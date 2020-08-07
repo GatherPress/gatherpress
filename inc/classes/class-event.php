@@ -698,6 +698,10 @@ class Event {
 
 	public function before_content( $content ) : string {
 
+		if ( ! is_singular( self::POST_TYPE ) ) {
+			return $content;
+		}
+
 		$before = Helper::render_template(
 			GATHERPRESS_CORE_PATH . '/template-parts/before-event-content.php',
 			[
@@ -710,6 +714,10 @@ class Event {
 	}
 
 	public function after_content( $content ) : string {
+
+		if ( ! is_singular( self::POST_TYPE ) ) {
+			return $content;
+		}
 
 		$after = Helper::render_template(
 			GATHERPRESS_CORE_PATH . '/template-parts/after-event-content.php'
