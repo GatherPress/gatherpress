@@ -1,0 +1,56 @@
+{
+	"name": "gatherpress",
+	"version": "1.0.0",
+	"description": "ES6 Assets for GatherPress including Blocks, Filters, and Plugins",
+	"main": "index.js",
+	"scripts": {
+		"build": "wp-scripts build",
+		"check-engines": "wp-scripts check-engines",
+		"check-licenses": "wp-scripts check-licenses",
+		"dev": "wp-scripts start",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"lint:pkg-json": "wp-scripts lint-pkg-json",
+		"start": "wp-scripts start",
+		"test:e2e": "wp-scripts test-e2e",
+		"test:unit": "wp-scripts test-unit-js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mauteri/gatherpress.git"
+	},
+	"keywords": [
+		"dates",
+		"events"
+	],
+	"author": "",
+	"license": "GPL-2.0",
+	"bugs": {
+		"url": "https://github.com/mauteri/gatherpress/issues"
+	},
+	"homepage": "https://github.com/mauteri/gatherpress#readme",
+	"devDependencies": {
+		"@wordpress/api-fetch": "^3.18.0",
+		"@wordpress/components": "^8.3.2",
+		"@wordpress/compose": "^3.19.0",
+		"@wordpress/data": "^4.22.0",
+		"@wordpress/date": "^3.10.0",
+		"@wordpress/i18n": "^3.14.0",
+		"@wordpress/scripts": "^5.1.0",
+		"css-loader": "^3.6.0",
+		"file-loader": "^6.0.0",
+		"ignore-emit-webpack-plugin": "^2.0.2",
+		"mini-css-extract-plugin": "^0.8.0",
+		"node-sass": "^4.14.1",
+		"path": "^0.12.7",
+		"popper.js": "^1.16.1",
+		"postcss-loader": "^3.0.0",
+		"postcss-preset-env": "^6.7.0",
+		"sass-loader": "^7.1.0"
+	},
+	"dependencies": {
+		"jquery": "^3.5.1",
+		"tailwindcss": "^1.4.6",
+		"tether": "^1.4.7"
+	}
+}

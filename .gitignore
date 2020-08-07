@@ -1,0 +1,33 @@
+# Logs and databases #
+######################
+*.log
+*.sql
+
+# OS generated files #
+######################
+.DS_Store*
+ehthumbs.db
+Thumbs.db
+._*
+
+# Editor/IDE generated files #
+######################
+*.un~
+.idea
+nbproject
+.netbeans.xml
+
+# SASS #
+##########
+.sass-cache
+
+# Node #
+##########
+node_modules
+npm-debug.log
+typings
+
+# Composer #
+##########
+vendor
+
