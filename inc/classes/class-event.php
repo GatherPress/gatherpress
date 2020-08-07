@@ -53,7 +53,8 @@ class Event {
 		add_filter( 'wp_unique_post_slug', [ $this, 'append_id_to_event_slug' ], 10, 4 );
 		add_filter( sprintf( 'manage_%s_posts_columns', self::POST_TYPE ), [ $this, 'set_custom_columns' ] );
 		add_filter( sprintf( 'manage_edit-%s_sortable_columns', self::POST_TYPE ), [ $this, 'sortable_columns' ] );
-		add_filter( 'single_template', [ $this, 'single_event_template' ] );
+		add_filter( 'the_content', [ $this, 'before_content' ], 0 );
+		add_filter( 'the_content', [ $this, 'after_content' ], 99999 );
 
 	}
 
@@ -695,13 +696,27 @@ class Event {
 
 	}
 
-	public function single_event_template( $template ) {
+	public function before_content( $content ) : string {
 
-		global $post;
+		$before = Helper::render_template(
+			GATHERPRESS_CORE_PATH . '/template-parts/before-event-content.php',
+			[
+				'event' => $this,
+			]
+		);
 
-		if ( self::POST_TYPE === $post->post_type ) {
-			return GATHERPRESS_CORE_PATH . '/templates/single-event.php';
-		}
+		return $before . $content;
+
+	}
+
+	public function after_content( $content ) : string {
+
+		$after = Helper::render_template(
+			GATHERPRESS_CORE_PATH . '/template-parts/after-event-content.php'
+		);
+
+		return $content . $after;
+
 	}
 
 }
