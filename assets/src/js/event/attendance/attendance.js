@@ -68,8 +68,8 @@ export class Attendance extends Component {
 		let nav     = [];
 
 		for ( let i = 0; i < this.pages.length; i++ ) {
-			let item = this.pages[ i ],
-				active = ( i === this.state.activeTab ) ? 'border-l border-t border-r rounded-t active' : '';
+			let item              = this.pages[ i ],
+				additionalClasses = ( i === this.state.activeTab ) ? 'border-blue-500 bg-blue-500 hover:bg-blue-700 text-white active' : 'border-white bg-white hover:border-gray-200 text-blue-500 hover:bg-gray-200';
 
 			nav.push(
 				<li
@@ -78,7 +78,7 @@ export class Attendance extends Component {
 					<a
 						ref           = { input => this.navItem = input }
 						key           = { item.slug }
-						className     = { 'bg-white inline-block py-2 px-4 text-blue-500 hover:text-blue-800 font-semibold ' + active }
+						className     = { 'text-center no-underline block border rounded py-2 px-4 ' + additionalClasses }
 						id            = { 'nav-' + item.slug + '-tab' }
 						data-id       = { item.slug }
 						data-toggle   = 'tab'

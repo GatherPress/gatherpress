@@ -33,6 +33,7 @@ class BuddyPress {
 		}
 
 		add_action( 'bp_notification_settings', [ $this, 'event_notification_settings' ], 1 );
+		add_action( 'bp_register_theme_packages', [ $this, 'register_theme_packages' ] );
 
 	}
 
@@ -69,6 +70,20 @@ class BuddyPress {
 	public function is_buddypress_available() : bool {
 
 		return (bool) function_exists( 'buddypress' );
+
+	}
+
+	public function register_theme_packages() {
+
+		bp_register_theme_package(
+			[
+				'id'      => 'gp-default',
+				'name'    => __( 'GatherPress Default', 'gatherpress' ),
+				'version' => GATHERPRESS_THEME_VERSION,
+				'dir'     => trailingslashit( GATHERPRESS_CORE_PATH . '/bp-templates/gp-default' ),
+				'url'     => trailingslashit( GATHERPRESS_CORE_URL . '/bp-templates/gp-default' )
+			]
+		);
 
 	}
 

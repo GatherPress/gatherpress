@@ -55,7 +55,8 @@ class Event {
 		add_filter( sprintf( 'manage_edit-%s_sortable_columns', self::POST_TYPE ), [ $this, 'sortable_columns' ] );
 		add_filter( 'the_content', [ $this, 'before_content' ], 0 );
 		add_filter( 'the_content', [ $this, 'after_content' ], 99999 );
-		add_filter( 'get_the_date', [ $this, 'get_the_event_date' ], 10, 3 );
+		add_filter( 'get_the_date', [ $this, 'get_the_event_date' ], 10, 2 );
+		add_filter( 'the_time', [ $this, 'get_the_event_date' ], 10, 2 );
 
 	}
 
@@ -728,9 +729,11 @@ class Event {
 
 	}
 
-	public function get_the_event_date( $the_date, $format, $post ) : string {
+	public function get_the_event_date( $the_date, $format ) : string {
 
-		if ( $post->post_type !== self::POST_TYPE ) {
+		global $post;
+
+		if ( ! is_a( $post, '\WP_Post' ) && $post->post_type !== self::POST_TYPE ) {
 			return $the_date;
 		}
 
