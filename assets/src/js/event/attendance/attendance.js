@@ -72,10 +72,10 @@ export class Attendance extends Component {
 				additionalClasses = ( i === this.state.activeTab ) ? 'border-blue-500 bg-blue-500 hover:bg-blue-700 text-white active' : 'border-white bg-white hover:border-gray-200 text-blue-500 hover:bg-gray-200';
 
 			nav.push(
-				<li
-					className = '-mb-px mr-1 list-none'
+				<div
+					className = '-mb-px mr-2 list-none'
 				>
-					<a
+					<button
 						ref           = { input => this.navItem = input }
 						key           = { item.slug }
 						className     = { 'text-center no-underline block border rounded py-2 px-4 ' + additionalClasses }
@@ -89,8 +89,8 @@ export class Attendance extends Component {
 						onClick       = { ( e ) => this.tabUpdate( e ) }
 					>
 						{ item.name }
-					</a>
-				</li>
+					</button>
+				</div>
 			);
 		}
 
@@ -183,14 +183,13 @@ export class Attendance extends Component {
 			<div
 				className = 'mt-4'
 			>
-				<nav className= ''>
-					<ul
-						className = 'flex border-b ml-0'
-						id        = 'attendance-nav'
-						role      = 'tablist'
-					>
-						{ this.displayNavigation() }
-					</ul>
+				<nav
+					className = 'flex border-b ml-0'
+					className = 'flex border-b ml-0'
+					id        = 'attendance-nav'
+					role      = 'tablist'
+				>
+					{ this.displayNavigation() }
 				</nav>
 				<div
 					className = 'tab-content p-3'
