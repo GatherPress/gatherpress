@@ -73,7 +73,7 @@ export class Attendance extends Component {
 
 			nav.push(
 				<li
-					className = '-mb-px mr-1'
+					className = '-mb-px mr-1 list-none'
 				>
 					<a
 						ref           = { input => this.navItem = input }
@@ -183,9 +183,9 @@ export class Attendance extends Component {
 			<div
 				className = 'mt-4'
 			>
-				<nav>
+				<nav className= ''>
 					<ul
-						className = 'flex border-b'
+						className = 'flex border-b ml-0'
 						id        = 'attendance-nav'
 						role      = 'tablist'
 					>

@@ -27,7 +27,7 @@ class Query {
 	protected function _setup_hooks() : void {
 
 		add_action( 'pre_get_posts', [ $this, 'pre_get_posts' ] );
-		add_filter( 'posts_clauses', [ $this, 'order_past_events' ] );
+		add_filter( 'posts_clauses', [ $this, 'order_upcoming_events' ] );
 		add_filter( 'posts_clauses', [ $this, 'admin_order_events' ] );
 
 	}

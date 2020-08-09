@@ -9,6 +9,8 @@
 ehthumbs.db
 Thumbs.db
 ._*
+*.css.map
+*.js.map
 
 # Editor/IDE generated files #
 ######################

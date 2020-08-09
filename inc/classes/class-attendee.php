@@ -310,7 +310,7 @@ class Attendee {
 		}
 
 		// Sort before breaking down statuses in return array.
-		usort( $attendees, [ $this, 'sort_attendees_by_role' ] );
+//		usort( $attendees, [ $this, 'sort_attendees_by_role' ] );
 
 		$retval['all']['attendees'] = $attendees;
 		$retval['all']['count']     = count( $retval['all']['attendees'] );
