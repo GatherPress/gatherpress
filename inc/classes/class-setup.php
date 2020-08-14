@@ -34,7 +34,7 @@ class Setup {
 		Layout::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
-
+		Role::get_instance();
 	}
 
 }

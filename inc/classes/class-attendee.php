@@ -296,13 +296,13 @@ class Attendee {
 			}
 
 			$user_info = get_userdata( $user_id );
-//			$roles     = Role::get_instance()->get_role_names();
+			$roles     = Role::get_instance()->get_role_names();
 			$attendees[] = [
 				'id'        => $user_id,
 				'name'      => $user_info->display_name,
 				'photo'     => get_avatar_url( $user_id ),
 				'profile'   => bp_core_get_user_domain( $user_id ),
-				'role'      => '', //$roles[ current( $user_info->roles ) ] ?? '',
+				'role'      => $roles[ current( $user_info->roles ) ] ?? '',
 				'timestamp' => sanitize_text_field( $attendee['timestamp'] ),
 				'status'    => $user_status,
 			];
@@ -310,7 +310,7 @@ class Attendee {
 		}
 
 		// Sort before breaking down statuses in return array.
-//		usort( $attendees, [ $this, 'sort_attendees_by_role' ] );
+		usort( $attendees, [ $this, 'sort_attendees_by_role' ] );
 
 		$retval['all']['attendees'] = $attendees;
 		$retval['all']['count']     = count( $retval['all']['attendees'] );
