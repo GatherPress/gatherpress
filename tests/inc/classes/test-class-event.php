@@ -81,7 +81,6 @@ class Test_Event extends \WP_UnitTestCase {
 
 	}
 
-
 	/**
 	 * @covers ::adjust_sql
 	 */
