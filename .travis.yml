@@ -3,6 +3,9 @@ dist: trusty
 
 language: php
 
+services:
+  - mysql
+
 notifications:
   email:
     on_success: never
@@ -36,6 +39,8 @@ matrix:
       env: WP_TRAVISCI=phpcs
 
 before_script:
+  - travis_retry composer self-update
+  - travis_retry composer install --no-interaction --prefer-source --dev
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
   - |
     if [ -f ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini ]; then
@@ -58,6 +63,7 @@ before_script:
     fi
 
 script:
+  - vendor/bin/phpunit --coverage-clover=coverage.xml
   - |
     if [[ ! -z "$WP_VERSION" ]] ; then
       phpunit
@@ -67,3 +73,9 @@ script:
     if [[ "$WP_TRAVISCI" == "phpcs" ]] ; then
       phpcs
     fi
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+
+install:
+  - composer install --prefer-dist --no-interaction
