@@ -85,7 +85,7 @@ class Test_Event extends \WP_UnitTestCase {
 	/**
 	 * @covers ::adjust_sql
 	 */
-	public function test_adjust_sql() : void {
+	public function test_adjust_sql() {
 
 		global $wpdb;
 
