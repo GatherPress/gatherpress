@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d1711cc2a841d3af81c2535c4e2764af",
+    "content-hash": "b7b3d4e44ba2ac233ca8fc0250c7b4ae",
     "packages": [
         {
             "name": "buddypress/buddypress",
