@@ -6,9 +6,6 @@
     "require": {
         "buddypress/buddypress": "^5.2"
     },
-    "require-dev": {
-        "phpunit/phpunit": "5.7.26"
-    },
     "extra": {
         "installer-paths": {
             "vendor/{$name}/": ["type:wordpress-plugin"]
