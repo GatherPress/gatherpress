@@ -10,9 +10,9 @@ class Test_Event extends \WP_UnitTestCase {
 
 	/**
 	 * @covers ::get_calendar_links
-	 * @covers ::_get_google_calendar_link
-	 * @covers ::_get_ics_calendar_download
-	 * @covers ::_get_yahoo_calendar_link
+	 * @covers ::get_google_calendar_link
+	 * @covers ::get_ics_calendar_download
+	 * @covers ::get_yahoo_calendar_link
 	 */
 	public function test_get_calendar_links() {
 
