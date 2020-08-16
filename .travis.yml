@@ -3,9 +3,6 @@ dist: trusty
 
 language: php
 
-services:
-  - mysql
-
 notifications:
   email:
     on_success: never
@@ -17,6 +14,7 @@ branches:
 
 cache:
   directories:
+    - vendor
     - $HOME/.composer/cache
 
 matrix:
@@ -63,10 +61,9 @@ before_script:
     fi
 
 script:
-  - vendor/bin/phpunit --coverage-clover=coverage.xml
   - |
     if [[ ! -z "$WP_VERSION" ]] ; then
-      phpunit
+      phpunit --coverage-clover=coverage.xml
       WP_MULTISITE=1 phpunit
     fi
   - |
@@ -76,6 +73,3 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-
-install:
-  - composer install --prefer-dist --no-interaction
