@@ -2,7 +2,7 @@
 /**
  * Template for handling before event content.
  *
- * @package gatherpress
+ * @package gp_template
  */
 
 ?>

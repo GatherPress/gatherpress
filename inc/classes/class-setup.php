@@ -1,4 +1,9 @@
 <?php
+/**
+ * Class Setup
+ *
+ * @package GatherPress\Inc
+ */
 
 namespace GatherPress\Inc;
 
@@ -17,14 +22,14 @@ class Setup {
 	 */
 	protected function __construct() {
 
-		$this->_instantiate_classes();
+		$this->instantiate_classes();
 
 	}
 
 	/**
 	 * Instantiate singletons.
 	 */
-	private function _instantiate_classes() {
+	protected function instantiate_classes() {
 
 		Assets::get_instance();
 		Attendee::get_instance();
@@ -35,6 +40,7 @@ class Setup {
 		Query::get_instance();
 		Rest_Api::get_instance();
 		Role::get_instance();
+
 	}
 
 }
