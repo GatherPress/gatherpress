@@ -7,7 +7,7 @@
         "buddypress/buddypress": "^5.2"
     },
     "require-dev": {
-        "phpunit/phpunit": "6.5.14"
+        "phpunit/phpunit": "5.7.26"
     },
     "extra": {
         "installer-paths": {
