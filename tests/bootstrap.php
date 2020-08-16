@@ -23,8 +23,10 @@ require_once $_tests_dir . '/includes/functions.php';
  * Manually load the plugin being tested.
  */
 function _manually_load_plugin() {
-	require_once dirname( __DIR__ ) . '/../buddypress/bp-loader.php';
-	require dirname( dirname( __FILE__ ) ) . '/gatherpress.php';
+	// Include BuddyPress from composer.
+	require_once dirname( dirname( __FILE__ ) ) . '/vendor/buddypress/bp-loader.php';
+
+	require_once dirname( dirname( __FILE__ ) ) . '/gatherpress.php';
 }
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
