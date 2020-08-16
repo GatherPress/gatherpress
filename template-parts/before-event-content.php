@@ -1,3 +1,10 @@
+<?php
+/**
+ * @file
+ * Template for handling before event content.
+ */
+?>
+
 <div class="flex items-center pt-4 pb-4">
 	<div class="w-9/12">
 		<span class="m-0 p-0 font-bold text-2xl">
