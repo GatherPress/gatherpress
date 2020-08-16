@@ -4,7 +4,7 @@
 
 	<!-- What to scan -->
 	<file>.</file>
-	<file>*.asset.php</file>
+	<exclude-pattern>*.asset.php</exclude-pattern>
 	<exclude-pattern>/vendor/</exclude-pattern>
 	<exclude-pattern>/node_modules/</exclude-pattern>
 
