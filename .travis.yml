@@ -76,3 +76,6 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
+install:
+  - composer install --prefer-dist --no-interaction
