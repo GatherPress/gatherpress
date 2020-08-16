@@ -24,7 +24,7 @@ class Rest_Api {
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() : void {
+	protected function _setup_hooks() {
 
 		add_action( 'rest_api_init', [ $this, 'register_endpoints' ] );
 

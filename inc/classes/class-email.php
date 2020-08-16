@@ -24,7 +24,7 @@ class Email {
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() : void {
+	protected function _setup_hooks() {
 
 		add_action( 'admin_init', [ $this, 'setup_email_templates' ] );
 
@@ -33,7 +33,7 @@ class Email {
 	/**
 	 * Basically a copy of bp_core_install_emails() for our creation of custom templates.
 	 */
-	public function setup_email_templates() : void {
+	public function setup_email_templates() {
 
 		if ( is_multisite() && ! is_main_site() ) {
 			return;

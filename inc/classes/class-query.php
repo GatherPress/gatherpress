@@ -24,7 +24,7 @@ class Query {
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() : void {
+	protected function _setup_hooks() {
 
 		add_action( 'pre_get_posts', [ $this, 'pre_get_posts' ] );
 		add_filter( 'posts_clauses', [ $this, 'order_upcoming_events' ] );
@@ -57,7 +57,7 @@ class Query {
 	 *
 	 * @param $query
 	 */
-	public function pre_get_posts( $query ) : void {
+	public function pre_get_posts( $query ) {
 
 		if (
 			( $query->is_home() || $query->is_front_page() )

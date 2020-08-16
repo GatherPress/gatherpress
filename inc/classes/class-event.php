@@ -35,7 +35,7 @@ class Event {
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() : void {
+	protected function _setup_hooks() {
 
 		/**
 		 * Actions.
@@ -97,7 +97,7 @@ class Event {
 	/**
 	 * Add new rewrite rule for event to append Post ID.
 	 */
-	public function change_rewrite_rule() : void {
+	public function change_rewrite_rule() {
 
 		add_rewrite_rule(
 			'^events/([^/]*)-([0-9]+)/?$',
@@ -113,7 +113,7 @@ class Event {
 	/**
 	 * Maybe create custom table if doesn't exist for main site or current site in network.
 	 */
-	public function maybe_create_custom_table() : void {
+	public function maybe_create_custom_table() {
 
 		$this->create_table();
 
@@ -147,7 +147,7 @@ class Event {
 	/**
 	 * Create custom event table.
 	 */
-	public function create_table() : void {
+	public function create_table() {
 
 		global $wpdb;
 
@@ -176,7 +176,7 @@ class Event {
 	/**
 	 * Register the Event post type.
 	 */
-	public function register_post_types() : void {
+	public function register_post_types() {
 
 		register_post_type(
 			static::POST_TYPE,
@@ -220,7 +220,7 @@ class Event {
 	 *
 	 * @param int $post_id
 	 */
-	public function delete_event( int $post_id ) : void {
+	public function delete_event( int $post_id ) {
 
 		global $wpdb;
 
@@ -621,7 +621,7 @@ class Event {
 	 * @param string $column
 	 * @param int    $post_id
 	 */
-	public function custom_columns( string $column, int $post_id ) : void {
+	public function custom_columns( string $column, int $post_id ) {
 
 		switch ( $column ) {
 

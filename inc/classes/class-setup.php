@@ -24,7 +24,7 @@ class Setup {
 	/**
 	 * Instantiate singletons.
 	 */
-	private function _instantiate_classes() : void {
+	private function _instantiate_classes() {
 
 		Assets::get_instance();
 		Attendee::get_instance();

@@ -26,7 +26,7 @@ class Assets {
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() : void {
+	protected function _setup_hooks() {
 
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'admin_enqueue_scripts' ] );
@@ -37,7 +37,7 @@ class Assets {
 	/**
 	 * Enqueue frontend styles and scripts.
 	 */
-	public function enqueue_scripts() : void {
+	public function enqueue_scripts() {
 
 		$attendee = Attendee::get_instance();
 		$event    = Event::get_instance();
@@ -79,7 +79,7 @@ class Assets {
 	/**
 	 * Enqueue backend styles and scripts.
 	 */
-	public function admin_enqueue_scripts() : void {
+	public function admin_enqueue_scripts() {
 
 		wp_enqueue_style( 'gatherpress-admin-css', $this->_build . 'admin.css', [], GATHERPRESS_THEME_VERSION );
 
@@ -88,7 +88,7 @@ class Assets {
 	/**
 	 * Enqueue block styles and scripts.
 	 */
-	public function block_enqueue_scripts() : void {
+	public function block_enqueue_scripts() {
 
 		$post_id = $GLOBALS['post']->ID;
 

@@ -24,7 +24,7 @@ class BuddyPress {
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() : void {
+	protected function _setup_hooks() {
 
 		if ( ! $this->is_buddypress_available() ) {
 			add_action( 'admin_notices', [ $this, 'buddypress_dependency' ] );
@@ -53,7 +53,7 @@ class BuddyPress {
 	/**
 	 * Warning message for BuddyPress dependency.
 	 */
-	public function buddypress_dependency() : void {
+	public function buddypress_dependency() {
 
 		printf(
 			'<div class="error"><p>%s</p></div>',

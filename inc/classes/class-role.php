@@ -24,7 +24,7 @@ class Role {
 	/**
 	 * Setup Hooks.
 	 */
-	protected function _setup_hooks() : void {
+	protected function _setup_hooks() {
 
 		add_action( 'init', [ $this, 'change_role_names' ] );
 
@@ -48,7 +48,7 @@ class Role {
 	/**
 	 * Map WordPress role names to GatherPress names.
 	 */
-	public function change_role_names() : void {
+	public function change_role_names() {
 
 		global $wp_roles;
 

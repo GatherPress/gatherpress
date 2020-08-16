@@ -36,7 +36,7 @@ class Attendee {
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() : void {
+	protected function _setup_hooks() {
 
 		add_action( 'init', [ $this, 'maybe_create_custom_table' ] );
 
@@ -45,7 +45,7 @@ class Attendee {
 	/**
 	 * Maybe create custom table if doesn't exist for main site or current site in network.
 	 */
-	public function maybe_create_custom_table() : void {
+	public function maybe_create_custom_table() {
 
 		$this->create_table();
 
@@ -62,7 +62,7 @@ class Attendee {
 	/**
 	 * Create custom attendees table.
 	 */
-	public function create_table() : void {
+	public function create_table() {
 
 		global $wpdb;
 
