@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for loading all static assets.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,23 +15,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Assets.
+ */
 class Assets {
 
 	use Singleton;
 
-	protected $_build = GATHERPRESS_CORE_URL . '/assets/build/';
+	protected $_build = GP_CORE_URL . '/assets/build/';
 
 	/**
 	 * Assets constructor.
 	 */
 	protected function __construct() {
-		$this->_setup_hooks();
+		$this->setup_hooks();
 	}
 
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() {
+	protected function setup_hooks() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
@@ -37,13 +47,13 @@ class Assets {
 		$attendee = Attendee::get_instance();
 		$event    = Event::get_instance();
 
-		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/style.asset.php';
+		$asset = require_once GP_CORE_PATH . '/assets/build/style.asset.php';
 		wp_enqueue_style( 'gatherpress-style', $this->_build . 'style.css', array(), $asset['version'] );
 
 		if ( is_singular( 'gp_event' ) ) {
 			global $post;
 
-			$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/event_single.asset.php';
+			$asset = require_once GP_CORE_PATH . '/assets/build/event_single.asset.php';
 			wp_enqueue_script(
 				'gatherpress-event-single',
 				$this->_build . 'event_single.js',
@@ -74,7 +84,7 @@ class Assets {
 	 * Enqueue backend styles and scripts.
 	 */
 	public function admin_enqueue_scripts() {
-		wp_enqueue_style( 'gatherpress-admin-css', $this->_build . 'admin.css', array(), GATHERPRESS_THEME_VERSION );
+		wp_enqueue_style( 'gatherpress-admin-css', $this->_build . 'admin.css', array(), GP_THEME_VERSION );
 	}
 
 	/**
@@ -83,10 +93,10 @@ class Assets {
 	public function block_enqueue_scripts() {
 		$post_id = $GLOBALS['post']->ID;
 
-		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/editor.asset.php';
+		$asset = require_once GP_CORE_PATH . '/assets/build/editor.asset.php';
 		wp_enqueue_style( 'gatherpress-editor', $this->_build . 'editor.css', array( 'wp-edit-blocks' ), $asset['version'] );
 
-		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/index.asset.php';
+		$asset = require_once GP_CORE_PATH . '/assets/build/index.asset.php';
 		wp_enqueue_script(
 			'gatherpress-index',
 			$this->_build . 'index.js',
@@ -97,7 +107,8 @@ class Assets {
 				'wp-plugins',
 				'wp-edit-post',
 			),
-			$asset['version']
+			$asset['version'],
+			true
 		);
 
 		wp_localize_script(
@@ -114,5 +125,3 @@ class Assets {
 	}
 
 }
-
-// EOF

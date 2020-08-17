@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for registering REST API endpoints.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Rest_Api.
+ */
 class Rest_Api {
 
 	use Singleton;
@@ -16,13 +26,13 @@ class Rest_Api {
 	 * Query constructor.
 	 */
 	protected function __construct() {
-		$this->_setup_hooks();
+		$this->setup_hooks();
 	}
 
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() {
+	protected function setup_hooks() {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 	}
 
@@ -34,18 +44,23 @@ class Rest_Api {
 	public function register_endpoints() {
 
 		// All event routes.
-		$routes = $this->_get_event_routes();
+		$routes = $this->get_event_routes();
 
 		foreach ( $routes as $route ) {
 			register_rest_route(
-				sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ),
+				sprintf( '%s/event', GP_REST_NAMESPACE ),
 				sprintf( '/%s', $route['route'] ),
 				$route['args']
 			);
 		}
 	}
 
-	protected function _get_event_routes() {
+	/**
+	 * Get the event routes.
+	 *
+	 * @return array[]
+	 */
+	protected function get_event_routes() {
 		return array(
 			array(
 				'route' => 'datetime',
@@ -133,6 +148,13 @@ class Rest_Api {
 		);
 	}
 
+	/**
+	 * Validate attendance status.
+	 *
+	 * @param string $param An attendance status.
+	 *
+	 * @return bool
+	 */
 	public function validate_attendance_status( $param ) : bool {
 		return ( 'attending' === $param || 'not_attending' === $param );
 	}
@@ -140,7 +162,7 @@ class Rest_Api {
 	/**
 	 * Validate Event Post ID.
 	 *
-	 * @param $param
+	 * @param int|string $param A Post ID to validate.
 	 *
 	 * @return bool
 	 */
@@ -155,7 +177,7 @@ class Rest_Api {
 	/**
 	 * Validate Datetime.
 	 *
-	 * @param $param
+	 * @param string $param A Date time to validate.
 	 *
 	 * @return bool
 	 */
@@ -166,7 +188,7 @@ class Rest_Api {
 	/**
 	 * Update custom event table with start and end Datetime.
 	 *
-	 * @param \WP_REST_Request $request
+	 * @param \WP_REST_Request $request Contains data from the request.
 	 *
 	 * @return \WP_REST_Response
 	 */
@@ -190,6 +212,13 @@ class Rest_Api {
 		return new \WP_REST_Response( $response );
 	}
 
+	/**
+	 * Announce an event to all members that subscribe to these notices.
+	 *
+	 * @param \WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return \WP_REST_Response
+	 */
 	public function announce( \WP_REST_Request $request ) {
 		$params  = $request->get_params();
 		$post_id = intval( $params['post_id'] );
@@ -203,6 +232,13 @@ class Rest_Api {
 		return new \WP_REST_Response( $response );
 	}
 
+	/**
+	 * Update the attendance status for a user to an event.
+	 *
+	 * @param \WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return \WP_REST_Response
+	 */
 	public function update_attendance( \WP_REST_Request $request ) {
 		$params          = $request->get_params();
 		$attendee        = Attendee::get_instance();
@@ -254,5 +290,3 @@ class Rest_Api {
 	}
 
 }
-
-// EOF

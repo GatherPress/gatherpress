@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for all query related functionality.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Query.
+ */
 class Query {
 
 	use Singleton;
@@ -16,18 +26,23 @@ class Query {
 	 * Query constructor.
 	 */
 	protected function __construct() {
-		$this->_setup_hooks();
+		$this->setup_hooks();
 	}
 
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() {
+	protected function setup_hooks() {
 		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
 		add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
 		add_filter( 'posts_clauses', array( $this, 'admin_order_events' ) );
 	}
 
+	/**
+	 * Get upcoming events.
+	 *
+	 * @return \WP_Query
+	 */
 	public function get_upcoming_events() : \WP_Query {
 		remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
 		add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
@@ -49,7 +64,7 @@ class Query {
 	/**
 	 * Set post type query to event on homepage.
 	 *
-	 * @param $query
+	 * @param \WP_Query $query An instance of \WP_Query.
 	 */
 	public function pre_get_posts( $query ) {
 		if (
@@ -65,7 +80,7 @@ class Query {
 	 *
 	 * @todo this is how we will handle past events. Upcoming/current events need to have adjusted orderby.
 	 *
-	 * @param array $pieces
+	 * @param array $pieces Includes pieces of the query like join, where, orderby, et al.
 	 *
 	 * @return array
 	 */
@@ -80,7 +95,7 @@ class Query {
 	/**
 	 * Set sorting for Event admin.
 	 *
-	 * @param array $pieces
+	 * @param array $pieces Includes pieces of the query like join, where, orderby, et al.
 	 *
 	 * @return array
 	 */
@@ -101,7 +116,7 @@ class Query {
 	/**
 	 * Order events by start datetime for ones that are upcoming.
 	 *
-	 * @param array $pieces
+	 * @param array $pieces Includes pieces of the query like join, where, orderby, et al.
 	 *
 	 * @return array
 	 */
@@ -114,5 +129,3 @@ class Query {
 	}
 
 }
-
-// EOF

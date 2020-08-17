@@ -1,14 +1,26 @@
 <?php
+/**
+ * Class handles unit tests for GatherPress\Inc\Event.
+ *
+ * @package GatherPress
+ * @subpackage Tests
+ * @since 1.0.0
+ */
+
 namespace GatherPress\Tests\Inc;
 
 use GatherPress\Inc\Event;
 
 /**
+ * Class Test_Event.
+ *
  * @coversDefaultClass GatherPress\Inc\Event
  */
 class Test_Event extends \WP_UnitTestCase {
 
 	/**
+	 * Coverage for get_calendar_links method.
+	 *
 	 * @covers ::get_calendar_links
 	 * @covers ::get_google_calendar_link
 	 * @covers ::get_ics_calendar_download
@@ -42,6 +54,8 @@ class Test_Event extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Cover for has_event_past method.
+	 *
 	 * @covers ::has_event_past
 	 */
 	public function test_has_event_past() {
@@ -51,7 +65,7 @@ class Test_Event extends \WP_UnitTestCase {
 				'post_type' => 'gp_event',
 			)
 		);
-		$year     = date( 'Y' );
+		$year     = gmdate( 'Y' );
 		$params   = array(
 			'post_id'        => $post_id,
 			'datetime_start' => sprintf( '%d-05-11 15:00:00', $year - 1 ),
@@ -78,6 +92,8 @@ class Test_Event extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Coverage for adjust_sql method.
+	 *
 	 * @covers ::adjust_sql
 	 */
 	public function test_adjust_sql() {
@@ -109,5 +125,3 @@ class Test_Event extends \WP_UnitTestCase {
 		$this->assertContains( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
 	}
 }
-
-// EOF

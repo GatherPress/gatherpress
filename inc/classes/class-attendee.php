@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for all attendance related functionality.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Attendee.
+ */
 class Attendee {
 
 	use Singleton;
@@ -15,26 +25,31 @@ class Attendee {
 	const TABLE_FORMAT       = '%sgp_attendees';
 	const ATTENDEE_CACHE_KEY = 'attendee_%d';
 
+	/**
+	 * Attendance statuses.
+	 */
 	public $statuses = array(
 		'attending',
 		'not_attending',
 		'waitlist',
 	);
 
-	// @todo temporary limit. Configuration coming in ticket https://github.com/mauteri/gatherpress/issues/56
+	/**
+	 * @todo temporary limit. Configuration coming in ticket https://github.com/mauteri/gatherpress/issues/56
+	 */
 	public $limit = 3;
 
 	/**
 	 * Query constructor.
 	 */
 	protected function __construct() {
-		$this->_setup_hooks();
+		$this->setup_hooks();
 	}
 
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() {
+	protected function setup_hooks() {
 		add_action( 'init', array( $this, 'maybe_create_custom_table' ) );
 	}
 
@@ -83,8 +98,8 @@ class Attendee {
 	/**
 	 * Get an event attendee.
 	 *
-	 * @param int $post_id
-	 * @param int $user_id
+	 * @param int $post_id An event post ID.
+	 * @param int $user_id A user ID.
 	 *
 	 * @return array
 	 */
@@ -96,7 +111,9 @@ class Attendee {
 		}
 
 		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$data  = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE post_id = %d AND user_id = %d", $post_id, $user_id ), ARRAY_A );
+
+		// @todo add caching to this.
+		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . esc_sql( $table ) . ' WHERE post_id = %d AND user_id = %d', $post_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		return (array) $data;
 	}
@@ -104,9 +121,9 @@ class Attendee {
 	/**
 	 * Save an event attendee.
 	 *
-	 * @param int    $post_id
-	 * @param int    $user_id
-	 * @param string $status
+	 * @param int    $post_id An event post ID.
+	 * @param int    $user_id A user ID.
+	 * @param string $status  Attendance status
 	 *
 	 * @return string
 	 */
@@ -134,7 +151,7 @@ class Attendee {
 		$data = array(
 			'post_id'   => intval( $post_id ),
 			'user_id'   => intval( $user_id ),
-			'timestamp' => date( 'Y-m-d H:i:s' ),
+			'timestamp' => gmdate( 'Y-m-d H:i:s' ),
 			'status'    => sanitize_key( $status ),
 		);
 
@@ -146,9 +163,9 @@ class Attendee {
 			$where = array(
 				'id' => intval( $attendee['id'] ),
 			);
-			$save  = $wpdb->update( $table, $data, $where );
+			$save  = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		} else {
-			$save = $wpdb->insert( $table, $data );
+			$save = $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
 
 		wp_cache_delete( sprintf( self::ATTENDEE_CACHE_KEY, $post_id ) );
@@ -167,7 +184,7 @@ class Attendee {
 	/**
 	 * Check the waitlist and maybe move attendees to attending.
 	 *
-	 * @param int $post_id
+	 * @param int $post_id An event post ID.
 	 *
 	 * @return int  Number of attendees from waitlist that were moved to attending.
 	 */
@@ -205,8 +222,8 @@ class Attendee {
 	/**
 	 * Check if the attending limit has been reached for an event.
 	 *
-	 * @param int    $post_id
-	 * @param string $status
+	 * @param int    $post_id An event post ID.
+	 * @param string $status  Desired attendance status.
 	 *
 	 * @return bool
 	 */
@@ -227,7 +244,7 @@ class Attendee {
 	/**
 	 * Get all attendees for an event.
 	 *
-	 * @param int $post_id
+	 * @param int $post_id An event post ID.
 	 *
 	 * @return array
 	 */
@@ -255,7 +272,7 @@ class Attendee {
 		$site_users  = count_users();
 		$total_users = $site_users['total_users'];
 		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$data        = (array) $wpdb->get_results( $wpdb->prepare( "SELECT user_id, timestamp, status FROM {$table} WHERE post_id = %d LIMIT %d", $post_id, $total_users ), ARRAY_A );
+		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $post_id, $total_users ), ARRAY_A );
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
 		$attendees   = array();
 
@@ -317,22 +334,22 @@ class Attendee {
 	/**
 	 * Sort attendees by their role.
 	 *
-	 * @param array $a
-	 * @param array $b
+	 * @param array $a First attendee to compare in sort.
+	 * @param array $b Second attendee to compare in sort.
 	 *
 	 * @return bool
 	 */
 	public function sort_attendees_by_role( array $a, array $b ) : bool {
 		$roles = array_values( Role::get_instance()->get_role_names() );
 
-		return ( array_search( $a['role'], $roles ) > array_search( $b['role'], $roles ) );
+		return ( array_search( $a['role'], $roles, true ) > array_search( $b['role'], $roles, true ) );
 	}
 
 	/**
 	 * Sort attendees by earliest timestamp.
 	 *
-	 * @param array $a
-	 * @param array $b
+	 * @param array $a First attendee to compare in sort.
+	 * @param array $b Second attendee to compare in sort.
 	 *
 	 * @return bool
 	 */
@@ -341,5 +358,3 @@ class Attendee {
 	}
 
 }
-
-// EOF

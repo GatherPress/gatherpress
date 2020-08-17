@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for all email related functionality.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Email.
+ */
 class Email {
 
 	use Singleton;
@@ -16,13 +26,13 @@ class Email {
 	 * BuddyPress constructor.
 	 */
 	protected function __construct() {
-		$this->_setup_hooks();
+		$this->setup_hooks();
 	}
 
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() {
+	protected function setup_hooks() {
 		add_action( 'admin_init', array( $this, 'setup_email_templates' ) );
 	}
 
@@ -40,9 +50,9 @@ class Email {
 			'post_status' => 'publish',
 			'post_type'   => bp_get_email_post_type(),
 		);
-		$emails       = $this->_email_get_schema();
-		$descriptions = $this->_email_get_type_schema( 'description' );
-		$cache_key    = md5( json_encode( $emails ) ) . md5( json_encode( $descriptions ) );
+		$emails       = $this->email_get_schema();
+		$descriptions = $this->email_get_type_schema( 'description' );
+		$cache_key    = md5( wp_json_encode( $emails ) ) . md5( wp_json_encode( $descriptions ) );
 
 		if ( $templates['cache_key'] === $cache_key ) {
 			return;
@@ -90,7 +100,12 @@ class Email {
 		update_option( $key, $templates );
 	}
 
-	protected function _email_get_schema() : array {
+	/**
+	 * Create GatherPress email schema for BuddyPress email templates.
+	 *
+	 * @return array[]
+	 */
+	protected function email_get_schema() : array {
 		return array(
 			'gp-event-announce' => array(
 				'post_title'   => __( '[{{{site.name}}}] posted new event', 'gatherpress' ),
@@ -100,12 +115,19 @@ class Email {
 		);
 	}
 
-	protected function _email_get_type_schema( string $field = 'description' ) : array {
+	/**
+	 * Method to get the email type schema for GatherPress that utilizes BuddyPress functionality.
+	 *
+	 * @param string $field The specific field to return in array if not `all`.
+	 *
+	 * @return array[]
+	 */
+	protected function email_get_type_schema( string $field = 'description' ) : array {
 		$types = array(
 			'gp-event-announce' => array(
 				'description' => __( 'A new event was announced.', 'gatherpress' ),
 				'unsubscribe' => array(
-					'meta_key' => 'notification_event_announce',
+					'meta_key' => 'notification_event_announce', //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 					'message'  => __( 'You will no longer receive emails when one of your groups announces an event.', 'gatherpress' ),
 				),
 			),
@@ -123,7 +145,7 @@ class Email {
 	 *
 	 * @todo will need to send this to a queue to process for large groups.
 	 *
-	 * @param int $post_id
+	 * @param int $post_id An event post ID.
 	 *
 	 * @return bool
 	 */
@@ -170,5 +192,3 @@ class Email {
 	}
 
 }
-
-// EOF

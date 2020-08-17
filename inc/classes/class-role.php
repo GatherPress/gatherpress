@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for all role related functionality.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Role.
+ */
 class Role {
 
 	use Singleton;
@@ -16,13 +26,13 @@ class Role {
 	 * Role constructor.
 	 */
 	protected function __construct() {
-		$this->_setup_hooks();
+		$this->setup_hooks();
 	}
 
 	/**
 	 * Setup Hooks.
 	 */
-	protected function _setup_hooks() {
+	protected function setup_hooks() {
 		add_action( 'init', array( $this, 'change_role_names' ) );
 	}
 
@@ -48,7 +58,7 @@ class Role {
 		global $wp_roles;
 
 		if ( ! isset( $wp_roles ) ) {
-			$wp_roles = new \WP_Roles();
+			$wp_roles = new \WP_Roles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		}
 
 		$role_name_changes = $this->get_role_names();

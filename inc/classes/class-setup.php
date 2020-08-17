@@ -2,7 +2,9 @@
 /**
  * Class is responsible for executing plugin setups.
  *
- * @package GatherPress\Inc
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
  */
 
 namespace GatherPress\Inc;
@@ -14,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Setup
+ * Class Setup.
  */
 class Setup {
 
@@ -36,7 +38,6 @@ class Setup {
 		BuddyPress::get_instance();
 		Email::get_instance();
 		Event::get_instance();
-		Layout::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
 		Role::get_instance();

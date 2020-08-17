@@ -1,14 +1,26 @@
 <?php
+/**
+ * Class handles unit tests for GatherPress\Inc\Attendee.
+ *
+ * @package GatherPress
+ * @subpackage Tests
+ * @since 1.0.0
+ */
+
 namespace GatherPress\Tests\Inc;
 
 use GatherPress\Inc\Attendee;
 
 /**
+ * Class Test_Attendee.
+ *
  * @coversDefaultClass GatherPress\Inc\Attendee
  */
 class Test_Attendee extends \WP_UnitTestCase {
 
 	/**
+	 * Coverage for get_attendee method.
+	 *
 	 * @covers ::get_attendee
 	 */
 	public function test_get_attendee() {
@@ -36,6 +48,8 @@ class Test_Attendee extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Coverage for save_attendee method.
+	 *
 	 * @covers ::save_attendee
 	 */
 	public function test_save_attendee() {
@@ -61,5 +75,3 @@ class Test_Attendee extends \WP_UnitTestCase {
 		$this->assertEmpty( $instance->save_attendee( $post_id, $user_id, $status ) );
 	}
 }
-
-// EOF

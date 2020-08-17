@@ -1,4 +1,11 @@
 <?php
+/**
+ * Trait is responsible for setting a class as a singleton.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc\Traits;
 
@@ -35,7 +42,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 trait Singleton {
 
-	protected static $_instance = array();
+	protected static $instance = array();
 
 	/**
 	 * Protected class constructor to prevent direct object creation
@@ -59,8 +66,7 @@ trait Singleton {
 	 * @return object Singleton instance of the class.
 	 */
 	final public static function get_instance() {
-
-		/*
+		/**
 		 * If this trait is implemented in a class which has multiple
 		 * sub-classes then static::$_instance will be overwritten with the most recent
 		 * sub-class instance. Thanks to late static binding
@@ -70,26 +76,24 @@ trait Singleton {
 		 */
 		$called_class = get_called_class();
 
-		if ( ! isset( static::$_instance[ $called_class ] ) ) {
-			static::$_instance[ $called_class ] = new $called_class();
+		if ( ! isset( static::$instance[ $called_class ] ) ) {
+			static::$instance[ $called_class ] = new $called_class();
 
 			/*
 			 * Run _init() method, if it exists in class.
 			 * This is only for backwards compatibility with existing code.
 			 */
-			if ( method_exists( static::$_instance[ $called_class ], '_init' ) ) {
-				static::$_instance[ $called_class ]->_init();
+			if ( method_exists( static::$instance[ $called_class ], '_init' ) ) {
+				static::$instance[ $called_class ]->_init();
 			}
 
 			/*
 			 * Dependent items can use the `gp_singleton_init_{$called_class}` hook to execute code
 			 * immediately after _init() is called.
 			 */
-			do_action( sprintf( 'gp_singleton_init_%s', $called_class ) );
+			do_action( sprintf( 'gp_singleton_init_%s', $called_class ) ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores, WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound)
 		}
 
-		return static::$_instance[ $called_class ];
+		return static::$instance[ $called_class ];
 	}
 }
-
-// EOF
