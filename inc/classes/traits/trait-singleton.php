@@ -44,6 +44,8 @@ trait Singleton {
 
 	/**
 	 * Instance array.
+	 *
+	 * @var array
 	 */
 	protected static $instance = array();
 
