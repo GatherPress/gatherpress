@@ -2,8 +2,11 @@
 /**
  * Class is responsible for all event related functionality.
  *
- * @package GatherPress\Inc
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
  */
+
 namespace GatherPress\Inc;
 
 use GatherPress\Inc\Traits\Singleton;
@@ -61,10 +64,12 @@ class Event {
 	/**
 	 * Ensure that event slugs always have ID appended to URL.
 	 *
-	 * @param string $slug
-	 * @param int    $post_id
-	 * @param string $post_status
-	 * @param string $post_type
+	 * @since 1.0.0
+	 *
+	 * @param string $slug        The desired slug (post_name).
+	 * @param int    $post_id     Post ID.
+	 * @param string $post_status No uniqueness checks are made if the post is still draft or pending.
+	 * @param string $post_type   Post type.
 	 *
 	 * @return string
 	 */
@@ -92,6 +97,8 @@ class Event {
 
 	/**
 	 * Add new rewrite rule for event to append Post ID.
+	 *
+	 * @since 1.0.0
 	 */
 	public function change_rewrite_rule() {
 		add_rewrite_rule(
@@ -106,6 +113,8 @@ class Event {
 
 	/**
 	 * Maybe create custom table if doesn't exist for main site or current site in network.
+	 *
+	 * @since 1.0.0
 	 */
 	public function maybe_create_custom_table() {
 		$this->create_table();
@@ -122,7 +131,9 @@ class Event {
 	/**
 	 * Delete custom table on site deletion.
 	 *
-	 * @param array $tables
+	 * @since 1.0.0
+	 *
+	 * @param array $tables Array of names of the site tables to be dropped.
 	 *
 	 * @return array
 	 */
@@ -136,6 +147,8 @@ class Event {
 
 	/**
 	 * Create custom event table.
+	 *
+	 * @since 1.0.0
 	 */
 	public function create_table() {
 		global $wpdb;
@@ -163,6 +176,8 @@ class Event {
 
 	/**
 	 * Register the Event post type.
+	 *
+	 * @since 1.0.0
 	 */
 	public function register_post_types() {
 		register_post_type(
@@ -199,13 +214,14 @@ class Event {
 				),
 			)
 		);
-
 	}
 
 	/**
 	 * Delete event record from custom table when event is deleted.
 	 *
-	 * @param int $post_id
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id An event post ID.
 	 */
 	public function delete_event( int $post_id ) {
 		global $wpdb;
@@ -216,7 +232,7 @@ class Event {
 
 		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
 
-		$wpdb->delete(
+		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$table,
 			array(
 				'post_id' => $post_id,
@@ -227,11 +243,16 @@ class Event {
 	/**
 	 * Save the start and end datetimes for an event.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $params {
-	 *     @type int     $post_id
-	 *     @type string  $datetime_start
-	 *     @type string  $datetime_end
-	 *     @type string  $timezone
+	 *     An array of arguments used to save event data to custom event table.
+	 *
+	 *     @type int     $post_id        An event post ID.
+	 *     @type string  $datetime_start Start DateTime to save for event.
+	 *     @type string  $datetime_end   End DateTime to save for event.
+	 *     @type string  $timezone       Timezone of the event.
+	 *
 	 * }
 	 *
 	 * @return bool
@@ -265,22 +286,23 @@ class Event {
 		$fields['datetime_end_gmt']   = get_gmt_from_date( $fields['datetime_end'] );
 		$fields['timezone']           = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
 		$table                        = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
-		$exists                       = $wpdb->get_var(
+		// @todo Add caching to this and create new method to check existence.
+		$exists                       = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prepare(
-				"SELECT post_id FROM {$table} WHERE post_id = %d",
+				'SELECT post_id FROM ' . esc_sql( $table ) . ' WHERE post_id = %d',
 				$fields['post_id']
 			)
 		);
 
 		if ( ! empty( $exists ) ) {
-			$retval = $wpdb->update(
+			$retval = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$table,
 				$fields,
 				array( 'post_id' => $fields['post_id'] )
 			);
 			wp_cache_delete( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
 		} else {
-			$retval = $wpdb->insert( $table, $fields );
+			$retval = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
 
 		return (bool) $retval;
@@ -289,7 +311,9 @@ class Event {
 	/**
 	 * Get display DateTime.
 	 *
-	 * @param int $post_id
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id An event post ID.
 	 *
 	 * @return string
 	 */
@@ -312,7 +336,9 @@ class Event {
 	/**
 	 * Check if start DateTime and end DateTime is same date.
 	 *
-	 * @param int $post_id
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id An event post ID.
 	 *
 	 * @return bool
 	 */
@@ -334,7 +360,9 @@ class Event {
 	/**
 	 * Check if event is in the past.
 	 *
-	 * @param int $post_id
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id An event post ID.
 	 *
 	 * @return bool
 	 */
@@ -353,8 +381,10 @@ class Event {
 	/**
 	 * Get datetime start.
 	 *
-	 * @param int    $post_id
-	 * @param string $format
+	 * @since 1.0.0
+	 *
+	 * @param int    $post_id An event post ID.
+	 * @param string $format  PHP date format.
 	 *
 	 * @return string
 	 */
@@ -366,8 +396,10 @@ class Event {
 	/**
 	 * Get datetime end.
 	 *
-	 * @param int    $post_id
-	 * @param string $format
+	 * @since 1.0.0
+	 *
+	 * @param int    $post_id An event post ID.
+	 * @param string $format  PHP date format.
 	 *
 	 * @return string
 	 */
@@ -378,9 +410,11 @@ class Event {
 	/**
 	 * Format date for display.
 	 *
-	 * @param int    $post_id
-	 * @param string $format
-	 * @param string $which
+	 * @since 1.0.0
+	 *
+	 * @param int    $post_id An event post ID.
+	 * @param string $format  PHP date format.
+	 * @param string $which   The datetime field in event table.
 	 *
 	 * @return string
 	 */
@@ -390,7 +424,7 @@ class Event {
 
 		// If site timezone is a valid setting, set it for timezone, if not remove `T` from format.
 		if ( ! preg_match( '/^-|\+/', $site_timezone ) ) {
-			date_default_timezone_set( $site_timezone );
+			date_default_timezone_set( $site_timezone ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.timezone_change_date_default_timezone_set
 		} else {
 			$format = str_replace( ' T', '', $format );
 		}
@@ -403,7 +437,7 @@ class Event {
 			$date = gmdate( $format, $ts );
 		}
 
-		date_default_timezone_set( $server_timezone );
+		date_default_timezone_set( $server_timezone ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.timezone_change_date_default_timezone_set
 
 		return (string) $date;
 	}
@@ -411,7 +445,9 @@ class Event {
 	/**
 	 * Get the datetime from custom table.
 	 *
-	 * @param int $post_id
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id An event post ID.
 	 *
 	 * @return array
 	 */
@@ -426,7 +462,7 @@ class Event {
 
 			if ( empty( $data ) || ! is_array( $data ) ) {
 				$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
-				$data  = (array) $wpdb->get_results( $wpdb->prepare( "SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt FROM {$table} WHERE post_id = %d LIMIT 1", $post_id ) );
+				$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $post_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
 				wp_cache_set( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
@@ -447,14 +483,16 @@ class Event {
 	/**
 	 * Get all supported add to calendar links for event.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @todo need to add venue location for all calendar methods when feature is done.
 	 *
-	 * @param int $post_id
+	 * @param int $post_id An event post ID.
 	 *
 	 * @return array
 	 */
 	public function get_calendar_links( int $post_id ) : array {
-		if ( static::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
 			return array();
 		}
 
@@ -470,7 +508,9 @@ class Event {
 	/**
 	 * Get add to Google calendar link for event.
 	 *
-	 * @param \WP_Post $event
+	 * @since 1.0.0
+	 *
+	 * @param \WP_Post $event An event post object.
 	 *
 	 * @return string
 	 */
@@ -497,7 +537,9 @@ class Event {
 	/**
 	 * Get add to Yahoo! calendar link for event.
 	 *
-	 * @param \WP_Post $event
+	 * @since 1.0.0
+	 *
+	 * @param \WP_Post $event An event post object.
 	 *
 	 * @return string
 	 */
@@ -533,7 +575,9 @@ class Event {
 	/**
 	 * Get ICS download for event.
 	 *
-	 * @param \WP_Post $event
+	 * @since 1.0.0
+	 *
+	 * @param \WP_Post $event An event post object.
 	 *
 	 * @return string
 	 */
@@ -565,7 +609,9 @@ class Event {
 	/**
 	 * Set custom columns for Event post type.
 	 *
-	 * @param array $columns
+	 * @since 1.0.0
+	 *
+	 * @param array $columns An associative array of column headings.
 	 *
 	 * @return array
 	 */
@@ -581,8 +627,10 @@ class Event {
 	/**
 	 * Populate custom columns for Event post type.
 	 *
-	 * @param string $column
-	 * @param int    $post_id
+	 * @since 1.0.0
+	 *
+	 * @param string $column  The name of the column to display.
+	 * @param int    $post_id The current post ID.
 	 */
 	public function custom_columns( string $column, int $post_id ) {
 		switch ( $column ) {
@@ -595,7 +643,9 @@ class Event {
 	/**
 	 * Make custom columns sortable for Event post type.
 	 *
-	 * @param array $columns
+	 * @since 1.0.0
+	 *
+	 * @param array $columns An array of sortable columns.
 	 *
 	 * @return array
 	 */
@@ -608,9 +658,11 @@ class Event {
 	/**
 	 * Adjust SQL for Event queries to join on gp_event_extended table.
 	 *
-	 * @param array  $pieces
-	 * @param string $type
-	 * @param string $order
+	 * @since 1.0.0
+	 *
+	 * @param array  $pieces Includes pieces of the query like join, where, orderby, et al.
+	 * @param string $type   Options are all, future, or past.
+	 * @param string $order  Event order DESC or ASC.
 	 *
 	 * @return array
 	 */
@@ -630,11 +682,11 @@ class Event {
 
 		if ( self::POST_TYPE === $wp_query->get( 'post_type' ) ) {
 			$table          = sprintf( self::TABLE_FORMAT, $wpdb->prefix, self::POST_TYPE );
-			$pieces['join'] = "LEFT JOIN {$table} ON {$wpdb->posts}.ID={$table}.post_id";
+			$pieces['join'] = 'LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
 			$order          = strtoupper( $order );
 
 			if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
-				$pieces['orderby'] = sprintf( "{$table}.datetime_start_gmt %s", esc_sql( $order ) );
+				$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
 			}
 
 			if ( 'all' !== $type ) {
@@ -642,10 +694,10 @@ class Event {
 
 				switch ( $type ) {
 					case 'future':
-						$pieces['where'] .= $wpdb->prepare( " AND {$table}.datetime_end_gmt >= %s", esc_sql( $current ) );
+						$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
 						break;
 					case 'past':
-						$pieces['where'] .= $wpdb->prepare( " AND {$table}.datetime_end_gmt < %s", esc_sql( $current ) );
+						$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
 						break;
 				}
 			}
@@ -657,7 +709,9 @@ class Event {
 	/**
 	 * Adds before content template.
 	 *
-	 * @param $content
+	 * @since 1.0.0
+	 *
+	 * @param string $content Content of the current post.
 	 *
 	 * @return string
 	 */
@@ -679,7 +733,9 @@ class Event {
 	/**
 	 * Adds after content template.
 	 *
-	 * @param $content
+	 * @since 1.0.0
+	 *
+	 * @param string $content Content of the current post.
 	 *
 	 * @return string
 	 */
@@ -698,8 +754,10 @@ class Event {
 	/**
 	 * Returns the event date instead of publish date for events.
 	 *
-	 * @param $the_date
-	 * @param $format
+	 * @since 1.0.0
+	 *
+	 * @param string $the_date The formatted date.
+	 * @param string $format   PHP date format.
 	 *
 	 * @return string
 	 */
