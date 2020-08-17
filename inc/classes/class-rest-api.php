@@ -48,7 +48,7 @@ class Rest_Api {
 
 		foreach ( $routes as $route ) {
 			register_rest_route(
-				sprintf( '%s/event', GP_REST_NAMESPACE ),
+				sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ),
 				sprintf( '/%s', $route['route'] ),
 				$route['args']
 			);

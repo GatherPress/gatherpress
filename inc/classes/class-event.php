@@ -30,7 +30,7 @@ class Event {
 	 * Event constructor.
 	 */
 	protected function __construct() {
-		$this->rest_namespace = GP_REST_NAMESPACE . '/event';
+		$this->rest_namespace = GATHERPRESS_REST_NAMESPACE . '/event';
 
 		$this->setup_hooks();
 	}
@@ -722,7 +722,7 @@ class Event {
 		}
 
 		$before = Helper::render_template(
-			GP_CORE_PATH . '/template-parts/before-event-content.php',
+			GATHERPRESS_CORE_PATH . '/template-parts/before-event-content.php',
 			array(
 				'event' => $this,
 			)
@@ -746,7 +746,7 @@ class Event {
 		}
 
 		$after = Helper::render_template(
-			GP_CORE_PATH . '/template-parts/after-event-content.php'
+			GATHERPRESS_CORE_PATH . '/template-parts/after-event-content.php'
 		);
 
 		return $content . $after;

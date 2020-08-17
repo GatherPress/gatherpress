@@ -22,7 +22,10 @@ class Assets {
 
 	use Singleton;
 
-	protected $_build = GP_CORE_URL . '/assets/build/';
+	/**
+	 * Path to `build` directory.
+	 */
+	protected $build = GATHERPRESS_CORE_URL . '/assets/build/';
 
 	/**
 	 * Assets constructor.
@@ -47,16 +50,16 @@ class Assets {
 		$attendee = Attendee::get_instance();
 		$event    = Event::get_instance();
 
-		$asset = require_once GP_CORE_PATH . '/assets/build/style.asset.php';
-		wp_enqueue_style( 'gatherpress-style', $this->_build . 'style.css', array(), $asset['version'] );
+		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/style.asset.php';
+		wp_enqueue_style( 'gatherpress-style', $this->build . 'style.css', array(), $asset['version'] );
 
 		if ( is_singular( 'gp_event' ) ) {
 			global $post;
 
-			$asset = require_once GP_CORE_PATH . '/assets/build/event_single.asset.php';
+			$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/event_single.asset.php';
 			wp_enqueue_script(
 				'gatherpress-event-single',
-				$this->_build . 'event_single.js',
+				$this->build . 'event_single.js',
 				$asset['dependencies'],
 				$asset['version'],
 				true
@@ -84,7 +87,7 @@ class Assets {
 	 * Enqueue backend styles and scripts.
 	 */
 	public function admin_enqueue_scripts() {
-		wp_enqueue_style( 'gatherpress-admin-css', $this->_build . 'admin.css', array(), GP_THEME_VERSION );
+		wp_enqueue_style( 'gatherpress-admin-css', $this->build . 'admin.css', array(), GATHERPRESS_THEME_VERSION );
 	}
 
 	/**
@@ -93,13 +96,13 @@ class Assets {
 	public function block_enqueue_scripts() {
 		$post_id = $GLOBALS['post']->ID;
 
-		$asset = require_once GP_CORE_PATH . '/assets/build/editor.asset.php';
-		wp_enqueue_style( 'gatherpress-editor', $this->_build . 'editor.css', array( 'wp-edit-blocks' ), $asset['version'] );
+		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/editor.asset.php';
+		wp_enqueue_style( 'gatherpress-editor', $this->build . 'editor.css', array( 'wp-edit-blocks' ), $asset['version'] );
 
-		$asset = require_once GP_CORE_PATH . '/assets/build/index.asset.php';
+		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/index.asset.php';
 		wp_enqueue_script(
 			'gatherpress-index',
-			$this->_build . 'index.js',
+			$this->build . 'index.js',
 			array(
 				'wp-blocks',
 				'wp-i18n',

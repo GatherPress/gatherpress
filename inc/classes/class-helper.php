@@ -57,7 +57,7 @@ class Helper {
 	 * @return string
 	 */
 	public static function button_classes() : string {
-		return (string) apply_filters( 'gp_button_classes', '' );
+		return (string) apply_filters( 'gatherpress_button_classes', '' );
 	}
 
 }

@@ -13,14 +13,14 @@
  */
 
 // Constants.
-define( 'GP_CORE_PATH', __DIR__ );
-define( 'GP_CORE_URL', plugin_dir_url( __FILE__ ) );
-define( 'GP_THEME_VERSION', '0.1.0' );
-define( 'GP_REST_NAMESPACE', 'gatherpress/v1' );
+define( 'GATHERPRESS_CORE_PATH', __DIR__ );
+define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
+define( 'GATHERPRESS_THEME_VERSION', '0.1.0' );
+define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 
 // Required files.
-require_once GP_CORE_PATH . '/inc/helpers/autoloader.php';
-require_once GP_CORE_PATH . '/inc/template-tags.php';
+require_once GATHERPRESS_CORE_PATH . '/inc/helpers/autoloader.php';
+require_once GATHERPRESS_CORE_PATH . '/inc/template-tags.php';
 
 // Kick things off!
 \GatherPress\Inc\Setup::get_instance();

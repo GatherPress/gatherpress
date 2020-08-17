@@ -12,7 +12,7 @@ namespace GatherPress\Inc\Helpers;
 /**
  * Autoloader function.
  *
- * @param string $resource
+ * @param string $resource Namespace to autoload.
  */
 function autoloader( $resource = '' ) {
 	$namespace_root = 'GatherPress\\';

@@ -45,6 +45,7 @@ class BuddyPress {
 
 	/**
 	 * Setting for receiving event announcements in BuddyPress notifications.
+	 *
 	 * @todo fix the template below. See previous theme repo.
 	 */
 	public function event_notification_settings() {
@@ -53,8 +54,8 @@ class BuddyPress {
 			'announce' => ! empty( $notification_event_announce ) ? $notification_event_announce : 'yes',
 		);
 
-		echo Helper::render_template(
-			GP_CORE_PATH . '/template-parts/buddypress/email/event-notification-settings.php',
+		echo Helper::render_template( //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			GATHERPRESS_CORE_PATH . '/template-parts/buddypress/email/event-notification-settings.php',
 			$args
 		);
 	}
@@ -86,9 +87,9 @@ class BuddyPress {
 			array(
 				'id'      => 'gp-default',
 				'name'    => __( 'GatherPress Default', 'gatherpress' ),
-				'version' => GP_THEME_VERSION,
-				'dir'     => trailingslashit( GP_CORE_PATH . '/bp-templates/gp-default' ),
-				'url'     => trailingslashit( GP_CORE_URL . '/bp-templates/gp-default' ),
+				'version' => GATHERPRESS_THEME_VERSION,
+				'dir'     => trailingslashit( GATHERPRESS_CORE_PATH . '/bp-templates/gp-default' ),
+				'url'     => trailingslashit( GATHERPRESS_CORE_URL . '/bp-templates/gp-default' ),
 			)
 		);
 	}

@@ -42,6 +42,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 trait Singleton {
 
+	/**
+	 * Instance array.
+	 */
 	protected static $instance = array();
 
 	/**
@@ -91,7 +94,7 @@ trait Singleton {
 			 * Dependent items can use the `gp_singleton_init_{$called_class}` hook to execute code
 			 * immediately after _init() is called.
 			 */
-			do_action( sprintf( 'gp_singleton_init_%s', $called_class ) ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores, WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound)
+			do_action( sprintf( 'gp_singleton_init_%s', $called_class ) ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores, WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 		}
 
 		return static::$instance[ $called_class ];

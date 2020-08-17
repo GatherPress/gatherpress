@@ -27,6 +27,8 @@ class Attendee {
 
 	/**
 	 * Attendance statuses.
+	 *
+	 * @var string[]
 	 */
 	public $statuses = array(
 		'attending',
@@ -35,7 +37,11 @@ class Attendee {
 	);
 
 	/**
+	 * Set the limit in a variable for now.
+	 *
 	 * @todo temporary limit. Configuration coming in ticket https://github.com/mauteri/gatherpress/issues/56
+	 *
+	 * @var int
 	 */
 	public $limit = 3;
 
@@ -123,7 +129,7 @@ class Attendee {
 	 *
 	 * @param int    $post_id An event post ID.
 	 * @param int    $user_id A user ID.
-	 * @param string $status  Attendance status
+	 * @param string $status  Attendance status.
 	 *
 	 * @return string
 	 */
@@ -272,7 +278,7 @@ class Attendee {
 		$site_users  = count_users();
 		$total_users = $site_users['total_users'];
 		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $post_id, $total_users ), ARRAY_A );
+		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $post_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
 		$attendees   = array();
 
