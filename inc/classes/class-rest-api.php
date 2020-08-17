@@ -55,9 +55,10 @@ class Rest_Api {
 			[
 				'route' => 'datetime',
 				'args'  => [
-					'methods'  => \WP_REST_Server::EDITABLE,
-					'callback' => [ $this, 'update_datetime' ],
-					'args'     => [
+					'methods'             => \WP_REST_Server::EDITABLE,
+					'callback'            => [ $this, 'update_datetime' ],
+					'permission_callback' => '__return_true',
+					'args'                => [
 						'_wpnonce'       => [
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
@@ -84,9 +85,10 @@ class Rest_Api {
 			[
 				'route' => 'announce',
 				'args'  => [
-					'methods'  => \WP_REST_Server::EDITABLE,
-					'callback' => [ $this, 'announce' ],
-					'args'     => [
+					'methods'             => \WP_REST_Server::EDITABLE,
+					'callback'            => [ $this, 'announce' ],
+					'permission_callback' => '__return_true',
+					'args'                => [
 						'_wpnonce'       => [
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
@@ -105,9 +107,10 @@ class Rest_Api {
 			[
 				'route' => 'attendance',
 				'args'  => [
-					'methods'  => \WP_REST_Server::EDITABLE,
-					'callback' => [ $this, 'update_attendance' ],
-					'args'     => [
+					'methods'             => \WP_REST_Server::EDITABLE,
+					'callback'            => [ $this, 'update_attendance' ],
+					'permission_callback' => '__return_true',
+					'args'                => [
 						'_wpnonce'       => [
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.

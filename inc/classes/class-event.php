@@ -267,7 +267,7 @@ class Event {
 		$table                        = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
 		$exists                       = $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT post_id FROM ' . esc_sql( $table ) . ' WHERE post_id = %d',
+				"SELECT post_id FROM {$table} WHERE post_id = %d",
 				$fields['post_id']
 			)
 		);
@@ -426,7 +426,7 @@ class Event {
 
 			if ( empty( $data ) || ! is_array( $data ) ) {
 				$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
-				$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt FROM %s WHERE post_id = %d LIMIT 1', $table, $post_id ) );
+				$data  = (array) $wpdb->get_results( $wpdb->prepare( "SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt FROM {$table} WHERE post_id = %d LIMIT 1", $post_id ) );
 				$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
 				wp_cache_set( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
@@ -642,10 +642,10 @@ class Event {
 
 				switch ( $type ) {
 					case 'future':
-						$pieces['where'] .= $wpdb->prepare( ' AND %s.datetime_end_gmt >= %s', $table, esc_sql( $current ) );
+						$pieces['where'] .= $wpdb->prepare( " AND {$table}.datetime_end_gmt >= %s", esc_sql( $current ) );
 						break;
 					case 'past':
-						$pieces['where'] .= $wpdb->prepare( ' AND %s.datetime_end_gmt < %s', $table, esc_sql( $current ) );
+						$pieces['where'] .= $wpdb->prepare( " AND {$table}.datetime_end_gmt < %s", esc_sql( $current ) );
 						break;
 				}
 			}
