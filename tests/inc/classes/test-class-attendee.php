@@ -12,12 +12,11 @@ class Test_Attendee extends \WP_UnitTestCase {
 	 * @covers ::get_attendee
 	 */
 	public function test_get_attendee() {
-
 		$instance = Attendee::get_instance();
 		$post_id  = $this->factory->post->create(
-			[
-				'post_type' => 'gp_event'
-			]
+			array(
+				'post_type' => 'gp_event',
+			)
 		);
 		$user_id  = $this->factory->user->create();
 		$status   = 'attending';
@@ -34,19 +33,17 @@ class Test_Attendee extends \WP_UnitTestCase {
 		$this->assertSame( $status, $data['status'] );
 		$this->assertInternalType( 'int', strtotime( $data['timestamp'] ) );
 		$this->assertNotEmpty( $data['id'] );
-
 	}
 
 	/**
 	 * @covers ::save_attendee
 	 */
 	public function test_save_attendee() {
-
 		$instance = Attendee::get_instance();
 		$post_id  = $this->factory->post->create(
-			[
-				'post_type' => 'gp_event'
-			]
+			array(
+				'post_type' => 'gp_event',
+			)
 		);
 		$user_id  = $this->factory->user->create();
 		$status   = 'attending';

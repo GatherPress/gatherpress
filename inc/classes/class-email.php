@@ -16,35 +16,30 @@ class Email {
 	 * BuddyPress constructor.
 	 */
 	protected function __construct() {
-
 		$this->_setup_hooks();
-
 	}
 
 	/**
 	 * Setup hooks.
 	 */
 	protected function _setup_hooks() {
-
-		add_action( 'admin_init', [ $this, 'setup_email_templates' ] );
-
+		add_action( 'admin_init', array( $this, 'setup_email_templates' ) );
 	}
 
 	/**
 	 * Basically a copy of bp_core_install_emails() for our creation of custom templates.
 	 */
 	public function setup_email_templates() {
-
 		if ( is_multisite() && ! is_main_site() ) {
 			return;
 		}
 
 		$key          = 'gp_email_templates';
-		$templates    = get_option( $key, [] );
-		$defaults     = [
+		$templates    = get_option( $key, array() );
+		$defaults     = array(
 			'post_status' => 'publish',
 			'post_type'   => bp_get_email_post_type(),
-		];
+		);
 		$emails       = $this->_email_get_schema();
 		$descriptions = $this->_email_get_type_schema( 'description' );
 		$cache_key    = md5( json_encode( $emails ) ) . md5( json_encode( $descriptions ) );
@@ -85,47 +80,42 @@ class Email {
 				wp_update_term(
 					(int) $term->term_id,
 					bp_get_email_tax_type(),
-					[
+					array(
 						'description' => $descriptions[ $id ],
-					]
+					)
 				);
 			}
 		}
 
 		update_option( $key, $templates );
-
 	}
 
 	protected function _email_get_schema() : array {
-
-		return [
-			'gp-event-announce' => [
+		return array(
+			'gp-event-announce' => array(
 				'post_title'   => __( '[{{{site.name}}}] posted new event', 'gatherpress' ),
 				'post_content' => __( "{{event.name}} has been announced:\n\n<a href=\"{{{event.url}}}\">Go to the event page</a>.", 'gatherpress' ),
 				'post_excerpt' => __( "{{event.name}} has been announced:\n\n<a href=\"{{{event.url}}}\">Go to the event page</a>.", 'gatherpress' ),
-			],
-		];
-
+			),
+		);
 	}
 
 	protected function _email_get_type_schema( string $field = 'description' ) : array {
-
-		$types = [
-			'gp-event-announce' => [
-				'description'	=> __( 'A new event was announced.', 'gatherpress' ),
-				'unsubscribe'	=> [
-					'meta_key'	=> 'notification_event_announce',
-					'message'	=> __( 'You will no longer receive emails when one of your groups announces an event.', 'gatherpress' ),
-				],
-			],
-		];
+		$types = array(
+			'gp-event-announce' => array(
+				'description' => __( 'A new event was announced.', 'gatherpress' ),
+				'unsubscribe' => array(
+					'meta_key' => 'notification_event_announce',
+					'message'  => __( 'You will no longer receive emails when one of your groups announces an event.', 'gatherpress' ),
+				),
+			),
+		);
 
 		if ( 'all' !== $field ) {
 			return wp_list_pluck( $types, $field );
 		}
 
 		return $types;
-
 	}
 
 	/**
@@ -138,7 +128,6 @@ class Email {
 	 * @return bool
 	 */
 	public function event_announce( int $post_id ) : bool {
-
 		$setting = 'gp-event-announce';
 		$meta    = get_post_meta( $post_id, $setting, true );
 		$status  = get_post_status( $post_id );
@@ -147,8 +136,7 @@ class Email {
 		if (
 			! empty( $meta )
 			|| 'publish' !== $status
-			|| $event->has_event_past( $post_id ) )
-		{
+			|| $event->has_event_past( $post_id ) ) {
 			return false;
 		}
 
@@ -159,19 +147,19 @@ class Email {
 				continue;
 			}
 
-			$unsubscribe_args = [
+			$unsubscribe_args = array(
 				'user_id'           => $user->ID,
 				'notification_type' => $setting,
-			];
+			);
 
-			$args = [
-				'tokens' => [
+			$args = array(
+				'tokens' => array(
 					'site.name'   => esc_html( bp_get_site_name() ),
 					'event.name'  => esc_html( get_the_title( $post_id ) ),
 					'event.url'   => esc_url( get_the_permalink( $post_id ) ),
 					'unsubscribe' => esc_url( bp_email_get_unsubscribe_link( $unsubscribe_args ) ),
-				],
-			];
+				),
+			);
 
 			bp_send_email( $setting, $user->ID, $args );
 		}
@@ -179,9 +167,8 @@ class Email {
 		update_post_meta( $post_id, $setting, time() );
 
 		return true;
-
 	}
 
 }
 
-//EOF
+// EOF

@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 trait Singleton {
 
-	protected static $_instance = [];
+	protected static $_instance = array();
 
 	/**
 	 * Protected class constructor to prevent direct object creation
@@ -44,12 +44,12 @@ trait Singleton {
 	 * this trait. This is ideal for doing stuff that you only want to
 	 * do once, such as hooking into actions and filters, etc.
 	 */
-	protected function  __construct() { }
+	protected function __construct() { }
 
 	/**
 	 * Prevent object cloning
 	 */
-	final protected function  __clone() { }
+	final protected function __clone() { }
 
 	/**
 	 * This method returns new or existing Singleton instance
@@ -71,7 +71,6 @@ trait Singleton {
 		$called_class = get_called_class();
 
 		if ( ! isset( static::$_instance[ $called_class ] ) ) {
-
 			static::$_instance[ $called_class ] = new $called_class();
 
 			/*
@@ -90,7 +89,6 @@ trait Singleton {
 		}
 
 		return static::$_instance[ $called_class ];
-
 	}
 }
 

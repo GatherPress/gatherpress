@@ -17,11 +17,11 @@ class Test_Event extends \WP_UnitTestCase {
 	public function test_get_calendar_links() {
 		$instance = Event::get_instance();
 		$post_id  = $this->factory->post->create(
-			[
+			array(
 				'post_title'   => 'Unit Test Event',
 				'post_type'    => 'gp_event',
 				'post_content' => 'Unit Test description.',
-			]
+			)
 		);
 		$params   = array(
 			'post_id'        => $post_id,
@@ -45,11 +45,10 @@ class Test_Event extends \WP_UnitTestCase {
 	 * @covers ::has_event_past
 	 */
 	public function test_has_event_past() {
-
 		$instance = Event::get_instance();
 		$post_id  = $this->factory->post->create(
 			array(
-				'post_type'    => 'gp_event',
+				'post_type' => 'gp_event',
 			)
 		);
 		$year     = date( 'Y' );
@@ -65,52 +64,49 @@ class Test_Event extends \WP_UnitTestCase {
 
 		$this->assertTrue( $output );
 
-		$params   = [
+		$params = array(
 			'post_id'        => $post_id,
 			'datetime_start' => sprintf( '%d-05-11 15:00:00', $year + 1 ),
 			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year + 1 ),
-		];
+		);
 
 		$instance->save_datetimes( $params );
 
 		$output = $instance->has_event_past( $post_id );
 
 		$this->assertFalse( $output );
-
 	}
 
 	/**
 	 * @covers ::adjust_sql
 	 */
 	public function test_adjust_sql() {
-
 		global $wpdb;
 
 		$instance = Event::get_instance();
 		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 		$post_id  = $this->factory->post->create(
-			[
-				'post_type' => 'gp_event'
-			]
+			array(
+				'post_type' => 'gp_event',
+			)
 		);
 
 		$this->go_to( get_the_permalink( $post_id ) );
 
-		$retval = $instance->adjust_sql( [], 'all', 'DESC' );
+		$retval = $instance->adjust_sql( array(), 'all', 'DESC' );
 
 		$this->assertContains( 'DESC', $retval['orderby'] );
 		$this->assertEmpty( $retval['where'] );
 
-		$retval = $instance->adjust_sql( [], 'past', 'desc' );
+		$retval = $instance->adjust_sql( array(), 'past', 'desc' );
 
 		$this->assertContains( 'DESC', $retval['orderby'] );
 		$this->assertContains( "AND {$table}.datetime_end_gmt <", $retval['where'] );
 
-		$retval = $instance->adjust_sql( [], 'future', 'ASC' );
+		$retval = $instance->adjust_sql( array(), 'future', 'ASC' );
 
 		$this->assertContains( 'ASC', $retval['orderby'] );
 		$this->assertContains( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
-
 	}
 }
 

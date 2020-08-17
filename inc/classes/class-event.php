@@ -286,8 +286,9 @@ class Event {
 		$fields['datetime_end_gmt']   = get_gmt_from_date( $fields['datetime_end'] );
 		$fields['timezone']           = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
 		$table                        = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
+
 		// @todo Add caching to this and create new method to check existence.
-		$exists                       = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prepare(
 				'SELECT post_id FROM ' . esc_sql( $table ) . ' WHERE post_id = %d',
 				$fields['post_id']

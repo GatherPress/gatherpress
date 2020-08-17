@@ -16,40 +16,34 @@ class Query {
 	 * Query constructor.
 	 */
 	protected function __construct() {
-
 		$this->_setup_hooks();
-
 	}
 
 	/**
 	 * Setup hooks.
 	 */
 	protected function _setup_hooks() {
-
-		add_action( 'pre_get_posts', [ $this, 'pre_get_posts' ] );
-		add_filter( 'posts_clauses', [ $this, 'order_upcoming_events' ] );
-		add_filter( 'posts_clauses', [ $this, 'admin_order_events' ] );
-
+		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
+		add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
+		add_filter( 'posts_clauses', array( $this, 'admin_order_events' ) );
 	}
 
 	public function get_upcoming_events() : \WP_Query {
+		remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
+		add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
 
-		remove_filter( 'posts_clauses', [ $this, 'order_past_events' ] );
-		add_filter( 'posts_clauses', [ $this, 'order_upcoming_events' ] );
-
-		$args = [
+		$args = array(
 			'post_type'      => Event::POST_TYPE,
 			'no_found_rows'  => true,
 			'posts_per_page' => 5,
-		];
+		);
 
 		$query = new \WP_Query( $args );
 
-		remove_filter( 'posts_clauses', [ $this, 'order_upcoming_events' ] );
-		add_filter( 'posts_clauses', [ $this, 'order_past_events' ] );
+		remove_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
+		add_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
 
 		return $query;
-
 	}
 
 	/**
@@ -58,14 +52,12 @@ class Query {
 	 * @param $query
 	 */
 	public function pre_get_posts( $query ) {
-
 		if (
 			( $query->is_home() || $query->is_front_page() )
 			&& $query->is_main_query()
 		) {
 			$query->set( 'post_type', Event::POST_TYPE );
 		}
-
 	}
 
 	/**
@@ -78,13 +70,11 @@ class Query {
 	 * @return array
 	 */
 	public function order_past_events( array $pieces ) : array {
-
 		if ( ! is_archive() && ! is_home() ) {
 			return $pieces;
 		}
 
 		return Event::get_instance()->adjust_sql( $pieces, 'past' );
-
 	}
 
 	/**
@@ -95,7 +85,6 @@ class Query {
 	 * @return array
 	 */
 	public function admin_order_events( array $pieces ) : array {
-
 		if ( ! is_admin() ) {
 			return $pieces;
 		}
@@ -107,7 +96,6 @@ class Query {
 		}
 
 		return $pieces;
-
 	}
 
 	/**
@@ -118,13 +106,11 @@ class Query {
 	 * @return array
 	 */
 	public function order_upcoming_events( array $pieces ) : array {
-
 		if ( ! is_archive() && ! is_home() ) {
 			return $pieces;
 		}
 
 		return Event::get_instance()->adjust_sql( $pieces, 'future', 'ASC' );
-
 	}
 
 }

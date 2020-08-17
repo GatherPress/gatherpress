@@ -16,18 +16,14 @@ class Rest_Api {
 	 * Query constructor.
 	 */
 	protected function __construct() {
-
 		$this->_setup_hooks();
-
 	}
 
 	/**
 	 * Setup hooks.
 	 */
 	protected function _setup_hooks() {
-
-		add_action( 'rest_api_init', [ $this, 'register_endpoints' ] );
-
+		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 	}
 
 	/**
@@ -47,101 +43,98 @@ class Rest_Api {
 				$route['args']
 			);
 		}
-
 	}
 
 	protected function _get_event_routes() {
-		return [
-			[
+		return array(
+			array(
 				'route' => 'datetime',
-				'args'  => [
+				'args'  => array(
 					'methods'             => \WP_REST_Server::EDITABLE,
-					'callback'            => [ $this, 'update_datetime' ],
+					'callback'            => array( $this, 'update_datetime' ),
 					'permission_callback' => '__return_true',
-					'args'                => [
-						'_wpnonce'       => [
+					'args'                => array(
+						'_wpnonce'       => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
 							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
 							 */
+							'required' => true,
+						),
+						'post_id'        => array(
 							'required'          => true,
-						],
-						'post_id'        => [
+							'validate_callback' => array( $this, 'validate_event_post_id' ),
+						),
+						'datetime_start' => array(
 							'required'          => true,
-							'validate_callback' => [ $this, 'validate_event_post_id' ],
-						],
-						'datetime_start' => [
+							'validate_callback' => array( $this, 'validate_datetime' ),
+						),
+						'datetime_end'   => array(
 							'required'          => true,
-							'validate_callback' => [ $this, 'validate_datetime' ],
-						],
-						'datetime_end'   => [
-							'required'          => true,
-							'validate_callback' => [ $this, 'validate_datetime' ],
-						],
-					],
-				]
-			],
-			[
+							'validate_callback' => array( $this, 'validate_datetime' ),
+						),
+					),
+				),
+			),
+			array(
 				'route' => 'announce',
-				'args'  => [
+				'args'  => array(
 					'methods'             => \WP_REST_Server::EDITABLE,
-					'callback'            => [ $this, 'announce' ],
+					'callback'            => array( $this, 'announce' ),
 					'permission_callback' => '__return_true',
-					'args'                => [
-						'_wpnonce'       => [
+					'args'                => array(
+						'_wpnonce' => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
 							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
 							 */
+							'required' => true,
+						),
+						'post_id'  => array(
 							'required'          => true,
-						],
-						'post_id'        => [
-							'required'          => true,
-							'validate_callback' => [ $this, 'validate_event_post_id' ],
-						],
-					],
-				]
-			],
-			[
+							'validate_callback' => array( $this, 'validate_event_post_id' ),
+						),
+					),
+				),
+			),
+			array(
 				'route' => 'attendance',
-				'args'  => [
+				'args'  => array(
 					'methods'             => \WP_REST_Server::EDITABLE,
-					'callback'            => [ $this, 'update_attendance' ],
+					'callback'            => array( $this, 'update_attendance' ),
 					'permission_callback' => '__return_true',
-					'args'                => [
-						'_wpnonce'       => [
+					'args'                => array(
+						'_wpnonce' => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
 							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
 							 */
+							'required' => true,
+						),
+						'post_id'  => array(
 							'required'          => true,
-						],
-						'post_id'        => [
-							'required'          => true,
-							'validate_callback' => [ $this, 'validate_event_post_id' ],
-						],
+							'validate_callback' => array( $this, 'validate_event_post_id' ),
+						),
 						// @todo add logic for allowing event organizers to add people to events as attendees.
-						//					'user_id'        => [
-						//						'required'          => false,
-						//						'validate_callback' => [ $this, 'validate_event_post_id' ],
-						//					],
-						'status' => [
+						// 'user_id'        => [
+						// 'required'          => false,
+						// 'validate_callback' => [ $this, 'validate_event_post_id' ],
+						// ],
+						'status'   => array(
 							'required'          => true,
-							'validate_callback' => [ $this, 'validate_attendance_status' ],
-						],
-					],
-				]
-			],
-		];
+							'validate_callback' => array( $this, 'validate_attendance_status' ),
+						),
+					),
+				),
+			),
+		);
 	}
 
 	public function validate_attendance_status( $param ) : bool {
-
 		return ( 'attending' === $param || 'not_attending' === $param );
-
 	}
 
 	/**
@@ -152,13 +145,11 @@ class Rest_Api {
 	 * @return bool
 	 */
 	public function validate_event_post_id( $param ) : bool {
-
 		return (
 			0 < intval( $param )
 			&& is_numeric( $param )
 			&& Event::POST_TYPE === get_post_type( $param )
 		);
-
 	}
 
 	/**
@@ -169,9 +160,7 @@ class Rest_Api {
 	 * @return bool
 	 */
 	public function validate_datetime( $param ) : bool {
-
 		return (bool) \DateTime::createFromFormat( 'Y-m-d H:i:s', $param );
-
 	}
 
 	/**
@@ -182,44 +171,39 @@ class Rest_Api {
 	 * @return \WP_REST_Response
 	 */
 	public function update_datetime( \WP_REST_Request $request ) {
-
 		$event = Event::get_instance();
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
-				]
+				)
 			);
 		}
 
 		$params   = wp_parse_args( $request->get_params(), $request->get_default_params() );
 		$success  = $event->save_datetimes( $params );
-		$response = [
+		$response = array(
 			'success' => $success,
-		];
+		);
 
 		return new \WP_REST_Response( $response );
-
 	}
 
 	public function announce( \WP_REST_Request $request ) {
-
-		$params   = $request->get_params();
-		$post_id  = intval( $params['post_id'] );
-		$email    = Email::get_instance();
+		$params  = $request->get_params();
+		$post_id = intval( $params['post_id'] );
+		$email   = Email::get_instance();
 
 		$success  = $email->event_announce( $post_id );
-		$response = [
+		$response = array(
 			'success' => $success,
-		];
+		);
 
 		return new \WP_REST_Response( $response );
-
 	}
 
 	public function update_attendance( \WP_REST_Request $request ) {
-
 		$params          = $request->get_params();
 		$attendee        = Attendee::get_instance();
 		$event           = Event::get_instance();
@@ -258,17 +242,15 @@ class Rest_Api {
 			if ( in_array( $status, $attendee->statuses, true ) ) {
 				$success = true;
 			}
-
 		}
 
-		$response = [
-			'success'    => (bool) $success,
-			'status'     => $status,
-			'attendees'  => $attendee->get_attendees( $post_id ),
-		];
+		$response = array(
+			'success'   => (bool) $success,
+			'status'    => $status,
+			'attendees' => $attendee->get_attendees( $post_id ),
+		);
 
 		return new \WP_REST_Response( $response );
-
 	}
 
 }

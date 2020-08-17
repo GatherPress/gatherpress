@@ -15,11 +15,11 @@ class Attendee {
 	const TABLE_FORMAT       = '%sgp_attendees';
 	const ATTENDEE_CACHE_KEY = 'attendee_%d';
 
-	public $statuses = [
+	public $statuses = array(
 		'attending',
 		'not_attending',
 		'waitlist',
-	];
+	);
 
 	// @todo temporary limit. Configuration coming in ticket https://github.com/mauteri/gatherpress/issues/56
 	public $limit = 3;
@@ -28,25 +28,20 @@ class Attendee {
 	 * Query constructor.
 	 */
 	protected function __construct() {
-
 		$this->_setup_hooks();
-
 	}
 
 	/**
 	 * Setup hooks.
 	 */
 	protected function _setup_hooks() {
-
-		add_action( 'init', [ $this, 'maybe_create_custom_table' ] );
-
+		add_action( 'init', array( $this, 'maybe_create_custom_table' ) );
 	}
 
 	/**
 	 * Maybe create custom table if doesn't exist for main site or current site in network.
 	 */
 	public function maybe_create_custom_table() {
-
 		$this->create_table();
 
 		if ( is_multisite() ) {
@@ -56,17 +51,15 @@ class Attendee {
 			$this->create_table();
 			restore_current_blog();
 		}
-
 	}
 
 	/**
 	 * Create custom attendees table.
 	 */
 	public function create_table() {
-
 		global $wpdb;
 
-		$sql             = [];
+		$sql             = array();
 		$charset_collate = $GLOBALS['wpdb']->get_charset_collate();
 		$table           = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 
@@ -85,7 +78,6 @@ class Attendee {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		dbDelta( $sql );
-
 	}
 
 	/**
@@ -97,18 +89,16 @@ class Attendee {
 	 * @return array
 	 */
 	public function get_attendee( int $post_id, int $user_id ) : array {
-
 		global $wpdb;
 
 		if ( 1 > $post_id || 1 > $user_id ) {
-			return [];
+			return array();
 		}
 
 		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 		$data  = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE post_id = %d AND user_id = %d", $post_id, $user_id ), ARRAY_A );
 
 		return (array) $data;
-
 	}
 
 	/**
@@ -121,7 +111,6 @@ class Attendee {
 	 * @return string
 	 */
 	public function save_attendee( int $post_id, int $user_id, string $status ) : string {
-
 		global $wpdb;
 
 		$retval = '';
@@ -142,22 +131,22 @@ class Attendee {
 			$status = 'waitlist';
 		}
 
-		$data = [
+		$data = array(
 			'post_id'   => intval( $post_id ),
 			'user_id'   => intval( $user_id ),
 			'timestamp' => date( 'Y-m-d H:i:s' ),
 			'status'    => sanitize_key( $status ),
-		];
+		);
 
 		if ( ! empty( $attendee ) ) {
 			if ( 1 > intval( $attendee['id'] ) ) {
 				return $retval;
 			}
 
-			$where = [
+			$where = array(
 				'id' => intval( $attendee['id'] ),
-			];
-			$save = $wpdb->update( $table, $data, $where );
+			);
+			$save  = $wpdb->update( $table, $data, $where );
 		} else {
 			$save = $wpdb->insert( $table, $data );
 		}
@@ -173,7 +162,6 @@ class Attendee {
 		}
 
 		return $retval;
-
 	}
 
 	/**
@@ -184,7 +172,6 @@ class Attendee {
 	 * @return int  Number of attendees from waitlist that were moved to attending.
 	 */
 	public function check_waitlist( int $post_id ) : int {
-
 		$attendees = $this->get_attendees( $post_id );
 		$total     = 0;
 
@@ -192,10 +179,10 @@ class Attendee {
 			intval( $attendees['attending']['count'] ) < $this->limit
 			&& intval( $attendees['waitlist']['count'] )
 		) {
-			$waitlist  = $attendees['waitlist']['attendees'];
+			$waitlist = $attendees['waitlist']['attendees'];
 
 			// People longest on the waitlist should be added first.
-			usort( $waitlist, [ $this, 'sort_attendees_by_timestamp' ] );
+			usort( $waitlist, array( $this, 'sort_attendees_by_timestamp' ) );
 
 			$total = $this->limit - intval( $attendees['attending']['count'] );
 			$i     = 0;
@@ -213,7 +200,6 @@ class Attendee {
 		}
 
 		return intval( $total );
-
 	}
 
 	/**
@@ -225,7 +211,6 @@ class Attendee {
 	 * @return bool
 	 */
 	public function attending_limit_reached( int $post_id, string $status ) : bool {
-
 		$attendees = $this->get_attendees( $post_id );
 
 		if (
@@ -237,7 +222,6 @@ class Attendee {
 		}
 
 		return false;
-
 	}
 
 	/**
@@ -248,7 +232,6 @@ class Attendee {
 	 * @return array
 	 */
 	public function get_attendees( int $post_id ) : array {
-
 		global $wpdb;
 
 		$cache_key = sprintf( self::ATTENDEE_CACHE_KEY, $post_id );
@@ -258,12 +241,12 @@ class Attendee {
 			return $retval;
 		}
 
-		$retval = [
-			'all' => [
-				'attendees' => [],
+		$retval = array(
+			'all' => array(
+				'attendees' => array(),
 				'count'     => 0,
-			],
-		];
+			),
+		);
 
 		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return $retval;
@@ -273,14 +256,14 @@ class Attendee {
 		$total_users = $site_users['total_users'];
 		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 		$data        = (array) $wpdb->get_results( $wpdb->prepare( "SELECT user_id, timestamp, status FROM {$table} WHERE post_id = %d LIMIT %d", $post_id, $total_users ), ARRAY_A );
-		$data        = ( ! empty( $data ) ) ? (array) $data : [];
-		$attendees   = [];
+		$data        = ( ! empty( $data ) ) ? (array) $data : array();
+		$attendees   = array();
 
 		foreach ( $this->statuses as $status ) {
-			$retval[ $status ] = [
-				'attendees' => [],
+			$retval[ $status ] = array(
+				'attendees' => array(),
 				'count'     => 0,
-			];
+			);
 		}
 
 		foreach ( $data as $attendee ) {
@@ -295,9 +278,9 @@ class Attendee {
 				continue;
 			}
 
-			$user_info = get_userdata( $user_id );
-			$roles     = Role::get_instance()->get_role_names();
-			$attendees[] = [
+			$user_info   = get_userdata( $user_id );
+			$roles       = Role::get_instance()->get_role_names();
+			$attendees[] = array(
 				'id'        => $user_id,
 				'name'      => $user_info->display_name,
 				'photo'     => get_avatar_url( $user_id ),
@@ -305,20 +288,22 @@ class Attendee {
 				'role'      => $roles[ current( $user_info->roles ) ] ?? '',
 				'timestamp' => sanitize_text_field( $attendee['timestamp'] ),
 				'status'    => $user_status,
-			];
-
+			);
 		}
 
 		// Sort before breaking down statuses in return array.
-		usort( $attendees, [ $this, 'sort_attendees_by_role' ] );
+		usort( $attendees, array( $this, 'sort_attendees_by_role' ) );
 
 		$retval['all']['attendees'] = $attendees;
 		$retval['all']['count']     = count( $retval['all']['attendees'] );
 
 		foreach ( $this->statuses as $status ) {
-			$retval[ $status ]['attendees'] = array_filter( $attendees, function( $attendee ) use ( $status ) {
-				return ( $status === $attendee['status'] );
-			});
+			$retval[ $status ]['attendees'] = array_filter(
+				$attendees,
+				function( $attendee ) use ( $status ) {
+					return ( $status === $attendee['status'] );
+				}
+			);
 
 			$retval[ $status ]['attendees'] = array_values( $retval[ $status ]['attendees'] );
 			$retval[ $status ]['count']     = count( $retval[ $status ]['attendees'] );
@@ -327,7 +312,6 @@ class Attendee {
 		wp_cache_set( $cache_key, $retval, 15 * MINUTE_IN_SECONDS );
 
 		return $retval;
-
 	}
 
 	/**
@@ -339,11 +323,9 @@ class Attendee {
 	 * @return bool
 	 */
 	public function sort_attendees_by_role( array $a, array $b ) : bool {
-
 		$roles = array_values( Role::get_instance()->get_role_names() );
 
 		return ( array_search( $a['role'], $roles ) > array_search( $b['role'], $roles ) );
-
 	}
 
 	/**
@@ -355,9 +337,7 @@ class Attendee {
 	 * @return bool
 	 */
 	public function sort_attendees_by_timestamp( array $a, array $b ) : bool {
-
 		return ( strtotime( $a['timestamp'] ) < strtotime( $b['timestamp'] ) );
-
 	}
 
 }

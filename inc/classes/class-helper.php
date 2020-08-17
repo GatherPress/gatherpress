@@ -16,8 +16,7 @@ class Helper {
 	 *
 	 * @return string
 	 */
-	public static function render_template( string $path, array $variables = [] ) : string {
-
+	public static function render_template( string $path, array $variables = array() ) : string {
 		if ( ! file_exists( $path ) ) {
 			return '';
 		}
@@ -31,25 +30,19 @@ class Helper {
 		require $path; // better to fail with an error than to continue with incorrect/weird data
 
 		return ob_get_clean();
-
 	}
 
 	public static function anchor_classes() {
-
 		return apply_filters( 'gatherpress_anchor_classes', 'text-blue-500 hover:text-blue-800' );
-
 	}
 
 	public static function button_classes() {
-
 		return apply_filters( 'gatherpress_button_classes', '' );
-
 	}
 
 	public static function button_primary_classes() {
-
 	}
 
 }
 
-//EOF
+// EOF
