@@ -13,4 +13,7 @@
 			<exclude>./tests/test-sample.php</exclude>
 		</testsuite>
 	</testsuites>
+	<logging>
+		<log type="coverage-clover" target="clover.xml"/>
+	</logging>
 </phpunit>

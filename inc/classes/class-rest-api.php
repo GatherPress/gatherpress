@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for registering REST API endpoints.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Rest_Api.
+ */
 class Rest_Api {
 
 	use Singleton;
@@ -16,18 +26,14 @@ class Rest_Api {
 	 * Query constructor.
 	 */
 	protected function __construct() {
-
-		$this->_setup_hooks();
-
+		$this->setup_hooks();
 	}
 
 	/**
 	 * Setup hooks.
 	 */
-	protected function _setup_hooks() : void {
-
-		add_action( 'rest_api_init', [ $this, 'register_endpoints' ] );
-
+	protected function setup_hooks() {
+		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 	}
 
 	/**
@@ -38,7 +44,7 @@ class Rest_Api {
 	public function register_endpoints() {
 
 		// All event routes.
-		$routes = $this->_get_event_routes();
+		$routes = $this->get_event_routes();
 
 		foreach ( $routes as $route ) {
 			register_rest_route(
@@ -47,176 +53,193 @@ class Rest_Api {
 				$route['args']
 			);
 		}
-
 	}
 
-	protected function _get_event_routes() {
-		return [
-			[
+	/**
+	 * Get the event routes.
+	 *
+	 * @return array[]
+	 */
+	protected function get_event_routes() {
+		return array(
+			array(
 				'route' => 'datetime',
-				'args'  => [
-					'methods'  => \WP_REST_Server::EDITABLE,
-					'callback' => [ $this, 'update_datetime' ],
-					'args'     => [
-						'_wpnonce'       => [
+				'args'  => array(
+					'methods'             => \WP_REST_Server::EDITABLE,
+					'callback'            => array( $this, 'update_datetime' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'_wpnonce'       => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
 							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
 							 */
+							'required' => true,
+						),
+						'post_id'        => array(
 							'required'          => true,
-						],
-						'post_id'        => [
+							'validate_callback' => array( $this, 'validate_event_post_id' ),
+						),
+						'datetime_start' => array(
 							'required'          => true,
-							'validate_callback' => [ $this, 'validate_event_post_id' ],
-						],
-						'datetime_start' => [
+							'validate_callback' => array( $this, 'validate_datetime' ),
+						),
+						'datetime_end'   => array(
 							'required'          => true,
-							'validate_callback' => [ $this, 'validate_datetime' ],
-						],
-						'datetime_end'   => [
-							'required'          => true,
-							'validate_callback' => [ $this, 'validate_datetime' ],
-						],
-					],
-				]
-			],
-			[
+							'validate_callback' => array( $this, 'validate_datetime' ),
+						),
+					),
+				),
+			),
+			array(
 				'route' => 'announce',
-				'args'  => [
-					'methods'  => \WP_REST_Server::EDITABLE,
-					'callback' => [ $this, 'announce' ],
-					'args'     => [
-						'_wpnonce'       => [
+				'args'  => array(
+					'methods'             => \WP_REST_Server::EDITABLE,
+					'callback'            => array( $this, 'announce' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'_wpnonce' => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
 							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
 							 */
+							'required' => true,
+						),
+						'post_id'  => array(
 							'required'          => true,
-						],
-						'post_id'        => [
-							'required'          => true,
-							'validate_callback' => [ $this, 'validate_event_post_id' ],
-						],
-					],
-				]
-			],
-			[
+							'validate_callback' => array( $this, 'validate_event_post_id' ),
+						),
+					),
+				),
+			),
+			array(
 				'route' => 'attendance',
-				'args'  => [
-					'methods'  => \WP_REST_Server::EDITABLE,
-					'callback' => [ $this, 'update_attendance' ],
-					'args'     => [
-						'_wpnonce'       => [
+				'args'  => array(
+					'methods'             => \WP_REST_Server::EDITABLE,
+					'callback'            => array( $this, 'update_attendance' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'_wpnonce' => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
 							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
 							 */
+							'required' => true,
+						),
+						'post_id'  => array(
 							'required'          => true,
-						],
-						'post_id'        => [
-							'required'          => true,
-							'validate_callback' => [ $this, 'validate_event_post_id' ],
-						],
+							'validate_callback' => array( $this, 'validate_event_post_id' ),
+						),
 						// @todo add logic for allowing event organizers to add people to events as attendees.
-						//					'user_id'        => [
-						//						'required'          => false,
-						//						'validate_callback' => [ $this, 'validate_event_post_id' ],
-						//					],
-						'status' => [
+						// 'user_id'        => [
+						// 'required'          => false,
+						// 'validate_callback' => [ $this, 'validate_event_post_id' ],
+						// ],
+						'status'   => array(
 							'required'          => true,
-							'validate_callback' => [ $this, 'validate_attendance_status' ],
-						],
-					],
-				]
-			],
-		];
+							'validate_callback' => array( $this, 'validate_attendance_status' ),
+						),
+					),
+				),
+			),
+		);
 	}
 
+	/**
+	 * Validate attendance status.
+	 *
+	 * @param string $param An attendance status.
+	 *
+	 * @return bool
+	 */
 	public function validate_attendance_status( $param ) : bool {
-
 		return ( 'attending' === $param || 'not_attending' === $param );
-
 	}
 
 	/**
 	 * Validate Event Post ID.
 	 *
-	 * @param $param
+	 * @param int|string $param A Post ID to validate.
 	 *
 	 * @return bool
 	 */
 	public function validate_event_post_id( $param ) : bool {
-
 		return (
 			0 < intval( $param )
 			&& is_numeric( $param )
 			&& Event::POST_TYPE === get_post_type( $param )
 		);
-
 	}
 
 	/**
 	 * Validate Datetime.
 	 *
-	 * @param $param
+	 * @param string $param A Date time to validate.
 	 *
 	 * @return bool
 	 */
 	public function validate_datetime( $param ) : bool {
-
 		return (bool) \DateTime::createFromFormat( 'Y-m-d H:i:s', $param );
-
 	}
 
 	/**
 	 * Update custom event table with start and end Datetime.
 	 *
-	 * @param \WP_REST_Request $request
+	 * @param \WP_REST_Request $request Contains data from the request.
 	 *
 	 * @return \WP_REST_Response
 	 */
 	public function update_datetime( \WP_REST_Request $request ) {
-
 		$event = Event::get_instance();
 
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return new \WP_REST_Response(
-				[
+				array(
 					'success' => false,
-				]
+				)
 			);
 		}
 
 		$params   = wp_parse_args( $request->get_params(), $request->get_default_params() );
 		$success  = $event->save_datetimes( $params );
-		$response = [
+		$response = array(
 			'success' => $success,
-		];
+		);
 
 		return new \WP_REST_Response( $response );
-
 	}
 
+	/**
+	 * Announce an event to all members that subscribe to these notices.
+	 *
+	 * @param \WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return \WP_REST_Response
+	 */
 	public function announce( \WP_REST_Request $request ) {
-
-		$params   = $request->get_params();
-		$post_id  = intval( $params['post_id'] );
-		$email    = Email::get_instance();
+		$params  = $request->get_params();
+		$post_id = intval( $params['post_id'] );
+		$email   = Email::get_instance();
 
 		$success  = $email->event_announce( $post_id );
-		$response = [
+		$response = array(
 			'success' => $success,
-		];
+		);
 
 		return new \WP_REST_Response( $response );
-
 	}
 
+	/**
+	 * Update the attendance status for a user to an event.
+	 *
+	 * @param \WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return \WP_REST_Response
+	 */
 	public function update_attendance( \WP_REST_Request $request ) {
-
 		$params          = $request->get_params();
 		$attendee        = Attendee::get_instance();
 		$event           = Event::get_instance();
@@ -255,19 +278,15 @@ class Rest_Api {
 			if ( in_array( $status, $attendee->statuses, true ) ) {
 				$success = true;
 			}
-
 		}
 
-		$response = [
-			'success'    => (bool) $success,
-			'status'     => $status,
-			'attendees'  => $attendee->get_attendees( $post_id ),
-		];
+		$response = array(
+			'success'   => (bool) $success,
+			'status'    => $status,
+			'attendees' => $attendee->get_attendees( $post_id ),
+		);
 
 		return new \WP_REST_Response( $response );
-
 	}
 
 }
-
-// EOF

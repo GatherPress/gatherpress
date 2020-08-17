@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for executing plugin setups.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Setup.
+ */
 class Setup {
 
 	use Singleton;
@@ -16,27 +26,21 @@ class Setup {
 	 * Setup constructor.
 	 */
 	protected function __construct() {
-
-		$this->_instantiate_classes();
-
+		$this->instantiate_classes();
 	}
 
 	/**
 	 * Instantiate singletons.
 	 */
-	private function _instantiate_classes() : void {
-
+	protected function instantiate_classes() {
 		Assets::get_instance();
 		Attendee::get_instance();
 		BuddyPress::get_instance();
 		Email::get_instance();
 		Event::get_instance();
-		Layout::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
 		Role::get_instance();
 	}
 
 }
-
-// EOF

@@ -1,23 +1,34 @@
 <?php
+/**
+ * Class handles unit tests for GatherPress\Inc\Attendee.
+ *
+ * @package GatherPress
+ * @subpackage Tests
+ * @since 1.0.0
+ */
+
 namespace GatherPress\Tests\Inc;
 
 use GatherPress\Inc\Attendee;
 
 /**
+ * Class Test_Attendee.
+ *
  * @coversDefaultClass GatherPress\Inc\Attendee
  */
 class Test_Attendee extends \WP_UnitTestCase {
 
 	/**
+	 * Coverage for get_attendee method.
+	 *
 	 * @covers ::get_attendee
 	 */
 	public function test_get_attendee() {
-
 		$instance = Attendee::get_instance();
 		$post_id  = $this->factory->post->create(
-			[
-				'post_type' => 'gp_event'
-			]
+			array(
+				'post_type' => 'gp_event',
+			)
 		);
 		$user_id  = $this->factory->user->create();
 		$status   = 'attending';
@@ -34,19 +45,19 @@ class Test_Attendee extends \WP_UnitTestCase {
 		$this->assertSame( $status, $data['status'] );
 		$this->assertInternalType( 'int', strtotime( $data['timestamp'] ) );
 		$this->assertNotEmpty( $data['id'] );
-
 	}
 
 	/**
+	 * Coverage for save_attendee method.
+	 *
 	 * @covers ::save_attendee
 	 */
 	public function test_save_attendee() {
-
 		$instance = Attendee::get_instance();
 		$post_id  = $this->factory->post->create(
-			[
-				'post_type' => 'gp_event'
-			]
+			array(
+				'post_type' => 'gp_event',
+			)
 		);
 		$user_id  = $this->factory->user->create();
 		$status   = 'attending';
@@ -64,5 +75,3 @@ class Test_Attendee extends \WP_UnitTestCase {
 		$this->assertEmpty( $instance->save_attendee( $post_id, $user_id, $status ) );
 	}
 }
-
-// EOF

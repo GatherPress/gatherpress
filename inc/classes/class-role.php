@@ -1,4 +1,11 @@
 <?php
+/**
+ * Class is responsible for all role related functionality.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Inc;
 
@@ -8,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Role.
+ */
 class Role {
 
 	use Singleton;
@@ -16,18 +26,14 @@ class Role {
 	 * Role constructor.
 	 */
 	protected function __construct() {
-
-		$this->_setup_hooks();
-
+		$this->setup_hooks();
 	}
 
 	/**
 	 * Setup Hooks.
 	 */
-	protected function _setup_hooks() : void {
-
-		add_action( 'init', [ $this, 'change_role_names' ] );
-
+	protected function setup_hooks() {
+		add_action( 'init', array( $this, 'change_role_names' ) );
 	}
 
 	/**
@@ -36,30 +42,28 @@ class Role {
 	 * @return array
 	 */
 	public function get_role_names() : array {
-		return [
+		return array(
 			'administrator' => __( 'Organizer', 'gatherpress' ),
 			'editor'        => __( 'Assistant Organizer', 'gatherpress' ),
 			'author'        => __( 'Event Organizer', 'gatherpress' ),
 			'contributor'   => __( 'Event Assistant', 'gatherpress' ),
 			'subscriber'    => __( 'Member', 'gatherpress' ),
-		];
+		);
 	}
 
 	/**
 	 * Map WordPress role names to GatherPress names.
 	 */
-	public function change_role_names() : void {
-
+	public function change_role_names() {
 		global $wp_roles;
 
 		if ( ! isset( $wp_roles ) ) {
-			$wp_roles = new \WP_Roles();
+			$wp_roles = new \WP_Roles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 		}
 
 		$role_name_changes = $this->get_role_names();
 
 		foreach ( $role_name_changes as $key => $value ) {
-
 			if ( is_array( $wp_roles->roles[ $key ] ) ) {
 				$wp_roles->roles[ $key ]['name'] = $value;
 			}
@@ -68,9 +72,6 @@ class Role {
 				$wp_roles->role_names[ $key ] = $value;
 			}
 		}
-
 	}
 
 }
-
-// EOF
