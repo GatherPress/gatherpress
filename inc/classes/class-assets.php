@@ -27,7 +27,7 @@ class Assets {
 	 *
 	 * @var string
 	 */
-	protected $build = GATHERPRESS_CORE_URL . '/assets/build/';
+	protected $build = GATHERPRESS_CORE_URL . 'assets/build/';
 
 	/**
 	 * Assets constructor.
@@ -52,11 +52,26 @@ class Assets {
 		$attendee = Attendee::get_instance();
 		$event    = Event::get_instance();
 
-		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/style.asset.php';
-		wp_enqueue_style( 'gatherpress-style', $this->build . 'style.css', array(), $asset['version'] );
+//		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/style.asset.php';
+//		wp_enqueue_style( 'gatherpress-blocks-loader', $this->build . 'style.css', array(), $asset['version'] );
+//
+//		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/style.asset.php';
+//		wp_enqueue_style( 'gatherpress-style', $this->build . 'style.css', array(), $asset['version'] );
+
+		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/tailwind.asset.php';
+		wp_enqueue_style( 'gatherpress-style', $this->build . 'tailwind.css', array(), $asset['version'] );
 
 		if ( is_singular( 'gp_event' ) ) {
 			global $post;
+
+			$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/script.asset.php';
+			wp_enqueue_script(
+				'gatherpress-script',
+				$this->build . 'script.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
 
 			$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/event_single.asset.php';
 			wp_enqueue_script(
@@ -71,11 +86,11 @@ class Assets {
 			$attendee_status = $attendee->get_attendee( $post->ID, $user_id );
 
 			wp_localize_script(
-				'gatherpress-event-single',
+				'gatherpress-script',
 				'GatherPress',
 				array(
 					'has_event_past'      => $event->has_event_past( $post->ID ),
-					'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event/' ),
+					'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event' ),
 					'nonce'               => wp_create_nonce( 'wp_rest' ),
 					'post_id'             => $GLOBALS['post']->ID,
 					'attendees'           => $attendee->get_attendees( $post->ID ),
@@ -96,7 +111,9 @@ class Assets {
 	 * Enqueue block styles and scripts.
 	 */
 	public function block_enqueue_scripts() {
-		$post_id = $GLOBALS['post']->ID;
+		$post_id  = $GLOBALS['post']->ID;
+		$event    = Event::get_instance();
+		$attendee = Attendee::get_instance();
 
 		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/editor.asset.php';
 		wp_enqueue_style( 'gatherpress-editor', $this->build . 'editor.css', array( 'wp-edit-blocks' ), $asset['version'] );
@@ -125,8 +142,15 @@ class Assets {
 				'event_datetime'   => Event::get_instance()->get_datetime( $post_id ),
 				'event_announced'  => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
 				'default_timezone' => sanitize_text_field( wp_timezone_string() ),
+				'has_event_past'      => $event->has_event_past( $post_id ),
+				'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event' ),
+				'attendees'           => $attendee->get_attendees( $post_id ),
+				'current_user_status' => $attendee_status['status'] ?? '',
 			)
 		);
+
+		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/tailwind.asset.php';
+		wp_enqueue_style( 'gatherpress-style', $this->build . 'tailwind.css', array(), $asset['version'] );
 	}
 
 }

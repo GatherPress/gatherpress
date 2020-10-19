@@ -1,6 +1,6 @@
 import apiFetch from '@wordpress/api-fetch';
-import { updateDateTimeStart } from './datetime-start/label'
-import { updateDateTimeEnd, hasEventPastNotice } from './datetime-end/label'
+import { updateDateTimeStart } from './datetime-start/label';
+import { updateDateTimeEnd, hasEventPastNotice } from './datetime-end/label';
 
 export const dateTimeFormat = 'YYYY-MM-DDTHH:mm:ss';
 
@@ -44,10 +44,11 @@ export function saveDateTime() {
 				post_id: GatherPress.post_id,
 				datetime_start: moment( GatherPress.event_datetime.datetime_start ).format( 'YYYY-MM-DD HH:mm:ss' ),
 				datetime_end: moment( GatherPress.event_datetime.datetime_end ).format( 'YYYY-MM-DD HH:mm:ss' ),
-				_wpnonce: GatherPress.nonce,
-			},
+				_wpnonce: GatherPress.nonce
+			}
 		}
-		).then((res) => {
+		).then( ( res ) => {
+
 			// Saved.
 		});
 	}

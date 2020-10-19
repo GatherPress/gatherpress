@@ -55,8 +55,8 @@ class Event {
 		add_filter( 'wp_unique_post_slug', array( $this, 'append_id_to_event_slug' ), 10, 4 );
 		add_filter( sprintf( 'manage_%s_posts_columns', self::POST_TYPE ), array( $this, 'set_custom_columns' ) );
 		add_filter( sprintf( 'manage_edit-%s_sortable_columns', self::POST_TYPE ), array( $this, 'sortable_columns' ) );
-		add_filter( 'the_content', array( $this, 'before_content' ), 0 );
-		add_filter( 'the_content', array( $this, 'after_content' ), 99999 );
+//		add_filter( 'the_content', array( $this, 'before_content' ), 0 );
+//		add_filter( 'the_content', array( $this, 'after_content' ), 99999 );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 2 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ), 10, 2 );
 	}

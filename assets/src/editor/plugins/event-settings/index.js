@@ -7,7 +7,7 @@ const { __ }                         = wp.i18n;
 const { PluginDocumentSettingPanel } = wp.editPost;
 
 const EventSettings = () => {
-	return(
+	return (
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
 				name        = 'gp-event-settings'
@@ -21,9 +21,9 @@ const EventSettings = () => {
 			</PluginDocumentSettingPanel>
 		)
 	);
-}
+};
 
 registerPlugin( 'gp-event-settings', {
 	render: EventSettings,
 	icon: ''
-} );
+});

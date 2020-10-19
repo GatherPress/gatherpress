@@ -11,7 +11,7 @@ export class AnnounceEvent extends Component {
 		super( props );
 
 		this.state = {
-			announceEventSent: ( '0'!== GatherPress.event_announced )
+			announceEventSent: ( '0' !== GatherPress.event_announced )
 		};
 	}
 
@@ -22,9 +22,9 @@ export class AnnounceEvent extends Component {
 				method: 'POST',
 				data: {
 					post_id: GatherPress.post_id,
-					_wpnonce: GatherPress.nonce,
-				},
-			}).then( ( res) => {
+					_wpnonce: GatherPress.nonce
+				}
+			}).then( ( res ) => {
 				GatherPress.event_announced = ( res.success ) ? '1' : '0';
 				this.setState({
 					announceEventSent: res.success
@@ -35,13 +35,13 @@ export class AnnounceEvent extends Component {
 	}
 
 	shouldDisable() {
-		return this.state.announceEventSent
-			|| 'publish' !== wp.data.select( 'core/editor' ).getEditedPostAttribute( 'status' )
-			|| hasEventPast();
+		return this.state.announceEventSent ||
+			'publish' !== wp.data.select( 'core/editor' ).getEditedPostAttribute( 'status' ) ||
+			hasEventPast();
 	}
 
 	render() {
-		return(
+		return (
 			<section>
 				<h3>{ __( 'Options', 'gatherpress' ) }</h3>
 				<PanelRow>

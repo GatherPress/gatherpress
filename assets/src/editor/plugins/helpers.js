@@ -2,13 +2,13 @@
 export function isEventPostType() {
 	const getPostType = wp.data.select( 'core/editor' ).getCurrentPostType(); // Gets the current post type.
 
-	return ( getPostType === 'gp_event' );
+	return ( 'gp_event' === getPostType );
 }
 
 // @todo hack approach to enabling Save buttons after update
 // https://github.com/WordPress/gutenberg/issues/13774
 export function enableSave() {
-	wp.data.dispatch( 'core/editor' ).editPost( { meta: { _non_existing_meta: true } } );
+	wp.data.dispatch( 'core/editor' ).editPost({ meta: { _non_existing_meta: true } });
 }
 
 export function hasEventPastNotice() {
@@ -23,7 +23,7 @@ export function hasEventPastNotice() {
 		__( 'This event has already past.', 'gatherpress' ),
 		{
 			id: id,
-			isDismissible: true,
+			isDismissible: true
 		}
 		);
 	}

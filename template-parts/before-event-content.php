@@ -14,6 +14,6 @@
 		</span>
 	</div>
 	<div class="w-3/12">
-		<div id="attendance_button_container"></div>
+<!--		<div id="attendance_button_container"></div>-->
 	</div>
 </div>
