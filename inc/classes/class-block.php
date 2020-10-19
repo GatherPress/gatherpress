@@ -56,7 +56,7 @@ class Block {
 			&& 'gatherpress' === $block_name_parts[0]
 			&& ! empty( $block_name_parts[1] )
 		) {
-			return Helper::render_template(
+			return Utility::render_template(
 				sprintf( '%s/template-parts/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name_parts[1] )
 			);
 		}

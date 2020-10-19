@@ -92,9 +92,9 @@ class Test_Event extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Coverage for adjust_sql method.
+	 * Coverage for adjust_event_sql method.
 	 *
-	 * @covers ::adjust_sql
+	 * @covers ::adjust_event_sql
 	 */
 	public function test_adjust_sql() {
 		global $wpdb;

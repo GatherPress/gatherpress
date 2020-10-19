@@ -54,7 +54,7 @@ class BuddyPress {
 			'announce' => ! empty( $notification_event_announce ) ? $notification_event_announce : 'yes',
 		);
 
-		echo Helper::render_template( //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo Utility::render_template( //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			GATHERPRESS_CORE_PATH . '/template-parts/buddypress/email/event-notification-settings.php',
 			$args
 		);
