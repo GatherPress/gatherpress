@@ -209,7 +209,7 @@ class Setup {
 		$sql             = array();
 		$charset_collate = $GLOBALS['wpdb']->get_charset_collate();
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::TABLE_FORMAT );
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 		$sql[] = "CREATE TABLE {$table} (
 					post_id bigint(20) unsigned NOT NULL default '0',
 					datetime_start datetime NOT NULL default '0000-00-00 00:00:00',
