@@ -23,11 +23,17 @@ class Assets {
 	use Singleton;
 
 	/**
-	 * Path to `build` directory.
+	 * URL to `build` directory.
 	 *
 	 * @var string
 	 */
 	protected $build = GATHERPRESS_CORE_URL . 'assets/build/';
+
+	/**
+	 * Path to `build` directory.
+	 *
+	 * @var string
+	 */
 	protected $path  = GATHERPRESS_CORE_PATH . '/assets/build/';
 
 	/**
@@ -68,7 +74,6 @@ class Assets {
 				true
 			);
 
-
 			wp_localize_script(
 				'gatherpress-script',
 				'GatherPress',
@@ -89,7 +94,7 @@ class Assets {
 	 * Enqueue block styles and scripts.
 	 */
 	public function block_enqueue_scripts() {
-		$post_id  = $GLOBALS['post']->ID ?? 0;
+		$post_id = $GLOBALS['post']->ID ?? 0;
 
 		$asset = require_once $this->path . 'editor.asset.php';
 		wp_enqueue_style( 'gatherpress-editor', $this->build . 'editor.css', array( 'wp-edit-blocks' ), $asset['version'] );
@@ -115,9 +120,9 @@ class Assets {
 			array_merge(
 				$this->localize( $post_id ),
 				array(
-					'event_datetime'      => Event::get_instance()->get_datetime( $post_id ),
-					'event_announced'     => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
-					'default_timezone'    => sanitize_text_field( wp_timezone_string() ),
+					'event_datetime'   => Event::get_instance()->get_datetime( $post_id ),
+					'event_announced'  => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
+					'default_timezone' => sanitize_text_field( wp_timezone_string() ),
 				)
 			)
 		);
