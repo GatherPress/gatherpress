@@ -193,8 +193,6 @@ class Rest_Api {
 	 * @return \WP_REST_Response
 	 */
 	public function update_datetime( \WP_REST_Request $request ) {
-		$event = Event::get_instance();
-
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return new \WP_REST_Response(
 				array(
@@ -204,7 +202,7 @@ class Rest_Api {
 		}
 
 		$params   = wp_parse_args( $request->get_params(), $request->get_default_params() );
-		$success  = $event->save_datetimes( $params );
+		$success  = Event::save_datetimes( $params );
 		$response = array(
 			'success' => $success,
 		);
@@ -241,14 +239,13 @@ class Rest_Api {
 	 */
 	public function update_attendance( \WP_REST_Request $request ) {
 		$params          = $request->get_params();
-		$attendee        = Attendee::get_instance();
-		$event           = Event::get_instance();
 		$success         = false;
 		$current_user_id = get_current_user_id();
 		$blog_id         = get_current_blog_id();
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
+		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
 		if (
@@ -271,11 +268,11 @@ class Rest_Api {
 			intval( $user_id )
 			&& current_user_can( 'read' )
 			&& is_user_member_of_blog( $user_id )
-			&& ! $event->has_event_past( $post_id )
+			&& ! $event->has_event_past()
 		) {
-			$status = $attendee->save_attendee( $post_id, $user_id, $status );
+			$status = $event->attendee->save_attendee( $user_id, $status );
 
-			if ( in_array( $status, $attendee->statuses, true ) ) {
+			if ( in_array( $status, $event->attendee->statuses, true ) ) {
 				$success = true;
 			}
 		}
@@ -283,7 +280,7 @@ class Rest_Api {
 		$response = array(
 			'success'   => (bool) $success,
 			'status'    => $status,
-			'attendees' => $attendee->get_attendees( $post_id ),
+			'attendees' => $event->attendee->get_attendees(),
 		);
 
 		return new \WP_REST_Response( $response );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Class is responsible for all role related functionality.
+ * Class is responsible for all utility related functionality.
  *
  * @package GatherPress
  * @subpackage Core
@@ -14,9 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Helper.
+ * Class Utility.
  */
-class Helper {
+class Utility {
 
 	/**
 	 * Render template.
@@ -40,24 +40,6 @@ class Helper {
 		require $path; // better to fail with an error than to continue with incorrect/weird data.
 
 		return ob_get_clean();
-	}
-
-	/**
-	 * Returns HTML classes for an anchor.
-	 *
-	 * @return string
-	 */
-	public static function anchor_classes() : string {
-		return (string) apply_filters( 'gatherpress_anchor_classes', 'text-blue-500 hover:text-blue-800' );
-	}
-
-	/**
-	 * Returns HTML classes for a button.
-	 *
-	 * @return string
-	 */
-	public static function button_classes() : string {
-		return (string) apply_filters( 'gatherpress_button_classes', '' );
 	}
 
 }

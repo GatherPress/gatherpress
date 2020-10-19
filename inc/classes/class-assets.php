@@ -56,9 +56,6 @@ class Assets {
 	 * Enqueue frontend styles and scripts.
 	 */
 	public function enqueue_scripts() {
-		$attendee = Attendee::get_instance();
-		$event    = Event::get_instance();
-
 		$asset = require_once $this->path . 'style.asset.php';
 		wp_enqueue_style( 'gatherpress-style', $this->build . 'style.css', array(), $asset['version'] );
 
@@ -95,6 +92,7 @@ class Assets {
 	 */
 	public function block_enqueue_scripts() {
 		$post_id = $GLOBALS['post']->ID ?? 0;
+		$event   = new Event( $post_id );
 
 		$asset = require_once $this->path . 'editor.asset.php';
 		wp_enqueue_style( 'gatherpress-editor', $this->build . 'editor.css', array( 'wp-edit-blocks' ), $asset['version'] );
@@ -120,7 +118,7 @@ class Assets {
 			array_merge(
 				$this->localize( $post_id ),
 				array(
-					'event_datetime'   => Event::get_instance()->get_datetime( $post_id ),
+					'event_datetime'   => $event->get_datetime(),
 					'event_announced'  => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
 					'default_timezone' => sanitize_text_field( wp_timezone_string() ),
 				)
@@ -136,13 +134,15 @@ class Assets {
 	 * @return array
 	 */
 	protected function localize( int $post_id ) : array {
+		$event = new Event( $post_id );
+
 		return array(
 			'nonce'               => wp_create_nonce( 'wp_rest' ),
 			'post_id'             => $post_id,
-			'has_event_past'      => Event::get_instance()->has_event_past( $post_id ),
+			'has_event_past'      => $event->has_event_past(),
 			'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event' ),
-			'current_user_status' => Attendee::get_instance()->get_attendee( $post_id, get_current_user_id() ) ?? '',
-			'attendees'           => Attendee::get_instance()->get_attendees( $post_id ),
+			'current_user_status' => $event->attendee->get_attendee( get_current_user_id() ) ?? '',
+			'attendees'           => $event->attendee->get_attendees(),
 		);
 	}
 

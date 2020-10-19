@@ -9,8 +9,6 @@
 
 namespace GatherPress\Inc;
 
-use GatherPress\Inc\Traits\Singleton;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -19,8 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Attendee.
  */
 class Attendee {
-
-	use Singleton;
 
 	const TABLE_FORMAT       = '%sgp_attendees';
 	const ATTENDEE_CACHE_KEY = 'attendee_%d';
@@ -46,80 +42,41 @@ class Attendee {
 	public $limit = 3;
 
 	/**
-	 * Query constructor.
+	 * Event post object.
+	 *
+	 * @var array|\WP_Post|null
 	 */
-	protected function __construct() {
-		$this->setup_hooks();
-	}
+	protected $event;
 
 	/**
-	 * Setup hooks.
+	 * Attendee constructor.
+	 *
+	 * @param int $post_id An event post ID.
 	 */
-	protected function setup_hooks() {
-		add_action( 'init', array( $this, 'maybe_create_custom_table' ) );
-	}
-
-	/**
-	 * Maybe create custom table if doesn't exist for main site or current site in network.
-	 */
-	public function maybe_create_custom_table() {
-		$this->create_table();
-
-		if ( is_multisite() ) {
-			$blog_id = get_current_blog_id();
-
-			switch_to_blog( $blog_id );
-			$this->create_table();
-			restore_current_blog();
-		}
-	}
-
-	/**
-	 * Create custom attendees table.
-	 */
-	public function create_table() {
-		global $wpdb;
-
-		$sql             = array();
-		$charset_collate = $GLOBALS['wpdb']->get_charset_collate();
-		$table           = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-
-		$sql[] = "CREATE TABLE {$table} (
-					id bigint(20) unsigned NOT NULL auto_increment,
-					post_id bigint(20) unsigned NOT NULL default '0',
-					user_id bigint(20) unsigned NOT NULL default '0',
-					timestamp datetime NOT NULL default '0000-00-00 00:00:00',
-					status varchar(255) default NULL,
-					PRIMARY KEY  (id),
-					KEY post_id (post_id),
-					KEY user_id (user_id),
-					KEY status (status)
-				) {$charset_collate};";
-
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-
-		dbDelta( $sql );
+	public function __construct( int $post_id ) {
+		$this->event = get_post( $post_id );
 	}
 
 	/**
 	 * Get an event attendee.
 	 *
-	 * @param int $post_id An event post ID.
 	 * @param int $user_id A user ID.
 	 *
 	 * @return array
 	 */
-	public function get_attendee( int $post_id, int $user_id ) : array {
+	public function get_attendee( int $user_id ) : array {
 		global $wpdb;
 
-		if ( 1 > $post_id || 1 > $user_id ) {
+		$event_id = $this->event->ID;
+
+		if ( 1 > $event_id || 1 > $user_id ) {
 			return array();
 		}
 
 		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo add caching to this.
-		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . esc_sql( $table ) . ' WHERE post_id = %d AND user_id = %d', $post_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . esc_sql( $table ) . ' WHERE post_id = %d AND user_id = %d', $event_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		return (array) $data;
 	}
@@ -127,18 +84,19 @@ class Attendee {
 	/**
 	 * Save an event attendee.
 	 *
-	 * @param int    $post_id An event post ID.
 	 * @param int    $user_id A user ID.
 	 * @param string $status  Attendance status.
 	 *
 	 * @return string
 	 */
-	public function save_attendee( int $post_id, int $user_id, string $status ) : string {
+	public function save_attendee( int $user_id, string $status ) : string {
 		global $wpdb;
+
+		$event_id = $this->event->ID;
 
 		$retval = '';
 
-		if ( 1 > $post_id || 1 > $user_id ) {
+		if ( 1 > $event_id || 1 > $user_id ) {
 			return $retval;
 		}
 
@@ -147,15 +105,15 @@ class Attendee {
 		}
 
 		$table         = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$attendee      = $this->get_attendee( $post_id, $user_id );
-		$limit_reached = $this->attending_limit_reached( $post_id, $status );
+		$attendee      = $this->get_attendee( $user_id );
+		$limit_reached = $this->attending_limit_reached( $status );
 
 		if ( $limit_reached ) {
 			$status = 'waitlist';
 		}
 
 		$data = array(
-			'post_id'   => intval( $post_id ),
+			'post_id'   => intval( $event_id ),
 			'user_id'   => intval( $user_id ),
 			'timestamp' => gmdate( 'Y-m-d H:i:s' ),
 			'status'    => sanitize_key( $status ),
@@ -174,14 +132,14 @@ class Attendee {
 			$save = $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
 
-		wp_cache_delete( sprintf( self::ATTENDEE_CACHE_KEY, $post_id ) );
+		wp_cache_delete( sprintf( self::ATTENDEE_CACHE_KEY, $event_id ) );
 
 		if ( $save ) {
 			$retval = sanitize_key( $status );
 		}
 
 		if ( ! $limit_reached && 'not_attending' === $status ) {
-			$this->check_waitlist( $post_id );
+			$this->check_waitlist();
 		}
 
 		return $retval;
@@ -190,12 +148,10 @@ class Attendee {
 	/**
 	 * Check the waitlist and maybe move attendees to attending.
 	 *
-	 * @param int $post_id An event post ID.
-	 *
 	 * @return int  Number of attendees from waitlist that were moved to attending.
 	 */
-	public function check_waitlist( int $post_id ) : int {
-		$attendees = $this->get_attendees( $post_id );
+	public function check_waitlist() : int {
+		$attendees = $this->get_attendees();
 		$total     = 0;
 
 		if (
@@ -217,7 +173,7 @@ class Attendee {
 				}
 
 				$attendee = $waitlist[ $i ];
-				$this->save_attendee( $post_id, $attendee['id'], 'attending' );
+				$this->save_attendee( $attendee['id'], 'attending' );
 				$i++;
 			}
 		}
@@ -228,13 +184,12 @@ class Attendee {
 	/**
 	 * Check if the attending limit has been reached for an event.
 	 *
-	 * @param int    $post_id An event post ID.
 	 * @param string $status  Desired attendance status.
 	 *
 	 * @return bool
 	 */
-	public function attending_limit_reached( int $post_id, string $status ) : bool {
-		$attendees = $this->get_attendees( $post_id );
+	public function attending_limit_reached( string $status ) : bool {
+		$attendees = $this->get_attendees();
 
 		if (
 			! empty( $attendees['attending'] )
@@ -250,14 +205,14 @@ class Attendee {
 	/**
 	 * Get all attendees for an event.
 	 *
-	 * @param int $post_id An event post ID.
-	 *
 	 * @return array
 	 */
-	public function get_attendees( int $post_id ) : array {
+	public function get_attendees() : array {
 		global $wpdb;
 
-		$cache_key = sprintf( self::ATTENDEE_CACHE_KEY, $post_id );
+		$event_id = $this->event->ID;
+
+		$cache_key = sprintf( self::ATTENDEE_CACHE_KEY, $event_id );
 		$retval    = wp_cache_get( $cache_key );
 
 		if ( ! empty( $retval ) && is_array( $retval ) ) {
@@ -271,14 +226,14 @@ class Attendee {
 			),
 		);
 
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( Event::POST_TYPE !== get_post_type( $event_id ) ) {
 			return $retval;
 		}
 
 		$site_users  = count_users();
 		$total_users = $site_users['total_users'];
 		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $post_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $event_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
 		$attendees   = array();
 

@@ -153,12 +153,12 @@ class Email {
 		$setting = 'gp-event-announce';
 		$meta    = get_post_meta( $post_id, $setting, true );
 		$status  = get_post_status( $post_id );
-		$event   = Event::get_instance();
+		$event   = new Event( $post_id );
 
 		if (
 			! empty( $meta )
 			|| 'publish' !== $status
-			|| $event->has_event_past( $post_id ) ) {
+			|| $event->has_event_past() ) {
 			return false;
 		}
 

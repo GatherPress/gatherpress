@@ -89,7 +89,7 @@ class Query {
 			return $pieces;
 		}
 
-		return Event::get_instance()->adjust_sql( $pieces, 'past' );
+		return Event::adjust_sql( $pieces, 'past' );
 	}
 
 	/**
@@ -107,7 +107,7 @@ class Query {
 		global $wp_query;
 
 		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
-			$pieces = Event::get_instance()->adjust_sql( $pieces, 'all', $wp_query->get( 'order' ) );
+			$pieces = Event::adjust_sql( $pieces, 'all', $wp_query->get( 'order' ) );
 		}
 
 		return $pieces;
@@ -125,7 +125,7 @@ class Query {
 			return $pieces;
 		}
 
-		return Event::get_instance()->adjust_sql( $pieces, 'future', 'ASC' );
+		return Event::adjust_sql( $pieces, 'future', 'ASC' );
 	}
 
 }
