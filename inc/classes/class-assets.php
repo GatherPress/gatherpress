@@ -52,8 +52,8 @@ class Assets {
 		$attendee = Attendee::get_instance();
 		$event    = Event::get_instance();
 
-		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/tailwind.asset.php';
-		wp_enqueue_style( 'gatherpress-style', $this->build . 'tailwind.css', array(), $asset['version'] );
+		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/style.asset.php';
+		wp_enqueue_style( 'gatherpress-style', $this->build . 'style.css', array(), $asset['version'] );
 
 		if ( is_singular( 'gp_event' ) ) {
 			global $post;
@@ -62,15 +62,6 @@ class Assets {
 			wp_enqueue_script(
 				'gatherpress-script',
 				$this->build . 'script.js',
-				$asset['dependencies'],
-				$asset['version'],
-				true
-			);
-
-			$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/event_single.asset.php';
-			wp_enqueue_script(
-				'gatherpress-event-single',
-				$this->build . 'event_single.js',
 				$asset['dependencies'],
 				$asset['version'],
 				true
@@ -98,7 +89,8 @@ class Assets {
 	 * Enqueue backend styles and scripts.
 	 */
 	public function admin_enqueue_scripts() {
-		wp_enqueue_style( 'gatherpress-admin-css', $this->build . 'admin.css', array(), GATHERPRESS_THEME_VERSION );
+		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/admin.asset.php';
+		wp_enqueue_style( 'gatherpress-admin', $this->build . 'admin.css', array(), $asset['version'] );
 	}
 
 	/**
