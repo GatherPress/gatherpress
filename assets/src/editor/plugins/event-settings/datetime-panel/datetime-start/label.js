@@ -13,7 +13,7 @@ export function updateDateTimeStart( dateTime, setState = null ) {
 	});
 
 	if ( null !== setState ) {
-		setState( { dateTime } );
+		setState({ dateTime });
 	}
 
 	enableSave();
@@ -31,7 +31,7 @@ export class DateTimeStartLabel extends Component {
 		super( props );
 
 		this.state = {
-			dateTime: GatherPress.event_datetime.datetime_start,
+			dateTime: GatherPress.event_datetime.datetime_start
 		};
 	}
 
@@ -51,12 +51,12 @@ export class DateTimeStartLabel extends Component {
 	render() {
 		const settings = __experimentalGetSettings();
 
-		return(
+		return (
 			dateI18n(
 				`${ settings.formats.date } ${ settings.formats.time }`,
 				this.state.dateTime
 			)
-		)
+		);
 	}
 
 }

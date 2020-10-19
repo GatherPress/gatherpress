@@ -4,16 +4,16 @@ module.exports = {
 		content: [
 			'../template-parts/*.php',
 			'./src/js/event/attendance/*.js'
-		],
+		]
 	},
 	theme: {
-		extend: {},
+		extend: {}
 	},
 	variants: {
-		display: ['group-hover']
+		display: [ 'group-hover' ]
 	},
 	plugins: [
-		require('tailwindcss'),
-		require('autoprefixer'),
-	],
-}
+		require( 'tailwindcss' ),
+		require( 'autoprefixer' )
+	]
+};

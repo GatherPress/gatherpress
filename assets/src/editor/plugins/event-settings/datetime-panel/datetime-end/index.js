@@ -1,9 +1,9 @@
 import { DateTimePicker } from '@wordpress/components';
 import { __experimentalGetSettings } from '@wordpress/date';
 import { withState } from '@wordpress/compose';
-import { updateDateTimeStart, getDateTimeStart } from './label';
+import { updateDateTimeEnd, getDateTimeEnd } from './label';
 
-export const DateTimeStart = withState()( ( { setState } ) => {
+export const DateTimeEnd = withState()( ({ setState }) => {
 
 	const settings     = __experimentalGetSettings();
 	const is12HourTime = /a(?!\\)/i.test(
@@ -15,9 +15,9 @@ export const DateTimeStart = withState()( ( { setState } ) => {
 
 	return (
 		<DateTimePicker
-			currentDate = { getDateTimeStart() }
-			onChange    = { ( date ) => updateDateTimeStart( date, setState ) }
+			currentDate = { getDateTimeEnd() }
+			onChange    = { ( date ) => updateDateTimeEnd( date, setState ) }
 			is12Hour    = { is12HourTime }
 		/>
 	);
-} );
+});

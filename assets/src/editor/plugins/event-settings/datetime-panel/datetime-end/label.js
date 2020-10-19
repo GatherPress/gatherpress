@@ -15,7 +15,7 @@ export function updateDateTimeEnd( dateTime, setState = null ) {
 	});
 
 	if ( null !== setState ) {
-		setState( { dateTime } );
+		setState({ dateTime });
 	}
 
 	enableSave();
@@ -42,7 +42,7 @@ export function hasEventPastNotice() {
 			__( 'This event has already past.', 'gatherpress' ),
 			{
 				id: id,
-				isDismissible: true,
+				isDismissible: true
 			}
 		);
 	}
@@ -54,7 +54,7 @@ export class DateTimeEndLabel extends Component {
 		super( props );
 
 		this.state = {
-			dateTime: GatherPress.event_datetime.datetime_end,
+			dateTime: GatherPress.event_datetime.datetime_end
 		};
 	}
 
@@ -80,12 +80,12 @@ export class DateTimeEndLabel extends Component {
 	render() {
 		const settings = __experimentalGetSettings();
 
-		return(
+		return (
 			dateI18n(
 				`${ settings.formats.date } ${ settings.formats.time }`,
 				this.state.dateTime
 			)
-		)
+		);
 	}
 
 }

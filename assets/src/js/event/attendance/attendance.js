@@ -3,7 +3,7 @@ import { __ } from '@wordpress/i18n';
 
 export function updateAttendanceList( attendanceList ) {
 
-	this.setState( { attendanceList } );
+	this.setState({ attendanceList });
 
 }
 
@@ -21,22 +21,22 @@ export class Attendance extends Component {
 		updateAttendanceList = updateAttendanceList.bind( this );
 
 		this.state = {
-			attendanceList: GatherPress.attendees,
+			attendanceList: GatherPress.attendees
 		};
 
 		this.pages = [
 			{
 				name: __( 'Attending', 'gatherpress' ),
-				slug: 'attending',
+				slug: 'attending'
 			},
 			{
 				name: __( 'Waitlist', 'gatherpress' ),
-				slug: 'waitlist',
+				slug: 'waitlist'
 			},
 			{
 				name: __( 'Not Attending', 'gatherpress' ),
-				slug: 'not_attending',
-			},
+				slug: 'not_attending'
+			}
 		];
 
 		for ( let i = 0; i < this.pages.length; i++ ) {
@@ -69,7 +69,7 @@ export class Attendance extends Component {
 
 		for ( let i = 0; i < this.pages.length; i++ ) {
 			let item              = this.pages[ i ],
-				additionalClasses = ( i === this.state.activeTab ) ? 'border-blue-500 bg-blue-500 hover:bg-blue-700 text-white active' : 'border-white bg-white hover:border-gray-200 text-blue-500 hover:bg-gray-200';
+				additionalClasses = ( i === this.state.activeTab ) ? 'wp-block-button__link no-underline hover:no-underline active' : 'wp-block-button__link no-underline hover:no-underline opacity-50';
 
 			nav.push(
 				<div
@@ -78,13 +78,14 @@ export class Attendance extends Component {
 					<button
 						ref           = { input => this.navItem = input }
 						key           = { item.slug }
-						className     = { 'text-center no-underline block border rounded py-2 px-4 ' + additionalClasses }
+						className     = {  additionalClasses }
 						id            = { 'nav-' + item.slug + '-tab' }
 						data-id       = { item.slug }
 						data-toggle   = 'tab'
 						href          = { '#nav-' + item.slug }
 						role          = 'tab'
 						aria-controls = { 'nav-' + item.slug }
+
 						// aria-selected = { ( '' === item.active ) ? 'false' : 'true' }
 						onClick       = { ( e ) => this.tabUpdate( e ) }
 					>
@@ -120,7 +121,7 @@ export class Attendance extends Component {
 						{ this.getAttendees( item.slug ) }
 					</div>
 				</div>
-			)
+			);
 		}
 
 		return content;
@@ -129,7 +130,7 @@ export class Attendance extends Component {
 
 	getAttendees( slug ) {
 
-		if ( 'undefined' === typeof this.state.attendanceList[ slug ] ) {
+		if ( 'undefined' === typeof this.state.attendanceList[ slug ]) {
 			return;
 		}
 
@@ -179,12 +180,11 @@ export class Attendance extends Component {
 	}
 
 	render() {
-		return(
+		return (
 			<div
 				className = 'mt-4'
 			>
 				<nav
-					className = 'flex border-b ml-0'
 					className = 'flex border-b ml-0'
 					id        = 'attendance-nav'
 					role      = 'tablist'

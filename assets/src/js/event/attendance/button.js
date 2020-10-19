@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { __ } from '@wordpress/i18n';
 
 import { updateAttendanceList, updateActiveNavigation } from './attendance';
 
-export class AttendanceButton extends Component {
+export class AttendanceButton extends React.Component {
 
 	constructor( props ) {
 		super( props );
@@ -14,7 +14,6 @@ export class AttendanceButton extends Component {
 	}
 
 	attendanceStatus( status ) {
-
 		switch ( status ) {
 			case 'attending':
 				return __( 'Attending', 'gatherpress' );
@@ -25,17 +24,14 @@ export class AttendanceButton extends Component {
 		}
 
 		return __( 'Attend', 'gatherpress' );
-
 	}
 
-	changeSelection( evt ) {
+	onAnchorClick(e) {
+		e.preventDefault();
 
-		evt.preventDefault();
-
-		let status = evt.target.getAttribute( 'data-value' );
+		const status = e.target.getAttribute( 'data-value' );
 
 		this.updateStatus( status );
-
 	}
 
 	updateStatus( status ) {
@@ -44,7 +40,7 @@ export class AttendanceButton extends Component {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-WP-Nonce': GatherPress.nonce,
+				'X-WP-Nonce': GatherPress.nonce
 			},
 			body: JSON.stringify({
 				status: status,
@@ -73,56 +69,53 @@ export class AttendanceButton extends Component {
 	render() {
 		const hasEventPast = ( '1' === GatherPress.has_event_past ) ? 'opacity-50 cursor-not-allowed' : '';
 
-		return(
-			<div
-				className  = 'group inline-block relative float-right'
-			>
-				<button
-					type          = 'button'
-					className     = { 'no-underline bg-blue-500 hover:bg-blue-700 text-white text-2xl py-2 px-4 rounded inline-flex items-center ' + hasEventPast }
-					data-toggle   = 'dropdown'
-					aria-haspopup = 'true'
-					aria-expanded = 'false'
+		return (
+			<div className = "group inline-block relative">
+				<span
+					type = "button"
+					className = { 'wp-block-button__link ' + hasEventPast }
+					data-toggle = "dropdown"
+					aria-haspopup = "true"
+					aria-expanded = "false"
 				>
-					<span
-						className = 'mr-1'
-					>
+					<span className = "mr-1">
 						{ this.state.inputValue }
 					</span>
 					<svg
-						className = 'fill-current h-4 w-4'
-						xmlns     = 'http://www.w3.org/2000/svg'
-						viewBox   = '0 0 20 20'
+						className = "fill-current h-4 w-4"
+						xmlns = "http://www.w3.org/2000/svg"
+						viewBox = "0 0 20 20"
 					>
-						<path
-							d = 'M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z'
-						/>
+						<path d = "M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
 					</svg>
-				</button>
+				</span>
 				<ul
-					className       = 'absolute right-0 z-10 hidden text-gray-700 pt-1 group-hover:block'
+					className = "absolute left-0 z-10 hidden text-gray-700 pt-1 group-hover:block"
+					style     = {{ margin: 0, padding: 0 }}
 				>
 					<li
-						className = 'list-none m-0'
+						className = "list-none m-0"
+						style = {{ padding: 0, margin: 0 }}
 					>
 						<a
 							className  = 'no-underline rounded-t bg-gray-200 hover:bg-gray-400 py-2 px-4 block whitespace-no-wrap'
 							href       = '#'
 							data-value = 'attending'
-							onClick    = { ( evt ) => this.changeSelection( evt ) }
+							onClick    = { e => this.onAnchorClick(e) }
 						>
 							{ __( 'Yes, I would like to attend this event.', 'gatherpress' ) }
 						</a>
 
 					</li>
 					<li
-						className = 'list-none m-0'
+						className = "list-none m-0"
+						style = {{ padding: 0, margin: 0 }}
 					>
 						<a
 							className  = 'no-underline rounded-b bg-gray-200 hover:bg-gray-400 py-2 px-4 block whitespace-no-wrap'
 							href       = '#'
 							data-value = 'not_attending'
-							onClick    = { ( evt ) => this.changeSelection( evt ) }
+							onClick    = { e => this.onAnchorClick(e) }
 						>
 							{ __( 'No, I cannot attend this event.', 'gatherpress' ) }
 						</a>

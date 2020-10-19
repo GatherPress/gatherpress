@@ -29,7 +29,7 @@ export const DateTimeStartSettingPanel = () =>
 				</span>
 				<Dropdown
 					position         = 'bottom left'
-					renderToggle     = { ( { isOpen, onToggle } ) => (
+					renderToggle     = { ({ isOpen, onToggle }) => (
 						<Button
 							onClick       = { onToggle }
 							aria-expanded = { isOpen }
@@ -47,7 +47,7 @@ export const DateTimeStartSettingPanel = () =>
 				</span>
 				<Dropdown
 					position         = 'bottom left'
-					renderToggle     = { ( { isOpen, onToggle } ) => (
+					renderToggle     = { ({ isOpen, onToggle }) => (
 						<Button
 							onClick       = { onToggle }
 							aria-expanded = { isOpen }

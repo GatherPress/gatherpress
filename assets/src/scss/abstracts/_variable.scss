@@ -8,11 +8,11 @@
 
 /// Regular font family
 /// @type List
-$text-font-stack: 'Open Sans', 'Helvetica Neue Light', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif !default;
+$text-font-stack: "Open Sans", "Helvetica Neue Light", "Helvetica Neue", "Helvetica", "Arial", sans-serif !default;
 
 /// Code (monospace) font family
 /// @type List
-$code-font-stack: 'Courier New', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Monaco', monospace !default;
+$code-font-stack: "Courier New", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Monaco", monospace !default;
 
 
 
@@ -20,7 +20,7 @@ $code-font-stack: 'Courier New', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono',
 
 /// Copy text color
 /// @type Color
-$text-color: #222222;
+$text-color: #222;
 
 /// Main brand color
 /// @type Color
@@ -28,26 +28,26 @@ $brand-color: #0073e5;
 
 /// White
 /// @type Color
-$white: #ffffff;
+$white: #fff;
 
 /// Black
 /// @type Color
-$black: #000000;
+$black: #000;
 
 /// Set same greys in config/editor-color-palette.php
 
 /// Light grey
 /// @type Color
-$light-grey: #F8F8F8;
+$light-grey: #f8f8f8;
 
 /// Medium grey
 /// @type Color
-$medium-grey: #999999;
+$medium-grey: #999;
 
 /// Dark grey
 /// @type Color
-$dark-grey: #444444;
-$darker-grey: #0A0A0A;
+$dark-grey: #444;
+$darker-grey: #0a0a0a;
 $darkest-grey: #101010;
 $darkest-gray2: #090909;
 
@@ -71,4 +71,4 @@ $slider-height-mobile: 350px !default;
 /// @type String
 /// @example scss - When using a CDN
 ///   $base-url: 'http://cdn.example.com/assets/';
-$base-url: '/assets/' !default;
+$base-url: "/assets/" !default;
