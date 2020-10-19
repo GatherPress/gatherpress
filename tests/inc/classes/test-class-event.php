@@ -34,8 +34,8 @@ class Test_Event extends \WP_UnitTestCase {
 				'post_content' => 'Unit Test description.',
 			)
 		);
-		$event  = new Event( $post_id );
-		$params = array(
+		$event   = new Event( $post_id );
+		$params  = array(
 			'post_id'        => $post_id,
 			'datetime_start' => '2020-05-11 15:00:00',
 			'datetime_end'   => '2020-05-11 17:00:00',
@@ -64,9 +64,9 @@ class Test_Event extends \WP_UnitTestCase {
 				'post_type' => 'gp_event',
 			)
 		);
-		$event  = new Event( $post_id );
-		$year   = gmdate( 'Y' );
-		$params = array(
+		$event   = new Event( $post_id );
+		$year    = gmdate( 'Y' );
+		$params  = array(
 			'post_id'        => $post_id,
 			'datetime_start' => sprintf( '%d-05-11 15:00:00', $year - 1 ),
 			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year - 1 ),
