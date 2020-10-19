@@ -34,7 +34,7 @@ class Assets {
 	 *
 	 * @var string
 	 */
-	protected $path  = GATHERPRESS_CORE_PATH . '/assets/build/';
+	protected $path = GATHERPRESS_CORE_PATH . '/assets/build/';
 
 	/**
 	 * Assets constructor.
