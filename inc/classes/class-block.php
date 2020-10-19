@@ -39,8 +39,8 @@ class Block {
 	/**
 	 * Callback to render blocks.
 	 *
-	 * @param string $block_content
-	 * @param array  $block
+	 * @param string $block_content The block content about to be appended.
+	 * @param array  $block The full block, including name and attributes.
 	 *
 	 * @return string
 	 */
