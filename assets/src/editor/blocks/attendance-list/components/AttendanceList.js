@@ -23,7 +23,7 @@ const AttendanceList = () => {
 		defaultList = [];
 
 	if (typeof GatherPress === 'object') {
-		defaultStatus = GatherPress.current_user_status;
+		defaultStatus = GatherPress.current_user_status.status;
 	}
 
 	const [attendanceStatus, setAttendanceStatus] = useState(defaultStatus);

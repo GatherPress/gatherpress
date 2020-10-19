@@ -7,7 +7,7 @@ const AttendanceSelector = () => {
 	let defaultStatus = '';
 
 	if (typeof GatherPress === 'object') {
-		defaultStatus = GatherPress.current_user_status;
+		defaultStatus = GatherPress.current_user_status.status;
 	}
 
 	const [ attendanceStatus, setAttendanceStatus ] = useState(defaultStatus);
@@ -73,7 +73,7 @@ const AttendanceSelector = () => {
 	});
 
 	return(
-		<p className="gp-component group inline-block relative">
+		<div className="gp-component group inline-block relative">
 			<a
 				className="wp-block-button__link"
 				href="#"
@@ -90,7 +90,7 @@ const AttendanceSelector = () => {
 			>
 				{renderedItems}
 			</ul>
-		</p>
+		</div>
 	);
 }
 
