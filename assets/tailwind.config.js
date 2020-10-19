@@ -2,8 +2,8 @@ module.exports = {
 	purge: {
 		enable: true,
 		content: [
-			'../template-parts/*.php',
-			'./src/js/event/attendance/*.js'
+			'../template-parts/**/*.php',
+			'./src/**/*.js'
 		]
 	},
 	theme: {

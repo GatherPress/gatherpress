@@ -3,18 +3,15 @@ const path = require( 'path' );
 const postcssPresetEnv = require( 'postcss-preset-env' );
 const MiniCssExtractPlugin = require( 'mini-css-extract-plugin' );
 const IgnoreEmitPlugin = require( 'ignore-emit-webpack-plugin' );
-const tailwindcss = require( 'tailwindcss' );
-
-const production = '' === process.env.NODE_ENV;
+const TailWindCSS = require( 'tailwindcss' );
+const production = ('' === process.env.NODE_ENV);
 
 module.exports = {
 	...defaultConfig,
 	entry: {
 		index: path.resolve( process.cwd(), 'src', 'index.js' ),
-		tailwind: path.resolve( process.cwd(), 'src', 'tailwind.scss' ),
 		style: path.resolve( process.cwd(), 'src', 'style.scss' ),
 		script: path.resolve( process.cwd(), 'src/js', 'index.js' ),
-		event_single: path.resolve( process.cwd(), 'src/js/event', 'single.js' ),
 		editor: path.resolve( process.cwd(), 'src', 'editor.scss' ),
 		admin: path.resolve( process.cwd(), 'src', 'admin.scss' ),
 	},
@@ -22,6 +19,12 @@ module.exports = {
 		...defaultConfig.optimization,
 		splitChunks: {
 			cacheGroups: {
+				admin: {
+					name: 'admin',
+					test: /admin\.(sc|sa|c)ss$/,
+					chunks: 'all',
+					enforce: true
+				},
 				editor: {
 					name: 'editor',
 					test: /editor\.(sc|sa|c)ss$/,
@@ -78,7 +81,7 @@ module.exports = {
 										'nesting-rules': true
 									}
 								}),
-								tailwindcss( './tailwind.config.js' )
+								TailWindCSS( './tailwind.config.js' )
 							]
 						}
 					}
@@ -91,6 +94,6 @@ module.exports = {
 		new MiniCssExtractPlugin({
 			filename: '[name].css'
 		}),
-		new IgnoreEmitPlugin([ 'editor.js', 'style.js', 'tailwind.js' ])
+		new IgnoreEmitPlugin([ 'editor.js', 'style.js', 'admin.js' ])
 	]
 };
