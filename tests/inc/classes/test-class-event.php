@@ -27,7 +27,6 @@ class Test_Event extends \WP_UnitTestCase {
 	 * @covers ::get_yahoo_calendar_link
 	 */
 	public function test_get_calendar_links() {
-		$instance = Event::get_instance();
 		$post_id  = $this->factory->post->create(
 			array(
 				'post_title'   => 'Unit Test Event',
@@ -35,15 +34,16 @@ class Test_Event extends \WP_UnitTestCase {
 				'post_content' => 'Unit Test description.',
 			)
 		);
+		$event    = new Event( $post_id );
 		$params   = array(
 			'post_id'        => $post_id,
 			'datetime_start' => '2020-05-11 15:00:00',
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
-		$instance->save_datetimes( $params );
+		Event::save_datetimes( $params );
 
-		$output  = $instance->get_calendar_links( $post_id );
+		$output  = $event->get_calendar_links();
 		$expects = array(
 			'google' => 'https://www.google.com/calendar/render/?action=TEMPLATE&text=Unit Test Event&dates=20200511T150000Z/20200511T170000Z&details=Unit Test description.&location&sprop=name:',
 			'isc'    => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0AURL:http://example.org/?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:Unit Test description.%0ALOCATION:%0AEND:VEVENT%0AEND:VCALENDAR',
@@ -59,12 +59,12 @@ class Test_Event extends \WP_UnitTestCase {
 	 * @covers ::has_event_past
 	 */
 	public function test_has_event_past() {
-		$instance = Event::get_instance();
 		$post_id  = $this->factory->post->create(
 			array(
 				'post_type' => 'gp_event',
 			)
 		);
+		$event    = new Event( $post_id );
 		$year     = gmdate( 'Y' );
 		$params   = array(
 			'post_id'        => $post_id,
@@ -72,9 +72,9 @@ class Test_Event extends \WP_UnitTestCase {
 			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year - 1 ),
 		);
 
-		$instance->save_datetimes( $params );
+		Event::save_datetimes( $params );
 
-		$output = $instance->has_event_past( $post_id );
+		$output = $event->has_event_past();
 
 		$this->assertTrue( $output );
 
@@ -84,9 +84,9 @@ class Test_Event extends \WP_UnitTestCase {
 			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year + 1 ),
 		);
 
-		$instance->save_datetimes( $params );
+		Event::save_datetimes( $params );
 
-		$output = $instance->has_event_past( $post_id );
+		$output = $event->has_event_past();
 
 		$this->assertFalse( $output );
 	}
@@ -99,7 +99,6 @@ class Test_Event extends \WP_UnitTestCase {
 	public function test_adjust_sql() {
 		global $wpdb;
 
-		$instance = Event::get_instance();
 		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 		$post_id  = $this->factory->post->create(
 			array(
@@ -109,17 +108,17 @@ class Test_Event extends \WP_UnitTestCase {
 
 		$this->go_to( get_the_permalink( $post_id ) );
 
-		$retval = $instance->adjust_sql( array(), 'all', 'DESC' );
+		$retval = Event::adjust_sql( array(), 'all', 'DESC' );
 
 		$this->assertContains( 'DESC', $retval['orderby'] );
 		$this->assertEmpty( $retval['where'] );
 
-		$retval = $instance->adjust_sql( array(), 'past', 'desc' );
+		$retval = Event::adjust_sql( array(), 'past', 'desc' );
 
 		$this->assertContains( 'DESC', $retval['orderby'] );
 		$this->assertContains( "AND {$table}.datetime_end_gmt <", $retval['where'] );
 
-		$retval = $instance->adjust_sql( array(), 'future', 'ASC' );
+		$retval = Event::adjust_sql( array(), 'future', 'ASC' );
 
 		$this->assertContains( 'ASC', $retval['orderby'] );
 		$this->assertContains( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
