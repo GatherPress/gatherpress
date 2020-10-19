@@ -52,12 +52,6 @@ class Assets {
 		$attendee = Attendee::get_instance();
 		$event    = Event::get_instance();
 
-//		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/style.asset.php';
-//		wp_enqueue_style( 'gatherpress-blocks-loader', $this->build . 'style.css', array(), $asset['version'] );
-//
-//		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/style.asset.php';
-//		wp_enqueue_style( 'gatherpress-style', $this->build . 'style.css', array(), $asset['version'] );
-
 		$asset = require_once GATHERPRESS_CORE_PATH . '/assets/build/tailwind.asset.php';
 		wp_enqueue_style( 'gatherpress-style', $this->build . 'tailwind.css', array(), $asset['version'] );
 
@@ -137,11 +131,11 @@ class Assets {
 			'gatherpress-index',
 			'GatherPress',
 			array(
-				'nonce'            => wp_create_nonce( 'wp_rest' ),
-				'post_id'          => $post_id,
-				'event_datetime'   => Event::get_instance()->get_datetime( $post_id ),
-				'event_announced'  => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
-				'default_timezone' => sanitize_text_field( wp_timezone_string() ),
+				'nonce'               => wp_create_nonce( 'wp_rest' ),
+				'post_id'             => $post_id,
+				'event_datetime'      => Event::get_instance()->get_datetime( $post_id ),
+				'event_announced'     => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
+				'default_timezone'    => sanitize_text_field( wp_timezone_string() ),
 				'has_event_past'      => $event->has_event_past( $post_id ),
 				'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event' ),
 				'attendees'           => $attendee->get_attendees( $post_id ),

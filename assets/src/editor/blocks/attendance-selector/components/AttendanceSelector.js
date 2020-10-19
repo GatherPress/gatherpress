@@ -73,7 +73,7 @@ const AttendanceSelector = () => {
 	});
 
 	return(
-		<div className="gp-component group inline-block relative">
+		<p className="gp-component group inline-block relative">
 			<a
 				className="wp-block-button__link"
 				href="#"
@@ -90,7 +90,7 @@ const AttendanceSelector = () => {
 			>
 				{renderedItems}
 			</ul>
-		</div>
+		</p>
 	);
 }
 

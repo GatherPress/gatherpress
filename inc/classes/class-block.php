@@ -16,20 +16,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Attendee.
+ * Class Block.
  */
 class Block {
 
 	use Singleton;
 
+	/**
+	 * Block constructor.
+	 */
 	protected function __construct() {
 		$this->setup_hooks();
 	}
 
+	/**
+	 * Setup hooks.
+	 */
 	protected function setup_hooks() {
-		add_filter( 'render_block', [ $this, 'render_block' ], 10, 2 );
+		add_filter( 'render_block', array( $this, 'render_block' ), 10, 2 );
 	}
 
+	/**
+	 * Callback to render blocks.
+	 *
+	 * @param string $block_content
+	 * @param array  $block
+	 *
+	 * @return string
+	 */
 	public function render_block( string $block_content, array $block ) : string {
 		if ( ! isset( $block['blockName'] ) ) {
 			return $block_content;
@@ -43,7 +57,7 @@ class Block {
 			&& ! empty( $block_name_parts[1] )
 		) {
 			return Helper::render_template(
-				 sprintf( '%s/template-parts/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name_parts[1] )
+				sprintf( '%s/template-parts/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name_parts[1] )
 			);
 		}
 
