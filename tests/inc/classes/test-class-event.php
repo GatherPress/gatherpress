@@ -27,15 +27,15 @@ class Test_Event extends \WP_UnitTestCase {
 	 * @covers ::get_yahoo_calendar_link
 	 */
 	public function test_get_calendar_links() {
-		$post_id  = $this->factory->post->create(
+		$post_id = $this->factory->post->create(
 			array(
 				'post_title'   => 'Unit Test Event',
 				'post_type'    => 'gp_event',
 				'post_content' => 'Unit Test description.',
 			)
 		);
-		$event    = new Event( $post_id );
-		$params   = array(
+		$event  = new Event( $post_id );
+		$params = array(
 			'post_id'        => $post_id,
 			'datetime_start' => '2020-05-11 15:00:00',
 			'datetime_end'   => '2020-05-11 17:00:00',
@@ -59,14 +59,14 @@ class Test_Event extends \WP_UnitTestCase {
 	 * @covers ::has_event_past
 	 */
 	public function test_has_event_past() {
-		$post_id  = $this->factory->post->create(
+		$post_id = $this->factory->post->create(
 			array(
 				'post_type' => 'gp_event',
 			)
 		);
-		$event    = new Event( $post_id );
-		$year     = gmdate( 'Y' );
-		$params   = array(
+		$event  = new Event( $post_id );
+		$year   = gmdate( 'Y' );
+		$params = array(
 			'post_id'        => $post_id,
 			'datetime_start' => sprintf( '%d-05-11 15:00:00', $year - 1 ),
 			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year - 1 ),
@@ -99,8 +99,8 @@ class Test_Event extends \WP_UnitTestCase {
 	public function test_adjust_sql() {
 		global $wpdb;
 
-		$table    = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
-		$post_id  = $this->factory->post->create(
+		$table   = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+		$post_id = $this->factory->post->create(
 			array(
 				'post_type' => 'gp_event',
 			)

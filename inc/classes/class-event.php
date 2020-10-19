@@ -23,11 +23,15 @@ class Event {
 	const DATETIME_CACHE_KEY = 'datetime_%d';
 
 	/**
+	 * Event post object.
+	 *
 	 * @var array|\WP_Post|null
 	 */
 	protected $event;
 
 	/**
+	 * Attendee instance.
+	 *
 	 * @var Attendee
 	 */
 	public $attendee;
@@ -49,8 +53,6 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $post_id An event post ID.
-	 *
 	 * @return string
 	 */
 	public function get_display_datetime() : string {
@@ -69,8 +71,6 @@ class Event {
 	 * Check if start DateTime and end DateTime is same date.
 	 *
 	 * @since 1.0.0
-	 *
-	 * @param int $post_id An event post ID.
 	 *
 	 * @return bool
 	 */
@@ -94,8 +94,6 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $post_id An event post ID.
-	 *
 	 * @return bool
 	 */
 	public function has_event_past() : bool {
@@ -115,7 +113,6 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $post_id An event post ID.
 	 * @param string $format  PHP date format.
 	 *
 	 * @return string

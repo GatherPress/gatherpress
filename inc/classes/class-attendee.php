@@ -42,6 +42,8 @@ class Attendee {
 	public $limit = 3;
 
 	/**
+	 * Event post object.
+	 *
 	 * @var array|\WP_Post|null
 	 */
 	protected $event;
@@ -49,7 +51,7 @@ class Attendee {
 	/**
 	 * Attendee constructor.
 	 *
-	 * @param int $post_id
+	 * @param int $post_id An event post ID.
 	 */
 	public function __construct( int $post_id ) {
 		$this->event = get_post( $post_id );

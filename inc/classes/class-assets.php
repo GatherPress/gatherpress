@@ -92,7 +92,7 @@ class Assets {
 	 */
 	public function block_enqueue_scripts() {
 		$post_id = $GLOBALS['post']->ID ?? 0;
-		$event = new Event( $post_id );
+		$event   = new Event( $post_id );
 
 		$asset = require_once $this->path . 'editor.asset.php';
 		wp_enqueue_style( 'gatherpress-editor', $this->build . 'editor.css', array( 'wp-edit-blocks' ), $asset['version'] );
