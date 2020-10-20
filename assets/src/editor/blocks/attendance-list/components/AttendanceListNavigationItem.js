@@ -1,6 +1,6 @@
 import React from 'react';
 
-const AttendanceListNavigationItem = ({ item, additionalClasses, onTitleClick }) => {
+const AttendanceListNavigationItem = ({ item, additionalClasses, count, onTitleClick }) => {
 	const { title, value } = item;
 
 	return(
@@ -14,7 +14,7 @@ const AttendanceListNavigationItem = ({ item, additionalClasses, onTitleClick })
 				aria-controls={`#nav-${value}`}
 				onClick={ e => onTitleClick(e, value) }
 			>
-				{title}
+				{title}({count})
 			</a>
 		</div>
 	);

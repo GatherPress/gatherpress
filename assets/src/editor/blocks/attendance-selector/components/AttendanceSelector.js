@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {__} from '@wordpress/i18n';
-import AttendanceItem from './AttendanceItem';
+import AttendanceSelectorItem from './AttendanceSelectorItem';
 import attendance from '../apis/attendance';
 
 const AttendanceSelector = () => {
@@ -15,11 +15,11 @@ const AttendanceSelector = () => {
 	const items = [
 		{
 			text: __( 'Yes, I would like to attend this event.', 'gatherpress' ),
-			value: 'attending'
+			status: 'attending'
 		},
 		{
 			text: __( 'No, I cannot attend this event.', 'gatherpress' ),
-			value: 'not_attending'
+			status: 'not_attending'
 		}
 	];
 
@@ -44,6 +44,23 @@ const AttendanceSelector = () => {
 			});
 
 			dispatchEvent(dispatchAttendanceList);
+
+			let count = {
+				all: 0,
+				attending: 0,
+				not_attending: 0,
+				waitlist: 0
+			};
+
+			for (const [key, value] of Object.entries(response.data.attendees)) {
+				count[key] = value.count;
+			}
+
+			const dispatchAttendanceCount = new CustomEvent('setAttendanceCount', {
+				detail: count
+			});
+
+			dispatchEvent(dispatchAttendanceCount);
 		}
 	}
 
@@ -61,12 +78,12 @@ const AttendanceSelector = () => {
 	}
 
 	const renderedItems = items.map((item, index) => {
-		const { text, value } = item;
+		const { text, status } = item;
 		return(
-			<AttendanceItem
+			<AttendanceSelectorItem
 				key={index}
 				text={text}
-				value={value}
+				status={status}
 				onAnchorClick={onAnchorClick}
 			/>
 		);
