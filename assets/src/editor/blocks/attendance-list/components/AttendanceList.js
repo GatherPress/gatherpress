@@ -19,7 +19,7 @@ const items = [
 ];
 
 const AttendanceList = () => {
-	let defaultStatus = null,
+	let defaultStatus = 'attending',
 		defaultList = [];
 
 	if (typeof GatherPress === 'object') {
