@@ -1,6 +1,8 @@
 <?php
 /**
  * Load all files.
+ *
+ * @package GatherPress
  */
 
 $gatherpress_files = array(
