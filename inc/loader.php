@@ -1,5 +1,9 @@
 <?php
-$files = array(
+/**
+ * Load all files.
+ */
+
+$gatherpress_files = array(
 	'/inc/classes/traits/trait-singleton.php',
 	'/inc/classes/class-assets.php',
 	'/inc/classes/class-attendee.php',
@@ -14,6 +18,6 @@ $files = array(
 	'/inc/classes/class-utility.php',
 );
 
-foreach ( $files as $file ) {
-	require_once( GATHERPRESS_CORE_PATH . $file );
+foreach ( $gatherpress_files as $gatherpress_file ) {
+	require_once GATHERPRESS_CORE_PATH . $gatherpress_file;
 }

@@ -18,7 +18,7 @@ define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'GATHERPRESS_THEME_VERSION', '0.1.0' );
 define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 
-require_once( GATHERPRESS_CORE_PATH . '/inc/loader.php' );
+require_once GATHERPRESS_CORE_PATH . '/inc/loader.php';
 
 // Kick things off!
 \GatherPress\Inc\Setup::get_instance();
