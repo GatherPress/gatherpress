@@ -19,11 +19,10 @@ const items = [
 ];
 
 const AttendanceList = () => {
-	let defaultStatus = 'attending',
-		defaultList = [];
+	let defaultStatus = 'attending';
 
 	if (typeof GatherPress === 'object') {
-		defaultStatus = GatherPress.current_user_status.status;
+		defaultStatus = (GatherPress.current_user_status.length) ? GatherPress.current_user_status.status : defaultStatus;
 	}
 
 	const [attendanceStatus, setAttendanceStatus] = useState(defaultStatus);
