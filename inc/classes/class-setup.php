@@ -36,11 +36,13 @@ class Setup {
 	protected function instantiate_classes() {
 		Assets::get_instance();
 		Block::get_instance();
-		BuddyPress::get_instance();
-		Email::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
 		Role::get_instance();
+
+		// @todo move these classes to a `gp-buddypress` plugin.
+		// BuddyPress::get_instance();
+		// Email::get_instance();
 	}
 
 	/**

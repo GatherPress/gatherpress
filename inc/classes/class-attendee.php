@@ -262,7 +262,9 @@ class Attendee {
 				'id'        => $user_id,
 				'name'      => $user_info->display_name,
 				'photo'     => get_avatar_url( $user_id ),
-				'profile'   => bp_core_get_user_domain( $user_id ),
+				// @todo make a filter so we can use this function in gp-buddypress plugin is activated.
+				//'profile'   => bp_core_get_user_domain( $user_id ),
+				'profile'   => get_author_posts_url( $user_id ),
 				'role'      => $roles[ current( $user_info->roles ) ] ?? '',
 				'timestamp' => sanitize_text_field( $attendee['timestamp'] ),
 				'status'    => $user_status,
