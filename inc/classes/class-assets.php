@@ -83,6 +83,9 @@ class Assets {
 	 * Enqueue backend styles and scripts.
 	 */
 	public function admin_enqueue_scripts() {
+		$asset = require_once $this->path . 'style.asset.php';
+		wp_enqueue_style( 'gatherpress-style', $this->build . 'style.css', array(), $asset['version'] );
+
 		$asset = require_once $this->path . 'admin.asset.php';
 		wp_enqueue_style( 'gatherpress-admin', $this->build . 'admin.css', array(), $asset['version'] );
 	}

@@ -11,6 +11,8 @@ const AttendanceSelector = () => {
 	}
 
 	const [ attendanceStatus, setAttendanceStatus ] = useState(defaultStatus);
+	const [ selectorHidden, setSelectorHidden ] = useState('hidden');
+	const [ selectorExpanded, setSelectorExpanded ] = useState('false');
 
 	const items = [
 		{
@@ -89,20 +91,28 @@ const AttendanceSelector = () => {
 		);
 	});
 
+	const onSpanKeyDown = (e) => {
+		if ( 13 === e.keyCode) {
+			setSelectorHidden(('hidden' === selectorHidden) ? 'show' : 'hidden');
+			setSelectorExpanded(('false' === selectorExpanded) ? 'true' : 'false');
+		}
+	};
+
 	return(
 		<div className="gp-attendance-selector wp-block-button group inline-block relative">
-			<a
+			<span
 				className="wp-block-button__link"
-				href="#"
-				onClick={e => e.preventDefault()}
+				aria-expanded={selectorExpanded}
+				tabIndex="0"
+				onKeyDown={onSpanKeyDown}
 			>
 				<span className="mr-1">{ getStatusText(attendanceStatus) }</span>
 				<svg className="fill-current h-8 w-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
 					<path d = "M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
 				</svg>
-			</a>
+			</span>
 			<ul
-				className="absolute left-0 z-10 hidden text-gray-700 pt-1 group-hover:block"
+				className={`absolute ${selectorHidden} left-0 z-10 text-gray-700 pt-1 group-hover:block`}
 				style={{ margin:0, padding:0 }}
 			>
 				{renderedItems}
