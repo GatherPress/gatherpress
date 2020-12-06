@@ -6,8 +6,10 @@
  * @subpackage Core
  * @since 1.0.0
  */
+$max_posts = intval( $attrs['maxNumberOfEvents'] );
+$max_posts = ( 0 > $max_posts ) ? 5 : $max_posts;
 
-$query = \GatherPress\Inc\Query::get_instance()->get_future_events();
+$query = \GatherPress\Inc\Query::get_instance()->get_future_events( $max_posts );
 ?>
 <div id="gp-upcoming-events-container">
 	<?php

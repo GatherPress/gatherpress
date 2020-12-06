@@ -7,8 +7,10 @@ registerBlockType( 'gatherpress/upcoming-events', {
 	icon: 'groups',
 	category: 'gatherpress',
 	attributes: {
-		content: { type: 'string' },
-		color: { type: 'string' }
+		maxNumberOfEvents: {
+			type: 'string',
+			default: '5'
+		},
 	},
 	edit: Edit,
 	save: () => null

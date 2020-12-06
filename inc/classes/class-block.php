@@ -59,7 +59,7 @@ class Block {
 			return Utility::render_template(
 				sprintf( '%s/template-parts/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name_parts[1] ),
 				array(
-					'block_content' => $block_content
+					'attrs' => $block['attrs'] ?? [],
 				)
 			);
 		}

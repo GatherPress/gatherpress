@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import markup_future_events from "../apis/markup_future_events";
 
-const UpcomingEvents = () => {
+const UpcomingEvents = (props) => {
 	const [markup, setMarkup] = useState( 'Loading...' );
+	const { maxNumberOfEvents } = props;
 
 	(async (setMarkup) => {
 		const response = await markup_future_events.get('/markup_future_events', {
-			status: status,
+			params: {
+				max_number: maxNumberOfEvents,
+			}
 		});
 
 		setMarkup(response.data.markup);
 	})(setMarkup);
 
-	return <div id="foobar" onClick={(e) => e.preventDefault()} dangerouslySetInnerHTML={{ __html: markup }} />;
+	return <div onClick={(e) => e.preventDefault()} dangerouslySetInnerHTML={{ __html: markup }} />;
 }
 
 export default UpcomingEvents;

@@ -160,6 +160,10 @@ class Rest_Api {
 							 */
 							'required' => false,
 						),
+						'max_number'   => array(
+							'required'          => true,
+							'validate_callback' => array( $this, 'validate_number' ),
+						),
 					),
 				),
 			),
@@ -189,6 +193,20 @@ class Rest_Api {
 			0 < intval( $param )
 			&& is_numeric( $param )
 			&& Event::POST_TYPE === get_post_type( $param )
+		);
+	}
+
+	/**
+	 * Validate number.
+	 *
+	 * @param int|string $param A Post ID to validate.
+	 *
+	 * @return bool
+	 */
+	public function validate_number( $param ) : bool {
+		return (
+			0 < intval( $param )
+			&& is_numeric( $param )
 		);
 	}
 
@@ -249,9 +267,16 @@ class Rest_Api {
 	}
 
 	public function markup_future_events( \WP_REST_Request $request ) {
+		$params   = $request->get_params();
+		$attrs    = [
+			'maxNumberOfEvents' => intval( $params['max_number'] ),
+		];
 		$response = array(
 			'markup' => Utility::render_template(
-				sprintf( '%s/template-parts/blocks/upcoming-events.php', GATHERPRESS_CORE_PATH )
+				sprintf( '%s/template-parts/blocks/upcoming-events.php', GATHERPRESS_CORE_PATH ),
+				[
+					'attrs' => $attrs,
+				]
 			)
 		);
 
