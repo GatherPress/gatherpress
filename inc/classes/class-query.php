@@ -34,62 +34,78 @@ class Query {
 	 */
 	protected function setup_hooks() {
 		// @todo this will be handled by blocks
-//		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
-		add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
+		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
+//		add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
 		add_filter( 'posts_clauses', array( $this, 'admin_order_events' ) );
 	}
 
 	/**
-	 * Get upcoming events.
+	 * Get future events.
+	 *
+	 * @param int $number
 	 *
 	 * @return \WP_Query
 	 */
-	public function get_upcoming_events() : \WP_Query {
-		remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
-		add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
-
+	public function get_future_events( int $number = 5 ) : \WP_Query {
 		$args = array(
-			'post_type'      => Event::POST_TYPE,
-			'no_found_rows'  => true,
-			'posts_per_page' => 5,
+			'post_type'       => Event::POST_TYPE,
+			'no_found_rows'   => true,
+			'posts_per_page'  => $number,
+			'gp_events_query' => 'future',
 		);
 
-		$query = new \WP_Query( $args );
-
-		remove_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
-		add_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
-
-		return $query;
+		return new \WP_Query( $args );
 	}
 
 	/**
-	 * Set post type query to event on homepage.
+	 * Get past events.
+	 *
+	 * @param int $number
+	 *
+	 * @return \WP_Query
+	 */
+	public function get_past_events( int $number = 5 ) : \WP_Query {
+		$args = array(
+			'post_type'       => Event::POST_TYPE,
+			'no_found_rows'   => true,
+			'posts_per_page'  => $number,
+			'gp_events_query' => 'past',
+		);
+
+		return new \WP_Query( $args );
+	}
+
+	/**
+	 * Set event query and order adjustments before query is made.
 	 *
 	 * @param \WP_Query $query An instance of \WP_Query.
 	 */
 	public function pre_get_posts( $query ) {
-		if (
-			( $query->is_home() || $query->is_front_page() )
-			&& $query->is_main_query()
-		) {
-			$query->set( 'post_type', Event::POST_TYPE );
+		$events_query = $query->get( 'gp_events_query' );
+
+		switch ( $events_query ) {
+			case 'future':
+				remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
+				add_filter( 'posts_clauses', array( $this, 'order_future_events' ) );
+				break;
+			case 'past':
+				add_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
+				remove_filter( 'posts_clauses', array( $this, 'order_future_events' ) );
+				break;
+			default:
+				remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
+				remove_filter( 'posts_clauses', array( $this, 'order_future_events' ) );
 		}
 	}
 
 	/**
 	 * Order events by start datetime for ones that happened in past.
 	 *
-	 * @todo this is how we will handle past events. Upcoming/current events need to have adjusted orderby.
-	 *
 	 * @param array $pieces Includes pieces of the query like join, where, orderby, et al.
 	 *
 	 * @return array
 	 */
 	public function order_past_events( array $pieces ) : array {
-		if ( ! is_archive() && ! is_home() ) {
-			return $pieces;
-		}
-
 		return Event::adjust_sql( $pieces, 'past' );
 	}
 
@@ -106,7 +122,6 @@ class Query {
 		}
 
 		global $wp_query;
-
 		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
 			$pieces = Event::adjust_sql( $pieces, 'all', $wp_query->get( 'order' ) );
 		}
@@ -121,11 +136,7 @@ class Query {
 	 *
 	 * @return array
 	 */
-	public function order_upcoming_events( array $pieces ) : array {
-		if ( ! is_archive() && ! is_home() ) {
-			return $pieces;
-		}
-
+	public function order_future_events( array $pieces ) : array {
 		return Event::adjust_sql( $pieces, 'future', 'ASC' );
 	}
 

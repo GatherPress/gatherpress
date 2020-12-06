@@ -145,6 +145,24 @@ class Rest_Api {
 					),
 				),
 			),
+			array(
+				'route' => 'markup_future_events',
+				'args'  => array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'markup_future_events' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'_wpnonce' => array(
+							/**
+							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
+							 *
+							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
+							 */
+							'required' => false,
+						),
+					),
+				),
+			),
 		);
 	}
 
@@ -225,6 +243,16 @@ class Rest_Api {
 		$success  = $email->event_announce( $post_id );
 		$response = array(
 			'success' => $success,
+		);
+
+		return new \WP_REST_Response( $response );
+	}
+
+	public function markup_future_events( \WP_REST_Request $request ) {
+		$response = array(
+			'markup' => Utility::render_template(
+				sprintf( '%s/template-parts/blocks/upcoming-events.php', GATHERPRESS_CORE_PATH )
+			)
 		);
 
 		return new \WP_REST_Response( $response );
