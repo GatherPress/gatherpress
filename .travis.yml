@@ -14,7 +14,7 @@ branches:
 
 cache:
   directories:
-#    - vendor
+    - vendor
     - $HOME/.composer/cache
 
 matrix:
@@ -35,8 +35,8 @@ matrix:
       env: WP_TRAVISCI=phpcs
 
 before_script:
-#  - travis_retry composer self-update
-#  - travis_retry composer install --no-interaction --prefer-source --dev
+  - travis_retry composer self-update
+  - travis_retry composer install --no-interaction --prefer-source --dev
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
   - |
     if [ -f ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/xdebug.ini ]; then
@@ -61,8 +61,7 @@ before_script:
 script:
   - |
     if [[ ! -z "$WP_VERSION" ]] ; then
-#      phpunit --coverage-clover=coverage.xml
-      phpunit
+      phpunit --coverage-clover=coverage.xml
       WP_MULTISITE=1 phpunit
     fi
   - |
@@ -70,5 +69,5 @@ script:
       phpcs
     fi
 
-#after_success:
-#  - bash <(curl -s https://codecov.io/bash)
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
