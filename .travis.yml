@@ -34,7 +34,7 @@ jobs:
       env: WP_TRAVISCI=phpcs
 
 before_script:
-  - travis_retry composer self-update
+  - travis_retry composer self-update --1
   - travis_retry composer install --no-interaction --prefer-source --dev
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
   - |
