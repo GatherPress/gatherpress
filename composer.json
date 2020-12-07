@@ -6,8 +6,11 @@
 	"require": {
 	},
 	"require-dev": {
-		"phpcompatibility/phpcompatibility-wp": "*",
-		"dealerdirect/phpcodesniffer-composer-installer": "^0.4.3",
-		"wp-phpunit/wp-phpunit": "^5.4"
+		"phpunit/phpunit": "^7.5",
+		"squizlabs/php_codesniffer": "*",
+		"wp-coding-standards/wpcs": "*",
+		"phpcompatibility/php-compatibility": "*",
+		"phpcompatibility/phpcompatibility-paragonie": "*",
+		"phpcompatibility/phpcompatibility-wp": "*"
 	}
 }
