@@ -142,8 +142,8 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $format  PHP date format.
-	 * @param string $which   The datetime field in event table.
+	 * @param string  $format  PHP date format.
+	 * @param string  $which   The datetime field in event table.
 	 * @param boolean $local  Whether to format date in local time or GMT.
 	 *
 	 * @return string
@@ -156,12 +156,12 @@ class Event {
 		if ( true === $local ) {
 			try {
 				$tz = new \DateTimeZone( $dt['timezone'] );
-			} catch( Exception $e ) {
+			} catch ( Exception $e ) {
 				$tz = wp_timezone_string();
 
-				 if ( ! preg_match( '/^-|\+/', $tz ) ) {
+				if ( ! preg_match( '/^-|\+/', $tz ) ) {
 					$tz = date_default_timezone_get();
-				 }
+				}
 			}
 		}
 
@@ -339,7 +339,7 @@ class Event {
 	public static function adjust_sql( array $pieces, string $type = 'all', string $order = 'DESC' ) : array {
 		global $wp_query, $wpdb;
 
-		$defaults = array(
+		$defaults       = array(
 			'where'    => '',
 			'groupby'  => '',
 			'join'     => '',

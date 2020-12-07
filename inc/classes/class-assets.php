@@ -74,7 +74,7 @@ class Assets {
 			wp_localize_script(
 				'gatherpress-script',
 				'GatherPress',
-				$this->localize( $post->ID ?? 0)
+				$this->localize( $post->ID ?? 0 )
 			);
 		}
 	}

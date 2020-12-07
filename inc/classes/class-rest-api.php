@@ -152,7 +152,7 @@ class Rest_Api {
 					'callback'            => array( $this, 'markup_future_events' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
-						'_wpnonce' => array(
+						'_wpnonce'   => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
@@ -160,7 +160,7 @@ class Rest_Api {
 							 */
 							'required' => false,
 						),
-						'max_number'   => array(
+						'max_number' => array(
 							'required'          => true,
 							'validate_callback' => array( $this, 'validate_number' ),
 						),
@@ -266,18 +266,25 @@ class Rest_Api {
 		return new \WP_REST_Response( $response );
 	}
 
+	/**
+	 * Returns markup for future events.
+	 *
+	 * @param \WP_REST_Request $request
+	 *
+	 * @return \WP_REST_Response
+	 */
 	public function markup_future_events( \WP_REST_Request $request ) {
 		$params   = $request->get_params();
-		$attrs    = [
+		$attrs    = array(
 			'maxNumberOfEvents' => intval( $params['max_number'] ),
-		];
+		);
 		$response = array(
 			'markup' => Utility::render_template(
 				sprintf( '%s/template-parts/blocks/upcoming-events.php', GATHERPRESS_CORE_PATH ),
-				[
+				array(
 					'attrs' => $attrs,
-				]
-			)
+				)
+			),
 		);
 
 		return new \WP_REST_Response( $response );

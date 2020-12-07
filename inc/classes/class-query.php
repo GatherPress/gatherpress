@@ -35,14 +35,13 @@ class Query {
 	protected function setup_hooks() {
 		// @todo this will be handled by blocks
 		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
-//		add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
 		add_filter( 'posts_clauses', array( $this, 'admin_order_events' ) );
 	}
 
 	/**
 	 * Get future events.
 	 *
-	 * @param int $number
+	 * @param int $number Maximum number of events to display.
 	 *
 	 * @return \WP_Query
 	 */
@@ -60,7 +59,7 @@ class Query {
 	/**
 	 * Get past events.
 	 *
-	 * @param int $number
+	 * @param int $number Maximum number of events to display.
 	 *
 	 * @return \WP_Query
 	 */

@@ -6,20 +6,21 @@
  * @subpackage Core
  * @since 1.0.0
  */
-$max_posts = intval( $attrs['maxNumberOfEvents'] );
-$max_posts = ( 0 > $max_posts ) ? 5 : $max_posts;
 
-$query = \GatherPress\Inc\Query::get_instance()->get_future_events( $max_posts );
+$gatherpress_max_posts = intval( $attrs['maxNumberOfEvents'] );
+$gatherpress_max_posts = ( 0 > $gatherpress_max_posts ) ? 5 : $gatherpress_max_posts;
+
+$gatherpress_query = \GatherPress\Inc\Query::get_instance()->get_future_events( $gatherpress_max_posts );
 ?>
 <div id="gp-upcoming-events-container">
 	<?php
-	if ( $query->have_posts() ) {
+	if ( $gatherpress_query->have_posts() ) {
 		?>
 		<?php
-		while ( $query->have_posts() ) {
-			$query->the_post();
+		while ( $gatherpress_query->have_posts() ) {
+			$gatherpress_query->the_post();
 
-			$event = new \GatherPress\Inc\Event( get_the_ID() );
+			$gatherpress_event = new \GatherPress\Inc\Event( get_the_ID() );
 			?>
 			<div class="bg-white">
 				<div class="flex p-4">
@@ -34,7 +35,7 @@ $query = \GatherPress\Inc\Query::get_instance()->get_future_events( $max_posts )
 					?>
 					<div class="flex-grow w-2/3">
 						<h5>
-							<?php echo esc_html( $event->get_datetime_start() ); ?>
+							<?php echo esc_html( $gatherpress_event->get_datetime_start() ); ?>
 						</h5>
 						<h3>
 							<a href="<?php the_permalink(); ?>" class="block">
