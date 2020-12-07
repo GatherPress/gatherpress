@@ -2,15 +2,5 @@
 	"name": "gatherpress/gatherpress",
 	"description": "Powering WordPress Communities",
 	"type": "project",
-	"license": "GNU General Public License v2.0",
-	"require": {
-	},
-	"require-dev": {
-		"phpunit/phpunit": "^7.5",
-		"squizlabs/php_codesniffer": "*",
-		"wp-coding-standards/wpcs": "*",
-		"phpcompatibility/php-compatibility": "*",
-		"phpcompatibility/phpcompatibility-paragonie": "*",
-		"phpcompatibility/phpcompatibility-wp": "*"
-	}
+	"license": "GNU General Public License v2.0"
 }
