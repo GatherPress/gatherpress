@@ -55,18 +55,18 @@ before_script:
       composer global require phpcompatibility/php-compatibility
       composer global require phpcompatibility/phpcompatibility-paragonie
       composer global require phpcompatibility/phpcompatibility-wp
-      ./vendor/bin/phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs,$HOME/.composer/vendor/phpcompatibility/php-compatibility,$HOME/.composer/vendor/phpcompatibility/phpcompatibility-paragonie,$HOME/.composer/vendor/phpcompatibility/phpcompatibility-wp
+      $HOME/.composer/vendor/bin/phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs,$HOME/.composer/vendor/phpcompatibility/php-compatibility,$HOME/.composer/vendor/phpcompatibility/phpcompatibility-paragonie,$HOME/.composer/vendor/phpcompatibility/phpcompatibility-wp
     fi
 
 script:
   - |
     if [[ ! -z "$WP_VERSION" ]] ; then
-      ./vendor/bin/phpunit --coverage-clover=coverage.xml
-      WP_MULTISITE=1 ./vendor/bin/phpunit
+      $HOME/.composer/vendor/bin/phpunit --coverage-clover=coverage.xml
+      WP_MULTISITE=1 $HOME/.composer/vendor/bin/phpunit
     fi
   - |
     if [[ "$WP_TRAVISCI" == "phpcs" ]] ; then
-      ./vendor/bin/phpcs
+      $HOME/.composer/vendor/bin/phpcs
     fi
 
 after_success:
