@@ -269,7 +269,7 @@ class Rest_Api {
 	/**
 	 * Returns markup for future events.
 	 *
-	 * @param \WP_REST_Request $request
+	 * @param \WP_REST_Request $request Contains data from the request.
 	 *
 	 * @return \WP_REST_Response
 	 */
