@@ -1,14 +1,13 @@
 {
-    "name": "gatherpress/gatherpress",
-    "description": "Powering WordPress Communities",
-    "type": "project",
-    "license": "GNU General Public License v2.0",
-    "require": {
-        "buddypress/buddypress": "^5.2"
-    },
-    "extra": {
-        "installer-paths": {
-            "vendor/{$name}/": ["type:wordpress-plugin"]
-        }
-    }
+	"name": "gatherpress/gatherpress",
+	"description": "Powering WordPress Communities",
+	"type": "project",
+	"license": "GNU General Public License v2.0",
+	"require": {
+	},
+	"require-dev": {
+		"phpcompatibility/phpcompatibility-wp": "*",
+		"dealerdirect/phpcodesniffer-composer-installer": "^0.4.3",
+		"wp-phpunit/wp-phpunit": "^5.4"
+	}
 }
