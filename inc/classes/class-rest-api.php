@@ -145,6 +145,28 @@ class Rest_Api {
 					),
 				),
 			),
+			array(
+				'route' => 'markup_future_events',
+				'args'  => array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'markup_future_events' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'_wpnonce'   => array(
+							/**
+							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
+							 *
+							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
+							 */
+							'required' => false,
+						),
+						'max_number' => array(
+							'required'          => true,
+							'validate_callback' => array( $this, 'validate_number' ),
+						),
+					),
+				),
+			),
 		);
 	}
 
@@ -171,6 +193,20 @@ class Rest_Api {
 			0 < intval( $param )
 			&& is_numeric( $param )
 			&& Event::POST_TYPE === get_post_type( $param )
+		);
+	}
+
+	/**
+	 * Validate number.
+	 *
+	 * @param int|string $param A Post ID to validate.
+	 *
+	 * @return bool
+	 */
+	public function validate_number( $param ) : bool {
+		return (
+			0 < intval( $param )
+			&& is_numeric( $param )
 		);
 	}
 
@@ -225,6 +261,30 @@ class Rest_Api {
 		$success  = $email->event_announce( $post_id );
 		$response = array(
 			'success' => $success,
+		);
+
+		return new \WP_REST_Response( $response );
+	}
+
+	/**
+	 * Returns markup for future events.
+	 *
+	 * @param \WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function markup_future_events( \WP_REST_Request $request ) {
+		$params   = $request->get_params();
+		$attrs    = array(
+			'maxNumberOfEvents' => intval( $params['max_number'] ),
+		);
+		$response = array(
+			'markup' => Utility::render_template(
+				sprintf( '%s/template-parts/blocks/upcoming-events.php', GATHERPRESS_CORE_PATH ),
+				array(
+					'attrs' => $attrs,
+				)
+			),
 		);
 
 		return new \WP_REST_Response( $response );

@@ -9,6 +9,8 @@
 
 namespace GatherPress\Inc;
 
+use PHPMailer\PHPMailer\Exception;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -118,7 +120,7 @@ class Event {
 	 * @return string
 	 */
 	public function get_datetime_start( string $format = 'D, F j, g:ia T' ) : string {
-		return $this->get_formatted_date( $format, 'datetime_start' );
+		return $this->get_formatted_date( $format, 'start' );
 	}
 
 
@@ -132,7 +134,7 @@ class Event {
 	 * @return string
 	 */
 	public function get_datetime_end( string $format = 'D, F j, g:ia T' ) : string {
-		return $this->get_formatted_date( $format, 'datetime_end' );
+		return $this->get_formatted_date( $format, 'end' );
 	}
 
 	/**
@@ -140,31 +142,33 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $format  PHP date format.
-	 * @param string $which   The datetime field in event table.
+	 * @param string  $format  PHP date format.
+	 * @param string  $which   The datetime field in event table.
+	 * @param boolean $local  Whether to format date in local time or GMT.
 	 *
 	 * @return string
 	 */
-	protected function get_formatted_date( string $format = 'D, F j, g:ia T', string $which = 'datetime_start' ) : string {
-		$server_timezone = date_default_timezone_get();
-		$site_timezone   = wp_timezone_string();
-
-		// If site timezone is a valid setting, set it for timezone, if not remove `T` from format.
-		if ( ! preg_match( '/^-|\+/', $site_timezone ) ) {
-			date_default_timezone_set( $site_timezone ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.timezone_change_date_default_timezone_set
-		} else {
-			$format = str_replace( ' T', '', $format );
-		}
-
+	protected function get_formatted_date( string $format = 'D, F j, g:ia T', string $which = 'start', $local = true ) : string {
 		$dt   = $this->get_datetime();
-		$date = $dt[ $which ];
+		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
+		$tz   = null;
+
+		if ( true === $local ) {
+			try {
+				$tz = new \DateTimeZone( $dt['timezone'] );
+			} catch ( Exception $e ) {
+				$tz = wp_timezone_string();
+
+				if ( ! preg_match( '/^-|\+/', $tz ) ) {
+					$tz = date_default_timezone_get();
+				}
+			}
+		}
 
 		if ( ! empty( $date ) ) {
 			$ts   = strtotime( $date );
-			$date = gmdate( $format, $ts );
+			$date = wp_date( $format, $ts, $tz );
 		}
-
-		date_default_timezone_set( $server_timezone ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.timezone_change_date_default_timezone_set
 
 		return (string) $date;
 	}
@@ -187,7 +191,7 @@ class Event {
 
 			if ( empty( $data ) || ! is_array( $data ) ) {
 				$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
-				$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
 				wp_cache_set( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
@@ -234,10 +238,10 @@ class Event {
 	 * @return string
 	 */
 	protected function get_google_calendar_link() : string {
-		$date_start = $this->get_formatted_date( 'Ymd', 'datetime_start_gmt' );
-		$time_start = $this->get_formatted_date( 'His', 'datetime_start_gmt' );
-		$date_end   = $this->get_formatted_date( 'Ymd', 'datetime_end_gmt' );
-		$time_end   = $this->get_formatted_date( 'His', 'datetime_end_gmt' );
+		$date_start = $this->get_formatted_date( 'Ymd', 'start', false );
+		$time_start = $this->get_formatted_date( 'His', 'start', false );
+		$date_end   = $this->get_formatted_date( 'Ymd', 'end', false );
+		$time_end   = $this->get_formatted_date( 'His', 'end', false );
 		$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
 
 		return add_query_arg(
@@ -261,13 +265,13 @@ class Event {
 	 * @return string
 	 */
 	protected function get_yahoo_calendar_link() : string {
-		$date_start     = $this->get_formatted_date( 'Ymd', 'datetime_start_gmt' );
-		$time_start     = $this->get_formatted_date( 'His', 'datetime_start_gmt' );
+		$date_start     = $this->get_formatted_date( 'Ymd', 'start', false );
+		$time_start     = $this->get_formatted_date( 'His', 'start', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 
 		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start = $this->get_formatted_date( 'Y-m-d H:i:s', 'datetime_start_gmt' );
-		$diff_end   = $this->get_formatted_date( 'Y-m-d H:i:s', 'datetime_end_gmt' );
+		$diff_start = $this->get_formatted_date( 'Y-m-d H:i:s', 'start', false );
+		$diff_end   = $this->get_formatted_date( 'Y-m-d H:i:s', 'end', false );
 		$duration   = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
 		$full       = intval( $duration );
 		$fraction   = ( $duration - $full );
@@ -297,10 +301,10 @@ class Event {
 	 * @return string
 	 */
 	protected function get_ics_calendar_download() : string {
-		$date_start     = $this->get_formatted_date( 'Ymd', 'datetime_start_gmt' );
-		$time_start     = $this->get_formatted_date( 'His', 'datetime_start_gmt' );
-		$date_end       = $this->get_formatted_date( 'Ymd', 'datetime_end_gmt' );
-		$time_end       = $this->get_formatted_date( 'His', 'datetime_end_gmt' );
+		$date_start     = $this->get_formatted_date( 'Ymd', 'start', false );
+		$time_start     = $this->get_formatted_date( 'His', 'start', false );
+		$date_end       = $this->get_formatted_date( 'Ymd', 'end', false );
+		$time_end       = $this->get_formatted_date( 'His', 'end', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
 
@@ -335,7 +339,7 @@ class Event {
 	public static function adjust_sql( array $pieces, string $type = 'all', string $order = 'DESC' ) : array {
 		global $wp_query, $wpdb;
 
-		$defaults = array(
+		$defaults       = array(
 			'where'    => '',
 			'groupby'  => '',
 			'join'     => '',
@@ -344,28 +348,25 @@ class Event {
 			'fields'   => '',
 			'limits'   => '',
 		);
-		$pieces   = array_merge( $defaults, $pieces );
+		$pieces         = array_merge( $defaults, $pieces );
+		$table          = sprintf( self::TABLE_FORMAT, $wpdb->prefix, self::POST_TYPE );
+		$pieces['join'] = 'LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
+		$order          = strtoupper( $order );
 
-		if ( self::POST_TYPE === $wp_query->get( 'post_type' ) ) {
-			$table          = sprintf( self::TABLE_FORMAT, $wpdb->prefix, self::POST_TYPE );
-			$pieces['join'] = 'LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
-			$order          = strtoupper( $order );
+		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
+			$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
+		}
 
-			if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
-				$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
-			}
+		if ( 'all' !== $type ) {
+			$current = gmdate( 'Y-m-d H:i:s', time() );
 
-			if ( 'all' !== $type ) {
-				$current = gmdate( 'Y-m-d H:i:s', time() );
-
-				switch ( $type ) {
-					case 'future':
-						$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
-						break;
-					case 'past':
-						$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
-						break;
-				}
+			switch ( $type ) {
+				case 'future':
+					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
+					break;
+				case 'past':
+					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
+					break;
 			}
 		}
 

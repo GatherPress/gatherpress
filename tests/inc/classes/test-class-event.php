@@ -106,8 +106,6 @@ class Test_Event extends \WP_UnitTestCase {
 			)
 		);
 
-		$this->go_to( get_the_permalink( $post_id ) );
-
 		$retval = Event::adjust_sql( array(), 'all', 'DESC' );
 
 		$this->assertContains( 'DESC', $retval['orderby'] );

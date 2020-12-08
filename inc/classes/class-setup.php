@@ -306,7 +306,7 @@ class Setup {
 	public function set_custom_columns( array $columns ) : array {
 		$placement = 2;
 		$insert    = array(
-			'datetime' => __( 'Date & time', 'gatherpress' ),
+			'datetime' => __( 'Event date &amp; time', 'gatherpress' ),
 		);
 
 		return array_slice( $columns, 0, $placement, true ) + $insert + array_slice( $columns, $placement, null, true );

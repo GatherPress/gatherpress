@@ -59,22 +59,22 @@ class Assets {
 		$asset = require_once $this->path . 'style.asset.php';
 		wp_enqueue_style( 'gatherpress-style', $this->build . 'style.css', array(), $asset['version'] );
 
+		$asset = require_once $this->path . 'script.asset.php';
+		wp_enqueue_script(
+			'gatherpress-script',
+			$this->build . 'script.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
 		if ( is_singular( 'gp_event' ) ) {
 			global $post;
-
-			$asset = require_once $this->path . 'script.asset.php';
-			wp_enqueue_script(
-				'gatherpress-script',
-				$this->build . 'script.js',
-				$asset['dependencies'],
-				$asset['version'],
-				true
-			);
 
 			wp_localize_script(
 				'gatherpress-script',
 				'GatherPress',
-				$this->localize( $post->ID )
+				$this->localize( $post->ID ?? 0 )
 			);
 		}
 	}
