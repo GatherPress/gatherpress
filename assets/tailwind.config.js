@@ -2,7 +2,7 @@ module.exports = {
 	purge: {
 		enable: true,
 		content: [
-			'../template-parts/**/*.php',
+			'../templates/**/*.php',
 			'./src/**/*.js'
 		]
 	},
