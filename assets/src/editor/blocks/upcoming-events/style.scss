@@ -1,0 +1,50 @@
+.gp-upcoming-events {
+	&__container {
+		display: grid;
+		margin-bottom: 2rem;
+	}
+
+	&__image {
+		grid-column: 1;
+		grid-row: 1;
+		margin: 0;
+	}
+
+	&__content {
+		grid-column: 2 / span 2;
+		grid-row: 1;
+		padding: 0 1rem;
+	}
+
+	&__datetime {
+		margin: 0 0 0.5rem;
+		padding: 0;
+	}
+
+	&__title {
+		margin: 0 0 0.5rem;
+		padding: 0;
+	}
+
+	&__excerpt p {
+		margin: 0;
+		padding: 0;
+	}
+
+	.editor-styles-wrapper & {
+		&__datetime {
+			margin: 0;
+			padding: 0;
+		}
+
+		&__title {
+			margin: 0;
+			padding: 0;
+		}
+
+		&__excerpt p {
+			margin: 0;
+			padding: 0;
+		}
+	}
+}

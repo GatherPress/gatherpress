@@ -57,7 +57,7 @@ class Block {
 			&& ! empty( $block_name_parts[1] )
 		) {
 			return Utility::render_template(
-				sprintf( '%s/template-parts/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name_parts[1] ),
+				sprintf( '%s/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name_parts[1] ),
 				array(
 					'attrs' => $block['attrs'] ?? array(),
 				)
