@@ -62,6 +62,13 @@ class Setup {
 		add_filter( sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ), array( $this, 'sortable_columns' ) );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 2 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ), 10, 2 );
+		add_filter( 'body_class', array( $this, 'body_class' ) );
+	}
+
+	public function body_class( $classes ) {
+		$classes[] = sprintf( 'gp-theme-%s', esc_attr( get_stylesheet() ) );
+
+		return $classes;
 	}
 
 	/**
