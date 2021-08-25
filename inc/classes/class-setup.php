@@ -65,6 +65,13 @@ class Setup {
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 	}
 
+	/**
+	 * Add body class for active theme.
+	 *
+	 * @param $classes
+	 *
+	 * @return mixed
+	 */
 	public function body_class( $classes ) {
 		$classes[] = sprintf( 'gp-theme-%s', esc_attr( get_stylesheet() ) );
 
