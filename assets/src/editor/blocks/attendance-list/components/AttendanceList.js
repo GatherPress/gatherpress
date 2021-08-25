@@ -21,28 +21,28 @@ const items = [
 const AttendanceList = () => {
 	let defaultStatus = 'attending';
 
-	if (typeof GatherPress === 'object') {
-		defaultStatus = ('undefined' !== typeof GatherPress.current_user_status.status) ? GatherPress.current_user_status.status : defaultStatus;
+	if ( 'object' === typeof GatherPress ) {
+		defaultStatus = ( 'undefined' !== typeof GatherPress.current_user_status.status ) ? GatherPress.current_user_status.status : defaultStatus;
 	}
 
-	const [attendanceStatus, setAttendanceStatus] = useState(defaultStatus);
+	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
 
-	addEventListener('setAttendanceStatus', (e) => {
-		setAttendanceStatus(e.detail);
-	}, false);
+	addEventListener( 'setAttendanceStatus', ( e ) => {
+		setAttendanceStatus( e.detail );
+	}, false );
 
-	const onTitleClick = (e, value) => {
+	const onTitleClick = ( e, value ) => {
 		e.preventDefault();
 
-		setAttendanceStatus(value);
+		setAttendanceStatus( value );
 	};
 
-	return(
+	return (
 		<div className="mt-4">
 			<AttendanceListNavigation items={items} activeValue={attendanceStatus} onTitleClick={onTitleClick} />
 			<AttendanceListContent items={items} activeValue={attendanceStatus} />
 		</div>
 	);
-}
+};
 
 export default AttendanceList;
