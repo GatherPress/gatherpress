@@ -4,7 +4,7 @@ const postcssPresetEnv = require( 'postcss-preset-env' );
 const MiniCssExtractPlugin = require( 'mini-css-extract-plugin' );
 const IgnoreEmitPlugin = require( 'ignore-emit-webpack-plugin' );
 const TailWindCSS = require( 'tailwindcss' );
-const production = ('' === process.env.NODE_ENV);
+const production = ( '' === process.env.NODE_ENV );
 
 module.exports = {
 	...defaultConfig,
@@ -13,7 +13,7 @@ module.exports = {
 		style: path.resolve( process.cwd(), 'src', 'style.scss' ),
 		script: path.resolve( process.cwd(), 'src/js', 'index.js' ),
 		editor: path.resolve( process.cwd(), 'src', 'editor.scss' ),
-		admin: path.resolve( process.cwd(), 'src', 'admin.scss' ),
+		admin: path.resolve( process.cwd(), 'src', 'admin.scss' )
 	},
 	optimization: {
 		...defaultConfig.optimization,
