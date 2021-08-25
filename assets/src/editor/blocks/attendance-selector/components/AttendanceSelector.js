@@ -6,13 +6,13 @@ import attendance from '../apis/attendance';
 const AttendanceSelector = () => {
 	let defaultStatus = '';
 
-	if (typeof GatherPress === 'object') {
+	if ( 'object' === typeof GatherPress ) {
 		defaultStatus = GatherPress.current_user_status.status;
 	}
 
-	const [ attendanceStatus, setAttendanceStatus ] = useState(defaultStatus);
-	const [ selectorHidden, setSelectorHidden ] = useState('hidden');
-	const [ selectorExpanded, setSelectorExpanded ] = useState('false');
+	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
+	const [ selectorHidden, setSelectorHidden ] = useState( 'hidden' );
+	const [ selectorExpanded, setSelectorExpanded ] = useState( 'false' );
 
 	const items = [
 		{
@@ -25,49 +25,49 @@ const AttendanceSelector = () => {
 		}
 	];
 
-	const onAnchorClick = async (e, status) => {
+	const onAnchorClick = async( e, status ) => {
 		e.preventDefault();
 
-		const response = await attendance.post('/attendance', {
-			status: status,
+		const response = await attendance.post( '/attendance', {
+			status: status
 		});
 
-		if (response.data.success) {
-			setAttendanceStatus(response.data.status);
+		if ( response.data.success ) {
+			setAttendanceStatus( response.data.status );
 
-			const dispatchAttendanceStatus = new CustomEvent('setAttendanceStatus', {
+			const dispatchAttendanceStatus = new CustomEvent( 'setAttendanceStatus', {
 				detail: response.data.status
 			});
 
-			dispatchEvent(dispatchAttendanceStatus);
+			dispatchEvent( dispatchAttendanceStatus );
 
-			const dispatchAttendanceList = new CustomEvent('setAttendanceList', {
+			const dispatchAttendanceList = new CustomEvent( 'setAttendanceList', {
 				detail: response.data.attendees
 			});
 
-			dispatchEvent(dispatchAttendanceList);
+			dispatchEvent( dispatchAttendanceList );
 
 			let count = {
 				all: 0,
 				attending: 0,
-				not_attending: 0,
+				not_attending: 0, // eslint-disable-line camelcase
 				waitlist: 0
 			};
 
-			for (const [key, value] of Object.entries(response.data.attendees)) {
+			for ( const [ key, value ] of Object.entries( response.data.attendees ) ) {
 				count[key] = value.count;
 			}
 
-			const dispatchAttendanceCount = new CustomEvent('setAttendanceCount', {
+			const dispatchAttendanceCount = new CustomEvent( 'setAttendanceCount', {
 				detail: count
 			});
 
-			dispatchEvent(dispatchAttendanceCount);
+			dispatchEvent( dispatchAttendanceCount );
 		}
-	}
+	};
 
-	const getStatusText = (status) => {
-		switch(status) {
+	const getStatusText = ( status ) => {
+		switch ( status ) {
 			case 'attending':
 				return __( 'Attending', 'gatherpress' );
 			case 'not_attending':
@@ -77,11 +77,11 @@ const AttendanceSelector = () => {
 		}
 
 		return __( 'Attend', 'gatherpress' );
-	}
+	};
 
-	const renderedItems = items.map((item, index) => {
+	const renderedItems = items.map( ( item, index ) => {
 		const { text, status } = item;
-		return(
+		return (
 			<AttendanceSelectorItem
 				key={index}
 				text={text}
@@ -91,34 +91,33 @@ const AttendanceSelector = () => {
 		);
 	});
 
-	const onSpanKeyDown = (e) => {
-		if ( 13 === e.keyCode) {
-			setSelectorHidden(('hidden' === selectorHidden) ? 'show' : 'hidden');
-			setSelectorExpanded(('false' === selectorExpanded) ? 'true' : 'false');
+	const onSpanKeyDown = ( e ) => {
+		if ( 13 === e.keyCode ) {
+			setSelectorHidden( ( 'hidden' === selectorHidden ) ? 'show' : 'hidden' );
+			setSelectorExpanded( ( 'false' === selectorExpanded ) ? 'true' : 'false' );
 		}
 	};
 
-	return(
+	return (
 		<div className="gp-attendance-selector wp-block-button group inline-block relative">
 			<span
-				className="wp-block-button__link"
+				className="gp-attendance-selector__container"
 				aria-expanded={selectorExpanded}
 				tabIndex="0"
 				onKeyDown={onSpanKeyDown}
 			>
-				<span className="mr-1">{ getStatusText(attendanceStatus) }</span>
-				<svg className="fill-current h-8 w-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+				<span className="gp-attendance-selector__text mr-1">{ getStatusText( attendanceStatus ) }</span>
+				<svg className="gp-attendance-selector__svg fill-current h-8 w-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
 					<path d = "M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
 				</svg>
 			</span>
 			<ul
-				className={`absolute ${selectorHidden} left-0 z-10 text-gray-700 pt-1 group-hover:block`}
-				style={{ margin:0, padding:0 }}
+				className={`gp-attendance-selector__options absolute ${selectorHidden} left-0 z-10 text-gray-700 pt-1 group-hover:block`}
 			>
 				{renderedItems}
 			</ul>
 		</div>
 	);
-}
+};
 
 export default AttendanceSelector;

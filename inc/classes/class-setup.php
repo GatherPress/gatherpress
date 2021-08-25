@@ -66,7 +66,7 @@ class Setup {
 	}
 
 	/**
-	 * Add body class for active theme.
+	 * AddAttendanceSelector.js body class for active theme.
 	 *
 	 * @param $classes
 	 *
