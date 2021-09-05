@@ -26,6 +26,7 @@
 	&__svg {
 		width: 2rem;
 		height: 2rem;
+		fill: var(--global--color-background);
 	}
 
 	&__options {
@@ -36,12 +37,17 @@
 		display: none;
 		background: #ffffff;
 		padding: 1rem;
+		margin: 0;
 	}
 
 	&__option {
 		list-style-type: none;
 		margin: 0;
-		padding: 0;
+		padding: 0.25rem;
 		white-space: nowrap;
+	}
+
+	&__anchor {
+		text-decoration: none;
 	}
 }

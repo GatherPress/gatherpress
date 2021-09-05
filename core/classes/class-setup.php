@@ -7,9 +7,9 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Inc;
+namespace GatherPress\Core;
 
-use \GatherPress\Inc\Traits\Singleton;
+use \GatherPress\Core\Traits\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -40,7 +40,7 @@ class Setup {
 		Rest_Api::get_instance();
 		Role::get_instance();
 
-		// @todo move these classes to a `gp-buddypress` plugin.
+		// @todo move these classes to a `buddypress` directory in plugin.
 		// BuddyPress::get_instance();
 		// Email::get_instance();
 	}

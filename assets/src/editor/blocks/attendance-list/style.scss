@@ -1,0 +1,14 @@
+.gp-attendance-list {
+	&__navigation {
+		display: flex;
+		margin-bottom: 1rem;
+	}
+
+	&__item {
+		margin-right: 1rem;
+
+		&:last-child {
+			margin-right: 0;
+		}
+	}
+}

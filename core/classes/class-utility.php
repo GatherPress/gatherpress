@@ -7,7 +7,7 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Inc;
+namespace GatherPress\Core;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

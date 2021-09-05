@@ -38,7 +38,7 @@ const AttendanceList = () => {
 	};
 
 	return (
-		<div className="mt-4">
+		<div className="gp-attendance-list mt-4">
 			<AttendanceListNavigation items={items} activeValue={attendanceStatus} onTitleClick={onTitleClick} />
 			<AttendanceListContent items={items} activeValue={attendanceStatus} />
 		</div>

@@ -7,9 +7,9 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Inc;
+namespace GatherPress\Core;
 
-use \GatherPress\Inc\Traits\Singleton;
+use \GatherPress\Core\Traits\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
