@@ -4,11 +4,19 @@
 		margin-bottom: 1rem;
 	}
 
-	&__item {
-		margin-right: 1rem;
+	&__items {
+		flex-wrap: wrap;
+	}
 
-		&:last-child {
-			margin-right: 0;
-		}
+	&__active {
+		display: flex;
+	}
+
+	&__hidden {
+		display: none;
+	}
+
+	&__item {
+		border: 5px solid transparent;
 	}
 }

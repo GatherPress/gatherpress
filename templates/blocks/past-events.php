@@ -9,7 +9,7 @@
 
 $gatherpress_max_posts = ( is_array( $attrs ) && ! empty( $attrs['maxNumberOfEvents'] ) ) ? intval( $attrs['maxNumberOfEvents'] ) : 5;
 $gatherpress_max_posts = ( 0 > $gatherpress_max_posts ) ? 5 : $gatherpress_max_posts;
-$gatherpress_query     = \GatherPress\Inc\Query::get_instance()->get_past_events( $gatherpress_max_posts );
+$gatherpress_query     = \GatherPress\Core\Query::get_instance()->get_past_events( $gatherpress_max_posts );
 ?>
 <div class="gp-past-events">
 	<?php
@@ -19,7 +19,7 @@ $gatherpress_query     = \GatherPress\Inc\Query::get_instance()->get_past_events
 		while ( $gatherpress_query->have_posts() ) {
 			$gatherpress_query->the_post();
 
-			$gatherpress_event = new \GatherPress\Inc\Event( get_the_ID() );
+			$gatherpress_event = new \GatherPress\Core\Event( get_the_ID() );
 
 			?>
 			<div class="gp-past-events__container">

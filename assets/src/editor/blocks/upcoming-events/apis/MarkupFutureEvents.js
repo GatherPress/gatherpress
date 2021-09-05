@@ -7,6 +7,6 @@ export default axios.create({
 		'X-WP-Nonce': GatherPress.nonce
 	},
 	params: {
-		_wpnonce: GatherPress.nonce,
+		_wpnonce: GatherPress.nonce
 	}
 });

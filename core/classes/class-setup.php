@@ -55,7 +55,7 @@ class Setup {
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
 
-		add_filter( 'block_categories', array( $this, 'block_category' ) );
+		add_filter( 'block_categories_all', array( $this, 'block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
 		add_filter( 'wp_unique_post_slug', array( $this, 'append_id_to_event_slug' ), 10, 4 );
 		add_filter( sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ), array( $this, 'set_custom_columns' ) );

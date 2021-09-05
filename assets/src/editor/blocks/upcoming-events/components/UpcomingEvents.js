@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import markup_future_events from '../apis/markup_future_events';
+import MarkupFutureEvents from '../apis/MarkupFutureEvents';
 
 const UpcomingEvents = ( props ) => {
 	const [ markup, setMarkup ] = useState( '<div class="spinner gp-spinner"></div>' );
 	const { maxNumberOfEvents } = props;
 
 	( async( setMarkup ) => {
-		const response = await markup_future_events.get( '/markup_future_events', {
+		const response = await MarkupFutureEvents.get( '/markup_future_events', { /* eslint-disable camelcase */
 			params: {
-				max_number: maxNumberOfEvents
+				max_number: maxNumberOfEvents /* eslint-disable camelcase */
 			}
 		});
 

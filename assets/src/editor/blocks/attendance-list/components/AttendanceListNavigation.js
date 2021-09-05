@@ -22,7 +22,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	}, false );
 
 	const renderedItems = items.map( ( item, index ) => {
-		const additionalClasses = ( item.value === activeValue ) ? 'active' : 'opacity-50';
+		const additionalClasses = ( item.value === activeValue ) ? 'active' : 'opacity-50'; // @todo adjust this.
 
 		return (
 			<AttendanceListNavigationItem

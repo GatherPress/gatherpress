@@ -99,20 +99,20 @@ const AttendanceSelector = () => {
 	};
 
 	return (
-		<div className="gp-attendance-selector wp-block-button group inline-block relative">
+		<div className="gp-attendance-selector">
 			<span
 				className="gp-attendance-selector__container"
 				aria-expanded={selectorExpanded}
 				tabIndex="0"
 				onKeyDown={onSpanKeyDown}
 			>
-				<span className="gp-attendance-selector__text mr-1">{ getStatusText( attendanceStatus ) }</span>
-				<svg className="gp-attendance-selector__svg fill-current h-8 w-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+				<span className="gp-attendance-selector__text">{ getStatusText( attendanceStatus ) }</span>
+				<svg className="gp-attendance-selector__svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
 					<path d = "M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
 				</svg>
 			</span>
 			<ul
-				className={`gp-attendance-selector__options absolute ${selectorHidden} left-0 z-10 text-gray-700 pt-1 group-hover:block`}
+				className={`gp-attendance-selector__options ${selectorHidden}`}
 			>
 				{renderedItems}
 			</ul>
