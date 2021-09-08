@@ -2,22 +2,23 @@ import React from 'react';
 
 const AttendanceListNavigationItem = ({ item, additionalClasses, count, onTitleClick }) => {
 	const { title, value } = item;
+	const active = ( 0 === count ) ? 'hidden' : 'active';
 
-	return(
-		<div className="-mb-px mr-2 list-none">
+	return (
+		<div className={`gp-attendance-list__item gp-attendance-list__${active}`}>
 			<a
-				className={`no-underline hover:no-underline ${additionalClasses}`}
+				className={`gp-attendance-list__anchor ${additionalClasses}`}
 				data-item={value}
 				data-toggle="tab"
-				href={`#nav-${value}`}
+				href={`#gp-attendance-${value}`}
 				role="tab"
-				aria-controls={`#nav-${value}`}
-				onClick={ e => onTitleClick(e, value) }
+				aria-controls={`#gp-attendance-${value}`}
+				onClick={ e => onTitleClick( e, value ) }
 			>
 				{title}({count})
 			</a>
 		</div>
 	);
-}
+};
 
 export default AttendanceListNavigationItem;

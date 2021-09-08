@@ -1,20 +1,20 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Inc\Attendee.
+ * Class handles unit tests for GatherPress\Core\Attendee.
  *
  * @package GatherPress
  * @subpackage Tests
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Inc;
+namespace GatherPress\Tests\Core;
 
-use GatherPress\Inc\Attendee;
+use GatherPress\Core\Attendee;
 
 /**
  * Class Test_Attendee.
  *
- * @coversDefaultClass GatherPress\Inc\Attendee
+ * @coversDefaultClass GatherPress\Core\Attendee
  */
 class Test_Attendee extends \WP_UnitTestCase {
 

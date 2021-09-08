@@ -1,0 +1,22 @@
+.gp-attendance-list {
+	&__navigation {
+		display: flex;
+		margin-bottom: 1rem;
+	}
+
+	&__items {
+		flex-wrap: wrap;
+	}
+
+	&__active {
+		display: flex;
+	}
+
+	&__hidden {
+		display: none;
+	}
+
+	&__item {
+		border: 5px solid transparent;
+	}
+}

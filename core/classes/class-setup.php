@@ -7,9 +7,9 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Inc;
+namespace GatherPress\Core;
 
-use \GatherPress\Inc\Traits\Singleton;
+use \GatherPress\Core\Traits\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -40,7 +40,7 @@ class Setup {
 		Rest_Api::get_instance();
 		Role::get_instance();
 
-		// @todo move these classes to a `gp-buddypress` plugin.
+		// @todo move these classes to a `buddypress` directory in plugin.
 		// BuddyPress::get_instance();
 		// Email::get_instance();
 	}
@@ -55,13 +55,27 @@ class Setup {
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
 
-		add_filter( 'block_categories', array( $this, 'block_category' ) );
+		add_filter( 'block_categories_all', array( $this, 'block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
 		add_filter( 'wp_unique_post_slug', array( $this, 'append_id_to_event_slug' ), 10, 4 );
 		add_filter( sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ), array( $this, 'set_custom_columns' ) );
 		add_filter( sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ), array( $this, 'sortable_columns' ) );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 2 );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ), 10, 2 );
+		add_filter( 'body_class', array( $this, 'body_class' ) );
+	}
+
+	/**
+	 * AddAttendanceSelector.js body class for active theme.
+	 *
+	 * @param $classes
+	 *
+	 * @return mixed
+	 */
+	public function body_class( $classes ) {
+		$classes[] = sprintf( 'gp-theme-%s', esc_attr( get_stylesheet() ) );
+
+		return $classes;
 	}
 
 	/**

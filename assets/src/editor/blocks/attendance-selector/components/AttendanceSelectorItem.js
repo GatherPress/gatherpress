@@ -1,20 +1,19 @@
 import React from 'react';
 
 const AttendanceSelectorItem = ({ text, status, onAnchorClick }) => {
-	return(
+	return (
 		<li
-			className="list-none m-0"
-			style={{ padding:0, margin:0 }}
+			className="gp-attendance-selector__option"
 		>
 			<a
-				className="no-underline rounded-t bg-gray-200 focus:bg-gray-400 hover:bg-gray-400 py-2 px-4 block whitespace-no-wrap"
+				className="gp-attendance-selector__anchor"
 				href="#"
-				onClick={ e => onAnchorClick(e, status)}
+				onClick={ e => onAnchorClick( e, status )}
 			>
 				{text}
 			</a>
 		</li>
 	);
-}
+};
 
 export default AttendanceSelectorItem;
