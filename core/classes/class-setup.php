@@ -354,7 +354,7 @@ class Setup {
 	public function get_the_event_date( $the_date, $format ) : string {
 		global $post;
 
-		if ( ! is_a( $post, '\WP_Post' ) && Event::POST_TYPE !== $post->post_type ) {
+		if ( ! is_a( $post, '\WP_Post' ) || Event::POST_TYPE !== $post->post_type ) {
 			return $the_date;
 		}
 
