@@ -337,7 +337,7 @@ class Event {
 	 * @return array
 	 */
 	public static function adjust_sql( array $pieces, string $type = 'all', string $order = 'DESC' ) : array {
-		global $wp_query, $wpdb;
+		global $wpdb;
 
 		$defaults       = array(
 			'where'    => '',
