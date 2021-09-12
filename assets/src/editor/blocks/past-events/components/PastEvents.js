@@ -7,9 +7,9 @@ const PastEvents = ( props ) => {
 	const { maxNumberOfEvents } = props;
 
 	( async( setMarkup ) => {
-		const response = await MarkupPastEvents.get( '/markup_past_events', { /* eslint-disable camelcase */
+		const response = await MarkupPastEvents.get( '/markup-past-events', { /* eslint-disable camelcase */
 			params: {
-				max_number: maxNumberOfEvents /* eslint-disable camelcase */
+				max_number: maxNumberOfEvents
 			}
 		});
 

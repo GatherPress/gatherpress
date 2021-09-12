@@ -7,9 +7,9 @@ const UpcomingEvents = ( props ) => {
 	const { maxNumberOfEvents } = props;
 
 	( async( setMarkup ) => {
-		const response = await MarkupFutureEvents.get( '/markup_future_events', { /* eslint-disable camelcase */
+		const response = await MarkupFutureEvents.get( '/markup-future-events', { /* eslint-disable camelcase */
 			params: {
-				max_number: maxNumberOfEvents /* eslint-disable camelcase */
+				max_number: maxNumberOfEvents
 			}
 		});
 
