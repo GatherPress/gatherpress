@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactHtmlParser from 'react-html-parser';
 import MarkupPastEvents from '../apis/MarkupPastEvents';
 
 const PastEvents = ( props ) => {
@@ -15,7 +16,11 @@ const PastEvents = ( props ) => {
 		setMarkup( response.data.markup );
 	})( setMarkup );
 
-	return <div onClick={( e ) => e.preventDefault()} dangerouslySetInnerHTML={{ __html: markup }} />;
+	return (
+		<div onClick={( e ) => e.preventDefault()}>
+			{ReactHtmlParser( markup )}
+		</div>
+	);
 };
 
 export default PastEvents;
