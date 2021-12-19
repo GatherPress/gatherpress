@@ -3,15 +3,14 @@
  * Load all files.
  *
  * @package GatherPress
+ * @subpackage Core
  */
 
-$gatherpress_files = array(
+$gatherpress_core_files = array(
 	'/core/classes/traits/trait-singleton.php',
 	'/core/classes/class-assets.php',
 	'/core/classes/class-attendee.php',
 	'/core/classes/class-block.php',
-	'/core/classes/class-buddypress.php',
-	'/core/classes/class-email.php',
 	'/core/classes/class-event.php',
 	'/core/classes/class-query.php',
 	'/core/classes/class-rest-api.php',
@@ -21,6 +20,8 @@ $gatherpress_files = array(
 	'/core/classes/class-utility.php',
 );
 
-foreach ( $gatherpress_files as $gatherpress_file ) {
-	require_once GATHERPRESS_CORE_PATH . $gatherpress_file;
+foreach ( $gatherpress_core_files as $file ) {
+	require_once GATHERPRESS_CORE_PATH . $file;
 }
+
+GatherPress\Core\Setup::get_instance();

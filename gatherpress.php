@@ -19,6 +19,4 @@ define( 'GATHERPRESS_THEME_VERSION', '0.1.0' );
 define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 
 require_once GATHERPRESS_CORE_PATH . '/core/loader.php';
-
-// Let's go!
-GatherPress\Core\Setup::get_instance();
+require_once GATHERPRESS_CORE_PATH . '/buddypress/loader.php';
