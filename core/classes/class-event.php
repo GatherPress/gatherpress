@@ -29,7 +29,7 @@ class Event {
 	 *
 	 * @var array|\WP_Post|null
 	 */
-	protected $event;
+	protected $event = null;
 
 	/**
 	 * Attendee instance.
@@ -44,6 +44,10 @@ class Event {
 	 * @param int $post_id An event post ID.
 	 */
 	public function __construct( int $post_id ) {
+		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
+			return null;
+		}
+
 		$this->event    = get_post( $post_id );
 		$this->attendee = new Attendee( $post_id );
 
@@ -153,7 +157,7 @@ class Event {
 		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$tz   = null;
 
-		if ( true === $local ) {
+		if ( true === $local && ! empty( $dt['timezone'] ) ) {
 			try {
 				$tz = new \DateTimeZone( $dt['timezone'] );
 			} catch ( Exception $e ) {
@@ -182,29 +186,32 @@ class Event {
 	 */
 	public function get_datetime() : array {
 		global $wpdb;
+		$default = array(
+			'datetime_start'     => '',
+			'datetime_start_gmt' => '',
+			'datetime_end'       => '',
+			'datetime_end_gmt'   => '',
+			'timezone'           => '',
+		);
+		$data    = array();
 
-		$data = array();
+		if ( ! $this->event ) {
+			return $default;
+		}
 
-		if ( self::POST_TYPE === $this->event->post_type ) {
-			$cache_key = sprintf( self::DATETIME_CACHE_KEY, $this->event->ID );
-			$data      = wp_cache_get( $cache_key );
+		$cache_key = sprintf( self::DATETIME_CACHE_KEY, $this->event->ID );
+		$data      = wp_cache_get( $cache_key );
 
-			if ( empty( $data ) || ! is_array( $data ) ) {
-				$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
-				$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-				$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
+		if ( empty( $data ) || ! is_array( $data ) ) {
+			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
+			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
-				wp_cache_set( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
-			}
+			wp_cache_set( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
 		}
 
 		return array_merge(
-			array(
-				'datetime_start'     => '',
-				'datetime_start_gmt' => '',
-				'datetime_end'       => '',
-				'datetime_end_gmt'   => '',
-			),
+			$default,
 			(array) $data
 		);
 	}
@@ -219,7 +226,7 @@ class Event {
 	 * @return array
 	 */
 	public function get_calendar_links() : array {
-		if ( self::POST_TYPE !== $this->event->post_type ) {
+		if ( ! $this->event ) {
 			return array();
 		}
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactHtmlParser from 'react-html-parser';
 import MarkupFutureEvents from '../apis/MarkupFutureEvents';
 
 const UpcomingEvents = ( props ) => {
@@ -6,16 +7,20 @@ const UpcomingEvents = ( props ) => {
 	const { maxNumberOfEvents } = props;
 
 	( async( setMarkup ) => {
-		const response = await MarkupFutureEvents.get( '/markup_future_events', { /* eslint-disable camelcase */
+		const response = await MarkupFutureEvents.get( '/markup-future-events', { /* eslint-disable camelcase */
 			params: {
-				max_number: maxNumberOfEvents /* eslint-disable camelcase */
+				max_number: maxNumberOfEvents
 			}
 		});
 
 		setMarkup( response.data.markup );
 	})( setMarkup );
 
-	return <div onClick={( e ) => e.preventDefault()} dangerouslySetInnerHTML={{ __html: markup }} />;
+	return (
+		<div onClick={( e ) => e.preventDefault()}>
+			{ReactHtmlParser( markup )}
+		</div>
+	);
 };
 
 export default UpcomingEvents;

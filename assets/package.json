@@ -53,6 +53,7 @@
 		"postcss-loader": "^3.0.0",
 		"postcss-preset-env": "^6.7.0",
 		"react": "^16.13.1",
+		"react-html-parser": "^2.0.2",
 		"sass-loader": "^7.1.0"
 	},
 	"dependencies": {

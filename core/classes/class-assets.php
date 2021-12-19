@@ -144,8 +144,8 @@ class Assets {
 			'post_id'             => $post_id,
 			'has_event_past'      => $event->has_event_past(),
 			'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event' ),
-			'current_user_status' => $event->attendee->get_attendee( get_current_user_id() ) ?? '',
-			'attendees'           => $event->attendee->get_attendees(),
+			'current_user_status' => ( $event->attendee && $event->attendee->get_attendee( get_current_user_id() ) ) ? $event->attendee->get_attendee( get_current_user_id() ) : '', // @todo cleanup
+			'attendees'           => ( $event->attendee ) ? $event->attendee->get_attendees() : array(), // @todo cleanup
 		);
 	}
 

@@ -39,7 +39,7 @@ class Setup {
 		Query::get_instance();
 		Rest_Api::get_instance();
 		Role::get_instance();
-
+		Settings::get_instance();
 		// @todo move these classes to a `buddypress` directory in plugin.
 		// BuddyPress::get_instance();
 		// Email::get_instance();
@@ -354,7 +354,7 @@ class Setup {
 	public function get_the_event_date( $the_date, $format ) : string {
 		global $post;
 
-		if ( ! is_a( $post, '\WP_Post' ) && Event::POST_TYPE !== $post->post_type ) {
+		if ( ! is_a( $post, '\WP_Post' ) || Event::POST_TYPE !== $post->post_type ) {
 			return $the_date;
 		}
 

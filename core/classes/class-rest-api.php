@@ -146,7 +146,7 @@ class Rest_Api {
 				),
 			),
 			array(
-				'route' => 'markup_future_events',
+				'route' => 'markup-future-events',
 				'args'  => array(
 					'methods'             => \WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'markup_future_events' ),
@@ -168,7 +168,7 @@ class Rest_Api {
 				),
 			),
 			array(
-				'route' => 'markup_past_events',
+				'route' => 'markup-past-events',
 				'args'  => array(
 					'methods'             => \WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'markup_past_events' ),

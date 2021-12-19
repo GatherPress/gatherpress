@@ -26,7 +26,7 @@ class Utility {
 	 *
 	 * @return string
 	 */
-	public static function render_template( string $path, array $variables = array() ) : string {
+	public static function render_template( string $path, array $variables = array(), bool $echo = false ) : string {
 		if ( ! file_exists( $path ) ) {
 			return '';
 		}
@@ -35,10 +35,13 @@ class Utility {
 			extract( $variables, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract
 		}
 
+		if ( true === $echo ) {
+			require $path;
+			return '';
+		}
+
 		ob_start();
-
-		require $path; // better to fail with an error than to continue with incorrect/weird data.
-
+		require $path;
 		return ob_get_clean();
 	}
 
