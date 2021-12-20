@@ -61,7 +61,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	public function get_display_datetime() : string {
+	public function get_display_datetime(): string {
 		if ( $this->is_same_date() ) {
 			$start = $this->get_datetime_start( 'l, F j, Y g:i A' );
 			$end   = $this->get_datetime_end( 'g:i A T' );
@@ -80,7 +80,7 @@ class Event {
 	 *
 	 * @return bool
 	 */
-	public function is_same_date() : bool {
+	public function is_same_date(): bool {
 		$datetime_start = $this->get_datetime_start( 'Y-m-d' );
 		$datetime_end   = $this->get_datetime_end( 'Y-m-d' );
 
@@ -102,7 +102,7 @@ class Event {
 	 *
 	 * @return bool
 	 */
-	public function has_event_past() : bool {
+	public function has_event_past(): bool {
 		$data    = $this->get_datetime();
 		$end     = $data['datetime_end_gmt'];
 		$current = time();
@@ -123,7 +123,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	public function get_datetime_start( string $format = 'D, F j, g:ia T' ) : string {
+	public function get_datetime_start( string $format = 'D, F j, g:ia T' ): string {
 		return $this->get_formatted_date( $format, 'start' );
 	}
 
@@ -137,7 +137,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	public function get_datetime_end( string $format = 'D, F j, g:ia T' ) : string {
+	public function get_datetime_end( string $format = 'D, F j, g:ia T' ): string {
 		return $this->get_formatted_date( $format, 'end' );
 	}
 
@@ -152,7 +152,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	protected function get_formatted_date( string $format = 'D, F j, g:ia T', string $which = 'start', $local = true ) : string {
+	protected function get_formatted_date( string $format = 'D, F j, g:ia T', string $which = 'start', $local = true ): string {
 		$dt   = $this->get_datetime();
 		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$tz   = null;
@@ -184,7 +184,7 @@ class Event {
 	 *
 	 * @return array
 	 */
-	public function get_datetime() : array {
+	public function get_datetime(): array {
 		global $wpdb;
 		$default = array(
 			'datetime_start'     => '',
@@ -225,7 +225,7 @@ class Event {
 	 *
 	 * @return array
 	 */
-	public function get_calendar_links() : array {
+	public function get_calendar_links(): array {
 		if ( ! $this->event ) {
 			return array();
 		}
@@ -244,7 +244,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	protected function get_google_calendar_link() : string {
+	protected function get_google_calendar_link(): string {
 		$date_start = $this->get_formatted_date( 'Ymd', 'start', false );
 		$time_start = $this->get_formatted_date( 'His', 'start', false );
 		$date_end   = $this->get_formatted_date( 'Ymd', 'end', false );
@@ -271,7 +271,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	protected function get_yahoo_calendar_link() : string {
+	protected function get_yahoo_calendar_link(): string {
 		$date_start     = $this->get_formatted_date( 'Ymd', 'start', false );
 		$time_start     = $this->get_formatted_date( 'His', 'start', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
@@ -307,7 +307,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	protected function get_ics_calendar_download() : string {
+	protected function get_ics_calendar_download(): string {
 		$date_start     = $this->get_formatted_date( 'Ymd', 'start', false );
 		$time_start     = $this->get_formatted_date( 'His', 'start', false );
 		$date_end       = $this->get_formatted_date( 'Ymd', 'end', false );
@@ -343,7 +343,7 @@ class Event {
 	 *
 	 * @return array
 	 */
-	public static function adjust_sql( array $pieces, string $type = 'all', string $order = 'DESC' ) : array {
+	public static function adjust_sql( array $pieces, string $type = 'all', string $order = 'DESC' ): array {
 		global $wpdb;
 
 		$defaults       = array(
@@ -397,7 +397,7 @@ class Event {
 	 *
 	 * @return bool
 	 */
-	public static function save_datetimes( array $params ) : bool {
+	public static function save_datetimes( array $params ): bool {
 		global $wpdb;
 
 		$retval = false;

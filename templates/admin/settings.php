@@ -1,7 +1,12 @@
 <?php
+
+use GatherPress\Core\Settings;
+
 if ( ! isset( $sub_pages, $page ) ) {
 	return;
 }
+
+$setting = Settings::get_instance();
 ?>
 <div class="wrap">
 	<h1 class="wp-heading-inline">
@@ -10,9 +15,9 @@ if ( ! isset( $sub_pages, $page ) ) {
 	<h2 class="nav-tab-wrapper">
 		<?php
 		foreach ( $sub_pages as $sub_page => $value ) {
-			$active_page = ( $page === 'gp-' . $sub_page ) ? 'nav-tab-active' : '';
+			$active_page = ( $page === $setting->prefix_key( $sub_page ) ) ? 'nav-tab-active' : '';
 			$url = add_query_arg(
-				[ 'page' => sprintf( 'gp-%s', $sub_page ) ],
+				[ 'page' => $setting->prefix_key( $sub_page ) ],
 				admin_url( 'options-general.php' )
 			);
 			?>
@@ -23,10 +28,14 @@ if ( ! isset( $sub_pages, $page ) ) {
 		}
 		?>
 	</h2>
-	<form method="post" action="options.php">
-		<?php settings_fields( $page ); ?>
+	<?php if ( $setting->prefix_key( 'credits' ) === $page ) : ?>
 		<?php do_settings_sections( $page ); ?>
+	<?php else : ?>
+		<form method="post" action="options.php">
+			<?php settings_fields( $page ); ?>
+			<?php do_settings_sections( $page ); ?>
 
-		<?php submit_button(); ?>
-	</form>
+			<?php submit_button( __( 'Save Settings', 'gatherpress' ) ); ?>
+		</form>
+	<?php endif; ?>
 </div>
