@@ -33,7 +33,18 @@ class Role {
 	 * Setup Hooks.
 	 */
 	protected function setup_hooks() {
-		add_action( 'init', array( $this, 'change_role_names' ) );
+	}
+
+	public function get_default_role_names(): array {
+		$defaults = array(
+			'administrator' => __( 'Organizer', 'gatherpress' ),
+			'editor'        => __( 'Assistant Organizer', 'gatherpress' ),
+			'author'        => __( 'Event Organizer', 'gatherpress' ),
+			'contributor'   => __( 'Event Assistant', 'gatherpress' ),
+			'subscriber'    => __( 'Member', 'gatherpress' ),
+		);
+
+		return apply_filters( 'gatherpress/roles/default_names', $defaults );
 	}
 
 	/**
@@ -41,37 +52,35 @@ class Role {
 	 *
 	 * @return array
 	 */
-	public function get_role_names() : array {
-		return array(
-			'administrator' => __( 'Organizer', 'gatherpress' ),
-			'editor'        => __( 'Assistant Organizer', 'gatherpress' ),
-			'author'        => __( 'Event Organizer', 'gatherpress' ),
-			'contributor'   => __( 'Event Assistant', 'gatherpress' ),
-			'subscriber'    => __( 'Member', 'gatherpress' ),
-		);
+	public function get_roles(): array {
+		global $wp_roles;
+
+		$settings = array();
+		$roles    = $wp_roles->roles;
+
+		foreach ( $roles as $role => $value ) {
+			$settings[ $role ] = $value['name'];
+		}
+
+		return $settings;
 	}
 
 	/**
-	 * Map WordPress role names to GatherPress names.
+	 * Return role settings that are either saved or default.
+	 *
+	 * @return array
 	 */
-	public function change_role_names() {
-		global $wp_roles;
+	public function get_role_settings(): array {
+		$settings       = Settings::get_instance();
+		$roles          = array_map(
+			function( $value ) {
+				return $value['default'];
+			},
+			$settings->get_sub_pages()['language']['sections']['roles']['options']
+		);
+		$saved_settings = array_filter( $settings->get_value( 'gp_language', 'roles', '', array() ) );
 
-		if ( ! isset( $wp_roles ) ) {
-			$wp_roles = new \WP_Roles(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-		}
-
-		$role_name_changes = $this->get_role_names();
-
-		foreach ( $role_name_changes as $key => $value ) {
-			if ( is_array( $wp_roles->roles[ $key ] ) ) {
-				$wp_roles->roles[ $key ]['name'] = $value;
-			}
-
-			if ( ! empty( $wp_roles->role_names[ $key ] ) ) {
-				$wp_roles->role_names[ $key ] = $value;
-			}
-		}
+		return array_merge( $roles, $saved_settings );
 	}
 
 }

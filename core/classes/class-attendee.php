@@ -257,7 +257,7 @@ class Attendee {
 			}
 
 			$user_info   = get_userdata( $user_id );
-			$roles       = Role::get_instance()->get_role_names();
+			$roles       = Role::get_instance()->get_role_settings();
 			$attendees[] = array(
 				'id'        => $user_id,
 				'name'      => $user_info->display_name,
@@ -303,7 +303,7 @@ class Attendee {
 	 * @return bool
 	 */
 	public function sort_attendees_by_role( array $a, array $b ) : bool {
-		$roles = array_values( Role::get_instance()->get_role_names() );
+		$roles = array_values( Role::get_instance()->get_role_settings() );
 
 		return ( array_search( $a['role'], $roles, true ) > array_search( $b['role'], $roles, true ) );
 	}
