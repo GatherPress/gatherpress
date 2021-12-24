@@ -138,14 +138,18 @@ class Assets {
 	 */
 	protected function localize( int $post_id ) : array {
 		$event = new Event( $post_id );
+		$settings = Settings::get_instance();
 
 		return array(
+			'attendees'           => ( $event->attendee ) ? $event->attendee->get_attendees() : array(), // @todo cleanup
+			'current_user_status' => ( $event->attendee && $event->attendee->get_attendee( get_current_user_id() ) ) ? $event->attendee->get_attendee( get_current_user_id() ) : '', // @todo cleanup
+			'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event' ),
+			'has_event_past'      => $event->has_event_past(),
 			'nonce'               => wp_create_nonce( 'wp_rest' ),
 			'post_id'             => $post_id,
-			'has_event_past'      => $event->has_event_past(),
-			'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event' ),
-			'current_user_status' => ( $event->attendee && $event->attendee->get_attendee( get_current_user_id() ) ) ? $event->attendee->get_attendee( get_current_user_id() ) : '', // @todo cleanup
-			'attendees'           => ( $event->attendee ) ? $event->attendee->get_attendees() : array(), // @todo cleanup
+			'settings'            => array(
+				'language' => $settings->get_value( $settings->prefix_key( 'language' ) ),
+			),
 		);
 	}
 

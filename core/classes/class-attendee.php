@@ -29,7 +29,7 @@ class Attendee {
 	public $statuses = array(
 		'attending',
 		'not_attending',
-		'waitlist',
+		'waiting_list',
 	);
 
 	/**
@@ -109,7 +109,7 @@ class Attendee {
 		$limit_reached = $this->attending_limit_reached( $status );
 
 		if ( $limit_reached ) {
-			$status = 'waitlist';
+			$status = 'waiting_list';
 		}
 
 		$data = array(
@@ -139,40 +139,40 @@ class Attendee {
 		}
 
 		if ( ! $limit_reached && 'not_attending' === $status ) {
-			$this->check_waitlist();
+			$this->check_waiting_list();
 		}
 
 		return $retval;
 	}
 
 	/**
-	 * Check the waitlist and maybe move attendees to attending.
+	 * Check the waiting_list and maybe move attendees to attending.
 	 *
-	 * @return int  Number of attendees from waitlist that were moved to attending.
+	 * @return int  Number of attendees from waiting_list that were moved to attending.
 	 */
-	public function check_waitlist() : int {
+	public function check_waiting_list() : int {
 		$attendees = $this->get_attendees();
 		$total     = 0;
 
 		if (
 			intval( $attendees['attending']['count'] ) < $this->limit
-			&& intval( $attendees['waitlist']['count'] )
+			&& intval( $attendees['waiting_list']['count'] )
 		) {
-			$waitlist = $attendees['waitlist']['attendees'];
+			$waiting_list = $attendees['waiting_list']['attendees'];
 
-			// People longest on the waitlist should be added first.
-			usort( $waitlist, array( $this, 'sort_attendees_by_timestamp' ) );
+			// People longest on the waiting_list should be added first.
+			usort( $waiting_list, array( $this, 'sort_attendees_by_timestamp' ) );
 
 			$total = $this->limit - intval( $attendees['attending']['count'] );
 			$i     = 0;
 
 			while ( $i < $total ) {
-				// Check that we have enough on the waitlist to run this.
-				if ( ( $i + 1 ) > intval( $attendees['waitlist']['count'] ) ) {
+				// Check that we have enough on the waiting_list to run this.
+				if ( ( $i + 1 ) > intval( $attendees['waiting_list']['count'] ) ) {
 					break;
 				}
 
-				$attendee = $waitlist[ $i ];
+				$attendee = $waiting_list[ $i ];
 				$this->save_attendee( $attendee['id'], 'attending' );
 				$i++;
 			}
