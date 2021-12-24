@@ -174,7 +174,7 @@ class Settings {
 	 * @return mixed
 	 */
 	public function get_value( string $sub_page, string $section = '', string $option = '', $default = '' ) {
-		$options = get_option( $sub_page ) ?? [];
+		$options = $this->get_options( $sub_page );
 
 		if ( ! empty( $section ) && ! empty( $option ) ) {
 			return ( ! empty( $options[ $section ][ $option ] ) ) ? $options[ $section ][ $option ] : $default;
@@ -182,7 +182,50 @@ class Settings {
 			return ( ! empty( $options[ $section ] ) ) ? $options[ $section ] : $default;
 		}
 
-		return $default;
+		return $options;
+	}
+
+	/**
+	 * Get currently set options from a GatherPress sub page.
+	 *
+	 * @param string $sub_page
+	 *
+	 * @return array
+	 */
+	public function get_options( string $sub_page ): array {
+		$option = get_option( $sub_page );
+
+		if ( ! empty( $option ) && is_array( $option ) ) {
+			return $option;
+		}
+
+		return $this->get_option_defaults( $sub_page );
+	}
+
+	/**
+	 * Default options for GatherPress sub pages.
+	 * @param string $option
+	 *
+	 * @return array
+	 */
+	public function get_option_defaults( string $option ): array {
+		$sub_pages = $this->get_sub_pages();
+		$option    = $this->unprefix_key( $option );
+		$defaults  = [];
+
+		if ( ! empty( $sub_pages[ $option ]['sections'] ) && is_array( $sub_pages[ $option ]['sections'] ) ) {
+			foreach ( $sub_pages[ $option ]['sections'] as $section => $settings ) {
+				if ( ! is_array( $settings['options'] ) ) {
+					continue;
+				}
+
+				foreach ( $settings['options'] as $option => $values ) {
+					$defaults[ $section ][ $option ] = $values['default'];
+				}
+			}
+		}
+
+		return $defaults;
 	}
 
 	/**

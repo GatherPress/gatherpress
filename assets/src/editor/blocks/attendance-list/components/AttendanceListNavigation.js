@@ -6,7 +6,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 		all: 0,
 		attending: 0,
 		not_attending: 0, // eslint-disable-line camelcase
-		waitlist: 0
+		waiting_list: 0 // eslint-disable-line camelcase
 	};
 
 	if ( 'object' === typeof GatherPress ) {

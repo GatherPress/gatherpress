@@ -16,11 +16,11 @@ const AttendanceSelector = () => {
 
 	const items = [
 		{
-			text: __( 'Yes, I would like to attend this event.', 'gatherpress' ),
+			text: GatherPress.settings.language.attendance.attending_text,
 			status: 'attending'
 		},
 		{
-			text: __( 'No, I cannot attend this event.', 'gatherpress' ),
+			text: GatherPress.settings.language.attendance.not_attending_text,
 			status: 'not_attending'
 		}
 	];
@@ -51,7 +51,7 @@ const AttendanceSelector = () => {
 				all: 0,
 				attending: 0,
 				not_attending: 0, // eslint-disable-line camelcase
-				waitlist: 0
+				waiting_list: 0 // eslint-disable-line camelcase
 			};
 
 			for ( const [ key, value ] of Object.entries( response.data.attendees ) ) {
@@ -69,14 +69,14 @@ const AttendanceSelector = () => {
 	const getStatusText = ( status ) => {
 		switch ( status ) {
 			case 'attending':
-				return __( 'Attending', 'gatherpress' );
+				return GatherPress.settings.language.attendance.attending;
 			case 'not_attending':
-				return __( 'Not Attending', 'gatherpress' );
-			case 'waitlist':
-				return __( 'On Waitlist', 'gatherpress' );
+				return GatherPress.settings.language.attendance.not_attending;
+			case 'waiting_list':
+				return GatherPress.settings.language.attendance.waiting_list;
 		}
 
-		return __( 'Attend', 'gatherpress' );
+		return GatherPress.settings.language.attendance.attend;
 	};
 
 	const renderedItems = items.map( ( item, index ) => {
