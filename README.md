@@ -25,3 +25,24 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 
 # Credits
 [mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [cameronbarrett](https://profiles.wordpress.org/cameronbarrett/), [pbrocks](https://profiles.wordpress.org/pbrocks/)
+
+---
+
+# [WIP] Documentation Outline
+
+## 1. Setup
+1. Download a ZIP of the repository
+2. Install it in your WordPress instance
+3. Activate the plugin
+
+## 2. Create an Event
+1. Go to the WP Admin > Events
+2. Add an event
+3. Populate a date/time
+4. Add the `Attendance Selector` block where you wish to display the CTA for this event
+5. Add the `Attendance List` block (if desired) to display the list of attendees
+6. Done
+
+## 3. Settings
+### Edit Terminology (Language)
+To edit how roles such as "Administrator" and "Editor" are referred to throughout the plugin, you can change these in the WP Admin > Settings > GatherPress > Language section.
