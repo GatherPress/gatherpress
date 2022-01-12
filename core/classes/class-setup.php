@@ -102,7 +102,7 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 */
-	public function register_post_types() {
+	public static function register_post_types() {
 		register_post_type(
 			Event::POST_TYPE,
 			array(

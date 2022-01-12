@@ -35,6 +35,7 @@ register_activation_hook( __FILE__, 'activate_gatherpress_plugin' );
  * @return void
  */
 function activate_gatherpress_plugin() {
+	GatherPress\Core\Setup::register_post_types();
 	flush_rewrite_rules();
 }
 
