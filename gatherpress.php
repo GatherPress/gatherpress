@@ -2,10 +2,10 @@
 /**
  * Plugin Name: GatherPress
  * Plugin URI:  https://gatherpress.org/
- * Description: GatherPress adds event management to WordPress.
+ * Description: GatherPress adds event management and more to WordPress.
  * Author:      The GatherPress Community
  * Author URI:  https://gatherpess.org/
- * Version:     0.1.0
+ * Version:     0.1.1
  * Text Domain: gatherpress
  * License:     GPLv2 or later (license.txt)
  *
