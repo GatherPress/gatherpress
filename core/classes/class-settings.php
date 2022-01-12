@@ -53,6 +53,16 @@ class Settings {
 			6
 		);
 
+		add_submenu_page(
+			'edit.php?post_type=gp_event',
+			__( 'GatherPress Settings', 'gatherpress' ),
+			__( 'GatherPress Settings', 'gatherpress' ),
+			'manage_options',
+			$this->prefix_key( 'general' ),
+			array( $this, 'settings_page' ),
+			6
+		);
+
 		$sub_pages = $this->get_sub_pages();
 
 		foreach ( $sub_pages as $sub_page => $setting ) {
@@ -63,6 +73,15 @@ class Settings {
 			$page = $this->prefix_key( $sub_page );
 
 			add_options_page(
+				$setting['name'],
+				$setting['name'],
+				'manage_options',
+				$page,
+				array( $this, 'settings_page' )
+			);
+
+			add_submenu_page(
+				'edit.php?post_type=gp_event',
 				$setting['name'],
 				$setting['name'],
 				'manage_options',
@@ -83,7 +102,8 @@ class Settings {
 				continue;
 			}
 
-			remove_submenu_page( 'options-general.php', $this->prefix_key(  $sub_page ) );
+			remove_submenu_page( 'options-general.php', $this->prefix_key( $sub_page ) );
+			remove_submenu_page( 'edit.php?post_type=gp_event', $this->prefix_key( $sub_page ) );
 		}
 	}
 
@@ -107,7 +127,7 @@ class Settings {
 						$section,
 						$section_settings['name'],
 						function() use ( $section_settings ) {
-							if ( ! empty( $section_settings['description' ] ) ) {
+							if ( ! empty( $section_settings['description'] ) ) {
 								echo '<p class="description">' . esc_html( $section_settings['description'] ) . '</p>';
 							}
 						},
@@ -117,7 +137,7 @@ class Settings {
 					if ( isset( $section_settings['options'] ) ) {
 						foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
 							if ( $option_settings['field'] && method_exists( $this, $option_settings['field'] ) ) {
-								$option_settings['callback'] = function() use( $sub_page, $section, $option, $option_settings ) {
+								$option_settings['callback'] = function() use ( $sub_page, $section, $option, $option_settings ) {
 									$sub_page = $this->prefix_key( $sub_page );
 
 									$this->{$option_settings['field']}( $sub_page, $section, $option, $option_settings );
@@ -156,9 +176,9 @@ class Settings {
 
 		<input id="<?php echo esc_attr( $this->prefix_key( $option ) ); ?>" type='text' name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_html( $value ); ?>" />
 		<?php
-		if ( ! empty( $option_settings['description' ] ) ) {
+		if ( ! empty( $option_settings['description'] ) ) {
 			?>
-			<p class="description"><?php echo esc_html( $option_settings['description' ] ); ?></p>
+			<p class="description"><?php echo esc_html( $option_settings['description'] ); ?></p>
 			<?php
 		}
 	}
@@ -166,9 +186,9 @@ class Settings {
 	/**
 	 * Gets the value.
 	 *
-	 * @param string $sub_page
-	 * @param string $section
-	 * @param string $option
+	 * @param string       $sub_page
+	 * @param string       $section
+	 * @param string       $option
 	 * @param mixed|string $default
 	 *
 	 * @return mixed
@@ -204,6 +224,7 @@ class Settings {
 
 	/**
 	 * Default options for GatherPress sub pages.
+	 *
 	 * @param string $option
 	 *
 	 * @return array
@@ -211,7 +232,7 @@ class Settings {
 	public function get_option_defaults( string $option ): array {
 		$sub_pages = $this->get_sub_pages();
 		$option    = $this->unprefix_key( $option );
-		$defaults  = [];
+		$defaults  = array();
 
 		if ( ! empty( $sub_pages[ $option ]['sections'] ) && is_array( $sub_pages[ $option ]['sections'] ) ) {
 			foreach ( $sub_pages[ $option ]['sections'] as $section => $settings ) {
@@ -253,7 +274,7 @@ class Settings {
 	 */
 	public function get_sub_pages(): array {
 		$sub_pages = array(
-			'general' => array(
+			'general'  => array(
 				'name'        => __( 'General', 'gatherpress' ),
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
 				'priority'    => 1,
@@ -267,30 +288,30 @@ class Settings {
 						'options'     => $this->get_role_options(),
 					),
 					'attendance' => array(
-						'name'    => __( 'Attendance', 'gatherpress' ),
+						'name'        => __( 'Attendance', 'gatherpress' ),
 						'description' => __( 'Adjust language below to best reflect your events.', 'gatherpress' ),
-						'options' => array(
-							'attend' => array(
+						'options'     => array(
+							'attend'             => array(
 								'label'   => __( 'Attend', 'gatherpress' ),
 								'field'   => 'text_field',
 								'default' => __( 'Attend', 'gatherpress' ),
 							),
-							'attending' => array(
+							'attending'          => array(
 								'label'   => __( 'Attending', 'gatherpress' ),
 								'field'   => 'text_field',
 								'default' => __( 'Attending', 'gatherpress' ),
 							),
-							'not_attending' => array(
+							'not_attending'      => array(
 								'label'   => __( 'Not Attending', 'gatherpress' ),
 								'field'   => 'text_field',
 								'default' => __( 'Not Attending', 'gatherpress' ),
 							),
-							'waiting_list' => array(
+							'waiting_list'       => array(
 								'label'   => __( 'Waiting List', 'gatherpress' ),
 								'field'   => 'text_field',
 								'default' => __( 'Waiting List', 'gatherpress' ),
 							),
-							'attending_text' => array(
+							'attending_text'     => array(
 								'label'   => __( 'Attending Selection Text', 'gatherpress' ),
 								'field'   => 'text_field',
 								'default' => __( 'Yes, I would like to attend this event.', 'gatherpress' ),
@@ -300,18 +321,18 @@ class Settings {
 								'field'   => 'text_field',
 								'default' => __( 'No, I cannot attend this event.', 'gatherpress' ),
 							),
-							'menu_structure' => array(
-								'label'   => __( 'Menu Structure', 'gatherpress' ),
-								'field'   => 'text_field',
-								'description' => __( '%status% represents attendance status and %count% represents the number of those with that status for an event.', 'gatherpress' ),
-								'default' => '%status%(%count%)',
-							)
+							'menu_structure'     => array(
+								'label'       => __( 'Menu Structure', 'gatherpress' ),
+								'field'       => 'text_field',
+								'description' => __( '%1$status% represents attendance status and %2$count% represents the number of those with that status for an event.', 'gatherpress' ),
+								'default'     => '%status%(%count%)',
+							),
 						),
 					),
 
 				),
 			),
-			'credits' => array(
+			'credits'  => array(
 				'name'     => __( 'Credits', 'gatherpress' ),
 				'priority' => 99,
 			),
@@ -337,9 +358,9 @@ class Settings {
 
 		foreach ( $role_names as $role_name => $value ) {
 			$options[ $role_name ] = array(
-				'label'    => $value,
-				'field'    => 'text_field',
-				'default'  => $role_defaults_names[ $role_name ] ?? $value,
+				'label'   => $value,
+				'field'   => 'text_field',
+				'default' => $role_defaults_names[ $role_name ] ?? $value,
 			);
 		}
 
