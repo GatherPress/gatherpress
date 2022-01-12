@@ -395,9 +395,9 @@ class Settings {
 	 * @param array $a
 	 * @param array $b
 	 *
-	 * @return bool
+	 * @return int
 	 */
-	public function sort_sub_pages_by_priority( array $a, array $b ): bool {
+	public function sort_sub_pages_by_priority( array $a, array $b ): int {
 		$a['priority'] = isset( $a['priority'] ) ? intval( $a['priority'] ) : 10;
 		$b['priority'] = isset( $b['priority'] ) ? intval( $b['priority'] ) : 10;
 
