@@ -3,12 +3,13 @@ import {__} from '@wordpress/i18n';
 import AttendanceSelectorItem from './AttendanceSelectorItem';
 import attendance from '../apis/attendance';
 
-const AttendanceSelector = () => {
-	let defaultStatus = '';
 
-	if ( 'object' === typeof GatherPress ) {
-		defaultStatus = GatherPress.current_user_status.status;
+const AttendanceSelector = () => {
+	if ( 'object' !== typeof GatherPress ) {
+		return '';
 	}
+
+	let defaultStatus = GatherPress.current_user_status.status;
 
 	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
 	const [ selectorHidden, setSelectorHidden ] = useState( 'hidden' );
@@ -98,8 +99,25 @@ const AttendanceSelector = () => {
 		}
 	};
 
+	if ( '' === GatherPress.current_user_status ) {
+		return (
+			<div className="gp-attendance-selector">
+				<div className="wp-block-button">
+					<a
+						className="wp-block-button__link"
+						href="#"
+						onClick={ e => onAnchorClick( e, 'attending' )}
+					>
+						{ getStatusText( attendanceStatus ) }
+					</a>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="gp-attendance-selector">
+			<div>Current Response: </div>
 			<span
 				className="gp-attendance-selector__container"
 				aria-expanded={selectorExpanded}

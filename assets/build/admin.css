@@ -1,1 +1,14 @@
+/*
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+.gp-component {
+	.wp-block-button__link {
+		@apply .no-underline .inline-flex .items-center;
+	}
+}
+*/
+
+
+/*# sourceMappingURL=admin.css.map*/
