@@ -57,7 +57,7 @@
 		"sass-loader": "^7.1.0"
 	},
 	"dependencies": {
-		"axios": "^0.21.1",
+		"axios": "^0.21.2",
 		"jquery": "^3.5.1",
 		"react-dom": "^16.13.1",
 		"tailwindcss": "^1.8.10",
