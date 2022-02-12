@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ReactHtmlParser from 'react-html-parser';
+import HtmlReactParser from 'html-react-parser';
 import MarkupPastEvents from '../apis/MarkupPastEvents';
 
 const PastEvents = ( props ) => {
@@ -18,7 +18,7 @@ const PastEvents = ( props ) => {
 
 	return (
 		<div onClick={( e ) => e.preventDefault()}>
-			{ReactHtmlParser( markup )}
+			{HtmlReactParser( markup )}
 		</div>
 	);
 };
