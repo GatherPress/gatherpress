@@ -55,8 +55,8 @@ class Settings {
 
 		add_submenu_page(
 			'edit.php?post_type=gp_event',
-			__( 'GatherPress Settings', 'gatherpress' ),
-			__( 'GatherPress Settings', 'gatherpress' ),
+			__( 'Settings', 'gatherpress' ),
+			__( 'Settings', 'gatherpress' ),
 			'manage_options',
 			$this->prefix_key( 'general' ),
 			array( $this, 'settings_page' ),
