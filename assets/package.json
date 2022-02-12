@@ -36,8 +36,6 @@
 		"@wordpress/scripts": "^21.0.1",
 		"html-react-parser": "^1.4.8",
 		"ignore-emit-webpack-plugin": "^2.0.6",
-		"markdown-it": "^12.3.2",
-		"nth-check": "^2.0.1",
 		"react": "^17.0.2"
 	}
 }
