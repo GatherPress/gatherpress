@@ -1,0 +1,11 @@
+{
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "git@github.com:penske-media-corp/pmc-unit-test.git"
+    }
+  ],
+  "require": {
+    "pmc/unit-test": "dev-main"
+  }
+}

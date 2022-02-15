@@ -9,12 +9,12 @@
 
 namespace GatherPress\Tests\Inc;
 
-use GatherPress\Inc\Event;
+use GatherPress\Core\Event;
 
 /**
  * Class Test_Event.
  *
- * @coversDefaultClass GatherPress\Inc\Event
+ * @coversDefaultClass GatherPress\Core\Event
  */
 class Test_Event extends \WP_UnitTestCase {
 
