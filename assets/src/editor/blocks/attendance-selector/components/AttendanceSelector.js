@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {__} from '@wordpress/i18n';
 import AttendanceSelectorItem from './AttendanceSelectorItem';
 import attendance from '../apis/attendance';
+import Modal from 'react-modal';
 
 
 const AttendanceSelector = () => {
@@ -14,6 +15,32 @@ const AttendanceSelector = () => {
 	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
 	const [ selectorHidden, setSelectorHidden ] = useState( 'hidden' );
 	const [ selectorExpanded, setSelectorExpanded ] = useState( 'false' );
+
+const customStyles = {
+  content: {
+    top: '50%',
+    left: '50%',
+    right: 'auto',
+    bottom: 'auto',
+    marginRight: '-50%',
+    transform: 'translate(-50%, -50%)',
+  },
+};
+
+Modal.setAppElement('#gp-attendance-selector-container');
+const [modalIsOpen, setIsOpen] = React.useState(false);
+const openModal = () => {
+    setIsOpen(true);
+  }
+
+  const afterOpenModal = () => {
+    // references are now sync'd and can be accessed.
+    subtitle.style.color = '#f00';
+  }
+
+  const closeModal = () => {
+    setIsOpen(false);
+  }
 
 	const items = [
 		{
@@ -115,25 +142,65 @@ const AttendanceSelector = () => {
 		);
 	}
 
+	const Example = () => {
+		const [show, setShow] = useState(false);
+		const handleClose = () => setShow(false);
+		const handleShow = () => setShow(true);
+		return (
+			<>
+				<Button variant="primary" onClick={handleShow}>
+					Launch demo modal
+				</Button>
+
+				<Modal show={show} onHide={handleClose}>
+					<Modal.Header closeButton>
+						<Modal.Title>Modal heading</Modal.Title>
+					</Modal.Header>
+					<Modal.Body>Woohoo, you're reading this text in a modal!</Modal.Body>
+					<Modal.Footer>
+						<Button variant="secondary" onClick={handleClose}>
+							Close
+						</Button>
+						<Button variant="primary" onClick={handleClose}>
+							Save Changes
+						</Button>
+					</Modal.Footer>
+				</Modal>
+			</>
+		);
+	};
+
+{/*   return ( */}
+{/*     <div> */}
+{/*       <p>Modal is Open? {isOpen ? 'Yes' : 'No'}</p> */}
+{/*       <button onClick={open}>OPEN</button> */}
+{/*     </div> */}
+{/*   ); */}
+
 	return (
-		<div className="gp-attendance-selector">
-			<div>Current Response: </div>
-			<span
-				className="gp-attendance-selector__container"
+		<div className="gp-attendance-selector wp-block-button">
+			<button
+				className="gp-attendance-selector__container wp-block-button__link"
 				aria-expanded={selectorExpanded}
 				tabIndex="0"
 				onKeyDown={onSpanKeyDown}
+				onClick={openModal}
 			>
-				<span className="gp-attendance-selector__text">{ getStatusText( attendanceStatus ) }</span>
-				<svg className="gp-attendance-selector__svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-					<path d = "M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-				</svg>
-			</span>
-			<ul
-				className={`gp-attendance-selector__options ${selectorHidden}`}
-			>
-				{renderedItems}
-			</ul>
+				{ getStatusText( attendanceStatus ) }
+			</button>
+      <Modal
+        isOpen={modalIsOpen}
+        onAfterOpen={afterOpenModal}
+        onRequestClose={closeModal}
+        style={customStyles}
+        contentLabel="Example Modal"
+      >
+				<div>
+					<h1>Title</h1>
+					<p>This is a customizable modal.</p>
+					<button onClick={closeModal}>CLOSE</button>
+				</div>
+			</Modal>
 		</div>
 	);
 };
