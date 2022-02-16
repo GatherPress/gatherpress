@@ -47,7 +47,7 @@ class Test_Event extends Base {
 		$output  = $event->get_calendar_links();
 		$expects = array(
 			'google' => 'https://www.google.com/calendar/render/?action=TEMPLATE&text=Unit Test Event&dates=20200511T150000Z/20200511T170000Z&details=Unit Test description.&location&sprop=name:',
-			'isc'    => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0AURL:http://example.org/?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:Unit Test description.%0ALOCATION:%0AEND:VEVENT%0AEND:VCALENDAR',
+			'isc'    => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:Unit Test description.%0ALOCATION:%0AEND:VEVENT%0AEND:VCALENDAR',
 			'yahoo'  => 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit Test Event&st=20200511T150000Z&dur=0200&desc=Unit Test description.&in_loc',
 		);
 
