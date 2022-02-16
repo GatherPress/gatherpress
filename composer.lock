@@ -4,12 +4,46 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c60e4e78d5f4bf9d6b8899e77a3c2294",
-    "packages": [],
+    "content-hash": "81f246eb21dffe69d4ddc23676b8c3ca",
+    "packages": [
+        {
+            "name": "pmc/unit-test",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/penske-media-corp/pmc-unit-test.git",
+                "reference": "86535c4ea4b9b019ddffaa6c02afbb452e94d8fb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/penske-media-corp/pmc-unit-test/zipball/86535c4ea4b9b019ddffaa6c02afbb452e94d8fb",
+                "reference": "86535c4ea4b9b019ddffaa6c02afbb452e94d8fb",
+                "shasum": ""
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "autoload.php"
+                ],
+                "psr-4": {
+                    "PMC\\Unit_Test\\": "src/"
+                }
+            },
+            "description": "PMC Unit Test",
+            "support": {
+                "source": "https://github.com/penske-media-corp/pmc-unit-test/tree/main",
+                "issues": "https://github.com/penske-media-corp/pmc-unit-test/issues"
+            },
+            "time": "2022-02-15T19:16:58+00:00"
+        }
+    ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "pmc/unit-test": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
