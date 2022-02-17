@@ -3,7 +3,7 @@ import {__} from '@wordpress/i18n';
 import AttendanceSelectorItem from './AttendanceSelectorItem';
 import attendance from '../apis/attendance';
 import Modal from 'react-modal';
-
+import { Button, ButtonGroup } from '@wordpress/components';
 
 const AttendanceSelector = () => {
 	if ( 'object' !== typeof GatherPress ) {
@@ -15,32 +15,34 @@ const AttendanceSelector = () => {
 	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
 	const [ selectorHidden, setSelectorHidden ] = useState( 'hidden' );
 	const [ selectorExpanded, setSelectorExpanded ] = useState( 'false' );
+	const customStyles = {
+		content: {
+			top: '50%',
+			left: '50%',
+			right: 'auto',
+			bottom: 'auto',
+			marginRight: '-50%',
+			transform: 'translate(-50%, -50%)',
+		},
+	};
+	const [modalIsOpen, setIsOpen] = React.useState(false);
+	const openModal = () => {
+		setIsOpen(true);
+	}
 
-const customStyles = {
-  content: {
-    top: '50%',
-    left: '50%',
-    right: 'auto',
-    bottom: 'auto',
-    marginRight: '-50%',
-    transform: 'translate(-50%, -50%)',
-  },
-};
+	// Might be better way to do this, but should only run on frontend, not admin.
+	if ( 'undefined' === typeof adminpage ) {
+		Modal.setAppElement('#gp-attendance-selector-container');
+	}
 
-Modal.setAppElement('#gp-attendance-selector-container');
-const [modalIsOpen, setIsOpen] = React.useState(false);
-const openModal = () => {
-    setIsOpen(true);
-  }
+	const afterOpenModal = () => {
+		// references are now sync'd and can be accessed.
+		subtitle.style.color = '#f00';
+	}
 
-  const afterOpenModal = () => {
-    // references are now sync'd and can be accessed.
-    subtitle.style.color = '#f00';
-  }
-
-  const closeModal = () => {
-    setIsOpen(false);
-  }
+	const closeModal = () => {
+		setIsOpen(false);
+	}
 
 	const items = [
 		{
@@ -142,66 +144,45 @@ const openModal = () => {
 		);
 	}
 
-	const Example = () => {
-		const [show, setShow] = useState(false);
-		const handleClose = () => setShow(false);
-		const handleShow = () => setShow(true);
-		return (
-			<>
-				<Button variant="primary" onClick={handleShow}>
-					Launch demo modal
-				</Button>
-
-				<Modal show={show} onHide={handleClose}>
-					<Modal.Header closeButton>
-						<Modal.Title>Modal heading</Modal.Title>
-					</Modal.Header>
-					<Modal.Body>Woohoo, you're reading this text in a modal!</Modal.Body>
-					<Modal.Footer>
-						<Button variant="secondary" onClick={handleClose}>
-							Close
-						</Button>
-						<Button variant="primary" onClick={handleClose}>
-							Save Changes
-						</Button>
-					</Modal.Footer>
-				</Modal>
-			</>
-		);
-	};
-
-{/*   return ( */}
-{/*     <div> */}
-{/*       <p>Modal is Open? {isOpen ? 'Yes' : 'No'}</p> */}
-{/*       <button onClick={open}>OPEN</button> */}
-{/*     </div> */}
-{/*   ); */}
-
 	return (
-		<div className="gp-attendance-selector wp-block-button">
-			<button
-				className="gp-attendance-selector__container wp-block-button__link"
-				aria-expanded={selectorExpanded}
-				tabIndex="0"
-				onKeyDown={onSpanKeyDown}
-				onClick={openModal}
+		<ButtonGroup className="gp-block gp-attendance-selector wp-block-buttons">
+			<div className="wp-block-button">
+				<Button
+					className="gp-attendance-selector__container wp-block-button__link"
+					aria-expanded={selectorExpanded}
+					tabIndex="0"
+					onKeyDown={onSpanKeyDown}
+					onClick={openModal}
+				>
+					{ getStatusText( attendanceStatus ) }
+				</Button>
+			</div>
+			<Modal
+				isOpen={modalIsOpen}
+				onAfterOpen={afterOpenModal}
+				onRequestClose={closeModal}
+				style={customStyles}
+				contentLabel="Example Modal"
 			>
-				{ getStatusText( attendanceStatus ) }
-			</button>
-      <Modal
-        isOpen={modalIsOpen}
-        onAfterOpen={afterOpenModal}
-        onRequestClose={closeModal}
-        style={customStyles}
-        contentLabel="Example Modal"
-      >
-				<div>
-					<h1>Title</h1>
-					<p>This is a customizable modal.</p>
-					<button onClick={closeModal}>CLOSE</button>
+				<div className="gp-block">
+					<h3>{__('Complete your RSVP', 'gatherpress')}</h3>
+					<p>
+						<label htmlFor="gp-number-of-guests">
+							{__('Number of guests?', 'gatherpress')}
+						</label>
+						<input id="gp-number-of-guests" type="number" min="0" max="5" defaultValue="0" />
+					</p>
+					<ButtonGroup className="wp-block-buttons">
+						<div className="wp-block-button has-custom-font-size is-style-outline has-small-font-size">
+							<Button className="wp-block-button__link">Skip</Button>
+						</div>
+						<div className="wp-block-button has-custom-font-size has-small-font-size">
+							<Button className="wp-block-button__link">Submit</Button>
+						</div>
+					</ButtonGroup>
 				</div>
 			</Modal>
-		</div>
+		</ButtonGroup>
 	);
 };
 

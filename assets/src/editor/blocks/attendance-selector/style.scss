@@ -1,6 +1,8 @@
-.gp-attendance-selector {
-	&__container {
-		border: none;
+.gp-block {
+	.wp-block-button:not(.is-style-outline) {
+		button {
+			border: none;
+		}
 	}
 }
 
