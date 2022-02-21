@@ -89,7 +89,7 @@ class Attendee {
 	 *
 	 * @return string
 	 */
-	public function save_attendee( int $user_id, string $status ) : string {
+	public function save_attendee( int $user_id, string $status, int $guests = 0 ) : string {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -117,6 +117,7 @@ class Attendee {
 			'user_id'   => intval( $user_id ),
 			'timestamp' => gmdate( 'Y-m-d H:i:s' ),
 			'status'    => sanitize_key( $status ),
+			'guests'    => intval( $guests ),
 		);
 
 		if ( ! empty( $attendee ) ) {
@@ -233,7 +234,7 @@ class Attendee {
 		$site_users  = count_users();
 		$total_users = $site_users['total_users'];
 		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $event_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $event_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
 		$attendees   = array();
 
@@ -247,6 +248,7 @@ class Attendee {
 		foreach ( $data as $attendee ) {
 			$user_id     = intval( $attendee['user_id'] );
 			$user_status = sanitize_key( $attendee['status'] );
+			$user_guests = intval( $attendee['guests'] );
 
 			if ( 1 > $user_id ) {
 				continue;
@@ -268,6 +270,7 @@ class Attendee {
 				'role'      => $roles[ current( $user_info->roles ) ] ?? '',
 				'timestamp' => sanitize_text_field( $attendee['timestamp'] ),
 				'status'    => $user_status,
+				'guests'    => $user_guests,
 			);
 		}
 

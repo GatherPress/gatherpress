@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
-import {__} from '@wordpress/i18n';
+// import React, { useState } from 'react';
+import { useState } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
+import { Button, ButtonGroup } from '@wordpress/components';
+import Modal from 'react-modal';
 import AttendanceSelectorItem from './AttendanceSelectorItem';
 import attendance from '../apis/attendance';
-import Modal from 'react-modal';
-import { Button, ButtonGroup } from '@wordpress/components';
 
 const AttendanceSelector = () => {
-	if ( 'object' !== typeof GatherPress ) {
+	if ('object' !== typeof GatherPress) {
 		return '';
 	}
 
-	let defaultStatus = GatherPress.current_user_status.status;
-
-	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
-	const [ selectorHidden, setSelectorHidden ] = useState( 'hidden' );
-	const [ selectorExpanded, setSelectorExpanded ] = useState( 'false' );
+	const [attendanceStatus, setAttendanceStatus] = useState(GatherPress.current_user.status);
+	const [attendanceGuests, setAttendanceGuests] = useState(GatherPress.current_user.guests);
+	const [selectorHidden, setSelectorHidden] = useState('hidden');
+	const [selectorExpanded, setSelectorExpanded] = useState('false');
 	const customStyles = {
 		content: {
 			top: '50%',
@@ -25,83 +25,108 @@ const AttendanceSelector = () => {
 			transform: 'translate(-50%, -50%)',
 		},
 	};
-	const [modalIsOpen, setIsOpen] = React.useState(false);
-	const openModal = () => {
+	const [modalIsOpen, setIsOpen] = useState(false);
+	const openModal = (e) => {
+		onAnchorClick(e, 'attending', 0, false);
 		setIsOpen(true);
-	}
+	};
 
 	// Might be better way to do this, but should only run on frontend, not admin.
-	if ( 'undefined' === typeof adminpage ) {
+	if ('undefined' === typeof adminpage) {
 		Modal.setAppElement('#gp-attendance-selector-container');
 	}
 
 	const afterOpenModal = () => {
 		// references are now sync'd and can be accessed.
 		subtitle.style.color = '#f00';
-	}
+	};
 
 	const closeModal = () => {
 		setIsOpen(false);
-	}
+	};
 
 	const items = [
 		{
 			text: GatherPress.settings.language.attendance.attending_text,
-			status: 'attending'
+			status: 'attending',
+
 		},
 		{
 			text: GatherPress.settings.language.attendance.not_attending_text,
-			status: 'not_attending'
-		}
+			status: 'not_attending',
+		},
 	];
 
-	const onAnchorClick = async( e, status ) => {
+	const onAnchorClick = async (e, status, close = true) => {
 		e.preventDefault();
 
-		const response = await attendance.post( '/attendance', {
-			status: status
+		let guests = attendanceGuests;
+
+		if ('attending' !== status) {
+			guests = 0;
+		}
+
+		const response = await attendance.post('/attendance', {
+			status,
+			guests
 		});
 
-		if ( response.data.success ) {
-			setAttendanceStatus( response.data.status );
+		if (response.data.success) {
+			setAttendanceStatus(response.data.status);
+			setAttendanceGuests(response.data.guests);
 
-			const dispatchAttendanceStatus = new CustomEvent( 'setAttendanceStatus', {
-				detail: response.data.status
-			});
+			const dispatchAttendanceStatus = new CustomEvent(
+				'setAttendanceStatus',
+				{
+					detail: response.data.status,
+				}
+			);
 
-			dispatchEvent( dispatchAttendanceStatus );
+			dispatchEvent(dispatchAttendanceStatus);
 
-			const dispatchAttendanceList = new CustomEvent( 'setAttendanceList', {
-				detail: response.data.attendees
-			});
+			const dispatchAttendanceList = new CustomEvent(
+				'setAttendanceList',
+				{
+					detail: response.data.attendees,
+				}
+			);
 
-			dispatchEvent( dispatchAttendanceList );
+			dispatchEvent(dispatchAttendanceList);
 
-			let count = {
+			const count = {
 				all: 0,
 				attending: 0,
 				not_attending: 0, // eslint-disable-line camelcase
-				waiting_list: 0 // eslint-disable-line camelcase
+				waiting_list: 0, // eslint-disable-line camelcase
 			};
 
-			for ( const [ key, value ] of Object.entries( response.data.attendees ) ) {
+			for (const [key, value] of Object.entries(
+				response.data.attendees
+			)) {
 				count[key] = value.count;
 			}
 
-			const dispatchAttendanceCount = new CustomEvent( 'setAttendanceCount', {
-				detail: count
-			});
+			const dispatchAttendanceCount = new CustomEvent(
+				'setAttendanceCount',
+				{
+					detail: count,
+				}
+			);
 
-			dispatchEvent( dispatchAttendanceCount );
+			dispatchEvent(dispatchAttendanceCount);
+
+			if (close) {
+				closeModal();
+			}
 		}
 	};
 
-	const getStatusText = ( status ) => {
-		switch ( status ) {
+	const getStatusText = (status) => {
+		switch (status) {
 			case 'attending':
-				return GatherPress.settings.language.attendance.attending;
+				return 'Edit RSVP';
 			case 'not_attending':
-				return GatherPress.settings.language.attendance.not_attending;
+				return GatherPress.settings.language.attendance.attend;
 			case 'waiting_list':
 				return GatherPress.settings.language.attendance.waiting_list;
 		}
@@ -109,8 +134,9 @@ const AttendanceSelector = () => {
 		return GatherPress.settings.language.attendance.attend;
 	};
 
-	const renderedItems = items.map( ( item, index ) => {
+	const renderedItems = items.map((item, index) => {
 		const { text, status } = item;
+
 		return (
 			<AttendanceSelectorItem
 				key={index}
@@ -121,23 +147,25 @@ const AttendanceSelector = () => {
 		);
 	});
 
-	const onSpanKeyDown = ( e ) => {
-		if ( 13 === e.keyCode ) {
-			setSelectorHidden( ( 'hidden' === selectorHidden ) ? 'show' : 'hidden' );
-			setSelectorExpanded( ( 'false' === selectorExpanded ) ? 'true' : 'false' );
+	const onSpanKeyDown = (e) => {
+		if (13 === e.keyCode) {
+			setSelectorHidden('hidden' === selectorHidden ? 'show' : 'hidden');
+			setSelectorExpanded(
+				'false' === selectorExpanded ? 'true' : 'false'
+			);
 		}
 	};
 
-	if ( '' === GatherPress.current_user_status ) {
+	if ('' === GatherPress.current_user) {
 		return (
 			<div className="gp-attendance-selector">
 				<div className="wp-block-button">
 					<a
 						className="wp-block-button__link"
 						href="#"
-						onClick={ e => onAnchorClick( e, 'attending' )}
+						onClick={(e) => onAnchorClick(e, 'attending')}
 					>
-						{ getStatusText( attendanceStatus ) }
+						{getStatusText(attendanceStatus)}
 					</a>
 				</div>
 			</div>
@@ -152,9 +180,9 @@ const AttendanceSelector = () => {
 					aria-expanded={selectorExpanded}
 					tabIndex="0"
 					onKeyDown={onSpanKeyDown}
-					onClick={openModal}
+					onClick={(e) => openModal(e)}
 				>
-					{ getStatusText( attendanceStatus ) }
+					{getStatusText(attendanceStatus)}
 				</Button>
 			</div>
 			<Modal
@@ -165,19 +193,38 @@ const AttendanceSelector = () => {
 				contentLabel="Example Modal"
 			>
 				<div className="gp-block">
-					<h3>{__('Complete your RSVP', 'gatherpress')}</h3>
+					<h3>{__('Update RSVP', 'gatherpress')}</h3>
 					<p>
 						<label htmlFor="gp-number-of-guests">
 							{__('Number of guests?', 'gatherpress')}
 						</label>
-						<input id="gp-number-of-guests" type="number" min="0" max="5" defaultValue="0" />
+						<input
+							id="gp-number-of-guests"
+							type="number"
+							min="0"
+							max="5"
+							onChange={(e) => setAttendanceGuests(e.target.value)}
+							defaultValue={attendanceGuests}
+						/>
 					</p>
 					<ButtonGroup className="wp-block-buttons">
-						<div className="wp-block-button has-custom-font-size is-style-outline has-small-font-size">
-							<Button className="wp-block-button__link">Skip</Button>
+						<div className="wp-block-button has-custom-font-size has-small-font-size">
+							<Button
+								onClick={(e) =>
+									onAnchorClick(e, 'not_attending')
+								}
+								className="wp-block-button__link"
+							>
+								Not Attending
+							</Button>
 						</div>
 						<div className="wp-block-button has-custom-font-size has-small-font-size">
-							<Button className="wp-block-button__link">Submit</Button>
+							<Button
+								onClick={(e) => onAnchorClick(e, 'attending')}
+								className="wp-block-button__link"
+							>
+								Submit
+							</Button>
 						</div>
 					</ButtonGroup>
 				</div>

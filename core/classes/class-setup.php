@@ -245,6 +245,7 @@ class Setup {
 					user_id bigint(20) unsigned NOT NULL default '0',
 					timestamp datetime NOT NULL default '0000-00-00 00:00:00',
 					status varchar(255) default NULL,
+					guests tinyint(1) default 0,
 					PRIMARY KEY  (id),
 					KEY post_id (post_id),
 					KEY user_id (user_id),

@@ -142,7 +142,7 @@ class Assets {
 
 		return array(
 			'attendees'           => ( $event->attendee ) ? $event->attendee->get_attendees() : array(), // @todo cleanup
-			'current_user_status' => ( $event->attendee && $event->attendee->get_attendee( get_current_user_id() ) ) ? $event->attendee->get_attendee( get_current_user_id() ) : '', // @todo cleanup
+			'current_user' => ( $event->attendee && $event->attendee->get_attendee( get_current_user_id() ) ) ? $event->attendee->get_attendee( get_current_user_id() ) : '', // @todo cleanup
 			'event_rest_api'      => home_url( 'wp-json/gatherpress/v1/event' ),
 			'has_event_past'      => $event->has_event_past(),
 			'nonce'               => wp_create_nonce( 'wp_rest' ),

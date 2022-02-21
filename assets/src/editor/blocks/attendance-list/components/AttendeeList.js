@@ -21,6 +21,14 @@ const AttendeeList = ({ value }) => {
 	) {
 		renderedItems = attendanceList[value].attendees.map( ( attendee, index ) => {
 			const { profile, name, photo, role } = attendee;
+			let { guests } = attendee;
+
+			if (guests) {
+				guests = ' +' + guests + ' guest(s)';
+			} else {
+				guests = '';
+			}
+
 			return (
 			<div key={index} className="gp-attendance-list__item">
 				<a className="gp-attendance-list__member-avatar" href={profile}>
@@ -31,7 +39,12 @@ const AttendeeList = ({ value }) => {
 						{name}
 					</a>
 				</div>
-				<div className="gp-attendance-list__member-role">{role}</div>
+				<div className="gp-attendance-list__member-role">
+					{role}
+				</div>
+				<small className="gp-attendance-list__guests">
+					{guests}
+				</small>
 			</div>
 			);
 		});
