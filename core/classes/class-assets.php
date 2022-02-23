@@ -104,6 +104,7 @@ class Assets {
 		wp_enqueue_script(
 			'gatherpress-index',
 			$this->build . 'index.js',
+			// @todo look into and fix dependencies so we can use $asset['dependencies'] here
 			array(
 				'wp-blocks',
 				'wp-i18n',
@@ -136,7 +137,7 @@ class Assets {
 	 *
 	 * @return array
 	 */
-	protected function localize( int $post_id ) : array {
+	protected function localize( int $post_id ): array {
 		$event = new Event( $post_id );
 		$settings = Settings::get_instance();
 		return array(
