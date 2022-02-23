@@ -1,9 +1,7 @@
-// import React, { useState } from 'react';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Button, ButtonGroup } from '@wordpress/components';
 import Modal from 'react-modal';
-import AttendanceSelectorItem from './AttendanceSelectorItem';
 import attendance from '../apis/attendance';
 
 const AttendanceSelector = () => {
@@ -36,26 +34,9 @@ const AttendanceSelector = () => {
 		Modal.setAppElement('#gp-attendance-selector-container');
 	}
 
-	const afterOpenModal = () => {
-		// references are now sync'd and can be accessed.
-		subtitle.style.color = '#f00';
-	};
-
 	const closeModal = () => {
 		setIsOpen(false);
 	};
-
-	const items = [
-		{
-			text: GatherPress.settings.language.attendance.attending_text,
-			status: 'attending',
-
-		},
-		{
-			text: GatherPress.settings.language.attendance.not_attending_text,
-			status: 'not_attending',
-		},
-	];
 
 	const onAnchorClick = async (e, status, close = true) => {
 		e.preventDefault();
@@ -124,28 +105,12 @@ const AttendanceSelector = () => {
 	const getStatusText = (status) => {
 		switch (status) {
 			case 'attending':
-				return 'Edit RSVP';
-			case 'not_attending':
-				return GatherPress.settings.language.attendance.attend;
 			case 'waiting_list':
-				return GatherPress.settings.language.attendance.waiting_list;
+				return __('Edit RSVP', 'gatherpress');
 		}
 
-		return GatherPress.settings.language.attendance.attend;
+		return __('Attend', 'gatherpress');
 	};
-
-	const renderedItems = items.map((item, index) => {
-		const { text, status } = item;
-
-		return (
-			<AttendanceSelectorItem
-				key={index}
-				text={text}
-				status={status}
-				onAnchorClick={onAnchorClick}
-			/>
-		);
-	});
 
 	const onSpanKeyDown = (e) => {
 		if (13 === e.keyCode) {
@@ -156,6 +121,7 @@ const AttendanceSelector = () => {
 		}
 	};
 
+	// @todo need to revisit this and handle button for users that aren't logged in.
 	if ('' === GatherPress.current_user) {
 		return (
 			<div className="gp-attendance-selector">
@@ -187,43 +153,42 @@ const AttendanceSelector = () => {
 			</div>
 			<Modal
 				isOpen={modalIsOpen}
-				onAfterOpen={afterOpenModal}
 				onRequestClose={closeModal}
 				style={customStyles}
-				contentLabel="Example Modal"
+				contentLabel={__('Edit RSVP', 'gatherpress')}
 			>
 				<div className="gp-block">
-					<h3>{__('Update RSVP', 'gatherpress')}</h3>
-					<p>
-						<label htmlFor="gp-number-of-guests">
+					<div class="has-large-font-size">{__('Edit RSVP', 'gatherpress')}</div>
+					<div class="gp-guests-container">
+						<label htmlFor="gp-guests">
 							{__('Number of guests?', 'gatherpress')}
 						</label>
 						<input
-							id="gp-number-of-guests"
+							id="gp-guests"
 							type="number"
 							min="0"
 							max="5"
 							onChange={(e) => setAttendanceGuests(e.target.value)}
 							defaultValue={attendanceGuests}
 						/>
-					</p>
-					<ButtonGroup className="wp-block-buttons">
-						<div className="wp-block-button has-custom-font-size has-small-font-size">
+					</div>
+					<ButtonGroup className="gp-buttons-container wp-block-buttons">
+						<div className="gp-button-container wp-block-button is-style-outline has-small-font-size ">
 							<Button
 								onClick={(e) =>
 									onAnchorClick(e, 'not_attending')
 								}
-								className="wp-block-button__link"
+								className="gp-button wp-block-button__link"
 							>
-								Not Attending
+								{__('Not Attending', 'gatherpress')}
 							</Button>
 						</div>
-						<div className="wp-block-button has-custom-font-size has-small-font-size">
+						<div className="gp-button-container wp-block-button has-small-font-size">
 							<Button
 								onClick={(e) => onAnchorClick(e, 'attending')}
-								className="wp-block-button__link"
+								className="gp-button wp-block-button__link"
 							>
-								Submit
+								{__('Update', 'gatherpress')}
 							</Button>
 						</div>
 					</ButtonGroup>

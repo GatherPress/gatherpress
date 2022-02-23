@@ -6,56 +6,13 @@
 	}
 }
 
-//.gp-attendance-selector {
-//	display: inline-block;
-//	position: relative;
-//
-//	&:hover {
-//		.gp-attendance-selector__options {
-//			display: block;
-//		}
-//	}
-//
-//	&__container {
-//		display: flex;
-//		background-color: var(--wp--preset--color--primary);
-//		color: var(--wp--preset--color--background);
-//		border: var(--button--border-width) solid transparent;
-//		border-radius: var(--button--border-radius);
-//		cursor: pointer;
-//		font-weight: var(--button--font-weight);
-//		font-family: var(--button--font-family);
-//		font-size: var(--wp--preset--font-size--medium);
-//		line-height: var(--button--line-height);
-//		padding: var(--button--padding-vertical) var(--button--padding-horizontal);
-//		text-decoration: none;
-//	}
-//
-//	&__svg {
-//		width: 2rem;
-//		height: 2rem;
-//		fill: var(--global--color-background);
-//	}
-//
-//	&__options {
-//		position: absolute;
-//		overflow: hidden;
-//		left: 0;
-//		z-index: 10;
-//		display: none;
-//		background: #ffffff;
-//		padding: 1rem;
-//		margin: 0;
-//	}
-//
-//	&__option {
-//		list-style-type: none;
-//		margin: 0;
-//		padding: 0.25rem;
-//		white-space: nowrap;
-//	}
-//
-//	&__anchor {
-//		text-decoration: none;
-//	}
-//}
+.gp-buttons-container {
+	display: flex;
+	grid-column-gap: 1rem;
+}
+
+.gp-guests-container {
+	display: flex;
+	grid-column-gap: 1rem;
+	margin-bottom: 1rem;
+}
