@@ -1,6 +1,6 @@
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { Button, ButtonGroup } from '@wordpress/components';
+import { ButtonGroup } from '@wordpress/components';
 import Modal from 'react-modal';
 import attendance from '../apis/attendance';
 
@@ -156,7 +156,7 @@ const AttendanceSelector = () => {
 		<div className="gp-block gp-attendance-selector">
 			<ButtonGroup className="gp-buttons-container wp-block-buttons">
 				<div className="gp-button-container  wp-block-button">
-					<Button
+					<a
 						className="gp-button wp-block-button__link"
 						aria-expanded={selectorExpanded}
 						tabIndex="0"
@@ -164,7 +164,7 @@ const AttendanceSelector = () => {
 						onClick={(e) => openModal(e)}
 					>
 						{getButtonText(attendanceStatus)}
-					</Button>
+					</a>
 				</div>
 				<Modal
 					isOpen={modalIsOpen}
@@ -173,7 +173,7 @@ const AttendanceSelector = () => {
 					contentLabel={__('Edit RSVP', 'gatherpress')}
 				>
 					<div className="gp-block gp-modal">
-						<div className="has-large-font-size">{__('Edit RSVP', 'gatherpress')}</div>
+						<div className="gp-modal-header has-large-font-size">{__('Edit RSVP', 'gatherpress')}</div>
 						<div className="gp-guests-container">
 							<label htmlFor="gp-guests">
 								{__('Number of guests?', 'gatherpress')}
@@ -189,22 +189,22 @@ const AttendanceSelector = () => {
 						</div>
 						<ButtonGroup className="gp-buttons-container wp-block-buttons">
 							<div className="gp-button-container wp-block-button is-style-outline has-small-font-size">
-								<Button
+								<a
 									onClick={(e) =>
 										onAnchorClick(e, 'not_attending')
 									}
 									className="gp-button wp-block-button__link"
 								>
 									{__('Not Attending', 'gatherpress')}
-								</Button>
+								</a>
 							</div>
 							<div className="gp-button-container wp-block-button has-small-font-size">
-								<Button
+								<a
 									onClick={closeModal}
 									className="gp-button wp-block-button__link"
 								>
 									{__('Close', 'gatherpress')}
-								</Button>
+								</a>
 							</div>
 						</ButtonGroup>
 					</div>
