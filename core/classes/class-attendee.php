@@ -73,12 +73,21 @@ class Attendee {
 			return array();
 		}
 
+		$default = array(
+			'id'        => 0,
+			'post_id'   => $event_id,
+			'user_id'   => $user_id,
+			'timestamp' => null,
+			'status'    => 'attend',
+			'guests'    => 0,
+		);
+
 		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo add caching to this.
-		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . esc_sql( $table ) . ' WHERE post_id = %d AND user_id = %d', $event_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT id, timestamp, status, guests FROM ' . esc_sql( $table ) . ' WHERE post_id = %d AND user_id = %d', $event_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
-		return (array) $data;
+		return array_merge( $default, (array) $data );
 	}
 
 	/**
@@ -120,11 +129,7 @@ class Attendee {
 			'guests'    => intval( $guests ),
 		);
 
-		if ( ! empty( $attendee ) ) {
-			if ( 1 > intval( $attendee['id'] ) ) {
-				return $retval;
-			}
-
+		if ( intval( $attendee['id'] ) ) {
 			$where = array(
 				'id' => intval( $attendee['id'] ),
 			);
