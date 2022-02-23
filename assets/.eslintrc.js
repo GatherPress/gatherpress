@@ -4,7 +4,7 @@ module.exports = {
 		'es2020': true
 	},
 	'extends': [
-		'wordpress'
+		'plugin:@wordpress/eslint-plugin/recommended'
 	],
 	'parserOptions': {
 		'ecmaFeatures': {

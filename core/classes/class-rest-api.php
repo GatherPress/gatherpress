@@ -351,6 +351,7 @@ class Rest_Api {
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
+		$guests          = intval( $params['guests'] );
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
@@ -376,7 +377,7 @@ class Rest_Api {
 			&& is_user_member_of_blog( $user_id )
 			&& ! $event->has_event_past()
 		) {
-			$status = $event->attendee->save_attendee( $user_id, $status );
+			$status = $event->attendee->save_attendee( $user_id, $status, $guests );
 
 			if ( in_array( $status, $event->attendee->statuses, true ) ) {
 				$success = true;
@@ -386,6 +387,7 @@ class Rest_Api {
 		$response = array(
 			'success'   => (bool) $success,
 			'status'    => $status,
+			'guests'    => $guests,
 			'attendees' => $event->attendee->get_attendees(),
 		);
 
