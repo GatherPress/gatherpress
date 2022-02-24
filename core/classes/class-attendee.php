@@ -64,7 +64,7 @@ class Attendee {
 	 *
 	 * @return array
 	 */
-	public function get_attendee( int $user_id ) : array {
+	public function get_attendee( int $user_id ): array {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -98,7 +98,7 @@ class Attendee {
 	 *
 	 * @return string
 	 */
-	public function save_attendee( int $user_id, string $status, int $guests = 0 ) : string {
+	public function save_attendee( int $user_id, string $status, int $guests = 0 ): string {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -156,7 +156,7 @@ class Attendee {
 	 *
 	 * @return int  Number of attendees from waiting_list that were moved to attending.
 	 */
-	public function check_waiting_list() : int {
+	public function check_waiting_list(): int {
 		$attendees = $this->get_attendees();
 		$total     = 0;
 
@@ -194,7 +194,7 @@ class Attendee {
 	 *
 	 * @return bool
 	 */
-	public function attending_limit_reached( string $status ) : bool {
+	public function attending_limit_reached( string $status ): bool {
 		$attendees = $this->get_attendees();
 
 		if (
@@ -213,7 +213,7 @@ class Attendee {
 	 *
 	 * @return array
 	 */
-	public function get_attendees() : array {
+	public function get_attendees(): array {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -310,7 +310,7 @@ class Attendee {
 	 *
 	 * @return bool
 	 */
-	public function sort_attendees_by_role( array $a, array $b ) : bool {
+	public function sort_attendees_by_role( array $a, array $b ): bool {
 		$roles = array_values( Role::get_instance()->get_role_settings() );
 
 		return ( array_search( $a['role'], $roles, true ) > array_search( $b['role'], $roles, true ) );
@@ -324,7 +324,7 @@ class Attendee {
 	 *
 	 * @return bool
 	 */
-	public function sort_attendees_by_timestamp( array $a, array $b ) : bool {
+	public function sort_attendees_by_timestamp( array $a, array $b ): bool {
 		return ( strtotime( $a['timestamp'] ) < strtotime( $b['timestamp'] ) );
 	}
 

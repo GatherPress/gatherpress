@@ -199,7 +199,7 @@ class Rest_Api {
 	 *
 	 * @return bool
 	 */
-	public function validate_attendance_status( $param ) : bool {
+	public function validate_attendance_status( $param ): bool {
 		return ( 'attending' === $param || 'not_attending' === $param );
 	}
 
@@ -210,7 +210,7 @@ class Rest_Api {
 	 *
 	 * @return bool
 	 */
-	public function validate_event_post_id( $param ) : bool {
+	public function validate_event_post_id( $param ): bool {
 		return (
 			0 < intval( $param )
 			&& is_numeric( $param )
@@ -225,7 +225,7 @@ class Rest_Api {
 	 *
 	 * @return bool
 	 */
-	public function validate_number( $param ) : bool {
+	public function validate_number( $param ): bool {
 		return (
 			0 < intval( $param )
 			&& is_numeric( $param )
@@ -239,7 +239,7 @@ class Rest_Api {
 	 *
 	 * @return bool
 	 */
-	public function validate_datetime( $param ) : bool {
+	public function validate_datetime( $param ): bool {
 		return (bool) \DateTime::createFromFormat( 'Y-m-d H:i:s', $param );
 	}
 

@@ -45,7 +45,7 @@ class Query {
 	 *
 	 * @return \WP_Query
 	 */
-	public function get_future_events( int $number = 5 ) : \WP_Query {
+	public function get_future_events( int $number = 5 ): \WP_Query {
 		$args = array(
 			'post_type'       => Event::POST_TYPE,
 			'no_found_rows'   => true,
@@ -63,7 +63,7 @@ class Query {
 	 *
 	 * @return \WP_Query
 	 */
-	public function get_past_events( int $number = 5 ) : \WP_Query {
+	public function get_past_events( int $number = 5 ): \WP_Query {
 		$args = array(
 			'post_type'       => Event::POST_TYPE,
 			'no_found_rows'   => true,
@@ -104,7 +104,7 @@ class Query {
 	 *
 	 * @return array
 	 */
-	public function order_past_events( array $pieces ) : array {
+	public function order_past_events( array $pieces ): array {
 		return Event::adjust_sql( $pieces, 'past' );
 	}
 
@@ -115,12 +115,13 @@ class Query {
 	 *
 	 * @return array
 	 */
-	public function admin_order_events( array $pieces ) : array {
+	public function admin_order_events( array $pieces ): array {
 		if ( ! is_admin() ) {
 			return $pieces;
 		}
 
 		global $wp_query;
+
 		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
 			$pieces = Event::adjust_sql( $pieces, 'all', $wp_query->get( 'order' ) );
 		}
@@ -135,7 +136,7 @@ class Query {
 	 *
 	 * @return array
 	 */
-	public function order_future_events( array $pieces ) : array {
+	public function order_future_events( array $pieces ): array {
 		return Event::adjust_sql( $pieces, 'future', 'ASC' );
 	}
 

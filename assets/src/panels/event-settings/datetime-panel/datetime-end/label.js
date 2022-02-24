@@ -1,9 +1,8 @@
 import React, { Component } from 'react';
 import { dateI18n, __experimentalGetSettings } from '@wordpress/date';
+import { __ } from '@wordpress/i18n';
 import { validateDateTimeEnd } from '../helpers';
 import { hasEventPast, enableSave } from '../../../helpers';
-
-const { __ } = wp.i18n;
 
 export function updateDateTimeEnd( dateTime, setState = null ) {
 	validateDateTimeEnd( dateTime );

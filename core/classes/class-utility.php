@@ -26,7 +26,7 @@ class Utility {
 	 *
 	 * @return string
 	 */
-	public static function render_template( string $path, array $variables = array(), bool $echo = false ) : string {
+	public static function render_template( string $path, array $variables = array(), bool $echo = false ): string {
 		if ( ! file_exists( $path ) ) {
 			return '';
 		}
