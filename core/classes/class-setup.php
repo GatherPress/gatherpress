@@ -148,7 +148,7 @@ class Setup {
 	 *
 	 * @return array
 	 */
-	public function on_site_delete( array $tables ) : array {
+	public function on_site_delete( array $tables ): array {
 		global $wpdb;
 
 		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
@@ -269,7 +269,7 @@ class Setup {
 	 *
 	 * @return string
 	 */
-	public function append_id_to_event_slug( string $slug, int $post_id, string $post_status, string $post_type ) : string {
+	public function append_id_to_event_slug( string $slug, int $post_id, string $post_status, string $post_type ): string {
 		if ( Event::POST_TYPE !== $post_type ) {
 			return $slug;
 		}
@@ -318,7 +318,7 @@ class Setup {
 	 *
 	 * @return array
 	 */
-	public function set_custom_columns( array $columns ) : array {
+	public function set_custom_columns( array $columns ): array {
 		$placement = 2;
 		$insert    = array(
 			'datetime' => __( 'Event date &amp; time', 'gatherpress' ),
@@ -336,7 +336,7 @@ class Setup {
 	 *
 	 * @return array
 	 */
-	public function sortable_columns( array $columns ) : array {
+	public function sortable_columns( array $columns ): array {
 		$columns['datetime'] = 'datetime';
 
 		return $columns;
@@ -352,7 +352,7 @@ class Setup {
 	 *
 	 * @return string
 	 */
-	public function get_the_event_date( $the_date, $format ) : string {
+	public function get_the_event_date( $the_date, $format ): string {
 		global $post;
 
 		if ( ! is_a( $post, '\WP_Post' ) || Event::POST_TYPE !== $post->post_type ) {

@@ -44,7 +44,7 @@ class Block {
 	 *
 	 * @return string
 	 */
-	public function render_block( string $block_content, array $block ) : string {
+	public function render_block( string $block_content, array $block ): string {
 		if ( ! isset( $block['blockName'] ) ) {
 			return $block_content;
 		}

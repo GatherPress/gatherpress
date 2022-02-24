@@ -1,0 +1,9 @@
+@import "src/blocks/upcoming-events/style";
+@import "src/blocks/past-events/style";
+@import "src/blocks/attendance-selector/style";
+@import "src/blocks/attendance-list/style";
+
+.gp-spinner.spinner {
+	visibility: visible;
+	float: none;
+}
