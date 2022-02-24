@@ -2,7 +2,7 @@
 
 ## 🎖️ The Goal
 
-GatherPress is the result of the WordPress community's frustration with event management tools that have not met the diverse needs of organizers and members.
+GatherPress is the result of the WordPress community's desire for new event management tools that meet the diverse needs of event organizers and members.
 
 ## 📃 The Project
 This project is for the collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and the grit sweat and love of **the community, for the community**. 
@@ -24,7 +24,7 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 > Auth: `key pair`
 
 # Credits
-[mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [cameronbarrett](https://profiles.wordpress.org/cameronbarrett/), [pbrocks](https://profiles.wordpress.org/pbrocks/)
+[mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [pbrocks](https://profiles.wordpress.org/pbrocks/), [hauvong](https://profiles.wordpress.org/hauvong/)
 
 ---
 
