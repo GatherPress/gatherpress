@@ -1,34 +1,48 @@
-.gp-upcoming-events {
-	&__container {
-		display: grid;
-		margin-bottom: 2rem;
+.gp-upcoming-event {
+	&__header {
+		display: flex;
+		gap: 2rem;
+		margin-bottom: 1rem;
+		justify-content: space-between;
+	}
+
+	&__info {
+		padding: 0;
 	}
 
 	&__image {
-		grid-column: 1;
-		grid-row: 1;
+		flex-shrink: 0;
 		margin: 0;
-	}
 
-	&__content {
-		grid-column: 2 / span 2;
-		grid-row: 1;
-		padding: 0 1rem;
+		a {
+			display: block;
+		}
 	}
 
 	&__datetime {
-		margin: 0 0 0.5rem;
+		margin-bottom: 0.5rem;
 		padding: 0;
 	}
 
 	&__title {
-		margin: 0 0 0.5rem;
+		margin-bottom: 1.5rem;
 		padding: 0;
 	}
 
-	&__excerpt p {
-		margin: 0;
-		padding: 0;
+	&__excerpt {
+		margin-bottom: 1rem;
+
+		p {
+			margin: 0;
+			padding: 0;
+		}
+	}
+
+	&__footer {
+		margin-bottom: 2rem;
+		padding-bottom: 2rem;
+		display: flex;
+		justify-content: flex-end;
 	}
 
 	.editor-styles-wrapper & {
