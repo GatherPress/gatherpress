@@ -44,21 +44,4 @@
 		display: flex;
 		justify-content: flex-end;
 	}
-
-	.editor-styles-wrapper & {
-		&__datetime {
-			margin: 0;
-			padding: 0;
-		}
-
-		&__title {
-			margin: 0;
-			padding: 0;
-		}
-
-		&__excerpt p {
-			margin: 0;
-			padding: 0;
-		}
-	}
 }
