@@ -131,7 +131,7 @@ class Setup {
 					'comments',
 					'revisions',
 				),
-				'menu_icon'     => 'dashicons-calendar',
+				'menu_icon'     => 'dashicons-nametag',
 				'rewrite'       => array(
 					'slug' => 'events',
 				),
