@@ -44,5 +44,4 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 6. Done
 
 ## 3. Settings
-### Edit Terminology (Language)
-To edit how roles such as "Administrator" and "Editor" are referred to throughout the plugin, you can change these in the WP Admin > Settings > GatherPress > Language section.
+To find what global configuration changes are available in this plugin go to WP Admin > Settings > GatherPress.

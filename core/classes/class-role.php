@@ -67,20 +67,18 @@ class Role {
 
 	/**
 	 * Return role settings that are either saved or default.
+	 * @todo temporary mapping to roles, this will be revisited as a taxonomy to assign members.
 	 *
 	 * @return array
 	 */
 	public function get_role_settings(): array {
-		$settings       = Settings::get_instance();
-		$roles          = array_map(
-			function( $value ) {
-				return $value['default'];
-			},
-			$settings->get_sub_pages()['language']['sections']['roles']['options']
+		return array(
+			'administrator' => __( 'Organizer', 'gatherpress' ),
+			'editor' => __( 'Assistant Organizer', 'gatherpress' ),
+			'author' => __( 'Event Organizer', 'gatherpress' ),
+			'contributor' => __( 'Event Assistant', 'gatherpress' ),
+			'subscriber' => __( 'Member', 'gatherpress' ),
 		);
-		$saved_settings = array_filter( $settings->get_value( 'gp_language', 'roles', '', array() ) );
-
-		return array_merge( $roles, $saved_settings );
 	}
 
 }

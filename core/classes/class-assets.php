@@ -152,7 +152,7 @@ class Assets {
 			'event_announced'  => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
 			'default_timezone' => sanitize_text_field( wp_timezone_string() ),
 			'settings'         => array(
-				'language' => $settings->get_value( $settings->prefix_key( 'language' ) ),
+				// @todo settings to come...
 			),
 		);
 	}
