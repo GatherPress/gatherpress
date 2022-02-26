@@ -203,13 +203,13 @@ class Setup {
 	 * @since 1.0.0
 	 */
 	public function maybe_create_custom_table() {
-		$this->create_table();
+		$this->create_tables();
 
 		if ( is_multisite() ) {
 			$blog_id = get_current_blog_id();
 
 			switch_to_blog( $blog_id );
-			$this->create_table();
+			$this->create_tables();
 			restore_current_blog();
 		}
 	}
@@ -219,13 +219,13 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 */
-	protected function create_table() {
+	protected function create_tables() {
 		global $wpdb;
 
 		$sql             = array();
 		$charset_collate = $GLOBALS['wpdb']->get_charset_collate();
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$sql[] = "CREATE TABLE {$table} (
 					post_id bigint(20) unsigned NOT NULL default '0',
 					datetime_start datetime NOT NULL default '0000-00-00 00:00:00',

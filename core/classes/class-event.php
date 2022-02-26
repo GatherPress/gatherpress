@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Event {
 
 	const POST_TYPE          = 'gp_event';
-	const TABLE_FORMAT       = '%s%s_extended';
+	const TABLE_FORMAT       = '%sgp_events';
 	const DATETIME_CACHE_KEY = 'datetime_%d';
 
 	/**
@@ -203,7 +203,7 @@ class Event {
 		$data      = wp_cache_get( $cache_key );
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
-			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
+			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
@@ -356,7 +356,7 @@ class Event {
 			'limits'   => '',
 		);
 		$pieces         = array_merge( $defaults, $pieces );
-		$table          = sprintf( self::TABLE_FORMAT, $wpdb->prefix, self::POST_TYPE );
+		$table          = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 		$pieces['join'] = 'LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
 		$order          = strtoupper( $order );
 
@@ -425,7 +425,7 @@ class Event {
 		$fields['datetime_start_gmt'] = get_gmt_from_date( $fields['datetime_start'] );
 		$fields['datetime_end_gmt']   = get_gmt_from_date( $fields['datetime_end'] );
 		$fields['timezone']           = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
-		$table                        = sprintf( static::TABLE_FORMAT, $wpdb->prefix, static::POST_TYPE );
+		$table                        = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo Add caching to this and create new method to check existence.
 		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
