@@ -2,7 +2,7 @@ import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { ButtonGroup } from '@wordpress/components';
 import Modal from 'react-modal';
-import attendance from '../apis/attendance';
+import apiFetch from '@wordpress/api-fetch';
 
 const AttendanceSelector = () => {
 	if ('object' !== typeof GatherPress) {
@@ -47,59 +47,65 @@ const AttendanceSelector = () => {
 			guests = 0;
 		}
 
-		const response = await attendance.post('/attendance', {
-			status,
-			guests
+		apiFetch({
+			path: '/gatherpress/v1/event/attendance',
+			method: 'POST',
+			data: {
+				post_id: GatherPress.post_id,
+				status: status,
+				guests: guests,
+				_wpnonce: GatherPress.nonce
+			}
+		}).then((res) => {
+			if (res.success) {
+				setAttendanceStatus(res.status);
+				setAttendanceGuests(res.guests);
+
+				const dispatchAttendanceStatus = new CustomEvent(
+					'setAttendanceStatus',
+					{
+						detail: res.status,
+					}
+				);
+
+				dispatchEvent(dispatchAttendanceStatus);
+
+				const dispatchAttendanceList = new CustomEvent(
+					'setAttendanceList',
+					{
+						detail: res.attendees,
+					}
+				);
+
+				dispatchEvent(dispatchAttendanceList);
+
+				const count = {
+					all: 0,
+					attending: 0,
+					not_attending: 0, // eslint-disable-line camelcase
+					waiting_list: 0, // eslint-disable-line camelcase
+				};
+
+				for (const [key, value] of Object.entries(
+					res.attendees
+				)) {
+					count[key] = value.count;
+				}
+
+				const dispatchAttendanceCount = new CustomEvent(
+					'setAttendanceCount',
+					{
+						detail: count,
+					}
+				);
+
+				dispatchEvent(dispatchAttendanceCount);
+
+				if (close) {
+					closeModal();
+				}
+			}
 		});
-
-		if (response.data.success) {
-			setAttendanceStatus(response.data.status);
-			setAttendanceGuests(response.data.guests);
-
-			const dispatchAttendanceStatus = new CustomEvent(
-				'setAttendanceStatus',
-				{
-					detail: response.data.status,
-				}
-			);
-
-			dispatchEvent(dispatchAttendanceStatus);
-
-			const dispatchAttendanceList = new CustomEvent(
-				'setAttendanceList',
-				{
-					detail: response.data.attendees,
-				}
-			);
-
-			dispatchEvent(dispatchAttendanceList);
-
-			const count = {
-				all: 0,
-				attending: 0,
-				not_attending: 0, // eslint-disable-line camelcase
-				waiting_list: 0, // eslint-disable-line camelcase
-			};
-
-			for (const [key, value] of Object.entries(
-				response.data.attendees
-			)) {
-				count[key] = value.count;
-			}
-
-			const dispatchAttendanceCount = new CustomEvent(
-				'setAttendanceCount',
-				{
-					detail: count,
-				}
-			);
-
-			dispatchEvent(dispatchAttendanceCount);
-
-			if (close) {
-				closeModal();
-			}
-		}
 	};
 
 	const getButtonText = (status) => {
