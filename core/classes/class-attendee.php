@@ -39,7 +39,7 @@ class Attendee {
 	 *
 	 * @var int
 	 */
-	public $limit = 3;
+	public $limit = 500;
 
 	/**
 	 * Event post object.
