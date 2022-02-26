@@ -35,7 +35,7 @@ class Test_Attendee extends Base {
 		$status   = 'attending';
 
 		$this->assertEmpty( $attendee->get_attendee( 0 ) );
-		$this->assertEmpty( $attendee->get_attendee( $user->ID ) );
+		$this->assertEquals( 0, $attendee->get_attendee( $user->ID )['id'] );
 
 		$attendee->save_attendee( $user->ID, $status );
 
