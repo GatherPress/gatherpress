@@ -7,7 +7,7 @@
  * @since 1.0.0
  */
 
-$gatherpress_max_posts = ( is_array( $attrs ) && ! empty( $attrs['maxNumberOfEvents'] ) ) ? intval( $attrs['maxNumberOfEvents'] ) : 5;
+$gatherpress_max_posts = ( isset( $attrs ) && is_array( $attrs ) && ! empty( $attrs['maxNumberOfEvents'] ) ) ? intval( $attrs['maxNumberOfEvents'] ) : 5;
 $gatherpress_max_posts = ( 0 > $gatherpress_max_posts ) ? 5 : $gatherpress_max_posts;
 $gatherpress_query     = \GatherPress\Core\Query::get_instance()->get_future_events( $gatherpress_max_posts );
 ?>
@@ -22,28 +22,45 @@ $gatherpress_query     = \GatherPress\Core\Query::get_instance()->get_future_eve
 			$gatherpress_event = new \GatherPress\Core\Event( get_the_ID() );
 
 			?>
-			<div class="gp-upcoming-events__container">
-				<?php
-				if ( has_post_thumbnail() ) {
-					?>
-					<figure class="gp-upcoming-events__image">
-						<?php the_post_thumbnail( 'medium' ); ?>
-					</figure>
+			<div class="gp-upcoming-event">
+				<div class="gp-upcoming-event__header">
+					<div class="gp-upcoming-event__info">
+						<div class="gp-upcoming-event__datetime has-small-font-size">
+							<strong>
+								<?php echo esc_html( $gatherpress_event->get_datetime_start() ); ?>
+							</strong>
+						</div>
+						<div class="gp-upcoming-event__title has-large-font-size">
+							<a href="<?php the_permalink(); ?>">
+								<?php the_title(); ?>
+							</a>
+						</div>
+						<div class="gp-buttons-container wp-block-buttons">
+							<div class="gp-button-container wp-block-button">
+								<a href="<?php the_permalink(); ?>" class="gp-button wp-block-button__link">
+									<?php esc_html_e( 'Attend', 'gatherpress' ); ?>
+								</a>
+							</div>
+						</div>
+					</div>
 					<?php
-				}
-				?>
-				<div class="gp-upcoming-events__content">
-					<h5 class="gp-upcoming-events__datetime">
-						<?php echo esc_html( $gatherpress_event->get_datetime_start() ); ?>
-					</h5>
-					<h3 class="gp-upcoming-events__title">
-						<a href="<?php the_permalink(); ?>" class="block">
-							<?php the_title(); ?>
-						</a>
-					</h3>
-					<div class="gp-upcoming-events__excerpt">
+					if ( has_post_thumbnail() ) {
+						?>
+						<figure class="gp-upcoming-event__image">
+							<a href="<?php the_permalink(); ?>">
+								<?php the_post_thumbnail( 'medium' ); ?>
+							</a>
+						</figure>
+						<?php
+					}
+					?>
+				</div>
+				<div class="gp-upcoming-event__content">
+					<div class="gp-upcoming-event__excerpt">
 						<?php the_excerpt(); ?>
 					</div>
+				</div>
+				<div class="gp-upcoming-event__footer">
 				</div>
 			</div>
 			<?php

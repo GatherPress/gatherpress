@@ -135,7 +135,7 @@ const AttendanceSelector = () => {
 	};
 
 	// @todo need to revisit this and handle button for users that aren't logged in.
-	// Clean up so this
+	// Clean up so this does something... See issue #68 in GitHub.
 	if ('' === GatherPress.current_user) {
 		return (
 			<div className="gp-attendance-selector">
@@ -153,11 +153,11 @@ const AttendanceSelector = () => {
 	}
 
 	return (
-		<div className="gp-block gp-attendance-selector">
-			<ButtonGroup className="gp-buttons-container wp-block-buttons">
-				<div className="gp-button-container  wp-block-button">
+		<div className="gp-attendance-selector">
+			<ButtonGroup className="gp-buttons wp-block-buttons">
+				<div className="gp-buttons__container  wp-block-button">
 					<a
-						className="gp-button wp-block-button__link"
+						className="gp-buttons__button wp-block-button__link"
 						aria-expanded={selectorExpanded}
 						tabIndex="0"
 						onKeyDown={onSpanKeyDown}
@@ -172,9 +172,11 @@ const AttendanceSelector = () => {
 					style={customStyles}
 					contentLabel={__('Edit RSVP', 'gatherpress')}
 				>
-					<div className="gp-block gp-modal">
-						<div className="gp-modal-header has-large-font-size">{__('Edit RSVP', 'gatherpress')}</div>
-						<div className="gp-guests-container">
+					<div className="gp-modal">
+						<div className="gp-modal__header has-large-font-size">
+							{__('Edit RSVP', 'gatherpress')}
+						</div>
+						<div className="gp-modal__content">
 							<label htmlFor="gp-guests">
 								{__('Number of guests?', 'gatherpress')}
 							</label>
@@ -187,21 +189,21 @@ const AttendanceSelector = () => {
 								defaultValue={attendanceGuests}
 							/>
 						</div>
-						<ButtonGroup className="gp-buttons-container wp-block-buttons">
-							<div className="gp-button-container wp-block-button is-style-outline has-small-font-size">
+						<ButtonGroup className="gp-buttons wp-block-buttons">
+							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
 								<a
 									onClick={(e) =>
 										onAnchorClick(e, 'not_attending')
 									}
-									className="gp-button wp-block-button__link"
+									className="gp-buttons__button wp-block-button__link"
 								>
 									{__('Not Attending', 'gatherpress')}
 								</a>
 							</div>
-							<div className="gp-button-container wp-block-button has-small-font-size">
+							<div className="gp-buttons__container wp-block-button has-small-font-size">
 								<a
 									onClick={closeModal}
-									className="gp-button wp-block-button__link"
+									className="gp-buttons__button wp-block-button__link"
 								>
 									{__('Close', 'gatherpress')}
 								</a>
@@ -212,12 +214,12 @@ const AttendanceSelector = () => {
 			</ButtonGroup>
 			{'attend' !== attendanceStatus &&
 				<div className="gp-status">
-					<div className="gp-response">
+					<div className="gp-status__response">
 						<span>{__('Response:', 'gatherpress')}</span>
 						<strong>{getStatusText(attendanceStatus)}</strong>
 					</div>
 					{0 < attendanceGuests &&
-						<div className="gp-guests">
+						<div className="gp-status__guests">
 							<span>+{attendanceGuests} {__('guest(s)', 'gatherpress')}</span>
 						</div>
 					}
