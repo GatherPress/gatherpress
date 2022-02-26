@@ -123,7 +123,7 @@ class Setup {
 				'show_in_rest'  => true,
 				'public'        => true,
 				'hierarchical'  => false,
-				'menu_position' => 3,
+				'menu_position' => 4,
 				'supports'      => array(
 					'title',
 					'editor',
