@@ -5,15 +5,15 @@ import AttendanceListContent from './AttendanceListContent';
 
 const items = [
 	{
-		title: GatherPress.settings.language.attendance.attending,
+		title: __('Attending', 'gatherpress'),
 		value: 'attending'
 	},
 	{
-		title: GatherPress.settings.language.attendance.waiting_list,
+		title: __('Waiting List', 'gatherpress'),
 		value: 'waiting_list'
 	},
 	{
-		title: GatherPress.settings.language.attendance.not_attending,
+		title: __('Not Attending', 'gatherpress'),
 		value: 'not_attending'
 	}
 ];

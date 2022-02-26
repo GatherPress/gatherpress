@@ -53,16 +53,6 @@ class Settings {
 			6
 		);
 
-		add_submenu_page(
-			'edit.php?post_type=gp_event',
-			__( 'Settings', 'gatherpress' ),
-			__( 'Settings', 'gatherpress' ),
-			'manage_options',
-			$this->prefix_key( 'general' ),
-			array( $this, 'settings_page' ),
-			6
-		);
-
 		$sub_pages = $this->get_sub_pages();
 
 		foreach ( $sub_pages as $sub_page => $setting ) {
@@ -73,15 +63,6 @@ class Settings {
 			$page = $this->prefix_key( $sub_page );
 
 			add_options_page(
-				$setting['name'],
-				$setting['name'],
-				'manage_options',
-				$page,
-				array( $this, 'settings_page' )
-			);
-
-			add_submenu_page(
-				'edit.php?post_type=gp_event',
 				$setting['name'],
 				$setting['name'],
 				'manage_options',
@@ -103,7 +84,6 @@ class Settings {
 			}
 
 			remove_submenu_page( 'options-general.php', $this->prefix_key( $sub_page ) );
-			remove_submenu_page( 'edit.php?post_type=gp_event', $this->prefix_key( $sub_page ) );
 		}
 	}
 
@@ -278,59 +258,6 @@ class Settings {
 				'name'        => __( 'General', 'gatherpress' ),
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
 				'priority'    => 1,
-			),
-			'language' => array(
-				'name'     => __( 'Language', 'gatherpress' ),
-				'sections' => array(
-					'roles'      => array(
-						'name'        => __( 'Roles', 'gatherpress' ),
-						'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
-						'options'     => $this->get_role_options(),
-					),
-					'attendance' => array(
-						'name'        => __( 'Attendance', 'gatherpress' ),
-						'description' => __( 'Adjust language below to best reflect your events.', 'gatherpress' ),
-						'options'     => array(
-							'attend'             => array(
-								'label'   => __( 'Attend', 'gatherpress' ),
-								'field'   => 'text_field',
-								'default' => __( 'Attend', 'gatherpress' ),
-							),
-							'attending'          => array(
-								'label'   => __( 'Attending', 'gatherpress' ),
-								'field'   => 'text_field',
-								'default' => __( 'Attending', 'gatherpress' ),
-							),
-							'not_attending'      => array(
-								'label'   => __( 'Not Attending', 'gatherpress' ),
-								'field'   => 'text_field',
-								'default' => __( 'Not Attending', 'gatherpress' ),
-							),
-							'waiting_list'       => array(
-								'label'   => __( 'Waiting List', 'gatherpress' ),
-								'field'   => 'text_field',
-								'default' => __( 'Waiting List', 'gatherpress' ),
-							),
-							'attending_text'     => array(
-								'label'   => __( 'Attending Selection Text', 'gatherpress' ),
-								'field'   => 'text_field',
-								'default' => __( 'Yes, I would like to attend this event.', 'gatherpress' ),
-							),
-							'not_attending_text' => array(
-								'label'   => __( 'Not Attending Selection Text', 'gatherpress' ),
-								'field'   => 'text_field',
-								'default' => __( 'No, I cannot attend this event.', 'gatherpress' ),
-							),
-							'menu_structure'     => array(
-								'label'       => __( 'Menu Structure', 'gatherpress' ),
-								'field'       => 'text_field',
-								'description' => __( '%1$status% represents attendance status and %2$count% represents the number of those with that status for an event.', 'gatherpress' ),
-								'default'     => '%status%(%count%)',
-							),
-						),
-					),
-
-				),
 			),
 			'credits'  => array(
 				'name'     => __( 'Credits', 'gatherpress' ),
