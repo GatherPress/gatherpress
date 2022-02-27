@@ -12,11 +12,11 @@ const EventsList = ( props ) => {
 
 	useEffect(() => {
 		apiFetch({
-			path: `/gatherpress/v1/event/future-events?max_number=${maxNumberOfEvents}`
+			path: `/gatherpress/v1/event/${type}-events?max_number=${maxNumberOfEvents}`
 		}).then((events) => {
 			setEvents(events);
 		});
-	}, [setEvents, maxNumberOfEvents]);
+	}, [setEvents, maxNumberOfEvents, type]);
 
 	return (
 		<div id={`gp-${type}-events`}>

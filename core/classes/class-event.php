@@ -338,7 +338,7 @@ class Event {
 	 * @since 1.0.0
 	 *
 	 * @param array  $pieces Includes pieces of the query like join, where, orderby, et al.
-	 * @param string $type   Options are all, future, or past.
+	 * @param string $type   Options are all, upcoming, or past.
 	 * @param string $order  Event order DESC or ASC.
 	 *
 	 * @return array
@@ -368,7 +368,7 @@ class Event {
 			$current = gmdate( 'Y-m-d H:i:s', time() );
 
 			switch ( $type ) {
-				case 'future':
+				case 'upcoming':
 					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
 					break;
 				case 'past':
