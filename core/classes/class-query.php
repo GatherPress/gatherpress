@@ -39,19 +39,19 @@ class Query {
 	}
 
 	/**
-	 * Get future events.
+	 * Get upcoming events.
 	 *
 	 * @param int $number Maximum number of events to display.
 	 *
 	 * @return \WP_Query
 	 */
-	public function get_future_events( int $number = 5 ): \WP_Query {
+	public function get_upcoming_events( int $number = 5 ): \WP_Query {
 		$args = array(
 			'post_type'       => Event::POST_TYPE,
 			'fields'          => 'ids',
 			'no_found_rows'   => true,
 			'posts_per_page'  => $number,
-			'gp_events_query' => 'future',
+			'gp_events_query' => 'upcoming',
 		);
 
 		return new \WP_Query( $args );
@@ -67,6 +67,7 @@ class Query {
 	public function get_past_events( int $number = 5 ): \WP_Query {
 		$args = array(
 			'post_type'       => Event::POST_TYPE,
+			'fields'          => 'ids',
 			'no_found_rows'   => true,
 			'posts_per_page'  => $number,
 			'gp_events_query' => 'past',
@@ -84,17 +85,17 @@ class Query {
 		$events_query = $query->get( 'gp_events_query' );
 
 		switch ( $events_query ) {
-			case 'future':
+			case 'upcoming':
 				remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
-				add_filter( 'posts_clauses', array( $this, 'order_future_events' ) );
+				add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
 				break;
 			case 'past':
 				add_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
-				remove_filter( 'posts_clauses', array( $this, 'order_future_events' ) );
+				remove_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
 				break;
 			default:
 				remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
-				remove_filter( 'posts_clauses', array( $this, 'order_future_events' ) );
+				remove_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
 		}
 	}
 
@@ -137,8 +138,8 @@ class Query {
 	 *
 	 * @return array
 	 */
-	public function order_future_events( array $pieces ): array {
-		return Event::adjust_sql( $pieces, 'future', 'ASC' );
+	public function order_upcoming_events( array $pieces ): array {
+		return Event::adjust_sql( $pieces, 'upcoming', 'ASC' );
 	}
 
 }

@@ -146,10 +146,10 @@ class Rest_Api {
 				),
 			),
 			array(
-				'route' => 'future-events',
+				'route' => 'upcoming-events',
 				'args'  => array(
 					'methods'             => \WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'future_events' ),
+					'callback'            => array( $this, 'upcoming_events' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
 						'_wpnonce'   => array(
@@ -168,10 +168,10 @@ class Rest_Api {
 				),
 			),
 			array(
-				'route' => 'markup-past-events',
+				'route' => 'past-events',
 				'args'  => array(
 					'methods'             => \WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'markup_past_events' ),
+					'callback'            => array( $this, 'past_events' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
 						'_wpnonce'   => array(
@@ -289,16 +289,48 @@ class Rest_Api {
 	}
 
 	/**
-	 * Returns future events.
+	 * Returns upcoming events.
 	 *
 	 * @param \WP_REST_Request $request Contains data from the request.
 	 *
 	 * @return \WP_REST_Response
 	 */
-	public function future_events( \WP_REST_Request $request ) {
+	public function upcoming_events( \WP_REST_Request $request ) {
 		$params     = $request->get_params();
 		$max_number = $this->max_number( (int) $params['max_number'], 5 );
-		$query      = Query::get_instance()->get_future_events( $max_number );
+		$query      = Query::get_instance()->get_upcoming_events( $max_number );
+		$posts      = [];
+
+		if ( $query->have_posts() ) {
+			foreach ( $query->posts as $post_id ) {
+				$event   = new Event( $post_id );
+				$posts[] = [
+					'ID'             => $post_id,
+					'datetime_start' => $event->get_datetime_start(),
+					'permalink'      => get_the_permalink( $post_id ),
+					'title'          => get_the_title( $post_id ),
+					'excerpt'        => get_the_excerpt( $post_id  ),
+					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
+				];
+			}
+		}
+
+		wp_reset_postdata();
+
+		return new \WP_REST_Response( $posts );
+	}
+
+	/**
+	 * Returns past events.
+	 *
+	 * @param \WP_REST_Request $request Contains data from the request.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function past_events( \WP_REST_Request $request ) {
+		$params     = $request->get_params();
+		$max_number = $this->max_number( (int) $params['max_number'], 5 );
+		$query      = Query::get_instance()->get_past_events( $max_number );
 		$posts      = [];
 
 		if ( $query->have_posts() ) {
@@ -334,30 +366,6 @@ class Rest_Api {
 		}
 
 		return $number;
-	}
-
-	/**
-	 * Returns markup for future events.
-	 *
-	 * @param \WP_REST_Request $request Contains data from the request.
-	 *
-	 * @return \WP_REST_Response
-	 */
-	public function markup_past_events( \WP_REST_Request $request ) {
-		$params   = $request->get_params();
-		$attrs    = array(
-			'maxNumberOfEvents' => intval( $params['max_number'] ),
-		);
-		$response = array(
-			'markup' => Utility::render_template(
-				sprintf( '%s/templates/blocks/past-events.php', GATHERPRESS_CORE_PATH ),
-				array(
-					'attrs' => $attrs,
-				)
-			),
-		);
-
-		return new \WP_REST_Response( $response );
 	}
 
 	/**
