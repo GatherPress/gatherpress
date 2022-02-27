@@ -1,4 +1,4 @@
-import AttendanceList from './components/AttendanceList';
+import AttendanceList from '../components/AttendanceList';
 
 const Edit = ( props ) => {
 	return (
