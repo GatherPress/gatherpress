@@ -1,6 +1,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import EventItem from './EventItem';
+import Loader from './Loader';
 
 const EventsList = ( props ) => {
 	const { maxNumberOfEvents, type } = props;
@@ -20,9 +21,7 @@ const EventsList = ( props ) => {
 	return (
 		<div id={`gp-${type}-events`}>
 			{0 === events.length &&
-				<div class="gp-loader">
-					<div></div>
-				</div>
+				<Loader />
 			}
 			{renderEvents}
 		</div>
