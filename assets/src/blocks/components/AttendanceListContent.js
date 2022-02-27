@@ -21,6 +21,9 @@ const AttendanceListContent = ({ items, activeValue }) => {
 
 	return (
 		<div className="gp-attendance-list__container">
+			{'' === renderedItems &&
+				<div>Here i am</div>
+			}
 			{renderedItems}
 		</div>
 	);

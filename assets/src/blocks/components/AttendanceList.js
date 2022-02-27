@@ -1,29 +1,59 @@
-import React, { useState } from 'react';
+import { useState } from '@wordpress/element';
 import {__} from '@wordpress/i18n';
+import { ButtonGroup } from '@wordpress/components';
 import AttendanceListNavigation from './AttendanceListNavigation';
 import AttendanceListContent from './AttendanceListContent';
 import { Listener } from '../helpers/broadcasting';
-
-const items = [
-	{
-		title: __('Attending', 'gatherpress'),
-		value: 'attending'
-	},
-	{
-		title: __('Waiting List', 'gatherpress'),
-		value: 'waiting_list'
-	},
-	{
-		title: __('Not Attending', 'gatherpress'),
-		value: 'not_attending'
-	}
-];
+import Modal from 'react-modal';
 
 const AttendanceList = () => {
 	let defaultStatus = 'attending';
+	const items = [
+		{
+			title: __('Attending', 'gatherpress'),
+			value: 'attending'
+		},
+		{
+			title: __('Waiting List', 'gatherpress'),
+			value: 'waiting_list'
+		},
+		{
+			title: __('Not Attending', 'gatherpress'),
+			value: 'not_attending'
+		}
+	];
+
+	const customStyles = {
+		content: {
+			top: '50%',
+			left: '50%',
+			right: 'auto',
+			bottom: 'auto',
+			marginRight: '-50%',
+			transform: 'translate(-50%, -50%)',
+		},
+	};
+	const [modalIsOpen, setIsOpen] = useState(false);
+	const openModal = (e) => {
+		e.preventDefault();
+
+		setIsOpen(true);
+	};
+
+	// Might be better way to do this, but should only run on frontend, not admin.
+	if ('undefined' === typeof adminpage) {
+		Modal.setAppElement('body');
+	}
+
+	const closeModal = (e) => {
+		e.preventDefault();
+
+		setIsOpen(false);
+	};
 
 	if ( 'object' === typeof GatherPress ) {
-		defaultStatus = ( 'undefined' !== typeof GatherPress.current_user.status ) ? GatherPress.current_user.status : defaultStatus;
+		// @todo redo this logic and have it come from API and not GatherPress object.
+		defaultStatus = ( 'undefined' !== typeof GatherPress.current_user.status && 'attend' !== GatherPress.current_user.status ) ? GatherPress.current_user.status : defaultStatus;
 	}
 
 	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
@@ -37,10 +67,53 @@ const AttendanceList = () => {
 	};
 
 	return (
-		<div className="gp-attendance-list">
-			<AttendanceListNavigation items={items} activeValue={attendanceStatus} onTitleClick={onTitleClick} />
-			<AttendanceListContent items={items} activeValue={attendanceStatus} />
-		</div>
+		<>
+			<div className="gp-attendance-list">
+				<AttendanceListNavigation items={items} activeValue={attendanceStatus} onTitleClick={onTitleClick} />
+				<AttendanceListContent items={items} activeValue={attendanceStatus} />
+			</div>
+			<div className="has-text-align-right">
+				<a
+					href="#"
+					onClick={(e) => openModal(e)}
+				>
+					{ __( 'See all', 'gatherpress' ) }
+				</a>
+			</div>
+			<Modal
+				isOpen={modalIsOpen}
+				onRequestClose={closeModal}
+				style={customStyles}
+				contentLabel={__('Attendance', 'gatherpress')}
+			>
+				<div className="gp-modal">
+					<div className="gp-modal__header has-large-font-size">
+						{__('Attendance List', 'gatherpress')}
+					</div>
+					<div className="gp-modal__content">
+					</div>
+					<ButtonGroup className="gp-buttons wp-block-buttons">
+						<div className="gp-buttons__container wp-block-button has-small-font-size">
+							<a
+								href="#"
+								className="gp-buttons__button wp-block-button__link"
+							>
+								{__('Load More', 'gatherpress')}
+							</a>
+						</div>
+						<div className="gp-buttons__container wp-block-button has-small-font-size">
+							<a
+								href="#"
+								onClick={closeModal}
+								className="gp-buttons__button wp-block-button__link"
+							>
+								{__('Close', 'gatherpress')}
+							</a>
+						</div>
+					</ButtonGroup>
+				</div>
+			</Modal>
+		</>
 	);
 };
 
