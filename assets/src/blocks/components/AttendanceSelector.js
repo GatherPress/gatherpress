@@ -25,6 +25,8 @@ const AttendanceSelector = () => {
 	};
 	const [modalIsOpen, setIsOpen] = useState(false);
 	const openModal = (e) => {
+		e.preventDefault();
+
 		if ('not_attending' === attendanceStatus) {
 			onAnchorClick(e, 'attending', 0, false);
 		}
@@ -36,7 +38,9 @@ const AttendanceSelector = () => {
 		Modal.setAppElement('#gp-attendance-selector-container');
 	}
 
-	const closeModal = () => {
+	const closeModal = (e) => {
+		e.preventDefault();
+
 		setIsOpen(false);
 	};
 
@@ -102,7 +106,7 @@ const AttendanceSelector = () => {
 				dispatchEvent(dispatchAttendanceCount);
 
 				if (close) {
-					closeModal();
+					closeModal(e);
 				}
 			}
 		});
@@ -163,6 +167,7 @@ const AttendanceSelector = () => {
 			<ButtonGroup className="gp-buttons wp-block-buttons">
 				<div className="gp-buttons__container  wp-block-button">
 					<a
+						href="#"
 						className="gp-buttons__button wp-block-button__link"
 						aria-expanded={selectorExpanded}
 						tabIndex="0"
@@ -198,6 +203,7 @@ const AttendanceSelector = () => {
 						<ButtonGroup className="gp-buttons wp-block-buttons">
 							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
 								<a
+									href="#"
 									onClick={(e) =>
 										onAnchorClick(e, 'not_attending')
 									}
@@ -208,6 +214,7 @@ const AttendanceSelector = () => {
 							</div>
 							<div className="gp-buttons__container wp-block-button has-small-font-size">
 								<a
+									href="#"
 									onClick={closeModal}
 									className="gp-buttons__button wp-block-button__link"
 								>

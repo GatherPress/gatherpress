@@ -73,7 +73,7 @@ class Assets {
 			true
 		);
 
-		if ( is_singular( 'gp_event' ) ) {
+//		if ( is_singular( 'gp_event' ) ) {
 			global $post;
 
 			wp_localize_script(
@@ -81,7 +81,7 @@ class Assets {
 				'GatherPress',
 				$this->localize( $post->ID ?? 0 )
 			);
-		}
+//		}
 	}
 
 	/**

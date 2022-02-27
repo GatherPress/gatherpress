@@ -48,6 +48,7 @@ class Query {
 	public function get_future_events( int $number = 5 ): \WP_Query {
 		$args = array(
 			'post_type'       => Event::POST_TYPE,
+			'fields'          => 'ids',
 			'no_found_rows'   => true,
 			'posts_per_page'  => $number,
 			'gp_events_query' => 'future',

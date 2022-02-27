@@ -146,10 +146,10 @@ class Rest_Api {
 				),
 			),
 			array(
-				'route' => 'markup-future-events',
+				'route' => 'future-events',
 				'args'  => array(
 					'methods'             => \WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'markup_future_events' ),
+					'callback'            => array( $this, 'future_events' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
 						'_wpnonce'   => array(
@@ -289,27 +289,51 @@ class Rest_Api {
 	}
 
 	/**
-	 * Returns markup for future events.
+	 * Returns future events.
 	 *
 	 * @param \WP_REST_Request $request Contains data from the request.
 	 *
 	 * @return \WP_REST_Response
 	 */
-	public function markup_future_events( \WP_REST_Request $request ) {
-		$params   = $request->get_params();
-		$attrs    = array(
-			'maxNumberOfEvents' => intval( $params['max_number'] ),
-		);
-		$response = array(
-			'markup' => Utility::render_template(
-				sprintf( '%s/templates/blocks/upcoming-events.php', GATHERPRESS_CORE_PATH ),
-				array(
-					'attrs' => $attrs,
-				)
-			),
-		);
+	public function future_events( \WP_REST_Request $request ) {
+		$params     = $request->get_params();
+		$max_number = $this->max_number( (int) $params['max_number'], 5 );
+		$query      = Query::get_instance()->get_future_events( $max_number );
+		$posts      = [];
 
-		return new \WP_REST_Response( $response );
+		if ( $query->have_posts() ) {
+			foreach ( $query->posts as $post_id ) {
+				$event   = new Event( $post_id );
+				$posts[] = [
+					'ID'             => $post_id,
+					'datetime_start' => $event->get_datetime_start(),
+					'permalink'      => get_the_permalink( $post_id ),
+					'title'          => get_the_title( $post_id ),
+					'excerpt'        => get_the_excerpt( $post_id  ),
+					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
+				];
+			}
+		}
+
+		wp_reset_postdata();
+
+		return new \WP_REST_Response( $posts );
+	}
+
+	/**
+	 * Check that max_number is 5 or less.
+	 *
+	 * @param int $number
+	 * @param int $max_number
+	 *
+	 * @return int
+	 */
+	protected function max_number( int $number, int $max_number ): int {
+		if ( $max_number < $number ) {
+			$number = $max_number;
+		}
+
+		return $number;
 	}
 
 	/**

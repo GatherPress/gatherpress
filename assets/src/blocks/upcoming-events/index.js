@@ -10,6 +10,10 @@ registerBlockType( 'gatherpress/upcoming-events', {
 		maxNumberOfEvents: {
 			type: 'string',
 			default: '5'
+		},
+		type: {
+			type: 'string',
+			default: 'upcoming'
 		}
 	},
 	edit: Edit,

@@ -1,5 +1,5 @@
 import { __ } from '@wordpress/i18n';
-import UpcomingEvents from './components/UpcomingEvents';
+import EventsList from '../components/EventsList';
 const { RichText, InspectorControls } = wp.blockEditor;
 const { ToggleControl, PanelBody, PanelRow, CheckboxControl, SelectControl, ColorPicker } = wp.components;
 
@@ -21,12 +21,12 @@ const Edit = ( props ) => {
 							{label: '2', value: '2'},
 							{label: '1', value: '1'}
 						]}
-						onChange={( newval ) => setAttributes({ maxNumberOfEvents: newval })}
+						onChange={( newVal ) => setAttributes({ maxNumberOfEvents: newVal })}
 						/>
 					</PanelRow>
 				</PanelBody>
 			</InspectorControls>
-			<UpcomingEvents maxNumberOfEvents={attributes.maxNumberOfEvents} />
+			<EventsList maxNumberOfEvents={attributes.maxNumberOfEvents} type="upcoming" />
 		</div>
 	);
 };
