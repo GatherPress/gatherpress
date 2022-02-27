@@ -1,6 +1,6 @@
 const Loader = () => {
 	return (
-		<div class="gp-loader">
+		<div className="gp-loader">
 			<div />
 		</div>
 	);

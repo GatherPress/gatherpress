@@ -16,7 +16,7 @@ const EventsList = ( props ) => {
 		}).then((events) => {
 			setEvents(events);
 		});
-	}, [setEvents]);
+	}, [setEvents, maxNumberOfEvents]);
 
 	return (
 		<div id={`gp-${type}-events`}>
