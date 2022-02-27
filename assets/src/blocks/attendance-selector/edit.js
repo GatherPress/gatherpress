@@ -1,4 +1,4 @@
-import AttendanceSelector from './components/AttendanceSelector';
+import AttendanceSelector from '../components/AttendanceSelector';
 
 const Edit = ( props ) => {
 	return (

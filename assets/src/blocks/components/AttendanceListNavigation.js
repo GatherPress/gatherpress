@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import AttendanceListNavigationItem from './AttendanceListNavigationItem';
+import { Listener } from '../helpers/broadcasting';
 
 const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	let defaultCount = {
@@ -17,9 +18,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 
 	const [ attendanceCount, setAttendanceCount ] = useState( defaultCount );
 
-	addEventListener( 'setAttendanceCount', ( e ) => {
-		setAttendanceCount( e.detail );
-	}, false );
+	Listener({ setAttendanceCount: setAttendanceCount });
 
 	const renderedItems = items.map( ( item, index ) => {
 		const additionalClasses = ( item.value === activeValue ) ? 'active' : 'opacity-50'; // @todo adjust this.

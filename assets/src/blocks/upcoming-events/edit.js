@@ -1,7 +1,7 @@
 import { __ } from '@wordpress/i18n';
-import UpcomingEvents from './components/UpcomingEvents';
-const { RichText, InspectorControls } = wp.blockEditor;
-const { ToggleControl, PanelBody, PanelRow, CheckboxControl, SelectControl, ColorPicker } = wp.components;
+import { RichText, InspectorControls } from '@wordpress/block-editor';
+import { ToggleControl, PanelBody, PanelRow, CheckboxControl, SelectControl, ColorPicker } from '@wordpress/components';
+import EventsList from '../components/EventsList';
 
 const Edit = ( props ) => {
 	const { attributes, setAttributes } = props;
@@ -10,8 +10,7 @@ const Edit = ( props ) => {
 		<div>
 			<InspectorControls>
 				<PanelBody>
-					<PanelRow>
-						<SelectControl
+					<SelectControl
 						label={__( 'Maximum number to display?', 'gatherpress' )}
 						value={attributes.maxNumberOfEvents}
 						options={[
@@ -21,12 +20,11 @@ const Edit = ( props ) => {
 							{label: '2', value: '2'},
 							{label: '1', value: '1'}
 						]}
-						onChange={( newval ) => setAttributes({ maxNumberOfEvents: newval })}
-						/>
-					</PanelRow>
+						onChange={( newVal ) => setAttributes({ maxNumberOfEvents: newVal })}
+					/>
 				</PanelBody>
 			</InspectorControls>
-			<UpcomingEvents maxNumberOfEvents={attributes.maxNumberOfEvents} />
+			<EventsList maxNumberOfEvents={attributes.maxNumberOfEvents} type="upcoming" />
 		</div>
 	);
 };

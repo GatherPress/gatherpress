@@ -3,6 +3,7 @@ import { __ } from '@wordpress/i18n';
 import { ButtonGroup } from '@wordpress/components';
 import Modal from 'react-modal';
 import apiFetch from '@wordpress/api-fetch';
+import { Broadcaster } from '../helpers/broadcasting';
 
 const AttendanceSelector = () => {
 	if ('object' !== typeof GatherPress) {
@@ -25,6 +26,8 @@ const AttendanceSelector = () => {
 	};
 	const [modalIsOpen, setIsOpen] = useState(false);
 	const openModal = (e) => {
+		e.preventDefault();
+
 		if ('not_attending' === attendanceStatus) {
 			onAnchorClick(e, 'attending', 0, false);
 		}
@@ -36,7 +39,9 @@ const AttendanceSelector = () => {
 		Modal.setAppElement('#gp-attendance-selector-container');
 	}
 
-	const closeModal = () => {
+	const closeModal = (e) => {
+		e.preventDefault();
+
 		setIsOpen(false);
 	};
 
@@ -61,23 +66,6 @@ const AttendanceSelector = () => {
 				setAttendanceStatus(res.status);
 				setAttendanceGuests(res.guests);
 
-				const dispatchAttendanceStatus = new CustomEvent(
-					'setAttendanceStatus',
-					{
-						detail: res.status,
-					}
-				);
-
-				dispatchEvent(dispatchAttendanceStatus);
-
-				const dispatchAttendanceList = new CustomEvent(
-					'setAttendanceList',
-					{
-						detail: res.attendees,
-					}
-				);
-
-				dispatchEvent(dispatchAttendanceList);
 
 				const count = {
 					all: 0,
@@ -92,17 +80,16 @@ const AttendanceSelector = () => {
 					count[key] = value.count;
 				}
 
-				const dispatchAttendanceCount = new CustomEvent(
-					'setAttendanceCount',
-					{
-						detail: count,
-					}
-				);
+				const payload = {
+					setAttendanceStatus: res.status,
+					setAttendanceList: res.attendees,
+					setAttendanceCount: count,
+				};
 
-				dispatchEvent(dispatchAttendanceCount);
+				Broadcaster(payload);
 
 				if (close) {
-					closeModal();
+					closeModal(e);
 				}
 			}
 		});
@@ -163,6 +150,7 @@ const AttendanceSelector = () => {
 			<ButtonGroup className="gp-buttons wp-block-buttons">
 				<div className="gp-buttons__container  wp-block-button">
 					<a
+						href="#"
 						className="gp-buttons__button wp-block-button__link"
 						aria-expanded={selectorExpanded}
 						tabIndex="0"
@@ -198,9 +186,8 @@ const AttendanceSelector = () => {
 						<ButtonGroup className="gp-buttons wp-block-buttons">
 							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
 								<a
-									onClick={(e) =>
-										onAnchorClick(e, 'not_attending')
-									}
+									href="#"
+									onClick={(e) => onAnchorClick(e, 'not_attending')}
 									className="gp-buttons__button wp-block-button__link"
 								>
 									{__('Not Attending', 'gatherpress')}
@@ -208,6 +195,7 @@ const AttendanceSelector = () => {
 							</div>
 							<div className="gp-buttons__container wp-block-button has-small-font-size">
 								<a
+									href="#"
 									onClick={closeModal}
 									className="gp-buttons__button wp-block-button__link"
 								>
