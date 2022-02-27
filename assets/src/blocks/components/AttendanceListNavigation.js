@@ -21,7 +21,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	Listener({ setAttendanceCount: setAttendanceCount });
 
 	const renderedItems = items.map( ( item, index ) => {
-		const additionalClasses = ( item.value === activeValue ) ? 'gp-attendance-list__active--current' : '';
+		const additionalClasses = ( item.value === activeValue ) ? 'gp-attendance-list__navigation--current' : '';
 
 		return (
 			<AttendanceListNavigationItem
