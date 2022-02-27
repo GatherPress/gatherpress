@@ -5,9 +5,9 @@ const AttendanceListNavigationItem = ({ item, additionalClasses, count, onTitleC
 	const active = ( 0 === count && 'attending' !== value ) ? 'hidden' : 'active';
 
 	return (
-		<div className={`gp-attendance-list__navigation--item gp-attendance-list__${active}`}>
+		<div className={`gp-attendance-list__navigation--item gp-attendance-list__${active} ${additionalClasses}`}>
 			<a
-				className={`gp-attendance-list__anchor ${additionalClasses}`}
+				className="gp-attendance-list__anchor"
 				data-item={value}
 				data-toggle="tab"
 				href="#"
@@ -17,7 +17,7 @@ const AttendanceListNavigationItem = ({ item, additionalClasses, count, onTitleC
 			>
 				{title}
 			</a>
-			<span>
+			<span className="gp-attendance-list__count">
 				({count})
 			</span>
 		</div>

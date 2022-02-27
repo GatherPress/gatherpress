@@ -21,6 +21,11 @@
 
 	&__active {
 		display: flex;
+		opacity: 0.65;
+
+		&--current {
+			opacity: 1;
+		}
 	}
 
 	&__hidden {
@@ -34,7 +39,6 @@
 	}
 
 	&__anchor {
-		opacity: 0.65;
 
 		&--current {
 			opacity: 1;
