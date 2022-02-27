@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import PastEvents from './components/PastEvents';
+import EventsList from '../components/EventsList';
 
 const container = document.querySelector( '#gp-past-events-container' );
 
 if ( container ) {
-	ReactDOM.render( <PastEvents />, container );
+	ReactDOM.render( <EventsList type="past" maxNumberOfEvents={container.dataset.max_posts} />, container );
 }

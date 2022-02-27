@@ -3,6 +3,7 @@ import { __ } from '@wordpress/i18n';
 import { ButtonGroup } from '@wordpress/components';
 import Modal from 'react-modal';
 import apiFetch from '@wordpress/api-fetch';
+import { Broadcaster } from '../helpers/broadcasting';
 
 const AttendanceSelector = () => {
 	if ('object' !== typeof GatherPress) {
@@ -65,23 +66,6 @@ const AttendanceSelector = () => {
 				setAttendanceStatus(res.status);
 				setAttendanceGuests(res.guests);
 
-				const dispatchAttendanceStatus = new CustomEvent(
-					'setAttendanceStatus',
-					{
-						detail: res.status,
-					}
-				);
-
-				dispatchEvent(dispatchAttendanceStatus);
-
-				const dispatchAttendanceList = new CustomEvent(
-					'setAttendanceList',
-					{
-						detail: res.attendees,
-					}
-				);
-
-				dispatchEvent(dispatchAttendanceList);
 
 				const count = {
 					all: 0,
@@ -96,14 +80,13 @@ const AttendanceSelector = () => {
 					count[key] = value.count;
 				}
 
-				const dispatchAttendanceCount = new CustomEvent(
-					'setAttendanceCount',
-					{
-						detail: count,
-					}
-				);
+				const payload = {
+					setAttendanceStatus: res.status,
+					setAttendanceList: res.attendees,
+					setAttendanceCount: count,
+				};
 
-				dispatchEvent(dispatchAttendanceCount);
+				Broadcaster(payload);
 
 				if (close) {
 					closeModal(e);
@@ -204,9 +187,7 @@ const AttendanceSelector = () => {
 							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
 								<a
 									href="#"
-									onClick={(e) =>
-										onAnchorClick(e, 'not_attending')
-									}
+									onClick={(e) => onAnchorClick(e, 'not_attending')}
 									className="gp-buttons__button wp-block-button__link"
 								>
 									{__('Not Attending', 'gatherpress')}

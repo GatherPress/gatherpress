@@ -10,6 +10,10 @@ registerBlockType( 'gatherpress/past-events', {
 		maxNumberOfEvents: {
 			type: 'string',
 			default: '5'
+		},
+		type: {
+			type: 'string',
+			default: 'past'
 		}
 	},
 	edit: Edit,

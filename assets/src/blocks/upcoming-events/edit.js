@@ -1,7 +1,7 @@
 import { __ } from '@wordpress/i18n';
+import { RichText, InspectorControls } from '@wordpress/block-editor';
+import { ToggleControl, PanelBody, PanelRow, CheckboxControl, SelectControl, ColorPicker } from '@wordpress/components';
 import EventsList from '../components/EventsList';
-const { RichText, InspectorControls } = wp.blockEditor;
-const { ToggleControl, PanelBody, PanelRow, CheckboxControl, SelectControl, ColorPicker } = wp.components;
 
 const Edit = ( props ) => {
 	const { attributes, setAttributes } = props;

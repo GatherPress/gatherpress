@@ -1,4 +1,5 @@
 import React, {Fragment, useState} from 'react';
+import { Listener } from '../helpers/broadcasting';
 
 const AttendeeList = ({ value }) => {
 	let defaultList = [];
@@ -9,9 +10,7 @@ const AttendeeList = ({ value }) => {
 
 	const [ attendanceList, setAttendanceList ] = useState( defaultList );
 
-	addEventListener( 'setAttendanceList', ( e ) => {
-		setAttendanceList( e.detail );
-	}, false );
+	Listener({ setAttendanceList: setAttendanceList });
 
 	let renderedItems = '';
 

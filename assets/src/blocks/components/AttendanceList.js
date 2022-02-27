@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {__} from '@wordpress/i18n';
 import AttendanceListNavigation from './AttendanceListNavigation';
 import AttendanceListContent from './AttendanceListContent';
+import { Listener } from '../helpers/broadcasting';
 
 const items = [
 	{
@@ -27,9 +28,7 @@ const AttendanceList = () => {
 
 	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
 
-	addEventListener( 'setAttendanceStatus', ( e ) => {
-		setAttendanceStatus( e.detail );
-	}, false );
+	Listener({ setAttendanceStatus: setAttendanceStatus });
 
 	const onTitleClick = ( e, value ) => {
 		e.preventDefault();
