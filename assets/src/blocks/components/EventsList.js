@@ -20,7 +20,9 @@ const EventsList = ( props ) => {
 	return (
 		<div id={`gp-${type}-events`}>
 			{0 === events.length &&
-				<div>Loading...</div>
+				<div class="gp-loader">
+					<div></div>
+				</div>
 			}
 			{renderEvents}
 		</div>

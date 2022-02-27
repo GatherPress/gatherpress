@@ -10,8 +10,7 @@ const Edit = ( props ) => {
 		<div>
 			<InspectorControls>
 				<PanelBody>
-					<PanelRow>
-						<SelectControl
+					<SelectControl
 						label={__( 'Maximum number to display?', 'gatherpress' )}
 						value={attributes.maxNumberOfEvents}
 						options={[
@@ -22,8 +21,7 @@ const Edit = ( props ) => {
 							{label: '1', value: '1'}
 						]}
 						onChange={( newVal ) => setAttributes({ maxNumberOfEvents: newVal })}
-						/>
-					</PanelRow>
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<EventsList maxNumberOfEvents={attributes.maxNumberOfEvents} type="past" />
