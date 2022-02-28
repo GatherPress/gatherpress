@@ -56,7 +56,16 @@ class Assets {
 	 * Enqueue frontend styles and scripts.
 	 */
 	public function enqueue_scripts() {
+		// @todo some stuff is repeated in enqueuing for frontend and blocks. need to break into other methods.
+
 		$asset = require_once $this->path . 'blocks_style.asset.php';
+
+		// Button styles are needed for various
+		$asset['dependencies'] = array_merge(
+			$asset['dependencies'],
+			[ 'wp-block-button' ]
+		);
+
 		wp_enqueue_style(
 			'gatherpress-blocks-style',
 			$this->build . 'blocks_style.css',
@@ -106,8 +115,14 @@ class Assets {
 	public function block_enqueue_scripts() {
 		$post_id = $GLOBALS['post']->ID ?? 0;
 		$event   = new Event( $post_id );
+		$asset   = require_once $this->path . 'blocks_style.asset.php';
 
-		$asset = require_once $this->path . 'blocks_style.asset.php';
+		// Button styles are needed for various
+		$asset['dependencies'] = array_merge(
+			$asset['dependencies'],
+			[ 'wp-block-button' ]
+		);
+
 		wp_enqueue_style(
 			'gatherpress-blocks-style',
 			$this->build . 'blocks_style.css',
