@@ -67,11 +67,7 @@ class Assets {
 
 		$asset = $this->get_asset_data( 'blocks_style' );
 
-		// Button styles are needed for various
-		$asset['dependencies'] = array_merge(
-			$asset['dependencies'],
-			[ 'wp-block-button' ]
-		);
+		wp_enqueue_style( 'wp-block-button' );
 
 		wp_enqueue_style(
 			'gatherpress-blocks-style',
@@ -127,11 +123,7 @@ class Assets {
 
 		$asset = $this->get_asset_data( 'blocks_style' );
 
-		// Button styles are needed for various
-		$asset['dependencies'] = array_merge(
-			$asset['dependencies'],
-			[ 'wp-block-button' ]
-		);
+		wp_enqueue_style( 'wp-block-button' );
 
 		wp_enqueue_style(
 			'gatherpress-blocks-style',
