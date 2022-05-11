@@ -33,3 +33,7 @@ typings
 ##########
 vendor
 
+# .wp-env #
+##########
+wp-core
+
