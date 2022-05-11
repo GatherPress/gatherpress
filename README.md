@@ -99,7 +99,7 @@ https://github.com/pbrocks/gatherpress-pbrocks
 
 ![PBrocks GatherPress repo](assets/media/pbrocksgatherpress-pbrocks.png)
 
-#### Install wp-env globally
+### Install wp-env globally
 
 In a terminal window, run:
 
