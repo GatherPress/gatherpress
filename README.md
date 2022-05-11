@@ -5,7 +5,7 @@
 GatherPress is the result of the WordPress community's desire for new event management tools that meet the diverse needs of event organizers and members.
 
 ## 📃 The Project
-This project is for the collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and the grit sweat and love of **the community, for the community**. 
+This project is for the collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and the grit sweat and love of **the community, for the community**.
 
 We're creating the very network features we need to host events and gather well.
 
@@ -17,10 +17,10 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 **GitHub Administrators**
 > [Mervin Hernandez](https://github.com/MervinHernandez) and [Mike Auteri](https://github.com/mauteri)
 
-**GatherePress.org**   
-> Talk to Mervin for access to `gatherpress.org` via SSH and WP Admin login.   
-> Host: `138.197.7.55`   
-> User: `gatherpress`   
+**GatherePress.org**
+> Talk to Mervin for access to `gatherpress.org` via SSH and WP Admin login.
+> Host: `138.197.7.55`
+> User: `gatherpress`
 > Auth: `key pair`
 
 # Credits
@@ -45,3 +45,7 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 
 ## 3. Settings
 To find what global configuration changes are available in this plugin go to WP Admin > Settings > GatherPress.
+
+# Developer Documentation
+
+
