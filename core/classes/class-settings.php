@@ -22,6 +22,8 @@ class Settings {
 
 	use Singleton;
 
+	const PARENT_SLUG = 'edit.php?post_type=gp_event';
+
 	/**
 	 * Role constructor.
 	 */
@@ -44,9 +46,10 @@ class Settings {
 	 * Setup options page.
 	 */
 	public function options_page() {
-		add_options_page(
-			__( 'GatherPress', 'gatherpress' ),
-			__( 'GatherPress', 'gatherpress' ),
+		add_submenu_page(
+			self::PARENT_SLUG,
+			__( 'Settings', 'gatherpress' ),
+			__( 'Settings', 'gatherpress' ),
 			'manage_options',
 			$this->prefix_key( 'general' ),
 			array( $this, 'settings_page' ),
@@ -62,7 +65,8 @@ class Settings {
 
 			$page = $this->prefix_key( $sub_page );
 
-			add_options_page(
+			add_submenu_page(
+				self::PARENT_SLUG,
 				$setting['name'],
 				$setting['name'],
 				'manage_options',
@@ -83,7 +87,7 @@ class Settings {
 				continue;
 			}
 
-			remove_submenu_page( 'options-general.php', $this->prefix_key( $sub_page ) );
+			remove_submenu_page( self::PARENT_SLUG, $this->prefix_key( $sub_page ) );
 		}
 	}
 
