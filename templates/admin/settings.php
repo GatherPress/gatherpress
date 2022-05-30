@@ -18,7 +18,7 @@ $setting = Settings::get_instance();
 			$active_page = ( $page === $setting->prefix_key( $sub_page ) ) ? 'nav-tab-active' : '';
 			$url = add_query_arg(
 				[ 'page' => $setting->prefix_key( $sub_page ) ],
-				admin_url( 'options-general.php' )
+				admin_url( $setting::PARENT_SLUG )
 			);
 			?>
 			<a class="<?php echo esc_attr( 'nav-tab ' . $active_page ); ?>" href="<?php echo esc_url( $url ); ?>">
