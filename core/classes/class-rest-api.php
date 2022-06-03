@@ -409,7 +409,7 @@ class Rest_Api {
 			&& is_user_member_of_blog( $user_id )
 			&& ! $event->has_event_past()
 		) {
-			$status = $event->attendee->save_attendee( $user_id, $status, $guests );
+			$status = $event->attendee->save( $user_id, $status, $guests );
 
 			if ( in_array( $status, $event->attendee->statuses, true ) ) {
 				$success = true;
@@ -420,7 +420,7 @@ class Rest_Api {
 			'success'   => (bool) $success,
 			'status'    => $status,
 			'guests'    => $guests,
-			'attendees' => $event->attendee->get_attendees(),
+			'attendees' => $event->attendee->get_all(),
 		);
 
 		return new \WP_REST_Response( $response );

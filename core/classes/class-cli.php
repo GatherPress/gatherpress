@@ -41,7 +41,7 @@ class CLI extends WP_CLI {
 		$status  = $assoc_args['status'];
 		$guests  = $assoc_args['guests'] ?? 0;
 
-		$response = $event->attendee->save_attendee( $user_id, $status, $guests );
+		$response = $event->attendee->save( $user_id, $status, $guests );
 
 		\WP_CLI::success( $response );
 	}
