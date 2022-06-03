@@ -11,6 +11,7 @@ $gatherpress_core_files = array(
 	'/core/classes/class-assets.php',
 	'/core/classes/class-attendee.php',
 	'/core/classes/class-block.php',
+	'/core/classes/class-cli.php',
 	'/core/classes/class-event.php',
 	'/core/classes/class-query.php',
 	'/core/classes/class-rest-api.php',

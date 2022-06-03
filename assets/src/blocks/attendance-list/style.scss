@@ -45,3 +45,20 @@
 		}
 	}
 }
+
+.gp-modal {
+	&__attendance-list {
+		max-width: 30rem;
+		width: 100%;
+	}
+
+	.gp-attendance-list {
+		&__items {
+			flex-wrap: wrap;
+
+			&--item {
+				display: flex;
+			}
+		}
+	}
+}

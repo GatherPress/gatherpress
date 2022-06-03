@@ -36,17 +36,19 @@ const AttendeeList = ({ value }) => {
 							<img alt={name} title={name} src={photo} />
 						</figure>
 					</a>
-					<div className="gp-attendance-list__member-name">
-						<a href={profile}>
-							{name}
-						</a>
+					<div className="gp-attendance-list__member-info">
+						<div className="gp-attendance-list__member-name">
+							<a href={profile}>
+								{name}
+							</a>
+						</div>
+						<div className="gp-attendance-list__member-role">
+							{role}
+						</div>
+						<small className="gp-attendance-list__guests">
+							{guests}
+						</small>
 					</div>
-					<div className="gp-attendance-list__member-role">
-						{role}
-					</div>
-					<small className="gp-attendance-list__guests">
-						{guests}
-					</small>
 				</div>
 			);
 		});

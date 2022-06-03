@@ -11,15 +11,15 @@ const AttendanceList = () => {
 	const items = [
 		{
 			title: __('Attending', 'gatherpress'),
-			value: 'attending'
+			value: 'attending',
 		},
 		{
 			title: __('Waiting List', 'gatherpress'),
-			value: 'waiting_list'
+			value: 'waiting_list',
 		},
 		{
 			title: __('Not Attending', 'gatherpress'),
-			value: 'not_attending'
+			value: 'not_attending',
 		}
 	];
 
@@ -51,33 +51,42 @@ const AttendanceList = () => {
 		setIsOpen(false);
 	};
 
-	if ( 'object' === typeof GatherPress ) {
+	if ('object' === typeof GatherPress) {
 		// @todo redo this logic and have it come from API and not GatherPress object.
-		defaultStatus = ( 'undefined' !== typeof GatherPress.current_user.status && 'attend' !== GatherPress.current_user.status ) ? GatherPress.current_user.status : defaultStatus;
+		defaultStatus =
+			'undefined' !== typeof GatherPress.current_user.status &&
+			'attend' !== GatherPress.current_user.status
+				? GatherPress.current_user.status
+				: defaultStatus;
 	}
 
-	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
+	const [attendanceStatus, setAttendanceStatus] = useState(defaultStatus);
 
-	Listener({ setAttendanceStatus: setAttendanceStatus });
+	Listener({ setAttendanceStatus });
 
-	const onTitleClick = ( e, value ) => {
+	const onTitleClick = (e, value) => {
 		e.preventDefault();
 
-		setAttendanceStatus( value );
+		setAttendanceStatus(value);
 	};
 
 	return (
 		<>
 			<div className="gp-attendance-list">
-				<AttendanceListNavigation items={items} activeValue={attendanceStatus} onTitleClick={onTitleClick} />
-				<AttendanceListContent items={items} activeValue={attendanceStatus} />
+				<AttendanceListNavigation
+					items={items}
+					activeValue={attendanceStatus}
+					onTitleClick={onTitleClick}
+				/>
+				<AttendanceListContent
+					items={items}
+					activeValue={attendanceStatus}
+				/>
 			</div>
 			<div className="has-text-align-right">
-				<a
-					href="#"
-					onClick={(e) => openModal(e)}
-				>
-					{ __( 'See all', 'gatherpress' ) }
+				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+				<a href="#" onClick={(e) => openModal(e)}>
+					{__('See all', 'gatherpress')}
 				</a>
 			</div>
 			<Modal
@@ -86,14 +95,26 @@ const AttendanceList = () => {
 				style={customStyles}
 				contentLabel={__('Attendance', 'gatherpress')}
 			>
-				<div className="gp-modal">
+				<div className="gp-modal gp-modal__attendance-list">
 					<div className="gp-modal__header has-large-font-size">
 						{__('Attendance List', 'gatherpress')}
 					</div>
+					<div className="gp-modal__navigation">
+						<AttendanceListNavigation
+							items={items}
+							activeValue={attendanceStatus}
+							onTitleClick={onTitleClick}
+						/>
+					</div>
 					<div className="gp-modal__content">
+						<AttendanceListContent
+							items={items}
+							activeValue={attendanceStatus}
+						/>
 					</div>
 					<ButtonGroup className="gp-buttons wp-block-buttons">
 						<div className="gp-buttons__container wp-block-button has-small-font-size">
+							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 							<a
 								href="#"
 								className="gp-buttons__button wp-block-button__link"
@@ -102,6 +123,7 @@ const AttendanceList = () => {
 							</a>
 						</div>
 						<div className="gp-buttons__container wp-block-button has-small-font-size">
+							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 							<a
 								href="#"
 								onClick={closeModal}

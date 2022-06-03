@@ -166,7 +166,7 @@ const AttendanceSelector = () => {
 					style={customStyles}
 					contentLabel={__('Edit RSVP', 'gatherpress')}
 				>
-					<div className="gp-modal">
+					<div className="gp-modal gp-modal__attendance-selector">
 						<div className="gp-modal__header has-large-font-size">
 							{__('Edit RSVP', 'gatherpress')}
 						</div>
