@@ -1,5 +1,5 @@
 workflows:
-  version: 2
+  version: 1
   main:
     jobs:
       - php70-build
@@ -8,7 +8,7 @@ workflows:
       - php73-build
       - php74-build
 
-version: 2
+version: 1
 
 job-references:
   mysql_image: &mysql_image
