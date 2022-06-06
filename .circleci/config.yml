@@ -28,7 +28,8 @@ job-references:
       sudo sh -c "printf '\ndeb http://ftp.us.debian.org/debian sid main\n' >> /etc/apt/sources.list"
       sudo apt-get update && sudo apt-get install default-mysql-client
       composer global require "phpunit/phpunit=7.5.*"
-      composer global require wp-coding-standards/wpcs
+      composer global require --dev automattic/vipwpcs
+      dealerdirect/phpcodesniffer-composer-installer -W
       phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
 
   run_phpcs: &run_phpcs
