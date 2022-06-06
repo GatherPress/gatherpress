@@ -39,7 +39,7 @@ job-references:
       - run:
           name: "Run Tests"
           command: |
-            composer global require "phpunit/phpunit=7.5.*"
+            composer global require "phpunit/phpunit=5.7.*"
             composer global require wp-coding-standards/wpcs
             phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
             phpcs
