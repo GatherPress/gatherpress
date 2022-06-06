@@ -17,8 +17,8 @@ job-references:
   setup_environment: &setup_environment
     name: "Setup Environment Variables"
     command: |
-      su -c 'echo "export PATH=$HOME/.composer/vendor/bin:$PATH" >> $BASH_ENV'
-      su -c 'source /home/circleci/.bashrc'
+      su root -c 'echo "export PATH=$HOME/.composer/vendor/bin:$PATH" >> $BASH_ENV'
+      su root -c 'source /home/circleci/.bashrc'
 
   install_dependencies: &install_dependencies
     name: "Install Dependencies"
