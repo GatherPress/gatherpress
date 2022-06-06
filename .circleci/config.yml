@@ -12,7 +12,7 @@ version: 2
 
 job-references:
   mysql_image: &mysql_image
-    circleci/mysql
+    circleci/mysql:5.7
 
   setup_environment: &setup_environment
     name: "Setup Environment Variables"
