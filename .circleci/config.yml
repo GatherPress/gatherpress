@@ -29,12 +29,12 @@ job-references:
       sudo apt-get update && sudo apt-get install default-mysql-client
       composer global require "phpunit/phpunit=7.5.*"
       composer global require wp-coding-standards/wpcs
-      $HOME/vendor/bin/phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
+      $HOME/.composer/vendor/bin/phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
 
   run_phpcs: &run_phpcs
     name: "Run PHPCS"
     command: |
-      $HOME/vendor/bin/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
+      $HOME/.composer/vendor/bin/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
   run_phpunit_single_site: &run_phpunit_single_site
     name: "Run PHPUnit - Single Site"
@@ -42,12 +42,12 @@ job-references:
       SKIP_DB_CREATE=false
       rm -rf $WP_TESTS_DIR $WP_CORE_DIR
       bash bin/install-wp-tests.sh wordpress_test root '' 127.0.0.1 latest $SKIP_DB_CREATE
-      $HOME/vendor/bin/phpunit
+      $HOME/.composer/vendor/bin/phpunit
 
   run_phpunit_multi_site: &run_phpunit_multi_site
     name: "Run PHPUnit - Multi Site"
     command: |
-      WP_MULTISITE=1 $HOME/vendor/bin/phpunit
+      WP_MULTISITE=1 $HOME/.composer/vendor/bin/phpunit
 
   php_job: &php_job
     environment:
