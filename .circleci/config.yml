@@ -19,8 +19,6 @@ job-references:
     command: |
       echo "export PATH=$HOME/.composer/vendor/bin:$PATH" >> $BASH_ENV
       source /home/circleci/.bashrc
-      source ~/.bashrc
-      echo $PATH
 
   install_dependencies: &install_dependencies
     name: "Install Dependencies"
@@ -35,8 +33,8 @@ job-references:
   run_phpcs: &run_phpcs
     name: "Run PHPCS"
     command: |
-      phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
-      phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
+      $HOME/.composer/vendor/bin/phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
+      $HOME/.composer/vendor/bin/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
   run_phpunit_single_site: &run_phpunit_single_site
     name: "Run PHPUnit - Single Site"
