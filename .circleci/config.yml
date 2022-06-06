@@ -29,11 +29,11 @@ job-references:
       sudo apt-get update && sudo apt-get install default-mysql-client
       composer global require "phpunit/phpunit=7.5.*"
       composer global require wp-coding-standards/wpcs
-      phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
 
   run_phpcs: &run_phpcs
     name: "Run PHPCS"
     command: |
+      phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
       phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
   run_phpunit_single_site: &run_phpunit_single_site
@@ -55,8 +55,8 @@ job-references:
       - WP_CORE_DIR: "/tmp/wordpress/"
     steps:
       - checkout
-      - run: *install_dependencies
       - run: *setup_environment
+      - run: *install_dependencies
       - run: *run_phpcs
       - run: *run_phpunit_single_site
       - run: *run_phpunit_multi_site
