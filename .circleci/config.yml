@@ -7,7 +7,6 @@ workflows:
       - php72-build
       - php73-build
       - php74-build
-      - php80-build
 
 version: 2
 
@@ -79,10 +78,4 @@ jobs:
     <<: *php_job
     docker:
       - image: circleci/php:7.4
-      - image: *mysql_image
-
-  php80-build:
-    <<: *php_job
-    docker:
-      - image: circleci/php:8.0
       - image: *mysql_image
