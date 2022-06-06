@@ -33,8 +33,8 @@ job-references:
   run_phpcs: &run_phpcs
     name: "Run PHPCS"
     command: |
-      /usr/share/php/codesniffer/vendor/squizlabs/php_codesniffer/bin/phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
-      /usr/share/php/codesniffer/vendor/squizlabs/php_codesniffer/bin/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
+      phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
+      phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
   run_phpunit_single_site: &run_phpunit_single_site
     name: "Run PHPUnit - Single Site"
