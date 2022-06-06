@@ -57,7 +57,6 @@ job-references:
       - checkout
       - run: *setup_environment
       - run: *install_dependencies
-      - run: *run_phpcs
       - run: *run_phpunit_single_site
       - run: *run_phpunit_multi_site
 
