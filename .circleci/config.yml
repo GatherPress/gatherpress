@@ -25,6 +25,7 @@ job-references:
       composer global require wp-coding-standards/wpcs
       COMPOSER_BIN=$(composer global config bin-dir --absolute)
       ${COMPOSER_BIN}/phpcs --config-set installed_paths ${COMPOSER_BIN}/../wp-coding-standards/wpcs
+      composer global config bin-dir --absolute
 
   run_phpcs: &run_phpcs
     name: "Run PHPCS"
