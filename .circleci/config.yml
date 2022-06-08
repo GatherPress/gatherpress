@@ -23,6 +23,7 @@ job-references:
       sudo apt-get update && sudo apt-get install default-mysql-client
       composer global require "phpunit/phpunit=7.5.*"
       composer global require wp-coding-standards/wpcs
+      composer global require phpcompatibility/phpcompatibility-wp
       COMPOSER_BIN=$(composer global config bin-dir --absolute)
       ${COMPOSER_BIN}/phpcs --config-set installed_paths ${COMPOSER_BIN}/../wp-coding-standards/wpcs
 
@@ -30,7 +31,6 @@ job-references:
     name: "Run PHPCS"
     command: |
       COMPOSER_BIN=$(composer global config bin-dir --absolute)
-      ${COMPOSER_BIN}/phpcs -i
       ${COMPOSER_BIN}/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
   run_phpunit_single_site: &run_phpunit_single_site
