@@ -17,6 +17,7 @@ trait Singleton {
 
 	/**
 	 * Instance of class.
+	 *
 	 * @var null
 	 */
 	private static $instance = null;

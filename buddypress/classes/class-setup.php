@@ -40,7 +40,7 @@ class Setup {
 	/**
 	 * Setup BuddyPress settings page in admin.
 	 *
-	 * @param array $sub_pages
+	 * @param array $sub_pages List of setting sub pages.
 	 *
 	 * @return array
 	 */

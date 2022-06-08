@@ -1,4 +1,11 @@
 <?php
+/**
+ * Settings template.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
 
 use GatherPress\Core\Settings;
 
