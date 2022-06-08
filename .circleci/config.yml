@@ -24,9 +24,10 @@ job-references:
       composer global require "phpunit/phpunit=7.5.*"
       composer global require wp-coding-standards/wpcs
       composer global require phpcompatibility/php-compatibility
+      composer global require paragonie/sodium_compat
       composer global require phpcompatibility/phpcompatibility-wp
       COMPOSER_BIN=$(composer global config bin-dir --absolute)
-      ${COMPOSER_BIN}/phpcs --config-set installed_paths ${COMPOSER_BIN}/../wp-coding-standards/wpcs,${COMPOSER_BIN}/../phpcompatibility/php-compatibility,${COMPOSER_BIN}/../phpcompatibility/phpcompatibility-wp
+      ${COMPOSER_BIN}/phpcs --config-set installed_paths ${COMPOSER_BIN}/../wp-coding-standards/wpcs,${COMPOSER_BIN}/../phpcompatibility/php-compatibility,${COMPOSER_BIN}/../paragonie/sodium_compat,${COMPOSER_BIN}/../phpcompatibility/phpcompatibility-wp
 
   run_phpcs: &run_phpcs
     name: "Run PHPCS"
