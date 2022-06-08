@@ -86,7 +86,7 @@ class Assets {
 			true
 		);
 
-//		if ( is_singular( 'gp_event' ) ) {
+		// if ( is_singular( 'gp_event' ) ) {
 			global $post;
 
 			wp_localize_script(
@@ -94,7 +94,7 @@ class Assets {
 				'GatherPress',
 				$this->localize( $post->ID ?? 0 )
 			);
-//		}
+		// }
 	}
 
 	/**
@@ -156,7 +156,7 @@ class Assets {
 	 * @return array
 	 */
 	protected function localize( int $post_id ): array {
-		$event = new Event( $post_id );
+		$event    = new Event( $post_id );
 		$settings = Settings::get_instance();
 		return array(
 			'attendees'        => ( $event->attendee ) ? $event->attendee->get_attendees() : array(), // @todo cleanup

@@ -67,6 +67,7 @@ class Role {
 
 	/**
 	 * Return role settings that are either saved or default.
+	 *
 	 * @todo temporary mapping to roles, this will be revisited as a taxonomy to assign members.
 	 *
 	 * @return array
@@ -74,10 +75,10 @@ class Role {
 	public function get_role_settings(): array {
 		return array(
 			'administrator' => __( 'Organizer', 'gatherpress' ),
-			'editor' => __( 'Assistant Organizer', 'gatherpress' ),
-			'author' => __( 'Event Organizer', 'gatherpress' ),
-			'contributor' => __( 'Event Assistant', 'gatherpress' ),
-			'subscriber' => __( 'Member', 'gatherpress' ),
+			'editor'        => __( 'Assistant Organizer', 'gatherpress' ),
+			'author'        => __( 'Event Organizer', 'gatherpress' ),
+			'contributor'   => __( 'Event Assistant', 'gatherpress' ),
+			'subscriber'    => __( 'Member', 'gatherpress' ),
 		);
 	}
 

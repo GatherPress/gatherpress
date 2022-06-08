@@ -258,12 +258,12 @@ class Settings {
 	 */
 	public function get_sub_pages(): array {
 		$sub_pages = array(
-			'general'  => array(
+			'general' => array(
 				'name'        => __( 'General', 'gatherpress' ),
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
 				'priority'    => 1,
 			),
-			'credits'  => array(
+			'credits' => array(
 				'name'     => __( 'Credits', 'gatherpress' ),
 				'priority' => 99,
 			),
