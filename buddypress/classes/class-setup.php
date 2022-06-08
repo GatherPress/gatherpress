@@ -37,6 +37,13 @@ class Setup {
 		add_action( 'bp_notification_settings', array( $this, 'event_notification_settings' ), 1 );
 	}
 
+	/**
+	 * Setup BuddyPress settings page in admin.
+	 *
+	 * @param array $sub_pages
+	 *
+	 * @return array
+	 */
 	public function set_sub_page( array $sub_pages ): array {
 		$sub_pages['buddypress'] = array(
 			'name' => __( 'BuddyPress', 'gatherpress' ),

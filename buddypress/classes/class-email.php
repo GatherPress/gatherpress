@@ -124,7 +124,7 @@ class Email {
 	 */
 	protected function email_get_type_schema( string $field = 'description' ) : array {
 		$types = array(
-			'gp-event-announce' => array(
+			'gatherpress-event-announce' => array(
 				'description' => __( 'A new event was announced.', 'gatherpress' ),
 				'unsubscribe' => array(
 					'meta_key' => 'notification_event_announce', //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
@@ -150,7 +150,7 @@ class Email {
 	 * @return bool
 	 */
 	public function event_announce( int $post_id ) : bool {
-		$setting = 'gp-event-announce';
+		$setting = 'gatherpress-event-announce';
 		$meta    = get_post_meta( $post_id, $setting, true );
 		$status  = get_post_status( $post_id );
 		$event   = new Event( $post_id );
