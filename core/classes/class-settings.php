@@ -25,10 +25,24 @@ class Settings {
 	const PARENT_SLUG = 'edit.php?post_type=gp_event';
 
 	/**
+	 * Current page.
+	 *
+	 * @var string
+	 */
+	protected $page = '';
+
+	/**
 	 * Role constructor.
 	 */
 	protected function __construct() {
+		$this->set_page();
 		$this->setup_hooks();
+	}
+
+	protected function set_page() {
+		if ( isset( $_GET['page'] ) ) {
+			$this->page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
+		}
 	}
 
 	/**
@@ -348,7 +362,7 @@ class Settings {
 			sprintf( '%s/templates/admin/settings.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'sub_pages' => $this->get_sub_pages(),
-				'page'      => sanitize_text_field( wp_unslash( $_GET['page'] ) ) ?? '',
+				'page'      => $this->page,
 			),
 			true
 		);
@@ -366,8 +380,7 @@ class Settings {
 			$sub_pages = $this->get_sub_pages();
 
 			if ( isset( $sub_pages ) ) {
-				$page = sanitize_text_field( wp_unslash( $_GET['page'] ) ) ?? '';
-				$page = $this->unprefix_key( $page );
+				$page = $this->unprefix_key( $this->page );
 
 				if ( isset( $sub_pages[ $page ] ) ) {
 					$submenu = $this->prefix_key( 'general' );
