@@ -42,7 +42,7 @@ class Settings {
 	/**
 	 * Helper to set the current page.
 	 *
-	 * @phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	 * phpcs:disable WordPress.Security.NonceVerification.Recommended
 	 *
 	 * @return void
 	 */
@@ -50,6 +50,8 @@ class Settings {
 		if ( isset( $_GET['page'] ) ) {
 			$this->page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
 		}
+
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
