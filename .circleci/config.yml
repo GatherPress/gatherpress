@@ -21,6 +21,7 @@ job-references:
       sudo apt-get update && sudo apt-get install default-mysql-client
       composer install --no-interaction --prefer-source --dev
       composer global require "phpunit/phpunit=7.5.*"
+      composer global require yoast/phpunit-polyfills
       composer global require squizlabs/php_codesniffer
       composer global require wp-coding-standards/wpcs
       composer global require phpcompatibility/php-compatibility
