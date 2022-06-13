@@ -2,11 +2,9 @@ workflows:
   version: 2
   main:
     jobs:
-      - php70-build
-      - php71-build
-      - php72-build
-      - php73-build
-      - php74-build
+      - php74-cs
+      - php73-test
+      - php74-test
 
 version: 2
 
@@ -21,6 +19,8 @@ job-references:
       sudo -E docker-php-ext-install mysqli
       sudo sh -c "printf '\ndeb http://ftp.us.debian.org/debian sid main\n' >> /etc/apt/sources.list"
       sudo apt-get update && sudo apt-get install default-mysql-client
+      composer self-update --1
+      composer install --no-interaction --prefer-source --dev
       composer global require "phpunit/phpunit=7.5.*"
       composer global require squizlabs/php_codesniffer
       composer global require wp-coding-standards/wpcs
@@ -50,7 +50,7 @@ job-references:
     command: |
       WP_MULTISITE=1 ${COMPOSER_BIN}/phpunit
 
-  php_job: &php_job
+  php_cs: &php_cs
     environment:
       - WP_TESTS_DIR: "/tmp/wordpress-tests-lib"
       - WP_CORE_DIR: "/tmp/wordpress/"
@@ -58,36 +58,32 @@ job-references:
       - checkout
       - run: *install_dependencies
       - run: *run_phpcs
+
+  php_test: &php_test
+    environment:
+      - WP_TESTS_DIR: "/tmp/wordpress-tests-lib"
+      - WP_CORE_DIR: "/tmp/wordpress/"
+    steps:
+      - checkout
+      - run: *install_dependencies
       - run: *run_phpunit_single_site
       - run: *run_phpunit_multi_site
 
 jobs:
-  php70-build:
-    <<: *php_job
+  php74-cs:
+    <<: *php_cs
     docker:
-      - image: circleci/php:7.0
+      - image: circleci/php:7.4
       - image: *mysql_image
 
-  php71-build:
-    <<: *php_job
-    docker:
-      - image: circleci/php:7.1
-      - image: *mysql_image
-
-  php72-build:
-    <<: *php_job
-    docker:
-      - image: circleci/php:7.2
-      - image: *mysql_image
-
-  php73-build:
-    <<: *php_job
+  php73-test:
+    <<: *php_test
     docker:
       - image: circleci/php:7.3
       - image: *mysql_image
 
-  php74-build:
-    <<: *php_job
+  php74-test:
+    <<: *php_test
     docker:
       - image: circleci/php:7.4
       - image: *mysql_image
