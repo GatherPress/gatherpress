@@ -39,6 +39,13 @@ class Settings {
 		$this->setup_hooks();
 	}
 
+	/**
+	 * Helper to set the current page.
+	 *
+	 * @phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	 *
+	 * @return void
+	 */
 	protected function set_page() {
 		if ( isset( $_GET['page'] ) ) {
 			$this->page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
