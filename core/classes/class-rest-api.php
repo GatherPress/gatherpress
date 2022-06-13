@@ -355,8 +355,8 @@ class Rest_Api {
 	/**
 	 * Check that max_number is 5 or less.
 	 *
-	 * @param int $number
-	 * @param int $max_number
+	 * @param int $number     Actual number.
+	 * @param int $max_number Maximum number.
 	 *
 	 * @return int
 	 */

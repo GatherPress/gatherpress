@@ -44,7 +44,7 @@ class Role {
 			'subscriber'    => __( 'Member', 'gatherpress' ),
 		);
 
-		return apply_filters( 'gatherpress/roles/default_names', $defaults );
+		return apply_filters( 'gatherpress_roles_default_names', $defaults );
 	}
 
 	/**

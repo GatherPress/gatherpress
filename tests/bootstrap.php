@@ -2,6 +2,8 @@
 /**
  * PHPUnit bootstrap file.
  *
+ * Bootstrap file for plugin automated tests.
+ *
  * @package GatherPress
  * @subpackage Tests
  * @since 1.0.0
