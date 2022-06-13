@@ -91,6 +91,11 @@ class Settings {
 		}
 	}
 
+	/**
+	 * Register settings page.
+	 *
+	 * @return void
+	 */
 	public function register_settings() {
 		$sub_pages = $this->get_sub_pages();
 
@@ -145,14 +150,14 @@ class Settings {
 	/**
 	 * Outputs a text input field.
 	 *
-	 * @param $sub_page
-	 * @param $section
-	 * @param $option
-	 * @param $option_settings
+	 * @param string $sub_page        The sub page for the text field.
+	 * @param string $section         The section for the text field.
+	 * @param string $option          The option for the text field.
+	 * @param array  $option_settings The option settings.
 	 *
 	 * @return void
 	 */
-	public function text_field( $sub_page, $section, $option, $option_settings ) {
+	public function text_field( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
 		$default = $option_settings['default'] ?? '';
 		$value   = $this->get_value( $sub_page, $section, $option, $default );
@@ -170,10 +175,10 @@ class Settings {
 	/**
 	 * Gets the value.
 	 *
-	 * @param string       $sub_page
-	 * @param string       $section
-	 * @param string       $option
-	 * @param mixed|string $default
+	 * @param string       $sub_page The sub page of the value.
+	 * @param string       $section  The section of the value.
+	 * @param string       $option   The option of the value.
+	 * @param mixed|string $default  The default value.
 	 *
 	 * @return mixed
 	 */
@@ -192,7 +197,7 @@ class Settings {
 	/**
 	 * Get currently set options from a GatherPress sub page.
 	 *
-	 * @param string $sub_page
+	 * @param string $sub_page The sub page to get options.
 	 *
 	 * @return array
 	 */
@@ -209,7 +214,7 @@ class Settings {
 	/**
 	 * Default options for GatherPress sub pages.
 	 *
-	 * @param string $option
+	 * @param string $option The option to get the default.
 	 *
 	 * @return array
 	 */
@@ -236,9 +241,9 @@ class Settings {
 	/**
 	 * Create name field for setting.
 	 *
-	 * @param string $sub_page
-	 * @param string $section
-	 * @param string $option
+	 * @param string $sub_page Sub page of name field.
+	 * @param string $section  Section of name field.
+	 * @param string $option   Option of name field.
 	 *
 	 * @return string
 	 */
@@ -269,7 +274,7 @@ class Settings {
 			),
 		);
 
-		$sub_pages = (array) apply_filters( 'gatherpress/settings/sub_pages', $sub_pages ); // @todo don't filter all pages, just allow to add additional subpages.
+		$sub_pages = (array) apply_filters( 'gatherpress_settings_sub_pages', $sub_pages ); // @todo don't filter all pages, just allow to add additional subpages.
 
 		uasort( $sub_pages, array( $this, 'sort_sub_pages_by_priority' ) );
 
@@ -301,7 +306,7 @@ class Settings {
 	/**
 	 * Add gp- prefix.
 	 *
-	 * @param string $key
+	 * @param string $key The key for adding prefix.
 	 *
 	 * @return string
 	 */
@@ -312,7 +317,7 @@ class Settings {
 	/**
 	 * Remove gp- prefix.
 	 *
-	 * @param string $key
+	 * @param string $key The key for removing prefix.
 	 *
 	 * @return string
 	 */
@@ -323,16 +328,16 @@ class Settings {
 	/**
 	 * Sort associative array by priority. 10 is default.
 	 *
-	 * @param array $a
-	 * @param array $b
+	 * @param array $first  First to compare priority.
+	 * @param array $second Second to compare priority.
 	 *
 	 * @return int
 	 */
-	public function sort_sub_pages_by_priority( array $a, array $b ): int {
-		$a['priority'] = isset( $a['priority'] ) ? intval( $a['priority'] ) : 10;
-		$b['priority'] = isset( $b['priority'] ) ? intval( $b['priority'] ) : 10;
+	public function sort_sub_pages_by_priority( array $first, array $second ): int {
+		$first['priority']  = isset( $first['priority'] ) ? intval( $first['priority'] ) : 10;
+		$second['priority'] = isset( $second['priority'] ) ? intval( $second['priority'] ) : 10;
 
-		return ( $a['priority'] > $b['priority'] );
+		return ( $first['priority'] > $second['priority'] );
 	}
 
 	/**
@@ -343,7 +348,7 @@ class Settings {
 			sprintf( '%s/templates/admin/settings.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'sub_pages' => $this->get_sub_pages(),
-				'page'      => $_GET['page'],
+				'page'      => sanitize_text_field( wp_unslash( $_GET['page'] ) ) ?? '',
 			),
 			true
 		);
@@ -352,16 +357,16 @@ class Settings {
 	/**
 	 * Select GatherPress in menu for all sub pages.
 	 *
-	 * @param $submenu
+	 * @param string $submenu Name of sub menu page.
 	 *
-	 * @return mixed|string
+	 * @return string
 	 */
 	public function select_menu( $submenu ) {
 		if ( empty( $submenu ) ) {
 			$sub_pages = $this->get_sub_pages();
 
 			if ( isset( $sub_pages ) ) {
-				$page = $_GET['page'] ?? '';
+				$page = sanitize_text_field( wp_unslash( $_GET['page'] ) ) ?? '';
 				$page = $this->unprefix_key( $page );
 
 				if ( isset( $sub_pages[ $page ] ) ) {
