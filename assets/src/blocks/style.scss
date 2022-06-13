@@ -1,3 +1,16 @@
+// Mixins
+@mixin for-core-tablet {
+	@media screen and (max-width: 782px) { @content; }
+}
+
+@mixin for-core-mobile {
+	@media screen and (max-width: 600px) { @content; }
+}
+
+@mixin for-core-narrow {
+	@media screen and (max-width: 400px) { @content; }
+}
+
 @import "src/blocks/upcoming-events/style";
 @import "src/blocks/past-events/style";
 @import "src/blocks/attendance-selector/style";

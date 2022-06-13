@@ -2,7 +2,7 @@ import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Listener } from '../helpers/broadcasting';
 
-const AttendeeList = ({ value }) => {
+const AttendeeList = ({ value, limit }) => {
 	let defaultList = [];
 
 	if ( 'object' === typeof GatherPress ) {
@@ -19,7 +19,13 @@ const AttendeeList = ({ value }) => {
 		'object' === typeof attendanceList &&
 		'undefined' !== typeof attendanceList[value]
 	) {
-		renderedItems = attendanceList[value].attendees.map( ( attendee, index ) => {
+		let attendees = [...attendanceList[value].attendees];
+
+		if (limit) {
+			attendees = attendees.splice(0, limit);
+		}
+
+		renderedItems = attendees.map( ( attendee, index ) => {
 			const { profile, name, photo, role } = attendee;
 			let { guests } = attendee;
 

@@ -1,6 +1,5 @@
 import { useState } from '@wordpress/element';
 import {__} from '@wordpress/i18n';
-import { ButtonGroup } from '@wordpress/components';
 import AttendanceListNavigation from './AttendanceListNavigation';
 import AttendanceListContent from './AttendanceListContent';
 import { Listener } from '../helpers/broadcasting';
@@ -29,6 +28,7 @@ const AttendanceList = () => {
 			left: '50%',
 			right: 'auto',
 			bottom: 'auto',
+			maxHeight: '75%',
 			marginRight: '-50%',
 			transform: 'translate(-50%, -50%)',
 		},
@@ -81,6 +81,7 @@ const AttendanceList = () => {
 				<AttendanceListContent
 					items={items}
 					activeValue={attendanceStatus}
+					limit={8}
 				/>
 			</div>
 			<div className="has-text-align-right">
@@ -112,27 +113,6 @@ const AttendanceList = () => {
 							activeValue={attendanceStatus}
 						/>
 					</div>
-					<ButtonGroup className="gp-buttons wp-block-buttons">
-						<div className="gp-buttons__container wp-block-button has-small-font-size">
-							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-							<a
-								href="#"
-								className="gp-buttons__button wp-block-button__link"
-							>
-								{__('Load More', 'gatherpress')}
-							</a>
-						</div>
-						<div className="gp-buttons__container wp-block-button has-small-font-size">
-							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-							<a
-								href="#"
-								onClick={closeModal}
-								className="gp-buttons__button wp-block-button__link"
-							>
-								{__('Close', 'gatherpress')}
-							</a>
-						</div>
-					</ButtonGroup>
 				</div>
 			</Modal>
 		</>
