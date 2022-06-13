@@ -21,8 +21,8 @@ $gatherpress_core_files = array(
 	'/core/classes/class-utility.php',
 );
 
-foreach ( $gatherpress_core_files as $file ) {
-	require_once GATHERPRESS_CORE_PATH . $file;
+foreach ( $gatherpress_core_files as $gatherpress_core_file ) {
+	require_once GATHERPRESS_CORE_PATH . $gatherpress_core_file;
 }
 
 GatherPress\Core\Setup::get_instance();

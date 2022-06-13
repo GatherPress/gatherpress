@@ -299,19 +299,19 @@ class Rest_Api {
 		$params     = $request->get_params();
 		$max_number = $this->max_number( (int) $params['max_number'], 5 );
 		$query      = Query::get_instance()->get_upcoming_events( $max_number );
-		$posts      = [];
+		$posts      = array();
 
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {
 				$event   = new Event( $post_id );
-				$posts[] = [
+				$posts[] = array(
 					'ID'             => $post_id,
 					'datetime_start' => $event->get_datetime_start(),
 					'permalink'      => get_the_permalink( $post_id ),
 					'title'          => get_the_title( $post_id ),
-					'excerpt'        => get_the_excerpt( $post_id  ),
+					'excerpt'        => get_the_excerpt( $post_id ),
 					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
-				];
+				);
 			}
 		}
 
@@ -331,19 +331,19 @@ class Rest_Api {
 		$params     = $request->get_params();
 		$max_number = $this->max_number( (int) $params['max_number'], 5 );
 		$query      = Query::get_instance()->get_past_events( $max_number );
-		$posts      = [];
+		$posts      = array();
 
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {
 				$event   = new Event( $post_id );
-				$posts[] = [
+				$posts[] = array(
 					'ID'             => $post_id,
 					'datetime_start' => $event->get_datetime_start(),
 					'permalink'      => get_the_permalink( $post_id ),
 					'title'          => get_the_title( $post_id ),
-					'excerpt'        => get_the_excerpt( $post_id  ),
+					'excerpt'        => get_the_excerpt( $post_id ),
 					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
-				];
+				);
 			}
 		}
 
@@ -355,8 +355,8 @@ class Rest_Api {
 	/**
 	 * Check that max_number is 5 or less.
 	 *
-	 * @param int $number
-	 * @param int $max_number
+	 * @param int $number     Actual number.
+	 * @param int $max_number Maximum number.
 	 *
 	 * @return int
 	 */
