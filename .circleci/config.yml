@@ -21,8 +21,6 @@ job-references:
       sudo -E docker-php-ext-install mysqli
       sudo sh -c "printf '\ndeb http://ftp.us.debian.org/debian sid main\n' >> /etc/apt/sources.list"
       sudo apt-get update && sudo apt-get install default-mysql-client
-      composer self-update --1
-      composer install --no-interaction --prefer-source --dev
       composer global require "phpunit/phpunit=7.5.*"
       composer global require squizlabs/php_codesniffer
       composer global require wp-coding-standards/wpcs
