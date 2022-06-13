@@ -48,6 +48,7 @@ job-references:
   run_phpunit_multi_site: &run_phpunit_multi_site
     name: "Run PHPUnit - Multi Site"
     command: |
+      COMPOSER_BIN=$(composer global config bin-dir --absolute)
       WP_MULTISITE=1 ${COMPOSER_BIN}/phpunit
 
   php_cs: &php_cs

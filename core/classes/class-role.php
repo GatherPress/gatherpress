@@ -35,6 +35,11 @@ class Role {
 	protected function setup_hooks() {
 	}
 
+	/**
+	 * Default list of role names.
+	 *
+	 * @return array
+	 */
 	public function get_default_role_names(): array {
 		$defaults = array(
 			'administrator' => __( 'Organizer', 'gatherpress' ),
