@@ -86,7 +86,8 @@ class Assets {
 			true
 		);
 
-//		if ( is_singular( 'gp_event' ) ) {
+		// phpcs:ignore
+		// if ( is_singular( 'gp_event' ) ) {
 			global $post;
 
 			wp_localize_script(
@@ -94,11 +95,16 @@ class Assets {
 				'GatherPress',
 				$this->localize( $post->ID ?? 0 )
 			);
-//		}
+		// phpcs:ignore
+		// }
 	}
 
 	/**
 	 * Enqueue backend styles and scripts.
+	 *
+	 * @param string $hook Name of file.
+	 *
+	 * @return void
 	 */
 	public function admin_enqueue_scripts( $hook ) {
 		if ( 'post-new.php' === $hook || 'post.php' === $hook ) {
@@ -144,7 +150,7 @@ class Assets {
 		wp_localize_script(
 			'gatherpress-blocks-backend',
 			'GatherPress',
-			$this->localize( $post_id ),
+			$this->localize( $post_id )
 		);
 	}
 
@@ -156,7 +162,7 @@ class Assets {
 	 * @return array
 	 */
 	protected function localize( int $post_id ): array {
-		$event = new Event( $post_id );
+		$event    = new Event( $post_id );
 		$settings = Settings::get_instance();
 		return array(
 			'attendees'        => ( $event->attendee ) ? $event->attendee->get_attendees() : array(), // @todo cleanup
@@ -180,7 +186,7 @@ class Assets {
 	 * Data is cached as `require_once` only returns the file contents on the
 	 * first request, returning `true` thereafter.
 	 *
-	 * @param string $asset
+	 * @param string $asset File name of the asset.
 	 *
 	 * @return array
 	 */

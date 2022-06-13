@@ -14,8 +14,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 trait Singleton {
+
+	/**
+	 * Instance of class.
+	 *
+	 * @var null
+	 */
 	private static $instance = null;
 
+	/**
+	 * Get the instance of the Singleton class.
+	 *
+	 * @return object
+	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -23,4 +34,5 @@ trait Singleton {
 
 		return self::$instance;
 	}
+
 }

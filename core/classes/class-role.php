@@ -35,6 +35,11 @@ class Role {
 	protected function setup_hooks() {
 	}
 
+	/**
+	 * Default list of role names.
+	 *
+	 * @return array
+	 */
 	public function get_default_role_names(): array {
 		$defaults = array(
 			'administrator' => __( 'Organizer', 'gatherpress' ),
@@ -44,7 +49,7 @@ class Role {
 			'subscriber'    => __( 'Member', 'gatherpress' ),
 		);
 
-		return apply_filters( 'gatherpress/roles/default_names', $defaults );
+		return apply_filters( 'gatherpress_roles_default_names', $defaults );
 	}
 
 	/**
@@ -67,6 +72,7 @@ class Role {
 
 	/**
 	 * Return role settings that are either saved or default.
+	 *
 	 * @todo temporary mapping to roles, this will be revisited as a taxonomy to assign members.
 	 *
 	 * @return array
@@ -74,10 +80,10 @@ class Role {
 	public function get_role_settings(): array {
 		return array(
 			'administrator' => __( 'Organizer', 'gatherpress' ),
-			'editor' => __( 'Assistant Organizer', 'gatherpress' ),
-			'author' => __( 'Event Organizer', 'gatherpress' ),
-			'contributor' => __( 'Event Assistant', 'gatherpress' ),
-			'subscriber' => __( 'Member', 'gatherpress' ),
+			'editor'        => __( 'Assistant Organizer', 'gatherpress' ),
+			'author'        => __( 'Event Organizer', 'gatherpress' ),
+			'contributor'   => __( 'Event Assistant', 'gatherpress' ),
+			'subscriber'    => __( 'Member', 'gatherpress' ),
 		);
 	}
 

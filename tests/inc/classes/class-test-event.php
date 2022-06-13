@@ -111,7 +111,7 @@ class Test_Event extends Base {
 		$this->assertContains( 'DESC', $retval['orderby'] );
 		$this->assertContains( "AND {$table}.datetime_end_gmt <", $retval['where'] );
 
-		$retval = Event::adjust_sql( array(), 'future', 'ASC' );
+		$retval = Event::adjust_sql( array(), 'upcoming', 'ASC' );
 
 		$this->assertContains( 'ASC', $retval['orderby'] );
 		$this->assertContains( "AND {$table}.datetime_end_gmt >=", $retval['where'] );

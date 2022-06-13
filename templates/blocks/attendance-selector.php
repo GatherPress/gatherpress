@@ -7,9 +7,9 @@
  * @since 1.0.0
  */
 
-$event = new GatherPress\Core\Event( get_the_ID() );
+$gatherpress_event = new GatherPress\Core\Event( get_the_ID() );
 
-if ( $event->has_event_past() ) {
+if ( $gatherpress_event->has_event_past() ) {
 	return;
 }
 ?>

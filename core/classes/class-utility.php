@@ -23,6 +23,7 @@ class Utility {
 	 *
 	 * @param string $path      Path to template.
 	 * @param array  $variables Array of variables to pass to template.
+	 * @param bool   $echo      Echo or return the template.
 	 *
 	 * @return string
 	 */

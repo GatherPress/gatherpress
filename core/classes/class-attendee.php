@@ -95,6 +95,7 @@ class Attendee {
 	 *
 	 * @param int    $user_id A user ID.
 	 * @param string $status  Attendance status.
+	 * @param int    $guests  Number of guests.
 	 *
 	 * @return string
 	 */
