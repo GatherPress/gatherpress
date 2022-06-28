@@ -20,9 +20,9 @@ use GatherPress\Core\Attendee;
 class Test_Attendee extends Base {
 
 	/**
-	 * Coverage for get_attendee method.
+	 * Coverage for get method.
 	 *
-	 * @covers ::get_attendee
+	 * @covers ::get
 	 */
 	public function test_get_attendee() {
 		$post     = $this->mock->post(
@@ -34,12 +34,12 @@ class Test_Attendee extends Base {
 		$user     = $this->mock->user()->get();
 		$status   = 'attending';
 
-		$this->assertEmpty( $attendee->get_attendee( 0 ) );
-		$this->assertEquals( 0, $attendee->get_attendee( $user->ID )['id'] );
+		$this->assertEmpty( $attendee->get( 0 ) );
+		$this->assertEquals( 0, $attendee->get( $user->ID )['id'] );
 
-		$attendee->save_attendee( $user->ID, $status );
+		$attendee->save( $user->ID, $status );
 
-		$data = $attendee->get_attendee( $user->ID );
+		$data = $attendee->get( $user->ID );
 
 		$this->assertSame( $post->ID, intval( $data['post_id'] ) );
 		$this->assertSame( $user->ID, intval( $data['user_id'] ) );
@@ -49,9 +49,9 @@ class Test_Attendee extends Base {
 	}
 
 	/**
-	 * Coverage for save_attendee method.
+	 * Coverage for save method.
 	 *
-	 * @covers ::save_attendee
+	 * @covers ::save
 	 */
 	public function test_save_attendee() {
 		$post     = $this->mock->post(
@@ -63,17 +63,17 @@ class Test_Attendee extends Base {
 		$user     = $this->mock->user()->get();
 		$status   = 'attending';
 
-		$this->assertSame( $status, $attendee->save_attendee( $user->ID, $status ) );
+		$this->assertSame( $status, $attendee->save( $user->ID, $status ) );
 
 		$status = 'not_attending';
 
-		$this->assertSame( $status, $attendee->save_attendee( $user->ID, $status ) );
+		$this->assertSame( $status, $attendee->save( $user->ID, $status ) );
 
-		$this->assertEmpty( $attendee->save_attendee( 0, $status ) );
+		$this->assertEmpty( $attendee->save( 0, $status ) );
 
 		$status = 'unittest';
 
-		$this->assertEmpty( $attendee->save_attendee( $user->ID, $status ) );
+		$this->assertEmpty( $attendee->save( $user->ID, $status ) );
 	}
 
 }

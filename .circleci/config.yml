@@ -1,12 +1,12 @@
+version: '2.1'
+orbs:
+  slack: circleci/slack@4.1
 workflows:
-  version: 2
   main:
     jobs:
       - php74-cs
       - php73-test
       - php74-test
-
-version: 2
 
 job-references:
   mysql_image: &mysql_image
@@ -51,6 +51,11 @@ job-references:
       COMPOSER_BIN=$(composer global config bin-dir --absolute)
       WP_MULTISITE=1 ${COMPOSER_BIN}/phpunit
 
+  slack_notify: &slack_notify
+    channel: development
+    event: fail
+    template: basic_fail_1
+
   php_cs: &php_cs
     environment:
       - WP_TESTS_DIR: "/tmp/wordpress-tests-lib"
@@ -59,6 +64,7 @@ job-references:
       - checkout
       - run: *install_dependencies
       - run: *run_phpcs
+      - slack/notify: *slack_notify
 
   php_test: &php_test
     environment:
@@ -69,6 +75,7 @@ job-references:
       - run: *install_dependencies
       - run: *run_phpunit_single_site
       - run: *run_phpunit_multi_site
+      - slack/notify: *slack_notify
 
 jobs:
   php74-cs:

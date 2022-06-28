@@ -21,7 +21,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	Listener({ setAttendanceCount: setAttendanceCount });
 
 	const renderedItems = items.map( ( item, index ) => {
-		const additionalClasses = ( item.value === activeValue ) ? 'active' : 'opacity-50'; // @todo adjust this.
+		const additionalClasses = ( item.value === activeValue ) ? 'gp-attendance-list__navigation--current' : '';
 
 		return (
 			<AttendanceListNavigationItem
@@ -35,7 +35,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	});
 
 	return (
-		<nav className="gp-attendance-list__navigation flex border-b ml-0" role="tab-list">
+		<nav className="gp-attendance-list__navigation" role="tab-list">
 			{renderedItems}
 		</nav>
 	);

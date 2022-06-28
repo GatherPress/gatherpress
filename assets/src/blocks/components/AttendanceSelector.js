@@ -14,6 +14,8 @@ const AttendanceSelector = () => {
 	const [attendanceGuests, setAttendanceGuests] = useState(GatherPress.current_user.guests);
 	const [selectorHidden, setSelectorHidden] = useState('hidden');
 	const [selectorExpanded, setSelectorExpanded] = useState('false');
+	const [modalIsOpen, setIsOpen] = useState(false);
+
 	const customStyles = {
 		content: {
 			top: '50%',
@@ -24,7 +26,7 @@ const AttendanceSelector = () => {
 			transform: 'translate(-50%, -50%)',
 		},
 	};
-	const [modalIsOpen, setIsOpen] = useState(false);
+
 	const openModal = (e) => {
 		e.preventDefault();
 
@@ -57,15 +59,14 @@ const AttendanceSelector = () => {
 			method: 'POST',
 			data: {
 				post_id: GatherPress.post_id,
-				status: status,
-				guests: guests,
-				_wpnonce: GatherPress.nonce
-			}
+				status,
+				guests,
+				_wpnonce: GatherPress.nonce,
+			},
 		}).then((res) => {
 			if (res.success) {
 				setAttendanceStatus(res.status);
 				setAttendanceGuests(res.guests);
-
 
 				const count = {
 					all: 0,
@@ -74,9 +75,7 @@ const AttendanceSelector = () => {
 					waiting_list: 0, // eslint-disable-line camelcase
 				};
 
-				for (const [key, value] of Object.entries(
-					res.attendees
-				)) {
+				for (const [key, value] of Object.entries(res.attendees)) {
 					count[key] = value.count;
 				}
 
@@ -116,7 +115,7 @@ const AttendanceSelector = () => {
 		}
 
 		return '';
-	}
+	};
 
 	const onSpanKeyDown = (e) => {
 		if (13 === e.keyCode) {
@@ -133,6 +132,7 @@ const AttendanceSelector = () => {
 		return (
 			<div className="gp-attendance-selector">
 				<div className="wp-block-button">
+					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a
 						className="wp-block-button__link"
 						href="#"
@@ -149,6 +149,7 @@ const AttendanceSelector = () => {
 		<div className="gp-attendance-selector">
 			<ButtonGroup className="gp-buttons wp-block-buttons">
 				<div className="gp-buttons__container  wp-block-button">
+					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a
 						href="#"
 						className="gp-buttons__button wp-block-button__link"
@@ -166,7 +167,7 @@ const AttendanceSelector = () => {
 					style={customStyles}
 					contentLabel={__('Edit RSVP', 'gatherpress')}
 				>
-					<div className="gp-modal">
+					<div className="gp-modal gp-modal__attendance-selector">
 						<div className="gp-modal__header has-large-font-size">
 							{__('Edit RSVP', 'gatherpress')}
 						</div>
@@ -179,21 +180,32 @@ const AttendanceSelector = () => {
 								type="number"
 								min="0"
 								max="5"
-								onChange={(e) => onAnchorClick(e, 'attending', e.target.value, false)}
+								onChange={(e) =>
+									onAnchorClick(
+										e,
+										'attending',
+										e.target.value,
+										false
+									)
+								}
 								defaultValue={attendanceGuests}
 							/>
 						</div>
 						<ButtonGroup className="gp-buttons wp-block-buttons">
 							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
+								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 								<a
 									href="#"
-									onClick={(e) => onAnchorClick(e, 'not_attending')}
+									onClick={(e) =>
+										onAnchorClick(e, 'not_attending')
+									}
 									className="gp-buttons__button wp-block-button__link"
 								>
 									{__('Not Attending', 'gatherpress')}
 								</a>
 							</div>
 							<div className="gp-buttons__container wp-block-button has-small-font-size">
+								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 								<a
 									href="#"
 									onClick={closeModal}
@@ -206,19 +218,22 @@ const AttendanceSelector = () => {
 					</div>
 				</Modal>
 			</ButtonGroup>
-			{'attend' !== attendanceStatus &&
+			{'attend' !== attendanceStatus && (
 				<div className="gp-status">
 					<div className="gp-status__response">
 						<span>{__('Response:', 'gatherpress')}</span>
 						<strong>{getStatusText(attendanceStatus)}</strong>
 					</div>
-					{0 < attendanceGuests &&
+					{0 < attendanceGuests && (
 						<div className="gp-status__guests">
-							<span>+{attendanceGuests} {__('guest(s)', 'gatherpress')}</span>
+							<span>
+								+{attendanceGuests}{' '}
+								{__('guest(s)', 'gatherpress')}
+							</span>
 						</div>
-					}
+					)}
 				</div>
-			}
+			)}
 		</div>
 	);
 };

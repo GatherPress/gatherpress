@@ -1,7 +1,8 @@
-import React, {Fragment, useState} from 'react';
+import { useState } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
 import { Listener } from '../helpers/broadcasting';
 
-const AttendeeList = ({ value }) => {
+const AttendeeList = ({ value, limit }) => {
 	let defaultList = [];
 
 	if ( 'object' === typeof GatherPress ) {
@@ -18,7 +19,13 @@ const AttendeeList = ({ value }) => {
 		'object' === typeof attendanceList &&
 		'undefined' !== typeof attendanceList[value]
 	) {
-		renderedItems = attendanceList[value].attendees.map( ( attendee, index ) => {
+		let attendees = [...attendanceList[value].attendees];
+
+		if (limit) {
+			attendees = attendees.splice(0, limit);
+		}
+
+		renderedItems = attendees.map( ( attendee, index ) => {
 			const { profile, name, photo, role } = attendee;
 			let { guests } = attendee;
 
@@ -29,30 +36,39 @@ const AttendeeList = ({ value }) => {
 			}
 
 			return (
-			<div key={index} className="gp-attendance-list__item">
-				<a className="gp-attendance-list__member-avatar" href={profile}>
-					<img alt={name} title={name} src={photo} />
-				</a>
-				<div className="gp-attendance-list__member-name">
-					<a href={profile}>
-						{name}
+				<div key={index} className="gp-attendance-list__items--item">
+					<a className="gp-attendance-list__member-avatar" href={profile}>
+						<figure className="wp-block-image is-style-rounded">
+							<img alt={name} title={name} src={photo} />
+						</figure>
 					</a>
+					<div className="gp-attendance-list__member-info">
+						<div className="gp-attendance-list__member-name">
+							<a href={profile}>
+								{name}
+							</a>
+						</div>
+						<div className="gp-attendance-list__member-role">
+							{role}
+						</div>
+						<small className="gp-attendance-list__guests">
+							{guests}
+						</small>
+					</div>
 				</div>
-				<div className="gp-attendance-list__member-role">
-					{role}
-				</div>
-				<small className="gp-attendance-list__guests">
-					{guests}
-				</small>
-			</div>
 			);
 		});
 	}
 
 	return (
-		<Fragment>
+		<>
+			{'attending' === value && 0 === renderedItems.length &&
+				<div className="gp-attendance-list__no-attendees">
+					{__( 'No one is attending this event yet.', 'gatherpress')}
+				</div>
+			}
 			{renderedItems}
-		</Fragment>
+		</>
 	);
 };
 

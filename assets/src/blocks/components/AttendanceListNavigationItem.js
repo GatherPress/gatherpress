@@ -2,12 +2,12 @@ import React from 'react';
 
 const AttendanceListNavigationItem = ({ item, additionalClasses, count, onTitleClick }) => {
 	const { title, value } = item;
-	const active = ( 0 === count ) ? 'hidden' : 'active';
+	const active = ( 0 === count && 'attending' !== value ) ? 'hidden' : 'active';
 
 	return (
-		<div className={`gp-attendance-list__item gp-attendance-list__${active}`}>
+		<div className={`gp-attendance-list__navigation--item gp-attendance-list__${active} ${additionalClasses}`}>
 			<a
-				className={`gp-attendance-list__anchor ${additionalClasses}`}
+				className="gp-attendance-list__anchor"
 				data-item={value}
 				data-toggle="tab"
 				href="#"
@@ -15,8 +15,11 @@ const AttendanceListNavigationItem = ({ item, additionalClasses, count, onTitleC
 				aria-controls={`#gp-attendance-${value}`}
 				onClick={ e => onTitleClick( e, value ) }
 			>
-				{title} ({count})
+				{title}
 			</a>
+			<span className="gp-attendance-list__count">
+				({count})
+			</span>
 		</div>
 	);
 };

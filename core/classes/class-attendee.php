@@ -64,7 +64,7 @@ class Attendee {
 	 *
 	 * @return array
 	 */
-	public function get_attendee( int $user_id ): array {
+	public function get( int $user_id ): array {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -99,7 +99,7 @@ class Attendee {
 	 *
 	 * @return string
 	 */
-	public function save_attendee( int $user_id, string $status, int $guests = 0 ): string {
+	public function save( int $user_id, string $status, int $guests = 0 ): string {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -115,7 +115,7 @@ class Attendee {
 		}
 
 		$table         = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$attendee      = $this->get_attendee( $user_id );
+		$attendee      = $this->get( $user_id );
 		$limit_reached = $this->attending_limit_reached( $status );
 
 		if ( $limit_reached ) {
@@ -158,7 +158,7 @@ class Attendee {
 	 * @return int  Number of attendees from waiting_list that were moved to attending.
 	 */
 	public function check_waiting_list(): int {
-		$attendees = $this->get_attendees();
+		$attendees = $this->get_all();
 		$total     = 0;
 
 		if (
@@ -168,7 +168,7 @@ class Attendee {
 			$waiting_list = $attendees['waiting_list']['attendees'];
 
 			// People longest on the waiting_list should be added first.
-			usort( $waiting_list, array( $this, 'sort_attendees_by_timestamp' ) );
+			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
 			$total = $this->limit - intval( $attendees['attending']['count'] );
 			$i     = 0;
@@ -180,7 +180,7 @@ class Attendee {
 				}
 
 				$attendee = $waiting_list[ $i ];
-				$this->save_attendee( $attendee['id'], 'attending' );
+				$this->save( $attendee['id'], 'attending' );
 				$i++;
 			}
 		}
@@ -196,7 +196,7 @@ class Attendee {
 	 * @return bool
 	 */
 	public function attending_limit_reached( string $status ): bool {
-		$attendees = $this->get_attendees();
+		$attendees = $this->get_all();
 
 		if (
 			! empty( $attendees['attending'] )
@@ -214,7 +214,7 @@ class Attendee {
 	 *
 	 * @return array
 	 */
-	public function get_attendees(): array {
+	public function get_all(): array {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -281,7 +281,7 @@ class Attendee {
 		}
 
 		// Sort before breaking down statuses in return array.
-		usort( $attendees, array( $this, 'sort_attendees_by_role' ) );
+		usort( $attendees, array( $this, 'sort_by_role' ) );
 
 		$retval['all']['attendees'] = $attendees;
 		$retval['all']['count']     = count( $retval['all']['attendees'] );
@@ -311,7 +311,7 @@ class Attendee {
 	 *
 	 * @return bool
 	 */
-	public function sort_attendees_by_role( array $a, array $b ): bool {
+	public function sort_by_role( array $a, array $b ): bool {
 		$roles = array_values( Role::get_instance()->get_role_settings() );
 
 		return ( array_search( $a['role'], $roles, true ) > array_search( $b['role'], $roles, true ) );
@@ -325,7 +325,7 @@ class Attendee {
 	 *
 	 * @return bool
 	 */
-	public function sort_attendees_by_timestamp( array $a, array $b ): bool {
+	public function sort_by_timestamp( array $a, array $b ): bool {
 		return ( strtotime( $a['timestamp'] ) < strtotime( $b['timestamp'] ) );
 	}
 

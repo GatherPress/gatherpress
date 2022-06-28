@@ -3,26 +3,24 @@ import apiFetch from '@wordpress/api-fetch';
 import EventItem from './EventItem';
 import Loader from './Loader';
 
-const EventsList = ( props ) => {
+const EventsList = (props) => {
 	const { maxNumberOfEvents, type } = props;
 	const [events, setEvents] = useState([]);
 	const renderEvents = events.map((event) => {
-		return <EventItem key={event.ID} type={type} event={event} />
+		return <EventItem key={event.ID} type={type} event={event} />;
 	});
 
 	useEffect(() => {
 		apiFetch({
-			path: `/gatherpress/v1/event/${type}-events?max_number=${maxNumberOfEvents}`
-		}).then((events) => {
-			setEvents(events);
+			path: `/gatherpress/v1/event/${type}-events?max_number=${maxNumberOfEvents}`,
+		}).then((e) => {
+			setEvents(e);
 		});
 	}, [setEvents, maxNumberOfEvents, type]);
 
 	return (
 		<div id={`gp-${type}-events`}>
-			{0 === events.length &&
-				<Loader />
-			}
+			{0 === events.length && <Loader />}
 			{renderEvents}
 		</div>
 	);
