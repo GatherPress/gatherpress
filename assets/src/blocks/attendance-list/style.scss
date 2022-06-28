@@ -17,7 +17,7 @@
 
 	&__items {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr 1fr;
+		grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
 		gap: 1rem;
 
 		&--item {
@@ -53,21 +53,17 @@
 
 .gp-modal {
 	&__attendance-list {
-		max-width: 30rem;
 		width: 100%;
 	}
 
 	.gp-attendance-list {
 		&__items {
+			grid-template-columns: 1fr 1fr;
+
 			&--item {
 				display: flex;
 				width: 18rem;
 			}
-		}
-
-		&__active {
-			display: grid;
-			grid-template-columns: 1fr;
 		}
 	}
 }
