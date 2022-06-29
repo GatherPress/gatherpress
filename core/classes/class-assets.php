@@ -165,7 +165,7 @@ class Assets {
 		$event    = new Event( $post_id );
 		$settings = Settings::get_instance();
 		return array(
-			'attendees'        => ( $event->attendee ) ? $event->attendee->get_all() : array(), // @todo cleanup
+			'attendees'        => ( $event->attendee ) ? $event->attendee->attendees() : array(), // @todo cleanup
 			'current_user'     => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '', // @todo cleanup
 			'event_rest_api'   => home_url( 'wp-json/gatherpress/v1/event' ),
 			'has_event_past'   => $event->has_event_past(),

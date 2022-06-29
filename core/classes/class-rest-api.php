@@ -311,6 +311,8 @@ class Rest_Api {
 					'title'          => get_the_title( $post_id ),
 					'excerpt'        => get_the_excerpt( $post_id ),
 					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
+					'attendees'      => ( $event->attendee ) ? $event->attendee->attendees() : array(),
+					'current_user'   => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
 				);
 			}
 		}
@@ -343,6 +345,8 @@ class Rest_Api {
 					'title'          => get_the_title( $post_id ),
 					'excerpt'        => get_the_excerpt( $post_id ),
 					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
+					'attendees'      => ( $event->attendee ) ? $event->attendee->attendees() : array(),
+					'current_user'   => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
 				);
 			}
 		}
@@ -420,7 +424,7 @@ class Rest_Api {
 			'success'   => (bool) $success,
 			'status'    => $status,
 			'guests'    => $guests,
-			'attendees' => $event->attendee->get_all(),
+			'attendees' => $event->attendee->attendees(),
 		);
 
 		return new \WP_REST_Response( $response );

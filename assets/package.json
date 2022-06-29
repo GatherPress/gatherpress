@@ -33,6 +33,8 @@
 	},
 	"homepage": "https://github.com/GatherPress/gatherpress#readme",
 	"devDependencies": {
+		"@wordpress/api-fetch": "^6.8.0",
+		"@wordpress/components": "^19.13.0",
 		"@wordpress/eslint-plugin": "^10.0.2",
 		"@wordpress/scripts": "^23.3.0",
 		"eslint": "^8.16.0",

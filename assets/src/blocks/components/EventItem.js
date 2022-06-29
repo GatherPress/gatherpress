@@ -36,13 +36,11 @@ const EventItem = ( props ) => {
 						</div>
 					</div>
 				</div>
-				{true &&
-					<figure className={`${event_class}__image`}>
-						<a href={event.permalink}>
-							{HtmlReactParser( event.featured_image )}
-						</a>
-					</figure>
-				}
+				<figure className={`${event_class}__image`}>
+					<a href={event.permalink}>
+						{HtmlReactParser(event.featured_image)}
+					</a>
+				</figure>
 			</div>
 			<div className={`${event_class}__content`}>
 				<div className={`${event_class}__excerpt`}>
