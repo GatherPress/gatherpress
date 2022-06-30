@@ -29,14 +29,6 @@ const EventItem = ( props ) => {
 							{HtmlReactParser( event.title )}
 						</a>
 					</div>
-					<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
-					{/*<div className="gp-buttons-container wp-block-buttons">*/}
-					{/*	<div className="gp-button-container wp-block-button">*/}
-					{/*		<a href={event.permalink} className="gp-button wp-block-button__link">*/}
-					{/*			{__( 'Attend', 'gatherpress' )}*/}
-					{/*		</a>*/}
-					{/*	</div>*/}
-					{/*</div>*/}
 				</div>
 				<figure className={`${event_class}__image`}>
 					<a href={event.permalink}>
@@ -50,6 +42,7 @@ const EventItem = ( props ) => {
 				</div>
 			</div>
 			<div className={`${event_class}__footer`}>
+				<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
 			</div>
 		</div>
 	);
