@@ -4,6 +4,7 @@ import { ButtonGroup } from '@wordpress/components';
 import Modal from 'react-modal';
 import apiFetch from '@wordpress/api-fetch';
 import HtmlReactParser from 'html-react-parser';
+import AttendanceSelector from './AttendanceSelector';
 
 const EventItem = ( props ) => {
 	if ('object' !== typeof GatherPress) {
@@ -28,13 +29,14 @@ const EventItem = ( props ) => {
 							{HtmlReactParser( event.title )}
 						</a>
 					</div>
-					<div className="gp-buttons-container wp-block-buttons">
-						<div className="gp-button-container wp-block-button">
-							<a href={event.permalink} className="gp-button wp-block-button__link">
-								{__( 'Attend', 'gatherpress' )}
-							</a>
-						</div>
-					</div>
+					<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
+					{/*<div className="gp-buttons-container wp-block-buttons">*/}
+					{/*	<div className="gp-button-container wp-block-button">*/}
+					{/*		<a href={event.permalink} className="gp-button wp-block-button__link">*/}
+					{/*			{__( 'Attend', 'gatherpress' )}*/}
+					{/*		</a>*/}
+					{/*	</div>*/}
+					{/*</div>*/}
 				</div>
 				<figure className={`${event_class}__image`}>
 					<a href={event.permalink}>
