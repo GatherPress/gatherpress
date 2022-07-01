@@ -2,12 +2,14 @@ import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Listener } from '../helpers/broadcasting';
 
-const AttendeeList = ({ value, limit }) => {
+const AttendeeList = ({ value, limit, attendees = [], minimal=false }) => {
 	let defaultList = [];
 
 	if ( 'object' === typeof GatherPress ) {
-		defaultList = GatherPress.attendees;
+		// defaultList = GatherPress.attendees;
 	}
+
+	defaultList = attendees;
 
 	const [ attendanceList, setAttendanceList ] = useState( defaultList );
 
@@ -37,24 +39,26 @@ const AttendeeList = ({ value, limit }) => {
 
 			return (
 				<div key={index} className="gp-attendance-list__items--item">
-					<a className="gp-attendance-list__member-avatar" href={profile}>
-						<figure className="wp-block-image is-style-rounded">
+					<figure className="gp-attendance-list__member-avatar">
+						<a href={profile}>
 							<img alt={name} title={name} src={photo} />
-						</figure>
-					</a>
-					<div className="gp-attendance-list__member-info">
-						<div className="gp-attendance-list__member-name">
-							<a href={profile}>
-								{name}
-							</a>
+						</a>
+					</figure>
+					{false === minimal && (
+						<div className="gp-attendance-list__member-info">
+							<div className="gp-attendance-list__member-name">
+								<a href={profile}>
+									{name}
+								</a>
+							</div>
+							<div className="gp-attendance-list__member-role">
+								{role}
+							</div>
+							<small className="gp-attendance-list__guests">
+								{guests}
+							</small>
 						</div>
-						<div className="gp-attendance-list__member-role">
-							{role}
-						</div>
-						<small className="gp-attendance-list__guests">
-							{guests}
-						</small>
-					</div>
+					)}
 				</div>
 			);
 		});

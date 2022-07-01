@@ -1,10 +1,6 @@
-import { useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
-import { ButtonGroup } from '@wordpress/components';
-import Modal from 'react-modal';
-import apiFetch from '@wordpress/api-fetch';
 import HtmlReactParser from 'html-react-parser';
 import AttendanceSelector from './AttendanceSelector';
+import AttendeeList from './AttendeeList';
 
 const EventItem = ( props ) => {
 	if ('object' !== typeof GatherPress) {
@@ -42,6 +38,9 @@ const EventItem = ( props ) => {
 				</div>
 			</div>
 			<div className={`${event_class}__footer`}>
+				<div className="gp-attendance-list__items">
+					<AttendeeList value="attending" attendees={event.attendees} limit="3" minimal={true} />
+				</div>
 				<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
 			</div>
 		</div>

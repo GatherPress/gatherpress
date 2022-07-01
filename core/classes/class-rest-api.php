@@ -310,7 +310,7 @@ class Rest_Api {
 					'permalink'      => get_the_permalink( $post_id ),
 					'title'          => get_the_title( $post_id ),
 					'excerpt'        => get_the_excerpt( $post_id ),
-					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
+					'featured_image' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
 					'attendees'      => ( $event->attendee ) ? $event->attendee->attendees() : array(),
 					'current_user'   => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
 				);
@@ -344,7 +344,7 @@ class Rest_Api {
 					'permalink'      => get_the_permalink( $post_id ),
 					'title'          => get_the_title( $post_id ),
 					'excerpt'        => get_the_excerpt( $post_id ),
-					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
+					'featured_image' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
 					'attendees'      => ( $event->attendee ) ? $event->attendee->attendees() : array(),
 					'current_user'   => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
 				);

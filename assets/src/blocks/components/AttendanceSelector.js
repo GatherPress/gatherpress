@@ -104,6 +104,18 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 		return __('Attend', 'gatherpress');
 	};
 
+	const getStatusIcon = (status) => {
+		switch (status) {
+			case 'attending':
+				return 'dashicons dashicons-yes-alt';
+			case 'waiting_list':
+				return 'dashicons dashicons-editor-help';
+			case 'not_attending':
+				return 'dashicons dashicons-dismiss';
+		}
+		return '';
+	}
+
 	const getStatusText = (status) => {
 		switch (status) {
 			case 'attending':
@@ -221,7 +233,7 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 			{'attend' !== attendanceStatus && (
 				<div className="gp-status">
 					<div className="gp-status__response">
-						<span>{__('Response:', 'gatherpress')}</span>
+						<span className={getStatusIcon(attendanceStatus)}></span>
 						<strong>{getStatusText(attendanceStatus)}</strong>
 					</div>
 					{0 < attendanceGuests && (
