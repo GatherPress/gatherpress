@@ -2,7 +2,7 @@ import AttendanceSelector from '../components/AttendanceSelector';
 
 const Edit = ( props ) => {
 	return (
-		<AttendanceSelector />
+		<AttendanceSelector eventId={GatherPress.post_id} currentUser={GatherPress.current_user} />
 	);
 };
 

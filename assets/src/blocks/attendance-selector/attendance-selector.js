@@ -5,5 +5,5 @@ import AttendanceSelector from '../components/AttendanceSelector';
 const container = document.querySelector( '#gp-attendance-selector-container' );
 
 if ( container ) {
-	ReactDOM.render( <AttendanceSelector />, container );
+	ReactDOM.render( <AttendanceSelector eventId={GatherPress.post_id} currentUser={GatherPress.current_user} />, container );
 }
