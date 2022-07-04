@@ -1,7 +1,13 @@
-export const Broadcaster = (payload) => {
+export const Broadcaster = (payload, identifier = false) => {
 	for (const [key, value] of Object.entries(payload)) {
+		let type = key;
+
+		if (identifier) {
+			type += identifier;
+		}
+
 		const dispatcher = new CustomEvent(
-			key,
+			type,
 			{
 				detail: value,
 			}
@@ -11,9 +17,15 @@ export const Broadcaster = (payload) => {
 	}
 };
 
-export const Listener = (payload) => {
+export const Listener = (payload, identifier = false) => {
 	for (const [key, value] of Object.entries(payload)) {
-		addEventListener( key, ( e ) => {
+		let type = key;
+
+		if (identifier) {
+			type += identifier;
+		}
+
+		addEventListener( type, ( e ) => {
 			value( e.detail );
 		}, false );
 	}

@@ -421,6 +421,7 @@ class Rest_Api {
 		}
 
 		$response = array(
+			'event_id'  => $post_id,
 			'success'   => (bool) $success,
 			'status'    => $status,
 			'guests'    => $guests,

@@ -30,7 +30,7 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 	const openModal = (e) => {
 		e.preventDefault();
 
-		if ('not_attending' === attendanceStatus) {
+		if ('not_attending' === attendanceStatus || 'attend' === attendanceStatus) {
 			onAnchorClick(e, 'attending', 0, false);
 		}
 		setIsOpen(true);
@@ -85,7 +85,7 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 					setAttendanceCount: count,
 				};
 
-				Broadcaster(payload);
+				Broadcaster(payload, res.event_id);
 
 				if (close) {
 					closeModal(e);

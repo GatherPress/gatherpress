@@ -39,7 +39,7 @@ const EventItem = ( props ) => {
 			</div>
 			<div className={`${event_class}__footer`}>
 				<div className="gp-attendance-list__items">
-					<AttendeeList value="attending" attendees={event.attendees} limit="3" minimal={true} />
+					<AttendeeList eventId={event.ID} value="attending" attendees={event.attendees} limit="3" minimal={true} />
 				</div>
 				<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
 			</div>
