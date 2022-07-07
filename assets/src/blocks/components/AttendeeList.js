@@ -3,15 +3,7 @@ import { __ } from '@wordpress/i18n';
 import { Listener } from '../helpers/broadcasting';
 
 const AttendeeList = ({ eventId, value, limit, attendees = [], minimal=false }) => {
-	let defaultList = [];
-
-	if ( 'object' === typeof GatherPress ) {
-		// defaultList = GatherPress.attendees;
-	}
-
-	defaultList = attendees;
-
-	const [ attendanceList, setAttendanceList ] = useState( defaultList );
+	const [ attendanceList, setAttendanceList ] = useState( attendees );
 
 	Listener({ setAttendanceList: setAttendanceList }, eventId);
 
