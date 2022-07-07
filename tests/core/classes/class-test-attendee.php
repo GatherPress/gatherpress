@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Attendee.
  *
  * @package GatherPress
- * @subpackage Tests
+ * @subpackage Core
  * @since 1.0.0
  */
 
