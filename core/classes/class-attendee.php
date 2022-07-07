@@ -214,7 +214,7 @@ class Attendee {
 	 *
 	 * @return array
 	 */
-	public function attendees( int $total = 0 ): array {
+	public function attendees(): array {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -238,7 +238,7 @@ class Attendee {
 		}
 
 		$site_users  = count_users();
-		$total_users = ( empty( abs( $total ) ) ) ? $site_users['total_users'] : $total;
+		$total_users = $site_users['total_users'];
 		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $event_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
