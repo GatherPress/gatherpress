@@ -4,7 +4,12 @@ import { ToggleControl, PanelBody, PanelRow, CheckboxControl, SelectControl, Col
 import EventsList from '../components/EventsList';
 
 const Edit = ( props ) => {
-	const { attributes, setAttributes } = props;
+	const { attributes, setAttributes, clientId } = props;
+	const { blockId } = attributes;
+
+	if ( ! blockId ) {
+		setAttributes( { blockId: clientId } );
+	}
 
 	return (
 		<div>
