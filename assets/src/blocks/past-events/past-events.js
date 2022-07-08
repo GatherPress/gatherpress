@@ -1,5 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+
+/**
+ * Internal dependencies.
+ */
 import EventsList from '../components/EventsList';
 
 const container = document.querySelector( '#gp-past-events-container' );
