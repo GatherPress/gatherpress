@@ -60,7 +60,7 @@ const AttendeeList = ({ eventId, value, limit, attendees = [], avatarOnly = fals
 		<>
 			{'attending' === value && 0 === renderedItems.length && false === avatarOnly &&
 				<div className="gp-attendance-list__no-attendees">
-					{__( 'No one is attending this event yet.', 'gatherpress')}
+					{('1' !== GatherPress.has_event_past) ? __( 'No one is attending this event yet.', 'gatherpress') : __( 'No one went to this event.', 'gatherpress')}
 				</div>
 			}
 			{renderedItems}
