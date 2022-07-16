@@ -30,7 +30,7 @@ trait Singleton {
 	 *
 	 * @return object
 	 */
-	public static function get_instance(): object {
+	public static function get_instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
