@@ -166,7 +166,7 @@ class Setup {
 			Event::TAXONOMY,
 			Event::POST_TYPE,
 			array(
-				'labels' => array(
+				'labels'            => array(
 					'name'              => _x( 'Topics', 'taxonomy general name', 'gatherpress' ),
 					'singular_name'     => _x( 'Topic', 'taxonomy singular name', 'gatherpress' ),
 					'search_items'      => __( 'Search Topics', 'gatherpress' ),
