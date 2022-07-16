@@ -10,6 +10,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
 
 registerBlockType( 'gatherpress/past-events', {
+	apiVersion: 2,
 	title: __( 'Past Events', 'gatherpress' ),
 	icon: 'groups',
 	category: 'gatherpress',

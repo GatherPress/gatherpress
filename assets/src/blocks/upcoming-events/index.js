@@ -3,6 +3,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
 
 registerBlockType( 'gatherpress/upcoming-events', {
+	apiVersion: 2,
 	title: __( 'Upcoming Events', 'gatherpress' ),
 	icon: 'groups',
 	category: 'gatherpress',
