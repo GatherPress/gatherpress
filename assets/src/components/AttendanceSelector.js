@@ -147,7 +147,7 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a
 						className="wp-block-button__link"
-						href="#"
+						href="wp-content/plugins/gatherpress/assets/src/components/AttendanceSelector#"
 						onClick={(e) => onAnchorClick(e, 'attending')}
 					>
 						{__('Attend', 'gatherpress')}
@@ -163,7 +163,7 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 				<div className="gp-buttons__container  wp-block-button">
 					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a
-						href="#"
+						href="wp-content/plugins/gatherpress/assets/src/components/AttendanceSelector#"
 						className="gp-buttons__button wp-block-button__link"
 						aria-expanded={selectorExpanded}
 						tabIndex="0"
@@ -207,7 +207,7 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
 								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 								<a
-									href="#"
+									href="wp-content/plugins/gatherpress/assets/src/components/AttendanceSelector#"
 									onClick={(e) =>
 										onAnchorClick(e, 'not_attending')
 									}
@@ -219,7 +219,7 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 							<div className="gp-buttons__container wp-block-button has-small-font-size">
 								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 								<a
-									href="#"
+									href="wp-content/plugins/gatherpress/assets/src/components/AttendanceSelector#"
 									onClick={closeModal}
 									className="gp-buttons__button wp-block-button__link"
 								>

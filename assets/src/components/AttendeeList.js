@@ -2,7 +2,7 @@ import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Listener } from '../helpers/broadcasting';
 
-const AttendeeList = ({ eventId, value, limit, attendees = [], minimal=false }) => {
+const AttendeeList = ({ eventId, value, limit, attendees = [], avatarOnly = false }) => {
 	const [ attendanceList, setAttendanceList ] = useState( attendees );
 
 	Listener({ setAttendanceList: setAttendanceList }, eventId);
@@ -36,7 +36,7 @@ const AttendeeList = ({ eventId, value, limit, attendees = [], minimal=false }) 
 							<img alt={name} title={name} src={photo} />
 						</a>
 					</figure>
-					{false === minimal && (
+					{false === avatarOnly && (
 						<div className="gp-attendance-list__member-info">
 							<div className="gp-attendance-list__member-name">
 								<a href={profile}>
@@ -58,7 +58,7 @@ const AttendeeList = ({ eventId, value, limit, attendees = [], minimal=false }) 
 
 	return (
 		<>
-			{'attending' === value && 0 === renderedItems.length &&
+			{'attending' === value && 0 === renderedItems.length && false === avatarOnly &&
 				<div className="gp-attendance-list__no-attendees">
 					{__( 'No one is attending this event yet.', 'gatherpress')}
 				</div>
