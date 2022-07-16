@@ -6,6 +6,7 @@
  * @subpackage Core
  * @since 1.0.0
  */
+
 if ( empty( $gatherpress_block_name ) ) {
 	return;
 }
