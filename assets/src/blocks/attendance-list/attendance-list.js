@@ -1,9 +1,15 @@
+/**
+ * External dependencies.
+ */
 import React from 'react';
 import ReactDOM from 'react-dom';
+/**
+ * Internal dependencies.
+ */
 import AttendanceList from '../components/AttendanceList';
 
-const container = document.querySelector( '#gp-attendance-list-container' );
+const containers = document.querySelectorAll( `[data-gp_block_name="attendance-list"]` );
 
-if ( container ) {
-	ReactDOM.render( <AttendanceList />, container );
+for (let i =0; i < containers.length; i++) {
+	ReactDOM.render( <AttendanceList />, containers[i] );
 }

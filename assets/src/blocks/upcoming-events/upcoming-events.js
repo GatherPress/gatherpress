@@ -1,9 +1,17 @@
+/**
+ * External dependencies.
+ */
 import React from 'react';
 import ReactDOM from 'react-dom';
+/**
+ * Internal dependencies.
+ */
 import EventsList from '../components/EventsList';
 
-const containers = document.querySelectorAll( `[data-gp_id="gp-upcoming-events-container"]` );
+const containers = document.querySelectorAll( `[data-gp_block_name="upcoming-events"]` );
 
 for (let i =0; i < containers.length; i++) {
-	ReactDOM.render( <EventsList type="upcoming" maxNumberOfEvents={containers[i].dataset.max_posts} />, containers[i] );
+	const attrs = JSON.parse( containers[i].dataset.gp_block_attrs );
+
+	ReactDOM.render( <EventsList type="upcoming" maxNumberOfEvents={attrs.maxNumberofEvents ?? 5} />, containers[i] );
 }

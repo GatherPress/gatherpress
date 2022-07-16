@@ -1,13 +1,17 @@
+/**
+ * External dependencies.
+ */
 import React from 'react';
 import ReactDOM from 'react-dom';
-
 /**
  * Internal dependencies.
  */
 import EventsList from '../components/EventsList';
 
-const container = document.querySelector( '#gp-past-events-container' );
+const containers = document.querySelectorAll( `[data-gp_block_name="past-events"]` );
 
-if ( container ) {
-	ReactDOM.render( <EventsList type="past" maxNumberOfEvents={container.dataset.max_posts} />, container );
+for (let i =0; i < containers.length; i++) {
+	const attrs = JSON.parse( containers[i].dataset.gp_block_attrs );
+
+	ReactDOM.render( <EventsList type="past" maxNumberOfEvents={attrs.maxNumberofEvents ?? 5} />, containers[i] );
 }

@@ -22,6 +22,17 @@ class Block {
 
 	use Singleton;
 
+	private array $react_blocks = array(
+		'attendance-list',
+		'attendance-selector',
+		'past-events',
+		'upcoming-events',
+	);
+
+	private array $static_blocks = array(
+		'event-date',
+	);
+
 	/**
 	 * Block constructor.
 	 */
@@ -51,13 +62,27 @@ class Block {
 
 		$block_name_parts = explode( '/', $block['blockName'] );
 
-		if (
-			2 === count( $block_name_parts )
-			&& 'gatherpress' === $block_name_parts[0]
-			&& ! empty( $block_name_parts[1] )
-		) {
+		if ( 2 !== count( $block_name_parts ) ) {
+			return $block_content;
+		}
+
+		if ( 'gatherpress' !== $block_name_parts[0] ) {
+			return $block_content;
+		}
+
+		$block_name = $block_name_parts[1];
+
+		if ( in_array( $block_name, $this->react_blocks, true ) ) {
 			return Utility::render_template(
-				sprintf( '%s/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name_parts[1] ),
+				sprintf( '%s/templates/blocks/react-block.php', GATHERPRESS_CORE_PATH ),
+				array(
+					'name'  => $block_name,
+					'attrs' => $block['attrs'] ?? array(),
+				)
+			);
+		} elseif ( in_array( $block_name, $this->static_blocks, true ) ) {
+			return Utility::render_template(
+				sprintf( '%s/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name ),
 				array(
 					'attrs' => $block['attrs'] ?? array(),
 				)
@@ -66,4 +91,5 @@ class Block {
 
 		return $block_content;
 	}
+
 }

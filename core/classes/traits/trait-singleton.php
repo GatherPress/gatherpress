@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Trait Singleton.
+ */
 trait Singleton {
 
 	/**
@@ -27,7 +30,7 @@ trait Singleton {
 	 *
 	 * @return object
 	 */
-	public static function get_instance() {
+	public static function get_instance(): object {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
