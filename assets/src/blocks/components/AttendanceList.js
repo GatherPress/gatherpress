@@ -34,7 +34,7 @@ const AttendanceList = () => {
 	const [attendanceStatus, setAttendanceStatus] = useState(defaultStatus);
 	const [attendeeLimit, setAttendeeLimit] = useState(defaultLimit);
 
-	Listener({ setAttendanceStatus });
+	Listener({ setAttendanceStatus }, GatherPress.post_id);
 
 	const onTitleClick = (e, value) => {
 		e.preventDefault();

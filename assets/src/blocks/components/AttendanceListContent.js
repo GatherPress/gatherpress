@@ -14,7 +14,7 @@ const AttendanceListContent = ({ items, activeValue, limit = false }) => {
 				role="tabpanel"
 				aria-labelledby={`gp-attendance-${value}-tab`}
 			>
-				<AttendeeList value={value} limit={limit} />
+				<AttendeeList eventId={GatherPress.post_id} value={value} limit={limit} attendees={GatherPress.attendees} />
 			</div>
 		);
 	});

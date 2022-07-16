@@ -158,7 +158,7 @@ class Attendee {
 	 * @return int  Number of attendees from waiting_list that were moved to attending.
 	 */
 	public function check_waiting_list(): int {
-		$attendees = $this->get_all();
+		$attendees = $this->attendees();
 		$total     = 0;
 
 		if (
@@ -196,7 +196,7 @@ class Attendee {
 	 * @return bool
 	 */
 	public function attending_limit_reached( string $status ): bool {
-		$attendees = $this->get_all();
+		$attendees = $this->attendees();
 
 		if (
 			! empty( $attendees['attending'] )
@@ -214,7 +214,7 @@ class Attendee {
 	 *
 	 * @return array
 	 */
-	public function get_all(): array {
+	public function attendees(): array {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -306,27 +306,27 @@ class Attendee {
 	/**
 	 * Sort attendees by their role.
 	 *
-	 * @param array $a First attendee to compare in sort.
-	 * @param array $b Second attendee to compare in sort.
+	 * @param array $first  First attendee to compare in sort.
+	 * @param array $second Second attendee to compare in sort.
 	 *
 	 * @return bool
 	 */
-	public function sort_by_role( array $a, array $b ): bool {
+	public function sort_by_role( array $first, array $second ): bool {
 		$roles = array_values( Role::get_instance()->get_role_settings() );
 
-		return ( array_search( $a['role'], $roles, true ) > array_search( $b['role'], $roles, true ) );
+		return ( array_search( $first['role'], $roles, true ) > array_search( $second['role'], $roles, true ) );
 	}
 
 	/**
 	 * Sort attendees by earliest timestamp.
 	 *
-	 * @param array $a First attendee to compare in sort.
-	 * @param array $b Second attendee to compare in sort.
+	 * @param array $first  First attendee to compare in sort.
+	 * @param array $second Second attendee to compare in sort.
 	 *
 	 * @return bool
 	 */
-	public function sort_by_timestamp( array $a, array $b ): bool {
-		return ( strtotime( $a['timestamp'] ) < strtotime( $b['timestamp'] ) );
+	public function sort_by_timestamp( array $first, array $second ): bool {
+		return ( strtotime( $first['timestamp'] ) < strtotime( $second['timestamp'] ) );
 	}
 
 }

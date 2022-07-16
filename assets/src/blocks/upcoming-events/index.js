@@ -7,6 +7,9 @@ registerBlockType( 'gatherpress/upcoming-events', {
 	icon: 'groups',
 	category: 'gatherpress',
 	attributes: {
+		blockId: {
+			type: 'string',
+		},
 		maxNumberOfEvents: {
 			type: 'string',
 			default: '5'

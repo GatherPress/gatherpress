@@ -1,6 +1,13 @@
+/**
+ * WordPress dependencies.
+ */
 import { __ } from '@wordpress/i18n';
-import { RichText, InspectorControls } from '@wordpress/block-editor';
-import { ToggleControl, PanelBody, PanelRow, CheckboxControl, SelectControl, ColorPicker } from '@wordpress/components';
+import { InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, SelectControl } from '@wordpress/components';
+
+/**
+ * Internal dependencies.
+ */
 import EventsList from '../components/EventsList';
 
 const Edit = ( props ) => {
@@ -13,6 +20,7 @@ const Edit = ( props ) => {
 					<SelectControl
 						label={__( 'Maximum number to display?', 'gatherpress' )}
 						value={attributes.maxNumberOfEvents}
+						// @todo possibly make this max list a setting.
 						options={[
 							{label: '5', value: '5'},
 							{label: '4', value: '4'},

@@ -7,6 +7,7 @@ registerBlockType( 'gatherpress/attendance-list', {
 	icon: 'groups',
 	category: 'gatherpress',
 	attributes: {
+		blockId: { type: 'string' },
 		content: { type: 'string' },
 		color: { type: 'string' }
 	},

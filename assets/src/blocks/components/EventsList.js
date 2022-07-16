@@ -1,7 +1,14 @@
+/**
+ * WordPress dependencies.
+ */
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
+import { Spinner } from '@wordpress/components';
+
+/**
+ * Block dependencies.
+ */
 import EventItem from './EventItem';
-import Loader from './Loader';
 
 const EventsList = (props) => {
 	const { maxNumberOfEvents, type } = props;
@@ -20,7 +27,7 @@ const EventsList = (props) => {
 
 	return (
 		<div id={`gp-${type}-events`}>
-			{0 === events.length && <Loader />}
+			{0 === events.length && <Spinner />}
 			{renderEvents}
 		</div>
 	);

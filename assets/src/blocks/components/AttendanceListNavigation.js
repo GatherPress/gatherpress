@@ -3,22 +3,22 @@ import AttendanceListNavigationItem from './AttendanceListNavigationItem';
 import { Listener } from '../helpers/broadcasting';
 
 const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
-	let defaultCount = {
+	const defaultCount = {
 		all: 0,
 		attending: 0,
 		not_attending: 0, // eslint-disable-line camelcase
 		waiting_list: 0 // eslint-disable-line camelcase
 	};
 
-	if ( 'object' === typeof GatherPress ) {
-		for ( const [ key, value ] of Object.entries( GatherPress.attendees ) ) {
+	if ('object' === typeof GatherPress) {
+		for (const [key, value] of Object.entries(GatherPress.attendees)) {
 			defaultCount[key] = value.count;
 		}
 	}
 
 	const [ attendanceCount, setAttendanceCount ] = useState( defaultCount );
 
-	Listener({ setAttendanceCount: setAttendanceCount });
+	Listener({ setAttendanceCount }, GatherPress.post_id);
 
 	const renderedItems = items.map( ( item, index ) => {
 		const additionalClasses = ( item.value === activeValue ) ? 'gp-attendance-list__navigation--current' : '';

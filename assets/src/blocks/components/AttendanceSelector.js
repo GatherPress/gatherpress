@@ -5,13 +5,13 @@ import Modal from 'react-modal';
 import apiFetch from '@wordpress/api-fetch';
 import { Broadcaster } from '../helpers/broadcasting';
 
-const AttendanceSelector = () => {
+const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 	if ('object' !== typeof GatherPress) {
 		return '';
 	}
 
-	const [attendanceStatus, setAttendanceStatus] = useState(GatherPress.current_user.status);
-	const [attendanceGuests, setAttendanceGuests] = useState(GatherPress.current_user.guests);
+	const [attendanceStatus, setAttendanceStatus] = useState(currentUser.status);
+	const [attendanceGuests, setAttendanceGuests] = useState(currentUser.guests);
 	const [selectorHidden, setSelectorHidden] = useState('hidden');
 	const [selectorExpanded, setSelectorExpanded] = useState('false');
 	const [modalIsOpen, setIsOpen] = useState(false);
@@ -30,7 +30,7 @@ const AttendanceSelector = () => {
 	const openModal = (e) => {
 		e.preventDefault();
 
-		if ('not_attending' === attendanceStatus) {
+		if ('not_attending' === attendanceStatus || 'attend' === attendanceStatus) {
 			onAnchorClick(e, 'attending', 0, false);
 		}
 		setIsOpen(true);
@@ -38,7 +38,7 @@ const AttendanceSelector = () => {
 
 	// Might be better way to do this, but should only run on frontend, not admin.
 	if ('undefined' === typeof adminpage) {
-		Modal.setAppElement('#gp-attendance-selector-container');
+		Modal.setAppElement('.gp-enabled');
 	}
 
 	const closeModal = (e) => {
@@ -58,7 +58,7 @@ const AttendanceSelector = () => {
 			path: '/gatherpress/v1/event/attendance',
 			method: 'POST',
 			data: {
-				post_id: GatherPress.post_id,
+				post_id: eventId,
 				status,
 				guests,
 				_wpnonce: GatherPress.nonce,
@@ -85,7 +85,7 @@ const AttendanceSelector = () => {
 					setAttendanceCount: count,
 				};
 
-				Broadcaster(payload);
+				Broadcaster(payload, res.event_id);
 
 				if (close) {
 					closeModal(e);
@@ -103,6 +103,18 @@ const AttendanceSelector = () => {
 
 		return __('Attend', 'gatherpress');
 	};
+
+	const getStatusIcon = (status) => {
+		switch (status) {
+			case 'attending':
+				return 'dashicons dashicons-yes-alt';
+			case 'waiting_list':
+				return 'dashicons dashicons-editor-help';
+			case 'not_attending':
+				return 'dashicons dashicons-dismiss';
+		}
+		return '';
+	}
 
 	const getStatusText = (status) => {
 		switch (status) {
@@ -128,7 +140,7 @@ const AttendanceSelector = () => {
 
 	// @todo need to revisit this and handle button for users that aren't logged in.
 	// Clean up so this does something... See issue #68 in GitHub.
-	if ('' === GatherPress.current_user) {
+	if ('' === currentUser) {
 		return (
 			<div className="gp-attendance-selector">
 				<div className="wp-block-button">
@@ -221,7 +233,7 @@ const AttendanceSelector = () => {
 			{'attend' !== attendanceStatus && (
 				<div className="gp-status">
 					<div className="gp-status__response">
-						<span>{__('Response:', 'gatherpress')}</span>
+						<span className={getStatusIcon(attendanceStatus)}></span>
 						<strong>{getStatusText(attendanceStatus)}</strong>
 					</div>
 					{0 < attendanceGuests && (
