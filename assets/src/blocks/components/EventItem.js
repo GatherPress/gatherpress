@@ -9,7 +9,7 @@ const EventItem = ( props ) => {
 
 	const { type, event } = props;
 
-	const event_class = `gp-${type}-event`;
+	const event_class = `gp-events-list`;
 
 	return (
 		<div className={event_class}>
@@ -41,7 +41,9 @@ const EventItem = ( props ) => {
 				<div className="gp-attendance-list__items">
 					<AttendeeList eventId={event.ID} value="attending" attendees={event.attendees} limit="3" minimal={true} />
 				</div>
-				<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
+				{ 'upcoming' === type && (
+					<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
+				)}
 			</div>
 		</div>
 	);

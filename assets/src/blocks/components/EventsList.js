@@ -26,7 +26,7 @@ const EventsList = (props) => {
 	}, [setEvents, maxNumberOfEvents, type]);
 
 	return (
-		<div id={`gp-${type}-events`}>
+		<div className={`gp-${type}-events`}>
 			{0 === events.length && <Spinner />}
 			{renderEvents}
 		</div>
