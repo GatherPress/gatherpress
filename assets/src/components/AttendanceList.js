@@ -74,7 +74,7 @@ const AttendanceList = () => {
 			</div>
 			<div className="has-text-align-right">
 				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-				<a href="wp-content/plugins/gatherpress/assets/src/components/AttendanceList#" onClick={(e) => updateLimit(e)}>
+				<a href="#" onClick={(e) => updateLimit(e)}>
 					{loadListText}
 				</a>
 			</div>

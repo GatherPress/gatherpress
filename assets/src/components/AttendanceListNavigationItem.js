@@ -10,7 +10,7 @@ const AttendanceListNavigationItem = ({ item, additionalClasses, count, onTitleC
 				className="gp-attendance-list__anchor"
 				data-item={value}
 				data-toggle="tab"
-				href="wp-content/plugins/gatherpress/assets/src/components/AttendanceListNavigationItem#"
+				href="#"
 				role="tab"
 				aria-controls={`#gp-attendance-${value}`}
 				onClick={ e => onTitleClick( e, value ) }
