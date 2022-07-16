@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom';
 /**
  * Internal dependencies.
  */
-import AttendanceSelector from '../components/AttendanceSelector';
+import AttendanceSelector from '../../components/AttendanceSelector';
 
 const containers = document.querySelectorAll( `[data-gp_block_name="attendance-selector"]` );
 

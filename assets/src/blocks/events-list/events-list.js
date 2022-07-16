@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom';
 /**
  * Internal dependencies.
  */
-import EventsList from '../components/EventsList';
+import EventsList from '../../components/EventsList';
 
 const containers = document.querySelectorAll( `[data-gp_block_name="events-list"]` );
 

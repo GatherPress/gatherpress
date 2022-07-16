@@ -5,7 +5,7 @@ import { useBlockProps } from '@wordpress/block-editor';
 /**
  * Internal dependencies.
  */
-import AttendanceSelector from '../components/AttendanceSelector';
+import AttendanceSelector from '../../components/AttendanceSelector';
 
 const Edit = ( props ) => {
 	const blockProps = useBlockProps();

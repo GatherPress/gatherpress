@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom';
 /**
  * Internal dependencies.
  */
-import AttendanceList from '../components/AttendanceList';
+import AttendanceList from '../../components/AttendanceList';
 
 const containers = document.querySelectorAll( `[data-gp_block_name="attendance-list"]` );
 

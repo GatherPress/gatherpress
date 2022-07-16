@@ -11,7 +11,7 @@ import { PanelBody, RangeControl, ButtonGroup, Button, __experimentalText as Tex
 /**
  * Internal dependencies.
  */
-import EventsList from '../components/EventsList';
+import EventsList from '../../components/EventsList';
 
 const Edit = ( props ) => {
 	const { attributes, setAttributes } = props;
