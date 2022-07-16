@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Event {
 
 	const POST_TYPE          = 'gp_event';
+	const TAXONOMY           = 'gp_topic';
 	const TABLE_FORMAT       = '%sgp_events';
 	const DATETIME_CACHE_KEY = 'datetime_%d';
 
