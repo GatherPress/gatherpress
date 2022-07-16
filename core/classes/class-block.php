@@ -23,6 +23,27 @@ class Block {
 	use Singleton;
 
 	/**
+	 * List of React blocks.
+	 *
+	 * @var array List of block names.
+	 */
+	protected $react_blocks = array(
+		'attendance-list',
+		'attendance-selector',
+		'past-events',
+		'upcoming-events',
+	);
+
+	/**
+	 * List of Static blocks.
+	 *
+	 * @var array List of block names.
+	 */
+	protected $static_blocks = array(
+		'event-date',
+	);
+
+	/**
 	 * Block constructor.
 	 */
 	protected function __construct() {
@@ -51,19 +72,34 @@ class Block {
 
 		$block_name_parts = explode( '/', $block['blockName'] );
 
-		if (
-			2 === count( $block_name_parts )
-			&& 'gatherpress' === $block_name_parts[0]
-			&& ! empty( $block_name_parts[1] )
-		) {
+		if ( 2 !== count( $block_name_parts ) ) {
+			return $block_content;
+		}
+
+		if ( 'gatherpress' !== $block_name_parts[0] ) {
+			return $block_content;
+		}
+
+		$block_name = $block_name_parts[1];
+
+		if ( in_array( $block_name, $this->react_blocks, true ) ) {
 			return Utility::render_template(
-				sprintf( '%s/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name_parts[1] ),
+				sprintf( '%s/templates/blocks/react-block.php', GATHERPRESS_CORE_PATH ),
 				array(
-					'attrs' => $block['attrs'] ?? array(),
+					'gatherpress_block_name'  => $block_name,
+					'gatherpress_block_attrs' => $block['attrs'] ?? array(),
+				)
+			);
+		} elseif ( in_array( $block_name, $this->static_blocks, true ) ) {
+			return Utility::render_template(
+				sprintf( '%s/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name ),
+				array(
+					'gatherpress_block_attrs' => $block['attrs'] ?? array(),
 				)
 			);
 		}
 
 		return $block_content;
 	}
+
 }

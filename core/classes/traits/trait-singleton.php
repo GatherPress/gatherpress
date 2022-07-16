@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Trait Singleton.
+ */
 trait Singleton {
 
 	/**
