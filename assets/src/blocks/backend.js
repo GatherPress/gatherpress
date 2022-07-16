@@ -3,8 +3,7 @@
  */
 import './attendance-list/index';
 import './attendance-selector/index';
-import './upcoming-events/index';
-import './past-events/index';
+import './events-list/index';
 
 wp.blocks.updateCategory( 'gatherpress', {
 	icon: 'nametag'

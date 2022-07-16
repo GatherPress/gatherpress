@@ -8,10 +8,10 @@ import ReactDOM from 'react-dom';
  */
 import EventsList from '../components/EventsList';
 
-const containers = document.querySelectorAll( `[data-gp_block_name="upcoming-events"]` );
+const containers = document.querySelectorAll( `[data-gp_block_name="events-list"]` );
 
 for (let i =0; i < containers.length; i++) {
 	const attrs = JSON.parse( containers[i].dataset.gp_block_attrs );
-
-	ReactDOM.render( <EventsList type="upcoming" maxNumberOfEvents={attrs.maxNumberofEvents ?? 5} />, containers[i] );
+	console.log(attrs);
+	ReactDOM.render( <EventsList type={attrs.type ?? 'upcoming'} maxNumberOfEvents={attrs.maxNumberOfEvents ?? 5} />, containers[i] );
 }

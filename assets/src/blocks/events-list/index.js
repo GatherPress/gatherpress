@@ -1,27 +1,26 @@
 /**
- * WordPress dependencies.
+ * External dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import { registerBlockType } from '@wordpress/blocks';
-
+import { registerBlockType, registerBlockStyle } from '@wordpress/blocks';
 /**
  * Internal dependencies.
  */
 import Edit from './edit';
 
-registerBlockType( 'gatherpress/past-events', {
+registerBlockType( 'gatherpress/events-list', {
 	apiVersion: 2,
-	title: __( 'Past Events', 'gatherpress' ),
+	title: __( 'Events List', 'gatherpress' ),
 	icon: 'groups',
 	category: 'gatherpress',
 	attributes: {
 		maxNumberOfEvents: {
-			type: 'string',
+			type: 'integer',
 			default: '5'
 		},
 		type: {
 			type: 'string',
-			default: 'past'
+			default: 'upcoming'
 		}
 	},
 	edit: Edit,

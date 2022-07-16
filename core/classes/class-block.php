@@ -30,8 +30,7 @@ class Block {
 	protected $react_blocks = array(
 		'attendance-list',
 		'attendance-selector',
-		'past-events',
-		'upcoming-events',
+		'events-list',
 	);
 
 	/**

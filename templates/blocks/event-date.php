@@ -7,6 +7,6 @@
  * @since 1.0.0
  */
 
+$gatherpress_event = new \GatherPress\Core\Event( get_the_ID() );
 ?>
-
-<div>Event Date</div>
+<div><?php echo esc_html( $gatherpress_event->get_display_datetime() ); ?></div>
