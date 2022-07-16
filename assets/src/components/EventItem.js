@@ -1,6 +1,7 @@
 import HtmlReactParser from 'html-react-parser';
 import AttendanceSelector from './AttendanceSelector';
 import AttendeeList from './AttendeeList';
+import AttendeeResponse from './AttendeeResponse';
 
 const EventItem = ( props ) => {
 	if ('object' !== typeof GatherPress) {
@@ -41,8 +42,12 @@ const EventItem = ( props ) => {
 				<div className="gp-attendance-list__items">
 					<AttendeeList eventId={event.ID} value="attending" attendees={event.attendees} limit="3" avatarOnly={true} />
 				</div>
-				{ 'upcoming' === type && (
+				{'upcoming' === type && (
 					<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
+				)}
+
+				{'past' === type && (
+					<AttendeeResponse type={type} status={event.current_user?.status} />
 				)}
 			</div>
 		</div>

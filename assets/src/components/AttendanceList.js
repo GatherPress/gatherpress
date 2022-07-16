@@ -8,15 +8,15 @@ const AttendanceList = () => {
 	let defaultStatus = 'attending';
 	const items = [
 		{
-			title: __('Attending', 'gatherpress'),
+			title: ('1' !== GatherPress.has_event_past) ? __('Attending', 'gatherpress') : __('Went', 'gatherpress'),
 			value: 'attending',
 		},
 		{
-			title: __('Waiting List', 'gatherpress'),
+			title: ('1' !== GatherPress.has_event_past) ? __('Waiting List', 'gatherpress') : __('Wait Listed', 'gatherpress'),
 			value: 'waiting_list',
 		},
 		{
-			title: __('Not Attending', 'gatherpress'),
+			title: ('1' !== GatherPress.has_event_past) ? __('Not Attending', 'gatherpress') : __('Didn\'t Go', 'gatherpress'),
 			value: 'not_attending',
 		},
 	];
