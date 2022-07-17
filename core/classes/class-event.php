@@ -125,7 +125,7 @@ class Event {
 	 * @return string
 	 */
 	public function get_datetime_start( string $format = 'D, F j, g:ia T' ): string {
-		return $this->get_formatted_date( $format, 'start' );
+		return $this->get_formatted_datetime( $format, 'start' );
 	}
 
 
@@ -139,21 +139,21 @@ class Event {
 	 * @return string
 	 */
 	public function get_datetime_end( string $format = 'D, F j, g:ia T' ): string {
-		return $this->get_formatted_date( $format, 'end' );
+		return $this->get_formatted_datetime( $format, 'end' );
 	}
 
 	/**
-	 * Format date for display.
-	 *
-	 * @since 1.0.0
+	 * Format datetime for display.
 	 *
 	 * @param string  $format  PHP date format.
 	 * @param string  $which   The datetime field in event table.
-	 * @param boolean $local  Whether to format date in local time or GMT.
+	 * @param boolean $local   Whether to format date in local time or GMT.
 	 *
 	 * @return string
+	 *@since 1.0.0
+	 *
 	 */
-	protected function get_formatted_date( string $format = 'D, F j, g:ia T', string $which = 'start', $local = true ): string {
+	protected function get_formatted_datetime( string $format = 'D, F j, g:ia T', string $which = 'start', bool $local = true ): string {
 		$dt   = $this->get_datetime();
 		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$tz   = null;
@@ -187,6 +187,7 @@ class Event {
 	 */
 	public function get_datetime(): array {
 		global $wpdb;
+
 		$default = array(
 			'datetime_start'     => '',
 			'datetime_start_gmt' => '',
@@ -246,10 +247,10 @@ class Event {
 	 * @return string
 	 */
 	protected function get_google_calendar_link(): string {
-		$date_start = $this->get_formatted_date( 'Ymd', 'start', false );
-		$time_start = $this->get_formatted_date( 'His', 'start', false );
-		$date_end   = $this->get_formatted_date( 'Ymd', 'end', false );
-		$time_end   = $this->get_formatted_date( 'His', 'end', false );
+		$date_start = $this->get_formatted_datetime( 'Ymd', 'start', false );
+		$time_start = $this->get_formatted_datetime( 'His', 'start', false );
+		$date_end   = $this->get_formatted_datetime( 'Ymd', 'end', false );
+		$time_end   = $this->get_formatted_datetime( 'His', 'end', false );
 		$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
 
 		return add_query_arg(
@@ -273,13 +274,13 @@ class Event {
 	 * @return string
 	 */
 	protected function get_yahoo_calendar_link(): string {
-		$date_start     = $this->get_formatted_date( 'Ymd', 'start', false );
-		$time_start     = $this->get_formatted_date( 'His', 'start', false );
+		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
+		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 
 		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start = $this->get_formatted_date( 'Y-m-d H:i:s', 'start', false );
-		$diff_end   = $this->get_formatted_date( 'Y-m-d H:i:s', 'end', false );
+		$diff_start = $this->get_formatted_datetime( 'Y-m-d H:i:s', 'start', false );
+		$diff_end   = $this->get_formatted_datetime( 'Y-m-d H:i:s', 'end', false );
 		$duration   = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
 		$full       = intval( $duration );
 		$fraction   = ( $duration - $full );
@@ -309,10 +310,10 @@ class Event {
 	 * @return string
 	 */
 	protected function get_ics_calendar_download(): string {
-		$date_start     = $this->get_formatted_date( 'Ymd', 'start', false );
-		$time_start     = $this->get_formatted_date( 'His', 'start', false );
-		$date_end       = $this->get_formatted_date( 'Ymd', 'end', false );
-		$time_end       = $this->get_formatted_date( 'His', 'end', false );
+		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
+		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
+		$date_end       = $this->get_formatted_datetime( 'Ymd', 'end', false );
+		$time_end       = $this->get_formatted_datetime( 'His', 'end', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
 
@@ -335,6 +336,8 @@ class Event {
 
 	/**
 	 * Adjust SQL for Event queries to join on gp_event_extended table.
+	 *
+	 * @todo remove this static method from Event class and add it to Setup class.
 	 *
 	 * @since 1.0.0
 	 *
@@ -389,7 +392,6 @@ class Event {
 	 * @param array $params {
 	 *     An array of arguments used to save event data to custom event table.
 	 *
-	 *     @type int     $post_id        An event post ID.
 	 *     @type string  $datetime_start Start DateTime to save for event.
 	 *     @type string  $datetime_end   End DateTime to save for event.
 	 *     @type string  $timezone       Timezone of the event.
@@ -398,11 +400,12 @@ class Event {
 	 *
 	 * @return bool
 	 */
-	public static function save_datetimes( array $params ): bool {
+	public function save_datetimes( array $params ): bool {
 		global $wpdb;
 
-		$retval = false;
-		$fields = array_filter(
+		$params['post_id'] = $this->event->ID;
+		$retval            = false;
+		$fields            = array_filter(
 			$params,
 			function( $key ) {
 				return in_array(
