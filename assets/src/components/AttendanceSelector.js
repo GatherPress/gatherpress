@@ -17,7 +17,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { Broadcaster } from '../helpers/broadcasting';
 import AttendeeResponse from './AttendeeResponse';
 
-const AttendanceSelector = ({ eventId, currentUser = '' }) => {
+const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 	if ('object' !== typeof GatherPress) {
 		return '';
 	}
@@ -42,7 +42,10 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 	const openModal = (e) => {
 		e.preventDefault();
 
-		if ('not_attending' === attendanceStatus || 'attend' === attendanceStatus) {
+		if (
+			'not_attending' === attendanceStatus ||
+			'attend' === attendanceStatus
+		) {
 			onAnchorClick(e, 'attending', 0, false);
 		}
 		setIsOpen(true);
@@ -145,97 +148,93 @@ const AttendanceSelector = ({ eventId, currentUser = '' }) => {
 	}
 
 	return (
-		<>
-			{'1' !== GatherPress.has_event_past && (
-				<div className="gp-attendance-selector">
-					<ButtonGroup className="gp-buttons wp-block-buttons">
-						<div className="gp-buttons__container  wp-block-button">
-							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-							<a
-								href="#"
-								className="gp-buttons__button wp-block-button__link"
-								aria-expanded={selectorExpanded}
-								tabIndex="0"
-								onKeyDown={onSpanKeyDown}
-								onClick={(e) => openModal(e)}
-							>
-								{getButtonText(attendanceStatus)}
-							</a>
+		<div className="gp-attendance-selector">
+			<ButtonGroup className="gp-buttons wp-block-buttons">
+				<div className="gp-buttons__container  wp-block-button">
+					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+					<a
+						href="#"
+						className="gp-buttons__button wp-block-button__link"
+						aria-expanded={selectorExpanded}
+						tabIndex="0"
+						onKeyDown={onSpanKeyDown}
+						onClick={(e) => openModal(e)}
+					>
+						{getButtonText(attendanceStatus)}
+					</a>
+				</div>
+				<Modal
+					isOpen={modalIsOpen}
+					onRequestClose={closeModal}
+					style={customStyles}
+					contentLabel={__('Edit RSVP', 'gatherpress')}
+				>
+					<div className="gp-modal gp-modal__attendance-selector">
+						<div className="gp-modal__header has-large-font-size">
+							{__('Edit RSVP', 'gatherpress')}
 						</div>
-						<Modal
-							isOpen={modalIsOpen}
-							onRequestClose={closeModal}
-							style={customStyles}
-							contentLabel={__('Edit RSVP', 'gatherpress')}
-						>
-							<div className="gp-modal gp-modal__attendance-selector">
-								<div className="gp-modal__header has-large-font-size">
-									{__('Edit RSVP', 'gatherpress')}
-								</div>
-								<div className="gp-modal__content">
-									<label htmlFor="gp-guests">
-										{__('Number of guests?', 'gatherpress')}
-									</label>
-									<input
-										id="gp-guests"
-										type="number"
-										min="0"
-										max="5"
-										onChange={(e) =>
-											onAnchorClick(
-												e,
-												'attending',
-												e.target.value,
-												false
-											)
-										}
-										defaultValue={attendanceGuests}
-									/>
-								</div>
-								<ButtonGroup className="gp-buttons wp-block-buttons">
-									<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
-										{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-										<a
-											href="#"
-											onClick={(e) =>
-												onAnchorClick(e, 'not_attending')
-											}
-											className="gp-buttons__button wp-block-button__link"
-										>
-											{__('Not Attending', 'gatherpress')}
-										</a>
-									</div>
-									<div className="gp-buttons__container wp-block-button has-small-font-size">
-										{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-										<a
-											href="#"
-											onClick={closeModal}
-											className="gp-buttons__button wp-block-button__link"
-										>
-											{__('Close', 'gatherpress')}
-										</a>
-									</div>
-								</ButtonGroup>
+						<div className="gp-modal__content">
+							<label htmlFor="gp-guests">
+								{__('Number of guests?', 'gatherpress')}
+							</label>
+							<input
+								id="gp-guests"
+								type="number"
+								min="0"
+								max="5"
+								onChange={(e) =>
+									onAnchorClick(
+										e,
+										'attending',
+										e.target.value,
+										false
+									)
+								}
+								defaultValue={attendanceGuests}
+							/>
+						</div>
+						<ButtonGroup className="gp-buttons wp-block-buttons">
+							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
+								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+								<a
+									href="#"
+									onClick={(e) =>
+										onAnchorClick(e, 'not_attending')
+									}
+									className="gp-buttons__button wp-block-button__link"
+								>
+									{__('Not Attending', 'gatherpress')}
+								</a>
 							</div>
-						</Modal>
-					</ButtonGroup>
-					{'attend' !== attendanceStatus && (
-						<div className="gp-status">
-							<AttendeeResponse type={('1' !== GatherPress.has_event_past) ? 'upcoming' : 'past'} status={attendanceStatus} />
+							<div className="gp-buttons__container wp-block-button has-small-font-size">
+								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+								<a
+									href="#"
+									onClick={closeModal}
+									className="gp-buttons__button wp-block-button__link"
+								>
+									{__('Close', 'gatherpress')}
+								</a>
+							</div>
+						</ButtonGroup>
+					</div>
+				</Modal>
+			</ButtonGroup>
+			{'attend' !== attendanceStatus && (
+				<div className="gp-status">
+					<AttendeeResponse type={type} status={attendanceStatus} />
 
-							{0 < attendanceGuests && (
-								<div className="gp-status__guests">
-									<span>
-										+{attendanceGuests}{' '}
-										{__('guest(s)', 'gatherpress')}
-									</span>
-								</div>
-							)}
+					{0 < attendanceGuests && (
+						<div className="gp-status__guests">
+							<span>
+								+{attendanceGuests}{' '}
+								{__('guest(s)', 'gatherpress')}
+							</span>
 						</div>
 					)}
 				</div>
 			)}
-		</>
+		</div>
 	);
 };
 

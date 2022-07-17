@@ -10,44 +10,51 @@ const EventItem = ( props ) => {
 
 	const { type, event } = props;
 
-	const event_class = `gp-events-list`;
+	const eventClass = `gp-events-list`;
 
 	return (
-		<div className={event_class}>
-			<div className={`${event_class}__header`}>
-				<div className={`${event_class}__info`}>
-					<div className={`${event_class}__datetime has-small-font-size`}>
-						<strong>
-							{event.datetime_start}
-						</strong>
+		<div className={eventClass}>
+			<div className={`${eventClass}__header`}>
+				<div className={`${eventClass}__info`}>
+					<div
+						className={`${eventClass}__datetime has-small-font-size`}
+					>
+						<strong>{event.datetime_start}</strong>
 					</div>
-					<div className={`${event_class}__title has-large-font-size`}>
+					<div className={`${eventClass}__title has-large-font-size`}>
 						<a href={event.permalink}>
-							{HtmlReactParser( event.title )}
+							{HtmlReactParser(event.title)}
 						</a>
 					</div>
 				</div>
-				<figure className={`${event_class}__image`}>
+				<figure className={`${eventClass}__image`}>
 					<a href={event.permalink}>
 						{HtmlReactParser(event.featured_image)}
 					</a>
 				</figure>
 			</div>
-			<div className={`${event_class}__content`}>
-				<div className={`${event_class}__excerpt`}>
-					{HtmlReactParser( event.excerpt )}
+			<div className={`${eventClass}__content`}>
+				<div className={`${eventClass}__excerpt`}>
+					{HtmlReactParser(event.excerpt)}
 				</div>
 			</div>
-			<div className={`${event_class}__footer`}>
+			<div className={`${eventClass}__footer`}>
 				<div className="gp-attendance-list__items">
 					<AttendeeList eventId={event.ID} value="attending" attendees={event.attendees} limit="3" avatarOnly={true} />
 				</div>
 				{'upcoming' === type && (
-					<AttendanceSelector eventId={event.ID} currentUser={event.current_user} />
+					<AttendanceSelector
+						eventId={event.ID}
+						currentUser={event.current_user}
+						type={type}
+					/>
 				)}
 
 				{'past' === type && (
-					<AttendeeResponse type={type} status={event.current_user?.status} />
+					<AttendeeResponse
+						type={type}
+						status={event.current_user?.status}
+					/>
 				)}
 			</div>
 		</div>
