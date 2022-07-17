@@ -7,6 +7,7 @@ workflows:
       - php74-cs
       - php73-test
       - php74-test
+      - lint-js
 
 job-references:
   mysql_image: &mysql_image
@@ -117,4 +118,3 @@ jobs:
     docker:
       - image: circleci/php:7.4
       - image: *mysql_image
-
