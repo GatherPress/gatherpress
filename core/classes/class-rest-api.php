@@ -259,8 +259,8 @@ class Rest_Api {
 			);
 		}
 
-		$params   = wp_parse_args( $request->get_params(), $request->get_default_params() );
-		$event    = new Event( $params['post_id'] );
+		$params = wp_parse_args( $request->get_params(), $request->get_default_params() );
+		$event  = new Event( $params['post_id'] );
 
 		unset( $params['post_id'] );
 

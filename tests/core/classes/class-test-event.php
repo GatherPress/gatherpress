@@ -56,7 +56,7 @@ class Test_Event extends Base {
 	/**
 	 * Coverage for get_display_datetime method.
 	 *
-	 * @param array $params    Parameters for datetimes.
+	 * @param array  $params    Parameters for datetimes.
 	 * @param string $expects  Expected formatted output.
 	 *
 	 * @covers ::get_display_datetime
