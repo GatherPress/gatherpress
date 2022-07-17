@@ -8,12 +8,12 @@ export function updateDateTimeStart( dateTime, setState = null ) {
 
 	GatherPress.event_datetime.datetime_start = dateTime;
 
-	this.setState({
-		dateTime: dateTime
-	});
+	this.setState( {
+		dateTime,
+	} );
 
 	if ( null !== setState ) {
-		setState({ dateTime });
+		setState( { dateTime } );
 	}
 
 	enableSave();
@@ -26,37 +26,33 @@ export function getDateTimeStart() {
 }
 
 export class DateTimeStartLabel extends Component {
-
 	constructor( props ) {
 		super( props );
 
 		this.state = {
-			dateTime: GatherPress.event_datetime.datetime_start
+			dateTime: GatherPress.event_datetime.datetime_start,
 		};
 	}
 
 	componentDidMount() {
 		this.updateDateTimeStart = updateDateTimeStart;
-		this.getDateTimeStart    = getDateTimeStart;
+		this.getDateTimeStart = getDateTimeStart;
 
 		updateDateTimeStart = updateDateTimeStart.bind( this );
-		getDateTimeStart    = getDateTimeStart.bind( this );
+		getDateTimeStart = getDateTimeStart.bind( this );
 	}
 
 	componentWillUnmount() {
 		updateDateTimeStart = this.updateDateTimeStart;
-		getDateTimeStart    = this.getDateTimeStart;
+		getDateTimeStart = this.getDateTimeStart;
 	}
 
 	render() {
 		const settings = __experimentalGetSettings();
 
-		return (
-			dateI18n(
-				`${ settings.formats.date } ${ settings.formats.time }`,
-				this.state.dateTime
-			)
+		return dateI18n(
+			`${ settings.formats.date } ${ settings.formats.time }`,
+			this.state.dateTime,
 		);
 	}
-
 }

@@ -12,8 +12,12 @@ const Edit = () => {
 	const type = '1' === GatherPress.has_event_past ? 'past' : 'upcoming';
 
 	return (
-		<div {...blockProps}>
-			<AttendanceSelector eventId={GatherPress.post_id} currentUser={GatherPress.current_user} type={type} />
+		<div { ...blockProps }>
+			<AttendanceSelector
+				eventId={ GatherPress.post_id }
+				currentUser={ GatherPress.current_user }
+				type={ type }
+			/>
 		</div>
 	);
 };

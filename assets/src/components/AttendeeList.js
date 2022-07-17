@@ -2,68 +2,79 @@ import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Listener } from '../helpers/broadcasting';
 
-const AttendeeList = ({ eventId, value, limit, attendees = [], avatarOnly = false }) => {
+const AttendeeList = ( {
+	eventId,
+	value,
+	limit,
+	attendees = [],
+	avatarOnly = false,
+} ) => {
 	const [ attendanceList, setAttendanceList ] = useState( attendees );
 
-	Listener({ setAttendanceList: setAttendanceList }, eventId);
+	Listener( { setAttendanceList }, eventId );
 
 	let renderedItems = '';
 
 	if (
 		'object' === typeof attendanceList &&
-		'undefined' !== typeof attendanceList[value]
+		'undefined' !== typeof attendanceList[ value ]
 	) {
-		let attendees = [...attendanceList[value].attendees];
+		let attendees = [ ...attendanceList[ value ].attendees ];
 
-		if (limit) {
-			attendees = attendees.splice(0, limit);
+		if ( limit ) {
+			attendees = attendees.splice( 0, limit );
 		}
 
 		renderedItems = attendees.map( ( attendee, index ) => {
 			const { profile, name, photo, role } = attendee;
 			let { guests } = attendee;
 
-			if (guests) {
+			if ( guests ) {
 				guests = ' +' + guests + ' guest(s)';
 			} else {
 				guests = '';
 			}
 
 			return (
-				<div key={index} className="gp-attendance-list__items--item">
+				<div key={ index } className="gp-attendance-list__items--item">
 					<figure className="gp-attendance-list__member-avatar">
-						<a href={profile}>
-							<img alt={name} title={name} src={photo} />
+						<a href={ profile }>
+							<img alt={ name } title={ name } src={ photo } />
 						</a>
 					</figure>
-					{false === avatarOnly && (
+					{ false === avatarOnly && (
 						<div className="gp-attendance-list__member-info">
 							<div className="gp-attendance-list__member-name">
-								<a href={profile}>
-									{name}
-								</a>
+								<a href={ profile }>{ name }</a>
 							</div>
 							<div className="gp-attendance-list__member-role">
-								{role}
+								{ role }
 							</div>
 							<small className="gp-attendance-list__guests">
-								{guests}
+								{ guests }
 							</small>
 						</div>
-					)}
+					) }
 				</div>
 			);
-		});
+		} );
 	}
 
 	return (
 		<>
-			{'attending' === value && 0 === renderedItems.length && false === avatarOnly &&
+			{ 'attending' === value &&
+				0 === renderedItems.length &&
+				false === avatarOnly && (
 				<div className="gp-attendance-list__no-attendees">
-					{('1' !== GatherPress.has_event_past) ? __( 'No one is attending this event yet.', 'gatherpress') : __( 'No one went to this event.', 'gatherpress')}
+					{ '1' !== GatherPress.has_event_past
+						? __(
+							'No one is attending this event yet.',
+							'gatherpress',
+							  )
+						: __( 'No one went to this event.', 'gatherpress' ) }
 				</div>
-			}
-			{renderedItems}
+			) }
+			{ renderedItems }
 		</>
 	);
 };

@@ -16,13 +16,13 @@ registerBlockType( 'gatherpress/events-list', {
 	attributes: {
 		maxNumberOfEvents: {
 			type: 'integer',
-			default: '5'
+			default: '5',
 		},
 		type: {
 			type: 'string',
-			default: 'upcoming'
-		}
+			default: 'upcoming',
+		},
 	},
 	edit: Edit,
-	save: () => null
-});
+	save: () => null,
+} );

@@ -9,12 +9,12 @@ export function updateDateTimeEnd( dateTime, setState = null ) {
 
 	GatherPress.event_datetime.datetime_end = dateTime;
 
-	this.setState({
-		dateTime: dateTime
-	});
+	this.setState( {
+		dateTime,
+	} );
 
 	if ( null !== setState ) {
-		setState({ dateTime });
+		setState( { dateTime } );
 	}
 
 	enableSave();
@@ -29,9 +29,9 @@ export function getDateTimeEnd() {
 }
 
 export function hasEventPastNotice() {
-	const id               = 'gp_event_past';
-	const notices          = wp.data.dispatch( 'core/notices' );
-	const eventPastStatus  = hasEventPast();
+	const id = 'gp_event_past';
+	const notices = wp.data.dispatch( 'core/notices' );
+	const eventPastStatus = hasEventPast();
 
 	notices.removeNotice( id );
 
@@ -40,36 +40,35 @@ export function hasEventPastNotice() {
 			'warning',
 			__( 'This event has already past.', 'gatherpress' ),
 			{
-				id: id,
-				isDismissible: true
-			}
+				id,
+				isDismissible: true,
+			},
 		);
 	}
 }
 
 export class DateTimeEndLabel extends Component {
-
 	constructor( props ) {
 		super( props );
 
 		this.state = {
-			dateTime: GatherPress.event_datetime.datetime_end
+			dateTime: GatherPress.event_datetime.datetime_end,
 		};
 	}
 
 	componentDidMount() {
 		this.updateDateTimeEnd = updateDateTimeEnd;
-		this.getDateTimeEnd    = getDateTimeEnd;
+		this.getDateTimeEnd = getDateTimeEnd;
 
 		updateDateTimeEnd = updateDateTimeEnd.bind( this );
-		getDateTimeEnd    = getDateTimeEnd.bind( this );
+		getDateTimeEnd = getDateTimeEnd.bind( this );
 
 		hasEventPastNotice();
 	}
 
 	componentWillUnmount() {
 		updateDateTimeEnd = this.updateDateTimeEnd;
-		getDateTimeEnd    = this.getDateTimeEnd;
+		getDateTimeEnd = this.getDateTimeEnd;
 	}
 
 	componentDidUpdate() {
@@ -79,12 +78,9 @@ export class DateTimeEndLabel extends Component {
 	render() {
 		const settings = __experimentalGetSettings();
 
-		return (
-			dateI18n(
-				`${ settings.formats.date } ${ settings.formats.time }`,
-				this.state.dateTime
-			)
+		return dateI18n(
+			`${ settings.formats.date } ${ settings.formats.time }`,
+			this.state.dateTime,
 		);
 	}
-
 }

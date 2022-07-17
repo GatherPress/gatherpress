@@ -11,7 +11,7 @@ const Edit = ( props ) => {
 	const blockProps = useBlockProps();
 
 	return (
-		<div {...blockProps}>
+		<div { ...blockProps }>
 			<AttendanceList />
 		</div>
 	);

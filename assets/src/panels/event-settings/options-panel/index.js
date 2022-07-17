@@ -1,5 +1,3 @@
 import { AnnounceEvent } from './announce-event';
 
-export const OptionsPanel = () => (
-	<AnnounceEvent />
-);
+export const OptionsPanel = () => <AnnounceEvent />;
