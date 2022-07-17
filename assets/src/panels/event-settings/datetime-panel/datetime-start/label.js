@@ -1,11 +1,24 @@
-import React, { Component } from 'react';
+/**
+ * External dependencies.
+ */
+import { Component } from 'react';
+
+/**
+ * WordPress dependencies.
+ */
+// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 import { dateI18n, __experimentalGetSettings } from '@wordpress/date';
+
+/**
+ * Internal dependencies.
+ */
 import { validateDateTimeStart } from '../helpers';
 import { enableSave } from '../../../helpers';
 
 export function updateDateTimeStart( dateTime, setState = null ) {
 	validateDateTimeStart( dateTime );
 
+	// eslint-disable-next-line no-undef
 	GatherPress.event_datetime.datetime_start = dateTime;
 
 	this.setState( {
@@ -20,6 +33,7 @@ export function updateDateTimeStart( dateTime, setState = null ) {
 }
 
 export function getDateTimeStart() {
+	// eslint-disable-next-line no-undef
 	GatherPress.event_datetime.datetime_start = this.state.dateTime;
 
 	return this.state.dateTime;
@@ -30,6 +44,7 @@ export class DateTimeStartLabel extends Component {
 		super( props );
 
 		this.state = {
+			// eslint-disable-next-line no-undef
 			dateTime: GatherPress.event_datetime.datetime_start,
 		};
 	}

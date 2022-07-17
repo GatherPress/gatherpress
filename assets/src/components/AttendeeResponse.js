@@ -39,8 +39,7 @@ const AttendeeResponse = ( { type, status } ) => {
 			},
 		},
 	};
-	console.log( type );
-	console.log( status );
+
 	return (
 		<div className="gp-status__response">
 			<span className={ responses[ type ][ status ].icon }></span>

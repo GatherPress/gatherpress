@@ -3,6 +3,7 @@
  */
 import React from 'react';
 import ReactDOM from 'react-dom';
+
 /**
  * Internal dependencies.
  */
@@ -14,7 +15,7 @@ const containers = document.querySelectorAll(
 
 for ( let i = 0; i < containers.length; i++ ) {
 	const attrs = JSON.parse( containers[ i ].dataset.gp_block_attrs );
-	console.log( attrs );
+
 	ReactDOM.render(
 		<EventsList
 			type={ attrs.type ?? 'upcoming' }

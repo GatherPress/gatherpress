@@ -1,12 +1,25 @@
-import React, { Component } from 'react';
+/**
+ * Extneral dependencies.
+ */
+import { Component } from 'react';
+
+/**
+ * WordPress dependencies.
+ */
+// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 import { dateI18n, __experimentalGetSettings } from '@wordpress/date';
 import { __ } from '@wordpress/i18n';
+
+/**
+ * Internal dependencies.
+ */
 import { validateDateTimeEnd } from '../helpers';
 import { hasEventPast, enableSave } from '../../../helpers';
 
 export function updateDateTimeEnd( dateTime, setState = null ) {
 	validateDateTimeEnd( dateTime );
 
+	// eslint-disable-next-line no-undef
 	GatherPress.event_datetime.datetime_end = dateTime;
 
 	this.setState( {
@@ -21,6 +34,7 @@ export function updateDateTimeEnd( dateTime, setState = null ) {
 }
 
 export function getDateTimeEnd() {
+	// eslint-disable-next-line no-undef
 	GatherPress.event_datetime.datetime_end = this.state.dateTime;
 
 	hasEventPastNotice();
@@ -52,6 +66,7 @@ export class DateTimeEndLabel extends Component {
 		super( props );
 
 		this.state = {
+			// eslint-disable-next-line no-undef
 			dateTime: GatherPress.event_datetime.datetime_end,
 		};
 	}
