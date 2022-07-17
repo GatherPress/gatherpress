@@ -56,6 +56,9 @@ class Test_Event extends Base {
 	/**
 	 * Coverage for get_display_datetime method.
 	 *
+	 * @param array $params    Parameters for datetimes.
+	 * @param string $expects  Expected formatted output.
+	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::save_datetimes
 	 * @covers ::is_same_date
@@ -65,14 +68,14 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_display_datetime( array $params, string $expects ) {
-		$post   = $this->mock->post(
+		$post  = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
 				'post_type'    => 'gp_event',
 				'post_content' => 'Unit Test description.',
 			)
 		)->get();
-		$event  = new Event( $post->ID );
+		$event = new Event( $post->ID );
 
 		$output = $event->save_datetimes( $params );
 
@@ -104,14 +107,14 @@ class Test_Event extends Base {
 			$event->get_datetime()
 		);
 
-		$post   = $this->mock->post(
+		$post  = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
 				'post_type'    => 'gp_event',
 				'post_content' => 'Unit Test description.',
 			)
 		)->get();
-		$event  = new Event( $post->ID );
+		$event = new Event( $post->ID );
 
 		$this->assertSame(
 			array(
