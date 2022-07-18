@@ -10,8 +10,8 @@ registerBlockType( 'gatherpress/attendance-list', {
 	attributes: {
 		blockId: { type: 'string' },
 		content: { type: 'string' },
-		color: { type: 'string' }
+		color: { type: 'string' },
 	},
 	edit: Edit,
-	save: () => null
-});
+	save: () => null,
+} );

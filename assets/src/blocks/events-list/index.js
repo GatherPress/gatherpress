@@ -2,7 +2,7 @@
  * External dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import { registerBlockType, registerBlockStyle } from '@wordpress/blocks';
+import { registerBlockType } from '@wordpress/blocks';
 /**
  * Internal dependencies.
  */
@@ -16,13 +16,13 @@ registerBlockType( 'gatherpress/events-list', {
 	attributes: {
 		maxNumberOfEvents: {
 			type: 'integer',
-			default: '5'
+			default: '5',
 		},
 		type: {
 			type: 'string',
-			default: 'upcoming'
-		}
+			default: 'upcoming',
+		},
 	},
 	edit: Edit,
-	save: () => null
-});
+	save: () => null,
+} );

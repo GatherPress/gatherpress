@@ -6,5 +6,5 @@ import './attendance-selector/index';
 import './events-list/index';
 
 wp.blocks.updateCategory( 'gatherpress', {
-	icon: 'nametag'
-});
+	icon: 'nametag',
+} );
