@@ -3,8 +3,12 @@ import AttendeeList from './AttendeeList';
 
 const AttendanceListContent = ( { items, activeValue, limit = false } ) => {
 	const renderedItems = items.map( ( item, index ) => {
-		const { title, value } = item;
+		const { value } = item;
 		const active = value === activeValue ? 'active' : 'hidden';
+		// eslint-disable-next-line no-undef
+		const postId = GatherPress.post_id;
+		// eslint-disable-next-line no-undef
+		const attendees = GatherPress.attendees;
 
 		return (
 			<div
@@ -15,10 +19,10 @@ const AttendanceListContent = ( { items, activeValue, limit = false } ) => {
 				aria-labelledby={ `gp-attendance-${ value }-tab` }
 			>
 				<AttendeeList
-					eventId={ GatherPress.post_id }
+					eventId={ postId }
 					value={ value }
 					limit={ limit }
-					attendees={ GatherPress.attendees }
+					attendees={ attendees }
 				/>
 			</div>
 		);

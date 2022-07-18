@@ -2,6 +2,7 @@
  * External dependencies.
  */
 import classnames from 'classnames';
+
 /**
  * WordPress dependencies.
  */
@@ -12,8 +13,10 @@ import {
 	RangeControl,
 	ButtonGroup,
 	Button,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalText as Text,
 } from '@wordpress/components';
+
 /**
  * Internal dependencies.
  */

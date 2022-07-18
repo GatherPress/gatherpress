@@ -1,5 +1,12 @@
+/**
+ * WordPress dependencies.
+ */
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+
+/**
+ * Internal dependencies.
+ */
 import { Listener } from '../helpers/broadcasting';
 
 const AttendeeList = ( {
@@ -19,7 +26,7 @@ const AttendeeList = ( {
 		'object' === typeof attendanceList &&
 		'undefined' !== typeof attendanceList[ value ]
 	) {
-		let attendees = [ ...attendanceList[ value ].attendees ];
+		attendees = [ ...attendanceList[ value ].attendees ];
 
 		if ( limit ) {
 			attendees = attendees.splice( 0, limit );
@@ -66,11 +73,12 @@ const AttendeeList = ( {
 				0 === renderedItems.length &&
 				false === avatarOnly && (
 				<div className="gp-attendance-list__no-attendees">
+					{ /* eslint-disable-next-line no-undef */ }
 					{ '1' !== GatherPress.has_event_past
 						? __(
 							'No one is attending this event yet.',
 							'gatherpress',
-							  )
+						)
 						: __( 'No one went to this event.', 'gatherpress' ) }
 				</div>
 			) }

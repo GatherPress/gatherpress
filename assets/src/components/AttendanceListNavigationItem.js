@@ -13,6 +13,7 @@ const AttendanceListNavigationItem = ( {
 		<div
 			className={ `gp-attendance-list__navigation--item gp-attendance-list__${ active } ${ additionalClasses }` }
 		>
+			{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
 			<a
 				className="gp-attendance-list__anchor"
 				data-item={ value }

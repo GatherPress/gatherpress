@@ -11,6 +11,7 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 	};
 
 	if ( 'object' === typeof GatherPress ) {
+		// eslint-disable-next-line no-undef
 		for ( const [ key, value ] of Object.entries( GatherPress.attendees ) ) {
 			defaultCount[ key ] = value.count;
 		}
@@ -18,6 +19,7 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 
 	const [ attendanceCount, setAttendanceCount ] = useState( defaultCount );
 
+	// eslint-disable-next-line no-undef
 	Listener( { setAttendanceCount }, GatherPress.post_id );
 
 	const renderedItems = items.map( ( item, index ) => {
@@ -38,7 +40,7 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 	} );
 
 	return (
-		<nav className="gp-attendance-list__navigation" role="tab-list">
+		<nav className="gp-attendance-list__navigation">
 			{ renderedItems }
 		</nav>
 	);

@@ -9,6 +9,7 @@ const AttendanceList = () => {
 	const items = [
 		{
 			title:
+				// eslint-disable-next-line no-undef
 				'1' !== GatherPress.has_event_past
 					? __( 'Attending', 'gatherpress' )
 					: __( 'Went', 'gatherpress' ),
@@ -16,6 +17,7 @@ const AttendanceList = () => {
 		},
 		{
 			title:
+				// eslint-disable-next-line no-undef
 				'1' !== GatherPress.has_event_past
 					? __( 'Waiting List', 'gatherpress' )
 					: __( 'Wait Listed', 'gatherpress' ),
@@ -23,6 +25,7 @@ const AttendanceList = () => {
 		},
 		{
 			title:
+				// eslint-disable-next-line no-undef
 				'1' !== GatherPress.has_event_past
 					? __( 'Not Attending', 'gatherpress' )
 					: __( "Didn't Go", 'gatherpress' ),
@@ -33,8 +36,11 @@ const AttendanceList = () => {
 	if ( 'object' === typeof GatherPress ) {
 		// @todo redo this logic and have it come from API and not GatherPress object.
 		defaultStatus =
+			// eslint-disable-next-line no-undef
 			'undefined' !== typeof GatherPress.current_user.status &&
+			// eslint-disable-next-line no-undef
 			'attend' !== GatherPress.current_user.status
+				// eslint-disable-next-line no-undef
 				? GatherPress.current_user.status
 				: defaultStatus;
 	}
@@ -43,6 +49,7 @@ const AttendanceList = () => {
 	const [ attendanceStatus, setAttendanceStatus ] = useState( defaultStatus );
 	const [ attendeeLimit, setAttendeeLimit ] = useState( defaultLimit );
 
+	// eslint-disable-next-line no-undef
 	Listener( { setAttendanceStatus }, GatherPress.post_id );
 
 	const onTitleClick = ( e, value ) => {

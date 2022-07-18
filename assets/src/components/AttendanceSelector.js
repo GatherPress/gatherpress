@@ -18,10 +18,6 @@ import { Broadcaster } from '../helpers/broadcasting';
 import AttendeeResponse from './AttendeeResponse';
 
 const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
-	if ( 'object' !== typeof GatherPress ) {
-		return '';
-	}
-
 	const [ attendanceStatus, setAttendanceStatus ] = useState(
 		currentUser.status,
 	);
@@ -80,6 +76,7 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 				post_id: eventId,
 				status,
 				guests,
+				// eslint-disable-next-line no-undef
 				_wpnonce: GatherPress.nonce,
 			},
 		} ).then( ( res ) => {
