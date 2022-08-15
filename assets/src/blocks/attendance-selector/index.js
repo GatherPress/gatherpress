@@ -9,8 +9,8 @@ registerBlockType( 'gatherpress/attendance-selector', {
 	category: 'gatherpress',
 	attributes: {
 		content: { type: 'string' },
-		color: { type: 'string' }
+		color: { type: 'string' },
 	},
 	edit: Edit,
-	save: () => null
-});
+	save: () => null,
+} );

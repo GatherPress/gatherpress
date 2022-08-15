@@ -7,6 +7,7 @@ workflows:
       - php74-cs
       - php73-test
       - php74-test
+      - lint-js
 
 job-references:
   mysql_image: &mysql_image
@@ -29,6 +30,12 @@ job-references:
       composer global require phpcompatibility/phpcompatibility-wp
       COMPOSER_BIN=$(composer global config bin-dir --absolute)
       ${COMPOSER_BIN}/phpcs --config-set installed_paths ${COMPOSER_BIN}/../wp-coding-standards/wpcs,${COMPOSER_BIN}/../phpcompatibility/php-compatibility,${COMPOSER_BIN}/../phpcompatibility/phpcompatibility-paragonie,${COMPOSER_BIN}/../phpcompatibility/phpcompatibility-wp
+      sudo apt install nodejs npm
+
+  run_lint_js: &run_lint_js
+    name: "Run ESLint"
+    command: |
+      cd assets && npm install --legacy-peer-deps && npm run lint:js
 
   run_phpcs: &run_phpcs
     name: "Run PHPCS"
@@ -77,6 +84,16 @@ job-references:
       - run: *run_phpunit_multi_site
       - slack/notify: *slack_notify
 
+  lint_js: &lint_js
+    environment:
+      - WP_TESTS_DIR: "/tmp/wordpress-tests-lib"
+      - WP_CORE_DIR: "/tmp/wordpress/"
+    steps:
+      - checkout
+      - run: *install_dependencies
+      - run: *run_lint_js
+      - slack/notify: *slack_notify
+
 jobs:
   php74-cs:
     <<: *php_cs
@@ -92,6 +109,12 @@ jobs:
 
   php74-test:
     <<: *php_test
+    docker:
+      - image: circleci/php:7.4
+      - image: *mysql_image
+
+  lint-js:
+    <<: *lint_js
     docker:
       - image: circleci/php:7.4
       - image: *mysql_image

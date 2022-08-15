@@ -7,9 +7,12 @@ module.exports = {
 	entry: {
 		blocks_style: path.resolve( process.cwd(), 'src', 'blocks/style.scss' ),
 		blocks_backend: path.resolve( process.cwd(), 'src/blocks', 'backend.js' ),
-		blocks_frontend: path.resolve( process.cwd(), 'src/blocks', 'frontend.js' ),
+		blocks_frontend: path.resolve(
+			process.cwd(),
+			'src/blocks',
+			'frontend.js',
+		),
 		panels: path.resolve( process.cwd(), 'src/panels', 'index.js' ),
-
 	},
 	optimization: {
 		...defaultConfig.optimization,
@@ -19,14 +22,14 @@ module.exports = {
 					name: 'blocks_style',
 					test: /blocks_style\.(sc|sa|c)ss$/,
 					chunks: 'all',
-					enforce: true
+					enforce: true,
 				},
-				default: false
-			}
-		}
+				default: false,
+			},
+		},
 	},
 	plugins: [
 		...defaultConfig.plugins,
-		new IgnoreEmitPlugin([ 'blocks_style.js' ])
-	]
+		new IgnoreEmitPlugin( [ 'blocks_style.js' ] ),
+	],
 };

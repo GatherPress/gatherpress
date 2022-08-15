@@ -4,7 +4,7 @@ import AttendeeList from './AttendeeList';
 import AttendeeResponse from './AttendeeResponse';
 
 const EventItem = ( props ) => {
-	if ('object' !== typeof GatherPress) {
+	if ( 'object' !== typeof GatherPress ) {
 		return '';
 	}
 
@@ -22,13 +22,13 @@ const EventItem = ( props ) => {
 						</a>
 					</figure>
 					<div
-						className={`${eventClass}__datetime has-small-font-size`}
+						className={ `${ eventClass }__datetime has-small-font-size` }
 					>
-						<strong>{event.datetime_start}</strong>
+						<strong>{ event.datetime_start }</strong>
 					</div>
-					<div className={`${eventClass}__title has-large-font-size`}>
-						<a href={event.permalink}>
-							{HtmlReactParser(event.title)}
+					<div className={ `${ eventClass }__title has-large-font-size` }>
+						<a href={ event.permalink }>
+							{ HtmlReactParser( event.title ) }
 						</a>
 					</div>
 					<div className={`${eventClass}__content`}>
@@ -38,27 +38,33 @@ const EventItem = ( props ) => {
 					</div>
 				</div>
 			</div>
-			<div className={`${eventClass}__footer`}>
+			<div className={ `${ eventClass }__footer` }>
 				<div className="gp-attendance-list__items">
-					<AttendeeList eventId={event.ID} value="attending" attendees={event.attendees} limit="3" avatarOnly={true} />
+					<AttendeeList
+						eventId={ event.ID }
+						value="attending"
+						attendees={ event.attendees }
+						limit="3"
+						avatarOnly={ true }
+					/>
 				</div>
-				{'upcoming' === type && (
+				{ 'upcoming' === type && (
 					<AttendanceSelector
-						eventId={event.ID}
-						currentUser={event.current_user}
-						type={type}
+						eventId={ event.ID }
+						currentUser={ event.current_user }
+						type={ type }
 					/>
-				)}
+				) }
 
-				{'past' === type && (
+				{ 'past' === type && (
 					<AttendeeResponse
-						type={type}
-						status={event.current_user?.status}
+						type={ type }
+						status={ event.current_user?.status }
 					/>
-				)}
+				) }
 			</div>
 		</div>
 	);
-}
+};
 
 export default EventItem;
