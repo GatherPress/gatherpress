@@ -13,12 +13,12 @@ const EventItem = ( props ) => {
 	const eventClass = `gp-events-list`;
 
 	return (
-		<div className={eventClass}>
-			<div className={`${eventClass}__header`}>
-				<div className={`${eventClass}__info`}>
-					<figure className={`${eventClass}__image`}>
-						<a href={event.permalink}>
-							{HtmlReactParser(event.featured_image)}
+		<div className={ eventClass }>
+			<div className={ `${ eventClass }__header` }>
+				<div className={ `${ eventClass }__info` }>
+					<figure className={ `${ eventClass }__image` }>
+						<a href={ event.permalink }>
+							{ HtmlReactParser( event.featured_image ) }
 						</a>
 					</figure>
 					<div
@@ -31,9 +31,9 @@ const EventItem = ( props ) => {
 							{ HtmlReactParser( event.title ) }
 						</a>
 					</div>
-					<div className={`${eventClass}__content`}>
-						<div className={`${eventClass}__excerpt`}>
-							{HtmlReactParser(event.excerpt)}
+					<div className={ `${ eventClass }__content` }>
+						<div className={ `${ eventClass }__excerpt` }>
+							{ HtmlReactParser( event.excerpt ) }
 						</div>
 					</div>
 				</div>
