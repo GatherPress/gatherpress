@@ -18,6 +18,12 @@ registerBlockType( 'gatherpress/events-list', {
 			type: 'integer',
 			default: '5',
 		},
+		topics: {
+			type: 'array',
+			items: {
+				type: 'object',
+			},
+		},
 		type: {
 			type: 'string',
 			default: 'upcoming',

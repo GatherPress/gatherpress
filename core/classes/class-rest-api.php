@@ -146,13 +146,13 @@ class Rest_Api {
 				),
 			),
 			array(
-				'route' => 'upcoming-events',
+				'route' => 'events-list',
 				'args'  => array(
 					'methods'             => \WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'upcoming_events' ),
+					'callback'            => array( $this, 'events_list' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
-						'_wpnonce'   => array(
+						'_wpnonce'        => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
@@ -160,31 +160,16 @@ class Rest_Api {
 							 */
 							'required' => false,
 						),
-						'max_number' => array(
+						'event_list_type' => array(
+							'required'          => true,
+							'validate_callback' => array( $this, 'validate_event_list_type' ),
+						),
+						'max_number'      => array(
 							'required'          => true,
 							'validate_callback' => array( $this, 'validate_number' ),
 						),
-					),
-				),
-			),
-			array(
-				'route' => 'past-events',
-				'args'  => array(
-					'methods'             => \WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'past_events' ),
-					'permission_callback' => '__return_true',
-					'args'                => array(
-						'_wpnonce'   => array(
-							/**
-							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-							 *
-							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-							 */
+						'topics'          => array(
 							'required' => false,
-						),
-						'max_number' => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_number' ),
 						),
 					),
 				),
@@ -230,6 +215,17 @@ class Rest_Api {
 			0 < intval( $param )
 			&& is_numeric( $param )
 		);
+	}
+
+	/**
+	 * Validate event list type.
+	 *
+	 * @param string $param event list type.
+	 *
+	 * @return bool
+	 */
+	public function validate_event_list_type( string $param ): bool {
+		return in_array( $param, array( 'upcoming', 'past' ), true );
 	}
 
 	/**
@@ -293,51 +289,29 @@ class Rest_Api {
 	}
 
 	/**
-	 * Returns upcoming events.
+	 * Returns events list.
 	 *
 	 * @param \WP_REST_Request $request Contains data from the request.
 	 *
 	 * @return \WP_REST_Response
 	 */
-	public function upcoming_events( \WP_REST_Request $request ) {
-		$params     = $request->get_params();
-		$max_number = $this->max_number( (int) $params['max_number'], 5 );
-		$query      = Query::get_instance()->get_upcoming_events( $max_number );
-		$posts      = array();
+	public function events_list( \WP_REST_Request $request ) {
+		$params          = $request->get_params();
+		$event_list_type = $params['event_list_type'];
+		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
+		$posts           = array();
+		$topics          = array();
 
-		if ( $query->have_posts() ) {
-			foreach ( $query->posts as $post_id ) {
-				$event   = new Event( $post_id );
-				$posts[] = array(
-					'ID'             => $post_id,
-					'datetime_start' => $event->get_datetime_start(),
-					'permalink'      => get_the_permalink( $post_id ),
-					'title'          => get_the_title( $post_id ),
-					'excerpt'        => get_the_excerpt( $post_id ),
-					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
-					'attendees'      => ( $event->attendee ) ? $event->attendee->attendees() : array(),
-					'current_user'   => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
-				);
-			}
+		if ( ! empty( $params['topics'] ) ) {
+			$topics = array_map(
+				function( $slug ) {
+					return sanitize_key( $slug );
+				},
+				explode( ',', $params['topics'] )
+			);
 		}
 
-		wp_reset_postdata();
-
-		return new \WP_REST_Response( $posts );
-	}
-
-	/**
-	 * Returns past events.
-	 *
-	 * @param \WP_REST_Request $request Contains data from the request.
-	 *
-	 * @return \WP_REST_Response
-	 */
-	public function past_events( \WP_REST_Request $request ) {
-		$params     = $request->get_params();
-		$max_number = $this->max_number( (int) $params['max_number'], 5 );
-		$query      = Query::get_instance()->get_past_events( $max_number );
-		$posts      = array();
+		$query = Query::get_instance()->get_events_list( $event_list_type, $max_number, $topics );
 
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {

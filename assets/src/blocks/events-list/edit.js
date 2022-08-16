@@ -1,6 +1,7 @@
 /**
  * External dependencies.
  */
+import { includes } from 'lodash';
 import classnames from 'classnames';
 
 /**
@@ -10,12 +11,15 @@ import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
 	PanelBody,
+	FormTokenField,
 	RangeControl,
 	ButtonGroup,
 	Button,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalText as Text,
 } from '@wordpress/components';
+import { store as coreStore } from '@wordpress/core-data';
+import { useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -25,6 +29,59 @@ import EventsList from '../../components/EventsList';
 const Edit = ( props ) => {
 	const { attributes, setAttributes } = props;
 	const blockProps = useBlockProps();
+	const { topics } = attributes;
+	const {
+		topicsList,
+	} = useSelect(
+		( select ) => {
+			const { getEntityRecords } = select( coreStore );
+			return {
+				topicsList: getEntityRecords(
+					'taxonomy',
+					'gp_topic',
+					{
+						per_page: -1,
+						context: 'view',
+					},
+				),
+			};
+		},
+		[
+			topics,
+		],
+	);
+
+	const topicSuggestions =
+		topicsList?.reduce(
+			( accumulator, topic ) => ( {
+				...accumulator,
+				[ topic.name ]: topic,
+			} ),
+			{},
+		) ?? {};
+
+	const selectTopics = ( tokens ) => {
+		const hasNoSuggestion = tokens.some(
+			( token ) =>
+				typeof token === 'string' && ! topicSuggestions[ token ],
+		);
+
+		if ( hasNoSuggestion ) {
+			return;
+		}
+
+		const allTopics = tokens.map( ( token ) => {
+			return typeof token === 'string'
+				? topicSuggestions[ token ]
+				: token;
+		} );
+
+		if ( includes( allTopics, null ) ) {
+			return false;
+		}
+
+		setAttributes( { topics: allTopics } );
+	};
 
 	return (
 		<div { ...blockProps }>
@@ -83,7 +140,7 @@ const Edit = ( props ) => {
 				<PanelBody>
 					<RangeControl
 						label={ __(
-							'Maximum number of events to display?',
+							'Maximum number of events to display',
 							'gatherpress',
 						) }
 						min={ 1 }
@@ -93,11 +150,27 @@ const Edit = ( props ) => {
 							setAttributes( { maxNumberOfEvents: newVal } )
 						}
 					/>
+					<FormTokenField
+						key="query-controls-topics-select"
+						label={ __( 'Topics', 'gatherpress' ) }
+						value={
+							topics &&
+							topics.map( ( item ) => ( {
+								id: item.id,
+								slug: item.slug,
+								value: item.name || item.value,
+							} ) )
+						}
+						suggestions={ Object.keys( topicSuggestions ) }
+						onChange={ selectTopics }
+						maxSuggestions={ 20 }
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<EventsList
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
+				topics={ attributes.topics }
 			/>
 		</div>
 	);

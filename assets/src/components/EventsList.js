@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 import EventItem from './EventItem';
 
 const EventsList = ( props ) => {
-	const { maxNumberOfEvents, type } = props;
+	const { maxNumberOfEvents, type, topics } = props;
 	const [ events, setEvents ] = useState( [] );
 	const [ loaded, setLoaded ] = useState( false );
 	const renderEvents = events.map( ( event ) => {
@@ -32,13 +32,21 @@ const EventsList = ( props ) => {
 	};
 
 	useEffect( () => {
+		let topicsString = '';
+
+		if ( 'object' === typeof topics ) {
+			topicsString = topics.map( ( topic ) => {
+				return topic.slug;
+			} )?.join( ',' );
+		}
+
 		apiFetch( {
-			path: `/gatherpress/v1/event/${ type }-events?max_number=${ maxNumberOfEvents }`,
+			path: `/gatherpress/v1/event/events-list?event_list_type=${ type }&max_number=${ maxNumberOfEvents }&topics=${ topicsString }`,
 		} ).then( ( e ) => {
 			setLoaded( true );
 			setEvents( e );
 		} );
-	}, [ setEvents, maxNumberOfEvents, type ] );
+	}, [ setEvents, maxNumberOfEvents, type, topics ] );
 
 	return (
 		<div className={ `gp-${ type }-events` }>
