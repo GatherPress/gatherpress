@@ -34,7 +34,7 @@ const Edit = ( props ) => {
 		topicsList,
 	} = useSelect(
 		( select ) => {
-			const { getEntityRecords } = select (coreStore );
+			const { getEntityRecords } = select( coreStore );
 			return {
 				topicsList: getEntityRecords(
 					'taxonomy',
