@@ -10,6 +10,7 @@
 namespace GatherPress\Core;
 
 use \GatherPress\Core\Traits\Singleton;
+use \GatherPress\Core\Event;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -53,6 +54,28 @@ class Query {
 			'posts_per_page'  => $number,
 			'gp_events_query' => 'upcoming',
 		);
+
+		return new \WP_Query( $args );
+	}
+
+	public function get_events_list( string $event_list_type = '', int $number = 5, array $topics = [] ): \WP_Query {
+		$args = array(
+			'post_type'       => Event::POST_TYPE,
+			'fields'          => 'ids',
+			'no_found_rows'   => true,
+			'posts_per_page'  => $number,
+			'gp_events_query' => $event_list_type,
+		);
+
+		if ( ! empty( $topics ) ) {
+			$args['tax_query'] = array(
+				array(
+					'taxonomy' => Event::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => $topics,
+				),
+			);
+		}
 
 		return new \WP_Query( $args );
 	}

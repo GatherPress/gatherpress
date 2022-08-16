@@ -336,7 +336,7 @@ class Event {
 	/**
 	 * Adjust SQL for Event queries to join on gp_event_extended table.
 	 *
-	 * @todo remove this static method from Event class and add it to Setup class.
+	 * @todo remove this static method from Event class and add it to Query class.
 	 *
 	 * @since 1.0.0
 	 *
@@ -358,10 +358,10 @@ class Event {
 			'fields'   => '',
 			'limits'   => '',
 		);
-		$pieces         = array_merge( $defaults, $pieces );
-		$table          = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
-		$pieces['join'] = 'LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
-		$order          = strtoupper( $order );
+		$pieces          = array_merge( $defaults, $pieces );
+		$table           = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
+		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
+		$order           = strtoupper( $order );
 
 		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
 			$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
