@@ -16,6 +16,11 @@ const EventItem = ( props ) => {
 		<div className={ eventClass }>
 			<div className={ `${ eventClass }__header` }>
 				<div className={ `${ eventClass }__info` }>
+					<figure className={ `${ eventClass }__image` }>
+						<a href={ event.permalink }>
+							{ HtmlReactParser( event.featured_image ) }
+						</a>
+					</figure>
 					<div
 						className={ `${ eventClass }__datetime has-small-font-size` }
 					>
@@ -26,16 +31,11 @@ const EventItem = ( props ) => {
 							{ HtmlReactParser( event.title ) }
 						</a>
 					</div>
-				</div>
-				<figure className={ `${ eventClass }__image` }>
-					<a href={ event.permalink }>
-						{ HtmlReactParser( event.featured_image ) }
-					</a>
-				</figure>
-			</div>
-			<div className={ `${ eventClass }__content` }>
-				<div className={ `${ eventClass }__excerpt` }>
-					{ HtmlReactParser( event.excerpt ) }
+					<div className={ `${ eventClass }__content` }>
+						<div className={ `${ eventClass }__excerpt` }>
+							{ HtmlReactParser( event.excerpt ) }
+						</div>
+					</div>
 				</div>
 			</div>
 			<div className={ `${ eventClass }__footer` }>

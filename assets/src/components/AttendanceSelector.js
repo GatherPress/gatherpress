@@ -51,6 +51,11 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 		setIsOpen( true );
 	};
 
+	// No need to show block if event is in the past.
+	if ( 'past' === type ) {
+		return '';
+	}
+
 	// Might be better way to do this, but should only run on frontend, not admin.
 	if ( 'undefined' === typeof adminpage ) {
 		Modal.setAppElement( '.gp-enabled' );

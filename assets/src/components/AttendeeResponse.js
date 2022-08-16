@@ -1,6 +1,6 @@
 import { __ } from '@wordpress/i18n';
 
-const AttendeeResponse = ( { type, status } ) => {
+const AttendeeResponse = ( { type = 'upcoming', status = 'attend' } ) => {
 	const responses = {
 		upcoming: {
 			attend: {

@@ -12,7 +12,8 @@
 
 	&__image {
 		flex-shrink: 0;
-		margin: 0;
+		float: right;
+		margin: 0 0 1rem 1rem;
 
 		a {
 			display: block;
@@ -40,6 +41,7 @@
 
 	&__footer {
 		margin-bottom: 2rem;
+		border-bottom: 1px solid #CCCCCC;
 		padding-bottom: 2rem;
 		display: flex;
 
