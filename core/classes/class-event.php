@@ -349,7 +349,7 @@ class Event {
 	public static function adjust_sql( array $pieces, string $type = 'all', string $order = 'DESC' ): array {
 		global $wpdb;
 
-		$defaults       = array(
+		$defaults        = array(
 			'where'    => '',
 			'groupby'  => '',
 			'join'     => '',

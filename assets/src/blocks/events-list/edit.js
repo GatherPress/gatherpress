@@ -140,7 +140,7 @@ const Edit = ( props ) => {
 				<PanelBody>
 					<RangeControl
 						label={ __(
-							'Maximum number of events to display.',
+							'Maximum number of events to display',
 							'gatherpress',
 						) }
 						min={ 1 }

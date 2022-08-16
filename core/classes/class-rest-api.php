@@ -152,7 +152,7 @@ class Rest_Api {
 					'callback'            => array( $this, 'events_list' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
-						'_wpnonce'   => array(
+						'_wpnonce'        => array(
 							/**
 							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
 							 *
@@ -164,11 +164,11 @@ class Rest_Api {
 							'required'          => true,
 							'validate_callback' => array( $this, 'validate_event_list_type' ),
 						),
-						'max_number' => array(
+						'max_number'      => array(
 							'required'          => true,
 							'validate_callback' => array( $this, 'validate_number' ),
 						),
-						'topics' => array(
+						'topics'          => array(
 							'required' => false,
 						),
 					),
@@ -225,7 +225,7 @@ class Rest_Api {
 	 * @return bool
 	 */
 	public function validate_event_list_type( string $param ): bool {
-		return in_array( $param, [ 'upcoming', 'past', true ] );
+		return in_array( $param, array( 'upcoming', 'past' ), true );
 	}
 
 	/**
@@ -303,7 +303,7 @@ class Rest_Api {
 		$topics          = array();
 
 		if ( ! empty( $params['topics'] ) ) {
-			$topics          = array_map(
+			$topics = array_map(
 				function( $slug ) {
 					return sanitize_key( $slug );
 				},
