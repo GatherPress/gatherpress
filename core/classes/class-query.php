@@ -77,7 +77,7 @@ class Query {
 		);
 
 		if ( ! empty( $topics ) ) {
-			$args['tax_query'] = array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			$args['tax_query'] = array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				array(
 					'taxonomy' => Event::TAXONOMY,
 					'field'    => 'slug',
