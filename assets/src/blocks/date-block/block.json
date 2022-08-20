@@ -1,0 +1,31 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "gatherpress/date-block",
+	"version": "0.1.1",
+	"title": "GatherPress Date Block",
+	"category": "gatherpress",
+	"icon": {
+		"background": "#29c8aa",
+		"foreground": "white",
+		"src": "flag"
+	},
+	"description": "A datetime block to build from.",
+	"attributes": {
+		"datetime": {
+			"type": "string"
+		},
+		"message": {
+			"type": "string",
+			"source": "text",
+			"selector": "div"
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+}

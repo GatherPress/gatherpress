@@ -87,15 +87,12 @@ class Setup {
 	 * @return array
 	 */
 	public function block_category( $categories ) {
-		return array_merge(
-			$categories,
-			array(
-				array(
-					'slug'  => 'gatherpress',
-					'title' => __( 'GatherPress', 'gatherpress' ),
-				),
-			)
+		$gatherpress_blocks = array(
+			'slug'  => 'gatherpress',
+			'title' => __( 'GatherPress', 'gatherpress' ),
 		);
+		array_unshift( $categories, $gatherpress_blocks );
+		return $categories;
 	}
 
 	/**
@@ -147,6 +144,14 @@ class Setup {
 					'revisions',
 				),
 				'menu_icon'     => 'dashicons-nametag',
+				'template'  => array(
+					array(
+						'gatherpress/event-starter',
+					),
+					array(
+						'gatherpress/author-card',
+					),
+				),
 				'rewrite'       => array(
 					'slug' => 'events',
 				),
@@ -421,5 +426,4 @@ class Setup {
 
 		return $event->get_datetime_start( $format );
 	}
-
 }
