@@ -148,9 +148,6 @@ class Setup {
 					array(
 						'gatherpress/event-starter',
 					),
-					array(
-						'gatherpress/author-card',
-					),
 				),
 				'rewrite'       => array(
 					'slug' => 'events',
