@@ -48,7 +48,7 @@ const UserSelect = ( props ) => {
 	const selectUsers = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
 			( token ) =>
-			typeof token === 'string' && ! userSuggestions[ token ],
+				typeof token === 'string' && ! userSuggestions[ token ],
 		);
 
 		if ( hasNoSuggestion ) {
@@ -57,8 +57,8 @@ const UserSelect = ( props ) => {
 
 		const allUsers = tokens.map( ( token ) => {
 			return typeof token === 'string'
-			? userSuggestions[ token ]
-			: token;
+				? userSuggestions[ token ]
+				: token;
 		} );
 
 		if ( includes( allUsers, null ) ) {
