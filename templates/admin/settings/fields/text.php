@@ -6,6 +6,7 @@
  * @subpackage Core
  * @since 1.0.0
  */
+
 if ( ! isset( $name, $option, $value, $description ) ) {
 	return;
 }

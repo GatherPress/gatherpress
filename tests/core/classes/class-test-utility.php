@@ -27,7 +27,7 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_prefix_key() {
-		$this->assertSame( 'gp_unittest', Utility::prefix_key( 'unittest') );
+		$this->assertSame( 'gp_unittest', Utility::prefix_key( 'unittest' ) );
 	}
 
 	/**
@@ -38,7 +38,7 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_unprefix_key() {
-		$this->assertSame( 'unittest', Utility::unprefix_key( 'gp_unittest') );
+		$this->assertSame( 'unittest', Utility::unprefix_key( 'gp_unittest' ) );
 	}
 
 }

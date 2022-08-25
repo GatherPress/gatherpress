@@ -311,7 +311,7 @@ class Attendee {
 	 * @return bool
 	 */
 	public function sort_by_role( array $first, array $second ): bool {
-		$roles = array_values(
+		$roles   = array_values(
 			array_map(
 				function( $role ) {
 					return $role['labels']['singular_name'];

@@ -101,6 +101,6 @@ const UserSelect = ( props ) => {
 			/>
 		</>
 	);
-}
+};
 
 export default UserSelect;

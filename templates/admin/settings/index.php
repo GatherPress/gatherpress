@@ -23,7 +23,7 @@ $gatherpress_settings = Settings::get_instance();
 	<h2 class="nav-tab-wrapper">
 		<?php
 		foreach ( $sub_pages as $gatherpress_sub_page => $gatherpress_value ) {
-			$gatherpress_active_page = ( $page === Utility::prefix_key( $gatherpress_sub_page ) ) ? 'nav-tab-active' : '';
+			$gatherpress_active_page = ( Utility::prefix_key( $gatherpress_sub_page ) === $page ) ? 'nav-tab-active' : '';
 			$gatherpress_url         = add_query_arg(
 				array( 'page' => Utility::prefix_key( $gatherpress_sub_page ) ),
 				admin_url( $gatherpress_settings::PARENT_SLUG )

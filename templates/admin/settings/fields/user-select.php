@@ -14,7 +14,7 @@ if ( ! isset( $name, $option, $value, $description ) ) {
 $gatherpress_component_attrs = array(
 	'name'   => $name,
 	'option' => $option,
-	'value'  => $value ?: '[]',
+	'value'  => ! empty( $value ) ? $value : '[]',
 );
 ?>
 <div

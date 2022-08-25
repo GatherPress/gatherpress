@@ -188,15 +188,25 @@ class Settings {
 		Utility::render_template(
 			sprintf( '%s/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
 			array(
-				'name'  => $name,
-				'option' => Utility::prefix_key( $option ),
-				'value' => $value,
+				'name'        => $name,
+				'option'      => Utility::prefix_key( $option ),
+				'value'       => $value,
 				'description' => $option_settings['description'] ?? '',
 			),
 			true
 		);
 	}
 
+	/**
+	 * Outputs a dynamic user select field.
+	 *
+	 * @param string $sub_page        The sub page for the text field.
+	 * @param string $section         The section for the text field.
+	 * @param string $option          The option for the text field.
+	 * @param array  $option_settings The option settings.
+	 *
+	 * @return void
+	 */
 	public function user_select( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
 		$default = $option_settings['default'] ?? '';
@@ -205,14 +215,13 @@ class Settings {
 		Utility::render_template(
 			sprintf( '%s/templates/admin/settings/fields/user-select.php', GATHERPRESS_CORE_PATH ),
 			array(
-				'name'  => $name,
-				'option' => Utility::prefix_key( $option ),
-				'value' => $value,
+				'name'        => $name,
+				'option'      => Utility::prefix_key( $option ),
+				'value'       => $value,
 				'description' => $option_settings['description'] ?? '',
 			),
 			true
 		);
-
 	}
 
 	/**
@@ -306,7 +315,7 @@ class Settings {
 	 */
 	public function get_sub_pages(): array {
 		$sub_pages = array(
-			'general' => array(
+			'general'    => array(
 				'name'        => __( 'General', 'gatherpress' ),
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
 				'priority'    => PHP_INT_MIN,
@@ -315,17 +324,17 @@ class Settings {
 				'name'        => __( 'Leadership', 'gatherpress' ),
 				'description' => __( 'Leadership for GatherPress.', 'gatherpress' ),
 				'sections'    => array(
-					'roles'      => array(
+					'roles' => array(
 						'name'        => __( 'Roles', 'gatherpress' ),
 						'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
 						'options'     => array(
-							'organizers' => array(
+							'organizers'           => array(
 								'labels' => array(
 									'name'          => __( 'Organizers', 'gatherpress' ),
 									'singular_name' => __( 'Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Organizers', 'gatherpress' ),
 								),
-								'field' => 'user_select',
+								'field'  => 'user_select',
 							),
 							'assistant-organizers' => array(
 								'labels' => array(
@@ -333,29 +342,29 @@ class Settings {
 									'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
 								),
-								'field' => 'user_select',
+								'field'  => 'user_select',
 							),
-							'event-organizers' => array(
+							'event-organizers'     => array(
 								'labels' => array(
 									'name'          => __( 'Event Organizers', 'gatherpress' ),
 									'singular_name' => __( 'Event Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
 								),
-								'field' => 'user_select',
+								'field'  => 'user_select',
 							),
-							'event-assistants' => array(
+							'event-assistants'     => array(
 								'labels' => array(
 									'name'          => __( 'Event Assistants', 'gatherpress' ),
 									'singular_name' => __( 'Event Assistant', 'gatherpress' ),
 									'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
 								),
-								'field' => 'user_select',
+								'field'  => 'user_select',
 							),
 						),
 					),
 				),
 			),
-			'credits' => array(
+			'credits'    => array(
 				'name'     => __( 'Credits', 'gatherpress' ),
 				'priority' => PHP_INT_MAX,
 			),
@@ -412,12 +421,12 @@ class Settings {
 	 */
 	public function get_user_role( int $user_id ): string {
 		$leadership = get_option( Utility::prefix_key( 'leadership' ) );
-		$roles      = $leadership['roles'] ?? [];
+		$roles      = $leadership['roles'] ?? array();
 		$default    = __( 'Member', 'gatherpress' );
 
 		foreach ( $roles as $role => $users ) {
 			foreach ( json_decode( $users ) as $user ) {
-				if ( $user_id === intval( $user->id ) ) {
+				if ( intval( $user->id ) === $user_id ) {
 					$roles = $this->get_user_roles();
 
 					return $roles[ $role ]['labels']['singular_name'] ?? $default;
