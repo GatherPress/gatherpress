@@ -38,7 +38,6 @@ class Setup {
 		Block::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
-		Role::get_instance();
 		Settings::get_instance();
 		// @todo move these classes to a `buddypress` directory in plugin.
 		// BuddyPress::get_instance();

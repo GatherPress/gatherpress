@@ -1,9 +1,16 @@
+/**
+ * External dependencies.
+ */
+import { includes } from 'lodash';
+
+/**
+ * WordPress dependencies.
+ */
 import { FormTokenField } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
 import { store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
-import { includes } from 'lodash';
 
 const UserSelect = ( props ) => {
 	const { name, option, value } = props.attrs;
