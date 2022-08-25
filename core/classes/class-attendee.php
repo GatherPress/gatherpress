@@ -263,7 +263,6 @@ class Attendee {
 			if ( ! in_array( $user_status, $this->statuses, true ) ) {
 				continue;
 			}
-
 			$user_info   = get_userdata( $user_id );
 			$roles       = Role::get_instance()->get_role_settings();
 			$attendees[] = array(
@@ -273,7 +272,8 @@ class Attendee {
 				// @todo make a filter so we can use this function in gp-buddypress plugin is activated.
 				// 'profile'   => bp_core_get_user_domain( $user_id ),
 				'profile'   => get_author_posts_url( $user_id ),
-				'role'      => $roles[ current( $user_info->roles ) ] ?? '',
+//				'role'      => $roles[ current( $user_info->roles ) ] ?? '',
+				'role'      => Settings::get_instance()->get_user_role( $user_id ),
 				'timestamp' => sanitize_text_field( $attendee['timestamp'] ),
 				'status'    => $user_status,
 				'guests'    => $user_guests,

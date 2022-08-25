@@ -180,13 +180,13 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	public function text_field( string $sub_page, string $section, string $option, array $option_settings ) {
+	public function text( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
 		$default = $option_settings['default'] ?? '';
 		$value   = $this->get_value( $sub_page, $section, $option, $default );
 
 		Utility::render_template(
-			sprintf( '%s/templates/admin/text-field.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'name'  => $name,
 				'option' => Utility::prefix_key( $option ),
@@ -195,6 +195,24 @@ class Settings {
 			),
 			true
 		);
+	}
+
+	public function user_select( string $sub_page, string $section, string $option, array $option_settings ) {
+		$name    = $this->get_name_field( $sub_page, $section, $option );
+		$default = $option_settings['default'] ?? '';
+		$value   = $this->get_value( $sub_page, $section, $option, $default );
+
+		Utility::render_template(
+			sprintf( '%s/templates/admin/settings/fields/user-select.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'name'  => $name,
+				'option' => Utility::prefix_key( $option ),
+				'value' => $value,
+				'description' => $option_settings['description'] ?? '',
+			),
+			true
+		);
+
 	}
 
 	/**
@@ -307,7 +325,7 @@ class Settings {
 									'singular_name' => __( 'Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Organizers', 'gatherpress' ),
 								),
-								'field' => 'text_field',
+								'field' => 'user_select',
 							),
 							'assistant-organizers' => array(
 								'labels' => array(
@@ -315,7 +333,7 @@ class Settings {
 									'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
 								),
-								'field' => 'text_field',
+								'field' => 'user_select',
 							),
 							'event-organizers' => array(
 								'labels' => array(
@@ -323,7 +341,7 @@ class Settings {
 									'singular_name' => __( 'Event Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
 								),
-								'field' => 'text_field',
+								'field' => 'user_select',
 							),
 							'event-assistants' => array(
 								'labels' => array(
@@ -331,7 +349,7 @@ class Settings {
 									'singular_name' => __( 'Event Assistant', 'gatherpress' ),
 									'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
 								),
-								'field' => 'text_field',
+								'field' => 'user_select',
 							),
 						),
 					),
@@ -364,12 +382,50 @@ class Settings {
 		foreach ( $role_names as $role_name => $value ) {
 			$options[ $role_name ] = array(
 				'label'   => $value['name'],
-				'field'   => 'text_field',
+				'field'   => 'text',
 				'default' => $role_defaults_names[ $role_name ] ?? '',
 			);
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Get list of user roles.
+	 *
+	 * @return array
+	 */
+	public function get_user_roles(): array {
+		$sub_pages = $this->get_sub_pages();
+		$options   = (array) $sub_pages['leadership']['sections']['roles']['options'];
+
+		return $options ?? array();
+	}
+
+
+	/**
+	 * Return role of the user.
+	 *
+	 * @param int $user_id User ID.
+	 *
+	 * @return string
+	 */
+	public function get_user_role( int $user_id ): string {
+		$leadership = get_option( Utility::prefix_key( 'leadership' ) );
+		$roles      = $leadership['roles'] ?? [];
+		$default    = __( 'Member', 'gatherpress' );
+
+		foreach ( $roles as $role => $users ) {
+			foreach ( json_decode( $users ) as $user ) {
+				if ( $user_id === intval( $user->id ) ) {
+					$roles = $this->get_user_roles();
+
+					return $roles[ $role ]['labels']['singular_name'] ?? $default;
+				}
+			}
+		}
+
+		return $default;
 	}
 
 	/**
@@ -392,7 +448,7 @@ class Settings {
 	 */
 	public function settings_page() {
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/templates/admin/settings/index.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'sub_pages' => $this->get_sub_pages(),
 				'page'      => $this->page,
@@ -408,11 +464,11 @@ class Settings {
 	 *
 	 * @return string
 	 */
-	public function select_menu( $submenu ) {
+	public function select_menu( $submenu ): string {
 		if ( empty( $submenu ) ) {
 			$sub_pages = $this->get_sub_pages();
 
-			if ( isset( $sub_pages ) ) {
+			if ( ! empty( $sub_pages ) ) {
 				$page = Utility::unprefix_key( $this->page );
 
 				if ( isset( $sub_pages[ $page ] ) ) {

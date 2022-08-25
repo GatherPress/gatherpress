@@ -118,6 +118,25 @@ class Assets {
 				true
 			);
 		}
+
+		$settings      = Settings::get_instance();
+		$setting_hooks = array_map( function( $key ) {
+			return sprintf( 'gp_event_page_gp_%s', sanitize_key ( $key ) );
+		}, array_keys( $settings->get_sub_pages() ) );
+
+		if ( in_array( $hook, $setting_hooks, true ) ) {
+			wp_enqueue_style( 'wp-edit-blocks' );
+
+			$asset = $this->get_asset_data( 'settings' );
+
+			wp_enqueue_script(
+				'gatherpress-settings',
+				$this->build . 'settings.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+		}
 	}
 
 	/**
