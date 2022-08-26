@@ -59,7 +59,7 @@ job-references:
       WP_MULTISITE=1 ${COMPOSER_BIN}/phpunit
 
   slack_notify: &slack_notify
-    channel: development
+    channel: logs
     event: fail
     template: basic_fail_1
 

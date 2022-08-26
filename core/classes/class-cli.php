@@ -44,6 +44,42 @@ class CLI extends WP_CLI {
 	}
 
 	/**
+	 * Generate credits for credits page.
+	 *
+	 * @param array $args       Arguments of the script.
+	 * @param array $assoc_args Associative arguments of the script.
+	 *
+	 * @return void
+	 */
+	public function generate_credits( array $args = array(), array $assoc_args = array() ) {
+		$credits = require_once GATHERPRESS_CORE_PATH . '/data/credits/credits.php';
+		$version = $assoc_args['version'] ?? GATHERPRESS_VERSION;
+		$latest  = GATHERPRESS_CORE_PATH . '/data/credits/latest.json';
+		$data    = array();
+
+		if ( empty( $credits[ $version ] ) ) {
+			WP_CLI::error( 'Version does not exist' );
+		}
+
+		unlink( $latest );
+		$file = fopen( $latest, 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fopen
+
+		foreach ( $credits[ $version ] as $group => $users ) {
+			$data[ $group ] = array();
+
+			foreach ( $users as $user ) {
+				$response         = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
+				$data[ $group ][] = json_decode( $response['body'], true );
+			}
+		}
+
+		fwrite( $file, wp_json_encode( $data ) ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite
+		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
+
+		WP_CLI::success( 'New latest.json file has been generated.' );
+	}
+
+	/**
 	 * Add an attendee to an event.
 	 *
 	 * @param int   $event_id   Post ID of the event.

@@ -140,7 +140,7 @@ class Settings {
 						$section_settings['name'],
 						function() use ( $section_settings ) {
 							if ( ! empty( $section_settings['description'] ) ) {
-								echo '<p class="description">' . esc_html( $section_settings['description'] ) . '</p>';
+								echo '<p class="description">' . wp_kses_post( $section_settings['description'] ) . '</p>';
 							}
 						},
 						Utility::prefix_key( $sub_page )
@@ -219,6 +219,30 @@ class Settings {
 				'option'      => Utility::prefix_key( $option ),
 				'value'       => $value,
 				'description' => $option_settings['description'] ?? '',
+			),
+			true
+		);
+	}
+
+	/**
+	 * Outputs credits to people set in latest.json.
+	 *
+	 * @param string $sub_page        The sub page for the text field.
+	 * @param string $section         The section for the text field.
+	 * @param string $option          The option for the text field.
+	 * @param array  $option_settings The option settings.
+	 *
+	 * @return void
+	 */
+	public function credits( string $sub_page, string $section, string $option, array $option_settings ) {
+		$credits = wp_safe_remote_get( sprintf( '%s/data/credits/latest.json', GATHERPRESS_CORE_URL ) );
+		$credits = json_decode( $credits['body'], true );
+
+		Utility::render_template(
+			sprintf( '%s/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'option'  => $option,
+				'credits' => $credits[ $option ],
 			),
 			true
 		);
@@ -367,6 +391,37 @@ class Settings {
 			'credits'    => array(
 				'name'     => __( 'Credits', 'gatherpress' ),
 				'priority' => PHP_INT_MAX,
+				'sections' => array(
+					'credits' => array(
+						'name'        => __( 'Credits', 'gatherpress' ),
+						'description' => sprintf(
+							/* translators: %1$s: opening anchor tag, %2$s closing anchor tag. */
+							__( 'Meet the folks behind GatherPress. Want to see your name here? %1$sGet Involved!%2$s', 'gatherpress' ),
+							'<a href="https://github.com/GatherPress/gatherpress" target="_blank">',
+							'</a>'
+						),
+						'options'     => array(
+							'project-leads'    => array(
+								'labels' => array(
+									'name' => __( 'Project Leads', 'gatherpress' ),
+								),
+								'field'  => 'credits',
+							),
+							'gatherpress-team' => array(
+								'labels' => array(
+									'name' => __( 'GatherPress Team', 'gatherpress' ),
+								),
+								'field'  => 'credits',
+							),
+							'contributors'     => array(
+								'labels' => array(
+									'name' => __( 'Contributors', 'gatherpress' ),
+								),
+								'field'  => 'credits',
+							),
+						),
+					),
+				),
 			),
 		);
 
