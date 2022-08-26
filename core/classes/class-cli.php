@@ -52,7 +52,7 @@ class CLI extends WP_CLI {
 	 * @return void
 	 */
 	public function generate_credits( array $args = array(), array $assoc_args = array() ) {
-		$credits = require_once( GATHERPRESS_CORE_PATH . '/data/credits/credits.php' );
+		$credits = require_once GATHERPRESS_CORE_PATH . '/data/credits/credits.php';
 		$version = $assoc_args['version'] ?? GATHERPRESS_VERSION;
 		$latest  = GATHERPRESS_CORE_PATH . '/data/credits/latest.json';
 		$data    = array();
@@ -62,7 +62,7 @@ class CLI extends WP_CLI {
 		}
 
 		unlink( $latest );
-		$file = fopen( $latest, 'w' );
+		$file = fopen( $latest, 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fopen
 
 		foreach ( $credits[ $version ] as $group => $users ) {
 			$data[ $group ] = array();
@@ -73,8 +73,8 @@ class CLI extends WP_CLI {
 			}
 		}
 
-		fwrite( $file, wp_json_encode( $data ) );
-		fclose( $file );
+		fwrite( $file, wp_json_encode( $data ) ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite
+		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
 
 		WP_CLI::success( 'New latest.json file has been generate.' );
 	}
