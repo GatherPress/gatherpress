@@ -486,7 +486,7 @@ class Settings {
 			}
 		}
 
-		return $submenu;
+		return (string) $submenu;
 	}
 
 }
