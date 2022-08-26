@@ -68,7 +68,7 @@ class CLI extends WP_CLI {
 			$data[ $group ] = array();
 
 			foreach ( $users as $user ) {
-				$response = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
+				$response         = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
 				$data[ $group ][] = json_decode( $response['body'], true );
 			}
 		}

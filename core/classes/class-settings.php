@@ -241,8 +241,8 @@ class Settings {
 		Utility::render_template(
 			sprintf( '%s/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
 			array(
-				'option'  => $option,
-				'credits' => $credits[ $option ],
+				'option'              => $option,
+				'gatherpress_credits' => $credits[ $option ],
 			),
 			true
 		);
@@ -394,8 +394,8 @@ class Settings {
 				'sections' => array(
 					'credits' => array(
 						'name'        => __( 'Credits', 'gatherpress' ),
-						/* translators: %1$s: opening anchor tag, %2$s closing anchor tag. */
 						'description' => sprintf(
+							/* translators: %1$s: opening anchor tag, %2$s closing anchor tag. */
 							__( 'Meet the folks behind GatherPress. Want to see your name here? %1$sGet Involved!%2$s', 'gatherpress' ),
 							'<a href="https://github.com/GatherPress/gatherpress" target="_blank">',
 							'</a>'
