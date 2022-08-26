@@ -241,8 +241,8 @@ class Settings {
 		Utility::render_template(
 			sprintf( '%s/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
 			array(
-				'option'              => $option,
-				'gatherpress_credits' => $credits[ $option ],
+				'option'  => $option,
+				'credits' => $credits[ $option ],
 			),
 			true
 		);
