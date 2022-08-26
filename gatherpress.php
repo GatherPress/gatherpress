@@ -16,7 +16,6 @@
 // Constants.
 define( 'GATHERPRESS_VERSION', current( get_file_data( __FILE__, array( 'Version' ), 'plugin' ) ) );
 define( 'GATHERPRESS_MINIMUM_PHP_VERSION', current( get_file_data( __FILE__, array( 'Minimum PHP Version' ), 'plugin' ) ) );
-define( 'GATHERPRESS_CURRENT_PHP_VERSION', phpversion() );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
@@ -24,25 +23,29 @@ define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 /**
  * Check version of PHP before loading plugin.
  */
-if ( version_compare( GATHERPRESS_CURRENT_PHP_VERSION, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
-	add_action( 'admin_notices', function() {
-		?>
-		<div class="notice notice-error">
-			<p>
-				<?php echo sprintf(
-					/* translators: %1$s: minimum PHP version, %2$s current PHP version. */
-					esc_html__(
-						'GatherPress requires PHP Version %1$s or greater. You are currently running PHP %2$s. Please upgrade.',
-						'gatherpress'
-					),
-					GATHERPRESS_MINIMUM_PHP_VERSION,
-					GATHERPRESS_CURRENT_PHP_VERSION
+if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
+	add_action(
+		'admin_notices',
+		function() {
+			?>
+			<div class="notice notice-error">
+				<p>
+					<?php
+					echo sprintf(
+						/* translators: %1$s: minimum PHP version, %2$s current PHP version. */
+						esc_html__(
+							'GatherPress requires PHP Version %1$s or greater. You are currently running PHP %2$s. Please upgrade.',
+							'gatherpress'
+						),
+						esc_html( GATHERPRESS_MINIMUM_PHP_VERSION ),
+						esc_html( PHP_VERSION_ID )
 					);
-				?>
-			</p>
-		</div>
-		<?php
-	} );
+					?>
+				</p>
+			</div>
+			<?php
+		}
+	);
 
 	return;
 }
