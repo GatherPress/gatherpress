@@ -14,7 +14,7 @@
 
 // Constants.
 define('GATHERPRESS_CORE_PATH', __DIR__ );
-define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
+define('GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'GATHERPRESS_VERSION', current( get_file_data( __FILE__, array( 'Version' ), 'plugin' ) ) );
 define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 
