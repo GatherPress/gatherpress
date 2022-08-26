@@ -76,7 +76,7 @@ class CLI extends WP_CLI {
 		fwrite( $file, wp_json_encode( $data ) ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite
 		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
 
-		WP_CLI::success( 'New latest.json file has been generate.' );
+		WP_CLI::success( 'New latest.json file has been generated.' );
 	}
 
 	/**
