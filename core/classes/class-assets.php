@@ -131,6 +131,15 @@ class Assets {
 			// Need to load block styling for some dynamic fields.
 			wp_enqueue_style( 'wp-edit-blocks' );
 
+			$asset = $this->get_asset_data( 'settings_style' );
+
+			wp_enqueue_style(
+				'gatherpress-settings-style',
+				$this->build . 'settings_style.css',
+				$asset['dependencies'],
+				$asset['version']
+			);
+
 			$asset = $this->get_asset_data( 'settings' );
 
 			wp_enqueue_script(

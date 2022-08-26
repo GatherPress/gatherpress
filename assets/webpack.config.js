@@ -14,6 +14,7 @@ module.exports = {
 		blocks_style: path.resolve( process.cwd(), 'src', 'blocks/style.scss' ),
 		panels: path.resolve( process.cwd(), 'src/panels', 'index.js' ),
 		settings: path.resolve( process.cwd(), 'src/settings', 'index.js' ),
+		settings_style: path.resolve( process.cwd(), 'src/settings', 'style.scss' ),
 	},
 	optimization: {
 		...defaultConfig.optimization,
@@ -31,6 +32,6 @@ module.exports = {
 	},
 	plugins: [
 		...defaultConfig.plugins,
-		new IgnoreEmitPlugin( [ 'blocks_style.js' ] ),
+		new IgnoreEmitPlugin( [ 'blocks_style.js', 'settings_style.js' ] ),
 	],
 };
