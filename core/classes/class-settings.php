@@ -74,7 +74,7 @@ class Settings {
 			__( 'Settings', 'gatherpress' ),
 			__( 'Settings', 'gatherpress' ),
 			'manage_options',
-			$this->prefix_key( 'general' ),
+			Utility::prefix_key( 'general' ),
 			array( $this, 'settings_page' ),
 			6
 		);
@@ -86,7 +86,7 @@ class Settings {
 				continue;
 			}
 
-			$page = $this->prefix_key( $sub_page );
+			$page = Utility::prefix_key( $sub_page );
 
 			add_submenu_page(
 				self::PARENT_SLUG,
@@ -110,7 +110,7 @@ class Settings {
 				continue;
 			}
 
-			remove_submenu_page( self::PARENT_SLUG, $this->prefix_key( $sub_page ) );
+			remove_submenu_page( self::PARENT_SLUG, Utility::prefix_key( $sub_page ) );
 		}
 	}
 
@@ -129,8 +129,8 @@ class Settings {
 
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
 			register_setting(
-				$this->prefix_key( $sub_page ),
-				$this->prefix_key( $sub_page )
+				Utility::prefix_key( $sub_page ),
+				Utility::prefix_key( $sub_page )
 			);
 
 			if ( isset( $sub_page_settings['sections'] ) ) {
@@ -143,25 +143,25 @@ class Settings {
 								echo '<p class="description">' . esc_html( $section_settings['description'] ) . '</p>';
 							}
 						},
-						$this->prefix_key( $sub_page )
+						Utility::prefix_key( $sub_page )
 					);
 
 					if ( isset( $section_settings['options'] ) ) {
 						foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
 							if ( $option_settings['field'] && method_exists( $this, $option_settings['field'] ) ) {
 								$option_settings['callback'] = function() use ( $sub_page, $section, $option, $option_settings ) {
-									$sub_page = $this->prefix_key( $sub_page );
+									$sub_page = Utility::prefix_key( $sub_page );
 
 									$this->{$option_settings['field']}( $sub_page, $section, $option, $option_settings );
 								};
 							}
 							add_settings_field(
 								$option,
-								$option_settings['label'],
+								$option_settings['labels']['name'],
 								$option_settings['callback'],
-								$this->prefix_key( $sub_page ),
+								Utility::prefix_key( $sub_page ),
 								$section,
-								array( 'label_for' => $this->prefix_key( $option ) )
+								array( 'label_for' => Utility::prefix_key( $option ) )
 							);
 						}
 					}
@@ -180,19 +180,48 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	public function text_field( string $sub_page, string $section, string $option, array $option_settings ) {
+	public function text( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
 		$default = $option_settings['default'] ?? '';
 		$value   = $this->get_value( $sub_page, $section, $option, $default );
-		?>
 
-		<input id="<?php echo esc_attr( $this->prefix_key( $option ) ); ?>" type='text' name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_html( $value ); ?>" />
-		<?php
-		if ( ! empty( $option_settings['description'] ) ) {
-			?>
-			<p class="description"><?php echo esc_html( $option_settings['description'] ); ?></p>
-			<?php
-		}
+		Utility::render_template(
+			sprintf( '%s/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'name'        => $name,
+				'option'      => Utility::prefix_key( $option ),
+				'value'       => $value,
+				'description' => $option_settings['description'] ?? '',
+			),
+			true
+		);
+	}
+
+	/**
+	 * Outputs a dynamic user select field.
+	 *
+	 * @param string $sub_page        The sub page for the text field.
+	 * @param string $section         The section for the text field.
+	 * @param string $option          The option for the text field.
+	 * @param array  $option_settings The option settings.
+	 *
+	 * @return void
+	 */
+	public function user_select( string $sub_page, string $section, string $option, array $option_settings ) {
+		$name    = $this->get_name_field( $sub_page, $section, $option );
+		$default = $option_settings['default'] ?? '';
+		$value   = $this->get_value( $sub_page, $section, $option, $default );
+
+		Utility::render_template(
+			sprintf( '%s/templates/admin/settings/fields/user-select.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'name'        => $name,
+				'option'      => Utility::prefix_key( $option ),
+				'value'       => $value,
+				'description' => $option_settings['description'] ?? '',
+			),
+			true
+		);
 	}
 
 	/**
@@ -243,7 +272,7 @@ class Settings {
 	 */
 	public function get_option_defaults( string $option ): array {
 		$sub_pages = $this->get_sub_pages();
-		$option    = $this->unprefix_key( $option );
+		$option    = Utility::unprefix_key( $option );
 		$defaults  = array();
 
 		if ( ! empty( $sub_pages[ $option ]['sections'] ) && is_array( $sub_pages[ $option ]['sections'] ) ) {
@@ -253,7 +282,7 @@ class Settings {
 				}
 
 				foreach ( $settings['options'] as $option => $values ) {
-					$defaults[ $section ][ $option ] = $values['default'];
+					$defaults[ $section ][ $option ] = $values['default'] ?? '';
 				}
 			}
 		}
@@ -286,18 +315,62 @@ class Settings {
 	 */
 	public function get_sub_pages(): array {
 		$sub_pages = array(
-			'general' => array(
+			'general'    => array(
 				'name'        => __( 'General', 'gatherpress' ),
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
-				'priority'    => 1,
+				'priority'    => PHP_INT_MIN,
 			),
-			'credits' => array(
+			'leadership' => array(
+				'name'        => __( 'Leadership', 'gatherpress' ),
+				'description' => __( 'Leadership for GatherPress.', 'gatherpress' ),
+				'sections'    => array(
+					'roles' => array(
+						'name'        => __( 'Roles', 'gatherpress' ),
+						'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
+						'options'     => array(
+							'organizers'           => array(
+								'labels' => array(
+									'name'          => __( 'Organizers', 'gatherpress' ),
+									'singular_name' => __( 'Organizer', 'gatherpress' ),
+									'plural_name'   => __( 'Organizers', 'gatherpress' ),
+								),
+								'field'  => 'user_select',
+							),
+							'assistant-organizers' => array(
+								'labels' => array(
+									'name'          => __( 'Assistant Organizers', 'gatherpress' ),
+									'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
+									'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
+								),
+								'field'  => 'user_select',
+							),
+							'event-organizers'     => array(
+								'labels' => array(
+									'name'          => __( 'Event Organizers', 'gatherpress' ),
+									'singular_name' => __( 'Event Organizer', 'gatherpress' ),
+									'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
+								),
+								'field'  => 'user_select',
+							),
+							'event-assistants'     => array(
+								'labels' => array(
+									'name'          => __( 'Event Assistants', 'gatherpress' ),
+									'singular_name' => __( 'Event Assistant', 'gatherpress' ),
+									'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
+								),
+								'field'  => 'user_select',
+							),
+						),
+					),
+				),
+			),
+			'credits'    => array(
 				'name'     => __( 'Credits', 'gatherpress' ),
-				'priority' => 99,
+				'priority' => PHP_INT_MAX,
 			),
 		);
 
-		$sub_pages = (array) apply_filters( 'gatherpress_settings_sub_pages', $sub_pages ); // @todo don't filter all pages, just allow to add additional subpages.
+		$sub_pages = (array) apply_filters( 'gatherpress_settings_sub_pages', $sub_pages );
 
 		uasort( $sub_pages, array( $this, 'sort_sub_pages_by_priority' ) );
 
@@ -317,9 +390,9 @@ class Settings {
 
 		foreach ( $role_names as $role_name => $value ) {
 			$options[ $role_name ] = array(
-				'label'   => $value,
-				'field'   => 'text_field',
-				'default' => $role_defaults_names[ $role_name ] ?? $value,
+				'label'   => $value['name'],
+				'field'   => 'text',
+				'default' => $role_defaults_names[ $role_name ] ?? '',
 			);
 		}
 
@@ -327,25 +400,41 @@ class Settings {
 	}
 
 	/**
-	 * Add gp- prefix.
+	 * Get list of user roles.
 	 *
-	 * @param string $key The key for adding prefix.
-	 *
-	 * @return string
+	 * @return array
 	 */
-	public function prefix_key( string $key ): string {
-		return sprintf( 'gp_%s', $key );
+	public function get_user_roles(): array {
+		$sub_pages = $this->get_sub_pages();
+		$options   = (array) $sub_pages['leadership']['sections']['roles']['options'];
+
+		return $options ?? array();
 	}
 
+
 	/**
-	 * Remove gp- prefix.
+	 * Return role of the user.
 	 *
-	 * @param string $key The key for removing prefix.
+	 * @param int $user_id User ID.
 	 *
 	 * @return string
 	 */
-	public function unprefix_key( string $key ): string {
-		return preg_replace( '/^gp_/', '', $key );
+	public function get_user_role( int $user_id ): string {
+		$leadership = get_option( Utility::prefix_key( 'leadership' ) );
+		$roles      = $leadership['roles'] ?? array();
+		$default    = __( 'Member', 'gatherpress' );
+
+		foreach ( $roles as $role => $users ) {
+			foreach ( json_decode( $users ) as $user ) {
+				if ( intval( $user->id ) === $user_id ) {
+					$roles = $this->get_user_roles();
+
+					return $roles[ $role ]['labels']['singular_name'] ?? $default;
+				}
+			}
+		}
+
+		return $default;
 	}
 
 	/**
@@ -368,7 +457,7 @@ class Settings {
 	 */
 	public function settings_page() {
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/templates/admin/settings/index.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'sub_pages' => $this->get_sub_pages(),
 				'page'      => $this->page,
@@ -384,20 +473,20 @@ class Settings {
 	 *
 	 * @return string
 	 */
-	public function select_menu( $submenu ) {
+	public function select_menu( $submenu ): string {
 		if ( empty( $submenu ) ) {
 			$sub_pages = $this->get_sub_pages();
 
-			if ( isset( $sub_pages ) ) {
-				$page = $this->unprefix_key( $this->page );
+			if ( ! empty( $sub_pages ) ) {
+				$page = Utility::unprefix_key( $this->page );
 
 				if ( isset( $sub_pages[ $page ] ) ) {
-					$submenu = $this->prefix_key( 'general' );
+					$submenu = Utility::prefix_key( 'general' );
 				}
 			}
 		}
 
-		return $submenu;
+		return (string) $submenu;
 	}
 
 }

@@ -8,6 +8,7 @@
  */
 
 use GatherPress\Core\Settings;
+use GatherPress\Core\Utility;
 
 if ( ! isset( $sub_pages, $page ) ) {
 	return;
@@ -22,9 +23,9 @@ $gatherpress_settings = Settings::get_instance();
 	<h2 class="nav-tab-wrapper">
 		<?php
 		foreach ( $sub_pages as $gatherpress_sub_page => $gatherpress_value ) {
-			$gatherpress_active_page = ( $page === $gatherpress_settings->prefix_key( $gatherpress_sub_page ) ) ? 'nav-tab-active' : '';
+			$gatherpress_active_page = ( Utility::prefix_key( $gatherpress_sub_page ) === $page ) ? 'nav-tab-active' : '';
 			$gatherpress_url         = add_query_arg(
-				array( 'page' => $gatherpress_settings->prefix_key( $gatherpress_sub_page ) ),
+				array( 'page' => Utility::prefix_key( $gatherpress_sub_page ) ),
 				admin_url( $gatherpress_settings::PARENT_SLUG )
 			);
 			?>
@@ -35,7 +36,7 @@ $gatherpress_settings = Settings::get_instance();
 		}
 		?>
 	</h2>
-	<?php if ( $gatherpress_settings->prefix_key( 'credits' ) === $page ) : ?>
+	<?php if ( Utility::prefix_key( 'credits' ) === $page ) : ?>
 		<?php do_settings_sections( $page ); ?>
 	<?php else : ?>
 		<form method="post" action="options.php">

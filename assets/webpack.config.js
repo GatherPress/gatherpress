@@ -5,14 +5,15 @@ const IgnoreEmitPlugin = require( 'ignore-emit-webpack-plugin' );
 module.exports = {
 	...defaultConfig,
 	entry: {
-		blocks_style: path.resolve( process.cwd(), 'src', 'blocks/style.scss' ),
 		blocks_backend: path.resolve( process.cwd(), 'src/blocks', 'backend.js' ),
 		blocks_frontend: path.resolve(
 			process.cwd(),
 			'src/blocks',
 			'frontend.js',
 		),
+		blocks_style: path.resolve( process.cwd(), 'src', 'blocks/style.scss' ),
 		panels: path.resolve( process.cwd(), 'src/panels', 'index.js' ),
+		settings: path.resolve( process.cwd(), 'src/settings', 'index.js' ),
 	},
 	optimization: {
 		...defaultConfig.optimization,

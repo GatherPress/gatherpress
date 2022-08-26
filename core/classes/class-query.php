@@ -9,8 +9,7 @@
 
 namespace GatherPress\Core;
 
-use \GatherPress\Core\Traits\Singleton;
-use \GatherPress\Core\Event;
+use GatherPress\Core\Traits\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

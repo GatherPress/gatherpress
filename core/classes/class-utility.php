@@ -46,4 +46,26 @@ class Utility {
 		return ob_get_clean();
 	}
 
+	/**
+	 * Add gp- prefix.
+	 *
+	 * @param string $key The key for adding prefix.
+	 *
+	 * @return string
+	 */
+	public static function prefix_key( string $key ): string {
+		return sprintf( 'gp_%s', $key );
+	}
+
+	/**
+	 * Remove gp- prefix.
+	 *
+	 * @param string $key The key for removing prefix.
+	 *
+	 * @return string
+	 */
+	public static function unprefix_key( string $key ): string {
+		return preg_replace( '/^gp_/', '', $key );
+	}
+
 }
