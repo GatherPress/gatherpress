@@ -20,7 +20,7 @@ for ( let i = 0; i < containers.length; i++ ) {
 		<EventsList
 			type={ attrs.type ?? 'upcoming' }
 			maxNumberOfEvents={ attrs.maxNumberOfEvents ?? 5 }
-			topics={ attrs.topics ?? {} }
+			topics={ attrs.topics ?? [] }
 		/>,
 		containers[ i ],
 	);
