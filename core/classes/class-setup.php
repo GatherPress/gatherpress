@@ -151,6 +151,40 @@ class Setup {
 				),
 			)
 		);
+
+		register_post_type(
+			Venue::POST_TYPE,
+			array(
+				'labels'        => array(
+					'name'               => _x( 'Venues', 'Post Type General Name', 'gatherpress' ),
+					'singular_name'      => _x( 'Venue', 'Post Type Singular Name', 'gatherpress' ),
+					'menu_name'          => __( 'Venues', 'gatherpress' ),
+					'all_items'          => __( 'Venues', 'gatherpress' ),
+					'view_item'          => __( 'View Venue', 'gatherpress' ),
+					'add_new_item'       => __( 'Add New Venue', 'gatherpress' ),
+					'add_new'            => __( 'Add New', 'gatherpress' ),
+					'edit_item'          => __( 'Edit Venue', 'gatherpress' ),
+					'update_item'        => __( 'Update Venue', 'gatherpress' ),
+					'search_items'       => __( 'Search Venues', 'gatherpress' ),
+					'not_found'          => __( 'Not Found', 'gatherpress' ),
+					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+				),
+				'show_in_rest'  => true,
+				'public'        => true,
+				'hierarchical'  => false,
+				'show_in_menu'  => 'edit.php?post_type=gp_event',
+				'supports'      => array(
+					'title',
+					'editor',
+					'thumbnail',
+					'revisions',
+				),
+				'menu_icon'     => 'dashicons-location',
+				'rewrite'       => array(
+					'slug' => 'venues',
+				),
+			)
+		);
 	}
 
 	/**
