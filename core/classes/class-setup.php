@@ -178,12 +178,27 @@ class Setup {
 					'editor',
 					'thumbnail',
 					'revisions',
+					'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-location',
 				'rewrite'       => array(
 					'slug' => 'venues',
 				),
 			)
+		);
+
+		register_post_meta(
+			Venue::POST_TYPE,
+			'_venue_information',
+			array(
+				'auth_callback' => function() {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
 		);
 	}
 

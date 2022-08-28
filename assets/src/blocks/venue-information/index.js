@@ -9,10 +9,7 @@ registerBlockType( 'gatherpress/venue-information', {
 	category: 'gatherpress',
 	attributes: {
 		blockId: { type: 'string' },
-		address: { type: 'string' },
-		city: { type: 'string' },
-		stateOrProvince: { type: 'string' },
-		postalCode: { type: 'string' },
+		fullAddress: { type: 'string' },
 		phoneNumber: { type: 'string' },
 		website: { type: 'string' },
 	},
