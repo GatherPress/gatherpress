@@ -9,6 +9,8 @@
 
 namespace GatherPress\Core;
 
+use GatherPress\Core\Traits\Singleton;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -18,28 +20,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Venue {
 
+	use Singleton;
+
 	const POST_TYPE = 'gp_venue';
+	const TAXONOMY  = '_gp_venue';
 
 	/**
-	 * Event post object.
-	 *
-	 * @var array|\WP_Post|null
+	 * Venue constructor.
 	 */
-	protected $venue = null;
+	public function __construct() {
+	}
 
-	/**
-	 * Event constructor.
-	 *
-	 * @param int $post_id An event post ID.
-	 */
-	public function __construct( int $post_id ) {
-		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
-			return null;
-		}
+	protected function setup_hooks(): void {
 
-		$this->venue    = get_post( $post_id );
-
-		return $this->venue;
 	}
 
 }

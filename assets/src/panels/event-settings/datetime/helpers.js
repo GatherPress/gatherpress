@@ -7,6 +7,7 @@ import moment from 'moment';
  * WordPress dependencies.
  */
 import apiFetch from '@wordpress/api-fetch';
+import { isEventPostType } from '../../helpers';
 
 /**
  * Internal dependencies.
@@ -57,7 +58,7 @@ export function saveDateTime() {
 	const isSavingPost = wp.data.select( 'core/editor' ).isSavingPost(),
 		isAutosavingPost = wp.data.select( 'core/editor' ).isAutosavingPost();
 
-	if ( isSavingPost && ! isAutosavingPost ) {
+	if ( isEventPostType() && isSavingPost && ! isAutosavingPost ) {
 		apiFetch( {
 			path: '/gatherpress/v1/event/datetime/',
 			method: 'POST',

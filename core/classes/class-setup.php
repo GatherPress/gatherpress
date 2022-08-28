@@ -239,6 +239,20 @@ class Setup {
 				'show_in_rest'      => true,
 			)
 		);
+
+		register_taxonomy(
+			Venue::TAXONOMY,
+			Event::POST_TYPE,
+			array(
+				'labels'            => array(),
+				'hierarchical'      => false,
+				'public'            => true,
+				'show_ui'           => true,
+				'show_admin_column' => false,
+				'query_var'         => true,
+				'show_in_rest'      => true,
+			)
+		);
 	}
 
 	/**
