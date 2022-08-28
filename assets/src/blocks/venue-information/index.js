@@ -1,5 +1,12 @@
+/**
+ * WordPress dependencies.
+ */
 import { __ } from '@wordpress/i18n';
 import { registerBlockType } from '@wordpress/blocks';
+
+/**
+ * Internal dependencies.
+ */
 import edit from './edit';
 
 registerBlockType( 'gatherpress/venue-information', {
@@ -9,9 +16,18 @@ registerBlockType( 'gatherpress/venue-information', {
 	category: 'gatherpress',
 	attributes: {
 		blockId: { type: 'string' },
-		fullAddress: { type: 'string' },
-		phoneNumber: { type: 'string' },
-		website: { type: 'string' },
+		fullAddress: {
+			type: 'string',
+			default: '',
+		},
+		phoneNumber: {
+			type: 'string',
+			default: '',
+		},
+		website: {
+			type: 'string',
+			default: '',
+		},
 	},
 	edit,
 	save: () => null,

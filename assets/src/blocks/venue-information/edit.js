@@ -5,6 +5,7 @@ import { __ } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
 import {  Flex, FlexBlock, FlexItem, Icon, TextControl } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
 
 const Edit = ( props ) => {
 	const { attributes, setAttributes, isSelected } = props;
@@ -15,9 +16,15 @@ const Edit = ( props ) => {
 	} = attributes;
 	const blockProps = useBlockProps();
 	const editPost = useDispatch( 'core/editor' ).editPost;
-	const venueInformationMetaData = JSON.parse( useSelect(
+	let venueInformationMetaData = useSelect(
 		( select ) => select( 'core/editor' ).getEditedPostAttribute( 'meta' )._venue_information,
-	) );
+	);
+
+	if ( venueInformationMetaData ) {
+		venueInformationMetaData = JSON.parse( venueInformationMetaData );
+	} else {
+		venueInformationMetaData = {};
+	}
 
 	const onUpdate = ( key, value ) => {
 		const payload = JSON.stringify( { ...venueInformationMetaData, [ key ]: value } );
@@ -26,6 +33,14 @@ const Edit = ( props ) => {
 		setAttributes( { [ key ]: value } );
 		editPost( { meta } );
 	};
+
+	useEffect( () => {
+		setAttributes( {
+			fullAddress: venueInformationMetaData.fullAddress ?? '',
+			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
+			website: venueInformationMetaData.website ?? '',
+		} );
+	}, [] );
 
 	return (
 		<div { ...blockProps }>
@@ -36,7 +51,7 @@ const Edit = ( props ) => {
 							<Icon icon="location" />
 						</FlexItem>
 						<FlexItem>
-							{fullAddress}
+							{ fullAddress }
 						</FlexItem>
 					</Flex>
 					<Flex justify="normal" gap="4">
@@ -46,7 +61,7 @@ const Edit = ( props ) => {
 									<Icon icon="phone" />
 								</FlexItem>
 								<FlexItem>
-									{phoneNumber}
+									{ phoneNumber }
 								</FlexItem>
 							</Flex>
 						</FlexItem>
@@ -56,7 +71,7 @@ const Edit = ( props ) => {
 									<Icon icon="admin-site-alt3" />
 								</FlexItem>
 								<FlexItem>
-									<a href={website} target="_blank">{website}</a>
+									<a href={ website } target="_blank">{ website }</a>
 								</FlexItem>
 							</Flex>
 						</FlexItem>
@@ -90,6 +105,7 @@ const Edit = ( props ) => {
 							<TextControl
 								label={ __( 'Website', 'gatherpress') }
 								value={ website }
+								type="url"
 								onChange={ ( value ) => {
 									onUpdate( 'website', value );
 								} }
