@@ -39,6 +39,7 @@ class Setup {
 		Query::get_instance();
 		Rest_Api::get_instance();
 		Settings::get_instance();
+		Venue::get_instance();
 		// @todo move these classes to a `buddypress` directory in plugin.
 		// BuddyPress::get_instance();
 		// Email::get_instance();
@@ -247,7 +248,7 @@ class Setup {
 				'labels'            => array(),
 				'hierarchical'      => false,
 				'public'            => true,
-				'show_ui'           => true,
+				'show_ui'           => false,
 				'show_admin_column' => false,
 				'query_var'         => true,
 				'show_in_rest'      => true,

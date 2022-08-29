@@ -29,10 +29,51 @@ class Venue {
 	 * Venue constructor.
 	 */
 	public function __construct() {
+		$this->setup_hooks();
 	}
 
 	protected function setup_hooks(): void {
+		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_venue' ) );
+		add_action( 'delete_post', array( $this, 'delete_venue' ) );
+	}
 
+	public function save_venue( int $post_id ): void {
+		$term_slug = $this->get_venue_term_slug( $post_id );
+		$term      = term_exists( $term_slug, self::TAXONOMY );
+		$title     = get_the_title( $post_id );
+
+		if ( empty( $term ) ) {
+			wp_insert_term(
+				$title,
+				self::TAXONOMY,
+				array(
+					'slug' => $term_slug,
+				)
+			);
+		} else {
+			wp_update_term(
+				$term['term_id'],
+				self::TAXONOMY,
+				array(
+					'name' => $title,
+				)
+			);
+		}
+	}
+
+	public function delete_venue( int $post_id ): void {
+		if ( get_post_type( $post_id ) === self::POST_TYPE ) {
+			$term_slug = $this->get_venue_term_slug( $post_id );
+			$term      = get_term_by( 'slug', $term_slug, self::TAXONOMY );
+
+			if ( is_a( $term, '\WP_Term' ) ) {
+				wp_delete_term( $term->term_id, self::TAXONOMY );
+			}
+		}
+	}
+
+	public function get_venue_term_slug( int $post_id ): string {
+		return sprintf( '_venue_%d', $post_id );
 	}
 
 }

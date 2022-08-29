@@ -1,20 +1,28 @@
 /**
  * WordPress dependencies.
  */
-
 import { __ } from '@wordpress/i18n';
-import {  Flex, FlexBlock, FlexItem, Icon, TextControl } from '@wordpress/components';
+import {  Flex, FlexItem } from '@wordpress/components';
 import { SelectControl, PanelRow } from '@wordpress/components';
-import { store as coreStore } from '@wordpress/core-data';
-import { useSelect } from '@wordpress/data';
-import { useState } from '@wordpress/element';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
+
 const VenuePanel = ( props ) => {
 	const { venue, setVenue } = props;
+	const editPost = useDispatch( 'core/editor' ).editPost;
+	const { unlockPostSaving } = useDispatch( 'core/editor' );
+	const venueTerm = useSelect(
+		( select ) => select( 'core/editor' ).getEditedPostAttribute( '_gp_venue' ),
+	);
+
+	useEffect( () => {
+		setVenue( String( venueTerm ) ?? '' );
+	}, [] );
 
 	let venues = useSelect( ( select ) => {
 		return select( 'core' ).getEntityRecords(
-			'postType',
-			'gp_venue',
+			'taxonomy',
+			'_gp_venue',
 			{
 				per_page: -1,
 				context: 'view',
@@ -24,13 +32,20 @@ const VenuePanel = ( props ) => {
 
 	if ( venues ) {
 		venues = venues.map( ( item ) => ( {
-			label: item.title.rendered,
-			value: item.id || item.value,
+			label: item.name,
+			value: item.id,
 		} ) );
 
 		venues.unshift( { value: '', label: __( 'Choose a venue', 'gatherpress' ), disabled: true } );
 	} else {
 		venues = [];
+	}
+	// venues = [];
+
+	const updateTerm = ( value ) => {
+		setVenue( value );
+		editPost( { _gp_venue: [ value ] } );
+		unlockPostSaving();
 	}
 
 	return(
@@ -44,9 +59,11 @@ const VenuePanel = ( props ) => {
 						label={ __( 'Venue', 'gatherpress' ) }
 						hideLabelFromVision="true"
 						value={ venue }
-						onChange={ ( value ) => setVenue( value ) }
+						onChange={ ( value ) => {
+							updateTerm( value );
+						} }
 						options={ venues }
-						style={{ width: '10rem' }}
+						style={{ width: '11rem' }}
 					/>
 				</FlexItem>
 			</Flex>
