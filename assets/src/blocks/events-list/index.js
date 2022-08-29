@@ -28,6 +28,10 @@ registerBlockType( 'gatherpress/events-list', {
 			type: 'string',
 			default: 'upcoming',
 		},
+		showAttendeeList: {
+			type: 'boolean',
+			default: true
+		}
 	},
 	edit: Edit,
 	save: () => null,

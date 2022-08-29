@@ -8,7 +8,7 @@ const EventItem = ( props ) => {
 		return '';
 	}
 
-	const { type, event } = props;
+	const { type, event, showAttendeeList } = props;
 
 	const eventClass = `gp-events-list`;
 
@@ -18,6 +18,7 @@ const EventItem = ( props ) => {
 				<div className={ `${ eventClass }__info` }>
 					<figure className={ `${ eventClass }__image` }>
 						<a href={ event.permalink }>
+							{/* Here we will need to put an image block with controls so it can be cropped */}
 							{ HtmlReactParser( event.featured_image ) }
 						</a>
 					</figure>
@@ -39,6 +40,7 @@ const EventItem = ( props ) => {
 				</div>
 			</div>
 			<div className={ `${ eventClass }__footer` }>
+			{ showAttendeeList && (
 				<div className="gp-attendance-list__items">
 					<AttendeeList
 						eventId={ event.ID }
@@ -48,6 +50,7 @@ const EventItem = ( props ) => {
 						avatarOnly={ true }
 					/>
 				</div>
+			)}
 				{ 'upcoming' === type && (
 					<AttendanceSelector
 						eventId={ event.ID }

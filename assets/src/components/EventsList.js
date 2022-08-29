@@ -12,11 +12,11 @@ import { __ } from '@wordpress/i18n';
 import EventItem from './EventItem';
 
 const EventsList = ( props ) => {
-	const { maxNumberOfEvents, type, topics } = props;
+	const { maxNumberOfEvents, type, topics, showAttendeeList } = props;
 	const [ events, setEvents ] = useState( [] );
 	const [ loaded, setLoaded ] = useState( false );
 	const renderEvents = events.map( ( event ) => {
-		return <EventItem key={ event.ID } type={ type } event={ event } />;
+		return <EventItem key={ event.ID } type={ type } event={ event } showAttendeeList={ showAttendeeList } />;
 	} );
 	const renderNoEventsMessage = () => {
 		const message =

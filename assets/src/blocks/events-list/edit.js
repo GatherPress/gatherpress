@@ -17,6 +17,7 @@ import {
 	Button,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalText as Text,
+	ToggleControl,
 } from '@wordpress/components';
 import { store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
@@ -166,12 +167,27 @@ const Edit = ( props ) => {
 						maxSuggestions={ 20 }
 					/>
 				</PanelBody>
+	 <PanelBody>
+		<ToggleControl
+            label="Show/Hide Attendee list"
+            help={
+                attributes.showAttendeeList
+                    ? 'Show Attendee List'
+                    : 'Do not show Attendee List'
+            }
+            checked={ attributes.showAttendeeList }
+            onChange={ () => {
+                setAttributes( { showAttendeeList: ! attributes.showAttendeeList } );
+            } }
+        />
+		</PanelBody>
 			</InspectorControls>
 			<EventsList
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
 				topics={ attributes.topics }
-			/>
+				showAttendeeList = { attributes.showAttendeeList }
+			/>		
 		</div>
 	);
 };

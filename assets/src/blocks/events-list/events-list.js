@@ -21,6 +21,7 @@ for ( let i = 0; i < containers.length; i++ ) {
 			type={ attrs.type ?? 'upcoming' }
 			maxNumberOfEvents={ attrs.maxNumberOfEvents ?? 5 }
 			topics={ attrs.topics ?? [] }
+			showAttendeeList={ attrs.showAttendeeList ?? true }
 		/>,
 		containers[ i ],
 	);
