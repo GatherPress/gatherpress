@@ -32,11 +32,21 @@ class Venue {
 		$this->setup_hooks();
 	}
 
+	/**
+	 * Setup hooks.
+	 */
 	protected function setup_hooks(): void {
 		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_venue_term' ) );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
 	}
 
+	/**
+	 * Update or insert a Venue taxonomy term for event queries.
+	 *
+	 * @param int $post_id Post ID of venue.
+	 *
+	 * @return void
+	 */
 	public function save_venue_term( int $post_id ): void {
 		$term_slug = $this->get_venue_term_slug( $post_id );
 		$term      = term_exists( $term_slug, self::TAXONOMY );
@@ -61,6 +71,13 @@ class Venue {
 		}
 	}
 
+	/**
+	 * Delete a venue term when a Venue is deleted.
+	 *
+	 * @param int $post_id Post ID of venue.
+	 *
+	 * @return void
+	 */
 	public function delete_venue_term( int $post_id ): void {
 		if ( get_post_type( $post_id ) === self::POST_TYPE ) {
 			$term_slug = $this->get_venue_term_slug( $post_id );
@@ -72,6 +89,13 @@ class Venue {
 		}
 	}
 
+	/**
+	 * Term slug for venue taxonomy which includes Post ID of venue CPT.
+	 *
+	 * @param int $post_id Post ID of venue.
+	 *
+	 * @return string
+	 */
 	public function get_venue_term_slug( int $post_id ): string {
 		return sprintf( '_venue_%d', $post_id );
 	}

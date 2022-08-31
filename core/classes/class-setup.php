@@ -113,6 +113,8 @@ class Setup {
 	/**
 	 * Register the GatherPress post types.
 	 *
+	 * @todo cleanup registering so it's not so repeated.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
@@ -205,6 +207,8 @@ class Setup {
 
 	/**
 	 * Register the GatherPress taxonomies.
+	 *
+	 * @todo cleanup registering so it's not so repeated.
 	 *
 	 * @since 1.0.0
 	 *

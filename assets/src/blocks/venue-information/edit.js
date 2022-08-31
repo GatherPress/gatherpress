@@ -46,36 +46,54 @@ const Edit = ( props ) => {
 		<div { ...blockProps }>
 			{ ! isSelected && (
 				<>
-					<Flex justify="normal">
-						<FlexItem display="flex">
-							<Icon icon="location" />
-						</FlexItem>
-						<FlexItem>
-							{ fullAddress }
-						</FlexItem>
-					</Flex>
-					<Flex justify="normal" gap="4">
-						<FlexItem>
-							<Flex justify="normal">
-								<FlexItem display="flex">
-									<Icon icon="phone" />
-								</FlexItem>
+					{ ( ! fullAddress && ! phoneNumber && ! website ) && (
+						<Flex justify="normal">
+							<FlexItem display="flex">
+								<Icon icon="location" />
+							</FlexItem>
+							<FlexItem>
+								<em>{ __( 'Add venue information.', 'gatherpress' ) }</em>
+							</FlexItem>
+						</Flex>
+					) }
+					{ fullAddress && (
+						<Flex justify="normal">
+							<FlexItem display="flex">
+								<Icon icon="location" />
+							</FlexItem>
+							<FlexItem>
+								{ fullAddress }
+							</FlexItem>
+						</Flex>
+					) }
+					{ ( phoneNumber || website ) && (
+						<Flex justify="normal" gap="4">
+							{ phoneNumber && (
 								<FlexItem>
-									{ phoneNumber }
+									<Flex justify="normal">
+										<FlexItem display="flex">
+											<Icon icon="phone" />
+										</FlexItem>
+										<FlexItem>
+											{ phoneNumber }
+										</FlexItem>
+									</Flex>
 								</FlexItem>
-							</Flex>
-						</FlexItem>
-						<FlexItem>
-							<Flex justify="normal">
-								<FlexItem display="flex">
-									<Icon icon="admin-site-alt3" />
-								</FlexItem>
+							) }
+							{ website && (
 								<FlexItem>
-									<a href={ website } target="_blank">{ website }</a>
+									<Flex justify="normal">
+										<FlexItem display="flex">
+											<Icon icon="admin-site-alt3" />
+										</FlexItem>
+										<FlexItem>
+											<a href={ website } target="_blank">{ website }</a>
+										</FlexItem>
+									</Flex>
 								</FlexItem>
-							</Flex>
-						</FlexItem>
-					</Flex>
+							) }
+						</Flex>
+					) }
 				</>
 			) }
 			{ isSelected && (
