@@ -20,7 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Setup {
 
-
 	use Singleton;
 
 	/**
