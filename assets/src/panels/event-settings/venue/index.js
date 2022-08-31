@@ -39,7 +39,6 @@ const VenuePanel = ( props ) => {
 	} else {
 		venues = [];
 	}
-	// venues = [];
 
 	const updateTerm = ( value ) => {
 		setVenue( value );
