@@ -35,7 +35,7 @@ class Venue {
 	/**
 	 * Setup hooks.
 	 */
-	protected function setup_hooks(): void {
+	protected function setup_hooks() {
 		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_venue_term' ) );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
 	}
@@ -47,7 +47,7 @@ class Venue {
 	 *
 	 * @return void
 	 */
-	public function save_venue_term( int $post_id ): void {
+	public function save_venue_term( int $post_id ) {
 		$term_slug = $this->get_venue_term_slug( $post_id );
 		$term      = term_exists( $term_slug, self::TAXONOMY );
 		$title     = get_the_title( $post_id );
@@ -78,7 +78,7 @@ class Venue {
 	 *
 	 * @return void
 	 */
-	public function delete_venue_term( int $post_id ): void {
+	public function delete_venue_term( int $post_id ) {
 		if ( get_post_type( $post_id ) === self::POST_TYPE ) {
 			$term_slug = $this->get_venue_term_slug( $post_id );
 			$term      = get_term_by( 'slug', $term_slug, self::TAXONOMY );

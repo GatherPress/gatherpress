@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
-import {  Flex, FlexBlock, FlexItem, Icon, TextControl } from '@wordpress/components';
+import { Flex, FlexBlock, FlexItem, Icon, TextControl } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
 
@@ -12,7 +12,7 @@ const Edit = ( props ) => {
 	const {
 		fullAddress,
 		phoneNumber,
-		website
+		website,
 	} = attributes;
 	const blockProps = useBlockProps();
 	const editPost = useDispatch( 'core/editor' ).editPost;
@@ -87,7 +87,7 @@ const Edit = ( props ) => {
 											<Icon icon="admin-site-alt3" />
 										</FlexItem>
 										<FlexItem>
-											<a href={ website } target="_blank">{ website }</a>
+											<a href={ website } target="_blank" rel="noreferrer noopener">{ website }</a>
 										</FlexItem>
 									</Flex>
 								</FlexItem>
@@ -101,7 +101,7 @@ const Edit = ( props ) => {
 					<Flex>
 						<FlexBlock>
 							<TextControl
-								label={ __( 'Full Address', 'gatherpress') }
+								label={ __( 'Full Address', 'gatherpress' ) }
 								value={ fullAddress }
 								onChange={ ( value ) => {
 									onUpdate( 'fullAddress', value );
@@ -112,7 +112,7 @@ const Edit = ( props ) => {
 					<Flex>
 						<FlexBlock>
 							<TextControl
-								label={ __( 'Phone Number', 'gatherpress') }
+								label={ __( 'Phone Number', 'gatherpress' ) }
 								value={ phoneNumber }
 								onChange={ ( value ) => {
 									onUpdate( 'phoneNumber', value );
@@ -121,7 +121,7 @@ const Edit = ( props ) => {
 						</FlexBlock>
 						<FlexBlock>
 							<TextControl
-								label={ __( 'Website', 'gatherpress') }
+								label={ __( 'Website', 'gatherpress' ) }
 								value={ website }
 								type="url"
 								onChange={ ( value ) => {

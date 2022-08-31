@@ -2,8 +2,7 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import {  Flex, FlexItem } from '@wordpress/components';
-import { SelectControl, PanelRow } from '@wordpress/components';
+import { Flex, FlexItem, PanelRow, SelectControl } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
 
@@ -46,9 +45,9 @@ const VenuePanel = ( props ) => {
 		setVenue( value );
 		editPost( { _gp_venue: [ value ] } );
 		unlockPostSaving();
-	}
+	};
 
-	return(
+	return (
 		<PanelRow>
 			<Flex>
 				<FlexItem>
@@ -63,12 +62,12 @@ const VenuePanel = ( props ) => {
 							updateTerm( value );
 						} }
 						options={ venues }
-						style={{ width: '11rem' }}
+						style={ { width: '11rem' } }
 					/>
 				</FlexItem>
 			</Flex>
 		</PanelRow>
 	);
-}
+};
 
 export default VenuePanel;

@@ -184,6 +184,9 @@ class Setup {
 					'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-location',
+				'template'      => array(
+					array( 'gatherpress/venue-information' ),
+				),
 				'rewrite'       => array(
 					'slug' => 'venues',
 				),
@@ -201,7 +204,7 @@ class Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
-			),
+			)
 		);
 	}
 

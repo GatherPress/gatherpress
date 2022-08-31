@@ -11,7 +11,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
 import { isEventPostType } from '../helpers';
 import { DateTimeStartSettingPanel } from './datetime';
 import VenuePanel from './venue';
-import { OptionsPanel } from './options';
+// import { OptionsPanel } from './options';
 import { useState } from '@wordpress/element';
 
 const EventSettings = () => {
@@ -28,8 +28,8 @@ const EventSettings = () => {
 				<DateTimeStartSettingPanel />
 				<hr />
 				<VenuePanel venue={ venue } setVenue={ setVenue } />
-				{/*<hr />*/}
-				{/*<OptionsPanel />*/}
+				{ /*<hr />*/ }
+				{ /*<OptionsPanel />*/ }
 			</PluginDocumentSettingPanel>
 		)
 	);

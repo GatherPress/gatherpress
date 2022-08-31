@@ -26,7 +26,7 @@ class Test_Venue extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_venue_term_slug(): void {
+	public function test_get_venue_term_slug() {
 		$this->assertSame( '_venue_123', Venue::get_instance()->get_venue_term_slug( 123 ) );
 	}
 

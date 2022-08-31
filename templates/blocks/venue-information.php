@@ -14,7 +14,7 @@ if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs
 if (
 	empty( $gatherpress_block_attrs['fullAddress'] ) &&
 	empty( $gatherpress_block_attrs['phoneNumber'] ) &&
-	empty($gatherpress_block_attrs['website'] )
+	empty( $gatherpress_block_attrs['website'] )
 ) {
 	return;
 }
