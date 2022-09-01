@@ -52,3 +52,38 @@ if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
 
 require_once GATHERPRESS_CORE_PATH . '/core/loader.php';
 require_once GATHERPRESS_CORE_PATH . '/buddypress/loader.php';
+
+register_activation_hook( __FILE__, 'activate_gatherpress_plugin' );
+/**
+ * Activate GatherPress plugin.
+ *
+ * @return void
+ */
+function activate_gatherpress_plugin() {
+	GatherPress\Core\Setup::register_post_types();
+	if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
+		add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+	}
+}
+
+register_deactivation_hook( __FILE__, 'deactivate_gatherpress_plugin' );
+/**
+ * Activate GatherPress plugin.
+ *
+ * @return void
+ */
+function deactivate_gatherpress_plugin() {
+	flush_rewrite_rules();
+}
+
+add_action( 'init', 'maybe_flush_gatherpress_rewrite_rules', 20 );
+/**
+ * Flush rewrite rules if the previously added flag exists,
+ * and then remove the flag.
+ */
+function maybe_flush_gatherpress_rewrite_rules() {
+	if ( get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
+		flush_rewrite_rules();
+		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
+	}
+}

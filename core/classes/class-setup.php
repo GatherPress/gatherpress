@@ -105,7 +105,7 @@ class Setup {
 	 * @return void
 	 */
 	public function register() {
-		$this->register_post_types();
+		self::register_post_types();
 		$this->register_taxonomies();
 	}
 
@@ -116,7 +116,7 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	public function register_post_types() {
+	public static function register_post_types() {
 		register_post_type(
 			Event::POST_TYPE,
 			array(
