@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class Setup.
+ * Setup Class undergirds plugin.
  */
 class Setup {
 
