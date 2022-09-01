@@ -235,8 +235,7 @@ class Settings {
 	 * @return void
 	 */
 	public function credits( string $sub_page, string $section, string $option, array $option_settings ) {
-		$credits = wp_safe_remote_get( sprintf( '%s/data/credits/latest.json', GATHERPRESS_CORE_URL ) );
-		$credits = json_decode( $credits['body'], true );
+		$credits = include sprintf( '%s/data/credits/latest.php', GATHERPRESS_CORE_PATH );
 
 		Utility::render_template(
 			sprintf( '%s/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
