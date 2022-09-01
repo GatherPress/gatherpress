@@ -1,0 +1,19 @@
+.gp-venue-information {
+	&__row {
+		display: flex;
+	}
+
+	&__icon {
+		display: flex;
+		align-items: center;
+	}
+
+	&__item {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	&__gap {
+		gap: 1rem;
+	}
+}
