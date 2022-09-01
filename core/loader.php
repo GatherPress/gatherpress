@@ -18,6 +18,7 @@ $gatherpress_core_files = array(
 	'/core/classes/class-settings.php',
 	'/core/classes/class-setup.php',
 	'/core/classes/class-utility.php',
+	'/core/classes/class-venue.php',
 );
 
 foreach ( $gatherpress_core_files as $gatherpress_core_file ) {

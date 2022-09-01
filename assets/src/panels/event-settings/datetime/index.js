@@ -8,6 +8,7 @@ import moment from 'moment';
  */
 import { Dropdown, Button, PanelRow } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { subscribe } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -25,7 +26,7 @@ let dateTimeStart = GatherPress.event_datetime.datetime_start;
 // eslint-disable-next-line no-undef
 let dateTimeEnd = GatherPress.event_datetime.datetime_end;
 
-wp.data.subscribe( saveDateTime );
+subscribe( saveDateTime );
 
 dateTimeStart =
 	'' !== dateTimeStart

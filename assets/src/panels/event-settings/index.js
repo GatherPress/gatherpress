@@ -1,12 +1,22 @@
-import { isEventPostType } from '../helpers';
-import { DateTimeStartSettingPanel } from './datetime-panel';
-import { OptionsPanel } from './options-panel';
+/**
+ * WordPress dependencies.
+ */
+import { __ } from '@wordpress/i18n';
+import { registerPlugin } from '@wordpress/plugins';
+import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
 
-const { registerPlugin } = wp.plugins;
-const { __ } = wp.i18n;
-const { PluginDocumentSettingPanel } = wp.editPost;
+/**
+ * Internal dependencies.
+ */
+import { isEventPostType } from '../helpers';
+import { DateTimeStartSettingPanel } from './datetime';
+import VenuePanel from './venue';
+// import { OptionsPanel } from './options';
+import { useState } from '@wordpress/element';
 
 const EventSettings = () => {
+	const [ venue, setVenue ] = useState( '' );
+
 	return (
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
@@ -17,7 +27,9 @@ const EventSettings = () => {
 			>
 				<DateTimeStartSettingPanel />
 				<hr />
-				<OptionsPanel />
+				<VenuePanel venue={ venue } setVenue={ setVenue } />
+				{ /*<hr />*/ }
+				{ /*<OptionsPanel />*/ }
 			</PluginDocumentSettingPanel>
 		)
 	);
