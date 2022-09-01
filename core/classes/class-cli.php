@@ -72,7 +72,7 @@ class CLI extends WP_CLI {
 				$data[ $group ][] = json_decode( $response['body'], true );
 			}
 		}
-		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite
+		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
 
 		WP_CLI::success( 'New latest.json file has been generated.' );
