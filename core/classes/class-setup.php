@@ -2,9 +2,9 @@
 /**
  * Class is responsible for executing plugin setups.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Setup Class undergirds plugin.
  */
 class Setup {
+
 
 	use Singleton;
 
@@ -194,7 +195,7 @@ class Setup {
 			Venue::POST_TYPE,
 			'_venue_information',
 			array(
-				'auth_callback'     => function() {
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'sanitize_text_field',
@@ -373,7 +374,7 @@ class Setup {
 					KEY status (status)
 				) {$charset_collate};";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		include_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		dbDelta( $sql );
 	}

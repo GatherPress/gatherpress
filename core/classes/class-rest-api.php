@@ -2,9 +2,9 @@
 /**
  * Class is responsible for registering REST API endpoints.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Rest_Api.
  */
 class Rest_Api {
+
 
 	use Singleton;
 
@@ -197,9 +198,9 @@ class Rest_Api {
 	 */
 	public function validate_event_post_id( $param ): bool {
 		return (
-			0 < intval( $param )
-			&& is_numeric( $param )
-			&& Event::POST_TYPE === get_post_type( $param )
+		0 < intval( $param )
+		&& is_numeric( $param )
+		&& Event::POST_TYPE === get_post_type( $param )
 		);
 	}
 
@@ -212,8 +213,8 @@ class Rest_Api {
 	 */
 	public function validate_number( $param ): bool {
 		return (
-			0 < intval( $param )
-			&& is_numeric( $param )
+		0 < intval( $param )
+		&& is_numeric( $param )
 		);
 	}
 
@@ -304,7 +305,7 @@ class Rest_Api {
 
 		if ( ! empty( $params['topics'] ) ) {
 			$topics = array_map(
-				function( $slug ) {
+				function ( $slug ) {
 					return sanitize_key( $slug );
 				},
 				explode( ',', $params['topics'] )
@@ -369,8 +370,7 @@ class Rest_Api {
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
-		if (
-			intval( $current_user_id )
+		if ( intval( $current_user_id )
 			&& intval( $user_id )
 			&& $current_user_id !== $user_id
 		) {
@@ -385,8 +385,7 @@ class Rest_Api {
 			add_user_to_blog( $blog_id, $user_id, 'subscriber' );
 		}
 
-		if (
-			intval( $user_id )
+		if ( intval( $user_id )
 			&& current_user_can( 'read' )
 			&& is_user_member_of_blog( $user_id )
 			&& ! $event->has_event_past()

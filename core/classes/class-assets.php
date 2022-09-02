@@ -2,9 +2,9 @@
 /**
  * Class is responsible for loading all static assets.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Assets.
  */
 class Assets {
+
 
 	use Singleton;
 
@@ -86,17 +87,17 @@ class Assets {
 			true
 		);
 
-		// phpcs:ignore
-		// if ( is_singular( 'gp_event' ) ) {
-			global $post;
+     // phpcs:ignore
+     // if ( is_singular( 'gp_event' ) ) {
+		global $post;
 
-			wp_localize_script(
-				'gatherpress-blocks-frontend',
-				'GatherPress',
-				$this->localize( $post->ID ?? 0 )
-			);
-		// phpcs:ignore
-		// }
+		wp_localize_script(
+			'gatherpress-blocks-frontend',
+			'GatherPress',
+			$this->localize( $post->ID ?? 0 )
+		);
+     // phpcs:ignore
+     // }
 	}
 
 	/**
@@ -121,7 +122,7 @@ class Assets {
 
 		$settings      = Settings::get_instance();
 		$setting_hooks = array_map(
-			function( $key ) {
+			function ( $key ) {
 				return sprintf( 'gp_event_page_gp_%s', sanitize_key( $key ) );
 			},
 			array_keys( $settings->get_sub_pages() )
@@ -170,7 +171,7 @@ class Assets {
 			$asset['version']
 		);
 
-		$asset = require_once $this->path . 'blocks_backend.asset.php';
+		$asset = include_once $this->path . 'blocks_backend.asset.php';
 		wp_enqueue_script(
 			'gatherpress-blocks-backend',
 			$this->build . 'blocks_backend.js',
@@ -207,7 +208,7 @@ class Assets {
 			'event_announced'  => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
 			'default_timezone' => sanitize_text_field( wp_timezone_string() ),
 			'settings'         => array(
-				// @todo settings to come...
+			// @todo settings to come...
 			),
 		);
 	}
@@ -224,7 +225,7 @@ class Assets {
 	 */
 	protected function get_asset_data( string $asset ): array {
 		if ( empty( $this->asset_data[ $asset ] ) ) {
-			$this->asset_data[ $asset ] = require_once $this->path . sprintf( '%s.asset.php', $asset );
+			$this->asset_data[ $asset ] = include_once $this->path . sprintf( '%s.asset.php', $asset );
 		}
 
 		return $this->asset_data[ $asset ];

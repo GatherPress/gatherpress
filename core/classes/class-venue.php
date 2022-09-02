@@ -2,9 +2,9 @@
 /**
  * Class is responsible for instances of venues.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Venue.
  */
 class Venue {
+
 
 	use Singleton;
 

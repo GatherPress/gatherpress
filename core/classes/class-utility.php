@@ -2,9 +2,9 @@
 /**
  * Class is responsible for all utility related functionality.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Utility.
  */
 class Utility {
+
 
 	/**
 	 * Render template.
@@ -37,12 +38,12 @@ class Utility {
 		}
 
 		if ( true === $echo ) {
-			require $path;
+			include $path;
 			return '';
 		}
 
 		ob_start();
-		require $path;
+		include $path;
 		return ob_get_clean();
 	}
 

@@ -2,9 +2,9 @@
 /**
  * Class is responsible for WP-CLI commands.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -23,6 +23,7 @@ use WP_CLI;
  * Class Cli.
  */
 class CLI extends WP_CLI {
+
 
 	/**
 	 * Make changes to an event.
@@ -52,7 +53,7 @@ class CLI extends WP_CLI {
 	 * @return void
 	 */
 	public function generate_credits( array $args = array(), array $assoc_args = array() ) {
-		$credits = require_once GATHERPRESS_CORE_PATH . '/data/credits/credits.php';
+		$credits = include_once GATHERPRESS_CORE_PATH . '/data/credits/credits.php';
 		$version = $assoc_args['version'] ?? GATHERPRESS_VERSION;
 		$latest  = GATHERPRESS_CORE_PATH . '/data/credits/latest.php';
 		$data    = array();

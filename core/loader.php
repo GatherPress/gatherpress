@@ -2,7 +2,7 @@
 /**
  * Load all files.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
  */
 
@@ -22,7 +22,7 @@ $gatherpress_core_files = array(
 );
 
 foreach ( $gatherpress_core_files as $gatherpress_core_file ) {
-	require_once GATHERPRESS_CORE_PATH . $gatherpress_core_file;
+	include_once GATHERPRESS_CORE_PATH . $gatherpress_core_file;
 }
 
 GatherPress\Core\Setup::get_instance();

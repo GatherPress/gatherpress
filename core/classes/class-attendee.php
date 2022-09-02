@@ -2,9 +2,9 @@
 /**
  * Class is responsible for all attendance related functionality.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Attendee.
  */
 class Attendee {
+
 
 	const TABLE_FORMAT       = '%sgp_attendees';
 	const ATTENDEE_CACHE_KEY = 'attendee_%d';
@@ -161,8 +162,7 @@ class Attendee {
 		$attendees = $this->attendees();
 		$total     = 0;
 
-		if (
-			intval( $attendees['attending']['count'] ) < $this->limit
+		if ( intval( $attendees['attending']['count'] ) < $this->limit
 			&& intval( $attendees['waiting_list']['count'] )
 		) {
 			$waiting_list = $attendees['waiting_list']['attendees'];
@@ -191,15 +191,14 @@ class Attendee {
 	/**
 	 * Check if the attending limit has been reached for an event.
 	 *
-	 * @param string $status  Desired attendance status.
+	 * @param string $status Desired attendance status.
 	 *
 	 * @return bool
 	 */
 	public function attending_limit_reached( string $status ): bool {
 		$attendees = $this->attendees();
 
-		if (
-			! empty( $attendees['attending'] )
+		if ( ! empty( $attendees['attending'] )
 			&& intval( $attendees['attending']['count'] ) >= $this->limit
 			&& 'attending' === $status
 		) {
@@ -288,7 +287,7 @@ class Attendee {
 		foreach ( $this->statuses as $status ) {
 			$retval[ $status ]['attendees'] = array_filter(
 				$attendees,
-				function( $attendee ) use ( $status ) {
+				function ( $attendee ) use ( $status ) {
 					return ( $status === $attendee['status'] );
 				}
 			);
@@ -313,8 +312,8 @@ class Attendee {
 	public function sort_by_role( array $first, array $second ): bool {
 		$roles   = array_values(
 			array_map(
-				function( $role ) {
-					return $role['labels']['singular_name'];
+				function ( $role ) {
+						return $role['labels']['singular_name'];
 				},
 				Settings::get_instance()->get_user_roles()
 			)

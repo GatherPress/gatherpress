@@ -2,9 +2,9 @@
 /**
  * Class is responsible for managing plugin settings.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Settings.
  */
 class Settings {
+
 
 	use Singleton;
 
@@ -42,7 +43,7 @@ class Settings {
 	/**
 	 * Helper to set the current page.
 	 *
-	 * phpcs:disable WordPress.Security.NonceVerification.Recommended
+     * phpcs:disable WordPress.Security.NonceVerification.Recommended
 	 *
 	 * @return void
 	 */
@@ -51,7 +52,7 @@ class Settings {
 			$this->page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
 		}
 
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+     // phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -138,7 +139,7 @@ class Settings {
 					add_settings_section(
 						$section,
 						$section_settings['name'],
-						function() use ( $section_settings ) {
+						function () use ( $section_settings ) {
 							if ( ! empty( $section_settings['description'] ) ) {
 								echo '<p class="description">' . wp_kses_post( $section_settings['description'] ) . '</p>';
 							}
@@ -149,20 +150,20 @@ class Settings {
 					if ( isset( $section_settings['options'] ) ) {
 						foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
 							if ( $option_settings['field'] && method_exists( $this, $option_settings['field'] ) ) {
-								$option_settings['callback'] = function() use ( $sub_page, $section, $option, $option_settings ) {
+								$option_settings['callback'] = function () use ( $sub_page, $section, $option, $option_settings ) {
 									$sub_page = Utility::prefix_key( $sub_page );
 
 									$this->{$option_settings['field']}( $sub_page, $section, $option, $option_settings );
 								};
 							}
-							add_settings_field(
-								$option,
-								$option_settings['labels']['name'],
-								$option_settings['callback'],
-								Utility::prefix_key( $sub_page ),
-								$section,
-								array( 'label_for' => Utility::prefix_key( $option ) )
-							);
+										add_settings_field(
+											$option,
+											$option_settings['labels']['name'],
+											$option_settings['callback'],
+											Utility::prefix_key( $sub_page ),
+											$section,
+											array( 'label_for' => Utility::prefix_key( $option ) )
+										);
 						}
 					}
 				}

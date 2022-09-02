@@ -2,9 +2,9 @@
 /**
  * Trait is responsible for setting a class as a singleton.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core\Traits;
@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Trait Singleton.
  */
 trait Singleton {
+
 
 	/**
 	 * Instance of class.

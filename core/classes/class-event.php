@@ -2,9 +2,9 @@
 /**
  * Class is responsible for instances of events.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Event.
  */
 class Event {
+
 
 	const POST_TYPE          = 'gp_event';
 	const TAXONOMY           = 'gp_topic';
@@ -120,7 +121,7 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $format  PHP date format.
+	 * @param string $format PHP date format.
 	 *
 	 * @return string
 	 */
@@ -134,7 +135,7 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $format  PHP date format.
+	 * @param string $format PHP date format.
 	 *
 	 * @return string
 	 */
@@ -145,12 +146,12 @@ class Event {
 	/**
 	 * Format datetime for display.
 	 *
-	 * @param string  $format  PHP date format.
-	 * @param string  $which   The datetime field in event table.
-	 * @param boolean $local   Whether to format date in local time or GMT.
+	 * @param string  $format PHP date format.
+	 * @param string  $which  The datetime field in event table.
+	 * @param boolean $local  Whether to format date in local time or GMT.
 	 *
 	 * @return string
-	 * @since 1.0.0
+	 * @since  1.0.0
 	 */
 	protected function get_formatted_datetime( string $format = 'D, F j, g:ia T', string $which = 'start', bool $local = true ): string {
 		$dt   = $this->get_datetime();
@@ -389,11 +390,11 @@ class Event {
 	 * @since 1.0.0
 	 *
 	 * @param array $params {
-	 *     An array of arguments used to save event data to custom event table.
+	 *                      An array of arguments used to save event data to custom event table.
 	 *
-	 *     @type string  $datetime_start Start DateTime to save for event.
-	 *     @type string  $datetime_end   End DateTime to save for event.
-	 *     @type string  $timezone       Timezone of the event.
+	 * @type string  $datetime_start Start DateTime to save for event.
+	 * @type string  $datetime_end   End DateTime to save for event.
+	 * @type string  $timezone       Timezone of the event.
 	 *
 	 * }
 	 *
@@ -406,7 +407,7 @@ class Event {
 		$retval            = false;
 		$fields            = array_filter(
 			$params,
-			function( $key ) {
+			function ( $key ) {
 				return in_array(
 					$key,
 					array(

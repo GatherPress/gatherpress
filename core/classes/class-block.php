@@ -2,9 +2,9 @@
 /**
  * Class is responsible for all block related functionality.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Block.
  */
 class Block {
+
 
 	use Singleton;
 
@@ -61,7 +62,7 @@ class Block {
 	 * Callback to render blocks.
 	 *
 	 * @param string $block_content The block content about to be appended.
-	 * @param array  $block The full block, including name and attributes.
+	 * @param array  $block         The full block, including name and attributes.
 	 *
 	 * @return string
 	 */

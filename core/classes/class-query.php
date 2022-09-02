@@ -2,9 +2,9 @@
 /**
  * Class is responsible for all query related functionality.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 namespace GatherPress\Core;
@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Query.
  */
 class Query {
+
 
 	use Singleton;
 
@@ -60,9 +61,9 @@ class Query {
 	/**
 	 * Query that returns a list of events.
 	 *
-	 * @param string $event_list_type  Type of event list: upcoming or past.
-	 * @param int    $number           Maximum number of events.
-	 * @param array  $topics           Array of topic slugs.
+	 * @param string $event_list_type Type of event list: upcoming or past.
+	 * @param int    $number          Maximum number of events.
+	 * @param array  $topics          Array of topic slugs.
 	 *
 	 * @return \WP_Query
 	 */
@@ -77,11 +78,11 @@ class Query {
 
 		if ( ! empty( $topics ) ) {
 			$args['tax_query'] = array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				array(
-					'taxonomy' => Event::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => $topics,
-				),
+			array(
+			'taxonomy' => Event::TAXONOMY,
+			'field'    => 'slug',
+			'terms'    => $topics,
+			),
 			);
 		}
 
