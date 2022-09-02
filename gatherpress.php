@@ -5,7 +5,7 @@
  * Description:         GatherPress adds event management and more to WordPress.
  * Author:              The GatherPress Community
  * Author URI:          https://gatherpess.org/
- * Version:             0.4.1
+ * Version:             0.5
  * Minimum PHP Version: 7.3
  * Text Domain:         gatherpress
  * License:             GPLv2 or later (license.txt)
@@ -20,38 +20,16 @@ define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 
-/**
- * Check version of PHP before loading plugin.
- */
-if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
-	add_action(
-		'admin_notices',
-		function() {
-			?>
-			<div class="notice notice-error">
-				<p>
-					<?php
-					echo sprintf(
-						/* translators: %1$s: minimum PHP version, %2$s current PHP version. */
-						esc_html__(
-							'GatherPress requires PHP Version %1$s or greater. You are currently running PHP %2$s. Please upgrade.',
-							'gatherpress'
-						),
-						esc_html( GATHERPRESS_MINIMUM_PHP_VERSION ),
-						esc_html( PHP_VERSION_ID )
-					);
-					?>
-				</p>
-			</div>
-			<?php
-		}
-	);
-
+// Bail if things do not meet minimum plugin requirements.
+if ( ! require_once GATHERPRESS_CORE_PATH . '/core/preflight.php' ) {
 	return;
 }
 
-require_once GATHERPRESS_CORE_PATH . '/core/loader.php';
-require_once GATHERPRESS_CORE_PATH . '/buddypress/loader.php';
+require_once GATHERPRESS_CORE_PATH . '/core/classes/class-autoloader.php';
+
+GatherPress\Core\Autoloader::register();
+GatherPress\Core\Setup::get_instance();
+GatherPress\BuddyPress\Setup::get_instance();
 
 register_activation_hook( __FILE__, 'activate_gatherpress_plugin' );
 /**

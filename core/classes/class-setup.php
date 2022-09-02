@@ -39,6 +39,7 @@ class Setup {
 		Query::get_instance();
 		Rest_Api::get_instance();
 		Settings::get_instance();
+		Venue::get_instance();
 		// @todo move these classes to a `buddypress` directory in plugin.
 		// BuddyPress::get_instance();
 		// Email::get_instance();
@@ -112,6 +113,8 @@ class Setup {
 	/**
 	 * Register the GatherPress post types.
 	 *
+	 * @todo cleanup registering so it's not so repeated.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
@@ -151,10 +154,64 @@ class Setup {
 				),
 			)
 		);
+
+		register_post_type(
+			Venue::POST_TYPE,
+			array(
+				'labels'       => array(
+					'name'               => _x( 'Venues', 'Post Type General Name', 'gatherpress' ),
+					'singular_name'      => _x( 'Venue', 'Post Type Singular Name', 'gatherpress' ),
+					'menu_name'          => __( 'Venues', 'gatherpress' ),
+					'all_items'          => __( 'Venues', 'gatherpress' ),
+					'view_item'          => __( 'View Venue', 'gatherpress' ),
+					'add_new_item'       => __( 'Add New Venue', 'gatherpress' ),
+					'add_new'            => __( 'Add New', 'gatherpress' ),
+					'edit_item'          => __( 'Edit Venue', 'gatherpress' ),
+					'update_item'        => __( 'Update Venue', 'gatherpress' ),
+					'search_items'       => __( 'Search Venues', 'gatherpress' ),
+					'not_found'          => __( 'Not Found', 'gatherpress' ),
+					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+				),
+				'show_in_rest' => true,
+				'public'       => true,
+				'hierarchical' => false,
+				'show_in_menu' => 'edit.php?post_type=gp_event',
+				'supports'     => array(
+					'title',
+					'editor',
+					'thumbnail',
+					'revisions',
+					'custom-fields',
+				),
+				'menu_icon'    => 'dashicons-location',
+				'template'     => array(
+					array( 'gatherpress/venue-information' ),
+				),
+				'rewrite'      => array(
+					'slug' => 'venues',
+				),
+			)
+		);
+
+		register_post_meta(
+			Venue::POST_TYPE,
+			'_venue_information',
+			array(
+				'auth_callback'     => function() {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			)
+		);
 	}
 
 	/**
 	 * Register the GatherPress taxonomies.
+	 *
+	 * @todo cleanup registering so it's not so repeated.
 	 *
 	 * @since 1.0.0
 	 *
@@ -187,6 +244,20 @@ class Setup {
 				'show_admin_column' => true,
 				'query_var'         => true,
 				'rewrite'           => array( 'slug' => 'topic' ),
+				'show_in_rest'      => true,
+			)
+		);
+
+		register_taxonomy(
+			Venue::TAXONOMY,
+			Event::POST_TYPE,
+			array(
+				'labels'            => array(),
+				'hierarchical'      => false,
+				'public'            => true,
+				'show_ui'           => false,
+				'show_admin_column' => false,
+				'query_var'         => true,
 				'show_in_rest'      => true,
 			)
 		);

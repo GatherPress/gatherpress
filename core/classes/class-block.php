@@ -40,6 +40,7 @@ class Block {
 	 */
 	protected $static_blocks = array(
 		'event-date',
+		'venue-information',
 	);
 
 	/**
