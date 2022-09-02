@@ -167,26 +167,39 @@ const Edit = ( props ) => {
 						maxSuggestions={ 20 }
 					/>
 				</PanelBody>
-	 <PanelBody>
-		<ToggleControl
-            label="Show/Hide Attendee list"
-            help={
-                attributes.showAttendeeList
-                    ? 'Show Attendee List'
-                    : 'Do not show Attendee List'
-            }
-            checked={ attributes.showAttendeeList }
-            onChange={ () => {
-                setAttributes( { showAttendeeList: ! attributes.showAttendeeList } );
-            } }
-        />
-		</PanelBody>
+				<PanelBody>
+					<ToggleControl
+						label="Show/Hide Attendee list"
+						help={
+							attributes.showAttendeeList
+								? 'Show Attendee List'
+								: 'Do not show Attendee List'
+						}
+						checked={ attributes.showAttendeeList }
+						onChange={ () => {
+							setAttributes( { showAttendeeList: ! attributes.showAttendeeList } );
+						} }
+					/>
+					<ToggleControl
+						label="Show/Hide Featured Image"
+						help={
+							attributes.showFeaturedImage
+								? 'Show Featured Image'
+								: 'Do not show Featured Image'
+						}
+						checked={ attributes.showFeaturedImage }
+						onChange={ () => {
+							setAttributes( { showFeaturedImage: ! attributes.showFeaturedImage } );
+						} }
+					/>
+				</PanelBody>
 			</InspectorControls>
 			<EventsList
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
 				topics={ attributes.topics }
-				showAttendeeList = { attributes.showAttendeeList }
+				showAttendeeList={ attributes.showAttendeeList }
+				showFeaturedImage={ attributes.showFeaturedImage }
 			/>		
 		</div>
 	);

@@ -8,7 +8,7 @@ const EventItem = ( props ) => {
 		return '';
 	}
 
-	const { type, event, showAttendeeList } = props;
+	const { type, event, showAttendeeList, showFeaturedImage } = props;
 
 	const eventClass = `gp-events-list`;
 
@@ -16,12 +16,14 @@ const EventItem = ( props ) => {
 		<div className={ eventClass }>
 			<div className={ `${ eventClass }__header` }>
 				<div className={ `${ eventClass }__info` }>
+				{ showFeaturedImage && (
 					<figure className={ `${ eventClass }__image` }>
 						<a href={ event.permalink }>
 							{/* Here we will need to put an image block with controls so it can be cropped */}
 							{ HtmlReactParser( event.featured_image ) }
 						</a>
 					</figure>
+				) }
 					<div
 						className={ `${ eventClass }__datetime has-small-font-size` }
 					>

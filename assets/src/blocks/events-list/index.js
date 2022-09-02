@@ -31,6 +31,10 @@ registerBlockType( 'gatherpress/events-list', {
 		showAttendeeList: {
 			type: 'boolean',
 			default: true
+		},
+		showFeaturedImage: {
+			type: 'boolean',
+			default: true
 		}
 	},
 	edit: Edit,

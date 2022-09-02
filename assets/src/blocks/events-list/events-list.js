@@ -22,6 +22,7 @@ for ( let i = 0; i < containers.length; i++ ) {
 			maxNumberOfEvents={ attrs.maxNumberOfEvents ?? 5 }
 			topics={ attrs.topics ?? [] }
 			showAttendeeList={ attrs.showAttendeeList ?? true }
+			showFeaturedImage={ attrs.showFeaturedImage ?? true }
 		/>,
 		containers[ i ],
 	);
