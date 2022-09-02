@@ -20,7 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Query {
 
-
 	use Singleton;
 
 	/**
@@ -173,5 +172,4 @@ class Query {
 	public function order_upcoming_events( array $pieces ): array {
 		return Event::adjust_sql( $pieces, 'upcoming', 'ASC' );
 	}
-
 }

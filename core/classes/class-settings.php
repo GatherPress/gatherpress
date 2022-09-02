@@ -20,7 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Settings {
 
-
 	use Singleton;
 
 	const PARENT_SLUG = 'edit.php?post_type=gp_event';
@@ -543,5 +542,4 @@ class Settings {
 
 		return (string) $submenu;
 	}
-
 }

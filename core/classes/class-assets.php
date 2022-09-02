@@ -20,7 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Assets {
 
-
 	use Singleton;
 
 	/**
@@ -230,5 +229,4 @@ class Assets {
 
 		return $this->asset_data[ $asset ];
 	}
-
 }

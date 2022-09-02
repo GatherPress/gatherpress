@@ -20,7 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Rest_Api {
 
-
 	use Singleton;
 
 	/**
@@ -407,5 +406,4 @@ class Rest_Api {
 
 		return new \WP_REST_Response( $response );
 	}
-
 }

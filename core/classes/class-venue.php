@@ -20,7 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Venue {
 
-
 	use Singleton;
 
 	const POST_TYPE = 'gp_venue';
@@ -100,5 +99,4 @@ class Venue {
 	public function get_venue_term_slug( int $post_id ): string {
 		return sprintf( '_venue_%d', $post_id );
 	}
-
 }

@@ -20,7 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Block {
 
-
 	use Singleton;
 
 	/**
@@ -102,5 +101,4 @@ class Block {
 
 		return $block_content;
 	}
-
 }
