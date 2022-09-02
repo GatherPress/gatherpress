@@ -97,7 +97,7 @@ For example, my repo is called `gatherpress-pbrocks`, which distinguishes itself
 https://github.com/pbrocks/gatherpress-pbrocks
 ```
 
-![PBrocks GatherPress repo](assets/media/pbrocksgatherpress-pbrocks.png)
+![PBrocks GatherPress repo](docs/media/pbrocksgatherpress-pbrocks.png)
 
 ### Install wp-env globally
 
@@ -125,11 +125,11 @@ wp-env start
 
 You should then see that a development site has been configured for you on localhost port 2003
 
-![Development Site Login](assets/media/wp-env.json—startup.png)
+![Development Site Login](docs/media/wp-env.json—startup.png)
 
 #### Log in to Site / Log into Site
 
-![Development Site Login](assets/media/dev-login-gatherpress-pbrocks.png)
+![Development Site Login](docs/media/dev-login-gatherpress-pbrocks.png)
 
 #### Development Site Plugins/Themes
 
@@ -144,7 +144,7 @@ To further customize the development site using your favorite or most familiar d
 
 In fact, after the initial setup, you may notice that in your code editor, there is now a `wp-core` folder containing the default plugins and themes, but it is grayed out, so the contents of this folder will not be committed to the GatherPress repository.
 
-![Development Site Plugins/Themes](assets/media/gitignore—gatherpress.png)
+![Development Site Plugins/Themes](docs/media/gitignore—gatherpress.png)
 
 #### To shut down your development session
 
