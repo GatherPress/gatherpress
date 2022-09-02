@@ -23,6 +23,8 @@ for ( let i = 0; i < containers.length; i++ ) {
 			topics={ attrs.topics ?? [] }
 			showAttendeeList={ attrs.showAttendeeList ?? true }
 			showFeaturedImage={ attrs.showFeaturedImage ?? true }
+			showDescription={ attrs.showDescription ?? true }
+			showRsvpButton={ attrs.showRsvpButton ?? true }
 		/>,
 		containers[ i ],
 	);

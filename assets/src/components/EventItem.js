@@ -8,7 +8,7 @@ const EventItem = ( props ) => {
 		return '';
 	}
 
-	const { type, event, showAttendeeList, showFeaturedImage } = props;
+	const { type, event, showAttendeeList, showFeaturedImage, showDescription, showRsvpButton } = props;
 
 	const eventClass = `gp-events-list`;
 
@@ -34,11 +34,13 @@ const EventItem = ( props ) => {
 							{ HtmlReactParser( event.title ) }
 						</a>
 					</div>
-					<div className={ `${ eventClass }__content` }>
-						<div className={ `${ eventClass }__excerpt` }>
-							{ HtmlReactParser( event.excerpt ) }
+					{ showDescription && (
+						<div className={ `${ eventClass }__content` }>
+							<div className={ `${ eventClass }__excerpt` }>
+								{ HtmlReactParser( event.excerpt ) }
+							</div>
 						</div>
-					</div>
+					) }
 				</div>
 			</div>
 			<div className={ `${ eventClass }__footer` }>
@@ -53,7 +55,7 @@ const EventItem = ( props ) => {
 					/>
 				</div>
 			)}
-				{ 'upcoming' === type && (
+				{ ( 'upcoming' === type && showRsvpButton ) && (
 					<AttendanceSelector
 						eventId={ event.ID }
 						currentUser={ event.current_user }
@@ -61,7 +63,7 @@ const EventItem = ( props ) => {
 					/>
 				) }
 
-				{ 'past' === type && (
+				{ ( 'past' === type && showRsvpButton ) && (
 					<AttendeeResponse
 						type={ type }
 						status={ event.current_user?.status }

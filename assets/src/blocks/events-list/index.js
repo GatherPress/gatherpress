@@ -35,6 +35,14 @@ registerBlockType( 'gatherpress/events-list', {
 		showFeaturedImage: {
 			type: 'boolean',
 			default: true
+		},
+		showDescription: {
+			type: 'boolean',
+			default: true
+		},
+		showRsvpButton: {
+			type: 'boolean',
+			default: true
 		}
 	},
 	edit: Edit,

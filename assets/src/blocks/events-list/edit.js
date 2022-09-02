@@ -192,6 +192,30 @@ const Edit = ( props ) => {
 							setAttributes( { showFeaturedImage: ! attributes.showFeaturedImage } );
 						} }
 					/>
+					<ToggleControl
+						label="Show/Description"
+						help={
+							attributes.showDescription
+								? 'Show Description'
+								: 'Hide Description'
+						}
+						checked={ attributes.showDescription }
+						onChange={ () => {
+							setAttributes( { showDescription: ! attributes.showDescription } );
+						} }
+					/>
+					<ToggleControl
+						label="Show/RSVP Button"
+						help={
+							attributes.showRsvpButton
+								? 'Show RSVP Button'
+								: 'Hide RSVP Button'
+						}
+						checked={ attributes.showRsvpButton }
+						onChange={ () => {
+							setAttributes( { showRsvpButton: ! attributes.showRsvpButton } );
+						} }
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<EventsList
@@ -200,6 +224,8 @@ const Edit = ( props ) => {
 				topics={ attributes.topics }
 				showAttendeeList={ attributes.showAttendeeList }
 				showFeaturedImage={ attributes.showFeaturedImage }
+				showDescription={ attributes.showDescription }
+				showRsvpButton={ attributes.showRsvpButton }
 			/>		
 		</div>
 	);
