@@ -15,7 +15,14 @@ import { useState } from '@wordpress/element';
  */
 import { Listener } from '../../helpers/broadcasting';
 
-const formatDate = ( start, end ) => {
+/**
+ * Similar to get_display_datetime method in class-event.php.
+ *
+ * @param start
+ * @param end
+ * @returns {string}
+ */
+const displayDateTime = ( start, end ) => {
 	const dateFormat = 'dddd, MMMM D, YYYY';
 	const timeFormat = 'h:mm A';
 	const timeZoneFormat = 'z';
@@ -47,7 +54,7 @@ const Edit = () => {
 					<Icon icon="clock" />
 				</FlexItem>
 				<FlexItem>
-					{ formatDate( dateTimeStart, dateTimeEnd ) }
+					{ displayDateTime( dateTimeStart, dateTimeEnd ) }
 				</FlexItem>
 			</Flex>
 		</div>
