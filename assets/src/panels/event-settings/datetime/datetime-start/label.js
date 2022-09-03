@@ -30,6 +30,11 @@ export function updateDateTimeStart( dateTime, setState = null ) {
 		setState( { dateTime } );
 	}
 
+	const payload = {
+		setDateTimeStart: dateTime,
+	};
+
+	Broadcaster( payload );
 	enableSave();
 }
 

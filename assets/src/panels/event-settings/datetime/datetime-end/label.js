@@ -31,6 +31,11 @@ export function updateDateTimeEnd( dateTime, setState = null ) {
 		setState( { dateTime } );
 	}
 
+	const payload = {
+		setDateTimeEnd: dateTime,
+	};
+
+	Broadcaster( payload );
 	enableSave();
 }
 

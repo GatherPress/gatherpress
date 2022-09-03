@@ -12,7 +12,7 @@ import edit from './edit';
 registerBlockType( 'gatherpress/event-date', {
 	apiVersion: 2,
 	title: __( 'Event Date', 'gatherpress' ),
-	icon: 'groups',
+	icon: 'clock',
 	category: 'gatherpress',
 	attributes: {
 		blockId: { type: 'string' },
