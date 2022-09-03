@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "gatherpress/date-gp",
+	"version": "0.1.2",
+	"title": "GatherPress Event Date",
+	"category": "gatherpress-event",
+	"icon": {
+		"background": "#8bc7d4",
+		"foreground": "white",
+		"src": "nametag"
+	},
+	"description": "Starter block for selecting dates and times.",
+	"attributes": {
+		"theEndTime": {
+			"type": "string"
+		},
+		"theStartTime": {
+			"type": "string"
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"example": {},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+}

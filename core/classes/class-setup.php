@@ -19,9 +19,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Setup.
  */
 class Setup {
-
-
-
 	use Singleton;
 
 	/**
@@ -92,8 +89,14 @@ class Setup {
 			'slug'  => 'gatherpress',
 			'title' => __( 'GatherPress', 'gatherpress' ),
 		);
-		// return array_unshift( $categories, $gatherpress_category );
 		array_unshift( $categories, $gatherpress_category );
+		if ( 'gp_event' === get_post_type( get_the_ID() ) ) {
+			$gatherpress_event = array(
+				'slug'  => 'gatherpress-event',
+				'title' => __( 'GatherPress Event', 'gatherpress' ),
+			);
+			array_unshift( $categories, $gatherpress_event );
+		}
 		return $categories;
 	}
 
@@ -146,6 +149,24 @@ class Setup {
 					'revisions',
 				),
 				'menu_icon'     => 'dashicons-nametag',
+				'template'      => array(
+					array(
+						'core/heading',
+						array(
+							'content' => 'An Event Title ...',
+						),
+					),
+					array(
+						'core/paragraph',
+						array(
+							'content' => 'A Description about the event ...',
+						),
+					),
+					array(
+						'gatherpress/date-gp',
+						array(),
+					),
+				),
 				'rewrite'       => array(
 					'slug' => 'events',
 				),
