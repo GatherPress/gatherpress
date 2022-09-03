@@ -19,21 +19,23 @@ const formatDate = ( start, end ) => {
 	const dateFormat = 'dddd, MMMM D, YYYY';
 	const timeFormat = 'h:mm A';
 	const timeZoneFormat = 'z';
+	// eslint-disable-next-line no-undef
 	const timeZone = GatherPress.event_datetime.timezone;
-
-	let startFormat = dateFormat + ' ' + timeFormat;
+	const startFormat = dateFormat + ' ' + timeFormat;
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 
 	if ( moment( start ).format( dateFormat ) === moment( end ).format( dateFormat ) ) {
 		endFormat = timeFormat + ' ' + timeZoneFormat;
 	}
 
-	return moment( start ).format( startFormat ) + ' to ' + moment.tz( end, timeZone ).format( endFormat ) ;
+	return moment( start ).format( startFormat ) + ' to ' + moment.tz( end, timeZone ).format( endFormat );
 };
 
-const Edit = ( props ) => {
+const Edit = () => {
 	const blockProps = useBlockProps();
+	// eslint-disable-next-line no-undef
 	const [ dateTimeEnd, setDateTimeEnd ] = useState( GatherPress.event_datetime.datetime_end );
+	// eslint-disable-next-line no-undef
 	const [ dateTimeStart, setDateTimeStart ] = useState( GatherPress.event_datetime.datetime_start );
 
 	Listener( { setDateTimeEnd, setDateTimeStart } );
@@ -50,6 +52,6 @@ const Edit = ( props ) => {
 			</Flex>
 		</div>
 	);
-}
+};
 
 export default Edit;
