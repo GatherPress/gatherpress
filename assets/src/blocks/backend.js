@@ -3,6 +3,7 @@
  */
 import './attendance-list/index';
 import './attendance-selector/index';
+import './event-date/index';
 import './events-list/index';
 import './venue-information/index';
 

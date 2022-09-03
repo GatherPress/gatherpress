@@ -12,6 +12,7 @@ import { dateI18n, __experimentalGetSettings } from '@wordpress/date';
 /**
  * Internal dependencies.
  */
+import { Broadcaster } from '../../../../helpers/broadcasting';
 import { validateDateTimeStart } from '../helpers';
 import { enableSave } from '../../../helpers';
 
