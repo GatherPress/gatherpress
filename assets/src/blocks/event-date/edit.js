@@ -18,9 +18,9 @@ import { Listener } from '../../helpers/broadcasting';
 /**
  * Similar to get_display_datetime method in class-event.php.
  *
- * @param start
- * @param end
- * @returns {string}
+ * @param  {string} start
+ * @param  {string} end
+ * @return {string}
  */
 const displayDateTime = ( start, end ) => {
 	const dateFormat = 'dddd, MMMM D, YYYY';
