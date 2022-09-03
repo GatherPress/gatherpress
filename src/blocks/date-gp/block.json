@@ -3,7 +3,7 @@
 	"apiVersion": 2,
 	"name": "gatherpress/date-gp",
 	"version": "0.1.2",
-	"title": "GatherPress Event Date",
+	"title": "GatherPress Event",
 	"category": "gatherpress-event",
 	"icon": {
 		"background": "#8bc7d4",
