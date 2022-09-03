@@ -6,17 +6,14 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
-import { Flex, FlexBlock, FlexItem, Icon, TextControl } from '@wordpress/components';
-import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect, useState } from '@wordpress/element';
+import { Flex, FlexItem, Icon } from '@wordpress/components';
+import { useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
-import {dateTimeFormat} from '../../panels/event-settings/datetime/helpers';
 
 const formatDate = ( start, end ) => {
 	const dateFormat = 'dddd, MMMM D, YYYY';
@@ -35,7 +32,6 @@ const formatDate = ( start, end ) => {
 };
 
 const Edit = ( props ) => {
-	const { attributes, setAttributes, isSelected } = props;
 	const blockProps = useBlockProps();
 	const [ dateTimeEnd, setDateTimeEnd ] = useState( GatherPress.event_datetime.datetime_end );
 	const [ dateTimeStart, setDateTimeStart ] = useState( GatherPress.event_datetime.datetime_start );
