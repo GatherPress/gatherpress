@@ -49,7 +49,7 @@ class Autoloader {
 				}
 
 				$structure[]   = sprintf( 'class-%s.php', $file );
-				$resource_path = GATHERPRESS_CORE_PATH . '/' . implode( '/', $structure );
+				$resource_path = GATHERPRESS_CORE_PATH . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $structure );
 
 				if ( file_exists( $resource_path ) && 0 === validate_file( $resource_path ) ) {
 					require_once $resource_path;
