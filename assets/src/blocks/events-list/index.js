@@ -13,6 +13,7 @@ registerBlockType( 'gatherpress/events-list', {
 	title: __( 'Events List', 'gatherpress' ),
 	icon: 'groups',
 	category: 'gatherpress',
+	example: {},
 	attributes: {
 		maxNumberOfEvents: {
 			type: 'integer',

@@ -6,6 +6,7 @@ registerBlockType( 'gatherpress/attendance-list', {
 	apiVersion: 2,
 	title: __( 'Attendance List', 'gatherpress' ),
 	icon: 'groups',
+	example: {},
 	category: 'gatherpress',
 	attributes: {
 		blockId: { type: 'string' },

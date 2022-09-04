@@ -14,6 +14,7 @@ registerBlockType( 'gatherpress/venue-information', {
 	title: __( 'Venue Information', 'gatherpress' ),
 	icon: 'location',
 	category: 'gatherpress',
+	example: {},
 	attributes: {
 		blockId: { type: 'string' },
 		fullAddress: {
