@@ -1,6 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import { registerBlockType } from '@wordpress/blocks';
-import Edit from './edit';
+import edit from './edit';
 
 registerBlockType( 'gatherpress/attendance-selector', {
 	apiVersion: 2,
@@ -12,6 +12,6 @@ registerBlockType( 'gatherpress/attendance-selector', {
 		content: { type: 'string' },
 		color: { type: 'string' },
 	},
-	edit: Edit,
+	edit,
 	save: () => null,
 } );

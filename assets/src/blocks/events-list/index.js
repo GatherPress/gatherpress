@@ -6,7 +6,7 @@ import { registerBlockType } from '@wordpress/blocks';
 /**
  * Internal dependencies.
  */
-import Edit from './edit';
+import edit from './edit';
 
 registerBlockType( 'gatherpress/events-list', {
 	apiVersion: 2,
@@ -30,6 +30,6 @@ registerBlockType( 'gatherpress/events-list', {
 			default: 'upcoming',
 		},
 	},
-	edit: Edit,
+	edit,
 	save: () => null,
 } );
