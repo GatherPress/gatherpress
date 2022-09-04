@@ -43,12 +43,13 @@ class Venue {
 	/**
 	 * Update or insert a Venue taxonomy term for event queries.
 	 *
-	 * @param int $post_id Post ID of venue.
+	 * @param int      $post_id Post ID of venue.
+	 * @param \WP_Post $post    Post object.
 	 *
 	 * @return void
 	 */
-	public function save_venue_term( int $post_id, \WP_Post $post ) {
-		if ( isset($post->post_status ) && 'auto-draft' === $post->post_status ) {
+	public function save_venue_term( int $post_id, \WP_Post $post ): void {
+		if ( isset( $post->post_status ) && 'auto-draft' === $post->post_status ) {
 			return;
 		}
 
@@ -94,7 +95,7 @@ class Venue {
 	 *
 	 * @return void
 	 */
-	public function delete_venue_term( int $post_id ) {
+	public function delete_venue_term( int $post_id ): void {
 		if ( get_post_type( $post_id ) === self::POST_TYPE ) {
 			$term_slug = $this->get_venue_term_slug( $post_id );
 			$term      = get_term_by( 'slug', $term_slug, self::TAXONOMY );
