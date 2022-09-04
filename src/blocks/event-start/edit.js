@@ -24,10 +24,7 @@ import { useBlockProps } from '@wordpress/block-editor';
 export default function Edit() {
 	return (
 		<p { ...useBlockProps() }>
-			{ __(
-				'Event Start – ' + GatherPress.event_datetime.datetime_start,
-				'gatherpress-event'
-			) }
+			{moment(GatherPress.event_datetime.datetime_start).add(1, 'day').format('dddd, MMMM Do YYYY, h:mm:ss a')}
 		</p>
 	);
 }
