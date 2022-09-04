@@ -19,18 +19,19 @@ $venue = get_post( intval( $gatherpress_block_attrs['venueId'] ) );
 if ( Venue::POST_TYPE !== get_post_type( $venue ) ) {
 	return;
 }
-$venue_information = get_post_meta( $venue->ID, '_venue_information', true );
-$venue_information = json_decode( $venue_information );
+
+$venue_information = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
 ?>
 <div class="gp-venue">
-	<div class="has-medium-font-size">
-		<strong><?php echo esc_html( $venue->post_title ); ?></strong>
-	</div>
+<!--	<div class="has-medium-font-size">-->
+<!--		<strong>--><?php //echo esc_html( $venue->post_title ); ?><!--</strong>-->
+<!--	</div>-->
 	<?php
 	Utility::render_template(
 		sprintf( '%s/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),
 		array(
 			'gatherpress_block_attrs' => array(
+				'name'        => $venue->post_title,
 				'fullAddress' => $venue_information->fullAddress ?? '',
 				'phoneNumber' => $venue_information->phoneNumber ?? '',
 				'website'     => $venue_information->website ?? '',

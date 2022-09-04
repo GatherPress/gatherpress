@@ -37,12 +37,7 @@ const Edit = ( props ) => {
 		const website = venueInformation?.website ?? '';
 
 		return (
-			<div className="gp-venue">
-				<div className="has-medium-font-size">
-					<strong>{ venuePost?.title.rendered }</strong>
-				</div>
-				<VenueInformation fullAddress={ fullAddress } phoneNumber={ phoneNumber } website={ website } />
-			</div>
+			<VenueInformation name={ venuePost?.title.rendered } fullAddress={ fullAddress } phoneNumber={ phoneNumber } website={ website } />
 		);
 	};
 

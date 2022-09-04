@@ -1,48 +1,63 @@
 import { Flex, FlexItem, Icon } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-const VenueInformation = ( { fullAddress, phoneNumber, website } ) => {
+const VenueInformation = ( { name, fullAddress, phoneNumber, website } ) => {
 	return (
-		<>
-			{ fullAddress && (
-				<Flex justify="normal">
-					<FlexItem display="flex">
+		<div className="gp-venue-information">
+			{ ( name || fullAddress ) && (
+				<Flex justify="normal" align="flex-start" gap="4">
+					<FlexItem display="flex" className="gp-venue-information__icon">
 						<Icon icon="location" />
 					</FlexItem>
 					<FlexItem>
-						{ fullAddress }
+						{ name && (
+							<div className="gp-venue_information__name has-medium-font-size">
+								<strong>
+									{ name }
+								</strong>
+							</div>
+						) }
+						{ fullAddress && (
+							<div className="gp-venue-information__full-address">
+								{ fullAddress }
+							</div>
+						) }
 					</FlexItem>
 				</Flex>
 			) }
 			{ ( phoneNumber || website ) && (
-				<Flex justify="normal" gap="4">
+				<Flex justify="normal" gap="8">
 					{ phoneNumber && (
 						<FlexItem>
-							<Flex justify="normal">
-								<FlexItem display="flex">
+							<Flex justify="normal" gap="4">
+								<FlexItem display="flex" className="gp-venue-information__icon">
 									<Icon icon="phone" />
 								</FlexItem>
 								<FlexItem>
-									{ phoneNumber }
+									<div className="gp-venue-information__phone-number">
+										{ phoneNumber }
+									</div>
 								</FlexItem>
 							</Flex>
 						</FlexItem>
 					) }
 					{ website && (
 						<FlexItem>
-							<Flex justify="normal">
-								<FlexItem display="flex">
+							<Flex justify="normal" gap="4">
+								<FlexItem display="flex" className="gp-venue-information__icon">
 									<Icon icon="admin-site-alt3" />
 								</FlexItem>
 								<FlexItem>
-									<a href={ website } target="_blank" rel="noreferrer noopener">{ website }</a>
+									<div className="gp-venue-information__website">
+										<a href={ website } target="_blank" rel="noreferrer noopener">{ website }</a>
+									</div>
 								</FlexItem>
 							</Flex>
 						</FlexItem>
 					) }
 				</Flex>
 			) }
-		</>
+		</div>
 	);
 };
 
