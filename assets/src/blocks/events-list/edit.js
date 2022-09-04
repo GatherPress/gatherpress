@@ -209,10 +209,10 @@ const Edit = ( props ) => {
 						label="Description Limit"
 						help="Limit the amount of words that display underneath the title of the event"
 						value={ parseInt( attributes.descriptionLimit ) }
-						onChange={ ( value ) => setAttributes( { descriptionLimit: value } ) }
-						type="number"
+						onChange={ ( value ) => setAttributes( { descriptionLimit: parseInt(value) } ) }
 						min={ 0 }
 						max={ excerptMax }
+						type='number'
 					/>
 					<ToggleControl
 						label="Show/RSVP Button"
