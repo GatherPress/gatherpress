@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Setup {
 
+
 	use Singleton;
 
 	/**
@@ -87,15 +88,12 @@ class Setup {
 	 * @return array
 	 */
 	public function block_category( $categories ) {
-		return array_merge(
-			$categories,
-			array(
-				array(
-					'slug'  => 'gatherpress',
-					'title' => __( 'GatherPress', 'gatherpress' ),
-				),
-			)
+		$gatherpress_category = array(
+			'slug'  => 'gatherpress',
+			'title' => __( 'GatherPress', 'gatherpress' ),
 		);
+		array_unshift( $categories, $gatherpress_category );
+		return $categories;
 	}
 
 	/**
@@ -197,7 +195,7 @@ class Setup {
 			Venue::POST_TYPE,
 			'_venue_information',
 			array(
-				'auth_callback'     => function() {
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'sanitize_text_field',
@@ -491,5 +489,4 @@ class Setup {
 
 		return $event->get_datetime_start( $format );
 	}
-
 }
