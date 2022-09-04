@@ -69,7 +69,7 @@ function second_blocks_block_init() {
 
 }
 
-add_filter( 'allowed_block_types_all', 'check_allowed_block_types', 11, 2 );
+// add_filter( 'allowed_block_types_all', 'check_allowed_block_types', 11, 2 );
 /**
  * Check context for blocks
  *
