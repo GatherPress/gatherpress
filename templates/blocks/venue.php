@@ -29,8 +29,8 @@ $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue-
 		array(
 			'gatherpress_block_attrs' => array(
 				'name'        => $gatherpress_venue->post_title,
-				'fullAddress' => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-				'phoneNumber' => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+				'fullAddress' => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				'phoneNumber' => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 				'website'     => $gatherpress_venue_information->website ?? '',
 			),
 		),
