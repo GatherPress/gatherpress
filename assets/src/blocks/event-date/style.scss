@@ -1,0 +1,15 @@
+.gp-event-date {
+	&__row {
+		display: flex;
+	}
+
+	&__icon {
+		display: flex;
+		align-items: center;
+	}
+
+	&__item {
+		display: flex;
+		gap: 0.5rem;
+	}
+}
