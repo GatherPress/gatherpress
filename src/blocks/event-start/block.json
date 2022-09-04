@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "gatherpress-event/event-start",
+	"version": "0.1.0",
+	"title": "Event Start",
+	"category": "gatherpress-event",
+	"icon": {
+		"src": "sos",
+		"background": "lightslategray",
+		"foreground": "white"
+	},
+	"description": "Event Start Block scaffolded with Create Block tool.",
+	"supports": {
+		"html": false
+	},
+	"example": {},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+}

@@ -149,26 +149,45 @@ class Setup {
 					'revisions',
 				),
 				'menu_icon'     => 'dashicons-nametag',
+				'rewrite'       => array(
+					'slug' => 'events',
+				),
 				'template'      => array(
 					array(
 						'core/heading',
 						array(
-							'content' => 'An Event Title ...',
+							'content' => 'Event Title',
 						),
 					),
 					array(
 						'core/paragraph',
 						array(
-							'content' => 'A Description about the event ...',
+							'content' => 'Descriptive paragraph for Event',
 						),
 					),
 					array(
-						'gatherpress/date-gp',
+						'core/columns',
 						array(),
+						array(
+							array(
+								'core/column',
+								array(),
+								array(
+									array( 'gatherpress-event/event-start', array() ),
+								),
+							),
+							array(
+								'core/column',
+								array(),
+								array(
+									array(
+										'gatherpress-event/event-end',
+										array(),
+									),
+								),
+							),
+						),
 					),
-				),
-				'rewrite'       => array(
-					'slug' => 'events',
 				),
 			)
 		);

@@ -26,7 +26,7 @@ define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
 	add_action(
 		'admin_notices',
-		function() {
+		function () {
 			?>
 			<div class="notice notice-error">
 				<p>
@@ -62,6 +62,8 @@ add_action( 'init', 'combined_blocks_block_init' );
  * @see https://developer.wordpress.org/reference/functions/register_block_type/
  */
 function combined_blocks_block_init() {
-	register_block_type( __DIR__ . '/build/blocks/date-gp' );
-	// register_block_type( __DIR__ . '/build/blocks/block-starter' );
+	register_block_type( __DIR__ . '/build/blocks/event-end' );
+	register_block_type( __DIR__ . '/build/blocks/event-start' );
+	register_block_type( __DIR__ . '/build/blocks/event-template' );
+	register_block_type( __DIR__ . '/build/blocks/template-starter' );
 }

@@ -1,5 +1,11 @@
 import { useBlockProps } from '@wordpress/block-editor';
 
+import {
+	__experimentalGrid as Grid,
+	__experimentalText as Text,
+} from '@wordpress/components';
+
+
 /**
  * The save function defines the way in which the different attributes should
  * be combined into the final markup, which is then serialized by the block
@@ -13,23 +19,24 @@ import { useBlockProps } from '@wordpress/block-editor';
  */
 export default function save({ attributes }) {
 	const blockPropsSave = useBlockProps.save();
-	const { theTime, theStartTime, theEndTime } = attributes;
 	return (
         <div {...blockPropsSave}>
-			{theStartTime ?
-				<>
-					<p>The Start Date-Time:</p>
-					<p>{theStartTime}</p>
-				</> :
-				<p>No date defined</p>
-			}
-            { theEndTime ?
-                <>
-                    <p>The EndDate-Time:</p>
-                    <p>{theEndTime}</p>
-                </> :
-                    <p>No date defined</p>
-			}
+			<Grid columns={2}>
+				{GatherPress.event_datetime.datetime_start ?
+					<Text>
+						<p>The Start Date-Time:</p>
+						<p>{GatherPress.event_datetime.datetime_start}</p>
+					</Text> :
+					<Text>No date defined</Text>
+				}
+				{ GatherPress.event_datetime.datetime_end ?
+						<Text>
+						<p>The EndDate-Time:</p>
+						<p>{GatherPress.event_datetime.datetime_end}</p>
+						</Text> :
+						<Text>No date defined</Text>
+				}
+			</Grid>
         </div>
     );
 }

@@ -13,10 +13,9 @@ import {
 
 function Presentation_Grid() {
 	return (
-		<Grid columns={3}>
-			<Text>Code</Text>
-			<Text>is</Text>
-			<Text>Poetry</Text>
+		<Grid columns={2}>
+			<Text>{GatherPress.event_datetime.datetime_start}</Text>
+			<Text>{GatherPress.event_datetime.datetime_end}</Text>
 		</Grid>
 	);
 }
@@ -73,8 +72,6 @@ export default function Edit({ attributes, setAttributes }) {
 			<p>{GatherPress.event_datetime.datetime_end}</p>
 			<p>Click on the <span style={{ fontSize: "x-large" }}>&#9881;</span> in the upper right to select time and date</p>
 			<Presentation_Grid />
-			<p>{theStartTime}</p>
-			<p>{theEndTime}</p>
 		</div>
 	);
 
