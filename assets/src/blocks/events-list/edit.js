@@ -52,7 +52,7 @@ const Edit = ( props ) => {
 			topics,
 		],
 	);
-	const excerptMax = 55	
+	const excerptMax = 55;
 	const topicSuggestions =
 		topicsList?.reduce(
 			( accumulator, topic ) => ( {
@@ -210,10 +210,10 @@ const Edit = ( props ) => {
 						help="Limit the amount of words that display underneath the title of the event"
 						value={ parseInt( attributes.descriptionLimit ) }
 						onChange={ ( value ) => setAttributes( { descriptionLimit: value } ) }
-						type='number'
+						type="number"
 						min={ 0 }
 						max={ excerptMax }
-        			/>
+					/>
 					<ToggleControl
 						label="Show/RSVP Button"
 						help={
@@ -229,7 +229,7 @@ const Edit = ( props ) => {
 				</PanelBody>
 			</InspectorControls>
 			<EventsList
-				descriptionLimit={ attributes.descriptionLimit}
+				descriptionLimit={ attributes.descriptionLimit }
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
 				topics={ attributes.topics }
@@ -237,7 +237,7 @@ const Edit = ( props ) => {
 				showFeaturedImage={ attributes.showFeaturedImage }
 				showDescription={ attributes.showDescription }
 				showRsvpButton={ attributes.showRsvpButton }
-			/>		
+			/>
 		</div>
 	);
 };

@@ -17,7 +17,7 @@ registerBlockType( 'gatherpress/events-list', {
 		descriptionLimit: {
 			type: 'string',
 			default: '24',
-		},	
+		},
 		maxNumberOfEvents: {
 			type: 'integer',
 			default: '5',
@@ -34,20 +34,20 @@ registerBlockType( 'gatherpress/events-list', {
 		},
 		showAttendeeList: {
 			type: 'boolean',
-			default: true
+			default: true,
 		},
 		showFeaturedImage: {
 			type: 'boolean',
-			default: true
+			default: true,
 		},
 		showDescription: {
 			type: 'boolean',
-			default: true
+			default: true,
 		},
 		showRsvpButton: {
 			type: 'boolean',
-			default: true
-		}
+			default: true,
+		},
 	},
 	edit: Edit,
 	save: () => null,
