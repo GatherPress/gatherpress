@@ -154,9 +154,13 @@ class Setup {
 				),
 				'template'      => array(
 					array(
+						'gatherpress-event/event-template',
+						array(),
+					),
+					array(
 						'core/heading',
 						array(
-							'content' => 'Event Title',
+							'content' => 'PHP Event Template Title',
 						),
 					),
 					array(

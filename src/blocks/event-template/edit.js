@@ -4,8 +4,6 @@ import { __ } from '@wordpress/i18n';
 import {
     InnerBlocks,
 	InspectorControls,
-	MediaUploadCheck,
-	RichText,
 	useBlockProps
 } from '@wordpress/block-editor';
 
@@ -20,7 +18,7 @@ export default function Edit({ attributes, setAttributes }) {
 	const blockProps = useBlockProps();
 
     const EVENT_TEMPLATE = [
-        [ 'core/heading', { content: 'Event Title' } ],
+		['core/heading', { content: 'JS Event Template Title' } ],
 		['core/paragraph', { content: 'Event Summary -- this is from the GP JS block template called `event-template`' }],
 		['core/columns', {},
 			[

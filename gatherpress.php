@@ -53,7 +53,7 @@ if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
 require_once GATHERPRESS_CORE_PATH . '/core/loader.php';
 require_once GATHERPRESS_CORE_PATH . '/buddypress/loader.php';
 
-add_action( 'init', 'combined_blocks_block_init' );
+add_action( 'init', 'second_blocks_block_init', 11 );
 /**
  * Registers the block using the metadata loaded from the `block.json` file.
  * Behind the scenes, it registers also all assets so they can be enqueued
@@ -61,9 +61,36 @@ add_action( 'init', 'combined_blocks_block_init' );
  *
  * @see https://developer.wordpress.org/reference/functions/register_block_type/
  */
-function combined_blocks_block_init() {
+function second_blocks_block_init() {
 	register_block_type( __DIR__ . '/build/blocks/event-end' );
 	register_block_type( __DIR__ . '/build/blocks/event-start' );
 	register_block_type( __DIR__ . '/build/blocks/event-template' );
 	register_block_type( __DIR__ . '/build/blocks/template-starter' );
+
 }
+
+add_filter( 'allowed_block_types_all', 'check_allowed_block_types', 11, 2 );
+/**
+ * Check context for blocks
+ *
+ * @param bool|string[] $allowed_block_types
+ * @param WP_Block_Editor_Context $editor_context
+ * @return void
+ */
+function check_allowed_block_types( $allowed_block_types, $block_editor_context ) {
+    if ( 'gp_event' === $block_editor_context->post->post_type ) {
+
+		unregister_block_type('gatherpress-event/event-end' );
+		unregister_block_type('gatherpress-event/event-template' );
+		unset( $allowed_block_types['gatherpress-event/event-start'] );
+		return $allowed_block_types;
+        // return array(
+        //     'core/paragraph',
+        //     'core/heading',
+        //     'core/image',
+        //     'core/list',
+        // );
+    }
+    return $allowed_block_types;
+}
+
