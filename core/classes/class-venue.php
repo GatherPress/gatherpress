@@ -36,7 +36,7 @@ class Venue {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_venue_term' ) );
+		add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_venue_term' ), 10, 2 );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
 	}
 
@@ -47,7 +47,23 @@ class Venue {
 	 *
 	 * @return void
 	 */
-	public function save_venue_term( int $post_id ) {
+	public function save_venue_term( int $post_id, \WP_Post $post ) {
+		if ( isset($post->post_status ) && 'auto-draft' === $post->post_status ) {
+			return;
+		}
+
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			return;
+		}
+
+		if ( false !== wp_is_post_revision( $post_id ) ) {
+			return;
+		}
+
 		$term_slug = $this->get_venue_term_slug( $post_id );
 		$term      = term_exists( $term_slug, self::TAXONOMY );
 		$title     = get_the_title( $post_id );
