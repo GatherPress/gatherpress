@@ -48,10 +48,11 @@ class Autoloader {
 						$structure[] = 'classes';
 				}
 
-				$structure[]   = sprintf( 'class-%s.php', $file );
-				$resource_path = GATHERPRESS_CORE_PATH . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $structure );
+				$structure[]         = sprintf( 'class-%s.php', $file );
+				$resource_path       = GATHERPRESS_CORE_PATH . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $structure );
+				$resource_path_valid = validate_file( $resource_path );
 
-				if ( file_exists( $resource_path ) && 0 === validate_file( $resource_path ) ) {
+				if ( file_exists( $resource_path ) && ( 0 === $resource_path_valid || 2 === $resource_path_valid ) ) {
 					require_once $resource_path;
 
 					return true;
