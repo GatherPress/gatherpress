@@ -26,6 +26,10 @@ class Setup {
 	 * BuddyPress constructor.
 	 */
 	protected function __construct() {
+		if ( ! function_exists( 'buddypress' ) ) {
+			return;
+		}
+
 		$this->setup_hooks();
 	}
 
