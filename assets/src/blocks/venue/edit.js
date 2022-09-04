@@ -28,6 +28,7 @@ const Edit = ( props ) => {
 		const venuePost = useSelect(
 			( select ) => select( 'core' ).getEntityRecord( 'postType', 'gp_venue', id ),
 		);
+
 		let jsonString = venuePost?.meta._venue_information ?? '{}';
 		jsonString = ( '' !== jsonString ) ? jsonString : '{}';
 

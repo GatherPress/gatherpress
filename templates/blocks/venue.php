@@ -23,9 +23,6 @@ if ( Venue::POST_TYPE !== get_post_type( $venue ) ) {
 $venue_information = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
 ?>
 <div class="gp-venue">
-<!--	<div class="has-medium-font-size">-->
-<!--		<strong>--><?php //echo esc_html( $venue->post_title ); ?><!--</strong>-->
-<!--	</div>-->
 	<?php
 	Utility::render_template(
 		sprintf( '%s/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),

@@ -12,7 +12,7 @@ if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs
 }
 
 if (
-	empty( $gatherpress_block_attrs['title'] ) &&
+	empty( $gatherpress_block_attrs['name'] ) &&
 	empty( $gatherpress_block_attrs['fullAddress'] ) &&
 	empty( $gatherpress_block_attrs['phoneNumber'] ) &&
 	empty( $gatherpress_block_attrs['website'] )
