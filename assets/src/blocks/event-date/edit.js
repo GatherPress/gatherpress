@@ -41,9 +41,9 @@ const displayDateTime = ( start, end ) => {
 const Edit = () => {
 	const blockProps = useBlockProps();
 	// eslint-disable-next-line no-undef
-	const [ dateTimeEnd, setDateTimeEnd ] = useState( GatherPress.event_datetime.datetime_end );
-	// eslint-disable-next-line no-undef
 	const [ dateTimeStart, setDateTimeStart ] = useState( GatherPress.event_datetime.datetime_start );
+	// eslint-disable-next-line no-undef
+	const [ dateTimeEnd, setDateTimeEnd ] = useState( GatherPress.event_datetime.datetime_end );
 
 	Listener( { setDateTimeEnd, setDateTimeStart } );
 
