@@ -1,19 +1,25 @@
-/**
- * WordPress components that create the necessary UI elements for the block
- *
- * @see https://developer.wordpress.org/block-editor/packages/packages-components/
- */
+import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+
+import { Fragment } from '@wordpress/element';
+
 import {
 	DateTimePicker,
 	PanelBody,
 	PanelRow,
-	TextControl
+	__experimentalGrid as Grid,
+	__experimentalText as Text,
 } from '@wordpress/components';
 
 
-import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { Fragment } from '@wordpress/element';
-
+function Presentation_Grid() {
+	return (
+		<Grid columns={3}>
+			<Text>Code</Text>
+			<Text>is</Text>
+			<Text>Poetry</Text>
+		</Grid>
+	);
+}
 export default function Edit({ attributes, setAttributes }) {
 	const blockProps = useBlockProps();
 
@@ -26,6 +32,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 	const onUpdateEndDate = (dateTime) => {
 		var newDateTime = moment(dateTime).format('MM-DD-YYYY HH:mm');
+		// minDate: moment().toISOString(),
 		setAttributes({ theEndTime: newDateTime });
 	};
 
@@ -56,10 +63,16 @@ export default function Edit({ attributes, setAttributes }) {
 								is12Hour={true}
 							/>
 						</PanelRow>
+						<PanelRow>
+							<p>GatherPress.event_datetime.datetime_end</p>
+						</PanelRow>
 					</PanelBody>
 				</InspectorControls>
 			</Fragment>
-			<p>Click on the <span style={{fontSize:"x-large"}}>&#9881;</span> in the upper right to select time and date</p>
+			<p>GatherPress.event_datetime.datetime_end</p>
+			<p>{GatherPress.event_datetime.datetime_end}</p>
+			<p>Click on the <span style={{ fontSize: "x-large" }}>&#9881;</span> in the upper right to select time and date</p>
+			<Presentation_Grid />
 			<p>{theStartTime}</p>
 			<p>{theEndTime}</p>
 		</div>

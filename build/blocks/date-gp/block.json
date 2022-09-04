@@ -3,14 +3,14 @@
   "apiVersion": 2,
   "name": "gatherpress/date-gp",
   "version": "0.1.2",
-  "title": "GatherPress Event Date",
+  "title": "GatherPress Event",
   "category": "gatherpress-event",
   "icon": {
     "background": "#8bc7d4",
     "foreground": "white",
     "src": "nametag"
   },
-  "description": "Starter block for selecting dates and times.",
+  "description": "block for selecting dates and times.",
   "attributes": {
     "theEndTime": {
       "type": "string"

@@ -87,7 +87,31 @@ function check_permissions() {
 }
 ```
 
-## Define PHP Functions
+## GP JS Functions
+
+```js
+apiFetch( {
+   path: '/gatherpress/v1/event/datetime/',
+   method: 'POST',
+   data: {
+    // eslint-disable-next-line no-undef
+    post_id: GatherPress.post_id,
+    datetime_start: moment(
+    // eslint-disable-next-line no-undef
+     GatherPress.event_datetime.datetime_start,
+    ).format( 'YYYY-MM-DD HH:mm:ss' ),
+    datetime_end: moment(
+    // eslint-disable-next-line no-undef
+     GatherPress.event_datetime.datetime_end,
+    ).format( 'YYYY-MM-DD HH:mm:ss' ),
+    // eslint-disable-next-line no-undef
+    _wpnonce: GatherPress.nonce,
+   },
+  } )
+
+```
+
+## Some JS Functions
 
 ```js
 function getSetting() {

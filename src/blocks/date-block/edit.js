@@ -12,8 +12,22 @@ import {
 
 
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { Fragment, createElement } from '@wordpress/element';
+import { Fragment } from '@wordpress/element';
+import { useState } from '@wordpress/element';
 
+const MyDateTimePicker = () => {
+	const [date, setDate] = useState(new Date());
+
+	return (
+		<DateTimePicker
+			currentDate={date}
+			onChange={(newDate) => setDate(newDate)}
+			is12Hour={true}
+			__nextRemoveHelpButton
+			__nextRemoveResetButton
+		/>
+	);
+};
 export default function Edit({ attributes, setAttributes }) {
 	const blockProps = useBlockProps();
 

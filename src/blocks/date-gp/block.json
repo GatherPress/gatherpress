@@ -10,7 +10,7 @@
 		"foreground": "white",
 		"src": "nametag"
 	},
-	"description": "Starter block for selecting dates and times.",
+	"description": "block for selecting dates and times.",
 	"attributes": {
 		"theEndTime": {
 			"type": "string"
