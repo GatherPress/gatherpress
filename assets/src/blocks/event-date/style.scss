@@ -5,11 +5,12 @@
 
 	&__icon {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
+		padding-top: 0.4rem;
 	}
 
 	&__item {
 		display: flex;
-		gap: 0.5rem;
+		gap: 1rem;
 	}
 }

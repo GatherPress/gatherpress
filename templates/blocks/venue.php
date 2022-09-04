@@ -14,13 +14,13 @@ if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs
 	return;
 }
 
-$venue = get_post( intval( $gatherpress_block_attrs['venueId'] ) );
+$gatherpress_venue = get_post( intval( $gatherpress_block_attrs['venueId'] ) );
 
-if ( Venue::POST_TYPE !== get_post_type( $venue ) ) {
+if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 	return;
 }
 
-$venue_information = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
+$gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
 ?>
 <div class="gp-venue">
 	<?php
@@ -28,10 +28,10 @@ $venue_information = json_decode( get_post_meta( $venue->ID, '_venue_information
 		sprintf( '%s/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),
 		array(
 			'gatherpress_block_attrs' => array(
-				'name'        => $venue->post_title,
-				'fullAddress' => $venue_information->fullAddress ?? '',
-				'phoneNumber' => $venue_information->phoneNumber ?? '',
-				'website'     => $venue_information->website ?? '',
+				'name'        => $gatherpress_venue->post_title,
+				'fullAddress' => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+				'phoneNumber' => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+				'website'     => $gatherpress_venue_information->website ?? '',
 			),
 		),
 		true

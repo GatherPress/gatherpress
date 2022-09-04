@@ -1,5 +1,4 @@
 import { Flex, FlexItem, Icon } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
 
 const VenueInformation = ( { name, fullAddress, phoneNumber, website } ) => {
 	return (

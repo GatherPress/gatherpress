@@ -22,10 +22,10 @@ const VenuePanel = ( props ) => {
 		( select ) => select( 'core' ).getEntityRecord( 'taxonomy', '_gp_venue', venueTermId ),
 	);
 	const venueId = venueTerm?.slug.replace( '_venue_', '' );
-	const value = venueTermId + ':' + venueId;
+	const venueValue = venueTermId + ':' + venueId;
 
 	useEffect( () => {
-		setVenue( String( value ) ?? '' );
+		setVenue( String( venueValue ) ?? '' );
 		Broadcaster( {
 			setVenueId: venueId,
 		} );

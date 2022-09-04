@@ -21,7 +21,7 @@ if (
 }
 ?>
 <div class="gp-venue-information">
-	<?php if ( ! empty( $gatherpress_block_attrs['fullAddress'] ) || ! empty( $gatherpress_block_attrs['name'] )  ) : ?>
+	<?php if ( ! empty( $gatherpress_block_attrs['fullAddress'] ) || ! empty( $gatherpress_block_attrs['name'] ) ) : ?>
 		<div class="gp-venue-information__row">
 			<div class="gp-venue-information__item">
 				<div class="gp-venue-information__icon">
