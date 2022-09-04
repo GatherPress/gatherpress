@@ -8,7 +8,11 @@ const EventItem = ( props ) => {
 		return '';
 	}
 
-	const { type, event, showAttendeeList, showFeaturedImage, showDescription, showRsvpButton } = props;
+	const { type, event, descriptionLimit, showAttendeeList, showFeaturedImage, showDescription, showRsvpButton } = props;
+
+	const limitExcerpt = ( excerpt ) => {
+		return excerpt.split(" ").splice(0,parseInt(descriptionLimit)).join(" ") + '[…]';
+	}
 
 	const eventClass = `gp-events-list`;
 
@@ -31,13 +35,13 @@ const EventItem = ( props ) => {
 					</div>
 					<div className={ `${ eventClass }__title has-large-font-size` }>
 						<a href={ event.permalink }>
-							{ HtmlReactParser( event.title ) }
+							{  HtmlReactParser( event.title ) }
 						</a>
 					</div>
 					{ showDescription && (
 						<div className={ `${ eventClass }__content` }>
 							<div className={ `${ eventClass }__excerpt` }>
-								{ HtmlReactParser( event.excerpt ) }
+								{  HtmlReactParser( limitExcerpt( event.excerpt ) ) }
 							</div>
 						</div>
 					) }

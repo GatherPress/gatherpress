@@ -14,6 +14,10 @@ registerBlockType( 'gatherpress/events-list', {
 	icon: 'groups',
 	category: 'gatherpress',
 	attributes: {
+		descriptionLimit: {
+			type: 'string',
+			default: '24',
+		},	
 		maxNumberOfEvents: {
 			type: 'integer',
 			default: '5',

@@ -19,6 +19,7 @@ for ( let i = 0; i < containers.length; i++ ) {
 	ReactDOM.render(
 		<EventsList
 			type={ attrs.type ?? 'upcoming' }
+			descriptionLimit={ attrs.descriptionLimit }
 			maxNumberOfEvents={ attrs.maxNumberOfEvents ?? 5 }
 			topics={ attrs.topics ?? [] }
 			showAttendeeList={ attrs.showAttendeeList ?? true }

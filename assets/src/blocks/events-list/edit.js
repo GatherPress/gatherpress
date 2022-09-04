@@ -17,6 +17,7 @@ import {
 	Button,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalText as Text,
+	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
 import { store as coreStore } from '@wordpress/core-data';
@@ -51,7 +52,7 @@ const Edit = ( props ) => {
 			topics,
 		],
 	);
-
+	const excerptMax = 55	
 	const topicSuggestions =
 		topicsList?.reduce(
 			( accumulator, topic ) => ( {
@@ -204,6 +205,15 @@ const Edit = ( props ) => {
 							setAttributes( { showDescription: ! attributes.showDescription } );
 						} }
 					/>
+					<TextControl
+						label="Description Limit"
+						help="Limit the amount of words that display underneath the title of the event"
+						value={ parseInt( attributes.descriptionLimit ) }
+						onChange={ ( value ) => setAttributes( { descriptionLimit: value } ) }
+						type='number'
+						min={ 0 }
+						max={ excerptMax }
+        			/>
 					<ToggleControl
 						label="Show/RSVP Button"
 						help={
@@ -219,6 +229,7 @@ const Edit = ( props ) => {
 				</PanelBody>
 			</InspectorControls>
 			<EventsList
+				descriptionLimit={ attributes.descriptionLimit}
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
 				topics={ attributes.topics }
