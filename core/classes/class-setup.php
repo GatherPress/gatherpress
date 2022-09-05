@@ -20,7 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Setup {
 
-
 	use Singleton;
 
 	/**
@@ -195,7 +194,7 @@ class Setup {
 			Venue::POST_TYPE,
 			'_venue_information',
 			array(
-				'auth_callback'     => function () {
+				'auth_callback'     => function() {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'sanitize_text_field',
