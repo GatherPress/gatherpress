@@ -1,5 +1,5 @@
 /**
- * Extneral dependencies.
+ * External dependencies.
  */
 import { Component } from 'react';
 
@@ -13,6 +13,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies.
  */
+import { Broadcaster } from '../../../../helpers/broadcasting';
 import { validateDateTimeEnd } from '../helpers';
 import { hasEventPast, enableSave } from '../../../helpers';
 
@@ -30,6 +31,11 @@ export function updateDateTimeEnd( dateTime, setState = null ) {
 		setState( { dateTime } );
 	}
 
+	const payload = {
+		setDateTimeEnd: dateTime,
+	};
+
+	Broadcaster( payload );
 	enableSave();
 }
 

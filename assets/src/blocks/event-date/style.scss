@@ -1,8 +1,4 @@
-.gp-venue-information {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-
+.gp-event-date {
 	&__row {
 		display: flex;
 	}
@@ -16,9 +12,5 @@
 	&__item {
 		display: flex;
 		gap: 1rem;
-	}
-
-	&__gap {
-		gap: 2rem;
 	}
 }

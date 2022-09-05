@@ -9,24 +9,16 @@ import { registerBlockType } from '@wordpress/blocks';
  */
 import edit from './edit';
 
-registerBlockType( 'gatherpress/venue-information', {
+registerBlockType( 'gatherpress/venue', {
 	apiVersion: 2,
-	title: __( 'Venue Information', 'gatherpress' ),
+	title: __( 'Venue', 'gatherpress' ),
 	icon: 'location',
 	category: 'gatherpress',
 	attributes: {
 		blockId: { type: 'string' },
-		fullAddress: {
-			type: 'string',
-			default: '',
-		},
-		phoneNumber: {
-			type: 'string',
-			default: '',
-		},
-		website: {
-			type: 'string',
-			default: '',
+		venueId: {
+			type: 'integer',
+			default: null,
 		},
 	},
 	edit,

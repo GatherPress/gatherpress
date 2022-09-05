@@ -12,6 +12,7 @@ import { dateI18n, __experimentalGetSettings } from '@wordpress/date';
 /**
  * Internal dependencies.
  */
+import { Broadcaster } from '../../../../helpers/broadcasting';
 import { validateDateTimeStart } from '../helpers';
 import { enableSave } from '../../../helpers';
 
@@ -29,6 +30,11 @@ export function updateDateTimeStart( dateTime, setState = null ) {
 		setState( { dateTime } );
 	}
 
+	const payload = {
+		setDateTimeStart: dateTime,
+	};
+
+	Broadcaster( payload );
 	enableSave();
 }
 
