@@ -3,10 +3,10 @@
   "apiVersion": 2,
   "name": "gatherpress/event-date",
   "version": "0.1.2",
-  "title": "GatherPress Event Date",
+  "title": "Event Date",
   "category": "gatherpress",
   "icon": "clock",
-  "description": "block for selecting dates and times.",
+  "description": "Block for showing dates and times for events.",
   "attributes": {
     "blockId": {
       "type": "string"
