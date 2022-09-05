@@ -11,48 +11,50 @@ import { __ } from '@wordpress/i18n';
  */
 import EventItem from './EventItem';
 
-const EventsList = ( props ) => {
+const EventsList = (props) => {
 	const { maxNumberOfEvents, type, topics } = props;
-	const [ events, setEvents ] = useState( [] );
-	const [ loaded, setLoaded ] = useState( false );
-	const renderEvents = events.map( ( event ) => {
-		return <EventItem key={ event.ID } type={ type } event={ event } />;
-	} );
+	const [events, setEvents] = useState([]);
+	const [loaded, setLoaded] = useState(false);
+	const renderEvents = events.map((event) => {
+		return <EventItem key={event.ID} type={type} event={event} />;
+	});
 	const renderNoEventsMessage = () => {
 		const message =
 			'upcoming' === type
-				? __( 'There are no upcoming events.', 'gatherpress' )
-				: __( 'There are no past events.', 'gatherpress' );
+				? __('There are no upcoming events.', 'gatherpress')
+				: __('There are no past events.', 'gatherpress');
 
 		return (
-			<div className={ `gp-${ type }-events__no_events_message` }>
-				{ message }
+			<div className={`gp-${type}-events__no_events_message`}>
+				{message}
 			</div>
 		);
 	};
 
-	useEffect( () => {
+	useEffect(() => {
 		let topicsString = '';
 
-		if ( 'object' === typeof topics ) {
-			topicsString = topics.map( ( topic ) => {
-				return topic.slug;
-			} )?.join( ',' );
+		if ('object' === typeof topics) {
+			topicsString = topics
+				.map((topic) => {
+					return topic.slug;
+				})
+				?.join(',');
 		}
 
-		apiFetch( {
-			path: `/gatherpress/v1/event/events-list?event_list_type=${ type }&max_number=${ maxNumberOfEvents }&topics=${ topicsString }`,
-		} ).then( ( e ) => {
-			setLoaded( true );
-			setEvents( e );
-		} );
-	}, [ setEvents, maxNumberOfEvents, type, topics ] );
+		apiFetch({
+			path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}`,
+		}).then((e) => {
+			setLoaded(true);
+			setEvents(e);
+		});
+	}, [setEvents, maxNumberOfEvents, type, topics]);
 
 	return (
-		<div className={ `gp-${ type }-events` }>
-			{ ! loaded && <Spinner /> }
-			{ loaded && 0 === events.length && renderNoEventsMessage() }
-			{ loaded && renderEvents }
+		<div className={`gp-${type}-events`}>
+			{!loaded && <Spinner />}
+			{loaded && 0 === events.length && renderNoEventsMessage()}
+			{loaded && renderEvents}
 		</div>
 	);
 };

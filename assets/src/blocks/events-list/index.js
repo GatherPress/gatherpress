@@ -8,9 +8,9 @@ import { registerBlockType } from '@wordpress/blocks';
  */
 import edit from './edit';
 
-registerBlockType( 'gatherpress/events-list', {
+registerBlockType('gatherpress/events-list', {
 	apiVersion: 2,
-	title: __( 'Events List', 'gatherpress' ),
+	title: __('Events List', 'gatherpress'),
 	icon: 'groups',
 	category: 'gatherpress',
 	example: {},
@@ -32,4 +32,4 @@ registerBlockType( 'gatherpress/events-list', {
 	},
 	edit,
 	save: () => null,
-} );
+});

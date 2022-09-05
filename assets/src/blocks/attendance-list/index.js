@@ -2,9 +2,9 @@ import { __ } from '@wordpress/i18n';
 import { registerBlockType } from '@wordpress/blocks';
 import edit from './edit';
 
-registerBlockType( 'gatherpress/attendance-list', {
+registerBlockType('gatherpress/attendance-list', {
 	apiVersion: 2,
-	title: __( 'Attendance List', 'gatherpress' ),
+	title: __('Attendance List', 'gatherpress'),
 	icon: 'groups',
 	example: {},
 	category: 'gatherpress',
@@ -15,4 +15,4 @@ registerBlockType( 'gatherpress/attendance-list', {
 	},
 	edit,
 	save: () => null,
-} );
+});

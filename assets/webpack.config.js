@@ -1,20 +1,24 @@
-const defaultConfig = require( './node_modules/@wordpress/scripts/config/webpack.config.js' );
-const path = require( 'path' );
-const IgnoreEmitPlugin = require( 'ignore-emit-webpack-plugin' );
+const defaultConfig = require('./node_modules/@wordpress/scripts/config/webpack.config.js');
+const path = require('path');
+const IgnoreEmitPlugin = require('ignore-emit-webpack-plugin');
 
 module.exports = {
 	...defaultConfig,
 	entry: {
-		blocks_backend: path.resolve( process.cwd(), 'src/blocks', 'backend.js' ),
+		blocks_backend: path.resolve(process.cwd(), 'src/blocks', 'backend.js'),
 		blocks_frontend: path.resolve(
 			process.cwd(),
 			'src/blocks',
-			'frontend.js',
+			'frontend.js'
 		),
-		blocks_style: path.resolve( process.cwd(), 'src', 'blocks/style.scss' ),
-		panels: path.resolve( process.cwd(), 'src/panels', 'index.js' ),
-		settings: path.resolve( process.cwd(), 'src/settings', 'index.js' ),
-		settings_style: path.resolve( process.cwd(), 'src/settings', 'style.scss' ),
+		blocks_style: path.resolve(process.cwd(), 'src', 'blocks/style.scss'),
+		panels: path.resolve(process.cwd(), 'src/panels', 'index.js'),
+		settings: path.resolve(process.cwd(), 'src/settings', 'index.js'),
+		settings_style: path.resolve(
+			process.cwd(),
+			'src/settings',
+			'style.scss'
+		),
 	},
 	optimization: {
 		...defaultConfig.optimization,
@@ -32,6 +36,6 @@ module.exports = {
 	},
 	plugins: [
 		...defaultConfig.plugins,
-		new IgnoreEmitPlugin( [ 'blocks_style.js', 'settings_style.js' ] ),
+		new IgnoreEmitPlugin(['blocks_style.js', 'settings_style.js']),
 	],
 };

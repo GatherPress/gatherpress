@@ -10,14 +10,11 @@ import ReactDOM from 'react-dom';
 import UserSelect from '../components/UserSelect';
 
 const containers = document.querySelectorAll(
-	`[data-gp_component_name="user-select"]`,
+	`[data-gp_component_name="user-select"]`
 );
 
-for ( let i = 0; i < containers.length; i++ ) {
-	const attrs = JSON.parse( containers[ i ].dataset.gp_component_attrs );
+for (let i = 0; i < containers.length; i++) {
+	const attrs = JSON.parse(containers[i].dataset.gp_component_attrs);
 
-	ReactDOM.render(
-		<UserSelect attrs={ attrs } />,
-		containers[ i ],
-	);
+	ReactDOM.render(<UserSelect attrs={attrs} />, containers[i]);
 }

@@ -7,6 +7,6 @@ import './event-date/index';
 import './events-list/index';
 import './venue-information/index';
 
-wp.blocks.updateCategory( 'gatherpress', {
+wp.blocks.updateCategory('gatherpress', {
 	icon: 'nametag',
-} );
+});

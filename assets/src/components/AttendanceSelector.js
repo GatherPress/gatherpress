@@ -17,16 +17,16 @@ import apiFetch from '@wordpress/api-fetch';
 import { Broadcaster } from '../helpers/broadcasting';
 import AttendeeResponse from './AttendeeResponse';
 
-const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
-	const [ attendanceStatus, setAttendanceStatus ] = useState(
-		currentUser.status,
+const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
+	const [attendanceStatus, setAttendanceStatus] = useState(
+		currentUser.status
 	);
-	const [ attendanceGuests, setAttendanceGuests ] = useState(
-		currentUser.guests,
+	const [attendanceGuests, setAttendanceGuests] = useState(
+		currentUser.guests
 	);
-	const [ selectorHidden, setSelectorHidden ] = useState( 'hidden' );
-	const [ selectorExpanded, setSelectorExpanded ] = useState( 'false' );
-	const [ modalIsOpen, setIsOpen ] = useState( false );
+	const [selectorHidden, setSelectorHidden] = useState('hidden');
+	const [selectorExpanded, setSelectorExpanded] = useState('false');
+	const [modalIsOpen, setIsOpen] = useState(false);
 
 	const customStyles = {
 		content: {
@@ -39,42 +39,42 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 		},
 	};
 
-	const openModal = ( e ) => {
+	const openModal = (e) => {
 		e.preventDefault();
 
 		if (
 			'not_attending' === attendanceStatus ||
 			'attend' === attendanceStatus
 		) {
-			onAnchorClick( e, 'attending', 0, false );
+			onAnchorClick(e, 'attending', 0, false);
 		}
-		setIsOpen( true );
+		setIsOpen(true);
 	};
 
 	// No need to show block if event is in the past.
-	if ( 'past' === type ) {
+	if ('past' === type) {
 		return '';
 	}
 
 	// Might be better way to do this, but should only run on frontend, not admin.
-	if ( 'undefined' === typeof adminpage ) {
-		Modal.setAppElement( '.gp-enabled' );
+	if ('undefined' === typeof adminpage) {
+		Modal.setAppElement('.gp-enabled');
 	}
 
-	const closeModal = ( e ) => {
+	const closeModal = (e) => {
 		e.preventDefault();
 
-		setIsOpen( false );
+		setIsOpen(false);
 	};
 
-	const onAnchorClick = async ( e, status, guests = 0, close = true ) => {
+	const onAnchorClick = async (e, status, guests = 0, close = true) => {
 		e.preventDefault();
 
-		if ( 'attending' !== status ) {
+		if ('attending' !== status) {
 			guests = 0;
 		}
 
-		apiFetch( {
+		apiFetch({
 			path: '/gatherpress/v1/event/attendance',
 			method: 'POST',
 			data: {
@@ -84,10 +84,10 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 				// eslint-disable-next-line no-undef
 				_wpnonce: GatherPress.nonce,
 			},
-		} ).then( ( res ) => {
-			if ( res.success ) {
-				setAttendanceStatus( res.status );
-				setAttendanceGuests( res.guests );
+		}).then((res) => {
+			if (res.success) {
+				setAttendanceStatus(res.status);
+				setAttendanceGuests(res.guests);
 
 				const count = {
 					all: 0,
@@ -96,8 +96,8 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 					waiting_list: 0, // eslint-disable-line camelcase
 				};
 
-				for ( const [ key, value ] of Object.entries( res.attendees ) ) {
-					count[ key ] = value.count;
+				for (const [key, value] of Object.entries(res.attendees)) {
+					count[key] = value.count;
 				}
 
 				const payload = {
@@ -106,47 +106,47 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 					setAttendanceCount: count,
 				};
 
-				Broadcaster( payload, res.event_id );
+				Broadcaster(payload, res.event_id);
 
-				if ( close ) {
-					closeModal( e );
+				if (close) {
+					closeModal(e);
 				}
 			}
-		} );
+		});
 	};
 
-	const getButtonText = ( status ) => {
-		switch ( status ) {
+	const getButtonText = (status) => {
+		switch (status) {
 			case 'attending':
 			case 'waiting_list':
-				return __( 'Edit RSVP', 'gatherpress' );
+				return __('Edit RSVP', 'gatherpress');
 		}
 
-		return __( 'Attend', 'gatherpress' );
+		return __('Attend', 'gatherpress');
 	};
 
-	const onSpanKeyDown = ( e ) => {
-		if ( 13 === e.keyCode ) {
-			setSelectorHidden( 'hidden' === selectorHidden ? 'show' : 'hidden' );
+	const onSpanKeyDown = (e) => {
+		if (13 === e.keyCode) {
+			setSelectorHidden('hidden' === selectorHidden ? 'show' : 'hidden');
 			setSelectorExpanded(
-				'false' === selectorExpanded ? 'true' : 'false',
+				'false' === selectorExpanded ? 'true' : 'false'
 			);
 		}
 	};
 
 	// @todo need to revisit this and handle button for users that aren't logged in.
 	// Clean up so this does something... See issue #68 in GitHub.
-	if ( '' === currentUser ) {
+	if ('' === currentUser) {
 		return (
 			<div className="gp-attendance-selector">
 				<div className="wp-block-button">
-					{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
+					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a
 						className="wp-block-button__link"
 						href="#"
-						onClick={ ( e ) => onAnchorClick( e, 'attending' ) }
+						onClick={(e) => onAnchorClick(e, 'attending')}
 					>
-						{ __( 'Attend', 'gatherpress' ) }
+						{__('Attend', 'gatherpress')}
 					</a>
 				</div>
 			</div>
@@ -157,89 +157,89 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 		<div className="gp-attendance-selector">
 			<ButtonGroup className="gp-buttons wp-block-buttons">
 				<div className="gp-buttons__container  wp-block-button">
-					{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
+					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a
 						href="#"
 						className="gp-buttons__button wp-block-button__link"
-						aria-expanded={ selectorExpanded }
+						aria-expanded={selectorExpanded}
 						tabIndex="0"
-						onKeyDown={ onSpanKeyDown }
-						onClick={ ( e ) => openModal( e ) }
+						onKeyDown={onSpanKeyDown}
+						onClick={(e) => openModal(e)}
 					>
-						{ getButtonText( attendanceStatus ) }
+						{getButtonText(attendanceStatus)}
 					</a>
 				</div>
 				<Modal
-					isOpen={ modalIsOpen }
-					onRequestClose={ closeModal }
-					style={ customStyles }
-					contentLabel={ __( 'Edit RSVP', 'gatherpress' ) }
+					isOpen={modalIsOpen}
+					onRequestClose={closeModal}
+					style={customStyles}
+					contentLabel={__('Edit RSVP', 'gatherpress')}
 				>
 					<div className="gp-modal gp-modal__attendance-selector">
 						<div className="gp-modal__header has-large-font-size">
-							{ __( 'Edit RSVP', 'gatherpress' ) }
+							{__('Edit RSVP', 'gatherpress')}
 						</div>
 						<div className="gp-modal__content">
 							<label htmlFor="gp-guests">
-								{ __( 'Number of guests?', 'gatherpress' ) }
+								{__('Number of guests?', 'gatherpress')}
 							</label>
 							<input
 								id="gp-guests"
 								type="number"
 								min="0"
 								max="5"
-								onChange={ ( e ) =>
+								onChange={(e) =>
 									onAnchorClick(
 										e,
 										'attending',
 										e.target.value,
-										false,
+										false
 									)
 								}
-								defaultValue={ attendanceGuests }
+								defaultValue={attendanceGuests}
 							/>
 						</div>
 						<ButtonGroup className="gp-buttons wp-block-buttons">
 							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
-								{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
+								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 								<a
 									href="#"
-									onClick={ ( e ) =>
-										onAnchorClick( e, 'not_attending' )
+									onClick={(e) =>
+										onAnchorClick(e, 'not_attending')
 									}
 									className="gp-buttons__button wp-block-button__link"
 								>
-									{ __( 'Not Attending', 'gatherpress' ) }
+									{__('Not Attending', 'gatherpress')}
 								</a>
 							</div>
 							<div className="gp-buttons__container wp-block-button has-small-font-size">
-								{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
+								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 								<a
 									href="#"
-									onClick={ closeModal }
+									onClick={closeModal}
 									className="gp-buttons__button wp-block-button__link"
 								>
-									{ __( 'Close', 'gatherpress' ) }
+									{__('Close', 'gatherpress')}
 								</a>
 							</div>
 						</ButtonGroup>
 					</div>
 				</Modal>
 			</ButtonGroup>
-			{ 'attend' !== attendanceStatus && (
+			{'attend' !== attendanceStatus && (
 				<div className="gp-status">
-					<AttendeeResponse type={ type } status={ attendanceStatus } />
+					<AttendeeResponse type={type} status={attendanceStatus} />
 
-					{ 0 < attendanceGuests && (
+					{0 < attendanceGuests && (
 						<div className="gp-status__guests">
 							<span>
-								+{ attendanceGuests }{ ' ' }
-								{ __( 'guest(s)', 'gatherpress' ) }
+								+{attendanceGuests}{' '}
+								{__('guest(s)', 'gatherpress')}
 							</span>
 						</div>
-					) }
+					)}
 				</div>
-			) }
+			)}
 		</div>
 	);
 };

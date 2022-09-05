@@ -12,91 +12,82 @@ import { useState } from '@wordpress/element';
 import { store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
 
-const UserSelect = ( props ) => {
+const UserSelect = (props) => {
 	const { name, option, value } = props.attrs;
-	const [ users, setUsers ] = useState( JSON.parse( value ) ?? '[]' );
-	const {
-		usersList,
-	} = useSelect(
-		( select ) => {
-			const { getEntityRecords } = select( coreStore );
+	const [users, setUsers] = useState(JSON.parse(value) ?? '[]');
+	const { usersList } = useSelect(
+		(select) => {
+			const { getEntityRecords } = select(coreStore);
 			return {
-				usersList: getEntityRecords(
-					'root',
-					'user',
-					{
-						per_page: -1,
-						context: 'view',
-					},
-				),
+				usersList: getEntityRecords('root', 'user', {
+					per_page: -1,
+					context: 'view',
+				}),
 			};
 		},
-		[
-			users,
-		],
+		[users]
 	);
 
 	const userSuggestions =
 		usersList?.reduce(
-			( accumulator, user ) => ( {
+			(accumulator, user) => ({
 				...accumulator,
-				[ user.name ]: user,
-			} ),
-			{},
+				[user.name]: user,
+			}),
+			{}
 		) ?? {};
 
-	const selectUsers = ( tokens ) => {
+	const selectUsers = (tokens) => {
 		const hasNoSuggestion = tokens.some(
-			( token ) =>
-				typeof token === 'string' && ! userSuggestions[ token ],
+			(token) => typeof token === 'string' && !userSuggestions[token]
 		);
 
-		if ( hasNoSuggestion ) {
+		if (hasNoSuggestion) {
 			return;
 		}
 
-		const allUsers = tokens.map( ( token ) => {
-			return typeof token === 'string'
-				? userSuggestions[ token ]
-				: token;
-		} );
+		const allUsers = tokens.map((token) => {
+			return typeof token === 'string' ? userSuggestions[token] : token;
+		});
 
-		if ( includes( allUsers, null ) ) {
+		if (includes(allUsers, null)) {
 			return false;
 		}
 
-		setUsers( allUsers );
+		setUsers(allUsers);
 	};
 
 	return (
 		<>
 			<FormTokenField
-				key={ option }
-				label={ __( 'Select Users', 'gatherpress' ) }
-				name={ name }
+				key={option}
+				label={__('Select Users', 'gatherpress')}
+				name={name}
 				value={
 					users &&
-					users.map( ( item ) => ( {
+					users.map((item) => ({
 						id: item.id,
 						slug: item.slug,
 						value: item.name || item.value,
-					} ) )
+					}))
 				}
-				suggestions={ Object.keys( userSuggestions ) }
-				onChange={ selectUsers }
-				maxSuggestions={ 20 }
+				suggestions={Object.keys(userSuggestions)}
+				onChange={selectUsers}
+				maxSuggestions={20}
 			/>
 			<input
 				type="hidden"
-				id={ option }
-				name={ name }
+				id={option}
+				name={name}
 				value={
 					users &&
-					JSON.stringify( users.map( ( item ) => ( {
-						id: item.id,
-						slug: item.slug,
-						value: item.name || item.value,
-					} ) ) )
+					JSON.stringify(
+						users.map((item) => ({
+							id: item.id,
+							slug: item.slug,
+							value: item.name || item.value,
+						}))
+					)
 				}
 			/>
 		</>

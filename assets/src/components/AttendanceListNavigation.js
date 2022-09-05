@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AttendanceListNavigationItem from './AttendanceListNavigationItem';
 import { Listener } from '../helpers/broadcasting';
 
-const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
+const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	const defaultCount = {
 		all: 0,
 		attending: 0,
@@ -10,19 +10,19 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 		waiting_list: 0, // eslint-disable-line camelcase
 	};
 
-	if ( 'object' === typeof GatherPress ) {
+	if ('object' === typeof GatherPress) {
 		// eslint-disable-next-line no-undef
-		for ( const [ key, value ] of Object.entries( GatherPress.attendees ) ) {
-			defaultCount[ key ] = value.count;
+		for (const [key, value] of Object.entries(GatherPress.attendees)) {
+			defaultCount[key] = value.count;
 		}
 	}
 
-	const [ attendanceCount, setAttendanceCount ] = useState( defaultCount );
+	const [attendanceCount, setAttendanceCount] = useState(defaultCount);
 
 	// eslint-disable-next-line no-undef
-	Listener( { setAttendanceCount }, GatherPress.post_id );
+	Listener({ setAttendanceCount }, GatherPress.post_id);
 
-	const renderedItems = items.map( ( item, index ) => {
+	const renderedItems = items.map((item, index) => {
 		const additionalClasses =
 			item.value === activeValue
 				? 'gp-attendance-list__navigation--current'
@@ -30,19 +30,17 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 
 		return (
 			<AttendanceListNavigationItem
-				key={ index }
-				item={ item }
-				count={ attendanceCount[ item.value ] }
-				additionalClasses={ additionalClasses }
-				onTitleClick={ onTitleClick }
+				key={index}
+				item={item}
+				count={attendanceCount[item.value]}
+				additionalClasses={additionalClasses}
+				onTitleClick={onTitleClick}
 			/>
 		);
-	} );
+	});
 
 	return (
-		<nav className="gp-attendance-list__navigation">
-			{ renderedItems }
-		</nav>
+		<nav className="gp-attendance-list__navigation">{renderedItems}</nav>
 	);
 };
 

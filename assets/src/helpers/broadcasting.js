@@ -1,33 +1,33 @@
-export const Broadcaster = ( payload, identifier = false ) => {
-	for ( const [ key, value ] of Object.entries( payload ) ) {
+export const Broadcaster = (payload, identifier = false) => {
+	for (const [key, value] of Object.entries(payload)) {
 		let type = key;
 
-		if ( identifier ) {
+		if (identifier) {
 			type += identifier;
 		}
 
-		const dispatcher = new CustomEvent( type, {
+		const dispatcher = new CustomEvent(type, {
 			detail: value,
-		} );
+		});
 
-		dispatchEvent( dispatcher );
+		dispatchEvent(dispatcher);
 	}
 };
 
-export const Listener = ( payload, identifier = false ) => {
-	for ( const [ key, value ] of Object.entries( payload ) ) {
+export const Listener = (payload, identifier = false) => {
+	for (const [key, value] of Object.entries(payload)) {
 		let type = key;
 
-		if ( identifier ) {
+		if (identifier) {
 			type += identifier;
 		}
 
 		addEventListener(
 			type,
-			( e ) => {
-				value( e.detail );
+			(e) => {
+				value(e.detail);
 			},
-			false,
+			false
 		);
 	}
 };
