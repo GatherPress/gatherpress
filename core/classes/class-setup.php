@@ -60,8 +60,8 @@ class Setup {
 		add_filter( 'wp_unique_post_slug', array( $this, 'append_id_to_event_slug' ), 10, 4 );
 		add_filter( sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ), array( $this, 'set_custom_columns' ) );
 		add_filter( sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ), array( $this, 'sortable_columns' ) );
-		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ), 10, 2 );
-		add_filter( 'the_time', array( $this, 'get_the_event_date' ), 10, 2 );
+		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
+		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 	}
 
@@ -472,24 +472,19 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param string $the_date The formatted date.
-	 * @param string $format   PHP date format.
 	 *
 	 * @return string
 	 */
-	public function get_the_event_date( $the_date, $format ): string {
+	public function get_the_event_date( $the_date ): string {
 		global $post;
 
 		if ( ! is_a( $post, '\WP_Post' ) || Event::POST_TYPE !== $post->post_type ) {
 			return $the_date;
 		}
 
-		if ( empty( $format ) ) {
-			$format = get_option( 'date_format' );
-		}
-
 		$event = new Event( $post->ID );
 
-		return $event->get_datetime_start( $format );
+		return $event->get_display_datetime();
 	}
 
 }
