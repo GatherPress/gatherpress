@@ -13,7 +13,12 @@ import {
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
 
-const Edit = (props) => {
+/**
+ * Internal dependencies.
+ */
+import VenueInformation from '../../components/VenueInformation';
+
+const Edit = ( props ) => {
 	const { attributes, setAttributes, isSelected } = props;
 	const { fullAddress, phoneNumber, website } = attributes;
 	const blockProps = useBlockProps();
@@ -67,47 +72,8 @@ const Edit = (props) => {
 								</em>
 							</FlexItem>
 						</Flex>
-					)}
-					{fullAddress && (
-						<Flex justify="normal">
-							<FlexItem display="flex">
-								<Icon icon="location" />
-							</FlexItem>
-							<FlexItem>{fullAddress}</FlexItem>
-						</Flex>
-					)}
-					{(phoneNumber || website) && (
-						<Flex justify="normal" gap="4">
-							{phoneNumber && (
-								<FlexItem>
-									<Flex justify="normal">
-										<FlexItem display="flex">
-											<Icon icon="phone" />
-										</FlexItem>
-										<FlexItem>{phoneNumber}</FlexItem>
-									</Flex>
-								</FlexItem>
-							)}
-							{website && (
-								<FlexItem>
-									<Flex justify="normal">
-										<FlexItem display="flex">
-											<Icon icon="admin-site-alt3" />
-										</FlexItem>
-										<FlexItem>
-											<a
-												href={website}
-												target="_blank"
-												rel="noreferrer noopener"
-											>
-												{website}
-											</a>
-										</FlexItem>
-									</Flex>
-								</FlexItem>
-							)}
-						</Flex>
-					)}
+					) }
+					<VenueInformation fullAddress={ fullAddress } phoneNumber={ phoneNumber } website={ website } />
 				</>
 			)}
 			{isSelected && (

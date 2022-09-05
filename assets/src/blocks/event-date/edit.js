@@ -56,9 +56,9 @@ const Edit = () => {
 	Listener({ setDateTimeEnd, setDateTimeStart });
 
 	return (
-		<div {...blockProps}>
-			<Flex justify="normal">
-				<FlexItem display="flex">
+		<div { ...blockProps }>
+			<Flex justify="normal" align="flex-start" gap="4">
+				<FlexItem display="flex" className="gp-event-date__icon">
 					<Icon icon="clock" />
 				</FlexItem>
 				<FlexItem>
