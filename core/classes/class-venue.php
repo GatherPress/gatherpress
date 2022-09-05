@@ -117,4 +117,8 @@ class Venue {
 		return sprintf( '_venue_%d', $post_id );
 	}
 
+	public function get_venue_id_from_slug( string $slug ): int {
+		return intval( str_replace( '_venue_', '', $slug ) );
+	}
+
 }

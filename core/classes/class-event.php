@@ -128,6 +128,31 @@ class Event {
 		return $this->get_formatted_datetime( $format, 'start' );
 	}
 
+	public function get_venue_information(): array {
+		$venue_information = array(
+			'name'         => '',
+			'full_address' => '',
+			'phone_number' => '',
+			'website'      => '',
+		);
+
+		$term = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
+		if ( ! empty( $term ) && is_a( $term, '\WP_Term' ) ) {
+			$venue_information['name'] = $term->name;
+		}
+
+		$venue_id = Venue::get_instance()->get_venue_id_from_slug( $term->slug );
+
+		if ( intval( $venue_id ) ) {
+			$venue_meta = json_decode( get_post_meta( $venue_id, '_venue_information', true ) );
+
+			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_information['website']      = $venue_meta->website ?? '';
+		}
+
+		return $venue_information;
+	}
 
 	/**
 	 * Get datetime end.
@@ -232,9 +257,22 @@ class Event {
 		}
 
 		return array(
-			'google' => $this->get_google_calendar_link(),
-			'isc'    => $this->get_ics_calendar_download(),
-			'yahoo'  => $this->get_yahoo_calendar_link(),
+			'google'  => array(
+				'name' => __( 'Google Calendar', 'gatherpress' ),
+				'link' => $this->get_google_calendar_link(),
+			),
+			'ical'    => array(
+				'name'     => __( 'iCal', 'gatherpress' ),
+				'download' => $this->get_ics_calendar_download(),
+			),
+			'outlook' => array(
+				'name'     => __( 'Outlook', 'gatherpress' ),
+				'download' => $this->get_ics_calendar_download(),
+			),
+			'yahoo'   => array(
+				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
+				'link' => $this->get_yahoo_calendar_link(),
+			),
 		);
 	}
 
@@ -251,6 +289,7 @@ class Event {
 		$date_end   = $this->get_formatted_datetime( 'Ymd', 'end', false );
 		$time_end   = $this->get_formatted_datetime( 'His', 'end', false );
 		$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		$venue      = $this->get_venue_information();
 
 		return add_query_arg(
 			array(
@@ -258,10 +297,10 @@ class Event {
 				'text'     => sanitize_text_field( $this->event->post_title ),
 				'dates'    => sanitize_text_field( $datetime ),
 				'details'  => sanitize_text_field( $this->event->post_content ),
-				'location' => '',
+				'location' => sanitize_text_field( $venue['name'] . ' (' . $venue['full_address'] . ')' ),
 				'sprop'    => 'name:',
 			),
-			'https://www.google.com/calendar/render/'
+			'https://www.google.com/calendar/event'
 		);
 	}
 
@@ -285,6 +324,7 @@ class Event {
 		$fraction   = ( $duration - $full );
 		$hours      = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
 		$minutes    = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+		$venue      = $this->get_venue_information();
 
 		return add_query_arg(
 			array(
@@ -295,7 +335,7 @@ class Event {
 				'st'     => sanitize_text_field( $datetime_start ),
 				'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
 				'desc'   => sanitize_text_field( $this->event->post_content ),
-				'in_loc' => '',
+				'in_loc' => sanitize_text_field( $venue['name'] . ' (' . $venue['full_address'] . ')' ),
 			),
 			'https://calendar.yahoo.com/'
 		);
@@ -315,22 +355,34 @@ class Event {
 		$time_end       = $this->get_formatted_datetime( 'His', 'end', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
+		$datetime_stamp = sprintf( '%sT%sZ', date( 'Ymd' ), date( 'His' ) );
+		$venue          = $this->get_venue_information();
 
 		$args = array(
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
+			'PRODID:-//GatherPress//RemoteApi//EN',
 			'BEGIN:VEVENT',
 			sprintf( 'URL:%s', esc_url_raw( get_permalink( $this->event->ID ) ) ),
 			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
 			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
+			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
 			sprintf( 'SUMMARY:%s', sanitize_text_field( $this->event->post_title ) ),
 			sprintf( 'DESCRIPTION:%s', sanitize_text_field( $this->event->post_content ) ),
-			sprintf( 'LOCATION:%s', '' ),
+			sprintf( 'LOCATION:%s', sanitize_text_field( $venue['name'] . ' (' . $venue['full_address'] ) . ')' ),
+			'UID:gatherpress_' . intval( $this->event->ID ),
 			'END:VEVENT',
 			'END:VCALENDAR',
 		);
 
-		return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
+		return 'data:text/calendar;charset=utf8,' . $this->format_ics_string( implode( '%0A', $args ) );
+	}
+
+	private function format_ics_string( $str ): string {
+		$str = str_replace(
+			[ "\r\n", '\\', ',', ';', "\n" ], // replacement order is important
+			[ "\n", '\\\\', '\,', '\;', '\n' ], $str );
+		return wordwrap( $str, 73, "\n ", false );
 	}
 
 	/**
