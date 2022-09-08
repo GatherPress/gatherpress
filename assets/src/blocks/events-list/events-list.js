@@ -20,7 +20,7 @@ for ( let i = 0; i < containers.length; i++ ) {
 		<EventsList
 			type={ attrs.type ?? 'upcoming' }
 			descriptionLimit={ attrs.descriptionLimit }
-			imageSize={ attrs.imageSize }
+			imageSize={ attrs.imageSize ?? 'default' }
 			maxNumberOfEvents={ attrs.maxNumberOfEvents ?? 5 }
 			topics={ attrs.topics ?? [] }
 			showAttendeeList={ attrs.showAttendeeList ?? true }

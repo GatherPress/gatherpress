@@ -324,6 +324,7 @@ class Rest_Api {
 					'excerpt'        => get_the_excerpt( $post_id ),
 					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large' => get_the_post_thumbnail( $post_id, 'large' ),
+					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
 					'attendees'      => ( $event->attendee ) ? $event->attendee->attendees() : array(),
 					'current_user'   => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
 				);
