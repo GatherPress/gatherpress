@@ -85,7 +85,7 @@ const Edit = ( props ) => {
 
 		setAttributes( { topics: allTopics } );
 	};
-	const imageOptions = [ { label: 'Default', value: 'default' }, { label: 'Large', value: 'large' } ];
+	const imageOptions = [ { label: 'Default', value: 'default' }, { label: 'Thumbnail', value: 'thumbnail' }, { label: 'Large', value: 'large'} ];
 
 	return (
 		<div { ...blockProps }>
