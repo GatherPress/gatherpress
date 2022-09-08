@@ -18,6 +18,10 @@ registerBlockType( 'gatherpress/events-list', {
 			type: 'integer',
 			default: '24',
 		},
+		imageSize: {
+			type: 'string',
+			default: 'default',
+		},
 		maxNumberOfEvents: {
 			type: 'integer',
 			default: '5',

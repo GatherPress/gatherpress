@@ -12,6 +12,7 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
 	PanelBody,
 	FormTokenField,
+	SelectControl,
 	RangeControl,
 	ButtonGroup,
 	Button,
@@ -84,6 +85,7 @@ const Edit = ( props ) => {
 
 		setAttributes( { topics: allTopics } );
 	};
+	const imageOptions = [ { label: 'Default', value: 'default' }, { label: 'Large', value: 'large' } ];
 
 	return (
 		<div { ...blockProps }>
@@ -181,6 +183,14 @@ const Edit = ( props ) => {
 							setAttributes( { showAttendeeList: ! attributes.showAttendeeList } );
 						} }
 					/>
+					<SelectControl
+						label="Image Size Options"
+						value={ attributes.imageSize }
+						options={ imageOptions }
+						onChange={ ( value ) => {
+							setAttributes( { imageSize: value } );
+						} }
+					/>
 					<ToggleControl
 						label="Show/Hide Featured Image"
 						help={
@@ -209,10 +219,10 @@ const Edit = ( props ) => {
 						label="Description Limit"
 						help="Limit the amount of words that display underneath the title of the event"
 						value={ parseInt( attributes.descriptionLimit ) }
-						onChange={ ( value ) => setAttributes( { descriptionLimit: parseInt(value) } ) }
+						onChange={ ( value ) => setAttributes( { descriptionLimit: parseInt( value ) } ) }
 						min={ 0 }
 						max={ excerptMax }
-						type='number'
+						type="number"
 					/>
 					<ToggleControl
 						label="Show/RSVP Button"
@@ -229,6 +239,7 @@ const Edit = ( props ) => {
 				</PanelBody>
 			</InspectorControls>
 			<EventsList
+				imageSize={ attributes.imageSize }
 				descriptionLimit={ attributes.descriptionLimit }
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }

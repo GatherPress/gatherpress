@@ -8,11 +8,14 @@ const EventItem = ( props ) => {
 		return '';
 	}
 
-	const { type, event, descriptionLimit, showAttendeeList, showFeaturedImage, showDescription, showRsvpButton } = props;
+	const { type, event, descriptionLimit, imageSize, showAttendeeList, showFeaturedImage, showDescription, showRsvpButton } = props;
 
 	const limitExcerpt = ( excerpt ) => {
 		return excerpt.split( ' ' ).splice( 0, parseInt( descriptionLimit ) ).join( ' ' ) + '[…]';
 	};
+
+	const size = imageSize === 'default' ? 'featured_image' : 'featured_image_' + imageSize;
+	const featuredImage = HtmlReactParser( event[ size ] );
 
 	const eventClass = `gp-events-list`;
 
@@ -23,7 +26,7 @@ const EventItem = ( props ) => {
 					{ showFeaturedImage && (
 						<figure className={ `${ eventClass }__image` }>
 							<a href={ event.permalink }>
-								{ HtmlReactParser( event.featured_image ) }
+								{ featuredImage }
 							</a>
 						</figure>
 					) }
