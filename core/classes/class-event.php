@@ -144,8 +144,7 @@ class Event {
 		$venue_id = Venue::get_instance()->get_venue_id_from_slug( $term->slug );
 
 		if ( intval( $venue_id ) ) {
-			$venue_meta = json_decode( get_post_meta( $venue_id, '_venue_information', true ) );
-
+			$venue_meta                        = json_decode( get_post_meta( $venue_id, '_venue_information', true ) );
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['website']      = $venue_meta->website ?? '';
