@@ -375,14 +375,7 @@ class Event {
 			'END:VCALENDAR',
 		);
 
-		return 'data:text/calendar;charset=utf8,' . $this->format_ics_string( implode( '%0A', $args ) );
-	}
-
-	private function format_ics_string( $str ): string {
-		$str = str_replace(
-			[ "\r\n", '\\', ',', ';', "\n" ], // replacement order is important
-			[ "\n", '\\\\', '\,', '\;', '\n' ], $str );
-		return wordwrap( $str, 73, "\n ", false );
+		return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
 	}
 
 	/**
