@@ -136,12 +136,14 @@ class Event {
 			'website'      => '',
 		);
 
-		$term = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
+		$term     = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
+		$venue_id = null;
+
 		if ( ! empty( $term ) && is_a( $term, '\WP_Term' ) ) {
 			$venue_information['name'] = $term->name;
+			$venue_id = Venue::get_instance()->get_venue_id_from_slug( $term->slug );
 		}
 
-		$venue_id = Venue::get_instance()->get_venue_id_from_slug( $term->slug );
 
 		if ( intval( $venue_id ) ) {
 			$venue_meta                        = json_decode( get_post_meta( $venue_id, '_venue_information', true ) );
@@ -354,7 +356,8 @@ class Event {
 		$time_end       = $this->get_formatted_datetime( 'His', 'end', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
-		$datetime_stamp = sprintf( '%sT%sZ', date( 'Ymd' ), date( 'His' ) );
+		$modified_date  = strtotime( $this->event->post_modified );
+		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
 		$venue          = $this->get_venue_information();
 
 		$args = array(
