@@ -1,6 +1,7 @@
 /**
  * WordPress dependencies.
  */
+import { __ } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
@@ -36,9 +37,10 @@ const Edit = ( props ) => {
 		const fullAddress = venueInformation?.fullAddress ?? '';
 		const phoneNumber = venueInformation?.phoneNumber ?? '';
 		const website = venueInformation?.website ?? '';
+		const name = venuePost?.title.rendered ?? __( 'No venue selected.', 'gatherpress' );
 
 		return (
-			<VenueInformation name={ venuePost?.title.rendered } fullAddress={ fullAddress } phoneNumber={ phoneNumber } website={ website } />
+			<VenueInformation name={ name } fullAddress={ fullAddress } phoneNumber={ phoneNumber } website={ website } />
 		);
 	};
 
