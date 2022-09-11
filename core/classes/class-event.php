@@ -128,6 +128,11 @@ class Event {
 		return $this->get_formatted_datetime( $format, 'start' );
 	}
 
+	/**
+	 * Get venue information from event.
+	 *
+	 * @return array
+	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
 			'name'         => '',
@@ -141,9 +146,8 @@ class Event {
 
 		if ( ! empty( $term ) && is_a( $term, '\WP_Term' ) ) {
 			$venue_information['name'] = $term->name;
-			$venue_id = Venue::get_instance()->get_venue_id_from_slug( $term->slug );
+			$venue_id                  = Venue::get_instance()->get_venue_id_from_slug( $term->slug );
 		}
-
 
 		if ( intval( $venue_id ) ) {
 			$venue_meta                        = json_decode( get_post_meta( $venue_id, '_venue_information', true ) );

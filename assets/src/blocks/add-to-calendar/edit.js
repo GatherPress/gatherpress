@@ -15,6 +15,7 @@ const Edit = () => {
 					<Icon icon="calendar" />
 				</FlexItem>
 				<FlexItem>
+					{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
 					<a href="#">
 						{ __( 'Add to calendar', 'gatherpress' ) }
 					</a>

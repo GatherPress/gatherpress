@@ -1,9 +1,9 @@
 /**
  * Toggle to Show/Hide Calendar options.
  *
- * @param e Event.
+ * @param {TouchEvent} e Event.
  */
-const addToCalendarToggle = (e) => {
+const addToCalendarToggle = ( e ) => {
 	e.preventDefault();
 
 	const currentListDisplay = e.target.nextElementSibling.style.display;
@@ -29,7 +29,7 @@ const addToCalendarInit = () => {
 			if ( ! target.closest( '.gp-add-to-calendar' ) ) {
 				containers[ i ].querySelector( '.gp-add-to-calendar__list' ).style.display = 'none';
 			}
-		});
+		} );
 	}
 };
 
