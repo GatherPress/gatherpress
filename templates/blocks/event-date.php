@@ -7,7 +7,9 @@
  * @since 1.0.0
  */
 
-$gatherpress_event = new GatherPress\Core\Event( get_the_ID() );
+use GatherPress\Core\Event;
+
+$gatherpress_event = new Event( get_the_ID() );
 ?>
 <div class="gp-event-date">
 	<div class="gp-event-date__row">
@@ -21,3 +23,5 @@ $gatherpress_event = new GatherPress\Core\Event( get_the_ID() );
 		</div>
 	</div>
 </div>
+
+
