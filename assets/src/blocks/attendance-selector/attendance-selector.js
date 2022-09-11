@@ -12,7 +12,8 @@ const containers = document.querySelectorAll(
 	`[data-gp_block_name="attendance-selector"]`,
 );
 // eslint-disable-next-line no-undef
-const type = '1' === GatherPress.has_event_past ? 'past' : 'upcoming';
+// const type = '1' === GatherPress.has_event_past ? 'past' : 'upcoming';
+const type = 'upcoming';
 
 for ( let i = 0; i < containers.length; i++ ) {
 	ReactDOM.render(
