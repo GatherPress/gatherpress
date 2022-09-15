@@ -172,11 +172,11 @@ const Edit = ( props ) => {
 				</PanelBody>
 				<PanelBody>
 					<ToggleControl
-						label="Show/Hide Attendee list"
+						label={ __( 'Show/Hide Attendee list', 'gatherpress' ) }
 						help={
 							attributes.eventOptions.showAttendeeList
-								? 'Show Attendee List'
-								: 'Do not show Attendee List'
+								? __( 'Show Attendee List', 'gatherpress' )
+								: __( 'Do not show Attendee List', 'gatherpress' )
 						}
 						checked={ attributes.eventOptions.showAttendeeList ?? true }
 						onChange={ ( value ) => {
@@ -184,17 +184,17 @@ const Edit = ( props ) => {
 						} }
 					/>
 					<SelectControl
-						label="Image Size Options"
+						label={ __( 'Image Size Options', 'gatherpress' ) }
 						value={ attributes.eventOptions.imageSize }
 						options={ imageOptions }
 						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, imageSize: value } } ) }
 					/>
 					<ToggleControl
-						label="Show/Hide Featured Image"
+						label={ __( 'Show/Hide Featured Image', 'gatherpress' ) }
 						help={
 							attributes.eventOptions.showFeaturedImage
-								? 'Show Featured Image'
-								: 'Do not show Featured Image'
+								? __( 'Show Featured Image', 'gatherpress' )
+								: __( 'Do not show Featured Image', 'gatherpress' )
 						}
 						checked={ attributes.eventOptions.showFeaturedImage }
 						onChange={ ( value ) => {
@@ -202,11 +202,11 @@ const Edit = ( props ) => {
 						} }
 					/>
 					<ToggleControl
-						label="Show/Description"
+						label={ __( 'Show/Description', 'gatherpress' ) }
 						help={
 							attributes.eventOptions.showDescription
-								? 'Show Description'
-								: 'Hide Description'
+								? __( 'Show Description', 'gatherpress' )
+								: __( 'Hide Description', 'gatherpress' )
 						}
 						checked={ attributes.eventOptions.showDescription }
 						onChange={ ( value ) => {
@@ -215,8 +215,8 @@ const Edit = ( props ) => {
 
 					/>
 					<TextControl
-						label="Description Limit"
-						help="Limit the amount of words that display underneath the title of the event"
+						label={ __( 'Description Limit' ) }
+						help={ __( 'Limit the amount of words that display underneath the title of the event' ) }
 						value={ parseInt( attributes.eventOptions.descriptionLimit ) }
 						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, descriptionLimit: value } } ) }
 						min={ 0 }
@@ -224,11 +224,11 @@ const Edit = ( props ) => {
 						type="number"
 					/>
 					<ToggleControl
-						label="Show/RSVP Button"
+						label={ __( 'Show/RSVP Button' ) }
 						help={
 							attributes.eventOptions.showRsvpButton
-								? 'Show RSVP Button'
-								: 'Hide RSVP Button'
+								? __( 'Show RSVP Button' )
+								: __( 'Hide RSVP Button' )
 						}
 						checked={ attributes.eventOptions.showRsvpButton }
 						onChange={ ( value ) => {
