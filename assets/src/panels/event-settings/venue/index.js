@@ -48,7 +48,7 @@ const VenuePanel = ( props ) => {
 			value: item.id + ':' + item.slug.replace( '_venue_', '' ),
 		} ) );
 
-		venues.unshift( { value: '', label: __( 'Choose a venue', 'gatherpress' ), disabled: true } );
+		venues.unshift( { value: ':', label: __( 'Choose a venue', 'gatherpress' ) } );
 	} else {
 		venues = [];
 	}
@@ -56,7 +56,8 @@ const VenuePanel = ( props ) => {
 	const updateTerm = ( value ) => {
 		setVenue( value );
 		value = value.split( ':' );
-		editPost( { _gp_venue: [ value[ 0 ] ] } );
+		const term = ( '' !== value[ 0 ] ) ? [ value[ 0 ] ] : [];
+		editPost( { _gp_venue: term } );
 		Broadcaster( {
 			setVenueId: value[ 1 ],
 		} );

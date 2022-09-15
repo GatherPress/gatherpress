@@ -117,4 +117,15 @@ class Venue {
 		return sprintf( '_venue_%d', $post_id );
 	}
 
+	/**
+	 * Get the Venue CPT ID from Venue taxonomy slug.
+	 *
+	 * @param string $slug Slug of venue taxonomy to retrieve post type ID.
+	 *
+	 * @return int
+	 */
+	public function get_venue_id_from_slug( string $slug ): int {
+		return intval( str_replace( '_venue_', '', $slug ) );
+	}
+
 }
