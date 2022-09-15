@@ -242,7 +242,6 @@ const Edit = ( props ) => {
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
 				topics={ attributes.topics }
-				showRsvpButton={ attributes.showRsvpButton }
 			/>
 		</div>
 	);
