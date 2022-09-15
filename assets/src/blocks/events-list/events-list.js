@@ -18,7 +18,7 @@ for ( let i = 0; i < containers.length; i++ ) {
 
 	ReactDOM.render(
 		<EventsList
-			eventOptions = { attrs.eventOptions ?? {
+			eventOptions={ attrs.eventOptions ?? {
 				descriptionLimit: 55,
 				imageSize: 'default',
 				showAttendeeList: true,

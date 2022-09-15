@@ -22,8 +22,8 @@ registerBlockType( 'gatherpress/events-list', {
 				showAttendeeList: true,
 				showFeaturedImage: true,
 				showDescription: true,
-				showRsvpButton: true
-			}
+				showRsvpButton: true,
+			},
 		},
 		maxNumberOfEvents: {
 			type: 'integer',

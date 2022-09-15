@@ -85,8 +85,8 @@ const Edit = ( props ) => {
 
 		setAttributes( { topics: allTopics } );
 	};
-	console.log('atts from edit', attributes);
-	const imageOptions = [ { label: 'Default', value: 'default' }, { label: 'Thumbnail', value: 'thumbnail' }, { label: 'Large', value: 'large'} ];
+
+	const imageOptions = [ { label: 'Default', value: 'default' }, { label: 'Thumbnail', value: 'thumbnail' }, { label: 'Large', value: 'large' } ];
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
@@ -179,15 +179,15 @@ const Edit = ( props ) => {
 								: 'Do not show Attendee List'
 						}
 						checked={ attributes.eventOptions.showAttendeeList ?? true }
-						onChange={ (value ) => {
-							setAttributes( { eventOptions: { ...attributes.eventOptions, ['showAttendeeList']: value } } )
+						onChange={ ( value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, showAttendeeList: value } } );
 						} }
 					/>
 					<SelectControl
 						label="Image Size Options"
 						value={ attributes.eventOptions.imageSize }
 						options={ imageOptions }
-						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, ['imageSize']: value } } ) }
+						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, imageSize: value } } ) }
 					/>
 					<ToggleControl
 						label="Show/Hide Featured Image"
@@ -197,8 +197,8 @@ const Edit = ( props ) => {
 								: 'Do not show Featured Image'
 						}
 						checked={ attributes.eventOptions.showFeaturedImage }
-						onChange={ (value ) => {
-							setAttributes( { eventOptions: { ...attributes.eventOptions, ['showFeaturedImage']: value } } )
+						onChange={ ( value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, showFeaturedImage: value } } );
 						} }
 					/>
 					<ToggleControl
@@ -209,16 +209,16 @@ const Edit = ( props ) => {
 								: 'Hide Description'
 						}
 						checked={ attributes.eventOptions.showDescription }
-						onChange={ (value ) => {
-							setAttributes( { eventOptions: { ...attributes.eventOptions, ['showDescription']: value } } )
+						onChange={ ( value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, showDescription: value } } );
 						} }
-						
+
 					/>
 					<TextControl
 						label="Description Limit"
 						help="Limit the amount of words that display underneath the title of the event"
 						value={ parseInt( attributes.eventOptions.descriptionLimit ) }
-						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, ['descriptionLimit']: value } } ) }
+						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, descriptionLimit: value } } ) }
 						min={ 0 }
 						max={ excerptMax }
 						type="number"
@@ -231,14 +231,14 @@ const Edit = ( props ) => {
 								: 'Hide RSVP Button'
 						}
 						checked={ attributes.eventOptions.showRsvpButton }
-						onChange={ (value) => {
-							setAttributes( { eventOptions: { ...attributes.eventOptions, ['showRsvpButton']: value } } )
+						onChange={ ( value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, showRsvpButton: value } } );
 						} }
 					/>
 				</PanelBody>
 			</InspectorControls>
 			<EventsList
-				eventOptions={attributes.eventOptions}
+				eventOptions={ attributes.eventOptions }
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
 				topics={ attributes.topics }
