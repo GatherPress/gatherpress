@@ -8,13 +8,13 @@ const EventItem = ( props ) => {
 		return '';
 	}
 
-	const { type, event, descriptionLimit, imageSize, showAttendeeList, showFeaturedImage, showDescription, showRsvpButton } = props;
-
+	const { type, event, eventOptions } = props;
 	const limitExcerpt = ( excerpt ) => {
-		return excerpt.split( ' ' ).splice( 0, parseInt( descriptionLimit ) ).join( ' ' ) + '[…]';
+		return excerpt.split( ' ' ).splice( 0, parseInt( eventOptions.descriptionLimit ) ).join( ' ' ) + '[…]';
 	};
 
-	const size = imageSize === 'default' ? 'featured_image' : 'featured_image_' + imageSize;
+	const size = eventOptions.imageSize === 'default' ? 'featured_image' : 'featured_image_' + eventOptions.imageSize;
+
 	const featuredImage = HtmlReactParser( event[ size ] );
 
 	const eventClass = `gp-events-list`;
@@ -23,7 +23,7 @@ const EventItem = ( props ) => {
 		<div className={ eventClass }>
 			<div className={ `${ eventClass }__header` }>
 				<div className={ `${ eventClass }__info` }>
-					{ showFeaturedImage && (
+					{ eventOptions.showFeaturedImage && (
 						<figure className={ `${ eventClass }__image` }>
 							<a href={ event.permalink }>
 								{ featuredImage }
@@ -40,7 +40,7 @@ const EventItem = ( props ) => {
 							{ HtmlReactParser( event.title ) }
 						</a>
 					</div>
-					{ showDescription && (
+					{ eventOptions.showDescription && (
 						<div className={ `${ eventClass }__content` }>
 							<div className={ `${ eventClass }__excerpt` }>
 								{ HtmlReactParser( limitExcerpt( event.excerpt ) ) }
@@ -50,7 +50,7 @@ const EventItem = ( props ) => {
 				</div>
 			</div>
 			<div className={ `${ eventClass }__footer` }>
-				{ showAttendeeList && (
+				{ eventOptions.showAttendeeList && (
 					<div className="gp-attendance-list__items">
 						<AttendeeList
 							eventId={ event.ID }
@@ -61,7 +61,7 @@ const EventItem = ( props ) => {
 						/>
 					</div>
 				) }
-				{ ( 'upcoming' === type && showRsvpButton ) && (
+				{ ( 'upcoming' === type && eventOptions.showRsvpButton ) && (
 					<AttendanceSelector
 						eventId={ event.ID }
 						currentUser={ event.current_user }
@@ -69,7 +69,7 @@ const EventItem = ( props ) => {
 					/>
 				) }
 
-				{ ( 'past' === type && showRsvpButton ) && (
+				{ ( 'past' === type && eventOptions.showRsvpButton ) && (
 					<AttendeeResponse
 						type={ type }
 						status={ event.current_user?.status }

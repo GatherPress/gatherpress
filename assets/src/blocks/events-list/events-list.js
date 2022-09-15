@@ -18,15 +18,16 @@ for ( let i = 0; i < containers.length; i++ ) {
 
 	ReactDOM.render(
 		<EventsList
+			eventOptions = { attrs.eventOptions ?? {
+				descriptionLimit: 55,
+				imageSize: 'default',
+				showAttendeeList: true,
+				showFeaturedImage: true,
+				showRsvpButton: true,
+			} }
 			type={ attrs.type ?? 'upcoming' }
-			descriptionLimit={ attrs.descriptionLimit }
-			imageSize={ attrs.imageSize ?? 'default' }
 			maxNumberOfEvents={ attrs.maxNumberOfEvents ?? 5 }
 			topics={ attrs.topics ?? [] }
-			showAttendeeList={ attrs.showAttendeeList ?? true }
-			showFeaturedImage={ attrs.showFeaturedImage ?? true }
-			showDescription={ attrs.showDescription ?? true }
-			showRsvpButton={ attrs.showRsvpButton ?? true }
 		/>,
 		containers[ i ],
 	);

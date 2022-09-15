@@ -85,8 +85,8 @@ const Edit = ( props ) => {
 
 		setAttributes( { topics: allTopics } );
 	};
+	console.log('atts from edit', attributes);
 	const imageOptions = [ { label: 'Default', value: 'default' }, { label: 'Thumbnail', value: 'thumbnail' }, { label: 'Large', value: 'large'} ];
-
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
@@ -174,52 +174,51 @@ const Edit = ( props ) => {
 					<ToggleControl
 						label="Show/Hide Attendee list"
 						help={
-							attributes.showAttendeeList
+							attributes.eventOptions.showAttendeeList
 								? 'Show Attendee List'
 								: 'Do not show Attendee List'
 						}
-						checked={ attributes.showAttendeeList }
-						onChange={ () => {
-							setAttributes( { showAttendeeList: ! attributes.showAttendeeList } );
+						checked={ attributes.eventOptions.showAttendeeList ?? true }
+						onChange={ (value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, ['showAttendeeList']: value } } )
 						} }
 					/>
 					<SelectControl
 						label="Image Size Options"
-						value={ attributes.imageSize }
+						value={ attributes.eventOptions.imageSize }
 						options={ imageOptions }
-						onChange={ ( value ) => {
-							setAttributes( { imageSize: value } );
-						} }
+						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, ['imageSize']: value } } ) }
 					/>
 					<ToggleControl
 						label="Show/Hide Featured Image"
 						help={
-							attributes.showFeaturedImage
+							attributes.eventOptions.showFeaturedImage
 								? 'Show Featured Image'
 								: 'Do not show Featured Image'
 						}
-						checked={ attributes.showFeaturedImage }
-						onChange={ () => {
-							setAttributes( { showFeaturedImage: ! attributes.showFeaturedImage } );
+						checked={ attributes.eventOptions.showFeaturedImage }
+						onChange={ (value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, ['showFeaturedImage']: value } } )
 						} }
 					/>
 					<ToggleControl
 						label="Show/Description"
 						help={
-							attributes.showDescription
+							attributes.eventOptions.showDescription
 								? 'Show Description'
 								: 'Hide Description'
 						}
-						checked={ attributes.showDescription }
-						onChange={ () => {
-							setAttributes( { showDescription: ! attributes.showDescription } );
+						checked={ attributes.eventOptions.showDescription }
+						onChange={ (value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, ['showDescription']: value } } )
 						} }
+						
 					/>
 					<TextControl
 						label="Description Limit"
 						help="Limit the amount of words that display underneath the title of the event"
-						value={ parseInt( attributes.descriptionLimit ) }
-						onChange={ ( value ) => setAttributes( { descriptionLimit: parseInt( value ) } ) }
+						value={ parseInt( attributes.eventOptions.descriptionLimit ) }
+						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, ['descriptionLimit']: value } } ) }
 						min={ 0 }
 						max={ excerptMax }
 						type="number"
@@ -227,26 +226,22 @@ const Edit = ( props ) => {
 					<ToggleControl
 						label="Show/RSVP Button"
 						help={
-							attributes.showRsvpButton
+							attributes.eventOptions.showRsvpButton
 								? 'Show RSVP Button'
 								: 'Hide RSVP Button'
 						}
-						checked={ attributes.showRsvpButton }
-						onChange={ () => {
-							setAttributes( { showRsvpButton: ! attributes.showRsvpButton } );
+						checked={ attributes.eventOptions.showRsvpButton }
+						onChange={ (value) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, ['showRsvpButton']: value } } )
 						} }
 					/>
 				</PanelBody>
 			</InspectorControls>
 			<EventsList
-				imageSize={ attributes.imageSize }
-				descriptionLimit={ attributes.descriptionLimit }
+				eventOptions={attributes.eventOptions}
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
 				topics={ attributes.topics }
-				showAttendeeList={ attributes.showAttendeeList }
-				showFeaturedImage={ attributes.showFeaturedImage }
-				showDescription={ attributes.showDescription }
 				showRsvpButton={ attributes.showRsvpButton }
 			/>
 		</div>

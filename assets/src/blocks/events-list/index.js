@@ -14,13 +14,16 @@ registerBlockType( 'gatherpress/events-list', {
 	icon: 'groups',
 	category: 'gatherpress',
 	attributes: {
-		descriptionLimit: {
-			type: 'integer',
-			default: '24',
-		},
-		imageSize: {
-			type: 'string',
-			default: 'default',
+		eventOptions: {
+			type: 'object',
+			default: {
+				descriptionLimit: '55',
+				imageSize: 'default',
+				showAttendeeList: true,
+				showFeaturedImage: true,
+				showDescription: true,
+				showRsvpButton: true
+			}
 		},
 		maxNumberOfEvents: {
 			type: 'integer',
@@ -35,22 +38,6 @@ registerBlockType( 'gatherpress/events-list', {
 		type: {
 			type: 'string',
 			default: 'upcoming',
-		},
-		showAttendeeList: {
-			type: 'boolean',
-			default: true,
-		},
-		showFeaturedImage: {
-			type: 'boolean',
-			default: true,
-		},
-		showDescription: {
-			type: 'boolean',
-			default: true,
-		},
-		showRsvpButton: {
-			type: 'boolean',
-			default: true,
 		},
 	},
 	edit: Edit,

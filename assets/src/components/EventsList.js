@@ -12,12 +12,13 @@ import { __ } from '@wordpress/i18n';
 import EventItem from './EventItem';
 
 const EventsList = ( props ) => {
-	const { descriptionLimit, imageSize, maxNumberOfEvents, type, topics, showAttendeeList, showFeaturedImage, showDescription, showRsvpButton } = props;
+	const { eventOptions, maxNumberOfEvents, type, topics } = props;
 	const [ events, setEvents ] = useState( [] );
 	const [ loaded, setLoaded ] = useState( false );
 	const renderEvents = events.map( ( event ) => {
-		return <EventItem key={ event.ID } descriptionLimit={ descriptionLimit } imageSize={ imageSize } type={ type } event={ event } showAttendeeList={ showAttendeeList } showFeaturedImage={ showFeaturedImage } showDescription={ showDescription } showRsvpButton={ showRsvpButton } />;
+		return <EventItem key={ event.ID } eventOptions={ eventOptions } type={ type } event={ event } />;
 	} );
+
 	const renderNoEventsMessage = () => {
 		const message =
 			'upcoming' === type
