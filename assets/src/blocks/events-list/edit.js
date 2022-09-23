@@ -12,11 +12,14 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
 	PanelBody,
 	FormTokenField,
+	SelectControl,
 	RangeControl,
 	ButtonGroup,
 	Button,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalText as Text,
+	TextControl,
+	ToggleControl,
 } from '@wordpress/components';
 import { store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
@@ -50,7 +53,7 @@ const Edit = ( props ) => {
 			topics,
 		],
 	);
-
+	const excerptMax = 55;
 	const topicSuggestions =
 		topicsList?.reduce(
 			( accumulator, topic ) => ( {
@@ -83,6 +86,7 @@ const Edit = ( props ) => {
 		setAttributes( { topics: allTopics } );
 	};
 
+	const imageOptions = [ { label: 'Default', value: 'default' }, { label: 'Thumbnail', value: 'thumbnail' }, { label: 'Large', value: 'large' } ];
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
@@ -166,8 +170,75 @@ const Edit = ( props ) => {
 						maxSuggestions={ 20 }
 					/>
 				</PanelBody>
+				<PanelBody>
+					<ToggleControl
+						label={ __( 'Show/Hide Attendee list', 'gatherpress' ) }
+						help={
+							attributes.eventOptions.showAttendeeList
+								? __( 'Show Attendee List', 'gatherpress' )
+								: __( 'Do not show Attendee List', 'gatherpress' )
+						}
+						checked={ attributes.eventOptions.showAttendeeList ?? true }
+						onChange={ ( value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, showAttendeeList: value } } );
+						} }
+					/>
+					<SelectControl
+						label={ __( 'Image Size Options', 'gatherpress' ) }
+						value={ attributes.eventOptions.imageSize }
+						options={ imageOptions }
+						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, imageSize: value } } ) }
+					/>
+					<ToggleControl
+						label={ __( 'Show/Hide Featured Image', 'gatherpress' ) }
+						help={
+							attributes.eventOptions.showFeaturedImage
+								? __( 'Show Featured Image', 'gatherpress' )
+								: __( 'Do not show Featured Image', 'gatherpress' )
+						}
+						checked={ attributes.eventOptions.showFeaturedImage }
+						onChange={ ( value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, showFeaturedImage: value } } );
+						} }
+					/>
+					<ToggleControl
+						label={ __( 'Show/Description', 'gatherpress' ) }
+						help={
+							attributes.eventOptions.showDescription
+								? __( 'Show Description', 'gatherpress' )
+								: __( 'Hide Description', 'gatherpress' )
+						}
+						checked={ attributes.eventOptions.showDescription }
+						onChange={ ( value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, showDescription: value } } );
+						} }
+
+					/>
+					<TextControl
+						label={ __( 'Description Limit' ) }
+						help={ __( 'Limit the amount of words that display underneath the title of the event' ) }
+						value={ parseInt( attributes.eventOptions.descriptionLimit ) }
+						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, descriptionLimit: value } } ) }
+						min={ 0 }
+						max={ excerptMax }
+						type="number"
+					/>
+					<ToggleControl
+						label={ __( 'Show/RSVP Button' ) }
+						help={
+							attributes.eventOptions.showRsvpButton
+								? __( 'Show RSVP Button' )
+								: __( 'Hide RSVP Button' )
+						}
+						checked={ attributes.eventOptions.showRsvpButton }
+						onChange={ ( value ) => {
+							setAttributes( { eventOptions: { ...attributes.eventOptions, showRsvpButton: value } } );
+						} }
+					/>
+				</PanelBody>
 			</InspectorControls>
 			<EventsList
+				eventOptions={ attributes.eventOptions }
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }
 				type={ attributes.type }
 				topics={ attributes.topics }
