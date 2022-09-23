@@ -317,14 +317,16 @@ class Rest_Api {
 			foreach ( $query->posts as $post_id ) {
 				$event   = new Event( $post_id );
 				$posts[] = array(
-					'ID'             => $post_id,
-					'datetime_start' => $event->get_datetime_start(),
-					'permalink'      => get_the_permalink( $post_id ),
-					'title'          => get_the_title( $post_id ),
-					'excerpt'        => get_the_excerpt( $post_id ),
-					'featured_image' => get_the_post_thumbnail( $post_id, 'medium' ),
-					'attendees'      => ( $event->attendee ) ? $event->attendee->attendees() : array(),
-					'current_user'   => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
+					'ID'                       => $post_id,
+					'datetime_start'           => $event->get_datetime_start(),
+					'permalink'                => get_the_permalink( $post_id ),
+					'title'                    => get_the_title( $post_id ),
+					'excerpt'                  => get_the_excerpt( $post_id ),
+					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
+					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
+					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
+					'attendees'                => ( $event->attendee ) ? $event->attendee->attendees() : array(),
+					'current_user'             => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
 				);
 			}
 		}
