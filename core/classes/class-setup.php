@@ -82,7 +82,7 @@ class Setup {
 	/**
 	 * Add GatherPress block category.
 	 *
-	 * @param array $categories All the registered block categories.
+	 * @param array $block_categories All the registered block categories.
 	 *
 	 * @return array
 	 */
@@ -92,7 +92,9 @@ class Setup {
 			'title' => __( 'GatherPress', 'gatherpress' ),
 			'icon'  => 'nametag',
 		);
+
 		array_unshift( $block_categories, $demo_data );
+
 		return $block_categories;
 	}
 
