@@ -86,16 +86,14 @@ class Setup {
 	 *
 	 * @return array
 	 */
-	public function block_category( $categories ) {
-		return array_merge(
-			$categories,
-			array(
-				array(
-					'slug'  => 'gatherpress',
-					'title' => __( 'GatherPress', 'gatherpress' ),
-				),
-			)
+	public function block_category( $block_categories ) {
+		$demo_data = array(
+			'slug'  => 'gatherpress',
+			'title' => __( 'GatherPress', 'gatherpress' ),
+			'icon'  => 'nametag',
 		);
+		array_unshift( $block_categories, $demo_data );
+		return $block_categories;
 	}
 
 	/**
