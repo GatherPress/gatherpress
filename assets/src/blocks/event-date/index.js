@@ -13,6 +13,7 @@ registerBlockType( 'gatherpress/event-date', {
 	apiVersion: 2,
 	title: __( 'Event Date', 'gatherpress' ),
 	icon: 'clock',
+	example: {},
 	category: 'gatherpress',
 	attributes: {
 		blockId: { type: 'string' },

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "new-gatherpress/event-header",
+  "version": "0.1.1",
+  "title": "GatherPress Event Header",
+  "category": "gatherpress",
+  "icon": {
+    "background": "rgb(11, 61, 145)",
+    "foreground": "white",
+    "src": "flag"
+  },
+  "example": {},
+  "description": "Using Blocks to build a Block.",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "background_color": {
+      "type": "string",
+      "default": "rgba(222,222,222,.4)"
+    }
+  },
+  "textdomain": "gatherpress",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}

@@ -1,0 +1,56 @@
+{
+	"apiVersion": 2,
+	"name": "new-gatherpress/map-embed",
+	"version": "0.1.0",
+	"title": "Google Map Embed",
+	"category": "gatherpress",
+	"example": {},
+	"description": "Show location with Google Map",
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"align": true
+	},
+	"keywords": ["map", "google", "google map", "google maps", "location"],
+	"attributes": {
+		"id": {
+			"type": "string"
+		},
+		"align": {
+			"type": "string",
+			"default": ""
+		},
+		"location": {
+			"type": "string",
+			"default": "2214 Rhawn St, Phila PA"
+		},
+		"zoom": {
+			"type": "number",
+			"default": 10
+		},
+		"type": {
+			"type": "string",
+			"default": "m"
+		},
+		"deskHeight": {
+			"type": "number",
+			"default": 400
+		},
+		"tabHeight": {
+			"type": "number",
+			"default": 300
+		},
+		"mobileHeight": {
+			"type": "number",
+			"default": 250
+		},
+		"device": {
+			"type": "string",
+			"default": "desktop"
+		}
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+}

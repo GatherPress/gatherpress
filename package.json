@@ -1,0 +1,34 @@
+{
+	"name": "gatherpress-blocks",
+	"version": "1.2.1",
+	"description": "ES6 Assets for GatherPress including Blocks, Filters, and Plugins",
+	"main": "index.js",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/GatherPress/gatherpress.git"
+	},
+	"keywords": [
+		"dates",
+		"events"
+	],
+	"author": "GatherPress Team",
+	"license": "GPL-2.0",
+	"bugs": {
+		"url": "https://github.com/GatherPress/gatherpress/issues"
+	},
+	"homepage": "https://github.com/GatherPress/gatherpress#readme",
+	"scripts": {
+		"build": "wp-scripts build",
+		"format": "wp-scripts format",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"packages-update": "wp-scripts packages-update",
+		"plugin-zip": "wp-scripts plugin-zip",
+		"start": "wp-scripts start",
+		"env-start": "wp-env start",
+		"env-stop": "wp-env stop"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^24.2.0"
+	}
+}

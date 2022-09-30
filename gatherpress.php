@@ -30,3 +30,9 @@ require_once GATHERPRESS_CORE_PATH . '/core/classes/class-autoloader.php';
 GatherPress\Core\Autoloader::register();
 GatherPress\Core\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();
+
+add_action( 'init', 'create_new_gatherpress_blocks' );
+function create_new_gatherpress_blocks() {
+	register_block_type( __DIR__ . '/build/blocks/event-header' );
+	register_block_type( __DIR__ . '/build/blocks/map-embed' );
+}

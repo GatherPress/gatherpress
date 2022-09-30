@@ -137,6 +137,9 @@ class Setup {
 					'not_found'          => __( 'Not Found', 'gatherpress' ),
 					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
 				),
+				'template'  => [
+					[ 'new-gatherpress/event-header' ]
+				],
 				'show_in_rest'  => true,
 				'public'        => true,
 				'hierarchical'  => false,
