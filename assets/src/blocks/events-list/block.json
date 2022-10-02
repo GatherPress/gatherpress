@@ -1,0 +1,44 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "gatherpress/event-list",
+	"version": "0.1.1",
+	"title": "Event List",
+	"category": "gatherpress",
+	"icon": "clock",
+	"example": {},
+	"description": "A block listing events.",
+	"attributes": {
+		"eventOptions": {
+			"type": "object",
+			"default": {
+				"descriptionLimit": 55,
+				"imageSize": "default",
+				"showAttendeeList": true,
+				"showFeaturedImage": true,
+				"showDescription": true,
+				"showRsvpButton": true
+			}
+		},
+		"maxNumberOfEvents": {
+			"type": "integer",
+			"default": 5
+		},
+		"topics": {
+			"type": "array",
+			"items": {
+				"type": "object"
+			}
+		},
+		"type": {
+			"type": "string",
+			"default": "upcoming"
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css"
+}

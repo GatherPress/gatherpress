@@ -1,0 +1,26 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "gatherpress/venue",
+	"version": "0.1.1",
+	"title": "Venue",
+	"category": "gatherpress",
+	"icon": "location",
+	"example": {},
+	"description": "The venue block.",
+	"attributes": {
+		"blockId": {
+			"type": "string"
+		},
+		"venueId": {
+			"type": "integer",
+			"default": null
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css"
+}
