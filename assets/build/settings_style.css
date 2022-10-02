@@ -1,1 +1,26 @@
-.gp-settings__credits{display:flex;flex-wrap:wrap}.gp-settings__credits li{text-align:center;width:25%}@media screen and (max-width:37.5rem){.gp-settings__credits li{width:50%}}.gp-settings__credits a{display:block;font-size:1.1rem;padding:1rem}.gp-settings__credits img{border-radius:999rem}
+/*!************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[3].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[3].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[3].use[3]!./src/settings/style.scss ***!
+  \************************************************************************************************************************************************************************************************************************************************/
+.gp-settings__credits {
+  display: flex;
+  flex-wrap: wrap;
+}
+.gp-settings__credits li {
+  width: 25%;
+  text-align: center;
+}
+@media screen and (max-width: 37.5rem) {
+  .gp-settings__credits li {
+    width: 50%;
+  }
+}
+.gp-settings__credits a {
+  display: block;
+  padding: 1rem;
+  font-size: 1.1rem;
+}
+.gp-settings__credits img {
+  border-radius: 999rem;
+}
+
+/*# sourceMappingURL=settings_style.css.map*/
