@@ -1,15 +1,21 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 2,
-	"name": "gatherpress/event-date",
+	"name": "gatherpress/attendance-list",
 	"version": "0.1.1",
-	"title": "Event Date",
+	"title": "Event Attendance List",
 	"category": "gatherpress",
-	"icon": "clock",
+	"icon": "groups",
 	"example": {},
-	"description": "The block with event dates.",
+	"description": "The block with attendance list.",
 	"attributes": {
 		"blockId": {
+			"type": "string"
+		},
+		"content": {
+			"type": "string"
+		},
+		"color": {
 			"type": "string"
 		}
 	},
