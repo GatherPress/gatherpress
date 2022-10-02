@@ -13,10 +13,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
-	return;
-}
-
 use WP_CLI;
 
 /**
@@ -75,7 +71,7 @@ class CLI extends WP_CLI {
 		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
 
-		WP_CLI::success( 'New latest.json file has been generated.' );
+		WP_CLI::success( 'New latest.php file has been generated.' );
 	}
 
 	/**
@@ -98,5 +94,3 @@ class CLI extends WP_CLI {
 	}
 
 }
-
-\WP_CLI::add_command( 'gatherpress', CLI::class );

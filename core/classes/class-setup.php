@@ -10,6 +10,7 @@
 namespace GatherPress\Core;
 
 use \GatherPress\Core\Traits\Singleton;
+use WP_CLI;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -43,6 +44,9 @@ class Setup {
 		// @todo move these classes to a `buddypress` directory in plugin.
 		// BuddyPress::get_instance();
 		// Email::get_instance();
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			WP_CLI::add_command( 'gatherpress', CLI::class );
+		}
 	}
 
 	/**
