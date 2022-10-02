@@ -2,11 +2,11 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 2,
 	"name": "gatherpress/add-to-calendar",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"title": "Add to Calendar",
 	"category": "gatherpress",
 	"icon": "calendar",
-  "example": "{}",
+  "example": {},
   "description": "An applet block to add the event to your preferred calendar.",
 	"attributes": {
 		"blockId": {
@@ -18,6 +18,5 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css"
 }
