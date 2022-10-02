@@ -9,14 +9,9 @@ import { registerBlockType } from '@wordpress/blocks';
  */
 import edit from './edit';
 
-registerBlockType( 'gatherpress/add-to-calendar', {
-	apiVersion: 2,
-	title: __( 'Add to calendar', 'gatherpress' ),
-	icon: 'calendar',
-	category: 'gatherpress',
-	attributes: {
-		blockId: { type: 'string' },
-	},
+import metadata from './block.json';
+
+registerBlockType(metadata, {
 	edit,
 	save: () => null,
-} );
+});
