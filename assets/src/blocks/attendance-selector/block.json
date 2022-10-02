@@ -3,7 +3,7 @@
 	"apiVersion": 2,
 	"name": "gatherpress/attendance-selector",
 	"version": "0.1.1",
-	"title": "Event Attendance Selector",
+	"title": "Attendance Selector",
 	"category": "gatherpress",
 	"icon": "groups",
 	"example": {},

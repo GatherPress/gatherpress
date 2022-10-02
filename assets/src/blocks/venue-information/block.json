@@ -3,11 +3,11 @@
 	"apiVersion": 2,
 	"name": "gatherpress/venue-information",
 	"version": "0.1.1",
-	"title": "Event Venue Information",
+	"title": "Venue Information",
 	"category": "gatherpress",
 	"icon": "location",
-  "example": {},
-  "description": "The venue information block.",
+	"example": {},
+	"description": "The venue information block.",
 	"attributes": {
 		"blockId": {
 			"type": "string"
