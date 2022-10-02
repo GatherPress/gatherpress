@@ -2,7 +2,11 @@
  * External dependencies.
  */
 import React from 'react';
-import ReactDOM from 'react-dom';
+
+/**
+ * WordPress dependencies.
+ */
+import { render } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -14,5 +18,5 @@ const containers = document.querySelectorAll(
 );
 
 for ( let i = 0; i < containers.length; i++ ) {
-	ReactDOM.render( <AttendanceList />, containers[ i ] );
+	render( <AttendanceList />, containers[ i ] );
 }
