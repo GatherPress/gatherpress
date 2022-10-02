@@ -10,7 +10,11 @@ import edit from './edit';
 
 import metadata from './block.json';
 
-registerBlockType( metadata, {
-	edit,
-	save: () => null,
-} );
+let postType = wp.data.select('core/editor').getCurrentPostType();
+
+if ( 'gp_event' === postType ) {
+	registerBlockType( metadata, {
+		edit,
+		save: () => null,
+	} );
+}
