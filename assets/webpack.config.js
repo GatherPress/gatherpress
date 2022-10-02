@@ -1,6 +1,5 @@
 const defaultConfig = require( './node_modules/@wordpress/scripts/config/webpack.config.js' );
 const path = require( 'path' );
-const IgnoreEmitPlugin = require( 'ignore-emit-webpack-plugin' );
 
 module.exports = {
 	...defaultConfig,
@@ -30,8 +29,4 @@ module.exports = {
 			},
 		},
 	},
-	plugins: [
-		...defaultConfig.plugins,
-		new IgnoreEmitPlugin( [ 'blocks_style.js', 'settings_style.js' ] ),
-	],
 };
