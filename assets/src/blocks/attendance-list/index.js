@@ -1,17 +1,16 @@
-import { __ } from '@wordpress/i18n';
+/**
+ * WordPress dependencies.
+ */
 import { registerBlockType } from '@wordpress/blocks';
-import Edit from './edit';
 
-registerBlockType( 'gatherpress/attendance-list', {
-	apiVersion: 2,
-	title: __( 'Attendance List', 'gatherpress' ),
-	icon: 'groups',
-	category: 'gatherpress',
-	attributes: {
-		blockId: { type: 'string' },
-		content: { type: 'string' },
-		color: { type: 'string' },
-	},
-	edit: Edit,
+/**
+ * Internal dependencies.
+ */
+import edit from './edit';
+
+import metadata from './block.json';
+
+registerBlockType( metadata, {
+	edit,
 	save: () => null,
 } );

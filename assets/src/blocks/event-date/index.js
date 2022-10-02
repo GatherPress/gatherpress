@@ -1,7 +1,6 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
 import { registerBlockType } from '@wordpress/blocks';
 
 /**
@@ -9,14 +8,9 @@ import { registerBlockType } from '@wordpress/blocks';
  */
 import edit from './edit';
 
-registerBlockType( 'gatherpress/event-date', {
-	apiVersion: 2,
-	title: __( 'Event Date', 'gatherpress' ),
-	icon: 'clock',
-	category: 'gatherpress',
-	attributes: {
-		blockId: { type: 'string' },
-	},
+import metadata from './block.json';
+
+registerBlockType( metadata, {
 	edit,
 	save: () => null,
 } );
