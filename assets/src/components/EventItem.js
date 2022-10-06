@@ -19,6 +19,7 @@ const EventItem = ( props ) => {
 
 	const eventClass = `gp-events-list`;
 
+	const venue = event.venue;
 	return (
 		<div className={ eventClass }>
 			<div className={ `${ eventClass }__header` }>
@@ -34,6 +35,9 @@ const EventItem = ( props ) => {
 						className={ `${ eventClass }__datetime has-small-font-size` }
 					>
 						<strong>{ event.datetime_start }</strong>
+					</div>
+					<div>
+						Venue: { venue.name }
 					</div>
 					<div className={ `${ eventClass }__title has-large-font-size` }>
 						<a href={ event.permalink }>
