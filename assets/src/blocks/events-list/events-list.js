@@ -2,7 +2,11 @@
  * External dependencies.
  */
 import React from 'react';
-import ReactDOM from 'react-dom';
+
+/**
+ * WordPress dependencies.
+ */
+import { render } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -16,7 +20,7 @@ const containers = document.querySelectorAll(
 for ( let i = 0; i < containers.length; i++ ) {
 	const attrs = JSON.parse( containers[ i ].dataset.gp_block_attrs );
 
-	ReactDOM.render(
+	render(
 		<EventsList
 			eventOptions={ attrs.eventOptions ?? {
 				descriptionLimit: 55,

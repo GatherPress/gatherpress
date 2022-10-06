@@ -17,6 +17,9 @@
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (
@@ -52,6 +55,9 @@
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (
@@ -90,6 +96,9 @@
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (
@@ -125,6 +134,9 @@
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (
@@ -160,6 +172,9 @@
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (
@@ -195,6 +210,9 @@
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (
@@ -236,6 +254,9 @@ Laura currently resides in North NJ',
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (
@@ -271,6 +292,9 @@ Laura currently resides in North NJ',
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (
@@ -286,6 +310,44 @@ Laura currently resides in North NJ',
           0 => 
           array (
             'href' => 'https://profiles.wordpress.org/wp-json/wporg/v1/users?slug=cameronbarrett',
+          ),
+        ),
+      ),
+    ),
+    6 => 
+    array (
+      'id' => 4555438,
+      'name' => '',
+      'url' => 'http://lohud.com',
+      'description' => '',
+      'link' => 'https://profiles.wordpress.org/author/jmarx/',
+      'slug' => 'jmarx',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/c45f6353d61871317b31fb9048d39b2b?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/c45f6353d61871317b31fb9048d39b2b?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/c45f6353d61871317b31fb9048d39b2b?s=96&#038;r=g&#038;d=mm',
+      ),
+      'meta' => 
+      array (
+        'persisted_preferences' => 
+        array (
+        ),
+      ),
+      '_links' => 
+      array (
+        'self' => 
+        array (
+          0 => 
+          array (
+            'href' => 'https://profiles.wordpress.org/wp-json/wporg/v1/users/jmarx',
+          ),
+        ),
+        'collection' => 
+        array (
+          0 => 
+          array (
+            'href' => 'https://profiles.wordpress.org/wp-json/wporg/v1/users?slug=jmarx',
           ),
         ),
       ),
@@ -309,6 +371,9 @@ Laura currently resides in North NJ',
       ),
       'meta' => 
       array (
+        'persisted_preferences' => 
+        array (
+        ),
       ),
       '_links' => 
       array (

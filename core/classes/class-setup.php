@@ -10,6 +10,7 @@
 namespace GatherPress\Core;
 
 use \GatherPress\Core\Traits\Singleton;
+use WP_CLI;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -43,6 +44,9 @@ class Setup {
 		// @todo move these classes to a `buddypress` directory in plugin.
 		// BuddyPress::get_instance();
 		// Email::get_instance();
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			WP_CLI::add_command( 'gatherpress', CLI::class );
+		}
 	}
 
 	/**
@@ -140,6 +144,13 @@ class Setup {
 				'show_in_rest'  => true,
 				'public'        => true,
 				'hierarchical'  => false,
+				'template'      => array(
+					array( 'gatherpress/event-date' ),
+					array( 'gatherpress/add-to-calendar' ),
+					array( 'gatherpress/venue' ),
+					array( 'gatherpress/attendance-selector' ),
+					array( 'gatherpress/attendance-list' ),
+				),
 				'menu_position' => 4,
 				'supports'      => array(
 					'title',

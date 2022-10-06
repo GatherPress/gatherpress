@@ -201,6 +201,7 @@ class Assets {
 			'current_user'     => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '', // @todo cleanup
 			'event_rest_api'   => home_url( 'wp-json/gatherpress/v1/event' ),
 			'has_event_past'   => $event->has_event_past(),
+			'is_admin'         => is_admin(),
 			'nonce'            => wp_create_nonce( 'wp_rest' ),
 			'post_id'          => $post_id,
 			'event_datetime'   => $event->get_datetime(),
