@@ -54,14 +54,12 @@ class Setup {
 	 */
 	protected function setup_hooks() {
 		add_action( 'init', array( $this, 'register' ) );
-		add_action( 'init', array( $this, 'change_event_rewrite_rule' ) );
 		add_action( 'init', array( $this, 'maybe_create_custom_table' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
 
 		add_filter( 'block_categories_all', array( $this, 'block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
-		add_filter( 'wp_unique_post_slug', array( $this, 'append_id_to_event_slug' ), 10, 4 );
 		add_filter( sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ), array( $this, 'set_custom_columns' ) );
 		add_filter( sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ), array( $this, 'sortable_columns' ) );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
@@ -293,22 +291,6 @@ class Setup {
 	}
 
 	/**
-	 * Add new rewrite rule for event to append Post ID.
-	 *
-	 * @since 1.0.0
-	 */
-	public function change_event_rewrite_rule() {
-		add_rewrite_rule(
-			'^events/([^/]*)-([0-9]+)/?$',
-			sprintf(
-				'index.php?post_type=%s&postname=$matches[1]&p=$matches[2]',
-				Event::POST_TYPE
-			),
-			'top'
-		);
-	}
-
-	/**
 	 * Delete event record from custom table when event is deleted.
 	 *
 	 * @since 1.0.0
@@ -390,40 +372,6 @@ class Setup {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		dbDelta( $sql );
-	}
-
-	/**
-	 * Ensure that event slugs always have ID appended to URL.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $slug        The desired slug (post_name).
-	 * @param int    $post_id     Post ID.
-	 * @param string $post_status No uniqueness checks are made if the post is still draft or pending.
-	 * @param string $post_type   Post type.
-	 *
-	 * @return string
-	 */
-	public function append_id_to_event_slug( string $slug, int $post_id, string $post_status, string $post_type ): string {
-		if ( Event::POST_TYPE !== $post_type ) {
-			return $slug;
-		}
-
-		if ( 1 > intval( $post_id ) ) {
-			return $slug;
-		}
-
-		if ( ! preg_match( '/-(\d+)$/', $slug, $matches ) ) {
-			return "{$slug}-{$post_id}";
-		}
-
-		$slug_id = intval( $matches[1] );
-
-		if ( $slug_id === $post_id ) {
-			return $slug;
-		}
-
-		return preg_replace( '/-\d+$/', '-' . $post_id, $slug );
 	}
 
 	/**
