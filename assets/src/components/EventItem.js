@@ -8,7 +8,14 @@ const EventItem = ( props ) => {
 		return '';
 	}
 
-	const { type, event } = props;
+	const { type, event, eventOptions } = props;
+	const limitExcerpt = ( excerpt ) => {
+		return excerpt.split( ' ' ).splice( 0, parseInt( eventOptions.descriptionLimit ) ).join( ' ' ) + '[…]';
+	};
+
+	const size = eventOptions.imageSize === 'default' ? 'featured_image' : 'featured_image_' + eventOptions.imageSize;
+
+	const featuredImage = HtmlReactParser( event[ size ] );
 
 	const eventClass = `gp-events-list`;
 
@@ -16,11 +23,13 @@ const EventItem = ( props ) => {
 		<div className={ eventClass }>
 			<div className={ `${ eventClass }__header` }>
 				<div className={ `${ eventClass }__info` }>
-					<figure className={ `${ eventClass }__image` }>
-						<a href={ event.permalink }>
-							{ HtmlReactParser( event.featured_image ) }
-						</a>
-					</figure>
+					{ eventOptions.showFeaturedImage && (
+						<figure className={ `${ eventClass }__image` }>
+							<a href={ event.permalink }>
+								{ featuredImage }
+							</a>
+						</figure>
+					) }
 					<div
 						className={ `${ eventClass }__datetime has-small-font-size` }
 					>
@@ -31,24 +40,28 @@ const EventItem = ( props ) => {
 							{ HtmlReactParser( event.title ) }
 						</a>
 					</div>
-					<div className={ `${ eventClass }__content` }>
-						<div className={ `${ eventClass }__excerpt` }>
-							{ HtmlReactParser( event.excerpt ) }
+					{ eventOptions.showDescription && (
+						<div className={ `${ eventClass }__content` }>
+							<div className={ `${ eventClass }__excerpt` }>
+								{ HtmlReactParser( limitExcerpt( event.excerpt ) ) }
+							</div>
 						</div>
-					</div>
+					) }
 				</div>
 			</div>
 			<div className={ `${ eventClass }__footer` }>
-				<div className="gp-attendance-list__items">
-					<AttendeeList
-						eventId={ event.ID }
-						value="attending"
-						attendees={ event.attendees }
-						limit="3"
-						avatarOnly={ true }
-					/>
-				</div>
-				{ 'upcoming' === type && (
+				{ eventOptions.showAttendeeList && (
+					<div className="gp-attendance-list__items">
+						<AttendeeList
+							eventId={ event.ID }
+							value="attending"
+							attendees={ event.attendees }
+							limit="3"
+							avatarOnly={ true }
+						/>
+					</div>
+				) }
+				{ ( 'upcoming' === type && eventOptions.showRsvpButton ) && (
 					<AttendanceSelector
 						eventId={ event.ID }
 						currentUser={ event.current_user }
@@ -56,7 +69,7 @@ const EventItem = ( props ) => {
 					/>
 				) }
 
-				{ 'past' === type && (
+				{ ( 'past' === type && eventOptions.showRsvpButton ) && (
 					<AttendeeResponse
 						type={ type }
 						status={ event.current_user?.status }

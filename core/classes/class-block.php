@@ -39,6 +39,7 @@ class Block {
 	 * @var array List of block names.
 	 */
 	protected $static_blocks = array(
+		'add-to-calendar',
 		'event-date',
 		'venue',
 		'venue-information',
