@@ -20,7 +20,6 @@ const EventItem = ( props ) => {
 	const eventClass = `gp-events-list`;
 
 	const venue = event.venue;
-	console.log( venue );
 
 	return (
 		<div className={ eventClass }>
@@ -38,10 +37,10 @@ const EventItem = ( props ) => {
 					>
 						<strong>{ event.datetime_start }</strong>
 					</div>
-					{venue.name && (
-					<div>
-						Venue: { HtmlReactParser( '<a href=' + venue.permalink + '>' + venue.name + '</a>' ) }
-					</div>			
+					{ venue.name && (
+						<div>
+							Venue: { HtmlReactParser( '<a href=' + venue.permalink + '>' + venue.name + '</a>' ) }
+						</div>
 					) }
 
 					<div className={ `${ eventClass }__title has-large-font-size` }>
