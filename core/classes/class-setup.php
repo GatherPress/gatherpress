@@ -65,6 +65,41 @@ class Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
+
+		register_activation_hook( __FILE__, array( $this, 'activate_gatherpress_plugin' ) );
+		register_deactivation_hook( __FILE__, array( $this, 'deactivate_gatherpress_plugin' ) );
+		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ), 20 );
+	}
+
+	/**
+	 * Activate GatherPress plugin.
+	 *
+	 * @return void
+	 */
+	public function activate_gatherpress_plugin() {
+		if ( ! defined( 'GATHERPRESS_VERSION' ) ) {
+			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+		}
+	}
+
+	/**
+	 * Activate GatherPress plugin.
+	 *
+	 * @return void
+	 */
+	public function deactivate_gatherpress_plugin() {
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * Flush rewrite rules if the previously added flag exists,
+	 * and then remove the flag.
+	 */
+	public function maybe_flush_gatherpress_rewrite_rules() {
+		if ( get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
+			flush_rewrite_rules();
+			delete_option( 'gatherpress_flush_rewrite_rules_flag' );
+		}
 	}
 
 	/**
