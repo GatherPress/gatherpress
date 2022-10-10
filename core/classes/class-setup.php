@@ -53,6 +53,10 @@ class Setup {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
+
+		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
+		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
+
 		add_action( 'init', array( $this, 'register' ) );
 		add_action( 'init', array( $this, 'maybe_create_custom_table' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
@@ -65,9 +69,6 @@ class Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
-
-		register_activation_hook( __FILE__, array( $this, 'activate_gatherpress_plugin' ) );
-		register_deactivation_hook( __FILE__, array( $this, 'deactivate_gatherpress_plugin' ) );
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ), 20 );
 	}
 
@@ -76,8 +77,8 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	public function activate_gatherpress_plugin() {
-		if ( ! defined( 'GATHERPRESS_VERSION' ) ) {
+	function activate_gatherpress_plugin() {
+		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
 	}
@@ -87,7 +88,7 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	public function deactivate_gatherpress_plugin() {
+	function deactivate_gatherpress_plugin() {
 		flush_rewrite_rules();
 	}
 
