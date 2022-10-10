@@ -26,6 +26,7 @@ for ( let i = 0; i < containers.length; i++ ) {
 				descriptionLimit: 55,
 				imageSize: 'default',
 				showAttendeeList: true,
+				showDescription: true,
 				showFeaturedImage: true,
 				showRsvpButton: true,
 			} }
