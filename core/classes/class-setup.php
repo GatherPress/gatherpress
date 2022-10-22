@@ -74,7 +74,7 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	function activate_gatherpress_plugin() {
+	public function activate_gatherpress_plugin() {
 		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
@@ -85,7 +85,7 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	function deactivate_gatherpress_plugin() {
+	public function deactivate_gatherpress_plugin() {
 		flush_rewrite_rules();
 	}
 
