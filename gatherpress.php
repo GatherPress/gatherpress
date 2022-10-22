@@ -32,3 +32,31 @@ GatherPress\Core\Autoloader::register();
 GatherPress\Core\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();
 
+add_action( 'init', 'gatherpress_different_blocks_init' );
+/**
+ * Registers the block using the metadata loaded from the `block.json` file.
+ * Behind the scenes, it registers also all assets so they can be enqueued
+ * through the block editor in the corresponding context.
+ *
+ * @see https://developer.wordpress.org/reference/functions/register_block_type/
+ */
+function gatherpress_different_blocks_init() {
+	register_block_type(
+		__DIR__ . '/assets/build/blocks/add-to-calendar'
+	);
+	register_block_type(
+		__DIR__ . '/assets/build/blocks/initial-time'
+	);
+	register_block_type(
+		__DIR__ . '/assets/build/blocks/end-time'
+	);
+	register_block_type(
+		__DIR__ . '/assets/build/blocks/event-date'
+	);
+	register_block_type(
+		__DIR__ . '/assets/build/blocks/time-template'
+	);
+	register_block_type(
+		__DIR__ . '/assets/build/blocks/venue'
+	);
+}

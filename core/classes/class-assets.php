@@ -54,8 +54,8 @@ class Assets {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
+		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		// add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
 	}
 
@@ -159,28 +159,18 @@ class Assets {
 		$post_id = $GLOBALS['post']->ID ?? 0;
 		$event   = new Event( $post_id );
 
-		$asset = $this->get_asset_data( 'blocks_style' );
+		$asset = __DIR__ . '/assets/build/blocks/event-date/index.asset.php';
 
-		wp_enqueue_style( 'wp-block-button' );
-
-		wp_enqueue_style(
-			'gatherpress-blocks-style',
-			$this->build . 'blocks_style.css',
-			$asset['dependencies'],
-			$asset['version']
-		);
-
-		$asset = require_once $this->path . 'blocks_backend.asset.php';
 		wp_enqueue_script(
-			'gatherpress-blocks-backend',
-			$this->build . 'blocks_backend.js',
+			'gatherpress-blocks-object',
+			'/assets/build/blocks/event-date/index.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
 		);
 
 		wp_localize_script(
-			'gatherpress-blocks-backend',
+			'gatherpress-blocks-object',
 			'GatherPress',
 			$this->localize( $post_id )
 		);

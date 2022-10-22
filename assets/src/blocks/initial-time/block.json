@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "gatherpress/initial-time",
+	"version": "0.1.0",
+	"title": "Initial Time",
+	"category": "gatherpress",
+	"example": {},
+	"icon": "clock",
+	"description": "Initial Static block scaffolded with Create Block tool.",
+	"attributes": {
+		"beginTime": {
+			"type": "string"
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+}
