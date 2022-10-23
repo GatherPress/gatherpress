@@ -178,6 +178,7 @@ class Setup {
 				'template'      => array(
 					array( 'gatherpress/time-template' ),
 					array( 'gatherpress/add-to-calendar' ),
+					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/venue' ),
 					array( 'gatherpress/attendance-selector' ),
 					array( 'gatherpress/attendance-list' ),

@@ -21,7 +21,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_4__);
 /* harmony import */ var _components_VenueInformation__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../components/VenueInformation */ "./src/components/VenueInformation.js");
 
-
 /**
  * WordPress dependencies.
  */
@@ -30,11 +29,10 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 /**
  * Internal dependencies.
  */
-
-
 
 const Edit = props => {
   const {
@@ -50,15 +48,14 @@ const Edit = props => {
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.useBlockProps)();
   const editPost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useDispatch)('core/editor').editPost;
   let venueInformationMetaData = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => select('core/editor').getEditedPostAttribute('meta')._venue_information);
-
   if (venueInformationMetaData) {
     venueInformationMetaData = JSON.parse(venueInformationMetaData);
   } else {
     venueInformationMetaData = {};
   }
-
   const onUpdate = (key, value) => {
-    const payload = JSON.stringify({ ...venueInformationMetaData,
+    const payload = JSON.stringify({
+      ...venueInformationMetaData,
       [key]: value
     });
     const meta = {
@@ -71,10 +68,8 @@ const Edit = props => {
       meta
     });
   };
-
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
     var _venueInformationMeta, _venueInformationMeta2, _venueInformationMeta3;
-
     setAttributes({
       fullAddress: (_venueInformationMeta = venueInformationMetaData.fullAddress) !== null && _venueInformationMeta !== void 0 ? _venueInformationMeta : '',
       phoneNumber: (_venueInformationMeta2 = venueInformationMetaData.phoneNumber) !== null && _venueInformationMeta2 !== void 0 ? _venueInformationMeta2 : '',
@@ -112,7 +107,6 @@ const Edit = props => {
     }
   })))));
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (Edit);
 
 /***/ }),
@@ -128,7 +122,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__);
-
 
 
 const VenueInformation = _ref => {
@@ -182,7 +175,6 @@ const VenueInformation = _ref => {
     rel: "noreferrer noopener"
   }, website)))))));
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (VenueInformation);
 
 /***/ }),
@@ -340,10 +332,10 @@ __webpack_require__.r(__webpack_exports__);
  * WordPress dependencies.
  */
 
+
 /**
  * Internal dependencies.
  */
-
 
 
 (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_2__, {

@@ -3,7 +3,7 @@
  */
 import { DateTimePicker } from '@wordpress/components';
 // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-import { getSettings } from '@wordpress/date';
+import { __experimentalGetSettings } from '@wordpress/date';
 import { withState } from '@wordpress/compose';
 
 /**
@@ -12,7 +12,7 @@ import { withState } from '@wordpress/compose';
 import { updateDateTimeEnd, getDateTimeEnd } from './label';
 
 export const DateTimeEnd = withState()( ( { setState } ) => {
-	const settings = getSettings();
+	const settings = __experimentalGetSettings();
 	const is12HourTime = /a(?!\\)/i.test(
 		settings.formats.time
 			.toLowerCase()

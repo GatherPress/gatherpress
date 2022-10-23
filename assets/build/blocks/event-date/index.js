@@ -19,10 +19,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../helpers/broadcasting */ "./src/helpers/broadcasting.js");
 
-
 /**
  * External dependencies.
  */
+
 
 /**
  * WordPress dependencies.
@@ -43,28 +43,24 @@ __webpack_require__.r(__webpack_exports__);
  * @param {string} end
  * @return {string} Displayed date.
  */
-
 const displayDateTime = (start, end) => {
   const dateFormat = 'dddd, MMMM D, YYYY';
   const timeFormat = 'h:mm A';
-  const timeZoneFormat = 'z'; // eslint-disable-next-line no-undef
-
+  const timeZoneFormat = 'z';
+  // eslint-disable-next-line no-undef
   const timeZone = GatherPress.event_datetime.timezone;
   const startFormat = dateFormat + ' ' + timeFormat;
   let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
-
   if (moment__WEBPACK_IMPORTED_MODULE_1___default()(start).format(dateFormat) === moment__WEBPACK_IMPORTED_MODULE_1___default()(end).format(dateFormat)) {
     endFormat = timeFormat + ' ' + timeZoneFormat;
   }
-
   return moment__WEBPACK_IMPORTED_MODULE_1___default()(start).format(startFormat) + ' to ' + moment__WEBPACK_IMPORTED_MODULE_1___default().tz(end, timeZone).format(endFormat);
 };
-
 const Edit = () => {
-  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.useBlockProps)(); // eslint-disable-next-line no-undef
-
-  const [dateTimeStart, setDateTimeStart] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(GatherPress.event_datetime.datetime_start); // eslint-disable-next-line no-undef
-
+  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.useBlockProps)();
+  // eslint-disable-next-line no-undef
+  const [dateTimeStart, setDateTimeStart] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(GatherPress.event_datetime.datetime_start);
+  // eslint-disable-next-line no-undef
   const [dateTimeEnd, setDateTimeEnd] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(GatherPress.event_datetime.datetime_end);
   (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Listener)({
     setDateTimeEnd,
@@ -81,7 +77,6 @@ const Edit = () => {
     icon: "clock"
   })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.FlexItem, null, displayDateTime(dateTimeStart, dateTimeEnd))));
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (Edit);
 
 /***/ }),
@@ -99,14 +94,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 const Broadcaster = function (payload) {
   let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
   for (const [key, value] of Object.entries(payload)) {
     let type = key;
-
     if (identifier) {
       type += identifier;
     }
-
     const dispatcher = new CustomEvent(type, {
       detail: value
     });
@@ -115,14 +107,11 @@ const Broadcaster = function (payload) {
 };
 const Listener = function (payload) {
   let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
   for (const [key, value] of Object.entries(payload)) {
     let type = key;
-
     if (identifier) {
       type += identifier;
     }
-
     addEventListener(type, e => {
       value(e.detail);
     }, false);
@@ -274,10 +263,10 @@ __webpack_require__.r(__webpack_exports__);
  * WordPress dependencies.
  */
 
+
 /**
  * Internal dependencies.
  */
-
 
 
 (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_2__, {

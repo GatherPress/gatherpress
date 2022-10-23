@@ -1,13 +1,13 @@
 /**
  * External dependencies.
  */
-import { Component } from 'react';
+import { Component } from '@wordpress/element';
 
 /**
  * WordPress dependencies.
  */
 // eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-import { dateI18n, getSettings } from '@wordpress/date';
+import { dateI18n, __experimentalGetSettings } from '@wordpress/date';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -97,7 +97,7 @@ export class DateTimeEndLabel extends Component {
 	}
 
 	render() {
-		const settings = getSettings();
+		const settings = __experimentalGetSettings();
 
 		return dateI18n(
 			`${ settings.formats.date } ${ settings.formats.time }`,

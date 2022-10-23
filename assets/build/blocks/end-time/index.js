@@ -37,7 +37,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @return {WPElement} Element to render.
  */
-
 function Edit(_ref) {
   let {
     attributes,
@@ -48,14 +47,12 @@ function Edit(_ref) {
   } = attributes;
   const [openDatePopup, setOpenDatePopup] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(false);
   const [myDateTime, setMyDateTime] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(endTime);
-
   const updateOnChange = newTime => {
     setMyDateTime(newTime);
     setAttributes({
       endTime: newTime
     });
   };
-
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.useBlockProps)(), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, myDateTime ? (0,_helper_functions__WEBPACK_IMPORTED_MODULE_4__.FormatTheDate)(endTime) : (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_helper_functions__WEBPACK_IMPORTED_MODULE_4__.CreateEventEnd, null)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Button, {
     isLink: true,
     onClick: () => setOpenDatePopup(!openDatePopup),
@@ -88,6 +85,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./block.json */ "./src/blocks/end-time/block.json");
 
 
+
 /**
  * Internal dependencies
  */
@@ -100,7 +98,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
  */
-
 (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_4__, {
   edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"],
   save: _save__WEBPACK_IMPORTED_MODULE_3__["default"]
@@ -129,6 +126,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 /**
  * The edit function describes the structure of your block in the context of the
  * editor. This represents what the editor will render when the block is used.
@@ -137,7 +135,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @return {WPElement} Element to render.
  */
-
 function Save(_ref) {
   let {
     attributes
@@ -193,14 +190,14 @@ const FormatTheDate = function (inputDate) {
   const dateCopy = new Date(inputDate);
   dateCopy.setDate(dateCopy.getDate());
   return (0,_wordpress_date__WEBPACK_IMPORTED_MODULE_0__.dateI18n)(format, dateCopy) + 'UTC-' + dateCopy.getTimezoneOffset() / 60 + ':00';
-}; // @todo maybe put this is a save_post hook.
+};
+
+// @todo maybe put this is a save_post hook.
 // https://www.ibenic.com/use-wordpress-hooks-package-javascript-apps/
 // Then move button enabler
-
 function SaveGatherPressDateTime() {
   const isSavingPost = wp.data.select('core/editor').isSavingPost(),
-        isAutosavingPost = wp.data.select('core/editor').isAutosavingPost();
-
+    isAutosavingPost = wp.data.select('core/editor').isAutosavingPost();
   if (isEventPostType() && isSavingPost && !isAutosavingPost) {
     apiFetch({
       path: '/gatherpress/v1/event/datetime/',
@@ -208,14 +205,17 @@ function SaveGatherPressDateTime() {
       data: {
         // eslint-disable-next-line no-undef
         post_id: GatherPress.post_id,
-        datetime_start: moment__WEBPACK_IMPORTED_MODULE_1___default()( // eslint-disable-next-line no-undef
+        datetime_start: moment__WEBPACK_IMPORTED_MODULE_1___default()(
+        // eslint-disable-next-line no-undef
         GatherPress.event_datetime.datetime_start).format('YYYY-MM-DD HH:mm:ss'),
-        datetime_end: moment__WEBPACK_IMPORTED_MODULE_1___default()( // eslint-disable-next-line no-undef
+        datetime_end: moment__WEBPACK_IMPORTED_MODULE_1___default()(
+        // eslint-disable-next-line no-undef
         GatherPress.event_datetime.datetime_end).format('YYYY-MM-DD HH:mm:ss'),
         // eslint-disable-next-line no-undef
         _wpnonce: GatherPress.nonce
       }
-    }).then(() => {// Saved.
+    }).then(() => {
+      // Saved.
     });
   }
 }

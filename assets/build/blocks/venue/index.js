@@ -20,7 +20,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../helpers/broadcasting */ "./src/helpers/broadcasting.js");
 /* harmony import */ var _components_VenueInformation__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../components/VenueInformation */ "./src/components/VenueInformation.js");
 
-
 /**
  * WordPress dependencies.
  */
@@ -28,11 +27,10 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 /**
  * Internal dependencies.
  */
-
-
 
 
 const Edit = props => {
@@ -49,10 +47,8 @@ const Edit = props => {
       venueId: venueId !== null && venueId !== void 0 ? venueId : ''
     });
   });
-
   const Venue = _ref => {
     var _venuePost$meta$_venu, _venueInformation$ful, _venueInformation$pho, _venueInformation$web, _venuePost$title$rend;
-
     let {
       id
     } = _ref;
@@ -71,12 +67,10 @@ const Edit = props => {
       website: website
     });
   };
-
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", blockProps, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(Venue, {
     id: venueId
   }));
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (Edit);
 
 /***/ }),
@@ -92,7 +86,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__);
-
 
 
 const VenueInformation = _ref => {
@@ -146,7 +139,6 @@ const VenueInformation = _ref => {
     rel: "noreferrer noopener"
   }, website)))))));
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (VenueInformation);
 
 /***/ }),
@@ -164,14 +156,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 const Broadcaster = function (payload) {
   let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
   for (const [key, value] of Object.entries(payload)) {
     let type = key;
-
     if (identifier) {
       type += identifier;
     }
-
     const dispatcher = new CustomEvent(type, {
       detail: value
     });
@@ -180,14 +169,11 @@ const Broadcaster = function (payload) {
 };
 const Listener = function (payload) {
   let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
   for (const [key, value] of Object.entries(payload)) {
     let type = key;
-
     if (identifier) {
       type += identifier;
     }
-
     addEventListener(type, e => {
       value(e.detail);
     }, false);
@@ -349,10 +335,10 @@ __webpack_require__.r(__webpack_exports__);
  * WordPress dependencies.
  */
 
+
 /**
  * Internal dependencies.
  */
-
 
 
 (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_2__, {

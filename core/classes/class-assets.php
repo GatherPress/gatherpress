@@ -56,7 +56,7 @@ class Assets {
 	protected function setup_hooks() {
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		// add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
-		// add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
 	}
 
 	/**
@@ -110,6 +110,7 @@ class Assets {
 		if ( 'post-new.php' === $hook || 'post.php' === $hook ) {
 			$asset = $this->get_asset_data( 'panels' );
 
+			$asset = plugin_dir_path( GATHERPRESS_CORE_FILE ) . 'assets/build/blocks/event-date/index.asset.php';
 			wp_enqueue_script(
 				'gatherpress-panels',
 				$this->build . 'panels.js',
@@ -146,11 +147,11 @@ class Assets {
 	public function block_enqueue_scripts() {
 		$post_id = $GLOBALS['post']->ID ?? 0;
 
-		$asset = plugin_dir_path( GATHERPRESS_CORE_FILE ) . 'assets/build/blocks/event-date/index.asset.php';
+		$asset = plugin_dir_path( GATHERPRESS_CORE_FILE ) . 'assets/build/blocks/initial-time/index.asset.php';
 
 		wp_enqueue_script(
 			'gatherpress-blocks-object',
-			 plugins_url( 'assets/build/blocks/event-date/index.js', GATHERPRESS_CORE_FILE ),
+			 plugins_url( 'assets/build/blocks/initial-time/index.js', GATHERPRESS_CORE_FILE ),
 			$asset['dependencies'],
 			$asset['version'],
 			true

@@ -82,19 +82,6 @@ function gatherpress_different_blocks_init() {
 	);
 }
 
-add_filter(
-	'the_content',
-	function( $the_content ) {
-		if ( 'gp_event' !== get_post_type() ) {
-			return;
-		}
-		$asset = plugin_dir_path( GATHERPRESS_CORE_FILE ) . 'assets/build/blocks/event-date/index.asset.php';
-		// $event = new \GatherPress\Core\Event( get_the_ID() );
-		return $the_content . '<pre>$event info' . print_r( $asset, true ) . '</pre>';
-		return $the_content . '<h4>' . __FILE__ . '</h4>';
-	}
-);
-
 /**
  * Render callback function.
  *
@@ -154,3 +141,186 @@ function gatherpress_render_venue_information( $attributes, $content, $block ) {
 	require plugin_dir_path( __FILE__ ) . '/assets/build/blocks/venue-information/venue-information.php';
 	return ob_get_clean();
 }
+
+
+add_action( 'rest_api_init', __NAMESPACE__ . '\sample_endpoints' );
+/**
+ * Create custom endpoints for block settings
+ */
+function sample_endpoints() {
+
+	register_rest_route(
+		GATHERPRESS_REST_NAMESPACE,
+		'initial-time/',
+		[
+			'methods'  => \WP_REST_Server::READABLE,
+			'callback' => __NAMESPACE__ . '\get_initial_time',
+			'permission_callback' => __NAMESPACE__ . '\check_permissions',
+		]
+	);
+
+	register_rest_route(
+		GATHERPRESS_REST_NAMESPACE,
+		'initial-time/',
+		[
+			'methods'             => \WP_REST_Server::EDITABLE,
+			'callback'            => __NAMESPACE__ . '\update_initial_time',
+			'permission_callback' => __NAMESPACE__ . '\check_permissions',
+		]
+	);
+
+	register_rest_route(
+		GATHERPRESS_REST_NAMESPACE,
+		'end-time/',
+		[
+			'methods'  => \WP_REST_Server::READABLE,
+			'callback' => __NAMESPACE__ . '\get_end_time',
+			'permission_callback' => __NAMESPACE__ . '\check_permissions',
+		]
+	);
+
+	register_rest_route(
+		GATHERPRESS_REST_NAMESPACE,
+		'end-time/',
+		[
+			'methods'             => \WP_REST_Server::EDITABLE,
+			'callback'            => __NAMESPACE__ . '\update_end_time',
+			'permission_callback' => __NAMESPACE__ . '\check_permissions',
+		]
+	);
+
+}
+
+function get_initial_time() {
+
+	$initial_time = get_option( ADVGUTZAC_BLOCK_SETTING );
+
+	$response = new \WP_REST_Response( $initial_time );
+	$response->set_status( 200 );
+
+	return $response;
+}
+
+function update_initial_time( $request ) {
+
+	$new_initial_time = $request->get_body();
+	update_option( ADVGUTZAC_BLOCK_SETTING, $new_initial_time );
+
+	$initial_time = get_option( ADVGUTZAC_BLOCK_SETTING );
+	$response      = new \WP_REST_Response( $initial_time );
+	$response->set_status( 201 );
+
+	return $response;
+
+}
+
+
+function get_end_time() {
+
+	$end_time = get_option( ADVGUTZAC_BLOCK_SETTING );
+
+	$response = new \WP_REST_Response( $end_time );
+	$response->set_status( 200 );
+
+	return $response;
+}
+
+function update_end_time( $request ) {
+
+	$new_end_time = $request->get_body();
+	update_option( ADVGUTZAC_BLOCK_SETTING, $new_end_time );
+
+	$initial_time = get_option( ADVGUTZAC_BLOCK_SETTING );
+	$response      = new \WP_REST_Response( $initial_time );
+	$response->set_status( 201 );
+
+	return $response;
+
+}
+
+function check_permissions() {
+	return current_user_can( 'edit_posts' );
+}
+
+/**
+ * Save the start and end datetimes for an event.
+ *
+ * @since 1.0.0
+ *
+ * @param array $params {
+ *     An array of arguments used to save event data to custom event table.
+ *
+ *     @type string  $datetime_start Start DateTime to save for event.
+ *     @type string  $datetime_end   End DateTime to save for event.
+ *     @type string  $timezone       Timezone of the event.
+ *
+ * }
+ *
+ * @return bool
+ */
+function sample_save_datetimes( array $params ): bool {
+	global $wpdb;
+
+	$params['post_id'] = $this->event->ID;
+	$retval            = false;
+	$fields            = array_filter(
+		$params,
+		function( $key ) {
+			return in_array(
+				$key,
+				array(
+					'post_id',
+					'datetime_start',
+					'datetime_end',
+					'timezone',
+				),
+				true
+			);
+		},
+		ARRAY_FILTER_USE_KEY
+	);
+
+	if ( 1 > intval( $fields['post_id'] ) ) {
+		return $retval;
+	}
+
+	$fields['datetime_start_gmt'] = get_gmt_from_date( $fields['datetime_start'] );
+	$fields['datetime_end_gmt']   = get_gmt_from_date( $fields['datetime_end'] );
+	$fields['timezone']           = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
+	// $table                        = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+
+	// @todo Add caching to this and create new method to check existence.
+	$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->prepare(
+			'SELECT post_id FROM ' . esc_sql( $table ) . ' WHERE post_id = %d',
+			$fields['post_id']
+		)
+	);
+
+	if ( ! empty( $exists ) ) {
+		$retval = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$table,
+			$fields,
+			array( 'post_id' => $fields['post_id'] )
+		);
+		wp_cache_delete( DATETIME_CACHE_KEY, $fields['post_id'] );
+	} else {
+		$retval = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+	}
+
+	return (bool) $retval;
+}
+
+
+add_filter(
+	'the_content',
+	function( $the_content ) {
+		if ( 'gp_event' !== get_post_type() ) {
+			return;
+		}
+		$event = new \GatherPress\Core\Event( get_the_ID() );
+		// $event = new \GatherPress\Core\Event( get_the_ID() );
+		return $the_content . '<pre>$event info' . print_r( $event, true ) . '</pre>';
+		return $the_content . '<h4>' . __FILE__ . '</h4>';
+	}
+);

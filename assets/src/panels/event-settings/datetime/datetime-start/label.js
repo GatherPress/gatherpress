@@ -2,6 +2,7 @@
  * External dependencies.
  */
 // import { Component } from 'react';
+import { Component } from '@wordpress/element';
 
 /**
  * WordPress dependencies.

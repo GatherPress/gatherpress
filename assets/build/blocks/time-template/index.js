@@ -174,6 +174,7 @@ __webpack_require__.r(__webpack_exports__);
  * @see https://developer.wordpress.org/block-editor/developers/block-api/#registering-a-block
  */
 
+
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
  * All files containing `style` keyword are bundled together. The code used
@@ -198,7 +199,6 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @see https://developer.wordpress.org/block-editor/developers/block-api/#registering-a-block
  */
-
 (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_4__, {
   edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"],
   save: _save__WEBPACK_IMPORTED_MODULE_3__["default"]
@@ -226,7 +226,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__);
 
-
 /**
  * sets by path blocks/end-time/ 797 bytes 2 assets
   assets by path blocks/venue-information/ 883 bytes 2 assets
@@ -252,12 +251,9 @@ const MyPanel = () => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createE
   initialOpen: true
 }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelRow, null, "My Panel Inputs and Labels")));
 
-
-
 const onSelect = tabName => {
   console.log('Selecting tab ', tabName);
 };
-
 const MyTabPanel = () => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.TabPanel, {
   className: "my-tab-panel",
   activeClass: "active-tab",
@@ -280,7 +276,6 @@ const MyTabPanel = () => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.crea
     className: 'tab-three is-secondary'
   }]
 }, tab => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, tab.title), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, tab.content)));
-
 const PBrocksSettingsSidebar = () => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2__.PluginSidebar, {
   name: "pbrocks-settings-sidebar",
   title: "GatherPress Event",
@@ -306,7 +301,6 @@ const PBrocksSettingsSidebar = () => (0,_wordpress_element__WEBPACK_IMPORTED_MOD
   icon: _wordpress_icons__WEBPACK_IMPORTED_MODULE_7__["default"],
   initialOpen: true
 }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(MyTabPanel, null))));
-
 (0,_wordpress_plugins__WEBPACK_IMPORTED_MODULE_1__.registerPlugin)('pbrocks-settings-sidebar', {
   render: PBrocksSettingsSidebar
 });
@@ -331,11 +325,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/edit-post */ "@wordpress/edit-post");
 /* harmony import */ var _wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2__);
 
-
 /**
  * Internal dependencies
  */
+
 // import './panels';
+
 
 
 const PBrocksTimeSettingsPanel = () => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2__.PluginDocumentSettingPanel, {
@@ -365,13 +360,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__);
 
-
 /**
  * React hook that is used to mark the block wrapper element.
  * It provides all the necessary props like the class name.
  *
  * @see https://developer.wordpress.org/block-editor/packages/packages-block-editor/#useBlockProps
  */
+
 
 /**
  * The save function defines the way in which the different attributes should
@@ -384,7 +379,6 @@ __webpack_require__.r(__webpack_exports__);
  * @param {Object} props.attributes Available block attributes.
  * @return {WPElement} Element to render.
  */
-
 function save(_ref) {
   let {
     attributes

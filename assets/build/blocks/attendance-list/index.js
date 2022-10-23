@@ -15,22 +15,19 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _components_AttendanceList__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../components/AttendanceList */ "./src/components/AttendanceList.js");
 
-
 /**
  * WordPress dependencies.
  */
+
 
 /**
  * Internal dependencies.
  */
 
-
-
 const Edit = () => {
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)();
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", blockProps, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_AttendanceList__WEBPACK_IMPORTED_MODULE_2__["default"], null));
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (Edit);
 
 /***/ }),
@@ -55,62 +52,60 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 const AttendanceList = () => {
   let defaultStatus = 'attending';
   const items = [{
-    title: // eslint-disable-next-line no-undef
+    title:
+    // eslint-disable-next-line no-undef
     '1' !== GatherPress.has_event_past ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Attending', 'gatherpress') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Went', 'gatherpress'),
     value: 'attending'
   }, {
-    title: // eslint-disable-next-line no-undef
+    title:
+    // eslint-disable-next-line no-undef
     '1' !== GatherPress.has_event_past ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Waiting List', 'gatherpress') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Wait Listed', 'gatherpress'),
     value: 'waiting_list'
   }, {
-    title: // eslint-disable-next-line no-undef
+    title:
+    // eslint-disable-next-line no-undef
     '1' !== GatherPress.has_event_past ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Not Attending', 'gatherpress') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)("Didn't Go", 'gatherpress'),
     value: 'not_attending'
   }];
-
   if ('object' === typeof GatherPress) {
     // @todo redo this logic and have it come from API and not GatherPress object.
-    defaultStatus = // eslint-disable-next-line no-undef
-    'undefined' !== typeof GatherPress.current_user.status && // eslint-disable-next-line no-undef
-    'attend' !== GatherPress.current_user.status // eslint-disable-next-line no-undef
+    defaultStatus =
+    // eslint-disable-next-line no-undef
+    'undefined' !== typeof GatherPress.current_user.status &&
+    // eslint-disable-next-line no-undef
+    'attend' !== GatherPress.current_user.status
+    // eslint-disable-next-line no-undef
     ? GatherPress.current_user.status : defaultStatus;
   }
-
   const defaultLimit = 10;
   const [attendanceStatus, setAttendanceStatus] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(defaultStatus);
-  const [attendeeLimit, setAttendeeLimit] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(defaultLimit); // eslint-disable-next-line no-undef
+  const [attendeeLimit, setAttendeeLimit] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(defaultLimit);
 
+  // eslint-disable-next-line no-undef
   (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Listener)({
     setAttendanceStatus
   }, GatherPress.post_id);
-
   const onTitleClick = (e, value) => {
     e.preventDefault();
     setAttendanceStatus(value);
   };
-
   const updateLimit = e => {
     e.preventDefault();
-
     if (false !== attendeeLimit) {
       setAttendeeLimit(false);
     } else {
       setAttendeeLimit(defaultLimit);
     }
   };
-
   let loadListText;
-
   if (false === attendeeLimit) {
     loadListText = (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('See less', 'gatherpress');
   } else {
     loadListText = (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('See more', 'gatherpress');
   }
-
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     className: "gp-attendance-list"
   }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_AttendanceListNavigation__WEBPACK_IMPORTED_MODULE_2__["default"], {
@@ -128,7 +123,6 @@ const AttendanceList = () => {
     onClick: e => updateLimit(e)
   }, loadListText)));
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (AttendanceList);
 
 /***/ }),
@@ -146,7 +140,6 @@ __webpack_require__.r(__webpack_exports__);
 
 // import React from 'react';
 
-
 const AttendanceListContent = _ref => {
   let {
     items,
@@ -157,10 +150,10 @@ const AttendanceListContent = _ref => {
     const {
       value
     } = item;
-    const active = value === activeValue ? 'active' : 'hidden'; // eslint-disable-next-line no-undef
-
-    const postId = GatherPress.post_id; // eslint-disable-next-line no-undef
-
+    const active = value === activeValue ? 'active' : 'hidden';
+    // eslint-disable-next-line no-undef
+    const postId = GatherPress.post_id;
+    // eslint-disable-next-line no-undef
     const attendees = GatherPress.attendees;
     return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
       key: index,
@@ -179,7 +172,6 @@ const AttendanceListContent = _ref => {
     className: "gp-attendance-list__container"
   }, renderedItems);
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (AttendanceListContent);
 
 /***/ }),
@@ -213,7 +205,6 @@ const AttendanceListNavigation = _ref => {
     not_attending: 0,
     // eslint-disable-line camelcase
     waiting_list: 0 // eslint-disable-line camelcase
-
   };
 
   if ('object' === typeof GatherPress) {
@@ -222,9 +213,9 @@ const AttendanceListNavigation = _ref => {
       defaultCount[key] = value.count;
     }
   }
+  const [attendanceCount, setAttendanceCount] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(defaultCount);
 
-  const [attendanceCount, setAttendanceCount] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(defaultCount); // eslint-disable-next-line no-undef
-
+  // eslint-disable-next-line no-undef
   (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_2__.Listener)({
     setAttendanceCount
   }, GatherPress.post_id);
@@ -242,7 +233,6 @@ const AttendanceListNavigation = _ref => {
     className: "gp-attendance-list__navigation"
   }, renderedItems);
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (AttendanceListNavigation);
 
 /***/ }),
@@ -257,8 +247,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
 
-
 // import React from 'react';
+
 const AttendanceListNavigationItem = _ref => {
   let {
     item,
@@ -285,7 +275,6 @@ const AttendanceListNavigationItem = _ref => {
     className: "gp-attendance-list__count"
   }, "(", count, ")"));
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (AttendanceListNavigationItem);
 
 /***/ }),
@@ -303,17 +292,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
 
-
 /**
  * WordPress dependencies.
  */
 
 
+
 /**
  * Internal dependencies.
  */
-
-
 
 const AttendeeList = _ref => {
   let {
@@ -328,14 +315,11 @@ const AttendeeList = _ref => {
     setAttendanceList
   }, eventId);
   let renderedItems = '';
-
   if ('object' === typeof attendanceList && 'undefined' !== typeof attendanceList[value]) {
     attendees = [...attendanceList[value].attendees];
-
     if (limit) {
       attendees = attendees.splice(0, limit);
     }
-
     renderedItems = attendees.map((attendee, index) => {
       const {
         profile,
@@ -346,13 +330,11 @@ const AttendeeList = _ref => {
       let {
         guests
       } = attendee;
-
       if (guests) {
         guests = ' +' + guests + ' guest(s)';
       } else {
         guests = '';
       }
-
       return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
         key: index,
         className: "gp-attendance-list__items--item"
@@ -377,12 +359,10 @@ const AttendeeList = _ref => {
       }, guests)));
     });
   }
-
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'attending' === value && 0 === renderedItems.length && false === avatarOnly && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     className: "gp-attendance-list__no-attendees"
   }, '1' !== GatherPress.has_event_past ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('No one is attending this event yet.', 'gatherpress') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('No one went to this event.', 'gatherpress')), renderedItems);
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (AttendeeList);
 
 /***/ }),
@@ -400,14 +380,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 const Broadcaster = function (payload) {
   let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
   for (const [key, value] of Object.entries(payload)) {
     let type = key;
-
     if (identifier) {
       type += identifier;
     }
-
     const dispatcher = new CustomEvent(type, {
       detail: value
     });
@@ -416,14 +393,11 @@ const Broadcaster = function (payload) {
 };
 const Listener = function (payload) {
   let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
   for (const [key, value] of Object.entries(payload)) {
     let type = key;
-
     if (identifier) {
       type += identifier;
     }
-
     addEventListener(type, e => {
       value(e.detail);
     }, false);
@@ -565,10 +539,10 @@ __webpack_require__.r(__webpack_exports__);
  * WordPress dependencies.
  */
 
+
 /**
  * Internal dependencies.
  */
-
 
 
 (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_2__, {
