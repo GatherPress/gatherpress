@@ -1,17 +1,1 @@
-/*!************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[3].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[3].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[3].use[3]!./src/blocks/initial-time/editor.scss ***!
-  \************************************************************************************************************************************************************************************************************************************************************/
-/**
- * The following styles get applied inside the editor only.
- *
- * Replace them with your own styles or remove the file completely.
- */
-.wp-block-gatherpress-initial-time {
-  border: 1px dotted #f88;
-}
-
-.wp-block-gatherpress-initial-time p {
-  text-align: center;
-}
-
-/*# sourceMappingURL=index.css.map*/
+.wp-block-gatherpress-initial-time{border:1px dotted #f88}.wp-block-gatherpress-initial-time p{text-align:center}
