@@ -4,6 +4,7 @@
   "name": "gatherpress/time-template",
   "version": "0.1.1",
   "title": "GP Time Template",
+  "example": {},
   "category": "gatherpress",
   "icon": {
     "background": "#29c8aa",

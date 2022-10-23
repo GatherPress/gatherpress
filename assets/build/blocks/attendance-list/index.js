@@ -142,11 +142,9 @@ const AttendanceList = () => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "react");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _AttendeeList__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./AttendeeList */ "./src/components/AttendeeList.js");
+/* harmony import */ var _AttendeeList__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./AttendeeList */ "./src/components/AttendeeList.js");
 
-
+// import React from 'react';
 
 
 const AttendanceListContent = _ref => {
@@ -170,7 +168,7 @@ const AttendanceListContent = _ref => {
       id: `gp-attendance-${value}`,
       role: "tabpanel",
       "aria-labelledby": `gp-attendance-${value}-tab`
-    }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_AttendeeList__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_AttendeeList__WEBPACK_IMPORTED_MODULE_1__["default"], {
       eventId: postId,
       value: value,
       limit: limit,
@@ -195,11 +193,10 @@ const AttendanceListContent = _ref => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "react");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _AttendanceListNavigationItem__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./AttendanceListNavigationItem */ "./src/components/AttendanceListNavigationItem.js");
-/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
+/* harmony import */ var _AttendanceListNavigationItem__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./AttendanceListNavigationItem */ "./src/components/AttendanceListNavigationItem.js");
+/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
 
+// import React, { useState } from 'react';
 
 
 
@@ -226,14 +223,14 @@ const AttendanceListNavigation = _ref => {
     }
   }
 
-  const [attendanceCount, setAttendanceCount] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(defaultCount); // eslint-disable-next-line no-undef
+  const [attendanceCount, setAttendanceCount] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(defaultCount); // eslint-disable-next-line no-undef
 
-  (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_3__.Listener)({
+  (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_2__.Listener)({
     setAttendanceCount
   }, GatherPress.post_id);
   const renderedItems = items.map((item, index) => {
     const additionalClasses = item.value === activeValue ? 'gp-attendance-list__navigation--current' : '';
-    return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_AttendanceListNavigationItem__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_AttendanceListNavigationItem__WEBPACK_IMPORTED_MODULE_1__["default"], {
       key: index,
       item: item,
       count: attendanceCount[item.value],
@@ -259,11 +256,9 @@ const AttendanceListNavigation = _ref => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "react");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_1__);
 
 
-
+// import React from 'react';
 const AttendanceListNavigationItem = _ref => {
   let {
     item,
@@ -434,16 +429,6 @@ const Listener = function (payload) {
     }, false);
   }
 };
-
-/***/ }),
-
-/***/ "react":
-/*!************************!*\
-  !*** external "React" ***!
-  \************************/
-/***/ (function(module) {
-
-module.exports = window["React"];
 
 /***/ }),
 

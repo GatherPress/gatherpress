@@ -1,1 +1,3 @@
-// Silence is Golden
+/**
+ * Internal dependencies
+ */

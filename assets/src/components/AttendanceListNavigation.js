@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+// import React, { useState } from 'react';
+
+import { useState } from '@wordpress/element';
+
 import AttendanceListNavigationItem from './AttendanceListNavigationItem';
 import { Listener } from '../helpers/broadcasting';
 

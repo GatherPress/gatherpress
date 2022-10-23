@@ -1,5 +1,5 @@
-import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { useState } from '@wordpress/element';
 import AttendanceListNavigation from './AttendanceListNavigation';
 import AttendanceListContent from './AttendanceListContent';
 import { Listener } from '../helpers/broadcasting';

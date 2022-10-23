@@ -161,11 +161,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "AddWeeks": function() { return /* binding */ AddWeeks; },
 /* harmony export */   "CreateEventEnd": function() { return /* binding */ CreateEventEnd; },
 /* harmony export */   "CreateEventStart": function() { return /* binding */ CreateEventStart; },
-/* harmony export */   "FormatTheDate": function() { return /* binding */ FormatTheDate; }
+/* harmony export */   "FormatTheDate": function() { return /* binding */ FormatTheDate; },
+/* harmony export */   "SaveGatherPressDateTime": function() { return /* binding */ SaveGatherPressDateTime; }
 /* harmony export */ });
 /* harmony import */ var _wordpress_date__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/date */ "@wordpress/date");
 /* harmony import */ var _wordpress_date__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_date__WEBPACK_IMPORTED_MODULE_0__);
- // import './variations'
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! moment */ "moment");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_1__);
+
 
 const AddWeeks = function (numOfWeeks) {
   let date = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : new Date();
@@ -176,13 +179,13 @@ const AddWeeks = function (numOfWeeks) {
 const CreateEventStart = () => {
   const dateCopy = new Date();
   dateCopy.setDate(dateCopy.getDate() + 2 * 7);
-  dateCopy.setHours(18, 0, 0);
+  dateCopy.setHours(14, 0, 0);
   return FormatTheDate(dateCopy);
 };
 function CreateEventEnd() {
   const dateCopy = new Date();
   dateCopy.setDate(dateCopy.getDate() + 2 * 7);
-  dateCopy.setHours(20, 0, 0);
+  dateCopy.setHours(16, 0, 0);
   return FormatTheDate(dateCopy);
 }
 const FormatTheDate = function (inputDate) {
@@ -190,7 +193,32 @@ const FormatTheDate = function (inputDate) {
   const dateCopy = new Date(inputDate);
   dateCopy.setDate(dateCopy.getDate());
   return (0,_wordpress_date__WEBPACK_IMPORTED_MODULE_0__.dateI18n)(format, dateCopy) + 'UTC-' + dateCopy.getTimezoneOffset() / 60 + ':00';
-};
+}; // @todo maybe put this is a save_post hook.
+// https://www.ibenic.com/use-wordpress-hooks-package-javascript-apps/
+// Then move button enabler
+
+function SaveGatherPressDateTime() {
+  const isSavingPost = wp.data.select('core/editor').isSavingPost(),
+        isAutosavingPost = wp.data.select('core/editor').isAutosavingPost();
+
+  if (isEventPostType() && isSavingPost && !isAutosavingPost) {
+    apiFetch({
+      path: '/gatherpress/v1/event/datetime/',
+      method: 'POST',
+      data: {
+        // eslint-disable-next-line no-undef
+        post_id: GatherPress.post_id,
+        datetime_start: moment__WEBPACK_IMPORTED_MODULE_1___default()( // eslint-disable-next-line no-undef
+        GatherPress.event_datetime.datetime_start).format('YYYY-MM-DD HH:mm:ss'),
+        datetime_end: moment__WEBPACK_IMPORTED_MODULE_1___default()( // eslint-disable-next-line no-undef
+        GatherPress.event_datetime.datetime_end).format('YYYY-MM-DD HH:mm:ss'),
+        // eslint-disable-next-line no-undef
+        _wpnonce: GatherPress.nonce
+      }
+    }).then(() => {// Saved.
+    });
+  }
+}
 
 /***/ }),
 
@@ -215,6 +243,16 @@ __webpack_require__.r(__webpack_exports__);
 __webpack_require__.r(__webpack_exports__);
 // extracted by mini-css-extract-plugin
 
+
+/***/ }),
+
+/***/ "moment":
+/*!*************************!*\
+  !*** external "moment" ***!
+  \*************************/
+/***/ (function(module) {
+
+module.exports = window["moment"];
 
 /***/ }),
 
@@ -284,7 +322,7 @@ module.exports = window["wp"]["i18n"];
   \****************************************/
 /***/ (function(module) {
 
-module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/end-time","version":"0.1.0","title":"End Time","category":"gatherpress","example":{},"icon":"clock","description":"Initial Static block scaffolded with Create Block tool.","attributes":{"endTime":{"type":"string"}},"supports":{"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/end-time","version":"0.1.0","title":"End Time","category":"gatherpress","example":{},"icon":{"background":"#29c8aa","foreground":"white","src":"clock"},"description":"Initial Static block scaffolded with Create Block tool.","attributes":{"endTime":{"type":"string"}},"supports":{"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

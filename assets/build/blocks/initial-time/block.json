@@ -6,7 +6,11 @@
   "title": "Initial Time",
   "category": "gatherpress",
   "example": {},
-  "icon": "clock",
+  "icon": {
+    "background": "#29c8aa",
+    "foreground": "white",
+    "src": "clock"
+  },
   "description": "Initial Static block scaffolded with Create Block tool.",
   "attributes": {
     "beginTime": {

@@ -41,7 +41,7 @@ class Assets {
 	 *
 	 * @var string
 	 */
-	protected $path = GATHERPRESS_CORE_PATH . '/assets/build/';
+	protected $path = GATHERPRESS_CORE_PATH . 'assets/build/';
 
 	/**
 	 * Assets constructor.
@@ -56,7 +56,7 @@ class Assets {
 	protected function setup_hooks() {
 		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		// add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
-		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
+		// add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
 	}
 
 	/**
@@ -128,18 +128,6 @@ class Assets {
 		);
 
 		if ( in_array( $hook, $setting_hooks, true ) ) {
-			// Need to load block styling for some dynamic fields.
-			wp_enqueue_style( 'wp-edit-blocks' );
-
-			$asset = $this->get_asset_data( 'settings_style' );
-
-			wp_enqueue_style(
-				'gatherpress-settings-style',
-				$this->build . 'settings_style.css',
-				$asset['dependencies'],
-				$asset['version']
-			);
-
 			$asset = $this->get_asset_data( 'settings' );
 
 			wp_enqueue_script(
@@ -157,13 +145,12 @@ class Assets {
 	 */
 	public function block_enqueue_scripts() {
 		$post_id = $GLOBALS['post']->ID ?? 0;
-		$event   = new Event( $post_id );
 
-		$asset = __DIR__ . '/assets/build/blocks/event-date/index.asset.php';
+		$asset = plugin_dir_path( GATHERPRESS_CORE_FILE ) . 'assets/build/blocks/event-date/index.asset.php';
 
 		wp_enqueue_script(
 			'gatherpress-blocks-object',
-			'/assets/build/blocks/event-date/index.js',
+			 plugins_url( 'assets/build/blocks/event-date/index.js', GATHERPRESS_CORE_FILE ),
 			$asset['dependencies'],
 			$asset['version'],
 			true

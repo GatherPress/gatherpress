@@ -1,14 +1,9 @@
 /**
- * External dependencies
- */
-import Modal from 'react-modal';
-
-/**
  * WordPress dependencies.
  */
-import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { ButtonGroup } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+import { Button, ButtonGroup, Modal } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -16,6 +11,27 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import { Broadcaster } from '../helpers/broadcasting';
 import AttendeeResponse from './AttendeeResponse';
+
+const MyModal = () => {
+	const [isOpen, setOpen] = useState(false);
+	const openModal = () => setOpen(true);
+	const closeModal = () => setOpen(false);
+
+	return (
+		<>
+			<Button variant="secondary" onClick={openModal}>
+				Open Modal
+			</Button>
+			{isOpen && (
+				<Modal title="This is my modal" onRequestClose={closeModal}>
+					<Button variant="secondary" onClick={closeModal}>
+						My custom close button
+					</Button>
+				</Modal>
+			)}
+		</>
+	);
+};
 
 const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 	const [ attendanceStatus, setAttendanceStatus ] = useState(
@@ -169,6 +185,7 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 						{ getButtonText( attendanceStatus ) }
 					</a>
 				</div>
+				<MyModal />
 				<Modal
 					isOpen={ modalIsOpen }
 					onRequestClose={ closeModal }

@@ -176,7 +176,7 @@ class Setup {
 				'public'        => true,
 				'hierarchical'  => false,
 				'template'      => array(
-					array( 'gatherpress/event-date' ),
+					array( 'gatherpress/time-template' ),
 					array( 'gatherpress/add-to-calendar' ),
 					array( 'gatherpress/venue' ),
 					array( 'gatherpress/attendance-selector' ),

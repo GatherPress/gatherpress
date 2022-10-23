@@ -23,28 +23,16 @@ import edit from './edit';
 import save from './save';
 import json from './block.json';
 
+import './pbrocks-sidebar';
+import './pbrocks-time';
+
 /**
  * Every block starts by registering a new block type definition.
  *
  * @see https://developer.wordpress.org/block-editor/developers/block-api/#registering-a-block
  */
-registerBlockType(json, {
-	/**
-	 * Used to construct a preview for the block to be shown in the block inserter.
-	 */
-	example: {
-		attributes: {
-			message: 'Basic Template for a TextControl input and message attribute',
-		},
-	},
-
-	/**
-	 * @see ./edit.js
-	 */
+registerBlockType( json, {
 	edit,
 
-	/**
-	 * @see ./save.js
-	 */
 	save,
 });

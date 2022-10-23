@@ -1,4 +1,4 @@
-import React from 'react';
+// import React from 'react';
 import AttendeeList from './AttendeeList';
 
 const AttendanceListContent = ( { items, activeValue, limit = false } ) => {

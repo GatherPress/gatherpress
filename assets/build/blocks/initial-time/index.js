@@ -13,11 +13,14 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "AddWeeks": function() { return /* binding */ AddWeeks; },
 /* harmony export */   "CreateEventEnd": function() { return /* binding */ CreateEventEnd; },
 /* harmony export */   "CreateEventStart": function() { return /* binding */ CreateEventStart; },
-/* harmony export */   "FormatTheDate": function() { return /* binding */ FormatTheDate; }
+/* harmony export */   "FormatTheDate": function() { return /* binding */ FormatTheDate; },
+/* harmony export */   "SaveGatherPressDateTime": function() { return /* binding */ SaveGatherPressDateTime; }
 /* harmony export */ });
 /* harmony import */ var _wordpress_date__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/date */ "@wordpress/date");
 /* harmony import */ var _wordpress_date__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_date__WEBPACK_IMPORTED_MODULE_0__);
- // import './variations'
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! moment */ "moment");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_1__);
+
 
 const AddWeeks = function (numOfWeeks) {
   let date = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : new Date();
@@ -28,13 +31,13 @@ const AddWeeks = function (numOfWeeks) {
 const CreateEventStart = () => {
   const dateCopy = new Date();
   dateCopy.setDate(dateCopy.getDate() + 2 * 7);
-  dateCopy.setHours(18, 0, 0);
+  dateCopy.setHours(14, 0, 0);
   return FormatTheDate(dateCopy);
 };
 function CreateEventEnd() {
   const dateCopy = new Date();
   dateCopy.setDate(dateCopy.getDate() + 2 * 7);
-  dateCopy.setHours(20, 0, 0);
+  dateCopy.setHours(16, 0, 0);
   return FormatTheDate(dateCopy);
 }
 const FormatTheDate = function (inputDate) {
@@ -42,7 +45,32 @@ const FormatTheDate = function (inputDate) {
   const dateCopy = new Date(inputDate);
   dateCopy.setDate(dateCopy.getDate());
   return (0,_wordpress_date__WEBPACK_IMPORTED_MODULE_0__.dateI18n)(format, dateCopy) + 'UTC-' + dateCopy.getTimezoneOffset() / 60 + ':00';
-};
+}; // @todo maybe put this is a save_post hook.
+// https://www.ibenic.com/use-wordpress-hooks-package-javascript-apps/
+// Then move button enabler
+
+function SaveGatherPressDateTime() {
+  const isSavingPost = wp.data.select('core/editor').isSavingPost(),
+        isAutosavingPost = wp.data.select('core/editor').isAutosavingPost();
+
+  if (isEventPostType() && isSavingPost && !isAutosavingPost) {
+    apiFetch({
+      path: '/gatherpress/v1/event/datetime/',
+      method: 'POST',
+      data: {
+        // eslint-disable-next-line no-undef
+        post_id: GatherPress.post_id,
+        datetime_start: moment__WEBPACK_IMPORTED_MODULE_1___default()( // eslint-disable-next-line no-undef
+        GatherPress.event_datetime.datetime_start).format('YYYY-MM-DD HH:mm:ss'),
+        datetime_end: moment__WEBPACK_IMPORTED_MODULE_1___default()( // eslint-disable-next-line no-undef
+        GatherPress.event_datetime.datetime_end).format('YYYY-MM-DD HH:mm:ss'),
+        // eslint-disable-next-line no-undef
+        _wpnonce: GatherPress.nonce
+      }
+    }).then(() => {// Saved.
+    });
+  }
+}
 
 /***/ }),
 
@@ -130,11 +158,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./edit */ "./src/blocks/initial-time/edit.js");
 /* harmony import */ var _save__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./save */ "./src/blocks/initial-time/save.js");
 /* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./block.json */ "./src/blocks/initial-time/block.json");
+/* harmony import */ var _pbrocks__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./pbrocks */ "./src/blocks/initial-time/pbrocks.js");
 
 
 /**
  * Internal dependencies
  */
+
 
 
 
@@ -148,6 +178,42 @@ __webpack_require__.r(__webpack_exports__);
 (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_4__, {
   edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"],
   save: _save__WEBPACK_IMPORTED_MODULE_3__["default"]
+});
+
+/***/ }),
+
+/***/ "./src/blocks/initial-time/pbrocks.js":
+/*!********************************************!*\
+  !*** ./src/blocks/initial-time/pbrocks.js ***!
+  \********************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "PluginDocumentSettingPanelDemo": function() { return /* binding */ PluginDocumentSettingPanelDemo; }
+/* harmony export */ });
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_plugins__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/plugins */ "@wordpress/plugins");
+/* harmony import */ var _wordpress_plugins__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_plugins__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/edit-post */ "@wordpress/edit-post");
+/* harmony import */ var _wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2__);
+
+
+/**
+ * Internal dependencies
+ */
+// import './panels';
+
+
+const PluginDocumentSettingPanelDemo = () => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_edit_post__WEBPACK_IMPORTED_MODULE_2__.PluginDocumentSettingPanel, {
+  name: "custom-panel",
+  title: "Custom Panel",
+  className: "custom-panel"
+}, "Custom Panel Contents");
+(0,_wordpress_plugins__WEBPACK_IMPORTED_MODULE_1__.registerPlugin)('plugin-document-setting-panel-demo', {
+  render: PluginDocumentSettingPanelDemo,
+  icon: 'palmtree'
 });
 
 /***/ }),
@@ -218,6 +284,16 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "moment":
+/*!*************************!*\
+  !*** external "moment" ***!
+  \*************************/
+/***/ (function(module) {
+
+module.exports = window["moment"];
+
+/***/ }),
+
 /***/ "@wordpress/block-editor":
 /*!*************************************!*\
   !*** external ["wp","blockEditor"] ***!
@@ -258,6 +334,16 @@ module.exports = window["wp"]["date"];
 
 /***/ }),
 
+/***/ "@wordpress/edit-post":
+/*!**********************************!*\
+  !*** external ["wp","editPost"] ***!
+  \**********************************/
+/***/ (function(module) {
+
+module.exports = window["wp"]["editPost"];
+
+/***/ }),
+
 /***/ "@wordpress/element":
 /*!*********************************!*\
   !*** external ["wp","element"] ***!
@@ -278,13 +364,23 @@ module.exports = window["wp"]["i18n"];
 
 /***/ }),
 
+/***/ "@wordpress/plugins":
+/*!*********************************!*\
+  !*** external ["wp","plugins"] ***!
+  \*********************************/
+/***/ (function(module) {
+
+module.exports = window["wp"]["plugins"];
+
+/***/ }),
+
 /***/ "./src/blocks/initial-time/block.json":
 /*!********************************************!*\
   !*** ./src/blocks/initial-time/block.json ***!
   \********************************************/
 /***/ (function(module) {
 
-module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/initial-time","version":"0.1.0","title":"Initial Time","category":"gatherpress","example":{},"icon":"clock","description":"Initial Static block scaffolded with Create Block tool.","attributes":{"beginTime":{"type":"string"}},"supports":{"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/initial-time","version":"0.1.0","title":"Initial Time","category":"gatherpress","example":{},"icon":{"background":"#29c8aa","foreground":"white","src":"clock"},"description":"Initial Static block scaffolded with Create Block tool.","attributes":{"beginTime":{"type":"string"}},"supports":{"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 
