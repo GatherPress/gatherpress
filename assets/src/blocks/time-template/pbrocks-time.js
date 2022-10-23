@@ -2,8 +2,6 @@
  * Internal dependencies
  */
 
-// import './panels';
-
 import { registerPlugin } from '@wordpress/plugins';
 import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
 
@@ -14,16 +12,16 @@ export const PBrocksTimeSettingsPanel = () => (
 		className="pbrocks-time-panel"
 	>
 		<div>
-			PBrocks Panel Contents
+			PBrocks Panel Start Time
 		</div>
 		<div>
-			PBrocks Panel Contents
+			PBrocks Panel End Time
 		</div>
 	</PluginDocumentSettingPanel>
 );
 
-registerPlugin('pbrocks-time-panel-plugin', {
+registerPlugin( 'pbrocks-time-panel-plugin', {
 	render: PBrocksTimeSettingsPanel,
 	icon: 'palmtree',
-});
+} );
 

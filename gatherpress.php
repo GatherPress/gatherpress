@@ -50,9 +50,9 @@ function gatherpress_different_blocks_init() {
 	register_block_type(
 		__DIR__ . '/assets/build/blocks/attendance-list'
 	);
-	register_block_type(
-		__DIR__ . '/assets/build/blocks/attendance-selector'
-	);
+	// register_block_type(
+	// 	__DIR__ . '/assets/build/blocks/attendance-selector'
+	// );
 	register_block_type(
 		__DIR__ . '/assets/build/blocks/initial-time'
 	);
@@ -193,7 +193,7 @@ function sample_endpoints() {
 
 function get_initial_time() {
 
-	$initial_time = get_option( ADVGUTZAC_BLOCK_SETTING );
+	$initial_time = get_post_meta( get_the_ID(), INITIAL_TIME, true );
 
 	$response = new \WP_REST_Response( $initial_time );
 	$response->set_status( 200 );
@@ -204,10 +204,10 @@ function get_initial_time() {
 function update_initial_time( $request ) {
 
 	$new_initial_time = $request->get_body();
-	update_option( ADVGUTZAC_BLOCK_SETTING, $new_initial_time );
+	update_post_meta( get_the_ID(), INITIAL_TIME, $new_initial_time );
 
-	$initial_time = get_option( ADVGUTZAC_BLOCK_SETTING );
-	$response      = new \WP_REST_Response( $initial_time );
+	$initial_time = get_post_meta( get_the_ID(), INITIAL_TIME, true );
+	$response     = new \WP_REST_Response( $initial_time );
 	$response->set_status( 201 );
 
 	return $response;
@@ -217,7 +217,7 @@ function update_initial_time( $request ) {
 
 function get_end_time() {
 
-	$end_time = get_option( ADVGUTZAC_BLOCK_SETTING );
+	$end_time = get_post_meta( get_the_ID(), END_TIME, true );
 
 	$response = new \WP_REST_Response( $end_time );
 	$response->set_status( 200 );
@@ -228,9 +228,9 @@ function get_end_time() {
 function update_end_time( $request ) {
 
 	$new_end_time = $request->get_body();
-	update_option( ADVGUTZAC_BLOCK_SETTING, $new_end_time );
+	update_post_meta( get_the_ID(), END_TIME, $new_end_time );
 
-	$initial_time = get_option( ADVGUTZAC_BLOCK_SETTING );
+	$initial_time = get_post_meta( get_the_ID(), INITIAL_TIME, true );
 	$response      = new \WP_REST_Response( $initial_time );
 	$response->set_status( 201 );
 
@@ -318,6 +318,18 @@ add_filter(
 		if ( 'gp_event' !== get_post_type() ) {
 			return;
 		}
+		// if ( empty( $gatherpress_block_name ) ) {
+		// 	return;
+		// }
+
+		// if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs ) ) {
+		// 	$gatherpress_block_attrs = array();
+		// }
+		/*?>
+
+		<div data-gp_block_name="<?php echo esc_attr( $gatherpress_block_name ); ?>" data-gp_block_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_block_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
+		<?php */
+
 		$event = new \GatherPress\Core\Event( get_the_ID() );
 		// $event = new \GatherPress\Core\Event( get_the_ID() );
 		return $the_content . '<pre>$event info' . print_r( $event, true ) . '</pre>';
