@@ -34,14 +34,14 @@ class Assets {
 	 *
 	 * @var string
 	 */
-	protected $build = GATHERPRESS_CORE_URL . 'assets/build/';
+	protected $build = GATHERPRESS_CORE_URL . 'build/';
 
 	/**
 	 * Path to `build` directory.
 	 *
 	 * @var string
 	 */
-	protected $path = GATHERPRESS_CORE_PATH . '/assets/build/';
+	protected $path = GATHERPRESS_CORE_PATH . '/build/';
 
 	/**
 	 * Assets constructor.

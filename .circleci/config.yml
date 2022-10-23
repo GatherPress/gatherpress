@@ -35,7 +35,7 @@ job-references:
   run_lint_js: &run_lint_js
     name: "Run ESLint"
     command: |
-      cd assets && npm install --legacy-peer-deps && npm run lint:js
+      npm install --legacy-peer-deps && npm run lint:js
 
   run_phpcs: &run_phpcs
     name: "Run PHPCS"
