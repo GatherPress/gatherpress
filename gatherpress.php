@@ -5,7 +5,7 @@
  * Description:         GatherPress adds event management and more to WordPress.
  * Author:              The GatherPress Community
  * Author URI:          https://gatherpess.org/
- * Version:             0.11
+ * Version:             0.11.0
  * Minimum PHP Version: 7.3
  * Text Domain:         gatherpress
  * License:             GPLv2 or later (license.txt)
