@@ -53,11 +53,13 @@ class Setup {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
+		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
+		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 		add_action( 'init', array( $this, 'register' ) );
 		add_action( 'init', array( $this, 'maybe_create_custom_table' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
-
+		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
 		add_filter( 'block_categories_all', array( $this, 'block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
 		add_filter( sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ), array( $this, 'set_custom_columns' ) );
@@ -65,6 +67,37 @@ class Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
+	}
+
+	/**
+	 * Activate GatherPress plugin.
+	 *
+	 * @return void
+	 */
+	public function activate_gatherpress_plugin() {
+		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
+			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+		}
+	}
+
+	/**
+	 * Activate GatherPress plugin.
+	 *
+	 * @return void
+	 */
+	public function deactivate_gatherpress_plugin() {
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * Flush rewrite rules if the previously added flag exists,
+	 * and then remove the flag.
+	 */
+	public function maybe_flush_gatherpress_rewrite_rules() {
+		if ( get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
+			flush_rewrite_rules();
+			delete_option( 'gatherpress_flush_rewrite_rules_flag' );
+		}
 	}
 
 	/**
