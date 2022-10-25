@@ -315,9 +315,9 @@ class Rest_Api {
 
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {
-				$event   = new Event( $post_id );
+				$event             = new Event( $post_id );
 				$venue_information = $event->get_venue_information();
-				$posts[] = array(
+				$posts[]           = array(
 					'ID'                       => $post_id,
 					'datetime_start'           => $event->get_datetime_start(),
 					'permalink'                => get_the_permalink( $post_id ),
