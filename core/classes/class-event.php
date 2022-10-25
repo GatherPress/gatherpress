@@ -139,6 +139,7 @@ class Event {
 			'full_address' => '',
 			'phone_number' => '',
 			'website'      => '',
+			'permalink'    => '', 
 		);
 
 		$term     = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
@@ -154,6 +155,7 @@ class Event {
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['website']      = $venue_meta->website ?? '';
+			$venue_information['permalink']    = get_permalink( $venue_id ) ?? '';
 		}
 
 		return $venue_information;
