@@ -41,7 +41,6 @@ const EventItem = ( props ) => {
 							Venue: { venue }
 						</div>
 					) }
-
 					<div className={ `${ eventClass }__title has-large-font-size` }>
 						<a href={ event.permalink }>
 							{ HtmlReactParser( event.title ) }
