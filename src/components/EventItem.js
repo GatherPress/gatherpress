@@ -20,7 +20,6 @@ const EventItem = ( props ) => {
 	const eventClass = `gp-events-list`;
 	const venue = event.venue ? HtmlReactParser( '<a href=' + event.venue.permalink + '>' + event.venue.name + '</a>' ) : null;
 
-
 	return (
 		<div className={ eventClass }>
 			<div className={ `${ eventClass }__header` }>
