@@ -18,8 +18,8 @@ const EventItem = ( props ) => {
 	const featuredImage = HtmlReactParser( event[ size ] );
 
 	const eventClass = `gp-events-list`;
+	const venue = event.venue ? HtmlReactParser( '<a href=' + event.venue.permalink + '>' + event.venue.name + '</a>' ) : null;
 
-	const venue = event.venue;
 
 	return (
 		<div className={ eventClass }>
@@ -37,9 +37,9 @@ const EventItem = ( props ) => {
 					>
 						<strong>{ event.datetime_start }</strong>
 					</div>
-					{ venue.name && (
+					{ venue && (
 						<div>
-							Venue: { HtmlReactParser( '<a href=' + venue.permalink + '>' + venue.name + '</a>' ) }
+							Venue: { venue }
 						</div>
 					) }
 
