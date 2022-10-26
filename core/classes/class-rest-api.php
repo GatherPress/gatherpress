@@ -315,8 +315,9 @@ class Rest_Api {
 
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {
-				$event   = new Event( $post_id );
-				$posts[] = array(
+				$event             = new Event( $post_id );
+				$venue_information = $event->get_venue_information();
+				$posts[]           = array(
 					'ID'                       => $post_id,
 					'datetime_start'           => $event->get_datetime_start(),
 					'permalink'                => get_the_permalink( $post_id ),
@@ -327,6 +328,7 @@ class Rest_Api {
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
 					'attendees'                => ( $event->attendee ) ? $event->attendee->attendees() : array(),
 					'current_user'             => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
+					'venue'                    => ( $venue_information['name'] ? $event->get_venue_information() : null ),
 				);
 			}
 		}
