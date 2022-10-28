@@ -5,6 +5,25 @@
 [data-gp_block_name="attendance-list"]::before {
 	content: 'data-gp_block_name="attendance-list"';
 }
+
+@mixin for-core-tablet {
+	@media screen and (max-width: 782px) {
+		@content;
+	}
+}
+
+@mixin for-core-mobile {
+	@media screen and (max-width: 600px) {
+		@content;
+	}
+}
+
+@mixin for-core-narrow {
+	@media screen and (max-width: 400px) {
+		@content;
+	}
+}
+
 .gp-attendance-list {
 	&__navigation {
 		display: flex;
@@ -33,11 +52,11 @@
 		}
 	}
 
-	// &__active {
-	// 	@include for-core-mobile {
-	// 		grid-template-columns: 1fr 1fr;
-	// 	}
-	// }
+	&__active {
+		@include for-core-mobile {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
 
 	&__hidden {
 		display: none;

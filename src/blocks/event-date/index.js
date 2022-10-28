@@ -16,6 +16,8 @@ import '../../panels';
 
 import '../../settings';
 
+// import '../frontend';
+
 registerBlockType( metadata, {
 	edit,
 	save: () => null,

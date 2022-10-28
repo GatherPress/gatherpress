@@ -219,10 +219,11 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 									onClick={ closeModal }
 									className="gp-buttons__button wp-block-button__link"
 								>
-									{ __( 'Close', 'gatherpress' ) }
+									{ __( 'Yes, Please!!', 'gatherpress' ) }
 								</a>
 							</div>
 						</ButtonGroup>
+						<h4>data-AttendeeResponse</h4>
 					</div>
 				</Modal>
 			</ButtonGroup>

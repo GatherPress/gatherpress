@@ -237,6 +237,7 @@ const Edit = ( props ) => {
 					/>
 				</PanelBody>
 			</InspectorControls>
+			<h3>EventsList</h3>
 			<EventsList
 				eventOptions={ attributes.eventOptions }
 				maxNumberOfEvents={ attributes.maxNumberOfEvents }

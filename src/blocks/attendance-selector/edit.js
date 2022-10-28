@@ -16,6 +16,7 @@ const Edit = () => {
 
 	return (
 		<div { ...blockProps }>
+			<h4 style={{ color: 'maroon' }}>AttendanceSelector</h4>
 			<AttendanceSelector
 				eventId={ postId }
 				currentUser={ currentUser }

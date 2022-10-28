@@ -37,19 +37,38 @@ add_action( 'init', 'gatherpress_gp_blocks_init' );
 
 function gatherpress_gp_blocks_init() {
 	register_block_type(
+		__DIR__ . '/build/blocks/block-starter'
+	);
+	register_block_type(
 		__DIR__ . '/build/blocks/add-to-calendar',
 		[
 			'render_callback' => 'gp_blocks_add_to_calendar_render_callback'
 		]
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/attendance-list'
+		__DIR__ . '/build/blocks/attendance-list',
+		[
+			'render_callback' => 'gp_blocks_attendance_list_render_callback'
+		]
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/attendance-selector'
+		__DIR__ . '/build/blocks/attendance-selector',
+		[
+			'render_callback' => 'gp_blocks_attendance_selector_render_callback'
+		]
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/events-list'
+		__DIR__ . '/build/blocks/events-list',
+		[
+			'render_callback' => 'gp_blocks_events_list_render_callback'
+		]
+	);
+
+	register_block_type(
+		__DIR__ . '/build/blocks/example-dynamic',
+		[
+			'render_callback' => 'gp_blocks_example_dynamic_render_callback'
+		]
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/venue',
@@ -91,7 +110,7 @@ function gp_blocks_add_to_calendar_render_callback( $attributes, $content, $bloc
  */
 function gp_blocks_attendance_list_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-list/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-list/sample.php';
 	return ob_get_clean();
 }
 
@@ -106,7 +125,23 @@ function gp_blocks_attendance_list_render_callback( $attributes, $content, $bloc
  */
 function gp_blocks_attendance_selector_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-selector/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-selector/sample.php';
+	return ob_get_clean();
+}
+
+/**
+ * Render callback function.
+ *
+ * @param array    $attributes The block attributes.
+ * @param string   $content    The block content.
+ * @param WP_Block $block      Block instance.
+ *
+ * @return string The rendered output.
+ */
+function gp_blocks_example_dynamic_render_callback( $attributes, $content, $block ) {
+	ob_start();
+	echo $content;
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/example-dynamic/template.php';
 	return ob_get_clean();
 }
 
@@ -121,7 +156,8 @@ function gp_blocks_attendance_selector_render_callback( $attributes, $content, $
  */
 function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/template.php';
+	echo $content;
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/sample.php';
 	return ob_get_clean();
 }
 
@@ -136,7 +172,8 @@ function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
  */
 function gp_blocks_events_list_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/events-list/template.php';
+	echo '<h3>build/blocks/events-list/sample.php</h3>';
+	echo  $content;
 	return ob_get_clean();
 }
 
@@ -151,7 +188,8 @@ function gp_blocks_events_list_render_callback( $attributes, $content, $block ) 
  */
 function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue/template.php';
+	echo $content;
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue/sample.php';
 	return ob_get_clean();
 }
 
@@ -166,7 +204,7 @@ function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
  */
 function gp_blocks_venue_information_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/sample.php';
 	return ob_get_clean();
 }
 
@@ -184,4 +222,34 @@ function add_to_calendar_script() {
 		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/add-to-calendar.js' ),
 		true
 	);
+}
+
+// add_filter( 'render_block', 'show_the_block_constituents', 10, 2 );
+/**
+ * [show_the_block_constituents] Debug code for showing the parts of WP Blocks
+ *
+ * @param  [string] $block_content
+ * @param  [array]  $block
+ * @return [string]
+ */
+function show_the_block_constituents( $block_content, $block ) {
+	if ( true === WP_DEBUG && current_user_can( 'administrator' ) ) {
+		$block_content = "<div class='wp-block' data-blockType='{$block['blockName']}'>{$block_content}</div>" . ( 'string' === gettype( $block['blockName'] ) ? '<pre><xmp> $block_content = ' . gettype( $block_content ) . " {$block['blockName']} " . print_r( $block, true ) . '</xmp></pre>' : '' );
+	}
+	return $block_content;
+}
+
+add_filter( 'render_block', 'wplancpa_2019_show_block_type', 10, 2 );
+/**
+ * Undocumented function
+ *
+ * @param [type] $block_content
+ * @param [type] $block
+ * @return void
+ */
+function wplancpa_2019_show_block_type( $block_content, $block ) {
+	if ( true === WP_DEBUG ) {
+		$block_content = "<h5 style=\"color:salmon\">{$block['blockName']}</h5><div class='wp-block' data-blockType='{$block['blockName']}'>{$block_content}</div>";
+	}
+	return $block_content;
 }
