@@ -188,11 +188,32 @@ class Setup {
 					'editor',
 					'thumbnail',
 					'comments',
+					'custom-fields',
 					'revisions',
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				'rewrite'       => array(
 					'slug' => 'events',
+				),
+			)
+		);
+
+
+		register_post_meta(
+			Event::POST_TYPE,
+			'show_date_as_event_date',
+			array(
+				'auth_callback'     => function() {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'single'       => true,
+				'type'         => 'boolean',
+				'default'      => true,
+				'show_in_rest' => array(
+					'schema' => array(
+						'type'  => 'boolean',
+					),
 				),
 			)
 		);
@@ -470,7 +491,7 @@ class Setup {
 	public function get_the_event_date( $the_date ): string {
 		global $post;
 
-		if ( ! is_a( $post, '\WP_Post' ) || Event::POST_TYPE !== $post->post_type ) {
+		if ( ! is_a( $post, '\WP_Post' ) || Event::POST_TYPE !== $post->post_type || true !==  \rest_sanitize_boolean( \get_post_meta( get_the_ID(), 'show_date_as_event_date', true ) ) ){
 			return $the_date;
 		}
 

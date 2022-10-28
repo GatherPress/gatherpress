@@ -11,6 +11,10 @@
 	"attributes": {
 		"blockId": {
 			"type": "string"
+		},
+		"show_date_as_event": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"supports": {
