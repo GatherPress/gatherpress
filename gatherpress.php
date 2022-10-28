@@ -32,6 +32,9 @@ GatherPress\Core\Autoloader::register();
 GatherPress\Core\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();
 
+
+add_action( 'init', 'gatherpress_gp_blocks_init' );
+
 function gatherpress_gp_blocks_init() {
 	register_block_type(
 		__DIR__ . '/build/blocks/add-to-calendar',
@@ -46,16 +49,19 @@ function gatherpress_gp_blocks_init() {
 		__DIR__ . '/build/blocks/attendance-selector'
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/events-date'
-	);
-	register_block_type(
 		__DIR__ . '/build/blocks/events-list'
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/venue'
+		__DIR__ . '/build/blocks/venue',
+		[
+			'render_callback' => 'gp_blocks_venue_render_callback'
+		]
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/venue-information'
+		__DIR__ . '/build/blocks/venue-information',
+		[
+			'render_callback' => 'gp_blocks_venue_information_render_callback'
+		]
 	);
 }
 
@@ -70,7 +76,7 @@ function gatherpress_gp_blocks_init() {
  */
 function gp_blocks_add_to_calendar_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/add-to-calendar/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/add-to-calendar/template.php';
 	return ob_get_clean();
 }
 
@@ -85,7 +91,7 @@ function gp_blocks_add_to_calendar_render_callback( $attributes, $content, $bloc
  */
 function gp_blocks_attendance_list_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/attendance-list/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-list/template.php';
 	return ob_get_clean();
 }
 
@@ -100,7 +106,7 @@ function gp_blocks_attendance_list_render_callback( $attributes, $content, $bloc
  */
 function gp_blocks_attendance_selector_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/attendance-selector/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-selector/template.php';
 	return ob_get_clean();
 }
 
@@ -115,7 +121,7 @@ function gp_blocks_attendance_selector_render_callback( $attributes, $content, $
  */
 function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/event-date/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/template.php';
 	return ob_get_clean();
 }
 
@@ -130,7 +136,7 @@ function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
  */
 function gp_blocks_events_list_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/events-list/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/events-list/template.php';
 	return ob_get_clean();
 }
 
@@ -145,7 +151,7 @@ function gp_blocks_events_list_render_callback( $attributes, $content, $block ) 
  */
 function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/venue/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue/template.php';
 	return ob_get_clean();
 }
 
@@ -160,7 +166,7 @@ function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
  */
 function gp_blocks_venue_information_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/venue-information/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/template.php';
 	return ob_get_clean();
 }
 

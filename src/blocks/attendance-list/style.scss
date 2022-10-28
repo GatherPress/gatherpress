@@ -1,3 +1,10 @@
+[data-gp_block_name="attendance-list"] {
+	padding: 2rem;
+	border: 2px solid maroon;
+}
+[data-gp_block_name="attendance-list"]::before {
+	content: 'data-gp_block_name="attendance-list"';
+}
 .gp-attendance-list {
 	&__navigation {
 		display: flex;
