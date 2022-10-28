@@ -26,11 +26,11 @@
 		}
 	}
 
-	&__active {
-		@include for-core-mobile {
-			grid-template-columns: 1fr 1fr;
-		}
-	}
+	// &__active {
+	// 	@include for-core-mobile {
+	// 		grid-template-columns: 1fr 1fr;
+	// 	}
+	// }
 
 	&__hidden {
 		display: none;

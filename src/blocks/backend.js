@@ -1,11 +1,11 @@
 /**
  * Backend blocks loader.
  */
-import './add-to-calendar/index';
-import './attendance-list/index';
-import './attendance-selector/index';
-import './event-date/index';
-import './events-list/index';
-import './venue/index';
-import './venue-information/index';
+import './add-to-calendar';
+import './attendance-list';
+import './attendance-selector';
+import './event-date';
+import './events-list';
+import './venue';
+import './venue-information';
 

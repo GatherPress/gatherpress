@@ -34,7 +34,10 @@ GatherPress\BuddyPress\Setup::get_instance();
 
 function gatherpress_gp_blocks_init() {
 	register_block_type(
-		__DIR__ . '/build/blocks/add-to-calendar'
+		__DIR__ . '/build/blocks/add-to-calendar',
+		[
+			'render_callback' => 'gp_blocks_add_to_calendar_render_callback'
+		]
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/attendance-list'
@@ -159,4 +162,20 @@ function gp_blocks_venue_information_render_callback( $attributes, $content, $bl
 	ob_start();
 	require plugin_dir_path( __FILE__ ) . 'build/venue-information/template.php';
 	return ob_get_clean();
+}
+
+add_action( 'wp_enqueue_scripts', 'add_to_calendar_script' );
+/**
+ * Undocumented function
+ *
+ * @return void
+ */
+function add_to_calendar_script() {
+	wp_register_script(
+		'add-to-calendar',
+		plugins_url( 'core/js/add-to-calendar.js', __FILE__ ),
+		array(),
+		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/add-to-calendar.js' ),
+		true
+	);
 }
