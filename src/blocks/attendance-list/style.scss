@@ -1,9 +1,6 @@
-[data-gp_block_name="attendance-list"] {
+.wp-block-gatherpress-attendance-list {
 	padding: 2rem;
 	border: 2px solid maroon;
-}
-[data-gp_block_name="attendance-list"]::before {
-	content: 'data-gp_block_name="attendance-list"';
 }
 
 @mixin for-core-tablet {

@@ -46,17 +46,18 @@ function gatherpress_gp_blocks_init() {
 		]
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/attendance-list',
-		[
-			'render_callback' => 'gp_blocks_attendance_list_render_callback'
-		]
+		__DIR__ . '/build/blocks/attendance-list'
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/attendance-selector',
+		__DIR__ . '/build/blocks/attendance-selector'
+	);
+	register_block_type(
+		__DIR__ . '/build/blocks/event-date',
 		[
-			'render_callback' => 'gp_blocks_attendance_selector_render_callback'
+			'render_callback' => 'gp_blocks_event_date_render_callback'
 		]
 	);
+
 	register_block_type(
 		__DIR__ . '/build/blocks/events-list',
 		[
@@ -156,8 +157,7 @@ function gp_blocks_example_dynamic_render_callback( $attributes, $content, $bloc
  */
 function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	echo $content;
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/sample.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/template.php';
 	return ob_get_clean();
 }
 
@@ -188,8 +188,30 @@ function gp_blocks_events_list_render_callback( $attributes, $content, $block ) 
  */
 function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	echo $content;
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue/sample.php';
+	if ( ! isset( $attributes['venueId'] ) ) {
+		return 'Venue unset';
+	}
+	$gatherpress_venue = get_post( intval( $attributes['venueId'] ) );
+
+	$gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
+	?>
+	<div class="gp-venue">
+		<?php
+		GatherPress\Core\Utility::render_template(
+			sprintf( '%s/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'gatherpress_block_attrs' => array(
+					'name'        => $gatherpress_venue->post_title,
+					'fullAddress' => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+					'phoneNumber' => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+					'website'     => $gatherpress_venue_information->website ?? '',
+				),
+			),
+			true
+		);
+		?>
+	</div>
+	<?php
 	return ob_get_clean();
 }
 
@@ -204,6 +226,8 @@ function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
  */
 function gp_blocks_venue_information_render_callback( $attributes, $content, $block ) {
 	ob_start();
+	echo $content;
+	echo __FUNCTION__ . '<p>' . print_r( $attributes, true ) . '</p>';
 	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/sample.php';
 	return ob_get_clean();
 }
@@ -239,7 +263,7 @@ function show_the_block_constituents( $block_content, $block ) {
 	return $block_content;
 }
 
-add_filter( 'render_block', 'wplancpa_2019_show_block_type', 10, 2 );
+// add_filter( 'render_block', 'wplancpa_2019_show_block_type', 10, 2 );
 /**
  * Undocumented function
  *

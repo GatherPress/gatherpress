@@ -1,51 +1,28 @@
 /**
- * External dependencies.
+ * Retrieves the translation of text.
+ *
+ * @see https://developer.wordpress.org/block-editor/packages/packages-i18n/
  */
-import React from 'react';
-/**
- * WordPress dependencies.
- */
+import { __ } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
-import { render } from '@wordpress/element';
 
 /**
- * Internal dependencies.
+ * The save function defines the way in which the different attributes should
+ * be combined into the final markup, which is then serialized by the block
+ * editor into `post_content`.
+ *
+ * @see https://developer.wordpress.org/block-editor/developers/block-api/block-edit-save/#save
+ *
+ * @return {WPElement} Element to render.
  */
-import AttendanceSelector from '../../components/AttendanceSelector';
-
-const Save = () => {
+export default function save() {
 	const blockProps = useBlockProps.save();
-	// eslint-disable-next-line no-undef
-	const postId = GatherPress.post_id;
-	// eslint-disable-next-line no-undef
-	const currentUser = GatherPress.current_user;
-
-	const RenderContainers = () => {
-		const containers = document.querySelectorAll(
-			`[data-gp_block_name="attendance-selector"]`,
-		);
-		// eslint-disable-next-line no-undef
-		const type = ('1' === GatherPress.has_event_past) ? 'past' : 'upcoming';
-
-		for (let i = 0; i < containers.length; i++) {
-			render(
-				<AttendanceSelector
-					// eslint-disable-next-line no-undef
-					eventId={GatherPress.post_id}
-					// eslint-disable-next-line no-undef
-					currentUser={GatherPress.current_user}
-					type={type}
-				/>,
-				containers[i],
-			);
-		}
-	};
-
 	return (
 		<div {...blockProps}>
-			<RenderContainers />
-		</div>
+			<p>{ __(
+				'AttendanceSelector – hello from the saved content!',
+				'gatherpress'
+			) }</p>
+		</div >
 	);
-};
-
-export default Save;
+}

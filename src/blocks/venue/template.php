@@ -11,13 +11,13 @@ use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 
 if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs ) ) {
-	return;
+	// return;
 }
 
 $gatherpress_venue = get_post( intval( $gatherpress_block_attrs['venueId'] ) );
 
 if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
-	return;
+	// return;
 }
 
 $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
