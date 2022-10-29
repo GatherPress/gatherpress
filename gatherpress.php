@@ -285,3 +285,54 @@ function timezone_check_admin_notice() {
 	</div>
 <?php
 }
+
+add_action( 'enqueue_block_editor_assets', 'maybe_deny_list_blocks' );
+/**
+ * Undocumented function
+ *
+ * @return void
+ */
+function maybe_deny_list_blocks() {
+    wp_register_script(
+        'post-deny-list-blocks',
+        plugins_url( 'core/js/post-deny-list.js', __FILE__ ),
+        array(
+			'wp-blocks',
+			'wp-dom-ready',
+			'wp-edit-post'
+		),
+		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/post-deny-list.js'),
+		true
+    );
+    wp_register_script(
+        'event-deny-list-blocks',
+        plugins_url( 'core/js/event-deny-list.js', __FILE__ ),
+        array(
+			'wp-blocks',
+			'wp-dom-ready',
+			'wp-edit-post'
+		),
+		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/event-deny-list.js'),
+		true
+    );
+    wp_register_script(
+        'venue-deny-list-blocks',
+        plugins_url( 'core/js/venue-deny-list.js', __FILE__ ),
+        array(
+			'wp-blocks',
+			'wp-dom-ready',
+			'wp-edit-post'
+		),
+		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/venue-deny-list.js'),
+		true
+    );
+	if ( 'post' === get_post_type() || 'page' === get_post_type() ) {
+		wp_enqueue_script( 'post-deny-list-blocks' );
+	}
+	if ( 'gp_event' === get_post_type() ) {
+		wp_enqueue_script( 'event-deny-list-blocks' );
+	}
+	if ( 'gp_venue' === get_post_type() ) {
+		wp_enqueue_script( 'venue-deny-list-blocks' );
+	}
+}

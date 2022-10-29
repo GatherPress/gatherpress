@@ -3,6 +3,9 @@
  */
 import { registerBlockType } from '@wordpress/blocks';
 
+import './plugin-2';
+import './maybe-deny-list';
+
 /**
  * Internal dependencies.
  */
