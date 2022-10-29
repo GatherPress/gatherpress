@@ -38,7 +38,7 @@ const EventItem = ( props ) => {
 					</div>
 					{ venue && (
 						<div>
-							Venue: { venue }
+							<span class="dashicons dashicons-location">&nbsp;</span> { venue }
 						</div>
 					) }
 					<div className={ `${ eventClass }__title has-large-font-size` }>
