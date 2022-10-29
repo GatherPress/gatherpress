@@ -37,9 +37,6 @@ add_action( 'init', 'gatherpress_gp_blocks_init' );
 
 function gatherpress_gp_blocks_init() {
 	register_block_type(
-		__DIR__ . '/build/blocks/block-starter'
-	);
-	register_block_type(
 		__DIR__ . '/build/blocks/add-to-calendar',
 		[
 			'render_callback' => 'gp_blocks_add_to_calendar_render_callback'
@@ -57,18 +54,10 @@ function gatherpress_gp_blocks_init() {
 			'render_callback' => 'gp_blocks_event_date_render_callback'
 		]
 	);
-
 	register_block_type(
 		__DIR__ . '/build/blocks/events-list',
 		[
 			'render_callback' => 'gp_blocks_events_list_render_callback'
-		]
-	);
-
-	register_block_type(
-		__DIR__ . '/build/blocks/example-dynamic',
-		[
-			'render_callback' => 'gp_blocks_example_dynamic_render_callback'
 		]
 	);
 	register_block_type(
@@ -78,10 +67,7 @@ function gatherpress_gp_blocks_init() {
 		]
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/venue-information',
-		[
-			'render_callback' => 'gp_blocks_venue_information_render_callback'
-		]
+		__DIR__ . '/build/blocks/venue-information'
 	);
 }
 
@@ -188,8 +174,12 @@ function gp_blocks_events_list_render_callback( $attributes, $content, $block ) 
  */
 function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 	ob_start();
+	$timezone = get_option('timezone_string');
+	if ( ! $timezone ) {
+		$timezone = ' / timezone unset';
+	}
 	if ( ! isset( $attributes['venueId'] ) ) {
-		return 'Venue unset';
+		return '<p>Venue unset' . $timezone . '</p>';
 	}
 	$gatherpress_venue = get_post( intval( $attributes['venueId'] ) );
 
@@ -227,8 +217,8 @@ function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 function gp_blocks_venue_information_render_callback( $attributes, $content, $block ) {
 	ob_start();
 	echo $content;
-	echo __FUNCTION__ . '<p>' . print_r( $attributes, true ) . '</p>';
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/sample.php';
+	echo '<p>' . __FUNCTION__ . '<pre>' . print_r( $attributes, true ) . '</pre>';
+	// require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/sample.php';
 	return ob_get_clean();
 }
 
@@ -276,4 +266,22 @@ function wplancpa_2019_show_block_type( $block_content, $block ) {
 		$block_content = "<h5 style=\"color:salmon\">{$block['blockName']}</h5><div class='wp-block' data-blockType='{$block['blockName']}'>{$block_content}</div>";
 	}
 	return $block_content;
+}
+
+add_action('admin_notices', 'timezone_check_admin_notice');
+/**
+ * display custom admin notice function
+ *
+ * @return void
+ */
+function timezone_check_admin_notice() {
+	$timezone = get_option('timezone_string');
+	if ( $timezone ) {
+		return;
+	}
+	?>
+	<div class="notice notice-error is-dismissible">
+		<p><?php _e('Please set your timezone in order to ensure proper GatherPress settings!', 'gatherpress'); ?></p>
+	</div>
+<?php
 }

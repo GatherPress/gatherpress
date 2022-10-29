@@ -5,29 +5,7 @@
  */
 import { __ } from "@wordpress/i18n";
 import { useBlockProps } from "@wordpress/block-editor";
-import { Button, Modal } from "@wordpress/components";
-import { useState } from "@wordpress/element";
 
-const AttendanceModal = () => {
-	const [isOpen, setOpen] = useState(false);
-	const openModal = () => setOpen(true);
-	const closeModal = () => setOpen(false);
-
-	return (
-		<>
-			<Button variant="secondary" onClick={openModal}>
-				Open Modal
-			</Button>
-			{isOpen && (
-				<Modal title="This is my modal" onRequestClose={closeModal}>
-					<Button variant="secondary" onClick={closeModal}>
-						My custom close button
-					</Button>
-				</Modal>
-			)}
-		</>
-	);
-};
 /**
  * The save function defines the way in which the different attributes should
  * be combined into the final markup, which is then serialized by the block
@@ -37,13 +15,20 @@ const AttendanceModal = () => {
  *
  * @return {WPElement} Element to render.
  */
-export default function save() {
+export default function save(props) {
 	const blockProps = useBlockProps.save();
 	return (
 		<div {...blockProps}>
+			{props.attributes.fullAddress && (
+				<p>{props.attributes.fullAddress}</p>
+			)}
+			{props.attributes.phoneNumber && (
+				<p>{props.attributes.phoneNumber}</p>
+			)}
+			{props.attributes.website && <p>{props.attributes.website}</p>}
 			<p>
 				{__(
-					"AttendanceSelector – hello from the saved content!",
+					"Venue Information – hello from the saved content!",
 					"gatherpress"
 				)}
 			</p>
