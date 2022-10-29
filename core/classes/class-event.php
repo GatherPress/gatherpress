@@ -139,7 +139,7 @@ class Event {
 			'full_address' => '',
 			'phone_number' => '',
 			'website'      => '',
-			'permalink'    => '', 
+			'permalink'    => '',
 		);
 
 		$term     = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
