@@ -83,7 +83,12 @@ function gatherpress_gp_blocks_init() {
 function gp_blocks_add_to_calendar_render_callback( $attributes, $content, $block ) {
 	ob_start();
 	require plugin_dir_path( __FILE__ ) . 'build/blocks/add-to-calendar/template.php';
-	return ob_get_clean();
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
+
 }
 
 /**
@@ -98,7 +103,13 @@ function gp_blocks_add_to_calendar_render_callback( $attributes, $content, $bloc
 function gp_blocks_attendance_list_render_callback( $attributes, $content, $block ) {
 	ob_start();
 	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-list/sample.php';
-	return ob_get_clean();
+
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
+
 }
 
 /**
@@ -113,7 +124,13 @@ function gp_blocks_attendance_list_render_callback( $attributes, $content, $bloc
 function gp_blocks_attendance_selector_render_callback( $attributes, $content, $block ) {
 	ob_start();
 	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-selector/sample.php';
-	return ob_get_clean();
+
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
+
 }
 
 /**
@@ -127,9 +144,14 @@ function gp_blocks_attendance_selector_render_callback( $attributes, $content, $
  */
 function gp_blocks_example_dynamic_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	echo $content;
+
 	require plugin_dir_path( __FILE__ ) . 'build/blocks/example-dynamic/template.php';
-	return ob_get_clean();
+
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
 }
 
 /**
@@ -144,7 +166,12 @@ function gp_blocks_example_dynamic_render_callback( $attributes, $content, $bloc
 function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
 	ob_start();
 	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/template.php';
-	return ob_get_clean();
+
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
 }
 
 /**
@@ -160,7 +187,13 @@ function gp_blocks_events_list_render_callback( $attributes, $content, $block ) 
 	ob_start();
 	echo '<h3>build/blocks/events-list/sample.php</h3>';
 	echo  $content;
-	return ob_get_clean();
+
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
+
 }
 
 /**
@@ -202,7 +235,13 @@ function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 		?>
 	</div>
 	<?php
-	return ob_get_clean();
+
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
+
 }
 
 /**
@@ -219,7 +258,13 @@ function gp_blocks_venue_information_render_callback( $attributes, $content, $bl
 	echo $content;
 	echo '<p>' . __FUNCTION__ . '<pre>' . print_r( $attributes, true ) . '</pre>';
 	// require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/sample.php';
-	return ob_get_clean();
+
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
+
 }
 
 add_action( 'wp_enqueue_scripts', 'add_to_calendar_script' );
