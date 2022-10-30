@@ -8,26 +8,6 @@ import { useBlockProps } from "@wordpress/block-editor";
 import { Button, Modal } from "@wordpress/components";
 import { useState } from "@wordpress/element";
 
-const AttendanceModal = () => {
-	const [isOpen, setOpen] = useState(false);
-	const openModal = () => setOpen(true);
-	const closeModal = () => setOpen(false);
-
-	return (
-		<>
-			<Button variant="secondary" onClick={openModal}>
-				Open Modal
-			</Button>
-			{isOpen && (
-				<Modal title="This is my modal" onRequestClose={closeModal}>
-					<Button variant="secondary" onClick={closeModal}>
-						My custom close button
-					</Button>
-				</Modal>
-			)}
-		</>
-	);
-};
 /**
  * The save function defines the way in which the different attributes should
  * be combined into the final markup, which is then serialized by the block
@@ -47,6 +27,28 @@ export default function save() {
 					"gatherpress"
 				)}
 			</p>
+			<div
+				data-gp_block_name="attendance-selector"
+				data-gp_block_attrs="[]"
+			>
+				<div class="gp-attendance-selector">
+					<div
+						role="group"
+						class="components-button-group gp-buttons wp-block-buttons"
+					>
+						<div class="gp-buttons__container wp-block-button">
+							<a
+								href="#"
+								class="gp-buttons__button wp-block-button__link"
+								aria-expanded="false"
+								tabindex="0"
+							>
+								Attend
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }

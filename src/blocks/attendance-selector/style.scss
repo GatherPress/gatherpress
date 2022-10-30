@@ -1,12 +1,6 @@
-.wp-block-gatherpress-attendance-selector,
-[data-gp_block_name="attendance-selector"] {
+.wp-block-gatherpress-attendance-selector {
 	padding: 2rem;
 	border: 2px solid maroon;
-}
-
-.wp-block-gatherpress-attendance-selector::before,
-[data-gp_block_name="attendance-selector"]::before {
-	content: 'data-gp_block_name="attendance-selector"';
 }
 
 .gp-attendance-selector {

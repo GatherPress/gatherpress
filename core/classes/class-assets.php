@@ -54,7 +54,7 @@ class Assets {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		// add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
 	}
@@ -64,37 +64,52 @@ class Assets {
 	 */
 	public function enqueue_scripts() {
 		// @todo some stuff is repeated in enqueuing for frontend and blocks. need to break into other methods.
+		$post_id = get_the_ID() ?? 0;
 
-		$asset = $this->get_asset_data( 'blocks_style' );
+		// $asset = $this->get_asset_data( 'blocks_style' );
 
-		wp_enqueue_style( 'wp-block-button' );
+		// wp_enqueue_style( 'wp-block-button' );
 
-		wp_enqueue_style(
-			'gatherpress-blocks-style',
-			$this->build . 'blocks_style.css',
-			$asset['dependencies'],
-			$asset['version']
-		);
+		// wp_enqueue_style(
+		// 	'gatherpress-blocks-style',
+		// 	$this->build . 'blocks_style.css',
+		// 	$asset['dependencies'],
+		// 	$asset['version']
+		// );
 
-		$asset = $this->get_asset_data( 'blocks_frontend' );
+		// $asset = $this->get_asset_data( 'blocks_frontend' );
 
+		$asset = include( plugin_dir_path( GATHERPRESS_CORE_FILE ) . 'build/blocks/attendance-selector/index.asset.php' );
 		wp_enqueue_script(
-			'gatherpress-blocks-frontend',
-			$this->build . 'blocks_frontend.js',
+			'gatherpress-attendance-selector',
+			GATHERPRESS_CORE_URL . 'build/blocks/attendance-selector/index.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
 		);
 
+		wp_localize_script(
+			'gatherpress-attendance-selector',
+			'GatherPress',
+			$this->localize( $post_id )
+		);
+		// wp_enqueue_script(
+		// 	'gatherpress-blocks-frontend',
+		// 	$this->build . 'blocks_frontend.js',
+		// 	$asset['dependencies'],
+		// 	$asset['version'],
+		// 	true
+		// );
+
 		// phpcs:ignore
 		// if ( is_singular( 'gp_event' ) ) {
-			global $post;
+			// global $post;
 
-			wp_localize_script(
-				'gatherpress-blocks-frontend',
-				'GatherPress',
-				$this->localize( $post->ID ?? 0 )
-			);
+			// wp_localize_script(
+			// 	'gatherpress-blocks-frontend',
+			// 	'GatherPress',
+			// 	$this->localize( $post->ID ?? 0 )
+			// );
 		// phpcs:ignore
 		// }
 	}
