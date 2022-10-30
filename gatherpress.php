@@ -69,6 +69,9 @@ function gatherpress_gp_blocks_init() {
 	register_block_type(
 		__DIR__ . '/build/blocks/venue-information'
 	);
+	register_block_type(
+		__DIR__ . '/build/blocks/venue-map'
+	);
 }
 
 /**
