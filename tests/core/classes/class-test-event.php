@@ -1,22 +1,22 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Event.
+ * Class handles unit tests for GatherPress\Includes\Event.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Includes;
 
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
-use GatherPress\Core\Event;
+use GatherPress\Includes\Event;
 
 /**
  * Class Test_Event.
  *
- * @coversDefaultClass \GatherPress\Core\Event
+ * @coversDefaultClass \GatherPress\Includes\Event
  */
 class Test_Event extends Base {
 

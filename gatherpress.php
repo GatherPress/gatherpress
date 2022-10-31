@@ -28,8 +28,8 @@ if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/preflight.php' ) {
 
 require_once GATHERPRESS_CORE_PATH . '/includes/classes/class-autoloader.php';
 
-GatherPress\Core\Autoloader::register();
-GatherPress\Core\Setup::get_instance();
+GatherPress\Includes\Autoloader::register();
+GatherPress\Includes\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();
 
 
@@ -223,7 +223,7 @@ function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 	?>
 	<div class="gp-venue">
 		<?php
-		GatherPress\Core\Utility::render_template(
+		GatherPress\Includes\Utility::render_template(
 			sprintf( '%s/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'gatherpress_block_attrs' => array(

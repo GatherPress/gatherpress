@@ -3,12 +3,12 @@
  * Settings template.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-use GatherPress\Core\Settings;
-use GatherPress\Core\Utility;
+use GatherPress\Includes\Settings;
+use GatherPress\Includes\Utility;
 
 if ( ! isset( $sub_pages, $page ) ) {
 	return;

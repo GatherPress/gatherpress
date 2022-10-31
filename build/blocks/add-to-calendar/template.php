@@ -3,11 +3,11 @@
  * Container for Add to calendar block.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-use GatherPress\Core\Event;
+use GatherPress\Includes\Event;
 wp_enqueue_script( 'add-to-calendar' );
 $gatherpress_event = new Event( get_the_ID() );
 ?>

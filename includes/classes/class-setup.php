@@ -3,13 +3,13 @@
  * Class is responsible for executing plugin setups.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Includes;
 
-use \GatherPress\Core\Traits\Singleton;
+use \GatherPress\Includes\Traits\Singleton;
 use WP_CLI;
 
 if ( ! defined( 'ABSPATH' ) ) {

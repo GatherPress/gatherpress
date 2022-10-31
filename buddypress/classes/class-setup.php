@@ -9,7 +9,7 @@
 
 namespace GatherPress\BuddyPress;
 
-use \GatherPress\Core\Traits\Singleton;
+use \GatherPress\Includes\Traits\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

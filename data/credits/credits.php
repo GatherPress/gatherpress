@@ -3,7 +3,7 @@
  * Credits for each version of GatherPress. Used to generate latest.json.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 

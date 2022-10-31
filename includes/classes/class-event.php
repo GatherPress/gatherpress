@@ -3,11 +3,11 @@
  * Class is responsible for instances of events.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Includes;
 
 use PHPMailer\PHPMailer\Exception;
 

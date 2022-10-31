@@ -3,7 +3,7 @@
  * User Select Field template.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 

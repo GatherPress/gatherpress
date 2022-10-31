@@ -3,9 +3,9 @@
  *
  */
 
-// $an_event = new \GatherPress\Core\Event( get_the_ID() );
+// $an_event = new \GatherPress\Includes\Event( get_the_ID() );
 if ( 'gp_event' === get_post_type( get_the_ID() ) ) {
-    $an_event = new \GatherPress\Core\Event( get_the_ID() );
+    $an_event = new \GatherPress\Includes\Event( get_the_ID() );
 } else {
 	$an_event = '';
 }

@@ -3,11 +3,11 @@
  * Class is responsible for all utility related functionality.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Includes;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

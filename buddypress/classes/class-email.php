@@ -3,13 +3,13 @@
  * Class is responsible for all email related functionality.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
 namespace GatherPress\BuddyPress;
 
-use \GatherPress\Core\Traits\Singleton;
+use \GatherPress\Includes\Traits\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

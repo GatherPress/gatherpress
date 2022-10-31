@@ -3,11 +3,11 @@
  * Class is autoloading GatherPress class files.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Includes;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

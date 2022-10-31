@@ -3,11 +3,11 @@
  * Placeholder for Event Date block.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-use GatherPress\Core\Event;
+use GatherPress\Includes\Event;
 
 $gatherpress_event = new Event( get_the_ID() );
 ?>

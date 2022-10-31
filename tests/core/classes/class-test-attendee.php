@@ -1,21 +1,21 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Attendee.
+ * Class handles unit tests for GatherPress\Includes\Attendee.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Includes;
 
 use PMC\Unit_Test\Base;
-use GatherPress\Core\Attendee;
+use GatherPress\Includes\Attendee;
 
 /**
  * Class Test_Attendee.
  *
- * @coversDefaultClass \GatherPress\Core\Attendee
+ * @coversDefaultClass \GatherPress\Includes\Attendee
  */
 class Test_Attendee extends Base {
 

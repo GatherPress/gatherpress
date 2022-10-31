@@ -3,12 +3,12 @@
  * Template for Venue block.
  *
  * @package GatherPress
- * @subpackage Core
+ * @subpackage Includes
  * @since 1.0.0
  */
 
-use GatherPress\Core\Utility;
-use GatherPress\Core\Venue;
+use GatherPress\Includes\Utility;
+use GatherPress\Includes\Venue;
 
 if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs ) ) {
 	return;
