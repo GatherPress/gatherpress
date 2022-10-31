@@ -36,7 +36,6 @@ class Setup {
 	 */
 	protected function instantiate_classes() {
 		Assets::get_instance();
-		// Block::get_instance();
 		Query::get_instance();
 		Rest_Api::get_instance();
 		Settings::get_instance();
