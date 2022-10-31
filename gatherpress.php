@@ -22,11 +22,11 @@ define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 
 // Bail if things do not meet minimum plugin requirements.
-if ( ! require_once GATHERPRESS_CORE_PATH . '/core/preflight.php' ) {
+if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/preflight.php' ) {
 	return;
 }
 
-require_once GATHERPRESS_CORE_PATH . '/core/classes/class-autoloader.php';
+require_once GATHERPRESS_CORE_PATH . '/includes/classes/class-autoloader.php';
 
 GatherPress\Core\Autoloader::register();
 GatherPress\Core\Setup::get_instance();
@@ -279,9 +279,9 @@ add_action( 'wp_enqueue_scripts', 'add_to_calendar_script' );
 function add_to_calendar_script() {
 	wp_register_script(
 		'add-to-calendar',
-		plugins_url( 'core/js/add-to-calendar.js', __FILE__ ),
+		plugins_url( 'includes/js/add-to-calendar.js', __FILE__ ),
 		array(),
-		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/add-to-calendar.js' ),
+		filemtime( plugin_dir_path( __FILE__ ) . 'includes/js/add-to-calendar.js' ),
 		true
 	);
 }
@@ -343,13 +343,13 @@ add_action( 'enqueue_block_editor_assets', 'maybe_deny_list_blocks' );
 function maybe_deny_list_blocks() {
     wp_register_script(
         'post-deny-list-blocks',
-        plugins_url( 'core/js/post-deny-list.js', __FILE__ ),
+        plugins_url( 'includes/js/post-deny-list.js', __FILE__ ),
         array(
 			'wp-blocks',
 			'wp-dom-ready',
 			'wp-edit-post'
 		),
-		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/post-deny-list.js'),
+		filemtime( plugin_dir_path( __FILE__ ) . 'includes/js/post-deny-list.js'),
 		true
     );
     wp_register_script(
