@@ -55,8 +55,9 @@ class Assets {
 	 */
 	protected function setup_hooks() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-		// add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'maybe_deny_blocks_list' ) );
 	}
 
 	/**
@@ -65,19 +66,6 @@ class Assets {
 	public function enqueue_scripts() {
 		// @todo some stuff is repeated in enqueuing for frontend and blocks. need to break into other methods.
 		$post_id = get_the_ID() ?? 0;
-
-		// $asset = $this->get_asset_data( 'blocks_style' );
-
-		// wp_enqueue_style( 'wp-block-button' );
-
-		// wp_enqueue_style(
-		// 	'gatherpress-blocks-style',
-		// 	$this->build . 'blocks_style.css',
-		// 	$asset['dependencies'],
-		// 	$asset['version']
-		// );
-
-		// $asset = $this->get_asset_data( 'blocks_frontend' );
 
 		$asset = include( plugin_dir_path( GATHERPRESS_CORE_FILE ) . 'build/blocks/attendance-selector/index.asset.php' );
 		wp_enqueue_script(
@@ -93,25 +81,6 @@ class Assets {
 			'GatherPress',
 			$this->localize( $post_id )
 		);
-		// wp_enqueue_script(
-		// 	'gatherpress-blocks-frontend',
-		// 	$this->build . 'blocks_frontend.js',
-		// 	$asset['dependencies'],
-		// 	$asset['version'],
-		// 	true
-		// );
-
-		// phpcs:ignore
-		// if ( is_singular( 'gp_event' ) ) {
-			// global $post;
-
-			// wp_localize_script(
-			// 	'gatherpress-blocks-frontend',
-			// 	'GatherPress',
-			// 	$this->localize( $post->ID ?? 0 )
-			// );
-		// phpcs:ignore
-		// }
 	}
 
 	/**
@@ -122,18 +91,14 @@ class Assets {
 	 * @return void
 	 */
 	public function admin_enqueue_scripts( $hook ) {
-		if ( 'post-new.php' === $hook || 'post.php' === $hook ) {
-			$asset = $this->get_asset_data( 'panels' );
-
-			wp_enqueue_script(
-				'gatherpress-panels',
-				$this->build . 'panels.js',
-				$asset['dependencies'],
-				$asset['version'],
-				true
+		if ( 'gp_event_page_gp_credits' === $hook ) {
+			wp_enqueue_style(
+				'gatherpress-admin',
+				plugins_url( 'assets/css/admin-dashboard.css', __DIR__ ),
+				[],
+				filemtime( plugin_dir_path(__DIR__) . 'assets/css/admin-dashboard.css' )
 			);
 		}
-
 		$settings      = Settings::get_instance();
 		$setting_hooks = array_map(
 			function( $key ) {
@@ -144,26 +109,26 @@ class Assets {
 
 		if ( in_array( $hook, $setting_hooks, true ) ) {
 			// Need to load block styling for some dynamic fields.
-			wp_enqueue_style( 'wp-edit-blocks' );
+			// wp_enqueue_style( 'wp-edit-blocks' );
 
-			$asset = $this->get_asset_data( 'settings_style' );
+			// $asset = $this->get_asset_data( 'settings_style' );
 
-			wp_enqueue_style(
-				'gatherpress-settings-style',
-				$this->build . 'settings_style.css',
-				$asset['dependencies'],
-				$asset['version']
-			);
+			// wp_enqueue_style(
+			// 	'gatherpress-settings-style',
+			// 	$this->build . 'settings_style.css',
+			// 	$asset['dependencies'],
+			// 	$asset['version']
+			// );
 
-			$asset = $this->get_asset_data( 'settings' );
+			// $asset = $this->get_asset_data( 'settings' );
 
-			wp_enqueue_script(
-				'gatherpress-settings',
-				$this->build . 'settings.js',
-				$asset['dependencies'],
-				$asset['version'],
-				true
-			);
+			// wp_enqueue_script(
+			// 	'gatherpress-settings',
+			// 	$this->build . 'settings.js',
+			// 	$asset['dependencies'],
+			// 	$asset['version'],
+			// 	true
+			// );
 		}
 	}
 
@@ -175,7 +140,6 @@ class Assets {
 		$event   = new Event( $post_id );
 		$post_id = get_the_ID() ?? 0;
 
-		$asset = GATHERPRESS_CORE_PATH . '/build/blocks/event-date/index.asset.php';
 		$asset = include( plugin_dir_path( GATHERPRESS_CORE_FILE ) . 'build/blocks/event-date/index.asset.php' );
 		wp_enqueue_script(
 			'gatherpress-blocks-backend',
@@ -217,6 +181,56 @@ class Assets {
 				// @todo settings to come...
 			),
 		);
+	}
+
+	/**
+	 * Undocumented function
+	 *
+	 * @return void
+	 */
+	function maybe_deny_blocks_list() {
+		wp_register_script(
+			'post-deny-list-blocks',
+			plugins_url( 'js/venue-deny-list.js', __DIR__ ),
+			array(
+				'wp-blocks',
+				'wp-dom-ready',
+				'wp-edit-post'
+			),
+			filemtime( plugin_dir_path( __DIR__ ) . 'js/post-deny-list.js' ),
+			true
+		);
+		wp_register_script(
+			'event-deny-list-blocks',
+			plugins_url( 'js/event-deny-list.js', __DIR__ ),
+			array(
+				'wp-blocks',
+				'wp-dom-ready',
+				'wp-edit-post'
+			),
+			filemtime( plugin_dir_path( __DIR__ ) . 'js/event-deny-list.js' ),
+			true
+		);
+		wp_register_script(
+			'venue-deny-list-blocks',
+			plugins_url( 'js/venue-deny-list.js', __DIR__ ),
+			array(
+				'wp-blocks',
+				'wp-dom-ready',
+				'wp-edit-post'
+			),
+			filemtime( plugin_dir_path( __DIR__ ) . 'js/venue-deny-list.js' ),
+			true
+		);
+		if ( 'post' === get_post_type() || 'page' === get_post_type() ) {
+			wp_enqueue_script( 'post-deny-list-blocks' );
+		}
+		if ( 'gp_event' === get_post_type() ) {
+			wp_enqueue_script( 'event-deny-list-blocks' );
+		}
+		if ( 'gp_venue' === get_post_type() ) {
+			wp_enqueue_script( 'venue-deny-list-blocks' );
+		}
 	}
 
 	/**

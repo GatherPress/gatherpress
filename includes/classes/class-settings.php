@@ -235,7 +235,7 @@ class Settings {
 	 * @return void
 	 */
 	public function credits( string $sub_page, string $section, string $option, array $option_settings ) {
-		$credits = include sprintf( '%s/data/credits/latest.php', GATHERPRESS_CORE_PATH );
+		$credits = include sprintf( '%s/includes/data/credits/latest.php', GATHERPRESS_CORE_PATH );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
@@ -342,6 +342,20 @@ class Settings {
 				'name'        => __( 'General', 'gatherpress' ),
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
 				'priority'    => PHP_INT_MIN,
+				'sections' => array(
+					'frontend' => array(
+						'name'        => __( 'Frontend Settings', 'gatherpress' ),
+						'description'        => __( 'This is where I want to put the checkbox to show date', 'gatherpress' ),
+						'options'     => array(
+							'show_date_as_event'           => array(
+								'labels' => array(
+									'name'          => __( 'How to show date', 'gatherpress' ),
+								),
+								'field'  => $this->post_date_setting(),
+							),
+						),
+					),
+				)
 			),
 			'leadership' => array(
 				'name'        => __( 'Leadership', 'gatherpress' ),
@@ -518,6 +532,15 @@ class Settings {
 			),
 			true
 		);
+	}
+
+	/**
+	 * Render the options page.
+	 */
+	public function post_date_setting() {
+		?>
+	<input name="option_name" type="checkbox" value="1" <?php checked( '1', get_option( 'option_name' ) ); ?> />
+		<?php
 	}
 
 	/**

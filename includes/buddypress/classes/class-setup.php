@@ -7,7 +7,7 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\BuddyPress;
+namespace GatherPress\Includes\BuddyPress;
 
 use \GatherPress\Includes\Traits\Singleton;
 

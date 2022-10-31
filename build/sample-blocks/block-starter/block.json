@@ -1,10 +1,10 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 2,
-  "name": "block-building-diagnostics/block-starter",
+  "name": "gatherpress/block-starter",
   "version": "0.1.1",
   "title": "Sample Block Starter",
-  "category": "gatherpress",
+  "category": "gatherpress-sample",
   "icon": {
     "background": "#29c8aa",
     "foreground": "white",
@@ -22,7 +22,7 @@
     "html": false
   },
   "example": {},
-  "textdomain": "block-building-diagnostics",
+  "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css"

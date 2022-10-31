@@ -30,16 +30,21 @@ require_once GATHERPRESS_CORE_PATH . '/includes/classes/class-autoloader.php';
 
 GatherPress\Includes\Autoloader::register();
 GatherPress\Includes\Setup::get_instance();
-GatherPress\BuddyPress\Setup::get_instance();
+// GatherPress\Includes\BuddyPress\Setup::get_instance();
 
 
 add_action( 'init', 'gatherpress_gp_blocks_init' );
-
+/**
+ * Register the blocks with PHP.
+ *
+ * @return void
+ */
 function gatherpress_gp_blocks_init() {
 	register_block_type(
 		__DIR__ . '/build/blocks/add-to-calendar',
 		[
-			'render_callback' => 'gp_blocks_add_to_calendar_render_callback'
+			'render_callback' => 'gp_blocks_add_to_calendar_render_callback',
+			'view_script' => 'add-to-calendar',
 		]
 	);
 	register_block_type(
@@ -69,8 +74,23 @@ function gatherpress_gp_blocks_init() {
 	register_block_type(
 		__DIR__ . '/build/blocks/venue-information'
 	);
+}
+
+add_action( 'init', 'gatherpress_gp_sample_blocks_init' );
+/**
+ * Undocumented function
+ *
+ * @return void
+ */
+function gatherpress_gp_sample_blocks_init() {
 	register_block_type(
-		__DIR__ . '/build/blocks/venue-map'
+		__DIR__ . '/build/sample-blocks/block-starter'
+	);
+	register_block_type(
+		__DIR__ . '/build/sample-blocks/example-dynamic',
+		[
+			'render_callback' => 'gp_blocks_example_dynamic_render_callback'
+		]
 	);
 }
 
@@ -148,7 +168,7 @@ function gp_blocks_attendance_selector_render_callback( $attributes, $content, $
 function gp_blocks_example_dynamic_render_callback( $attributes, $content, $block ) {
 	ob_start();
 
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/example-dynamic/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/sample-blocks/example-dynamic/template.php';
 
 	$block_content = ob_get_clean();
 
@@ -243,6 +263,7 @@ function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 
 	$wrapper_attributes = get_block_wrapper_attributes();
 
+	return $block_content;
 	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
 
 }
@@ -260,7 +281,6 @@ function gp_blocks_venue_information_render_callback( $attributes, $content, $bl
 	ob_start();
 	echo $content;
 	echo '<p>' . __FUNCTION__ . '<pre>' . print_r( $attributes, true ) . '</pre>';
-	// require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/sample.php';
 
 	$block_content = ob_get_clean();
 
@@ -332,55 +352,4 @@ function timezone_check_admin_notice() {
 		<p><?php _e('Please set your timezone in order to ensure proper GatherPress settings!', 'gatherpress'); ?></p>
 	</div>
 <?php
-}
-
-add_action( 'enqueue_block_editor_assets', 'maybe_deny_list_blocks' );
-/**
- * Undocumented function
- *
- * @return void
- */
-function maybe_deny_list_blocks() {
-    wp_register_script(
-        'post-deny-list-blocks',
-        plugins_url( 'includes/js/post-deny-list.js', __FILE__ ),
-        array(
-			'wp-blocks',
-			'wp-dom-ready',
-			'wp-edit-post'
-		),
-		filemtime( plugin_dir_path( __FILE__ ) . 'includes/js/post-deny-list.js'),
-		true
-    );
-    wp_register_script(
-        'event-deny-list-blocks',
-        plugins_url( 'core/js/event-deny-list.js', __FILE__ ),
-        array(
-			'wp-blocks',
-			'wp-dom-ready',
-			'wp-edit-post'
-		),
-		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/event-deny-list.js'),
-		true
-    );
-    wp_register_script(
-        'venue-deny-list-blocks',
-        plugins_url( 'core/js/venue-deny-list.js', __FILE__ ),
-        array(
-			'wp-blocks',
-			'wp-dom-ready',
-			'wp-edit-post'
-		),
-		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/venue-deny-list.js'),
-		true
-    );
-	if ( 'post' === get_post_type() || 'page' === get_post_type() ) {
-		wp_enqueue_script( 'post-deny-list-blocks' );
-	}
-	if ( 'gp_event' === get_post_type() ) {
-		wp_enqueue_script( 'event-deny-list-blocks' );
-	}
-	if ( 'gp_venue' === get_post_type() ) {
-		wp_enqueue_script( 'venue-deny-list-blocks' );
-	}
 }

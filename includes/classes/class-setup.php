@@ -126,6 +126,13 @@ class Setup {
 			'title' => __( 'GatherPress', 'gatherpress' ),
 			'icon'  => 'nametag',
 		);
+		$gatherpress_sample_category = array(
+			'slug'  => 'gatherpress-sample',
+			'title' => __( 'GatherPress Sample', 'gatherpress' ),
+			'icon'  => 'nametag',
+		);
+
+		array_unshift( $block_categories, $gatherpress_sample_category );
 
 		array_unshift( $block_categories, $gatherpress_category );
 
