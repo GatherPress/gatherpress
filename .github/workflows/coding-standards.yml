@@ -64,7 +64,10 @@ jobs:
         run: phpcs -i
 
       - name: Run PHPCS on all Core files
-        run: --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
+        run: vendor/bin/phpcs -q -n --report=checkstyle | cs2pr
+
+      - name: Check test suite files for warnings
+        run: vendor/bin/phpcs tests -q --report=checkstyle | cs2pr
 
   # Runs the JavaScript coding standards checks.
   #
