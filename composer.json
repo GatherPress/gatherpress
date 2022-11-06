@@ -10,7 +10,14 @@
 		}
 	],
 	"require": {
-		"pmc/unit-test": "dev-main"
+		"pmc/unit-test": "dev-main",
+		"php": ">=7.3"
+	},
+	"require-dev": {
+		"dealerdirect/phpcodesniffer-composer-installer": "*",
+		"wp-coding-standards/wpcs": "*",
+		"phpcompatibility/phpcompatibility-wp": "*",
+		"phpunit/phpunit": "^7.5"
 	},
 	"scripts": {
 		"compat": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs --standard=phpcompat.xml.dist --report=summary,source",
