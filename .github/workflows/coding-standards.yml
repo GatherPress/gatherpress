@@ -42,6 +42,7 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-composer-
+
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -53,15 +54,19 @@ jobs:
         run: |
           php --version
           composer --version
+
       - name: Install Composer dependencies
         run: |
           composer install --prefer-dist --no-suggest --no-progress --no-ansi --no-interaction
           echo "vendor/bin" >> $GITHUB_PATH
+      - name: Log PHPCS debug information
+        run: phpcs -i
 
       - name: Run PHPCS on all Core files
-        run: |
-          COMPOSER_BIN=$(composer global config bin-dir --absolute)
-          ${COMPOSER_BIN}/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
+        run: vendor/bin/phpcs -q -n --report=checkstyle | cs2pr
+
+      - name: Check test suite files for warnings
+        run: vendor/bin/phpcs tests -q --report=checkstyle | cs2pr
 
   # Runs the JavaScript coding standards checks.
   #
@@ -86,6 +91,7 @@ jobs:
           npm --version
           node --version
           git --version
+
       - name: Install NodeJS
         uses: actions/setup-node@v1
         with:
@@ -101,10 +107,12 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
+
       - name: Log debug information
         run: |
           npm --version
           node --version
+
       - name: Install Dependencies
         run: npm ci
 
