@@ -88,7 +88,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        php_versions: [ 8.0, 7.4, 7.3 ]
+        php_versions: [ 7.4, 7.3 ]
         os: [ ubuntu-latest ]
     env:
       LOCAL_PHP: ${{ matrix.php_versions }}-fpm
@@ -107,13 +107,11 @@ jobs:
       - name: Unzip built artifact
         run: unzip built-wp-${{ github.sha }}.zip
 
-      - name: Get composer cache directory
+      - name: Get Composer cache directory
         id: composer-cache
-        if: ${{ env.COMPOSER_INSTALL == true || env.LOCAL_PHP == '8.0-fpm' }}
         run: echo "::set-output name=dir::$(composer config cache-files-dir)"
 
-      - name: Cache Composer dependencies
-        if: ${{ env.COMPOSER_INSTALL == true || env.LOCAL_PHP == '8.0-fpm' }}
+      - name: Set up Composer caching
         uses: actions/cache@v2
         env:
           cache-name: cache-composer-dependencies
