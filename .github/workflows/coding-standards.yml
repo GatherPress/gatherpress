@@ -57,14 +57,11 @@ jobs:
         run: |
           composer install --prefer-dist --no-suggest --no-progress --no-ansi --no-interaction
           echo "vendor/bin" >> $GITHUB_PATH
-      - name: Log PHPCS debug information
-        run: phpcs -i
 
       - name: Run PHPCS on all Core files
-        run: vendor/bin/phpcs -q -n --report=checkstyle | cs2pr
-
-      - name: Check test suite files for warnings
-        run: vendor/bin/phpcs tests -q --report=checkstyle | cs2pr
+        run: |
+          COMPOSER_BIN=$(composer global config bin-dir --absolute)
+          ${COMPOSER_BIN}/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
   # Runs the JavaScript coding standards checks.
   #
@@ -89,11 +86,10 @@ jobs:
           npm --version
           node --version
           git --version
-          svn --version
       - name: Install NodeJS
         uses: actions/setup-node@v1
         with:
-          node-version: 12
+          node-version: 16
 
       - name: Cache NodeJS modules
         uses: actions/cache@v2
@@ -113,4 +109,4 @@ jobs:
         run: npm ci
 
       - name: Run JSHint
-        run: npm run grunt jshint
+        run: npm install --legacy-peer-deps && npm run lint:js
