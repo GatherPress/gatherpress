@@ -26,7 +26,7 @@ jobs:
         ports:
             # Use a different port to tunnel into the container.
           - 33306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3 --ssl_mode=disabled
 
     steps:
       - name: Checkout
