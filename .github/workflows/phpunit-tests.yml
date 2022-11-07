@@ -15,7 +15,6 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
         php_versions: [ '8.0', '7.4', '7.3' ]
-        phpunit: [7.5.15]
     env:
       LOCAL_PHP: ${{ matrix.php_versions }}-fpm
     services:
@@ -56,7 +55,7 @@ jobs:
 
         # Install PHPUnit using the matrix variables above
       - name: Install PHPUnit
-        run: composer global require "phpunit/phpunit=${{ matrix.phpunit }}"
+        run: composer global require "phpunit/phpunit"
 
         # Check listing of directory
         # Also a quick example of multi-commands and the $GITHUB_WORKSPACE variable.
