@@ -21,12 +21,10 @@ jobs:
       mysql:
         image: mysql:5.7.27
         env:
-          # Default password into the databases
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
         ports:
-            # Use a different port to tunnel into the container.
-          - 33306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3 --ssl-mode=DISABLED
+          - 3306/tcp
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
       - name: Checkout
@@ -71,7 +69,7 @@ jobs:
         # Note - use the external container port listed above in the mysql section.
         # Install the 'latest' version of WordPress too.
       - name: Install WP Tests
-        run: bash bin/install-wp-tests.sh wordpress_test root root 127.0.0.1:33306 latest
+        run: bash bin/install-wp-tests.sh wordpress_test root '' 127.0.0.1:33306 latest
 
       - name: PHPUnit tests
         run: phpunit
