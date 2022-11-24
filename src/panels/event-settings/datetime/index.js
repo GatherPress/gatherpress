@@ -50,7 +50,11 @@ export const DateTimeStartSettingPanel = () => (
 			<Dropdown
 				position="bottom left"
 				renderToggle={ ( { isOpen, onToggle } ) => (
-					<Button onClick={ onToggle } aria-expanded={ isOpen } isLink>
+					<Button
+						onClick={ onToggle }
+						aria-expanded={ isOpen }
+						isLink
+					>
 						<DateTimeStartLabel />
 					</Button>
 				) }
@@ -62,7 +66,11 @@ export const DateTimeStartSettingPanel = () => (
 			<Dropdown
 				position="bottom left"
 				renderToggle={ ( { isOpen, onToggle } ) => (
-					<Button onClick={ onToggle } aria-expanded={ isOpen } isLink>
+					<Button
+						onClick={ onToggle }
+						aria-expanded={ isOpen }
+						isLink
+					>
 						<DateTimeEndLabel />
 					</Button>
 				) }

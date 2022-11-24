@@ -33,25 +33,17 @@ const Edit = ( props ) => {
 	const { attributes, setAttributes } = props;
 	const blockProps = useBlockProps();
 	const { topics } = attributes;
-	const {
-		topicsList,
-	} = useSelect(
+	const { topicsList } = useSelect(
 		( select ) => {
 			const { getEntityRecords } = select( coreStore );
 			return {
-				topicsList: getEntityRecords(
-					'taxonomy',
-					'gp_topic',
-					{
-						per_page: -1,
-						context: 'view',
-					},
-				),
+				topicsList: getEntityRecords( 'taxonomy', 'gp_topic', {
+					per_page: -1,
+					context: 'view',
+				} ),
 			};
 		},
-		[
-			topics,
-		],
+		[ topics ]
 	);
 	const excerptMax = 55;
 	const topicSuggestions =
@@ -60,13 +52,13 @@ const Edit = ( props ) => {
 				...accumulator,
 				[ topic.name ]: topic,
 			} ),
-			{},
+			{}
 		) ?? {};
 
 	const selectTopics = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
 			( token ) =>
-				typeof token === 'string' && ! topicSuggestions[ token ],
+				typeof token === 'string' && ! topicSuggestions[ token ]
 		);
 
 		if ( hasNoSuggestion ) {
@@ -86,7 +78,11 @@ const Edit = ( props ) => {
 		setAttributes( { topics: allTopics } );
 	};
 
-	const imageOptions = [ { label: 'Default', value: 'default' }, { label: 'Thumbnail', value: 'thumbnail' }, { label: 'Large', value: 'large' } ];
+	const imageOptions = [
+		{ label: 'Default', value: 'default' },
+		{ label: 'Thumbnail', value: 'thumbnail' },
+		{ label: 'Large', value: 'large' },
+	];
 	return (
 		<div { ...blockProps }>
 			<InspectorControls>
@@ -98,7 +94,7 @@ const Edit = ( props ) => {
 								'block-editor-block-styles__item',
 								{
 									'is-active': 'upcoming' === attributes.type,
-								},
+								}
 							) }
 							variant="secondary"
 							label={ __( 'Upcoming', 'gatherpress' ) }
@@ -121,7 +117,7 @@ const Edit = ( props ) => {
 								'block-editor-block-styles__item',
 								{
 									'is-active': 'past' === attributes.type,
-								},
+								}
 							) }
 							variant="secondary"
 							label={ __( 'Past', 'gatherpress' ) }
@@ -145,7 +141,7 @@ const Edit = ( props ) => {
 					<RangeControl
 						label={ __(
 							'Maximum number of events to display',
-							'gatherpress',
+							'gatherpress'
 						) }
 						min={ 1 }
 						max={ 10 }
@@ -176,29 +172,57 @@ const Edit = ( props ) => {
 						help={
 							attributes.eventOptions.showAttendeeList
 								? __( 'Show Attendee List', 'gatherpress' )
-								: __( 'Do not show Attendee List', 'gatherpress' )
+								: __(
+										'Do not show Attendee List',
+										'gatherpress'
+								  )
 						}
-						checked={ attributes.eventOptions.showAttendeeList ?? true }
+						checked={
+							attributes.eventOptions.showAttendeeList ?? true
+						}
 						onChange={ ( value ) => {
-							setAttributes( { eventOptions: { ...attributes.eventOptions, showAttendeeList: value } } );
+							setAttributes( {
+								eventOptions: {
+									...attributes.eventOptions,
+									showAttendeeList: value,
+								},
+							} );
 						} }
 					/>
 					<SelectControl
 						label={ __( 'Image Size Options', 'gatherpress' ) }
 						value={ attributes.eventOptions.imageSize }
 						options={ imageOptions }
-						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, imageSize: value } } ) }
+						onChange={ ( value ) =>
+							setAttributes( {
+								eventOptions: {
+									...attributes.eventOptions,
+									imageSize: value,
+								},
+							} )
+						}
 					/>
 					<ToggleControl
-						label={ __( 'Show/Hide Featured Image', 'gatherpress' ) }
+						label={ __(
+							'Show/Hide Featured Image',
+							'gatherpress'
+						) }
 						help={
 							attributes.eventOptions.showFeaturedImage
 								? __( 'Show Featured Image', 'gatherpress' )
-								: __( 'Do not show Featured Image', 'gatherpress' )
+								: __(
+										'Do not show Featured Image',
+										'gatherpress'
+								  )
 						}
 						checked={ attributes.eventOptions.showFeaturedImage }
 						onChange={ ( value ) => {
-							setAttributes( { eventOptions: { ...attributes.eventOptions, showFeaturedImage: value } } );
+							setAttributes( {
+								eventOptions: {
+									...attributes.eventOptions,
+									showFeaturedImage: value,
+								},
+							} );
 						} }
 					/>
 					<ToggleControl
@@ -210,15 +234,30 @@ const Edit = ( props ) => {
 						}
 						checked={ attributes.eventOptions.showDescription }
 						onChange={ ( value ) => {
-							setAttributes( { eventOptions: { ...attributes.eventOptions, showDescription: value } } );
+							setAttributes( {
+								eventOptions: {
+									...attributes.eventOptions,
+									showDescription: value,
+								},
+							} );
 						} }
-
 					/>
 					<TextControl
 						label={ __( 'Description Limit' ) }
-						help={ __( 'Limit the amount of words that display underneath the title of the event' ) }
-						value={ parseInt( attributes.eventOptions.descriptionLimit ) }
-						onChange={ ( value ) => setAttributes( { eventOptions: { ...attributes.eventOptions, descriptionLimit: value } } ) }
+						help={ __(
+							'Limit the amount of words that display underneath the title of the event'
+						) }
+						value={ parseInt(
+							attributes.eventOptions.descriptionLimit
+						) }
+						onChange={ ( value ) =>
+							setAttributes( {
+								eventOptions: {
+									...attributes.eventOptions,
+									descriptionLimit: value,
+								},
+							} )
+						}
 						min={ 0 }
 						max={ excerptMax }
 						type="number"
@@ -232,7 +271,12 @@ const Edit = ( props ) => {
 						}
 						checked={ attributes.eventOptions.showRsvpButton }
 						onChange={ ( value ) => {
-							setAttributes( { eventOptions: { ...attributes.eventOptions, showRsvpButton: value } } );
+							setAttributes( {
+								eventOptions: {
+									...attributes.eventOptions,
+									showRsvpButton: value,
+								},
+							} );
 						} }
 					/>
 				</PanelBody>

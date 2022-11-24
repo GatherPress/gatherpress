@@ -15,11 +15,11 @@ const VenuePanel = ( props ) => {
 	const { venue, setVenue } = props;
 	const editPost = useDispatch( 'core/editor' ).editPost;
 	const { unlockPostSaving } = useDispatch( 'core/editor' );
-	const venueTermId = useSelect(
-		( select ) => select( 'core/editor' ).getEditedPostAttribute( '_gp_venue' ),
+	const venueTermId = useSelect( ( select ) =>
+		select( 'core/editor' ).getEditedPostAttribute( '_gp_venue' )
 	);
-	const venueTerm = useSelect(
-		( select ) => select( 'core' ).getEntityRecord( 'taxonomy', '_gp_venue', venueTermId ),
+	const venueTerm = useSelect( ( select ) =>
+		select( 'core' ).getEntityRecord( 'taxonomy', '_gp_venue', venueTermId )
 	);
 	const venueId = venueTerm?.slug.replace( '_venue_', '' );
 	const venueValue = venueTermId + ':' + venueId;
@@ -31,16 +31,15 @@ const VenuePanel = ( props ) => {
 		} );
 	} );
 
-	let venues = useSelect( ( select ) => {
-		return select( 'core' ).getEntityRecords(
-			'taxonomy',
-			'_gp_venue',
-			{
+	let venues = useSelect(
+		( select ) => {
+			return select( 'core' ).getEntityRecords( 'taxonomy', '_gp_venue', {
 				per_page: -1,
 				context: 'view',
-			},
-		);
-	}, [ venue ] );
+			} );
+		},
+		[ venue ]
+	);
 
 	if ( venues ) {
 		venues = venues.map( ( item ) => ( {
@@ -48,7 +47,10 @@ const VenuePanel = ( props ) => {
 			value: item.id + ':' + item.slug.replace( '_venue_', '' ),
 		} ) );
 
-		venues.unshift( { value: ':', label: __( 'Choose a venue', 'gatherpress' ) } );
+		venues.unshift( {
+			value: ':',
+			label: __( 'Choose a venue', 'gatherpress' ),
+		} );
 	} else {
 		venues = [];
 	}
@@ -56,7 +58,7 @@ const VenuePanel = ( props ) => {
 	const updateTerm = ( value ) => {
 		setVenue( value );
 		value = value.split( ':' );
-		const term = ( '' !== value[ 0 ] ) ? [ value[ 0 ] ] : [];
+		const term = '' !== value[ 0 ] ? [ value[ 0 ] ] : [];
 		editPost( { _gp_venue: term } );
 		Broadcaster( {
 			setVenueId: value[ 1 ],
@@ -67,9 +69,7 @@ const VenuePanel = ( props ) => {
 	return (
 		<PanelRow>
 			<Flex>
-				<FlexItem>
-					{ __( 'Venue', 'gatherpress' ) }
-				</FlexItem>
+				<FlexItem>{ __( 'Venue', 'gatherpress' ) }</FlexItem>
 				<FlexItem>
 					<SelectControl
 						label={ __( 'Venue', 'gatherpress' ) }

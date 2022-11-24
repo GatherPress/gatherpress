@@ -4,16 +4,24 @@ const path = require( 'path' );
 module.exports = {
 	...defaultConfig,
 	entry: {
-		blocks_backend: path.resolve( process.cwd(), 'src/blocks', 'backend.js' ),
+		blocks_backend: path.resolve(
+			process.cwd(),
+			'src/blocks',
+			'backend.js'
+		),
 		blocks_frontend: path.resolve(
 			process.cwd(),
 			'src/blocks',
-			'frontend.js',
+			'frontend.js'
 		),
 		blocks_style: path.resolve( process.cwd(), 'src', 'blocks/style.scss' ),
 		panels: path.resolve( process.cwd(), 'src/panels', 'index.js' ),
 		settings: path.resolve( process.cwd(), 'src/settings', 'index.js' ),
-		settings_style: path.resolve( process.cwd(), 'src/settings', 'style.scss' ),
+		settings_style: path.resolve(
+			process.cwd(),
+			'src/settings',
+			'style.scss'
+		),
 	},
 	optimization: {
 		...defaultConfig.optimization,
