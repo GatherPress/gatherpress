@@ -17,7 +17,8 @@
 		"dealerdirect/phpcodesniffer-composer-installer": "*",
 		"wp-coding-standards/wpcs": "*",
 		"phpcompatibility/phpcompatibility-wp": "*",
-		"phpunit/phpunit": "*"
+		"phpunit/phpunit": "*",
+		"yoast/phpunit-polyfills": "*"
 	},
 	"scripts": {
 		"compat": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs --standard=phpcompat.xml.dist --report=summary,source",

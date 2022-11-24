@@ -44,7 +44,7 @@ class Test_Attendee extends Base {
 		$this->assertSame( $post->ID, intval( $data['post_id'] ) );
 		$this->assertSame( $user->ID, intval( $data['user_id'] ) );
 		$this->assertSame( $status, $data['status'] );
-		$this->assertInternalType( 'int', strtotime( $data['timestamp'] ) );
+		$this->assertIsInt( strtotime( $data['timestamp'] ) );
 		$this->assertNotEmpty( $data['id'] );
 	}
 

@@ -52,25 +52,20 @@ jobs:
       - name: Composer install
         run: composer install --optimize-autoloader --prefer-dist
 
-        # Install PHPUnit using the matrix variables above
-      - name: Install PHPUnit
-        run: composer global require "phpunit/phpunit"
+      - name: Use desired version of NodeJS
+        uses: actions/setup-node@8c91899e586c5b171469028077307d293428b516 # v3.5.1
+        with:
+            node-version-file: '.nvmrc'
+            cache: npm
 
-        # Check listing of directory
-        # Also a quick example of multi-commands and the $GITHUB_WORKSPACE variable.
-      - name: list dir
+      - name: NPM install and build
         run: |
-          ls -la
-          ls $GITHUB_WORKSPACE
-        # Run the WordPress PHPUnit install script.
-        # This will install WordPress into /tmp/wordpress
-        # It will create a wordpress_test database using the [root root] credentials
-        # It will connect to the localhost (127.0.0.1) using the port 33306
-        #
-        # Note - use the external container port listed above in the mysql section.
-        # Install the 'latest' version of WordPress too.
-      - name: Install WP Tests
-        run: bash bin/install-wp-tests.sh wordpress_test root '' 127.0.0.1:33306 latest
+            npm ci
+            npm run build
+      - name: Install WordPress
+        run: |
+            npm run wp-env start
 
-      - name: PHPUnit tests
-        run: phpunit
+      - name: Running single site unit tests
+        run: npm run test:unit:php
+        if: ${{ success() || failure() }}
