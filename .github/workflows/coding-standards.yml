@@ -94,9 +94,10 @@ jobs:
           git --version
 
       - name: Install NodeJS
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
-          node-version: 16
+            node-version-file: '.nvmrc'
+            cache: npm
 
       - name: Cache NodeJS modules
         uses: actions/cache@v2
