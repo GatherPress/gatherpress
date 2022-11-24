@@ -64,7 +64,8 @@ jobs:
             npm run build
       - name: Install WordPress
         run: |
-            npm run wp-env start
+            npm i -g @wordpress/env
+            wp-env start
 
       - name: Running single site unit tests
         run: npm run test:unit:php
