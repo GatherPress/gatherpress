@@ -1,6 +1,6 @@
 {
 	"name": "gatherpress",
-	"version": "0.12.0",
+	"version": "0.12.1",
 	"description": "ES6 Assets for GatherPress including Blocks, Filters, and Plugins",
 	"main": "index.js",
 	"scripts": {
@@ -19,7 +19,8 @@
 		"test:e2e": "wp-scripts test-e2e",
 		"test:unit": "wp-scripts test-unit-js",
 		"pretest:unit:php": "wp-env start",
-		"test:unit:php": "wp-env run tests-wordpress /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --verbose"
+		"test:unit:php": "wp-env run tests-wordpress /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --verbose",
+		"wp-env": "wp-env"
 	},
 	"repository": {
 		"type": "git",
@@ -57,5 +58,16 @@
 		"moment": "^2.29.4",
 		"react": "^17.0.2",
 		"react-modal": "^3.15.1"
+	},
+	"wp-env": {
+		"plugin-dir": "gutenberg",
+		"plugin-name": "Gutenberg",
+		"docker-template": "./bin/docker-compose.override.yml.template",
+		"welcome-logo": [
+			"GatherPress"
+		],
+		"welcome-build-command": "npm run dev"
 	}
 }
+
+
