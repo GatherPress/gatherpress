@@ -36,4 +36,4 @@ vendor
 # .wp-env #
 ##########
 wp-core
-
+.phpunit.result.cache

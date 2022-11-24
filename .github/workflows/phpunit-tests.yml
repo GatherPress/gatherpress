@@ -1,0 +1,73 @@
+name: PHPUnit Tests
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/GP-182
+  pull_request:
+
+jobs:
+  test-php:
+    name: ${{ matrix.php_versions }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        php_versions: [ '8.0', '7.4', '7.3' ]
+    env:
+      LOCAL_PHP: ${{ matrix.php_versions }}-fpm
+    services:
+      mysql:
+        image: mysql:5.7.27
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+        ports:
+            # Use a different port to tunnel into the container.
+          - 33306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Install PHP
+      - name: Setup PHP
+        # Using this repo
+        uses: shivammathur/setup-php@v1
+        # And these settings
+        with:
+          php-version: ${{ matrix.php_versions }} # Change the version to install with the matrix variables above.
+          extension-csv: mbstring, intl #optional, setup extensions
+          ini-values-csv: post_max_size=256M, short_open_tag=On #optional, setup php.ini configuration
+          coverage: xdebug #optional, setup coverage driver
+          pecl: false #optional, setup PECL
+
+      # Check PHP is installed.
+      # Weird Note - the next step 'composer install' fails if this PHP Check is not run.
+      - name: Check PHP Version
+        run: php -v
+
+      # Install composer to use your autoloader
+      - name: Composer install
+        run: composer install --optimize-autoloader --prefer-dist
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v2
+        with:
+            node-version-file: '.nvmrc'
+            cache: npm
+
+      - name: NPM install and build
+        run: |
+            npm ci
+            npm run build
+
+      - name: Install WordPress
+        run: |
+            npm i -g @wordpress/env
+            wp-env start
+
+      - name: Running single site unit tests
+        run: npm run test:unit:php
+        if: ${{ success() || failure() }}

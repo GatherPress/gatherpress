@@ -266,17 +266,17 @@ class Test_Event extends Base {
 		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 		$retval = Event::adjust_sql( array(), 'all', 'DESC' );
 
-		$this->assertContains( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
 		$this->assertEmpty( $retval['where'] );
 
 		$retval = Event::adjust_sql( array(), 'past', 'desc' );
 
-		$this->assertContains( 'DESC', $retval['orderby'] );
-		$this->assertContains( "AND {$table}.datetime_end_gmt <", $retval['where'] );
+		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt <", $retval['where'] );
 
 		$retval = Event::adjust_sql( array(), 'upcoming', 'ASC' );
 
-		$this->assertContains( 'ASC', $retval['orderby'] );
-		$this->assertContains( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
+		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
 	}
 }
