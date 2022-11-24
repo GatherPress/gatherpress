@@ -61,7 +61,7 @@ jobs:
           composer --version
 
       - name: NPM Install
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Install WordPress
         run: |
