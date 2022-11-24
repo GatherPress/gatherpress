@@ -96,7 +96,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
             node-version-file: '.nvmrc'
-            cache: npm
 
       - name: Install Dependencies
         run: npm ci
