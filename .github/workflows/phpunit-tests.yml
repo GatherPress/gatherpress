@@ -44,7 +44,7 @@ jobs:
           pecl: false #optional, setup PECL
 
       # Install composer to use your autoloader
-      - name: Composer install
+      - name: Composer Install
         run: composer install --optimize-autoloader --prefer-dist
 
       - name: Install NodeJS
@@ -60,13 +60,13 @@ jobs:
           php --version
           composer --version
 
-      - name: NPM install
+      - name: NPM Install
         run: npm ci
 
       - name: Install WordPress
         run: |
             npm i -g @wordpress/env
-            npm run wp-env start
+            wp-env start
 
       - name: Running single site unit tests
         run: npm run test:unit:php
