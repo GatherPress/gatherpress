@@ -18,7 +18,6 @@
 		"start": "wp-scripts start",
 		"test:e2e": "wp-scripts test-e2e",
 		"test:unit": "wp-scripts test-unit-js",
-		"pretest:unit:php": "wp-env start",
 		"test:unit:php": "wp-env run tests-wordpress /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --verbose",
 		"wp-env": "wp-env"
 	},
