@@ -11,8 +11,10 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 	};
 
 	if ( 'object' === typeof GatherPress ) {
-		// eslint-disable-next-line no-undef
-		for ( const [ key, value ] of Object.entries( GatherPress.attendees ) ) {
+		for ( const [ key, value ] of Object.entries(
+			// eslint-disable-next-line no-undef
+			GatherPress.attendees
+		) ) {
 			defaultCount[ key ] = value.count;
 		}
 	}
@@ -40,9 +42,7 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 	} );
 
 	return (
-		<nav className="gp-attendance-list__navigation">
-			{ renderedItems }
-		</nav>
+		<nav className="gp-attendance-list__navigation">{ renderedItems }</nav>
 	);
 };
 

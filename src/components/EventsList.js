@@ -16,7 +16,14 @@ const EventsList = ( props ) => {
 	const [ events, setEvents ] = useState( [] );
 	const [ loaded, setLoaded ] = useState( false );
 	const renderEvents = events.map( ( event ) => {
-		return <EventItem key={ event.ID } eventOptions={ eventOptions } type={ type } event={ event } />;
+		return (
+			<EventItem
+				key={ event.ID }
+				eventOptions={ eventOptions }
+				type={ type }
+				event={ event }
+			/>
+		);
 	} );
 
 	const renderNoEventsMessage = () => {
@@ -36,9 +43,11 @@ const EventsList = ( props ) => {
 		let topicsString = '';
 
 		if ( 'object' === typeof topics ) {
-			topicsString = topics.map( ( topic ) => {
-				return topic.slug;
-			} )?.join( ',' );
+			topicsString = topics
+				.map( ( topic ) => {
+					return topic.slug;
+				} )
+				?.join( ',' );
 		}
 
 		apiFetch( {

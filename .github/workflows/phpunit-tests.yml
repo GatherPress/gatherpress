@@ -43,25 +43,25 @@ jobs:
           coverage: xdebug #optional, setup coverage driver
           pecl: false #optional, setup PECL
 
-      # Check PHP is installed.
-      # Weird Note - the next step 'composer install' fails if this PHP Check is not run.
-      - name: Check PHP Version
-        run: php -v
-
       # Install composer to use your autoloader
-      - name: Composer install
+      - name: Composer Install
         run: composer install --optimize-autoloader --prefer-dist
 
       - name: Install NodeJS
         uses: actions/setup-node@v2
         with:
-            node-version-file: '.nvmrc'
-            cache: npm
+          node-version-file: '.nvmrc'
 
-      - name: NPM install and build
+      - name: Log debug information
         run: |
-            npm ci
-            npm run build
+          npm --version
+          node --version
+          git --version
+          php --version
+          composer --version
+
+      - name: NPM Install
+        run: npm ci --legacy-peer-deps
 
       - name: Install WordPress
         run: |
