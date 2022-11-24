@@ -95,7 +95,7 @@ jobs:
             node-version-file: '.nvmrc'
 
       - name: NPM install
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Run JSHint
         run: npm run lint:js
