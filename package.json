@@ -1,7 +1,7 @@
 {
 	"name": "gatherpress",
-	"version": "0.12.1",
-	"description": "ES6 Assets for GatherPress including Blocks, Filters, and Plugins",
+	"version": "0.12.2",
+	"description": "Powering Communities with WordPress",
 	"main": "index.js",
 	"scripts": {
 		"build": "wp-scripts build",

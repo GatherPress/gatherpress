@@ -2,10 +2,10 @@
 /**
  * Plugin Name:         GatherPress
  * Plugin URI:          https://gatherpress.org/
- * Description:         GatherPress adds event management and more to WordPress.
+ * Description:         Powering Communities with WordPress.
  * Author:              The GatherPress Community
  * Author URI:          https://gatherpess.org/
- * Version:             0.12.1
+ * Version:             0.12.2
  * Minimum PHP Version: 7.3
  * Text Domain:         gatherpress
  * License:             GPLv2 or later (license.txt)
@@ -31,4 +31,3 @@ require_once GATHERPRESS_CORE_PATH . '/core/classes/class-autoloader.php';
 GatherPress\Core\Autoloader::register();
 GatherPress\Core\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();
-
