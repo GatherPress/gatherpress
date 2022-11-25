@@ -196,7 +196,7 @@ class Event {
 		) {
 			$tz = new \DateTimeZone( $dt['timezone'] );
 		} elseif ( false === $local ) {
-			$tz   = new \DateTimeZone( 'UTC' );
+			$tz = new \DateTimeZone( 'UTC' );
 		}
 
 		if ( ! empty( $date ) ) {
