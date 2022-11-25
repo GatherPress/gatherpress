@@ -8,7 +8,7 @@ import Modal from 'react-modal';
  */
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { ButtonGroup } from '@wordpress/components';
+import { ButtonGroup, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -127,6 +127,17 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 		return __( 'Attend', 'gatherpress' );
 	};
 
+	const getModalLabel = ( status ) => {
+		switch ( status ) {
+			case 'attending':
+				return __( "You're Attending", 'gatherpress' );
+			case 'waiting_list':
+				return __( "You're Wait Listed", 'gatherpress' );
+		}
+
+		return '';
+	};
+
 	const onSpanKeyDown = ( e ) => {
 		if ( 13 === e.keyCode ) {
 			setSelectorHidden(
@@ -181,7 +192,11 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 				>
 					<div className="gp-modal gp-modal__attendance-selector">
 						<div className="gp-modal__header has-large-font-size">
-							{ __( 'Edit RSVP', 'gatherpress' ) }
+							{ getModalLabel( attendanceStatus ) ? (
+								getModalLabel( attendanceStatus )
+							) : (
+								<Spinner />
+							) }
 						</div>
 						<div className="gp-modal__content">
 							<label htmlFor="gp-guests">
