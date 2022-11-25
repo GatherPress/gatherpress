@@ -189,16 +189,14 @@ class Event {
 		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$tz   = null;
 
-		if ( true === $local && ! empty( $dt['timezone'] ) ) {
-			try {
-				$tz = new \DateTimeZone( $dt['timezone'] );
-			} catch ( Exception $e ) {
-				$tz = wp_timezone_string();
-
-				if ( ! preg_match( '/^-|\+/', $tz ) ) {
-					$tz = date_default_timezone_get();
-				}
-			}
+		if (
+			true === $local
+			&& ! empty( $dt['timezone'] )
+			&& in_array( $dt['timezone'], \DateTimeZone::listIdentifiers(), true )
+		) {
+			$tz = new \DateTimeZone( $dt['timezone'] );
+		} elseif ( false === $local ) {
+			$tz   = new \DateTimeZone( 'UTC' );
 		}
 
 		if ( ! empty( $date ) ) {
