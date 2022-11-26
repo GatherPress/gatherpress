@@ -18,7 +18,9 @@ const autocompleteContainers = document.querySelectorAll(
 );
 
 for ( let i = 0; i < autocompleteContainers.length; i++ ) {
-	const attrs = JSON.parse( autocompleteContainers[ i ].dataset.gp_component_attrs );
+	const attrs = JSON.parse(
+		autocompleteContainers[ i ].dataset.gp_component_attrs
+	);
 
 	render( <Autocomplete attrs={ attrs } />, autocompleteContainers[ i ] );
 }

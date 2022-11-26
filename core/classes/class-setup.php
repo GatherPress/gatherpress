@@ -482,7 +482,15 @@ class Setup {
 		return $event->get_display_datetime();
 	}
 
-	public function set_event_archive_labels( $post_states, $post ) {
+	/**
+	 * Add Upcoming and Past Events display states to assigned pages.
+	 *
+	 * @param array    $post_states An array of post display states.
+	 * @param \WP_Post $post        The current post object.
+	 *
+	 * @return array
+	 */
+	public function set_event_archive_labels( array $post_states, \WP_Post $post ) {
 		$general = get_option( Utility::prefix_key( 'general' ) );
 		$pages   = $general['pages'];
 
@@ -491,7 +499,7 @@ class Setup {
 		}
 
 		$archive_pages = array(
-			'past_events' => json_decode( $pages['past_events'] ),
+			'past_events'     => json_decode( $pages['past_events'] ),
 			'upcoming_events' => json_decode( $pages['upcoming_events' ] ),
 		);
 
@@ -500,13 +508,12 @@ class Setup {
 				$page = $value[0];
 
 				if ( $page->id === $post->ID ) {
-					$post_states[ sprintf( 'gp_%s', $page->slug ) ] = sprintf( 'GP %s', $page->value );
+					$post_states[ sprintf( 'gp_%s', $key ) ] = sprintf( 'GP %s', $page->value );
 				}
 			}
 		}
 
 		return $post_states;
-
 	}
 
 }

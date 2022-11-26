@@ -34,7 +34,7 @@ class Query {
 	 */
 	protected function setup_hooks() {
 		// @todo this will be handled by blocks
-		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ), 99 );
+		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
 		add_filter( 'posts_clauses', array( $this, 'admin_order_events' ) );
 	}
 

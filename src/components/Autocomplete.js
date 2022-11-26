@@ -18,7 +18,8 @@ const Autocomplete = ( props ) => {
 	const { contentList } = useSelect(
 		( select ) => {
 			const { getEntityRecords } = select( coreStore );
-			const entityType = ( 'user' !== fieldOptions.type ) ? 'postType' : 'root';
+			const entityType =
+				'user' !== fieldOptions.type ? 'postType' : 'root';
 			const kind = fieldOptions.type || 'post';
 			return {
 				contentList: getEntityRecords( entityType, kind, {
@@ -32,16 +33,17 @@ const Autocomplete = ( props ) => {
 
 	const contentSuggestions =
 		contentList?.reduce(
-			( accumulator, content ) => ( {
+			( accumulator, item ) => ( {
 				...accumulator,
-				[ content.title?.rendered || content.name ]: content,
+				[ item.title?.rendered || item.name ]: item,
 			} ),
 			{}
 		) ?? {};
 
 	const selectContent = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			( token ) => typeof token === 'string' && ! contentSuggestions[ token ]
+			( token ) =>
+				typeof token === 'string' && ! contentSuggestions[ token ]
 		);
 
 		if ( hasNoSuggestion ) {
@@ -49,7 +51,9 @@ const Autocomplete = ( props ) => {
 		}
 
 		const allContent = tokens.map( ( token ) => {
-			return typeof token === 'string' ? contentSuggestions[ token ] : token;
+			return typeof token === 'string'
+				? contentSuggestions[ token ]
+				: token;
 		} );
 
 		if ( includes( allContent, null ) ) {
@@ -63,7 +67,9 @@ const Autocomplete = ( props ) => {
 		<>
 			<FormTokenField
 				key={ option }
-				label={ fieldOptions.label || __( 'Select Posts', 'gatherpress' ) }
+				label={
+					fieldOptions.label || __( 'Select Posts', 'gatherpress' )
+				}
 				name={ name }
 				value={
 					content &&
@@ -88,7 +94,8 @@ const Autocomplete = ( props ) => {
 						content.map( ( item ) => ( {
 							id: item.id,
 							slug: item.slug,
-							value: item.title?.rendered || item.name || item.value,
+							value:
+								item.title?.rendered || item.name || item.value,
 						} ) )
 					)
 				}
