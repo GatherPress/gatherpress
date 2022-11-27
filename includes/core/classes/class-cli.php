@@ -48,9 +48,9 @@ class CLI extends WP_CLI {
 	 * @return void
 	 */
 	public function generate_credits( array $args = array(), array $assoc_args = array() ) {
-		$credits = require_once GATHERPRESS_CORE_PATH . '/data/credits/credits.php';
+		$credits = require_once GATHERPRESS_CORE_PATH . '/includes/data/credits/credits.php';
 		$version = $assoc_args['version'] ?? GATHERPRESS_VERSION;
-		$latest  = GATHERPRESS_CORE_PATH . '/data/credits/latest.php';
+		$latest  = GATHERPRESS_CORE_PATH . '/includes/data/credits/latest.php';
 		$data    = array();
 
 		if ( empty( $credits[ $version ] ) ) {
