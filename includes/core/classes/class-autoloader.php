@@ -39,7 +39,7 @@ class Autoloader {
 
 				array_pop( $structure );
 				array_unshift( $structure, 'includes' );
-				$foo = $structure[1] === 'buddypress';
+
 				switch ( $class_type ) {
 					case 'traits':
 						array_pop( $structure );
