@@ -222,7 +222,7 @@ class Event {
 			'datetime_start_gmt' => '',
 			'datetime_end'       => '',
 			'datetime_end_gmt'   => '',
-			'timezone'           => '',
+			'timezone'           => sanitize_text_field( wp_timezone_string() ),
 		);
 		$data    = array();
 
