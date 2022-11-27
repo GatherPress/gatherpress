@@ -9,7 +9,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
  * Internal dependencies.
  */
 import { isEventPostType } from '../helpers';
-import { DateTimeStartSettingPanel } from './datetime';
+import DateTimePanel from './datetime';
 import VenuePanel from './venue';
 // import { OptionsPanel } from './options';
 import { useState } from '@wordpress/element';
@@ -25,7 +25,7 @@ const EventSettings = () => {
 				initialOpen={ true }
 				className="gp-event-settings"
 			>
-				<DateTimeStartSettingPanel />
+				<DateTimePanel />
 				<hr />
 				<VenuePanel venue={ venue } setVenue={ setVenue } />
 				{ /*<hr />*/ }
