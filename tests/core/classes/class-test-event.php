@@ -254,9 +254,9 @@ class Test_Event extends Base {
 	}
 
 	/**
-	 * Coverage for adjust_event_sql method.
+	 * Coverage for adjust_sql method.
 	 *
-	 * @covers ::adjust_event_sql
+	 * @covers ::adjust_sql
 	 *
 	 * @return void
 	 */

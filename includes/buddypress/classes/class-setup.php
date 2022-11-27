@@ -68,7 +68,7 @@ class Setup {
 		);
 
 		echo Utility::render_template( //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			GATHERPRESS_CORE_PATH . '/templates/buddypress/email/event-notification-settings.php',
+			GATHERPRESS_CORE_PATH . '/includes/templates/buddypress/email/event-notification-settings.php',
 			$args
 		);
 	}

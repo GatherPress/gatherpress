@@ -48,9 +48,9 @@ class CLI extends WP_CLI {
 	 * @return void
 	 */
 	public function generate_credits( array $args = array(), array $assoc_args = array() ) {
-		$credits = require_once GATHERPRESS_CORE_PATH . '/data/credits/credits.php';
+		$credits = require_once GATHERPRESS_CORE_PATH . '/includes/data/credits/credits.php';
 		$version = $assoc_args['version'] ?? GATHERPRESS_VERSION;
-		$latest  = GATHERPRESS_CORE_PATH . '/data/credits/latest.php';
+		$latest  = GATHERPRESS_CORE_PATH . '/includes/data/credits/latest.php';
 		$data    = array();
 
 		if ( empty( $credits[ $version ] ) ) {
@@ -64,8 +64,13 @@ class CLI extends WP_CLI {
 			$data[ $group ] = array();
 
 			foreach ( $users as $user ) {
-				$response         = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
-				$data[ $group ][] = json_decode( $response['body'], true );
+				$response  = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
+				$user_data = json_decode( $response['body'], true );
+
+				// Remove unsecure data (eg http) and data we do not need.
+				unset( $user_data['description'], $user_data['url'], $user_data['meta'], $user_data['_links'] );
+
+				$data[ $group ][] = $user_data;
 			}
 		}
 		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export

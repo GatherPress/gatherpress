@@ -115,6 +115,70 @@ class Query {
 	public function pre_get_posts( $query ) {
 		$events_query = $query->get( 'gp_events_query' );
 
+		if ( ! is_admin() && $query->is_main_query() ) {
+			$general = get_option( Utility::prefix_key( 'general' ) );
+
+			if ( ! is_array( $general ) ) {
+				return;
+			}
+
+			$pages = $general['pages'];
+
+			if ( empty( $pages ) || ! is_array( $pages ) ) {
+				return;
+			}
+
+			$archive_pages = array(
+				'past'     => json_decode( $pages['past_events'] ),
+				'upcoming' => json_decode( $pages['upcoming_events'] ),
+			);
+
+			foreach ( $archive_pages as $key => $value ) {
+				if ( ! empty( $value ) && is_array( $value ) ) {
+					$page = $value[0];
+					if ( $page->id === $query->queried_object_id ) {
+						$query->set( 'post_type', 'gp_event' );
+
+						$page_id                     = $query->queried_object_id;
+						$events_query                = $key;
+						$query->is_page              = false;
+						$query->is_singular          = false;
+						$query->is_archive           = true;
+						$query->is_post_type_archive = array( Event::POST_TYPE );
+
+						// This will force a page to behave like an archive page. Use -1 as that is not a valid ID.
+						$query->queried_object_id = '-1';
+
+						// Option adjustments for page_for_posts and show_on_front to force archive page.
+						add_filter(
+							'pre_option',
+							function( $pre, $option ) {
+								if ( 'page_for_posts' === $option ) {
+									return '-1';
+								}
+
+								if ( 'show_on_front' === $option ) {
+									return 'page';
+								}
+
+								return $pre;
+							},
+							10,
+							2
+						);
+
+						// Pass original page title as archive title.
+						add_filter(
+							'get_the_archive_title',
+							function() use ( $page_id ) {
+								return get_the_title( $page_id );
+							}
+						);
+					}
+				}
+			}
+		}
+
 		switch ( $events_query ) {
 			case 'upcoming':
 				remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
