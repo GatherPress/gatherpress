@@ -50,7 +50,9 @@ jobs:
             wp-env start
 
       - name: Running PHPUnit Tests
-        run: npm run test:unit:php
+        run: |
+          php --version
+          npm run test:unit:php
         if: ${{ success() || failure() }}
 
       - name: Fix Code Coverage Paths
