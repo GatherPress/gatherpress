@@ -102,7 +102,7 @@ class Test_Event extends Base {
 				'datetime_start_gmt' => '',
 				'datetime_end'       => '',
 				'datetime_end_gmt'   => '',
-				'timezone'           => '',
+				'timezone'           => '+00:00',
 			),
 			$event->get_datetime()
 		);
@@ -122,7 +122,7 @@ class Test_Event extends Base {
 				'datetime_start_gmt' => '',
 				'datetime_end'       => '',
 				'datetime_end_gmt'   => '',
-				'timezone'           => '',
+				'timezone'           => '+00:00',
 			),
 			$event->get_datetime()
 		);
