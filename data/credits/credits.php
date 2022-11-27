@@ -8,12 +8,12 @@
  */
 
 return array(
-	'0.10' => array(
+	'0.10.0' => array(
 		'project-leads'    => array( 'mauteri', 'hrmervin' ),
 		'gatherpress-team' => array( 'pbrocks', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett', 'jmarx' ),
 		'contributors'     => array( 'hauvong' ),
 	),
-	'0.4'  => array(
+	'0.4.0'  => array(
 		'project-leads'    => array( 'mauteri', 'hrmervin' ),
 		'gatherpress-team' => array( 'pbrocks', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett' ),
 		'contributors'     => array( 'hauvong' ),

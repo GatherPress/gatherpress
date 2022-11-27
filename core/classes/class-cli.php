@@ -64,8 +64,13 @@ class CLI extends WP_CLI {
 			$data[ $group ] = array();
 
 			foreach ( $users as $user ) {
-				$response         = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
-				$data[ $group ][] = json_decode( $response['body'], true );
+				$response  = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
+				$user_data = json_decode( $response['body'], true );
+
+				// Remove unsecure data (eg http) and data we do not need.
+				unset( $user_data['description'], $user_data['url'], $user_data['meta'], $user_data['_links'] );
+
+				$data[ $group ][] = $user_data;
 			}
 		}
 		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
