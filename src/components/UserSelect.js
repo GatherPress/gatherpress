@@ -15,25 +15,17 @@ import { useSelect } from '@wordpress/data';
 const UserSelect = ( props ) => {
 	const { name, option, value } = props.attrs;
 	const [ users, setUsers ] = useState( JSON.parse( value ) ?? '[]' );
-	const {
-		usersList,
-	} = useSelect(
+	const { usersList } = useSelect(
 		( select ) => {
 			const { getEntityRecords } = select( coreStore );
 			return {
-				usersList: getEntityRecords(
-					'root',
-					'user',
-					{
-						per_page: -1,
-						context: 'view',
-					},
-				),
+				usersList: getEntityRecords( 'root', 'user', {
+					per_page: -1,
+					context: 'view',
+				} ),
 			};
 		},
-		[
-			users,
-		],
+		[ users ]
 	);
 
 	const userSuggestions =
@@ -42,13 +34,12 @@ const UserSelect = ( props ) => {
 				...accumulator,
 				[ user.name ]: user,
 			} ),
-			{},
+			{}
 		) ?? {};
 
 	const selectUsers = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			( token ) =>
-				typeof token === 'string' && ! userSuggestions[ token ],
+			( token ) => typeof token === 'string' && ! userSuggestions[ token ]
 		);
 
 		if ( hasNoSuggestion ) {
@@ -56,9 +47,7 @@ const UserSelect = ( props ) => {
 		}
 
 		const allUsers = tokens.map( ( token ) => {
-			return typeof token === 'string'
-				? userSuggestions[ token ]
-				: token;
+			return typeof token === 'string' ? userSuggestions[ token ] : token;
 		} );
 
 		if ( includes( allUsers, null ) ) {
@@ -92,11 +81,13 @@ const UserSelect = ( props ) => {
 				name={ name }
 				value={
 					users &&
-					JSON.stringify( users.map( ( item ) => ( {
-						id: item.id,
-						slug: item.slug,
-						value: item.name || item.value,
-					} ) ) )
+					JSON.stringify(
+						users.map( ( item ) => ( {
+							id: item.id,
+							slug: item.slug,
+							value: item.name || item.value,
+						} ) )
+					)
 				}
 			/>
 		</>

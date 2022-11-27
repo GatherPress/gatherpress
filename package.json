@@ -1,7 +1,7 @@
 {
 	"name": "gatherpress",
-	"version": "1.0.0",
-	"description": "ES6 Assets for GatherPress including Blocks, Filters, and Plugins",
+	"version": "0.12.2",
+	"description": "Powering Communities with WordPress",
 	"main": "index.js",
 	"scripts": {
 		"build": "wp-scripts build",
@@ -17,7 +17,10 @@
 		"packages-update": "wp-scripts packages-update",
 		"start": "wp-scripts start",
 		"test:e2e": "wp-scripts test-e2e",
-		"test:unit": "wp-scripts test-unit-js"
+		"test:unit": "wp-scripts test-unit-js",
+		"plugin-zip": "wp-scripts plugin-zip",
+		"pretest:unit:php": "wp-env start --xdebug",
+		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --verbose"
 	},
 	"repository": {
 		"type": "git",
@@ -57,3 +60,5 @@
 		"react-modal": "^3.15.1"
 	}
 }
+
+
