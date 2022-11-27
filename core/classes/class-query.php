@@ -117,6 +117,11 @@ class Query {
 
 		if ( ! is_admin() && $query->is_main_query() ) {
 			$general = get_option( Utility::prefix_key( 'general' ) );
+
+			if ( ! is_array( $general ) ) {
+				return;
+			}
+
 			$pages   = $general['pages'];
 
 			if ( empty( $pages ) || ! is_array( $pages ) ) {
