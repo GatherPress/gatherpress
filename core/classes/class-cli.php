@@ -64,7 +64,7 @@ class CLI extends WP_CLI {
 			$data[ $group ] = array();
 
 			foreach ( $users as $user ) {
-				$response         = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
+				$response  = wp_remote_request( sprintf( 'https://profiles.wordpress.org/wp-json/wporg/v1/users/%s', $user ) );
 				$user_data = json_decode( $response['body'], true );
 
 				// Remove unsecure data (eg http) and data we do not need.
