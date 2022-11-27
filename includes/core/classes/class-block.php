@@ -86,7 +86,7 @@ class Block {
 
 		if ( in_array( $block_name, $this->react_blocks, true ) ) {
 			return Utility::render_template(
-				sprintf( '%s/templates/blocks/react-block.php', GATHERPRESS_CORE_PATH ),
+				sprintf( '%s/includes/templates/blocks/react-block.php', GATHERPRESS_CORE_PATH ),
 				array(
 					'gatherpress_block_name'  => $block_name,
 					'gatherpress_block_attrs' => $block['attrs'] ?? array(),
@@ -94,7 +94,7 @@ class Block {
 			);
 		} elseif ( in_array( $block_name, $this->static_blocks, true ) ) {
 			return Utility::render_template(
-				sprintf( '%s/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name ),
+				sprintf( '%s/includes/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name ),
 				array(
 					'gatherpress_block_attrs' => $block['attrs'] ?? array(),
 				)

@@ -41,9 +41,6 @@ jobs:
           php --version
           composer --version
 
-      - name: NPM Install
-        run: npm ci --legacy-peer-deps
-
       - name: Install WordPress
         run: |
             npm i -g @wordpress/env
@@ -53,11 +50,12 @@ jobs:
         run: |
           php --version
           npm run test:unit:php
-          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
+# docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
         if: ${{ success() || failure() }}
 
-      - name: Fix Code Coverage Paths
-        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+# Need to look into this...
+#      - name: Fix Code Coverage Paths
+#        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master

@@ -12,6 +12,12 @@ import { useEffect } from '@wordpress/element';
 import { Broadcaster } from '../../../helpers/broadcasting';
 import { DateTimeStartLabel, DateTimeEndLabel } from '../../../components/DateTime';
 
+const currentDateTime = moment()
+	.add( 1, 'day' )
+	.set( 'hour', 18 )
+	.set( 'minute', 0 )
+	.format( dateTimeFormat );
+
 const DateTimePanel = ( props ) => {
 	return (
 		<section>
