@@ -60,6 +60,7 @@ class Setup {
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
+
 		add_filter( 'block_categories_all', array( $this, 'block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
 		add_filter( sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ), array( $this, 'set_custom_columns' ) );
@@ -67,6 +68,7 @@ class Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
+		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 	}
 
 	/**
@@ -186,6 +188,7 @@ class Setup {
 				'supports'      => array(
 					'title',
 					'editor',
+					'excerpt',
 					'thumbnail',
 					'comments',
 					'revisions',
@@ -477,6 +480,40 @@ class Setup {
 		$event = new Event( $post->ID );
 
 		return $event->get_display_datetime();
+	}
+
+	/**
+	 * Add Upcoming and Past Events display states to assigned pages.
+	 *
+	 * @param array    $post_states An array of post display states.
+	 * @param \WP_Post $post        The current post object.
+	 *
+	 * @return array
+	 */
+	public function set_event_archive_labels( array $post_states, \WP_Post $post ) {
+		$general = get_option( Utility::prefix_key( 'general' ) );
+		$pages   = $general['pages'];
+
+		if ( empty( $pages ) || ! is_array( $pages ) ) {
+			return $post_states;
+		}
+
+		$archive_pages = array(
+			'past_events'     => json_decode( $pages['past_events'] ),
+			'upcoming_events' => json_decode( $pages['upcoming_events'] ),
+		);
+
+		foreach ( $archive_pages as $key => $value ) {
+			if ( ! empty( $value ) && is_array( $value ) ) {
+				$page = $value[0];
+
+				if ( $page->id === $post->ID ) {
+					$post_states[ sprintf( 'gp_%s', $key ) ] = sprintf( 'GP %s', $page->value );
+				}
+			}
+		}
+
+		return $post_states;
 	}
 
 }
