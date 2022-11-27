@@ -119,13 +119,13 @@ class Query {
 			$general = get_option( Utility::prefix_key( 'general' ) );
 			$pages   = $general['pages'];
 
-			if ( empty( $pages ) || ! is_array( $pages) ) {
+			if ( empty( $pages ) || ! is_array( $pages ) ) {
 				return;
 			}
 
 			$archive_pages = array(
 				'past'     => json_decode( $pages['past_events'] ),
-				'upcoming' => json_decode( $pages['upcoming_events' ] ),
+				'upcoming' => json_decode( $pages['upcoming_events'] ),
 			);
 
 			foreach ( $archive_pages as $key => $value ) {
@@ -145,22 +145,30 @@ class Query {
 						$query->queried_object_id = '-1';
 
 						// Option adjustments for page_for_posts and show_on_front to force archive page.
-						add_filter( 'pre_option', function( $pre, $option ) {
-							if ( 'page_for_posts' === $option ) {
-								return '-1';
-							}
+						add_filter(
+							'pre_option',
+							function( $pre, $option ) {
+								if ( 'page_for_posts' === $option ) {
+									return '-1';
+								}
 
-							if ( 'show_on_front' === $option ) {
-								return 'page';
-							}
+								if ( 'show_on_front' === $option ) {
+									return 'page';
+								}
 
-							return $pre;
-						}, 10, 2 );
+								return $pre;
+							},
+							10,
+							2
+						);
 
 						// Pass original page title as archive title.
-						add_filter( 'get_the_archive_title', function() use ( $page_id ) {
-							return get_the_title( $page_id );
-						} );
+						add_filter(
+							'get_the_archive_title',
+							function() use ( $page_id ) {
+								return get_the_title( $page_id );
+							}
+						);
 					}
 				}
 			}

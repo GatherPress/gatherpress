@@ -223,7 +223,7 @@ class Settings {
 				'option'        => Utility::prefix_key( $option ),
 				'value'         => $value,
 				'description'   => $option_settings['description'] ?? '',
-				'field_options' => $option_settings['field']['options'] ?? [],
+				'field_options' => $option_settings['field']['options'] ?? array(),
 			),
 			true
 		);
@@ -357,21 +357,21 @@ class Settings {
 									'name' => __( 'Upcoming Events', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type' => 'autocomplete',
-									'options'   => array(
+									'type'    => 'autocomplete',
+									'options' => array(
 										'type'  => 'page',
 										'label' => __( 'Select Page', 'gatherpress' ),
 										'limit' => 1,
 									),
 								),
 							),
-							'past_events' => array(
+							'past_events'     => array(
 								'labels' => array(
 									'name' => __( 'Past Events', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type' => 'autocomplete',
-									'options'   => array(
+									'type'    => 'autocomplete',
+									'options' => array(
 										'type'  => 'page',
 										'label' => __( 'Select Page', 'gatherpress' ),
 										'limit' => 1,
@@ -397,8 +397,8 @@ class Settings {
 									'plural_name'   => __( 'Organizers', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type' => 'autocomplete',
-									'options'   => array(
+									'type'    => 'autocomplete',
+									'options' => array(
 										'type'  => 'user',
 										'label' => __( 'Select Users', 'gatherpress' ),
 									),
@@ -411,8 +411,8 @@ class Settings {
 									'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type' => 'autocomplete',
-									'options'   => array(
+									'type'    => 'autocomplete',
+									'options' => array(
 										'type'  => 'user',
 										'label' => __( 'Select Users', 'gatherpress' ),
 									),
@@ -425,8 +425,8 @@ class Settings {
 									'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type' => 'autocomplete',
-									'options'   => array(
+									'type'    => 'autocomplete',
+									'options' => array(
 										'type'  => 'user',
 										'label' => __( 'Select Users', 'gatherpress' ),
 									),
@@ -439,8 +439,8 @@ class Settings {
 									'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type' => 'autocomplete',
-									'options'   => array(
+									'type'    => 'autocomplete',
+									'options' => array(
 										'type'  => 'user',
 										'label' => __( 'Select Users', 'gatherpress' ),
 									),
@@ -469,7 +469,7 @@ class Settings {
 								),
 								'field'  => array(
 									'type' => 'credits',
-								)
+								),
 							),
 							'gatherpress-team' => array(
 								'labels' => array(
@@ -477,7 +477,7 @@ class Settings {
 								),
 								'field'  => array(
 									'type' => 'credits',
-								)
+								),
 							),
 							'contributors'     => array(
 								'labels' => array(
@@ -485,7 +485,7 @@ class Settings {
 								),
 								'field'  => array(
 									'type' => 'credits',
-								)
+								),
 							),
 						),
 					),

@@ -494,13 +494,13 @@ class Setup {
 		$general = get_option( Utility::prefix_key( 'general' ) );
 		$pages   = $general['pages'];
 
-		if ( empty( $pages ) || ! is_array( $pages) ) {
+		if ( empty( $pages ) || ! is_array( $pages ) ) {
 			return $post_states;
 		}
 
 		$archive_pages = array(
 			'past_events'     => json_decode( $pages['past_events'] ),
-			'upcoming_events' => json_decode( $pages['upcoming_events' ] ),
+			'upcoming_events' => json_decode( $pages['upcoming_events'] ),
 		);
 
 		foreach ( $archive_pages as $key => $value ) {
