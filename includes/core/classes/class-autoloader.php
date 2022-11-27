@@ -38,6 +38,7 @@ class Autoloader {
 				$class_type = $structure[ count( $structure ) - 2 ];
 
 				array_pop( $structure );
+				array_unshift( $structure, 'includes' );
 
 				switch ( $class_type ) {
 					case 'traits':

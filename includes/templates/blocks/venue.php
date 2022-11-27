@@ -25,7 +25,7 @@ $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue-
 <div class="gp-venue">
 	<?php
 	Utility::render_template(
-		sprintf( '%s/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),
+		sprintf( '%s/includes/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),
 		array(
 			'gatherpress_block_attrs' => array(
 				'name'        => $gatherpress_venue->post_title,
