@@ -186,7 +186,7 @@ class Settings {
 		$value   = $this->get_value( $sub_page, $section, $option, $default );
 
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'name'        => $name,
 				'option'      => Utility::prefix_key( $option ),
@@ -213,7 +213,7 @@ class Settings {
 		$value   = $this->get_value( $sub_page, $section, $option, $default );
 
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings/fields/user-select.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/fields/user-select.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'name'        => $name,
 				'option'      => Utility::prefix_key( $option ),
@@ -235,10 +235,10 @@ class Settings {
 	 * @return void
 	 */
 	public function credits( string $sub_page, string $section, string $option, array $option_settings ) {
-		$credits = include sprintf( '%s/data/credits/latest.php', GATHERPRESS_CORE_PATH );
+		$credits = include sprintf( '%s/includes/data/credits/latest.php', GATHERPRESS_CORE_PATH );
 
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'option'  => $option,
 				'credits' => $credits[ $option ],
@@ -511,7 +511,7 @@ class Settings {
 	 */
 	public function settings_page() {
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings/index.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/index.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'sub_pages' => $this->get_sub_pages(),
 				'page'      => $this->page,
