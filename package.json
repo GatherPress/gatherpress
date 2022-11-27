@@ -15,11 +15,12 @@
 		"lint:md:js": "wp-scripts lint-md-js",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
+		"plugin-zip": "wp-scripts plugin-zip",
 		"start": "wp-scripts start",
 		"test:e2e": "wp-scripts test-e2e",
 		"test:unit": "wp-scripts test-unit-js",
-		"pretest:unit:php": "wp-env start",
-		"test:unit:php": "wp-env run tests-wordpress /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --verbose"
+		"pretest:unit:php": "wp-env start --xdebug",
+		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --verbose"
 	},
 	"repository": {
 		"type": "git",
@@ -59,5 +60,3 @@
 		"react-modal": "^3.15.1"
 	}
 }
-
-
