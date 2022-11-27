@@ -52,7 +52,7 @@ class Email {
 		);
 		$emails       = $this->email_get_schema();
 		$descriptions = $this->email_get_type_schema( 'description' );
-		$cache_key    = md5( wp_json_encode( $emails ) ) . md5( wp_json_encode( $descriptions ) );
+		$cache_key    = hash( 'sha512', wp_json_encode( $emails ) . wp_json_encode( $descriptions ) );
 
 		if ( $templates['cache_key'] === $cache_key ) {
 			return;

@@ -72,7 +72,7 @@ if (
 					</div>
 					<div class="gp-venue-information__text">
 						<div class="gp-venue-information__website">
-							<a href="<?php echo esc_url( $gatherpress_block_attrs['website'] ); ?>" target="_blank">
+							<a href="<?php echo esc_url( $gatherpress_block_attrs['website'] ); ?>" target="_blank" rel="noopener">
 								<?php echo esc_html( $gatherpress_block_attrs['website'] ); ?>
 							</a>
 						</div>
