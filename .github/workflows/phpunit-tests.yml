@@ -15,35 +15,16 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
         php_versions: [ '8.0', '7.4', '7.3' ]
-    env:
-      LOCAL_PHP: ${{ matrix.php_versions }}-fpm
-    services:
-      mysql:
-        image: mysql:5.7.27
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
-        ports:
-            # Use a different port to tunnel into the container.
-          - 33306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      # Install PHP
       - name: Setup PHP
-        # Using this repo
-        uses: shivammathur/setup-php@v1
-        # And these settings
+        uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php_versions }} # Change the version to install with the matrix variables above.
-          extension-csv: mbstring, intl #optional, setup extensions
-          ini-values-csv: post_max_size=256M, short_open_tag=On #optional, setup php.ini configuration
-          coverage: xdebug #optional, setup coverage driver
-          pecl: false #optional, setup PECL
+          php-version: ${{ matrix.php_versions }}
+          coverage: xdebug
 
-      # Install composer to use your autoloader
       - name: Composer Install
         run: composer install --optimize-autoloader --prefer-dist
 
@@ -68,6 +49,18 @@ jobs:
             npm i -g @wordpress/env
             wp-env start
 
-      - name: Running single site unit tests
-        run: npm run test:unit:php
+      - name: Running PHPUnit Tests
+        run: |
+          php --version
+          npm run test:unit:php
+          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
         if: ${{ success() || failure() }}
+
+      - name: Fix Code Coverage Paths
+        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
