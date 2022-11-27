@@ -19,7 +19,7 @@ import { DateTimeStartLabel } from './datetime-start/label';
 import { DateTimeEnd } from './datetime-end';
 import { DateTimeEndLabel } from './datetime-end/label';
 
-const currentDateTime = moment().format( dateTimeFormat );
+const currentDateTime = moment().add(1, 'day').set('hour', 18).set('minute', 0).format( dateTimeFormat );
 
 // eslint-disable-next-line no-undef
 let dateTimeStart = GatherPress.event_datetime.datetime_start;
@@ -30,7 +30,7 @@ subscribe( saveDateTime );
 
 dateTimeStart =
 	'' !== dateTimeStart
-		? moment( dateTimeStart ).format( dateTimeFormat )
+	? moment(dateTimeStart).format( dateTimeFormat )
 		: currentDateTime;
 dateTimeEnd =
 	'' !== dateTimeEnd
