@@ -52,8 +52,8 @@ jobs:
       - name: Running PHPUnit Tests
         run: |
           php --version
-          npm run test:unit:php
-          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
+          wp-env run tests-wordpress-${{ php --version }} php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --verbose
+          docker cp $(docker ps -aqf "name=tests-wordpress--${{ php --version }}"):/var/www/html/coverage.xml coverage.xml
         if: ${{ success() || failure() }}
 
       - name: Fix Code Coverage Paths
