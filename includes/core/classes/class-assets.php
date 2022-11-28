@@ -57,7 +57,7 @@ class Assets {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
-		//The 9 priority must be used so the global object loads before the build scripts
+		// The 9 priority must be used so the global object loads before the build scripts.
 		add_action( 'enqueue_block_editor_assets', array( $this, 'add_global_object' ), 9 );
 		add_action( 'enqueue_block_assets', array( $this, 'add_global_object' ), 9 );
 	}
@@ -69,7 +69,7 @@ class Assets {
 		$post_id = get_the_ID() ?? 0;
 		?>
 		<script>
-		var GatherPress = <?php echo json_encode($this->localize( $post_id )); ?>
+		var GatherPress = <?php echo wp_json_encode( $this->localize( $post_id ) ); ?>
 		</script>
 		<?php
 	}
@@ -100,7 +100,6 @@ class Assets {
 			$asset['version'],
 			true
 		);
-
 	}
 
 	/**
