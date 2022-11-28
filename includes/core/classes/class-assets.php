@@ -180,7 +180,7 @@ class Assets {
 			$this->build . 'blocks_backend.js',
 			$asset['dependencies'],
 			$asset['version'],
-			false
+			true
 		);
 	}
 
