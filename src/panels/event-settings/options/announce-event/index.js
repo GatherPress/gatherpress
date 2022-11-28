@@ -20,8 +20,8 @@ export class AnnounceEvent extends Component {
 			global.confirm(
 				__(
 					'Ready to announce this event to all members?',
-					'gatherpress',
-				),
+					'gatherpress'
+				)
 			)
 		) {
 			apiFetch( {

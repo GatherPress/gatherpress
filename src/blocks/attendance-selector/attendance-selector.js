@@ -14,10 +14,10 @@ import { render } from '@wordpress/element';
 import AttendanceSelector from '../../components/AttendanceSelector';
 
 const containers = document.querySelectorAll(
-	`[data-gp_block_name="attendance-selector"]`,
+	`[data-gp_block_name="attendance-selector"]`
 );
 // eslint-disable-next-line no-undef
-const type = ( '1' === GatherPress.has_event_past ) ? 'past' : 'upcoming';
+const type = '1' === GatherPress.has_event_past ? 'past' : 'upcoming';
 
 for ( let i = 0; i < containers.length; i++ ) {
 	render(
@@ -28,6 +28,6 @@ for ( let i = 0; i < containers.length; i++ ) {
 			currentUser={ GatherPress.current_user }
 			type={ type }
 		/>,
-		containers[ i ],
+		containers[ i ]
 	);
 }

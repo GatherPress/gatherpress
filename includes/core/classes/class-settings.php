@@ -148,11 +148,15 @@ class Settings {
 
 					if ( isset( $section_settings['options'] ) ) {
 						foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
-							if ( $option_settings['field'] && method_exists( $this, $option_settings['field'] ) ) {
+							$field = $option_settings['field']['type'];
+
+							if (
+								$option_settings['field']['type']
+								&& method_exists( $this, $option_settings['field']['type'] )
+							) {
 								$option_settings['callback'] = function() use ( $sub_page, $section, $option, $option_settings ) {
 									$sub_page = Utility::prefix_key( $sub_page );
-
-									$this->{$option_settings['field']}( $sub_page, $section, $option, $option_settings );
+									$this->{$option_settings['field']['type']}( $sub_page, $section, $option, $option_settings );
 								};
 							}
 							add_settings_field(
@@ -186,7 +190,7 @@ class Settings {
 		$value   = $this->get_value( $sub_page, $section, $option, $default );
 
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'name'        => $name,
 				'option'      => Utility::prefix_key( $option ),
@@ -198,7 +202,7 @@ class Settings {
 	}
 
 	/**
-	 * Outputs a dynamic user select field.
+	 * Outputs a dynamic select field for a type of content.
 	 *
 	 * @param string $sub_page        The sub page for the text field.
 	 * @param string $section         The section for the text field.
@@ -207,18 +211,19 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	public function user_select( string $sub_page, string $section, string $option, array $option_settings ) {
+	public function autocomplete( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
 		$default = $option_settings['default'] ?? '';
 		$value   = $this->get_value( $sub_page, $section, $option, $default );
 
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings/fields/user-select.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/fields/autocomplete.php', GATHERPRESS_CORE_PATH ),
 			array(
-				'name'        => $name,
-				'option'      => Utility::prefix_key( $option ),
-				'value'       => $value,
-				'description' => $option_settings['description'] ?? '',
+				'name'          => $name,
+				'option'        => Utility::prefix_key( $option ),
+				'value'         => $value,
+				'description'   => $option_settings['description'] ?? '',
+				'field_options' => $option_settings['field']['options'] ?? array(),
 			),
 			true
 		);
@@ -235,10 +240,10 @@ class Settings {
 	 * @return void
 	 */
 	public function credits( string $sub_page, string $section, string $option, array $option_settings ) {
-		$credits = include sprintf( '%s/data/credits/latest.php', GATHERPRESS_CORE_PATH );
+		$credits = include sprintf( '%s/includes/data/credits/latest.php', GATHERPRESS_CORE_PATH );
 
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'option'  => $option,
 				'credits' => $credits[ $option ],
@@ -342,6 +347,40 @@ class Settings {
 				'name'        => __( 'General', 'gatherpress' ),
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
 				'priority'    => PHP_INT_MIN,
+				'sections'    => array(
+					'pages' => array(
+						'name'        => __( 'Event Archive Pages', 'gatherpress' ),
+						'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
+						'options'     => array(
+							'upcoming_events' => array(
+								'labels' => array(
+									'name' => __( 'Upcoming Events', 'gatherpress' ),
+								),
+								'field'  => array(
+									'type'    => 'autocomplete',
+									'options' => array(
+										'type'  => 'page',
+										'label' => __( 'Select Page', 'gatherpress' ),
+										'limit' => 1,
+									),
+								),
+							),
+							'past_events'     => array(
+								'labels' => array(
+									'name' => __( 'Past Events', 'gatherpress' ),
+								),
+								'field'  => array(
+									'type'    => 'autocomplete',
+									'options' => array(
+										'type'  => 'page',
+										'label' => __( 'Select Page', 'gatherpress' ),
+										'limit' => 1,
+									),
+								),
+							),
+						),
+					),
+				),
 			),
 			'leadership' => array(
 				'name'        => __( 'Leadership', 'gatherpress' ),
@@ -357,7 +396,13 @@ class Settings {
 									'singular_name' => __( 'Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Organizers', 'gatherpress' ),
 								),
-								'field'  => 'user_select',
+								'field'  => array(
+									'type'    => 'autocomplete',
+									'options' => array(
+										'type'  => 'user',
+										'label' => __( 'Select Users', 'gatherpress' ),
+									),
+								),
 							),
 							'assistant-organizers' => array(
 								'labels' => array(
@@ -365,7 +410,13 @@ class Settings {
 									'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
 								),
-								'field'  => 'user_select',
+								'field'  => array(
+									'type'    => 'autocomplete',
+									'options' => array(
+										'type'  => 'user',
+										'label' => __( 'Select Users', 'gatherpress' ),
+									),
+								),
 							),
 							'event-organizers'     => array(
 								'labels' => array(
@@ -373,7 +424,13 @@ class Settings {
 									'singular_name' => __( 'Event Organizer', 'gatherpress' ),
 									'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
 								),
-								'field'  => 'user_select',
+								'field'  => array(
+									'type'    => 'autocomplete',
+									'options' => array(
+										'type'  => 'user',
+										'label' => __( 'Select Users', 'gatherpress' ),
+									),
+								),
 							),
 							'event-assistants'     => array(
 								'labels' => array(
@@ -381,7 +438,13 @@ class Settings {
 									'singular_name' => __( 'Event Assistant', 'gatherpress' ),
 									'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
 								),
-								'field'  => 'user_select',
+								'field'  => array(
+									'type'    => 'autocomplete',
+									'options' => array(
+										'type'  => 'user',
+										'label' => __( 'Select Users', 'gatherpress' ),
+									),
+								),
 							),
 						),
 					),
@@ -404,19 +467,25 @@ class Settings {
 								'labels' => array(
 									'name' => __( 'Project Leads', 'gatherpress' ),
 								),
-								'field'  => 'credits',
+								'field'  => array(
+									'type' => 'credits',
+								),
 							),
 							'gatherpress-team' => array(
 								'labels' => array(
 									'name' => __( 'GatherPress Team', 'gatherpress' ),
 								),
-								'field'  => 'credits',
+								'field'  => array(
+									'type' => 'credits',
+								),
 							),
 							'contributors'     => array(
 								'labels' => array(
 									'name' => __( 'Contributors', 'gatherpress' ),
 								),
-								'field'  => 'credits',
+								'field'  => array(
+									'type' => 'credits',
+								),
 							),
 						),
 					),
@@ -456,6 +525,8 @@ class Settings {
 	/**
 	 * Get list of user roles.
 	 *
+	 * @todo add to class-attendee.php
+	 *
 	 * @return array
 	 */
 	public function get_user_roles(): array {
@@ -468,6 +539,8 @@ class Settings {
 
 	/**
 	 * Return role of the user.
+	 *
+	 * @todo add to class-attendee.php
 	 *
 	 * @param int $user_id User ID.
 	 *
@@ -511,7 +584,7 @@ class Settings {
 	 */
 	public function settings_page() {
 		Utility::render_template(
-			sprintf( '%s/templates/admin/settings/index.php', GATHERPRESS_CORE_PATH ),
+			sprintf( '%s/includes/templates/admin/settings/index.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'sub_pages' => $this->get_sub_pages(),
 				'page'      => $this->page,

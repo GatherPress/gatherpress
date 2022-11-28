@@ -11,17 +11,16 @@ import { render } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import UserSelect from '../components/UserSelect';
+import Autocomplete from '../components/Autocomplete';
 
-const containers = document.querySelectorAll(
-	`[data-gp_component_name="user-select"]`,
+const autocompleteContainers = document.querySelectorAll(
+	`[data-gp_component_name="autocomplete"]`
 );
 
-for ( let i = 0; i < containers.length; i++ ) {
-	const attrs = JSON.parse( containers[ i ].dataset.gp_component_attrs );
-
-	render(
-		<UserSelect attrs={ attrs } />,
-		containers[ i ],
+for ( let i = 0; i < autocompleteContainers.length; i++ ) {
+	const attrs = JSON.parse(
+		autocompleteContainers[ i ].dataset.gp_component_attrs
 	);
+
+	render( <Autocomplete attrs={ attrs } />, autocompleteContainers[ i ] );
 }

@@ -27,7 +27,7 @@ export const Listener = ( payload, identifier = false ) => {
 			( e ) => {
 				value( e.detail );
 			},
-			false,
+			false
 		);
 	}
 };
