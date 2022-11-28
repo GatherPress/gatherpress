@@ -56,7 +56,7 @@ class Assets {
 	protected function setup_hooks() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
-		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ), 1 );
 	}
 
 	/**
