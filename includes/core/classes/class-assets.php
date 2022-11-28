@@ -175,7 +175,8 @@ class Assets {
 			'gatherpress-blocks-backend',
 			$this->build . 'blocks_backend.js',
 			$asset['dependencies'],
-			$asset['version']
+			$asset['version'],
+			false
 		);
 
 		wp_localize_script(
