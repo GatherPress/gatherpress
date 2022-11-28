@@ -1,24 +1,42 @@
 /**
+ * External dependencies.
+ */
+import moment from 'moment';
+
+/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
 import { Button, Dropdown, Flex, FlexItem, PanelRow, SelectControl } from '@wordpress/components';
-import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
+import { useSelect, useDispatch, subscribe } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
 import { Broadcaster } from '../../../helpers/broadcasting';
-import { DateTimeStartLabel, DateTimeEndLabel } from '../../../components/DateTime';
+import {
+	DateTimeStartLabel,
+	DateTimeEndLabel,
+	dateTimeFormat,
+	getDateTimeStart,
+	getDateTimeEnd,
+	DateTimeStartPicker,
+	DateTimeEndPicker,
+	saveDateTime
+} from '../../../components/DateTime';
 
-const currentDateTime = moment()
-	.add( 1, 'day' )
-	.set( 'hour', 18 )
-	.set( 'minute', 0 )
-	.format( dateTimeFormat );
+// subscribe( saveDateTime );
 
 const DateTimePanel = ( props ) => {
+	const [ dateTimeStart, setDateTimeStart ] = useState();
+	const [ dateTimeEnd, setDateTimeEnd ] = useState();
+
+	useEffect( () => {
+		setDateTimeStart( moment( getDateTimeStart() ).format( dateTimeFormat ) );
+		setDateTimeEnd( moment( getDateTimeEnd() ).format( dateTimeFormat ) );
+	} );
+
 	return (
 		<section>
 			<h3>{ __( 'Date & time', 'gatherpress' ) }</h3>
@@ -34,10 +52,10 @@ const DateTimePanel = ( props ) => {
 									aria-expanded={ isOpen }
 									isLink
 								>
-									<DateTimeStartLabel />
+									<DateTimeStartLabel dateTimeStart={ dateTimeStart } />
 								</Button>
 							) }
-							renderContent={ () => '' }
+							renderContent={ () => <DateTimeStartPicker dateTimeStart={ dateTimeStart } setDateTimeStart={ setDateTimeStart } /> }
 						/>
 					</FlexItem>
 				</Flex>
@@ -45,7 +63,21 @@ const DateTimePanel = ( props ) => {
 			<PanelRow>
 				<Flex>
 					<FlexItem>{ __( 'End', 'gatherpress' ) }</FlexItem>
-					<FlexItem>here</FlexItem>
+					<FlexItem>
+						<Dropdown
+							position="bottom left"
+							renderToggle={ ( { isOpen, onToggle } ) => (
+								<Button
+									onClick={ onToggle }
+									aria-expanded={ isOpen }
+									isLink
+								>
+									<DateTimeEndLabel dateTimeEnd={ dateTimeEnd }/>
+								</Button>
+							) }
+							renderContent={ () => <DateTimeEndPicker dateTimeEnd={ dateTimeEnd } setDateTimeEnd={ setDateTimeEnd } /> }
+						/>
+					</FlexItem>
 				</Flex>
 			</PanelRow>
 		</section>

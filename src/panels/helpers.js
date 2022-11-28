@@ -7,6 +7,8 @@ import moment from 'moment';
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
+import { store as noticesStore } from '@wordpress/notices';
+import { useDispatch } from '@wordpress/data';
 
 // Checks if the post type is for events.
 export function isEventPostType() {
@@ -25,19 +27,24 @@ export function enableSave() {
 
 export function hasEventPastNotice() {
 	const id = 'gp_event_past';
-	const notices = wp.data.dispatch( 'core/notices' );
+	// const notices = wp.data.dispatch( 'core/notices' );
+	const { createErrorNotice } = useDispatch( noticesStore );
 
 	notices.removeNotice( id );
 
 	if ( hasEventPast() ) {
-		notices.createNotice(
-			'warning',
-			__( 'This event has already past.', 'gatherpress' ),
-			{
-				id,
-				isDismissible: true,
-			}
-		);
+		createErrorNotice( __( 'This event has already past.', 'gatherpress' ), {
+			type: id,
+			explicitDismiss: true,
+		} );
+		// notices.createNotice(
+		// 	'warning',
+		// 	__( 'This event has already past.', 'gatherpress' ),
+		// 	{
+		// 		id,
+		// 		isDismissible: false,
+		// 	}
+		// );
 	}
 }
 
