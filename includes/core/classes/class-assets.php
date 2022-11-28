@@ -57,6 +57,21 @@ class Assets {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ), 9 );
+		//The 9 priority must be used so the global object loads before the build scripts
+		add_action( 'enqueue_block_editor_assets', array( $this, 'add_global_object' ), 9 );
+		add_action( 'enqueue_block_assets', array( $this, 'add_global_object' ), 9 );
+	}
+
+	/**
+	 * Localize the global GatherPress js object for use in the build scripts.
+	 */
+	public function add_global_object() {
+		$post_id = get_the_ID() ?? 0;
+		?>
+		<script>
+		var GatherPress = <?php echo json_encode($this->localize( $post_id )); ?>
+		</script>
+		<?php
 	}
 
 	/**
@@ -86,17 +101,6 @@ class Assets {
 			true
 		);
 
-		// phpcs:ignore
-		// if ( is_singular( 'gp_event' ) ) {
-			global $post;
-
-			wp_localize_script(
-				'gatherpress-blocks-frontend',
-				'GatherPress',
-				$this->localize( $post->ID ?? 0 )
-			);
-		// phpcs:ignore
-		// }
 	}
 
 	/**
@@ -177,12 +181,6 @@ class Assets {
 			$asset['dependencies'],
 			$asset['version'],
 			false
-		);
-
-		wp_localize_script(
-			'gatherpress-blocks-backend',
-			'GatherPress',
-			$this->localize( $post_id )
 		);
 	}
 
