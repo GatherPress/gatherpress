@@ -67,7 +67,7 @@ const EventItem = ( props ) => {
 						<div className={ `${ eventClass }__content` }>
 							<div className={ `${ eventClass }__excerpt` }>
 								{ HtmlReactParser(
-									limitExcerpt( event.excerpt)
+									limitExcerpt( event.excerpt )
 								) }
 							</div>
 						</div>
