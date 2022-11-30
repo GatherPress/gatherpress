@@ -3,18 +3,18 @@ import AttendanceSelector from './AttendanceSelector';
 import AttendeeList from './AttendeeList';
 import AttendeeResponse from './AttendeeResponse';
 
-const EventItem = (props) => {
-	if ('object' !== typeof GatherPress) {
+const EventItem = ( props ) => {
+	if ( 'object' !== typeof GatherPress ) {
 		return '';
 	}
 
 	const { type, event, eventOptions } = props;
-	const limitExcerpt = (excerpt) => {
+	const limitExcerpt = ( excerpt ) => {
 		return (
 			excerpt
-				.split(' ')
-				.splice(0, parseInt(eventOptions.descriptionLimit))
-				.join(' ') + '[…]'
+				.split( ' ' )
+				.splice( 0, parseInt( eventOptions.descriptionLimit ) )
+				.join( ' ' ) + '[…]'
 		);
 	};
 
@@ -23,7 +23,7 @@ const EventItem = (props) => {
 			? 'featured_image'
 			: 'featured_image_' + eventOptions.imageSize;
 
-	const featuredImage = HtmlReactParser(event[size]);
+	const featuredImage = HtmlReactParser( event[ size ] );
 
 	const eventClass = `gp-events-list`;
 	const venue = event.venue
@@ -37,65 +37,69 @@ const EventItem = (props) => {
 		: null;
 
 	return (
-		<div className={eventClass}>
-			<div className={`${eventClass}__header`}>
-				<div className={`${eventClass}__info`}>
-					{eventOptions.showFeaturedImage && (
-						<figure className={`${eventClass}__image`}>
-							<a href={event.permalink}>{featuredImage}</a>
+		<div className={ eventClass }>
+			<div className={ `${ eventClass }__header` }>
+				<div className={ `${ eventClass }__info` }>
+					{ eventOptions.showFeaturedImage && (
+						<figure className={ `${ eventClass }__image` }>
+							<a href={ event.permalink }>{ featuredImage }</a>
 						</figure>
-					)}
+					) }
 					<div
-						className={`${eventClass}__datetime has-small-font-size`}
+						className={ `${ eventClass }__datetime has-small-font-size` }
 					>
-						<strong>{event.datetime_start}</strong>
+						<strong>{ event.datetime_start }</strong>
 					</div>
-					{venue && (
+					{ venue && (
 						<div>
-							{venue}
+							{ venue }
 							<span className="dashicons dashicons-location"></span>
 						</div>
-					)}
-					<div className={`${eventClass}__title has-large-font-size`}>
-						<a href={event.permalink}>
-							{HtmlReactParser(event.title)}
+					) }
+					<div
+						className={ `${ eventClass }__title has-large-font-size` }
+					>
+						<a href={ event.permalink }>
+							{ HtmlReactParser( event.title ) }
 						</a>
 					</div>
-					{eventOptions.showDescription && (
-						<div className={`${eventClass}__content`}>
-							<div className={`${eventClass}__excerpt`}>
-								{HtmlReactParser(limitExcerpt(event.excerpt))}
+					{ eventOptions.showDescription && (
+						<div className={ `${ eventClass }__content` }>
+							<div className={ `${ eventClass }__excerpt` }>
+								{ HtmlReactParser(
+									limitExcerpt( event.excerpt )
+								) }
 							</div>
 						</div>
-					)}
+					) }
 				</div>
 			</div>
-			<div className={`${eventClass}__footer`}>
-				{eventOptions.showAttendeeList && (
+			<div className={ `${ eventClass }__footer` }>
+				{ eventOptions.showAttendeeList && (
 					<div className="gp-attendance-list__items">
 						<AttendeeList
-							eventId={event.ID}
+							eventId={ event.ID }
 							value="attending"
-							attendees={event.attendees}
+							attendees={ event.attendees }
 							limit="3"
-							avatarOnly={true}
+							avatarOnly={ true }
 						/>
 					</div>
-				)}
-				{'upcoming' === type && eventOptions.showRsvpButton && (
+				) }
+				{ 'upcoming' === type && eventOptions.showRsvpButton && (
 					<AttendanceSelector
-						eventId={event.ID}
-						currentUser={event.current_user}
-						type={type}
+						eventId={ event.ID }
+						currentUser={ event.current_user }
+						type={ type }
 					/>
-				)}
+				) }
 
-				{'past' === type && eventOptions.showRsvpButton && (
+				{ 'past' === type && eventOptions.showRsvpButton && (
 					<AttendeeResponse
-						type={type}
-						status={event.current_user?.status}
+						type={ type }
+						status={ event.current_user?.status }
 					/>
-				)}
+				) }
 			</div>
 		</div>
 	);
