@@ -36,7 +36,7 @@ export function hasEventPastNotice() {
 			{
 				id,
 				isDismissible: true,
-			},
+			}
 		);
 	}
 }

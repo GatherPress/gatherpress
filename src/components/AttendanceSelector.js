@@ -8,7 +8,7 @@ import Modal from 'react-modal';
  */
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { ButtonGroup } from '@wordpress/components';
+import { ButtonGroup, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -19,10 +19,10 @@ import AttendeeResponse from './AttendeeResponse';
 
 const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 	const [ attendanceStatus, setAttendanceStatus ] = useState(
-		currentUser.status,
+		currentUser.status
 	);
 	const [ attendanceGuests, setAttendanceGuests ] = useState(
-		currentUser.guests,
+		currentUser.guests
 	);
 	const [ selectorHidden, setSelectorHidden ] = useState( 'hidden' );
 	const [ selectorExpanded, setSelectorExpanded ] = useState( 'false' );
@@ -96,7 +96,9 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 					waiting_list: 0, // eslint-disable-line camelcase
 				};
 
-				for ( const [ key, value ] of Object.entries( res.attendees ) ) {
+				for ( const [ key, value ] of Object.entries(
+					res.attendees
+				) ) {
 					count[ key ] = value.count;
 				}
 
@@ -125,11 +127,24 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 		return __( 'Attend', 'gatherpress' );
 	};
 
+	const getModalLabel = ( status ) => {
+		switch ( status ) {
+			case 'attending':
+				return __( "You're Attending", 'gatherpress' );
+			case 'waiting_list':
+				return __( "You're Wait Listed", 'gatherpress' );
+		}
+
+		return '';
+	};
+
 	const onSpanKeyDown = ( e ) => {
 		if ( 13 === e.keyCode ) {
-			setSelectorHidden( 'hidden' === selectorHidden ? 'show' : 'hidden' );
+			setSelectorHidden(
+				'hidden' === selectorHidden ? 'show' : 'hidden'
+			);
 			setSelectorExpanded(
-				'false' === selectorExpanded ? 'true' : 'false',
+				'false' === selectorExpanded ? 'true' : 'false'
 			);
 		}
 	};
@@ -177,7 +192,11 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 				>
 					<div className="gp-modal gp-modal__attendance-selector">
 						<div className="gp-modal__header has-large-font-size">
-							{ __( 'Edit RSVP', 'gatherpress' ) }
+							{ getModalLabel( attendanceStatus ) ? (
+								getModalLabel( attendanceStatus )
+							) : (
+								<Spinner />
+							) }
 						</div>
 						<div className="gp-modal__content">
 							<label htmlFor="gp-guests">
@@ -193,7 +212,7 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 										e,
 										'attending',
 										e.target.value,
-										false,
+										false
 									)
 								}
 								defaultValue={ attendanceGuests }
@@ -228,7 +247,10 @@ const AttendanceSelector = ( { eventId, currentUser = '', type } ) => {
 			</ButtonGroup>
 			{ 'attend' !== attendanceStatus && (
 				<div className="gp-status">
-					<AttendeeResponse type={ type } status={ attendanceStatus } />
+					<AttendeeResponse
+						type={ type }
+						status={ attendanceStatus }
+					/>
 
 					{ 0 < attendanceGuests && (
 						<div className="gp-status__guests">

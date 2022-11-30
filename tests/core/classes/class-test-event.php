@@ -102,7 +102,7 @@ class Test_Event extends Base {
 				'datetime_start_gmt' => '',
 				'datetime_end'       => '',
 				'datetime_end_gmt'   => '',
-				'timezone'           => '',
+				'timezone'           => '+00:00',
 			),
 			$event->get_datetime()
 		);
@@ -122,7 +122,7 @@ class Test_Event extends Base {
 				'datetime_start_gmt' => '',
 				'datetime_end'       => '',
 				'datetime_end_gmt'   => '',
-				'timezone'           => '',
+				'timezone'           => '+00:00',
 			),
 			$event->get_datetime()
 		);
@@ -254,9 +254,9 @@ class Test_Event extends Base {
 	}
 
 	/**
-	 * Coverage for adjust_event_sql method.
+	 * Coverage for adjust_sql method.
 	 *
-	 * @covers ::adjust_event_sql
+	 * @covers ::adjust_sql
 	 *
 	 * @return void
 	 */
@@ -266,17 +266,17 @@ class Test_Event extends Base {
 		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 		$retval = Event::adjust_sql( array(), 'all', 'DESC' );
 
-		$this->assertContains( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
 		$this->assertEmpty( $retval['where'] );
 
 		$retval = Event::adjust_sql( array(), 'past', 'desc' );
 
-		$this->assertContains( 'DESC', $retval['orderby'] );
-		$this->assertContains( "AND {$table}.datetime_end_gmt <", $retval['where'] );
+		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt <", $retval['where'] );
 
 		$retval = Event::adjust_sql( array(), 'upcoming', 'ASC' );
 
-		$this->assertContains( 'ASC', $retval['orderby'] );
-		$this->assertContains( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
+		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
 	}
 }
