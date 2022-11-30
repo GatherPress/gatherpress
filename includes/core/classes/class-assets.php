@@ -57,9 +57,8 @@ class Assets {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
-		//add_action( 'enqueue_block_assets', array( $this, 'add_global_object' ) );
-		add_action( 'wp_head', array( $this, 'add_global_object' ),  PHP_INT_MIN );
-		add_action( 'admin_head', array( $this, 'add_global_object' ),  PHP_INT_MIN );
+		add_action( 'wp_head', array( $this, 'add_global_object' ) );
+		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ) );
 	}
 
 	/**
@@ -69,7 +68,7 @@ class Assets {
 		$post_id = get_the_ID() ?? 0;
 		?>
 		<script>
-		var GatherPress = <?php echo wp_json_encode( $this->localize( $post_id ) ); ?>
+		const GatherPress = <?php echo wp_json_encode( $this->localize( $post_id ) ); ?>
 		</script>
 		<?php
 	}
