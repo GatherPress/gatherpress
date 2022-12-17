@@ -19,11 +19,7 @@ import { DateTimeStartLabel } from './datetime-start/label';
 import { DateTimeEnd } from './datetime-end';
 import { DateTimeEndLabel } from './datetime-end/label';
 
-const currentDateTime = moment()
-	.add( 1, 'day' )
-	.set( 'hour', 18 )
-	.set( 'minute', 0 )
-	.format( dateTimeFormat );
+const currentDateTime = moment().format( dateTimeFormat );
 
 // eslint-disable-next-line no-undef
 let dateTimeStart = GatherPress.event_datetime.datetime_start;
@@ -54,11 +50,7 @@ export const DateTimeStartSettingPanel = () => (
 			<Dropdown
 				position="bottom left"
 				renderToggle={ ( { isOpen, onToggle } ) => (
-					<Button
-						onClick={ onToggle }
-						aria-expanded={ isOpen }
-						isLink
-					>
+					<Button onClick={ onToggle } aria-expanded={ isOpen } isLink>
 						<DateTimeStartLabel />
 					</Button>
 				) }
@@ -70,11 +62,7 @@ export const DateTimeStartSettingPanel = () => (
 			<Dropdown
 				position="bottom left"
 				renderToggle={ ( { isOpen, onToggle } ) => (
-					<Button
-						onClick={ onToggle }
-						aria-expanded={ isOpen }
-						isLink
-					>
+					<Button onClick={ onToggle } aria-expanded={ isOpen } isLink>
 						<DateTimeEndLabel />
 					</Button>
 				) }

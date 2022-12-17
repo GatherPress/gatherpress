@@ -1,0 +1,81 @@
+.gp-events-list {
+	&__header {
+		display: flex;
+		gap: 2rem;
+		margin-bottom: 1rem;
+	}
+
+	&__info {
+		padding: 0;
+		flex-grow: 1;
+	}
+
+	&__image {
+		flex-shrink: 0;
+		float: right;
+		margin: 0 0 1rem 1rem;
+
+		a {
+			display: block;
+		}
+	}
+
+	&__datetime {
+		margin-bottom: 0.5rem;
+		padding: 0;
+	}
+
+	&__title {
+		margin-bottom: 1.5rem;
+		padding: 0;
+	}
+
+	&__excerpt {
+		margin-bottom: 1rem;
+
+		p {
+			margin: 0;
+			padding: 0;
+		}
+	}
+
+	&__footer {
+		margin-bottom: 2rem;
+		border-bottom: 1px solid #CCCCCC;
+		padding-bottom: 2rem;
+		display: flex;
+
+		.gp-attendance-list {
+			&__items {
+				display: flex;
+				gap: 0;
+				flex-grow: 2;
+
+				&--item {
+					margin-left: -1rem;
+					margin-bottom: 0;
+					display: flex;
+					align-items: center;
+
+					&:first-child {
+						margin-left: 0;
+					}
+
+					img {
+						width: 50px;
+					}
+				}
+			}
+
+			&__member-avatar {
+				a {
+					display: flex;
+				}
+			}
+		}
+
+		.gp-attendance-selector {
+			margin-bottom: 0;
+		}
+	}
+}

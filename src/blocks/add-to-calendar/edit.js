@@ -16,7 +16,9 @@ const Edit = () => {
 				</FlexItem>
 				<FlexItem>
 					{ /* eslint-disable-next-line jsx-a11y/anchor-is-valid */ }
-					<a href="#">{ __( 'Add to calendar', 'gatherpress' ) }</a>
+					<a href="#">
+						{ __( 'Add to calendar', 'gatherpress' ) }
+					</a>
 				</FlexItem>
 			</Flex>
 		</div>

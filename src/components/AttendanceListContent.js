@@ -28,9 +28,7 @@ const AttendanceListContent = ( { items, activeValue, limit = false } ) => {
 		);
 	} );
 
-	return (
-		<div className="gp-attendance-list__container">{ renderedItems }</div>
-	);
+	return <div className="gp-attendance-list__container">{ renderedItems }</div>;
 };
 
 export default AttendanceListContent;

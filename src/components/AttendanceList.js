@@ -40,8 +40,8 @@ const AttendanceList = () => {
 			'undefined' !== typeof GatherPress.current_user.status &&
 			// eslint-disable-next-line no-undef
 			'attend' !== GatherPress.current_user.status
-				? // eslint-disable-next-line no-undef
-				  GatherPress.current_user.status
+				// eslint-disable-next-line no-undef
+				? GatherPress.current_user.status
 				: defaultStatus;
 	}
 	const defaultLimit = 10;

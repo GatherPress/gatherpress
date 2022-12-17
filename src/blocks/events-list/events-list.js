@@ -14,7 +14,7 @@ import { render } from '@wordpress/element';
 import EventsList from '../../components/EventsList';
 
 const containers = document.querySelectorAll(
-	`[data-gp_block_name="events-list"]`
+	`[data-gp_block_name="events-list"]`,
 );
 
 for ( let i = 0; i < containers.length; i++ ) {
@@ -22,20 +22,18 @@ for ( let i = 0; i < containers.length; i++ ) {
 
 	render(
 		<EventsList
-			eventOptions={
-				attrs.eventOptions ?? {
-					descriptionLimit: 55,
-					imageSize: 'default',
-					showAttendeeList: true,
-					showDescription: true,
-					showFeaturedImage: true,
-					showRsvpButton: true,
-				}
-			}
+			eventOptions={ attrs.eventOptions ?? {
+				descriptionLimit: 55,
+				imageSize: 'default',
+				showAttendeeList: true,
+				showDescription: true,
+				showFeaturedImage: true,
+				showRsvpButton: true,
+			} }
 			type={ attrs.type ?? 'upcoming' }
 			maxNumberOfEvents={ attrs.maxNumberOfEvents ?? 5 }
 			topics={ attrs.topics ?? [] }
 		/>,
-		containers[ i ]
+		containers[ i ],
 	);
 }

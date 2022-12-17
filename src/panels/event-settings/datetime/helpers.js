@@ -20,7 +20,7 @@ export const dateTimeFormat = 'YYYY-MM-DDTHH:mm:ss';
 export function validateDateTimeStart( dateTime ) {
 	const dateTimeEndNumeric = moment(
 		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_end
+		GatherPress.event_datetime.datetime_end,
 	).valueOf();
 	const dateTimeNumeric = moment( dateTime ).valueOf();
 
@@ -37,7 +37,7 @@ export function validateDateTimeStart( dateTime ) {
 export function validateDateTimeEnd( dateTime ) {
 	const dateTimeStartNumeric = moment(
 		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_start
+		GatherPress.event_datetime.datetime_start,
 	).valueOf();
 	const dateTimeNumeric = moment( dateTime ).valueOf();
 
@@ -66,12 +66,12 @@ export function saveDateTime() {
 				// eslint-disable-next-line no-undef
 				post_id: GatherPress.post_id,
 				datetime_start: moment(
-					// eslint-disable-next-line no-undef
-					GatherPress.event_datetime.datetime_start
+				// eslint-disable-next-line no-undef
+					GatherPress.event_datetime.datetime_start,
 				).format( 'YYYY-MM-DD HH:mm:ss' ),
 				datetime_end: moment(
-					// eslint-disable-next-line no-undef
-					GatherPress.event_datetime.datetime_end
+				// eslint-disable-next-line no-undef
+					GatherPress.event_datetime.datetime_end,
 				).format( 'YYYY-MM-DD HH:mm:ss' ),
 				// eslint-disable-next-line no-undef
 				_wpnonce: GatherPress.nonce,

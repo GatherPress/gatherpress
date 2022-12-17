@@ -1,0 +1,43 @@
+.gp-add-to-calendar {
+	position: relative;
+
+	&__row {
+		display: flex;
+	}
+
+	&__icon {
+		display: flex;
+		align-items: flex-start;
+		padding-top: 0.4rem;
+	}
+
+	&__item {
+		display: flex;
+		gap: 1rem;
+	}
+
+	&__list {
+		flex-direction: column;
+		border-radius: 0.4rem;
+		border: 1px solid #CCCCCC;
+		overflow: hidden;
+		width: 15rem;
+		position: absolute;
+	}
+
+	&__list-item {
+		border-top: 1px solid #CCCCCC;
+		margin-top: -1px;
+
+		a {
+			color: #000000;
+			background-color: #FFFFFF;
+			display: block;
+			padding: 0.5rem;
+
+			&:hover {
+				background-color: #EEEEEE;
+			}
+		}
+	}
+}

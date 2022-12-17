@@ -62,7 +62,7 @@ export function hasEventPastNotice() {
 			{
 				id,
 				isDismissible: true,
-			}
+			},
 		);
 	}
 }
@@ -101,7 +101,7 @@ export class DateTimeEndLabel extends Component {
 
 		return dateI18n(
 			`${ settings.formats.date } ${ settings.formats.time }`,
-			this.state.dateTime
+			this.state.dateTime,
 		);
 	}
 }

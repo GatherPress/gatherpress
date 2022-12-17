@@ -5,16 +5,15 @@ const VenueInformation = ( { name, fullAddress, phoneNumber, website } ) => {
 		<div className="gp-venue-information">
 			{ ( name || fullAddress ) && (
 				<Flex justify="normal" align="flex-start" gap="4">
-					<FlexItem
-						display="flex"
-						className="gp-venue-information__icon"
-					>
+					<FlexItem display="flex" className="gp-venue-information__icon">
 						<Icon icon="location" />
 					</FlexItem>
 					<FlexItem>
 						{ name && (
 							<div className="gp-venue_information__name has-medium-font-size">
-								<strong>{ name }</strong>
+								<strong>
+									{ name }
+								</strong>
 							</div>
 						) }
 						{ fullAddress && (
@@ -30,10 +29,7 @@ const VenueInformation = ( { name, fullAddress, phoneNumber, website } ) => {
 					{ phoneNumber && (
 						<FlexItem>
 							<Flex justify="normal" gap="4">
-								<FlexItem
-									display="flex"
-									className="gp-venue-information__icon"
-								>
+								<FlexItem display="flex" className="gp-venue-information__icon">
 									<Icon icon="phone" />
 								</FlexItem>
 								<FlexItem>
@@ -47,21 +43,12 @@ const VenueInformation = ( { name, fullAddress, phoneNumber, website } ) => {
 					{ website && (
 						<FlexItem>
 							<Flex justify="normal" gap="4">
-								<FlexItem
-									display="flex"
-									className="gp-venue-information__icon"
-								>
+								<FlexItem display="flex" className="gp-venue-information__icon">
 									<Icon icon="admin-site-alt3" />
 								</FlexItem>
 								<FlexItem>
 									<div className="gp-venue-information__website">
-										<a
-											href={ website }
-											target="_blank"
-											rel="noreferrer noopener"
-										>
-											{ website }
-										</a>
+										<a href={ website } target="_blank" rel="noreferrer noopener">{ website }</a>
 									</div>
 								</FlexItem>
 							</Flex>

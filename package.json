@@ -1,10 +1,10 @@
 {
 	"name": "gatherpress",
-	"version": "0.13.0",
+	"version": "0.13.1",
 	"description": "Powering Communities with WordPress",
 	"main": "index.js",
 	"scripts": {
-		"build": "wp-scripts build",
+		"build": "wp-scripts build --webpack-copy-php",
 		"check-engines": "wp-scripts check-engines",
 		"check-licenses": "wp-scripts check-licenses",
 		"format": "wp-scripts format",
@@ -16,7 +16,7 @@
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
-		"start": "wp-scripts start",
+		"start": "wp-scripts start --webpack-copy-php",
 		"test:e2e": "wp-scripts test-e2e",
 		"test:unit": "wp-scripts test-unit-js",
 		"pretest:unit:php": "wp-env start --xdebug",

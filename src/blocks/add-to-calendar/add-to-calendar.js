@@ -13,8 +13,7 @@ const addToCalendarToggle = ( e ) => {
 		lists[ i ].style.display = 'none';
 	}
 
-	e.target.nextElementSibling.style.display =
-		'none' === currentListDisplay ? 'flex' : 'none';
+	e.target.nextElementSibling.style.display = ( 'none' === currentListDisplay ) ? 'flex' : 'none';
 };
 
 /**
@@ -24,15 +23,11 @@ const addToCalendarInit = () => {
 	const containers = document.querySelectorAll( '.gp-add-to-calendar' );
 
 	for ( let i = 0; i < containers.length; i++ ) {
-		containers[ i ]
-			.querySelector( '.gp-add-to-calendar__init' )
-			.addEventListener( 'click', addToCalendarToggle, false );
+		containers[ i ].querySelector( '.gp-add-to-calendar__init' ).addEventListener( 'click', addToCalendarToggle, false );
 
 		document.addEventListener( 'click', ( { target } ) => {
 			if ( ! target.closest( '.gp-add-to-calendar' ) ) {
-				containers[ i ].querySelector(
-					'.gp-add-to-calendar__list'
-				).style.display = 'none';
+				containers[ i ].querySelector( '.gp-add-to-calendar__list' ).style.display = 'none';
 			}
 		} );
 	}

@@ -54,9 +54,10 @@ class Assets {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
-		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
+		// add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts_2' ), 10, 1 );
+		// add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts_2' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ) );
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ) );
 	}
@@ -98,6 +99,22 @@ class Assets {
 			$asset['dependencies'],
 			$asset['version'],
 			true
+		);
+	}
+
+	/**
+	 * Enqueue backend styles and scripts.
+	 *
+	 * @param string $hook Name of file.
+	 *
+	 * @return void
+	 */
+	public function admin_enqueue_scripts_2( $hook ) {
+		wp_enqueue_style(
+			'gp-admin-settings',
+			plugins_url( 'css/admin-settings.css', __FILE__ ),
+			[],
+			filemtime( plugin_dir_path( __FILE__ ) . 'css/admin-settings.css' )
 		);
 	}
 
@@ -153,12 +170,14 @@ class Assets {
 			);
 		}
 
-		wp_enqueue_style(
-			'gp-admin-settings',
-			plugins_url( 'css/admin-settings.css', __FILE__ ),
-			[],
-			filemtime( plugin_dir_path( __FILE__ ) . 'css/admin-settings.css' )
-		);
+	}
+
+	/**
+	 * Enqueue block styles and scripts.
+	 */
+	public function block_enqueue_scripts_2() {
+		$post_id = $GLOBALS['post']->ID ?? 0;
+		$event   = new Event( $post_id );
 
 	}
 
@@ -229,10 +248,10 @@ class Assets {
 	 */
 	protected function get_asset_data( string $asset ): array {
 		if ( empty( $this->asset_data[ $asset ] ) ) {
-			$this->asset_data[ $asset ] = require_once $this->path . sprintf( '%s.asset.php', $asset );
+			// $this->asset_data[ $asset ] = require_once $this->path . sprintf( '%s.asset.php', $asset );
 		}
-
-		return $this->asset_data[ $asset ];
+		return [];
+		// return $this->asset_data[ $asset ];
 	}
 
 }

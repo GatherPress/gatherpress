@@ -1,0 +1,25 @@
+.gp-settings {
+	&__credits {
+		display: flex;
+		flex-wrap: wrap;
+
+		li {
+			width: 25%;
+			text-align: center;
+
+			@media screen and (max-width: 37.5rem) {
+				width: 50%;
+			}
+		}
+
+		a {
+			display: block;
+			padding: 1rem;
+			font-size: 1.1rem;
+		}
+
+		img {
+			border-radius: 999rem;
+		}
+	}
+}

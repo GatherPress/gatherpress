@@ -1,3 +1,26 @@
+.wp-block-gatherpress-attendance-list {
+	padding: 2rem;
+	border: 2px solid maroon;
+}
+
+@mixin for-core-tablet {
+	@media screen and (max-width: 782px) {
+		@content;
+	}
+}
+
+@mixin for-core-mobile {
+	@media screen and (max-width: 600px) {
+		@content;
+	}
+}
+
+@mixin for-core-narrow {
+	@media screen and (max-width: 400px) {
+		@content;
+	}
+}
+
 .gp-attendance-list {
 	&__navigation {
 		display: flex;

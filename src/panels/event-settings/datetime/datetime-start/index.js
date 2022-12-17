@@ -19,7 +19,7 @@ export const DateTimeStart = withState()( ( { setState } ) => {
 			.replace( /\\\\/g, '' )
 			.split( '' )
 			.reverse()
-			.join( '' )
+			.join( '' ),
 	);
 
 	return (

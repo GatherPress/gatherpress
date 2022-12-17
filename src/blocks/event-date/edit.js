@@ -31,30 +31,19 @@ const displayDateTime = ( start, end ) => {
 	const startFormat = dateFormat + ' ' + timeFormat;
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 
-	if (
-		moment( start ).format( dateFormat ) ===
-		moment( end ).format( dateFormat )
-	) {
+	if ( moment( start ).format( dateFormat ) === moment( end ).format( dateFormat ) ) {
 		endFormat = timeFormat + ' ' + timeZoneFormat;
 	}
 
-	return (
-		moment( start ).format( startFormat ) +
-		' to ' +
-		moment.tz( end, timeZone ).format( endFormat )
-	);
+	return moment( start ).format( startFormat ) + ' to ' + moment.tz( end, timeZone ).format( endFormat );
 };
 
 const Edit = () => {
 	const blockProps = useBlockProps();
-	const [ dateTimeStart, setDateTimeStart ] = useState(
-		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_start
-	);
-	const [ dateTimeEnd, setDateTimeEnd ] = useState(
-		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_end
-	);
+	// eslint-disable-next-line no-undef
+	const [ dateTimeStart, setDateTimeStart ] = useState( GatherPress.event_datetime.datetime_start );
+	// eslint-disable-next-line no-undef
+	const [ dateTimeEnd, setDateTimeEnd ] = useState( GatherPress.event_datetime.datetime_end );
 
 	Listener( { setDateTimeEnd, setDateTimeStart } );
 
