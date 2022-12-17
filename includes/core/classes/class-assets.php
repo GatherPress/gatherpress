@@ -152,6 +152,14 @@ class Assets {
 				true
 			);
 		}
+
+		wp_enqueue_style(
+			'gp-admin-settings',
+			plugins_url( 'css/admin-settings.css', __FILE__ ),
+			[],
+			filemtime( plugin_dir_path( __FILE__ ) . 'css/admin-settings.css' )
+		);
+
 	}
 
 	/**
