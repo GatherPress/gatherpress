@@ -1,1 +1,467 @@
-!function(){"use strict";var e,n={203:function(){var e=window.wp.blocks,n=window.wp.element,t=window.wp.i18n,l=window.wp.blockEditor,r=window.wp.data,o=window.wp.components,i=e=>{let{name:t,fullAddress:l,phoneNumber:r,website:i}=e;return(0,n.createElement)("div",{className:"gp-venue-information"},(t||l)&&(0,n.createElement)(o.Flex,{justify:"normal",align:"flex-start",gap:"4"},(0,n.createElement)(o.FlexItem,{display:"flex",className:"gp-venue-information__icon"},(0,n.createElement)(o.Icon,{icon:"location"})),(0,n.createElement)(o.FlexItem,null,t&&(0,n.createElement)("div",{className:"gp-venue_information__name has-medium-font-size"},(0,n.createElement)("strong",null,t)),l&&(0,n.createElement)("div",{className:"gp-venue-information__full-address"},l))),(r||i)&&(0,n.createElement)(o.Flex,{justify:"normal",gap:"8"},r&&(0,n.createElement)(o.FlexItem,null,(0,n.createElement)(o.Flex,{justify:"normal",gap:"4"},(0,n.createElement)(o.FlexItem,{display:"flex",className:"gp-venue-information__icon"},(0,n.createElement)(o.Icon,{icon:"phone"})),(0,n.createElement)(o.FlexItem,null,(0,n.createElement)("div",{className:"gp-venue-information__phone-number"},r)))),i&&(0,n.createElement)(o.FlexItem,null,(0,n.createElement)(o.Flex,{justify:"normal",gap:"4"},(0,n.createElement)(o.FlexItem,{display:"flex",className:"gp-venue-information__icon"},(0,n.createElement)(o.Icon,{icon:"admin-site-alt3"})),(0,n.createElement)(o.FlexItem,null,(0,n.createElement)("div",{className:"gp-venue-information__website"},(0,n.createElement)("a",{href:i,target:"_blank",rel:"noreferrer noopener"},i)))))))},a=JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/venue","version":"0.1.1","title":"Venue","category":"gatherpress","icon":"location","example":{},"description":"The venue block.","attributes":{"blockId":{"type":"string"},"venueId":{"type":"integer","default":null}},"supports":{"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","style":"file:./style-index.css"}');(0,e.registerBlockType)(a,{edit:e=>{const{setAttributes:o}=e,a=(0,l.useBlockProps)(),[s,c]=(0,n.useState)("");return function(e){let n=arguments.length>1&&void 0!==arguments[1]&&arguments[1];for(const[t,l]of Object.entries(e)){let e=t;n&&(e+=n),addEventListener(e,(e=>{l(e.detail)}),!1)}}({setVenueId:c}),(0,n.useEffect)((()=>{o({venueId:null!=s?s:""})})),(0,n.createElement)("div",a,(0,n.createElement)((e=>{var l,o,a,s,c;let{id:u}=e;const m=(0,r.useSelect)((e=>e("core").getEntityRecord("postType","gp_venue",u)));let d=null!==(l=null==m?void 0:m.meta._venue_information)&&void 0!==l?l:"{}";d=""!==d?d:"{}";const p=JSON.parse(d),f=null!==(o=null==p?void 0:p.fullAddress)&&void 0!==o?o:"",v=null!==(a=null==p?void 0:p.phoneNumber)&&void 0!==a?a:"",g=null!==(s=null==p?void 0:p.website)&&void 0!==s?s:"",E=null!==(c=null==m?void 0:m.title.rendered)&&void 0!==c?c:(0,t.__)("No venue selected.","gatherpress");return(0,n.createElement)(i,{name:E,fullAddress:f,phoneNumber:v,website:g})}),{id:s}))},save:()=>null})}},t={};function l(e){var r=t[e];if(void 0!==r)return r.exports;var o=t[e]={exports:{}};return n[e](o,o.exports,l),o.exports}l.m=n,e=[],l.O=function(n,t,r,o){if(!t){var i=1/0;for(u=0;u<e.length;u++){t=e[u][0],r=e[u][1],o=e[u][2];for(var a=!0,s=0;s<t.length;s++)(!1&o||i>=o)&&Object.keys(l.O).every((function(e){return l.O[e](t[s])}))?t.splice(s--,1):(a=!1,o<i&&(i=o));if(a){e.splice(u--,1);var c=r();void 0!==c&&(n=c)}}return n}o=o||0;for(var u=e.length;u>0&&e[u-1][2]>o;u--)e[u]=e[u-1];e[u]=[t,r,o]},l.o=function(e,n){return Object.prototype.hasOwnProperty.call(e,n)},function(){var e={654:0,857:0};l.O.j=function(n){return 0===e[n]};var n=function(n,t){var r,o,i=t[0],a=t[1],s=t[2],c=0;if(i.some((function(n){return 0!==e[n]}))){for(r in a)l.o(a,r)&&(l.m[r]=a[r]);if(s)var u=s(l)}for(n&&n(t);c<i.length;c++)o=i[c],l.o(e,o)&&e[o]&&e[o][0](),e[o]=0;return l.O(u)},t=self.webpackChunkgatherpress=self.webpackChunkgatherpress||[];t.forEach(n.bind(null,0)),t.push=n.bind(null,t.push.bind(t))}();var r=l.O(void 0,[857],(function(){return l(203)}));r=l.O(r)}();
+/******/ (function() { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/blocks/venue/edit.js":
+/*!**********************************!*\
+  !*** ./src/blocks/venue/edit.js ***!
+  \**********************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../helpers/broadcasting */ "./src/helpers/broadcasting.js");
+/* harmony import */ var _components_VenueInformation__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../components/VenueInformation */ "./src/components/VenueInformation.js");
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+const Edit = props => {
+  const {
+    setAttributes
+  } = props;
+  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.useBlockProps)();
+  const [venueId, setVenueId] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
+  (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Listener)({
+    setVenueId
+  });
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    setAttributes({
+      venueId: venueId !== null && venueId !== void 0 ? venueId : ''
+    });
+  });
+  const Venue = _ref => {
+    var _venuePost$meta$_venu, _venueInformation$ful, _venueInformation$pho, _venueInformation$web, _venuePost$title$rend;
+    let {
+      id
+    } = _ref;
+    const venuePost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core').getEntityRecord('postType', 'gp_venue', id));
+    let jsonString = (_venuePost$meta$_venu = venuePost === null || venuePost === void 0 ? void 0 : venuePost.meta._venue_information) !== null && _venuePost$meta$_venu !== void 0 ? _venuePost$meta$_venu : '{}';
+    jsonString = '' !== jsonString ? jsonString : '{}';
+    const venueInformation = JSON.parse(jsonString);
+    const fullAddress = (_venueInformation$ful = venueInformation === null || venueInformation === void 0 ? void 0 : venueInformation.fullAddress) !== null && _venueInformation$ful !== void 0 ? _venueInformation$ful : '';
+    const phoneNumber = (_venueInformation$pho = venueInformation === null || venueInformation === void 0 ? void 0 : venueInformation.phoneNumber) !== null && _venueInformation$pho !== void 0 ? _venueInformation$pho : '';
+    const website = (_venueInformation$web = venueInformation === null || venueInformation === void 0 ? void 0 : venueInformation.website) !== null && _venueInformation$web !== void 0 ? _venueInformation$web : '';
+    const name = (_venuePost$title$rend = venuePost === null || venuePost === void 0 ? void 0 : venuePost.title.rendered) !== null && _venuePost$title$rend !== void 0 ? _venuePost$title$rend : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('No venue selected.', 'gatherpress');
+    return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_VenueInformation__WEBPACK_IMPORTED_MODULE_5__["default"], {
+      name: name,
+      fullAddress: fullAddress,
+      phoneNumber: phoneNumber,
+      website: website
+    });
+  };
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", blockProps, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(Venue, {
+    id: venueId
+  }));
+};
+/* harmony default export */ __webpack_exports__["default"] = (Edit);
+
+/***/ }),
+
+/***/ "./src/blocks/venue/index.js":
+/*!***********************************!*\
+  !*** ./src/blocks/venue/index.js ***!
+  \***********************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./edit */ "./src/blocks/venue/edit.js");
+/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./block.json */ "./src/blocks/venue/block.json");
+/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/venue/style.scss");
+/**
+ * WordPress dependencies.
+ */
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_2__, {
+  edit: _edit__WEBPACK_IMPORTED_MODULE_1__["default"],
+  save: () => null
+});
+
+/***/ }),
+
+/***/ "./src/components/VenueInformation.js":
+/*!********************************************!*\
+  !*** ./src/components/VenueInformation.js ***!
+  \********************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__);
+
+
+const VenueInformation = _ref => {
+  let {
+    name,
+    fullAddress,
+    phoneNumber,
+    website
+  } = _ref;
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    className: "gp-venue-information"
+  }, (name || fullAddress) && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Flex, {
+    justify: "normal",
+    align: "flex-start",
+    gap: "4"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+    display: "flex",
+    className: "gp-venue-information__icon"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Icon, {
+    icon: "location"
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, null, name && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    className: "gp-venue_information__name has-medium-font-size"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, name)), fullAddress && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    className: "gp-venue-information__full-address"
+  }, fullAddress))), (phoneNumber || website) && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Flex, {
+    justify: "normal",
+    gap: "8"
+  }, phoneNumber && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Flex, {
+    justify: "normal",
+    gap: "4"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+    display: "flex",
+    className: "gp-venue-information__icon"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Icon, {
+    icon: "phone"
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    className: "gp-venue-information__phone-number"
+  }, phoneNumber)))), website && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Flex, {
+    justify: "normal",
+    gap: "4"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+    display: "flex",
+    className: "gp-venue-information__icon"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Icon, {
+    icon: "admin-site-alt3"
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    className: "gp-venue-information__website"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("a", {
+    href: website,
+    target: "_blank",
+    rel: "noreferrer noopener"
+  }, website)))))));
+};
+/* harmony default export */ __webpack_exports__["default"] = (VenueInformation);
+
+/***/ }),
+
+/***/ "./src/helpers/broadcasting.js":
+/*!*************************************!*\
+  !*** ./src/helpers/broadcasting.js ***!
+  \*************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Broadcaster": function() { return /* binding */ Broadcaster; },
+/* harmony export */   "Listener": function() { return /* binding */ Listener; }
+/* harmony export */ });
+const Broadcaster = function (payload) {
+  let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  for (const [key, value] of Object.entries(payload)) {
+    let type = key;
+    if (identifier) {
+      type += identifier;
+    }
+    const dispatcher = new CustomEvent(type, {
+      detail: value
+    });
+    dispatchEvent(dispatcher);
+  }
+};
+const Listener = function (payload) {
+  let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  for (const [key, value] of Object.entries(payload)) {
+    let type = key;
+    if (identifier) {
+      type += identifier;
+    }
+    addEventListener(type, e => {
+      value(e.detail);
+    }, false);
+  }
+};
+
+/***/ }),
+
+/***/ "./src/blocks/venue/style.scss":
+/*!*************************************!*\
+  !*** ./src/blocks/venue/style.scss ***!
+  \*************************************/
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "@wordpress/block-editor":
+/*!*************************************!*\
+  !*** external ["wp","blockEditor"] ***!
+  \*************************************/
+/***/ (function(module) {
+
+module.exports = window["wp"]["blockEditor"];
+
+/***/ }),
+
+/***/ "@wordpress/blocks":
+/*!********************************!*\
+  !*** external ["wp","blocks"] ***!
+  \********************************/
+/***/ (function(module) {
+
+module.exports = window["wp"]["blocks"];
+
+/***/ }),
+
+/***/ "@wordpress/components":
+/*!************************************!*\
+  !*** external ["wp","components"] ***!
+  \************************************/
+/***/ (function(module) {
+
+module.exports = window["wp"]["components"];
+
+/***/ }),
+
+/***/ "@wordpress/data":
+/*!******************************!*\
+  !*** external ["wp","data"] ***!
+  \******************************/
+/***/ (function(module) {
+
+module.exports = window["wp"]["data"];
+
+/***/ }),
+
+/***/ "@wordpress/element":
+/*!*********************************!*\
+  !*** external ["wp","element"] ***!
+  \*********************************/
+/***/ (function(module) {
+
+module.exports = window["wp"]["element"];
+
+/***/ }),
+
+/***/ "@wordpress/i18n":
+/*!******************************!*\
+  !*** external ["wp","i18n"] ***!
+  \******************************/
+/***/ (function(module) {
+
+module.exports = window["wp"]["i18n"];
+
+/***/ }),
+
+/***/ "./src/blocks/venue/block.json":
+/*!*************************************!*\
+  !*** ./src/blocks/venue/block.json ***!
+  \*************************************/
+/***/ (function(module) {
+
+module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/venue","version":"0.1.1","title":"Venue","category":"gatherpress","icon":"location","example":{},"description":"The venue block.","attributes":{"blockId":{"type":"string"},"venueId":{"type":"integer","default":null}},"supports":{"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","style":"file:./style-index.css"}');
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/chunk loaded */
+/******/ 	!function() {
+/******/ 		var deferred = [];
+/******/ 		__webpack_require__.O = function(result, chunkIds, fn, priority) {
+/******/ 			if(chunkIds) {
+/******/ 				priority = priority || 0;
+/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+/******/ 				deferred[i] = [chunkIds, fn, priority];
+/******/ 				return;
+/******/ 			}
+/******/ 			var notFulfilled = Infinity;
+/******/ 			for (var i = 0; i < deferred.length; i++) {
+/******/ 				var chunkIds = deferred[i][0];
+/******/ 				var fn = deferred[i][1];
+/******/ 				var priority = deferred[i][2];
+/******/ 				var fulfilled = true;
+/******/ 				for (var j = 0; j < chunkIds.length; j++) {
+/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every(function(key) { return __webpack_require__.O[key](chunkIds[j]); })) {
+/******/ 						chunkIds.splice(j--, 1);
+/******/ 					} else {
+/******/ 						fulfilled = false;
+/******/ 						if(priority < notFulfilled) notFulfilled = priority;
+/******/ 					}
+/******/ 				}
+/******/ 				if(fulfilled) {
+/******/ 					deferred.splice(i--, 1)
+/******/ 					var r = fn();
+/******/ 					if (r !== undefined) result = r;
+/******/ 				}
+/******/ 			}
+/******/ 			return result;
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	!function() {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = function(module) {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				function() { return module['default']; } :
+/******/ 				function() { return module; };
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	!function() {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = function(exports, definition) {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	!function() {
+/******/ 		__webpack_require__.o = function(obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); }
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	!function() {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = function(exports) {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	!function() {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"blocks/venue/index": 0,
+/******/ 			"blocks/venue/style-index": 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		__webpack_require__.O.j = function(chunkId) { return installedChunks[chunkId] === 0; };
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = function(parentChunkLoadingFunction, data) {
+/******/ 			var chunkIds = data[0];
+/******/ 			var moreModules = data[1];
+/******/ 			var runtime = data[2];
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some(function(id) { return installedChunks[id] !== 0; })) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 			return __webpack_require__.O(result);
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = self["webpackChunkgatherpress"] = self["webpackChunkgatherpress"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	}();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/venue/style-index"], function() { return __webpack_require__("./src/blocks/venue/index.js"); })
+/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
+/******/ 	
+/******/ })()
+;
+//# sourceMappingURL=index.js.map

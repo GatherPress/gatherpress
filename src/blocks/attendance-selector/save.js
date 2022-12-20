@@ -30,6 +30,7 @@ export default function save() {
 			<div
 				data-gp_block_name="attendance-selector"
 				data-gp_block_attrs="[]"
+				style={{ border: '1px solid' }}
 			>
 				<div class="gp-attendance-selector">
 					<div

@@ -37,13 +37,13 @@ add_action( 'init', 'gatherpress_gp_blocks_init' );
 
 function gatherpress_gp_blocks_init() {
 	register_block_type(
-		__DIR__ . '/build/blocks/add-to-calendar',
-		[
-			'render_callback' => 'gp_blocks_add_to_calendar_render_callback'
-		]
+		__DIR__ . '/build/blocks/add-to-calendar'
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/attendance-list'
+		__DIR__ . '/build/blocks/attendance-list',
+		[
+			'render_callback' => 'gp_blocks_attendance_list_render_callback'
+		]
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/attendance-selector'
@@ -69,26 +69,6 @@ function gatherpress_gp_blocks_init() {
 	register_block_type(
 		__DIR__ . '/build/blocks/venue-information'
 	);
-}
-
-/**
- * Render callback function.
- *
- * @param array    $attributes The block attributes.
- * @param string   $content    The block content.
- * @param WP_Block $block      Block instance.
- *
- * @return string The rendered output.
- */
-function gp_blocks_add_to_calendar_render_callback( $attributes, $content, $block ) {
-	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/add-to-calendar/template.php';
-	$block_content = ob_get_clean();
-
-	$wrapper_attributes = get_block_wrapper_attributes();
-
-	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
-
 }
 
 /**
@@ -276,11 +256,15 @@ add_action( 'wp_enqueue_scripts', 'add_to_calendar_script' );
 function add_to_calendar_script() {
 	wp_register_script(
 		'add-to-calendar',
-		plugins_url( 'core/js/add-to-calendar.js', __FILE__ ),
+		plugins_url( 'includes/core/classes/js/add-to-calendar.js', __FILE__ ),
 		array(),
-		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/add-to-calendar.js' ),
+		filemtime( plugin_dir_path( __FILE__ ) . 'includes/core/classes/js/add-to-calendar.js' ),
 		true
 	);
+
+	if ( 'gp_event' === get_post_type() ) {
+		wp_enqueue_script( 'add-to-calendar' );
+	}
 }
 
 // add_filter( 'render_block', 'show_the_block_constituents', 10, 2 );
@@ -340,35 +324,35 @@ add_action( 'enqueue_block_editor_assets', 'maybe_deny_list_blocks' );
 function maybe_deny_list_blocks() {
     wp_register_script(
         'post-deny-list-blocks',
-        plugins_url( 'core/js/post-deny-list.js', __FILE__ ),
+        plugins_url( 'includes/core/classes/js/post-deny-list.js', __FILE__ ),
         array(
 			'wp-blocks',
 			'wp-dom-ready',
 			'wp-edit-post'
 		),
-		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/post-deny-list.js'),
+		filemtime( plugin_dir_path( __FILE__ ) . 'includes/core/classes/js/post-deny-list.js'),
 		true
     );
     wp_register_script(
         'event-deny-list-blocks',
-        plugins_url( 'core/js/event-deny-list.js', __FILE__ ),
+        plugins_url( 'includes/core/classes/js/event-deny-list.js', __FILE__ ),
         array(
 			'wp-blocks',
 			'wp-dom-ready',
 			'wp-edit-post'
 		),
-		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/event-deny-list.js'),
+		filemtime( plugin_dir_path( __FILE__ ) . 'includes/core/classes/js/event-deny-list.js'),
 		true
     );
     wp_register_script(
         'venue-deny-list-blocks',
-        plugins_url( 'core/js/venue-deny-list.js', __FILE__ ),
+        plugins_url( 'includes/core/classes/js/venue-deny-list.js', __FILE__ ),
         array(
 			'wp-blocks',
 			'wp-dom-ready',
 			'wp-edit-post'
 		),
-		filemtime( plugin_dir_path( __FILE__ ) . 'core/js/venue-deny-list.js'),
+		filemtime( plugin_dir_path( __FILE__ ) . 'includes/core/classes/js/venue-deny-list.js'),
 		true
     );
 	if ( 'post' === get_post_type() || 'page' === get_post_type() ) {
