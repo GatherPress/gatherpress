@@ -13,10 +13,10 @@ const AttendanceListContent = ( { items, activeValue, limit = false } ) => {
 		return (
 			<div
 				key={ index }
-				className={ `gp-attendance-list__items gp-attendance-list__${ active }` }
-				id={ `gp-attendance-${ value }` }
+				className={ `gatherpress-attendance-list__items gatherpress-attendance-list__${ active }` }
+				id={ `gatherpress-attendance-${ value }` }
 				role="tabpanel"
-				aria-labelledby={ `gp-attendance-${ value }-tab` }
+				aria-labelledby={ `gatherpress-attendance-${ value }-tab` }
 			>
 				<AttendeeList
 					eventId={ postId }
@@ -28,7 +28,7 @@ const AttendanceListContent = ( { items, activeValue, limit = false } ) => {
 		);
 	} );
 
-	return <div className="gp-attendance-list__container">{ renderedItems }</div>;
+	return <div className="gatherpress-attendance-list__container">{ renderedItems }</div>;
 };
 
 export default AttendanceListContent;

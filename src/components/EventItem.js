@@ -17,7 +17,7 @@ const EventItem = ( props ) => {
 
 	const featuredImage = HtmlReactParser( event[ size ] );
 
-	const eventClass = `gp-events-list`;
+	const eventClass = `gatherpress-events-list`;
 	const venue = event.venue ? HtmlReactParser( '<a href=' + event.venue.permalink + '>' + event.venue.name + '</a>' ) : null;
 
 	return (
@@ -57,7 +57,7 @@ const EventItem = ( props ) => {
 			</div>
 			<div className={ `${ eventClass }__footer` }>
 				{ eventOptions.showAttendeeList && (
-					<div className="gp-attendance-list__items">
+					<div className="gatherpress-attendance-list__items">
 						<AttendeeList
 							eventId={ event.ID }
 							value="attending"

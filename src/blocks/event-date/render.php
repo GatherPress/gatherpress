@@ -11,17 +11,17 @@ use GatherPress\Core\Event;
 
 $gatherpress_event = new Event( get_the_ID() );
 ?>
-<div class="gp-event-date">
-	<div class="gp-event-date__row">
-		<div class="gp-event-date__item">
-			<div class="gp-event-date__icon">
+<!-- <div class="gatherpress-event-date"> -->
+	<div class="gatherpress-event-date__row">
+		<div class="gatherpress-event-date__item">
+			<div class="gatherpress-event-date__icon">
 				<div class="dashicons dashicons-clock"></div>
 			</div>
-			<div class="gp-event-date__text">
+			<div class="gatherpress-event-date__text">
 				<?php echo esc_html( $gatherpress_event->get_display_datetime() ); ?>
 			</div>
 		</div>
 	</div>
-</div>
+<!-- </div> -->
 
 

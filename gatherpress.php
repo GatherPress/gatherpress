@@ -37,7 +37,10 @@ add_action( 'init', 'gatherpress_gp_blocks_init' );
 
 function gatherpress_gp_blocks_init() {
 	register_block_type(
-		__DIR__ . '/build/blocks/add-to-calendar'
+		__DIR__ . '/build/blocks/add-to-calendar',
+		[
+			'render_callback' => 'gp_blocks_add_to_calendar_render_callback'
+		]
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/attendance-list',
@@ -80,6 +83,26 @@ function gatherpress_gp_blocks_init() {
  *
  * @return string The rendered output.
  */
+function gp_blocks_add_to_calendar_render_callback( $attributes, $content, $block ) {
+	ob_start();
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/add-to-calendar/render.php';
+
+	$block_content = ob_get_clean();
+
+	$wrapper_attributes = get_block_wrapper_attributes();
+
+	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
+}
+
+/**
+ * Render callback function.
+ *
+ * @param array    $attributes The block attributes.
+ * @param string   $content    The block content.
+ * @param WP_Block $block      Block instance.
+ *
+ * @return string The rendered output.
+ */
 function gp_blocks_attendance_list_render_callback( $attributes, $content, $block ) {
 	ob_start();
 	require plugin_dir_path( __FILE__ ) . 'build/blocks/attendance-list/sample.php';
@@ -89,7 +112,6 @@ function gp_blocks_attendance_list_render_callback( $attributes, $content, $bloc
 	$wrapper_attributes = get_block_wrapper_attributes();
 
 	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
-
 }
 
 /**
@@ -145,7 +167,7 @@ function gp_blocks_example_dynamic_render_callback( $attributes, $content, $bloc
  */
 function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
 	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/template.php';
+	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/render.php';
 
 	$block_content = ob_get_clean();
 
@@ -186,13 +208,15 @@ function gp_blocks_events_list_render_callback( $attributes, $content, $block ) 
  * @return string The rendered output.
  */
 function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
+	$wrapper_attributes = get_block_wrapper_attributes();
+
 	ob_start();
 	$timezone = get_option('timezone_string');
 	if ( ! $timezone ) {
 		$timezone = ' / timezone unset';
 	}
 	if ( ! isset( $attributes['venueId'] ) ) {
-		return '<p>Venue unset' . $timezone . '</p>';
+		return sprintf( '<div %s>%s</div>', $wrapper_attributes, 'Venue unset ' . $timezone );
 	}
 	$gatherpress_venue = get_post( intval( $attributes['venueId'] ) );
 
@@ -217,8 +241,6 @@ function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 	<?php
 
 	$block_content = ob_get_clean();
-
-	$wrapper_attributes = get_block_wrapper_attributes();
 
 	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
 

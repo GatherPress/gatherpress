@@ -2,22 +2,22 @@ import { Flex, FlexItem, Icon } from '@wordpress/components';
 
 const VenueInformation = ( { name, fullAddress, phoneNumber, website } ) => {
 	return (
-		<div className="gp-venue-information">
+		<div className="gatherpress-venue-information">
 			{ ( name || fullAddress ) && (
 				<Flex justify="normal" align="flex-start" gap="4">
-					<FlexItem display="flex" className="gp-venue-information__icon">
+					<FlexItem display="flex" className="gatherpress-venue-information__icon">
 						<Icon icon="location" />
 					</FlexItem>
 					<FlexItem>
 						{ name && (
-							<div className="gp-venue_information__name has-medium-font-size">
+							<div className="gatherpress-venue_information__name has-medium-font-size">
 								<strong>
 									{ name }
 								</strong>
 							</div>
 						) }
 						{ fullAddress && (
-							<div className="gp-venue-information__full-address">
+							<div className="gatherpress-venue-information__full-address">
 								{ fullAddress }
 							</div>
 						) }
@@ -29,11 +29,11 @@ const VenueInformation = ( { name, fullAddress, phoneNumber, website } ) => {
 					{ phoneNumber && (
 						<FlexItem>
 							<Flex justify="normal" gap="4">
-								<FlexItem display="flex" className="gp-venue-information__icon">
+								<FlexItem display="flex" className="gatherpress-venue-information__icon">
 									<Icon icon="phone" />
 								</FlexItem>
 								<FlexItem>
-									<div className="gp-venue-information__phone-number">
+									<div className="gatherpress-venue-information__phone-number">
 										{ phoneNumber }
 									</div>
 								</FlexItem>
@@ -43,11 +43,11 @@ const VenueInformation = ( { name, fullAddress, phoneNumber, website } ) => {
 					{ website && (
 						<FlexItem>
 							<Flex justify="normal" gap="4">
-								<FlexItem display="flex" className="gp-venue-information__icon">
+								<FlexItem display="flex" className="gatherpress-venue-information__icon">
 									<Icon icon="admin-site-alt3" />
 								</FlexItem>
 								<FlexItem>
-									<div className="gp-venue-information__website">
+									<div className="gatherpress-venue-information__website">
 										<a href={ website } target="_blank" rel="noreferrer noopener">{ website }</a>
 									</div>
 								</FlexItem>

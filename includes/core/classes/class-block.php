@@ -92,14 +92,15 @@ class Block {
 					'gatherpress_block_attrs' => $block['attrs'] ?? array(),
 				)
 			);
-		} elseif ( in_array( $block_name, $this->static_blocks, true ) ) {
-			return Utility::render_template(
-				sprintf( '%s/includes/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name ),
-				array(
-					'gatherpress_block_attrs' => $block['attrs'] ?? array(),
-				)
-			);
 		}
+		// elseif ( in_array( $block_name, $this->static_blocks, true ) ) {
+		// 	return Utility::render_template(
+		// 		sprintf( '%s/includes/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name ),
+		// 		array(
+		// 			'gatherpress_block_attrs' => $block['attrs'] ?? array(),
+		// 		)
+		// 	);
+		// }
 
 		return $block_content;
 	}

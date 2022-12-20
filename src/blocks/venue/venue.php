@@ -22,7 +22,7 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 
 $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
 ?>
-<div class="gp-venue">
+<div class="gatherpress-venue">
 	<?php
 	Utility::render_template(
 		sprintf( '%s/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),

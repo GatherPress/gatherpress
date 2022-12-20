@@ -107,7 +107,7 @@ class Email {
 	 */
 	protected function email_get_schema() : array {
 		return array(
-			'gp-event-announce' => array(
+			'gatherpress-event-announce' => array(
 				'post_title'   => __( '[{{{site.name}}}] posted new event', 'gatherpress' ),
 				'post_content' => __( "{{event.name}} has been announced:\n\n<a href=\"{{{event.url}}}\">Go to the event page</a>.", 'gatherpress' ),
 				'post_excerpt' => __( "{{event.name}} has been announced:\n\n<a href=\"{{{event.url}}}\">Go to the event page</a>.", 'gatherpress' ),

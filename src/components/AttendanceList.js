@@ -76,7 +76,7 @@ const AttendanceList = () => {
 
 	return (
 		<>
-			<div className="gp-attendance-list">
+			<div className="gatherpress-attendance-list">
 				<AttendanceListNavigation
 					items={ items }
 					activeValue={ attendanceStatus }

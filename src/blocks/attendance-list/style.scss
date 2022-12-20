@@ -1,8 +1,29 @@
+[data-gp_block_name="attendance-list"]:before {
+	content: 'attendance-list'
+}
+[data-gp_block_name="attendance-selector"]:before {
+	content: 'attendance-selector'
+}
+
+[data-gp_block_name="attendance-list"],
+[data-gp_block_name="attendance-selector"],
+.wp-block-gatherpress-attendance-selector,
+.wp-block-gatherpress-event-date,
+.gatherpress-event-date,
+.gatherpress-add-to-calendar,
 .wp-block-gatherpress-attendance-list {
 	padding: 2rem;
 	border: 2px solid maroon;
 }
-
+.wp-block-gatherpress-add-to-calendar,
+.wp-block-gatherpress-attendance-list,
+.wp-block-gatherpress-attendance-selector,
+.wp-block-gatherpress-event-date,
+.wp-block-gatherpress-venue-informaton,
+.wp-block-gatherpress-venue {
+	padding: 2rem;
+	border: 2px solid green;
+}
 @mixin for-core-tablet {
 	@media screen and (max-width: 782px) {
 		@content;
@@ -21,7 +42,7 @@
 	}
 }
 
-.gp-attendance-list {
+.gatherpress-attendance-list {
 	&__navigation {
 		display: flex;
 		gap: 1rem;
@@ -80,12 +101,12 @@
 	}
 }
 
-.gp-modal {
+.gatherpress-modal {
 	&__attendance-list {
 		width: 100%;
 	}
 
-	.gp-attendance-list {
+	.gatherpress-attendance-list {
 		&__items {
 			grid-template-columns: 1fr 1fr;
 

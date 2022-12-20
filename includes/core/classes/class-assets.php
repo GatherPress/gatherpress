@@ -111,7 +111,7 @@ class Assets {
 	 */
 	public function admin_enqueue_scripts_2( $hook ) {
 		wp_enqueue_style(
-			'gp-admin-settings',
+			'gatherpress-admin-settings',
 			plugins_url( 'css/admin-settings.css', __FILE__ ),
 			[],
 			filemtime( plugin_dir_path( __FILE__ ) . 'css/admin-settings.css' )
@@ -228,7 +228,7 @@ class Assets {
 			'nonce'            => wp_create_nonce( 'wp_rest' ),
 			'post_id'          => $post_id,
 			'event_datetime'   => $event->get_datetime(),
-			'event_announced'  => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
+			'event_announced'  => ( get_post_meta( $post_id, 'gatherpress-event-announce', true ) ) ? 1 : 0,
 			'default_timezone' => sanitize_text_field( wp_timezone_string() ),
 			'settings'         => array(
 				// @todo settings to come...

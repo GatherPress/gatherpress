@@ -110,8 +110,8 @@ class Setup {
 	 * @return mixed
 	 */
 	public function body_class( $classes ) {
-		$classes[] = 'gp-enabled';
-		$classes[] = sprintf( 'gp-theme-%s', esc_attr( get_stylesheet() ) );
+		$classes[] = 'gatherpress-enabled';
+		$classes[] = sprintf( 'gatherpress-theme-%s', esc_attr( get_stylesheet() ) );
 
 		return $classes;
 	}

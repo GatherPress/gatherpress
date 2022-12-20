@@ -47,7 +47,7 @@ class Utility {
 	}
 
 	/**
-	 * Add gp- prefix.
+	 * Add gatherpress- prefix.
 	 *
 	 * @param string $key The key for adding prefix.
 	 *
@@ -58,7 +58,7 @@ class Utility {
 	}
 
 	/**
-	 * Remove gp- prefix.
+	 * Remove gatherpress- prefix.
 	 *
 	 * @param string $key The key for removing prefix.
 	 *

@@ -1,4 +1,4 @@
-.gp-events-list {
+.gatherpress-events-list {
 	&__header {
 		display: flex;
 		gap: 2rem;
@@ -45,7 +45,7 @@
 		padding-bottom: 2rem;
 		display: flex;
 
-		.gp-attendance-list {
+		.gatherpress-attendance-list {
 			&__items {
 				display: flex;
 				gap: 0;
@@ -74,7 +74,7 @@
 			}
 		}
 
-		.gp-attendance-selector {
+		.gatherpress-attendance-selector {
 			margin-bottom: 0;
 		}
 	}

@@ -25,7 +25,7 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 	const renderedItems = items.map( ( item, index ) => {
 		const additionalClasses =
 			item.value === activeValue
-				? 'gp-attendance-list__navigation--current'
+				? 'gatherpress-attendance-list__navigation--current'
 				: '';
 
 		return (
@@ -40,7 +40,7 @@ const AttendanceListNavigation = ( { items, activeValue, onTitleClick } ) => {
 	} );
 
 	return (
-		<nav className="gp-attendance-list__navigation">
+		<nav className="gatherpress-attendance-list__navigation">
 			{ renderedItems }
 		</nav>
 	);

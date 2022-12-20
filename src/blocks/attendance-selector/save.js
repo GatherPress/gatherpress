@@ -32,15 +32,15 @@ export default function save() {
 				data-gp_block_attrs="[]"
 				style={{ border: '1px solid' }}
 			>
-				<div class="gp-attendance-selector">
+				<div class="gatherpress-attendance-selector">
 					<div
 						role="group"
-						class="components-button-group gp-buttons wp-block-buttons"
+						class="components-button-group gatherpress-buttons wp-block-buttons"
 					>
-						<div class="gp-buttons__container wp-block-button">
+						<div class="gatherpress-buttons__container wp-block-button">
 							<a
 								href="#"
-								class="gp-buttons__button wp-block-button__link"
+								class="gatherpress-buttons__button wp-block-button__link"
 								aria-expanded="false"
 								tabindex="0"
 							>

@@ -20,10 +20,10 @@ const EventSettings = () => {
 	return (
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
-				name="gp-event-settings"
+				name="gatherpress-event-settings"
 				title={ __( 'Event settings', 'gatherpress' ) }
 				initialOpen={ true }
-				className="gp-event-settings"
+				className="gatherpress-event-settings"
 			>
 				<DateTimeStartSettingPanel />
 				<hr />
@@ -35,7 +35,7 @@ const EventSettings = () => {
 	);
 };
 
-registerPlugin( 'gp-event-settings', {
+registerPlugin( 'gatherpress-event-settings', {
 	render: EventSettings,
 	icon: '',
 } );
