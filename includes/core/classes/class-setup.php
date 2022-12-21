@@ -69,6 +69,7 @@ class Setup {
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+		add_action( 'admin_notices', array( $this, 'timezone_check_admin_notice' ) );
 	}
 
 	/**
@@ -133,6 +134,30 @@ class Setup {
 		array_unshift( $block_categories, $gatherpress_category );
 
 		return $block_categories;
+	}
+
+	/**
+	 * Display custom admin notice function
+	 *
+	 * @return void
+	 */
+	public function timezone_check_admin_notice() {
+		$timezone = get_option('timezone_string');
+		if ( $timezone ) {
+			return;
+		}
+		$class = 'notice notice-error is-dismissible';
+		$string1 = __( 'Please set', 'gatherpress' );
+		$string2 = __( 'your timezone', 'gatherpress' );
+		$string3 = __( 'in order to ensure proper GatherPress settings!', 'gatherpress' );
+
+		printf( '<div class="%1$s"><p>%2$s <a href="%3$s">%4$s</a> %5$s</p></div>',
+			esc_attr( $class ),
+			esc_html( $string1 ),
+			esc_url( get_admin_url() . 'options-general.php#timezone_string' ),
+			esc_html( $string2 ),
+			esc_html( $string3 )
+		);
 	}
 
 	/**

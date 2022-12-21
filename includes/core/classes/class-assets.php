@@ -60,7 +60,79 @@ class Assets {
 		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts_2' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ) );
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'add_to_calendar_script' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'maybe_deny_list_blocks' ) );
 	}
+
+	/**
+	 * Enqueue Scripts
+	 *
+	 * @return void
+	 */
+	public function add_to_calendar_script() {
+		wp_register_script(
+			'add-to-calendar',
+			plugins_url( 'js/add-to-calendar.js', __FILE__ ),
+			array(),
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/add-to-calendar.js' ),
+			true
+		);
+
+		if ( 'gp_event' === get_post_type() ) {
+			wp_enqueue_script( 'add-to-calendar' );
+		}
+	}
+
+	/**
+	 * Enqueue Scripts
+	 *
+	 * @return void
+	 */
+	public function maybe_deny_list_blocks() {
+		wp_register_script(
+			'post-deny-list-blocks',
+			plugins_url( 'js/post-deny-list.js', __FILE__ ),
+			array(
+				'wp-blocks',
+				'wp-dom-ready',
+				'wp-edit-post'
+			),
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/post-deny-list.js'),
+			true
+		);
+		wp_register_script(
+			'event-deny-list-blocks',
+			plugins_url( 'js/event-deny-list.js', __FILE__ ),
+			array(
+				'wp-blocks',
+				'wp-dom-ready',
+				'wp-edit-post'
+			),
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/event-deny-list.js'),
+			true
+		);
+		wp_register_script(
+			'venue-deny-list-blocks',
+			plugins_url( 'js/venue-deny-list.js', __FILE__ ),
+			array(
+				'wp-blocks',
+				'wp-dom-ready',
+				'wp-edit-post'
+			),
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/venue-deny-list.js'),
+			true
+		);
+		if ( 'post' === get_post_type() || 'page' === get_post_type() ) {
+			wp_enqueue_script( 'post-deny-list-blocks' );
+		}
+		if ( 'gp_event' === get_post_type() ) {
+			wp_enqueue_script( 'event-deny-list-blocks' );
+		}
+		if ( 'gp_venue' === get_post_type() ) {
+			wp_enqueue_script( 'venue-deny-list-blocks' );
+		}
+	}
+
 
 	/**
 	 * Localize the global GatherPress js object for use in the build scripts.
