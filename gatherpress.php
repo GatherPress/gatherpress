@@ -65,10 +65,13 @@ function gatherpress_gp_blocks_init() {
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/venue',
-		[
-			'render_callback' => 'gp_blocks_venue_render_callback'
-		]
 	);
+	// register_block_type(
+	// 	__DIR__ . '/build/blocks/venue',
+	// 	[
+	// 		'render_callback' => 'gp_blocks_venue_render_callback'
+	// 	]
+	// );
 	register_block_type(
 		__DIR__ . '/build/blocks/venue-information'
 	);
