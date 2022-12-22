@@ -13,9 +13,9 @@ $gatherpress_event = new Event( get_the_ID() );
 
 $wrapper_attributes = \get_block_wrapper_attributes();
 // $wrapper_attributes = \get_block_wrapper_attributes(
-// 	[
-// 		'class' => 'pbrocks-not-here',
-// 	]
+// [
+// 'class' => 'pbrocks-not-here',
+// ]
 // );
 // ob_start();
 ?>

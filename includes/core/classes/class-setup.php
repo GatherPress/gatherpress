@@ -142,16 +142,17 @@ class Setup {
 	 * @return void
 	 */
 	public function timezone_check_admin_notice() {
-		$timezone = get_option('timezone_string');
+		$timezone = get_option( 'timezone_string' );
 		if ( $timezone ) {
 			return;
 		}
-		$class = 'notice notice-error is-dismissible';
+		$class   = 'notice notice-error is-dismissible';
 		$string1 = __( 'Please set', 'gatherpress' );
 		$string2 = __( 'your timezone', 'gatherpress' );
 		$string3 = __( 'in order to ensure proper GatherPress settings!', 'gatherpress' );
 
-		printf( '<div class="%1$s"><p>%2$s <a href="%3$s">%4$s</a> %5$s</p></div>',
+		printf(
+			'<div class="%1$s"><p>%2$s <a href="%3$s">%4$s</a> %5$s</p></div>',
 			esc_attr( $class ),
 			esc_html( $string1 ),
 			esc_url( get_admin_url() . 'options-general.php#timezone_string' ),

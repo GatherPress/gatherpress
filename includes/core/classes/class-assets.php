@@ -95,9 +95,9 @@ class Assets {
 			array(
 				'wp-blocks',
 				'wp-dom-ready',
-				'wp-edit-post'
+				'wp-edit-post',
 			),
-			filemtime( plugin_dir_path( __FILE__ ) . 'js/post-deny-list.js'),
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/post-deny-list.js' ),
 			true
 		);
 		wp_register_script(
@@ -106,9 +106,9 @@ class Assets {
 			array(
 				'wp-blocks',
 				'wp-dom-ready',
-				'wp-edit-post'
+				'wp-edit-post',
 			),
-			filemtime( plugin_dir_path( __FILE__ ) . 'js/event-deny-list.js'),
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/event-deny-list.js' ),
 			true
 		);
 		wp_register_script(
@@ -117,9 +117,9 @@ class Assets {
 			array(
 				'wp-blocks',
 				'wp-dom-ready',
-				'wp-edit-post'
+				'wp-edit-post',
 			),
-			filemtime( plugin_dir_path( __FILE__ ) . 'js/venue-deny-list.js'),
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/venue-deny-list.js' ),
 			true
 		);
 		if ( 'post' === get_post_type() || 'page' === get_post_type() ) {
@@ -185,7 +185,7 @@ class Assets {
 		wp_enqueue_style(
 			'gatherpress-admin-settings',
 			plugins_url( 'css/admin-settings.css', __FILE__ ),
-			[],
+			array(),
 			filemtime( plugin_dir_path( __FILE__ ) . 'css/admin-settings.css' )
 		);
 	}
@@ -322,7 +322,7 @@ class Assets {
 		if ( empty( $this->asset_data[ $asset ] ) ) {
 			// $this->asset_data[ $asset ] = require_once $this->path . sprintf( '%s.asset.php', $asset );
 		}
-		return [];
+		return array();
 		// return $this->asset_data[ $asset ];
 	}
 
