@@ -1,6 +1,6 @@
 <?php
 /**
- * 
+ * Render has $attributus, $block, $content
  */
 
 $wrapper_attributes = get_block_wrapper_attributes();
@@ -14,19 +14,23 @@ $latest_events = get_posts(
 if ( $latest_events ) {
 	$output = '';
 	foreach ( $latest_events as $post ) {
-		$output .= '<li><a href="' . get_the_permalink( $post->ID ) . '" target="_blank">' . $post->post_title . '</a></li>';
+		$output .= '<li><p><a href="' . get_the_permalink( $post->ID ) . '" target="_blank">' . $post->post_title . '</a></p><p>' . $post->post_content . '</p></li>';
 	}
+}
+
+$wrapper_attributes = get_block_wrapper_attributes();
+
+if ( $attributes['className'] ) {
+	$wrapper_attributes = 'class="' . $attributes['className'] . '"';
 }
 
 // <pre>%s</pre>
 printf(
-	__( '<div %s><p>%s %s</p><p>Number of Events: %s</p><ul>%s</ul><pre>%s</pre><pre>%s</pre></div>', 'gatherpress' ),
-	$attributes['className'],
+	__( '<div %s><p>%s %s</p><p>Number of Events: %s</p><ul>%s</ul></div>', 'gatherpress' ),
+	$wrapper_attributes,
 	$block_name,
 	esc_html( '– hello from a dynamic block!' ),
 	count( $latest_events ),
-	$output,
-	print_r( $attributes, true ),
-	print_r( $block, true )
+	$output
 );
 
