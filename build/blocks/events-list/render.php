@@ -1,6 +1,10 @@
 <?php
+/**
+ * 
+ */
 
 $wrapper_attributes = get_block_wrapper_attributes();
+$block_name = $block->block_type->title;
 $latest_events = get_posts(
 	array(
 		'post_type'  => 'gp_event',
@@ -14,12 +18,15 @@ if ( $latest_events ) {
 	}
 }
 
+// <pre>%s</pre>
 printf(
-	__( '<div %s><p>%s</p><p>Number of Events: %s</p><ul>%s</ul></div>', 'gatherpress' ),
+	__( '<div %s><p>%s %s</p><p>Number of Events: %s</p><ul>%s</ul><pre>%s</pre><pre>%s</pre></div>', 'gatherpress' ),
 	$attributes['className'],
-	esc_html( 'Example Dynamic – hello from a dynamic block!' ),
+	$block_name,
+	esc_html( '– hello from a dynamic block!' ),
 	count( $latest_events ),
-	$output
-	// print_r( $attributes, true )
+	$output,
+	print_r( $attributes, true ),
+	print_r( $block, true )
 );
 

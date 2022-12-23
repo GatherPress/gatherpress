@@ -37,10 +37,7 @@ add_action( 'init', 'gatherpress_gp_blocks_init' );
 
 function gatherpress_gp_blocks_init() {
 	register_block_type(
-		__DIR__ . '/build/blocks/add-to-calendar',
-		[
-			'render_callback' => 'gp_blocks_add_to_calendar_render_callback'
-		]
+		__DIR__ . '/build/blocks/add-to-calendar'
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/attendance-list'
@@ -66,44 +63,4 @@ function gatherpress_gp_blocks_init() {
 	register_block_type(
 		__DIR__ . '/build/blocks/react-block'
 	);
-}
-
-/**
- * Render callback function.
- *
- * @param array    $attributes The block attributes.
- * @param string   $content    The block content.
- * @param WP_Block $block      Block instance.
- *
- * @return string The rendered output.
- */
-function gp_blocks_add_to_calendar_render_callback( $attributes, $content, $block ) {
-	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/add-to-calendar/render.php';
-
-	$block_content = ob_get_clean();
-
-	$wrapper_attributes = get_block_wrapper_attributes();
-
-	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
-}
-
-/**
- * Render callback function.
- *
- * @param array    $attributes The block attributes.
- * @param string   $content    The block content.
- * @param WP_Block $block      Block instance.
- *
- * @return string The rendered output.
- */
-function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
-	ob_start();
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/event-date/render.php';
-
-	$block_content = ob_get_clean();
-
-	$wrapper_attributes = get_block_wrapper_attributes();
-
-	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
 }

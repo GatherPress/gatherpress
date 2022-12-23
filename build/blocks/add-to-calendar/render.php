@@ -9,8 +9,16 @@
 
 use GatherPress\Core\Event;
 $gatherpress_event = new Event( get_the_ID() );
+
+$wrapper_attributes = get_block_wrapper_attributes();
+
+if ( $attributes['className'] ) {
+	$wrapper_attributes = 'class="' . $attributes['className'] . '"';
+}
+
 ?>
-<!-- <div class="gatherpress-add-to-calendar"> -->
+
+<div <?php echo $wrapper_attributes; ?>>
 	<div class="gatherpress-add-to-calendar__row">
 		<div class="gatherpress-add-to-calendar__item">
 			<div class="gatherpress-add-to-calendar__icon">
@@ -36,4 +44,4 @@ $gatherpress_event = new Event( get_the_ID() );
 			</div>
 		</div>
 	</div>
-<!-- </div> -->
+</div>
