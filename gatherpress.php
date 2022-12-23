@@ -49,10 +49,7 @@ function gatherpress_gp_blocks_init() {
 		__DIR__ . '/build/blocks/attendance-selector'
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/event-date',
-		[
-			'render_callback' => 'gp_blocks_event_date_render_callback'
-		]
+		__DIR__ . '/build/blocks/event-date'
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/events-list',
