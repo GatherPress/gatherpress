@@ -1,4 +1,9 @@
+
 .wp-block-gatherpress-add-to-calendar {
+	display: flex;
+	position: relative;
+}
+.gatherpress-add-to-calendar {
 	position: relative;
 
 	&__row {
@@ -22,13 +27,15 @@
 		border: 1px solid #CCCCCC;
 		overflow: hidden;
 		width: 15rem;
+			background-color: #FFFFFF;
 		position: absolute;
 	}
 
 	&__list-item {
 		border-top: 1px solid #CCCCCC;
 		margin-top: -1px;
-		font-size: 1.2rem;
+		margin: -1px 1rem ;
+		font-size: 85%;
 
 		a {
 			color: #000000;
