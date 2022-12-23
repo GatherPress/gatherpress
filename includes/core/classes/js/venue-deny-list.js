@@ -1,19 +1,22 @@
-const disable_blocks = [
+/**
+ * Remove unwanted blocks from given post type.
+ *
+ * @package gatherpress
+ */
+
+const disableBlocks = [
 	'gatherpress/add-to-calendar',
 	'gatherpress/attendance-list',
 	'gatherpress/attendance-selector',
 	'gatherpress/event-date',
 	'gatherpress/venue',
 ];
-wp.domReady(
-	function () {
-		Object.keys( disable_blocks ).forEach(
-			function (key) {
-				const blockName = disable_blocks[key];
-				if (blockName && wp.blocks.getBlockType( blockName ) !== undefined) {
-					wp.blocks.unregisterBlockType( blockName );
-				}
-			}
-		);
-	}
-);
+
+wp.domReady( function () {
+	Object.keys( disableBlocks ).forEach( function ( key ) {
+		const blockName = disableBlocks[ key ];
+		if ( blockName && wp.blocks.getBlockType( blockName ) !== undefined ) {
+			wp.blocks.unregisterBlockType( blockName );
+		}
+	} );
+} );

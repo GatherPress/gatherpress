@@ -1,14 +1,4 @@
 
-.wp-block-gatherpress-add-to-calendar,
-.wp-block-gatherpress-attendance-list,
-.wp-block-gatherpress-attendance-selector,
-.wp-block-gatherpress-event-date,
-.wp-block-gatherpress-events-list.wp-block-gatherpress-events-list,
-.wp-block-gatherpress-venue-informaton,
-.wp-block-gatherpress-venue {
-	padding: 2rem;
-	border: 2px solid green;
-}
 @mixin for-core-tablet {
 	@media screen and (max-width: 782px) {
 		@content;

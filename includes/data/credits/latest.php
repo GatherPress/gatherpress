@@ -1,4 +1,13 @@
-<?php return array(
+<?php
+/**
+ * Data for credits used to generate latest.json.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
+
+return array(
 	'project-leads'    =>
 	array(
 		0 =>

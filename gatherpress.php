@@ -34,7 +34,9 @@ GatherPress\BuddyPress\Setup::get_instance();
 
 
 add_action( 'init', 'gatherpress_gp_blocks_init' );
-
+/**
+ * Initialize GatherPress blocks.
+ */
 function gatherpress_gp_blocks_init() {
 	register_block_type(
 		__DIR__ . '/build/blocks/add-to-calendar'
@@ -56,11 +58,5 @@ function gatherpress_gp_blocks_init() {
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/venue-information'
-	);
-	register_block_type(
-		__DIR__ . '/build/blocks/example-dynamic'
-	);
-	register_block_type(
-		__DIR__ . '/build/blocks/react-block'
 	);
 }
