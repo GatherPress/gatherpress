@@ -21,12 +21,12 @@ export default function save() {
 	const blockProps = useBlockProps.save();
 	return (
 		<div {...blockProps}>
-			<p>
+			<div class="gatherpress-attendance-selector-replace-me-here">
 				{__(
 					"AttendanceSelector – hello from the saved content!",
 					"gatherpress"
 				)}
-			</p>
+			</div>
 			<div
 				data-gp_block_name="attendance-selector"
 				data-gp_block_attrs="[]"
