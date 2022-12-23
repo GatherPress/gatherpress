@@ -1,20 +1,4 @@
-[data-gp_block_name="attendance-list"]:before {
-	content: 'attendance-list'
-}
-[data-gp_block_name="attendance-selector"]:before {
-	content: 'attendance-selector'
-}
 
-[data-gp_block_name="attendance-list"],
-[data-gp_block_name="attendance-selector"],
-.wp-block-gatherpress-attendance-selector,
-.wp-block-gatherpress-event-date,
-.gatherpress-event-date,
-.gatherpress-add-to-calendar,
-.wp-block-gatherpress-attendance-list {
-	padding: 2rem;
-	border: 2px solid maroon;
-}
 .wp-block-gatherpress-add-to-calendar,
 .wp-block-gatherpress-attendance-list,
 .wp-block-gatherpress-attendance-selector,

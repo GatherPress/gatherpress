@@ -21,26 +21,20 @@ export default function save() {
 	const blockProps = useBlockProps.save();
 	return (
 		<div {...blockProps}>
-			<div class="gatherpress-attendance-selector-replace-me-here">
-				{__(
-					"AttendanceSelector – hello from the saved content!",
-					"gatherpress"
-				)}
-			</div>
 			<div
 				data-gp_block_name="attendance-selector"
 				data-gp_block_attrs="[]"
-				style={{ border: '1px solid' }}
+				className="gatherpress-attendance-container"
 			>
-				<div class="gatherpress-attendance-selector">
+				<div className="gatherpress-attendance-selector-here">
 					<div
 						role="group"
-						class="components-button-group gatherpress-buttons wp-block-buttons"
+						className="components-button-group gatherpress-buttons wp-block-buttons"
 					>
-						<div class="gatherpress-buttons__container wp-block-button">
+						<div className="gatherpress-buttons__container wp-block-button">
 							<a
 								href="#"
-								class="gatherpress-buttons__button wp-block-button__link"
+								className="gatherpress-buttons__button wp-block-button__link"
 								aria-expanded="false"
 								tabindex="0"
 							>
