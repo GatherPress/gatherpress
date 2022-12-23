@@ -1,22 +1,28 @@
-/**
- * External dependencies.
- */
-import React from 'react';
 
-/**
- * WordPress dependencies.
- */
-import { render } from '@wordpress/element';
+import domReady from  '@wordpress/dom-ready';
+
+import { render, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import AttendanceList from '../../components/AttendanceList';
 
-const containers = document.querySelectorAll(
-	`[data-gp_block_name="attendance-list"]`,
-);
+const ReactApp = () => {
+	// eslint-disable-next-line no-undef
+	const postId = GatherPress.post_id;
+	// eslint-disable-next-line no-undef
+	const currentUser = GatherPress.current_user;
 
-for ( let i = 0; i < containers.length; i++ ) {
-	render( <AttendanceList />, containers[ i ] );
-}
+	return (
+		<div className="react-place-code">
+			<AttendanceList />
+		</div>
+	);
+};
+
+
+domReady( function() {
+    const container = document.querySelector('.replace-attendance-list');
+    render( <ReactApp />, container );
+}); 

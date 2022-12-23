@@ -19,10 +19,12 @@ export default function save() {
 	const blockProps = useBlockProps.save();
 	return (
 		<div {...blockProps}>
-			<p>{__(
+			<div
+				className="replace-attendance-list"
+			>{__(
 				'AttendanceList – hello from the saved content!',
 				'gatherpress'
-			)}</p>
+			)}</div>
 		</div >
 	);
 }
