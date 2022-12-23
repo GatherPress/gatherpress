@@ -5,6 +5,9 @@
  * @see https://developer.wordpress.org/block-editor/packages/packages-block-editor/#useBlockProps
  */
 import { useBlockProps } from '@wordpress/block-editor';
+import { useSelect, useDispatch } from '@wordpress/data';
+
+import VenueInformation from '../../components/VenueInformation';
 
 /**
  * The save function defines the way in which the different attributes should
@@ -18,11 +21,22 @@ import { useBlockProps } from '@wordpress/block-editor';
  * @return {WPElement} Element to render.
  */
 export default function save({ attributes }) {
+
+	// let venueInformationMetaData = useSelect(
+	// 	( select ) => select( 'core/editor' ).getEditedPostAttribute( 'meta' )._venue_information,
+	// );
+
+	// if ( venueInformationMetaData ) {
+	// 	venueInformationMetaData = JSON.parse( venueInformationMetaData );
+	// }
+
 	const blockPropsSave = useBlockProps.save();
 	return (
         <div {...blockPropsSave}>
+            <VenueInformation />
             <p>get_post({ attributes.venueId })</p>
-            <p>{JSON.stringify(attributes)}</p>
+            <p>attributes {JSON.stringify(attributes)}</p>
+            {/* <p>venueInformationMetaData {JSON.stringify(venueInformationMetaData)}</p> */}
         </div>
     );
 }

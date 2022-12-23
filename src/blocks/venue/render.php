@@ -1,86 +1,17 @@
 <?php
 /**
- * Template for Venue Information block.
  *
- * @package GatherPress
- * @subpackage Core
- * @since 1.0.0
  */
 
-if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs ) ) {
-	// return;
-}
+$block_title = 'GatherPress Venue';
 
-if (
-	empty( $gatherpress_block_attrs['name'] ) &&
-	empty( $gatherpress_block_attrs['fullAddress'] ) &&
-	empty( $gatherpress_block_attrs['phoneNumber'] ) &&
-	empty( $gatherpress_block_attrs['website'] )
-) {
-	// return;
-}
-?>
-<div class="gatherpress-venue-information">
-	<?php
-    echo __FILE__;
-    if ( ! empty( $gatherpress_block_attrs['fullAddress'] ) || ! empty( $gatherpress_block_attrs['name'] ) ) : ?>
-		<div class="gatherpress-venue-information__row">
-			<div class="gatherpress-venue-information__item">
-				<div class="gatherpress-venue-information__icon">
-					<div class="dashicons dashicons-location"></div>
-				</div>
-				<div class="gatherpress-venue-information__text">
-					<?php
-					if ( ! empty( $gatherpress_block_attrs['name'] ) ) :
-						?>
-						<div class="gatherpress-venue-information__name has-medium-font-size">
-							<strong>
-								<?php echo esc_html( $gatherpress_block_attrs['name'] ); ?>
-							</strong>
-						</div>
-						<?php
-					endif;
+$gatherpress_venue = get_post( intval( $attributes['venueId'] ) );
 
-					if ( ! empty( $gatherpress_block_attrs['fullAddress'] ) ) :
-						?>
-						<div class="gatherpress-venue-information__full-address">
-							<?php echo esc_html( $gatherpress_block_attrs['fullAddress'] ); ?>
-						</div>
-						<?php
-					endif;
-					?>
-				</div>
-			</div>
-		</div>
-	<?php endif; ?>
-	<?php if ( ! empty( $gatherpress_block_attrs['phoneNumber'] ) || ! empty( $gatherpress_block_attrs['website'] ) ) : ?>
-		<div class="gatherpress-venue-information__row gatherpress-venue-information__gap">
-			<?php if ( ! empty( $gatherpress_block_attrs['phoneNumber'] ) ) : ?>
-				<div class="gatherpress-venue-information__item">
-					<div class="gatherpress-venue-information__icon">
-						<div class="dashicons dashicons-phone"></div>
-					</div>
-					<div class="gatherpress-venue-information__text">
-						<div class="gatherpress-venue-information__phone-number">
-							<?php echo esc_html( $gatherpress_block_attrs['phoneNumber'] ); ?>
-						</div>
-					</div>
-				</div>
-			<?php endif; ?>
-			<?php if ( ! empty( $gatherpress_block_attrs['website'] ) ) : ?>
-				<div class="gatherpress-venue-information__item">
-					<div class="gatherpress-venue-information__icon">
-						<div class="dashicons dashicons-admin-site-alt3"></div>
-					</div>
-					<div class="gatherpress-venue-information__text">
-						<div class="gatherpress-venue-information__website">
-							<a href="<?php echo esc_url( $gatherpress_block_attrs['website'] ); ?>" target="_blank" rel="noopener">
-								<?php echo esc_html( $gatherpress_block_attrs['website'] ); ?>
-							</a>
-						</div>
-					</div>
-				</div>
-			<?php endif; ?>
-		</div>
-	<?php endif; ?>
-</div>
+$wrapper_attributes = get_block_wrapper_attributes();
+
+printf(
+	__( '<div %s>The %s is: %s</div>', 'gatherpress' ),
+	$wrapper_attributes,
+	$block_title,
+	$gatherpress_venue->post_content
+);
