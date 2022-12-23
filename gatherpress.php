@@ -212,10 +212,16 @@ function gp_blocks_events_list_render_callback( $attributes, $content, $block ) 
  */
 function gp_blocks_venue_render_callback( $attributes, $content, $block ) {
 	$wrapper_attributes = get_block_wrapper_attributes();
-	ob_start();
+	// ob_start();
 	echo '<p>build/blocks/venue/sample.php</p>';
-	require plugin_dir_path( __FILE__ ) . 'build/blocks/venue/sample.php';
-	$block_content = ob_get_clean();
+	// require plugin_dir_path( __FILE__ ) . 'build/blocks/venue/sample.php';
+	// $block_content = ob_get_clean();
+    // $value = get_post_meta( get_the_ID(), 'myguten_meta_block_field', true );
+    // if ( $value ) {
+    //     $block_content = sprintf( "%s (%s)", $content, esc_html( $value ) );
+    // } else {
+    //     $block_content = $content;
+    // }
 	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
 }
 
@@ -289,3 +295,4 @@ function gp_blocks_venue_information_render_callback( $attributes, $content, $bl
 	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
 
 }
+

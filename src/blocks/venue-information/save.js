@@ -5,6 +5,7 @@
  */
 import { __ } from "@wordpress/i18n";
 import { useBlockProps } from "@wordpress/block-editor";
+import GoogleMap from './googlemap';
 
 /**
  * The save function defines the way in which the different attributes should
@@ -15,23 +16,42 @@ import { useBlockProps } from "@wordpress/block-editor";
  *
  * @return {WPElement} Element to render.
  */
-export default function save(props) {
+export default function save({attributes}) {
+
+// const Edit = ( { attributes, setAttributes, isSelected, clientId } ) => {
+	const {
+		blockId,
+		fullAddress,
+		phoneNumber,
+		website,
+		zoom,
+		type,
+		deskHeight,
+		tabHeight,
+		mobileHeight,
+		device,
+	} = attributes;
+
 	const blockProps = useBlockProps.save();
 	return (
 		<div {...blockProps}>
-			{props.attributes.fullAddress && (
-				<p>{props.attributes.fullAddress}</p>
+			{fullAddress && (
+				<p>{fullAddress}</p>
 			)}
-			{props.attributes.phoneNumber && (
-				<p>{props.attributes.phoneNumber}</p>
+			{phoneNumber && (
+				<p>{phoneNumber}</p>
 			)}
-			{props.attributes.website && <p>{props.attributes.website}</p>}
-			<p>
-				{__(
-					"Venue Information – hello from the saved content!",
-					"gatherpress"
-				)}
-			</p>
+			{website && (
+				<p>{website}</p>
+			)}
+			{fullAddress && (
+				<GoogleMap
+					location={fullAddress}
+					zoom={zoom}
+					type={type}
+					height={deskHeight}
+				/>
+			)}
 		</div>
 	);
 }

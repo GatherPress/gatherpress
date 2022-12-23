@@ -3,6 +3,7 @@ const disable_blocks = [
 	'gatherpress/attendance-list',
 	'gatherpress/attendance-selector',
 	'gatherpress/event-date',
+	'gatherpress/venue',
 ];
 wp.domReady(
 	function () {
