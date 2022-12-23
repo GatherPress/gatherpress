@@ -1,13 +1,7 @@
 /**
- * External dependencies.
- */
-import React from 'react';
-import { render } from 'react-dom';
-
-/**
  * WordPress dependencies.
  */
-// import { render } from '@wordpress/element';
+import { render } from '@wordpress/element';
 
 /**
  * Internal dependencies.

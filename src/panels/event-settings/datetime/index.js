@@ -69,8 +69,5 @@ export const DateTimeStartSettingPanel = () => (
 				renderContent={ () => <DateTimeEnd /> }
 			/>
 		</PanelRow>
-		{ /*<PanelRow>*/ }
-		{ /*	<h5>{ GatherPress.default_timezone }</h5>*/ }
-		{ /*</PanelRow>*/ }
 	</section>
 );

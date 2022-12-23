@@ -15,7 +15,7 @@ const ReactApp = () => {
 	const currentUser = GatherPress.current_user;
 
 	return (
-		<div className="react-place-code">
+		<div className="react-placed-code">
 			<AttendanceList />
 		</div>
 	);

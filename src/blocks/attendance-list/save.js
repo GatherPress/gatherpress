@@ -21,10 +21,7 @@ export default function save() {
 		<div {...blockProps}>
 			<div
 				className="replace-attendance-list"
-			>{__(
-				'AttendanceList – hello from the saved content!',
-				'gatherpress'
-			)}</div>
+			></div>
 		</div >
 	);
 }
