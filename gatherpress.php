@@ -52,10 +52,7 @@ function gatherpress_gp_blocks_init() {
 		__DIR__ . '/build/blocks/event-date'
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/events-list',
-		[
-			'render_callback' => 'gp_blocks_events_list_render_callback'
-		]
+		__DIR__ . '/build/blocks/events-list'
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/venue'
@@ -107,27 +104,6 @@ function gp_blocks_event_date_render_callback( $attributes, $content, $block ) {
 	$block_content = ob_get_clean();
 
 	$wrapper_attributes = get_block_wrapper_attributes();
-
-	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
-}
-
-/**
- * Render callback function.
- *
- * @param array    $attributes The block attributes.
- * @param string   $content    The block content.
- * @param WP_Block $block      Block instance.
- *
- * @return string The rendered output.
- */
-function gp_blocks_events_list_render_callback( $attributes, $content, $block ) {
-	$wrapper_attributes = get_block_wrapper_attributes();
-
-	ob_start();
-	echo '<h3>build/blocks/events-list/sample.php</h3>';
-	echo  $content;
-
-	$block_content = ob_get_clean();
 
 	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
 }
