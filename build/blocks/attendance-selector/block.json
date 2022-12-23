@@ -21,5 +21,6 @@
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
+  "viewScript": "file:./attendance-selector.js",
   "style": "file:./style-index.css"
 }
