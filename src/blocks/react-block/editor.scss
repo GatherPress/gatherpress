@@ -4,6 +4,11 @@
  * Replace them with your own styles or remove the file completely.
  */
 
-.wp-block-gatherpress-example-dynamic {
+.wp-block-gatherpress-react-block {
 	border: 1px dotted #f00;
+
+	input[type="text"] {
+		font-family: Gilbert, sans-serif;
+		font-size: 2rem;
+	}
 }

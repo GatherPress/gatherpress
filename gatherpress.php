@@ -43,10 +43,7 @@ function gatherpress_gp_blocks_init() {
 		]
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/attendance-list',
-		[
-			'render_callback' => 'gp_blocks_attendance_list_render_callback'
-		]
+		__DIR__ . '/build/blocks/attendance-list'
 	);
 	register_block_type(
 		__DIR__ . '/build/blocks/attendance-selector'
@@ -64,16 +61,16 @@ function gatherpress_gp_blocks_init() {
 		]
 	);
 	register_block_type(
-		__DIR__ . '/build/blocks/venue',
+		__DIR__ . '/build/blocks/venue'
 	);
-	// register_block_type(
-	// 	__DIR__ . '/build/blocks/venue',
-	// 	[
-	// 		'render_callback' => 'gp_blocks_venue_render_callback'
-	// 	]
-	// );
 	register_block_type(
 		__DIR__ . '/build/blocks/venue-information'
+	);
+	register_block_type(
+		__DIR__ . '/build/blocks/example-dynamic'
+	);
+	register_block_type(
+		__DIR__ . '/build/blocks/react-block'
 	);
 }
 

@@ -1,9 +1,9 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 2,
-	"name": "gatherpress/block-starter",
+	"name": "gatherpress/react-block",
 	"version": "0.1.1",
-	"title": "Sample Block Starter",
+	"title": "React Block",
 	"category": "gatherpress",
 	"icon": {
 		"background": "#29c8aa",
@@ -24,6 +24,7 @@
 	"example": {},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"viewScript": "file:./react-counter.js",
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css"
 }

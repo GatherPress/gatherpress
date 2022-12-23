@@ -24,5 +24,6 @@
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
+  "viewScript": "file:./attendance-list.js",
   "style": "file:./style-index.css"
 }

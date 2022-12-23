@@ -56,7 +56,7 @@ class Block {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		add_filter( 'render_block', array( $this, 'render_block' ), 10, 2 );
+		// add_filter( 'render_block', array( $this, 'render_block' ), 10, 2 );
 	}
 
 	/**
