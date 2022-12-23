@@ -273,26 +273,3 @@ function gp_blocks_venue_render_0ld_callback( $attributes, $content, $block ) {
 
 }
 
-/**
- * Render callback function.
- *
- * @param array    $attributes The block attributes.
- * @param string   $content    The block content.
- * @param WP_Block $block      Block instance.
- *
- * @return string The rendered output.
- */
-function gp_blocks_venue_information_render_callback( $attributes, $content, $block ) {
-	ob_start();
-	echo $content;
-	echo '<p>' . __FUNCTION__ . '<pre>' . print_r( $attributes, true ) . '</pre>';
-	// require plugin_dir_path( __FILE__ ) . 'build/blocks/venue-information/sample.php';
-
-	$block_content = ob_get_clean();
-
-	$wrapper_attributes = get_block_wrapper_attributes();
-
-	return sprintf( '<div %s>%s</div>', $wrapper_attributes, $block_content  );
-
-}
-
