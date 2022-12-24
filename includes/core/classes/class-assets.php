@@ -54,9 +54,7 @@ class Assets {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-//		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-//		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ), 10, 1 );
-//		add_action( 'enqueue_block_editor_assets', array( $this, 'block_enqueue_scripts' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 	}
@@ -65,40 +63,11 @@ class Assets {
 	 * Localize the global GatherPress js object for use in the build scripts.
 	 */
 	public function add_global_object() {
-		$post_id = get_the_ID() ?? 0;
 		?>
 		<script>
-		const GatherPress = <?php echo wp_json_encode( $this->localize( $post_id ) ); ?>
+			const GatherPress = <?php echo wp_json_encode( $this->localize( get_the_ID() ?? 0 ) ); ?>
 		</script>
 		<?php
-	}
-
-	/**
-	 * Enqueue frontend styles and scripts.
-	 */
-	public function enqueue_scripts() {
-		// @todo some stuff is repeated in enqueuing for frontend and blocks. need to break into other methods.
-
-		$asset = $this->get_asset_data( 'blocks_style' );
-
-		wp_enqueue_style( 'wp-block-button' );
-
-		wp_enqueue_style(
-			'gatherpress-blocks-style',
-			$this->build . 'blocks_style.css',
-			$asset['dependencies'],
-			$asset['version']
-		);
-
-		$asset = $this->get_asset_data( 'blocks_frontend' );
-
-		wp_enqueue_script(
-			'gatherpress-blocks-frontend',
-			$this->build . 'blocks_frontend.js',
-			$asset['dependencies'],
-			$asset['version'],
-			true
-		);
 	}
 
 	/**
@@ -152,34 +121,6 @@ class Assets {
 				true
 			);
 		}
-	}
-
-	/**
-	 * Enqueue block styles and scripts.
-	 */
-	public function block_enqueue_scripts() {
-		$post_id = $GLOBALS['post']->ID ?? 0;
-		$event   = new Event( $post_id );
-
-		$asset = $this->get_asset_data( 'blocks_style' );
-
-		wp_enqueue_style( 'wp-block-button' );
-
-		wp_enqueue_style(
-			'gatherpress-blocks-style',
-			$this->build . 'blocks_style.css',
-			$asset['dependencies'],
-			$asset['version']
-		);
-
-		$asset = require_once $this->path . 'blocks_backend.asset.php';
-		wp_enqueue_script(
-			'gatherpress-blocks-backend',
-			$this->build . 'blocks_backend.js',
-			$asset['dependencies'],
-			$asset['version'],
-			true
-		);
 	}
 
 	/**

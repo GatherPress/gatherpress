@@ -38,4 +38,6 @@ const addToCalendarInit = () => {
 	}
 };
 
-addToCalendarInit();
+document.addEventListener( 'DOMContentLoaded', () => {
+	addToCalendarInit();
+} );

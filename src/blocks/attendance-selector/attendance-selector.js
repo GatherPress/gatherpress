@@ -13,7 +13,7 @@ import { render } from '@wordpress/element';
  */
 import AttendanceSelector from '../../components/AttendanceSelector';
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener( 'DOMContentLoaded', () => {
 	const containers = document.querySelectorAll(
 	`[data-gp_block_name="attendance-selector"]`
 	);
