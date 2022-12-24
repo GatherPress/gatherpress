@@ -106,7 +106,7 @@ class Assets {
 
 			wp_enqueue_style(
 				'gatherpress-settings-style',
-				$this->build . 'settings_style.css',
+				$this->build . 'style-settings_style.css',
 				$asset['dependencies'],
 				$asset['version']
 			);
