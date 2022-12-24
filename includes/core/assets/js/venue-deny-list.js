@@ -1,7 +1,5 @@
 /**
  * Remove unwanted blocks from given post type.
- *
- * @package gatherpress
  */
 
 const disableBlocks = [
