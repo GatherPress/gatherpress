@@ -8,7 +8,7 @@
  */
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
-	$attributes = array();
+	return;
 }
 ?>
 
