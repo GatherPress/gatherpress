@@ -1,6 +1,6 @@
 <?php
 /**
- * Placeholder for Event Date block.
+ * Render Event Date block.
  *
  * @package GatherPress
  * @subpackage Core

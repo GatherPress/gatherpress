@@ -1,4 +1,12 @@
 <?php
+/**
+ * Render Events List block.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
+
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	$attributes = array();
 }

@@ -3,7 +3,7 @@ module.exports = {
 		browser: true,
 		es2020: true,
 	},
-	extends: [ 'plugin:@wordpress/eslint-plugin/recommended' ],
+	extends: ['plugin:@wordpress/eslint-plugin/recommended'],
 	parserOptions: {
 		ecmaFeatures: {
 			jsx: true,
@@ -11,6 +11,6 @@ module.exports = {
 		ecmaVersion: 12,
 		sourceType: 'module',
 	},
-	plugins: [ 'react' ],
+	plugins: ['react'],
 	rules: {},
 };

@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for Venue block.
+ * Render Venue block.
  *
  * @package GatherPress
  * @subpackage Core

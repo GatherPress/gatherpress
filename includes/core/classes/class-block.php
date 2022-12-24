@@ -26,7 +26,7 @@ class Block {
 	 *
 	 * @var array List of block names.
 	 */
-	protected array $blocks = array(
+	protected $blocks = array(
 		'add-to-calendar',
 		'attendance-list',
 		'attendance-selector',
