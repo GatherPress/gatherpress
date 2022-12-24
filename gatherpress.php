@@ -31,3 +31,32 @@ require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.ph
 GatherPress\Core\Autoloader::register();
 GatherPress\Core\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();
+
+add_action( 'init', 'gatherpress_gp_blocks_init' );
+
+/**
+ * Initialize GatherPress blocks.
+ */
+function gatherpress_gp_blocks_init() {
+	register_block_type(
+		__DIR__ . '/build/blocks/add-to-calendar'
+	);
+//	register_block_type(
+//		__DIR__ . '/build/blocks/attendance-list'
+//	);
+	register_block_type(
+		__DIR__ . '/build/blocks/attendance-selector'
+	);
+//	register_block_type(
+//		__DIR__ . '/build/blocks/event-date'
+//	);
+//	register_block_type(
+//		__DIR__ . '/build/blocks/events-list'
+//	);
+//	register_block_type(
+//		__DIR__ . '/build/blocks/venue'
+//	);
+//	register_block_type(
+//		__DIR__ . '/build/blocks/venue-information'
+//	);
+}

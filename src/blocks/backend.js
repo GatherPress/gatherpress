@@ -1,7 +1,7 @@
 /**
  * Backend blocks loader.
  */
-import './add-to-calendar/index';
+// import './add-to-calendar/index';
 import './attendance-list/index';
 import './attendance-selector/index';
 import './event-date/index';

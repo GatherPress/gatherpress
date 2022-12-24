@@ -29,7 +29,7 @@ class Block {
 	 */
 	protected $react_blocks = array(
 		'attendance-list',
-		'attendance-selector',
+//		'attendance-selector',
 		'events-list',
 	);
 
@@ -39,7 +39,7 @@ class Block {
 	 * @var array List of block names.
 	 */
 	protected $static_blocks = array(
-		'add-to-calendar',
+//		'add-to-calendar',
 		'event-date',
 		'venue',
 		'venue-information',

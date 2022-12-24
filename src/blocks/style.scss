@@ -11,7 +11,7 @@
 	@media screen and (max-width: 400px) { @content; }
 }
 
-@import "src/blocks/add-to-calendar/style";
+//@import "src/blocks/add-to-calendar/style";
 @import "src/blocks/attendance-selector/style";
 @import "src/blocks/attendance-list/style";
 @import "src/blocks/event-date/style";
