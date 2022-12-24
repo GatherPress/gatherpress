@@ -16,25 +16,25 @@ import { Broadcaster } from '../../../../helpers/broadcasting';
 import { validateDateTimeStart } from '../helpers';
 import { enableSave } from '../../../helpers';
 
-export function updateDateTimeStart( dateTime, setState = null ) {
-	validateDateTimeStart( dateTime );
+export function updateDateTimeStart(dateTime, setState = null) {
+	validateDateTimeStart(dateTime);
 
 	// eslint-disable-next-line no-undef
 	GatherPress.event_datetime.datetime_start = dateTime;
 
-	this.setState( {
+	this.setState({
 		dateTime,
-	} );
+	});
 
-	if ( null !== setState ) {
-		setState( { dateTime } );
+	if (null !== setState) {
+		setState({ dateTime });
 	}
 
 	const payload = {
 		setDateTimeStart: dateTime,
 	};
 
-	Broadcaster( payload );
+	Broadcaster(payload);
 	enableSave();
 }
 
@@ -46,8 +46,8 @@ export function getDateTimeStart() {
 }
 
 export class DateTimeStartLabel extends Component {
-	constructor( props ) {
-		super( props );
+	constructor(props) {
+		super(props);
 
 		this.state = {
 			// eslint-disable-next-line no-undef
@@ -59,8 +59,8 @@ export class DateTimeStartLabel extends Component {
 		this.updateDateTimeStart = updateDateTimeStart;
 		this.getDateTimeStart = getDateTimeStart;
 
-		updateDateTimeStart = updateDateTimeStart.bind( this );
-		getDateTimeStart = getDateTimeStart.bind( this );
+		updateDateTimeStart = updateDateTimeStart.bind(this);
+		getDateTimeStart = getDateTimeStart.bind(this);
 	}
 
 	componentWillUnmount() {
@@ -72,7 +72,7 @@ export class DateTimeStartLabel extends Component {
 		const settings = __experimentalGetSettings();
 
 		return dateI18n(
-			`${ settings.formats.date } ${ settings.formats.time }`,
+			`${settings.formats.date} ${settings.formats.time}`,
 			this.state.dateTime
 		);
 	}

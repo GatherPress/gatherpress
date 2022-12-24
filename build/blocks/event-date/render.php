@@ -1,6 +1,6 @@
 <?php
 /**
- * Placeholder for Event Date block.
+ * Render Event Date block.
  *
  * @package GatherPress
  * @subpackage Core
@@ -23,5 +23,3 @@ $gatherpress_event = new Event( get_the_ID() );
 		</div>
 	</div>
 </div>
-
-

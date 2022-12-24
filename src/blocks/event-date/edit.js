@@ -22,7 +22,7 @@ import { Listener } from '../../helpers/broadcasting';
  * @param {string} end
  * @return {string} Displayed date.
  */
-const displayDateTime = ( start, end ) => {
+const displayDateTime = (start, end) => {
 	const dateFormat = 'dddd, MMMM D, YYYY';
 	const timeFormat = 'h:mm A';
 	const timeZoneFormat = 'z';
@@ -31,41 +31,38 @@ const displayDateTime = ( start, end ) => {
 	const startFormat = dateFormat + ' ' + timeFormat;
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 
-	if (
-		moment( start ).format( dateFormat ) ===
-		moment( end ).format( dateFormat )
-	) {
+	if (moment(start).format(dateFormat) === moment(end).format(dateFormat)) {
 		endFormat = timeFormat + ' ' + timeZoneFormat;
 	}
 
 	return (
-		moment( start ).format( startFormat ) +
+		moment(start).format(startFormat) +
 		' to ' +
-		moment.tz( end, timeZone ).format( endFormat )
+		moment.tz(end, timeZone).format(endFormat)
 	);
 };
 
 const Edit = () => {
 	const blockProps = useBlockProps();
-	const [ dateTimeStart, setDateTimeStart ] = useState(
+	const [dateTimeStart, setDateTimeStart] = useState(
 		// eslint-disable-next-line no-undef
 		GatherPress.event_datetime.datetime_start
 	);
-	const [ dateTimeEnd, setDateTimeEnd ] = useState(
+	const [dateTimeEnd, setDateTimeEnd] = useState(
 		// eslint-disable-next-line no-undef
 		GatherPress.event_datetime.datetime_end
 	);
 
-	Listener( { setDateTimeEnd, setDateTimeStart } );
+	Listener({ setDateTimeEnd, setDateTimeStart });
 
 	return (
-		<div { ...blockProps }>
+		<div {...blockProps}>
 			<Flex justify="normal" align="flex-start" gap="4">
 				<FlexItem display="flex" className="gp-event-date__icon">
 					<Icon icon="clock" />
 				</FlexItem>
 				<FlexItem>
-					{ displayDateTime( dateTimeStart, dateTimeEnd ) }
+					{displayDateTime(dateTimeStart, dateTimeEnd)}
 				</FlexItem>
 			</Flex>
 		</div>

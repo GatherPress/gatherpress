@@ -1,6 +1,6 @@
 <?php
 /**
- * Container for Add to calendar block.
+ * Render Add to calendar block.
  *
  * @package GatherPress
  * @subpackage Core

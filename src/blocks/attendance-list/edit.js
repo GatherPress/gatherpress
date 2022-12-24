@@ -12,7 +12,7 @@ const Edit = () => {
 	const blockProps = useBlockProps();
 
 	return (
-		<div { ...blockProps }>
+		<div {...blockProps}>
 			<AttendanceList />
 		</div>
 	);

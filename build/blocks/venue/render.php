@@ -1,6 +1,6 @@
 <?php
 /**
- * Template for Venue block.
+ * Render Venue block.
  *
  * @package GatherPress
  * @subpackage Core
@@ -10,11 +10,11 @@
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 
-if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs ) ) {
+if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-$gatherpress_venue = get_post( intval( $gatherpress_block_attrs['venueId'] ) );
+$gatherpress_venue = get_post( intval( $attributes['venueId'] ) );
 
 if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 	return;
@@ -25,7 +25,7 @@ $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue-
 <div class="gp-venue">
 	<?php
 	Utility::render_template(
-		sprintf( '%s/includes/templates/blocks/venue-information.php', GATHERPRESS_CORE_PATH ),
+		sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),
 		array(
 			'gatherpress_block_attrs' => array(
 				'name'        => $gatherpress_venue->post_title,

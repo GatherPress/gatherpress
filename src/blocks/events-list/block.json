@@ -40,5 +40,7 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"style": "file:./style-index.css"
+	"style": "file:./style-index.css",
+	"viewScript": "file:./events-list.js",
+	"render": "file:./render.php"
 }

@@ -1,27 +1,27 @@
 <?php
 /**
- * Template for Venue Information block.
+ * Render Venue Information block.
  *
  * @package GatherPress
  * @subpackage Core
  * @since 1.0.0
  */
 
-if ( ! isset( $gatherpress_block_attrs ) || ! is_array( $gatherpress_block_attrs ) ) {
+if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
 if (
-	empty( $gatherpress_block_attrs['name'] ) &&
-	empty( $gatherpress_block_attrs['fullAddress'] ) &&
-	empty( $gatherpress_block_attrs['phoneNumber'] ) &&
-	empty( $gatherpress_block_attrs['website'] )
+	empty( $attributes['name'] ) &&
+	empty( $attributes['fullAddress'] ) &&
+	empty( $attributes['phoneNumber'] ) &&
+	empty( $attributes['website'] )
 ) {
 	return;
 }
 ?>
 <div class="gp-venue-information">
-	<?php if ( ! empty( $gatherpress_block_attrs['fullAddress'] ) || ! empty( $gatherpress_block_attrs['name'] ) ) : ?>
+	<?php if ( ! empty( $attributes['fullAddress'] ) || ! empty( $attributes['name'] ) ) : ?>
 		<div class="gp-venue-information__row">
 			<div class="gp-venue-information__item">
 				<div class="gp-venue-information__icon">
@@ -29,20 +29,20 @@ if (
 				</div>
 				<div class="gp-venue-information__text">
 					<?php
-					if ( ! empty( $gatherpress_block_attrs['name'] ) ) :
+					if ( ! empty( $attributes['name'] ) ) :
 						?>
 						<div class="gp-venue-information__name has-medium-font-size">
 							<strong>
-								<?php echo esc_html( $gatherpress_block_attrs['name'] ); ?>
+								<?php echo esc_html( $attributes['name'] ); ?>
 							</strong>
 						</div>
 						<?php
 					endif;
 
-					if ( ! empty( $gatherpress_block_attrs['fullAddress'] ) ) :
+					if ( ! empty( $attributes['fullAddress'] ) ) :
 						?>
 						<div class="gp-venue-information__full-address">
-							<?php echo esc_html( $gatherpress_block_attrs['fullAddress'] ); ?>
+							<?php echo esc_html( $attributes['fullAddress'] ); ?>
 						</div>
 						<?php
 					endif;
@@ -51,29 +51,29 @@ if (
 			</div>
 		</div>
 	<?php endif; ?>
-	<?php if ( ! empty( $gatherpress_block_attrs['phoneNumber'] ) || ! empty( $gatherpress_block_attrs['website'] ) ) : ?>
+	<?php if ( ! empty( $attributes['phoneNumber'] ) || ! empty( $attributes['website'] ) ) : ?>
 		<div class="gp-venue-information__row gp-venue-information__gap">
-			<?php if ( ! empty( $gatherpress_block_attrs['phoneNumber'] ) ) : ?>
+			<?php if ( ! empty( $attributes['phoneNumber'] ) ) : ?>
 				<div class="gp-venue-information__item">
 					<div class="gp-venue-information__icon">
 						<div class="dashicons dashicons-phone"></div>
 					</div>
 					<div class="gp-venue-information__text">
 						<div class="gp-venue-information__phone-number">
-							<?php echo esc_html( $gatherpress_block_attrs['phoneNumber'] ); ?>
+							<?php echo esc_html( $attributes['phoneNumber'] ); ?>
 						</div>
 					</div>
 				</div>
 			<?php endif; ?>
-			<?php if ( ! empty( $gatherpress_block_attrs['website'] ) ) : ?>
+			<?php if ( ! empty( $attributes['website'] ) ) : ?>
 				<div class="gp-venue-information__item">
 					<div class="gp-venue-information__icon">
 						<div class="dashicons dashicons-admin-site-alt3"></div>
 					</div>
 					<div class="gp-venue-information__text">
 						<div class="gp-venue-information__website">
-							<a href="<?php echo esc_url( $gatherpress_block_attrs['website'] ); ?>" target="_blank" rel="noopener">
-								<?php echo esc_html( $gatherpress_block_attrs['website'] ); ?>
+							<a href="<?php echo esc_url( $attributes['website'] ); ?>" target="_blank" rel="noopener">
+								<?php echo esc_html( $attributes['website'] ); ?>
 							</a>
 						</div>
 					</div>

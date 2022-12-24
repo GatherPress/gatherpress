@@ -15,27 +15,27 @@ import VenuePanel from './venue';
 import { useState } from '@wordpress/element';
 
 const EventSettings = () => {
-	const [ venue, setVenue ] = useState( '' );
+	const [venue, setVenue] = useState('');
 
 	return (
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
 				name="gp-event-settings"
-				title={ __( 'Event settings', 'gatherpress' ) }
-				initialOpen={ true }
+				title={__('Event settings', 'gatherpress')}
+				initialOpen={true}
 				className="gp-event-settings"
 			>
 				<DateTimeStartSettingPanel />
 				<hr />
-				<VenuePanel venue={ venue } setVenue={ setVenue } />
-				{ /*<hr />*/ }
-				{ /*<OptionsPanel />*/ }
+				<VenuePanel venue={venue} setVenue={setVenue} />
+				{/*<hr />*/}
+				{/*<OptionsPanel />*/}
 			</PluginDocumentSettingPanel>
 		)
 	);
 };
 
-registerPlugin( 'gp-event-settings', {
+registerPlugin('gp-event-settings', {
 	render: EventSettings,
 	icon: '',
-} );
+});
