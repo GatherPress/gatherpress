@@ -21,6 +21,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Block {
 
 	use Singleton;
+	/**
+	 * List of React blocks.
+	 *
+	 * @var array List of block names.
+	 */
+	protected $blocks = array(
+		'add-to-calendar',
+		'attendance-list',
+		'attendance-selector',
+		'event-date',
+		'venue',
+		'venue-information',
+	);
 
 	/**
 	 * List of React blocks.
@@ -40,9 +53,9 @@ class Block {
 	 */
 	protected $static_blocks = array(
 //		'add-to-calendar',
-		'event-date',
-		'venue',
-		'venue-information',
+//		'event-date',
+//		'venue',
+//		'venue-information',
 	);
 
 	/**
@@ -57,6 +70,18 @@ class Block {
 	 */
 	protected function setup_hooks() {
 		add_filter( 'render_block', array( $this, 'render_block' ), 10, 2 );
+		add_action( 'init', array( $this, 'register_blocks' ) );
+	}
+
+	/**
+	 * Register blocks.
+	 *
+	 * @return void
+	 */
+	public function register_blocks() {
+		foreach ( $this->blocks as $block ) {
+			register_block_type( sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block ) );
+		}
 	}
 
 	/**
