@@ -13,11 +13,15 @@ const disableBlocks = [
 	'gatherpress/venue-information',
 ];
 
-wp.domReady( function () {
-	Object.keys( disableBlocks ).forEach( function ( key ) {
-		const blockName = disableBlocks[ key ];
-		if ( blockName && wp.blocks.getBlockType( blockName ) !== undefined ) {
-			wp.blocks.unregisterBlockType( blockName );
-		}
-	} );
-} );
+wp.domReady(
+	function () {
+		Object.keys( disableBlocks ).forEach(
+			function ( key ) {
+				const blockName = disableBlocks[ key ];
+				if ( blockName && wp.blocks.getBlockType( blockName ) !== undefined ) {
+					wp.blocks.unregisterBlockType( blockName );
+				}
+			}
+		);
+	}
+);

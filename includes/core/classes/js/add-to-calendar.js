@@ -9,7 +9,7 @@ const addToCalendarToggle = (e) => {
 	e.preventDefault();
 
 	const currentListDisplay = e.target.nextElementSibling.style.display;
-	const lists = document.querySelectorAll(
+	const lists              = document.querySelectorAll(
 		'.gatherpress-add-to-calendar__list'
 	);
 
