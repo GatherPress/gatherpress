@@ -163,12 +163,12 @@ class Assets {
 			filemtime( plugin_dir_path( __DIR__ ) . 'assets/js/venue-deny-list.js' ),
 			true
 		);
-		
+
 		if ( 'gp_event' === get_post_type() ) {
 			wp_enqueue_script( 'event-deny-list-blocks' );
 		} elseif ( 'gp_venue' === get_post_type() ) {
 			wp_enqueue_script( 'venue-deny-list-blocks' );
-		} else  {
+		} else {
 			wp_enqueue_script( 'post-deny-list-blocks' );
 		}
 	}
