@@ -41,9 +41,9 @@ function gatherpress_gp_blocks_init() {
 	register_block_type(
 		__DIR__ . '/build/blocks/add-to-calendar'
 	);
-//	register_block_type(
-//		__DIR__ . '/build/blocks/attendance-list'
-//	);
+	register_block_type(
+		__DIR__ . '/build/blocks/attendance-list'
+	);
 	register_block_type(
 		__DIR__ . '/build/blocks/attendance-selector'
 	);

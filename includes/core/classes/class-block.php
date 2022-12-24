@@ -28,7 +28,7 @@ class Block {
 	 * @var array List of block names.
 	 */
 	protected $react_blocks = array(
-		'attendance-list',
+//		'attendance-list',
 //		'attendance-selector',
 		'events-list',
 	);
