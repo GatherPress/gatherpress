@@ -26,7 +26,7 @@ class Block {
 	 *
 	 * @var array List of block names.
 	 */
-	protected $blocks = array(
+	protected array $blocks = array(
 		'add-to-calendar',
 		'attendance-list',
 		'attendance-selector',
@@ -34,29 +34,6 @@ class Block {
 		'events-list',
 		'venue',
 		'venue-information',
-	);
-
-	/**
-	 * List of React blocks.
-	 *
-	 * @var array List of block names.
-	 */
-	protected $react_blocks = array(
-//		'attendance-list',
-//		'attendance-selector',
-//		'events-list',
-	);
-
-	/**
-	 * List of Static blocks.
-	 *
-	 * @var array List of block names.
-	 */
-	protected $static_blocks = array(
-//		'add-to-calendar',
-//		'event-date',
-//		'venue',
-//		'venue-information',
 	);
 
 	/**
@@ -70,7 +47,6 @@ class Block {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		add_filter( 'render_block', array( $this, 'render_block' ), 10, 2 );
 		add_action( 'init', array( $this, 'register_blocks' ) );
 	}
 
@@ -83,51 +59,6 @@ class Block {
 		foreach ( $this->blocks as $block ) {
 			register_block_type( sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block ) );
 		}
-	}
-
-	/**
-	 * Callback to render blocks.
-	 *
-	 * @param string $block_content The block content about to be appended.
-	 * @param array  $block The full block, including name and attributes.
-	 *
-	 * @return string
-	 */
-	public function render_block( string $block_content, array $block ): string {
-		if ( ! isset( $block['blockName'] ) ) {
-			return $block_content;
-		}
-
-		$block_name_parts = explode( '/', $block['blockName'] );
-
-		if ( 2 !== count( $block_name_parts ) ) {
-			return $block_content;
-		}
-
-		if ( 'gatherpress' !== $block_name_parts[0] ) {
-			return $block_content;
-		}
-
-		$block_name = $block_name_parts[1];
-
-		if ( in_array( $block_name, $this->react_blocks, true ) ) {
-			return Utility::render_template(
-				sprintf( '%s/includes/templates/blocks/react-block.php', GATHERPRESS_CORE_PATH ),
-				array(
-					'gatherpress_block_name'  => $block_name,
-					'gatherpress_block_attrs' => $block['attrs'] ?? array(),
-				)
-			);
-		} elseif ( in_array( $block_name, $this->static_blocks, true ) ) {
-			return Utility::render_template(
-				sprintf( '%s/includes/templates/blocks/%s.php', GATHERPRESS_CORE_PATH, $block_name ),
-				array(
-					'gatherpress_block_attrs' => $block['attrs'] ?? array(),
-				)
-			);
-		}
-
-		return $block_content;
 	}
 
 }
