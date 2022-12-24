@@ -4,8 +4,6 @@
  * @package gatherpress
  */
 
-wp.domReady(
-	function () {
-		wp.blocks.unregisterBlockType( 'gatherpress/events-list' );
-	}
-);
+wp.domReady( function () {
+	wp.blocks.unregisterBlockType( 'gatherpress/events-list' );
+} );
