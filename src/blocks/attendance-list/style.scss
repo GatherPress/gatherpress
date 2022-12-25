@@ -1,5 +1,10 @@
 @import "../mixins";
 
+.wp-block-gatherpress-attendance-list {
+	padding: 1rem;
+	border: 2px solid green
+}
+
 .gp-attendance-list {
 	&__navigation {
 		display: flex;

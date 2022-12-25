@@ -20,7 +20,7 @@ if (
 	return;
 }
 ?>
-<div class="gp-venue-information">
+<div <?php echo esc_attr( get_block_wrapper_attributes() ); ?>>
 	<?php if ( ! empty( $attributes['fullAddress'] ) || ! empty( $attributes['name'] ) ) : ?>
 		<div class="gp-venue-information__row">
 			<div class="gp-venue-information__item">

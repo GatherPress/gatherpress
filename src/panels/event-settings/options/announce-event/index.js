@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { Component } from '@wordpress/element';
 import { Button, PanelRow } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { hasEventPast } from '../../../helpers';

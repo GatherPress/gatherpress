@@ -1,6 +1,11 @@
 @import "../attendance-list/style";
 @import "../attendance-selector/style";
 
+.wp-block-gatherpress-events-list {
+	padding: 1rem;
+	border: 2px solid green
+}
+
 .gp-events-list {
 	&__header {
 		display: flex;

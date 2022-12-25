@@ -1,10 +1,10 @@
 /**
  * WordPress dependencies.
  */
+import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Flex, FlexItem, PanelRow, SelectControl } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
 
 /**
  * Internal dependencies.

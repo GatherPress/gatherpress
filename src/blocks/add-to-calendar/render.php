@@ -11,7 +11,7 @@ use GatherPress\Core\Event;
 
 $gatherpress_event = new Event( get_the_ID() );
 ?>
-<div class="gp-add-to-calendar">
+<div <?php echo get_block_wrapper_attributes() ?>>
 	<div class="gp-add-to-calendar__row">
 		<div class="gp-add-to-calendar__item">
 			<div class="gp-add-to-calendar__icon">
