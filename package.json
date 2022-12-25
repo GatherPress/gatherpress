@@ -56,7 +56,6 @@
 		"html-react-parser": "^3.0.4",
 		"lodash": "^4.17.21",
 		"moment": "^2.29.4",
-		"react": "^18.2.0",
 		"react-modal": "^3.16.1"
 	}
 }
