@@ -12,12 +12,12 @@ use GatherPress\Core\Event;
 $gatherpress_event = new Event( get_the_ID() );
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
-	<div class="wp-block-gatherpress-event-date__row">
-		<div class="wp-block-gatherpress-event-date__item">
-			<div class="wp-block-gatherpress-event-date__icon">
+	<div class="gp-event-date__row">
+		<div class="gp-event-date__item">
+			<div class="gp-event-date__icon">
 				<div class="dashicons dashicons-clock"></div>
 			</div>
-			<div class="wp-block-gatherpress-event-date__text">
+			<div class="gp-event-date__text">
 				<?php echo esc_html( $gatherpress_event->get_display_datetime() ); ?>
 			</div>
 		</div>

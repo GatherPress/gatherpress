@@ -2,7 +2,7 @@
 @import "../attendance-list/style";
 @import "../attendance-selector/style";
 
-.wp-block-gatherpress-events-list {
+.gp-events-list {
 	&__header {
 		display: flex;
 		gap: 2rem;
@@ -49,7 +49,7 @@
 		padding-bottom: 2rem;
 		display: flex;
 
-		.wp-block-gatherpress-attendance-list {
+		.gp-attendance-list {
 			&__items {
 				display: flex;
 				gap: 0;
@@ -78,10 +78,8 @@
 			}
 		}
 
-		.wp-block-gatherpress-attendance-selector {
-			&__wrapper {
-				margin-bottom: 0;
-			}
+		.gp-attendance-selector {
+			margin-bottom: 0;
 		}
 	}
 }
