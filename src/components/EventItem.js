@@ -25,7 +25,7 @@ const EventItem = (props) => {
 
 	const featuredImage = HtmlReactParser(event[size]);
 
-	const eventClass = `wp-block-gatherpress-events-list`;
+	const eventClass = `gp-events-list`;
 	const venue = event.venue
 		? HtmlReactParser(
 				'<a href=' +
@@ -37,7 +37,7 @@ const EventItem = (props) => {
 		: null;
 
 	return (
-		<div className={`${eventClass}__wrapper`}>
+		<div className={`${eventClass}`}>
 			<div className={`${eventClass}__header`}>
 				<div className={`${eventClass}__info`}>
 					{eventOptions.showFeaturedImage && (
@@ -67,7 +67,7 @@ const EventItem = (props) => {
 			</div>
 			<div className={`${eventClass}__footer`}>
 				{eventOptions.showAttendeeList && (
-					<div className="wp-block-gatherpress-attendance-list__items">
+					<div className="gp-attendance-list__items">
 						<AttendeeList
 							eventId={event.ID}
 							value="attending"

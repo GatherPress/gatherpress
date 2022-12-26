@@ -59,7 +59,7 @@ const EventsList = (props) => {
 	}, [setEvents, maxNumberOfEvents, type, topics]);
 
 	return (
-		<div className={`gp-${type}-events`}>
+		<div className={`gp-${type}-events-list`}>
 			{!loaded && <Spinner />}
 			{loaded && 0 === events.length && renderNoEventsMessage()}
 			{loaded && renderEvents}
