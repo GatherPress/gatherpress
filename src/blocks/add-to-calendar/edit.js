@@ -11,7 +11,10 @@ const Edit = () => {
 	return (
 		<div {...blockProps}>
 			<Flex justify="normal" align="flex-start" gap="4">
-				<FlexItem display="flex" className="wp-block-gatherpress-event-date__icon">
+				<FlexItem
+					display="flex"
+					className="wp-block-gatherpress-event-date__icon"
+				>
 					<Icon icon="calendar" />
 				</FlexItem>
 				<FlexItem>

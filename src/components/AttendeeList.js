@@ -43,7 +43,10 @@ const AttendeeList = ({
 			}
 
 			return (
-				<div key={index} className="wp-block-gatherpress-attendance-list__item">
+				<div
+					key={index}
+					className="wp-block-gatherpress-attendance-list__item"
+				>
 					<figure className="wp-block-gatherpress-attendance-list__member-avatar">
 						<a href={profile}>
 							<img alt={name} title={name} src={photo} />

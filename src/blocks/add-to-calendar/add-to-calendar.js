@@ -7,7 +7,9 @@ const addToCalendarToggle = (e) => {
 	e.preventDefault();
 
 	const currentListDisplay = e.target.nextElementSibling.style.display;
-	const lists = document.querySelectorAll('.wp-block-gatherpress-add-to-calendar__list');
+	const lists = document.querySelectorAll(
+		'.wp-block-gatherpress-add-to-calendar__list'
+	);
 
 	for (let i = 0; i < lists.length; i++) {
 		lists[i].style.display = 'none';
@@ -21,7 +23,9 @@ const addToCalendarToggle = (e) => {
  * Initialize all Add To Calendar blocks.
  */
 const addToCalendarInit = () => {
-	const containers = document.querySelectorAll('.wp-block-gatherpress-add-to-calendar');
+	const containers = document.querySelectorAll(
+		'.wp-block-gatherpress-add-to-calendar'
+	);
 
 	for (let i = 0; i < containers.length; i++) {
 		containers[i]

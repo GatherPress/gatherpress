@@ -25,7 +25,9 @@ const AttendanceListNavigationItem = ({
 			>
 				{title}
 			</a>
-			<span className="wp-block-gatherpress-attendance-list__count">({count})</span>
+			<span className="wp-block-gatherpress-attendance-list__count">
+				({count})
+			</span>
 		</div>
 	);
 };

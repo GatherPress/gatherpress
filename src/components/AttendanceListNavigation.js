@@ -42,7 +42,9 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	});
 
 	return (
-		<nav className="wp-block-gatherpress-attendance-list__navigation">{renderedItems}</nav>
+		<nav className="wp-block-gatherpress-attendance-list__navigation">
+			{renderedItems}
+		</nav>
 	);
 };
 

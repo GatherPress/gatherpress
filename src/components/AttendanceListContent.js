@@ -28,7 +28,11 @@ const AttendanceListContent = ({ items, activeValue, limit = false }) => {
 		);
 	});
 
-	return <div className="wp-block-gatherpress-attendance-list__content">{renderedItems}</div>;
+	return (
+		<div className="wp-block-gatherpress-attendance-list__content">
+			{renderedItems}
+		</div>
+	);
 };
 
 export default AttendanceListContent;
