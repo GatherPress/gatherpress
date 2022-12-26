@@ -43,10 +43,7 @@ const AttendeeList = ({
 			}
 
 			return (
-				<div
-					key={index}
-					className="gp-attendance-list__item"
-				>
+				<div key={index} className="gp-attendance-list__item">
 					<figure className="gp-attendance-list__member-avatar">
 						<a href={profile}>
 							<img alt={name} title={name} src={photo} />

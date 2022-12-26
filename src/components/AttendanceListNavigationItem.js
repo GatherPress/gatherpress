@@ -25,9 +25,7 @@ const AttendanceListNavigationItem = ({
 			>
 				{title}
 			</a>
-			<span className="gp-attendance-list__count">
-				({count})
-			</span>
+			<span className="gp-attendance-list__count">({count})</span>
 		</div>
 	);
 };
