@@ -1,4 +1,6 @@
-import React from 'react';
+/**
+ * Internal dependencies.
+ */
 import AttendeeList from './AttendeeList';
 
 const AttendanceListContent = ({ items, activeValue, limit = false }) => {
