@@ -45,22 +45,22 @@ const AttendeeList = ({
 			return (
 				<div
 					key={index}
-					className="wp-block-gatherpress-attendance-list__item"
+					className="gp-attendance-list__item"
 				>
-					<figure className="wp-block-gatherpress-attendance-list__member-avatar">
+					<figure className="gp-attendance-list__member-avatar">
 						<a href={profile}>
 							<img alt={name} title={name} src={photo} />
 						</a>
 					</figure>
 					{false === avatarOnly && (
-						<div className="wp-block-gatherpress-attendance-list__member-info">
-							<div className="wp-block-gatherpress-attendance-list__member-name">
+						<div className="gp-attendance-list__member-info">
+							<div className="gp-attendance-list__member-name">
 								<a href={profile}>{name}</a>
 							</div>
-							<div className="wp-block-gatherpress-attendance-list__member-role">
+							<div className="gp-attendance-list__member-role">
 								{role}
 							</div>
-							<small className="wp-block-gatherpress-attendance-list__guests">
+							<small className="gp-attendance-list__guests">
 								{guests}
 							</small>
 						</div>
@@ -75,7 +75,7 @@ const AttendeeList = ({
 			{'attending' === value &&
 				0 === renderedItems.length &&
 				false === avatarOnly && (
-					<div className="wp-block-gatherpress-attendance-list__no-attendees">
+					<div className="gp-attendance-list__no-attendees">
 						{/* eslint-disable-next-line no-undef */}
 						{false === GatherPress.has_event_past
 							? __(

@@ -8,7 +8,7 @@ const addToCalendarToggle = (e) => {
 
 	const currentListDisplay = e.target.nextElementSibling.style.display;
 	const lists = document.querySelectorAll(
-		'.wp-block-gatherpress-add-to-calendar__list'
+		'.gp-add-to-calendar__list'
 	);
 
 	for (let i = 0; i < lists.length; i++) {
@@ -24,18 +24,18 @@ const addToCalendarToggle = (e) => {
  */
 const addToCalendarInit = () => {
 	const containers = document.querySelectorAll(
-		'.wp-block-gatherpress-add-to-calendar'
+		'.gp-add-to-calendar'
 	);
 
 	for (let i = 0; i < containers.length; i++) {
 		containers[i]
-			.querySelector('.wp-block-gatherpress-add-to-calendar__init')
+			.querySelector('.gp-add-to-calendar__init')
 			.addEventListener('click', addToCalendarToggle, false);
 
 		document.addEventListener('click', ({ target }) => {
-			if (!target.closest('.wp-block-gatherpress-add-to-calendar')) {
+			if (!target.closest('.gp-add-to-calendar')) {
 				containers[i].querySelector(
-					'.wp-block-gatherpress-add-to-calendar__list'
+					'.gp-add-to-calendar__list'
 				).style.display = 'none';
 			}
 		});

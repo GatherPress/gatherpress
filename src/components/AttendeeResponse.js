@@ -41,7 +41,7 @@ const AttendeeResponse = ({ type = 'upcoming', status = 'attend' }) => {
 	};
 
 	return (
-		<div className="gatherpress-status__response">
+		<div className="gp-status__response">
 			<span className={responses[type][status].icon}></span>
 			<strong>{responses[type][status].text}</strong>
 		</div>
