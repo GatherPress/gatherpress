@@ -38,3 +38,4 @@ vendor
 wp-core
 .phpunit.result.cache
 coverage.xml
+*.zip
