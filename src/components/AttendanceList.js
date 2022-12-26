@@ -10,7 +10,7 @@ const AttendanceList = () => {
 		{
 			title:
 				// eslint-disable-next-line no-undef
-				 false === GatherPress.has_event_past
+				false === GatherPress.has_event_past
 					? __('Attending', 'gatherpress')
 					: __('Went', 'gatherpress'),
 			value: 'attending',
