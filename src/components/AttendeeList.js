@@ -77,7 +77,7 @@ const AttendeeList = ({
 				false === avatarOnly && (
 					<div className="wp-block-gatherpress-attendance-list__no-attendees">
 						{/* eslint-disable-next-line no-undef */}
-						{'1' !== GatherPress.has_event_past
+						{false === GatherPress.has_event_past
 							? __(
 									'No one is attending this event yet.',
 									'gatherpress'

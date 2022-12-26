@@ -10,7 +10,7 @@ const AttendanceList = () => {
 		{
 			title:
 				// eslint-disable-next-line no-undef
-				'1' !== GatherPress.has_event_past
+				 false === GatherPress.has_event_past
 					? __('Attending', 'gatherpress')
 					: __('Went', 'gatherpress'),
 			value: 'attending',
@@ -18,7 +18,7 @@ const AttendanceList = () => {
 		{
 			title:
 				// eslint-disable-next-line no-undef
-				'1' !== GatherPress.has_event_past
+				false === GatherPress.has_event_past
 					? __('Waiting List', 'gatherpress')
 					: __('Wait Listed', 'gatherpress'),
 			value: 'waiting_list',
@@ -26,7 +26,7 @@ const AttendanceList = () => {
 		{
 			title:
 				// eslint-disable-next-line no-undef
-				'1' !== GatherPress.has_event_past
+				false === GatherPress.has_event_past
 					? __('Not Attending', 'gatherpress')
 					: __("Didn't Go", 'gatherpress'),
 			value: 'not_attending',
