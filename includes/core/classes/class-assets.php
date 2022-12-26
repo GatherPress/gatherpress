@@ -125,11 +125,12 @@ class Assets {
 	}
 
 	/**
-	 * Enqueue Scripts
+	 * Enqueue Scripts to limit blocks by post type.
 	 *
 	 * @return void
 	 */
 	public function maybe_deny_list_blocks() {
+		// @todo -- add to build script
 		wp_register_script(
 			'post-deny-list-blocks',
 			plugins_url( 'assets/js/post-deny-list.js', __DIR__ ),
