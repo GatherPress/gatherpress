@@ -2,12 +2,12 @@ import { Flex, FlexItem, Icon } from '@wordpress/components';
 
 const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
 	return (
-		<div className="gp-venue-information">
+		<div className="gatherpress-venue">
 			{(name || fullAddress) && (
 				<Flex justify="normal" align="flex-start" gap="4">
 					<FlexItem
 						display="flex"
-						className="gp-venue-information__icon"
+						className="gatherpress-venue__icon"
 					>
 						<Icon icon="location" />
 					</FlexItem>
@@ -18,7 +18,7 @@ const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
 							</div>
 						)}
 						{fullAddress && (
-							<div className="gp-venue-information__full-address">
+							<div className="gatherpress-venue__full-address">
 								{fullAddress}
 							</div>
 						)}
@@ -32,12 +32,12 @@ const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
 							<Flex justify="normal" gap="4">
 								<FlexItem
 									display="flex"
-									className="gp-venue-information__icon"
+									className="gatherpress-venue__icon"
 								>
 									<Icon icon="phone" />
 								</FlexItem>
 								<FlexItem>
-									<div className="gp-venue-information__phone-number">
+									<div className="gatherpress-venue__phone-number">
 										{phoneNumber}
 									</div>
 								</FlexItem>
@@ -49,12 +49,12 @@ const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
 							<Flex justify="normal" gap="4">
 								<FlexItem
 									display="flex"
-									className="gp-venue-information__icon"
+									className="gatherpress-venue__icon"
 								>
 									<Icon icon="admin-site-alt3" />
 								</FlexItem>
 								<FlexItem>
-									<div className="gp-venue-information__website">
+									<div className="gatherpress-venue__website">
 										<a
 											href={website}
 											target="_blank"

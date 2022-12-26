@@ -1,4 +1,6 @@
-.gp-add-to-calendar {
+@import "../mixins";
+
+.wp-block-gatherpress-add-to-calendar {
 	position: relative;
 
 	&__row {
