@@ -1,4 +1,4 @@
-// @todo remove react from project and use WordPress packages. Fix during refactor.
+// @todo remove react from project and use WordPress packages. Fix during refactor of panels issue #150.
 import React, { Component } from 'react';
 import { Button, PanelRow } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
