@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	);
 
 	// eslint-disable-next-line no-undef
-	const type = '1' === GatherPress.has_event_past ? 'past' : 'upcoming';
+	const type = true === GatherPress.has_event_past ? 'past' : 'upcoming';
 
 	for (let i = 0; i < containers.length; i++) {
 		render(

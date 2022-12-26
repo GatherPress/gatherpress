@@ -20,65 +20,67 @@ if (
 	return;
 }
 ?>
-<div class="gp-venue-information">
-	<?php if ( ! empty( $attributes['fullAddress'] ) || ! empty( $attributes['name'] ) ) : ?>
-		<div class="gp-venue-information__row">
-			<div class="gp-venue-information__item">
-				<div class="gp-venue-information__icon">
-					<div class="dashicons dashicons-location"></div>
-				</div>
-				<div class="gp-venue-information__text">
-					<?php
-					if ( ! empty( $attributes['name'] ) ) :
-						?>
-						<div class="gp-venue-information__name has-medium-font-size">
-							<strong>
-								<?php echo esc_html( $attributes['name'] ); ?>
-							</strong>
-						</div>
+<div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
+	<div class="gatherpress-venue">
+		<?php if ( ! empty( $attributes['fullAddress'] ) || ! empty( $attributes['name'] ) ) : ?>
+			<div class="gatherpress-venue__row">
+				<div class="gatherpress-venue__item">
+					<div class="gatherpress-venue__icon">
+						<div class="dashicons dashicons-location"></div>
+					</div>
+					<div class="gatherpress-venue__text">
 						<?php
-					endif;
+						if ( ! empty( $attributes['name'] ) ) :
+							?>
+							<div class="gatherpress-venue__name has-medium-font-size">
+								<strong>
+									<?php echo esc_html( $attributes['name'] ); ?>
+								</strong>
+							</div>
+							<?php
+						endif;
 
-					if ( ! empty( $attributes['fullAddress'] ) ) :
+						if ( ! empty( $attributes['fullAddress'] ) ) :
+							?>
+							<div class="gatherpress-venue__full-address">
+								<?php echo esc_html( $attributes['fullAddress'] ); ?>
+							</div>
+							<?php
+						endif;
 						?>
-						<div class="gp-venue-information__full-address">
-							<?php echo esc_html( $attributes['fullAddress'] ); ?>
-						</div>
-						<?php
-					endif;
-					?>
+					</div>
 				</div>
 			</div>
-		</div>
-	<?php endif; ?>
-	<?php if ( ! empty( $attributes['phoneNumber'] ) || ! empty( $attributes['website'] ) ) : ?>
-		<div class="gp-venue-information__row gp-venue-information__gap">
-			<?php if ( ! empty( $attributes['phoneNumber'] ) ) : ?>
-				<div class="gp-venue-information__item">
-					<div class="gp-venue-information__icon">
-						<div class="dashicons dashicons-phone"></div>
-					</div>
-					<div class="gp-venue-information__text">
-						<div class="gp-venue-information__phone-number">
-							<?php echo esc_html( $attributes['phoneNumber'] ); ?>
+		<?php endif; ?>
+		<?php if ( ! empty( $attributes['phoneNumber'] ) || ! empty( $attributes['website'] ) ) : ?>
+			<div class="gatherpress-venue__row gatherpress-venue__gap">
+				<?php if ( ! empty( $attributes['phoneNumber'] ) ) : ?>
+					<div class="gatherpress-venue__item">
+						<div class="gatherpress-venue__icon">
+							<div class="dashicons dashicons-phone"></div>
+						</div>
+						<div class="gatherpress-venue__text">
+							<div class="gatherpress-venue__phone-number">
+								<?php echo esc_html( $attributes['phoneNumber'] ); ?>
+							</div>
 						</div>
 					</div>
-				</div>
-			<?php endif; ?>
-			<?php if ( ! empty( $attributes['website'] ) ) : ?>
-				<div class="gp-venue-information__item">
-					<div class="gp-venue-information__icon">
-						<div class="dashicons dashicons-admin-site-alt3"></div>
-					</div>
-					<div class="gp-venue-information__text">
-						<div class="gp-venue-information__website">
-							<a href="<?php echo esc_url( $attributes['website'] ); ?>" target="_blank" rel="noopener">
-								<?php echo esc_html( $attributes['website'] ); ?>
-							</a>
+				<?php endif; ?>
+				<?php if ( ! empty( $attributes['website'] ) ) : ?>
+					<div class="gatherpress-venue__item">
+						<div class="gatherpress-venue__icon">
+							<div class="dashicons dashicons-admin-site-alt3"></div>
+						</div>
+						<div class="gatherpress-venue__text">
+							<div class="gatherpress-venue__website">
+								<a href="<?php echo esc_url( $attributes['website'] ); ?>" target="_blank" rel="noopener">
+									<?php echo esc_html( $attributes['website'] ); ?>
+								</a>
+							</div>
 						</div>
 					</div>
-				</div>
-			<?php endif; ?>
-		</div>
-	<?php endif; ?>
+				<?php endif; ?>
+			</div>
+		<?php endif; ?>
+	</div>
 </div>

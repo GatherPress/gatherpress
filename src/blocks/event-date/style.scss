@@ -1,4 +1,6 @@
-.gp-event-date {
+@import "../mixins";
+
+.wp-block-gatherpress-event-date {
 	&__row {
 		display: flex;
 	}
