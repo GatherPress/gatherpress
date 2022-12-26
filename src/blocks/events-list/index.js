@@ -9,7 +9,9 @@ import edit from './edit';
 
 import metadata from './block.json';
 
-registerBlockType( metadata, {
+import './style.scss';
+
+registerBlockType(metadata, {
 	edit,
 	save: () => null,
-} );
+});

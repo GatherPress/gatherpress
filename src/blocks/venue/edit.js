@@ -12,48 +12,48 @@ import { useSelect } from '@wordpress/data';
 import { Listener } from '../../helpers/broadcasting';
 import VenueInformation from '../../components/VenueInformation';
 
-const Edit = ( props ) => {
+const Edit = (props) => {
 	const { setAttributes } = props;
 	const blockProps = useBlockProps();
-	const [ venueId, setVenueId ] = useState( '' );
+	const [venueId, setVenueId] = useState('');
 
-	Listener( { setVenueId } );
+	Listener({ setVenueId });
 
-	useEffect( () => {
-		setAttributes( {
+	useEffect(() => {
+		setAttributes({
 			venueId: venueId ?? '',
-		} );
-	} );
+		});
+	});
 
-	const Venue = ( { id } ) => {
-		const venuePost = useSelect( ( select ) =>
-			select( 'core' ).getEntityRecord( 'postType', 'gp_venue', id )
+	const Venue = ({ id }) => {
+		const venuePost = useSelect((select) =>
+			select('core').getEntityRecord('postType', 'gp_venue', id)
 		);
 
 		let jsonString = venuePost?.meta._venue_information ?? '{}';
 		jsonString = '' !== jsonString ? jsonString : '{}';
 
-		const venueInformation = JSON.parse( jsonString );
+		const venueInformation = JSON.parse(jsonString);
 		const fullAddress = venueInformation?.fullAddress ?? '';
 		const phoneNumber = venueInformation?.phoneNumber ?? '';
 		const website = venueInformation?.website ?? '';
 		const name =
 			venuePost?.title.rendered ??
-			__( 'No venue selected.', 'gatherpress' );
+			__('No venue selected.', 'gatherpress');
 
 		return (
 			<VenueInformation
-				name={ name }
-				fullAddress={ fullAddress }
-				phoneNumber={ phoneNumber }
-				website={ website }
+				name={name}
+				fullAddress={fullAddress}
+				phoneNumber={phoneNumber}
+				website={website}
 			/>
 		);
 	};
 
 	return (
-		<div { ...blockProps }>
-			<Venue id={ venueId } />
+		<div {...blockProps}>
+			<Venue id={venueId} />
 		</div>
 	);
 };

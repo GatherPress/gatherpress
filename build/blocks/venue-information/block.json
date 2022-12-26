@@ -2,7 +2,7 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 2,
   "name": "gatherpress/venue-information",
-  "version": "0.1.1",
+  "version": "0.2",
   "title": "Venue Information",
   "category": "gatherpress",
   "icon": "location",
@@ -30,5 +30,6 @@
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
-  "style": "file:./style-index.css"
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
 }

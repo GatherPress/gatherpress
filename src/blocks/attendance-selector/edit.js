@@ -15,11 +15,11 @@ const Edit = () => {
 	const currentUser = GatherPress.current_user;
 
 	return (
-		<div { ...blockProps }>
+		<div {...blockProps}>
 			<AttendanceSelector
-				eventId={ postId }
-				currentUser={ currentUser }
-				type={ 'upcoming' }
+				eventId={postId}
+				currentUser={currentUser}
+				type={'upcoming'}
 			/>
 		</div>
 	);

@@ -1,4 +1,6 @@
-.gp-venue-information {
+@import "../mixins";
+
+.gp-venue {
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;

@@ -13,10 +13,12 @@ import { render } from '@wordpress/element';
  */
 import AttendanceList from '../../components/AttendanceList';
 
-const containers = document.querySelectorAll(
-	`[data-gp_block_name="attendance-list"]`
-);
+document.addEventListener('DOMContentLoaded', () => {
+	const containers = document.querySelectorAll(
+		`[data-gp_block_name="attendance-list"]`
+	);
 
-for ( let i = 0; i < containers.length; i++ ) {
-	render( <AttendanceList />, containers[ i ] );
-}
+	for (let i = 0; i < containers.length; i++) {
+		render(<AttendanceList />, containers[i]);
+	}
+});

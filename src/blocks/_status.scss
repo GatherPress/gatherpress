@@ -1,0 +1,11 @@
+.gp-status {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+
+	&__response {
+		display: flex;
+		grid-column-gap: 0.5rem;
+		align-items: center;
+	}
+}

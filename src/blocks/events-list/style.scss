@@ -1,3 +1,7 @@
+@import "../mixins";
+@import "../attendance-list/style";
+@import "../attendance-selector/style";
+
 .gp-events-list {
 	&__header {
 		display: flex;
@@ -50,20 +54,20 @@
 				display: flex;
 				gap: 0;
 				flex-grow: 2;
+			}
 
-				&--item {
-					margin-left: -1rem;
-					margin-bottom: 0;
-					display: flex;
-					align-items: center;
+			&__item {
+				margin-left: -1rem;
+				margin-bottom: 0;
+				display: flex;
+				align-items: center;
 
-					&:first-child {
-						margin-left: 0;
-					}
+				&:first-child {
+					margin-left: 0;
+				}
 
-					img {
-						width: 50px;
-					}
+				img {
+					width: 3.125rem;
 				}
 			}
 

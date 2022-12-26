@@ -11,22 +11,22 @@ import { withState } from '@wordpress/compose';
  */
 import { updateDateTimeStart, getDateTimeStart } from './label';
 
-export const DateTimeStart = withState()( ( { setState } ) => {
+export const DateTimeStart = withState()(({ setState }) => {
 	const settings = __experimentalGetSettings();
 	const is12HourTime = /a(?!\\)/i.test(
 		settings.formats.time
 			.toLowerCase()
-			.replace( /\\\\/g, '' )
-			.split( '' )
+			.replace(/\\\\/g, '')
+			.split('')
 			.reverse()
-			.join( '' )
+			.join('')
 	);
 
 	return (
 		<DateTimePicker
-			currentDate={ getDateTimeStart() }
-			onChange={ ( date ) => updateDateTimeStart( date, setState ) }
-			is12Hour={ is12HourTime }
+			currentDate={getDateTimeStart()}
+			onChange={(date) => updateDateTimeStart(date, setState)}
+			is12Hour={is12HourTime}
 		/>
 	);
-} );
+});

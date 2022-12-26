@@ -1,6 +1,6 @@
 <?php
 /**
- * Placeholder for Event Date block.
+ * Render Event Date block.
  *
  * @package GatherPress
  * @subpackage Core
@@ -11,7 +11,7 @@ use GatherPress\Core\Event;
 
 $gatherpress_event = new Event( get_the_ID() );
 ?>
-<div class="gp-event-date">
+<div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
 	<div class="gp-event-date__row">
 		<div class="gp-event-date__item">
 			<div class="gp-event-date__icon">
@@ -23,5 +23,3 @@ $gatherpress_event = new Event( get_the_ID() );
 		</div>
 	</div>
 </div>
-
-

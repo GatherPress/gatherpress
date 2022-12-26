@@ -1,3 +1,8 @@
+@import "../mixins";
+@import "../modal";
+@import "../status";
+@import "../buttons";
+
 .gp-attendance-selector {
 	display: flex;
 	grid-column-gap: 1rem;
@@ -5,34 +10,3 @@
 	align-items: center;
 	margin-bottom: 1rem;
 }
-
-.gp-status {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-
-	&__response {
-		display: flex;
-		grid-column-gap: 0.5rem;
-		align-items: center;
-	}
-}
-
-.gp-modal {
-	&__header {
-		margin-bottom: 1rem;
-	}
-
-	&__content {
-		display: flex;
-		grid-column-gap: 1rem;
-		align-items: center;
-		margin-bottom: 1rem;
-	}
-
-	.gp-buttons {
-		display: flex;
-		grid-column-gap: 1rem;
-	}
-}
-
