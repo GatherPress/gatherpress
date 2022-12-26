@@ -1,4 +1,11 @@
-import React, { useState } from 'react';
+/**
+ * WordPress dependencies.
+ */
+import { useState } from '@wordpress/element';
+
+/**
+ * Internal dependencies.
+ */
 import AttendanceListNavigationItem from './AttendanceListNavigationItem';
 import { Listener } from '../helpers/broadcasting';
 
@@ -26,9 +33,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 
 	const renderedItems = items.map((item, index) => {
 		const additionalClasses =
-			item.value === activeValue
-				? 'wp-block-gatherpress-attendance-list__current'
-				: '';
+			item.value === activeValue ? 'gp-attendance-list__current' : '';
 
 		return (
 			<AttendanceListNavigationItem
@@ -42,9 +47,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	});
 
 	return (
-		<nav className="wp-block-gatherpress-attendance-list__navigation">
-			{renderedItems}
-		</nav>
+		<nav className="gp-attendance-list__navigation">{renderedItems}</nav>
 	);
 };
 

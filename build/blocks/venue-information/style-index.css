@@ -1,1 +1,1 @@
-.gatherpress-venue{display:flex;flex-direction:column;gap:.5rem}.gatherpress-venue__row{display:flex}.gatherpress-venue__icon{align-items:flex-start;display:flex;padding-top:.4rem}.gatherpress-venue__item{display:flex;gap:1rem}.gatherpress-venue__gap{gap:2rem}
+.gp-venue{flex-direction:column;gap:.5rem}.gp-venue,.gp-venue__row{display:flex}.gp-venue__icon{align-items:flex-start;display:flex;padding-top:.4rem}.gp-venue__item{display:flex;gap:1rem}.gp-venue__gap{gap:2rem}
