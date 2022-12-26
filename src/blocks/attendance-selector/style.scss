@@ -1,12 +1,14 @@
-.gp-attendance-selector {
-	display: flex;
-	grid-column-gap: 1rem;
-	justify-content: center;
-	align-items: center;
-	margin-bottom: 1rem;
+.wp-block-gatherpress-attendance-selector {
+	&__wrapper {
+		display: flex;
+		grid-column-gap: 1rem;
+		justify-content: center;
+		align-items: center;
+		margin-bottom: 1rem;
+	}
 }
 
-.gp-status {
+.gatherpress-status {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -18,7 +20,7 @@
 	}
 }
 
-.gp-modal {
+.gatherpress-modal {
 	&__header {
 		margin-bottom: 1rem;
 	}
@@ -29,10 +31,10 @@
 		align-items: center;
 		margin-bottom: 1rem;
 	}
+}
 
-	.gp-buttons {
-		display: flex;
-		grid-column-gap: 1rem;
-	}
+.gatherpress-buttons {
+	display: flex;
+	grid-column-gap: 1rem;
 }
 

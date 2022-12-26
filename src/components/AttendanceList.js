@@ -76,7 +76,7 @@ const AttendanceList = () => {
 
 	return (
 		<>
-			<div className="gp-attendance-list">
+			<div className="wp-block-gatherpress-attendance-list__wrapper">
 				<AttendanceListNavigation
 					items={items}
 					activeValue={attendanceStatus}

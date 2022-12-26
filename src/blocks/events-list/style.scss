@@ -1,7 +1,7 @@
 @import "../attendance-list/style";
 @import "../attendance-selector/style";
 
-.gp-events-list {
+.wp-block-gatherpress-events-list {
 	&__header {
 		display: flex;
 		gap: 2rem;
@@ -48,25 +48,25 @@
 		padding-bottom: 2rem;
 		display: flex;
 
-		.gp-attendance-list {
+		.wp-block-gatherpress-attendance-list {
 			&__items {
 				display: flex;
 				gap: 0;
 				flex-grow: 2;
+			}
 
-				&--item {
-					margin-left: -1rem;
-					margin-bottom: 0;
-					display: flex;
-					align-items: center;
+			&__item {
+				margin-left: -1rem;
+				margin-bottom: 0;
+				display: flex;
+				align-items: center;
 
-					&:first-child {
-						margin-left: 0;
-					}
+				&:first-child {
+					margin-left: 0;
+				}
 
-					img {
-						width: 50px;
-					}
+				img {
+					width: 3.125rem;
 				}
 			}
 
@@ -77,8 +77,10 @@
 			}
 		}
 
-		.gp-attendance-selector {
-			margin-bottom: 0;
+		.wp-block-gatherpress-attendance-selector {
+			&__wrapper {
+				margin-bottom: 0;
+			}
 		}
 	}
 }

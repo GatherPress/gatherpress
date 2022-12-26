@@ -14,7 +14,7 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-$gatherpress_venue = get_post( intval( $attributes['venueId'] ) );
+$gatherpress_venue = get_post( intval( $attributes['venueId'] ?? 0 ) );
 
 if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 	return;
@@ -22,7 +22,7 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 
 $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
 ?>
-<div class="gp-venue">
+<div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
 	<?php
 	Utility::render_template(
 		sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),

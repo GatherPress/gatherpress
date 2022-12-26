@@ -13,7 +13,7 @@ const AttendanceListContent = ({ items, activeValue, limit = false }) => {
 		return (
 			<div
 				key={index}
-				className={`gp-attendance-list__items gp-attendance-list__${active}`}
+				className={`wp-block-gatherpress-attendance-list__items wp-block-gatherpress-attendance-list__${active}`}
 				id={`gp-attendance-${value}`}
 				role="tabpanel"
 				aria-labelledby={`gp-attendance-${value}-tab`}
@@ -28,7 +28,7 @@ const AttendanceListContent = ({ items, activeValue, limit = false }) => {
 		);
 	});
 
-	return <div className="gp-attendance-list__container">{renderedItems}</div>;
+	return <div className="wp-block-gatherpress-attendance-list__content">{renderedItems}</div>;
 };
 
 export default AttendanceListContent;

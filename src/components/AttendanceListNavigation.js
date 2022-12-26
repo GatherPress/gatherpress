@@ -27,7 +27,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	const renderedItems = items.map((item, index) => {
 		const additionalClasses =
 			item.value === activeValue
-				? 'gp-attendance-list__navigation--current'
+				? 'wp-block-gatherpress-attendance-list__current'
 				: '';
 
 		return (
@@ -42,7 +42,7 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	});
 
 	return (
-		<nav className="gp-attendance-list__navigation">{renderedItems}</nav>
+		<nav className="wp-block-gatherpress-attendance-list__navigation">{renderedItems}</nav>
 	);
 };
 
