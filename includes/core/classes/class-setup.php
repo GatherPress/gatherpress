@@ -137,7 +137,7 @@ class Setup {
 	}
 
 	/**
-	 * Display custom admin notice function
+	 * Display admin notice function for unset timezone.
 	 *
 	 * @return void
 	 */
@@ -152,7 +152,7 @@ class Setup {
 			esc_attr( $class ),
 			sprintf(
 				wp_kses(
-				// translators: %s url link to setting.
+					// translators: %s url link to setting.
 					__( 'Please set <a href="%s">your timezone</a> in order to ensure proper GatherPress settings!', 'gatherpress' ),
 					array(
 						'a' => array(
