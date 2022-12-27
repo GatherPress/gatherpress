@@ -1,7 +1,7 @@
 /**
  * External dependencies.
  */
-import moment from 'moment/moment';
+import moment from 'moment';
 
 /**
  * WordPress dependencies.
@@ -12,16 +12,20 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies.
  */
-import { Broadcaster } from './broadcasting';
 import { enableSave } from './misc';
 import { isEventPostType } from './event';
 
 export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
 export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
-export const defaultDateTimeStart = moment()
+export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a z';
+// eslint-disable-next-line no-undef
+export const timeZone = GatherPress.event_datetime.timezone;
+export const defaultDateTimeStart = moment
+	.tz(timeZone)
 	.add(1, 'day')
 	.set('hour', 18)
 	.set('minute', 0)
+	.set('second', 0)
 	.format(dateTimeMomentFormat);
 
 export const getDateTimeStart = () => {
@@ -30,7 +34,7 @@ export const getDateTimeStart = () => {
 
 	dateTime =
 		'' !== dateTime
-			? moment(dateTime).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, timeZone).format(dateTimeMomentFormat)
 			: defaultDateTimeStart;
 
 	// eslint-disable-next-line no-undef
@@ -45,8 +49,9 @@ export const getDateTimeEnd = () => {
 
 	dateTime =
 		'' !== dateTime
-			? moment(dateTime).format(dateTimeMomentFormat)
-			: moment(defaultDateTimeStart)
+			? moment.tz(dateTime, timeZone).format(dateTimeMomentFormat)
+			: moment
+					.tz(defaultDateTimeStart, timeZone)
 					.add(2, 'hours')
 					.format(dateTimeMomentFormat);
 
@@ -66,9 +71,6 @@ export const updateDateTimeStart = (date, setDateTimeStart = null) => {
 		setDateTimeStart(date);
 	}
 
-	Broadcaster({
-		setDateTimeStart: date,
-	});
 	enableSave();
 };
 
@@ -82,21 +84,22 @@ export const updateDateTimeEnd = (date, setDateTimeEnd = null) => {
 		setDateTimeEnd(date);
 	}
 
-	Broadcaster({
-		setDateTimeEnd: date,
-	});
 	enableSave();
 };
 
 export function validateDateTimeStart(dateTimeStart) {
-	const dateTimeEndNumeric = moment(
-		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_end
-	).valueOf();
-	const dateTimeStartNumeric = moment(dateTimeStart).valueOf();
+	const dateTimeEndNumeric = moment
+		.tz(
+			// eslint-disable-next-line no-undef
+			GatherPress.event_datetime.datetime_end,
+			timeZone
+		)
+		.valueOf();
+	const dateTimeStartNumeric = moment.tz(dateTimeStart, timeZone).valueOf();
 
 	if (dateTimeStartNumeric >= dateTimeEndNumeric) {
-		const dateTimeEnd = moment(dateTimeStartNumeric)
+		const dateTimeEnd = moment
+			.tz(dateTimeStartNumeric, timeZone)
 			.add(2, 'hours')
 			.format(dateTimeMomentFormat);
 
@@ -105,14 +108,18 @@ export function validateDateTimeStart(dateTimeStart) {
 }
 
 export function validateDateTimeEnd(dateTimeEnd) {
-	const dateTimeStartNumeric = moment(
-		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_start
-	).valueOf();
-	const dateTimeEndNumeric = moment(dateTimeEnd).valueOf();
+	const dateTimeStartNumeric = moment
+		.tz(
+			// eslint-disable-next-line no-undef
+			GatherPress.event_datetime.datetime_start,
+			timeZone
+		)
+		.valueOf();
+	const dateTimeEndNumeric = moment.tz(dateTimeEnd, timeZone).valueOf();
 
 	if (dateTimeEndNumeric <= dateTimeStartNumeric) {
-		const dateTimeStart = moment(dateTimeEndNumeric)
+		const dateTimeStart = moment
+			.tz(dateTimeEndNumeric, timeZone)
 			.subtract(2, 'hours')
 			.format(dateTimeMomentFormat);
 		updateDateTimeStart(dateTimeStart);
@@ -130,14 +137,20 @@ export function saveDateTime() {
 			data: {
 				// eslint-disable-next-line no-undef
 				post_id: GatherPress.post_id,
-				datetime_start: moment(
-					// eslint-disable-next-line no-undef
-					GatherPress.event_datetime.datetime_start
-				).format(dateTimeDatabaseFormat),
-				datetime_end: moment(
-					// eslint-disable-next-line no-undef
-					GatherPress.event_datetime.datetime_end
-				).format(dateTimeDatabaseFormat),
+				datetime_start: moment
+					.tz(
+						// eslint-disable-next-line no-undef
+						GatherPress.event_datetime.datetime_start,
+						timeZone
+					)
+					.format(dateTimeDatabaseFormat),
+				datetime_end: moment
+					.tz(
+						// eslint-disable-next-line no-undef
+						GatherPress.event_datetime.datetime_end,
+						timeZone
+					)
+					.format(dateTimeDatabaseFormat),
 				// eslint-disable-next-line no-undef
 				_wpnonce: GatherPress.nonce,
 			},

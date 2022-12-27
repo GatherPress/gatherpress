@@ -31,8 +31,10 @@ import {
 	getDateTimeStart,
 	getDateTimeEnd,
 	saveDateTime,
+	timeZone,
 } from '../../../helpers/datetime';
 import { hasEventPastNotice } from '../../../helpers/event';
+import { Broadcaster } from '../../../helpers/broadcasting';
 
 hasEventPastNotice();
 subscribe(saveDateTime);
@@ -43,10 +45,18 @@ const DateTimePanel = () => {
 
 	useEffect(() => {
 		setDateTimeStart(
-			moment(getDateTimeStart()).format(dateTimeMomentFormat)
+			moment.tz(getDateTimeStart(), timeZone).format(dateTimeMomentFormat)
 		);
-		setDateTimeEnd(moment(getDateTimeEnd()).format(dateTimeMomentFormat));
+		setDateTimeEnd(
+			moment.tz(getDateTimeEnd(), timeZone).format(dateTimeMomentFormat)
+		);
+
 		hasEventPastNotice();
+
+		Broadcaster({
+			setDateTimeStart: dateTimeStart,
+			setDateTimeEnd: dateTimeEnd,
+		});
 	});
 
 	return (

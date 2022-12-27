@@ -1,34 +1,30 @@
 /**
  * WordPress dependencies.
  */
-import { dateI18n, getSettings } from '@wordpress/date';
+import { getSettings } from '@wordpress/date';
 import { DateTimePicker } from '@wordpress/components';
+import moment from 'moment';
 
 /**
  * Internal dependencies.
  */
-import { updateDateTimeStart, updateDateTimeEnd } from '../helpers/datetime';
+import {
+	updateDateTimeStart,
+	updateDateTimeEnd,
+	dateTimeLabelFormat,
+	timeZone,
+} from '../helpers/datetime';
 
 export const DateTimeStartLabel = (props) => {
 	const { dateTimeStart } = props;
-	const settings = getSettings();
 
-	return dateI18n(
-		`${settings.formats.date} ${settings.formats.time}`,
-		dateTimeStart,
-		false
-	);
+	return moment.tz(dateTimeStart, timeZone).format(dateTimeLabelFormat);
 };
 
 export const DateTimeEndLabel = (props) => {
 	const { dateTimeEnd } = props;
-	const settings = getSettings();
 
-	return dateI18n(
-		`${settings.formats.date} ${settings.formats.time}`,
-		dateTimeEnd,
-		false
-	);
+	return moment.tz(dateTimeEnd, timeZone).format(dateTimeLabelFormat);
 };
 
 export const DateTimeStartPicker = (props) => {

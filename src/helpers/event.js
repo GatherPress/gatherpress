@@ -1,7 +1,7 @@
 /**
  * External dependencies.
  */
-import moment from 'moment/moment';
+import moment from 'moment';
 
 /**
  * WordPress dependencies.
@@ -9,16 +9,20 @@ import moment from 'moment/moment';
 import { dispatch, select } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 
+/**
+ * Internal dependencies.
+ */
+import { timeZone } from './datetime';
+
 export function isEventPostType() {
 	return 'gp_event' === select('core/editor').getCurrentPostType();
 }
 
 export function hasEventPast() {
-	return (
-		moment().valueOf() >
-		// eslint-disable-next-line no-undef
-		moment(GatherPress.event_datetime.datetime_end).valueOf()
-	);
+	// eslint-disable-next-line no-undef
+	const dateTimeEnd = moment(GatherPress.event_datetime.datetime_end);
+
+	return moment.tz(timeZone).valueOf() > dateTimeEnd.tz(timeZone).valueOf();
 }
 
 export function hasEventPastNotice() {
