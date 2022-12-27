@@ -6,75 +6,108 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { Dropdown, Button, PanelRow } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import {
+	Button,
+	Dropdown,
+	Flex,
+	FlexItem,
+	PanelRow,
+} from '@wordpress/components';
+import { useState, useEffect } from '@wordpress/element';
 import { subscribe } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { saveDateTime, dateTimeFormat } from './helpers';
-import { DateTimeStart } from './datetime-start';
-import { DateTimeStartLabel } from './datetime-start/label';
-import { DateTimeEnd } from './datetime-end';
-import { DateTimeEndLabel } from './datetime-end/label';
+import {
+	DateTimeStartLabel,
+	DateTimeEndLabel,
+	DateTimeStartPicker,
+	DateTimeEndPicker,
+} from '../../../components/DateTime';
+import {
+	dateTimeMomentFormat,
+	getDateTimeStart,
+	getDateTimeEnd,
+	saveDateTime,
+} from '../../../helpers/datetime';
+import { hasEventPastNotice } from '../../../helpers/event';
 
-const currentDateTime = moment()
-	.add(1, 'day')
-	.set('hour', 18)
-	.set('minute', 0)
-	.format(dateTimeFormat);
-
-// eslint-disable-next-line no-undef
-let dateTimeStart = GatherPress.event_datetime.datetime_start;
-// eslint-disable-next-line no-undef
-let dateTimeEnd = GatherPress.event_datetime.datetime_end;
-
+hasEventPastNotice();
 subscribe(saveDateTime);
 
-dateTimeStart =
-	'' !== dateTimeStart
-		? moment(dateTimeStart).format(dateTimeFormat)
-		: currentDateTime;
-dateTimeEnd =
-	'' !== dateTimeEnd
-		? moment(dateTimeEnd).format(dateTimeFormat)
-		: moment(currentDateTime).add(2, 'hours').format(dateTimeFormat);
+const DateTimePanel = () => {
+	const [dateTimeStart, setDateTimeStart] = useState();
+	const [dateTimeEnd, setDateTimeEnd] = useState();
 
-// eslint-disable-next-line no-undef
-GatherPress.event_datetime.datetime_start = dateTimeStart;
-// eslint-disable-next-line no-undef
-GatherPress.event_datetime.datetime_end = dateTimeEnd;
+	useEffect(() => {
+		setDateTimeStart(
+			moment(getDateTimeStart()).format(dateTimeMomentFormat)
+		);
+		setDateTimeEnd(moment(getDateTimeEnd()).format(dateTimeMomentFormat));
+		hasEventPastNotice();
+	});
 
-export const DateTimeStartSettingPanel = () => (
-	<section>
-		<h3>{__('Date & time', 'gatherpress')}</h3>
-		<PanelRow>
-			<span>{__('Start', 'gatherpress')}</span>
-			<Dropdown
-				position="bottom left"
-				renderToggle={({ isOpen, onToggle }) => (
-					<Button onClick={onToggle} aria-expanded={isOpen} isLink>
-						<DateTimeStartLabel />
-					</Button>
-				)}
-				renderContent={() => <DateTimeStart />}
-			/>
-		</PanelRow>
-		<PanelRow>
-			<span>{__('End', 'gatherpress')}</span>
-			<Dropdown
-				position="bottom left"
-				renderToggle={({ isOpen, onToggle }) => (
-					<Button onClick={onToggle} aria-expanded={isOpen} isLink>
-						<DateTimeEndLabel />
-					</Button>
-				)}
-				renderContent={() => <DateTimeEnd />}
-			/>
-		</PanelRow>
-		{/*<PanelRow>*/}
-		{/*	<h5>{ GatherPress.default_timezone }</h5>*/}
-		{/*</PanelRow>*/}
-	</section>
-);
+	return (
+		<section>
+			<h3>{__('Date & time', 'gatherpress')}</h3>
+			<PanelRow>
+				<Flex>
+					<FlexItem>{__('Start', 'gatherpress')}</FlexItem>
+					<FlexItem>
+						<Dropdown
+							position="bottom left"
+							renderToggle={({ isOpen, onToggle }) => (
+								<Button
+									onClick={onToggle}
+									aria-expanded={isOpen}
+									isLink
+								>
+									<DateTimeStartLabel
+										dateTimeStart={dateTimeStart}
+									/>
+								</Button>
+							)}
+							renderContent={() => (
+								<DateTimeStartPicker
+									dateTimeStart={dateTimeStart}
+									setDateTimeStart={setDateTimeStart}
+								/>
+							)}
+						/>
+					</FlexItem>
+				</Flex>
+			</PanelRow>
+			<PanelRow>
+				<Flex>
+					<FlexItem>{__('End', 'gatherpress')}</FlexItem>
+					<FlexItem>
+						<Dropdown
+							position="bottom left"
+							renderToggle={({ isOpen, onToggle }) => (
+								<Button
+									onClick={onToggle}
+									aria-expanded={isOpen}
+									isLink
+								>
+									<DateTimeEndLabel
+										dateTimeEnd={dateTimeEnd}
+									/>
+								</Button>
+							)}
+							renderContent={() => (
+								<DateTimeEndPicker
+									dateTimeEnd={dateTimeEnd}
+									setDateTimeEnd={setDateTimeEnd}
+								/>
+							)}
+						/>
+					</FlexItem>
+				</Flex>
+			</PanelRow>
+		</section>
+	);
+};
+
+export default DateTimePanel;

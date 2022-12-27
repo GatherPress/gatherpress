@@ -4,15 +4,15 @@
 import { __ } from '@wordpress/i18n';
 import { Flex, FlexItem, PanelRow, SelectControl } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import { Broadcaster } from '../../../helpers/broadcasting';
 
-const VenuePanel = (props) => {
-	const { venue, setVenue } = props;
+const VenuePanel = () => {
+	const [venue, setVenue] = useState('');
 	const editPost = useDispatch('core/editor').editPost;
 	const { unlockPostSaving } = useDispatch('core/editor');
 	const venueTermId = useSelect((select) =>
