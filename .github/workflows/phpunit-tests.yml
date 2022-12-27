@@ -49,6 +49,7 @@ jobs:
       - name: Running PHPUnit Tests
         run: |
           php --version
+          docker kill $(docker ps -q)
           npm run test:unit:php
           echo "CONTAINERS"
           echo $(docker container ls)
