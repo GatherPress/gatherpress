@@ -147,18 +147,23 @@ class Setup {
 			return;
 		}
 		$class   = 'notice notice-error is-dismissible';
-		$string1 = __( 'Please set', 'gatherpress' );
-		$string2 = __( 'your timezone', 'gatherpress' );
-		$string3 = __( 'in order to ensure proper GatherPress settings!', 'gatherpress' );
-
-		printf(
-			'<div class="%1$s"><p>%2$s <a href="%3$s">%4$s</a> %5$s</p></div>',
+		$message = sprintf(
+			wp_kses(
+				__( '<div class="%s"><p>Please set <a href="%s">your timezone</a> in order to ensure proper GatherPress settings!</p></div>', 'gatherpress' ),
+				array(
+					'div' => array(
+						'class' => array()
+					),
+					'a' => array(
+						'href' => array()
+					),
+					'p' => array()
+				)
+			),
 			esc_attr( $class ),
-			esc_html( $string1 ),
-			esc_url( get_admin_url() . 'options-general.php#timezone_string' ),
-			esc_html( $string2 ),
-			esc_html( $string3 )
+			esc_url( get_admin_url( null,  'options-general.php#timezone_string' ) )
 		);
+		echo $message;
 	}
 
 	/**
