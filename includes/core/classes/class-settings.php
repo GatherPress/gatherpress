@@ -202,6 +202,60 @@ class Settings {
 	}
 
 	/**
+	 * Outputs a checkbox input field.
+	 *
+	 * @param string $sub_page        The sub page for the checkbox field.
+	 * @param string $section         The section for the checkbox field.
+	 * @param string $option          The option for the checkbox field.
+	 * @param array  $option_settings The option settings.
+	 *
+	 * @return void
+	 */
+	public function checkbox( string $sub_page, string $section, string $option, array $option_settings ) {
+		$name    = $this->get_name_field( $sub_page, $section, $option );
+		$default = $option_settings['default'] ?? '';
+		$value   = $this->get_value( $sub_page, $section, $option, $default );
+
+		Utility::render_template(
+			sprintf( '%s/includes/templates/admin/settings/fields/checkbox.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'name'        => $name,
+				'option'      => Utility::prefix_key( $option ),
+				'value'       => $value,
+				'description' => $option_settings['description'] ?? '',
+			),
+			true
+		);
+	}
+
+	/**
+	 * Outputs a radio input field.
+	 *
+	 * @param string $sub_page        The sub page for the radio field.
+	 * @param string $section         The section for the radio field.
+	 * @param string $option          The option for the radio field.
+	 * @param array  $option_settings The option settings.
+	 *
+	 * @return void
+	 */
+	public function radio( string $sub_page, string $section, string $option, array $option_settings ) {
+		$name    = $this->get_name_field( $sub_page, $section, $option );
+		$default = $option_settings['default'] ?? '';
+		$value   = $this->get_value( $sub_page, $section, $option, $default );
+
+		Utility::render_template(
+			sprintf( '%s/includes/templates/admin/settings/fields/radio.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'name'        => $name,
+				'option'      => Utility::prefix_key( $option ),
+				'value'       => $value,
+				'description' => $option_settings['description'] ?? '',
+			),
+			true
+		);
+	}
+
+	/**
 	 * Outputs a dynamic select field for a type of content.
 	 *
 	 * @param string $sub_page        The sub page for the text field.
@@ -374,6 +428,45 @@ class Settings {
 									'options' => array(
 										'type'  => 'page',
 										'label' => __( 'Select Page', 'gatherpress' ),
+										'limit' => 1,
+									),
+								),
+							),
+						),
+					),
+				),
+			),
+			'splash'    => array(
+				'name'        => __( 'Splash', 'gatherpress' ),
+				'description' => __( 'Splash Settings for GatherPress.', 'gatherpress' ),
+				'priority'    => PHP_INT_MIN,
+				'sections'    => array(
+					'splash_pages' => array(
+						'name'        => __( 'Splash Event Text', 'gatherpress' ),
+						'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
+						'options'     => array(
+							'splash_upcoming_events' => array(
+								'labels' => array(
+									'name' => __( 'Splash Events', 'gatherpress' ),
+								),
+								'field'  => array(
+									'type'    => 'text',
+									'options' => array(
+										'type'  => 'page',
+										'label' => __( 'Add Splash Taxt', 'gatherpress' ),
+										'limit' => 1,
+									),
+								),
+							),
+							'splash_checkbox'     => array(
+								'labels' => array(
+									'name' => __( 'Splash Checkbox', 'gatherpress' ),
+								),
+								'field'  => array(
+									'type'    => 'checkbox',
+									'options' => array(
+										'type'  => 'page',
+										'label' => __( 'Select Splash Page', 'gatherpress' ),
 										'limit' => 1,
 									),
 								),
