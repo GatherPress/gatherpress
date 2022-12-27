@@ -148,21 +148,20 @@ class Setup {
 		}
 		$class = 'notice notice-error is-dismissible';
 		printf(
-			wp_kses(
-				// translators: %1$s classes for admin_notice, %2$s url link to setting.
-				__( '<div class="%1$s"><p>Please set <a href="%2$s">your timezone</a> in order to ensure proper GatherPress settings!</p></div>', 'gatherpress' ),
-				array(
-					'div' => array(
-						'class' => array(),
-					),
-					'a'   => array(
-						'href' => array(),
-					),
-					'p'   => array(),
-				)
-			),
+			'<div class="%1$s"><p>%2$s</p></div>',
 			esc_attr( $class ),
-			esc_url( get_admin_url( null, 'options-general.php#timezone_string' ) )
+			sprintf(
+				wp_kses(
+				// translators: %s url link to setting.
+					__( 'Please set <a href="%s">your timezone</a> in order to ensure proper GatherPress settings!', 'gatherpress' ),
+					array(
+						'a' => array(
+							'href' => array(),
+						),
+					)
+				),
+				esc_url( get_admin_url( null, 'options-general.php#timezone_string' ) )
+			)
 		);
 	}
 
