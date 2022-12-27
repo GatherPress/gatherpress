@@ -66,11 +66,9 @@ export const updateDateTimeStart = (date, setDateTimeStart = null) => {
 		setDateTimeStart(date);
 	}
 
-	const payload = {
+	Broadcaster({
 		setDateTimeStart: date,
-	};
-
-	Broadcaster(payload);
+	});
 	enableSave();
 };
 
@@ -84,11 +82,9 @@ export const updateDateTimeEnd = (date, setDateTimeEnd = null) => {
 		setDateTimeEnd(date);
 	}
 
-	const payload = {
+	Broadcaster({
 		setDateTimeEnd: date,
-	};
-
-	Broadcaster(payload);
+	});
 	enableSave();
 };
 
