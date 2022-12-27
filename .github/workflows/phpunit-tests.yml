@@ -42,6 +42,7 @@ jobs:
 
       - name: Running PHPUnit Tests
         run: |
+          php --version
           npm i -g @wordpress/env
           npm run test:unit:php
           docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
