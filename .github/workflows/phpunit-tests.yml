@@ -44,13 +44,7 @@ jobs:
         run: |
           npm i -g @wordpress/env
           npm run test:unit:php
-          containers=$(docker container ls | awk 'NR > 1 {print $1}')
-          for container in $containers; do docker cp $container:/var/www/html/coverage.xml coverage.xml && echo 'coverage.xml file moved.'; done
-#          for container in containers; do test -d $container:$(docker exec $container pwd)/coverage.xml && echo 'It Exists'; done
-#          for container in containers; do docker cp $container:$(docker exec $container pwd)/coverage.xml coverage.xml; done
-
-#          echo $(docker container ls)
-#          docker cp $(docker ps -aqf "name=tests-wordpress"):$(docker exec $(docker ps -aqf "name=tests-wordpress") pwd)/coverage.xml coverage.xml
+          docker cp $(docker ps -aqf "name=tests-wordpress"):$(docker exec /var/www/html/coverage.xml coverage.xml
         if: ${{ success() || failure() }}
 
       - name: Fix Code Coverage Paths
