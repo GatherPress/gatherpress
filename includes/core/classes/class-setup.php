@@ -146,14 +146,13 @@ class Setup {
 		if ( $timezone ) {
 			return;
 		}
-		$class = 'notice notice-error is-dismissible';
 		printf(
 			'<div class="%1$s"><p>%2$s</p></div>',
-			esc_attr( $class ),
+			'notice notice-error is-dismissible',
 			sprintf(
 				wp_kses(
 					// translators: %s url link to setting.
-					__( 'Please set <a href="%s">your timezone</a> in order to ensure proper GatherPress settings!', 'gatherpress' ),
+					__( 'Please set <a href="%s">your timezone</a> in order to ensure proper event date and times.', 'gatherpress' ),
 					array(
 						'a' => array(
 							'href' => array(),
