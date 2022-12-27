@@ -13,16 +13,10 @@
 			<directory prefix="class-test-" suffix=".php">./tests/</directory>
 		</testsuite>
 	</testsuites>
-	<filter>
-		<whitelist addUncoveredFilesFromWhitelist="true">
-			<directory suffix=".php">./includes/core</directory>
-			<directory suffix=".php">./includes/buddypress</directory>
-		</whitelist>
-	</filter>
 	<coverage>
 		<include>
-			<directory suffix=".php">buddypress</directory>
-			<directory suffix=".php">core</directory>
+			<directory suffix=".php">./includes/buddypress/classes</directory>
+			<directory suffix=".php">./includes/core/classes</directory>
 		</include>
 	</coverage>
 </phpunit>
