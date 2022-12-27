@@ -147,7 +147,7 @@ class Setup {
 			return;
 		}
 		$class   = 'notice notice-error is-dismissible';
-		$message = sprintf(
+		printf(
 			wp_kses(
 				__( '<div class="%s"><p>Please set <a href="%s">your timezone</a> in order to ensure proper GatherPress settings!</p></div>', 'gatherpress' ),
 				array(
@@ -163,7 +163,6 @@ class Setup {
 			esc_attr( $class ),
 			esc_url( get_admin_url( null,  'options-general.php#timezone_string' ) )
 		);
-		echo $message;
 	}
 
 	/**
