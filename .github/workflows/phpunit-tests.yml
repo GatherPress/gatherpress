@@ -50,8 +50,6 @@ jobs:
         run: |
           php --version
           npm run test:unit:php
-          echo "DOCKER CONTAINER"
-          echo docker ps -aqf "name=tests-wordpress"
           docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
         if: ${{ success() || failure() }}
 
