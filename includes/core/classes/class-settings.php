@@ -464,7 +464,10 @@ class Settings {
 									'name' => __( 'Show post date as Event date', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type' => 'checkbox',
+									'type'    => 'checkbox',
+									'options' => array(
+										'default' => true,
+									),
 								),
 							),
 							'upcoming_events'    => array(
