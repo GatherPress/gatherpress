@@ -50,7 +50,6 @@ const EventItem = (props) => {
 					>
 						<strong>{event.datetime_start}</strong>
 					</div>
-					{venue && <div>Venue: {venue}</div>}
 					<div className={`${eventClass}__title has-large-font-size`}>
 						<a href={event.permalink}>
 							{HtmlReactParser(event.title)}
@@ -61,6 +60,12 @@ const EventItem = (props) => {
 							<div className={`${eventClass}__excerpt`}>
 								{HtmlReactParser(limitExcerpt(event.excerpt))}
 							</div>
+						</div>
+					)}
+					{venue && (
+						<div>
+							{venue}
+							<span className="dashicons dashicons-location"></span>
 						</div>
 					)}
 				</div>

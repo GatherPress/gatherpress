@@ -1,9 +1,15 @@
+/**
+ * WordPress dependencies.
+ */
 import { Component } from '@wordpress/element';
 import { Button, PanelRow } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
-import { hasEventPast } from '../../../helpers';
+import { __ } from '@wordpress/i18n';
 
-const { __ } = wp.i18n;
+/**
+ * Internal dependencies.
+ */
+import { hasEventPast } from '../../../../helpers/event';
 
 export class AnnounceEvent extends Component {
 	constructor(props) {
