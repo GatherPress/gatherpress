@@ -69,6 +69,7 @@ class Setup {
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+		add_action( 'admin_notices', array( $this, 'timezone_check_admin_notice' ) );
 	}
 
 	/**
@@ -133,6 +134,34 @@ class Setup {
 		array_unshift( $block_categories, $gatherpress_category );
 
 		return $block_categories;
+	}
+
+	/**
+	 * Display admin notice function for unset timezone.
+	 *
+	 * @return void
+	 */
+	public function timezone_check_admin_notice() {
+		$timezone = get_option( 'timezone_string' );
+		if ( $timezone ) {
+			return;
+		}
+		printf(
+			'<div class="%1$s"><p>%2$s</p></div>',
+			'notice notice-error is-dismissible',
+			sprintf(
+				wp_kses(
+					// translators: %s url link to setting.
+					__( 'Please set <a href="%s">your timezone</a> in order to ensure proper event date and times.', 'gatherpress' ),
+					array(
+						'a' => array(
+							'href' => array(),
+						),
+					)
+				),
+				esc_url( get_admin_url( null, 'options-general.php#timezone_string' ) )
+			)
+		);
 	}
 
 	/**
