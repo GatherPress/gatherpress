@@ -43,7 +43,6 @@ class Utility {
 
 		ob_start();
 		require $path;
-		echo '<p>' . basename( __FILE__ ) . ':' . __LINE__ . '</p>';
 		return ob_get_clean();
 	}
 

@@ -101,10 +101,14 @@ class Settings {
 	}
 
 	/**
-	 * Add additional tabs/pages to admin menu.
+	 * Add tabs/subpages to admin menu.
+	 *
+	 * @param array $sub_pages Tabs/subpages.
+	 *
+	 * @return array
 	 */
 	public function register_sub_pages( $sub_pages ) {
-		$sub_pages['leadership']    = array(
+		$sub_pages['leadership'] = array(
 			'name'        => __( 'Leadership', 'gatherpress' ),
 			'description' => __( 'Leadership for GatherPress.', 'gatherpress' ),
 			'sections'    => array(
@@ -446,7 +450,7 @@ class Settings {
 	 */
 	public function get_sub_pages(): array {
 		$gp_admin_tabs = array(
-			'general'    => array(
+			'general' => array(
 				'name'        => __( 'General', 'gatherpress' ),
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
 				'priority'    => PHP_INT_MIN,
@@ -455,15 +459,15 @@ class Settings {
 						'name'        => __( 'Event Archive Pages', 'gatherpress' ),
 						'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
 						'options'     => array(
-							'post_or_event_date'     => array(
+							'post_or_event_date' => array(
 								'labels' => array(
 									'name' => __( 'Show post date as Event date', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type'    => 'checkbox',
+									'type' => 'checkbox',
 								),
 							),
-							'upcoming_events' => array(
+							'upcoming_events'    => array(
 								'labels' => array(
 									'name' => __( 'Upcoming Events', 'gatherpress' ),
 								),
@@ -476,7 +480,7 @@ class Settings {
 									),
 								),
 							),
-							'past_events'     => array(
+							'past_events'        => array(
 								'labels' => array(
 									'name' => __( 'Past Events', 'gatherpress' ),
 								),
@@ -493,7 +497,7 @@ class Settings {
 					),
 				),
 			),
-			'credits'    => array(
+			'credits' => array(
 				'name'     => __( 'Credits', 'gatherpress' ),
 				'priority' => PHP_INT_MAX,
 				'sections' => array(
