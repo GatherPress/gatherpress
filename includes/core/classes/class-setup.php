@@ -503,7 +503,7 @@ class Setup {
 		global $post;
 		$gp_settings = get_option( 'gp_general' );
 
-		if ( ! is_a( $post, '\WP_Post' ) || Event::POST_TYPE !== $post->post_type || 1 !== intval( $gp_settings['pages']['post_or_event_date'] ) ) {
+		if ( Event::POST_TYPE !== $post->post_type || 1 !== intval( $gp_settings['pages']['post_or_event_date'] ) ) {
 			return $the_date;
 		}
 
