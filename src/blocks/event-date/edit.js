@@ -9,6 +9,7 @@ import moment from 'moment';
 import { useBlockProps } from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import { timeZone } from '../../helpers/datetime';
 
 /**
  * Internal dependencies.
@@ -27,16 +28,18 @@ const displayDateTime = (start, end) => {
 	const timeFormat = 'h:mm A';
 	const timeZoneFormat = 'z';
 	// eslint-disable-next-line no-undef
-	const timeZone = GatherPress.event_datetime.timezone;
 	const startFormat = dateFormat + ' ' + timeFormat;
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 
-	if (moment(start).format(dateFormat) === moment(end).format(dateFormat)) {
+	if (
+		moment.tz(start, timeZone).format(dateFormat) ===
+		moment.tz(end, timeZone).format(dateFormat)
+	) {
 		endFormat = timeFormat + ' ' + timeZoneFormat;
 	}
 
 	return (
-		moment(start).format(startFormat) +
+		moment.tz(start, timeZone).format(startFormat) +
 		' to ' +
 		moment.tz(end, timeZone).format(endFormat)
 	);
