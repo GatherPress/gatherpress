@@ -2,21 +2,23 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
+import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalDivider as Divider,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalVStack as VStack,
+} from '@wordpress/components';
 import { registerPlugin } from '@wordpress/plugins';
 import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
 
 /**
  * Internal dependencies.
  */
-import { isEventPostType } from '../helpers';
-import { DateTimeStartSettingPanel } from './datetime';
+import { isEventPostType } from '../../helpers/event';
+import DateTimePanel from './datetime';
 import VenuePanel from './venue';
-// import { OptionsPanel } from './options';
-import { useState } from '@wordpress/element';
 
 const EventSettings = () => {
-	const [venue, setVenue] = useState('');
-
 	return (
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
@@ -25,11 +27,11 @@ const EventSettings = () => {
 				initialOpen={true}
 				className="gp-event-settings"
 			>
-				<DateTimeStartSettingPanel />
-				<hr />
-				<VenuePanel venue={venue} setVenue={setVenue} />
-				{/*<hr />*/}
-				{/*<OptionsPanel />*/}
+				<VStack spacing={2}>
+					<DateTimePanel />
+					<Divider />
+					<VenuePanel />
+				</VStack>
 			</PluginDocumentSettingPanel>
 		)
 	);
