@@ -5,7 +5,7 @@
   "version": "0.2",
   "title": "Events List",
   "category": "gatherpress",
-  "icon": "clock",
+  "icon": "list-view",
   "example": {},
   "description": "A block listing events.",
   "attributes": {
