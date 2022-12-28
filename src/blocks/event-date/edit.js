@@ -9,7 +9,7 @@ import moment from 'moment';
 import { useBlockProps } from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon } from '@wordpress/components';
 import { useState } from '@wordpress/element';
-import { timeZone } from '../../helpers/datetime';
+import { timeZone, utcOffset } from '../../helpers/datetime';
 
 /**
  * Internal dependencies.
@@ -30,6 +30,7 @@ const displayDateTime = (start, end) => {
 	// eslint-disable-next-line no-undef
 	const startFormat = dateFormat + ' ' + timeFormat;
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
+	console.log(utcOffset);
 
 	if (
 		moment.tz(start, timeZone).format(dateFormat) ===
@@ -41,7 +42,7 @@ const displayDateTime = (start, end) => {
 	return (
 		moment.tz(start, timeZone).format(startFormat) +
 		' to ' +
-		moment.tz(end, timeZone).format(endFormat)
+		moment.tz(end, timeZone).format(endFormat) + utcOffset
 	);
 };
 

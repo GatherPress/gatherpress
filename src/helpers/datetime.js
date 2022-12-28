@@ -17,9 +17,39 @@ import { isEventPostType } from './event';
 
 export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
 export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
-export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a z';
-// eslint-disable-next-line no-undef
-export const timeZone = GatherPress.event_datetime.timezone;
+export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
+
+const getTimeZone = () => {
+	// eslint-disable-next-line no-undef
+	const timezone = GatherPress.event_datetime.timezone;
+	if (!!moment.tz.zone(timezone)) {
+		return timezone;
+	} else {
+		return 'UTC';
+	}
+}
+
+export const timeZone = getTimeZone();
+
+const getUtcOffset = () => {
+	if ('UTC' !== timeZone) {
+		return '';
+	}
+
+	// regex101.com: https://regex101.com/r/9F6DZ4/1
+	const regExp = /(\+|-)([0-9]{1,2}):([0-9]{2})/;
+	// eslint-disable-next-line no-undef
+	const offset = regExp.exec(GatherPress.event_datetime.timezone);
+
+	if (offset && 4 === offset.length) {
+		return String(offset[1] + (parseInt(offset[2], 10) + parseInt(offset[3], 10) / 60));
+	}
+
+	return '';
+}
+
+export const utcOffset = getUtcOffset();
+
 export const defaultDateTimeStart = moment
 	.tz(timeZone)
 	.add(1, 'day')
@@ -151,6 +181,7 @@ export function saveDateTime() {
 						timeZone
 					)
 					.format(dateTimeDatabaseFormat),
+				timezone: GatherPress.event_datetime.timezone,
 				// eslint-disable-next-line no-undef
 				_wpnonce: GatherPress.nonce,
 			},
