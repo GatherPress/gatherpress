@@ -8,11 +8,11 @@
  */
 
 if ( ! isset( $name, $option, $value, $description ) ) {
-	// return;
+	return;
 }
 ?>
 <label for="<?php echo esc_attr( $option ); ?>"></label>
-<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>"  value="1" <?php checked( 1, get_option('event_or_post_date'), true ); ?> />
+<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>"  value="1" <?php checked( 1, intval( $value ), true ); ?> />
 <?php
 if ( ! empty( $description ) ) {
 	?>
