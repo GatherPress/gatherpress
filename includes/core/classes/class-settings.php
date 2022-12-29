@@ -293,8 +293,12 @@ class Settings {
 	 */
 	public function checkbox( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
-		$default = $option_settings['default'] ?? '';
+		$default = ( $option_settings['field']['options']['default'] ? '1' : '' );
 		$value   = $this->get_value( $sub_page, $section, $option, $default );
+		// $gp_settings = get_option( 'template' );
+		$gp_settings = ( get_option( 'gp_general' ) ? get_option( 'gp_general' )   : 'NO SETTINGS SAVED' );
+		// $gp_settings = ( get_option( 'users_can_register' ) ? 'TRUE'   : 'NO SETTINGS SAVED' );
+		echo '<pre>' . print_r( $gp_settings, true ) . '</pre>';
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/checkbox.php', GATHERPRESS_CORE_PATH ),
@@ -302,7 +306,7 @@ class Settings {
 				'name'        => $name,
 				'option'      => Utility::prefix_key( $option ),
 				'value'       => $value,
-				'description' => $option_settings['description'] ?? '',
+				'description' => $option_settings['description'] ?? 'description unset',
 			),
 			true
 		);
@@ -455,9 +459,9 @@ class Settings {
 				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
 				'priority'    => PHP_INT_MIN,
 				'sections'    => array(
-					'pages' => array(
-						'name'        => __( 'Event Archive Pages', 'gatherpress' ),
-						'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
+					'general' => array(
+						'name'        => __( 'General Settings', 'gatherpress' ),
+						'description' => __( 'GatherPress needs <b><em>Mike</em></b> to show us how to save the initial settings upon activation.', 'gatherpress' ),
 						'options'     => array(
 							'post_or_event_date' => array(
 								'labels' => array(
@@ -466,10 +470,16 @@ class Settings {
 								'field'  => array(
 									'type'    => 'checkbox',
 									'options' => array(
-										'default' => true,
+										'default' => '1',
 									),
 								),
 							),
+						),
+					),
+					'pages' => array(
+						'name'        => __( 'Event Archive Pages', 'gatherpress' ),
+						'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
+						'options'     => array(
 							'upcoming_events'    => array(
 								'labels' => array(
 									'name' => __( 'Upcoming Events', 'gatherpress' ),

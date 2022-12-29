@@ -12,7 +12,7 @@ if ( ! isset( $name, $option, $value, $description ) ) {
 }
 ?>
 <label for="<?php echo esc_attr( $option ); ?>"></label>
-<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>"  value="1" <?php checked( 1, rest_sanitize_boolean( $value ), true ); ?> />
+<input id="<?php echo esc_attr( $option ); ?>" type="checkbox" name="<?php echo esc_attr( $name ); ?>"  value="1" <?php checked( 1, esc_attr( $value ), true ); ?> />
 <?php
 if ( ! empty( $description ) ) {
 	?>
