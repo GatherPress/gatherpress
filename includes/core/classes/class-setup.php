@@ -507,7 +507,7 @@ class Setup {
 		global $post;
 		$gp_settings = get_option( 'gp_general' );
 
-		if ( Event::POST_TYPE !== $post->post_type || true !== $gp_settings['post_or_event_date'] ) {
+		if ( Event::POST_TYPE !== $post->post_type || true !== $gp_settings['general']['post_or_event_date'] ) {
 			return $the_date;
 		}
 
