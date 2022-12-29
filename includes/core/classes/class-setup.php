@@ -78,6 +78,9 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin() {
+		$gp_settings['general']['post_or_event_date'] = true;
+		add_option( 'gp_general', $gp_settings );
+
 		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
