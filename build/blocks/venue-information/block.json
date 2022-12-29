@@ -2,7 +2,7 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 2,
   "name": "gatherpress/venue-information",
-  "version": "0.2",
+  "version": "0.1.1",
   "title": "Venue Information",
   "category": "gatherpress",
   "icon": "location",
@@ -16,6 +16,10 @@
       "type": "string",
       "default": ""
     },
+    "location": {
+      "type": "string",
+      "default": "2214 Rhawn St, Phila PA"
+    },
     "phoneNumber": {
       "type": "string",
       "default": ""
@@ -23,6 +27,30 @@
     "website": {
       "type": "string",
       "default": ""
+    },
+    "zoom": {
+      "type": "number",
+      "default": 10
+    },
+    "type": {
+      "type": "string",
+      "default": "m"
+    },
+    "deskHeight": {
+      "type": "number",
+      "default": 400
+    },
+    "tabHeight": {
+      "type": "number",
+      "default": 300
+    },
+    "mobileHeight": {
+      "type": "number",
+      "default": 250
+    },
+    "device": {
+      "type": "string",
+      "default": "desktop"
     }
   },
   "supports": {
@@ -30,6 +58,6 @@
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
-  "style": "file:./style-index.css",
-  "render": "file:./render.php"
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
 }
