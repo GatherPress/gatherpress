@@ -5,7 +5,7 @@
  * Description:         Powering Communities with WordPress.
  * Author:              The GatherPress Community
  * Author URI:          https://gatherpess.org/
- * Version:             0.14.3
+ * Version:             0.15.0
  * Minimum PHP Version: 7.3
  * Text Domain:         gatherpress
  * License:             GPLv2 or later (license.txt)
@@ -31,3 +31,4 @@ require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.ph
 GatherPress\Core\Autoloader::register();
 GatherPress\Core\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();
+

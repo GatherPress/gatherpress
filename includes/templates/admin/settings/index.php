@@ -16,7 +16,7 @@ if ( ! isset( $sub_pages, $page ) ) {
 
 $gatherpress_settings = Settings::get_instance();
 ?>
-<div class="wrap">
+<div class="wrap gp-settings">
 	<h1 class="wp-heading-inline">
 		<?php esc_html_e( 'GatherPress Settings', 'gatherpress' ); ?>
 	</h1>
