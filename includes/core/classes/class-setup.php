@@ -78,6 +78,8 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin() {
+		$gp_settings['general']['post_or_event_date'] = true;
+		add_option( 'gp_general', $gp_settings );
 		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
@@ -502,8 +504,9 @@ class Setup {
 	public function get_the_event_date( $the_date ): string {
 		global $post;
 		$gp_settings = get_option( 'gp_general' );
+		$event_date_format = ( $gp_settings['general']['post_or_event_date'] ?? 0 );
 
-		if ( Event::POST_TYPE !== $post->post_type || 1 !== intval( $gp_settings['pages']['post_or_event_date'] ) ) {
+		if ( Event::POST_TYPE !== $post->post_type || 1 !== intval( $event_date_format ) ) {
 			return $the_date;
 		}
 
