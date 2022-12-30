@@ -503,7 +503,7 @@ class Setup {
 	 */
 	public function get_the_event_date( $the_date ): string {
 		global $post;
-		$gp_settings = get_option( 'gp_general' );
+		$gp_settings       = get_option( 'gp_general' );
 		$event_date_format = ( $gp_settings['general']['post_or_event_date'] ?? 0 );
 
 		if ( Event::POST_TYPE !== $post->post_type || 1 !== intval( $event_date_format ) ) {

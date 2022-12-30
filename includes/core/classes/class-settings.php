@@ -464,20 +464,20 @@ class Settings {
 									'name' => __( 'Show post date as Event date', 'gatherpress' ),
 								),
 								'field'  => array(
-									'type'    => 'checkbox',
+									'type'        => 'checkbox',
 									'description' => __( 'GatherPress needs <b><em>Mike</em></b> to show us how to save the initial settings upon activation.', 'gatherpress' ),
-									'options' => array(
+									'options'     => array(
 										'default' => true,
 									),
 								),
 							),
 						),
 					),
-					'pages' => array(
+					'pages'   => array(
 						'name'        => __( 'Event Archive Pages', 'gatherpress' ),
 						'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
 						'options'     => array(
-							'upcoming_events'    => array(
+							'upcoming_events' => array(
 								'labels' => array(
 									'name' => __( 'Upcoming Events', 'gatherpress' ),
 								),
@@ -490,7 +490,7 @@ class Settings {
 									),
 								),
 							),
-							'past_events'        => array(
+							'past_events'     => array(
 								'labels' => array(
 									'name' => __( 'Past Events', 'gatherpress' ),
 								),
