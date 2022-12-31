@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { getSettings } from '@wordpress/date';
+import { dateI18n, getSettings } from '@wordpress/date';
 import { DateTimePicker } from '@wordpress/components';
 import moment from 'moment';
 
@@ -17,14 +17,24 @@ import {
 
 export const DateTimeStartLabel = (props) => {
 	const { dateTimeStart } = props;
+	const settings = getSettings();
 
-	return moment.tz(dateTimeStart, timeZone).format(dateTimeLabelFormat);
+	return dateI18n(
+		`${ settings.formats.date } ${ settings.formats.time }`,
+		dateTimeStart
+		// timeZone
+	);
 };
 
 export const DateTimeEndLabel = (props) => {
 	const { dateTimeEnd } = props;
+	const settings = getSettings();
 
-	return moment.tz(dateTimeEnd, timeZone).format(dateTimeLabelFormat);
+	return dateI18n(
+		`${ settings.formats.date } ${ settings.formats.time }`,
+		dateTimeEnd
+		// timeZone
+	);
 };
 
 export const DateTimeStartPicker = (props) => {

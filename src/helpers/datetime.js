@@ -50,13 +50,14 @@ const getUtcOffset = () => {
 
 export const utcOffset = getUtcOffset();
 
-export const defaultDateTimeStart = moment
-	.tz(timeZone)
-	.add(1, 'day')
-	.set('hour', 18)
-	.set('minute', 0)
-	.set('second', 0)
-	.format(dateTimeMomentFormat);
+export const defaultDateTimeStart = undefined;
+// export const defaultDateTimeStart = moment
+// 	.tz(timeZone)
+// 	.add(1, 'day')
+// 	.set('hour', 18)
+// 	.set('minute', 0)
+// 	.set('second', 0)
+// 	.format(dateTimeMomentFormat);
 
 export const getDateTimeStart = () => {
 	// eslint-disable-next-line no-undef
