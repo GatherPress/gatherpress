@@ -78,8 +78,6 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin() {
-		$gp_settings['general']['post_or_event_date'] = true;
-		add_option( 'gp_general', $gp_settings );
 		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
@@ -502,15 +500,14 @@ class Setup {
 	 * @return string
 	 */
 	public function get_the_event_date( $the_date ): string {
-		global $post;
-		$gp_settings       = get_option( 'gp_general' );
-		$event_date_format = ( $gp_settings['general']['post_or_event_date'] ?? 0 );
+		$settings         = Settings::get_instance();
+		$use_event_date   = $settings->get_value( 'gp_general', 'general', 'post_or_event_date' );
 
-		if ( Event::POST_TYPE !== $post->post_type || 1 !== intval( $event_date_format ) ) {
+		if ( Event::POST_TYPE !== get_post_type() || 1 !== intval( $use_event_date ) ) {
 			return $the_date;
 		}
 
-		$event = new Event( $post->ID );
+		$event = new Event( get_the_ID() );
 
 		return $event->get_display_datetime();
 	}
@@ -525,7 +522,7 @@ class Setup {
 	 */
 	public function set_event_archive_labels( array $post_states, \WP_Post $post ) {
 		$general = get_option( Utility::prefix_key( 'general' ) );
-		$pages   = $general['pages'];
+		$pages   = $general['pages'] ?? '';
 
 		if ( empty( $pages ) || ! is_array( $pages ) ) {
 			return $post_states;

@@ -63,7 +63,6 @@ class Settings {
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
-		add_filter( 'gatherpress_settings_sub_pages', array( $this, 'register_sub_pages' ), 10, 2 );
 	}
 
 	/**
@@ -98,85 +97,6 @@ class Settings {
 				array( $this, 'settings_page' )
 			);
 		}
-	}
-
-	/**
-	 * Add tabs/subpages to admin menu.
-	 *
-	 * @param array $sub_pages Tabs/subpages.
-	 *
-	 * @return array
-	 */
-	public function register_sub_pages( $sub_pages ) {
-		$sub_pages['leadership'] = array(
-			'name'        => __( 'Leadership', 'gatherpress' ),
-			'description' => __( 'Leadership for GatherPress.', 'gatherpress' ),
-			'sections'    => array(
-				'roles' => array(
-					'name'        => __( 'Roles', 'gatherpress' ),
-					'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
-					'options'     => array(
-						'organizers'           => array(
-							'labels' => array(
-								'name'          => __( 'Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => __( 'Select Users', 'gatherpress' ),
-								),
-							),
-						),
-						'assistant-organizers' => array(
-							'labels' => array(
-								'name'          => __( 'Assistant Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => __( 'Select Users', 'gatherpress' ),
-								),
-							),
-						),
-						'event-organizers'     => array(
-							'labels' => array(
-								'name'          => __( 'Event Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Event Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => __( 'Select Users', 'gatherpress' ),
-								),
-							),
-						),
-						'event-assistants'     => array(
-							'labels' => array(
-								'name'          => __( 'Event Assistants', 'gatherpress' ),
-								'singular_name' => __( 'Event Assistant', 'gatherpress' ),
-								'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => __( 'Select Users', 'gatherpress' ),
-								),
-							),
-						),
-					),
-				),
-			),
-		);
-		return $sub_pages;
 	}
 
 	/**
@@ -266,8 +186,7 @@ class Settings {
 	 */
 	public function text( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
-		$default = $option_settings['default'] ?? '';
-		$value   = $this->get_value( $sub_page, $section, $option, $default );
+		$value   = $this->get_value( $sub_page, $section, $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
@@ -293,8 +212,7 @@ class Settings {
 	 */
 	public function checkbox( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
-		$default = $option_settings['default'] ?? '';
-		$value   = $this->get_value( $sub_page, $section, $option, $default );
+		$value   = $this->get_value( $sub_page, $section, $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/checkbox.php', GATHERPRESS_CORE_PATH ),
@@ -320,8 +238,7 @@ class Settings {
 	 */
 	public function autocomplete( string $sub_page, string $section, string $option, array $option_settings ) {
 		$name    = $this->get_name_field( $sub_page, $section, $option );
-		$default = $option_settings['default'] ?? '';
-		$value   = $this->get_value( $sub_page, $section, $option, $default );
+		$value   = $this->get_value( $sub_page, $section, $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/autocomplete.php', GATHERPRESS_CORE_PATH ),
@@ -362,23 +279,35 @@ class Settings {
 	/**
 	 * Gets the value.
 	 *
-	 * @param string       $sub_page The sub page of the value.
-	 * @param string       $section  The section of the value.
-	 * @param string       $option   The option of the value.
-	 * @param mixed|string $default  The default value.
+	 * @param string $sub_page The sub page of the value.
+	 * @param string $section  The section of the value.
+	 * @param string $option   The option of the value.
 	 *
 	 * @return mixed
 	 */
-	public function get_value( string $sub_page, string $section = '', string $option = '', $default = '' ) {
+	public function get_value( string $sub_page, string $section = '', string $option = '' ) {
 		$options = $this->get_options( $sub_page );
+		$default = $this->get_default_value( $sub_page, $section, $option );
 
-		if ( ! empty( $section ) && ! empty( $option ) ) {
-			return ( ! empty( $options[ $section ][ $option ] ) ) ? $options[ $section ][ $option ] : $default;
-		} elseif ( ! empty( $section ) ) {
-			return ( ! empty( $options[ $section ] ) ) ? $options[ $section ] : $default;
-		}
+		return
+			( isset( $options[ $section ][ $option ] ) && '' !== $options[ $section ][ $option ] )
+				? $options[ $section ][ $option ]
+				: $default;
+	}
 
-		return $options;
+	/**
+	 * Get the default value.
+	 *
+	 * @param string $sub_page The sub page of the value.
+	 * @param string $section  The section of the value.
+	 * @param string $option   The option of the value.
+	 *
+	 * @return mixed
+	 */
+	public function get_default_value( string $sub_page, string $section = '', string $option = '' ) {
+		$sub_pages = $this->get_sub_pages();
+
+		return $sub_pages[ Utility::unprefix_key( $sub_page ) ]['sections'][ $section ][ 'options' ][ $option ]['field']['options']['default'] ?? '';
 	}
 
 	/**
@@ -449,99 +378,73 @@ class Settings {
 	 * @return array
 	 */
 	public function get_sub_pages(): array {
-		$gp_admin_tabs = array(
-			'general' => array(
-				'name'        => __( 'General', 'gatherpress' ),
-				'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
-				'priority'    => PHP_INT_MIN,
-				'sections'    => array(
-					'general' => array(
-						'name'        => __( 'General Settings', 'gatherpress' ),
-						'description' => __( 'GatherPress allows you to set event dates to reflect either the post date or event date. Default: show as event date.', 'gatherpress' ),
-						'options'     => array(
-							'post_or_event_date' => array(
-								'labels' => array(
-									'name' => __( 'Show post date as Event date', 'gatherpress' ),
-								),
-								'field'  => array(
-									'type'        => 'checkbox',
-									'description' => __( 'GatherPress needs <b><em>Mike</em></b> to show us how to save the initial settings upon activation.', 'gatherpress' ),
-									'options'     => array(
-										'default' => true,
-									),
-								),
+		$sub_pages               = array();
+		$sub_pages['general']    = $this->get_general_page();
+		$sub_pages['leadership'] = $this->get_leadership_page();
+		$sub_pages['credits']    = $this->get_credits_page();
+
+		$sub_pages = (array) apply_filters( 'gatherpress_settings_sub_pages', $sub_pages );
+
+		uasort( $sub_pages, array( $this, 'sort_sub_pages_by_priority' ) );
+
+		return $sub_pages;
+	}
+
+	/**
+	 * General page.
+	 *
+	 * @return array
+	 */
+	public function get_general_page(): array {
+		return array(
+			'name'        => __( 'General', 'gatherpress' ),
+			'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
+			'priority'    => PHP_INT_MIN,
+			'sections'    => array(
+				'general' => array(
+					'name'        => __( 'General Settings', 'gatherpress' ),
+					'description' => __( 'GatherPress allows you to set event dates to reflect either the post date or event date. Default: show as event date.', 'gatherpress' ),
+					'options'     => array(
+						'post_or_event_date' => array(
+							'labels' => array(
+								'name' => __( 'Show post date as event date', 'gatherpress' ),
 							),
-						),
-					),
-					'pages'   => array(
-						'name'        => __( 'Event Archive Pages', 'gatherpress' ),
-						'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
-						'options'     => array(
-							'upcoming_events' => array(
-								'labels' => array(
-									'name' => __( 'Upcoming Events', 'gatherpress' ),
-								),
-								'field'  => array(
-									'type'    => 'autocomplete',
-									'options' => array(
-										'type'  => 'page',
-										'label' => __( 'Select Page', 'gatherpress' ),
-										'limit' => 1,
-									),
-								),
-							),
-							'past_events'     => array(
-								'labels' => array(
-									'name' => __( 'Past Events', 'gatherpress' ),
-								),
-								'field'  => array(
-									'type'    => 'autocomplete',
-									'options' => array(
-										'type'  => 'page',
-										'label' => __( 'Select Page', 'gatherpress' ),
-										'limit' => 1,
-									),
+							'field'  => array(
+								'type'        => 'checkbox',
+								'options'     => array(
+									'default' => '1',
 								),
 							),
 						),
 					),
 				),
-			),
-			'credits' => array(
-				'name'     => __( 'Credits', 'gatherpress' ),
-				'priority' => PHP_INT_MAX,
-				'sections' => array(
-					'credits' => array(
-						'name'        => __( 'Credits', 'gatherpress' ),
-						'description' => sprintf(
-							/* translators: %1$s: opening anchor tag, %2$s closing anchor tag. */
-							__( 'Meet the folks behind GatherPress. Want to see your name here? %1$sGet Involved!%2$s', 'gatherpress' ),
-							'<a href="https://github.com/GatherPress/gatherpress" target="_blank">',
-							'</a>'
+				'pages'   => array(
+					'name'        => __( 'Event Archive Pages', 'gatherpress' ),
+					'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
+					'options'     => array(
+						'upcoming_events' => array(
+							'labels' => array(
+								'name' => __( 'Upcoming Events', 'gatherpress' ),
+							),
+							'field'  => array(
+								'type'    => 'autocomplete',
+								'options' => array(
+									'type'  => 'page',
+									'label' => __( 'Select Page', 'gatherpress' ),
+									'limit' => 1,
+								),
+							),
 						),
-						'options'     => array(
-							'project-leads'    => array(
-								'labels' => array(
-									'name' => __( 'Project Leads', 'gatherpress' ),
-								),
-								'field'  => array(
-									'type' => 'credits',
-								),
+						'past_events'     => array(
+							'labels' => array(
+								'name' => __( 'Past Events', 'gatherpress' ),
 							),
-							'gatherpress-team' => array(
-								'labels' => array(
-									'name' => __( 'GatherPress Team', 'gatherpress' ),
-								),
-								'field'  => array(
-									'type' => 'credits',
-								),
-							),
-							'contributors'     => array(
-								'labels' => array(
-									'name' => __( 'Contributors', 'gatherpress' ),
-								),
-								'field'  => array(
-									'type' => 'credits',
+							'field'  => array(
+								'type'    => 'autocomplete',
+								'options' => array(
+									'type'  => 'page',
+									'label' => __( 'Select Page', 'gatherpress' ),
+									'limit' => 1,
 								),
 							),
 						),
@@ -549,12 +452,131 @@ class Settings {
 				),
 			),
 		);
+	}
 
-		$gp_admin_tabs = (array) apply_filters( 'gatherpress_settings_sub_pages', $gp_admin_tabs );
+	/**
+	 * Leadership page.
+	 *
+	 * @return array
+	 */
+	public function get_leadership_page(): array {
+		return array(
+			'name'        => __( 'Leadership', 'gatherpress' ),
+			'description' => __( 'Leadership for GatherPress.', 'gatherpress' ),
+			'sections'    => array(
+				'roles' => array(
+					'name'        => __( 'Roles', 'gatherpress' ),
+					'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
+					'options'     => array(
+						'organizers'           => array(
+							'labels' => array(
+								'name'          => __( 'Organizers', 'gatherpress' ),
+								'singular_name' => __( 'Organizer', 'gatherpress' ),
+								'plural_name'   => __( 'Organizers', 'gatherpress' ),
+							),
+							'field'  => array(
+								'type'    => 'autocomplete',
+								'options' => array(
+									'type'  => 'user',
+									'label' => __( 'Select Users', 'gatherpress' ),
+								),
+							),
+						),
+						'assistant-organizers' => array(
+							'labels' => array(
+								'name'          => __( 'Assistant Organizers', 'gatherpress' ),
+								'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
+								'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
+							),
+							'field'  => array(
+								'type'    => 'autocomplete',
+								'options' => array(
+									'type'  => 'user',
+									'label' => __( 'Select Users', 'gatherpress' ),
+								),
+							),
+						),
+						'event-organizers'     => array(
+							'labels' => array(
+								'name'          => __( 'Event Organizers', 'gatherpress' ),
+								'singular_name' => __( 'Event Organizer', 'gatherpress' ),
+								'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
+							),
+							'field'  => array(
+								'type'    => 'autocomplete',
+								'options' => array(
+									'type'  => 'user',
+									'label' => __( 'Select Users', 'gatherpress' ),
+								),
+							),
+						),
+						'event-assistants'     => array(
+							'labels' => array(
+								'name'          => __( 'Event Assistants', 'gatherpress' ),
+								'singular_name' => __( 'Event Assistant', 'gatherpress' ),
+								'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
+							),
+							'field'  => array(
+								'type'    => 'autocomplete',
+								'options' => array(
+									'type'  => 'user',
+									'label' => __( 'Select Users', 'gatherpress' ),
+								),
+							),
+						),
+					),
+				),
+			),
+		);
+	}
 
-		uasort( $gp_admin_tabs, array( $this, 'sort_sub_pages_by_priority' ) );
-
-		return $gp_admin_tabs;
+	/**
+	 * Credits page.
+	 *
+	 * @return array
+	 */
+	public function get_credits_page(): array {
+		return array(
+			'name'     => __( 'Credits', 'gatherpress' ),
+			'priority' => PHP_INT_MAX,
+			'sections' => array(
+				'credits' => array(
+					'name'        => __( 'Credits', 'gatherpress' ),
+					'description' => sprintf(
+					/* translators: %1$s: opening anchor tag, %2$s closing anchor tag. */
+						__( 'Meet the folks behind GatherPress. Want to see your name here? %1$sGet Involved!%2$s', 'gatherpress' ),
+						'<a href="https://github.com/GatherPress/gatherpress" target="_blank">',
+						'</a>'
+					),
+					'options'     => array(
+						'project-leads'    => array(
+							'labels' => array(
+								'name' => __( 'Project Leads', 'gatherpress' ),
+							),
+							'field'  => array(
+								'type' => 'credits',
+							),
+						),
+						'gatherpress-team' => array(
+							'labels' => array(
+								'name' => __( 'GatherPress Team', 'gatherpress' ),
+							),
+							'field'  => array(
+								'type' => 'credits',
+							),
+						),
+						'contributors'     => array(
+							'labels' => array(
+								'name' => __( 'Contributors', 'gatherpress' ),
+							),
+							'field'  => array(
+								'type' => 'credits',
+							),
+						),
+					),
+				),
+			),
+		);
 	}
 
 	/**
@@ -592,7 +614,6 @@ class Settings {
 
 		return $options ?? array();
 	}
-
 
 	/**
 	 * Return role of the user.
