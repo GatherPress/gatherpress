@@ -185,8 +185,8 @@ class Settings {
 	 * @return void
 	 */
 	public function text( string $sub_page, string $section, string $option, array $option_settings ) {
-		$name    = $this->get_name_field( $sub_page, $section, $option );
-		$value   = $this->get_value( $sub_page, $section, $option );
+		$name  = $this->get_name_field( $sub_page, $section, $option );
+		$value = $this->get_value( $sub_page, $section, $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/text.php', GATHERPRESS_CORE_PATH ),
@@ -211,8 +211,8 @@ class Settings {
 	 * @return void
 	 */
 	public function checkbox( string $sub_page, string $section, string $option, array $option_settings ) {
-		$name    = $this->get_name_field( $sub_page, $section, $option );
-		$value   = $this->get_value( $sub_page, $section, $option );
+		$name  = $this->get_name_field( $sub_page, $section, $option );
+		$value = $this->get_value( $sub_page, $section, $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/checkbox.php', GATHERPRESS_CORE_PATH ),
@@ -237,8 +237,8 @@ class Settings {
 	 * @return void
 	 */
 	public function autocomplete( string $sub_page, string $section, string $option, array $option_settings ) {
-		$name    = $this->get_name_field( $sub_page, $section, $option );
-		$value   = $this->get_value( $sub_page, $section, $option );
+		$name  = $this->get_name_field( $sub_page, $section, $option );
+		$value = $this->get_value( $sub_page, $section, $option );
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/fields/autocomplete.php', GATHERPRESS_CORE_PATH ),
@@ -289,10 +289,7 @@ class Settings {
 		$options = $this->get_options( $sub_page );
 		$default = $this->get_default_value( $sub_page, $section, $option );
 
-		return
-			( isset( $options[ $section ][ $option ] ) && '' !== $options[ $section ][ $option ] )
-				? $options[ $section ][ $option ]
-				: $default;
+		return ( isset( $options[ $section ][ $option ] ) && '' !== $options[ $section ][ $option ] ) ? $options[ $section ][ $option ] : $default;
 	}
 
 	/**
@@ -307,7 +304,7 @@ class Settings {
 	public function get_default_value( string $sub_page, string $section = '', string $option = '' ) {
 		$sub_pages = $this->get_sub_pages();
 
-		return $sub_pages[ Utility::unprefix_key( $sub_page ) ]['sections'][ $section ][ 'options' ][ $option ]['field']['options']['default'] ?? '';
+		return $sub_pages[ Utility::unprefix_key( $sub_page ) ]['sections'][ $section ]['options'][ $option ]['field']['options']['default'] ?? '';
 	}
 
 	/**
@@ -410,8 +407,8 @@ class Settings {
 								'name' => __( 'Show post date as event date', 'gatherpress' ),
 							),
 							'field'  => array(
-								'type'        => 'checkbox',
-								'options'     => array(
+								'type'    => 'checkbox',
+								'options' => array(
 									'default' => '1',
 								),
 							),

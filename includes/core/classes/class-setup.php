@@ -500,8 +500,8 @@ class Setup {
 	 * @return string
 	 */
 	public function get_the_event_date( $the_date ): string {
-		$settings         = Settings::get_instance();
-		$use_event_date   = $settings->get_value( 'gp_general', 'general', 'post_or_event_date' );
+		$settings       = Settings::get_instance();
+		$use_event_date = $settings->get_value( 'gp_general', 'general', 'post_or_event_date' );
 
 		if ( Event::POST_TYPE !== get_post_type() || 1 !== intval( $use_event_date ) ) {
 			return $the_date;
