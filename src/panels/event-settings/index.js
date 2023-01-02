@@ -2,6 +2,7 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
+import { dispatch } from '@wordpress/data';
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalDivider as Divider,
@@ -41,3 +42,7 @@ registerPlugin('gp-event-settings', {
 	render: EventSettings,
 	icon: '',
 });
+
+dispatch('core/edit-post').toggleEditorPanelOpened(
+	'gp-event-settings/gp-event-settings'
+);
