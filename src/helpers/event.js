@@ -18,6 +18,10 @@ export function isEventPostType() {
 	return 'gp_event' === select('core/editor').getCurrentPostType();
 }
 
+export function CheckCurrentPostType() {
+	return wp.data.select('core/editor').getCurrentPostType();
+}
+
 export function hasEventPast() {
 	// eslint-disable-next-line no-undef
 	const dateTimeEnd = moment(GatherPress.event_datetime.datetime_end);

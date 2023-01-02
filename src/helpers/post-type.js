@@ -16,4 +16,4 @@ function FilterPostTypeBlocks() {
 		wp.blocks.unregisterBlockType('gatherpress/events-list');
 	}
 }
-// FilterPostTypeBlocks();
+
