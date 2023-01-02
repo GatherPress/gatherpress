@@ -41,3 +41,9 @@ registerPlugin('gp-event-settings', {
 	render: EventSettings,
 	icon: '',
 });
+
+
+wp.data.dispatch( 'core/edit-post' ) .toggleEditorPanelOpened(
+	'gp-event-settings/gp-event-settings'
+);
+
