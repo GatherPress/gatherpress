@@ -12,7 +12,7 @@ if ( ! isset( $name, $option, $value, $description ) ) {
 }
 ?>
 <label for="<?php echo esc_attr( $option ); ?>"></label>
-<input id="<?php echo esc_attr( $option ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_html( $value ); ?>" />
+<input id="<?php echo esc_attr( $option ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_attr( $value ); ?>" />
 <?php
 if ( ! empty( $description ) ) {
 	?>
