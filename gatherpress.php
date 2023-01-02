@@ -31,3 +31,4 @@ require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.ph
 GatherPress\Core\Autoloader::register();
 GatherPress\Core\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();
+
