@@ -1,0 +1,2 @@
+
+import './post-type'
