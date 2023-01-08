@@ -73,11 +73,16 @@ const Edit = (props) => {
 							</FlexItem>
 						</Flex>
 					)}
-					<VenueInformation
-						fullAddress={fullAddress}
-						phoneNumber={phoneNumber}
-						website={website}
-					/>
+					<>
+						<VenueInformation
+							fullAddress={fullAddress}
+							phoneNumber={phoneNumber}
+							website={website}
+						/>
+						<div>
+							<h4>Map goes here</h4>
+						</div>
+					</>
 				</>
 			)}
 			{isSelected && (
@@ -112,6 +117,11 @@ const Edit = (props) => {
 									onUpdate('website', value);
 								}}
 							/>
+						</FlexBlock>
+					</Flex>
+					<Flex>
+						<FlexBlock>
+							<h2>Map goes here</h2>
 						</FlexBlock>
 					</Flex>
 				</>
