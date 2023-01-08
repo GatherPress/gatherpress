@@ -12,6 +12,21 @@ module.exports = {
 	...defaultConfig,
 	entry: {
 		...defaultConfig.entry(),
+		postBlocksDeny: path.resolve(
+			process.cwd(),
+			'src/block-inserter',
+			'deny-post.js'
+		),
+		eventBlocksDeny: path.resolve(
+			process.cwd(),
+			'src/block-inserter',
+			'deny-event.js'
+		),
+		venueBlocksDeny: path.resolve(
+			process.cwd(),
+			'src/block-inserter',
+			'deny-venue.js'
+		),
 		panels: path.resolve(process.cwd(), 'src/panels', 'index.js'),
 		settings: path.resolve(process.cwd(), 'src/settings', 'index.js'),
 		settings_style: path.resolve(
