@@ -6,20 +6,11 @@ import { useBlockProps } from '@wordpress/block-editor';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 
-import {
-	Flex,
-	FlexBlock,
-	FlexItem,
-	Icon,
-	TextControl,
-} from '@wordpress/components';
-
 /**
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
 import VenueInformation from './venue-info';
-
 
 const Edit = (props) => {
 	const { setAttributes } = props;
@@ -63,11 +54,6 @@ const Edit = (props) => {
 	return (
 		<div {...blockProps}>
 			<VenueSelector id={venueId} />
-					<Flex>
-						<FlexBlock>
-							<h2>Map goes here</h2>
-						</FlexBlock>
-					</Flex>
 		</div>
 	);
 };

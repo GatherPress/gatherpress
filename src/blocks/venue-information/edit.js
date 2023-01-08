@@ -79,9 +79,6 @@ const Edit = (props) => {
 							phoneNumber={phoneNumber}
 							website={website}
 						/>
-						<div>
-							<h4>Map goes here</h4>
-						</div>
 					</>
 				</>
 			)}
@@ -117,11 +114,6 @@ const Edit = (props) => {
 									onUpdate('website', value);
 								}}
 							/>
-						</FlexBlock>
-					</Flex>
-					<Flex>
-						<FlexBlock>
-							<h2>Map goes here</h2>
 						</FlexBlock>
 					</Flex>
 				</>
