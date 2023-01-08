@@ -50,6 +50,7 @@ if (
 						?>
 					</div>
 				</div>
+                <h3>Map here</h3>
 			</div>
 		<?php endif; ?>
 		<?php if ( ! empty( $attributes['phoneNumber'] ) || ! empty( $attributes['website'] ) ) : ?>

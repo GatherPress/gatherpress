@@ -1,25 +1,18 @@
 {
-	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 2,
-	"name": "gatherpress/venue-information",
-	"version": "0.2",
-	"title": "Venue Information",
+	"name": "new-gatherpress/map-embed",
+	"version": "0.1.0",
+	"title": "Google Map Embed",
 	"category": "gatherpress",
-	"icon": "location",
 	"example": {},
-	"description": "The venue information block.",
+	"description": "Show location with Google Map",
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"align": true
+	},
+	"keywords": ["map", "google", "google map", "google maps", "location"],
 	"attributes": {
-		"blockId": {
-			"type": "string"
-		},
-		"phoneNumber": {
-			"type": "string",
-			"default": ""
-		},
-		"website": {
-			"type": "string",
-			"default": ""
-		},
 		"mapId": {
 			"type": "string"
 		},
@@ -27,9 +20,9 @@
 			"type": "string",
 			"default": ""
 		},
-		"fullAddress": {
+		"location": {
 			"type": "string",
-			"default": "currentLocation"
+			"default": "2214 Rhawn St, Phila PA"
 		},
 		"zoom": {
 			"type": "number",
@@ -56,10 +49,8 @@
 			"default": "desktop"
 		}
 	},
-	"supports": {
-		"html": false
-	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css"
 }

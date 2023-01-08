@@ -1,24 +1,20 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 2,
-  "name": "gatherpress/venue-information",
+  "name": "gatherpress/venue",
   "version": "0.2",
-  "title": "Venue Information",
+  "title": "Venue Selector",
   "category": "gatherpress",
   "icon": "location",
   "example": {},
-  "description": "The venue information block.",
+  "description": "The block to select a Venue.",
   "attributes": {
     "blockId": {
       "type": "string"
     },
-    "phoneNumber": {
-      "type": "string",
-      "default": ""
-    },
-    "website": {
-      "type": "string",
-      "default": ""
+    "venueId": {
+      "type": "integer",
+      "default": null
     },
     "mapId": {
       "type": "string"
@@ -27,7 +23,7 @@
       "type": "string",
       "default": ""
     },
-    "fullAddress": {
+    "location": {
       "type": "string",
       "default": "currentLocation"
     },
@@ -61,5 +57,6 @@
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
-  "style": "file:./style-index.css"
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
 }

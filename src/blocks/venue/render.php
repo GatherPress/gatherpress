@@ -20,17 +20,6 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 	return;
 }
 
-$gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
+$gp_venue_map = ( get_post(  $gatherpress_venue->ID )->post_content ?: '' );
 
-Utility::render_template(
-	sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),
-	array(
-		'attributes' => array(
-			'name'        => $gatherpress_venue->post_title,
-			'fullAddress' => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'phoneNumber' => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'website'     => $gatherpress_venue_information->website ?? '',
-		),
-	),
-	true
-);
+printf( '<map>%s</map>', esc_attr( $gp_venue_map ) );
