@@ -34,3 +34,5 @@ Utility::render_template(
 	),
 	true
 );
+
+echo '<div>Map something' . __FILE__ . '</div>';

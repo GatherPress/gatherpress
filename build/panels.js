@@ -262,6 +262,7 @@ function saveDateTime() {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "CheckCurrentPostType": () => (/* binding */ CheckCurrentPostType),
 /* harmony export */   "hasEventPast": () => (/* binding */ hasEventPast),
 /* harmony export */   "hasEventPastNotice": () => (/* binding */ hasEventPastNotice),
 /* harmony export */   "isEventPostType": () => (/* binding */ isEventPostType)
@@ -290,6 +291,9 @@ __webpack_require__.r(__webpack_exports__);
 
 function isEventPostType() {
   return 'gp_event' === (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_1__.select)('core/editor').getCurrentPostType();
+}
+function CheckCurrentPostType() {
+  return wp.data.select('core/editor').getCurrentPostType();
 }
 function hasEventPast() {
   // eslint-disable-next-line no-undef

@@ -1,1 +1,21 @@
-(()=>{const e=["gatherpress/add-to-calendar","gatherpress/attendance-list","gatherpress/attendance-selector","gatherpress/event-date","gatherpress/venue"];wp.domReady((function(){Object.keys(e).forEach((function(t){const s=e[t];s&&void 0!==wp.blocks.getBlockType(s)&&wp.blocks.unregisterBlockType(s)}))}))})();
+/******/ (() => { // webpackBootstrap
+var __webpack_exports__ = {};
+/*!******************************************!*\
+  !*** ./src/block-inserter/deny-venue.js ***!
+  \******************************************/
+/**
+ * Remove unwanted blocks from given post type.
+ */
+
+const disableBlocks = ['gatherpress/add-to-calendar', 'gatherpress/attendance-list', 'gatherpress/attendance-selector', 'gatherpress/event-date', 'gatherpress/venue'];
+wp.domReady(function () {
+  Object.keys(disableBlocks).forEach(function (key) {
+    const blockName = disableBlocks[key];
+    if (blockName && wp.blocks.getBlockType(blockName) !== undefined) {
+      wp.blocks.unregisterBlockType(blockName);
+    }
+  });
+});
+/******/ })()
+;
+//# sourceMappingURL=venueBlocksDeny.js.map
