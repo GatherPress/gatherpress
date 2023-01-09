@@ -9,13 +9,13 @@ import { useBlockProps } from '@wordpress/block-editor';
 import AttendanceList from '../../components/AttendanceList';
 
 const Edit = () => {
-	const blockProps = useBlockProps();
+    const blockProps = useBlockProps();
 
-	return (
-		<div {...blockProps}>
-			<AttendanceList />
-		</div>
-	);
+    return (
+    <div {...blockProps}>
+    <AttendanceList />
+    </div>
+    );
 };
 
 export default Edit;

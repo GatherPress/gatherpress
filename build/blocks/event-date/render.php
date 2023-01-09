@@ -2,24 +2,24 @@
 /**
  * Render Event Date block.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 use GatherPress\Core\Event;
 
-$gatherpress_event = new Event( get_the_ID() );
+$gatherpress_event = new Event(get_the_ID());
 ?>
-<div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
-	<div class="gp-event-date__row">
-		<div class="gp-event-date__item">
-			<div class="gp-event-date__icon">
-				<div class="dashicons dashicons-clock"></div>
-			</div>
-			<div class="gp-event-date__text">
-				<?php echo esc_html( $gatherpress_event->get_display_datetime() ); ?>
-			</div>
-		</div>
-	</div>
+<div <?php echo wp_kses_data(get_block_wrapper_attributes()); ?>>
+    <div class="gp-event-date__row">
+        <div class="gp-event-date__item">
+            <div class="gp-event-date__icon">
+                <div class="dashicons dashicons-clock"></div>
+            </div>
+            <div class="gp-event-date__text">
+                <?php echo esc_html($gatherpress_event->get_display_datetime()); ?>
+            </div>
+        </div>
+    </div>
 </div>
