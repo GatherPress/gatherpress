@@ -3,5 +3,5 @@
  */
 
 wp.domReady(function () {
-	wp.blocks.unregisterBlockType('gatherpress/events-list');
+	wp.blocks.unregisterBlockType('gatherpress/venue-information');
 });

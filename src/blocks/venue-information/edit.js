@@ -73,11 +73,13 @@ const Edit = (props) => {
 							</FlexItem>
 						</Flex>
 					)}
-					<VenueInformation
-						fullAddress={fullAddress}
-						phoneNumber={phoneNumber}
-						website={website}
-					/>
+					<>
+						<VenueInformation
+							fullAddress={fullAddress}
+							phoneNumber={phoneNumber}
+							website={website}
+						/>
+					</>
 				</>
 			)}
 			{isSelected && (

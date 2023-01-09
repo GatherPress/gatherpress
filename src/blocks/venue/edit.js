@@ -10,7 +10,7 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
-import VenueInformation from '../../components/VenueInformation';
+import VenueInformation from './venue-info';
 
 const Edit = (props) => {
 	const { setAttributes } = props;
@@ -25,7 +25,7 @@ const Edit = (props) => {
 		});
 	});
 
-	const Venue = ({ id }) => {
+	const VenueSelector = ({ id }) => {
 		const venuePost = useSelect((select) =>
 			select('core').getEntityRecord('postType', 'gp_venue', id)
 		);
@@ -53,7 +53,7 @@ const Edit = (props) => {
 
 	return (
 		<div {...blockProps}>
-			<Venue id={venueId} />
+			<VenueSelector id={venueId} />
 		</div>
 	);
 };

@@ -209,9 +209,9 @@ class Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/venue' ),
 					array( 'gatherpress/attendance-selector' ),
 					array( 'gatherpress/attendance-list' ),
+					array( 'gatherpress/venue' ),
 				),
 				'menu_position' => 4,
 				'supports'      => array(
