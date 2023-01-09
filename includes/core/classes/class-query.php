@@ -122,7 +122,7 @@ class Query {
 				return;
 			}
 
-			$pages   = $general['pages'] ?? '';
+			$pages = $general['pages'] ?? '';
 
 			if ( empty( $pages ) || ! is_array( $pages ) ) {
 				return;
