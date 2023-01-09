@@ -25,10 +25,5 @@ $gp_venue_map = ( get_post( $gatherpress_venue->ID )->post_content ?: '' );
 
 printf(
 	'<div>%s</div>',
-    // phpcs:disable
-	// print_r( wp_kses_post( $gp_venue_map ), true )
-	// wp_kses_post( $gp_venue_map )
-	// wp_kses_data( $gp_venue_map )
-	$gp_venue_map
-    // phpcs:enable
+	html_entity_decode( esc_html( $gp_venue_map ) )
 );
