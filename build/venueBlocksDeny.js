@@ -1,0 +1,1 @@
+(()=>{const e=["gatherpress/add-to-calendar","gatherpress/attendance-list","gatherpress/attendance-selector","gatherpress/event-date","gatherpress/venue"];wp.domReady((function(){Object.keys(e).forEach((function(t){const s=e[t];s&&void 0!==wp.blocks.getBlockType(s)&&wp.blocks.unregisterBlockType(s)}))}))})();

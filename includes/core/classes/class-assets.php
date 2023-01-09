@@ -121,6 +121,34 @@ class Assets {
 				true
 			);
 		}
+		if ( 'gp_event' === get_post_type() ) {
+			$asset = $this->get_asset_data( 'eventBlocksDeny' );
+			wp_enqueue_script(
+				'gatherpress-deny-event',
+				$this->build . 'eventBlocksDeny.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+		} elseif ( 'gp_venue' === get_post_type() ) {
+			$asset = $this->get_asset_data( 'venueBlocksDeny' );
+			wp_enqueue_script(
+				'gatherpress-deny-venue',
+				$this->build . 'venueBlocksDeny.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+		} else {
+			$asset = $this->get_asset_data( 'postBlocksDeny' );
+			wp_enqueue_script(
+				'gatherpress-deny-post',
+				$this->build . 'postBlocksDeny.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+		}
 	}
 
 	/**
