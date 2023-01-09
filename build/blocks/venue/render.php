@@ -22,4 +22,4 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 
 $gp_venue_map = ( get_post(  $gatherpress_venue->ID )->post_content ?: '' );
 
-printf( '<map>%s</map>', esc_attr( $gp_venue_map ) );
+printf( '<map>%s</map>', $gp_venue_map );
