@@ -13,7 +13,6 @@ import {
 	PanelBody,
 	RadioControl,
 	RangeControl,
-	TextareaControl,
 	TextControl,
 } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
@@ -201,7 +200,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 								</em>
 							</FlexItem>
 						</Flex>
-					)}
+					) }
 					<VenueInformation
 						fullAddress={fullAddress}
 						phoneNumber={phoneNumber}
