@@ -1,10 +1,6 @@
 import { useBlockProps } from '@wordpress/block-editor';
 
-import {
-    Flex,
-    FlexItem,
-    Icon
-} from '@wordpress/components';
+import { Flex, FlexItem, Icon } from '@wordpress/components';
 
 import VenueInformation from './venue-info';
 
@@ -22,7 +18,7 @@ export default function save({ attributes }) {
 		tabHeight,
 		mobileHeight,
 		device,
-    } = attributes;
+	} = attributes;
 
 	const blockProps = useBlockProps.save();
 

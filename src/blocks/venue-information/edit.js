@@ -23,7 +23,7 @@ import { useEffect } from '@wordpress/element';
  */
 import VenueInformation from '../../components/VenueInformation';
 
-import GoogleMapEmbed from './google-map'
+import GoogleMapEmbed from './google-map';
 
 const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 	const {
@@ -79,7 +79,9 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 					<TextControl
 						label={__('Venue Street Address', 'gatherpress')}
 						value={fullAddress}
-						onChange={(place) => setAttributes({ fullAddress: place })}
+						onChange={(place) =>
+							setAttributes({ fullAddress: place })
+						}
 						placeholder={__('Enter address', 'gatherpress')}
 					/>
 					<RangeControl
@@ -183,86 +185,86 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 				</PanelBody>
 			</InspectorControls>
 
-		<div {...blockProps}>
-			{!isSelected && (
-				<>
-					{!fullAddress && !phoneNumber && !website && (
-						<Flex justify="normal">
-							<FlexItem display="flex">
-								<Icon icon="location" />
-							</FlexItem>
-							<FlexItem>
-								<em>
-									{__(
-										'Add venue information.',
-										'gatherpress'
-									)}
-								</em>
-							</FlexItem>
+			<div {...blockProps}>
+				{!isSelected && (
+					<>
+						{!fullAddress && !phoneNumber && !website && (
+							<Flex justify="normal">
+								<FlexItem display="flex">
+									<Icon icon="location" />
+								</FlexItem>
+								<FlexItem>
+									<em>
+										{__(
+											'Add venue information.',
+											'gatherpress'
+										)}
+									</em>
+								</FlexItem>
+							</Flex>
+						)}
+						<VenueInformation
+							fullAddress={fullAddress}
+							phoneNumber={phoneNumber}
+							website={website}
+						/>
+						<GoogleMapEmbed
+							location={fullAddress}
+							zoom={zoom}
+							type={type}
+							height={deskHeight}
+							className={`emb__height_${mapId}`}
+						/>
+					</>
+				)}
+				{isSelected && (
+					<>
+						<Flex>
+							<FlexBlock>
+								<TextControl
+									label={__('Full Address', 'gatherpress')}
+									value={fullAddress}
+									onChange={(value) => {
+										onUpdate('fullAddress', value);
+									}}
+								/>
+							</FlexBlock>
 						</Flex>
-					) }
-					<VenueInformation
-						fullAddress={fullAddress}
-						phoneNumber={phoneNumber}
-						website={website}
-					/>
-					<GoogleMapEmbed
-						location={fullAddress}
-						zoom={zoom}
-						type={type}
-						height={deskHeight}
-						className={`emb__height_${mapId}`}
-					/>
-				</>
-			)}
-			{isSelected && (
-				<>
-					<Flex>
-						<FlexBlock>
-							<TextControl
-								label={__('Full Address', 'gatherpress')}
-								value={fullAddress}
-								onChange={(value) => {
-									onUpdate('fullAddress', value);
-								}}
-							/>
-						</FlexBlock>
-					</Flex>
-					<Flex>
-						<FlexBlock>
-							<TextControl
-								label={__('Phone Number', 'gatherpress')}
-								value={phoneNumber}
-								onChange={(value) => {
-									onUpdate('phoneNumber', value);
-								}}
-							/>
-						</FlexBlock>
-						<FlexBlock>
-							<TextControl
-								label={__('Website', 'gatherpress')}
-								value={website}
-								type="url"
-								onChange={(value) => {
-									onUpdate('website', value);
-								}}
-							/>
-						</FlexBlock>
-					</Flex>
-					<Flex>
-						<FlexBlock>
-							<GoogleMapEmbed
-								location={fullAddress}
-								zoom={zoom}
-								type={type}
-								height={deskHeight}
-								className={`emb__height_${mapId}`}
-							/>
-						</FlexBlock>
-					</Flex>
-				</>
-			)}
-		</div>
+						<Flex>
+							<FlexBlock>
+								<TextControl
+									label={__('Phone Number', 'gatherpress')}
+									value={phoneNumber}
+									onChange={(value) => {
+										onUpdate('phoneNumber', value);
+									}}
+								/>
+							</FlexBlock>
+							<FlexBlock>
+								<TextControl
+									label={__('Website', 'gatherpress')}
+									value={website}
+									type="url"
+									onChange={(value) => {
+										onUpdate('website', value);
+									}}
+								/>
+							</FlexBlock>
+						</Flex>
+						<Flex>
+							<FlexBlock>
+								<GoogleMapEmbed
+									location={fullAddress}
+									zoom={zoom}
+									type={type}
+									height={deskHeight}
+									className={`emb__height_${mapId}`}
+								/>
+							</FlexBlock>
+						</Flex>
+					</>
+				)}
+			</div>
 		</>
 	);
 };

@@ -1,13 +1,9 @@
-import {
-    Flex,
-    FlexItem,
-    Icon
-} from '@wordpress/components';
+import { Flex, FlexItem, Icon } from '@wordpress/components';
 
 const VenueInformation = ({ fullAddress, phoneNumber, website }) => {
 	return (
 		<div className="gp-venue">
-			{ fullAddress && (
+			{fullAddress && (
 				<Flex justify="normal" align="flex-start" gap="4">
 					<FlexItem display="flex" className="gp-venue__icon">
 						<Icon icon="location" />
