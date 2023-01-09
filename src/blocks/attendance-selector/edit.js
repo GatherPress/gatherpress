@@ -8,21 +8,21 @@ import { useBlockProps } from '@wordpress/block-editor';
 import AttendanceSelector from '../../components/AttendanceSelector';
 
 const Edit = () => {
-    const blockProps = useBlockProps();
-    // eslint-disable-next-line no-undef
-    const postId = GatherPress.post_id;
-    // eslint-disable-next-line no-undef
-    const currentUser = GatherPress.current_user;
+	const blockProps = useBlockProps();
+	// eslint-disable-next-line no-undef
+	const postId = GatherPress.post_id;
+	// eslint-disable-next-line no-undef
+	const currentUser = GatherPress.current_user;
 
-    return (
-    <div {...blockProps}>
-    <AttendanceSelector
-                eventId={postId}
-                currentUser={currentUser}
-                type={'upcoming'}
-    />
-    </div>
-    );
+	return (
+		<div {...blockProps}>
+			<AttendanceSelector
+				eventId={postId}
+				currentUser={currentUser}
+				type={'upcoming'}
+			/>
+		</div>
+	);
 };
 
 export default Edit;

@@ -13,9 +13,7 @@ import metadata from './block.json';
 
 import './style.scss';
 
-registerBlockType(
-    metadata, {
-        edit,
-        save,
-    }
-);
+registerBlockType(metadata, {
+	edit,
+	save,
+});
