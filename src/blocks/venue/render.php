@@ -20,11 +20,23 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 	return;
 }
 
+$args = array(
+	'iframe' => array(
+		'src' => array(),
+		'width' => array(),
+		'height' => array(),
+		'title' => array(),
+		'allow' => array(),
+		'allowfullscreen' => array(),
+		'frameborder' => array(),
+	),
+);
+
 // phpcs:ignore
 $gp_venue_map = ( get_post( $gatherpress_venue->ID )->post_content ?: '' );
 
 printf(
 	'<div>%s</div>',
 	// 	phpcs:ignore (WordPress.Security.EscapeOutput.OutputNotEscaped)
-	html_entity_decode( esc_html( $gp_venue_map ) )
+	wp_kses( $gp_venue_map, $args )
 );
