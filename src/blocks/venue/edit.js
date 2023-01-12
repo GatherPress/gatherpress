@@ -45,28 +45,28 @@ const Edit = (props) => {
 			__('No venue selected.', 'gatherpress');
 
 		return (
-            <>
-                <VenueInformation
-                    name={name}
-                    fullAddress={fullAddress}
-                    phoneNumber={phoneNumber}
-                    website={website}
-                />
+			<>
+				<VenueInformation
+					name={name}
+					fullAddress={fullAddress}
+					phoneNumber={phoneNumber}
+					website={website}
+				/>
 				<MapEmbed
 					location={fullAddress}
-					zoom='10'
-					type='m'
-					height='400'
-                />
-            </>
+					zoom="10"
+					type="m"
+					height="400"
+				/>
+			</>
 		);
 	};
 
 	return (
 		<div {...blockProps}>
-            <>
-                <VenueSelector id={venueId} />
-            </>
+			<>
+				<VenueSelector id={venueId} />
+			</>
 		</div>
 	);
 };

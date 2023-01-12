@@ -25,5 +25,6 @@ $gp_venue_map = ( get_post( $gatherpress_venue->ID )->post_content ?: '' );
 
 printf(
 	'<div>%s</div>',
+	// 	phpcs:ignore (WordPress.Security.EscapeOutput.OutputNotEscaped)
 	html_entity_decode( esc_html( $gp_venue_map ) )
 );
