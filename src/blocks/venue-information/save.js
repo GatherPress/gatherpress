@@ -5,15 +5,8 @@ import { Icon } from '@wordpress/components';
 import GoogleMapEmbed from './google-map';
 
 export default function save({ attributes }) {
-	const {
-		mapId,
-		fullAddress,
-		phoneNumber,
-		website,
-		zoom,
-		type,
-		deskHeight,
-	} = attributes;
+	const { mapId, fullAddress, phoneNumber, website, zoom, type, deskHeight } =
+		attributes;
 
 	const blockProps = useBlockProps.save();
 
