@@ -69,6 +69,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 			fullAddress: venueInformationMetaData.fullAddress ?? '',
 			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
 			website: venueInformationMetaData.website ?? '',
+			mapId: clientId,
 		});
 	}, []);
 
@@ -184,7 +185,6 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 					)}
 				</PanelBody>
 			</InspectorControls>
-
 			<div {...blockProps}>
 				{!isSelected && (
 					<>

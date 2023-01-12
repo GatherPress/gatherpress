@@ -1,8 +1,6 @@
 import { useBlockProps } from '@wordpress/block-editor';
 
-import { Flex, FlexItem, Icon } from '@wordpress/components';
-
-import VenueInformation from './venue-info';
+import { Icon } from '@wordpress/components';
 
 import GoogleMapEmbed from './google-map';
 
@@ -15,9 +13,6 @@ export default function save({ attributes }) {
 		zoom,
 		type,
 		deskHeight,
-		tabHeight,
-		mobileHeight,
-		device,
 	} = attributes;
 
 	const blockProps = useBlockProps.save();
