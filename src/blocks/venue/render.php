@@ -10,13 +10,13 @@
 use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 
-if (! isset($attributes) || ! is_array($attributes) ) {
+if ( ! isset($attributes) || ! is_array( $attributes ) ) {
     return;
 }
 
-$gatherpress_venue = get_post(intval($attributes['venueId'] ?? 0));
+$gatherpress_venue = get_post( intval( $attributes['venueId'] ?? 0 ) );
 
-if (Venue::POST_TYPE !== get_post_type($gatherpress_venue) ) {
+if ( Venue::POST_TYPE !== get_post_type($gatherpress_venue ) ) {
     return;
 }
 
@@ -28,15 +28,15 @@ printf(
     wp_kses(
         $gp_venue_map,
         array(
-        'iframe' => array(
-            'src' => array(),
-            'width' => array(),
-            'height' => array(),
-            'title' => array(),
-            'allow' => array(),
-            'allowfullscreen' => array(),
-            'frameborder' => array(),
-        ),
+			'iframe'               => array(
+				'src'              => array(),
+				'width'            => array(),
+				'height'           => array(),
+				'title'            => array(),
+				'allow'            => array(),
+				'allowfullscreen'  => array(),
+				'frameborder'      => array(),
+			),
         )
     )
 );
