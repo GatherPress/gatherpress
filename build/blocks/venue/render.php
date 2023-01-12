@@ -28,14 +28,14 @@ printf(
     wp_kses(
         $gp_venue_map,
         array(
-			'iframe'               => array(
-				'src'              => array(),
-				'width'            => array(),
-				'height'           => array(),
-				'title'            => array(),
-				'allow'            => array(),
-				'allowfullscreen'  => array(),
-				'frameborder'      => array(),
+			'iframe'              => array(
+				'src'             => array(),
+				'width'           => array(),
+				'height'          => array(),
+				'title'           => array(),
+				'allow'           => array(),
+				'allowfullscreen' => array(),
+				'frameborder'     => array(),
 			),
         )
     )
