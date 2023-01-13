@@ -15,7 +15,7 @@ if ( empty( $attributes['name'] )
 	&& empty( $attributes['fullAddress'] )
 	&& empty( $attributes['phoneNumber'] )
 	&& empty( $attributes['website'] )
-) {
+	) {
 	return;
 }
 ?>
