@@ -24,7 +24,8 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 $gp_venue_map = ( get_post( $gatherpress_venue->ID )->post_content ?: '' );
 
 printf(
-	'<div>%s</div>',
+	'<div %s>%s</div>',
+    wp_kses_data( get_block_wrapper_attributes() ),
 	wp_kses(
 		$gp_venue_map,
 		array(
