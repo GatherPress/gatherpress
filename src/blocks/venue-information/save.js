@@ -2,7 +2,7 @@ import { useBlockProps } from '@wordpress/block-editor';
 
 import { Icon } from '@wordpress/components';
 
-import GoogleMapEmbed from './google-map';
+import MapEmbed from '../../helpers/map-embed';
 
 export default function save({ attributes }) {
 	const { mapId, fullAddress, phoneNumber, website, zoom, type, deskHeight } =
@@ -31,7 +31,7 @@ export default function save({ attributes }) {
 			{fullAddress && (
 				<>
 					<div className="gp-venue__map">
-						<GoogleMapEmbed
+						<MapEmbed
 							location={fullAddress}
 							zoom={zoom}
 							type={type}

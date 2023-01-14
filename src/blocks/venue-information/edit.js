@@ -23,7 +23,7 @@ import { useEffect } from '@wordpress/element';
  */
 import VenueInformation from '../../components/VenueInformation';
 
-import GoogleMapEmbed from './google-map';
+import MapEmbed from '../../helpers/map-embed';
 
 const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 	const {
@@ -208,7 +208,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							phoneNumber={phoneNumber}
 							website={website}
 						/>
-						<GoogleMapEmbed
+						<MapEmbed
 							location={fullAddress}
 							zoom={zoom}
 							type={type}
@@ -253,7 +253,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 						</Flex>
 						<Flex>
 							<FlexBlock>
-								<GoogleMapEmbed
+								<MapEmbed
 									location={fullAddress}
 									zoom={zoom}
 									type={type}

@@ -13,7 +13,7 @@ import { Listener } from '../../helpers/broadcasting';
 
 import VenueInformation from './venue-info';
 
-import MapEmbed from './map-embed';
+import MapEmbed from '../../helpers/map-embed';
 
 const Edit = (props) => {
 	const { setAttributes } = props;
