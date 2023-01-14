@@ -12,10 +12,6 @@
 		"blockId": {
 			"type": "string"
 		},
-		"fullAddress": {
-			"type": "string",
-			"default": ""
-		},
 		"phoneNumber": {
 			"type": "string",
 			"default": ""
@@ -23,6 +19,41 @@
 		"website": {
 			"type": "string",
 			"default": ""
+		},
+		"mapId": {
+			"type": "string"
+		},
+		"align": {
+			"type": "string",
+			"default": ""
+		},
+		"fullAddress": {
+			"type": "string",
+			"default": "currentLocation"
+		},
+		"zoom": {
+			"type": "number",
+			"default": 10
+		},
+		"type": {
+			"type": "string",
+			"default": "m"
+		},
+		"deskHeight": {
+			"type": "number",
+			"default": 400
+		},
+		"tabHeight": {
+			"type": "number",
+			"default": 300
+		},
+		"mobileHeight": {
+			"type": "number",
+			"default": 250
+		},
+		"device": {
+			"type": "string",
+			"default": "desktop"
 		}
 	},
 	"supports": {
@@ -30,6 +61,5 @@
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"style": "file:./style-index.css",
-	"render": "file:./render.php"
+	"style": "file:./style-index.css"
 }

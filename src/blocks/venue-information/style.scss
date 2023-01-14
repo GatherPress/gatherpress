@@ -1,5 +1,14 @@
 @import "../mixins";
 
+.gp-venue__full-address-row,
+.gp-venue__phone-row,
+.gp-venue__website-row {
+    display: flex;
+}
+
+.gp-venue__full-address-row {
+    justify-content: center;
+}
 .gp-venue {
 	display: flex;
 	flex-direction: column;
@@ -7,6 +16,7 @@
 
 	&__row {
 		display: flex;
+		justify-content: space-between;
 	}
 
 	&__icon {
