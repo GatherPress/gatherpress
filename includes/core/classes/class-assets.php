@@ -121,34 +121,16 @@ class Assets {
 				true
 			);
 		}
-		if ( 'gp_event' === get_post_type() ) {
-			$asset = $this->get_asset_data( 'eventBlocksDeny' );
-			wp_enqueue_script(
-				'gatherpress-deny-event',
-				$this->build . 'eventBlocksDeny.js',
-				$asset['dependencies'],
-				$asset['version'],
-				true
-			);
-		} elseif ( 'gp_venue' === get_post_type() ) {
-			$asset = $this->get_asset_data( 'venueBlocksDeny' );
-			wp_enqueue_script(
-				'gatherpress-deny-venue',
-				$this->build . 'venueBlocksDeny.js',
-				$asset['dependencies'],
-				$asset['version'],
-				true
-			);
-		} else {
-			$asset = $this->get_asset_data( 'postBlocksDeny' );
-			wp_enqueue_script(
-				'gatherpress-deny-post',
-				$this->build . 'postBlocksDeny.js',
-				$asset['dependencies'],
-				$asset['version'],
-				true
-			);
-		}
+
+		$asset = $this->get_asset_data( 'admin' );
+
+		wp_enqueue_script(
+			'gatherpress-admin',
+			$this->build . 'admin.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
 	}
 
 	/**
@@ -162,20 +144,56 @@ class Assets {
 		$event    = new Event( $post_id );
 		$settings = Settings::get_instance();
 		return array(
-			'attendees'        => ( $event->attendee ) ? $event->attendee->attendees() : array(), // @todo cleanup
-			'current_user'     => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '', // @todo cleanup
-			'event_rest_api'   => home_url( 'wp-json/gatherpress/v1/event' ),
-			'has_event_past'   => $event->has_event_past(),
-			'is_admin'         => is_admin(),
-			'nonce'            => wp_create_nonce( 'wp_rest' ),
-			'post_id'          => $post_id,
-			'event_datetime'   => $event->get_datetime(),
-			'event_announced'  => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
-			'default_timezone' => sanitize_text_field( wp_timezone_string() ),
-			'settings'         => array(
+			'attendees'         => ( $event->attendee ) ? $event->attendee->attendees() : array(), // @todo cleanup
+			'current_user'      => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '', // @todo cleanup
+			'event_rest_api'    => home_url( 'wp-json/gatherpress/v1/event' ),
+			'has_event_past'    => $event->has_event_past(),
+			'is_admin'          => is_admin(),
+			'nonce'             => wp_create_nonce( 'wp_rest' ),
+			'post_id'           => $post_id,
+			'event_datetime'    => $event->get_datetime(),
+			'event_announced'   => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
+			'default_timezone'  => sanitize_text_field( wp_timezone_string() ),
+			'unregister_blocks' => $this->unregister_blocks(),
+			'settings'          => array(
 				// @todo settings to come...
 			),
 		);
+	}
+
+	/**
+	 * List of blocks to unregistered based on post type.
+	 *
+	 * @return array
+	 */
+	protected function unregister_blocks(): array {
+		if ( ! is_admin() ) {
+			return array();
+		}
+
+		switch ( get_post_type() ) {
+			case Event::POST_TYPE:
+				return array(
+					'gatherpress/venue-information',
+				);
+			case Venue::POST_TYPE:
+				return array(
+					'gatherpress/add-to-calendar',
+					'gatherpress/attendance-list',
+					'gatherpress/attendance-selector',
+					'gatherpress/event-date',
+					'gatherpress/venue',
+				);
+			default:
+				return array(
+					'gatherpress/add-to-calendar',
+					'gatherpress/attendance-list',
+					'gatherpress/attendance-selector',
+					'gatherpress/event-date',
+					'gatherpress/venue',
+					'gatherpress/venue-information',
+				);
+		}
 	}
 
 	/**
