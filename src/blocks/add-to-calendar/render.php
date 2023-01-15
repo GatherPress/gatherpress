@@ -2,9 +2,9 @@
 /**
  * Render Add to calendar block.
  *
- * @package    GatherPress
+ * @package GatherPress
  * @subpackage Core
- * @since      1.0.0
+ * @since 1.0.0
  */
 
 use GatherPress\Core\Event;
@@ -30,7 +30,7 @@ $gatherpress_event = new Event( get_the_ID() );
 									<?php elseif ( ! empty( $gatherpress_calendar['download'] ) ) : ?>
 									<a href="<?php echo esc_attr( $gatherpress_calendar['download'] ); ?>" rel="noopener noreferrer">
 									<?php endif; ?>
-							<?php echo esc_html( $gatherpress_calendar['name'] ); ?>
+									<?php echo esc_html( $gatherpress_calendar['name'] ); ?>
 									</a>
 							</div>
 						<?php endforeach; ?>

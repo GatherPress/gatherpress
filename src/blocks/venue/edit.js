@@ -64,9 +64,7 @@ const Edit = (props) => {
 
 	return (
 		<div {...blockProps}>
-			<>
-				<VenueSelector id={venueId} />
-			</>
+			<VenueSelector id={venueId} />
 		</div>
 	);
 };

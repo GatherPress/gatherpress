@@ -114,8 +114,9 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 						style={{ marginBottom: '10px', float: 'right' }}
 					>
 						<Button
+							label={__('Desktop view', 'gatherpress')}
 							isSmall={true}
-							isPressed={device === 'desktop'}
+							isPressed={'desktop' === device}
 							onClick={() =>
 								setAttributes({
 									device: 'desktop',
@@ -125,8 +126,9 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							<span className="dashicons dashicons-desktop"></span>
 						</Button>
 						<Button
+							label={__('Tablet view', 'gatherpress')}
 							isSmall={true}
-							isPressed={device === 'tablet'}
+							isPressed={'tablet' === device}
 							onClick={() =>
 								setAttributes({
 									device: 'tablet',
@@ -136,8 +138,9 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							<span className="dashicons dashicons-tablet"></span>
 						</Button>
 						<Button
+							label={__('Mobile view', 'gatherpress')}
 							isSmall={true}
-							isPressed={device === 'mobile'}
+							isPressed={'mobile' === device}
 							onClick={() =>
 								setAttributes({
 									device: 'mobile',
@@ -147,7 +150,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							<span className="dashicons dashicons-smartphone"></span>
 						</Button>
 					</ButtonGroup>
-					{device === 'desktop' && (
+					{'desktop' === device && (
 						<RangeControl
 							label={__('Map Height', 'gatherpress')}
 							beforeIcon="desktop"
@@ -159,7 +162,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							max={2000}
 						/>
 					)}
-					{device === 'tablet' && (
+					{'tablet' === device && (
 						<RangeControl
 							label={__('Map Height', 'gatherpress')}
 							beforeIcon="tablet"
@@ -171,7 +174,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							max={2000}
 						/>
 					)}
-					{device === 'mobile' && (
+					{'mobile' === device && (
 						<RangeControl
 							label={__('Map Height', 'gatherpress')}
 							beforeIcon="smartphone"
