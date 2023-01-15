@@ -21,6 +21,8 @@ use PMC\Unit_Test\Utility;
 class Test_Assets extends Base {
 
 	/**
+	 * Coverage for unregister_blocks.
+	 *
 	 * @covers ::unregister_blocks
 	 */
 	public function test_unregister_blocks_frontend() {
@@ -78,9 +80,17 @@ class Test_Assets extends Base {
 			),
 		);
 	}
+
 	/**
+	 * Coverage for unregister_blocks.
+	 *
+	 * @param string $post_type       Post type.
+	 * @param array  $expected_blocks Array of blocks.
+	 *
 	 * @dataProvider date_unregister_blocks_admin
 	 * @covers ::unregister_blocks
+	 *
+	 * @return void
 	 */
 	public function test_unregister_blocks_admin( $post_type, $expected_blocks ) {
 		$instance = Assets::get_instance();
