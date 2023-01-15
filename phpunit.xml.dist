@@ -6,6 +6,7 @@
 	convertNoticesToExceptions="true"
 	convertWarningsToExceptions="true"
 	convertDeprecationsToExceptions="true"
+	verbose="true"
 	>
 	<testsuites>
 		<testsuite name="test">
@@ -14,8 +15,8 @@
 	</testsuites>
 	<coverage>
 		<include>
-			<directory suffix=".php">buddypress</directory>
-			<directory suffix=".php">core</directory>
+			<directory suffix=".php">./includes/buddypress/classes</directory>
+			<directory suffix=".php">./includes/core/classes</directory>
 		</include>
 	</coverage>
 </phpunit>
