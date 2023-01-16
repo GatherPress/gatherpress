@@ -1,1 +1,0 @@
-wp.domReady((function(){wp.blocks.unregisterBlockType("gatherpress/venue-information")}));
