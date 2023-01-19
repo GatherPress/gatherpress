@@ -26,11 +26,11 @@ Utility::render_template(
 	sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),
 	array(
 		'attributes' => array(
-			'name'        => $gatherpress_venue->post_title,
-			'fullAddress' => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			'name'              => $gatherpress_venue->post_title,
+			'fullAddress'       => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			'encodedAddressURL' => $gatherpress_venue_information->encodedAddressURL ?? 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_venue_information->fullAddress ) . '&z=10&t=m&output=embed', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'phoneNumber' => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'website'     => $gatherpress_venue_information->website ?? '',
+			'phoneNumber'       => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			'website'           => $gatherpress_venue_information->website ?? '',
 		),
 	),
 	true
