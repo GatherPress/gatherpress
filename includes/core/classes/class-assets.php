@@ -54,9 +54,10 @@ class Assets {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ), 10 );
+		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 	}
 
 	/**
@@ -122,11 +123,28 @@ class Assets {
 			);
 		}
 
-		$asset = $this->get_asset_data( 'admin' );
+		$asset = $this->get_asset_data( 'editor' );
 
 		wp_enqueue_script(
-			'gatherpress-admin',
-			$this->build . 'admin.js',
+			'gatherpress-editor',
+			$this->build . 'editor.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+	}
+
+	/**
+	 * Enqueue backend styles and scripts.
+	 *
+	 * @return void
+	 */
+	public function editor_enqueue_scripts() {
+		$asset = $this->get_asset_data( 'editor' );
+
+		wp_enqueue_script(
+			'gatherpress-editor',
+			$this->build . 'editor.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
