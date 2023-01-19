@@ -2,7 +2,6 @@
  * WordPress dependencies.
  */
 import domReady from '@wordpress/dom-ready';
-
 import { dispatch, select } from '@wordpress/data';
 
 /**
