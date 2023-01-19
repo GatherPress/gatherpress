@@ -6,7 +6,7 @@ import domReady from '@wordpress/dom-ready';
 import { dispatch, select } from '@wordpress/data';
 
 /**
- * Remove unwanted blocks from localized array.
+ * Ensure panels are open for Events.
  */
 domReady(() => {
 	const isEditorSidebarOpened =
