@@ -142,6 +142,7 @@ const Edit = (props) => {
 					>
 						<iframe
 							style={{ width: '93%', height: '400px' }}
+							title={fullAddress}
 							src={encodedAddressURL}
 						></iframe>
 					</Flex>
