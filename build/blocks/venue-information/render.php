@@ -82,5 +82,11 @@ if (
 				<?php endif; ?>
 			</div>
 		<?php endif; ?>
+		<div class="gp-venue__map">
+			<iframe
+				style="width:99%;height:400px;"
+				src="<?php echo esc_html( $attributes['encodedAddressURL'] ); ?>"
+			></iframe>
+		</div>
 	</div>
 </div>
