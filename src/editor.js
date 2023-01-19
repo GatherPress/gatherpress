@@ -3,24 +3,23 @@
  */
 import domReady from '@wordpress/dom-ready';
 
+import { dispatch, select } from '@wordpress/data';
+
 /**
  * Remove unwanted blocks from localized array.
  */
 domReady(() => {
-	const isEditorSidebarOpened = wp.data
-		.select('core/edit-post')
-		.isEditorSidebarOpened();
+	const isEditorSidebarOpened =
+		select('core/edit-post').isEditorSidebarOpened();
 	if (!isEditorSidebarOpened) {
-		wp.data.dispatch('core/edit-post').openGeneralSidebar();
-		wp.data
-			.dispatch('core/edit-post')
-			.toggleEditorPanelOpened('gp-event-settings/gp-event-settings');
+		dispatch('core/edit-post').openGeneralSidebar();
+		dispatch('core/edit-post').toggleEditorPanelOpened(
+			'gp-event-settings/gp-event-settings'
+		);
 	} else {
-		wp.data
-			.dispatch('core/edit-post')
-			.openGeneralSidebar('edit-post/document');
-		wp.data
-			.dispatch('core/edit-post')
-			.toggleEditorPanelOpened('gp-event-settings/gp-event-settings');
+		dispatch('core/edit-post').openGeneralSidebar('edit-post/document');
+		dispatch('core/edit-post').toggleEditorPanelOpened(
+			'gp-event-settings/gp-event-settings'
+		);
 	}
 });
