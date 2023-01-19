@@ -13,7 +13,7 @@ domReady(() => {
 		// eslint-disable-next-line no-undef
 		const blockName = GatherPress.unregister_blocks[key];
 
-		if (blockName && 'undefined' !== getBlockType(blockName)) {
+		if (blockName && 'undefined' !== typeof getBlockType(blockName)) {
 			unregisterBlockType(blockName);
 		}
 	});
