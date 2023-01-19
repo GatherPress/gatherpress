@@ -123,7 +123,6 @@ class Assets {
 			);
 		}
 
-
 		$asset = $this->get_asset_data( 'editor' );
 
 		wp_enqueue_script(
@@ -138,12 +137,9 @@ class Assets {
 	/**
 	 * Enqueue backend styles and scripts.
 	 *
-	 * @param string $hook Name of file.
-	 *
 	 * @return void
 	 */
 	public function editor_enqueue_scripts() {
-
 		$asset = $this->get_asset_data( 'editor' );
 
 		wp_enqueue_script(
