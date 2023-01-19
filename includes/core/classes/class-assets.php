@@ -56,6 +56,7 @@ class Assets {
 	protected function setup_hooks() {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+		// add_action( 'enqueue_block_editor_assets', array( $this, 'show_editor_sidebar_by_default' ), 10 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ), 10 );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 	}
@@ -123,6 +124,16 @@ class Assets {
 			);
 		}
 
+
+		$asset = $this->get_asset_data( 'editor' );
+
+		wp_enqueue_script(
+			'gatherpress-editor',
+			$this->build . 'editor.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
 	}
 
 	/**
@@ -133,6 +144,10 @@ class Assets {
 	 * @return void
 	 */
 	public function editor_enqueue_scripts() {
+		// if ( Event::POST_TYPE !== get_post_type( get_the_ID() ) ) {
+		// 	// return;
+		// }
+
 		$asset = $this->get_asset_data( 'editor' );
 
 		wp_enqueue_script(
