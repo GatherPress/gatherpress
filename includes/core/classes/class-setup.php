@@ -60,7 +60,6 @@ class Setup {
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
-		add_action( 'enqueue_block_editor_assets', array( $this, 'show_editor_sidebar_by_default' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
@@ -489,25 +488,6 @@ class Setup {
 		$columns['datetime'] = 'datetime';
 
 		return $columns;
-	}
-
-	/**
-	 * Make sure the Event editor's settings are open on load.
-	 */
-	public function show_editor_sidebar_by_default() {
-		if ( ! is_admin() || 'gp_event' !== get_post_type( get_the_ID() ) ) {
-			return;
-		}
-		ob_start();
-		?>
-			window.onload = function() {
-				const isEditorSidebarOpened = wp.data.select( 'core/edit-post' ).isEditorSidebarOpened();
-				if ( ! isEditorSidebarOpened ) {
-					wp.data.dispatch( 'core/edit-post' ).openGeneralSidebar('edit-post/document').toggleEditorPanelOpened('gp-event-settings/gp-event-settings');
-				}
-			};
-		<?php
-		wp_add_inline_script( 'wp-blocks', ob_get_clean() );
 	}
 
 	/**
