@@ -24,10 +24,9 @@ const getTimeZone = () => {
 	const timezone = GatherPress.event_datetime.timezone;
 	if (!!moment.tz.zone(timezone)) {
 		return timezone;
-	} else {
-		return 'UTC';
 	}
-}
+	return 'UTC';
+};
 
 export const timeZone = getTimeZone();
 
@@ -42,11 +41,13 @@ const getUtcOffset = () => {
 	const offset = regExp.exec(GatherPress.event_datetime.timezone);
 
 	if (offset && 4 === offset.length) {
-		return String(offset[1] + (parseInt(offset[2], 10) + parseInt(offset[3], 10) / 60));
+		return String(
+			offset[1] + (parseInt(offset[2], 10) + parseInt(offset[3], 10) / 60)
+		);
 	}
 
 	return '';
-}
+};
 
 export const utcOffset = getUtcOffset();
 

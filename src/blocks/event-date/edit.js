@@ -42,7 +42,8 @@ const displayDateTime = (start, end) => {
 	return (
 		moment.tz(start, timeZone).format(startFormat) +
 		' to ' +
-		moment.tz(end, timeZone).format(endFormat) + utcOffset
+		moment.tz(end, timeZone).format(endFormat) +
+		utcOffset
 	);
 };
 

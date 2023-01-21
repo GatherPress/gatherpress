@@ -20,7 +20,7 @@ export const DateTimeStartLabel = (props) => {
 	const settings = getSettings();
 
 	return dateI18n(
-		`${ settings.formats.date } ${ settings.formats.time }`,
+		`${settings.formats.date} ${settings.formats.time}`,
 		dateTimeStart
 		// timeZone
 	);
@@ -31,7 +31,7 @@ export const DateTimeEndLabel = (props) => {
 	const settings = getSettings();
 
 	return dateI18n(
-		`${ settings.formats.date } ${ settings.formats.time }`,
+		`${settings.formats.date} ${settings.formats.time}`,
 		dateTimeEnd
 		// timeZone
 	);
