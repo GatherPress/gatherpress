@@ -9,8 +9,8 @@
 
 namespace GatherPress\Tests\Core;
 
-use PMC\Unit_Test\Base;
 use GatherPress\Core\Attendee;
+use PMC\Unit_Test\Base;
 
 /**
  * Class Test_Attendee.

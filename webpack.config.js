@@ -12,6 +12,8 @@ module.exports = {
 	...defaultConfig,
 	entry: {
 		...defaultConfig.entry(),
+		admin: path.resolve(process.cwd(), 'src', 'admin.js'),
+		editor: path.resolve(process.cwd(), 'src', 'editor.js'),
 		panels: path.resolve(process.cwd(), 'src/panels', 'index.js'),
 		settings: path.resolve(process.cwd(), 'src/settings', 'index.js'),
 		settings_style: path.resolve(

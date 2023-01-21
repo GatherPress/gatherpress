@@ -20,7 +20,7 @@ import VenueInformation from '../../components/VenueInformation';
 
 const Edit = (props) => {
 	const { attributes, setAttributes, isSelected } = props;
-	const { fullAddress, phoneNumber, website } = attributes;
+	const { encodedAddressURL, fullAddress, phoneNumber, website } = attributes;
 	const blockProps = useBlockProps();
 	const editPost = useDispatch('core/editor').editPost;
 	let venueInformationMetaData = useSelect(
@@ -46,8 +46,18 @@ const Edit = (props) => {
 		editPost({ meta });
 	};
 
+	const baseUrl = 'https://maps.google.com/maps';
+	const params = new URLSearchParams({
+		q: fullAddress,
+		z: 10,
+		t: 'm',
+		output: 'embed',
+	});
+	const encodedMapURL = baseUrl + '?' + params.toString();
+
 	useEffect(() => {
 		setAttributes({
+			encodedAddressURL: encodedMapURL ?? '',
 			fullAddress: venueInformationMetaData.fullAddress ?? '',
 			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
 			website: venueInformationMetaData.website ?? '',
@@ -73,11 +83,14 @@ const Edit = (props) => {
 							</FlexItem>
 						</Flex>
 					)}
-					<VenueInformation
-						fullAddress={fullAddress}
-						phoneNumber={phoneNumber}
-						website={website}
-					/>
+					<>
+						<VenueInformation
+							fullAddress={fullAddress}
+							phoneNumber={phoneNumber}
+							website={website}
+							encodedAddressURL={encodedAddressURL}
+						/>
+					</>
 				</>
 			)}
 			{isSelected && (
@@ -89,6 +102,13 @@ const Edit = (props) => {
 								value={fullAddress}
 								onChange={(value) => {
 									onUpdate('fullAddress', value);
+									setAttributes({
+										encodedAddressURL: encodedMapURL,
+									});
+									onUpdate(
+										'encodedAddressURL',
+										encodedMapURL
+									);
 								}}
 							/>
 						</FlexBlock>
@@ -113,6 +133,18 @@ const Edit = (props) => {
 								}}
 							/>
 						</FlexBlock>
+					</Flex>
+					<Flex
+						justify="normal"
+						align="flex-start"
+						gap="4"
+						style={{ padding: '1rem 0' }}
+					>
+						<iframe
+							style={{ width: '93%', height: '400px' }}
+							title={fullAddress}
+							src={encodedAddressURL}
+						></iframe>
 					</Flex>
 				</>
 			)}

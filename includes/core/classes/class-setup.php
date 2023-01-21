@@ -209,9 +209,9 @@ class Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/venue' ),
 					array( 'gatherpress/attendance-selector' ),
 					array( 'gatherpress/attendance-list' ),
+					array( 'gatherpress/venue' ),
 				),
 				'menu_position' => 4,
 				'supports'      => array(
@@ -500,14 +500,14 @@ class Setup {
 	 * @return string
 	 */
 	public function get_the_event_date( $the_date ): string {
-		global $post;
-		$gp_settings = get_option( 'gp_general' );
+		$settings       = Settings::get_instance();
+		$use_event_date = $settings->get_value( 'gp_general', 'general', 'post_or_event_date' );
 
-		if ( Event::POST_TYPE !== $post->post_type || 1 !== intval( $gp_settings['pages']['post_or_event_date'] ) ) {
+		if ( Event::POST_TYPE !== get_post_type() || 1 !== intval( $use_event_date ) ) {
 			return $the_date;
 		}
 
-		$event = new Event( $post->ID );
+		$event = new Event( get_the_ID() );
 
 		return $event->get_display_datetime();
 	}
@@ -522,7 +522,7 @@ class Setup {
 	 */
 	public function set_event_archive_labels( array $post_states, \WP_Post $post ) {
 		$general = get_option( Utility::prefix_key( 'general' ) );
-		$pages   = $general['pages'];
+		$pages   = $general['pages'] ?? '';
 
 		if ( empty( $pages ) || ! is_array( $pages ) ) {
 			return $post_states;

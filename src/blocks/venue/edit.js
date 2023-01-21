@@ -25,7 +25,7 @@ const Edit = (props) => {
 		});
 	});
 
-	const Venue = ({ id }) => {
+	const VenueSelector = ({ id }) => {
 		const venuePost = useSelect((select) =>
 			select('core').getEntityRecord('postType', 'gp_venue', id)
 		);
@@ -35,8 +35,20 @@ const Edit = (props) => {
 
 		const venueInformation = JSON.parse(jsonString);
 		const fullAddress = venueInformation?.fullAddress ?? '';
+
+		const baseUrl = 'https://maps.google.com/maps';
+		const params = new URLSearchParams({
+			q: fullAddress,
+			z: 10,
+			t: 'm',
+			output: 'embed',
+		});
+		const encodedMapURL = baseUrl + '?' + params.toString();
+
 		const phoneNumber = venueInformation?.phoneNumber ?? '';
 		const website = venueInformation?.website ?? '';
+		const encodedAddressURL =
+			venueInformation?.encodedAddressURL ?? encodedMapURL;
 		const name =
 			venuePost?.title.rendered ??
 			__('No venue selected.', 'gatherpress');
@@ -47,13 +59,14 @@ const Edit = (props) => {
 				fullAddress={fullAddress}
 				phoneNumber={phoneNumber}
 				website={website}
+				encodedAddressURL={encodedAddressURL}
 			/>
 		);
 	};
 
 	return (
 		<div {...blockProps}>
-			<Venue id={venueId} />
+			<VenueSelector id={venueId} />
 		</div>
 	);
 };
