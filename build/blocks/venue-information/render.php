@@ -39,7 +39,6 @@ if (
 							</div>
 							<?php
 						endif;
-
 						if ( ! empty( $attributes['fullAddress'] ) ) :
 							?>
 							<div class="gp-venue__full-address">
@@ -82,5 +81,11 @@ if (
 				<?php endif; ?>
 			</div>
 		<?php endif; ?>
+		<div class="gp-venue__map">
+			<iframe
+				style="width:99%;height:400px;"
+				src="<?php echo esc_url( $attributes['encodedAddressURL'] ); ?>"
+			></iframe>
+		</div>
 	</div>
 </div>

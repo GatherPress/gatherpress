@@ -16,6 +16,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"encodedAddressURL": {
+			"type": "string",
+			"default": ""
+		},
 		"phoneNumber": {
 			"type": "string",
 			"default": ""
