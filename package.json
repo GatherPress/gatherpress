@@ -8,7 +8,7 @@
 		"check-engines": "wp-scripts check-engines",
 		"check-licenses": "wp-scripts check-licenses",
 		"format": "wp-scripts format",
-		"lint:css:src": "wp-scripts lint-style 'src/**/*.scss'",
+		"lint:css": "wp-scripts lint-style 'src/**/*.scss'",
 		"lint:css:fix": "wp-scripts lint-style 'src/**/*.scss' --fix",
 		"lint:js": "wp-scripts lint-js",
 		"lint:js:fix": "wp-scripts lint-js --fix",

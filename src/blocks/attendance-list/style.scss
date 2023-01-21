@@ -1,6 +1,7 @@
 @import "../mixins";
 
 .gp-attendance-list {
+
 	&__navigation {
 		display: flex;
 		gap: 1rem;
@@ -26,6 +27,7 @@
 	}
 
 	&__active {
+
 		@include for-core-mobile {
 			grid-template-columns: 1fr 1fr;
 		}

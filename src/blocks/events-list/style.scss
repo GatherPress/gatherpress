@@ -3,6 +3,7 @@
 @import "../attendance-selector/style";
 
 .gp-events-list {
+
 	&__header {
 		display: flex;
 		gap: 2rem;
@@ -45,11 +46,12 @@
 
 	&__footer {
 		margin-bottom: 2rem;
-		border-bottom: 1px solid #CCCCCC;
+		border-bottom: 1px solid #ccc;
 		padding-bottom: 2rem;
 		display: flex;
 
 		.gp-attendance-list {
+
 			&__items {
 				display: flex;
 				gap: 0;
@@ -72,6 +74,7 @@
 			}
 
 			&__member-avatar {
+
 				a {
 					display: flex;
 				}
