@@ -192,7 +192,7 @@ class Event {
 		if (
 			true === $local
 			&& ! empty( $dt['timezone'] )
-			&& in_array( $dt['timezone'], \DateTimeZone::listIdentifiers(), true )
+			&& in_array( $dt['timezone'], $this->list_identifiers(), true )
 		) {
 			$tz = new \DateTimeZone( $dt['timezone'] );
 		} elseif ( false === $local ) {
@@ -205,6 +205,13 @@ class Event {
 		}
 
 		return (string) $date;
+	}
+
+	public function list_identifiers(): array {
+		$identifiers  = timezone_identifiers_list();
+		$offset_range = array( '-12:00', '-11:30', '-11:00', '-10:30', '-10:00', '-09:30', '-09:00', '-08:30', '-08:00', '-07:30', '-07:00', '-06:30', '-06:00', '-05:30', '-05:00', '-04:30', '-04:00', '-03:30', '-03:00', '-02:30', '-02:00', '-01:30', '-01:00', '-00:30', '+00:00', '+00:30', '+01:00', '+01:30', '+02:00', '+02:30', '+03:00', '+03:30', '+04:00', '+04:30', '+05:00', '+05:30', '+05:45', '+06:00', '+06:30', '+07:00', '+07:30', '+08:00', '+08:30', '+08:45', '+09:00', '+09:30', '+10:00', '+10:30', '+11:00', '+11:30', '+12:00', '+12:45', '+13:00', '+13:45', '+14:00' );
+
+		return array_merge( $identifiers, $offset_range );
 	}
 
 	/**

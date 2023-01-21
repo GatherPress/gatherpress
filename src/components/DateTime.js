@@ -17,24 +17,14 @@ import {
 
 export const DateTimeStartLabel = (props) => {
 	const { dateTimeStart } = props;
-	const settings = getSettings();
 
-	return dateI18n(
-		`${settings.formats.date} ${settings.formats.time}`,
-		dateTimeStart
-		// timeZone
-	);
+	return moment.tz(dateTimeStart, timeZone).format(dateTimeLabelFormat);
 };
 
 export const DateTimeEndLabel = (props) => {
 	const { dateTimeEnd } = props;
-	const settings = getSettings();
 
-	return dateI18n(
-		`${settings.formats.date} ${settings.formats.time}`,
-		dateTimeEnd
-		// timeZone
-	);
+	return moment.tz(dateTimeEnd, timeZone).format(dateTimeLabelFormat);
 };
 
 export const DateTimeStartPicker = (props) => {
