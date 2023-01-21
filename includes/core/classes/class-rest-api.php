@@ -251,14 +251,7 @@ class Rest_Api {
 	 * @return bool
 	 */
 	public function validate_timezone( $param ): bool {
-		$valid = in_array( $param, timezone_identifiers_list(), true );
-
-		if ( empty( $valid ) ) {
-			// regex101.com: https://regex101.com/r/9F6DZ4/1.
-			$valid = (bool) preg_match( '/(\+|-)([0-9]{1,2}):([0-9]{2})/', $param );
-		}
-
-		return $valid;
+		return in_array( $param, Event::list_identifiers(), true );
 	}
 
 	/**
