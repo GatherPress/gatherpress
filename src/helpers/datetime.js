@@ -183,6 +183,7 @@ export function saveDateTime() {
 						timeZone
 					)
 					.format(dateTimeDatabaseFormat),
+				// eslint-disable-next-line no-undef
 				timezone: GatherPress.event_datetime.timezone,
 				// eslint-disable-next-line no-undef
 				_wpnonce: GatherPress.nonce,

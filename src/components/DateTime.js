@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { dateI18n, getSettings } from '@wordpress/date';
+import { getSettings } from '@wordpress/date';
 import { DateTimePicker } from '@wordpress/components';
 import moment from 'moment';
 

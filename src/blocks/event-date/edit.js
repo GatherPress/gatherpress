@@ -30,7 +30,6 @@ const displayDateTime = (start, end) => {
 	// eslint-disable-next-line no-undef
 	const startFormat = dateFormat + ' ' + timeFormat;
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
-	console.log(utcOffset);
 
 	if (
 		moment.tz(start, timeZone).format(dateFormat) ===
