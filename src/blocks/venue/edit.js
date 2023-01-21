@@ -10,7 +10,12 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
+
 import VenueInformation from '../../components/VenueInformation';
+
+// import VenueInformation from './venue-info';
+
+import MapEmbed from '../../helpers/map-embed';
 
 const Edit = (props) => {
 	const { setAttributes } = props;
@@ -54,13 +59,27 @@ const Edit = (props) => {
 			__('No venue selected.', 'gatherpress');
 
 		return (
-			<VenueInformation
-				name={name}
-				fullAddress={fullAddress}
-				phoneNumber={phoneNumber}
-				website={website}
-				encodedAddressURL={encodedAddressURL}
-			/>
+			// <VenueInformation
+			// 	name={name}
+			// 	fullAddress={fullAddress}
+			// 	phoneNumber={phoneNumber}
+			// 	website={website}
+			// 	encodedAddressURL={encodedAddressURL}
+			// />
+			<>
+				<VenueInformation
+					name={name}
+					fullAddress={fullAddress}
+					phoneNumber={phoneNumber}
+					website={website}
+				/>
+				<MapEmbed
+					location={fullAddress}
+					zoom="10"
+					type="m"
+					height="400"
+				/>
+			</>
 		);
 	};
 
