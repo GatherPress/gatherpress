@@ -89,6 +89,10 @@ class Rest_Api {
 							'required'          => true,
 							'validate_callback' => array( $this, 'validate_datetime' ),
 						),
+						'timezone'       => array(
+							'required'          => false,
+							'validate_callback' => array( $this, 'validate_timezone' ),
+						),
 					),
 				),
 			),
@@ -237,6 +241,17 @@ class Rest_Api {
 	 */
 	public function validate_datetime( $param ): bool {
 		return (bool) \DateTime::createFromFormat( 'Y-m-d H:i:s', $param );
+	}
+
+	/**
+	 * Validate timezone.
+	 *
+	 * @param string $param A timezone to validate.
+	 *
+	 * @return bool
+	 */
+	public function validate_timezone( $param ): bool {
+		return in_array( $param, Event::list_identifiers(), true );
 	}
 
 	/**
