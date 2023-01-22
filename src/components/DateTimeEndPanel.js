@@ -1,7 +1,13 @@
 /**
  * WordPress dependencies.
  */
-import { Button, Dropdown, Flex, FlexItem, PanelRow } from '@wordpress/components';
+import {
+	Button,
+	Dropdown,
+	Flex,
+	FlexItem,
+	PanelRow,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 
@@ -23,7 +29,7 @@ const DateTimeEndPanel = (props) => {
 		});
 	});
 
-	return(
+	return (
 		<PanelRow>
 			<Flex>
 				<FlexItem>{__('End', 'gatherpress')}</FlexItem>
@@ -36,9 +42,7 @@ const DateTimeEndPanel = (props) => {
 								aria-expanded={isOpen}
 								isLink
 							>
-								<DateTimeEndLabel
-									dateTimeEnd={dateTimeEnd}
-								/>
+								<DateTimeEndLabel dateTimeEnd={dateTimeEnd} />
 							</Button>
 						)}
 						renderContent={() => (

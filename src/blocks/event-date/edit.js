@@ -74,8 +74,14 @@ const Edit = () => {
 				<InspectorControls>
 					<PanelBody>
 						<h3>{__('Date & time', 'gatherpress')}</h3>
-						<DateTimeStartPanel dateTimeStart={dateTimeStart} setDateTimeStart={setDateTimeStart} />
-						<DateTimeEndPanel dateTimeEnd={dateTimeEnd} setDateTimeEnd={setDateTimeEnd} />
+						<DateTimeStartPanel
+							dateTimeStart={dateTimeStart}
+							setDateTimeStart={setDateTimeStart}
+						/>
+						<DateTimeEndPanel
+							dateTimeEnd={dateTimeEnd}
+							setDateTimeEnd={setDateTimeEnd}
+						/>
 					</PanelBody>
 				</InspectorControls>
 			</Flex>

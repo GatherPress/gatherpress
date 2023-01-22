@@ -1,7 +1,13 @@
 /**
  * WordPress dependencies.
  */
-import { Button, Dropdown, Flex, FlexItem, PanelRow } from '@wordpress/components';
+import {
+	Button,
+	Dropdown,
+	Flex,
+	FlexItem,
+	PanelRow,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 
@@ -23,7 +29,7 @@ const DateTimeStartPanel = (props) => {
 		});
 	});
 
-	return(
+	return (
 		<PanelRow>
 			<Flex>
 				<FlexItem>{__('Start', 'gatherpress')}</FlexItem>
@@ -52,7 +58,6 @@ const DateTimeStartPanel = (props) => {
 			</Flex>
 		</PanelRow>
 	);
-
 };
 
 export default DateTimeStartPanel;
