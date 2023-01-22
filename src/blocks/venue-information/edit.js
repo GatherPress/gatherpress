@@ -21,8 +21,6 @@ import { useEffect } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import VenueInformation from '../../components/VenueInformation';
-
 import MapEmbed from '../../helpers/map-embed';
 
 import './editor.scss';
@@ -35,7 +33,6 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 		website,
 		zoom,
 		type,
-		encodedAddressURL,
 		deskHeight,
 		tabHeight,
 		mobileHeight,
@@ -78,7 +75,6 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 
 	useEffect(() => {
 		setAttributes({
-			encodedAddressURL: encodedMapURL ?? '',
 			fullAddress: venueInformationMetaData.fullAddress,
 			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
 			website: venueInformationMetaData.website ?? '',
@@ -101,6 +97,24 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							onUpdate('fullAddress', place);
 						}}
 						placeholder={__('Enter address', 'gatherpress')}
+					/>
+					<TextControl
+						label={__('Venue Phone Number', 'gatherpress')}
+						value={phoneNumber}
+						onChange={(number) => {
+							setAttributes({ phoneNumber: number });
+							onUpdate('phoneNumber', number);
+						}}
+						placeholder={__('Enter contact number', 'gatherpress')}
+					/>
+					<TextControl
+						label={__('Venue Website', 'gatherpress')}
+						value={website}
+						onChange={(url) => {
+							setAttributes({ website: url });
+							onUpdate('website', url);
+						}}
+						placeholder={__('Enter web address', 'gatherpress')}
 					/>
 				</PanelBody>
 				<PanelBody
