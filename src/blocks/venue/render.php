@@ -24,7 +24,8 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 
 $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
 
-// phpcs:ignore // (WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase)
+// (WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase)
+// phpcs:ignore 
 $gatherpress_full_address = $gatherpress_venue_information->fullAddress;
 
 $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $gatherpress_attributes['zoom'] ) . '&t=' . rawurlencode( $gatherpress_attributes['type'] ) . '&output=embed';

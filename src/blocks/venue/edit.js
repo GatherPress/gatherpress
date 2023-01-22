@@ -8,7 +8,6 @@ import { useSelect } from '@wordpress/data';
 import {
 	Button,
 	ButtonGroup,
-	Icon,
 	PanelBody,
 	RadioControl,
 	RangeControl,
@@ -65,8 +64,6 @@ const Edit = ({ attributes, setAttributes }) => {
 		});
 		const encodedMapURL = baseUrl + '?' + params.toString();
 
-		const phoneNumber = venueInformation?.phoneNumber ?? '';
-		const website = venueInformation?.website ?? '';
 		const encodedAddressURL =
 			venueInformation?.encodedAddressURL ?? encodedMapURL;
 		const name =
