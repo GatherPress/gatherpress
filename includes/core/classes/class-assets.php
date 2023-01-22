@@ -123,11 +123,11 @@ class Assets {
 			);
 		}
 
-		$asset = $this->get_asset_data( 'editor' );
+		$asset = $this->get_asset_data( 'admin' );
 
 		wp_enqueue_script(
-			'gatherpress-editor',
-			$this->build . 'editor.js',
+			'gatherpress-admin',
+			$this->build . 'admin.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true

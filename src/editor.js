@@ -8,16 +8,23 @@ import { dispatch, select } from '@wordpress/data';
  * Ensure panels are open for Events.
  */
 domReady(() => {
-	const isEditorSidebarOpened =
-		select('core/edit-post').isEditorSidebarOpened();
+	const selectPost = select('core/edit-post');
+
+	if (!selectPost) {
+		return;
+	}
+
+	const dispatchPost = dispatch('core/edit-post');
+	const isEditorSidebarOpened = selectPost.isEditorSidebarOpened();
+
 	if (!isEditorSidebarOpened) {
-		dispatch('core/edit-post').openGeneralSidebar();
-		dispatch('core/edit-post').toggleEditorPanelOpened(
+		dispatchPost.openGeneralSidebar();
+		dispatchPost.toggleEditorPanelOpened(
 			'gp-event-settings/gp-event-settings'
 		);
 	} else {
-		dispatch('core/edit-post').openGeneralSidebar('edit-post/document');
-		dispatch('core/edit-post').toggleEditorPanelOpened(
+		dispatchPost.openGeneralSidebar('edit-post/document');
+		dispatchPost.toggleEditorPanelOpened(
 			'gp-event-settings/gp-event-settings'
 		);
 	}
