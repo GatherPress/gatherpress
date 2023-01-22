@@ -8,11 +8,12 @@ import moment from 'moment';
  */
 import { select } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
-import { enableSave } from './misc';
+import { enableSave, getFromGlobal, setToGlobal } from './misc';
 import { isEventPostType } from './event';
 
 export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
@@ -20,33 +21,25 @@ export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
 export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
 
 const getTimeZone = () => {
-	// eslint-disable-next-line no-undef
-	const timezone = GatherPress.event_datetime.timezone;
+	const timezone = getFromGlobal('event_datetime.timezone');
+
 	if (!!moment.tz.zone(timezone)) {
 		return timezone;
 	}
-	return 'UTC';
+
+	return __('GMT', 'gatherpress');
 };
 
 export const timeZone = getTimeZone();
 
 const getUtcOffset = () => {
-	if ('UTC' !== timeZone) {
+	if (__('GMT', 'gatherpress') !== timeZone) {
 		return '';
 	}
 
-	// regex101.com: https://regex101.com/r/9F6DZ4/1
-	const regExp = /(\+|-)([0-9]{1,2}):([0-9]{2})/;
-	// eslint-disable-next-line no-undef
-	const offset = regExp.exec(GatherPress.event_datetime.timezone);
+	const offset = getFromGlobal('event_datetime.timezone');
 
-	if (offset && 4 === offset.length) {
-		return String(
-			offset[1] + (parseInt(offset[2], 10) + parseInt(offset[3], 10) / 60)
-		);
-	}
-
-	return '';
+	return 'string' === typeof offset ? offset.replace(':', '') : '';
 };
 
 export const utcOffset = getUtcOffset();
@@ -61,23 +54,20 @@ export const defaultDateTimeStart = moment
 	.format(dateTimeMomentFormat);
 
 export const getDateTimeStart = () => {
-	// eslint-disable-next-line no-undef
-	let dateTime = GatherPress.event_datetime.datetime_start;
+	let dateTime = getFromGlobal('event_datetime.datetime_start');
 
 	dateTime =
 		'' !== dateTime
 			? moment.tz(dateTime, timeZone).format(dateTimeMomentFormat)
 			: defaultDateTimeStart;
 
-	// eslint-disable-next-line no-undef
-	GatherPress.event_datetime.datetime_start = dateTime;
+	setToGlobal('event_datetime.datetime_start', dateTime);
 
 	return dateTime;
 };
 
 export const getDateTimeEnd = () => {
-	// eslint-disable-next-line no-undef
-	let dateTime = GatherPress.event_datetime.datetime_end;
+	let dateTime = getFromGlobal('event_datetime.datetime_end');
 
 	dateTime =
 		'' !== dateTime
@@ -87,8 +77,7 @@ export const getDateTimeEnd = () => {
 					.add(2, 'hours')
 					.format(dateTimeMomentFormat);
 
-	// eslint-disable-next-line no-undef
-	GatherPress.event_datetime.datetime_end = dateTime;
+	setToGlobal('event_datetime.datetime_end', dateTime);
 
 	return dateTime;
 };
@@ -96,8 +85,7 @@ export const getDateTimeEnd = () => {
 export const updateDateTimeStart = (date, setDateTimeStart = null) => {
 	validateDateTimeStart(date);
 
-	// eslint-disable-next-line no-undef
-	GatherPress.event_datetime.datetime_start = date;
+	setToGlobal('event_datetime.datetime_start', date);
 
 	if ('function' === typeof setDateTimeStart) {
 		setDateTimeStart(date);
@@ -109,8 +97,7 @@ export const updateDateTimeStart = (date, setDateTimeStart = null) => {
 export const updateDateTimeEnd = (date, setDateTimeEnd = null) => {
 	validateDateTimeEnd(date);
 
-	// eslint-disable-next-line no-undef
-	GatherPress.event_datetime.datetime_end = date;
+	setToGlobal('event_datetime.datetime_end', date);
 
 	if (null !== setDateTimeEnd) {
 		setDateTimeEnd(date);
@@ -121,11 +108,7 @@ export const updateDateTimeEnd = (date, setDateTimeEnd = null) => {
 
 export function validateDateTimeStart(dateTimeStart) {
 	const dateTimeEndNumeric = moment
-		.tz(
-			// eslint-disable-next-line no-undef
-			GatherPress.event_datetime.datetime_end,
-			timeZone
-		)
+		.tz(getFromGlobal('event_datetime.datetime_end'), timeZone)
 		.valueOf();
 	const dateTimeStartNumeric = moment.tz(dateTimeStart, timeZone).valueOf();
 
@@ -141,11 +124,7 @@ export function validateDateTimeStart(dateTimeStart) {
 
 export function validateDateTimeEnd(dateTimeEnd) {
 	const dateTimeStartNumeric = moment
-		.tz(
-			// eslint-disable-next-line no-undef
-			GatherPress.event_datetime.datetime_start,
-			timeZone
-		)
+		.tz(getFromGlobal('event_datetime.datetime_start'), timeZone)
 		.valueOf();
 	const dateTimeEndNumeric = moment.tz(dateTimeEnd, timeZone).valueOf();
 
@@ -167,26 +146,18 @@ export function saveDateTime() {
 			path: '/gatherpress/v1/event/datetime/',
 			method: 'POST',
 			data: {
-				// eslint-disable-next-line no-undef
-				post_id: GatherPress.post_id,
+				post_id: getFromGlobal('post_id'),
 				datetime_start: moment
 					.tz(
-						// eslint-disable-next-line no-undef
-						GatherPress.event_datetime.datetime_start,
+						getFromGlobal('event_datetime.datetime_start'),
 						timeZone
 					)
 					.format(dateTimeDatabaseFormat),
 				datetime_end: moment
-					.tz(
-						// eslint-disable-next-line no-undef
-						GatherPress.event_datetime.datetime_end,
-						timeZone
-					)
+					.tz(getFromGlobal('event_datetime.datetime_end'), timeZone)
 					.format(dateTimeDatabaseFormat),
-				// eslint-disable-next-line no-undef
-				timezone: GatherPress.event_datetime.timezone,
-				// eslint-disable-next-line no-undef
-				_wpnonce: GatherPress.nonce,
+				timezone: getFromGlobal('event_datetime.timezone'),
+				_wpnonce: getFromGlobal('nonce'),
 			},
 		}).then(() => {
 			// Saved.

@@ -10,14 +10,14 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { hasEventPast } from '../../../../helpers/event';
+import { getFromGlobal, setToGlobal } from '../../../../helpers/misc';
 
 export class AnnounceEvent extends Component {
 	constructor(props) {
 		super(props);
 
 		this.state = {
-			// eslint-disable-next-line no-undef
-			announceEventSent: '0' !== GatherPress.event_announced,
+			announceEventSent: '0' !== getFromGlobal('event_announced'),
 		};
 	}
 
@@ -34,14 +34,13 @@ export class AnnounceEvent extends Component {
 				path: '/gatherpress/v1/event/announce/',
 				method: 'POST',
 				data: {
-					// eslint-disable-next-line no-undef
-					post_id: GatherPress.post_id,
-					// eslint-disable-next-line no-undef
-					_wpnonce: GatherPress.nonce,
+					post_id: getFromGlobal('post_id'),
+					_wpnonce: getFromGlobal('nonce'),
 				},
 			}).then((res) => {
-				// eslint-disable-next-line no-undef
-				GatherPress.event_announced = res.success ? '1' : '0';
+				const success = res.success ? '1' : '0';
+
+				setToGlobal('event_announced', success);
 				this.setState({
 					announceEventSent: res.success,
 				});

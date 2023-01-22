@@ -2,15 +2,14 @@
  * Internal dependencies.
  */
 import AttendeeList from './AttendeeList';
+import { getFromGlobal } from '../helpers/misc';
 
 const AttendanceListContent = ({ items, activeValue, limit = false }) => {
+	const postId = getFromGlobal('post_id');
+	const attendees = getFromGlobal('attendees');
 	const renderedItems = items.map((item, index) => {
 		const { value } = item;
 		const active = value === activeValue ? 'active' : 'hidden';
-		// eslint-disable-next-line no-undef
-		const postId = GatherPress.post_id;
-		// eslint-disable-next-line no-undef
-		const attendees = GatherPress.attendees;
 
 		return (
 			<div

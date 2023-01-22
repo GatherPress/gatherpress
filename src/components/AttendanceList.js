@@ -3,54 +3,48 @@ import { __ } from '@wordpress/i18n';
 import AttendanceListNavigation from './AttendanceListNavigation';
 import AttendanceListContent from './AttendanceListContent';
 import { Listener } from '../helpers/broadcasting';
+import { getFromGlobal } from '../helpers/misc';
 
 const AttendanceList = () => {
+	const defaultLimit = 10;
 	let defaultStatus = 'attending';
+	const hasEventPast = getFromGlobal('has_event_past');
+	const currentUserStatus = getFromGlobal('current_user.status');
 	const items = [
 		{
 			title:
-				// eslint-disable-next-line no-undef
-				false === GatherPress.has_event_past
+				false === hasEventPast
 					? __('Attending', 'gatherpress')
 					: __('Went', 'gatherpress'),
 			value: 'attending',
 		},
 		{
 			title:
-				// eslint-disable-next-line no-undef
-				false === GatherPress.has_event_past
+				false === hasEventPast
 					? __('Waiting List', 'gatherpress')
 					: __('Wait Listed', 'gatherpress'),
 			value: 'waiting_list',
 		},
 		{
 			title:
-				// eslint-disable-next-line no-undef
-				false === GatherPress.has_event_past
+				false === hasEventPast
 					? __('Not Attending', 'gatherpress')
 					: __("Didn't Go", 'gatherpress'),
 			value: 'not_attending',
 		},
 	];
 
-	if ('object' === typeof GatherPress) {
-		// @todo redo this logic and have it come from API and not GatherPress object.
-		defaultStatus =
-			// eslint-disable-next-line no-undef
-			'undefined' !== typeof GatherPress.current_user.status &&
-			// eslint-disable-next-line no-undef
-			'attend' !== GatherPress.current_user.status
-				? // eslint-disable-next-line no-undef
-				  GatherPress.current_user.status
-				: defaultStatus;
-	}
-	const defaultLimit = 10;
+	// @todo redo this logic and have it come from API and not GatherPress object.
+	defaultStatus =
+		'undefined' !== typeof currentUserStatus &&
+		'attend' !== currentUserStatus
+			? currentUserStatus
+			: defaultStatus;
 
 	const [attendanceStatus, setAttendanceStatus] = useState(defaultStatus);
 	const [attendeeLimit, setAttendeeLimit] = useState(defaultLimit);
 
-	// eslint-disable-next-line no-undef
-	Listener({ setAttendanceStatus }, GatherPress.post_id);
+	Listener({ setAttendanceStatus }, getFromGlobal('post_id'));
 
 	const onTitleClick = (e, value) => {
 		e.preventDefault();

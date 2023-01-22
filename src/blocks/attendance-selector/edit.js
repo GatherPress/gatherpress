@@ -6,13 +6,12 @@ import { useBlockProps } from '@wordpress/block-editor';
  * Internal dependencies.
  */
 import AttendanceSelector from '../../components/AttendanceSelector';
+import { getFromGlobal } from '../../helpers/misc';
 
 const Edit = () => {
 	const blockProps = useBlockProps();
-	// eslint-disable-next-line no-undef
-	const postId = GatherPress.post_id;
-	// eslint-disable-next-line no-undef
-	const currentUser = GatherPress.current_user;
+	const postId = getFromGlobal('post_id');
+	const currentUser = getFromGlobal('current_user');
 
 	return (
 		<div {...blockProps}>

@@ -1,4 +1,9 @@
 /**
+ * External dependencies.
+ */
+import moment from 'moment';
+
+/**
  * WordPress dependencies.
  */
 import {
@@ -17,16 +22,25 @@ import { useEffect } from '@wordpress/element';
 import { DateTimeStartLabel, DateTimeStartPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
 import { Broadcaster } from '../helpers/broadcasting';
+import {
+	dateTimeMomentFormat,
+	getDateTimeStart,
+	timeZone,
+} from '../helpers/datetime';
 
 const DateTimeStartPanel = (props) => {
 	const { dateTimeStart, setDateTimeStart } = props;
 
 	useEffect(() => {
-		hasEventPastNotice();
+		setDateTimeStart(
+			moment.tz(getDateTimeStart(), timeZone).format(dateTimeMomentFormat)
+		);
 
 		Broadcaster({
 			setDateTimeStart: dateTimeStart,
 		});
+
+		hasEventPastNotice();
 	});
 
 	return (

@@ -1,4 +1,9 @@
 /**
+ * External dependencies.
+ */
+import moment from 'moment';
+
+/**
  * WordPress dependencies.
  */
 import {
@@ -17,16 +22,25 @@ import { useEffect } from '@wordpress/element';
 import { DateTimeEndLabel, DateTimeEndPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
 import { Broadcaster } from '../helpers/broadcasting';
+import {
+	dateTimeMomentFormat,
+	getDateTimeEnd,
+	timeZone,
+} from '../helpers/datetime';
 
 const DateTimeEndPanel = (props) => {
 	const { dateTimeEnd, setDateTimeEnd } = props;
 
 	useEffect(() => {
-		hasEventPastNotice();
+		setDateTimeEnd(
+			moment.tz(getDateTimeEnd(), timeZone).format(dateTimeMomentFormat)
+		);
 
 		Broadcaster({
 			setDateTimeEnd: dateTimeEnd,
 		});
+
+		hasEventPastNotice();
 	});
 
 	return (

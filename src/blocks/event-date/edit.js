@@ -18,6 +18,7 @@ import { Listener } from '../../helpers/broadcasting';
 import DateTimeStartPanel from '../../components/DateTimeStartPanel';
 import DateTimeEndPanel from '../../components/DateTimeEndPanel';
 import { timeZone, utcOffset } from '../../helpers/datetime';
+import { getFromGlobal } from '../../helpers/misc';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -30,7 +31,6 @@ const displayDateTime = (start, end) => {
 	const dateFormat = 'dddd, MMMM D, YYYY';
 	const timeFormat = 'h:mm A';
 	const timeZoneFormat = 'z';
-	// eslint-disable-next-line no-undef
 	const startFormat = dateFormat + ' ' + timeFormat;
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 
@@ -52,12 +52,10 @@ const displayDateTime = (start, end) => {
 const Edit = () => {
 	const blockProps = useBlockProps();
 	const [dateTimeStart, setDateTimeStart] = useState(
-		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_start
+		getFromGlobal('event_datetime.datetime_start')
 	);
 	const [dateTimeEnd, setDateTimeEnd] = useState(
-		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_end
+		getFromGlobal('event_datetime.datetime_end')
 	);
 
 	Listener({ setDateTimeEnd, setDateTimeStart });

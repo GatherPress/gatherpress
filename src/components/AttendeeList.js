@@ -8,6 +8,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { Listener } from '../helpers/broadcasting';
+import { getFromGlobal } from '../helpers/misc';
 
 const AttendeeList = ({
 	eventId,
@@ -73,8 +74,7 @@ const AttendeeList = ({
 				0 === renderedItems.length &&
 				false === avatarOnly && (
 					<div className="gp-attendance-list__no-attendees">
-						{/* eslint-disable-next-line no-undef */}
-						{false === GatherPress.has_event_past
+						{false === getFromGlobal('has_event_past')
 							? __(
 									'No one is attending this event yet.',
 									'gatherpress'

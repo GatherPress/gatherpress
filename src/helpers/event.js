@@ -13,6 +13,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { timeZone } from './datetime';
+import { getFromGlobal } from './misc';
 
 export function isEventPostType() {
 	return 'gp_event' === select('core/editor').getCurrentPostType();
@@ -23,8 +24,7 @@ export function CheckCurrentPostType() {
 }
 
 export function hasEventPast() {
-	// eslint-disable-next-line no-undef
-	const dateTimeEnd = moment(GatherPress.event_datetime.datetime_end);
+	const dateTimeEnd = moment(getFromGlobal('event_datetime.datetime_end'));
 
 	return moment.tz(timeZone).valueOf() > dateTimeEnd.tz(timeZone).valueOf();
 }
