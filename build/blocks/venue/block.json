@@ -12,16 +12,46 @@
     "blockId": {
       "type": "string"
     },
+    "fullAddress": {
+      "type": "string",
+      "default": "currentLocation"
+    },
+    "zoom": {
+      "type": "number",
+      "default": 10
+    },
+    "type": {
+      "type": "string",
+      "default": "m"
+    },
+    "deskHeight": {
+      "type": "number",
+      "default": 400
+    },
+    "tabHeight": {
+      "type": "number",
+      "default": 300
+    },
+    "mobileHeight": {
+      "type": "number",
+      "default": 250
+    },
+    "device": {
+      "type": "string",
+      "default": "desktop"
+    },
     "venueId": {
       "type": "integer",
       "default": null
     }
   },
   "supports": {
-    "html": true
+    "html": true,
+    "align": true
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",
   "render": "file:./render.php"
 }

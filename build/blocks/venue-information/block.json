@@ -61,7 +61,8 @@
     }
   },
   "supports": {
-    "html": false
+    "html": false,
+    "align": true
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",

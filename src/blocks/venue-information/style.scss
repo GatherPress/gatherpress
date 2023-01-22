@@ -3,12 +3,13 @@
 .gp-venue__full-address-row,
 .gp-venue__phone-row,
 .gp-venue__website-row {
-    display: flex;
+	display: flex;
 }
 
 .gp-venue__full-address-row {
-    justify-content: center;
+	justify-content: center;
 }
+
 .gp-venue {
 	display: flex;
 	flex-direction: column;

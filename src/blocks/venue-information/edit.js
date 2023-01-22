@@ -91,21 +91,21 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 			<InspectorControls>
 				<PanelBody
 					title={__('Venue Location', 'gatherpress')}
-					initialOpen={ true }
+					initialOpen={true}
 				>
 					<TextControl
 						label={__('Venue Street Address', 'gatherpress')}
 						value={fullAddress}
 						onChange={(place) => {
-							setAttributes({ fullAddress: place })
-							onUpdate( 'fullAddress', place )
+							setAttributes({ fullAddress: place });
+							onUpdate('fullAddress', place);
 						}}
 						placeholder={__('Enter address', 'gatherpress')}
 					/>
 				</PanelBody>
 				<PanelBody
-					title={__('Venue Settings', 'gatherpress')}
-					initialOpen={ false }
+					title={__('Map Settings', 'gatherpress')}
+					initialOpen={true}
 				>
 					<RangeControl
 						label={__('Zoom Level', 'gatherpress')}
@@ -219,14 +219,12 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							</FlexItem>
 							<FlexItem>
 								<em>
-									{( 
-										fullAddress ?
-										fullAddress :
-										__(
-											'Add venue information.',
-											'gatherpress'
-										)
-									)}
+									{fullAddress
+										? fullAddress
+										: __(
+												'Add venue information.',
+												'gatherpress'
+										  )}
 								</em>
 							</FlexItem>
 						</Flex>
@@ -247,14 +245,12 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							</FlexItem>
 							<FlexItem>
 								<em>
-									{( fullAddress ?
-
-										fullAddress :
-										__(
-											'Add venue information.',
-											'gatherpress'
-										)
-									)}
+									{fullAddress
+										? fullAddress
+										: __(
+												'Add venue information.',
+												'gatherpress'
+										  )}
 								</em>
 							</FlexItem>
 						</Flex>
@@ -272,7 +268,6 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 					</div>
 				)}
 			</div>
-			{JSON.stringify(attributes)}
 		</>
 	);
 };
