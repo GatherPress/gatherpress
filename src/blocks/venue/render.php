@@ -23,37 +23,43 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 // phpcs:ignore
 $gp_venue_map = ( get_post( $gatherpress_venue->ID )->post_content ?: '' );
 
-echo '<pre>' . print_r( $gatherpress_venue, true ) . '</pre>';
+$gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
 
-echo '<pre>' . print_r( $gp_venue_map, true ) . '</pre>';
+// echo '<pre>' . print_r( $gatherpress_venue, true ) . '</pre>';
 
-Utility::render_template(
-	sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),
-	array(
-		'attributes' => array(
-			'name'              => $gatherpress_venue->post_title,
-			'fullAddress'       => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'encodedAddressURL' => $gatherpress_venue_information->encodedAddressURL ?? 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_venue_information->fullAddress ) . '&z=10&t=m&output=embed', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'phoneNumber'       => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'website'           => $gatherpress_venue_information->website ?? '',
+// echo '<pre>' . print_r( $gp_venue_map, true ) . '</pre>';
+
+if ( $gatherpress_venue_information ) {
+	Utility::render_template(
+		sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),
+		array(
+			'attributes' => array(
+				'name'              => $gatherpress_venue->post_title,
+				'fullAddress'       => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				'encodedAddressURL' => $gatherpress_venue_information->encodedAddressURL ?? 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_venue_information->fullAddress ) . '&z=10&t=m&output=embed', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				'phoneNumber'       => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				'website'           => $gatherpress_venue_information->website ?? '',
+			),
 		),
-	),
-	true
-// printf(
-// 	'<div %s>%s</div>',
-// 	wp_kses_data( get_block_wrapper_attributes() ),
-// 	wp_kses(
-// 		$gp_venue_map,
-// 		array(
-// 			'iframe' => array(
-// 				'src'             => array(),
-// 				'width'           => array(),
-// 				'height'          => array(),
-// 				'title'           => array(),
-// 				'allow'           => array(),
-// 				'allowfullscreen' => array(),
-// 				'frameborder'     => array(),
-// 			),
-// 		)
-// 	)
-);
+		true
+	);
+} else {
+	printf(
+		'<div %s>%s</div>',
+		wp_kses_data( get_block_wrapper_attributes() ),
+		wp_kses(
+			$gp_venue_map,
+			array(
+				'iframe' => array(
+					'src'             => array(),
+					'width'           => array(),
+					'height'          => array(),
+					'title'           => array(),
+					'allow'           => array(),
+					'allowfullscreen' => array(),
+					'frameborder'     => array(),
+				),
+			)
+		)
+	);
+}
