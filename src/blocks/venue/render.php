@@ -14,6 +14,8 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
+$gatherpress_attributes = $attributes;
+
 $gatherpress_venue = get_post( intval( $attributes['venueId'] ?? 0 ) );
 
 if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
@@ -22,14 +24,14 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 
 $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
 
-$attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . urlencode( $gatherpress_venue_information->fullAddress ) . '&z=' . urlencode( $attributes['zoom'] ) . '&t=' . urlencode( $attributes['type'] ) . '&output=embed';
+$gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_venue_information->fullAddress ) . '&z=' . rawurlencode( $gatherpress_attributes['zoom'] ) . '&t=' . rawurlencode( $gatherpress_attributes['type'] ) . '&output=embed';
 
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
 	<iframe
-		src="<?php echo esc_attr( $attributes['encoded_addy'] ); ?>"
+		src="<?php echo esc_attr( $gatherpress_attributes['encoded_addy'] ); ?>"
 		title="<?php echo esc_attr( $gatherpress_venue_information->fullAddress ); ?>"
-		style="height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px"
+		style="height:<?php echo esc_attr( $gatherpress_attributes['deskHeight'] ); ?>px"
 	></iframe>
 </div>
 <?php

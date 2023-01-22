@@ -8,23 +8,16 @@ import { useSelect } from '@wordpress/data';
 import {
 	Button,
 	ButtonGroup,
-	Flex,
-	FlexBlock,
-	FlexItem,
 	Icon,
 	PanelBody,
-	PanelRow,
 	RadioControl,
 	RangeControl,
-	TextControl,
 } from '@wordpress/components';
 
 /**
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
-
-import VenueInformation from '../../components/VenueInformation';
 
 import MapEmbed from '../../helpers/map-embed';
 
