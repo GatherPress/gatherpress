@@ -404,7 +404,7 @@ class Settings {
 					'options'     => array(
 						'post_or_event_date' => array(
 							'labels' => array(
-								'name' => __( 'Show post date as event date', 'gatherpress' ),
+								'name' => __( 'Show publish date as event date for events', 'gatherpress' ),
 							),
 							'field'  => array(
 								'type'    => 'checkbox',

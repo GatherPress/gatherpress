@@ -21,24 +21,24 @@
 	&__list {
 		flex-direction: column;
 		border-radius: 0.4rem;
-		border: 1px solid #CCCCCC;
+		border: 1px solid #ccc;
 		overflow: hidden;
 		width: 15rem;
 		position: absolute;
 	}
 
 	&__list-item {
-		border-top: 1px solid #CCCCCC;
+		border-top: 1px solid #ccc;
 		margin-top: -1px;
 
 		a {
-			color: #000000;
-			background-color: #FFFFFF;
+			color: #000;
+			background-color: #fff;
 			display: block;
 			padding: 0.5rem;
 
 			&:hover {
-				background-color: #EEEEEE;
+				background-color: #eee;
 			}
 		}
 	}
