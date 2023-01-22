@@ -28,19 +28,6 @@ export default function save({ attributes }) {
 					</address>
 				</>
 			)}
-			{fullAddress && (
-				<>
-					<div className="gp-venue__map">
-						<MapEmbed
-							location={fullAddress}
-							zoom={zoom}
-							type={type}
-							height={deskHeight}
-							className={`embed-height_${mapId}`}
-						/>
-					</div>
-				</>
-			)}
 			<div className="gp-venue__row">
 				{phoneNumber && (
 					<>
@@ -71,6 +58,19 @@ export default function save({ attributes }) {
 					</>
 				)}
 			</div>
+			{fullAddress && (
+				<>
+					<div className="gp-venue__map">
+						<MapEmbed
+							location={fullAddress}
+							zoom={zoom}
+							type={type}
+							height={deskHeight}
+							className={`embed-height_${mapId}`}
+						/>
+					</div>
+				</>
+			)}
 		</div>
 	);
 }

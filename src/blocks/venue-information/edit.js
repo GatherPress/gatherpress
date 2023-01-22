@@ -64,21 +64,12 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 		editPost({ meta });
 	};
 
-	const baseUrl = 'https://maps.google.com/maps';
-	const params = new URLSearchParams({
-		q: fullAddress,
-		z: 10,
-		t: 'm',
-		output: 'embed',
-	});
-	const encodedMapURL = baseUrl + '?' + params.toString();
-
 	useEffect(() => {
 		setAttributes({
 			fullAddress: venueInformationMetaData.fullAddress,
 			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
 			website: venueInformationMetaData.website ?? '',
-			mapId: clientId,
+			mapId: clientId.slice(0, 8),
 		});
 	}, []);
 
@@ -242,12 +233,39 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 								</em>
 							</FlexItem>
 						</Flex>
+						<Flex justify="normal">
+							<FlexItem display="flex">
+								<Icon icon="phone" />
+							</FlexItem>
+							<FlexItem>
+								<em>
+									{phoneNumber
+										? phoneNumber
+										: __(
+												'Add venue information.',
+												'gatherpress'
+										  )}
+								</em>
+							</FlexItem>
+							<FlexItem display="flex">
+								<Icon icon="admin-site-alt3" />
+							</FlexItem>
+							<FlexItem>
+								<em>
+									{website
+										? website
+										: __(
+												'Add venue information.',
+												'gatherpress'
+										  )}
+								</em>
+							</FlexItem>
+						</Flex>
 						<MapEmbed
 							location={fullAddress}
 							zoom={zoom}
 							type={type}
 							height={deskHeight}
-							className={`emb__height_${mapId}`}
 						/>
 					</div>
 				)}
@@ -268,6 +286,34 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 								</em>
 							</FlexItem>
 						</Flex>
+						<Flex justify="normal">
+							<FlexItem display="flex">
+								<Icon icon="phone" />
+							</FlexItem>
+							<FlexItem>
+								<em>
+									{phoneNumber
+										? phoneNumber
+										: __(
+												'Add venue information.',
+												'gatherpress'
+										  )}
+								</em>
+							</FlexItem>
+							<FlexItem display="flex">
+								<Icon icon="admin-site-alt3" />
+							</FlexItem>
+							<FlexItem>
+								<em>
+									{website
+										? website
+										: __(
+												'Add venue information.',
+												'gatherpress'
+										  )}
+								</em>
+							</FlexItem>
+						</Flex>
 						<Flex>
 							<FlexBlock>
 								<MapEmbed
@@ -275,7 +321,6 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 									zoom={zoom}
 									type={type}
 									height={deskHeight}
-									className={`emb__height_${mapId}`}
 								/>
 							</FlexBlock>
 						</Flex>

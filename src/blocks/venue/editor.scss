@@ -1,6 +1,17 @@
 
 .wp-block-gatherpress-venue {
 	border: 1px solid lightgray;
-	width: 100%;
+}
+
+.wp-block-gatherpress-venue:not(.alignfull ) {
 	padding: 1rem;
+}
+
+.wp-block-gatherpress-venue.alignwide {
+	max-width: 88%;
+}
+
+.wp-block-gatherpress-venue.alignfull  {
+	max-width: 98%;
+	padding: 1rem 0;
 }
