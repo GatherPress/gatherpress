@@ -8,7 +8,7 @@ import moment from 'moment';
  */
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -49,8 +49,11 @@ const displayDateTime = (start, end) => {
 	);
 };
 
-const Edit = () => {
+const Edit = ({ attributes, setAttributes }) => {
 	const blockProps = useBlockProps();
+
+	const { eventStart, eventEnd } = attributes;
+
 	const [dateTimeStart, setDateTimeStart] = useState(
 		getFromGlobal('event_datetime.datetime_start')
 	);
@@ -60,6 +63,12 @@ const Edit = () => {
 
 	Listener({ setDateTimeEnd, setDateTimeStart });
 
+	useEffect(() => {
+		setAttributes({
+			eventStart: dateTimeStart,
+			eventEnd: dateTimeEnd,
+		});
+	});
 	return (
 		<div {...blockProps}>
 			<Flex justify="normal" align="flex-start" gap="4">
@@ -67,7 +76,7 @@ const Edit = () => {
 					<Icon icon="clock" />
 				</FlexItem>
 				<FlexItem>
-					{displayDateTime(dateTimeStart, dateTimeEnd)}
+					{displayDateTime(eventStart, eventEnd)}
 				</FlexItem>
 				<InspectorControls>
 					<PanelBody>
@@ -83,6 +92,7 @@ const Edit = () => {
 					</PanelBody>
 				</InspectorControls>
 			</Flex>
+			{ JSON.stringify( attributes) }
 		</div>
 	);
 };

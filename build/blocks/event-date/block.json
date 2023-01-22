@@ -7,9 +7,12 @@
   "category": "gatherpress",
   "icon": "clock",
   "example": {},
-  "description": "Display and edit event dates.",
+  "description": "The block with event dates.",
   "attributes": {
-    "blockId": {
+    "eventStart": {
+      "type": "string"
+    },
+    "eventEnd": {
       "type": "string"
     }
   },
