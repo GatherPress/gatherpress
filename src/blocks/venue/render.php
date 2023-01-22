@@ -23,6 +23,10 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 // phpcs:ignore
 $gp_venue_map = ( get_post( $gatherpress_venue->ID )->post_content ?: '' );
 
+echo '<pre>' . print_r( $gatherpress_venue, true ) . '</pre>';
+
+echo '<pre>' . print_r( $gp_venue_map, true ) . '</pre>';
+
 Utility::render_template(
 	sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),
 	array(

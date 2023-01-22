@@ -2,9 +2,9 @@
 /**
  * Render Venue block.
  *
- * @package GatherPress
+ * @package    GatherPress
  * @subpackage Core
- * @since 1.0.0
+ * @since      1.0.0
  */
 
 use GatherPress\Core\Utility;
@@ -20,7 +20,12 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 	return;
 }
 
-$gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
+// phpcs:ignore
+$gp_venue_map = ( get_post( $gatherpress_venue->ID )->post_content ?: '' );
+
+echo '<pre>' . print_r( $gatherpress_venue, true ) . '</pre>';
+
+echo '<pre>' . print_r( $gp_venue_map, true ) . '</pre>';
 
 Utility::render_template(
 	sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),
@@ -34,4 +39,21 @@ Utility::render_template(
 		),
 	),
 	true
+// printf(
+// 	'<div %s>%s</div>',
+// 	wp_kses_data( get_block_wrapper_attributes() ),
+// 	wp_kses(
+// 		$gp_venue_map,
+// 		array(
+// 			'iframe' => array(
+// 				'src'             => array(),
+// 				'width'           => array(),
+// 				'height'          => array(),
+// 				'title'           => array(),
+// 				'allow'           => array(),
+// 				'allowfullscreen' => array(),
+// 				'frameborder'     => array(),
+// 			),
+// 		)
+// 	)
 );

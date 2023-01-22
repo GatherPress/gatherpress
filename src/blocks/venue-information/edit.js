@@ -23,10 +23,9 @@ import { useEffect } from '@wordpress/element';
  */
 import VenueInformation from '../../components/VenueInformation';
 
-// const Edit = (props) => {
-// 	const { attributes, setAttributes, isSelected } = props;
-// 	const { encodedAddressURL, fullAddress, phoneNumber, website } = attributes;
 import MapEmbed from '../../helpers/map-embed';
+
+import './editor.scss';
 
 const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 	const {
@@ -36,6 +35,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 		website,
 		zoom,
 		type,
+		encodedAddressURL,
 		deskHeight,
 		tabHeight,
 		mobileHeight,
@@ -79,7 +79,7 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 	useEffect(() => {
 		setAttributes({
 			encodedAddressURL: encodedMapURL ?? '',
-			fullAddress: venueInformationMetaData.fullAddress ?? '',
+			fullAddress: venueInformationMetaData.fullAddress,
 			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
 			website: venueInformationMetaData.website ?? '',
 			mapId: clientId,
@@ -89,15 +89,24 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={__('Venue Settings', 'gatherpress')}>
+				<PanelBody
+					title={__('Venue Location', 'gatherpress')}
+					initialOpen={ true }
+				>
 					<TextControl
 						label={__('Venue Street Address', 'gatherpress')}
 						value={fullAddress}
-						onChange={(place) =>
+						onChange={(place) => {
 							setAttributes({ fullAddress: place })
-						}
+							onUpdate( 'fullAddress', place )
+						}}
 						placeholder={__('Enter address', 'gatherpress')}
 					/>
+				</PanelBody>
+				<PanelBody
+					title={__('Venue Settings', 'gatherpress')}
+					initialOpen={ false }
+				>
 					<RangeControl
 						label={__('Zoom Level', 'gatherpress')}
 						beforeIcon="search"
@@ -203,28 +212,24 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 			</InspectorControls>
 			<div {...blockProps}>
 				{!isSelected && (
-					<>
-						{!fullAddress && !phoneNumber && !website && (
-							<Flex justify="normal">
-								<FlexItem display="flex">
-									<Icon icon="location" />
-								</FlexItem>
-								<FlexItem>
-									<em>
-										{__(
+					<div className="gp-venue">
+						<Flex justify="normal">
+							<FlexItem display="flex">
+								<Icon icon="location" />
+							</FlexItem>
+							<FlexItem>
+								<em>
+									{( 
+										fullAddress ?
+										fullAddress :
+										__(
 											'Add venue information.',
 											'gatherpress'
-										)}
-									</em>
-								</FlexItem>
-							</Flex>
-						)}
-						<VenueInformation
-							fullAddress={fullAddress}
-							phoneNumber={phoneNumber}
-							website={website}
-							encodedAddressURL={encodedAddressURL}
-						/>
+										)
+									)}
+								</em>
+							</FlexItem>
+						</Flex>
 						<MapEmbed
 							location={fullAddress}
 							zoom={zoom}
@@ -232,99 +237,26 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 							height={deskHeight}
 							className={`emb__height_${mapId}`}
 						/>
-					</>
-		// 		</>
-		// 	)}
-		// 	{isSelected && (
-		// 		<>
-		// 			<Flex>
-		// 				<FlexBlock>
-		// 					<TextControl
-		// 						label={__('Full Address', 'gatherpress')}
-		// 						value={fullAddress}
-		// 						onChange={(value) => {
-		// 							onUpdate('fullAddress', value);
-		// 							setAttributes({
-		// 								encodedAddressURL: encodedMapURL,
-		// 							});
-		// 							onUpdate(
-		// 								'encodedAddressURL',
-		// 								encodedMapURL
-		// 							);
-		// 						}}
-		// 					/>
-		// 				</FlexBlock>
-		// 			</Flex>
-		// 			<Flex>
-		// 				<FlexBlock>
-		// 					<TextControl
-		// 						label={__('Phone Number', 'gatherpress')}
-		// 						value={phoneNumber}
-		// 						onChange={(value) => {
-		// 							onUpdate('phoneNumber', value);
-		// 						}}
-		// 					/>
-		// 				</FlexBlock>
-		// 				<FlexBlock>
-		// 					<TextControl
-		// 						label={__('Website', 'gatherpress')}
-		// 						value={website}
-		// 						type="url"
-		// 						onChange={(value) => {
-		// 							onUpdate('website', value);
-		// 						}}
-		// 					/>
-		// 				</FlexBlock>
-		// 			</Flex>
-		// 			<Flex
-		// 				justify="normal"
-		// 				align="flex-start"
-		// 				gap="4"
-		// 				style={{ padding: '1rem 0' }}
-		// 			>
-		// 				<iframe
-		// 					style={{ width: '93%', height: '400px' }}
-		// 					title={fullAddress}
-		// 					src={encodedAddressURL}
-		// 				></iframe>
-		// 			</Flex>
-		// 		</>
-		// 	)}
-		// </div>
+					</div>
 				)}
 				{isSelected && (
-					<>
-						<Flex>
-							<FlexBlock>
-								<TextControl
-									label={__('Full Address', 'gatherpress')}
-									value={fullAddress}
-									onChange={(value) => {
-										onUpdate('fullAddress', value);
-									}}
-								/>
-							</FlexBlock>
-						</Flex>
-						<Flex>
-							<FlexBlock>
-								<TextControl
-									label={__('Phone Number', 'gatherpress')}
-									value={phoneNumber}
-									onChange={(value) => {
-										onUpdate('phoneNumber', value);
-									}}
-								/>
-							</FlexBlock>
-							<FlexBlock>
-								<TextControl
-									label={__('Website', 'gatherpress')}
-									value={website}
-									type="url"
-									onChange={(value) => {
-										onUpdate('website', value);
-									}}
-								/>
-							</FlexBlock>
+					<div className="gp-venue">
+						<Flex justify="normal">
+							<FlexItem display="flex">
+								<Icon icon="location" />
+							</FlexItem>
+							<FlexItem>
+								<em>
+									{( fullAddress ?
+
+										fullAddress :
+										__(
+											'Add venue information.',
+											'gatherpress'
+										)
+									)}
+								</em>
+							</FlexItem>
 						</Flex>
 						<Flex>
 							<FlexBlock>
@@ -337,9 +269,10 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 								/>
 							</FlexBlock>
 						</Flex>
-					</>
+					</div>
 				)}
 			</div>
+			{JSON.stringify(attributes)}
 		</>
 	);
 };
