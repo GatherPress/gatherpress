@@ -85,6 +85,7 @@ if (
 			<iframe
 				style="width:99%;height:400px;"
 				src="<?php echo esc_url( $attributes['encodedAddressURL'] ); ?>"
+				title="<?php echo esc_html( $attributes['fullAddress'] ); ?>"
 			></iframe>
 		</div>
 	</div>
