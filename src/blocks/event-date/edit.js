@@ -6,15 +6,18 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { useBlockProps } from '@wordpress/block-editor';
-import { Flex, FlexItem, Icon } from '@wordpress/components';
+import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
 import { useState } from '@wordpress/element';
-import { timeZone, utcOffset } from '../../helpers/datetime';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
+import DateTimeStartPanel from '../../components/DateTimeStartPanel';
+import DateTimeEndPanel from '../../components/DateTimeEndPanel';
+import { timeZone, utcOffset } from '../../helpers/datetime';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -68,6 +71,13 @@ const Edit = () => {
 				<FlexItem>
 					{displayDateTime(dateTimeStart, dateTimeEnd)}
 				</FlexItem>
+				<InspectorControls>
+					<PanelBody>
+						<h3>{__('Date & time', 'gatherpress')}</h3>
+						<DateTimeStartPanel dateTimeStart={dateTimeStart} setDateTimeStart={setDateTimeStart} />
+						<DateTimeEndPanel dateTimeEnd={dateTimeEnd} setDateTimeEnd={setDateTimeEnd} />
+					</PanelBody>
+				</InspectorControls>
 			</Flex>
 		</div>
 	);
