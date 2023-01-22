@@ -1,4 +1,9 @@
 /**
+ * WordPress dependencies.
+ */
+import domReady from '@wordpress/dom-ready';
+
+/**
  * Toggle to Show/Hide Calendar options.
  *
  * @param {TouchEvent} e Event.
@@ -38,6 +43,6 @@ const addToCalendarInit = () => {
 	}
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+domReady(() => {
 	addToCalendarInit();
 });

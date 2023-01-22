@@ -1,6 +1,7 @@
 /**
  * WordPress dependencies.
  */
+import domReady from '@wordpress/dom-ready';
 import { render } from '@wordpress/element';
 
 /**
@@ -8,7 +9,7 @@ import { render } from '@wordpress/element';
  */
 import AttendanceList from '../../components/AttendanceList';
 
-document.addEventListener('DOMContentLoaded', () => {
+domReady(() => {
 	const containers = document.querySelectorAll(
 		`[data-gp_block_name="attendance-list"]`
 	);
