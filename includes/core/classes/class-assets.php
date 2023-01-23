@@ -159,14 +159,15 @@ class Assets {
 	 * @return array
 	 */
 	protected function localize( int $post_id ): array {
-		$event    = new Event( $post_id );
-		$settings = Settings::get_instance();
+		$event          = new Event( $post_id );
+		$settings       = Settings::get_instance();
+		$event_datetime = $event->get_datetime();
 		return array(
 			'attendees'         => ( $event->attendee ) ? $event->attendee->attendees() : array(), // @todo cleanup
 			'current_user'      => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '', // @todo cleanup
 			'default_timezone'  => sanitize_text_field( wp_timezone_string() ),
 			'event_announced'   => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
-			'event_datetime'    => $event->get_datetime(),
+			'event_datetime'    => $event_datetime,
 			'event_rest_api'    => home_url( 'wp-json/gatherpress/v1/event' ),
 			'has_event_past'    => $event->has_event_past(),
 			'is_admin'          => is_admin(),
@@ -176,6 +177,7 @@ class Assets {
 				// @todo settings to come...
 			),
 			'unregister_blocks' => $this->unregister_blocks(),
+			'timezone_choices'  => Utility::timezone_choices(),
 		);
 	}
 

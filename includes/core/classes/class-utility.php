@@ -68,4 +68,33 @@ class Utility {
 		return preg_replace( '/^gp_/', '', $key );
 	}
 
+	/**
+	 * Convert Time Zone markup to an array.
+	 *
+	 * @return array
+	 */
+	public static function timezone_choices(): array {
+		$timezones_raw   = explode( PHP_EOL, wp_timezone_choice( 'UTC' ) );
+		$timezones_clean = array();
+		$group           = null;
+
+		foreach ( $timezones_raw as $timezone ) {
+			preg_match( '/<optgroup label="(.+)">/', $timezone, $matches );
+
+			if ( 2 === count( $matches ) ) {
+				$group = $matches[1];
+				$timezones_clean[ $group ] = [];
+				continue;
+			}
+
+			preg_match( '/<option.*value="(.+)">(.+)<\/option>/', $timezone, $matches );
+
+			if ( ! empty( $group ) && 3 === count( $matches ) ) {
+				$timezones_clean[ $group ][ $matches[1] ] = $matches[2];
+			}
+		}
+
+		return $timezones_clean;
+	}
+
 }

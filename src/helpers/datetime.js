@@ -53,6 +53,11 @@ export const defaultDateTimeStart = moment
 	.set('second', 0)
 	.format(dateTimeMomentFormat);
 
+export const defaultDateTimeEnd = moment
+	.tz(defaultDateTimeStart, timeZone)
+	.add(2, 'hours')
+	.format(dateTimeMomentFormat);
+
 export const getDateTimeStart = () => {
 	let dateTime = getFromGlobal('event_datetime.datetime_start');
 
@@ -72,10 +77,7 @@ export const getDateTimeEnd = () => {
 	dateTime =
 		'' !== dateTime
 			? moment.tz(dateTime, timeZone).format(dateTimeMomentFormat)
-			: moment
-					.tz(defaultDateTimeStart, timeZone)
-					.add(2, 'hours')
-					.format(dateTimeMomentFormat);
+			: defaultDateTimeEnd;
 
 	setToGlobal('event_datetime.datetime_end', dateTime);
 

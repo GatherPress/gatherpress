@@ -17,8 +17,12 @@ import { __ } from '@wordpress/i18n';
 import { Listener } from '../../helpers/broadcasting';
 import DateTimeStartPanel from '../../components/DateTimeStartPanel';
 import DateTimeEndPanel from '../../components/DateTimeEndPanel';
-import { timeZone, utcOffset } from '../../helpers/datetime';
-import { getFromGlobal } from '../../helpers/misc';
+import {
+	defaultDateTimeEnd,
+	defaultDateTimeStart,
+	timeZone,
+	utcOffset,
+} from '../../helpers/datetime';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -51,12 +55,8 @@ const displayDateTime = (start, end) => {
 
 const Edit = () => {
 	const blockProps = useBlockProps();
-	const [dateTimeStart, setDateTimeStart] = useState(
-		getFromGlobal('event_datetime.datetime_start')
-	);
-	const [dateTimeEnd, setDateTimeEnd] = useState(
-		getFromGlobal('event_datetime.datetime_end')
-	);
+	const [dateTimeStart, setDateTimeStart] = useState(defaultDateTimeStart);
+	const [dateTimeEnd, setDateTimeEnd] = useState(defaultDateTimeEnd);
 
 	Listener({ setDateTimeEnd, setDateTimeStart });
 
