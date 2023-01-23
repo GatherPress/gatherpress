@@ -75,9 +75,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				<FlexItem display="flex" className="gp-event-date__icon">
 					<Icon icon="clock" />
 				</FlexItem>
-				<FlexItem>
-					{displayDateTime(eventStart, eventEnd)}
-				</FlexItem>
+				<FlexItem>{displayDateTime(eventStart, eventEnd)}</FlexItem>
 				<InspectorControls>
 					<PanelBody>
 						<h3>{__('Date & time', 'gatherpress')}</h3>
@@ -92,7 +90,7 @@ const Edit = ({ attributes, setAttributes }) => {
 					</PanelBody>
 				</InspectorControls>
 			</Flex>
-			{ JSON.stringify( attributes) }
+			{JSON.stringify(attributes)}
 		</div>
 	);
 };
