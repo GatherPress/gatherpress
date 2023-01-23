@@ -13,10 +13,11 @@ import {
 	PanelBody,
 	RadioControl,
 	RangeControl,
+	__experimentalInputControl as InputControl,
 	TextControl,
 } from '@wordpress/components';
-import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
+import { useSelect, useDispatch, withDispatch } from '@wordpress/data';
+import { useEffect, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -40,6 +41,8 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 
 	const blockProps = useBlockProps();
 	const editPost = useDispatch('core/editor').editPost;
+	const [editFullAddress, setEditFullAddress] = useState(false);
+	
 	let venueInformationMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
@@ -78,15 +81,7 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 					title={__('Venue Location', 'gatherpress')}
 					initialOpen={true}
 				>
-					<TextControl
-						label={__('Venue Street Address', 'gatherpress')}
-						value={fullAddress}
-						onChange={(place) => {
-							setAttributes({ fullAddress: place });
-							onUpdate('fullAddress', place);
-						}}
-						placeholder={__('Enter address', 'gatherpress')}
-					/>
+			
 					<TextControl
 						label={__('Venue Phone Number', 'gatherpress')}
 						value={phoneNumber}
@@ -214,21 +209,34 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				{!isSelected && (
 					<div className="gp-venue">
 						<Flex justify="normal">
 							<FlexItem display="flex">
 								<Icon icon="location" />
 							</FlexItem>
 							<FlexItem>
+							{ editFullAddress && ( 
+							<InputControl
+								style={{ width: '300px' }}
+								isPressEnterToChange={true}
+            					value={ fullAddress }
+            					onChange={(place) => {
+									setAttributes({ fullAddress: place });
+									onUpdate('fullAddress', place);
+									setEditFullAddress(false);
+								}}
+        					/>
+							) }
+							{ ! editFullAddress && (
 								<em>
 									{fullAddress
 										? fullAddress
 										: __(
-												'Add venue information.',
+												'Full Address',
 												'gatherpress'
-										  )}
+										  )} | <a href="#" onClick={() =>setEditFullAddress(true)}>Edit</a>
 								</em>
+							) }
 							</FlexItem>
 						</Flex>
 						<Flex justify="normal">
@@ -240,7 +248,7 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 									{phoneNumber
 										? phoneNumber
 										: __(
-												'Add venue information.',
+												'Phone Number',
 												'gatherpress'
 										  )}
 								</em>
@@ -253,7 +261,7 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 									{website
 										? website
 										: __(
-												'Add venue information.',
+												'Website',
 												'gatherpress'
 										  )}
 								</em>
@@ -266,64 +274,6 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 							height={deskHeight}
 						/>
 					</div>
-				)}
-				{isSelected && (
-					<div className="gp-venue">
-						<Flex justify="normal">
-							<FlexItem display="flex">
-								<Icon icon="location" />
-							</FlexItem>
-							<FlexItem>
-								<em>
-									{fullAddress
-										? fullAddress
-										: __(
-												'Add venue information.',
-												'gatherpress'
-										  )}
-								</em>
-							</FlexItem>
-						</Flex>
-						<Flex justify="normal">
-							<FlexItem display="flex">
-								<Icon icon="phone" />
-							</FlexItem>
-							<FlexItem>
-								<em>
-									{phoneNumber
-										? phoneNumber
-										: __(
-												'Add venue information.',
-												'gatherpress'
-										  )}
-								</em>
-							</FlexItem>
-							<FlexItem display="flex">
-								<Icon icon="admin-site-alt3" />
-							</FlexItem>
-							<FlexItem>
-								<em>
-									{website
-										? website
-										: __(
-												'Add venue information.',
-												'gatherpress'
-										  )}
-								</em>
-							</FlexItem>
-						</Flex>
-						<Flex>
-							<FlexBlock>
-								<MapEmbed
-									location={fullAddress}
-									zoom={zoom}
-									type={type}
-									height={deskHeight}
-								/>
-							</FlexBlock>
-						</Flex>
-					</div>
-				)}
 			</div>
 		</>
 	);
