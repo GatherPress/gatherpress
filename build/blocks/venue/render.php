@@ -32,7 +32,7 @@ $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . ra
 
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
-	<a href="<?php echo esc_url( get_permalink( $gatherpress_venue->ID ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $gatherpress_venue->post_title ) . ' ' . __( 'Venue Information', 'gatherpress' ); ?></a>
+	<a href="<?php echo esc_url( get_permalink( $gatherpress_venue->ID ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $gatherpress_venue->post_title ) . ' ' . esc_html__( 'Venue Information', 'gatherpress' ); ?></a>
 	<iframe
 		src="<?php echo esc_attr( $gatherpress_attributes['encoded_addy'] ); ?>"
 		title="<?php echo esc_attr( $gatherpress_full_address ); ?>"

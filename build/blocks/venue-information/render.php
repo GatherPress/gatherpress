@@ -57,7 +57,7 @@ $gatherpress_full_address = $attributes['fullAddress'];
 			</div>
 		<?php endif; ?>
 			<div class="gp-venue__row gp-venue__gap">
-		<?php if ( ! empty( $attributes['phoneNumber'] ) || ! empty( $attributes['website'] ) ) : ?>
+			<?php if ( ! empty( $attributes['phoneNumber'] ) || ! empty( $attributes['website'] ) ) : ?>
 				<?php if ( ! empty( $attributes['phoneNumber'] ) ) : ?>
 					<div class="gp-venue__item">
 						<div class="gp-venue__icon">
@@ -97,5 +97,4 @@ $gatherpress_full_address = $attributes['fullAddress'];
 			></iframe>
 		</div>
 	</div>
-	<?php echo '<pre>' . print_r( $attributes, true ) . '</pre>';?>
 </div>
