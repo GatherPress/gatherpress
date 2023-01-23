@@ -14,6 +14,7 @@
 		"lint:css:src:fix": "wp-scripts lint-style 'src/**/*.scss' --fix",
 		"lint:js": "wp-scripts lint-js",
 		"lint:js:fix": "wp-scripts lint-js --fix",
+		"lint:js:src:fix": "wp-scripts lint-js 'src/**/*.js' --fix",
 		"lint:md:docs": "wp-scripts lint-md-docs",
 		"lint:md:js": "wp-scripts lint-md-js",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",

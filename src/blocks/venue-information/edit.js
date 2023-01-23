@@ -25,9 +25,8 @@ import MapEmbed from '../../helpers/map-embed';
 
 import './editor.scss';
 
-const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
+const Edit = ({ attributes, isSelected, setAttributes }) => {
 	const {
-		mapId,
 		fullAddress,
 		phoneNumber,
 		website,
@@ -69,7 +68,6 @@ const Edit = ({ attributes, clientId, isSelected, setAttributes }) => {
 			fullAddress: venueInformationMetaData.fullAddress,
 			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
 			website: venueInformationMetaData.website ?? '',
-			mapId: clientId.slice(0, 8),
 		});
 	}, []);
 

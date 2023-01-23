@@ -9,9 +9,6 @@
   "example": {},
   "description": "The venue information block.",
   "attributes": {
-    "blockId": {
-      "type": "string"
-    },
     "fullAddress": {
       "type": "string",
       "default": "currentLocation"
@@ -23,9 +20,6 @@
     "website": {
       "type": "string",
       "default": ""
-    },
-    "mapId": {
-      "type": "string"
     },
     "align": {
       "type": "string",

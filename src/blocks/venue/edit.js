@@ -23,15 +23,8 @@ import MapEmbed from '../../helpers/map-embed';
 import './editor.scss';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const {
-		fullAddress,
-		zoom,
-		type,
-		deskHeight,
-		tabHeight,
-		mobileHeight,
-		device,
-	} = attributes;
+	const { zoom, type, deskHeight, tabHeight, mobileHeight, device } =
+		attributes;
 
 	const blockProps = useBlockProps();
 	const [venueId, setVenueId] = useState('');
@@ -55,17 +48,6 @@ const Edit = ({ attributes, setAttributes }) => {
 		const venueInformation = JSON.parse(jsonString);
 		const fullAddress = venueInformation?.fullAddress ?? '';
 
-		const baseUrl = 'https://maps.google.com/maps';
-		const params = new URLSearchParams({
-			q: fullAddress,
-			z: 10,
-			t: 'm',
-			output: 'embed',
-		});
-		const encodedMapURL = baseUrl + '?' + params.toString();
-
-		const encodedAddressURL =
-			venueInformation?.encodedAddressURL ?? encodedMapURL;
 		const name =
 			venuePost?.title.rendered ??
 			__('No venue selected.', 'gatherpress');
@@ -181,12 +163,15 @@ const Edit = ({ attributes, setAttributes }) => {
 						)}
 					</PanelBody>
 				</InspectorControls>
-				<MapEmbed
-					location={fullAddress}
-					zoom={zoom}
-					type={type}
-					height={deskHeight}
-				/>
+				<div>
+					<p>{name}</p>
+					<MapEmbed
+						location={fullAddress}
+						zoom={zoom}
+						type={type}
+						height={deskHeight}
+					/>
+				</div>
 			</>
 		);
 	};
