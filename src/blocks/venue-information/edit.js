@@ -80,30 +80,6 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={__('Venue Location', 'gatherpress')}
-					initialOpen={true}
-				>
-			
-					<TextControl
-						label={__('Venue Phone Number', 'gatherpress')}
-						value={phoneNumber}
-						onChange={(number) => {
-							setAttributes({ phoneNumber: number });
-							onUpdate('phoneNumber', number);
-						}}
-						placeholder={__('Enter contact number', 'gatherpress')}
-					/>
-					<TextControl
-						label={__('Venue Website', 'gatherpress')}
-						value={website}
-						onChange={(url) => {
-							setAttributes({ website: url });
-							onUpdate('website', url);
-						}}
-						placeholder={__('Enter web address', 'gatherpress')}
-					/>
-				</PanelBody>
-				<PanelBody
 					title={__('Map Settings', 'gatherpress')}
 					initialOpen={true}
 				>
