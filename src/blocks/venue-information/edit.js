@@ -42,7 +42,9 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 	const blockProps = useBlockProps();
 	const editPost = useDispatch('core/editor').editPost;
 	const [editFullAddress, setEditFullAddress] = useState(false);
-	
+	const [editPhoneNumber, setEditPhoneNumber] = useState(false);
+	const [editWebsite, setEditWebsite] = useState(false);
+
 	let venueInformationMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
@@ -229,12 +231,14 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 							) }
 							{ ! editFullAddress && (
 								<em>
+									<a href="#" onClick={() =>setEditFullAddress(true)}>
 									{fullAddress
 										? fullAddress
 										: __(
 												'Full Address',
 												'gatherpress'
-										  )} | <a href="#" onClick={() =>setEditFullAddress(true)}>Edit</a>
+										  )} 
+								</a>
 								</em>
 							) }
 							</FlexItem>
@@ -244,27 +248,58 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 								<Icon icon="phone" />
 							</FlexItem>
 							<FlexItem>
-								<em>
+								{ ! editPhoneNumber && (
+									<em> 
+									<a href="#" onClick={() =>setEditPhoneNumber(true)}>
 									{phoneNumber
 										? phoneNumber
 										: __(
 												'Phone Number',
 												'gatherpress'
-										  )}
-								</em>
+										  )} 
+									</a>
+									</em>
+								 ) }
+								 { editPhoneNumber && (
+										<InputControl
+										isPressEnterToChange={true}
+										value={ phoneNumber }
+										onChange={(number) => {
+											setAttributes({ phoneNumber: number });
+											onUpdate('phoneNumber', number);
+											setEditPhoneNumber(false);
+										}}
+									/>
+								 ) }
+
 							</FlexItem>
 							<FlexItem display="flex">
 								<Icon icon="admin-site-alt3" />
 							</FlexItem>
 							<FlexItem>
-								<em>
+							{ editWebsite && ( 
+								<InputControl
+									isPressEnterToChange={true}
+									value={website}
+									onChange={(url) => {
+										setAttributes({ website: url });
+										onUpdate('website', url);
+										setEditWebsite(false);
+									}}
+								/>
+							) }
+							{ ! editWebsite && (
+									<em> 
+									<a href="#" onClick={() =>setEditWebsite(true)}>
 									{website
 										? website
 										: __(
 												'Website',
 												'gatherpress'
 										  )}
+								</a>
 								</em>
+								) }
 							</FlexItem>
 						</Flex>
 						<MapEmbed
