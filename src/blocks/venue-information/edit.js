@@ -193,12 +193,12 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 								<Icon icon="location" />
 							</FlexItem>
 							<FlexItem>
-							{ editFullAddress && ( 
-							<InputControl
+								{ editFullAddress && ( 
+								<InputControl
 								style={{ width: '300px' }}
 								isPressEnterToChange={true}
-            					value={ fullAddress }
-            					onChange={(place) => {
+								value={ fullAddress }
+								onChange={(place) => {
 									setAttributes({ fullAddress: place });
 									onUpdate('fullAddress', place);
 									setEditFullAddress(false);
