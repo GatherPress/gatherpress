@@ -60,7 +60,7 @@ const Edit = (props) => {
 			(token) => typeof token === 'string' && !topicSuggestions[token]
 		);
 
-		if (hasNoSuggestion) { 
+		if (hasNoSuggestion) {
 			return;
 		}
 

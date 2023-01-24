@@ -194,29 +194,29 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 							</FlexItem>
 							<FlexItem>
 								{ editFullAddress && ( 
-								<InputControl
-								style={{ width: '300px' }}
-								isPressEnterToChange={true}
-								value={ fullAddress }
-								onChange={(place) => {
-									setAttributes({ fullAddress: place });
-									onUpdate('fullAddress', place);
-									setEditFullAddress(false);
-								}}
-        					/>
-							) }
-							{ ! editFullAddress && (
-								<em>
-									<a href="#" onClick={() =>setEditFullAddress(true)}>
-									{fullAddress
-										? fullAddress
-										: __(
-												'Full Address',
-												'gatherpress'
-										  )} 
-									</a>
-								</em>
-							) }
+										<InputControl
+											style={{ width: '300px' }}
+											isPressEnterToChange={true}
+											value={ fullAddress }
+											onChange={(place) => {
+												setAttributes({ fullAddress: place });
+												onUpdate('fullAddress', place);
+												setEditFullAddress(false);
+											}}
+								/>
+								) }
+								{ ! editFullAddress && (
+									<em>
+										<a href="#" onClick={() =>setEditFullAddress(true)}>
+										{fullAddress
+											? fullAddress
+											: __(
+													'Full Address',
+													'gatherpress'
+											)} 
+										</a>
+									</em>
+								) }
 							</FlexItem>
 						</Flex>
 						<Flex justify="normal">
@@ -225,26 +225,26 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 							</FlexItem>
 							<FlexItem>
 								{ ! editPhoneNumber && (
-								<em> 
-									<a href="#" onClick={() =>setEditPhoneNumber(true)}>
-										{phoneNumber
-										? phoneNumber
-										: __(
-											'Phone Number',
-											'gatherpress'
-												)} 
-									</a>
-								</em>
+									<em> 
+										<a href="#" onClick={() =>setEditPhoneNumber(true)}>
+											{phoneNumber
+											? phoneNumber
+											: __(
+												'Phone Number',
+												'gatherpress'
+													)} 
+										</a>
+									</em>
 								 ) }
 								 { editPhoneNumber && (
 								 <InputControl
-									isPressEnterToChange={true}
-									value={ phoneNumber }
-									onChange={(number) => {
-										setAttributes({ phoneNumber: number });
-										onUpdate('phoneNumber', number)
-										setEditPhoneNumber(false);
-									}}
+										isPressEnterToChange={true}
+										value={ phoneNumber }
+										onChange={(number) => {
+											setAttributes({ phoneNumber: number });
+											onUpdate('phoneNumber', number)
+											setEditPhoneNumber(false);
+										}}
 									/>
 									) }
 							</FlexItem>
@@ -254,13 +254,13 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 							<FlexItem>
 							{ editWebsite && ( 
 								<InputControl
-								isPressEnterToChange={true}
-								value={website}
-								onChange={(url) => {
-									setAttributes({ website: url });
-									onUpdate('website', url);
-									setEditWebsite(false);
-								}}
+									isPressEnterToChange={true}
+									value={website}
+									onChange={(url) => {
+										setAttributes({ website: url });
+										onUpdate('website', url);
+										setEditWebsite(false);
+									}}
 								/>
 							) }
 							{ ! editWebsite && (
