@@ -16,7 +16,7 @@ import {
 	__experimentalInputControl as InputControl,
 	TextControl,
 } from '@wordpress/components';
-import { useSelect, useDispatch, withDispatch } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
@@ -214,7 +214,7 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 												'Full Address',
 												'gatherpress'
 										  )} 
-								</a>
+									</a>
 								</em>
 							) }
 							</FlexItem>
@@ -225,29 +225,28 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 							</FlexItem>
 							<FlexItem>
 								{ ! editPhoneNumber && (
-									<em> 
+								<em> 
 									<a href="#" onClick={() =>setEditPhoneNumber(true)}>
-									{phoneNumber
+										{phoneNumber
 										? phoneNumber
 										: __(
-												'Phone Number',
-												'gatherpress'
-										  )} 
+											'Phone Number',
+											'gatherpress'
+												)} 
 									</a>
-									</em>
+								</em>
 								 ) }
 								 { editPhoneNumber && (
-										<InputControl
-										isPressEnterToChange={true}
-										value={ phoneNumber }
-										onChange={(number) => {
-											setAttributes({ phoneNumber: number });
-											onUpdate('phoneNumber', number);
-											setEditPhoneNumber(false);
-										}}
+								 <InputControl
+									isPressEnterToChange={true}
+									value={ phoneNumber }
+									onChange={(number) => {
+										setAttributes({ phoneNumber: number });
+										onUpdate('phoneNumber', number)
+										setEditPhoneNumber(false);
+									}}
 									/>
-								 ) }
-
+									) }
 							</FlexItem>
 							<FlexItem display="flex">
 								<Icon icon="admin-site-alt3" />
@@ -255,27 +254,27 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 							<FlexItem>
 							{ editWebsite && ( 
 								<InputControl
-									isPressEnterToChange={true}
-									value={website}
-									onChange={(url) => {
-										setAttributes({ website: url });
-										onUpdate('website', url);
-										setEditWebsite(false);
-									}}
+								isPressEnterToChange={true}
+								value={website}
+								onChange={(url) => {
+									setAttributes({ website: url });
+									onUpdate('website', url);
+									setEditWebsite(false);
+								}}
 								/>
 							) }
 							{ ! editWebsite && (
-									<em> 
-									<a href="#" onClick={() =>setEditWebsite(true)}>
+							<em> 
+								<a href="#" onClick={() =>setEditWebsite(true)}>
 									{website
-										? website
-										: __(
-												'Website',
-												'gatherpress'
-										  )}
+									? website
+									: __(
+										'Website',
+										'gatherpress'
+										)}
 								</a>
-								</em>
-								) }
+							</em>
+										) }
 							</FlexItem>
 						</Flex>
 						<MapEmbed
