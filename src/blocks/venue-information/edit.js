@@ -237,7 +237,7 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 									</em>
 								 ) }
 								 { editPhoneNumber && (
-								 <InputControl
+								 	<InputControl
 										isPressEnterToChange={true}
 										value={ phoneNumber }
 										onChange={(number) => {
