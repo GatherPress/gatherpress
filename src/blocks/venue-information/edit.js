@@ -246,35 +246,35 @@ const Edit = ({ attributes, isSelected, setAttributes }) => {
 											setEditPhoneNumber(false);
 										}}
 									/>
-									) }
+								) }
 							</FlexItem>
 							<FlexItem display="flex">
 								<Icon icon="admin-site-alt3" />
 							</FlexItem>
 							<FlexItem>
-							{ editWebsite && ( 
-								<InputControl
-									isPressEnterToChange={true}
-									value={website}
-									onChange={(url) => {
-										setAttributes({ website: url });
-										onUpdate('website', url);
-										setEditWebsite(false);
-									}}
-								/>
-							) }
-							{ ! editWebsite && (
-							<em> 
-								<a href="#" onClick={() =>setEditWebsite(true)}>
-									{website
-									? website
-									: __(
-										'Website',
-										'gatherpress'
-										)}
-								</a>
-							</em>
-										) }
+								{ editWebsite && ( 
+									<InputControl
+										isPressEnterToChange={true}
+										value={website}
+										onChange={(url) => {
+											setAttributes({ website: url });
+											onUpdate('website', url);
+											setEditWebsite(false);
+										}}
+									/>
+								) }
+								{ ! editWebsite && (
+									<em> 
+										<a href="#" onClick={() =>setEditWebsite(true)}>
+											{website
+											? website
+											: __(
+												'Website',
+												'gatherpress'
+												)}
+										</a>
+									</em>
+								) }
 							</FlexItem>
 						</Flex>
 						<MapEmbed
