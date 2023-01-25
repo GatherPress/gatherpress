@@ -185,10 +185,10 @@ class Event {
 	 * @since 1.0.0
 	 */
 	protected function get_formatted_datetime( string $format = 'D, F j, g:ia T', string $which = 'start', bool $local = true ): string {
-		$dt   = $this->get_datetime();
-		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
+		$dt             = $this->get_datetime();
+		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = static::maybe_convert_offset( $dt['timezone'] );
-		$tz   = null;
+		$tz             = null;
 
 		if (
 			true === $local
