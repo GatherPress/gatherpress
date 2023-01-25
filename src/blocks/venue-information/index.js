@@ -14,5 +14,5 @@ import './style.scss';
 
 registerBlockType(metadata, {
 	edit,
-	save: () => null,
+	save: () => {},
 });

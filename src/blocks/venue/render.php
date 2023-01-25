@@ -14,6 +14,8 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
+$gatherpress_attributes = $attributes;
+
 $gatherpress_venue = get_post( intval( $attributes['venueId'] ?? 0 ) );
 
 if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
@@ -22,16 +24,19 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 
 $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
 
-Utility::render_template(
-	sprintf( '%s/build/blocks/venue-information/render.php', GATHERPRESS_CORE_PATH ),
-	array(
-		'attributes' => array(
-			'name'              => $gatherpress_venue->post_title,
-			'fullAddress'       => $gatherpress_venue_information->fullAddress ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'encodedAddressURL' => $gatherpress_venue_information->encodedAddressURL ?? 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_venue_information->fullAddress ) . '&z=10&t=m&output=embed', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'phoneNumber'       => $gatherpress_venue_information->phoneNumber ?? '', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			'website'           => $gatherpress_venue_information->website ?? '',
-		),
-	),
-	true
-);
+// (WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase)
+// phpcs:ignore
+$gatherpress_full_address = $gatherpress_venue_information->fullAddress;
+
+$gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $gatherpress_attributes['zoom'] ) . '&t=' . rawurlencode( $gatherpress_attributes['type'] ) . '&output=embed';
+
+?>
+<div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
+	<a href="<?php echo esc_url( get_permalink( $gatherpress_venue->ID ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $gatherpress_venue->post_title ) . ' ' . esc_html__( 'Venue Information', 'gatherpress' ); ?></a>
+	<iframe
+		src="<?php echo esc_attr( $gatherpress_attributes['encoded_addy'] ); ?>"
+		title="<?php echo esc_attr( $gatherpress_full_address ); ?>"
+		style="height:<?php echo esc_attr( $gatherpress_attributes['deskHeight'] ); ?>px"
+	></iframe>
+</div>
+<?php
