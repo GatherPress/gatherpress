@@ -226,7 +226,7 @@ class Event {
 
 			$matches[3] = str_replace( array( '.25', '.5', '.75' ), array( ':15', ':30', ':45' ), $matches[3] );
 
-			return $matches[1] . str_pad( $matches[2], 2, '0', STR_PAD_LEFT )  . $matches[3];
+			return $matches[1] . str_pad( $matches[2], 2, '0', STR_PAD_LEFT ) . $matches[3];
 		}
 
 		return $timezone;

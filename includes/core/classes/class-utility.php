@@ -82,8 +82,8 @@ class Utility {
 			preg_match( '/<optgroup label="(.+)">/', $timezone, $matches );
 
 			if ( 2 === count( $matches ) ) {
-				$group = $matches[1];
-				$timezones_clean[ $group ] = [];
+				$group                     = $matches[1];
+				$timezones_clean[ $group ] = array();
 				continue;
 			}
 
