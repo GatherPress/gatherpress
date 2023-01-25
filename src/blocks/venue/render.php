@@ -2,9 +2,9 @@
 /**
  * Render Venue block.
  *
- * @package    GatherPress
+ * @package GatherPress
  * @subpackage Core
- * @since      1.0.0
+ * @since 1.0.0
  */
 
 use GatherPress\Core\Utility;
@@ -25,7 +25,7 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
 
 // (WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase)
-// phpcs:ignore 
+// phpcs:ignore
 $gatherpress_full_address = $gatherpress_venue_information->fullAddress;
 
 $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $gatherpress_attributes['zoom'] ) . '&t=' . rawurlencode( $gatherpress_attributes['type'] ) . '&output=embed';
