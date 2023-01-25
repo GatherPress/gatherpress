@@ -12,6 +12,7 @@ domReady(() => {
 	Object.keys(GatherPress.unregister_blocks).forEach((key) => {
 		// eslint-disable-next-line no-undef
 		const blockName = GatherPress.unregister_blocks[key];
+
 		if (blockName && 'undefined' !== typeof getBlockType(blockName)) {
 			unregisterBlockType(blockName);
 		}

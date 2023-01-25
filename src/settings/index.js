@@ -9,7 +9,7 @@ import { render } from '@wordpress/element';
 import Autocomplete from '../components/Autocomplete';
 
 const autocompleteContainers = document.querySelectorAll(
-	`[data - gp_component_name = "autocomplete"]`
+	`[data-gp_component_name="autocomplete"]`
 );
 
 for (let i = 0; i < autocompleteContainers.length; i++) {
