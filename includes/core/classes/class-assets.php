@@ -173,6 +173,7 @@ class Assets {
 			'is_admin'          => is_admin(),
 			'nonce'             => wp_create_nonce( 'wp_rest' ),
 			'post_id'           => $post_id,
+			'post_type'         => Event::POST_TYPE,
 			'settings'          => array(
 				// @todo settings to come...
 			),

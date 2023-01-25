@@ -2,16 +2,29 @@
  * WordPress dependencies.
  */
 import { PanelRow, SelectControl } from '@wordpress/components';
+import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../helpers/misc';
+import { Broadcaster } from '../helpers/broadcasting';
+import { enableSave, getFromGlobal, setToGlobal } from '../helpers/misc';
 
 const TimeZonePanel = (props) => {
-	const choices = getFromGlobal('timezone_choices');
 	const { timezone, setTimezone } = props;
+	const choices = getFromGlobal('timezone_choices');
+
+	// Run only once.
+	useEffect(() => {
+		setTimezone(getFromGlobal('event_datetime.timezone'));
+	}, []);
+
+	useEffect(() => {
+		Broadcaster({
+			setTimezone: getFromGlobal('event_datetime.timezone'),
+		});
+	});
 
 	return (
 		<PanelRow>
@@ -20,6 +33,8 @@ const TimeZonePanel = (props) => {
 				value={timezone}
 				onChange={(value) => {
 					setTimezone(value);
+					setToGlobal('event_datetime.timezone', value);
+					enableSave();
 				}}
 			>
 				{Object.keys(choices).map((group) => {

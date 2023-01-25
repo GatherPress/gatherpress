@@ -20,9 +20,9 @@ export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
 export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
 export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
 
-const getTimeZone = () => {
-	const timezone = getFromGlobal('event_datetime.timezone');
-
+export const getTimeZone = (
+	timezone = getFromGlobal('event_datetime.timezone')
+) => {
 	if (!!moment.tz.zone(timezone)) {
 		return timezone;
 	}
@@ -30,23 +30,38 @@ const getTimeZone = () => {
 	return __('GMT', 'gatherpress');
 };
 
-export const timeZone = getTimeZone();
+export const getUtcOffset = (timezone) => {
+	timezone = getTimeZone(timezone);
 
-const getUtcOffset = () => {
-	if (__('GMT', 'gatherpress') !== timeZone) {
+	if (__('GMT', 'gatherpress') !== timezone) {
 		return '';
 	}
 
 	const offset = getFromGlobal('event_datetime.timezone');
 
-	return 'string' === typeof offset ? offset.replace(':', '') : '';
+	// Regex: https://regex101.com/r/9bMgJd/1.
+	const pattern = /^UTC(\+|-)(\d+)(.\d+)?$/;
+	const sign = offset.replace(pattern, '$1');
+	if (sign !== offset) {
+		const hour = offset.replace(pattern, '$2').padStart(2, '0');
+		let minute = offset.replace(pattern, '$3');
+
+		if ('' === minute) {
+			minute = '00';
+		}
+		minute = minute
+			.replace('.25', '15')
+			.replace('.5', '30')
+			.replace('.75', '45');
+
+		return sign + hour + minute;
+	}
+
+	return '';
 };
 
-export const utcOffset = getUtcOffset();
-
-// export const defaultDateTimeStart = undefined;
 export const defaultDateTimeStart = moment
-	.tz(timeZone)
+	.tz(getTimeZone())
 	.add(1, 'day')
 	.set('hour', 18)
 	.set('minute', 0)
@@ -54,7 +69,7 @@ export const defaultDateTimeStart = moment
 	.format(dateTimeMomentFormat);
 
 export const defaultDateTimeEnd = moment
-	.tz(defaultDateTimeStart, timeZone)
+	.tz(defaultDateTimeStart, getTimeZone())
 	.add(2, 'hours')
 	.format(dateTimeMomentFormat);
 
@@ -63,7 +78,7 @@ export const getDateTimeStart = () => {
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, timeZone).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, getTimeZone()).format(dateTimeMomentFormat)
 			: defaultDateTimeStart;
 
 	setToGlobal('event_datetime.datetime_start', dateTime);
@@ -76,7 +91,7 @@ export const getDateTimeEnd = () => {
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, timeZone).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, getTimeZone()).format(dateTimeMomentFormat)
 			: defaultDateTimeEnd;
 
 	setToGlobal('event_datetime.datetime_end', dateTime);
@@ -110,13 +125,15 @@ export const updateDateTimeEnd = (date, setDateTimeEnd = null) => {
 
 export function validateDateTimeStart(dateTimeStart) {
 	const dateTimeEndNumeric = moment
-		.tz(getFromGlobal('event_datetime.datetime_end'), timeZone)
+		.tz(getFromGlobal('event_datetime.datetime_end'), getTimeZone())
 		.valueOf();
-	const dateTimeStartNumeric = moment.tz(dateTimeStart, timeZone).valueOf();
+	const dateTimeStartNumeric = moment
+		.tz(dateTimeStart, getTimeZone())
+		.valueOf();
 
 	if (dateTimeStartNumeric >= dateTimeEndNumeric) {
 		const dateTimeEnd = moment
-			.tz(dateTimeStartNumeric, timeZone)
+			.tz(dateTimeStartNumeric, getTimeZone())
 			.add(2, 'hours')
 			.format(dateTimeMomentFormat);
 
@@ -126,13 +143,13 @@ export function validateDateTimeStart(dateTimeStart) {
 
 export function validateDateTimeEnd(dateTimeEnd) {
 	const dateTimeStartNumeric = moment
-		.tz(getFromGlobal('event_datetime.datetime_start'), timeZone)
+		.tz(getFromGlobal('event_datetime.datetime_start'), getTimeZone())
 		.valueOf();
-	const dateTimeEndNumeric = moment.tz(dateTimeEnd, timeZone).valueOf();
+	const dateTimeEndNumeric = moment.tz(dateTimeEnd, getTimeZone()).valueOf();
 
 	if (dateTimeEndNumeric <= dateTimeStartNumeric) {
 		const dateTimeStart = moment
-			.tz(dateTimeEndNumeric, timeZone)
+			.tz(dateTimeEndNumeric, getTimeZone())
 			.subtract(2, 'hours')
 			.format(dateTimeMomentFormat);
 		updateDateTimeStart(dateTimeStart);
@@ -152,11 +169,14 @@ export function saveDateTime() {
 				datetime_start: moment
 					.tz(
 						getFromGlobal('event_datetime.datetime_start'),
-						timeZone
+						getTimeZone()
 					)
 					.format(dateTimeDatabaseFormat),
 				datetime_end: moment
-					.tz(getFromGlobal('event_datetime.datetime_end'), timeZone)
+					.tz(
+						getFromGlobal('event_datetime.datetime_end'),
+						getTimeZone()
+					)
 					.format(dateTimeDatabaseFormat),
 				timezone: getFromGlobal('event_datetime.timezone'),
 				_wpnonce: getFromGlobal('nonce'),

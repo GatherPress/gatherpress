@@ -25,7 +25,7 @@ import { Broadcaster } from '../helpers/broadcasting';
 import {
 	dateTimeMomentFormat,
 	getDateTimeEnd,
-	timeZone,
+	getTimeZone,
 } from '../helpers/datetime';
 
 const DateTimeEndPanel = (props) => {
@@ -33,7 +33,9 @@ const DateTimeEndPanel = (props) => {
 
 	useEffect(() => {
 		setDateTimeEnd(
-			moment.tz(getDateTimeEnd(), timeZone).format(dateTimeMomentFormat)
+			moment
+				.tz(getDateTimeEnd(), getTimeZone())
+				.format(dateTimeMomentFormat)
 		);
 
 		Broadcaster({

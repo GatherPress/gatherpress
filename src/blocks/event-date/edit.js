@@ -20,22 +20,25 @@ import DateTimeEndPanel from '../../components/DateTimeEndPanel';
 import {
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
-	timeZone,
-	utcOffset,
+	getTimeZone,
+	getUtcOffset,
 } from '../../helpers/datetime';
+import TimeZonePanel from '../../components/TimeZonePanel';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
  *
  * @param {string} start
  * @param {string} end
+ * @param {string} tz
  * @return {string} Displayed date.
  */
-const displayDateTime = (start, end) => {
+const displayDateTime = (start, end, tz) => {
 	const dateFormat = 'dddd, MMMM D, YYYY';
 	const timeFormat = 'h:mm A';
 	const timeZoneFormat = 'z';
 	const startFormat = dateFormat + ' ' + timeFormat;
+	const timeZone = getTimeZone(tz);
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 
 	if (
@@ -49,7 +52,7 @@ const displayDateTime = (start, end) => {
 		moment.tz(start, timeZone).format(startFormat) +
 		' to ' +
 		moment.tz(end, timeZone).format(endFormat) +
-		utcOffset
+		getUtcOffset(timeZone)
 	);
 };
 
@@ -57,8 +60,9 @@ const Edit = () => {
 	const blockProps = useBlockProps();
 	const [dateTimeStart, setDateTimeStart] = useState(defaultDateTimeStart);
 	const [dateTimeEnd, setDateTimeEnd] = useState(defaultDateTimeEnd);
+	const [timezone, setTimezone] = useState(getTimeZone());
 
-	Listener({ setDateTimeEnd, setDateTimeStart });
+	Listener({ setDateTimeEnd, setDateTimeStart, setTimezone });
 
 	return (
 		<div {...blockProps}>
@@ -67,7 +71,7 @@ const Edit = () => {
 					<Icon icon="clock" />
 				</FlexItem>
 				<FlexItem>
-					{displayDateTime(dateTimeStart, dateTimeEnd)}
+					{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
 				</FlexItem>
 				<InspectorControls>
 					<PanelBody>
@@ -79,6 +83,10 @@ const Edit = () => {
 						<DateTimeEndPanel
 							dateTimeEnd={dateTimeEnd}
 							setDateTimeEnd={setDateTimeEnd}
+						/>
+						<TimeZonePanel
+							timezone={timezone}
+							setTimezone={setTimezone}
 						/>
 					</PanelBody>
 				</InspectorControls>

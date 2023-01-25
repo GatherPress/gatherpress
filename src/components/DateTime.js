@@ -12,19 +12,19 @@ import {
 	updateDateTimeStart,
 	updateDateTimeEnd,
 	dateTimeLabelFormat,
-	timeZone,
+	getTimeZone,
 } from '../helpers/datetime';
 
 export const DateTimeStartLabel = (props) => {
 	const { dateTimeStart } = props;
 
-	return moment.tz(dateTimeStart, timeZone).format(dateTimeLabelFormat);
+	return moment.tz(dateTimeStart, getTimeZone()).format(dateTimeLabelFormat);
 };
 
 export const DateTimeEndLabel = (props) => {
 	const { dateTimeEnd } = props;
 
-	return moment.tz(dateTimeEnd, timeZone).format(dateTimeLabelFormat);
+	return moment.tz(dateTimeEnd, getTimeZone()).format(dateTimeLabelFormat);
 };
 
 export const DateTimeStartPicker = (props) => {

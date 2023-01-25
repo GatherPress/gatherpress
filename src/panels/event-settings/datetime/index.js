@@ -12,16 +12,13 @@ import { saveDateTime } from '../../../helpers/datetime';
 import DateTimeStartPanel from '../../../components/DateTimeStartPanel';
 import DateTimeEndPanel from '../../../components/DateTimeEndPanel';
 import TimeZonePanel from '../../../components/TimeZonePanel';
-import { getFromGlobal } from '../../../helpers/misc';
 
 subscribe(saveDateTime);
 
 const DateTimePanel = () => {
 	const [dateTimeStart, setDateTimeStart] = useState();
 	const [dateTimeEnd, setDateTimeEnd] = useState();
-	const [timezone, setTimezone] = useState(
-		getFromGlobal('event_datetime.timezone')
-	);
+	const [timezone, setTimezone] = useState();
 
 	return (
 		<section>

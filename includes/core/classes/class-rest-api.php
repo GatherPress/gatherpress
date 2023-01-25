@@ -251,7 +251,8 @@ class Rest_Api {
 	 * @return bool
 	 */
 	public function validate_timezone( $param ): bool {
-		return in_array( $param, Event::list_identifiers(), true );
+		var_dump(Event::maybe_convert_offset( $param ));
+		return in_array( Event::maybe_convert_offset( $param ), Event::list_identifiers(), true );
 	}
 
 	/**

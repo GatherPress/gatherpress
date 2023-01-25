@@ -25,7 +25,7 @@ import { Broadcaster } from '../helpers/broadcasting';
 import {
 	dateTimeMomentFormat,
 	getDateTimeStart,
-	timeZone,
+	getTimeZone,
 } from '../helpers/datetime';
 
 const DateTimeStartPanel = (props) => {
@@ -33,7 +33,9 @@ const DateTimeStartPanel = (props) => {
 
 	useEffect(() => {
 		setDateTimeStart(
-			moment.tz(getDateTimeStart(), timeZone).format(dateTimeMomentFormat)
+			moment
+				.tz(getDateTimeStart(), getTimeZone())
+				.format(dateTimeMomentFormat)
 		);
 
 		Broadcaster({
