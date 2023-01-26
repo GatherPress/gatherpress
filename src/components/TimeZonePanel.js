@@ -10,7 +10,10 @@ import { __ } from '@wordpress/i18n';
  */
 import { Broadcaster } from '../helpers/broadcasting';
 import { enableSave, getFromGlobal, setToGlobal } from '../helpers/misc';
-import {maybeConvertUtcOffsetForDatabase, maybeConvertUtcOffsetForSelect} from '../helpers/datetime';
+import {
+	maybeConvertUtcOffsetForDatabase,
+	maybeConvertUtcOffsetForSelect,
+} from '../helpers/datetime';
 
 const TimeZonePanel = (props) => {
 	const { timezone, setTimezone } = props;
