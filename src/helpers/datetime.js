@@ -67,7 +67,7 @@ export const maybeConvertUtcOffsetForDatabase = (offset = '') => {
 		return sign + hour + minute;
 	}
 
-	return '';
+	return offset;
 };
 
 export const maybeConvertUtcOffsetForSelect = (offset = '') => {
@@ -87,7 +87,7 @@ export const maybeConvertUtcOffsetForSelect = (offset = '') => {
 		return 'UTC' + sign + hour + minute;
 	}
 
-	return '';
+	return offset;
 };
 
 export const defaultDateTimeStart = moment
