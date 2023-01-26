@@ -10,6 +10,7 @@ import { __ } from '@wordpress/i18n';
  */
 import { Broadcaster } from '../helpers/broadcasting';
 import { enableSave, getFromGlobal, setToGlobal } from '../helpers/misc';
+import {maybeConvertUtcOffsetForDatabase, maybeConvertUtcOffsetForSelect} from '../helpers/datetime';
 
 const TimeZonePanel = (props) => {
 	const { timezone, setTimezone } = props;
@@ -30,8 +31,9 @@ const TimeZonePanel = (props) => {
 		<PanelRow>
 			<SelectControl
 				label={__('Time Zone')}
-				value={timezone}
+				value={maybeConvertUtcOffsetForSelect(timezone)}
 				onChange={(value) => {
+					value = maybeConvertUtcOffsetForDatabase(value);
 					setTimezone(value);
 					setToGlobal('event_datetime.timezone', value);
 					enableSave();

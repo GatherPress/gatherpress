@@ -39,26 +39,55 @@ export const getUtcOffset = (timezone) => {
 
 	const offset = getFromGlobal('event_datetime.timezone');
 
+	return maybeConvertUtcOffsetForDisplay(offset);
+};
+
+export const maybeConvertUtcOffsetForDisplay = (offset='') => {
+	return offset.replace(':', '');
+};
+
+export const maybeConvertUtcOffsetForDatabase = (offset='') => {
 	// Regex: https://regex101.com/r/9bMgJd/1.
 	const pattern = /^UTC(\+|-)(\d+)(.\d+)?$/;
 	const sign = offset.replace(pattern, '$1');
+
 	if (sign !== offset) {
 		const hour = offset.replace(pattern, '$2').padStart(2, '0');
 		let minute = offset.replace(pattern, '$3');
 
 		if ('' === minute) {
-			minute = '00';
+			minute = ':00';
 		}
+
 		minute = minute
-			.replace('.25', '15')
-			.replace('.5', '30')
-			.replace('.75', '45');
+			.replace('.25', ':15')
+			.replace('.5', ':30')
+			.replace('.75', ':45');
 
 		return sign + hour + minute;
 	}
 
 	return '';
 };
+
+export const maybeConvertUtcOffsetForSelect = (offset='') => {
+	// Regex: https://regex101.com/r/nOXCPo/1
+	const pattern = /^(\+|-)(\d{2}):(00|15|30|45)$/;
+	const sign = offset.replace(pattern, '$1');
+
+	if (sign !== offset) {
+		const hour = parseInt(offset.replace(pattern, '$2')).toString();
+		const minute = offset.replace(pattern, '$3')
+			.replace('00', '')
+			.replace('15', '.25')
+			.replace('30', '.5')
+			.replace('45', '.75');
+
+		return 'UTC' + sign + hour + minute;
+	}
+
+	return '';
+}
 
 export const defaultDateTimeStart = moment
 	.tz(getTimeZone())
