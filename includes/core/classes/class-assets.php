@@ -177,8 +177,8 @@ class Assets {
 			'settings'          => array(
 				// @todo settings to come...
 			),
-			'unregister_blocks' => $this->unregister_blocks(),
 			'timezone_choices'  => Utility::timezone_choices(),
+			'unregister_blocks' => $this->unregister_blocks(),
 		);
 	}
 
