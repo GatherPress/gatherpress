@@ -27,6 +27,8 @@ $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue-
 // (WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase)
 // phpcs:ignore
 $gatherpress_full_address = $gatherpress_attributes['venueAddress'];
+// phpcs:ignore
+$gatherpress_venue_phone = $gatherpress_venue_information->phoneNumber;
 
 $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $gatherpress_attributes['zoom'] ) . '&t=' . rawurlencode( $gatherpress_attributes['type'] ) . '&output=embed';
 ?>
@@ -63,15 +65,15 @@ $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . ra
 			</div>
 		<?php endif; ?>
 			<div class="gp-venue__row gp-venue__gap">
-			<?php if ( ! empty( $gatherpress_venue_information->phoneNumber ) || ! empty( $gatherpress_venue_information->website ) ) : ?>
-				<?php if ( ! empty( $gatherpress_venue_information->phoneNumber ) ) : ?>
+			<?php if ( ! empty( $gatherpress_venue_phone ) || ! empty( $gatherpress_venue_information->website ) ) : ?>
+				<?php if ( ! empty( $gatherpress_venue_phone ) ) : ?>
 					<div class="gp-venue__item">
 						<div class="gp-venue__icon">
 							<div class="dashicons dashicons-phone"></div>
 						</div>
 						<div class="gp-venue__text">
 							<div class="gp-venue__phone-number">
-								<?php echo esc_html( $gatherpress_venue_information->phoneNumber ); ?>
+								<?php echo esc_html( $gatherpress_venue_phone ); ?>
 							</div>
 						</div>
 					</div>
