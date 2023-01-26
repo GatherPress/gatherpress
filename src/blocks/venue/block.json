@@ -9,12 +9,15 @@
 	"example": {},
 	"description": "The venue block.",
 	"attributes": {
-		"blockId": {
+		"venueAddress": {
 			"type": "string"
 		},
-		"fullAddress": {
-			"type": "string",
-			"default": "currentLocation"
+		"venueId": {
+			"type": "integer",
+			"default": null
+		},
+		"venueName": {
+			"type": "string"
 		},
 		"zoom": {
 			"type": "number",
@@ -39,10 +42,6 @@
 		"device": {
 			"type": "string",
 			"default": "desktop"
-		},
-		"venueId": {
-			"type": "integer",
-			"default": null
 		}
 	},
 	"supports": {
