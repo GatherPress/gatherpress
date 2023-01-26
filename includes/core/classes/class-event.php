@@ -185,9 +185,10 @@ class Event {
 	 * @since 1.0.0
 	 */
 	protected function get_formatted_datetime( string $format = 'D, F j, g:ia T', string $which = 'start', bool $local = true ): string {
-		$dt   = $this->get_datetime();
-		$date = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
-		$tz   = null;
+		$dt             = $this->get_datetime();
+		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
+		$dt['timezone'] = static::maybe_convert_offset( $dt['timezone'] );
+		$tz             = null;
 
 		if (
 			true === $local
@@ -205,6 +206,30 @@ class Event {
 		}
 
 		return (string) $date;
+	}
+
+	/**
+	 * Maybe convert the UTC offset to format that can be passed to \DateTimeZone.
+	 *
+	 * @param string $timezone The time zone.
+	 *
+	 * @return string
+	 */
+	public static function maybe_convert_offset( string $timezone ): string {
+		// Regex: https://regex101.com/r/9bMgJd/1.
+		preg_match( '/^UTC(\+|-)(\d+)(.\d+)?$/', $timezone, $matches );
+
+		if ( count( $matches ) ) {
+			if ( empty( $matches[3] ) ) {
+				$matches[3] = ':00';
+			}
+
+			$matches[3] = str_replace( array( '.25', '.5', '.75' ), array( ':15', ':30', ':45' ), $matches[3] );
+
+			return $matches[1] . str_pad( $matches[2], 2, '0', STR_PAD_LEFT ) . $matches[3];
+		}
+
+		return $timezone;
 	}
 
 	/**

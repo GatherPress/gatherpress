@@ -16,6 +16,7 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import { Broadcaster } from '../helpers/broadcasting';
 import AttendeeResponse from './AttendeeResponse';
+import { getFromGlobal } from '../helpers/misc';
 
 const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 	const [attendanceStatus, setAttendanceStatus] = useState(
@@ -81,8 +82,7 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 				post_id: eventId,
 				status,
 				guests,
-				// eslint-disable-next-line no-undef
-				_wpnonce: GatherPress.nonce,
+				_wpnonce: getFromGlobal('nonce'),
 			},
 		}).then((res) => {
 			if (res.success) {

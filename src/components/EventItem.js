@@ -4,10 +4,6 @@ import AttendeeList from './AttendeeList';
 import AttendeeResponse from './AttendeeResponse';
 
 const EventItem = (props) => {
-	if ('object' !== typeof GatherPress) {
-		return '';
-	}
-
 	const { type, event, eventOptions } = props;
 	const limitExcerpt = (excerpt) => {
 		return (

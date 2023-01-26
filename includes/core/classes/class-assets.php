@@ -123,11 +123,11 @@ class Assets {
 			);
 		}
 
-		$asset = $this->get_asset_data( 'editor' );
+		$asset = $this->get_asset_data( 'admin' );
 
 		wp_enqueue_script(
-			'gatherpress-editor',
-			$this->build . 'editor.js',
+			'gatherpress-admin',
+			$this->build . 'admin.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -161,6 +161,7 @@ class Assets {
 	protected function localize( int $post_id ): array {
 		$event    = new Event( $post_id );
 		$settings = Settings::get_instance();
+
 		return array(
 			'attendees'         => ( $event->attendee ) ? $event->attendee->attendees() : array(), // @todo cleanup
 			'current_user'      => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '', // @todo cleanup
@@ -172,9 +173,11 @@ class Assets {
 			'is_admin'          => is_admin(),
 			'nonce'             => wp_create_nonce( 'wp_rest' ),
 			'post_id'           => $post_id,
+			'post_type'         => Event::POST_TYPE,
 			'settings'          => array(
 				// @todo settings to come...
 			),
+			'timezone_choices'  => Utility::timezone_choices(),
 			'unregister_blocks' => $this->unregister_blocks(),
 		);
 	}

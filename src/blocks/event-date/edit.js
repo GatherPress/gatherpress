@@ -6,29 +6,39 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { useBlockProps } from '@wordpress/block-editor';
-import { Flex, FlexItem, Icon } from '@wordpress/components';
+import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
 import { useState } from '@wordpress/element';
-import { timeZone, utcOffset } from '../../helpers/datetime';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
+import DateTimeStartPanel from '../../components/DateTimeStartPanel';
+import DateTimeEndPanel from '../../components/DateTimeEndPanel';
+import {
+	defaultDateTimeEnd,
+	defaultDateTimeStart,
+	getTimeZone,
+	getUtcOffset,
+} from '../../helpers/datetime';
+import TimeZonePanel from '../../components/TimeZonePanel';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
  *
  * @param {string} start
  * @param {string} end
+ * @param {string} tz
  * @return {string} Displayed date.
  */
-const displayDateTime = (start, end) => {
+const displayDateTime = (start, end, tz) => {
 	const dateFormat = 'dddd, MMMM D, YYYY';
 	const timeFormat = 'h:mm A';
 	const timeZoneFormat = 'z';
-	// eslint-disable-next-line no-undef
 	const startFormat = dateFormat + ' ' + timeFormat;
+	const timeZone = getTimeZone(tz);
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 
 	if (
@@ -42,22 +52,17 @@ const displayDateTime = (start, end) => {
 		moment.tz(start, timeZone).format(startFormat) +
 		' to ' +
 		moment.tz(end, timeZone).format(endFormat) +
-		utcOffset
+		getUtcOffset(timeZone)
 	);
 };
 
 const Edit = () => {
 	const blockProps = useBlockProps();
-	const [dateTimeStart, setDateTimeStart] = useState(
-		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_start
-	);
-	const [dateTimeEnd, setDateTimeEnd] = useState(
-		// eslint-disable-next-line no-undef
-		GatherPress.event_datetime.datetime_end
-	);
+	const [dateTimeStart, setDateTimeStart] = useState(defaultDateTimeStart);
+	const [dateTimeEnd, setDateTimeEnd] = useState(defaultDateTimeEnd);
+	const [timezone, setTimezone] = useState(getTimeZone());
 
-	Listener({ setDateTimeEnd, setDateTimeStart });
+	Listener({ setDateTimeEnd, setDateTimeStart, setTimezone });
 
 	return (
 		<div {...blockProps}>
@@ -66,8 +71,25 @@ const Edit = () => {
 					<Icon icon="clock" />
 				</FlexItem>
 				<FlexItem>
-					{displayDateTime(dateTimeStart, dateTimeEnd)}
+					{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
 				</FlexItem>
+				<InspectorControls>
+					<PanelBody>
+						<h3>{__('Date & time', 'gatherpress')}</h3>
+						<DateTimeStartPanel
+							dateTimeStart={dateTimeStart}
+							setDateTimeStart={setDateTimeStart}
+						/>
+						<DateTimeEndPanel
+							dateTimeEnd={dateTimeEnd}
+							setDateTimeEnd={setDateTimeEnd}
+						/>
+						<TimeZonePanel
+							timezone={timezone}
+							setTimezone={setTimezone}
+						/>
+					</PanelBody>
+				</InspectorControls>
 			</Flex>
 		</div>
 	);

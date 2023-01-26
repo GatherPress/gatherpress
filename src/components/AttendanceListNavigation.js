@@ -8,6 +8,7 @@ import { useState } from '@wordpress/element';
  */
 import AttendanceListNavigationItem from './AttendanceListNavigationItem';
 import { Listener } from '../helpers/broadcasting';
+import { getFromGlobal } from '../helpers/misc';
 
 const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	const defaultCount = {
@@ -17,19 +18,13 @@ const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 		waiting_list: 0, // eslint-disable-line camelcase
 	};
 
-	if ('object' === typeof GatherPress) {
-		for (const [key, value] of Object.entries(
-			// eslint-disable-next-line no-undef
-			GatherPress.attendees
-		)) {
-			defaultCount[key] = value.count;
-		}
+	for (const [key, value] of Object.entries(getFromGlobal('attendees'))) {
+		defaultCount[key] = value.count;
 	}
 
 	const [attendanceCount, setAttendanceCount] = useState(defaultCount);
 
-	// eslint-disable-next-line no-undef
-	Listener({ setAttendanceCount }, GatherPress.post_id);
+	Listener({ setAttendanceCount }, getFromGlobal('post_id'));
 
 	const renderedItems = items.map((item, index) => {
 		const additionalClasses =

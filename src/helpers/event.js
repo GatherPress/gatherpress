@@ -12,10 +12,14 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies.
  */
-import { timeZone } from './datetime';
+import { getTimeZone } from './datetime';
+import { getFromGlobal } from './misc';
 
 export function isEventPostType() {
-	return 'gp_event' === select('core/editor').getCurrentPostType();
+	return (
+		getFromGlobal('post_type') ===
+		select('core/editor').getCurrentPostType()
+	);
 }
 
 export function CheckCurrentPostType() {
@@ -23,10 +27,12 @@ export function CheckCurrentPostType() {
 }
 
 export function hasEventPast() {
-	// eslint-disable-next-line no-undef
-	const dateTimeEnd = moment(GatherPress.event_datetime.datetime_end);
+	const dateTimeEnd = moment(getFromGlobal('event_datetime.datetime_end'));
 
-	return moment.tz(timeZone).valueOf() > dateTimeEnd.tz(timeZone).valueOf();
+	return (
+		moment.tz(getTimeZone()).valueOf() >
+		dateTimeEnd.tz(getTimeZone()).valueOf()
+	);
 }
 
 export function hasEventPastNotice() {
