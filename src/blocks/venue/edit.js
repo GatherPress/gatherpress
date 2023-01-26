@@ -52,6 +52,13 @@ const Edit = ({ attributes, setAttributes }) => {
 			venuePost?.title.rendered ??
 			__('No venue selected.', 'gatherpress');
 
+		useEffect(() => {
+			setAttributes({
+				venueName: name,
+				venueAddress: fullAddress,
+			});
+		});
+
 		return (
 			<>
 				<InspectorControls>
