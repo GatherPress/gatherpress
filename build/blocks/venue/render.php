@@ -28,7 +28,7 @@ $gatherpress_venue_information = json_decode( get_post_meta( $gatherpress_venue-
 // phpcs:ignore
 $gatherpress_full_address = $gatherpress_attributes['venueAddress'];
 // phpcs:ignore
-$gatherpress_venue_phone = $gatherpress_venue_information->phoneNumber;
+$gatherpress_venue_phone = ( $gatherpress_venue_information->phoneNumber ?? '' );
 
 $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $gatherpress_attributes['zoom'] ) . '&t=' . rawurlencode( $gatherpress_attributes['type'] ) . '&output=embed';
 ?>
