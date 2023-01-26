@@ -6,7 +6,7 @@ import { useBlockProps } from '@wordpress/block-editor';
  * Internal dependencies.
  */
 import AttendanceSelector from '../../components/AttendanceSelector';
-import { getFromGlobal } from '../../helpers/misc';
+import { getFromGlobal } from '../../helpers/globals';
 
 const Edit = () => {
 	const blockProps = useBlockProps();

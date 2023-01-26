@@ -2,7 +2,7 @@
  * Internal dependencies.
  */
 import AttendeeList from './AttendeeList';
-import { getFromGlobal } from '../helpers/misc';
+import { getFromGlobal } from '../helpers/globals';
 
 const AttendanceListContent = ({ items, activeValue, limit = false }) => {
 	const postId = getFromGlobal('post_id');

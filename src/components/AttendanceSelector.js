@@ -16,7 +16,7 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import { Broadcaster } from '../helpers/broadcasting';
 import AttendeeResponse from './AttendeeResponse';
-import { getFromGlobal } from '../helpers/misc';
+import { getFromGlobal } from '../helpers/globals';
 
 const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 	const [attendanceStatus, setAttendanceStatus] = useState(

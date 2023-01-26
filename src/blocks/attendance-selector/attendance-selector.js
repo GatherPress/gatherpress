@@ -8,7 +8,7 @@ import { render } from '@wordpress/element';
  * Internal dependencies.
  */
 import AttendanceSelector from '../../components/AttendanceSelector';
-import { getFromGlobal } from '../../helpers/misc';
+import { getFromGlobal } from '../../helpers/globals';
 
 domReady(() => {
 	const containers = document.querySelectorAll(

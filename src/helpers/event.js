@@ -13,7 +13,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { getTimeZone } from './datetime';
-import { getFromGlobal } from './misc';
+import { getFromGlobal } from './globals';
 
 export function isEventPostType() {
 	return (

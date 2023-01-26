@@ -10,7 +10,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { hasEventPast } from '../../../../helpers/event';
-import { getFromGlobal, setToGlobal } from '../../../../helpers/misc';
+import { getFromGlobal, setToGlobal } from '../../../../helpers/globals';
 
 export class AnnounceEvent extends Component {
 	constructor(props) {
