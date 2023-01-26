@@ -38,4 +38,5 @@ vendor
 wp-core
 .phpunit.result.cache
 coverage.xml
-gatherpress.zip
+
+*.zip

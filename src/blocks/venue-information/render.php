@@ -19,9 +19,14 @@ if (
 ) {
 	return;
 }
+// (WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase)
+// phpcs:ignore
+$gatherpress_full_address = $attributes['fullAddress'];
+
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
 	<div class="gp-venue">
+		<div>
 		<?php if ( ! empty( $attributes['fullAddress'] ) || ! empty( $attributes['name'] ) ) : ?>
 			<div class="gp-venue__row">
 				<div class="gp-venue__item">
@@ -51,8 +56,8 @@ if (
 				</div>
 			</div>
 		<?php endif; ?>
-		<?php if ( ! empty( $attributes['phoneNumber'] ) || ! empty( $attributes['website'] ) ) : ?>
 			<div class="gp-venue__row gp-venue__gap">
+			<?php if ( ! empty( $attributes['phoneNumber'] ) || ! empty( $attributes['website'] ) ) : ?>
 				<?php if ( ! empty( $attributes['phoneNumber'] ) ) : ?>
 					<div class="gp-venue__item">
 						<div class="gp-venue__icon">
@@ -79,12 +84,16 @@ if (
 						</div>
 					</div>
 				<?php endif; ?>
+			<?php endif; ?>
 			</div>
-		<?php endif; ?>
-		<div class="gp-venue__map">
+		</div>
+	</div>
+	<div class="gp-venue__row gp-venue__gap">
+		<div class="gp-venue__map" style="width:99%;height:400px;">
 			<iframe
-				style="width:99%;height:400px;"
-				src="<?php echo esc_url( $attributes['encodedAddressURL'] ); ?>"
+				style="width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;"
+				src="<?php echo esc_url( 'https://maps.google.com/maps?q=' ) . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $attributes['zoom'] ) . '&t=' . rawurlencode( $attributes['type'] ) . '&output=embed'; ?>"
+				title="<?php echo esc_html( $attributes['fullAddress'] ); ?>"
 			></iframe>
 		</div>
 	</div>

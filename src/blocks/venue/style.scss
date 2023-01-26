@@ -1,1 +1,10 @@
 @import "../venue-information/style";
+
+.wp-block-gatherpress-venue > iframe {
+	height: 400px;
+	width: 100%;
+}
+
+.entry-content > .wp-block-gatherpress-venue.alignwide {
+	max-width: 88%;
+}

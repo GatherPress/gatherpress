@@ -9,16 +9,9 @@
 	"example": {},
 	"description": "The venue information block.",
 	"attributes": {
-		"blockId": {
-			"type": "string"
-		},
 		"fullAddress": {
 			"type": "string",
-			"default": ""
-		},
-		"encodedAddressURL": {
-			"type": "string",
-			"default": ""
+			"default": "currentLocation"
 		},
 		"phoneNumber": {
 			"type": "string",
@@ -27,13 +20,43 @@
 		"website": {
 			"type": "string",
 			"default": ""
+		},
+		"align": {
+			"type": "string",
+			"default": ""
+		},
+		"zoom": {
+			"type": "number",
+			"default": 10
+		},
+		"type": {
+			"type": "string",
+			"default": "m"
+		},
+		"deskHeight": {
+			"type": "number",
+			"default": 400
+		},
+		"tabHeight": {
+			"type": "number",
+			"default": 300
+		},
+		"mobileHeight": {
+			"type": "number",
+			"default": 250
+		},
+		"device": {
+			"type": "string",
+			"default": "desktop"
 		}
 	},
 	"supports": {
-		"html": false
+		"html": false,
+		"align": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
 	"render": "file:./render.php"
 }
