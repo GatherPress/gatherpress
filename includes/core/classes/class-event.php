@@ -262,7 +262,6 @@ class Event {
 			'datetime_end_gmt'   => '',
 			'timezone'           => sanitize_text_field( wp_timezone_string() ),
 		);
-		$data    = array();
 
 		if ( ! $this->event ) {
 			return $default;
