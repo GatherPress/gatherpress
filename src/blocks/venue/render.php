@@ -96,7 +96,7 @@ $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . ra
 			</div>
 		</div>
 	</div>
-	<?php if ( $gatherpress_attributes['showMap'] ) : ?>
+	<?php if ( $gatherpress_attributes['showEventMap'] ) : ?>
 		<iframe
 			src="<?php echo esc_attr( $gatherpress_attributes['encoded_addy'] ); ?>"
 			title="<?php echo esc_attr( $gatherpress_full_address ); ?>"

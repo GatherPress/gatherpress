@@ -31,7 +31,7 @@ import './editor.scss';
 
 const Edit = ({ attributes, setAttributes }) => {
 	const {
-		showMap,
+		showVenueMap,
 		fullAddress,
 		phoneNumber,
 		website,
@@ -93,13 +93,13 @@ const Edit = ({ attributes, setAttributes }) => {
 					<PanelRow>
 						<ToggleControl
 							label={
-								showMap
+								showVenueMap
 									? __('Display the map', 'gatherpress')
 									: __('Hide the map', 'gatherpress')
 							}
-							checked={showMap}
+							checked={showVenueMap}
 							onChange={(value) =>
-								setAttributes({ showMap: value })
+								setAttributes({ showVenueMap: value })
 							}
 						/>
 					</PanelRow>
@@ -300,7 +300,7 @@ const Edit = ({ attributes, setAttributes }) => {
 							)}
 						</FlexItem>
 					</Flex>
-					{showMap && (
+					{showVenueMap && (
 						<MapEmbed
 							location={fullAddress}
 							zoom={zoom}

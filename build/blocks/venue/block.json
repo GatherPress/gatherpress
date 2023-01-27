@@ -19,7 +19,7 @@
     "venueName": {
       "type": "string"
     },
-    "showMap": {
+    "showEventMap": {
       "type": "boolean",
       "default": true
     },
