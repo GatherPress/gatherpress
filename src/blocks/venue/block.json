@@ -23,11 +23,11 @@
 			"type": "boolean",
 			"default": true
 		},
-		"zoom": {
+		"zoomEventMap": {
 			"type": "number",
 			"default": 10
 		},
-		"type": {
+		"typeEventMap": {
 			"type": "string",
 			"default": "m"
 		},
