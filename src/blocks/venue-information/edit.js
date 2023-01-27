@@ -88,7 +88,7 @@ const Edit = ({ attributes, setAttributes }) => {
 					initialOpen={true}
 				>
 					<PanelRow>
-						{ __('Show map on Venue', 'gatherpress')}
+						{__('Show map on Venue', 'gatherpress')}
 					</PanelRow>
 					<PanelRow>
 						<ToggleControl
@@ -97,8 +97,10 @@ const Edit = ({ attributes, setAttributes }) => {
 									? __('Display the map', 'gatherpress')
 									: __('Hide the map', 'gatherpress')
 							}
-							checked={ showMap }
-							onChange={(value) => setAttributes({ showMap: value })}
+							checked={showMap}
+							onChange={(value) =>
+								setAttributes({ showMap: value })
+							}
 						/>
 					</PanelRow>
 					<RangeControl
