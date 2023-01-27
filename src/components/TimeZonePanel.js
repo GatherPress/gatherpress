@@ -9,7 +9,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { Broadcaster } from '../helpers/broadcasting';
-import { enableSave, getFromGlobal, setToGlobal } from '../helpers/misc';
+import { enableSave, getFromGlobal, setToGlobal } from '../helpers/globals';
 import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForSelect,

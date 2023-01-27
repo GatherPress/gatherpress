@@ -8,7 +8,7 @@ import { useState } from '@wordpress/element';
  */
 import AttendanceListNavigationItem from './AttendanceListNavigationItem';
 import { Listener } from '../helpers/broadcasting';
-import { getFromGlobal } from '../helpers/misc';
+import { getFromGlobal } from '../helpers/globals';
 
 const AttendanceListNavigation = ({ items, activeValue, onTitleClick }) => {
 	const defaultCount = {

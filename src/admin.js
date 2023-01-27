@@ -7,7 +7,7 @@ import { getBlockType, unregisterBlockType } from '@wordpress/blocks';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from './helpers/misc';
+import { getFromGlobal } from './helpers/globals';
 
 /**
  * Remove unwanted blocks from localized array.
