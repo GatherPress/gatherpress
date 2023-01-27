@@ -40,7 +40,7 @@ class Test_Event extends Base {
 					'datetime_end'   => '2020-05-11 17:00:00',
 					'timezone'       => 'America/New_York',
 				),
-				'expects' => 'Monday, May 11, 2020 11:00 AM to 1:00 PM EDT',
+				'expects' => 'Monday, May 11, 2020 3:00 PM to 5:00 PM EDT',
 			),
 			array(
 				'params'  => array(
@@ -48,7 +48,7 @@ class Test_Event extends Base {
 					'datetime_end'   => '2020-05-12 17:00:00',
 					'timezone'       => 'America/New_York',
 				),
-				'expects' => 'Monday, May 11, 2020, 11:00 AM to Tuesday, May 12, 2020, 1:00 PM EDT',
+				'expects' => 'Monday, May 11, 2020, 3:00 PM to Tuesday, May 12, 2020, 5:00 PM EDT',
 			),
 		);
 	}
@@ -138,29 +138,29 @@ class Test_Event extends Base {
 		$this->assertSame(
 			array(
 				'datetime_start'     => '2020-05-11 15:00:00',
-				'datetime_start_gmt' => '2020-05-11 15:00:00',
+				'datetime_start_gmt' => '2020-05-11 19:00:00',
 				'datetime_end'       => '2020-05-12 17:00:00',
-				'datetime_end_gmt'   => '2020-05-12 17:00:00',
+				'datetime_end_gmt'   => '2020-05-12 21:00:00',
 				'timezone'           => 'America/New_York',
 			),
 			$event->get_datetime()
 		);
 
-		$this->assertSame( 'Mon, May 11, 11:00am EDT', $event->get_datetime_start() );
+		$this->assertSame( 'Mon, May 11, 3:00pm EDT', $event->get_datetime_start() );
 		$this->assertSame( '2020-05-11', $event->get_datetime_start( 'Y-m-d' ) );
-		$this->assertSame( 'Tue, May 12, 1:00pm EDT', $event->get_datetime_end() );
+		$this->assertSame( 'Tue, May 12, 5:00pm EDT', $event->get_datetime_end() );
 		$this->assertSame( '2020-05-12', $event->get_datetime_end( 'Y-m-d' ) );
 
 		$this->assertSame(
-			'Mon, May 11, 11:00am EDT',
+			'Mon, May 11, 3:00pm EDT',
 			Utility::invoke_hidden_method( $event, 'get_formatted_datetime', array() )
 		);
 		$this->assertSame(
-			'Tue, May 12, 1:00pm EDT',
+			'Tue, May 12, 5:00pm EDT',
 			Utility::invoke_hidden_method( $event, 'get_formatted_datetime', array( 'D, F j, g:ia T', 'end' ) )
 		);
 		$this->assertSame(
-			'Tue, May 12, 5:00pm GMT+0000',
+			'Tue, May 12, 9:00pm GMT+0000',
 			Utility::invoke_hidden_method( $event, 'get_formatted_datetime', array( 'D, F j, g:ia T', 'end', false ) )
 		);
 	}
