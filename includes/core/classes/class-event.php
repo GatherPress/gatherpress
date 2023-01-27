@@ -10,6 +10,7 @@
 namespace GatherPress\Core;
 
 use PHPMailer\PHPMailer\Exception;
+use DateTimeZone;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -195,9 +196,9 @@ class Event {
 			&& ! empty( $dt['timezone'] )
 			&& in_array( $dt['timezone'], static::list_identifiers(), true )
 		) {
-			$tz = new \DateTimeZone( $dt['timezone'] );
+			$tz = new DateTimeZone( $dt['timezone'] );
 		} elseif ( false === $local ) {
-			$tz = new \DateTimeZone( 'GMT+0000' );
+			$tz = new DateTimeZone( 'GMT+0000' );
 		}
 
 		if ( ! empty( $date ) ) {
@@ -209,7 +210,7 @@ class Event {
 	}
 
 	/**
-	 * Maybe convert the UTC offset to format that can be passed to \DateTimeZone.
+	 * Maybe convert the UTC offset to format that can be passed to DateTimeZone.
 	 *
 	 * @param string $timezone The time zone.
 	 *
@@ -261,7 +262,6 @@ class Event {
 			'datetime_end_gmt'   => '',
 			'timezone'           => sanitize_text_field( wp_timezone_string() ),
 		);
-		$data    = array();
 
 		if ( ! $this->event ) {
 			return $default;
@@ -513,10 +513,13 @@ class Event {
 			return $retval;
 		}
 
-		$fields['datetime_start_gmt'] = get_gmt_from_date( $fields['datetime_start'] );
-		$fields['datetime_end_gmt']   = get_gmt_from_date( $fields['datetime_end'] );
-		$fields['timezone']           = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
-		$table                        = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
+		$timezone           = new DateTimeZone( $fields['timezone'] );
+
+		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( $fields['datetime_start'], $timezone );
+		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( $fields['datetime_end'], $timezone );
+
+		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo Add caching to this and create new method to check existence.
 		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -538,6 +541,25 @@ class Event {
 		}
 
 		return (bool) $retval;
+	}
+
+	/**
+	 * Convert the date to GMT.
+	 *
+	 * @param string       $date     The date to be converted.
+	 * @param DateTimeZone $timezone Time zone to use for date conversion.
+	 *
+	 * @return string
+	 */
+	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
+		$format   = 'Y-m-d H:i:s';
+		$datetime = date_create( $date, $timezone );
+
+		if ( false === $datetime ) {
+			return gmdate( $format, 0 );
+		}
+
+		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( $format );
 	}
 
 }
