@@ -8,7 +8,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { Listener } from '../helpers/broadcasting';
-import { getFromGlobal } from '../helpers/misc';
+import { getFromGlobal } from '../helpers/globals';
 
 const AttendeeList = ({
 	eventId,

@@ -13,7 +13,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies.
  */
-import { enableSave, getFromGlobal, setToGlobal } from './misc';
+import { enableSave, getFromGlobal, setToGlobal } from './globals';
 import { isEventPostType } from './event';
 
 export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';

@@ -19,6 +19,10 @@
 		"venueName": {
 			"type": "string"
 		},
+		"showMap": {
+			"type": "boolean",
+			"default": true
+		},
 		"zoom": {
 			"type": "number",
 			"default": 10

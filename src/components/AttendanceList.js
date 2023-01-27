@@ -3,7 +3,7 @@ import { __ } from '@wordpress/i18n';
 import AttendanceListNavigation from './AttendanceListNavigation';
 import AttendanceListContent from './AttendanceListContent';
 import { Listener } from '../helpers/broadcasting';
-import { getFromGlobal } from '../helpers/misc';
+import { getFromGlobal } from '../helpers/globals';
 
 const AttendanceList = () => {
 	const defaultLimit = 10;

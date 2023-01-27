@@ -96,10 +96,12 @@ $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . ra
 			</div>
 		</div>
 	</div>
-	<iframe
-		src="<?php echo esc_attr( $gatherpress_attributes['encoded_addy'] ); ?>"
-		title="<?php echo esc_attr( $gatherpress_full_address ); ?>"
-		style="height:<?php echo esc_attr( $gatherpress_attributes['deskHeight'] ); ?>px"
-	></iframe>
+	<?php if ( $gatherpress_attributes['showMap'] ) : ?>
+		<iframe
+			src="<?php echo esc_attr( $gatherpress_attributes['encoded_addy'] ); ?>"
+			title="<?php echo esc_attr( $gatherpress_full_address ); ?>"
+			style="height:<?php echo esc_attr( $gatherpress_attributes['deskHeight'] ); ?>px"
+		></iframe>
+	<?php endif; ?>
 </div>
 <?php
