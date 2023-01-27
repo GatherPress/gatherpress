@@ -9,8 +9,10 @@ import {
 	Button,
 	ButtonGroup,
 	PanelBody,
+	PanelRow,
 	RadioControl,
 	RangeControl,
+	ToggleControl,
 } from '@wordpress/components';
 
 /**
@@ -23,7 +25,7 @@ import MapEmbed from '../../helpers/map-embed';
 import './editor.scss';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { zoom, type, deskHeight, tabHeight, mobileHeight, device } =
+	const { showMap, zoom, type, deskHeight, tabHeight, mobileHeight, device } =
 		attributes;
 
 	const blockProps = useBlockProps();
@@ -41,6 +43,8 @@ const Edit = ({ attributes, setAttributes }) => {
 		const venuePost = useSelect((select) =>
 			select('core').getEntityRecord('postType', 'gp_venue', id)
 		);
+
+		const [ hasFixedBackground, setHasFixedBackground ] = useState( false );
 
 		let jsonString = venuePost?.meta._venue_information ?? '{}';
 		jsonString = '' !== jsonString ? jsonString : '{}';
@@ -66,6 +70,20 @@ const Edit = ({ attributes, setAttributes }) => {
 						title={__('Map Settings', 'gatherpress')}
 						initialOpen={true}
 					>
+						<PanelRow>
+							{ __('Show map on Event', 'gatherpress')}
+						</PanelRow>
+						<PanelRow>
+							<ToggleControl
+								label={
+									showMap
+										? __('Display the map', 'gatherpress')
+										: __('Hide the map', 'gatherpress')
+								}
+								checked={ showMap }
+								onChange={(value) => setAttributes({ showMap: value })}
+							/>
+						</PanelRow>
 						<RangeControl
 							label={__('Zoom Level', 'gatherpress')}
 							beforeIcon="search"
@@ -172,12 +190,14 @@ const Edit = ({ attributes, setAttributes }) => {
 				</InspectorControls>
 				<div>
 					<p>{name}</p>
-					<MapEmbed
-						location={fullAddress}
-						zoom={zoom}
-						type={type}
-						height={deskHeight}
-					/>
+					{showMap && (
+						<MapEmbed
+							location={fullAddress}
+							zoom={zoom}
+							type={type}
+							height={deskHeight}
+						/>
+					)}
 				</div>
 			</>
 		);

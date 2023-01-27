@@ -10,8 +10,10 @@ import {
 	FlexItem,
 	Icon,
 	PanelBody,
+	PanelRow,
 	RadioControl,
 	RangeControl,
+	ToggleControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalInputControl as InputControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
@@ -29,6 +31,7 @@ import './editor.scss';
 
 const Edit = ({ attributes, setAttributes }) => {
 	const {
+		showMap,
 		fullAddress,
 		phoneNumber,
 		website,
@@ -84,6 +87,20 @@ const Edit = ({ attributes, setAttributes }) => {
 					title={__('Map Settings', 'gatherpress')}
 					initialOpen={true}
 				>
+					<PanelRow>
+						{ __('Show map on Venue', 'gatherpress')}
+					</PanelRow>
+					<PanelRow>
+						<ToggleControl
+							label={
+								showMap
+									? __('Display the map', 'gatherpress')
+									: __('Hide the map', 'gatherpress')
+							}
+							checked={ showMap }
+							onChange={(value) => setAttributes({ showMap: value })}
+						/>
+					</PanelRow>
 					<RangeControl
 						label={__('Zoom Level', 'gatherpress')}
 						beforeIcon="search"
@@ -281,12 +298,14 @@ const Edit = ({ attributes, setAttributes }) => {
 							)}
 						</FlexItem>
 					</Flex>
-					<MapEmbed
-						location={fullAddress}
-						zoom={zoom}
-						type={type}
-						height={deskHeight}
-					/>
+					{showMap && (
+						<MapEmbed
+							location={fullAddress}
+							zoom={zoom}
+							type={type}
+							height={deskHeight}
+						/>
+					)}
 				</div>
 			</div>
 		</>

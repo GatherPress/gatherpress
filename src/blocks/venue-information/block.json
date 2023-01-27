@@ -9,6 +9,10 @@
 	"example": {},
 	"description": "The venue information block.",
 	"attributes": {
+		"showMap": {
+			"type": "boolean",
+			"default": true
+		},
 		"fullAddress": {
 			"type": "string",
 			"default": "currentLocation"
