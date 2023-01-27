@@ -62,6 +62,7 @@ class Test_Event extends Base {
 	 * @covers ::get_display_datetime
 	 * @covers ::save_datetimes
 	 * @covers ::is_same_date
+	 * @covers ::get_gmt_datetime
 	 *
 	 * @dataProvider data_get_display_datetime
 	 *
