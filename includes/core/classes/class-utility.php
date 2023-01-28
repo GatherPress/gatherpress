@@ -9,6 +9,11 @@
 
 namespace GatherPress\Core;
 
+/**
+ * Exit if accessed directly.
+ *
+ * @codeCoverageIgnore
+ */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
