@@ -9,8 +9,8 @@
 
 namespace GatherPress\Core;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
+	exit; // @codeCoverageIgnore
 }
 
 use WP_CLI;
