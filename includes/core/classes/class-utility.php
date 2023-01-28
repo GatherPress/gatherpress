@@ -9,7 +9,8 @@
 
 namespace GatherPress\Core;
 
-if ( ! defined( 'ABSPATH' ) ) {
+
+if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
 	exit; // @codeCoverageIgnore
 }
 
