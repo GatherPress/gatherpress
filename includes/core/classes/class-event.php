@@ -9,11 +9,10 @@
 
 namespace GatherPress\Core;
 
-use PHPMailer\PHPMailer\Exception;
 use DateTimeZone;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
+	exit; // @codeCoverageIgnore
 }
 
 /**
