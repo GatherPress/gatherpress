@@ -55,8 +55,8 @@ class Assets {
 	 */
 	protected function setup_hooks() {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
-		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ), 10 );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 	}
@@ -215,7 +215,7 @@ class Assets {
 					'gatherpress/attendance-list',
 					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
-					'gatherpress/venue',
+					'gatherpress/event-venue',
 				);
 			default:
 				return array(
@@ -223,7 +223,7 @@ class Assets {
 					'gatherpress/attendance-list',
 					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
-					'gatherpress/venue',
+					'gatherpress/event-venue',
 					'gatherpress/venue-information',
 				);
 		}

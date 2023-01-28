@@ -22,6 +22,8 @@ import { Listener } from '../../helpers/broadcasting';
 
 import MapEmbed from '../../helpers/map-embed';
 
+// import './deprecated-action';
+
 import './editor.scss';
 
 const Edit = ({ attributes, setAttributes }) => {
