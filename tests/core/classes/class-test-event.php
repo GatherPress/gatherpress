@@ -9,9 +9,11 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Attendee;
 use GatherPress\Core\Event;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
+use WP_Post;
 
 /**
  * Class Test_Event.
@@ -19,6 +21,27 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Event
  */
 class Test_Event extends Base {
+
+	/**
+	 * Coverage for __construct method.
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test___construct() {
+		$post = $this->mock->post()->get();
+		$event = new Event( $post->ID );
+
+		$this->assertNull( Utility::get_hidden_property( $event, 'event' ) );
+		$this->assertNull( Utility::get_hidden_property( $event, 'attendee' ) );
+
+		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$event = new Event( $post->ID );
+
+		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'event' ) );
+		$this->assertInstanceOf( Attendee::class, Utility::get_hidden_property( $event, 'attendee' ) );
+	}
 
 	/**
 	 * Data provider for get_display_datetime test.
@@ -56,15 +79,15 @@ class Test_Event extends Base {
 	/**
 	 * Coverage for get_display_datetime method.
 	 *
-	 * @param array  $params    Parameters for datetimes.
+	 * @param array  $params   Parameters for datetimes.
 	 * @param string $expects  Expected formatted output.
+	 *
+	 * @dataProvider data_get_display_datetime
 	 *
 	 * @covers ::get_display_datetime
 	 * @covers ::save_datetimes
 	 * @covers ::is_same_date
 	 * @covers ::get_gmt_datetime
-	 *
-	 * @dataProvider data_get_display_datetime
 	 *
 	 * @return void
 	 */
