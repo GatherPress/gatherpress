@@ -88,7 +88,7 @@ $gatherpress_full_address = $attributes['fullAddress'];
 			</div>
 		</div>
 	</div>
-	<?php if ( $gatherpress_attributes['showVenueMap'] ) : ?>
+	<?php if ( $attributes['showVenueMap'] ) : ?>
 		<div class="gp-venue__row gp-venue__gap">
 			<div class="gp-venue__map" style="width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;">
 				<iframe

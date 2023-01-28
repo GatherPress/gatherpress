@@ -25,8 +25,16 @@ import MapEmbed from '../../helpers/map-embed';
 import './editor.scss';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { showEventMap, zoomEventMap, typeEventMap, deskHeight, tabHeight, mobileHeight, device } =
-		attributes;
+	const {
+		deskHeight,
+		device,
+		showEventMap,
+		typeEventMap,
+		venueAddress,
+		zoomEventMap,
+		tabHeight,
+		mobileHeight,
+	} = attributes;
 
 	const blockProps = useBlockProps();
 	const [venueId, setVenueId] = useState('');
@@ -39,7 +47,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		});
 	});
 
-	const VenueSelector = ({ deskHeight, id, showEventMap, typeEventMap, zoomEventMap }) => {
+	const VenueSelector = ({ id }) => {
 		const venuePost = useSelect((select) =>
 			select('core').getEntityRecord('postType', 'gp_venue', id)
 		);
@@ -49,6 +57,8 @@ const Edit = ({ attributes, setAttributes }) => {
 
 		const venueInformation = JSON.parse(jsonString);
 		const fullAddress = venueInformation?.fullAddress ?? '';
+		const phoneNumber = venueInformation?.phoneNumber ?? '';
+		const website = venueInformation?.website ?? '';
 
 		const name =
 			venuePost?.title.rendered ??
@@ -63,15 +73,27 @@ const Edit = ({ attributes, setAttributes }) => {
 
 		return (
 			<div>
-				<p>{name}</p>
-				{/* {showEventMap && ( */}
-					<MapEmbed
-						location={fullAddress}
-						zoomEventMap={zoomEventMap}
-						type={typeEventMap}
-						height={deskHeight}
-					/>
-				{/* )} */}
+				<p className="address-name">{name}</p>
+				<p className="address-list">
+					{fullAddress ? (
+						<span className="dashicons dashicons-location"></span>
+					) : (
+						''
+					)}{' '}
+					{fullAddress}{' '}
+					{phoneNumber ? (
+						<span className="dashicons dashicons-phone"></span>
+					) : (
+						''
+					)}{' '}
+					{phoneNumber}{' '}
+					{website ? (
+						<span className="dashicons dashicons-admin-site-alt3"></span>
+					) : (
+						''
+					)}{' '}
+					{website}
+				</p>
 			</div>
 		);
 	};
@@ -103,7 +125,9 @@ const Edit = ({ attributes, setAttributes }) => {
 						label={__('Zoom Level', 'gatherpress')}
 						beforeIcon="search"
 						value={zoomEventMap}
-						onChange={(value) => setAttributes({ zoomEventMap: value })}
+						onChange={(value) =>
+							setAttributes({ zoomEventMap: value })
+						}
 						min={1}
 						max={22}
 					/>
@@ -205,6 +229,14 @@ const Edit = ({ attributes, setAttributes }) => {
 			</InspectorControls>
 			<div {...blockProps}>
 				<VenueSelector id={venueId} />
+				{venueAddress && showEventMap && (
+					<MapEmbed
+						location={venueAddress}
+						zoom={zoomEventMap}
+						type={typeEventMap}
+						height={deskHeight}
+					/>
+				)}
 			</div>
 		</>
 	);
