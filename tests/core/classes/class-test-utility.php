@@ -25,8 +25,9 @@ class Test_Utility extends Base {
 	 * Coverage for render_template method.
 	 *
 	 * @covers ::render_template
-	 * @return void
+	 *
 	 * @throws ErrorException Throws exception if callback to buffer_and_return is not callable.
+	 * @return void
 	 */
 	public function test_render_template() {
 		$this->assertEmpty( Utility::render_template( '' ) );
@@ -61,6 +62,7 @@ class Test_Utility extends Base {
 	 * Coverage for prefix_key method.
 	 *
 	 * @covers ::prefix_key
+	 *
 	 * @return void
 	 */
 	public function test_prefix_key() {
@@ -71,6 +73,7 @@ class Test_Utility extends Base {
 	 * Coverage for unprefix_key method.
 	 *
 	 * @covers ::unprefix_key
+	 *
 	 * @return void
 	 */
 	public function test_unprefix_key() {
@@ -81,6 +84,7 @@ class Test_Utility extends Base {
 	 * Coverage for timezone_choices method.
 	 *
 	 * @covers ::timezone_choices
+	 *
 	 * @return void
 	 */
 	public function test_timezone_choices() {
