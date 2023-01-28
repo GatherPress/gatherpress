@@ -55,6 +55,7 @@ class Assets {
 	 */
 	protected function setup_hooks() {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ), 10 );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
@@ -62,6 +63,8 @@ class Assets {
 
 	/**
 	 * Localize the global GatherPress js object for use in the build scripts.
+	 *
+	 * @return void
 	 */
 	public function add_global_object() {
 		?>
@@ -69,6 +72,15 @@ class Assets {
 			const GatherPress = <?php echo wp_json_encode( $this->localize( get_the_ID() ?? 0 ) ); ?>
 		</script>
 		<?php
+	}
+
+	/**
+	 * Enqueue frontend styles and scripts.
+	 *
+	 * @return void
+	 */
+	public function enqueue_scripts() {
+		 wp_enqueue_style( 'dashicons' );
 	}
 
 	/**
