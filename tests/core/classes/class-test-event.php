@@ -30,13 +30,13 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test___construct() {
-		$post = $this->mock->post()->get();
+		$post  = $this->mock->post()->get();
 		$event = new Event( $post->ID );
 
 		$this->assertNull( Utility::get_hidden_property( $event, 'event' ) );
 		$this->assertNull( Utility::get_hidden_property( $event, 'attendee' ) );
 
-		$post = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$event = new Event( $post->ID );
 
 		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'event' ) );
