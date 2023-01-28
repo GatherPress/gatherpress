@@ -9,8 +9,10 @@
 
 namespace GatherPress\Tests\Core;
 
+use ErrorException;
 use GatherPress\Core\Utility;
 use PMC\Unit_Test\Base;
+use PMC\Unit_Test\Utility as PMC_Utility;
 
 /**
  * Class Test_Utility.
@@ -20,10 +22,45 @@ use PMC\Unit_Test\Base;
 class Test_Utility extends Base {
 
 	/**
-	 * Cover for prefix_key method.
+	 * Coverage for render_template method.
+	 *
+	 * @covers ::render_template
+	 * @return void
+	 * @throws ErrorException
+	 */
+	public function test_render_template() {
+		$this->assertEmpty( Utility::render_template('') );
+
+		$description   = 'This is a template for testing.';
+		$template_path = GATHERPRESS_CORE_PATH . '/tests/assets/templates/test-template.php';
+		$template      = Utility::render_template( $template_path, array( 'description' => $description ) );
+		$this->assertStringContainsString( $description, $template );
+
+		$template = PMC_Utility::buffer_and_return(
+			array( Utility::class, 'render_template' ),
+			array(
+				$template_path,
+				array( 'description' => $description ),
+				false,
+			),
+		);
+		$this->assertEmpty( $template );
+
+		$template = PMC_Utility::buffer_and_return(
+			array( Utility::class, 'render_template' ),
+			array(
+				$template_path,
+				array( 'description' => $description ),
+				true,
+			),
+		);
+		$this->assertStringContainsString( $description, $template );
+	}
+
+	/**
+	 * Coverage for prefix_key method.
 	 *
 	 * @covers ::prefix_key
-	 *
 	 * @return void
 	 */
 	public function test_prefix_key() {
@@ -31,14 +68,31 @@ class Test_Utility extends Base {
 	}
 
 	/**
-	 * Cover for unprefix_key method.
+	 * Coverage for unprefix_key method.
 	 *
 	 * @covers ::unprefix_key
-	 *
 	 * @return void
 	 */
 	public function test_unprefix_key() {
 		$this->assertSame( 'unittest', Utility::unprefix_key( 'gp_unittest' ) );
+	}
+
+	/**
+	 * Coverage for timezone_choices method.
+	 *
+	 * @covers ::timezone_choices
+	 * @return void
+	 */
+	public function test_timezone_choices() {
+		$timezones = Utility::timezone_choices();
+		$keys      = array( 'Africa', 'America', 'Antarctica', 'Arctic', 'Asia', 'Atlantic', 'Australia', 'Europe', 'Indian', 'UTC', 'Manual Offsets' );
+
+		$this->assertIsArray( $timezones );
+
+		foreach ( $keys as $key ) {
+			$this->assertArrayHasKey( $key, $timezones );
+			$this->assertIsArray( $timezones[ $key ] );
+		}
 	}
 
 }
