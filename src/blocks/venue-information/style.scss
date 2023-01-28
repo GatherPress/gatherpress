@@ -10,6 +10,16 @@
 	justify-content: center;
 }
 
+.wp-block-gatherpress-venue-information.alignwide,
+.entry-content > .wp-block-gatherpress-venue-information.alignwide {
+	max-width: 88%;
+}
+
+.wp-block-gatherpress-venue-information.alignfull {
+	max-width: 100%;
+	padding: 1rem 0;
+}
+
 .gp-venue {
 	display: flex;
 	flex-direction: column;

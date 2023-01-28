@@ -9,7 +9,7 @@
   "example": {},
   "description": "The venue information block.",
   "attributes": {
-    "showMap": {
+    "showVenueMap": {
       "type": "boolean",
       "default": true
     },

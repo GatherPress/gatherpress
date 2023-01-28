@@ -30,7 +30,7 @@ $gatherpress_full_address = $gatherpress_attributes['venueAddress'];
 // phpcs:ignore
 $gatherpress_venue_phone = $gatherpress_venue_information->phoneNumber;
 
-$gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $gatherpress_attributes['zoom'] ) . '&t=' . rawurlencode( $gatherpress_attributes['type'] ) . '&output=embed';
+$gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $gatherpress_attributes['zoomEventMap'] ) . '&t=' . rawurlencode( $gatherpress_attributes['typeEventMap'] ) . '&output=embed';
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
 	<div class="gp-venue">
@@ -96,7 +96,7 @@ $gatherpress_attributes['encoded_addy'] = 'https://maps.google.com/maps?q=' . ra
 			</div>
 		</div>
 	</div>
-	<?php if ( $gatherpress_attributes['showMap'] ) : ?>
+	<?php if ( $gatherpress_attributes['showEventMap'] ) : ?>
 		<iframe
 			src="<?php echo esc_attr( $gatherpress_attributes['encoded_addy'] ); ?>"
 			title="<?php echo esc_attr( $gatherpress_full_address ); ?>"
