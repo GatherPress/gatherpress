@@ -26,10 +26,10 @@ class Test_Utility extends Base {
 	 *
 	 * @covers ::render_template
 	 * @return void
-	 * @throws ErrorException
+	 * @throws ErrorException Throws exception if callback to buffer_and_return is not callable.
 	 */
 	public function test_render_template() {
-		$this->assertEmpty( Utility::render_template('') );
+		$this->assertEmpty( Utility::render_template( '' ) );
 
 		$description   = 'This is a template for testing.';
 		$template_path = GATHERPRESS_CORE_PATH . '/tests/assets/templates/test-template.php';
