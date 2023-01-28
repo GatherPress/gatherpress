@@ -80,7 +80,7 @@ class Assets {
 	 * @return void
 	 */
 	public function enqueue_scripts() {
-		 wp_enqueue_style( 'dashicons' );
+		wp_enqueue_style( 'dashicons' );
 	}
 
 	/**
