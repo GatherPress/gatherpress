@@ -56,7 +56,7 @@
 	},
 	"supports": {
 		"html": false,
-		"align": true
+		"align": [ "wide", "full" ]
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

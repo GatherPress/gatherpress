@@ -47,9 +47,9 @@ const Edit = ({ attributes, setAttributes }) => {
 		});
 	});
 
-	const VenueSelector = ({ slug }) => {
+	const VenueSelector = ({ id }) => {
 		const venuePost = useSelect((select) =>
-			select('core').getEntityRecord('postType', 'gp_venue', slug)
+			select('core').getEntityRecord('postType', 'gp_venue', id)
 		);
 
 		let jsonString = venuePost?.meta._venue_information ?? '{}';
@@ -228,7 +228,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<VenueSelector slug={venueId} />
+				<VenueSelector id={venueId} />
 				{venueAddress && showEventMap && (
 					<MapEmbed
 						location={venueAddress}
