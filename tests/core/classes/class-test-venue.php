@@ -20,14 +20,14 @@ use PMC\Unit_Test\Base;
 class Test_Venue extends Base {
 
 	/**
-	 * Cover for get_venue_term_slug method.
+	 * Coverage for get_venue_term_slug method.
 	 *
 	 * @covers ::get_venue_term_slug
 	 *
 	 * @return void
 	 */
 	public function test_get_venue_term_slug() {
-		$this->assertSame( '_venue_123', Venue::get_instance()->get_venue_term_slug( 123 ) );
+		$this->assertSame( '_unit-test', Venue::get_instance()->get_venue_term_slug( 'unit-test' ) );
 	}
 
 }

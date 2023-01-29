@@ -21,9 +21,12 @@ const VenuePanel = () => {
 	const venueTerm = useSelect((select) =>
 		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
 	);
-	const venueId = venueTerm?.slug.replace('_venue_', '');
+	const venueSlug = venueTerm?.slug.slice(1, venueTerm?.slug.length);
+	const venuePost = useSelect((select) =>
+		select('core').getEntityRecords('postType', 'gp_venue', { per_page: 1, slug: venueSlug })[0]
+	);
+	const venueId = venuePost?.id;
 	const venueValue = venueTermId + ':' + venueId;
-
 	useEffect(() => {
 		setVenue(String(venueValue) ?? '');
 		Broadcaster({
