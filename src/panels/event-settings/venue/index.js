@@ -22,15 +22,11 @@ const VenuePanel = () => {
 		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
 	);
 	const venueSlug = venueTerm?.slug.slice(1, venueTerm?.slug.length);
-	const venuePost = useSelect((select) =>
-		select('core').getEntityRecords('postType', 'gp_venue', { per_page: 1, slug: venueSlug })[0]
-	);
-	const venueId = venuePost?.id;
-	const venueValue = venueTermId + ':' + venueId;
+	const venueValue = venueTermId + ':' + venueSlug;
 	useEffect(() => {
 		setVenue(String(venueValue) ?? '');
 		Broadcaster({
-			setVenueId: venueId,
+			setVenueSlug: venueSlug,
 		});
 	});
 
@@ -47,7 +43,7 @@ const VenuePanel = () => {
 	if (venues) {
 		venues = venues.map((item) => ({
 			label: item.name,
-			value: item.id + ':' + item.slug.replace('_venue_', ''),
+			value: item.id + ':' + item.slug.slice(1, item.slug.length),
 		}));
 
 		venues.unshift({
@@ -64,7 +60,7 @@ const VenuePanel = () => {
 		const term = '' !== value[0] ? [value[0]] : [];
 		editPost({ _gp_venue: term });
 		Broadcaster({
-			setVenueId: value[1],
+			setVenueSlug: value[1],
 		});
 		unlockPostSaving();
 	};

@@ -41,6 +41,15 @@ class Venue {
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
 	}
 
+	/**
+	 * If the slug of venue post changes, update slug for corresponding venue term.
+	 *
+	 * @param int     $post_id     Post ID.
+	 * @param WP_Post $post_after  Post object after save.
+	 * @param WP_Post $post_before Post object before save.
+	 *
+	 * @return void
+	 */
 	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ) {
 		if (
 			$post_before->post_name !== $post_after->post_name ||
