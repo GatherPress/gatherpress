@@ -107,7 +107,9 @@ const Edit = ({ attributes, setAttributes }) => {
 						label={__('Zoom Level', 'gatherpress')}
 						beforeIcon="search"
 						value={zoomVenueMap}
-						onChange={(value) => setAttributes({ zoomVenueMap: value })}
+						onChange={(value) =>
+							setAttributes({ zoomVenueMap: value })
+						}
 						min={1}
 						max={22}
 					/>
