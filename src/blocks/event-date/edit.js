@@ -6,10 +6,10 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
+import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
 import { useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.

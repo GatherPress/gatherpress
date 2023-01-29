@@ -1,13 +1,13 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 2,
-  "name": "gatherpress/venue",
+  "name": "gatherpress/event-venue",
   "version": "0.2",
-  "title": "Venue",
+  "title": "Event Venue",
   "category": "gatherpress",
   "icon": "location",
   "example": {},
-  "description": "The venue block.",
+  "description": "The block used for displaying the event's venue.",
   "attributes": {
     "venueAddress": {
       "type": "string"
