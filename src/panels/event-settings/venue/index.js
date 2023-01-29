@@ -67,21 +67,14 @@ const VenuePanel = () => {
 
 	return (
 		<PanelRow>
-			<Flex>
-				<FlexItem>{__('Venue', 'gatherpress')}</FlexItem>
-				<FlexItem>
-					<SelectControl
-						label={__('Venue', 'gatherpress')}
-						hideLabelFromVision="true"
-						value={venue}
-						onChange={(value) => {
-							updateTerm(value);
-						}}
-						options={venues}
-						style={{ width: '11rem' }}
-					/>
-				</FlexItem>
-			</Flex>
+			<SelectControl
+				label={__('Venue', 'gatherpress')}
+				value={venue}
+				onChange={(value) => {
+					updateTerm(value);
+				}}
+				options={venues}
+			/>
 		</PanelRow>
 	);
 };
