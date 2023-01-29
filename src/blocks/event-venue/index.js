@@ -16,3 +16,10 @@ registerBlockType(metadata, {
 	edit,
 	save: () => null,
 });
+
+registerBlockType('gatherpress/venue', {
+	title: 'Event Date',
+	category: 'gatherpress',
+	edit,
+	save: () => null,
+});

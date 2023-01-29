@@ -35,8 +35,8 @@ const Edit = ({ attributes, setAttributes }) => {
 		fullAddress,
 		phoneNumber,
 		website,
-		zoom,
-		type,
+		zoomVenueMap,
+		typeVenueMap,
 		deskHeight,
 		tabHeight,
 		mobileHeight,
@@ -106,14 +106,16 @@ const Edit = ({ attributes, setAttributes }) => {
 					<RangeControl
 						label={__('Zoom Level', 'gatherpress')}
 						beforeIcon="search"
-						value={zoom}
-						onChange={(value) => setAttributes({ zoom: value })}
+						value={zoomVenueMap}
+						onChange={(value) =>
+							setAttributes({ zoomVenueMap: value })
+						}
 						min={1}
 						max={22}
 					/>
 					<RadioControl
 						label={__('Map Type', 'gatherpress')}
-						selected={type}
+						selected={typeVenueMap}
 						options={[
 							{
 								label: __('Roadmap', 'gatherpress'),
@@ -125,7 +127,7 @@ const Edit = ({ attributes, setAttributes }) => {
 							},
 						]}
 						onChange={(value) => {
-							setAttributes({ type: value });
+							setAttributes({ typeVenueMap: value });
 						}}
 					/>
 					<ButtonGroup
@@ -303,8 +305,8 @@ const Edit = ({ attributes, setAttributes }) => {
 					{showVenueMap && (
 						<MapEmbed
 							location={fullAddress}
-							zoom={zoom}
-							type={type}
+							zoom={zoomVenueMap}
+							type={typeVenueMap}
 							height={deskHeight}
 						/>
 					)}

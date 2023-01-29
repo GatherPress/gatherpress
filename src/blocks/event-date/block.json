@@ -9,7 +9,10 @@
 	"example": {},
 	"description": "Display and edit event dates.",
 	"attributes": {
-		"blockId": {
+		"eventEnd": {
+			"type": "string"
+		},
+		"eventStart": {
 			"type": "string"
 		}
 	},

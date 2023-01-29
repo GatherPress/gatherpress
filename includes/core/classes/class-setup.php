@@ -182,7 +182,7 @@ class Setup {
 					array( 'gatherpress/add-to-calendar' ),
 					array( 'gatherpress/attendance-selector' ),
 					array( 'gatherpress/attendance-list' ),
-					array( 'gatherpress/venue' ),
+					array( 'gatherpress/event-venue' ),
 				),
 				'menu_position' => 4,
 				'supports'      => array(
