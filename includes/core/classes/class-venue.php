@@ -116,10 +116,10 @@ class Venue {
 	 *
 	 * @param string $slug Slug of venue taxonomy to retrieve venue post object.
 	 *
-	 * @return WP_Post|null
+	 * @return null|WP_Post
 	 */
 	public function get_venue_post_from_term_slug( string $slug ) {
-		return get_page_by_path( ltrim( '_', $slug ), OBJECT, Venue::POST_TYPE );
+		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, Venue::POST_TYPE );
 	}
 
 }
