@@ -29,11 +29,11 @@
 			"type": "string",
 			"default": ""
 		},
-		"zoom": {
+		"zoomVenueMap": {
 			"type": "number",
 			"default": 10
 		},
-		"type": {
+		"typeVenueMap": {
 			"type": "string",
 			"default": "m"
 		},

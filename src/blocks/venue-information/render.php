@@ -93,7 +93,7 @@ $gatherpress_full_address = $attributes['fullAddress'];
 			<div class="gp-venue__map" style="width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;">
 				<iframe
 					style="width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;"
-					src="<?php echo esc_url( 'https://maps.google.com/maps?q=' ) . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $attributes['zoom'] ) . '&t=' . rawurlencode( $attributes['type'] ) . '&output=embed'; ?>"
+					src="<?php echo esc_url( 'https://maps.google.com/maps?q=' ) . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $attributes['zoomVenueMap'] ) . '&t=' . rawurlencode( $attributes['typeVenueMap'] ) . '&output=embed'; ?>"
 					title="<?php echo esc_html( $attributes['fullAddress'] ); ?>"
 				></iframe>
 			</div>
