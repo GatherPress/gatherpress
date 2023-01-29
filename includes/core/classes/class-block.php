@@ -33,7 +33,6 @@ class Block {
 		'event-date',
 		'events-list',
 		'event-venue',
-		'venue',
 		'venue-information',
 	);
 

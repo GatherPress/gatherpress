@@ -22,10 +22,6 @@ import { Listener } from '../../helpers/broadcasting';
 
 import MapEmbed from '../../helpers/map-embed';
 
-import './deprecated-action';
-
-import { VenueQuery } from './venue-query';
-
 import './editor.scss';
 
 const Edit = ({ attributes, setAttributes }) => {
@@ -98,9 +94,6 @@ const Edit = ({ attributes, setAttributes }) => {
 					)}{' '}
 					{website}
 				</p>
-				<div>
-					{JSON.stringify(venuePost?.slug ?? '')}
-				</div>
 			</div>
 		);
 	};
@@ -112,9 +105,6 @@ const Edit = ({ attributes, setAttributes }) => {
 					title={__('Map Settings', 'gatherpress')}
 					initialOpen={true}
 				>
-					<PanelRow>
-						<VenueQuery />
-					</PanelRow>
 					<PanelRow>
 						{__('Show map on Event', 'gatherpress')}
 					</PanelRow>
@@ -239,8 +229,6 @@ const Edit = ({ attributes, setAttributes }) => {
 			</InspectorControls>
 			<div {...blockProps}>
 				<VenueSelector slug={venueId} />
-
-				{JSON.stringify(venueId ?? '')}
 				{venueAddress && showEventMap && (
 					<MapEmbed
 						location={venueAddress}
