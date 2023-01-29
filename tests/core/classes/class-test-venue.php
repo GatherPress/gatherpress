@@ -38,7 +38,12 @@ class Test_Venue extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_post_from_term_slug() {
-		$venue                = $this->mock->post( array( 'post_type' => Venue::POST_TYPE, 'post_name' => 'unit-test' ) )->get();
+		$venue                = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'unit-test',
+			)
+		)->get();
 		$venue_from_term_slug = Venue::get_instance()->get_venue_post_from_term_slug( '_unit-test' );
 
 		$this->assertEquals( $venue->ID, $venue_from_term_slug->ID );

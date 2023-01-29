@@ -119,7 +119,7 @@ class Venue {
 	 * @return null|WP_Post
 	 */
 	public function get_venue_post_from_term_slug( string $slug ) {
-		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, Venue::POST_TYPE );
+		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, self::POST_TYPE );
 	}
 
 }
