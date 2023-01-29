@@ -1,1 +1,1033 @@
-(()=>{"use strict";var e={n:t=>{var n=t&&t.__esModule?()=>t.default:()=>t;return e.d(n,{a:n}),n},d:(t,n)=>{for(var a in n)e.o(n,a)&&!e.o(t,a)&&Object.defineProperty(t,a,{enumerable:!0,get:n[a]})},o:(e,t)=>Object.prototype.hasOwnProperty.call(e,t)};const t=window.wp.element,n=window.wp.i18n,a=window.wp.data,r=window.wp.components,o=window.wp.plugins,i=window.wp.editPost,l=window.moment;var s=e.n(l);const c=window.wp.apiFetch;var m=e.n(c);function d(){(0,a.dispatch)("core/editor").editPost({meta:{_non_existing_meta:!0}})}function u(e){if("object"==typeof GatherPress)return e.split(".").reduce(((e,t)=>e&&e[t]),GatherPress)}function p(e,t){if("object"!=typeof GatherPress)return;const n=e.split("."),a=n.pop();n.reduce(((e,t)=>{var n;return null!==(n=e[t])&&void 0!==n?n:e[t]={}}),GatherPress)[a]=t}const _="YYYY-MM-DDTHH:mm:ss",g="YYYY-MM-DD HH:mm:ss",v="MMMM D, YYYY h:mm a",f=function(){let e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:u("event_datetime.timezone");return s().tz.zone(e)?e:(0,n.__)("GMT","gatherpress")},E=function(){let e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:"";const t=/^(\+|-)(\d{2}):(00|15|30|45)$/,n=e.replace(t,"$1");return n!==e?"UTC"+n+parseInt(e.replace(t,"$2")).toString()+e.replace(t,"$3").replace("00","").replace("15",".25").replace("30",".5").replace("45",".75"):e},h=s().tz(f()).add(1,"day").set("hour",18).set("minute",0).set("second",0).format(_),w=s().tz(h,f()).add(2,"hours").format(_),T=function(e){let t=arguments.length>1&&void 0!==arguments[1]?arguments[1]:null;S(e),p("event_datetime.datetime_start",e),"function"==typeof t&&t(e),d()},z=function(e){let t=arguments.length>1&&void 0!==arguments[1]?arguments[1]:null;D(e),p("event_datetime.datetime_end",e),null!==t&&t(e),d()};function S(e){const t=s().tz(u("event_datetime.datetime_end"),f()).valueOf(),n=s().tz(e,f()).valueOf();if(n>=t){const e=s().tz(n,f()).add(2,"hours").format(_);z(e)}}function D(e){const t=s().tz(u("event_datetime.datetime_start"),f()).valueOf(),n=s().tz(e,f()).valueOf();if(n<=t){const e=s().tz(n,f()).subtract(2,"hours").format(_);T(e)}}function P(){return u("post_type")===(0,a.select)("core/editor").getCurrentPostType()}function b(){const e="gp_event_past",t=(0,a.dispatch)("core/notices");t.removeNotice(e),function(){const e=s()(u("event_datetime.datetime_end"));return s().tz(f()).valueOf()>e.tz(f()).valueOf()}()&&t.createNotice("warning",(0,n.__)("This event has already past.","gatherpress"),{id:e,isDismissible:!1})}const y=window.wp.date,x=e=>{const{dateTimeStart:t}=e;return s().tz(t,f()).format(v)},C=e=>{const{dateTimeEnd:t}=e;return s().tz(t,f()).format(v)},O=e=>{const{dateTimeStart:n,setDateTimeStart:a}=e,o=(0,y.getSettings)(),i=/a(?!\\)/i.test(o.formats.time.toLowerCase().replace(/\\\\/g,"").split("").reverse().join(""));return(0,t.createElement)(r.DateTimePicker,{currentDate:n,onChange:e=>T(e,a),is12Hour:i})},k=e=>{const{dateTimeEnd:n,setDateTimeEnd:a}=e,o=(0,y.getSettings)(),i=/a(?!\\)/i.test(o.formats.time.toLowerCase().replace(/\\\\/g,"").split("").reverse().join(""));return(0,t.createElement)(r.DateTimePicker,{currentDate:n,onChange:e=>z(e,a),is12Hour:i})},Y=function(e){let t=arguments.length>1&&void 0!==arguments[1]&&arguments[1];for(const[n,a]of Object.entries(e)){let e=n;t&&(e+=t);const r=new CustomEvent(e,{detail:a});dispatchEvent(r)}},F=e=>{const{dateTimeStart:a,setDateTimeStart:o}=e;return(0,t.useEffect)((()=>{o(s().tz((()=>{let e=u("event_datetime.datetime_start");return e=""!==e?s().tz(e,f()).format(_):h,p("event_datetime.datetime_start",e),e})(),f()).format(_)),Y({setDateTimeStart:a}),b()})),(0,t.createElement)(r.PanelRow,null,(0,t.createElement)(r.Flex,null,(0,t.createElement)(r.FlexItem,null,(0,n.__)("Start","gatherpress")),(0,t.createElement)(r.FlexItem,null,(0,t.createElement)(r.Dropdown,{position:"bottom left",renderToggle:e=>{let{isOpen:n,onToggle:o}=e;return(0,t.createElement)(r.Button,{onClick:o,"aria-expanded":n,isLink:!0},(0,t.createElement)(x,{dateTimeStart:a}))},renderContent:()=>(0,t.createElement)(O,{dateTimeStart:a,setDateTimeStart:o})}))))},M=e=>{const{dateTimeEnd:a,setDateTimeEnd:o}=e;return(0,t.useEffect)((()=>{o(s().tz((()=>{let e=u("event_datetime.datetime_end");return e=""!==e?s().tz(e,f()).format(_):w,p("event_datetime.datetime_end",e),e})(),f()).format(_)),Y({setDateTimeEnd:a}),b()})),(0,t.createElement)(r.PanelRow,null,(0,t.createElement)(r.Flex,null,(0,t.createElement)(r.FlexItem,null,(0,n.__)("End","gatherpress")),(0,t.createElement)(r.FlexItem,null,(0,t.createElement)(r.Dropdown,{position:"bottom left",renderToggle:e=>{let{isOpen:n,onToggle:o}=e;return(0,t.createElement)(r.Button,{onClick:o,"aria-expanded":n,isLink:!0},(0,t.createElement)(C,{dateTimeEnd:a}))},renderContent:()=>(0,t.createElement)(k,{dateTimeEnd:a,setDateTimeEnd:o})}))))},j=e=>{const{timezone:a,setTimezone:o}=e,i=u("timezone_choices");return(0,t.useEffect)((()=>{o(u("event_datetime.timezone"))}),[]),(0,t.useEffect)((()=>{Y({setTimezone:u("event_datetime.timezone")})})),(0,t.createElement)(r.PanelRow,null,(0,t.createElement)(r.SelectControl,{label:(0,n.__)("Time Zone"),value:E(a),onChange:e=>{e=function(){let e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:"";const t=/^UTC(\+|-)(\d+)(.\d+)?$/,n=e.replace(t,"$1");if(n!==e){const a=e.replace(t,"$2").padStart(2,"0");let r=e.replace(t,"$3");return""===r&&(r=":00"),r=r.replace(".25",":15").replace(".5",":30").replace(".75",":45"),n+a+r}return e}(e),o(e),p("event_datetime.timezone",e),d()}},Object.keys(i).map((e=>(0,t.createElement)("optgroup",{key:e,label:e},Object.keys(i[e]).map((n=>(0,t.createElement)("option",{key:n,value:n},i[e][n]))))))))};(0,a.subscribe)((function(){const e=(0,a.select)("core/editor").isSavingPost(),t=(0,a.select)("core/editor").isAutosavingPost();P()&&e&&!t&&m()({path:"/gatherpress/v1/event/datetime/",method:"POST",data:{post_id:u("post_id"),datetime_start:s().tz(u("event_datetime.datetime_start"),f()).format(g),datetime_end:s().tz(u("event_datetime.datetime_end"),f()).format(g),timezone:u("event_datetime.timezone"),_wpnonce:u("nonce")}}).then((()=>{}))}));const I=()=>{const[e,a]=(0,t.useState)(),[r,o]=(0,t.useState)(),[i,l]=(0,t.useState)();return(0,t.createElement)("section",null,(0,t.createElement)("h3",null,(0,n.__)("Date & time","gatherpress")),(0,t.createElement)(F,{dateTimeStart:e,setDateTimeStart:a}),(0,t.createElement)(M,{dateTimeEnd:r,setDateTimeEnd:o}),(0,t.createElement)(j,{timezone:i,setTimezone:l}))},$=()=>{const[e,o]=(0,t.useState)(""),i=(0,a.useDispatch)("core/editor").editPost,{unlockPostSaving:l}=(0,a.useDispatch)("core/editor"),s=(0,a.useSelect)((e=>e("core/editor").getEditedPostAttribute("_gp_venue"))),c=(0,a.useSelect)((e=>e("core").getEntityRecord("taxonomy","_gp_venue",s)))?.slug.replace("_venue_",""),m=s+":"+c;(0,t.useEffect)((()=>{var e;o(null!==(e=String(m))&&void 0!==e?e:""),Y({setVenueId:c})}));let d=(0,a.useSelect)((e=>e("core").getEntityRecords("taxonomy","_gp_venue",{per_page:-1,context:"view"})),[e]);return d?(d=d.map((e=>({label:e.name,value:e.id+":"+e.slug.replace("_venue_","")}))),d.unshift({value:":",label:(0,n.__)("Choose a venue","gatherpress")})):d=[],(0,t.createElement)(r.PanelRow,null,(0,t.createElement)(r.Flex,null,(0,t.createElement)(r.FlexItem,null,(0,n.__)("Venue","gatherpress")),(0,t.createElement)(r.FlexItem,null,(0,t.createElement)(r.SelectControl,{label:(0,n.__)("Venue","gatherpress"),hideLabelFromVision:"true",value:e,onChange:e=>{(e=>{o(e);const t=""!==(e=e.split(":"))[0]?[e[0]]:[];i({_gp_venue:t}),Y({setVenueId:e[1]}),l()})(e)},options:d,style:{width:"11rem"}}))))};(0,o.registerPlugin)("gp-event-settings",{render:()=>P()&&(0,t.createElement)(i.PluginDocumentSettingPanel,{name:"gp-event-settings",title:(0,n.__)("Event settings","gatherpress"),initialOpen:!0,className:"gp-event-settings"},(0,t.createElement)(r.__experimentalVStack,{spacing:2},(0,t.createElement)(I,null),(0,t.createElement)(r.__experimentalDivider,null),(0,t.createElement)($,null))),icon:""}),(0,a.dispatch)("core/edit-post").toggleEditorPanelOpened("gp-event-settings/gp-event-settings")})();
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/components/DateTime.js":
+/*!************************************!*\
+  !*** ./src/components/DateTime.js ***!
+  \************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "DateTimeEndLabel": () => (/* binding */ DateTimeEndLabel),
+/* harmony export */   "DateTimeEndPicker": () => (/* binding */ DateTimeEndPicker),
+/* harmony export */   "DateTimeStartLabel": () => (/* binding */ DateTimeStartLabel),
+/* harmony export */   "DateTimeStartPicker": () => (/* binding */ DateTimeStartPicker)
+/* harmony export */ });
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_date__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/date */ "@wordpress/date");
+/* harmony import */ var _wordpress_date__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_date__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! moment */ "moment");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _helpers_datetime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../helpers/datetime */ "./src/helpers/datetime.js");
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+const DateTimeStartLabel = props => {
+  const {
+    dateTimeStart
+  } = props;
+  return moment__WEBPACK_IMPORTED_MODULE_3___default().tz(dateTimeStart, (0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_4__.getTimeZone)()).format(_helpers_datetime__WEBPACK_IMPORTED_MODULE_4__.dateTimeLabelFormat);
+};
+const DateTimeEndLabel = props => {
+  const {
+    dateTimeEnd
+  } = props;
+  return moment__WEBPACK_IMPORTED_MODULE_3___default().tz(dateTimeEnd, (0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_4__.getTimeZone)()).format(_helpers_datetime__WEBPACK_IMPORTED_MODULE_4__.dateTimeLabelFormat);
+};
+const DateTimeStartPicker = props => {
+  const {
+    dateTimeStart,
+    setDateTimeStart
+  } = props;
+  const settings = (0,_wordpress_date__WEBPACK_IMPORTED_MODULE_1__.getSettings)();
+  const is12HourTime = /a(?!\\)/i.test(settings.formats.time.toLowerCase().replace(/\\\\/g, '').split('').reverse().join(''));
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DateTimePicker, {
+    currentDate: dateTimeStart,
+    onChange: date => (0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_4__.updateDateTimeStart)(date, setDateTimeStart),
+    is12Hour: is12HourTime
+  });
+};
+const DateTimeEndPicker = props => {
+  const {
+    dateTimeEnd,
+    setDateTimeEnd
+  } = props;
+  const settings = (0,_wordpress_date__WEBPACK_IMPORTED_MODULE_1__.getSettings)();
+  const is12HourTime = /a(?!\\)/i.test(settings.formats.time.toLowerCase().replace(/\\\\/g, '').split('').reverse().join(''));
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DateTimePicker, {
+    currentDate: dateTimeEnd,
+    onChange: date => (0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_4__.updateDateTimeEnd)(date, setDateTimeEnd),
+    is12Hour: is12HourTime
+  });
+};
+
+/***/ }),
+
+/***/ "./src/components/DateTimeEndPanel.js":
+/*!********************************************!*\
+  !*** ./src/components/DateTimeEndPanel.js ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! moment */ "moment");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _DateTime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./DateTime */ "./src/components/DateTime.js");
+/* harmony import */ var _helpers_event__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../helpers/event */ "./src/helpers/event.js");
+/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
+/* harmony import */ var _helpers_datetime__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../helpers/datetime */ "./src/helpers/datetime.js");
+
+/**
+ * External dependencies.
+ */
+
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+
+const DateTimeEndPanel = props => {
+  const {
+    dateTimeEnd,
+    setDateTimeEnd
+  } = props;
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    setDateTimeEnd(moment__WEBPACK_IMPORTED_MODULE_1___default().tz((0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_7__.getDateTimeEnd)(), (0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_7__.getTimeZone)()).format(_helpers_datetime__WEBPACK_IMPORTED_MODULE_7__.dateTimeMomentFormat));
+    (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_6__.Broadcaster)({
+      setDateTimeEnd: dateTimeEnd
+    });
+    (0,_helpers_event__WEBPACK_IMPORTED_MODULE_5__.hasEventPastNotice)();
+  });
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Flex, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FlexItem, null, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('End', 'gatherpress')), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FlexItem, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Dropdown, {
+    position: "bottom left",
+    renderToggle: _ref => {
+      let {
+        isOpen,
+        onToggle
+      } = _ref;
+      return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+        onClick: onToggle,
+        "aria-expanded": isOpen,
+        isLink: true
+      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_DateTime__WEBPACK_IMPORTED_MODULE_4__.DateTimeEndLabel, {
+        dateTimeEnd: dateTimeEnd
+      }));
+    },
+    renderContent: () => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_DateTime__WEBPACK_IMPORTED_MODULE_4__.DateTimeEndPicker, {
+      dateTimeEnd: dateTimeEnd,
+      setDateTimeEnd: setDateTimeEnd
+    })
+  }))));
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DateTimeEndPanel);
+
+/***/ }),
+
+/***/ "./src/components/DateTimeStartPanel.js":
+/*!**********************************************!*\
+  !*** ./src/components/DateTimeStartPanel.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! moment */ "moment");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _DateTime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./DateTime */ "./src/components/DateTime.js");
+/* harmony import */ var _helpers_event__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../helpers/event */ "./src/helpers/event.js");
+/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
+/* harmony import */ var _helpers_datetime__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../helpers/datetime */ "./src/helpers/datetime.js");
+
+/**
+ * External dependencies.
+ */
+
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+
+const DateTimeStartPanel = props => {
+  const {
+    dateTimeStart,
+    setDateTimeStart
+  } = props;
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    setDateTimeStart(moment__WEBPACK_IMPORTED_MODULE_1___default().tz((0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_7__.getDateTimeStart)(), (0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_7__.getTimeZone)()).format(_helpers_datetime__WEBPACK_IMPORTED_MODULE_7__.dateTimeMomentFormat));
+    (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_6__.Broadcaster)({
+      setDateTimeStart: dateTimeStart
+    });
+    (0,_helpers_event__WEBPACK_IMPORTED_MODULE_5__.hasEventPastNotice)();
+  });
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Flex, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FlexItem, null, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('Start', 'gatherpress')), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FlexItem, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Dropdown, {
+    position: "bottom left",
+    renderToggle: _ref => {
+      let {
+        isOpen,
+        onToggle
+      } = _ref;
+      return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+        onClick: onToggle,
+        "aria-expanded": isOpen,
+        isLink: true
+      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_DateTime__WEBPACK_IMPORTED_MODULE_4__.DateTimeStartLabel, {
+        dateTimeStart: dateTimeStart
+      }));
+    },
+    renderContent: () => (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_DateTime__WEBPACK_IMPORTED_MODULE_4__.DateTimeStartPicker, {
+      dateTimeStart: dateTimeStart,
+      setDateTimeStart: setDateTimeStart
+    })
+  }))));
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DateTimeStartPanel);
+
+/***/ }),
+
+/***/ "./src/components/TimeZonePanel.js":
+/*!*****************************************!*\
+  !*** ./src/components/TimeZonePanel.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
+/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../helpers/globals */ "./src/helpers/globals.js");
+/* harmony import */ var _helpers_datetime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../helpers/datetime */ "./src/helpers/datetime.js");
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+const TimeZonePanel = props => {
+  const {
+    timezone,
+    setTimezone
+  } = props;
+  const choices = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('timezone_choices');
+
+  // Run only once.
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    setTimezone((0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.timezone'));
+  }, []);
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_3__.Broadcaster)({
+      setTimezone: (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.timezone')
+    });
+  });
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.SelectControl, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Time Zone'),
+    value: (0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_5__.maybeConvertUtcOffsetForSelect)(timezone),
+    onChange: value => {
+      value = (0,_helpers_datetime__WEBPACK_IMPORTED_MODULE_5__.maybeConvertUtcOffsetForDatabase)(value);
+      setTimezone(value);
+      (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.setToGlobal)('event_datetime.timezone', value);
+      (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.enableSave)();
+    }
+  }, Object.keys(choices).map(group => {
+    return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("optgroup", {
+      key: group,
+      label: group
+    }, Object.keys(choices[group]).map(item => {
+      return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("option", {
+        key: item,
+        value: item
+      }, choices[group][item]);
+    }));
+  })));
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (TimeZonePanel);
+
+/***/ }),
+
+/***/ "./src/helpers/broadcasting.js":
+/*!*************************************!*\
+  !*** ./src/helpers/broadcasting.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Broadcaster": () => (/* binding */ Broadcaster),
+/* harmony export */   "Listener": () => (/* binding */ Listener)
+/* harmony export */ });
+const Broadcaster = function (payload) {
+  let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  for (const [key, value] of Object.entries(payload)) {
+    let type = key;
+    if (identifier) {
+      type += identifier;
+    }
+    const dispatcher = new CustomEvent(type, {
+      detail: value
+    });
+    dispatchEvent(dispatcher);
+  }
+};
+const Listener = function (payload) {
+  let identifier = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  for (const [key, value] of Object.entries(payload)) {
+    let type = key;
+    if (identifier) {
+      type += identifier;
+    }
+    addEventListener(type, e => {
+      value(e.detail);
+    }, false);
+  }
+};
+
+/***/ }),
+
+/***/ "./src/helpers/datetime.js":
+/*!*********************************!*\
+  !*** ./src/helpers/datetime.js ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "dateTimeDatabaseFormat": () => (/* binding */ dateTimeDatabaseFormat),
+/* harmony export */   "dateTimeLabelFormat": () => (/* binding */ dateTimeLabelFormat),
+/* harmony export */   "dateTimeMomentFormat": () => (/* binding */ dateTimeMomentFormat),
+/* harmony export */   "defaultDateTimeEnd": () => (/* binding */ defaultDateTimeEnd),
+/* harmony export */   "defaultDateTimeStart": () => (/* binding */ defaultDateTimeStart),
+/* harmony export */   "getDateTimeEnd": () => (/* binding */ getDateTimeEnd),
+/* harmony export */   "getDateTimeStart": () => (/* binding */ getDateTimeStart),
+/* harmony export */   "getTimeZone": () => (/* binding */ getTimeZone),
+/* harmony export */   "getUtcOffset": () => (/* binding */ getUtcOffset),
+/* harmony export */   "maybeConvertUtcOffsetForDatabase": () => (/* binding */ maybeConvertUtcOffsetForDatabase),
+/* harmony export */   "maybeConvertUtcOffsetForDisplay": () => (/* binding */ maybeConvertUtcOffsetForDisplay),
+/* harmony export */   "maybeConvertUtcOffsetForSelect": () => (/* binding */ maybeConvertUtcOffsetForSelect),
+/* harmony export */   "saveDateTime": () => (/* binding */ saveDateTime),
+/* harmony export */   "updateDateTimeEnd": () => (/* binding */ updateDateTimeEnd),
+/* harmony export */   "updateDateTimeStart": () => (/* binding */ updateDateTimeStart),
+/* harmony export */   "validateDateTimeEnd": () => (/* binding */ validateDateTimeEnd),
+/* harmony export */   "validateDateTimeStart": () => (/* binding */ validateDateTimeStart)
+/* harmony export */ });
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! moment */ "moment");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _globals__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./globals */ "./src/helpers/globals.js");
+/* harmony import */ var _event__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./event */ "./src/helpers/event.js");
+/**
+ * External dependencies.
+ */
+
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
+const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
+const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
+const getTimeZone = function () {
+  let timezone = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : (0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.timezone');
+  if (!!moment__WEBPACK_IMPORTED_MODULE_0___default().tz.zone(timezone)) {
+    return timezone;
+  }
+  return (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('GMT', 'gatherpress');
+};
+const getUtcOffset = timezone => {
+  timezone = getTimeZone(timezone);
+  if ((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('GMT', 'gatherpress') !== timezone) {
+    return '';
+  }
+  const offset = (0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.timezone');
+  return maybeConvertUtcOffsetForDisplay(offset);
+};
+const maybeConvertUtcOffsetForDisplay = function () {
+  let offset = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+  return offset.replace(':', '');
+};
+const maybeConvertUtcOffsetForDatabase = function () {
+  let offset = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+  // Regex: https://regex101.com/r/9bMgJd/1.
+  const pattern = /^UTC(\+|-)(\d+)(.\d+)?$/;
+  const sign = offset.replace(pattern, '$1');
+  if (sign !== offset) {
+    const hour = offset.replace(pattern, '$2').padStart(2, '0');
+    let minute = offset.replace(pattern, '$3');
+    if ('' === minute) {
+      minute = ':00';
+    }
+    minute = minute.replace('.25', ':15').replace('.5', ':30').replace('.75', ':45');
+    return sign + hour + minute;
+  }
+  return offset;
+};
+const maybeConvertUtcOffsetForSelect = function () {
+  let offset = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+  // Regex: https://regex101.com/r/nOXCPo/1
+  const pattern = /^(\+|-)(\d{2}):(00|15|30|45)$/;
+  const sign = offset.replace(pattern, '$1');
+  if (sign !== offset) {
+    const hour = parseInt(offset.replace(pattern, '$2')).toString();
+    const minute = offset.replace(pattern, '$3').replace('00', '').replace('15', '.25').replace('30', '.5').replace('45', '.75');
+    return 'UTC' + sign + hour + minute;
+  }
+  return offset;
+};
+const defaultDateTimeStart = moment__WEBPACK_IMPORTED_MODULE_0___default().tz(getTimeZone()).add(1, 'day').set('hour', 18).set('minute', 0).set('second', 0).format(dateTimeMomentFormat);
+const defaultDateTimeEnd = moment__WEBPACK_IMPORTED_MODULE_0___default().tz(defaultDateTimeStart, getTimeZone()).add(2, 'hours').format(dateTimeMomentFormat);
+const getDateTimeStart = () => {
+  let dateTime = (0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.datetime_start');
+  dateTime = '' !== dateTime ? moment__WEBPACK_IMPORTED_MODULE_0___default().tz(dateTime, getTimeZone()).format(dateTimeMomentFormat) : defaultDateTimeStart;
+  (0,_globals__WEBPACK_IMPORTED_MODULE_4__.setToGlobal)('event_datetime.datetime_start', dateTime);
+  return dateTime;
+};
+const getDateTimeEnd = () => {
+  let dateTime = (0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.datetime_end');
+  dateTime = '' !== dateTime ? moment__WEBPACK_IMPORTED_MODULE_0___default().tz(dateTime, getTimeZone()).format(dateTimeMomentFormat) : defaultDateTimeEnd;
+  (0,_globals__WEBPACK_IMPORTED_MODULE_4__.setToGlobal)('event_datetime.datetime_end', dateTime);
+  return dateTime;
+};
+const updateDateTimeStart = function (date) {
+  let setDateTimeStart = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+  validateDateTimeStart(date);
+  (0,_globals__WEBPACK_IMPORTED_MODULE_4__.setToGlobal)('event_datetime.datetime_start', date);
+  if ('function' === typeof setDateTimeStart) {
+    setDateTimeStart(date);
+  }
+  (0,_globals__WEBPACK_IMPORTED_MODULE_4__.enableSave)();
+};
+const updateDateTimeEnd = function (date) {
+  let setDateTimeEnd = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+  validateDateTimeEnd(date);
+  (0,_globals__WEBPACK_IMPORTED_MODULE_4__.setToGlobal)('event_datetime.datetime_end', date);
+  if (null !== setDateTimeEnd) {
+    setDateTimeEnd(date);
+  }
+  (0,_globals__WEBPACK_IMPORTED_MODULE_4__.enableSave)();
+};
+function validateDateTimeStart(dateTimeStart) {
+  const dateTimeEndNumeric = moment__WEBPACK_IMPORTED_MODULE_0___default().tz((0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.datetime_end'), getTimeZone()).valueOf();
+  const dateTimeStartNumeric = moment__WEBPACK_IMPORTED_MODULE_0___default().tz(dateTimeStart, getTimeZone()).valueOf();
+  if (dateTimeStartNumeric >= dateTimeEndNumeric) {
+    const dateTimeEnd = moment__WEBPACK_IMPORTED_MODULE_0___default().tz(dateTimeStartNumeric, getTimeZone()).add(2, 'hours').format(dateTimeMomentFormat);
+    updateDateTimeEnd(dateTimeEnd);
+  }
+}
+function validateDateTimeEnd(dateTimeEnd) {
+  const dateTimeStartNumeric = moment__WEBPACK_IMPORTED_MODULE_0___default().tz((0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.datetime_start'), getTimeZone()).valueOf();
+  const dateTimeEndNumeric = moment__WEBPACK_IMPORTED_MODULE_0___default().tz(dateTimeEnd, getTimeZone()).valueOf();
+  if (dateTimeEndNumeric <= dateTimeStartNumeric) {
+    const dateTimeStart = moment__WEBPACK_IMPORTED_MODULE_0___default().tz(dateTimeEndNumeric, getTimeZone()).subtract(2, 'hours').format(dateTimeMomentFormat);
+    updateDateTimeStart(dateTimeStart);
+  }
+}
+function saveDateTime() {
+  const isSavingPost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_1__.select)('core/editor').isSavingPost(),
+    isAutosavingPost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_1__.select)('core/editor').isAutosavingPost();
+  if ((0,_event__WEBPACK_IMPORTED_MODULE_5__.isEventPostType)() && isSavingPost && !isAutosavingPost) {
+    _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_2___default()({
+      path: '/gatherpress/v1/event/datetime/',
+      method: 'POST',
+      data: {
+        post_id: (0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('post_id'),
+        datetime_start: moment__WEBPACK_IMPORTED_MODULE_0___default().tz((0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.datetime_start'), getTimeZone()).format(dateTimeDatabaseFormat),
+        datetime_end: moment__WEBPACK_IMPORTED_MODULE_0___default().tz((0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.datetime_end'), getTimeZone()).format(dateTimeDatabaseFormat),
+        timezone: (0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.timezone'),
+        _wpnonce: (0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('nonce')
+      }
+    }).then(() => {
+      // Saved.
+    });
+  }
+}
+
+/***/ }),
+
+/***/ "./src/helpers/event.js":
+/*!******************************!*\
+  !*** ./src/helpers/event.js ***!
+  \******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "CheckCurrentPostType": () => (/* binding */ CheckCurrentPostType),
+/* harmony export */   "hasEventPast": () => (/* binding */ hasEventPast),
+/* harmony export */   "hasEventPastNotice": () => (/* binding */ hasEventPastNotice),
+/* harmony export */   "isEventPostType": () => (/* binding */ isEventPostType)
+/* harmony export */ });
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! moment */ "moment");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _datetime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./datetime */ "./src/helpers/datetime.js");
+/* harmony import */ var _globals__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./globals */ "./src/helpers/globals.js");
+/**
+ * External dependencies.
+ */
+
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+function isEventPostType() {
+  return (0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('post_type') === (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_1__.select)('core/editor').getCurrentPostType();
+}
+function CheckCurrentPostType() {
+  return wp.data.select('core/editor').getCurrentPostType();
+}
+function hasEventPast() {
+  const dateTimeEnd = moment__WEBPACK_IMPORTED_MODULE_0___default()((0,_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('event_datetime.datetime_end'));
+  return moment__WEBPACK_IMPORTED_MODULE_0___default().tz((0,_datetime__WEBPACK_IMPORTED_MODULE_3__.getTimeZone)()).valueOf() > dateTimeEnd.tz((0,_datetime__WEBPACK_IMPORTED_MODULE_3__.getTimeZone)()).valueOf();
+}
+function hasEventPastNotice() {
+  const id = 'gp_event_past';
+  const notices = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_1__.dispatch)('core/notices');
+  notices.removeNotice(id);
+  if (hasEventPast()) {
+    notices.createNotice('warning', (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('This event has already past.', 'gatherpress'), {
+      id,
+      isDismissible: false
+    });
+  }
+}
+
+/***/ }),
+
+/***/ "./src/helpers/globals.js":
+/*!********************************!*\
+  !*** ./src/helpers/globals.js ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "enableSave": () => (/* binding */ enableSave),
+/* harmony export */   "getFromGlobal": () => (/* binding */ getFromGlobal),
+/* harmony export */   "setToGlobal": () => (/* binding */ setToGlobal)
+/* harmony export */ });
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_0__);
+
+
+// @todo hack approach to enabling Save buttons after update
+// https://github.com/WordPress/gutenberg/issues/13774
+function enableSave() {
+  (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_0__.dispatch)('core/editor').editPost({
+    meta: {
+      _non_existing_meta: true
+    }
+  });
+}
+
+/**
+ * Helper to safely retrieve from the GatherPress global variable.
+ *
+ * @param {string} args
+ * @return {undefined|*} Returns value of arguments provided.
+ */
+function getFromGlobal(args) {
+  // eslint-disable-next-line no-undef
+  if ('object' !== typeof GatherPress) {
+    return undefined;
+  }
+  return args.split('.').reduce(
+  // eslint-disable-next-line no-undef
+  (GatherPress, level) => GatherPress && GatherPress[level],
+  // eslint-disable-next-line no-undef
+  GatherPress);
+}
+
+/**
+ * Helper to safely set to the GatherPress global variable.
+ *
+ * @param {string} args
+ * @param {any}    value
+ */
+function setToGlobal(args, value) {
+  // eslint-disable-next-line no-undef
+  if ('object' !== typeof GatherPress) {
+    return;
+  }
+  const properties = args.split('.');
+  const last = properties.pop();
+
+  // eslint-disable-next-line no-undef
+  properties.reduce((all, item) => {
+    var _all$item;
+    return (_all$item = all[item]) !== null && _all$item !== void 0 ? _all$item : all[item] = {};
+  }, GatherPress)[last] = value;
+}
+
+/***/ }),
+
+/***/ "./src/panels/event-settings/datetime/index.js":
+/*!*****************************************************!*\
+  !*** ./src/panels/event-settings/datetime/index.js ***!
+  \*****************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _helpers_datetime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../helpers/datetime */ "./src/helpers/datetime.js");
+/* harmony import */ var _components_DateTimeStartPanel__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../components/DateTimeStartPanel */ "./src/components/DateTimeStartPanel.js");
+/* harmony import */ var _components_DateTimeEndPanel__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../../components/DateTimeEndPanel */ "./src/components/DateTimeEndPanel.js");
+/* harmony import */ var _components_TimeZonePanel__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../../components/TimeZonePanel */ "./src/components/TimeZonePanel.js");
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+
+(0,_wordpress_data__WEBPACK_IMPORTED_MODULE_1__.subscribe)(_helpers_datetime__WEBPACK_IMPORTED_MODULE_3__.saveDateTime);
+const DateTimePanel = () => {
+  const [dateTimeStart, setDateTimeStart] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)();
+  const [dateTimeEnd, setDateTimeEnd] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)();
+  const [timezone, setTimezone] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)();
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("section", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Date & time', 'gatherpress')), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_DateTimeStartPanel__WEBPACK_IMPORTED_MODULE_4__["default"], {
+    dateTimeStart: dateTimeStart,
+    setDateTimeStart: setDateTimeStart
+  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_DateTimeEndPanel__WEBPACK_IMPORTED_MODULE_5__["default"], {
+    dateTimeEnd: dateTimeEnd,
+    setDateTimeEnd: setDateTimeEnd
+  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_TimeZonePanel__WEBPACK_IMPORTED_MODULE_6__["default"], {
+    timezone: timezone,
+    setTimezone: setTimezone
+  }));
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (DateTimePanel);
+
+/***/ }),
+
+/***/ "./src/panels/event-settings/index.js":
+/*!********************************************!*\
+  !*** ./src/panels/event-settings/index.js ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _wordpress_plugins__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/plugins */ "@wordpress/plugins");
+/* harmony import */ var _wordpress_plugins__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_plugins__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _wordpress_edit_post__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @wordpress/edit-post */ "@wordpress/edit-post");
+/* harmony import */ var _wordpress_edit_post__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_wordpress_edit_post__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _helpers_event__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../helpers/event */ "./src/helpers/event.js");
+/* harmony import */ var _datetime__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./datetime */ "./src/panels/event-settings/datetime/index.js");
+/* harmony import */ var _venue__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./venue */ "./src/panels/event-settings/venue/index.js");
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+const EventSettings = () => {
+  return (0,_helpers_event__WEBPACK_IMPORTED_MODULE_6__.isEventPostType)() && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_edit_post__WEBPACK_IMPORTED_MODULE_5__.PluginDocumentSettingPanel, {
+    name: "gp-event-settings",
+    title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Event settings', 'gatherpress'),
+    initialOpen: true,
+    className: "gp-event-settings"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.__experimentalVStack, {
+    spacing: 2
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_datetime__WEBPACK_IMPORTED_MODULE_7__["default"], null), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.__experimentalDivider, null), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_venue__WEBPACK_IMPORTED_MODULE_8__["default"], null)));
+};
+(0,_wordpress_plugins__WEBPACK_IMPORTED_MODULE_4__.registerPlugin)('gp-event-settings', {
+  render: EventSettings,
+  icon: ''
+});
+(0,_wordpress_data__WEBPACK_IMPORTED_MODULE_2__.dispatch)('core/edit-post').toggleEditorPanelOpened('gp-event-settings/gp-event-settings');
+
+/***/ }),
+
+/***/ "./src/panels/event-settings/venue/index.js":
+/*!**************************************************!*\
+  !*** ./src/panels/event-settings/venue/index.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../../helpers/broadcasting */ "./src/helpers/broadcasting.js");
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+const VenuePanel = () => {
+  const [venue, setVenue] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
+  const editPost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useDispatch)('core/editor').editPost;
+  const {
+    unlockPostSaving
+  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useDispatch)('core/editor');
+  const venueTermId = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core/editor').getEditedPostAttribute('_gp_venue'));
+  const venueTerm = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId));
+  const venueId = venueTerm?.slug.replace('_venue_', '');
+  const venueValue = venueTermId + ':' + venueId;
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    var _String;
+    setVenue((_String = String(venueValue)) !== null && _String !== void 0 ? _String : '');
+    (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Broadcaster)({
+      setVenueId: venueId
+    });
+  });
+  let venues = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => {
+    return select('core').getEntityRecords('taxonomy', '_gp_venue', {
+      per_page: -1,
+      context: 'view'
+    });
+  }, [venue]);
+  if (venues) {
+    venues = venues.map(item => ({
+      label: item.name,
+      value: item.id + ':' + item.slug.replace('_venue_', '')
+    }));
+    venues.unshift({
+      value: ':',
+      label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Choose a venue', 'gatherpress')
+    });
+  } else {
+    venues = [];
+  }
+  const updateTerm = value => {
+    setVenue(value);
+    value = value.split(':');
+    const term = '' !== value[0] ? [value[0]] : [];
+    editPost({
+      _gp_venue: term
+    });
+    (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Broadcaster)({
+      setVenueId: value[1]
+    });
+    unlockPostSaving();
+  };
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Flex, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FlexItem, null, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Venue', 'gatherpress')), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FlexItem, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Venue', 'gatherpress'),
+    hideLabelFromVision: "true",
+    value: venue,
+    onChange: value => {
+      updateTerm(value);
+    },
+    options: venues,
+    style: {
+      width: '11rem'
+    }
+  }))));
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (VenuePanel);
+
+/***/ }),
+
+/***/ "moment":
+/*!*************************!*\
+  !*** external "moment" ***!
+  \*************************/
+/***/ ((module) => {
+
+module.exports = window["moment"];
+
+/***/ }),
+
+/***/ "@wordpress/api-fetch":
+/*!**********************************!*\
+  !*** external ["wp","apiFetch"] ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["apiFetch"];
+
+/***/ }),
+
+/***/ "@wordpress/components":
+/*!************************************!*\
+  !*** external ["wp","components"] ***!
+  \************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["components"];
+
+/***/ }),
+
+/***/ "@wordpress/data":
+/*!******************************!*\
+  !*** external ["wp","data"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["data"];
+
+/***/ }),
+
+/***/ "@wordpress/date":
+/*!******************************!*\
+  !*** external ["wp","date"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["date"];
+
+/***/ }),
+
+/***/ "@wordpress/edit-post":
+/*!**********************************!*\
+  !*** external ["wp","editPost"] ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["editPost"];
+
+/***/ }),
+
+/***/ "@wordpress/element":
+/*!*********************************!*\
+  !*** external ["wp","element"] ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["element"];
+
+/***/ }),
+
+/***/ "@wordpress/i18n":
+/*!******************************!*\
+  !*** external ["wp","i18n"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["i18n"];
+
+/***/ }),
+
+/***/ "@wordpress/plugins":
+/*!*********************************!*\
+  !*** external ["wp","plugins"] ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["plugins"];
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+(() => {
+/*!*****************************!*\
+  !*** ./src/panels/index.js ***!
+  \*****************************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _event_settings__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./event-settings */ "./src/panels/event-settings/index.js");
+/**
+ * Internal dependencies
+ */
+
+})();
+
+/******/ })()
+;
+//# sourceMappingURL=panels.js.map

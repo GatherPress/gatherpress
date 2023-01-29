@@ -6,10 +6,10 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
+import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
-import { useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { useEffect, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -56,13 +56,21 @@ const displayDateTime = (start, end, tz) => {
 	);
 };
 
-const Edit = () => {
+const Edit = ({ attributes, setAttributes }) => {
 	const blockProps = useBlockProps();
+	const { eventEnd, eventStart } = attributes;
 	const [dateTimeStart, setDateTimeStart] = useState(defaultDateTimeStart);
 	const [dateTimeEnd, setDateTimeEnd] = useState(defaultDateTimeEnd);
 	const [timezone, setTimezone] = useState(getTimeZone());
 
 	Listener({ setDateTimeEnd, setDateTimeStart, setTimezone });
+
+	useEffect(() => {
+		setAttributes({
+			eventEnd: dateTimeEnd ?? '',
+			eventStart: dateTimeStart ?? '',
+		});
+	});
 
 	return (
 		<div {...blockProps}>
@@ -73,6 +81,7 @@ const Edit = () => {
 				<FlexItem>
 					{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
 				</FlexItem>
+				{JSON.stringify(attributes)}
 				<InspectorControls>
 					<PanelBody>
 						<h3>{__('Date & time', 'gatherpress')}</h3>

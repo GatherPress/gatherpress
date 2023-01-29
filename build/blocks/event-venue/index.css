@@ -1,1 +1,38 @@
-.wp-block-gatherpress-event-venue{border:1px solid #cfcfc4}.wp-block-gatherpress-event-venue:not(.alignfull){padding:1rem}.wp-block-gatherpress-event-venue.alignwide{max-width:88%}.wp-block-gatherpress-event-venue.alignfull{max-width:100%;padding:1rem 0}.wp-block-gatherpress-event-venue p>span:not(:first-child){margin-left:1rem;margin-right:.2rem}.wp-block-gatherpress-event-venue p.address-name{font-size:1.2rem;font-weight:600}.wp-block-gatherpress-event-venue p.address-list{align-items:center;display:flex;font-size:.9rem;justify-content:flex-start}
+/*!***********************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[3].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[3].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[3].use[3]!./src/blocks/event-venue/editor.scss ***!
+  \***********************************************************************************************************************************************************************************************************************************************************/
+.wp-block-gatherpress-event-venue {
+  border: 1px solid #cfcfc4;
+}
+
+.wp-block-gatherpress-event-venue:not(.alignfull) {
+  padding: 1rem;
+}
+
+.wp-block-gatherpress-event-venue.alignwide {
+  max-width: 88%;
+}
+
+.wp-block-gatherpress-event-venue.alignfull {
+  max-width: 100%;
+  padding: 1rem 0;
+}
+
+.wp-block-gatherpress-event-venue p > span:not(:first-child) {
+  margin-right: 0.2rem;
+  margin-left: 1rem;
+}
+
+.wp-block-gatherpress-event-venue p.address-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.wp-block-gatherpress-event-venue p.address-list {
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/*# sourceMappingURL=index.css.map*/

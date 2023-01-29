@@ -1,4 +1,4 @@
-import { addAction } from '@wordpress/hooks';
+// import { addAction } from '@wordpress/hooks';
 import deprecated from '@wordpress/deprecated';
 
 deprecated( 'Eating meat', {
@@ -11,12 +11,12 @@ deprecated( 'Eating meat', {
 
 // Logs: 'Eating meat is deprecated since version 2019.01.01 and will be removed from the earth in version 2020.01.01. Please use vegetables instead. Note: You may find it beneficial to transition gradually.'
 
-function venueDeprecationAlert( message, { version } ) {
-    alert( `Deprecation: ${ message }. Version: ${ version }` );
-}
+// function venueDeprecationAlert( message, { version } ) {
+//     alert( `Deprecation: ${ message }. Version: ${ version }` );
+// }
 
-addAction(
-    'deprecated',
-    'gatherpress/venue-deprecation-alert',
-    venueDeprecationAlert
-);
+// addAction(
+//     'deprecated',
+//     'gatherpress/venue-deprecation-alert',
+//     venueDeprecationAlert
+// );

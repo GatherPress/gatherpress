@@ -190,7 +190,7 @@ class Assets {
 				// @todo settings to come...
 			),
 			'timezone_choices'  => Utility::timezone_choices(),
-			'unregister_blocks' => $this->unregister_blocks(),
+			// 'unregister_blocks' => $this->unregister_blocks(),
 		);
 	}
 
