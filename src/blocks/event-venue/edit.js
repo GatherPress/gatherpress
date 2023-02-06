@@ -37,22 +37,33 @@ const Edit = ({ attributes, setAttributes }) => {
 	} = attributes;
 
 	const blockProps = useBlockProps();
-	const [venueId, setVenueId] = useState('');
+	const [venueSlug, setVenueSlug] = useState('');
 
-	Listener({ setVenueId });
+	Listener({ setVenueSlug });
+
+	let venuePost = useSelect((select) =>
+		select('core').getEntityRecords('postType', 'gp_venue', {
+			per_page: 1,
+			slug: venueSlug,
+		})
+	);
+
+	if (!venueSlug) {
+		venuePost = null;
+	}
 
 	useEffect(() => {
 		setAttributes({
-			venueId: venueId ?? '',
+			venueSlug: venueSlug ?? '',
 		});
 	});
 
-	const VenueSelector = ({ id }) => {
-		const venuePost = useSelect((select) =>
-			select('core').getEntityRecord('postType', 'gp_venue', id)
-		);
+	const VenueSelector = ({ venue }) => {
+		if (venue) {
+			venue = venue[0];
+		}
 
-		let jsonString = venuePost?.meta._venue_information ?? '{}';
+		let jsonString = venue?.meta._venue_information ?? '{}';
 		jsonString = '' !== jsonString ? jsonString : '{}';
 
 		const venueInformation = JSON.parse(jsonString);
@@ -61,8 +72,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		const website = venueInformation?.website ?? '';
 
 		const name =
-			venuePost?.title.rendered ??
-			__('No venue selected.', 'gatherpress');
+			venue?.title.rendered ?? __('No venue selected.', 'gatherpress');
 
 		useEffect(() => {
 			setAttributes({
@@ -228,7 +238,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<VenueSelector id={venueId} />
+				<VenueSelector venue={venuePost} />
 				{venueAddress && showEventMap && (
 					<MapEmbed
 						location={venueAddress}

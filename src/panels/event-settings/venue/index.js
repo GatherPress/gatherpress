@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import { Flex, FlexItem, PanelRow, SelectControl } from '@wordpress/components';
+import { PanelRow, SelectControl } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
@@ -21,13 +21,12 @@ const VenuePanel = () => {
 	const venueTerm = useSelect((select) =>
 		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
 	);
-	const venueId = venueTerm?.slug.replace('_venue_', '');
-	const venueValue = venueTermId + ':' + venueId;
-
+	const venueSlug = venueTerm?.slug.slice(1, venueTerm?.slug.length);
+	const venueValue = venueTermId + ':' + venueSlug;
 	useEffect(() => {
 		setVenue(String(venueValue) ?? '');
 		Broadcaster({
-			setVenueId: venueId,
+			setVenueSlug: venueSlug,
 		});
 	});
 
@@ -44,7 +43,7 @@ const VenuePanel = () => {
 	if (venues) {
 		venues = venues.map((item) => ({
 			label: item.name,
-			value: item.id + ':' + item.slug.replace('_venue_', ''),
+			value: item.id + ':' + item.slug.slice(1, item.slug.length),
 		}));
 
 		venues.unshift({
@@ -61,28 +60,21 @@ const VenuePanel = () => {
 		const term = '' !== value[0] ? [value[0]] : [];
 		editPost({ _gp_venue: term });
 		Broadcaster({
-			setVenueId: value[1],
+			setVenueSlug: value[1],
 		});
 		unlockPostSaving();
 	};
 
 	return (
 		<PanelRow>
-			<Flex>
-				<FlexItem>{__('Venue', 'gatherpress')}</FlexItem>
-				<FlexItem>
-					<SelectControl
-						label={__('Venue', 'gatherpress')}
-						hideLabelFromVision="true"
-						value={venue}
-						onChange={(value) => {
-							updateTerm(value);
-						}}
-						options={venues}
-						style={{ width: '11rem' }}
-					/>
-				</FlexItem>
-			</Flex>
+			<SelectControl
+				label={__('Venue', 'gatherpress')}
+				value={venue}
+				onChange={(value) => {
+					updateTerm(value);
+				}}
+				options={venues}
+			/>
 		</PanelRow>
 	);
 };
