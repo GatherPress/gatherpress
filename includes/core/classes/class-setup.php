@@ -56,7 +56,6 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 		add_action( 'init', array( $this, 'register' ) );
-		add_action( 'init', array( $this, 'maybe_create_custom_table' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
@@ -77,6 +76,8 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin() {
+		$this->maybe_create_custom_table();
+
 		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
