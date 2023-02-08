@@ -57,7 +57,7 @@ class Assets {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
-		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ), 10 );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 	}
 

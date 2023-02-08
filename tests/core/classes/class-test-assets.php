@@ -21,6 +21,49 @@ use PMC\Unit_Test\Utility;
 class Test_Assets extends Base {
 
 	/**
+	 * Coverage for setup_hooks.
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks() {
+		$instance = Assets::get_instance();
+		$hooks    = array(
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_print_scripts',
+				'priority' => PHP_INT_MIN,
+				'callback' => array( $instance, 'add_global_object' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_enqueue_scripts',
+				'priority' => 10,
+				'callback' => array( $instance, 'admin_enqueue_scripts' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'enqueue_block_assets',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_scripts' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'enqueue_block_editor_assets',
+				'priority' => 10,
+				'callback' => array( $instance, 'editor_enqueue_scripts' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_head',
+				'priority' => PHP_INT_MIN,
+				'callback' => array( $instance, 'add_global_object' ),
+			),
+		);
+
+		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
 	 * Coverage for unregister_blocks.
 	 *
 	 * @covers ::unregister_blocks
