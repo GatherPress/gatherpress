@@ -52,9 +52,12 @@ class Test_Block extends Base {
 	 */
 	public function test_register_blocks() {
 		$instance            = Block::get_instance();
-		$blocks              = array_map( function( $value ) {
-			return sprintf( 'gatherpress/%s', $value );
-		}, Utility::get_hidden_property( $instance, 'blocks' ) );
+		$blocks              = array_map(
+			function( $value ) {
+				return sprintf( 'gatherpress/%s', $value );
+			},
+			Utility::get_hidden_property( $instance, 'blocks' )
+		);
 		$block_type_registry = WP_Block_Type_Registry::get_instance();
 
 		// Clear out registered blocks.
