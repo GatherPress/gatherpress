@@ -145,12 +145,12 @@ class Event {
 		$term  = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
 		$venue = null;
 
-		if ( ! empty( $term ) && is_a( $term, '\WP_Term' ) ) {
+		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
 			$venue_information['name'] = $term->name;
 			$venue                     = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
 		}
 
-		if ( is_a( '\WP_Post', $venue ) ) {
+		if ( is_a( $venue, 'WP_Post' ) ) {
 			$venue_meta                        = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase

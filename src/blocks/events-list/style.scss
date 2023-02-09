@@ -44,6 +44,12 @@
 		}
 	}
 
+	&__venue {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
 	&__footer {
 		margin-bottom: 2rem;
 		border-bottom: 1px solid #ccc;
