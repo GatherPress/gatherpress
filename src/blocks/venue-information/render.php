@@ -26,7 +26,6 @@ $gatherpress_full_address = $attributes['fullAddress'];
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
 	<div class="gp-venue">
-		<div>
 		<?php if ( ! empty( $attributes['fullAddress'] ) || ! empty( $attributes['name'] ) ) : ?>
 			<div class="gp-venue__row">
 				<div class="gp-venue__item">
@@ -85,18 +84,17 @@ $gatherpress_full_address = $attributes['fullAddress'];
 					</div>
 				<?php endif; ?>
 			<?php endif; ?>
-			</div>
 		</div>
+		<?php if ( $attributes['showVenueMap'] ) : ?>
+			<div class="gp-venue__row gp-venue__gap">
+				<div class="gp-venue__map" style="width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;">
+					<iframe
+						style="border:none;width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;"
+						src="<?php echo esc_url( 'https://maps.google.com/maps?q=' ) . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $attributes['zoomVenueMap'] ) . '&t=' . rawurlencode( $attributes['typeVenueMap'] ) . '&output=embed'; ?>"
+						title="<?php echo esc_html( $attributes['fullAddress'] ); ?>"
+					></iframe>
+				</div>
+			</div>
+		<?php endif; ?>
 	</div>
-	<?php if ( $attributes['showVenueMap'] ) : ?>
-		<div class="gp-venue__row gp-venue__gap">
-			<div class="gp-venue__map" style="width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;">
-				<iframe
-					style="width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;"
-					src="<?php echo esc_url( 'https://maps.google.com/maps?q=' ) . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $attributes['zoomVenueMap'] ) . '&t=' . rawurlencode( $attributes['typeVenueMap'] ) . '&output=embed'; ?>"
-					title="<?php echo esc_html( $attributes['fullAddress'] ); ?>"
-				></iframe>
-			</div>
-		</div>
-	<?php endif; ?>
 </div>
