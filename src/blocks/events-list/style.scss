@@ -28,10 +28,11 @@
 	&__datetime {
 		margin-bottom: 0.5rem;
 		padding: 0;
+		text-transform: uppercase;
 	}
 
 	&__title {
-		margin-bottom: 1.5rem;
+		margin-bottom: 1rem;
 		padding: 0;
 	}
 
@@ -48,6 +49,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
+		margin-bottom: 1rem;
 	}
 
 	&__footer {
