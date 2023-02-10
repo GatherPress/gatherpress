@@ -170,7 +170,7 @@ class Test_Event extends Base {
 			$event->get_datetime()
 		);
 
-		$this->assertSame( 'Mon, May 11, 3:00pm EDT', $event->get_datetime_start() );
+		$this->assertSame( 'Mon, May 11, 2020, 3:00 pm EDT', $event->get_datetime_start() );
 		$this->assertSame( '2020-05-11', $event->get_datetime_start( 'Y-m-d' ) );
 		$this->assertSame( 'Tue, May 12, 5:00pm EDT', $event->get_datetime_end() );
 		$this->assertSame( '2020-05-12', $event->get_datetime_end( 'Y-m-d' ) );
