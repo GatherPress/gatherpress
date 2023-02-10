@@ -8,28 +8,27 @@ import {
 	ButtonGroup,
 	Flex,
 	FlexItem,
+	FlexBlock,
 	Icon,
 	PanelBody,
 	PanelRow,
 	RadioControl,
 	RangeControl,
+	TextControl,
 	ToggleControl,
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalInputControl as InputControl,
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 } from '@wordpress/components';
-// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import MapEmbed from '../../helpers/map-embed';
+import VenueInformation from '../../components/VenueInformation';
 
 import './editor.scss';
 
-const Edit = ({ attributes, setAttributes }) => {
+const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const {
 		showVenueMap,
 		fullAddress,
@@ -45,9 +44,6 @@ const Edit = ({ attributes, setAttributes }) => {
 
 	const blockProps = useBlockProps();
 	const editPost = useDispatch('core/editor').editPost;
-	const [editFullAddress, setEditFullAddress] = useState(false);
-	const [editPhoneNumber, setEditPhoneNumber] = useState(false);
-	const [editWebsite, setEditWebsite] = useState(false);
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
@@ -98,9 +94,9 @@ const Edit = ({ attributes, setAttributes }) => {
 									: __('Hide the map', 'gatherpress')
 							}
 							checked={showVenueMap}
-							onChange={(value) =>
-								setAttributes({ showVenueMap: value })
-							}
+							onChange={(value) => {
+								setAttributes({ showVenueMap: value });
+							}}
 						/>
 					</PanelRow>
 					<RangeControl
@@ -210,98 +206,72 @@ const Edit = ({ attributes, setAttributes }) => {
 			</InspectorControls>
 			<div {...blockProps}>
 				<div className="gp-venue">
-					<Flex justify="normal">
-						<FlexItem display="flex">
-							<Icon icon="location" />
-						</FlexItem>
-						<FlexItem>
-							{editFullAddress && (
-								<InputControl
-									style={{ width: '300px' }}
-									isPressEnterToChange={true}
-									value={fullAddress}
-									onChange={(place) => {
-										setAttributes({ fullAddress: place });
-										onUpdate('fullAddress', place);
-										setEditFullAddress(false);
-									}}
-								/>
+					{!isSelected && (
+						<>
+							{!fullAddress && !phoneNumber && !website && (
+								<Flex justify="normal">
+									<FlexItem display="flex">
+										<Icon icon="location" />
+									</FlexItem>
+									<FlexItem>
+										<em>
+											{__(
+												'Add venue information.',
+												'gatherpress'
+											)}
+										</em>
+									</FlexItem>
+								</Flex>
 							)}
-							{!editFullAddress && (
-								<em>
-									{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-									<a
-										href="#"
-										onClick={() => setEditFullAddress(true)}
-									>
-										{fullAddress
-											? fullAddress
-											: __('Full Address', 'gatherpress')}
-									</a>
-								</em>
-							)}
-						</FlexItem>
-					</Flex>
-					<Flex justify="normal">
-						<FlexItem display="flex">
-							<Icon icon="phone" />
-						</FlexItem>
-						<FlexItem>
-							{!editPhoneNumber && (
-								<em>
-									{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-									<a
-										href="#"
-										onClick={() => setEditPhoneNumber(true)}
-									>
-										{phoneNumber
-											? phoneNumber
-											: __('Phone Number', 'gatherpress')}
-									</a>
-								</em>
-							)}
-							{editPhoneNumber && (
-								<InputControl
-									isPressEnterToChange={true}
-									value={phoneNumber}
-									onChange={(number) => {
-										setAttributes({ phoneNumber: number });
-										onUpdate('phoneNumber', number);
-										setEditPhoneNumber(false);
-									}}
-								/>
-							)}
-						</FlexItem>
-						<FlexItem display="flex">
-							<Icon icon="admin-site-alt3" />
-						</FlexItem>
-						<FlexItem>
-							{editWebsite && (
-								<InputControl
-									isPressEnterToChange={true}
-									value={website}
-									onChange={(url) => {
-										setAttributes({ website: url });
-										onUpdate('website', url);
-										setEditWebsite(false);
-									}}
-								/>
-							)}
-							{!editWebsite && (
-								<em>
-									{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-									<a
-										href="#"
-										onClick={() => setEditWebsite(true)}
-									>
-										{website
-											? website
-											: __('Website', 'gatherpress')}
-									</a>
-								</em>
-							)}
-						</FlexItem>
-					</Flex>
+							<VenueInformation
+								fullAddress={fullAddress}
+								phoneNumber={phoneNumber}
+								website={website}
+							/>
+						</>
+					)}
+					{isSelected && (
+						<>
+							<Flex>
+								<FlexBlock>
+									<TextControl
+										label={__(
+											'Full Address',
+											'gatherpress'
+										)}
+										value={fullAddress}
+										onChange={(value) => {
+											onUpdate('fullAddress', value);
+										}}
+									/>
+								</FlexBlock>
+							</Flex>
+							<Flex>
+								<FlexBlock>
+									<TextControl
+										label={__(
+											'Phone Number',
+											'gatherpress'
+										)}
+										value={phoneNumber}
+										onChange={(value) => {
+											onUpdate('phoneNumber', value);
+										}}
+									/>
+								</FlexBlock>
+								<FlexBlock>
+									<TextControl
+										label={__('Website', 'gatherpress')}
+										value={website}
+										type="url"
+										onChange={(value) => {
+											onUpdate('website', value);
+										}}
+									/>
+								</FlexBlock>
+							</Flex>
+						</>
+					)}
 					{showVenueMap && (
 						<MapEmbed
 							location={fullAddress}
