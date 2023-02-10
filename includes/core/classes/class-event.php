@@ -124,7 +124,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	public function get_datetime_start( string $format = 'D, F j, g:ia T' ): string {
+	public function get_datetime_start( string $format = 'D, M j, Y, g:i a T' ): string {
 		return $this->get_formatted_datetime( $format, 'start' );
 	}
 

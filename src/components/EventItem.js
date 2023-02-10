@@ -46,19 +46,19 @@ const EventItem = (props) => {
 							{HtmlReactParser(event.title)}
 						</a>
 					</div>
-					{eventOptions.showDescription && (
-						<div className={`${eventClass}__content`}>
-							<div className={`${eventClass}__excerpt`}>
-								{HtmlReactParser(limitExcerpt(event.excerpt))}
-							</div>
-						</div>
-					)}
 					{event.venue && (
 						<div className={`${eventClass}__venue`}>
 							<span className="dashicons dashicons-location"></span>
 							<a href={event.venue.permalink}>
 								{event.venue.name}
 							</a>
+						</div>
+					)}
+					{eventOptions.showDescription && (
+						<div className={`${eventClass}__content`}>
+							<div className={`${eventClass}__excerpt`}>
+								{HtmlReactParser(limitExcerpt(event.excerpt))}
+							</div>
 						</div>
 					)}
 				</div>
