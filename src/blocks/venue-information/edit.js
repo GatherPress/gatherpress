@@ -32,7 +32,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		website,
 		mapZoomLevel,
 		mapType,
-		mapHeight
+		mapHeight,
 	} = attributes;
 
 	const blockProps = useBlockProps();

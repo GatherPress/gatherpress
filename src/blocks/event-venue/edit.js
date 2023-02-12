@@ -21,12 +21,7 @@ import MapEmbed from '../../components/MapEmbed';
 import VenueInformation from '../../components/VenueInformation';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const {
-		mapHeight,
-		mapShow,
-		mapType,
-		mapZoomLevel,
-	} = attributes;
+	const { mapHeight, mapShow, mapType, mapZoomLevel } = attributes;
 
 	const blockProps = useBlockProps();
 	const [venueSlug, setVenueSlug] = useState('');
@@ -69,10 +64,10 @@ const Edit = ({ attributes, setAttributes }) => {
 		return (
 			<div className="gp-venue">
 				<VenueInformation
-					name={ name }
-					fullAddress={ fullAddress }
-					phoneNumber={ phoneNumber }
-					website={ website }
+					name={name}
+					fullAddress={fullAddress}
+					phoneNumber={phoneNumber}
+					website={website}
 				/>
 				{fullAddress && mapShow && (
 					<MapEmbed

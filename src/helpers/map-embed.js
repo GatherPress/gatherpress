@@ -27,4 +27,4 @@ domReady(() => {
 			containers[i]
 		);
 	}
-})
+});

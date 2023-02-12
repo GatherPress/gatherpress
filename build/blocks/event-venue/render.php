@@ -20,10 +20,10 @@ if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 
 $gatherpress_venue_name         = get_the_title( $gatherpress_venue->ID );
 $gatherpress_venue_information  = json_decode( get_post_meta( $gatherpress_venue->ID, '_venue_information', true ) );
-$gatherpress_venue_full_address = $gatherpress_venue_information->fullAddress;
-$gatherpress_venue_phone_number = $gatherpress_venue_information->phoneNumber;
+$gatherpress_venue_full_address = $gatherpress_venue_information->fullAddress; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+$gatherpress_venue_phone_number = $gatherpress_venue_information->phoneNumber; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 $gatherpress_venue_website      = $gatherpress_venue_information->website;
-$attributes['fullAddress']      = $gatherpress_venue_full_address;
+$attributes['fullAddress']      = $gatherpress_venue_full_address; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
