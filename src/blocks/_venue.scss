@@ -1,0 +1,25 @@
+.gp-venue {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+
+	&__row {
+		display: flex;
+		justify-content: flex-start;
+	}
+
+	&__icon {
+		display: flex;
+		align-items: flex-start;
+		padding-top: 0.4rem;
+	}
+
+	&__item {
+		display: flex;
+		gap: 1rem;
+	}
+
+	&__gap {
+		gap: 2rem;
+	}
+}

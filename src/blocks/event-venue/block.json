@@ -32,7 +32,7 @@
 	},
 	"supports": {
 		"html": true,
-		"align": [ "wide", "full" ]
+		"align": [ "wide" ]
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

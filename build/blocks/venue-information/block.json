@@ -45,8 +45,7 @@
   "supports": {
     "html": false,
     "align": [
-      "wide",
-      "full"
+      "wide"
     ]
   },
   "textdomain": "gatherpress",

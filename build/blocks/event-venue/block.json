@@ -33,8 +33,7 @@
   "supports": {
     "html": true,
     "align": [
-      "wide",
-      "full"
+      "wide"
     ]
   },
   "textdomain": "gatherpress",
