@@ -40,7 +40,7 @@ $attributes['fullAddress']      = $gatherpress_venue_full_address; // phpcs:igno
 							?>
 							<div class="gp-venue__name has-medium-font-size">
 								<strong>
-									<a href="<?php echo esc_url( get_permalink( $gatherpress_venue->ID ) ); ?>" target="_blank" rel="noopener">
+									<a href="<?php echo esc_url( get_permalink( $gatherpress_venue->ID ) ); ?>">
 										<?php echo esc_html( $gatherpress_venue_name ); ?>
 									</a>
 								</strong>
