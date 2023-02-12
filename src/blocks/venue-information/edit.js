@@ -151,9 +151,9 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 								</Flex>
 							)}
 							<VenueInformation
-								venueFullAddress={fullAddress}
-								venuePhoneNumber={phoneNumber}
-								venueWebsite={website}
+								fullAddress={fullAddress}
+								phoneNumber={phoneNumber}
+								website={website}
 							/>
 						</>
 					)}
