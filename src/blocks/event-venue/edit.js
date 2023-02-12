@@ -21,10 +21,10 @@ import MapEmbed from '../../components/MapEmbed';
 import VenueInformation from '../../components/VenueInformation';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { mapHeight, mapShow, mapType, mapZoomLevel } = attributes;
+	const { slug, mapHeight, mapShow, mapType, mapZoomLevel } = attributes;
 
 	const blockProps = useBlockProps();
-	const [venueSlug, setVenueSlug] = useState('');
+	const [venueSlug, setVenueSlug] = useState(slug);
 
 	Listener({ setVenueSlug });
 
