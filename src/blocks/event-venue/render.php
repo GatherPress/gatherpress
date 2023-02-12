@@ -12,7 +12,7 @@ use GatherPress\Core\Venue;
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
-$gatherpress_venue = Venue::get_instance()->get_venue_post_from_term_slug( $attributes['slug'] );
+$gatherpress_venue = Venue::get_instance()->get_venue_post_from_term_slug( (string) $attributes['slug'] );
 
 if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 	return;
