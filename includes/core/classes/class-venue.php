@@ -51,6 +51,10 @@ class Venue {
 	 * @return void
 	 */
 	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ) {
+		if ( Venue::POST_TYPE !== get_post_type( $post_id ) ) {
+			return;
+		}
+
 		if (
 			$post_before->post_name !== $post_after->post_name ||
 			$post_before->post_title !== $post_after->post_title

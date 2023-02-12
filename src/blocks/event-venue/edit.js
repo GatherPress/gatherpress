@@ -6,8 +6,6 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import {
-	Button,
-	ButtonGroup,
 	PanelBody,
 	PanelRow,
 	RadioControl,
@@ -19,21 +17,15 @@ import {
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
-
-import MapEmbed from '../../helpers/map-embed';
-
-import './editor.scss';
+import MapEmbed from '../../components/MapEmbed';
+import VenueInformation from '../../components/VenueInformation';
 
 const Edit = ({ attributes, setAttributes }) => {
 	const {
-		deskHeight,
-		device,
-		showEventMap,
-		typeEventMap,
-		venueAddress,
-		zoomEventMap,
-		tabHeight,
-		mobileHeight,
+		mapHeight,
+		mapShow,
+		mapType,
+		mapZoomLevel,
 	} = attributes;
 
 	const blockProps = useBlockProps();
@@ -54,11 +46,11 @@ const Edit = ({ attributes, setAttributes }) => {
 
 	useEffect(() => {
 		setAttributes({
-			venueSlug: venueSlug ?? '',
+			slug: venueSlug ?? '',
 		});
 	});
 
-	const VenueSelector = ({ venue }) => {
+	const Venue = ({ venue }) => {
 		if (venue) {
 			venue = venue[0];
 		}
@@ -74,36 +66,22 @@ const Edit = ({ attributes, setAttributes }) => {
 		const name =
 			venue?.title.rendered ?? __('No venue selected.', 'gatherpress');
 
-		useEffect(() => {
-			setAttributes({
-				venueName: name,
-				venueAddress: fullAddress,
-			});
-		});
-
 		return (
-			<div>
-				<p className="address-name">{name}</p>
-				<p className="address-list">
-					{fullAddress ? (
-						<span className="dashicons dashicons-location"></span>
-					) : (
-						''
-					)}{' '}
-					{fullAddress}{' '}
-					{phoneNumber ? (
-						<span className="dashicons dashicons-phone"></span>
-					) : (
-						''
-					)}{' '}
-					{phoneNumber}{' '}
-					{website ? (
-						<span className="dashicons dashicons-admin-site-alt3"></span>
-					) : (
-						''
-					)}{' '}
-					{website}
-				</p>
+			<div className="gp-venue">
+				<VenueInformation
+					name={ name }
+					fullAddress={ fullAddress }
+					phoneNumber={ phoneNumber }
+					website={ website }
+				/>
+				{fullAddress && mapShow && (
+					<MapEmbed
+						location={fullAddress}
+						zoom={mapZoomLevel}
+						type={mapType}
+						height={mapHeight}
+					/>
+				)}
 			</div>
 		);
 	};
@@ -121,22 +99,22 @@ const Edit = ({ attributes, setAttributes }) => {
 					<PanelRow>
 						<ToggleControl
 							label={
-								showEventMap
+								mapShow
 									? __('Display the map', 'gatherpress')
 									: __('Hide the map', 'gatherpress')
 							}
-							checked={showEventMap}
+							checked={mapShow}
 							onChange={(value) =>
-								setAttributes({ showEventMap: value })
+								setAttributes({ mapShow: value })
 							}
 						/>
 					</PanelRow>
 					<RangeControl
 						label={__('Zoom Level', 'gatherpress')}
 						beforeIcon="search"
-						value={zoomEventMap}
+						value={mapZoomLevel}
 						onChange={(value) =>
-							setAttributes({ zoomEventMap: value })
+							setAttributes({ mapZoomLevel: value })
 						}
 						min={1}
 						max={22}
@@ -144,7 +122,7 @@ const Edit = ({ attributes, setAttributes }) => {
 
 					<RadioControl
 						label={__('Map Type', 'gatherpress')}
-						selected={typeEventMap}
+						selected={mapType}
 						options={[
 							{
 								label: __('Roadmap', 'gatherpress'),
@@ -156,97 +134,23 @@ const Edit = ({ attributes, setAttributes }) => {
 							},
 						]}
 						onChange={(value) => {
-							setAttributes({ typeEventMap: value });
+							setAttributes({ mapType: value });
 						}}
 					/>
-					<ButtonGroup
-						style={{ marginBottom: '10px', float: 'right' }}
-					>
-						<Button
-							label={__('Desktop view', 'gatherpress')}
-							isSmall={true}
-							isPressed={'desktop' === device}
-							onClick={() =>
-								setAttributes({
-									device: 'desktop',
-								})
-							}
-						>
-							<span className="dashicons dashicons-desktop"></span>
-						</Button>
-						<Button
-							label={__('Tablet view', 'gatherpress')}
-							isSmall={true}
-							isPressed={'tablet' === device}
-							onClick={() =>
-								setAttributes({
-									device: 'tablet',
-								})
-							}
-						>
-							<span className="dashicons dashicons-tablet"></span>
-						</Button>
-						<Button
-							label={__('Mobile view', 'gatherpress')}
-							isSmall={true}
-							isPressed={'mobile' === device}
-							onClick={() =>
-								setAttributes({
-									device: 'mobile',
-								})
-							}
-						>
-							<span className="dashicons dashicons-smartphone"></span>
-						</Button>
-					</ButtonGroup>
-					{'desktop' === device && (
-						<RangeControl
-							label={__('Map Height', 'gatherpress')}
-							beforeIcon="desktop"
-							value={deskHeight}
-							onChange={(height) =>
-								setAttributes({ deskHeight: height })
-							}
-							min={1}
-							max={2000}
-						/>
-					)}
-					{'tablet' === device && (
-						<RangeControl
-							label={__('Map Height', 'gatherpress')}
-							beforeIcon="tablet"
-							value={tabHeight}
-							onChange={(height) =>
-								setAttributes({ tabHeight: height })
-							}
-							min={1}
-							max={2000}
-						/>
-					)}
-					{'mobile' === device && (
-						<RangeControl
-							label={__('Map Height', 'gatherpress')}
-							beforeIcon="smartphone"
-							value={mobileHeight}
-							onChange={(height) =>
-								setAttributes({ mobileHeight: height })
-							}
-							min={1}
-							max={2000}
-						/>
-					)}
+					<RangeControl
+						label={__('Map Height', 'gatherpress')}
+						beforeIcon="location"
+						value={mapHeight}
+						onChange={(height) =>
+							setAttributes({ mapHeight: height })
+						}
+						min={50}
+						max={1000}
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<VenueSelector venue={venuePost} />
-				{venueAddress && showEventMap && (
-					<MapEmbed
-						location={venueAddress}
-						zoom={zoomEventMap}
-						type={typeEventMap}
-						height={deskHeight}
-					/>
-				)}
+				<Venue venue={venuePost} />
 			</div>
 		</>
 	);

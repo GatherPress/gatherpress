@@ -2,50 +2,32 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 2,
 	"name": "gatherpress/event-venue",
-	"version": "0.2",
+	"version": "1.0.0",
 	"title": "Event Venue",
 	"category": "gatherpress",
 	"icon": "location",
 	"example": {},
 	"description": "The block used for displaying the event's venue.",
 	"attributes": {
-		"venueAddress": {
-			"type": "string"
-		},
-		"venueId": {
-			"type": "integer",
+		"slug": {
+			"type": "string",
 			"default": null
 		},
-		"venueName": {
-			"type": "string"
-		},
-		"showEventMap": {
+		"mapShow": {
 			"type": "boolean",
 			"default": true
 		},
-		"zoomEventMap": {
+		"mapZoomLevel": {
 			"type": "number",
 			"default": 10
 		},
-		"typeEventMap": {
+		"mapType": {
 			"type": "string",
 			"default": "m"
 		},
-		"deskHeight": {
-			"type": "number",
-			"default": 400
-		},
-		"tabHeight": {
+		"mapHeight": {
 			"type": "number",
 			"default": 300
-		},
-		"mobileHeight": {
-			"type": "number",
-			"default": 250
-		},
-		"device": {
-			"type": "string",
-			"default": "desktop"
 		}
 	},
 	"supports": {
@@ -56,5 +38,6 @@
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
+	"viewScript": "file:./event-venue.js",
 	"render": "file:./render.php"
 }

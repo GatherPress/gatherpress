@@ -4,8 +4,6 @@
 import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
-	Button,
-	ButtonGroup,
 	Flex,
 	FlexItem,
 	FlexBlock,
@@ -23,23 +21,18 @@ import { useEffect } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import MapEmbed from '../../helpers/map-embed';
+import MapEmbed from '../../components/MapEmbed';
 import VenueInformation from '../../components/VenueInformation';
-
-import './editor.scss';
 
 const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const {
-		showVenueMap,
+		mapShow,
 		fullAddress,
 		phoneNumber,
 		website,
-		zoomVenueMap,
-		typeVenueMap,
-		deskHeight,
-		tabHeight,
-		mobileHeight,
-		device,
+		mapZoomLevel,
+		mapType,
+		mapHeight
 	} = attributes;
 
 	const blockProps = useBlockProps();
@@ -89,29 +82,29 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 					<PanelRow>
 						<ToggleControl
 							label={
-								showVenueMap
+								mapShow
 									? __('Display the map', 'gatherpress')
 									: __('Hide the map', 'gatherpress')
 							}
-							checked={showVenueMap}
+							checked={mapShow}
 							onChange={(value) => {
-								setAttributes({ showVenueMap: value });
+								setAttributes({ mapShow: value });
 							}}
 						/>
 					</PanelRow>
 					<RangeControl
 						label={__('Zoom Level', 'gatherpress')}
 						beforeIcon="search"
-						value={zoomVenueMap}
+						value={mapZoomLevel}
 						onChange={(value) =>
-							setAttributes({ zoomVenueMap: value })
+							setAttributes({ mapZoomLevel: value })
 						}
 						min={1}
 						max={22}
 					/>
 					<RadioControl
 						label={__('Map Type', 'gatherpress')}
-						selected={typeVenueMap}
+						selected={mapType}
 						options={[
 							{
 								label: __('Roadmap', 'gatherpress'),
@@ -123,85 +116,19 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							},
 						]}
 						onChange={(value) => {
-							setAttributes({ typeVenueMap: value });
+							setAttributes({ mapType: value });
 						}}
 					/>
-					<ButtonGroup
-						style={{ marginBottom: '10px', float: 'right' }}
-					>
-						<Button
-							label={__('Desktop view', 'gatherpress')}
-							isSmall={true}
-							isPressed={'desktop' === device}
-							onClick={() =>
-								setAttributes({
-									device: 'desktop',
-								})
-							}
-						>
-							<span className="dashicons dashicons-desktop"></span>
-						</Button>
-						<Button
-							label={__('Tablet view', 'gatherpress')}
-							isSmall={true}
-							isPressed={'tablet' === device}
-							onClick={() =>
-								setAttributes({
-									device: 'tablet',
-								})
-							}
-						>
-							<span className="dashicons dashicons-tablet"></span>
-						</Button>
-						<Button
-							label={__('Mobile view', 'gatherpress')}
-							isSmall={true}
-							isPressed={'mobile' === device}
-							onClick={() =>
-								setAttributes({
-									device: 'mobile',
-								})
-							}
-						>
-							<span className="dashicons dashicons-smartphone"></span>
-						</Button>
-					</ButtonGroup>
-					{'desktop' === device && (
-						<RangeControl
-							label={__('Map Height', 'gatherpress')}
-							beforeIcon="desktop"
-							value={deskHeight}
-							onChange={(height) =>
-								setAttributes({ deskHeight: height })
-							}
-							min={1}
-							max={2000}
-						/>
-					)}
-					{'tablet' === device && (
-						<RangeControl
-							label={__('Map Height', 'gatherpress')}
-							beforeIcon="tablet"
-							value={tabHeight}
-							onChange={(height) =>
-								setAttributes({ tabHeight: height })
-							}
-							min={1}
-							max={2000}
-						/>
-					)}
-					{'mobile' === device && (
-						<RangeControl
-							label={__('Map Height', 'gatherpress')}
-							beforeIcon="smartphone"
-							value={mobileHeight}
-							onChange={(height) =>
-								setAttributes({ mobileHeight: height })
-							}
-							min={1}
-							max={2000}
-						/>
-					)}
+					<RangeControl
+						label={__('Map Height', 'gatherpress')}
+						beforeIcon="location"
+						value={mapHeight}
+						onChange={(height) =>
+							setAttributes({ mapHeight: height })
+						}
+						min={100}
+						max={1000}
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
@@ -224,9 +151,9 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 								</Flex>
 							)}
 							<VenueInformation
-								fullAddress={fullAddress}
-								phoneNumber={phoneNumber}
-								website={website}
+								venueFullAddress={fullAddress}
+								venuePhoneNumber={phoneNumber}
+								venueWebsite={website}
 							/>
 						</>
 					)}
@@ -272,12 +199,12 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							</Flex>
 						</>
 					)}
-					{showVenueMap && (
+					{mapShow && (
 						<MapEmbed
 							location={fullAddress}
-							zoom={zoomVenueMap}
-							type={typeVenueMap}
-							height={deskHeight}
+							zoom={mapZoomLevel}
+							type={mapType}
+							height={mapHeight}
 						/>
 					)}
 				</div>

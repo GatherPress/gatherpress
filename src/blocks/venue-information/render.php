@@ -19,8 +19,7 @@ if (
 ) {
 	return;
 }
-// (WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase)
-// phpcs:ignore
+
 $gatherpress_full_address = $attributes['fullAddress'];
 
 ?>
@@ -85,16 +84,8 @@ $gatherpress_full_address = $attributes['fullAddress'];
 				<?php endif; ?>
 			<?php endif; ?>
 		</div>
-		<?php if ( $attributes['showVenueMap'] ) : ?>
-			<div class="gp-venue__row gp-venue__gap">
-				<div class="gp-venue__map" style="width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;">
-					<iframe
-						style="border:none;width:100%;height:<?php echo esc_attr( $attributes['deskHeight'] ); ?>px;"
-						src="<?php echo esc_url( 'https://maps.google.com/maps?q=' ) . rawurlencode( $gatherpress_full_address ) . '&z=' . rawurlencode( $attributes['zoomVenueMap'] ) . '&t=' . rawurlencode( $attributes['typeVenueMap'] ) . '&output=embed'; ?>"
-						title="<?php echo esc_html( $attributes['fullAddress'] ); ?>"
-					></iframe>
-				</div>
-			</div>
+		<?php if ( $attributes['mapShow'] ) : ?>
+			<div data-gp_block_name="map-embed" data-gp_block_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $attributes ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
 		<?php endif; ?>
 	</div>
 </div>
