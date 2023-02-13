@@ -1,23 +1,30 @@
-const MapEmbed = (props) => {
-	const { location, zoom, type, height, className } = props;
-	const style = { border: 0, height, width: '100%' };
-	const baseUrl = 'https://maps.google.com/maps';
+/**
+ * WordPress dependencies.
+ */
+import domReady from '@wordpress/dom-ready';
+import { render } from '@wordpress/element';
 
-	const params = new URLSearchParams({
-		q: location,
-		z: zoom || 1,
-		t: type,
-		output: 'embed',
-	});
+/**
+ * Internal dependencies.
+ */
+import MapEmbed from '../components/MapEmbed';
 
-	const srcURL = baseUrl + '?' + params.toString();
-	return (
-		<iframe
-			src={srcURL}
-			style={style}
-			className={className}
-			title={location}
-		></iframe>
+domReady(() => {
+	const containers = document.querySelectorAll(
+		`[data-gp_block_name="map-embed"]`
 	);
-};
-export default MapEmbed;
+
+	for (let i = 0; i < containers.length; i++) {
+		const attrs = JSON.parse(containers[i].dataset.gp_block_attrs);
+
+		render(
+			<MapEmbed
+				location={attrs.fullAddress}
+				zoom={attrs.mapZoomLevel}
+				type={attrs.mapType}
+				height={attrs.mapHeight}
+			/>,
+			containers[i]
+		);
+	}
+});

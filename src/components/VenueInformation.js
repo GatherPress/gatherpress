@@ -1,14 +1,8 @@
 import { Flex, FlexItem, Icon } from '@wordpress/components';
 
-const VenueInformation = ({
-	name,
-	fullAddress,
-	encodedAddressURL,
-	phoneNumber,
-	website,
-}) => {
+const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
 	return (
-		<div className="gp-venue">
+		<>
 			{(name || fullAddress) && (
 				<Flex justify="normal" align="flex-start" gap="4">
 					<FlexItem display="flex" className="gp-venue__icon">
@@ -72,21 +66,7 @@ const VenueInformation = ({
 					)}
 				</Flex>
 			)}
-			{encodedAddressURL && (
-				<Flex
-					justify="normal"
-					align="flex-start"
-					gap="4"
-					style={{ padding: '1rem 0', width: '98%' }}
-				>
-					<iframe
-						style={{ width: '93%', height: '400px' }}
-						title={fullAddress}
-						src={encodedAddressURL}
-					></iframe>
-				</Flex>
-			)}
-		</div>
+		</>
 	);
 };
 
