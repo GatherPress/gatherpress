@@ -18,8 +18,6 @@ registerBlockType(metadata, {
 });
 
 registerBlockType('gatherpress/venue', {
-	title: 'Event Date',
-	category: 'gatherpress',
 	edit,
 	save: () => null,
 });
