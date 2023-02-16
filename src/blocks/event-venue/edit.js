@@ -4,7 +4,7 @@
 import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { useState, useEffect } from '@wordpress/element';
-import { useSelect, select } from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 import {
 	PanelBody,
 	PanelRow,
@@ -24,12 +24,17 @@ const Edit = ({ attributes, setAttributes }) => {
 	const { mapHeight, mapShow, mapType, mapZoomLevel } = attributes;
 	const blockProps = useBlockProps();
 	const [venueSlug, setVenueSlug] = useState('');
-	const venueTermId =
-		select('core/editor').getEditedPostAttribute('_gp_venue');
-	const venueTerm = select('core').getEntityRecord(
-		'taxonomy',
-		'_gp_venue',
-		venueTermId
+	const venueTermId = useSelect((select) =>
+		select('core/editor').getEditedPostAttribute('_gp_venue')
+	);
+	const venueTerm = useSelect((select) =>
+		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
+	);
+	let venuePost = useSelect((select) =>
+		select('core').getEntityRecords('postType', 'gp_venue', {
+			per_page: 1,
+			slug: venueSlug,
+		})
 	);
 
 	let slug = null;
@@ -44,13 +49,6 @@ const Edit = ({ attributes, setAttributes }) => {
 	});
 
 	Listener({ setVenueSlug });
-
-	let venuePost = useSelect(() =>
-		select('core').getEntityRecords('postType', 'gp_venue', {
-			per_page: 1,
-			slug: venueSlug,
-		})
-	);
 
 	if (!venueSlug) {
 		venuePost = null;
