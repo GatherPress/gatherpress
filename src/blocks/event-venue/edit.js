@@ -21,13 +21,15 @@ import MapEmbed from '../../components/MapEmbed';
 import VenueInformation from '../../components/VenueInformation';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { slug, mapHeight, mapShow, mapType, mapZoomLevel } = attributes;
-
+	const { mapHeight, mapShow, mapType, mapZoomLevel } = attributes;
 	const blockProps = useBlockProps();
-	const [venueSlug, setVenueSlug] = useState(slug);
-
-	Listener({ setVenueSlug });
-
+	const [venueSlug, setVenueSlug] = useState('');
+	const venueTermId = useSelect((select) =>
+		select('core/editor').getEditedPostAttribute('_gp_venue')
+	);
+	const venueTerm = useSelect((select) =>
+		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
+	);
 	let venuePost = useSelect((select) =>
 		select('core').getEntityRecords('postType', 'gp_venue', {
 			per_page: 1,
@@ -35,15 +37,22 @@ const Edit = ({ attributes, setAttributes }) => {
 		})
 	);
 
-	if (!venueSlug) {
-		venuePost = null;
+	let slug = null;
+
+	if (venueTerm) {
+		// Convert venue term slug to venue post type slug by removing leading underscore.
+		slug = venueTerm.slug.replace(/^_/, '');
 	}
 
 	useEffect(() => {
-		setAttributes({
-			slug: venueSlug ?? '',
-		});
+		setVenueSlug(slug);
 	});
+
+	Listener({ setVenueSlug });
+
+	if (!venueSlug) {
+		venuePost = null;
+	}
 
 	const Venue = ({ venue }) => {
 		if (venue) {

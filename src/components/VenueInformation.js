@@ -1,3 +1,11 @@
+/**
+ * External dependencies.
+ */
+import HtmlReactParser from 'html-react-parser';
+
+/**
+ * WordPress dependencies.
+ */
 import { Flex, FlexItem, Icon } from '@wordpress/components';
 
 const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
@@ -11,12 +19,12 @@ const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
 					<FlexItem>
 						{name && (
 							<div className="gp-venue_information__name has-medium-font-size">
-								<strong>{name}</strong>
+								<strong>{HtmlReactParser(name)}</strong>
 							</div>
 						)}
 						{fullAddress && (
 							<div className="gp-venue__full-address">
-								{fullAddress}
+								{HtmlReactParser(fullAddress)}
 							</div>
 						)}
 					</FlexItem>
