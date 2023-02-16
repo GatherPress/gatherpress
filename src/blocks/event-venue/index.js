@@ -18,6 +18,7 @@ registerBlockType(metadata, {
 });
 
 registerBlockType('gatherpress/venue', {
+	title: 'Venue',
 	edit,
 	save: () => null,
 });

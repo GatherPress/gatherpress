@@ -4,7 +4,7 @@
 import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { useState, useEffect } from '@wordpress/element';
-import { useSelect } from '@wordpress/data';
+import { useSelect, select } from '@wordpress/data';
 import {
 	PanelBody,
 	PanelRow,
@@ -34,6 +34,8 @@ const Edit = ({ attributes, setAttributes }) => {
 			slug: venueSlug,
 		})
 	);
+	const venueTerm = select('core/editor').getEditedPostAttribute('_gp_venue');
+	console.log(venueTerm);
 
 	if (!venueSlug) {
 		venuePost = null;
