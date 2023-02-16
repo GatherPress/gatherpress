@@ -9,10 +9,6 @@
   "example": {},
   "description": "The block used for displaying the event's venue.",
   "attributes": {
-    "slug": {
-      "type": "string",
-      "default": null
-    },
     "mapShow": {
       "type": "boolean",
       "default": true

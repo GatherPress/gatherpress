@@ -16,9 +16,3 @@ registerBlockType(metadata, {
 	edit,
 	save: () => null,
 });
-
-registerBlockType('gatherpress/venue', {
-	title: 'Venue',
-	edit,
-	save: () => null,
-});

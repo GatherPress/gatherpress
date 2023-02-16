@@ -12,7 +12,19 @@ use GatherPress\Core\Venue;
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
-$gatherpress_venue = Venue::get_instance()->get_venue_post_from_term_slug( (string) $attributes['slug'] );
+
+$gatherpress_venue_term_slug = '';
+$gatherpress_venue_terms     = get_the_terms( get_the_ID(), Venue::TAXONOMY );
+
+if ( ! empty( $gatherpress_venue_terms ) && is_array( $gatherpress_venue_terms ) ) {
+	$gatherpress_venue_term = $gatherpress_venue_terms[0];
+
+	if ( is_a( $gatherpress_venue_term, 'WP_Term' ) ) {
+		$gatherpress_venue_term_slug = $gatherpress_venue_term->slug;
+	}
+}
+
+$gatherpress_venue = Venue::get_instance()->get_venue_post_from_term_slug( $gatherpress_venue_term_slug );
 
 if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {
 	return;
