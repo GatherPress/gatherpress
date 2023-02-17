@@ -243,6 +243,7 @@ class Attendee {
 		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $event_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
 		$attendees   = array();
+		$all_guests  = 0;
 
 		foreach ( $this->statuses as $status ) {
 			$retval[ $status ] = array(
@@ -255,6 +256,7 @@ class Attendee {
 			$user_id     = intval( $attendee['user_id'] );
 			$user_status = sanitize_key( $attendee['status'] );
 			$user_guests = intval( $attendee['guests'] );
+			$all_guests += $user_guests;
 
 			if ( 1 > $user_id ) {
 				continue;
@@ -283,7 +285,7 @@ class Attendee {
 		usort( $attendees, array( $this, 'sort_by_role' ) );
 
 		$retval['all']['attendees'] = $attendees;
-		$retval['all']['count']     = count( $retval['all']['attendees'] );
+		$retval['all']['count']     = count( $retval['all']['attendees'] ) + $all_guests;
 
 		foreach ( $this->statuses as $status ) {
 			$retval[ $status ]['attendees'] = array_filter(
@@ -293,8 +295,14 @@ class Attendee {
 				}
 			);
 
+			$guests = 0;
+
+			foreach ( $retval[ $status ]['attendees'] as $attendee ) {
+				$guests += intval( $attendee['guests'] );
+			}
+
 			$retval[ $status ]['attendees'] = array_values( $retval[ $status ]['attendees'] );
-			$retval[ $status ]['count']     = count( $retval[ $status ]['attendees'] );
+			$retval[ $status ]['count']     = count( $retval[ $status ]['attendees'] ) + $guests;
 		}
 
 		wp_cache_set( $cache_key, $retval, 15 * MINUTE_IN_SECONDS );
