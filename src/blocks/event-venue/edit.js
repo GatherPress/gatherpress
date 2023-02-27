@@ -20,6 +20,8 @@ import { Listener } from '../../helpers/broadcasting';
 import MapEmbed from '../../components/MapEmbed';
 import VenueInformation from '../../components/VenueInformation';
 
+import VenueSelector from '../../components/VenueSelector';
+
 const Edit = ({ attributes, setAttributes }) => {
 	const { mapHeight, mapShow, mapType, mapZoomLevel } = attributes;
 	const blockProps = useBlockProps();
@@ -93,6 +95,14 @@ const Edit = ({ attributes, setAttributes }) => {
 	return (
 		<>
 			<InspectorControls>
+				<PanelBody
+					title={__('Venue Selector', 'gatherpress')}
+					initialOpen={true}
+				>
+					<PanelRow>
+						<VenueSelector />
+					</PanelRow>
+				</PanelBody>
 				<PanelBody
 					title={__('Map Settings', 'gatherpress')}
 					initialOpen={true}
