@@ -75,13 +75,17 @@ class Setup {
 	/**
 	 * Add links to the plugin action links.
 	 *
-	 * @param array<string, string> $actions
-	 * @return array<string, string>
+	 * @param array $actions Array of links.
+	 *
+	 * @return array
 	 */
 	public function filter_plugin_action_links( array $actions ) {
-		return array_merge( array(
-			'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
-		), $actions );
+		return array_merge(
+			array(
+				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
+			),
+			$actions 
+		);
 	}
 
 	/**
