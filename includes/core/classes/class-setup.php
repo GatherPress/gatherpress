@@ -84,7 +84,7 @@ class Setup {
 			array(
 				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
-			$actions 
+			$actions
 		);
 	}
 
