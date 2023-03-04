@@ -182,6 +182,7 @@ class Setup {
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
 					array( 'gatherpress/attendance-selector' ),
+					array( 'core/paragraph' ),
 					array( 'gatherpress/attendance-list' ),
 					array( 'gatherpress/event-venue' ),
 				),
