@@ -14,9 +14,9 @@ import { useEffect, useState } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import { Broadcaster } from '../../../helpers/broadcasting';
+import { Broadcaster } from '../helpers/broadcasting';
 
-const VenuePanel = () => {
+const VenueSelectorPanel = () => {
 	const [venue, setVenue] = useState('');
 	const editPost = useDispatch('core/editor').editPost;
 	const { unlockPostSaving } = useDispatch('core/editor');
@@ -73,7 +73,7 @@ const VenuePanel = () => {
 	return (
 		<PanelRow>
 			<SelectControl
-				label={__('Venue', 'gatherpress')}
+				label={__('Venue Selector', 'gatherpress')}
 				value={venue}
 				onChange={(value) => {
 					updateTerm(value);
@@ -84,4 +84,4 @@ const VenuePanel = () => {
 	);
 };
 
-export default VenuePanel;
+export default VenueSelectorPanel;

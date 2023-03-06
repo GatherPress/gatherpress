@@ -17,7 +17,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
  */
 import { isEventPostType } from '../../helpers/event';
 import DateTimePanel from './datetime';
-import VenuePanel from './venue';
+import VenuePanel from '../../components/VenueSelector';
 
 const EventSettings = () => {
 	return (
@@ -27,6 +27,7 @@ const EventSettings = () => {
 				title={__('Event settings', 'gatherpress')}
 				initialOpen={true}
 				className="gp-event-settings"
+				icon="nametag"
 			>
 				<VStack spacing={2}>
 					<DateTimePanel />
@@ -40,7 +41,6 @@ const EventSettings = () => {
 
 registerPlugin('gp-event-settings', {
 	render: EventSettings,
-	icon: '',
 });
 
 dispatch('core/edit-post').toggleEditorPanelOpened(
