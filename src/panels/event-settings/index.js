@@ -30,9 +30,9 @@ const EventSettings = () => {
 				icon="nametag"
 			>
 				<VStack spacing={2}>
-					<VenuePanel />
-					<Divider />
 					<DateTimePanel />
+					<Divider />
+					<VenuePanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
 		)
