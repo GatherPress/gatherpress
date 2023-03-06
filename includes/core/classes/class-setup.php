@@ -200,7 +200,12 @@ class Setup {
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
 					array( 'gatherpress/attendance-selector' ),
-					array( 'core/paragraph' ),
+					array(
+						'core/paragraph',
+						array(
+							'placeholder' => __( 'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', 'gatherpress' ),
+						),
+					),
 					array( 'gatherpress/attendance-list' ),
 					array( 'gatherpress/event-venue' ),
 				),
