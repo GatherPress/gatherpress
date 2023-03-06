@@ -68,6 +68,24 @@ class Setup {
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+		add_filter( sprintf( 'plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ), array( $this, 'filter_plugin_action_links' ) );
+		add_filter( sprintf( 'network_admin_plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ), array( $this, 'filter_plugin_action_links' ) );
+	}
+
+	/**
+	 * Add links to the plugin action links.
+	 *
+	 * @param array $actions Array of links.
+	 *
+	 * @return array
+	 */
+	public function filter_plugin_action_links( array $actions ) {
+		return array_merge(
+			array(
+				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
+			),
+			$actions
+		);
 	}
 
 	/**
