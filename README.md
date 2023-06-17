@@ -95,7 +95,7 @@ Once you have forked the GatherPress repo, you can also change the folder name o
 https://github.com/pbrocks/gatherpress
 ```
 
-![PBrocks GatherPress repo](docs/media/pbrocksgatherpress-pbrocks.png)
+![PBrocks GatherPress repo](docs/media/pbrocks-gatherpress.png)
 
 ### Install wp-env globally
 
@@ -116,11 +116,11 @@ wp-env start
 
 You should then see that a development site has been configured for you on localhost port 2003
 
-![Development Site Login](docs/media/wp-env.json—startup.png)
+![Development Site Login](docs/media/wp-env.json-startup.png)
 
 #### Log in to Site / Log into Site
 
-![Development Site Login](docs/media/dev-login-gatherpress-pbrocks.png)
+![Development Site Login](docs/media/dev-login-gatherpress.png)
 
 #### Development Site Plugins/Themes
 
