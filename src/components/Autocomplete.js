@@ -28,7 +28,7 @@ const Autocomplete = (props) => {
 				}),
 			};
 		},
-		[content]
+		[fieldOptions.type]
 	);
 
 	const contentSuggestions =

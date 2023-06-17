@@ -48,7 +48,7 @@ const Edit = ({ attributes, setAttributes }) => {
 
 	useEffect(() => {
 		setVenueSlug(slug);
-	});
+	}, [slug]);
 
 	Listener({ setVenueSlug });
 

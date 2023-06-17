@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { render } from '@wordpress/element';
+import { createRoot } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -17,5 +17,7 @@ for (let i = 0; i < autocompleteContainers.length; i++) {
 		autocompleteContainers[i].dataset.gp_component_attrs
 	);
 
-	render(<Autocomplete attrs={attrs} />, autocompleteContainers[i]);
+	createRoot(autocompleteContainers[i]).render(
+		<Autocomplete attrs={attrs} />
+	);
 }

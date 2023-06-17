@@ -33,17 +33,14 @@ const VenueSelectorPanel = () => {
 		Broadcaster({
 			setVenueSlug: venueSlug,
 		});
-	});
+	}, [venueValue, venueSlug]);
 
-	let venues = useSelect(
-		(select) => {
-			return select('core').getEntityRecords('taxonomy', '_gp_venue', {
-				per_page: -1,
-				context: 'view',
-			});
-		},
-		[venue]
-	);
+	let venues = useSelect((select) => {
+		return select('core').getEntityRecords('taxonomy', '_gp_venue', {
+			per_page: -1,
+			context: 'view',
+		});
+	}, []);
 
 	if (venues) {
 		venues = venues.map((item) => ({

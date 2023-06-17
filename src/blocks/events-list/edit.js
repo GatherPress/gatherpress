@@ -33,18 +33,15 @@ const Edit = (props) => {
 	const { attributes, setAttributes } = props;
 	const blockProps = useBlockProps();
 	const { topics } = attributes;
-	const { topicsList } = useSelect(
-		(select) => {
-			const { getEntityRecords } = select(coreStore);
-			return {
-				topicsList: getEntityRecords('taxonomy', 'gp_topic', {
-					per_page: -1,
-					context: 'view',
-				}),
-			};
-		},
-		[topics]
-	);
+	const { topicsList } = useSelect((select) => {
+		const { getEntityRecords } = select(coreStore);
+		return {
+			topicsList: getEntityRecords('taxonomy', 'gp_topic', {
+				per_page: -1,
+				context: 'view',
+			}),
+		};
+	}, []);
 	const excerptMax = 55;
 	const topicSuggestions =
 		topicsList?.reduce(

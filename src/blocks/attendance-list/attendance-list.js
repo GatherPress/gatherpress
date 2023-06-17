@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import domReady from '@wordpress/dom-ready';
-import { render } from '@wordpress/element';
+import { createRoot } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -15,6 +15,6 @@ domReady(() => {
 	);
 
 	for (let i = 0; i < containers.length; i++) {
-		render(<AttendanceList />, containers[i]);
+		createRoot(containers[i]).render(<AttendanceList />);
 	}
 });
