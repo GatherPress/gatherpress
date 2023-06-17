@@ -35,8 +35,7 @@ const VenueSelectorPanel = () => {
 		});
 	}, [venueValue, venueSlug]);
 
-	let venues = useSelect(
-		(select) => {
+	let venues = useSelect((select) => {
 		return select('core').getEntityRecords('taxonomy', '_gp_venue', {
 			per_page: -1,
 			context: 'view',
