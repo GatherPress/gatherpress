@@ -91,10 +91,8 @@ git clone https://github.com/YourGithubUsername/gatherpress.git
 
 Once you have forked the GatherPress repo, you can also change the folder name of your version of the repository by going into your settings of your repo on Github's website.
 
-For example, my repo is called `gatherpress-pbrocks`, which distinguishes itself from the upstream repo. As a result, my clone of GatherPres is found here:
-
 ```
-https://github.com/pbrocks/gatherpress-pbrocks
+https://github.com/pbrocks/gatherpress
 ```
 
 ![PBrocks GatherPress repo](docs/media/pbrocksgatherpress-pbrocks.png)
@@ -113,13 +111,6 @@ In your terminal window, run:
 
 ```sh
 cd gatherpress
-wp-env start
-```
-
-or in my case:
-
-```sh
-cd gatherpress-pbrocks
 wp-env start
 ```
 
