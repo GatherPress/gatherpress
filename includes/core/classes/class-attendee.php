@@ -118,7 +118,7 @@ class Attendee {
 		$attendee      = $this->get( $user_id );
 		$limit_reached = $this->attending_limit_reached( $status );
 
-		if ( $limit_reached ) {
+		if ( $limit_reached && ! $guests ) {
 			$status = 'waiting_list';
 		}
 
@@ -253,6 +253,9 @@ class Attendee {
 		}
 
 		foreach ( $data as $attendee ) {
+			// @todo currently forcing attendee guests to 0 as this feature is currently not available. We will address this feature in a later version of GatherPress.
+			$attendee['guests'] = 0;
+
 			$user_id     = intval( $attendee['user_id'] );
 			$user_status = sanitize_key( $attendee['status'] );
 			$user_guests = intval( $attendee['guests'] );

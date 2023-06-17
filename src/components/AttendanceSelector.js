@@ -195,24 +195,31 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 							)}
 						</div>
 						<div className="gp-modal__content">
-							<label htmlFor="gp-guests">
-								{__('Number of guests?', 'gatherpress')}
-							</label>
-							<input
-								id="gp-guests"
-								type="number"
-								min="0"
-								max="5"
-								onChange={(e) =>
-									onAnchorClick(
-										e,
-										'attending',
-										e.target.value,
-										false
-									)
-								}
-								defaultValue={attendanceGuests}
-							/>
+							<div className="gp-modal__text">
+								{__(
+									'To change your attending status, simply click the "Not Attending" button below.',
+									'gatherpress'
+								)}
+							</div>
+							{/*@todo Guests feature coming in later version of GatherPress*/}
+							{/*	<label htmlFor="gp-guests">*/}
+							{/*		{__('Number of guests?', 'gatherpress')}*/}
+							{/*	</label>*/}
+							{/*	<input*/}
+							{/*		id="gp-guests"*/}
+							{/*		type="number"*/}
+							{/*		min="0"*/}
+							{/*		max="5"*/}
+							{/*		onChange={(e) =>*/}
+							{/*			onAnchorClick(*/}
+							{/*				e,*/}
+							{/*				'attending',*/}
+							{/*				e.target.value,*/}
+							{/*				false*/}
+							{/*			)*/}
+							{/*		}*/}
+							{/*		defaultValue={attendanceGuests}*/}
+							{/*	/>*/}
 						</div>
 						<ButtonGroup className="gp-buttons wp-block-buttons">
 							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">

@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import domReady from '@wordpress/dom-ready';
-import { render } from '@wordpress/element';
+import { createRoot } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -17,14 +17,13 @@ domReady(() => {
 	for (let i = 0; i < containers.length; i++) {
 		const attrs = JSON.parse(containers[i].dataset.gp_block_attrs);
 
-		render(
+		createRoot(containers[i]).render(
 			<MapEmbed
 				location={attrs.fullAddress}
 				zoom={attrs.mapZoomLevel}
 				type={attrs.mapType}
 				height={attrs.mapHeight}
-			/>,
-			containers[i]
+			/>
 		);
 	}
 });

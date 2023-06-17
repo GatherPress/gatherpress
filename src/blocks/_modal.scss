@@ -1,10 +1,15 @@
 .gp-modal {
+	max-width: 20rem;
 
 	&__attendance-list {
 		width: 100%;
 	}
 
 	&__header {
+		margin-bottom: 1rem;
+	}
+
+	&__text {
 		margin-bottom: 1rem;
 	}
 
