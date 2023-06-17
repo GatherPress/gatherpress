@@ -22,7 +22,7 @@ const TimeZonePanel = (props) => {
 	// Run only once.
 	useEffect(() => {
 		setTimezone(getFromGlobal('event_datetime.timezone'));
-	}, []);
+	}, [setTimezone]);
 
 	useEffect(() => {
 		Broadcaster({

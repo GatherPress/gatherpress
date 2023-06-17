@@ -67,7 +67,12 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
 			website: venueInformationMetaData.website ?? '',
 		});
-	}, []);
+	}, [
+		setAttributes,
+		venueInformationMetaData.fullAddress,
+		venueInformationMetaData.phoneNumber,
+		venueInformationMetaData.website,
+	]);
 
 	return (
 		<>
