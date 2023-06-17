@@ -24,7 +24,7 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 > Auth: `key pair`
 
 # Credits
-[mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [pbrocks](https://profiles.wordpress.org/pbrocks/), [hauvong](https://profiles.wordpress.org/hauvong/)
+[mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [pbrocks](https://profiles.wordpress.org/pbrocks/), [jmarx](https://profiles.wordpress.org/jmarx/), [hauvong](https://profiles.wordpress.org/hauvong/)
 
 ---
 
