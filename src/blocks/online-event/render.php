@@ -13,28 +13,28 @@ if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }
 
-$post = get_post();
+$gatherpress_post = get_post();
 
-if ( ! is_a( $post, 'WP_Post' ) ) {
+if ( ! is_a( $gatherpress_post, 'WP_Post' ) ) {
 	return;
 }
 
-$user_id     = get_current_user_id();
-$online_link = $attributes['onlineEventLink'];
-$event       = new Event( $post->ID );
+$gatherpress_user_id     = get_current_user_id();
+$gatherpress_online_link = $attributes['onlineEventLink'];
+$gatherpress_event       = new Event( $gatherpress_post->ID );
 
-$attributes['onlineEventLink'] = '';
+$attributes['onlineEventLink'] = ''; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
 if (
-	! empty( $user_id ) &&
-	! empty( $online_link ) &&
-	is_object( $event->attendee )
+	! empty( $gatherpress_user_id ) &&
+	! empty( $gatherpress_online_link ) &&
+	is_object( $gatherpress_event->attendee )
 ) {
-	$user = $event->attendee->get( $user_id );
+	$gatherpress_user = $gatherpress_event->attendee->get( $gatherpress_user_id );
 
 	// Only show online link if member is attending event.
-	if ( 'attending' === $user['status'] ) {
-		$attributes['onlineEventLink'] = $online_link;
+	if ( 'attending' === $gatherpress_user['status'] ) {
+		$attributes['onlineEventLink'] = $gatherpress_online_link; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 	}
 }
 ?>

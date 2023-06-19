@@ -435,11 +435,11 @@ class Rest_Api {
 	/**
 	 * Edit data from event endpoint.
 	 *
-	 * @param $response
+	 * @param \WP_REST_Response $response The response object.
 	 *
-	 * @return mixed
+	 * @return \WP_REST_Response
 	 */
-	public function prepare_event_data( $response ) {
+	public function prepare_event_data( \WP_REST_Response $response ) {
 		// Remove online link meta data from endpoint.
 		$response->data['meta']['_online_event_link'] = '';
 
