@@ -34,6 +34,7 @@ class Rest_Api {
 	 */
 	protected function setup_hooks() {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
+		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 	}
 
 	/**
@@ -387,6 +388,7 @@ class Rest_Api {
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] );
 		$event           = new Event( $post_id );
+		$online_link     = (string) get_post_meta( $post_id, '_online_event_link', true );
 
 		// If managing user is adding someone to an event.
 		if (
@@ -419,14 +421,31 @@ class Rest_Api {
 		}
 
 		$response = array(
-			'event_id'  => $post_id,
-			'success'   => (bool) $success,
-			'status'    => $status,
-			'guests'    => $guests,
-			'attendees' => $event->attendee->attendees(),
+			'event_id'    => $post_id,
+			'success'     => (bool) $success,
+			'status'      => $status,
+			'guests'      => $guests,
+			'attendees'   => $event->attendee->attendees(),
+			'online_link' => ( 'attending' === $status ) ? $online_link : '',
 		);
 
 		return new \WP_REST_Response( $response );
+	}
+
+	/**
+	 * Edit data from event endpoint.
+	 *
+	 * @param \WP_REST_Response $response The response object.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function prepare_event_data( \WP_REST_Response $response ) {
+		// Remove online link meta data from FE endpoint.
+		if ( ! is_admin() ) {
+			$response->data['meta']['_online_event_link'] = '';
+		}
+
+		return $response;
 	}
 
 }

@@ -104,6 +104,7 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 					setAttendanceStatus: res.status,
 					setAttendanceList: res.attendees,
 					setAttendanceCount: count,
+					setOnlineEventLink: res.online_link,
 				};
 
 				Broadcaster(payload, res.event_id);

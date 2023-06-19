@@ -217,11 +217,26 @@ class Setup {
 					'thumbnail',
 					'comments',
 					'revisions',
+					'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				'rewrite'       => array(
 					'slug' => 'events',
 				),
+			)
+		);
+
+		register_post_meta(
+			Event::POST_TYPE,
+			'_online_event_link',
+			array(
+				'auth_callback'     => function() {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
 			)
 		);
 

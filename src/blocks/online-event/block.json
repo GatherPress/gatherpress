@@ -1,19 +1,17 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 2,
-	"name": "gatherpress/event-date",
+	"name": "gatherpress/online-event",
 	"version": "1.0.0",
-	"title": "Event Date",
+	"title": "Online Event",
 	"category": "gatherpress",
-	"icon": "clock",
+	"icon": "video-alt2",
 	"example": {},
-	"description": "Display and edit event dates.",
+	"description": "A block for events that are online.",
 	"attributes": {
-		"eventEnd": {
-			"type": "string"
-		},
-		"eventStart": {
-			"type": "string"
+		"onlineEventLink": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {
@@ -23,5 +21,6 @@
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
+	"viewScript": "file:./online-event.js",
 	"render": "file:./render.php"
 }

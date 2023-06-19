@@ -43,8 +43,9 @@
 		}
 	},
 	"supports": {
+		"align": [ "wide" ],
 		"html": false,
-		"align": [ "wide" ]
+		"multiple": false
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

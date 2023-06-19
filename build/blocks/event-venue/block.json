@@ -27,10 +27,11 @@
     }
   },
   "supports": {
-    "html": true,
     "align": [
       "wide"
-    ]
+    ],
+    "html": true,
+    "multiple": false
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",

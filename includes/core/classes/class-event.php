@@ -543,6 +543,25 @@ class Event {
 	}
 
 	/**
+	 * Get online event link if user is attending and event hasn't past.
+	 *
+	 * @return string
+	 */
+	public function get_online_event_link(): string {
+		$user = $this->attendee->get( get_current_user_id() );
+
+		if (
+			! isset( $user['status'] ) ||
+			'attending' !== $user['status'] ||
+			$this->has_event_past()
+		) {
+			return '';
+		}
+
+		return (string) get_post_meta( $this->event->ID, '_online_event_link', true );
+	}
+
+	/**
 	 * Convert the date to GMT.
 	 *
 	 * @param string       $date     The date to be converted.
