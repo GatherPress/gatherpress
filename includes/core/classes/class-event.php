@@ -543,6 +543,26 @@ class Event {
 	}
 
 	/**
+	 * Validate online event link for a particular event and user.
+	 *
+	 * @param string $online_event_link Online event link to validate.
+	 *
+	 * @return string
+	 */
+	public function validate_online_event_link( string $online_event_link ): string {
+		$user = $this->attendee->get( get_current_user_id() );
+
+		if (
+			'attending' !== $user['status'] ||
+			$this->has_event_past()
+		) {
+			$online_event_link = '';
+		}
+
+		return $online_event_link;
+	}
+
+	/**
 	 * Convert the date to GMT.
 	 *
 	 * @param string       $date     The date to be converted.

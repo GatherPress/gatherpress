@@ -34,7 +34,6 @@ class Rest_Api {
 	 */
 	protected function setup_hooks() {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 	}
 
 	/**
@@ -430,20 +429,6 @@ class Rest_Api {
 		);
 
 		return new \WP_REST_Response( $response );
-	}
-
-	/**
-	 * Edit data from event endpoint.
-	 *
-	 * @param \WP_REST_Response $response The response object.
-	 *
-	 * @return \WP_REST_Response
-	 */
-	public function prepare_event_data( \WP_REST_Response $response ) {
-		// Remove online link meta data from endpoint.
-		$response->data['meta']['_online_event_link'] = '';
-
-		return $response;
 	}
 
 }
