@@ -1,0 +1,25 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "gatherpress/online-event",
+	"version": "1.0.0",
+	"title": "Online Event",
+	"category": "gatherpress",
+	"icon": "video-alt2",
+	"example": {},
+	"description": "A block for events that are online.",
+	"attributes": {
+		"onlineEventLink": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./online-event.js",
+	"render": "file:./render.php"
+}

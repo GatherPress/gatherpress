@@ -319,10 +319,10 @@ class Attendee {
 	 * @param array $first  First attendee to compare in sort.
 	 * @param array $second Second attendee to compare in sort.
 	 *
-	 * @return bool
+	 * @return int
 	 */
-	public function sort_by_role( array $first, array $second ): bool {
-		$roles   = array_values(
+	public function sort_by_role( array $first, array $second ): int {
+		$roles       = array_values(
 			array_map(
 				function( $role ) {
 					return $role['labels']['singular_name'];
@@ -330,9 +330,11 @@ class Attendee {
 				Settings::get_instance()->get_user_roles()
 			)
 		);
-		$roles[] = __( 'Member', 'gatherpress' );
+		$roles[]     = __( 'Member', 'gatherpress' );
+		$first_role  = array_search( $first['role'], $roles, true );
+		$second_role = array_search( $second['role'], $roles, true );
 
-		return ( array_search( $first['role'], $roles, true ) > array_search( $second['role'], $roles, true ) );
+		return ( $first_role > $second_role ) ? 1 : -1;
 	}
 
 	/**
