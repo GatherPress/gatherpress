@@ -43,10 +43,11 @@
     }
   },
   "supports": {
-    "html": false,
     "align": [
       "wide"
-    ]
+    ],
+    "html": false,
+    "multiple": false
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",

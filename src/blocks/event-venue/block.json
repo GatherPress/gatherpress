@@ -27,8 +27,9 @@
 		}
 	},
 	"supports": {
+		"align": [ "wide" ],
 		"html": true,
-		"align": [ "wide" ]
+		"multiple": false
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
