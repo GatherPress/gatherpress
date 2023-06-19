@@ -8,6 +8,11 @@
  */
 
 return array(
+	'0.17.0' => array(
+		'project-leads'    => array( 'mauteri', 'hrmervin' ),
+		'gatherpress-team' => array( 'pbrocks', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett', 'jmarx', 'calebthedev' ),
+		'contributors'     => array( 'hauvong' ),
+	),
 	'0.10.0' => array(
 		'project-leads'    => array( 'mauteri', 'hrmervin' ),
 		'gatherpress-team' => array( 'pbrocks', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett', 'jmarx' ),
