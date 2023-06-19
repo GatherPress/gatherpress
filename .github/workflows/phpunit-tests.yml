@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        php_versions: [ '8.0', '7.4', ]
+        php_versions: [ '8.0', '7.4', '8.1', '8.2' ]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
