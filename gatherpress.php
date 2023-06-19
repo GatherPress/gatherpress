@@ -6,7 +6,7 @@
  * Author:              The GatherPress Community
  * Author URI:          https://gatherpess.org/
  * Version:             0.16.0
- * Minimum PHP Version: 7.3
+ * Minimum PHP Version: 7.4
  * Text Domain:         gatherpress
  * License:             GPLv2 or later (license.txt)
  *
