@@ -6,11 +6,16 @@ import { useBlockProps } from '@wordpress/block-editor';
 import {
 	Flex,
 	FlexItem,
-	Icon,
 	TextControl,
 } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
+
+/**
+ * Internal dependencies.
+ */
+import OnlineEvent from '../../components/OnlineEvent';
+import { getFromGlobal } from '../../helpers/globals';
 
 const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const blockProps = useBlockProps();
@@ -55,16 +60,10 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 				</Flex>
 			)}
 			{!isSelected && (
-				<Flex justify="normal">
-					<FlexItem display="flex">
-						<Icon icon="video-alt2" />
-					</FlexItem>
-					<FlexItem>
-						<a href={onlineEventLink}>
-							{__('Online event', 'gatherpress')}
-						</a>
-					</FlexItem>
-				</Flex>
+				<OnlineEvent
+					eventId={getFromGlobal('post_id')}
+					onlineEventLinkDefault={onlineEventLink}
+				/>
 			)}
 		</div>
 	);
