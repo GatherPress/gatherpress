@@ -33,7 +33,10 @@ if (
 	$gatherpress_user = $gatherpress_event->attendee->get( $gatherpress_user_id );
 
 	// Only show online link if member is attending event.
-	if ( 'attending' === $gatherpress_user['status'] ) {
+	if (
+		'attending' === $gatherpress_user['status'] &&
+		! $gatherpress_event->has_event_past()
+	) {
 		$attributes['onlineEventLink'] = $gatherpress_online_link; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 	}
 }
