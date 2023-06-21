@@ -166,7 +166,7 @@ const Edit = (props) => {
 						help={
 							attributes.eventOptions.showAttendeeList
 								? __('Show Attendee List', 'gatherpress')
-								: __('Do not show Attendee List', 'gatherpress')
+								: __('Hide Attendee List', 'gatherpress')
 						}
 						checked={
 							attributes.eventOptions.showAttendeeList ?? true
@@ -198,10 +198,7 @@ const Edit = (props) => {
 						help={
 							attributes.eventOptions.showFeaturedImage
 								? __('Show Featured Image', 'gatherpress')
-								: __(
-										'Do not show Featured Image',
-										'gatherpress'
-								  )
+								: __('Hide Featured Image', 'gatherpress')
 						}
 						checked={attributes.eventOptions.showFeaturedImage}
 						onChange={(value) => {
