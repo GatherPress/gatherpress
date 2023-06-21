@@ -293,11 +293,10 @@ class Rest_Api {
 	 * @return \WP_REST_Response
 	 */
 	public function announce( \WP_REST_Request $request ) {
-		$params  = $request->get_params();
-		$post_id = intval( $params['post_id'] );
-		$email   = Email::get_instance();
-
-		$success  = $email->event_announce( $post_id );
+		$params   = $request->get_params();
+		$post_id  = intval( $params['post_id'] );
+		$event    = new Event( $post_id );
+		$success  = $event->announce_via_email();
 		$response = array(
 			'success' => $success,
 		);

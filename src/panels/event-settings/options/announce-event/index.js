@@ -62,18 +62,18 @@ export class AnnounceEvent extends Component {
 	render() {
 		return (
 			<section>
-				<h3>{__('Options', 'gatherpress')}</h3>
+				<h3>{__('Announce event', 'gatherpress')}</h3>
 				<PanelRow>
-					<span>{__('Announce event', 'gatherpress')}</span>
 					<Button
 						className="components-button is-primary"
 						aria-disabled={this.shouldDisable()}
 						onClick={() => this.announce()}
-						disabled={this.shouldDisable()}
+						// disabled={this.shouldDisable()}
 					>
-						{this.state.announceEventSent
-							? __('Sent', 'gatherpress')
-							: __('Send', 'gatherpress')}
+						{/*{this.state.announceEventSent*/}
+						{/*	? __('Sent', 'gatherpress')*/}
+						{/*	: __('Send', 'gatherpress')}*/}
+						{__('Notify all members', 'gatherpress')}
 					</Button>
 				</PanelRow>
 			</section>

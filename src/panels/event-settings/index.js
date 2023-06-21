@@ -18,6 +18,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
 import { isEventPostType } from '../../helpers/event';
 import DateTimePanel from './datetime';
 import VenuePanel from '../../components/VenueSelector';
+import { AnnounceEvent } from './options/announce-event';
 
 const EventSettings = () => {
 	return (
@@ -33,6 +34,8 @@ const EventSettings = () => {
 					<DateTimePanel />
 					<Divider />
 					<VenuePanel />
+					<Divider />
+					<AnnounceEvent />
 				</VStack>
 			</PluginDocumentSettingPanel>
 		)

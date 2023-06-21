@@ -580,4 +580,21 @@ class Event {
 		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( $format );
 	}
 
+	public function announce_via_email(): bool {
+		$users = get_users();
+
+		foreach ( $users as $user ) {
+			if ( $user->user_email ) {
+				$to      = $user->user_email;
+				$subject = 'New Event!';
+				$body    = 'The email body content';
+				$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+
+				wp_mail( $to, $subject, $body, $headers );
+			}
+		}
+
+		return true;
+	}
+
 }
