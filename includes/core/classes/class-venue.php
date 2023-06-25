@@ -23,6 +23,9 @@ class Venue {
 
 	use Singleton;
 
+	/**
+	 * Constants.
+	 */
 	const POST_TYPE = 'gp_venue';
 	const TAXONOMY  = '_gp_venue';
 
@@ -36,9 +39,42 @@ class Venue {
 	/**
 	 * Setup hooks.
 	 */
-	protected function setup_hooks() {
+	protected function setup_hooks(): void {
+		add_action(
+			sprintf( 'save_post_%s', Venue::POST_TYPE ),
+			array( $this, 'add_venue_term' ),
+			10,
+			3
+		);
 		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
+	}
+
+	/**
+	 * Add venue term when venue post type first saves.
+	 *
+	 * @param int     $post_id Post ID.
+	 * @param WP_Post $post    Post object.
+	 * @param bool    $update  Whether this is an existing post being updated.
+	 *
+	 * @return void
+	 */
+	public function add_venue_term( int $post_id, WP_Post $post, bool $update ): void {
+		if ( ! $update ) {
+			$term_slug = $this->get_venue_term_slug( $post->post_name );
+			$title     = get_the_title( $post_id );
+			$term      = term_exists( $term_slug, self::TAXONOMY );
+
+			if ( empty( $term ) ) {
+				wp_insert_term(
+					$title,
+					self::TAXONOMY,
+					array(
+						'slug' => $term_slug,
+					)
+				);
+			}
+		}
 	}
 
 	/**
@@ -50,7 +86,7 @@ class Venue {
 	 *
 	 * @return void
 	 */
-	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ) {
+	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ): void {
 		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
 			return;
 		}
@@ -122,7 +158,7 @@ class Venue {
 	 *
 	 * @return null|WP_Post
 	 */
-	public function get_venue_post_from_term_slug( string $slug ) {
+	public function get_venue_post_from_term_slug( string $slug ): ?WP_Post {
 		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, self::POST_TYPE );
 	}
 
