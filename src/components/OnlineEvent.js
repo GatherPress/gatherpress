@@ -19,7 +19,7 @@ const OnlineEvent = ({ eventId, onlineEventLinkDefault = '' }) => {
 	Listener({ setOnlineEventLink }, eventId);
 
 	return (
-		<Flex justify="normal">
+		<Flex justify="normal" gap="4">
 			<FlexItem display="flex">
 				<Icon icon="video-alt2" />
 			</FlexItem>

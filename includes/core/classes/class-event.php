@@ -547,7 +547,11 @@ class Event {
 	 *
 	 * @return string
 	 */
-	public function get_online_event_link(): string {
+	public function maybe_get_online_event_link(): string {
+		if ( ! $this->attendee ) {
+			return '';
+		}
+
 		$user = $this->attendee->get( get_current_user_id() );
 
 		if (

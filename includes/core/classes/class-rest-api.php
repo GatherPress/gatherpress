@@ -440,10 +440,10 @@ class Rest_Api {
 	 * @return \WP_REST_Response
 	 */
 	public function prepare_event_data( \WP_REST_Response $response ) {
-		// Remove online link meta data from FE endpoint.
-		if ( ! is_admin() ) {
-			$response->data['meta']['_online_event_link'] = '';
-		}
+		$event = new Event( $response->data['id'] );
+
+		// Only get the online event link if user is attending and event hasn't past.
+		$response->data['meta']['_online_event_link'] = $event->maybe_get_online_event_link();
 
 		return $response;
 	}
