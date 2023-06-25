@@ -23,8 +23,10 @@ class Test_Attendee extends Base {
 	 * Coverage for get method.
 	 *
 	 * @covers ::get
+	 *
+	 * @return void
 	 */
-	public function test_get_attendee() {
+	public function test_get_attendee(): void {
 		$post     = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',
@@ -53,7 +55,7 @@ class Test_Attendee extends Base {
 	 *
 	 * @covers ::save
 	 */
-	public function test_save_attendee() {
+	public function test_save_attendee(): void {
 		$post     = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',

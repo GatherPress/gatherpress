@@ -29,7 +29,7 @@ class Test_Utility extends Base {
 	 * @throws ErrorException Throws exception if callback to buffer_and_return is not callable.
 	 * @return void
 	 */
-	public function test_render_template() {
+	public function test_render_template(): void {
 		$this->assertEmpty( Utility::render_template( '' ) );
 
 		$description   = 'This is a template for testing.';
@@ -65,7 +65,7 @@ class Test_Utility extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_prefix_key() {
+	public function test_prefix_key(): void {
 		$this->assertSame( 'gp_unittest', Utility::prefix_key( 'unittest' ) );
 	}
 
@@ -87,7 +87,7 @@ class Test_Utility extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_timezone_choices() {
+	public function test_timezone_choices(): void {
 		$timezones = Utility::timezone_choices();
 		$keys      = array( 'Africa', 'America', 'Antarctica', 'Arctic', 'Asia', 'Atlantic', 'Australia', 'Europe', 'Indian', 'UTC', 'Manual Offsets' );
 

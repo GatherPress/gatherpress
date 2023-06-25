@@ -29,7 +29,7 @@ class Test_Block extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_setup_hooks() {
+	public function test_setup_hooks(): void {
 		$instance = Block::get_instance();
 		$hooks    = array(
 			array(
@@ -50,7 +50,7 @@ class Test_Block extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_register_blocks() {
+	public function test_register_blocks(): void {
 		$instance            = Block::get_instance();
 		$blocks              = array_map(
 			function( $value ) {
