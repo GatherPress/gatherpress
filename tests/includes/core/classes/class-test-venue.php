@@ -74,7 +74,34 @@ class Test_Venue extends Base {
 		$venue_before = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
 		$venue_after  = clone $venue_before;
 
-		$venue_after->post_name .= '-after';
+		$venue_after->post_name .= '-first';
+
+		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
+
+		$term = term_exists( $instance->get_venue_term_slug( $venue_after->post_name ), Venue::TAXONOMY );
+
+		$this->assertIsArray(
+			$term,
+			'Failed to assert that term exists.'
+		);
+
+		$term_object = get_term( $term['term_id'] );
+
+		$this->assertSame(
+			$term_object->slug,
+			$instance->get_venue_term_slug( $venue_after->post_name ),
+			'Failed to assert that slugs match.'
+		);
+
+		$venue_before = clone $venue_after;
+		$venue_after  = clone $venue_before;
+
+		// Delete term to ensure maybe_update_term_slug re-creates it.
+		wp_delete_term( $term['term_id'], Venue::TAXONOMY );
+
+		$this->assertNull( term_exists( $term['term_id'], Venue::TAXONOMY ) );
+
+		$venue_after->post_name .= '-second';
 
 		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
 
