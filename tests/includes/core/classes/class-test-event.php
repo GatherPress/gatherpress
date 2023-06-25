@@ -29,7 +29,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test___construct() {
+	public function test___construct(): void {
 		$post  = $this->mock->post()->get();
 		$event = new Event( $post->ID );
 
@@ -91,7 +91,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_display_datetime( array $params, string $expects ) {
+	public function test_get_display_datetime( array $params, string $expects ): void {
 		$post  = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
@@ -117,7 +117,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_datetime() {
+	public function test_get_datetime(): void {
 		$event = new Event( 0 );
 
 		$this->assertSame(
@@ -199,7 +199,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_calendar_links() {
+	public function test_get_calendar_links(): void {
 		$post   = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
@@ -246,7 +246,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_has_event_past() {
+	public function test_has_event_past(): void {
 		$post   = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',
@@ -284,7 +284,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_adjust_sql() {
+	public function test_adjust_sql(): void {
 		global $wpdb;
 
 		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
@@ -303,4 +303,5 @@ class Test_Event extends Base {
 		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
 	}
+
 }

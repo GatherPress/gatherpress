@@ -28,7 +28,7 @@ class Test_Settings extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_setup_hooks() {
+	public function test_setup_hooks(): void {
 		$instance = Settings::get_instance();
 		$hooks    = array(
 			array(

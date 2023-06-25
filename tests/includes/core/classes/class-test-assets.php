@@ -23,9 +23,12 @@ class Test_Assets extends Base {
 	/**
 	 * Coverage for setup_hooks.
 	 *
+	 * @covers ::__construct
+	 * @covers ::setup_hooks
+	 *
 	 * @return void
 	 */
-	public function test_setup_hooks() {
+	public function test_setup_hooks(): void {
 		$instance = Assets::get_instance();
 		$hooks    = array(
 			array(
@@ -67,8 +70,10 @@ class Test_Assets extends Base {
 	 * Coverage for unregister_blocks.
 	 *
 	 * @covers ::unregister_blocks
+	 *
+	 * @return void
 	 */
-	public function test_unregister_blocks_frontend() {
+	public function test_unregister_blocks_frontend(): void {
 		$instance = Assets::get_instance();
 
 		$blocks = Utility::invoke_hidden_method( $instance, 'unregister_blocks' );
@@ -135,7 +140,7 @@ class Test_Assets extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_unregister_blocks_admin( $post_type, $expected_blocks ) {
+	public function test_unregister_blocks_admin( string $post_type, array $expected_blocks ): void {
 		$instance = Assets::get_instance();
 
 		$this->mock->post( array( 'post_type' => $post_type ) );
