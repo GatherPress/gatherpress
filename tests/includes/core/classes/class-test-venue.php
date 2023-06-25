@@ -32,6 +32,12 @@ class Test_Venue extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
+				'name'     => sprintf( 'save_post_%s', Venue::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'add_venue_term' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'post_updated',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_update_term_slug' ),
@@ -45,6 +51,50 @@ class Test_Venue extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for add_venue_term.
+	 *
+	 * @covers ::add_venue_term
+	 *
+	 * @return void
+	 */
+	public function test_add_venue_term(): void {
+		$instance = Venue::get_instance();
+		$venue    = $this->mock->post( array( 'post_type' => Venue::POST_TYPE ) )->get();
+		$term     = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
+
+		$this->assertIsArray(
+			$term,
+			'Failed to assert that term exists.'
+		);
+
+		// Delete term to ensure add_venue_term re-creates it.
+		wp_delete_term( $term['term_id'], Venue::TAXONOMY );
+
+		$this->assertNull(
+			term_exists( $term['term_id'], Venue::TAXONOMY ),
+			'Failed to assert that term does not exist after being deleted.'
+		);
+
+		$instance->add_venue_term( $venue->ID, $venue, true );
+
+		$term = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
+
+		$this->assertNull(
+			term_exists( $term['term_id'], Venue::TAXONOMY ),
+			'Failed to assert that term does not exist when $update is true.'
+		);
+
+		$instance->add_venue_term( $venue->ID, $venue, false );
+
+		$term = term_exists( $instance->get_venue_term_slug( $venue->post_name ), Venue::TAXONOMY );
+
+		$this->assertIsArray(
+			$term,
+			'Failed to assert that term exists.'
+		);
 	}
 
 	/**
@@ -99,7 +149,10 @@ class Test_Venue extends Base {
 		// Delete term to ensure maybe_update_term_slug re-creates it.
 		wp_delete_term( $term['term_id'], Venue::TAXONOMY );
 
-		$this->assertNull( term_exists( $term['term_id'], Venue::TAXONOMY ) );
+		$this->assertNull(
+			term_exists( $term['term_id'], Venue::TAXONOMY ),
+			'Failed to assert that term does not exist after being deleted.'
+		);
 
 		$venue_after->post_name .= '-second';
 
@@ -153,7 +206,11 @@ class Test_Venue extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_term_slug(): void {
-		$this->assertSame( '_unit-test', Venue::get_instance()->get_venue_term_slug( 'unit-test' ) );
+		$this->assertSame(
+			'_unit-test',
+			Venue::get_instance()->get_venue_term_slug( 'unit-test' ),
+			'Failed to assert that term slugs match.'
+		);
 	}
 
 	/**
@@ -172,7 +229,11 @@ class Test_Venue extends Base {
 		)->get();
 		$venue_from_term_slug = Venue::get_instance()->get_venue_post_from_term_slug( '_unit-test' );
 
-		$this->assertEquals( $venue->ID, $venue_from_term_slug->ID );
+		$this->assertEquals(
+			$venue->ID,
+			$venue_from_term_slug->ID,
+			'Failed to assert that IDs match.'
+		);
 	}
 
 }
