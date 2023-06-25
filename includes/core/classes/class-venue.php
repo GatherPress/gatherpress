@@ -41,7 +41,7 @@ class Venue {
 	 */
 	protected function setup_hooks(): void {
 		add_action(
-			sprintf( 'save_post_%s', Venue::POST_TYPE ),
+			sprintf( 'save_post_%s', self::POST_TYPE ),
 			array( $this, 'add_venue_term' ),
 			10,
 			3
