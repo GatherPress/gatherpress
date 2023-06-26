@@ -13,7 +13,7 @@ $gatherpress_preflight_return = true;
 if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
 	add_action(
 		'admin_notices',
-		function() {
+		static function () {
 			?>
 			<div class="notice notice-error">
 				<p>

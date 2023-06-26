@@ -253,7 +253,9 @@ class Attendee {
 		}
 
 		foreach ( $data as $attendee ) {
-			// @todo currently forcing attendee guests to 0 as this feature is currently not available. We will address this feature in a later version of GatherPress.
+			// @todo currently forcing attendee guests to 0 as this feature
+			// is currently not available. We will address this feature
+			// in a later version of GatherPress.
 			$attendee['guests'] = 0;
 
 			$user_id     = intval( $attendee['user_id'] );
