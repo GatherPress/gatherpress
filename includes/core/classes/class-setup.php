@@ -58,7 +58,12 @@ class Setup {
 
 		add_action( 'init', array( $this, 'register' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
-		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
+		add_action(
+			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
+			array( $this, 'custom_columns' ),
+			10,
+			2
+		);
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'block_category' ) );
@@ -75,8 +80,21 @@ class Setup {
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
-		add_filter( sprintf( 'plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ), array( $this, 'filter_plugin_action_links' ) );
-		add_filter( sprintf( 'network_admin_plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ), array( $this, 'filter_plugin_action_links' ) );
+		add_filter(
+			sprintf(
+				'plugin_action_links_%s/%s',
+				basename( GATHERPRESS_CORE_PATH ),
+				basename( GATHERPRESS_CORE_FILE )
+			),
+			array( $this, 'filter_plugin_action_links' )
+		);
+		add_filter(
+			sprintf( 'network_admin_plugin_action_links_%s/%s',
+				basename( GATHERPRESS_CORE_PATH ),
+				basename( GATHERPRESS_CORE_FILE )
+			),
+			array( $this, 'filter_plugin_action_links' )
+		);
 	}
 
 	/**

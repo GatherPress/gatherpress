@@ -152,7 +152,7 @@ class Query {
 						// Option adjustments for page_for_posts and show_on_front to force archive page.
 						add_filter(
 							'pre_option',
-							function( $pre, $option ) {
+							static function ( $pre, $option ) {
 								if ( 'page_for_posts' === $option ) {
 									return '-1';
 								}
