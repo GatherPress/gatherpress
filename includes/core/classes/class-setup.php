@@ -89,7 +89,8 @@ class Setup {
 			array( $this, 'filter_plugin_action_links' )
 		);
 		add_filter(
-			sprintf( 'network_admin_plugin_action_links_%s/%s',
+			sprintf(
+				'network_admin_plugin_action_links_%s/%s',
 				basename( GATHERPRESS_CORE_PATH ),
 				basename( GATHERPRESS_CORE_FILE )
 			),
