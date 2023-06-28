@@ -584,28 +584,6 @@ class Settings {
 	}
 
 	/**
-	 * Get Role options and settings for Language -> Roles.
-	 *
-	 * @return array
-	 */
-	public function get_role_options(): array {
-		$role                = Role::get_instance();
-		$role_names          = $role->get_roles();
-		$role_defaults_names = $role->get_default_role_names();
-		$options             = array();
-
-		foreach ( $role_names as $role_name => $value ) {
-			$options[ $role_name ] = array(
-				'label'   => $value['name'],
-				'field'   => 'text',
-				'default' => $role_defaults_names[ $role_name ] ?? '',
-			);
-		}
-
-		return $options;
-	}
-
-	/**
 	 * Get list of user roles.
 	 *
 	 * @todo add to class-attendee.php
