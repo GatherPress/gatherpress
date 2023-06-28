@@ -217,7 +217,7 @@ class Event {
 	 */
 	public static function maybe_convert_offset( string $timezone ): string {
 		// Regex: https://regex101.com/r/9bMgJd/1.
-		preg_match( '/^UTC(\+|-)(\d+)(.\d+)?$/', $timezone, $matches );
+		preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches );
 
 		if ( count( $matches ) ) {
 			if ( empty( $matches[3] ) ) {

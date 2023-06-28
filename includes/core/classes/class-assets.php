@@ -200,25 +200,29 @@ class Assets {
 	 * @return array
 	 */
 	protected function unregister_blocks(): array {
+		$blocks = array();
+
 		if ( ! is_admin() ) {
-			return array();
+			return $blocks;
 		}
 
 		switch ( get_post_type() ) {
 			case Event::POST_TYPE:
-				return array(
+				$blocks = array(
 					'gatherpress/venue-information',
 				);
+				break;
 			case Venue::POST_TYPE:
-				return array(
+				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/attendance-list',
 					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
 					'gatherpress/event-venue',
 				);
+				break;
 			default:
-				return array(
+				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/attendance-list',
 					'gatherpress/attendance-selector',
@@ -227,6 +231,8 @@ class Assets {
 					'gatherpress/venue-information',
 				);
 		}
+
+		return $blocks;
 	}
 
 	/**

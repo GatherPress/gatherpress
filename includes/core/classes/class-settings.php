@@ -402,7 +402,10 @@ class Settings {
 			'sections'    => array(
 				'general' => array(
 					'name'        => __( 'General Settings', 'gatherpress' ),
-					'description' => __( 'GatherPress allows you to set event dates to reflect either the post date or event date. Default: show as event date.', 'gatherpress' ),
+					'description' => __(
+						'GatherPress allows you to set event dates to reflect either the post date or event date. Default: show as event date.',
+						'gatherpress'
+					),
 					'options'     => array(
 						'post_or_event_date' => array(
 							'labels' => array(
