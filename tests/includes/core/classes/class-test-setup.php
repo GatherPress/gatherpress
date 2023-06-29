@@ -114,4 +114,85 @@ class Test_Setup extends Base {
 		$this->assert_hooks( $hooks, $instance );
 	}
 
+	/**
+	 * Coverage for body_class method.
+	 *
+	 * @covers ::body_class
+	 *
+	 * @return void
+	 */
+	public function test_body_class(): void {
+		$instance = Setup::get_instance();
+		$classes  = array( 'unit-test' );
+		$expects  = array(
+			'unit-test',
+			'gp-enabled',
+			sprintf( 'gp-theme-%s', esc_attr( get_stylesheet() ) ),
+		);
+
+		$this->assertSame(
+			$expects,
+			$instance->body_class( $classes ),
+			'Failed to assert the array of body classes matches.'
+		);
+	}
+
+	/**
+	 * Coverage for block_category method.
+	 *
+	 * @covers ::block_category
+	 *
+	 * @return void
+	 */
+	public function test_block_category(): void {
+		$instance = Setup::get_instance();
+		$default  = array(
+			array(
+				'slug'  => 'unit-test',
+				'title' => 'Unit Test',
+				'icon'  => 'unittest',
+			),
+		);
+		$expects  = array(
+			array(
+				'slug'  => 'gatherpress',
+				'title' => 'GatherPress',
+				'icon'  => 'nametag',
+			),
+			array(
+				'slug'  => 'unit-test',
+				'title' => 'Unit Test',
+				'icon'  => 'unittest',
+			),
+		);
+
+		$this->assertSame(
+			$expects,
+			$instance->block_category( $default ),
+			'Failed to assert correct block categories.'
+		);
+	}
+
+	/**
+	 * Coverage for sortable_columns method.
+	 *
+	 * @covers ::sortable_columns
+	 *
+	 * @return void
+	 */
+	public function test_sortable_columns(): void {
+		$instance = Setup::get_instance();
+		$default  = array( 'unit' => 'test' );
+		$expects  = array(
+			'unit'     => 'test',
+			'datetime' => 'datetime',
+		);
+
+		$this->assertSame(
+			$expects,
+			$instance->sortable_columns( $default ),
+			'Failed to assert correct sortable columns.'
+		);
+	}
+
 }

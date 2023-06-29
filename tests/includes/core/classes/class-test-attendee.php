@@ -78,4 +78,31 @@ class Test_Attendee extends Base {
 		$this->assertEmpty( $attendee->save( $user->ID, $status ) );
 	}
 
+	/**
+	 * Coverage for sort_by_timestamp method.
+	 *
+	 * @covers ::sort_by_timestamp
+	 *
+	 * @return void
+	 */
+	public function test_sort_by_timestamp(): void {
+		$post     = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get();
+		$attendee = new Attendee( $post->ID );
+		$newer    = array( 'timestamp' => '2023-05-11 08:30:00' );
+		$older    = array( 'timestamp' => '2022-05-11 08:30:00' );
+
+		$this->assertFalse(
+			$attendee->sort_by_timestamp( $newer, $older ),
+			'Failed to assert correct sorting of timestamp.'
+		);
+		$this->assertTrue(
+			$attendee->sort_by_timestamp( $older, $newer ),
+			'Failed to assert correct sorting of timestamp.'
+		);
+	}
+
 }
