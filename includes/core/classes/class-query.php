@@ -45,15 +45,7 @@ class Query {
 	 * @return \WP_Query
 	 */
 	public function get_upcoming_events( int $number = 5 ): \WP_Query {
-		$args = array(
-			'post_type'       => Event::POST_TYPE,
-			'fields'          => 'ids',
-			'no_found_rows'   => true,
-			'posts_per_page'  => $number,
-			'gp_events_query' => 'upcoming',
-		);
-
-		return new \WP_Query( $args );
+		return $this->get_events_list( 'upcoming', $number );
 	}
 
 	/**
@@ -64,15 +56,7 @@ class Query {
 	 * @return \WP_Query
 	 */
 	public function get_past_events( int $number = 5 ): \WP_Query {
-		$args = array(
-			'post_type'       => Event::POST_TYPE,
-			'fields'          => 'ids',
-			'no_found_rows'   => true,
-			'posts_per_page'  => $number,
-			'gp_events_query' => 'past',
-		);
-
-		return new \WP_Query( $args );
+		return $this->get_events_list( 'past', $number );
 	}
 
 	/**
