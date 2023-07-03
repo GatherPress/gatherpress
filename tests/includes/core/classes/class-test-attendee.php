@@ -54,8 +54,9 @@ class Test_Attendee extends Base {
 	 * Coverage for save method.
 	 *
 	 * @covers ::save
+	 * @covers ::__construct
 	 */
-	public function test_save_attendee(): void {
+	public function test_save(): void {
 		$post     = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',
@@ -76,6 +77,45 @@ class Test_Attendee extends Base {
 		$status = 'unittest';
 
 		$this->assertEmpty( $attendee->save( $user->ID, $status ) );
+	}
+
+	/**
+	 * Coverage for check_waiting_list method.
+	 *
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list(): void {
+		$post     = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get();
+		$attendee = new Attendee( $post->ID );
+
+		$this->assertSame( 0, $attendee->check_waiting_list(), 'Failed to assert expected waiting list value.' );
+	}
+
+	/**
+	 * Coverage for attending_limit_reached method.
+	 *
+	 * @covers ::attending_limit_reached
+	 *
+	 * @return void
+	 */
+	public function test_attending_limit_reached(): void {
+		$post     = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get();
+		$attendee = new Attendee( $post->ID );
+
+		$this->assertFalse(
+			$attendee->attending_limit_reached( 'attending' ),
+			'Failed to assert that limit has not been reached.'
+		);
 	}
 
 	/**
