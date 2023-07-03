@@ -33,7 +33,6 @@ class Query {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		// @todo this will be handled by blocks
 		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
 		add_filter( 'posts_clauses', array( $this, 'admin_order_events' ) );
 	}
@@ -52,6 +51,25 @@ class Query {
 			'no_found_rows'   => true,
 			'posts_per_page'  => $number,
 			'gp_events_query' => 'upcoming',
+		);
+
+		return new \WP_Query( $args );
+	}
+
+	/**
+	 * Get past events.
+	 *
+	 * @param int $number Maximum number of events to display.
+	 *
+	 * @return \WP_Query
+	 */
+	public function get_past_events( int $number = 5 ): \WP_Query {
+		$args = array(
+			'post_type'       => Event::POST_TYPE,
+			'fields'          => 'ids',
+			'no_found_rows'   => true,
+			'posts_per_page'  => $number,
+			'gp_events_query' => 'past',
 		);
 
 		return new \WP_Query( $args );
@@ -84,25 +102,6 @@ class Query {
 				),
 			);
 		}
-
-		return new \WP_Query( $args );
-	}
-
-	/**
-	 * Get past events.
-	 *
-	 * @param int $number Maximum number of events to display.
-	 *
-	 * @return \WP_Query
-	 */
-	public function get_past_events( int $number = 5 ): \WP_Query {
-		$args = array(
-			'post_type'       => Event::POST_TYPE,
-			'fields'          => 'ids',
-			'no_found_rows'   => true,
-			'posts_per_page'  => $number,
-			'gp_events_query' => 'past',
-		);
 
 		return new \WP_Query( $args );
 	}
