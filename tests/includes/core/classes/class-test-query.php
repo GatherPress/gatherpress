@@ -54,7 +54,6 @@ class Test_Query extends Base {
 	 * @covers ::get_upcoming_events
 	 * @covers ::order_upcoming_events
 	 * @covers ::get_events_list
-	 * @covers ::pre_get_posts
 	 *
 	 * @return void
 	 */
@@ -91,7 +90,6 @@ class Test_Query extends Base {
 	 * @covers ::get_past_events
 	 * @covers ::order_past_events
 	 * @covers ::get_events_list
-	 * @covers ::pre_get_posts
 	 *
 	 * @return void
 	 */
