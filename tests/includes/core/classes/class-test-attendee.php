@@ -119,6 +119,42 @@ class Test_Attendee extends Base {
 	}
 
 	/**
+	 * Coverages for attendees method.
+	 *
+	 * @covers ::attendees
+	 * @covers ::sort_by_role
+	 *
+	 * @return void
+	 */
+	public function test_attendees(): void {
+		$post      = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get();
+		$attendee  = new Attendee( $post->ID );
+		$user_id_1 = wp_create_user( 'user_1', 'unittest' );
+		$user_id_2 = wp_create_user( 'user_2', 'unittest' );
+
+		$attendee->save( $user_id_1, 'attending' );
+		$attendee->save( $user_id_2, 'not_attending' );
+
+		$attendees = $attendee->attendees();
+
+		$this->assertEquals( 2, $attendees['all']['count'], 'Failed to assert that count is 2.' );
+		$this->assertEquals(
+			$user_id_1,
+			$attendees['attending']['attendees'][0]['id'],
+			'Failed to assert user ID matches.'
+		);
+		$this->assertEquals(
+			$user_id_2,
+			$attendees['not_attending']['attendees'][0]['id'],
+			'Failed to assert user ID matches.'
+		);
+	}
+
+	/**
 	 * Coverage for sort_by_timestamp method.
 	 *
 	 * @covers ::sort_by_timestamp
