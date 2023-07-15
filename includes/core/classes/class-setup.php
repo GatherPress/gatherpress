@@ -55,21 +55,47 @@ class Setup {
 	protected function setup_hooks() {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
+
 		add_action( 'init', array( $this, 'register' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
-		add_action( sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ), array( $this, 'custom_columns' ), 10, 2 );
+		add_action(
+			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
+			array( $this, 'custom_columns' ),
+			10,
+			2
+		);
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
-		add_filter( sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ), array( $this, 'set_custom_columns' ) );
-		add_filter( sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ), array( $this, 'sortable_columns' ) );
+		add_filter(
+			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
+			array( $this, 'set_custom_columns' )
+		);
+		add_filter(
+			sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
+			array( $this, 'sortable_columns' )
+		);
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'body_class' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
-		add_filter( sprintf( 'plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ), array( $this, 'filter_plugin_action_links' ) );
-		add_filter( sprintf( 'network_admin_plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ), array( $this, 'filter_plugin_action_links' ) );
+		add_filter(
+			sprintf(
+				'plugin_action_links_%s/%s',
+				basename( GATHERPRESS_CORE_PATH ),
+				basename( GATHERPRESS_CORE_FILE )
+			),
+			array( $this, 'filter_plugin_action_links' )
+		);
+		add_filter(
+			sprintf(
+				'network_admin_plugin_action_links_%s/%s',
+				basename( GATHERPRESS_CORE_PATH ),
+				basename( GATHERPRESS_CORE_FILE )
+			),
+			array( $this, 'filter_plugin_action_links' )
+		);
 	}
 
 	/**

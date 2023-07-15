@@ -148,8 +148,6 @@ class Settings {
 
 					if ( isset( $section_settings['options'] ) ) {
 						foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
-							$field = $option_settings['field']['type'];
-
 							if (
 								$option_settings['field']['type']
 								&& method_exists( $this, $option_settings['field']['type'] )
@@ -289,7 +287,10 @@ class Settings {
 		$options = $this->get_options( $sub_page );
 		$default = $this->get_default_value( $sub_page, $section, $option );
 
-		return ( isset( $options[ $section ][ $option ] ) && '' !== $options[ $section ][ $option ] ) ? $options[ $section ][ $option ] : $default;
+		return (
+			isset( $options[ $section ][ $option ] )
+			&& '' !== $options[ $section ][ $option ]
+		) ? $options[ $section ][ $option ] : $default;
 	}
 
 	/**
@@ -304,7 +305,8 @@ class Settings {
 	public function get_default_value( string $sub_page, string $section = '', string $option = '' ) {
 		$sub_pages = $this->get_sub_pages();
 
-		return $sub_pages[ Utility::unprefix_key( $sub_page ) ]['sections'][ $section ]['options'][ $option ]['field']['options']['default'] ?? '';
+		return $sub_pages[ Utility::unprefix_key( $sub_page ) ]['sections'][ $section ]['options']
+			[ $option ]['field']['options']['default'] ?? '';
 	}
 
 	/**
@@ -400,7 +402,10 @@ class Settings {
 			'sections'    => array(
 				'general' => array(
 					'name'        => __( 'General Settings', 'gatherpress' ),
-					'description' => __( 'GatherPress allows you to set event dates to reflect either the post date or event date. Default: show as event date.', 'gatherpress' ),
+					'description' => __(
+						'GatherPress allows you to set event dates to reflect either the post date or event date. Default: show as event date.',
+						'gatherpress'
+					),
 					'options'     => array(
 						'post_or_event_date' => array(
 							'labels' => array(
@@ -457,6 +462,8 @@ class Settings {
 	 * @return array
 	 */
 	public function get_leadership_page(): array {
+		$user_label = __( 'Select Users', 'gatherpress' );
+
 		return array(
 			'name'        => __( 'Leadership', 'gatherpress' ),
 			'description' => __( 'Leadership for GatherPress.', 'gatherpress' ),
@@ -475,7 +482,7 @@ class Settings {
 								'type'    => 'autocomplete',
 								'options' => array(
 									'type'  => 'user',
-									'label' => __( 'Select Users', 'gatherpress' ),
+									'label' => $user_label,
 								),
 							),
 						),
@@ -489,7 +496,7 @@ class Settings {
 								'type'    => 'autocomplete',
 								'options' => array(
 									'type'  => 'user',
-									'label' => __( 'Select Users', 'gatherpress' ),
+									'label' => $user_label,
 								),
 							),
 						),
@@ -503,7 +510,7 @@ class Settings {
 								'type'    => 'autocomplete',
 								'options' => array(
 									'type'  => 'user',
-									'label' => __( 'Select Users', 'gatherpress' ),
+									'label' => $user_label,
 								),
 							),
 						),
@@ -517,7 +524,7 @@ class Settings {
 								'type'    => 'autocomplete',
 								'options' => array(
 									'type'  => 'user',
-									'label' => __( 'Select Users', 'gatherpress' ),
+									'label' => $user_label,
 								),
 							),
 						),
@@ -574,28 +581,6 @@ class Settings {
 				),
 			),
 		);
-	}
-
-	/**
-	 * Get Role options and settings for Language -> Roles.
-	 *
-	 * @return array
-	 */
-	public function get_role_options(): array {
-		$role                = Role::get_instance();
-		$role_names          = $role->get_roles();
-		$role_defaults_names = $role->get_default_role_names();
-		$options             = array();
-
-		foreach ( $role_names as $role_name => $value ) {
-			$options[ $role_name ] = array(
-				'label'   => $value['name'],
-				'field'   => 'text',
-				'default' => $role_defaults_names[ $role_name ] ?? '',
-			);
-		}
-
-		return $options;
 	}
 
 	/**

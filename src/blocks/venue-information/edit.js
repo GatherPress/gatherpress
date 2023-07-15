@@ -204,7 +204,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							</Flex>
 						</>
 					)}
-					{mapShow && (
+					{mapShow && fullAddress && (
 						<MapEmbed
 							location={fullAddress}
 							zoom={mapZoomLevel}

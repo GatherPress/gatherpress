@@ -202,9 +202,8 @@ class Rest_Api {
 	 */
 	public function validate_event_post_id( $param ): bool {
 		return (
-			0 < intval( $param )
-			&& is_numeric( $param )
-			&& Event::POST_TYPE === get_post_type( $param )
+			$this->validate_number( $param ) &&
+			Event::POST_TYPE === get_post_type( $param )
 		);
 	}
 
@@ -217,8 +216,8 @@ class Rest_Api {
 	 */
 	public function validate_number( $param ): bool {
 		return (
-			0 < intval( $param )
-			&& is_numeric( $param )
+			0 < intval( $param ) &&
+			is_numeric( $param )
 		);
 	}
 

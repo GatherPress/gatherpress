@@ -29,7 +29,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test___construct() {
+	public function test___construct(): void {
 		$post  = $this->mock->post()->get();
 		$event = new Event( $post->ID );
 
@@ -91,7 +91,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_display_datetime( array $params, string $expects ) {
+	public function test_get_display_datetime( array $params, string $expects ): void {
 		$post  = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
@@ -117,7 +117,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_datetime() {
+	public function test_get_datetime(): void {
 		$event = new Event( 0 );
 
 		$this->assertSame(
@@ -190,6 +190,84 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Data provider for maybe_convert_offset test.
+	 *
+	 * @return array
+	 */
+	public function data_maybe_convert_offset(): array {
+		return array(
+			array(
+				'America/New_York',
+				'America/New_York',
+			),
+			array(
+				'UTC',
+				'UTC',
+			),
+			array(
+				'UTC+9.5',
+				'+09:30',
+			),
+			array(
+				'UTC-7.25',
+				'-07:15',
+			),
+			array(
+				'UTC-5.75',
+				'-05:45',
+			),
+			array(
+				'UTC+1',
+				'+01:00',
+			),
+		);
+	}
+
+	/**
+	 * Coverage for maybe_convert_offset method.
+	 *
+	 * @dataProvider data_maybe_convert_offset
+	 *
+	 * @covers ::maybe_convert_offset
+	 *
+	 * @param string $input   Value to pass to method.
+	 * @param string $expects Expected response.
+	 *
+	 * @return void
+	 */
+	public function test_maybe_convert_offset( $input, $expects ): void {
+		$this->assertSame(
+			$expects,
+			Event::maybe_convert_offset( $input ),
+			'Failed to assert that conversion matches.'
+		);
+	}
+
+	/**
+	 * Coverage for list_identifiers method.
+	 *
+	 * @covers ::list_identifiers
+	 *
+	 * @return void
+	 */
+	public function test_list_identifiers(): void {
+		$list      = Event::list_identifiers();
+		$timezones = array(
+			'America/Belem',
+			'Asia/Chita',
+			'Europe/Vilnius',
+			'UTC',
+			'-12:00',
+			'-00:30',
+			'+09:30',
+			'+13:45',
+		);
+		foreach ( $timezones as $timezone ) {
+			$this->assertContains( $timezone, $list, 'Failed to assert timezone is in list.' );
+		}
+	}
+
+	/**
 	 * Coverage for get_calendar_links method.
 	 *
 	 * @covers ::get_calendar_links
@@ -199,7 +277,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_get_calendar_links() {
+	public function test_get_calendar_links(): void {
 		$post   = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
@@ -246,7 +324,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_has_event_past() {
+	public function test_has_event_past(): void {
 		$post   = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',
@@ -284,7 +362,7 @@ class Test_Event extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_adjust_sql() {
+	public function test_adjust_sql(): void {
 		global $wpdb;
 
 		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
@@ -303,4 +381,5 @@ class Test_Event extends Base {
 		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
 	}
+
 }

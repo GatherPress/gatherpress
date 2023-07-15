@@ -212,6 +212,8 @@ class Attendee {
 	/**
 	 * Get all attendees for an event.
 	 *
+	 * @todo should be part of Event class, needs refactoring.
+	 *
 	 * @return array
 	 */
 	public function attendees(): array {
@@ -253,7 +255,9 @@ class Attendee {
 		}
 
 		foreach ( $data as $attendee ) {
-			// @todo currently forcing attendee guests to 0 as this feature is currently not available. We will address this feature in a later version of GatherPress.
+			// @todo currently forcing attendee guests to 0 as this feature
+			// is currently not available. We will address this feature
+			// in a later version of GatherPress.
 			$attendee['guests'] = 0;
 
 			$user_id     = intval( $attendee['user_id'] );

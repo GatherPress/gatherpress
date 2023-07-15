@@ -33,7 +33,6 @@ class Query {
 	 * Setup hooks.
 	 */
 	protected function setup_hooks() {
-		// @todo this will be handled by blocks
 		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
 		add_filter( 'posts_clauses', array( $this, 'admin_order_events' ) );
 	}
@@ -46,15 +45,18 @@ class Query {
 	 * @return \WP_Query
 	 */
 	public function get_upcoming_events( int $number = 5 ): \WP_Query {
-		$args = array(
-			'post_type'       => Event::POST_TYPE,
-			'fields'          => 'ids',
-			'no_found_rows'   => true,
-			'posts_per_page'  => $number,
-			'gp_events_query' => 'upcoming',
-		);
+		return $this->get_events_list( 'upcoming', $number );
+	}
 
-		return new \WP_Query( $args );
+	/**
+	 * Get past events.
+	 *
+	 * @param int $number Maximum number of events to display.
+	 *
+	 * @return \WP_Query
+	 */
+	public function get_past_events( int $number = 5 ): \WP_Query {
+		return $this->get_events_list( 'past', $number );
 	}
 
 	/**
@@ -84,25 +86,6 @@ class Query {
 				),
 			);
 		}
-
-		return new \WP_Query( $args );
-	}
-
-	/**
-	 * Get past events.
-	 *
-	 * @param int $number Maximum number of events to display.
-	 *
-	 * @return \WP_Query
-	 */
-	public function get_past_events( int $number = 5 ): \WP_Query {
-		$args = array(
-			'post_type'       => Event::POST_TYPE,
-			'fields'          => 'ids',
-			'no_found_rows'   => true,
-			'posts_per_page'  => $number,
-			'gp_events_query' => 'past',
-		);
 
 		return new \WP_Query( $args );
 	}
@@ -152,7 +135,7 @@ class Query {
 						// Option adjustments for page_for_posts and show_on_front to force archive page.
 						add_filter(
 							'pre_option',
-							function( $pre, $option ) {
+							static function ( $pre, $option ) {
 								if ( 'page_for_posts' === $option ) {
 									return '-1';
 								}
