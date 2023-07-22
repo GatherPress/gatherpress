@@ -5,6 +5,7 @@ import { Component } from '@wordpress/element';
 import { Button, PanelRow } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
+import { select } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -52,9 +53,7 @@ export class AnnounceEvent extends Component {
 		return (
 			this.state.announceEventSent ||
 			'publish' !==
-				wp.data
-					.select('core/editor')
-					.getEditedPostAttribute('status') ||
+				select('core/editor').getEditedPostAttribute('status') ||
 			hasEventPast()
 		);
 	}

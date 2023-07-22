@@ -8,28 +8,13 @@ import moment from 'moment';
  */
 import { dispatch, select } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { Button, Modal } from '@wordpress/components';
-import { useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import { getTimeZone } from './datetime';
 import { getFromGlobal } from './globals';
-
-const MyModal = () => {
-	alert('yo');
-	const [isOpen, setOpen] = useState(true);
-	const closeModal = () => setOpen(false);
-
-	return (
-		<Modal title="This is my modal" onRequestClose={closeModal}>
-			<Button variant="secondary" onClick={closeModal}>
-				My custom close button
-			</Button>
-		</Modal>
-	);
-};
+import {Broadcaster} from './broadcasting';
 
 export function isEventPostType() {
 	return (
@@ -39,7 +24,7 @@ export function isEventPostType() {
 }
 
 export function CheckCurrentPostType() {
-	return wp.data.select('core/editor').getCurrentPostType();
+	return select('core/editor').getCurrentPostType();
 }
 
 export function hasEventPast() {
@@ -64,10 +49,35 @@ export function hasEventPastNotice() {
 			{
 				id,
 				isDismissible: false,
+			}
+		);
+	}
+}
+
+export function triggerEventCommuncation() {
+	const id = 'gp_event_communcation';
+	const notices = dispatch('core/notices');
+
+	notices.removeNotice(id);
+
+	if (
+		select('core/editor').getEditedPostAttribute('status') === 'publish' &&
+		!hasEventPast()
+	) {
+		notices.createNotice(
+			'success',
+			__('Update members about this event via email?', 'gatherpress'),
+			{
+				id,
+				isDismissible: true,
 				actions: [
 					{
-						onClick: () => MyModal(),
-						label: 'View post',
+						onClick: () => {
+							Broadcaster({
+								setOpen: true,
+							});
+						},
+						label: 'Create Message',
 					},
 				],
 			}
