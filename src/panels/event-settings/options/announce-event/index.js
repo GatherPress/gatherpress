@@ -62,7 +62,7 @@ export class AnnounceEvent extends Component {
 	render() {
 		return (
 			<section>
-				<h3>{__('Announce event', 'gatherpress')}</h3>
+				<h3>{__('Communication', 'gatherpress')}</h3>
 				<PanelRow>
 					<Button
 						className="components-button is-primary"
