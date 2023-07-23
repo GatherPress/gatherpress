@@ -9,7 +9,7 @@
 
 namespace GatherPress\Core;
 
-use \GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Traits\Singleton;
 use WP_CLI;
 
 if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
