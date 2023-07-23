@@ -96,6 +96,7 @@ class Test_Assets extends Base {
 					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
 					'gatherpress/event-venue',
+					'gatherpress/online-event',
 					'gatherpress/venue-information',
 				),
 			),
@@ -107,6 +108,7 @@ class Test_Assets extends Base {
 					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
 					'gatherpress/event-venue',
+					'gatherpress/online-event',
 					'gatherpress/venue-information',
 				),
 			),
@@ -124,6 +126,7 @@ class Test_Assets extends Base {
 					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
 					'gatherpress/event-venue',
+					'gatherpress/online-event',
 				),
 			),
 		);

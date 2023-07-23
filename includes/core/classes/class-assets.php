@@ -9,7 +9,7 @@
 
 namespace GatherPress\Core;
 
-use \GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Traits\Singleton;
 
 if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
 	exit; // @codeCoverageIgnore
@@ -231,6 +231,7 @@ class Assets {
 					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
 					'gatherpress/event-venue',
+					'gatherpress/online-event',
 				);
 				break;
 			default:
@@ -240,6 +241,7 @@ class Assets {
 					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
 					'gatherpress/event-venue',
+					'gatherpress/online-event',
 					'gatherpress/venue-information',
 				);
 		}
