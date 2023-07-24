@@ -61,6 +61,12 @@ class Test_Assets extends Base {
 				'priority' => PHP_INT_MIN,
 				'callback' => array( $instance, 'add_global_object' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_footer',
+				'priority' => 11,
+				'callback' => array( $instance, 'event_communication_modal' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );

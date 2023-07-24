@@ -59,7 +59,8 @@ class Assets {
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
-		add_action( 'admin_footer', array( $this, 'event_communication_modal' ) );
+		// Set priority to 11 to not conflict with media modal.
+		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 	}
 
 	/**

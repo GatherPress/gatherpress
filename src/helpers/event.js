@@ -14,7 +14,7 @@ import { __ } from '@wordpress/i18n';
  */
 import { getTimeZone } from './datetime';
 import { getFromGlobal } from './globals';
-import {Broadcaster} from './broadcasting';
+import { Broadcaster } from './broadcasting';
 
 export function isEventPostType() {
 	return (

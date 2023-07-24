@@ -98,10 +98,10 @@ class Rest_Api {
 				),
 			),
 			array(
-				'route' => 'announce',
+				'route' => 'email',
 				'args'  => array(
 					'methods'             => \WP_REST_Server::EDITABLE,
-					'callback'            => array( $this, 'announce' ),
+					'callback'            => array( $this, 'email' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
 						'_wpnonce' => array(
@@ -285,17 +285,17 @@ class Rest_Api {
 	}
 
 	/**
-	 * Announce an event to all members that subscribe to these notices.
+	 * Email an event to members.
 	 *
 	 * @param \WP_REST_Request $request Contains data from the request.
 	 *
 	 * @return \WP_REST_Response
 	 */
-	public function announce( \WP_REST_Request $request ) {
+	public function email( \WP_REST_Request $request ) {
 		$params   = $request->get_params();
 		$post_id  = intval( $params['post_id'] );
 		$event    = new Event( $post_id );
-		$success  = $event->announce_via_email();
+		$success  = $event->send_emails();
 		$response = array(
 			'success' => $success,
 		);

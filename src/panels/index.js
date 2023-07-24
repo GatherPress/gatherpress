@@ -4,7 +4,14 @@
 import { __ } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
 import { createRoot, useState } from '@wordpress/element';
-import {Button, CheckboxControl, Flex, FlexItem, Modal, TextareaControl} from '@wordpress/components';
+import {
+	Button,
+	CheckboxControl,
+	Flex,
+	FlexItem,
+	Modal,
+	TextareaControl,
+} from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -21,7 +28,7 @@ const sendMessage = () => {
 		)
 	) {
 		apiFetch({
-			path: '/gatherpress/v1/event/announce/',
+			path: '/gatherpress/v1/event/email/',
 			method: 'POST',
 			data: {
 				post_id: getFromGlobal('post_id'),
@@ -59,6 +66,7 @@ const EventCommuncationModal = () => {
 				<Modal
 					title={__('Email members', 'gatherpress')}
 					onRequestClose={closeModal}
+					shouldCloseOnClickOutside={false}
 				>
 					<TextareaControl
 						label={__('Optional Message', 'gatherpress')}
