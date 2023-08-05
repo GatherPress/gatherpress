@@ -10,6 +10,9 @@
 namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
 
 if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
 	exit; // @codeCoverageIgnore
@@ -35,6 +38,7 @@ class Rest_Api {
 	protected function setup_hooks() {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
+		add_filter( 'rest_send_nocache_headers', array( $this, 'nocache_headers_for_endpoint' ) );
 	}
 
 	/**
@@ -57,6 +61,27 @@ class Rest_Api {
 	}
 
 	/**
+	 * Prevent caching nonce for some endpoints for non-logged in visitors.
+	 *
+	 * @param bool $rest_send_nocache_headers Boolean value, if true will not cache nonce.
+	 *
+	 * @return bool
+	 */
+	public function nocache_headers_for_endpoint( bool $rest_send_nocache_headers ): bool {
+		global $wp;
+
+		$endpoints = array(
+			sprintf( '/%s/event/events-list', GATHERPRESS_REST_NAMESPACE ),
+		);
+
+		if ( in_array( $wp->query_vars['rest_route'], $endpoints, true ) ) {
+			$rest_send_nocache_headers = true;
+		}
+
+		return $rest_send_nocache_headers;
+	}
+
+	/**
 	 * Get the event routes.
 	 *
 	 * @return array[]
@@ -66,7 +91,7 @@ class Rest_Api {
 			array(
 				'route' => 'datetime',
 				'args'  => array(
-					'methods'             => \WP_REST_Server::EDITABLE,
+					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_datetime' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
@@ -100,7 +125,7 @@ class Rest_Api {
 			array(
 				'route' => 'email',
 				'args'  => array(
-					'methods'             => \WP_REST_Server::EDITABLE,
+					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'email' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
@@ -122,7 +147,7 @@ class Rest_Api {
 			array(
 				'route' => 'attendance',
 				'args'  => array(
-					'methods'             => \WP_REST_Server::EDITABLE,
+					'methods'             => WP_REST_Server::EDITABLE,
 					'callback'            => array( $this, 'update_attendance' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
@@ -153,7 +178,7 @@ class Rest_Api {
 			array(
 				'route' => 'events-list',
 				'args'  => array(
-					'methods'             => \WP_REST_Server::READABLE,
+					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'events_list' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
@@ -257,13 +282,13 @@ class Rest_Api {
 	/**
 	 * Update custom event table with start and end Datetime.
 	 *
-	 * @param \WP_REST_Request $request Contains data from the request.
+	 * @param WP_REST_Request $request Contains data from the request.
 	 *
-	 * @return \WP_REST_Response
+	 * @return WP_REST_Response
 	 */
-	public function update_datetime( \WP_REST_Request $request ) {
+	public function update_datetime( WP_REST_Request $request ) {
 		if ( ! current_user_can( 'edit_posts' ) ) {
-			return new \WP_REST_Response(
+			return new WP_REST_Response(
 				array(
 					'success' => false,
 				)
@@ -281,17 +306,17 @@ class Rest_Api {
 			'success' => $success,
 		);
 
-		return new \WP_REST_Response( $response );
+		return new WP_REST_Response( $response );
 	}
 
 	/**
 	 * Email an event to members.
 	 *
-	 * @param \WP_REST_Request $request Contains data from the request.
+	 * @param WP_REST_Request $request Contains data from the request.
 	 *
-	 * @return \WP_REST_Response
+	 * @return WP_REST_Response
 	 */
-	public function email( \WP_REST_Request $request ) {
+	public function email( WP_REST_Request $request ) {
 		$params   = $request->get_params();
 		$post_id  = intval( $params['post_id'] );
 		$event    = new Event( $post_id );
@@ -300,17 +325,17 @@ class Rest_Api {
 			'success' => $success,
 		);
 
-		return new \WP_REST_Response( $response );
+		return new WP_REST_Response( $response );
 	}
 
 	/**
 	 * Returns events list.
 	 *
-	 * @param \WP_REST_Request $request Contains data from the request.
+	 * @param WP_REST_Request $request Contains data from the request.
 	 *
-	 * @return \WP_REST_Response
+	 * @return WP_REST_Response
 	 */
-	public function events_list( \WP_REST_Request $request ) {
+	public function events_list( WP_REST_Request $request ) {
 		$params          = $request->get_params();
 		$event_list_type = $params['event_list_type'];
 		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
@@ -350,7 +375,7 @@ class Rest_Api {
 
 		wp_reset_postdata();
 
-		return new \WP_REST_Response( $posts );
+		return new WP_REST_Response( $posts );
 	}
 
 	/**
@@ -372,11 +397,11 @@ class Rest_Api {
 	/**
 	 * Update the attendance status for a user to an event.
 	 *
-	 * @param \WP_REST_Request $request Contains data from the request.
+	 * @param WP_REST_Request $request Contains data from the request.
 	 *
-	 * @return \WP_REST_Response
+	 * @return WP_REST_Response
 	 */
-	public function update_attendance( \WP_REST_Request $request ) {
+	public function update_attendance( WP_REST_Request $request ) {
 		$params          = $request->get_params();
 		$success         = false;
 		$current_user_id = get_current_user_id();
@@ -427,17 +452,17 @@ class Rest_Api {
 			'online_link' => ( 'attending' === $status ) ? $online_link : '',
 		);
 
-		return new \WP_REST_Response( $response );
+		return new WP_REST_Response( $response );
 	}
 
 	/**
 	 * Edit data from event endpoint.
 	 *
-	 * @param \WP_REST_Response $response The response object.
+	 * @param WP_REST_Response $response The response object.
 	 *
-	 * @return \WP_REST_Response
+	 * @return WP_REST_Response
 	 */
-	public function prepare_event_data( \WP_REST_Response $response ) {
+	public function prepare_event_data( WP_REST_Response $response ) {
 		$event = new Event( $response->data['id'] );
 
 		// Only get the online event link if user is attending and event hasn't past.
