@@ -196,13 +196,27 @@ class Assets {
 		);
 	}
 
-	public function get_login_url( int $post_id ): string {
+	/**
+	 * Get the login URL.
+	 *
+	 * @param int $post_id Post ID of event.
+	 *
+	 * @return string
+	 */
+	public function get_login_url( int $post_id = 0 ): string {
 		$permalink = get_the_permalink( $post_id );
 
 		return wp_login_url( $permalink );
 	}
 
-	public function get_registration_url( int $post_id ): string {
+	/**
+	 * Get the registration url.
+	 *
+	 * @param int $post_id Post ID of event.
+	 *
+	 * @return string
+	 */
+	public function get_registration_url( int $post_id = 0 ): string {
 		$permalink = get_the_permalink( $post_id );
 		$url       = '';
 

@@ -146,25 +146,6 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 		}
 	};
 
-	// @todo need to revisit this and handle button for users that aren't logged in.
-	// Clean up so this does something... See issue #68 in GitHub.
-	// if ('' === currentUser) {
-	// 	return (
-	// 		<div className="gp-attendance-selector">
-	// 			<div className="wp-block-button">
-	// 				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-	// 				<a
-	// 					className="wp-block-button__link"
-	// 					href="#"
-	// 					onClick={(e) => onAnchorClick(e, 'attending')}
-	// 				>
-	// 					{__('Attend', 'gatherpress')}
-	// 				</a>
-	// 			</div>
-	// 		</div>
-	// 	);
-	// }
-
 	const LoggedOutModal = () => {
 		return (
 			<div className="gp-modal gp-modal__attendance-selector">
