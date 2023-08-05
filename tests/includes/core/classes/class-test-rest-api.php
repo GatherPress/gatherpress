@@ -191,16 +191,13 @@ class Test_Rest_Api extends Base {
 	public function test_nocache_headers_for_endpoint(): void {
 		global $wp;
 
-		$backup_wp = $wp;
-		$instance  = Rest_Api::get_instance();
+		$instance = Rest_Api::get_instance();
 
 		$this->assertFalse( $instance->nocache_headers_for_endpoint( false ) );
 
 		$wp->query_vars['rest_route'] = '/gatherpress/v1/event/events-list';
 
 		$this->assertTrue( $instance->nocache_headers_for_endpoint( false ) );
-
-		$wp = $backup_wp;
 	}
 
 }
