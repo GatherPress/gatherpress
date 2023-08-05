@@ -155,4 +155,59 @@ class Test_Assets extends Base {
 		$this->mock->wp()->reset();
 	}
 
+	/**
+	 * Coverage for get_login_url.
+	 *
+	 * @covers ::get_login_url
+	 *
+	 * @return void
+	 */
+	public function test_get_login_url(): void {
+		$instance = Assets::get_instance();
+
+		$this->assertSame( wp_login_url(), $instance->get_login_url() );
+
+		$post = $this->mock->post()->get();
+
+		$this->assertSame( wp_login_url( get_the_permalink( $post->ID ) ), $instance->get_login_url( $post->ID ) );
+
+		$this->mock->post()->reset();
+	}
+
+	/**
+	 * Coverage for get_registration_url.
+	 *
+	 * @covers ::get_registration_url
+	 *
+	 * @return void
+	 */
+	public function test_get_registration_url(): void {
+		$instance                   = Assets::get_instance();
+		$users_can_register_name    = 'users_can_register';
+		$users_can_register_default = get_option( $users_can_register_name );
+
+		update_option( $users_can_register_name, 0 );
+
+		$this->assertEmpty( $instance->get_registration_url() );
+
+		update_option( $users_can_register_name, 1 );
+
+		$this->assertSame( wp_registration_url(), $instance->get_registration_url() );
+
+		$post = $this->mock->post()->get();
+
+		$this->assertSame(
+			add_query_arg(
+				'redirect',
+				get_the_permalink( $post->ID ),
+				wp_registration_url()
+			),
+			$instance->get_registration_url( $post->ID )
+		);
+
+		$this->mock->post()->reset();
+
+		update_option( $users_can_register_name, $users_can_register_default );
+	}
+
 }
