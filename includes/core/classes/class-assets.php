@@ -189,9 +189,28 @@ class Assets {
 			'settings'          => array(
 				// @todo settings to come...
 			),
+			'login_url'         => $this->get_login_url( $post_id ),
+			'registration_url'  => $this->get_registration_url( $post_id ),
 			'timezone_choices'  => Utility::timezone_choices(),
 			'unregister_blocks' => $this->unregister_blocks(),
 		);
+	}
+
+	public function get_login_url( int $post_id ): string {
+		$permalink = get_the_permalink( $post_id );
+
+		return wp_login_url( $permalink );
+	}
+
+	public function get_registration_url( int $post_id ): string {
+		$permalink = get_the_permalink( $post_id );
+		$url       = '';
+
+		if ( get_option( 'users_can_register' ) ) {
+			$url = add_query_arg( 'redirect', $permalink, wp_registration_url() );
+		}
+
+		return $url;
 	}
 
 	/**

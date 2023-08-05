@@ -148,22 +148,127 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 
 	// @todo need to revisit this and handle button for users that aren't logged in.
 	// Clean up so this does something... See issue #68 in GitHub.
-	if ('' === currentUser) {
+	// if ('' === currentUser) {
+	// 	return (
+	// 		<div className="gp-attendance-selector">
+	// 			<div className="wp-block-button">
+	// 				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+	// 				<a
+	// 					className="wp-block-button__link"
+	// 					href="#"
+	// 					onClick={(e) => onAnchorClick(e, 'attending')}
+	// 				>
+	// 					{__('Attend', 'gatherpress')}
+	// 				</a>
+	// 			</div>
+	// 		</div>
+	// 	);
+	// }
+
+	const LoggedOutModal = () => {
 		return (
-			<div className="gp-attendance-selector">
-				<div className="wp-block-button">
-					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-					<a
-						className="wp-block-button__link"
-						href="#"
-						onClick={(e) => onAnchorClick(e, 'attending')}
-					>
-						{__('Attend', 'gatherpress')}
-					</a>
+			<div className="gp-modal gp-modal__attendance-selector">
+				<div className="gp-modal__header has-large-font-size">
+					{__('Login Required', 'gatherpress')}
 				</div>
+				<div className="gp-modal__content">
+					<div className="gp-modal__text">
+						{__('You must ', 'gatherpress')}
+						<a href={getFromGlobal('login_url')}>
+							{__('Login', 'gatherpress')}
+						</a>
+						{__(' to RSVP to events.', 'gatherpress')}
+					</div>
+					{'' !== getFromGlobal('registration_url') && (
+						<div className="gp-modal__text">
+							<a href={getFromGlobal('registration_url')}>
+								{__('Register', 'gatherpress')}
+							</a>
+							{__(
+								' if you do not have an account.',
+								'gatherpress'
+							)}
+						</div>
+					)}
+				</div>
+				<ButtonGroup className="gp-buttons wp-block-buttons">
+					<div className="gp-buttons__container wp-block-button has-small-font-size">
+						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+						<a
+							href="#"
+							onClick={closeModal}
+							className="gp-buttons__button wp-block-button__link"
+						>
+							{__('Close', 'gatherpress')}
+						</a>
+					</div>
+				</ButtonGroup>
 			</div>
 		);
-	}
+	};
+
+	const LoggedInModal = () => {
+		return (
+			<div className="gp-modal gp-modal__attendance-selector">
+				<div className="gp-modal__header has-large-font-size">
+					{getModalLabel(attendanceStatus) ? (
+						getModalLabel(attendanceStatus)
+					) : (
+						<Spinner />
+					)}
+				</div>
+				<div className="gp-modal__content">
+					<div className="gp-modal__text">
+						{__(
+							'To change your attending status, simply click the "Not Attending" button below.',
+							'gatherpress'
+						)}
+					</div>
+					{/*@todo Guests feature coming in later version of GatherPress*/}
+					{/*	<label htmlFor="gp-guests">*/}
+					{/*		{__('Number of guests?', 'gatherpress')}*/}
+					{/*	</label>*/}
+					{/*	<input*/}
+					{/*		id="gp-guests"*/}
+					{/*		type="number"*/}
+					{/*		min="0"*/}
+					{/*		max="5"*/}
+					{/*		onChange={(e) =>*/}
+					{/*			onAnchorClick(*/}
+					{/*				e,*/}
+					{/*				'attending',*/}
+					{/*				e.target.value,*/}
+					{/*				false*/}
+					{/*			)*/}
+					{/*		}*/}
+					{/*		defaultValue={attendanceGuests}*/}
+					{/*	/>*/}
+				</div>
+				<ButtonGroup className="gp-buttons wp-block-buttons">
+					<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
+						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+						<a
+							href="#"
+							onClick={(e) => onAnchorClick(e, 'not_attending')}
+							className="gp-buttons__button wp-block-button__link"
+						>
+							{__('Not Attending', 'gatherpress')}
+						</a>
+					</div>
+					<div className="gp-buttons__container wp-block-button has-small-font-size">
+						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+						<a
+							href="#"
+							onClick={closeModal}
+							className="gp-buttons__button wp-block-button__link"
+						>
+							{__('Close', 'gatherpress')}
+						</a>
+					</div>
+				</ButtonGroup>
+			</div>
+		);
+	};
 
 	return (
 		<div className="gp-attendance-selector">
@@ -187,66 +292,8 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 					style={customStyles}
 					contentLabel={__('Edit RSVP', 'gatherpress')}
 				>
-					<div className="gp-modal gp-modal__attendance-selector">
-						<div className="gp-modal__header has-large-font-size">
-							{getModalLabel(attendanceStatus) ? (
-								getModalLabel(attendanceStatus)
-							) : (
-								<Spinner />
-							)}
-						</div>
-						<div className="gp-modal__content">
-							<div className="gp-modal__text">
-								{__(
-									'To change your attending status, simply click the "Not Attending" button below.',
-									'gatherpress'
-								)}
-							</div>
-							{/*@todo Guests feature coming in later version of GatherPress*/}
-							{/*	<label htmlFor="gp-guests">*/}
-							{/*		{__('Number of guests?', 'gatherpress')}*/}
-							{/*	</label>*/}
-							{/*	<input*/}
-							{/*		id="gp-guests"*/}
-							{/*		type="number"*/}
-							{/*		min="0"*/}
-							{/*		max="5"*/}
-							{/*		onChange={(e) =>*/}
-							{/*			onAnchorClick(*/}
-							{/*				e,*/}
-							{/*				'attending',*/}
-							{/*				e.target.value,*/}
-							{/*				false*/}
-							{/*			)*/}
-							{/*		}*/}
-							{/*		defaultValue={attendanceGuests}*/}
-							{/*	/>*/}
-						</div>
-						<ButtonGroup className="gp-buttons wp-block-buttons">
-							<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
-								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-								<a
-									href="#"
-									onClick={(e) =>
-										onAnchorClick(e, 'not_attending')
-									}
-									className="gp-buttons__button wp-block-button__link"
-								>
-									{__('Not Attending', 'gatherpress')}
-								</a>
-							</div>
-							<div className="gp-buttons__container wp-block-button has-small-font-size">
-								{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-								<a
-									href="#"
-									onClick={closeModal}
-									className="gp-buttons__button wp-block-button__link"
-								>
-									{__('Close', 'gatherpress')}
-								</a>
-							</div>
-						</ButtonGroup>
-					</div>
+					{'' === currentUser && <LoggedOutModal />}
+					{'' !== currentUser && <LoggedInModal />}
 				</Modal>
 			</ButtonGroup>
 			{'attend' !== attendanceStatus && (
