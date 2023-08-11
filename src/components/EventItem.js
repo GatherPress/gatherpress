@@ -9,6 +9,7 @@ import HtmlReactParser from 'html-react-parser';
 import AttendanceSelector from './AttendanceSelector';
 import AttendeeList from './AttendeeList';
 import AttendeeResponse from './AttendeeResponse';
+import { getFromGlobal } from '../helpers/globals';
 
 const EventItem = (props) => {
 	const { type, event, eventOptions } = props;
@@ -50,7 +51,7 @@ const EventItem = (props) => {
 						<div className={`${eventClass}__venue`}>
 							<span className="dashicons dashicons-location"></span>
 							<a href={event.venue.permalink}>
-								{event.venue.name}
+								{HtmlReactParser(event.venue.name)}
 							</a>
 						</div>
 					)}
@@ -75,20 +76,24 @@ const EventItem = (props) => {
 						/>
 					</div>
 				)}
-				{'upcoming' === type && eventOptions.showRsvpButton && (
-					<AttendanceSelector
-						eventId={event.ID}
-						currentUser={event.current_user}
-						type={type}
-					/>
-				)}
+				{'upcoming' === type &&
+					eventOptions.showRsvpButton &&
+					'' !== getFromGlobal('current_user') && (
+						<AttendanceSelector
+							eventId={event.ID}
+							currentUser={event.current_user}
+							type={type}
+						/>
+					)}
 
-				{'past' === type && eventOptions.showRsvpButton && (
-					<AttendeeResponse
-						type={type}
-						status={event.current_user?.status}
-					/>
-				)}
+				{'past' === type &&
+					eventOptions.showRsvpButton &&
+					'' !== getFromGlobal('current_user') && (
+						<AttendeeResponse
+							type={type}
+							status={event.current_user?.status}
+						/>
+					)}
 			</div>
 		</div>
 	);
