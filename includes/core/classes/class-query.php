@@ -70,50 +70,50 @@ class Query {
 	 * @return \WP_Query
 	 */
 	public function get_events_list( string $event_list_type = '', int $number = 5, array $topics = array(), array $venues = array() ): \WP_Query {
-		$args = [
+		$args = array(
 			'post_type'       => Event::POST_TYPE,
 			'fields'          => 'ids',
 			'no_found_rows'   => true,
 			'posts_per_page'  => $number,
-			'gp_events_query' => $event_list_type,		
-		];
+			'gp_events_query' => $event_list_type,
+		  );
+		  
+		  $tax_query = array();
+		  if ( ! empty( $topics ) ) {
+			$tax_query[] = array(
+			  'taxonomy' => Event::TAXONOMY,
+			  'field'    => 'slug',
+			  'terms'    => $topics,
+			);
+		  }
+		  
+		  if ( ! empty( $venues ) ) {
+			$tax_query[] = array(
+			  'taxonomy' => Venue::TAXONOMY,
+			  'field'    => 'slug',
+			  'terms'    => $venues,
+			);
+		  }
+		  
+		  if ( ! empty( $venues ) && ! empty( $topics ) ) {
+			$tax_query[] = array(
+			  'relation' => 'AND',
+			  'queries'  => array(
+				array(
+				  'taxonomy' => Event::TAXONOMY,
+				  'field'    => 'slug',
+				  'terms'    => $topics,
+				),
+				array(
+				  'taxonomy' => Venue::TAXONOMY,
+				  'field'    => 'slug',
+				  'terms'    => $venues,
+				),
+			  ),
+			);
+		  }
 
-		$tax_query = [];
-		if ( ! empty( $topics ) ) {
-			$tax_query[] = [
-				'taxonomy' => Event::TAXONOMY,
-				'field'    => 'slug',
-				'terms'    => $topics,
-			];
-		}
-
-		if ( ! empty( $venues ) ) {
-			$tax_query[] = [
-				'taxonomy' => Venue::TAXONOMY,
-				'field'    => 'slug',
-				'terms'    => $venues,
-			];
-		}
-
-		if ( ! empty( $venues ) && ! empty( $topics ) ) {
-			$tax_query[] = [
-				'relation' => 'AND',
-				'queries'  => [
-					[
-						'taxonomy' => Event::TAXONOMY,
-						'field'    => 'slug',
-						'terms'    => $topics,
-					],
-					[
-						'taxonomy' => Venue::TAXONOMY,
-						'field'    => 'slug',
-						'terms'    => $venues,
-					],
-				],
-			];
-		}
-
-		$args['tax_query'] = $tax_query;
+		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
 		return new \WP_Query($args);
 	}
