@@ -77,7 +77,7 @@ class Query {
 			'posts_per_page'  => $number,
 			'gp_events_query' => $event_list_type,
 		);
- 
+
 		$tax_query = array();
 		if ( ! empty( $topics ) ) {
 			$tax_query[] = array(
@@ -85,7 +85,7 @@ class Query {
 				'field'    => 'slug',
 				'terms'    => $topics,
 			);
-		}  
+		}
 
 		if ( ! empty( $venues ) ) {
 			$tax_query[] = array(
