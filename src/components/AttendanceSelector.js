@@ -2,12 +2,13 @@
  * External dependencies
  */
 import Modal from 'react-modal';
+import HtmlReactParser from 'html-react-parser';
 
 /**
  * WordPress dependencies.
  */
 import { useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { ButtonGroup, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
@@ -43,12 +44,12 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 	const openModal = (e) => {
 		e.preventDefault();
 
-		if (
-			'not_attending' === attendanceStatus ||
-			'attend' === attendanceStatus
-		) {
-			onAnchorClick(e, 'attending', 0, false);
-		}
+		// if (
+		// 	'not_attending' === attendanceStatus ||
+		// 	'attend' === attendanceStatus
+		// ) {
+		// 	onAnchorClick(e, 'attending', 0, false);
+		// }
 		setIsOpen(true);
 	};
 
@@ -120,10 +121,11 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 		switch (status) {
 			case 'attending':
 			case 'waiting_list':
+			case 'not_attending':
 				return __('Edit RSVP', 'gatherpress');
 		}
 
-		return __('Attend', 'gatherpress');
+		return __('RSVP', 'gatherpress');
 	};
 
 	const getModalLabel = (status) => {
@@ -132,6 +134,8 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 				return __("You're Attending", 'gatherpress');
 			case 'waiting_list':
 				return __("You're Wait Listed", 'gatherpress');
+			case 'not_attending':
+				return __("You're Not Attending", 'gatherpress');
 		}
 
 		return '';
@@ -188,7 +192,18 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 		);
 	};
 
-	const LoggedInModal = () => {
+	const LoggedInModal = ({ status }) => {
+		let buttonStatus = '';
+		let buttonLabel = '';
+
+		if ('not_attending' === status) {
+			buttonStatus = 'attending';
+			buttonLabel = __('Attend', 'gatherpress');
+		} else {
+			buttonStatus = 'not_attending';
+			buttonLabel = __('Not Attending', 'gatherpress');
+		}
+
 		return (
 			<div className="gp-modal gp-modal__attendance-selector">
 				<div className="gp-modal__header has-large-font-size">
@@ -200,9 +215,14 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 				</div>
 				<div className="gp-modal__content">
 					<div className="gp-modal__text">
-						{__(
-							'To change your attending status, simply click the "Not Attending" button below.',
-							'gatherpress'
+						{HtmlReactParser(
+							sprintf(
+								__(
+									'To change your attending status, simply click the %s button below.',
+									'gatherpress'
+								),
+								'<strong>' + buttonLabel + '</strong>'
+							)
 						)}
 					</div>
 					{/*@todo Guests feature coming in later version of GatherPress*/}
@@ -230,10 +250,10 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"
-							onClick={(e) => onAnchorClick(e, 'not_attending')}
+							onClick={(e) => onAnchorClick(e, buttonStatus)}
 							className="gp-buttons__button wp-block-button__link"
 						>
-							{__('Not Attending', 'gatherpress')}
+							{buttonLabel}
 						</a>
 					</div>
 					<div className="gp-buttons__container wp-block-button has-small-font-size">
@@ -274,7 +294,9 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 					contentLabel={__('Edit RSVP', 'gatherpress')}
 				>
 					{'' === currentUser && <LoggedOutModal />}
-					{'' !== currentUser && <LoggedInModal />}
+					{'' !== currentUser && (
+						<LoggedInModal status={attendanceStatus} />
+					)}
 				</Modal>
 			</ButtonGroup>
 			{'attend' !== attendanceStatus && (
