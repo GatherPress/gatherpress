@@ -3,7 +3,6 @@
  */
 import { includes } from 'lodash';
 import classnames from 'classnames';
-import HtmlReactParser from 'html-react-parser';
 
 /**
  * WordPress dependencies.
@@ -46,7 +45,7 @@ const Edit = (props) => {
 	const { venueList } = useSelect((select) => {
 		const { getEntityRecords } = select(coreStore);
 		return {
-			venueList: getEntityRecords('postType', 'gp_venue', {
+			venueList: getEntityRecords('taxonomy', '_gp_venue', {
 				per_page: -1,
 				context: 'view',
 			}),
@@ -65,7 +64,7 @@ const Edit = (props) => {
 		venueList?.reduce(
 			(accumulator, venue) => ({
 				...accumulator,
-				[HtmlReactParser(venue.title?.rendered)]: venue,
+				[venue.name]: venue,
 			}),
 			{}
 		) ?? {};
@@ -205,9 +204,7 @@ const Edit = (props) => {
 							venues.map((item) => ({
 								id: item.id,
 								slug: item.slug,
-								value: HtmlReactParser(
-									item.title?.rendered || item.value
-								),
+								value: item.name || item.value,
 							}))
 						}
 						suggestions={Object.keys(venueSuggestions)}

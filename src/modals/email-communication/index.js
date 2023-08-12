@@ -166,8 +166,6 @@ domReady(() => {
 		'gp-event-communication-modal'
 	);
 	if (modalWrapper) {
-		createRoot(modalWrapper).render(
-			<EventCommuncationModal />
-		);
+		createRoot(modalWrapper).render(<EventCommuncationModal />);
 	}
 });
