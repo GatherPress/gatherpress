@@ -1,4 +1,4 @@
 /**
  * Internal dependencies.
  */
-import './event-settings';
+import './email-communication';

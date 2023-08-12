@@ -212,7 +212,7 @@ class Attendee {
 	/**
 	 * Get all attendees for an event.
 	 *
-	 * @todo should be part of Event class, needs refactoring.
+	 * @todo should be part of Event class, needs refactoring (call method rsvp).
 	 *
 	 * @return array
 	 */

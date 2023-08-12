@@ -27,21 +27,21 @@ class Assets {
 	 *
 	 * @var array
 	 */
-	protected $asset_data = array();
+	protected array $asset_data = array();
 
 	/**
 	 * URL to `build` directory.
 	 *
 	 * @var string
 	 */
-	protected $build = GATHERPRESS_CORE_URL . 'build/';
+	protected string $build = GATHERPRESS_CORE_URL . 'build/';
 
 	/**
 	 * Path to `build` directory.
 	 *
 	 * @var string
 	 */
-	protected $path = GATHERPRESS_CORE_PATH . '/build/';
+	protected string $path = GATHERPRESS_CORE_PATH . '/build/';
 
 	/**
 	 * Assets constructor.
@@ -59,6 +59,8 @@ class Assets {
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
+		// Set priority to 11 to not conflict with media modal.
+		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 	}
 
 	/**
@@ -97,6 +99,15 @@ class Assets {
 			wp_enqueue_script(
 				'gatherpress-panels',
 				$this->build . 'panels.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+
+			$asset = $this->get_asset_data( 'modals' );
+			wp_enqueue_script(
+				'gatherpress-modals',
+				$this->build . 'modals.js',
 				$asset['dependencies'],
 				$asset['version'],
 				true
@@ -151,7 +162,7 @@ class Assets {
 	 *
 	 * @return void
 	 */
-	public function editor_enqueue_scripts() {
+	public function editor_enqueue_scripts(): void {
 		$asset = $this->get_asset_data( 'editor' );
 
 		wp_enqueue_script(
@@ -161,6 +172,17 @@ class Assets {
 			$asset['version'],
 			true
 		);
+	}
+
+	/**
+	 * Adds markup to event edit page to store communication modal.
+	 *
+	 * @return void
+	 */
+	public function event_communication_modal(): void {
+		if ( get_post_type() === Event::POST_TYPE ) {
+			echo '<div id="gp-event-communication-modal" />';
+		}
 	}
 
 	/**
