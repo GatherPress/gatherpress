@@ -19,9 +19,6 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 
 **GatherePress.org**
 > Talk to Mervin for access to `gatherpress.org` via SSH and WP Admin login.
-> Host: `138.197.7.55`
-> User: `gatherpress`
-> Auth: `key pair`
 
 # Credits
 [mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [pbrocks](https://profiles.wordpress.org/pbrocks/), [jmarx](https://profiles.wordpress.org/jmarx/), [hauvong](https://profiles.wordpress.org/hauvong/)

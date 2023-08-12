@@ -37,7 +37,8 @@ const AttendanceList = () => {
 	// @todo redo this logic and have it come from API and not GatherPress object.
 	defaultStatus =
 		'undefined' !== typeof currentUserStatus &&
-		'attend' !== currentUserStatus
+		'attend' !== currentUserStatus &&
+		'' !== currentUserStatus
 			? currentUserStatus
 			: defaultStatus;
 
