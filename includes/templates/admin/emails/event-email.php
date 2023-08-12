@@ -1,10 +1,20 @@
 <?php
+/**
+ * Email template.
+ *
+ * @package GatherPress
+ * @subpackage Core
+ * @since 1.0.0
+ */
+
+use GatherPress\Core\Event;
+
 if ( ! isset( $event_id, $message ) ) {
 	return;
 }
 
-$event = new \GatherPress\Core\Event( $event_id );
-$venue = $event->get_venue_information()['name'];
+$gatherpress_event = new Event( $event_id );
+$gatherpress_venue = $gatherpress_event->get_venue_information()['name'];
 
 ?>
 
@@ -26,11 +36,21 @@ $venue = $event->get_venue_information()['name'];
 		<h1 style="text-align: center;"><?php echo wp_kses_post( get_the_title( $event_id ) ); ?></h1>
 
 		<!-- Date & Time -->
-		<p style="text-align: center;"><?php printf( esc_html__( 'Date: %s', 'gatherpress'), $event->get_display_datetime() ); ?></p>
+		<p style="text-align: center;">
+			<?php
+			/* translators: %s: gatherpress_event date and time. */
+			printf( esc_html__( 'Date: %s', 'gatherpress' ), esc_html( $gatherpress_event->get_display_datetime() ) );
+			?>
+		</p>
 
 		<!-- Venue -->
-		<?php if ( ! empty( $venue ) ) : ?>
-			<p style="text-align: center;"><?php printf( esc_html__( 'Venue: %s', 'gatherpress'), $venue ); ?></p>
+		<?php if ( ! empty( $gatherpress_venue ) ) : ?>
+			<p style="text-align: center;">
+				<?php
+				/* translators: %s: gatherpress_event gatherpress_venue name. */
+				printf( esc_html__( 'Venue: %s', 'gatherpress' ), wp_kses_post( $gatherpress_venue ) );
+				?>
+			</p>
 		<?php endif; ?>
 
 		<!-- RSVP Button -->

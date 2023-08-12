@@ -39,7 +39,7 @@ class Rest_Api {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 		add_filter( 'rest_send_nocache_headers', array( $this, 'nocache_headers_for_endpoint' ) );
-		add_action( 'gatherpress_send_emails', [ $this, 'send_emails' ], 10, 3 );
+		add_action( 'gatherpress_send_emails', array( $this, 'send_emails' ), 10, 3 );
 	}
 
 	/**
@@ -144,9 +144,9 @@ class Rest_Api {
 						),
 						'message'  => array(
 							'required'          => false,
-							'validate_callback' => 'sanitize_text_field'
+							'validate_callback' => 'sanitize_text_field',
 						),
-						'send'      => array(
+						'send'     => array(
 							'required'          => true,
 							'validate_callback' => array( $this, 'validate_send' ),
 						),
@@ -386,6 +386,7 @@ class Rest_Api {
 		}
 
 		$members = $this->get_members( $send, $post_id );
+		/* translators: %s: event title. */
 		$subject = sprintf( __( '📅 Event: %s', 'gatherpress' ), get_the_title( $post_id ) );
 		$body    = Utility::render_template(
 			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),

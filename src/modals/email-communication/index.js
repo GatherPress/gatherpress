@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
-import { createRoot, useState } from '@wordpress/element';
+import { createRoot, useState, useEffect } from '@wordpress/element';
 import {
 	Button,
 	CheckboxControl,
@@ -13,12 +13,12 @@ import {
 	TextareaControl,
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
-import { useEffect } from '@wordpress/element';
+
 /**
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
-import { getFromGlobal, setToGlobal } from '../../helpers/globals';
+import { getFromGlobal } from '../../helpers/globals';
 
 const EventCommuncationModal = () => {
 	const [isOpen, setOpen] = useState(false);
@@ -35,7 +35,7 @@ const EventCommuncationModal = () => {
 			global.confirm(__('Confirm you are ready to send?', 'gatherpress'))
 		) {
 			apiFetch({
-				path: '/gatherpress/v1/event/email/',
+				path: getFromGlobal('event_rest_api') + '/email/',
 				method: 'POST',
 				data: {
 					post_id: getFromGlobal('post_id'),
@@ -56,8 +56,6 @@ const EventCommuncationModal = () => {
 					setAttendingChecked(false);
 					setWaitingListChecked(false);
 					setNotAttendingChecked(false);
-				} else {
-					alert('Sorry, something went wrong.');
 				}
 			});
 		}
@@ -150,7 +148,11 @@ const EventCommuncationModal = () => {
 						</FlexItem>
 					</Flex>
 					<br />
-					<Button variant="primary" onClick={sendMessage} disabled={buttonDisabled}>
+					<Button
+						variant="primary"
+						onClick={sendMessage}
+						disabled={buttonDisabled}
+					>
 						{__('Send Email', 'gatherpress')}
 					</Button>
 				</Modal>

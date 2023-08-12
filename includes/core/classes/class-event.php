@@ -640,12 +640,4 @@ class Event {
 		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( $format );
 	}
 
-	/**
-	 * Send emails about event to members.
-	 *
-	 * @return bool
-	 */
-	public function send_emails(): bool {
-	}
-
 }

@@ -77,7 +77,7 @@ export function triggerEventCommuncation() {
 								setOpen: true,
 							});
 						},
-						label: 'Create Message',
+						label: __('Create Message', 'gatherpress'),
 					},
 				],
 			}
