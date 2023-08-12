@@ -3,6 +3,7 @@
  */
 import { includes } from 'lodash';
 import classnames from 'classnames';
+import HtmlReactParser from 'html-react-parser';
 
 /**
  * WordPress dependencies.
@@ -64,7 +65,7 @@ const Edit = (props) => {
 		venueList?.reduce(
 			(accumulator, venue) => ({
 				...accumulator,
-				[venue.title.rendered]: venue,
+				[HtmlReactParser(venue.title?.rendered)]: venue,
 			}),
 			{}
 		) ?? {};
@@ -204,7 +205,9 @@ const Edit = (props) => {
 							venues.map((item) => ({
 								id: item.id,
 								slug: item.slug,
-								value: item.title.rendered || item.value,
+								value: HtmlReactParser(
+									item.title?.rendered || item.value
+								),
 							}))
 						}
 						suggestions={Object.keys(venueSuggestions)}
