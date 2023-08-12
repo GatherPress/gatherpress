@@ -1,5 +1,5 @@
 <?php
-if ( ! isset( $event_id ) ) {
+if ( ! isset( $event_id, $message ) ) {
 	return;
 }
 
@@ -14,7 +14,11 @@ $venue = $event->get_venue_information()['name'];
 		<title><?php echo wp_kses_post( get_the_title( $event_id ) ); ?></title>
 	</head>
 	<body style="font-family: Arial, sans-serif;">
-
+		<?php if ( ! empty( $message ) ) : ?>
+			<p style="margin-bottom: 16px;">
+				<?php echo esc_html( $message ); ?>
+			</p>
+		<?php endif; ?>
 		<!-- Feature Image -->
 		<img src="<?php echo esc_url( get_the_post_thumbnail_url( $event_id, 'full' ) ); ?>" alt="<?php esc_attr_e( 'Event Image', 'gatherpress' ); ?>" style="max-width: 100%;">
 

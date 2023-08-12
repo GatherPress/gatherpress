@@ -103,6 +103,15 @@ class Assets {
 				$asset['version'],
 				true
 			);
+
+			$asset = $this->get_asset_data( 'modals' );
+			wp_enqueue_script(
+				'gatherpress-modals',
+				$this->build . 'modals.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
 		}
 
 		$settings      = Settings::get_instance();

@@ -646,31 +646,6 @@ class Event {
 	 * @return bool
 	 */
 	public function send_emails(): bool {
-		if ( ! is_a( $this->event, '\WP_Post' ) ) {
-			return false;
-		}
-
-		// @todo make scheduled process.
-		$users   = get_users();
-		$subject = sprintf( __( 'New Event: %s', 'gatherpress' ), get_the_title( $this->event ) );
-		$body    = Utility::render_template(
-			sprintf( '%s/includes/templates/admin/emails/event-update.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'event_id' => $this->event->ID,
-			),
-		);
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
-
-		foreach ( $users as $user ) {
-			if ( $user->user_email ) {
-				$to = $user->user_email;
-
-				wp_mail( $to, $subject, $body, $headers );
-			}
-		}
-
-		return true;
 	}
 
 }

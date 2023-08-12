@@ -13,7 +13,6 @@
  * @package GatherPress
  */
 
-// Constants.
 define( 'GATHERPRESS_VERSION', current( get_file_data( __FILE__, array( 'Version' ), 'plugin' ) ) );
 define( 'GATHERPRESS_MINIMUM_PHP_VERSION', current( get_file_data( __FILE__, array( 'Minimum PHP Version' ), 'plugin' ) ) );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );

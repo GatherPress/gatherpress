@@ -39,6 +39,7 @@ class Rest_Api {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 		add_filter( 'rest_send_nocache_headers', array( $this, 'nocache_headers_for_endpoint' ) );
+		add_action( 'gatherpress_send_emails', [ $this, 'send_emails' ], 10, 3 );
 	}
 
 	/**
@@ -141,6 +142,14 @@ class Rest_Api {
 							'required'          => true,
 							'validate_callback' => array( $this, 'validate_event_post_id' ),
 						),
+						'message'  => array(
+							'required'          => false,
+							'validate_callback' => 'sanitize_text_field'
+						),
+						'send'      => array(
+							'required'          => true,
+							'validate_callback' => array( $this, 'validate_send' ),
+						),
 					),
 				),
 			),
@@ -233,6 +242,31 @@ class Rest_Api {
 	}
 
 	/**
+	 * Validate who to send emails to.
+	 *
+	 * @param mixed $param Array of sends.
+	 *
+	 * @return bool
+	 */
+	public function validate_send( $param ): bool {
+		if (
+			is_array( $param ) &&
+			array_key_exists( 'all', $param ) &&
+			is_bool( $param['all'] ) &&
+			array_key_exists( 'attending', $param ) &&
+			is_bool( $param['attending'] ) &&
+			array_key_exists( 'waiting_list', $param ) &&
+			is_bool( $param['waiting_list'] ) &&
+			array_key_exists( 'not_attending', $param ) &&
+			is_bool( $param['not_attending'] )
+		) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Validate number.
 	 *
 	 * @param int|string $param A Post ID to validate.
@@ -317,15 +351,97 @@ class Rest_Api {
 	 * @return WP_REST_Response
 	 */
 	public function email( WP_REST_Request $request ) {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+				)
+			);
+		}
+
 		$params   = $request->get_params();
 		$post_id  = intval( $params['post_id'] );
-		$event    = new Event( $post_id );
-		$success  = $event->send_emails();
+		$message  = $params['message'] ?? '';
+		$send     = $params['send'];
+		$success  = wp_schedule_single_event( time(), 'gatherpress_send_emails', array( $post_id, $send, $message ) );
 		$response = array(
 			'success' => $success,
 		);
 
 		return new WP_REST_Response( $response );
+	}
+
+	/**
+	 * Send emails.
+	 *
+	 * @param int    $post_id Event Post ID.
+	 * @param array  $send    Members to send to.
+	 * @param string $message Optional message to include in the email.
+	 *
+	 * @return void
+	 */
+	public function send_emails( int $post_id, array $send, string $message ): void {
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			return;
+		}
+
+		$members = $this->get_members( $send, $post_id );
+		$subject = sprintf( __( 'New Event: %s', 'gatherpress' ), get_the_title( $post_id ) );
+		$body    = Utility::render_template(
+			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'event_id' => $post_id,
+				'message'  => $message,
+			),
+		);
+		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
+
+		foreach ( $members as $member ) {
+			if ( $member->user_email ) {
+				$to = $member->user_email;
+
+				wp_mail( $to, $subject, $body, $headers );
+			}
+		}
+	}
+
+	/**
+	 * Get the members to send an email to about the event.
+	 *
+	 * @param array $send    Who to send emails to.
+	 * @param int   $post_id Event Post ID.
+	 *
+	 * @return array
+	 */
+	public function get_members( array $send, int $post_id ): array {
+		$member_ids    = array();
+		$attendees     = new Attendee( $post_id );
+		$all_attendees = $attendees->attendees();
+
+		if ( ! empty( $send['all'] ) ) {
+			return get_users();
+		}
+
+		foreach ( array( 'attending', 'waiting_list', 'not_attending' ) as $status ) {
+			if ( ! empty( $send[ $status ] ) ) {
+				$member_ids = array_merge(
+					$member_ids,
+					array_map(
+						static function( $member ) {
+							return $member['id'];
+						},
+						$all_attendees[ $status ]['attendees']
+					)
+				);
+			}
+		}
+
+		if ( ! empty( $member_ids ) ) {
+			return get_users( array( 'include' => $member_ids ) );
+		}
+
+		return $member_ids;
 	}
 
 	/**
