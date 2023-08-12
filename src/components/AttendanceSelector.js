@@ -43,13 +43,6 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 
 	const openModal = (e) => {
 		e.preventDefault();
-
-		// if (
-		// 	'not_attending' === attendanceStatus ||
-		// 	'attend' === attendanceStatus
-		// ) {
-		// 	onAnchorClick(e, 'attending', 0, false);
-		// }
 		setIsOpen(true);
 	};
 
@@ -131,14 +124,14 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 	const getModalLabel = (status) => {
 		switch (status) {
 			case 'attending':
-				return __("You're Attending", 'gatherpress');
+				return __("You're attending", 'gatherpress');
 			case 'waiting_list':
-				return __("You're Wait Listed", 'gatherpress');
+				return __("You're wait listed", 'gatherpress');
 			case 'not_attending':
-				return __("You're Not Attending", 'gatherpress');
+				return __("You're not attending", 'gatherpress');
 		}
 
-		return '';
+		return __('RSVP to this event', 'gatherpress');
 	};
 
 	const onSpanKeyDown = (e) => {
@@ -196,7 +189,7 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 		let buttonStatus = '';
 		let buttonLabel = '';
 
-		if ('not_attending' === status) {
+		if ('not_attending' === status || 'attend' === status) {
 			buttonStatus = 'attending';
 			buttonLabel = __('Attend', 'gatherpress');
 		} else {
@@ -217,8 +210,9 @@ const AttendanceSelector = ({ eventId, currentUser = '', type }) => {
 					<div className="gp-modal__text">
 						{HtmlReactParser(
 							sprintf(
+								/* translators: %s: button label. */
 								__(
-									'To change your attending status, simply click the %s button below.',
+									'To set or change your attending status, simply click the %s button below.',
 									'gatherpress'
 								),
 								'<strong>' + buttonLabel + '</strong>'
