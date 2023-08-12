@@ -77,7 +77,7 @@ class Query {
 			'posts_per_page'  => $number,
 			'gp_events_query' => $event_list_type,
 		);
-		  
+ 
 		$tax_query = array();
 		if ( ! empty( $topics ) ) {
 			$tax_query[] = array(
@@ -85,8 +85,8 @@ class Query {
 				'field'    => 'slug',
 				'terms'    => $topics,
 			);
-		}
-		  
+		}  
+
 		if ( ! empty( $venues ) ) {
 			$tax_query[] = array(
 				'taxonomy' => Venue::TAXONOMY,
@@ -94,21 +94,21 @@ class Query {
 				'terms'    => $venues,
 			);
 		}
-		  
+
 		if ( ! empty( $venues ) && ! empty( $topics ) ) {
 			$tax_query[] = array(
 				'relation' => 'AND',
 				'queries'  => array(
-				array(
-					'taxonomy' => Event::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => $topics,
-				),
-				array(
-					'taxonomy' => Venue::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => $venues,
-				),
+					array(
+						'taxonomy' => Event::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $topics,
+					),
+					array(
+						'taxonomy' => Venue::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $venues,
+					),
 				),
 			);
 		}
