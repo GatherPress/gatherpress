@@ -22,20 +22,17 @@ import { getFromGlobal, setToGlobal } from '../../helpers/globals';
 
 const EventCommuncationModal = () => {
 	const [isOpen, setOpen] = useState(false);
-	const [isAllChecked, setAllChecked] = useState(true);
+	const [isAllChecked, setAllChecked] = useState(false);
 	const [isAttendingChecked, setAttendingChecked] = useState(false);
 	const [isWaitingListChecked, setWaitingListChecked] = useState(false);
 	const [isNotAttendingChecked, setNotAttendingChecked] = useState(false);
+	const [isCheckBoxDisabled, setCheckBoxDisabled] = useState(false);
+	const [buttonDisabled, setButtonDisabled] = useState(false);
 	const [message, setMessage] = useState('');
 	const closeModal = () => setOpen(false);
 	const sendMessage = () => {
 		if (
-			global.confirm(
-				__(
-					'Ready to announce this event to all members?',
-					'gatherpress'
-				)
-			)
+			global.confirm(__('Confirm you are ready to send?', 'gatherpress'))
 		) {
 			apiFetch({
 				path: '/gatherpress/v1/event/email/',
@@ -52,25 +49,21 @@ const EventCommuncationModal = () => {
 					_wpnonce: getFromGlobal('nonce'),
 				},
 			}).then((res) => {
-				const success = res.success ? '1' : '0';
-
-				setToGlobal('event_announced', success);
-				this.setState({
-					announceEventSent: res.success,
-				});
+				if (res.success) {
+					closeModal();
+					setMessage('');
+					setAllChecked(false);
+					setAttendingChecked(false);
+					setWaitingListChecked(false);
+					setNotAttendingChecked(false);
+				} else {
+					alert('Sorry, something went wrong.');
+				}
 			});
 		}
 	};
 
 	useEffect(() => {
-		if (
-			isAttendingChecked ||
-			isWaitingListChecked ||
-			isNotAttendingChecked
-		) {
-			setAllChecked(false);
-		}
-
 		if (
 			isAttendingChecked &&
 			isWaitingListChecked &&
@@ -80,6 +73,26 @@ const EventCommuncationModal = () => {
 			setAttendingChecked(false);
 			setWaitingListChecked(false);
 			setNotAttendingChecked(false);
+		}
+
+		if (isAllChecked) {
+			setCheckBoxDisabled(true);
+			setAttendingChecked(false);
+			setWaitingListChecked(false);
+			setNotAttendingChecked(false);
+		} else {
+			setCheckBoxDisabled(false);
+		}
+
+		if (
+			!isAllChecked &&
+			!isAttendingChecked &&
+			!isWaitingListChecked &&
+			!isNotAttendingChecked
+		) {
+			setButtonDisabled(true);
+		} else {
+			setButtonDisabled(false);
 		}
 	}, [
 		isAllChecked,
@@ -94,7 +107,7 @@ const EventCommuncationModal = () => {
 		<>
 			{isOpen && (
 				<Modal
-					title={__('Email members', 'gatherpress')}
+					title={__('Email members about this event', 'gatherpress')}
 					onRequestClose={closeModal}
 					shouldCloseOnClickOutside={false}
 				>
@@ -103,7 +116,7 @@ const EventCommuncationModal = () => {
 						value={message}
 						onChange={(value) => setMessage(value)}
 					/>
-					<Flex>
+					<Flex gap="8">
 						<FlexItem>
 							<CheckboxControl
 								label={__('All', 'gatherpress')}
@@ -116,6 +129,7 @@ const EventCommuncationModal = () => {
 								label={__('Attending', 'gatherpress')}
 								checked={isAttendingChecked}
 								onChange={setAttendingChecked}
+								disabled={isCheckBoxDisabled}
 							/>
 						</FlexItem>
 						<FlexItem>
@@ -123,6 +137,7 @@ const EventCommuncationModal = () => {
 								label={__('Waiting List', 'gatherpress')}
 								checked={isWaitingListChecked}
 								onChange={setWaitingListChecked}
+								disabled={isCheckBoxDisabled}
 							/>
 						</FlexItem>
 						<FlexItem>
@@ -130,11 +145,12 @@ const EventCommuncationModal = () => {
 								label={__('Not Attending', 'gatherpress')}
 								checked={isNotAttendingChecked}
 								onChange={setNotAttendingChecked}
+								disabled={isCheckBoxDisabled}
 							/>
 						</FlexItem>
 					</Flex>
 					<br />
-					<Button variant="primary" onClick={sendMessage}>
+					<Button variant="primary" onClick={sendMessage} disabled={buttonDisabled}>
 						{__('Send Email', 'gatherpress')}
 					</Button>
 				</Modal>
