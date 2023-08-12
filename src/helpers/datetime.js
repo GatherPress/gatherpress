@@ -14,7 +14,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { enableSave, getFromGlobal, setToGlobal } from './globals';
-import { isEventPostType } from './event';
+import { isEventPostType, triggerEventCommuncation } from './event';
 
 export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
 export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
@@ -212,7 +212,7 @@ export function saveDateTime() {
 				_wpnonce: getFromGlobal('nonce'),
 			},
 		}).then(() => {
-			// Saved.
+			triggerEventCommuncation();
 		});
 	}
 }

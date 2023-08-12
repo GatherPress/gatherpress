@@ -14,6 +14,7 @@ import { __ } from '@wordpress/i18n';
  */
 import { getTimeZone } from './datetime';
 import { getFromGlobal } from './globals';
+import { Broadcaster } from './broadcasting';
 
 export function isEventPostType() {
 	return (
@@ -23,7 +24,7 @@ export function isEventPostType() {
 }
 
 export function CheckCurrentPostType() {
-	return wp.data.select('core/editor').getCurrentPostType();
+	return select('core/editor').getCurrentPostType();
 }
 
 export function hasEventPast() {
@@ -48,6 +49,37 @@ export function hasEventPastNotice() {
 			{
 				id,
 				isDismissible: false,
+			}
+		);
+	}
+}
+
+export function triggerEventCommuncation() {
+	const id = 'gp_event_communcation';
+	const notices = dispatch('core/notices');
+
+	notices.removeNotice(id);
+
+	if (
+		select('core/editor').getEditedPostAttribute('status') === 'publish' &&
+		!hasEventPast()
+	) {
+		notices.createNotice(
+			'success',
+			__('Update members about this event via email?', 'gatherpress'),
+			{
+				id,
+				isDismissible: true,
+				actions: [
+					{
+						onClick: () => {
+							Broadcaster({
+								setOpen: true,
+							});
+						},
+						label: __('Create Message', 'gatherpress'),
+					},
+				],
 			}
 		);
 	}
