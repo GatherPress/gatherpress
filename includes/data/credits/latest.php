@@ -90,9 +90,9 @@
       'slug' => 'newyorkerlaura',
       'avatar_urls' => 
       array (
-        24 => '//www.gravatar.com/avatar/68df787cd58d732a5f1d067e1eeb0663?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/68df787cd58d732a5f1d067e1eeb0663?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/68df787cd58d732a5f1d067e1eeb0663?s=96&#038;r=g&#038;d=mm',
+        24 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=96&#038;r=g&#038;d=mm',
       ),
     ),
     5 => 
@@ -132,6 +132,19 @@
         24 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    8 => 
+    array (
+      'id' => 11146216,
+      'name' => 'meagan hanes',
+      'link' => 'https://profiles.wordpress.org/author/meaganhanes/',
+      'slug' => 'meaganhanes',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/052d4e778920f20d9f6611bf5c027528?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/052d4e778920f20d9f6611bf5c027528?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/052d4e778920f20d9f6611bf5c027528?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),
