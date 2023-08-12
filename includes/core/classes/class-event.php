@@ -71,7 +71,11 @@ class Event {
 			$end   = $this->get_datetime_end( 'l, F j, Y, g:i A T' );
 		}
 
-		return sprintf( '%s to %s', $start, $end );
+		if ( ! empty( $start ) && ! empty( $end ) ) {
+			return sprintf( '%s to %s', $start, $end );
+		}
+
+		return __( '—', 'gatherpress' );
 	}
 
 	/**
