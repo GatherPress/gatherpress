@@ -65,6 +65,7 @@ class Query {
 	 * @param string $event_list_type  Type of event list: upcoming or past.
 	 * @param int    $number           Maximum number of events.
 	 * @param array  $topics           Array of topic slugs.
+	 * @param array  $venues           Array of venue slugs.
 	 *
 	 * @return \WP_Query
 	 */
@@ -76,9 +77,9 @@ class Query {
 			'posts_per_page'  => $number,
 			'gp_events_query' => $event_list_type,
 		);
-		if ( ! empty($venues) || ! empty($topics) ) {
+		if ( ! empty( $venues ) || ! empty( $topics ) ) {
 			$args['tax_query'] = array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				array (
+				array(
 					'relation' => 'OR',
 					array(
 						'taxonomy' => Event::TAXONOMY,
@@ -90,7 +91,7 @@ class Query {
 						'field'    => 'slug',
 						'terms'    => $venues,
 					),
-				)
+				),
 			);
 		}
 

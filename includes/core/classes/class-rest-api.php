@@ -342,7 +342,7 @@ class Rest_Api {
 		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
 		$posts           = array();
 		$topics          = array();
-		$venues 		 = array();
+		$venues          = array();
 
 		if ( ! empty( $params['topics'] ) ) {
 			$topics = array_map(
