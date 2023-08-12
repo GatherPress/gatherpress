@@ -70,32 +70,52 @@ class Query {
 	 * @return \WP_Query
 	 */
 	public function get_events_list( string $event_list_type = '', int $number = 5, array $topics = array(), array $venues = array() ): \WP_Query {
-		$args = array(
+		$args = [
 			'post_type'       => Event::POST_TYPE,
 			'fields'          => 'ids',
 			'no_found_rows'   => true,
 			'posts_per_page'  => $number,
-			'gp_events_query' => $event_list_type,
-		);
-		if ( ! empty( $venues ) || ! empty( $topics ) ) {
-			$args['tax_query'] = array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				array(
-					'relation' => 'OR',
-					array(
+			'gp_events_query' => $event_list_type,		
+		];
+
+		$tax_query = [];
+		if ( ! empty( $topics ) ) {
+			$tax_query[] = [
+				'taxonomy' => Event::TAXONOMY,
+				'field'    => 'slug',
+				'terms'    => $topics,
+			];
+		}
+
+		if ( ! empty( $venues ) ) {
+			$tax_query[] = [
+				'taxonomy' => Venue::TAXONOMY,
+				'field'    => 'slug',
+				'terms'    => $venues,
+			];
+		}
+
+		if ( ! empty( $venues ) && ! empty( $topics ) ) {
+			$tax_query[] = [
+				'relation' => 'AND',
+				'queries'  => [
+					[
 						'taxonomy' => Event::TAXONOMY,
 						'field'    => 'slug',
 						'terms'    => $topics,
-					),
-					array(
+					],
+					[
 						'taxonomy' => Venue::TAXONOMY,
 						'field'    => 'slug',
 						'terms'    => $venues,
-					),
-				),
-			);
+					],
+				],
+			];
 		}
 
-		return new \WP_Query( $args );
+		$args['tax_query'] = $tax_query;
+
+		return new \WP_Query($args);
 	}
 
 	/**
