@@ -38,7 +38,7 @@ class Setup {
 	 */
 	protected function setup_hooks() {
 		add_filter( 'gatherpress_settings_sub_pages', array( $this, 'set_sub_page' ) );
-		add_action( 'bp_notification_settings', array( $this, 'event_notification_settings' ), 1 );
+//		add_action( 'bp_notification_settings', array( $this, 'event_notification_settings' ), 1 );
 	}
 
 	/**
