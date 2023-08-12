@@ -50,7 +50,7 @@ const EventItem = (props) => {
 						<div className={`${eventClass}__venue`}>
 							<span className="dashicons dashicons-location"></span>
 							<a href={event.venue.permalink}>
-								{HtmlReactParser(event.venue.name)}
+								{event.venue.name}
 							</a>
 						</div>
 					)}
@@ -83,14 +83,12 @@ const EventItem = (props) => {
 					/>
 				)}
 
-				{'past' === type &&
-					eventOptions.showRsvpButton &&
-					'' !== event.current_user && (
-						<AttendeeResponse
-							type={type}
-							status={event.current_user?.status}
-						/>
-					)}
+				{'past' === type && eventOptions.showRsvpButton && (
+					<AttendeeResponse
+						type={type}
+						status={event.current_user?.status}
+					/>
+				)}
 			</div>
 		</div>
 	);

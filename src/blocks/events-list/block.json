@@ -30,6 +30,12 @@
 				"type": "object"
 			}
 		},
+		"venues": {
+			"type": "array",
+			"items": {
+				"type": "object"
+			}
+		},
 		"type": {
 			"type": "string",
 			"default": "upcoming"

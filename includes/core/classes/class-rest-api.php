@@ -342,6 +342,7 @@ class Rest_Api {
 		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
 		$posts           = array();
 		$topics          = array();
+		$venues 		 = array();
 
 		if ( ! empty( $params['topics'] ) ) {
 			$topics = array_map(
@@ -352,7 +353,16 @@ class Rest_Api {
 			);
 		}
 
-		$query = Query::get_instance()->get_events_list( $event_list_type, $max_number, $topics );
+		if ( ! empty( $params['venues'] ) ) {
+			$venues = array_map(
+				function( $slug ) {
+					return sanitize_key( $slug );
+				},
+				explode( ',', $params['venues'] )
+			);
+		}
+
+		$query = Query::get_instance()->get_events_list( $event_list_type, $max_number, $topics, $venues );
 
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {

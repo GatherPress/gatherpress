@@ -68,7 +68,7 @@ class Query {
 	 *
 	 * @return \WP_Query
 	 */
-	public function get_events_list( string $event_list_type = '', int $number = 5, array $topics = array() ): \WP_Query {
+	public function get_events_list( string $event_list_type = '', int $number = 5, array $topics = array(), array $venues = array() ): \WP_Query {
 		$args = array(
 			'post_type'       => Event::POST_TYPE,
 			'fields'          => 'ids',
@@ -76,14 +76,21 @@ class Query {
 			'posts_per_page'  => $number,
 			'gp_events_query' => $event_list_type,
 		);
-
-		if ( ! empty( $topics ) ) {
+		if ( ! empty($venues) || ! empty($topics) ) {
 			$args['tax_query'] = array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				array(
-					'taxonomy' => Event::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => $topics,
-				),
+				array (
+					'relation' => 'OR',
+					array(
+						'taxonomy' => Event::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $topics,
+					),
+					array(
+						'taxonomy' => Venue::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $venues,
+					),
+				)
 			);
 		}
 
