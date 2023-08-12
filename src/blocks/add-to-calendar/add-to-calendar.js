@@ -1,4 +1,3 @@
-alert('yo');
 /**
  * WordPress dependencies.
  */
