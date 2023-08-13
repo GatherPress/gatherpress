@@ -15,15 +15,15 @@ import { useState } from '@wordpress/element';
  * Internal dependencies.
  */
 import { Listener } from '../../helpers/broadcasting';
-import DateTimeStartPanel from '../../components/DateTimeStartPanel';
-import DateTimeEndPanel from '../../components/DateTimeEndPanel';
+import DateTimeStart from '../../components/DateTimeStart';
+import DateTimeEnd from '../../components/DateTimeEnd';
 import {
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
 	getTimeZone,
 	getUtcOffset,
 } from '../../helpers/datetime';
-import TimeZonePanel from '../../components/TimeZonePanel';
+import TimeZone from '../../components/TimeZone';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -76,15 +76,15 @@ const Edit = () => {
 				<InspectorControls>
 					<PanelBody>
 						<h3>{__('Date & time', 'gatherpress')}</h3>
-						<DateTimeStartPanel
+						<DateTimeStart
 							dateTimeStart={dateTimeStart}
 							setDateTimeStart={setDateTimeStart}
 						/>
-						<DateTimeEndPanel
+						<DateTimeEnd
 							dateTimeEnd={dateTimeEnd}
 							setDateTimeEnd={setDateTimeEnd}
 						/>
-						<TimeZonePanel
+						<TimeZone
 							timezone={timezone}
 							setTimezone={setTimezone}
 						/>

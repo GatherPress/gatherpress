@@ -17,7 +17,8 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
  */
 import { isEventPostType } from '../../helpers/event';
 import DateTimePanel from './datetime';
-import VenuePanel from '../../components/VenueSelector';
+import VenueSelectorPanel from './venue-selector';
+import OnlineEventLinkPanel from './online-link';
 
 const EventSettings = () => {
 	return (
@@ -29,10 +30,10 @@ const EventSettings = () => {
 				className="gp-event-settings"
 				icon="nametag"
 			>
-				<VStack spacing={2}>
+				<VStack spacing={6}>
 					<DateTimePanel />
-					<Divider />
-					<VenuePanel />
+					<VenueSelectorPanel />
+					<OnlineEventLinkPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
 		)

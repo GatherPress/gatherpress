@@ -11,7 +11,7 @@ import { useEffect, useState } from '@wordpress/element';
  */
 import { Broadcaster } from '../helpers/broadcasting';
 
-const VenueSelectorPanel = () => {
+const VenueSelector = () => {
 	const [venue, setVenue] = useState('');
 	const editPost = useDispatch('core/editor').editPost;
 	const { unlockPostSaving } = useDispatch('core/editor');
@@ -23,6 +23,7 @@ const VenueSelectorPanel = () => {
 	);
 	const venueSlug = venueTerm?.slug.slice(1, venueTerm?.slug.length);
 	const venueValue = venueTermId + ':' + venueSlug;
+
 	useEffect(() => {
 		setVenue(String(venueValue) ?? '');
 		Broadcaster({
@@ -76,4 +77,4 @@ const VenueSelectorPanel = () => {
 	);
 };
 
-export default VenueSelectorPanel;
+export default VenueSelector;

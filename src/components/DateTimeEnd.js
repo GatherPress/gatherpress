@@ -28,7 +28,7 @@ import {
 	getTimeZone,
 } from '../helpers/datetime';
 
-const DateTimeEndPanel = (props) => {
+const DateTimeEnd = (props) => {
 	const { dateTimeEnd, setDateTimeEnd } = props;
 
 	useEffect(() => {
@@ -74,4 +74,4 @@ const DateTimeEndPanel = (props) => {
 	);
 };
 
-export default DateTimeEndPanel;
+export default DateTimeEnd;

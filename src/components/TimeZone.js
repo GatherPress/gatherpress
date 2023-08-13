@@ -15,7 +15,7 @@ import {
 	maybeConvertUtcOffsetForSelect,
 } from '../helpers/datetime';
 
-const TimeZonePanel = (props) => {
+const TimeZone = (props) => {
 	const { timezone, setTimezone } = props;
 	const choices = getFromGlobal('timezone_choices');
 
@@ -60,4 +60,4 @@ const TimeZonePanel = (props) => {
 	);
 };
 
-export default TimeZonePanel;
+export default TimeZone;

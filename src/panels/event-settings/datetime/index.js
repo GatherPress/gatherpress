@@ -9,9 +9,9 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import { saveDateTime } from '../../../helpers/datetime';
-import DateTimeStartPanel from '../../../components/DateTimeStartPanel';
-import DateTimeEndPanel from '../../../components/DateTimeEndPanel';
-import TimeZonePanel from '../../../components/TimeZonePanel';
+import DateTimeStart from '../../../components/DateTimeStart';
+import DateTimeEnd from '../../../components/DateTimeEnd';
+import TimeZone from '../../../components/TimeZone';
 
 subscribe(saveDateTime);
 
@@ -23,15 +23,15 @@ const DateTimePanel = () => {
 	return (
 		<section>
 			<h3>{__('Date & time', 'gatherpress')}</h3>
-			<DateTimeStartPanel
+			<DateTimeStart
 				dateTimeStart={dateTimeStart}
 				setDateTimeStart={setDateTimeStart}
 			/>
-			<DateTimeEndPanel
+			<DateTimeEnd
 				dateTimeEnd={dateTimeEnd}
 				setDateTimeEnd={setDateTimeEnd}
 			/>
-			<TimeZonePanel timezone={timezone} setTimezone={setTimezone} />
+			<TimeZone timezone={timezone} setTimezone={setTimezone} />
 		</section>
 	);
 };
