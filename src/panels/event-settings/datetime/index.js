@@ -21,18 +21,22 @@ const DateTimePanel = () => {
 	const [timezone, setTimezone] = useState();
 
 	return (
-		<section>
-			<h3>{__('Date & time', 'gatherpress')}</h3>
-			<DateTimeStart
-				dateTimeStart={dateTimeStart}
-				setDateTimeStart={setDateTimeStart}
-			/>
-			<DateTimeEnd
-				dateTimeEnd={dateTimeEnd}
-				setDateTimeEnd={setDateTimeEnd}
-			/>
-			<TimeZone timezone={timezone} setTimezone={setTimezone} />
-		</section>
+		<>
+			<section>
+				<h3>{__('Date & time', 'gatherpress')}</h3>
+				<DateTimeStart
+					dateTimeStart={dateTimeStart}
+					setDateTimeStart={setDateTimeStart}
+				/>
+				<DateTimeEnd
+					dateTimeEnd={dateTimeEnd}
+					setDateTimeEnd={setDateTimeEnd}
+				/>
+			</section>
+			<section>
+				<TimeZone timezone={timezone} setTimezone={setTimezone} />
+			</section>
+		</>
 	);
 };
 
