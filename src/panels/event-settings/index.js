@@ -35,6 +35,8 @@ const EventSettings = () => {
 					<VenuePanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
+
+			//Insert online term toggle here. What component do we use?
 		)
 	);
 };
