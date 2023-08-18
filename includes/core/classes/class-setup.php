@@ -372,6 +372,16 @@ class Setup {
 				'show_in_rest'      => true,
 			)
 		);
+
+		/** 
+		 * Insert new term here for https://github.com/GatherPress/gatherpress/issues/302
+		 * Maybe put this in a custom method called add_terms();
+		 * Use https://developer.wordpress.org/reference/functions/wp_insert_term/
+		 * Make sure to use a translation escape function on the term before it gets added
+		 * https://codex.wordpress.org/I18n_for_WordPress_Developers#Translatable_strings Looks like we use something this:
+		 *  $term = __( 'online', 'my-text-domain' );
+		 *  wp_insert_term( $term, Venue::TAXONOMY );
+		*/
 	}
 
 	/**
