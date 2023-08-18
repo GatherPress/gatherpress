@@ -27,6 +27,7 @@ domReady(() => {
 						showDescription: true,
 						showFeaturedImage: true,
 						showRsvpButton: true,
+						showVenue: true,
 					}
 				}
 				type={attrs.type ?? 'upcoming'}
