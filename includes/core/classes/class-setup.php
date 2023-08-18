@@ -190,6 +190,7 @@ class Setup {
 	public function register() {
 		$this->register_post_types();
 		$this->register_taxonomies();
+		$this->add_terms();
 	}
 
 	/**
@@ -373,15 +374,21 @@ class Setup {
 			)
 		);
 
-		/** 
-		 * Insert new term here for https://github.com/GatherPress/gatherpress/issues/302
-		 * Maybe put this in a custom method called add_terms();
-		 * Use https://developer.wordpress.org/reference/functions/wp_insert_term/
-		 * Make sure to use a translation escape function on the term before it gets added
-		 * https://codex.wordpress.org/I18n_for_WordPress_Developers#Translatable_strings Looks like we use something this:
-		 *  $term = __( 'online', 'my-text-domain' );
-		 *  wp_insert_term( $term, Venue::TAXONOMY );
-		*/
+	}
+
+	/**
+	 * Add any default terms for taxonomies.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function add_terms() {
+		$term = __( 'Online', 'gatherpress' );
+		$term_exists = term_exists( 'Online', Venue::TAXONOMY );
+		if ( ! $term_exists ) {
+			$result = wp_insert_term( $term, Venue::TAXONOMY );
+		}
 	}
 
 	/**
