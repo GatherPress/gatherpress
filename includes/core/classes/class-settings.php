@@ -486,48 +486,6 @@ class Settings {
 								),
 							),
 						),
-						'assistant-organizers' => array(
-							'labels' => array(
-								'name'          => __( 'Assistant Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-						'event-organizers'     => array(
-							'labels' => array(
-								'name'          => __( 'Event Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Event Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-						'event-assistants'     => array(
-							'labels' => array(
-								'name'          => __( 'Event Assistants', 'gatherpress' ),
-								'singular_name' => __( 'Event Assistant', 'gatherpress' ),
-								'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
 					),
 				),
 			),
