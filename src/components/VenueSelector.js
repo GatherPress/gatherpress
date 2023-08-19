@@ -8,7 +8,7 @@ import HtmlReactParser from 'html-react-parser';
  */
 import { __ } from '@wordpress/i18n';
 import { PanelRow, SelectControl } from '@wordpress/components';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useSelect, useDispatch, select } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
@@ -35,11 +35,27 @@ const VenueSelectorPanel = () => {
 		});
 	}, [venueValue, venueSlug]);
 
+	const { blocks } = useSelect(() => ({
+		blocks: select('core/block-editor').getBlocks(),
+	}));
+	const onlineBlock = blocks.filter(
+		(block) => (block.name === 'gatherpress/online-event')
+	);
+	let onlineClentId;
+	if ( onlineBlock.length > 0 ) {
+		onlineClentId = onlineBlock[0].clientId;
+	}
+
 	let venues = useSelect((select) => {
-		return select('core').getEntityRecords('taxonomy', '_gp_venue', {
+		const items = select('core').getEntityRecords('taxonomy', '_gp_venue', {
 			per_page: -1,
 			context: 'view',
 		});
+		let inPersonVenues;
+		if (items) {
+			inPersonVenues = items.filter((item) => item.slug !== 'online');
+		}
+		return inPersonVenues;
 	}, []);
 
 	if (venues) {
@@ -57,6 +73,7 @@ const VenueSelectorPanel = () => {
 	}
 
 	const updateTerm = (value) => {
+		console.log(value);
 		setVenue(value);
 		value = value.split(':');
 		const term = '' !== value[0] ? [value[0]] : [];
