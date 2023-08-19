@@ -60,9 +60,9 @@ const EventSettings = () => {
 	const onlineBlock = blocks.filter(
 		(block) => (block.name === 'gatherpress/online-event')
 	);
-	let onlineClentId;
+	let onlineClientId;
 	if ( onlineBlock.length > 0 ) {
-		onlineClentId = onlineBlock[0].clientId;
+		onlineClientId = onlineBlock[0].clientId;
 	}
 
 	/** */
@@ -99,7 +99,7 @@ const EventSettings = () => {
 						value={hasOnlineBlock}
 						onChange={(newValue) => {
 							if (newValue === 'false') {
-								removeBlock(onlineClentId);
+								removeBlock(onlineClientId);
 							} else {
 								const newBlock = createBlock('gatherpress/online-event');
 								insertBlock(newBlock);
