@@ -373,7 +373,6 @@ class Setup {
 				'show_in_rest'      => true,
 			)
 		);
-
 	}
 
 	/**
@@ -384,7 +383,7 @@ class Setup {
 	 * @return void
 	 */
 	public function add_terms() {
-		$term = __( 'Online', 'gatherpress' );
+		$term        = __( 'Online', 'gatherpress' );
 		$term_exists = term_exists( 'Online', Venue::TAXONOMY );
 		if ( ! $term_exists ) {
 			$result = wp_insert_term( $term, Venue::TAXONOMY );
