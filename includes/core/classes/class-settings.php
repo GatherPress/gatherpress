@@ -472,7 +472,7 @@ class Settings {
 					'name'        => __( 'Roles', 'gatherpress' ),
 					'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
 					'options'     => array(
-						'organizers'           => array(
+						'organizers' => array(
 							'labels' => array(
 								'name'          => __( 'Organizers', 'gatherpress' ),
 								'singular_name' => __( 'Organizer', 'gatherpress' ),
