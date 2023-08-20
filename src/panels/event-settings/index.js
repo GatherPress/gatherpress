@@ -1,3 +1,6 @@
+/**
+ * WordPress dependencies.
+ */
 import { __ } from '@wordpress/i18n';
 import { dispatch, useDispatch, useSelect, select } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
@@ -19,24 +22,19 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
 import { isEventPostType } from '../../helpers/event';
 import DateTimePanel from './datetime';
 import VenuePanel from '../../components/VenueSelector';
-import { create } from 'lodash';
 
 const EventSettings = () => {
 	const [hasOnlineBlock, setHasOnlineBlock] = useState(false);
 	const { editPost } = useDispatch('core/editor');
 	const { removeBlock } = useDispatch('core/block-editor');
 	const { insertBlock } = useDispatch('core/block-editor');
-	/**
-	 * Need to use logic similar to this to detect the existance of a block. Grab the client and and UseEffect to detect the change
-	 * https://github.com/MeredithCorp/onecms-block-editor/blob/160b5a4990749c1d8e909ee6252fc4bd52a09329/app/block-editor/extensions/universal-taxonomy/index.js#L224
-	 */
-	const allVenues = useSelect((select) => {
+	const allVenues = useSelect(() => {
 		return select('core').getEntityRecords('taxonomy', '_gp_venue', {
 			per_page: -1,
 			context: 'view',
 		});
 	}, []);
-	const venueTermId = useSelect((select) =>
+	const venueTermId = useSelect(() =>
 		select('core/editor').getEditedPostAttribute('_gp_venue')
 	);
 	let onlineId;
@@ -51,42 +49,36 @@ const EventSettings = () => {
 	const { blocks } = useSelect(() => ({
 		blocks: select('core/block-editor').getBlocks(),
 	}));
-
-	const result = blocks.filter(
+	const currentOnlineEventBlocks = blocks.filter(
 		(block) => block.name === 'gatherpress/online-event'
 	);
-
-	/** */
 	const onlineBlock = blocks.filter(
-		(block) => (block.name === 'gatherpress/online-event')
+		(block) => block.name === 'gatherpress/online-event'
 	);
 	let onlineClientId;
-	if ( onlineBlock.length > 0 ) {
+	if (onlineBlock.length > 0) {
 		onlineClientId = onlineBlock[0].clientId;
 	}
-
 	const venueBlock = blocks.filter(
-		(block) => (block.name === 'gatherpress/event-venue')
+		(block) => block.name === 'gatherpress/event-venue'
 	);
 	let venueClientId;
-	if ( venueBlock.length > 0 ) {
+	if (venueBlock.length > 0) {
 		venueClientId = venueBlock[0].clientId;
 	}
 
-
-	/** */
 	useEffect(() => {
-		if (result.length > 0 && onlineId) {
+		if (currentOnlineEventBlocks.length > 0 && onlineId) {
 			setHasOnlineBlock(true);
 			editPost({ _gp_venue: [onlineId] });
 			removeBlock(venueClientId);
 		} else {
 			setHasOnlineBlock(false);
-			if ( venueTermId.includes(12) ) {
+			if (venueTermId.includes(12)) {
 				editPost({ _gp_venue: [] })
 			}
 		}
-	}, [result]);
+	}, [currentOnlineEventBlocks]);
 
 	return (
 		isEventPostType() && (
@@ -111,7 +103,9 @@ const EventSettings = () => {
 							if (newValue === 'false') {
 								removeBlock(onlineClientId);
 							} else {
-								const newBlock = createBlock('gatherpress/online-event');
+								const newBlock = createBlock(
+									'gatherpress/online-event'
+								);
 								insertBlock(newBlock);
 							}
 						}}

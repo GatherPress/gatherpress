@@ -13,14 +13,14 @@ import { createBlock } from '@wordpress/blocks';
 import { Broadcaster } from '../helpers/broadcasting';
 
 const VenueSelectorPanel = () => {
-	const { insertBlock } = useDispatch( 'core/block-editor' );
+	const { insertBlock } = useDispatch('core/block-editor');
 	const [venue, setVenue] = useState('');
 	const editPost = useDispatch('core/editor').editPost;
 	const { unlockPostSaving } = useDispatch('core/editor');
-	const venueTermId = useSelect((select) =>
+	const venueTermId = useSelect(() =>
 		select('core/editor').getEditedPostAttribute('_gp_venue')
 	);
-	const venueTerm = useSelect((select) =>
+	const venueTerm = useSelect(() =>
 		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
 	);
 	const venueSlug = venueTerm?.slug.slice(1, venueTerm?.slug.length);
@@ -35,18 +35,10 @@ const VenueSelectorPanel = () => {
 	const { blocks } = useSelect(() => ({
 		blocks: select('core/block-editor').getBlocks(),
 	}));
-	const onlineBlock = blocks.filter(
-		(block) => (block.name === 'gatherpress/online-event')
-	);
 	const venueBlock = blocks.filter(
-		(block) => (block.name === 'gatherpress/event-venue')
+		(block) => block.name === 'gatherpress/event-venue'
 	);
-	let onlineClentId;
-	if ( onlineBlock.length > 0 ) {
-		onlineClentId = onlineBlock[0].clientId;
-	}
-
-	let venues = useSelect((select) => {
+	let venues = useSelect(() => {
 		const items = select('core').getEntityRecords('taxonomy', '_gp_venue', {
 			per_page: -1,
 			context: 'view',
@@ -81,7 +73,7 @@ const VenueSelectorPanel = () => {
 			setVenueSlug: value[1],
 		});
 		unlockPostSaving();
-		if ( venueBlock.length === 0 ) {
+		if (venueBlock.length === 0) {
 			const newBlock = createBlock('gatherpress/event-venue');
 			insertBlock(newBlock);
 		}
