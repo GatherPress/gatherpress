@@ -75,7 +75,7 @@ const EventSettings = () => {
 			removeBlock(venueClientId);
 		} else {
 			setHasOnlineBlock(false);
-			if (venueTermId.includes(12)) {
+			if (venueTermId.includes(onlineId)) {
 				editPost({ _gp_venue: [] });
 			}
 		}
