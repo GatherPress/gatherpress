@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import HtmlReactParser from 'html-react-parser';
-
-/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
@@ -65,7 +60,7 @@ const VenueSelectorPanel = () => {
 
 	if (venues) {
 		venues = venues.map((item) => ({
-			label: HtmlReactParser(item.name),
+			label: item.name,
 			value: item.id + ':' + item.slug.slice(1, item.slug.length),
 		}));
 

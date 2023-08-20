@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 import EventItem from './EventItem';
 
 const EventsList = (props) => {
-	const { eventOptions, maxNumberOfEvents, type, topics } = props;
+	const { eventOptions, maxNumberOfEvents, type, topics, venues } = props;
 	const [events, setEvents] = useState([]);
 	const [loaded, setLoaded] = useState(false);
 	const renderEvents = events.map((event) => {
@@ -41,6 +41,7 @@ const EventsList = (props) => {
 
 	useEffect(() => {
 		let topicsString = '';
+		let venuesString = '';
 
 		if ('object' === typeof topics) {
 			topicsString = topics
@@ -50,13 +51,21 @@ const EventsList = (props) => {
 				?.join(',');
 		}
 
+		if ('object' === typeof venues) {
+			venuesString = venues
+				.map((venue) => {
+					return '_' + venue.slug;
+				})
+				?.join(',');
+		}
+
 		apiFetch({
-			path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}`,
+			path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`,
 		}).then((e) => {
 			setLoaded(true);
 			setEvents(e);
 		});
-	}, [setEvents, maxNumberOfEvents, type, topics]);
+	}, [setEvents, maxNumberOfEvents, type, topics, venues]);
 
 	return (
 		<div className={`gp-${type}-events-list`}>

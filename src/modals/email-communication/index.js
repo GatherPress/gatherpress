@@ -162,7 +162,10 @@ const EventCommuncationModal = () => {
 };
 
 domReady(() => {
-	createRoot(document.getElementById('gp-event-communication-modal')).render(
-		<EventCommuncationModal />
+	const modalWrapper = document.getElementById(
+		'gp-event-communication-modal'
 	);
+	if (modalWrapper) {
+		createRoot(modalWrapper).render(<EventCommuncationModal />);
+	}
 });

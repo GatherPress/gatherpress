@@ -17,7 +17,9 @@
 				"showAttendeeList": true,
 				"showFeaturedImage": true,
 				"showDescription": true,
-				"showRsvpButton": true
+				"showRsvpButton": true,
+				"showVenue": true
+
 			}
 		},
 		"maxNumberOfEvents": {
@@ -25,6 +27,12 @@
 			"default": 5
 		},
 		"topics": {
+			"type": "array",
+			"items": {
+				"type": "object"
+			}
+		},
+		"venues": {
 			"type": "array",
 			"items": {
 				"type": "object"
