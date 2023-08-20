@@ -26,8 +26,7 @@ import VenuePanel from '../../components/VenueSelector';
 const EventSettings = () => {
 	const [hasOnlineBlock, setHasOnlineBlock] = useState(false);
 	const { editPost } = useDispatch('core/editor');
-	const { removeBlock } = useDispatch('core/block-editor');
-	const { insertBlock } = useDispatch('core/block-editor');
+	const { removeBlock, insertBlock } = useDispatch('core/block-editor');
 	const allVenues = useSelect(() => {
 		return select('core').getEntityRecords('taxonomy', '_gp_venue', {
 			per_page: -1,
