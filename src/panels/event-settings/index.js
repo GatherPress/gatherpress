@@ -39,6 +39,7 @@ const EventSettings = () => {
 	);
 	let onlineId;
 	if (allVenues) {
+		// eslint-disable-next-line array-callback-return
 		allVenues.map((venue) => {
 			if (venue.slug === 'online') {
 				onlineId = venue.id;
@@ -75,7 +76,7 @@ const EventSettings = () => {
 		} else {
 			setHasOnlineBlock(false);
 			if (venueTermId.includes(12)) {
-				editPost({ _gp_venue: [] })
+				editPost({ _gp_venue: [] });
 			}
 		}
 	}, [currentOnlineEventBlocks]);
