@@ -25,7 +25,7 @@ const EventSettings = () => {
 	const [hasOnlineBlock, setHasOnlineBlock] = useState(false);
 	const { editPost } = useDispatch('core/editor');
 	const { removeBlock } = useDispatch('core/block-editor');
-	const { insertBlock } = useDispatch( 'core/editor' );
+	const { insertBlock } = useDispatch('core/block-editor');
 	/**
 	 * Need to use logic similar to this to detect the existance of a block. Grab the client and and UseEffect to detect the change
 	 * https://github.com/MeredithCorp/onecms-block-editor/blob/160b5a4990749c1d8e909ee6252fc4bd52a09329/app/block-editor/extensions/universal-taxonomy/index.js#L224
@@ -65,11 +65,21 @@ const EventSettings = () => {
 		onlineClientId = onlineBlock[0].clientId;
 	}
 
+	const venueBlock = blocks.filter(
+		(block) => (block.name === 'gatherpress/event-venue')
+	);
+	let venueClientId;
+	if ( venueBlock.length > 0 ) {
+		venueClientId = venueBlock[0].clientId;
+	}
+
+
 	/** */
 	useEffect(() => {
 		if (result.length > 0 && onlineId) {
 			setHasOnlineBlock(true);
 			editPost({ _gp_venue: [onlineId] });
+			removeBlock(venueClientId);
 		} else {
 			setHasOnlineBlock(false);
 			if ( venueTermId.includes(12) ) {

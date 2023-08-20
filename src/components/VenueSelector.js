@@ -10,6 +10,7 @@ import { __ } from '@wordpress/i18n';
 import { PanelRow, SelectControl } from '@wordpress/components';
 import { useSelect, useDispatch, select } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
+import { createBlock } from '@wordpress/blocks';
 
 /**
  * Internal dependencies.
@@ -17,6 +18,7 @@ import { useEffect, useState } from '@wordpress/element';
 import { Broadcaster } from '../helpers/broadcasting';
 
 const VenueSelectorPanel = () => {
+	const { insertBlock } = useDispatch( 'core/block-editor' );
 	const [venue, setVenue] = useState('');
 	const editPost = useDispatch('core/editor').editPost;
 	const { unlockPostSaving } = useDispatch('core/editor');
@@ -40,6 +42,9 @@ const VenueSelectorPanel = () => {
 	}));
 	const onlineBlock = blocks.filter(
 		(block) => (block.name === 'gatherpress/online-event')
+	);
+	const venueBlock = blocks.filter(
+		(block) => (block.name === 'gatherpress/event-venue')
 	);
 	let onlineClentId;
 	if ( onlineBlock.length > 0 ) {
@@ -73,7 +78,6 @@ const VenueSelectorPanel = () => {
 	}
 
 	const updateTerm = (value) => {
-		console.log(value);
 		setVenue(value);
 		value = value.split(':');
 		const term = '' !== value[0] ? [value[0]] : [];
@@ -82,6 +86,10 @@ const VenueSelectorPanel = () => {
 			setVenueSlug: value[1],
 		});
 		unlockPostSaving();
+		if ( venueBlock.length === 0 ) {
+			const newBlock = createBlock('gatherpress/event-venue');
+			insertBlock(newBlock);
+		}
 	};
 
 	return (
