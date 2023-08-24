@@ -462,8 +462,7 @@ class Settings {
 	 * @return array
 	 */
 	public function get_leadership_page(): array {
-		$user_label = __( 'Select Users', 'gatherpress' );
-		$roles      = array(
+		$roles = array(
 			'organizers' => array(
 				'labels' => array(
 					'name'          => __( 'Organizers', 'gatherpress' ),
@@ -474,7 +473,7 @@ class Settings {
 					'type'    => 'autocomplete',
 					'options' => array(
 						'type'  => 'user',
-						'label' => $user_label,
+						'label' => __( 'Select Users', 'gatherpress' ),
 					),
 				),
 			),
