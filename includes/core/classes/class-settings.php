@@ -382,7 +382,7 @@ class Settings {
 		$sub_pages['leadership'] = $this->get_leadership_page();
 		$sub_pages['credits']    = $this->get_credits_page();
 
-		$sub_pages = (array) apply_filters( 'gatherpress_settings_sub_pages', $sub_pages );
+		$sub_pages = (array) apply_filters( 'gatherpress_sub_pages', $sub_pages );
 
 		uasort( $sub_pages, array( $this, 'sort_sub_pages_by_priority' ) );
 
@@ -486,7 +486,7 @@ class Settings {
 				'roles' => array(
 					'name'        => __( 'Roles', 'gatherpress' ),
 					'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
-					'options'     => apply_filters( 'gatherpress_settings_leadership_roles', $roles ),
+					'options'     => apply_filters( 'gatherpress_roles', $roles ),
 				),
 			),
 		);
