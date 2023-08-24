@@ -316,6 +316,23 @@ const Edit = (props) => {
 							});
 						}}
 					/>
+					<ToggleControl
+						label={__('Show/Event Venue')}
+						help={
+							attributes.eventOptions.showVenue
+								? __('Show Event Venue')
+								: __('Hide Event Venue')
+						}
+						checked={attributes.eventOptions.showVenue}
+						onChange={(value) => {
+							setAttributes({
+								eventOptions: {
+									...attributes.eventOptions,
+									showVenue: value,
+								},
+							});
+						}}
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<EventsList

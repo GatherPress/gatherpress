@@ -472,53 +472,11 @@ class Settings {
 					'name'        => __( 'Roles', 'gatherpress' ),
 					'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
 					'options'     => array(
-						'organizers'           => array(
+						'organizers' => array(
 							'labels' => array(
 								'name'          => __( 'Organizers', 'gatherpress' ),
 								'singular_name' => __( 'Organizer', 'gatherpress' ),
 								'plural_name'   => __( 'Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-						'assistant-organizers' => array(
-							'labels' => array(
-								'name'          => __( 'Assistant Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-						'event-organizers'     => array(
-							'labels' => array(
-								'name'          => __( 'Event Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Event Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-						'event-assistants'     => array(
-							'labels' => array(
-								'name'          => __( 'Event Assistants', 'gatherpress' ),
-								'singular_name' => __( 'Event Assistant', 'gatherpress' ),
-								'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
 							),
 							'field'  => array(
 								'type'    => 'autocomplete',

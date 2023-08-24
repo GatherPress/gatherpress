@@ -46,7 +46,7 @@ const EventItem = (props) => {
 							{HtmlReactParser(event.title)}
 						</a>
 					</div>
-					{event.venue && (
+					{event.venue && eventOptions.showVenue && (
 						<div className={`${eventClass}__venue`}>
 							<span className="dashicons dashicons-location"></span>
 							<a href={event.venue.permalink}>

@@ -17,7 +17,9 @@
 				"showAttendeeList": true,
 				"showFeaturedImage": true,
 				"showDescription": true,
-				"showRsvpButton": true
+				"showRsvpButton": true,
+				"showVenue": true
+
 			}
 		},
 		"maxNumberOfEvents": {
