@@ -382,7 +382,7 @@ class Settings {
 		$sub_pages['leadership'] = $this->get_leadership_page();
 		$sub_pages['credits']    = $this->get_credits_page();
 
-		$sub_pages = (array) apply_filters( 'gatherpress_settings_sub_pages', $sub_pages );
+		$sub_pages = (array) apply_filters( 'gp_settings_sub_pages', $sub_pages );
 
 		uasort( $sub_pages, array( $this, 'sort_sub_pages_by_priority' ) );
 
@@ -463,6 +463,22 @@ class Settings {
 	 */
 	public function get_leadership_page(): array {
 		$user_label = __( 'Select Users', 'gatherpress' );
+		$roles      = array(
+			'organizers' => array(
+				'labels' => array(
+					'name'          => __( 'Organizers', 'gatherpress' ),
+					'singular_name' => __( 'Organizer', 'gatherpress' ),
+					'plural_name'   => __( 'Organizers', 'gatherpress' ),
+				),
+				'field'  => array(
+					'type'    => 'autocomplete',
+					'options' => array(
+						'type'  => 'user',
+						'label' => $user_label,
+					),
+				),
+			),
+		);
 
 		return array(
 			'name'        => __( 'Leadership', 'gatherpress' ),
@@ -471,22 +487,7 @@ class Settings {
 				'roles' => array(
 					'name'        => __( 'Roles', 'gatherpress' ),
 					'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
-					'options'     => array(
-						'organizers' => array(
-							'labels' => array(
-								'name'          => __( 'Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-					),
+					'options'     => apply_filters( 'gp_settings_leadership_roles', $roles ),
 				),
 			),
 		);
