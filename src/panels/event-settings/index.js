@@ -5,8 +5,6 @@ import { __ } from '@wordpress/i18n';
 import { dispatch } from '@wordpress/data';
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalDivider as Divider,
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { registerPlugin } from '@wordpress/plugins';

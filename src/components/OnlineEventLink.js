@@ -9,11 +9,10 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { Broadcaster } from '../helpers/broadcasting';
+import { Broadcaster, Listener } from '../helpers/broadcasting';
 
 const OnlineEventLink = () => {
-	const editPost = useDispatch('core/editor').editPost;
-	const { unlockPostSaving } = useDispatch('core/editor');
+	const { editPost, unlockPostSaving } = useDispatch('core/editor');
 	const onlineEventLinkMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
@@ -27,11 +26,11 @@ const OnlineEventLink = () => {
 
 		editPost({ meta });
 		setOnlineEventLink(value);
-		Broadcaster({
-			setOnlineEventLink: value,
-		});
+		Broadcaster({ setOnlineEventLink: value });
 		unlockPostSaving();
 	};
+
+	Listener({ setOnlineEventLink });
 
 	return (
 		<TextControl
