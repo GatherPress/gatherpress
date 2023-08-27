@@ -30,8 +30,7 @@
     "align": [
       "wide"
     ],
-    "html": true,
-    "multiple": false
+    "html": true
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
