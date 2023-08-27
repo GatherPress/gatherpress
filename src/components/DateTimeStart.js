@@ -28,7 +28,7 @@ import {
 	getTimeZone,
 } from '../helpers/datetime';
 
-const DateTimeStartPanel = (props) => {
+const DateTimeStart = (props) => {
 	const { dateTimeStart, setDateTimeStart } = props;
 
 	useEffect(() => {
@@ -76,4 +76,4 @@ const DateTimeStartPanel = (props) => {
 	);
 };
 
-export default DateTimeStartPanel;
+export default DateTimeStart;

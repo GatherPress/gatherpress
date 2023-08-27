@@ -9,14 +9,12 @@
   "example": {},
   "description": "A block for events that are online.",
   "attributes": {
-    "onlineEventLink": {
-      "type": "string",
-      "default": ""
+    "blockId": {
+      "type": "string"
     }
   },
   "supports": {
-    "html": false,
-    "multiple": false
+    "html": false
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",

@@ -8,7 +8,6 @@ import { createRoot } from '@wordpress/element';
  * Internal dependencies.
  */
 import OnlineEvent from '../../components/OnlineEvent';
-import { getFromGlobal } from '../../helpers/globals';
 
 domReady(() => {
 	const containers = document.querySelectorAll(
@@ -19,10 +18,7 @@ domReady(() => {
 		const attrs = JSON.parse(containers[i].dataset.gp_block_attrs);
 
 		createRoot(containers[i]).render(
-			<OnlineEvent
-				eventId={getFromGlobal('post_id')}
-				onlineEventLinkDefault={attrs.onlineEventLink ?? ''}
-			/>
+			<OnlineEvent onlineEventLink={attrs.onlineEventLink ?? ''} />
 		);
 	}
 });

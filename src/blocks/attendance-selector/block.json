@@ -17,8 +17,7 @@
 		}
 	},
 	"supports": {
-		"html": false,
-		"multiple": false
+		"html": false
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
