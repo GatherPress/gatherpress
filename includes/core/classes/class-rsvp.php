@@ -1,6 +1,6 @@
 <?php
 /**
- * Class is responsible for all attendance related functionality.
+ * Class is responsible for all RSVP related functionality.
  *
  * @package GatherPress
  * @subpackage Core
@@ -14,12 +14,12 @@ if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
 }
 
 /**
- * Class Attendee.
+ * Class RSVP.
  */
-class Attendee {
+class RSVP {
 
 	const TABLE_FORMAT       = '%sgp_rsvps';
-	const ATTENDEE_CACHE_KEY = 'gp_rsvp_%d';
+	const RSVP_CACHE_KEY = 'gp_rsvp_%d';
 
 	/**
 	 * Attendance statuses.
@@ -49,7 +49,7 @@ class Attendee {
 	protected $event;
 
 	/**
-	 * Attendee constructor.
+	 * RSVP constructor.
 	 *
 	 * @param int $post_id An event post ID.
 	 */
@@ -139,7 +139,7 @@ class Attendee {
 			$save = $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
 
-		wp_cache_delete( sprintf( self::ATTENDEE_CACHE_KEY, $event_id ) );
+		wp_cache_delete( sprintf( self::RSVP_CACHE_KEY, $event_id ) );
 
 		if ( $save ) {
 			$retval = sanitize_key( $status );
@@ -221,7 +221,7 @@ class Attendee {
 
 		$event_id = $this->event->ID;
 
-		$cache_key = sprintf( self::ATTENDEE_CACHE_KEY, $event_id );
+		$cache_key = sprintf( self::RSVP_CACHE_KEY, $event_id );
 		$retval    = wp_cache_get( $cache_key );
 
 		if ( ! empty( $retval ) && is_array( $retval ) ) {
