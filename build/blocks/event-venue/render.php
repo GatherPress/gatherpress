@@ -24,6 +24,12 @@ if ( ! empty( $gatherpress_venue_terms ) && is_array( $gatherpress_venue_terms )
 	}
 }
 
+if ( 'online-event' === $gatherpress_venue_term_slug ) {
+	echo wp_kses_post( do_blocks( '<!-- wp:gatherpress/online-event /-->' ) );
+
+	return;
+}
+
 $gatherpress_venue = Venue::get_instance()->get_venue_post_from_term_slug( $gatherpress_venue_term_slug );
 
 if ( Venue::POST_TYPE !== get_post_type( $gatherpress_venue ) ) {

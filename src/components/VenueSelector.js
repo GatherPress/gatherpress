@@ -21,7 +21,7 @@ const VenueSelector = () => {
 	const venueTerm = useSelect((select) =>
 		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
 	);
-	const venueSlug = venueTerm?.slug.slice(1, venueTerm?.slug.length);
+	const venueSlug = venueTerm?.slug.replace(/^_/, '');
 	const venueValue = venueTermId + ':' + venueSlug;
 
 	useEffect(() => {
@@ -41,7 +41,7 @@ const VenueSelector = () => {
 	if (venues) {
 		venues = venues.map((item) => ({
 			label: item.name,
-			value: item.id + ':' + item.slug.slice(1, item.slug.length),
+			value: item.id + ':' + item.slug.replace(/^_/, ''),
 		}));
 
 		venues.unshift({
