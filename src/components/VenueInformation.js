@@ -7,17 +7,31 @@ import HtmlReactParser from 'html-react-parser';
  * WordPress dependencies.
  */
 import { Flex, FlexItem, Icon } from '@wordpress/components';
+import OnlineEvent from './OnlineEvent';
+import { useSelect } from '@wordpress/data';
 
-const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
+const VenueInformation = ({
+	name,
+	fullAddress,
+	phoneNumber,
+	website,
+	onlineEvent = null,
+}) => {
+	const onlineEventLink = useSelect(
+		(select) =>
+			select('core/editor').getEditedPostAttribute('meta')
+				._online_event_link
+	);
+
 	return (
 		<>
-			{(name || fullAddress) && (
+			{!onlineEvent && (name || fullAddress) && (
 				<Flex justify="normal" align="flex-start" gap="4">
 					<FlexItem display="flex" className="gp-venue__icon">
 						<Icon icon="location" />
 					</FlexItem>
 					<FlexItem>
-						{name && (
+						{name && !onlineEvent && (
 							<div className="gp-venue_information__name has-medium-font-size">
 								<strong>{HtmlReactParser(name)}</strong>
 							</div>
@@ -74,6 +88,7 @@ const VenueInformation = ({ name, fullAddress, phoneNumber, website }) => {
 					)}
 				</Flex>
 			)}
+			{onlineEvent && <OnlineEvent onlineEventLink={onlineEventLink} />}
 		</>
 	);
 };

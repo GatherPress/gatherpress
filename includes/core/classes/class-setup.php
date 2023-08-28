@@ -190,7 +190,7 @@ class Setup {
 	public function register() {
 		$this->register_post_types();
 		$this->register_taxonomies();
-		$this->add_terms();
+		$this->add_online_event_term();
 	}
 
 	/**
@@ -382,11 +382,28 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	public function add_terms() {
-		$term        = __( 'Online', 'gatherpress' );
-		$term_exists = term_exists( 'Online', Venue::TAXONOMY );
-		if ( ! $term_exists ) {
-			$result = wp_insert_term( $term, Venue::TAXONOMY );
+	public function add_online_event_term(): void {
+		$term_name = __( 'Online event', 'gatherpress' );
+		$term_slug = 'online-event';
+		$term      = term_exists( 'Online', Venue::TAXONOMY );
+
+		if ( ! $term ) {
+			wp_insert_term(
+				$term_name,
+				Venue::TAXONOMY,
+				array(
+					'slug' => $term_slug
+				)
+			);
+		} else {
+			wp_update_term(
+				$term['term_id'],
+				Venue::TAXONOMY,
+				array(
+					'name' => $term_name,
+					'slug' => $term_slug,
+				),
+			);
 		}
 	}
 
