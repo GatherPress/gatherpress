@@ -22,7 +22,7 @@ class RSVP {
 	const RSVP_CACHE_KEY = 'gp_rsvp_%d';
 
 	/**
-	 * Attendance statuses.
+	 * RSVP statuses.
 	 *
 	 * @var string[]
 	 */
@@ -58,7 +58,7 @@ class RSVP {
 	}
 
 	/**
-	 * Get an event attendee.
+	 * Get an event RSVP.
 	 *
 	 * @param int $user_id A user ID.
 	 *
@@ -91,10 +91,10 @@ class RSVP {
 	}
 
 	/**
-	 * Save an event attendee.
+	 * Save an event RSVP.
 	 *
 	 * @param int    $user_id A user ID.
-	 * @param string $status  Attendance status.
+	 * @param string $status  RSVP status.
 	 * @param int    $guests  Number of guests.
 	 *
 	 * @return string
