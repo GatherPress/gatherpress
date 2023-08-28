@@ -14,10 +14,10 @@
       "default": {
         "descriptionLimit": 55,
         "imageSize": "default",
-        "showAttendeeList": true,
+        "showRsvpResponse": true,
         "showFeaturedImage": true,
         "showDescription": true,
-        "showRsvpButton": true,
+        "showRsvp": true,
         "showVenue": true
       }
     },
