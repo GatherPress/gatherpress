@@ -20,12 +20,8 @@ import RsvpStatusResponse from './RsvpStatusResponse';
 import { getFromGlobal } from '../helpers/globals';
 
 const Rsvp = ({ eventId, currentUser = '', type }) => {
-	const [rsvpStatus, setRsvpStatus] = useState(
-		currentUser.status
-	);
-	const [rsvpGuests, setRsvpGuests] = useState(
-		currentUser.guests
-	);
+	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
+	const [rsvpGuests, setRsvpGuests] = useState(currentUser.guests);
 	const [selectorHidden, setSelectorHidden] = useState('hidden');
 	const [selectorExpanded, setSelectorExpanded] = useState('false');
 	const [modalIsOpen, setIsOpen] = useState(false);

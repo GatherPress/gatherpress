@@ -41,9 +41,7 @@ const RsvpResponseNavigation = ({ items, activeValue, onTitleClick }) => {
 		);
 	});
 
-	return (
-		<nav className="gp-rsvp-response__navigation">{renderedItems}</nav>
-	);
+	return <nav className="gp-rsvp-response__navigation">{renderedItems}</nav>;
 };
 
 export default RsvpResponseNavigation;
