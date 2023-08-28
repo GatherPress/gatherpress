@@ -387,7 +387,7 @@ class Rest_Api {
 
 		$members = $this->get_members( $send, $post_id );
 		/* translators: %s: event title. */
-		$subject = sprintf( __( '📅 Event: %s', 'gatherpress' ), get_the_title( $post_id ) );
+		$subject = sprintf( __( '📅 %s', 'gatherpress' ), get_the_title( $post_id ) );
 		$body    = Utility::render_template(
 			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
 			array(
