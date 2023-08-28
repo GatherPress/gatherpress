@@ -31,7 +31,7 @@ const VenueInformation = ({
 						<Icon icon="location" />
 					</FlexItem>
 					<FlexItem>
-						{name && !onlineEvent && (
+						{name && (
 							<div className="gp-venue_information__name has-medium-font-size">
 								<strong>{HtmlReactParser(name)}</strong>
 							</div>
@@ -44,7 +44,7 @@ const VenueInformation = ({
 					</FlexItem>
 				</Flex>
 			)}
-			{(phoneNumber || website) && (
+			{!onlineEvent && (phoneNumber || website) && (
 				<Flex justify="normal" gap="8">
 					{phoneNumber && (
 						<FlexItem>
