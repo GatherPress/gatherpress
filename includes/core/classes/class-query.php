@@ -65,10 +65,11 @@ class Query {
 	 * @param string $event_list_type  Type of event list: upcoming or past.
 	 * @param int    $number           Maximum number of events.
 	 * @param array  $topics           Array of topic slugs.
+	 * @param array  $venues           Array of venue slugs.
 	 *
 	 * @return \WP_Query
 	 */
-	public function get_events_list( string $event_list_type = '', int $number = 5, array $topics = array() ): \WP_Query {
+	public function get_events_list( string $event_list_type = '', int $number = 5, array $topics = array(), array $venues = array() ): \WP_Query {
 		$args = array(
 			'post_type'       => Event::POST_TYPE,
 			'fields'          => 'ids',
@@ -77,15 +78,42 @@ class Query {
 			'gp_events_query' => $event_list_type,
 		);
 
+		$tax_query = array();
 		if ( ! empty( $topics ) ) {
-			$args['tax_query'] = array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				array(
-					'taxonomy' => Event::TAXONOMY,
-					'field'    => 'slug',
-					'terms'    => $topics,
+			$tax_query[] = array(
+				'taxonomy' => Event::TAXONOMY,
+				'field'    => 'slug',
+				'terms'    => $topics,
+			);
+		}
+
+		if ( ! empty( $venues ) ) {
+			$tax_query[] = array(
+				'taxonomy' => Venue::TAXONOMY,
+				'field'    => 'slug',
+				'terms'    => $venues,
+			);
+		}
+
+		if ( ! empty( $venues ) && ! empty( $topics ) ) {
+			$tax_query[] = array(
+				'relation' => 'AND',
+				'queries'  => array(
+					array(
+						'taxonomy' => Event::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $topics,
+					),
+					array(
+						'taxonomy' => Venue::TAXONOMY,
+						'field'    => 'slug',
+						'terms'    => $venues,
+					),
 				),
 			);
 		}
+
+		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
 		return new \WP_Query( $args );
 	}

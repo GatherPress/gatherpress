@@ -382,7 +382,7 @@ class Settings {
 		$sub_pages['leadership'] = $this->get_leadership_page();
 		$sub_pages['credits']    = $this->get_credits_page();
 
-		$sub_pages = (array) apply_filters( 'gatherpress_settings_sub_pages', $sub_pages );
+		$sub_pages = (array) apply_filters( 'gatherpress_sub_pages', $sub_pages );
 
 		uasort( $sub_pages, array( $this, 'sort_sub_pages_by_priority' ) );
 
@@ -462,7 +462,22 @@ class Settings {
 	 * @return array
 	 */
 	public function get_leadership_page(): array {
-		$user_label = __( 'Select Users', 'gatherpress' );
+		$roles = array(
+			'organizers' => array(
+				'labels' => array(
+					'name'          => __( 'Organizers', 'gatherpress' ),
+					'singular_name' => __( 'Organizer', 'gatherpress' ),
+					'plural_name'   => __( 'Organizers', 'gatherpress' ),
+				),
+				'field'  => array(
+					'type'    => 'autocomplete',
+					'options' => array(
+						'type'  => 'user',
+						'label' => __( 'Select Users', 'gatherpress' ),
+					),
+				),
+			),
+		);
 
 		return array(
 			'name'        => __( 'Leadership', 'gatherpress' ),
@@ -471,64 +486,7 @@ class Settings {
 				'roles' => array(
 					'name'        => __( 'Roles', 'gatherpress' ),
 					'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
-					'options'     => array(
-						'organizers'           => array(
-							'labels' => array(
-								'name'          => __( 'Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-						'assistant-organizers' => array(
-							'labels' => array(
-								'name'          => __( 'Assistant Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Assistant Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Assistant Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-						'event-organizers'     => array(
-							'labels' => array(
-								'name'          => __( 'Event Organizers', 'gatherpress' ),
-								'singular_name' => __( 'Event Organizer', 'gatherpress' ),
-								'plural_name'   => __( 'Event Organizers', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-						'event-assistants'     => array(
-							'labels' => array(
-								'name'          => __( 'Event Assistants', 'gatherpress' ),
-								'singular_name' => __( 'Event Assistant', 'gatherpress' ),
-								'plural_name'   => __( 'Event Assistants', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'user',
-									'label' => $user_label,
-								),
-							),
-						),
-					),
+					'options'     => apply_filters( 'gatherpress_roles', $roles ),
 				),
 			),
 		);

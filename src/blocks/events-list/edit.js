@@ -32,11 +32,20 @@ import EventsList from '../../components/EventsList';
 const Edit = (props) => {
 	const { attributes, setAttributes } = props;
 	const blockProps = useBlockProps();
-	const { topics } = attributes;
+	const { topics, venues } = attributes;
 	const { topicsList } = useSelect((select) => {
 		const { getEntityRecords } = select(coreStore);
 		return {
 			topicsList: getEntityRecords('taxonomy', 'gp_topic', {
+				per_page: -1,
+				context: 'view',
+			}),
+		};
+	}, []);
+	const { venueList } = useSelect((select) => {
+		const { getEntityRecords } = select(coreStore);
+		return {
+			venueList: getEntityRecords('taxonomy', '_gp_venue', {
 				per_page: -1,
 				context: 'view',
 			}),
@@ -48,6 +57,14 @@ const Edit = (props) => {
 			(accumulator, topic) => ({
 				...accumulator,
 				[topic.name]: topic,
+			}),
+			{}
+		) ?? {};
+	const venueSuggestions =
+		venueList?.reduce(
+			(accumulator, venue) => ({
+				...accumulator,
+				[venue.name]: venue,
 			}),
 			{}
 		) ?? {};
@@ -70,6 +87,26 @@ const Edit = (props) => {
 		}
 
 		setAttributes({ topics: allTopics });
+	};
+
+	const selectVenues = (tokens) => {
+		const hasNoSuggestion = tokens.some(
+			(token) => typeof token === 'string' && !venueSuggestions[token]
+		);
+
+		if (hasNoSuggestion) {
+			return;
+		}
+
+		const allVenues = tokens.map((token) => {
+			return typeof token === 'string' ? venueSuggestions[token] : token;
+		});
+
+		if (includes(allVenues, null)) {
+			return false;
+		}
+
+		setAttributes({ venues: allVenues });
 	};
 
 	const imageOptions = [
@@ -157,6 +194,21 @@ const Edit = (props) => {
 						}
 						suggestions={Object.keys(topicSuggestions)}
 						onChange={selectTopics}
+						maxSuggestions={20}
+					/>
+					<FormTokenField
+						key="query-controls-venues-select"
+						label={__('Venues', 'gatherpress')}
+						value={
+							venues &&
+							venues.map((item) => ({
+								id: item.id,
+								slug: item.slug,
+								value: item.name || item.value,
+							}))
+						}
+						suggestions={Object.keys(venueSuggestions)}
+						onChange={selectVenues}
 						maxSuggestions={20}
 					/>
 				</PanelBody>
@@ -264,6 +316,23 @@ const Edit = (props) => {
 							});
 						}}
 					/>
+					<ToggleControl
+						label={__('Show/Event Venue')}
+						help={
+							attributes.eventOptions.showVenue
+								? __('Show Event Venue')
+								: __('Hide Event Venue')
+						}
+						checked={attributes.eventOptions.showVenue}
+						onChange={(value) => {
+							setAttributes({
+								eventOptions: {
+									...attributes.eventOptions,
+									showVenue: value,
+								},
+							});
+						}}
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<EventsList
@@ -271,6 +340,7 @@ const Edit = (props) => {
 				maxNumberOfEvents={attributes.maxNumberOfEvents}
 				type={attributes.type}
 				topics={attributes.topics}
+				venues={attributes.venues}
 			/>
 		</div>
 	);

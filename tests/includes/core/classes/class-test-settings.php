@@ -114,9 +114,6 @@ class Test_Settings extends Base {
 		$user_roles = $instance->get_user_roles();
 
 		$this->assertIsArray( $user_roles['organizers'], 'Failed to assert user role is an array.' );
-		$this->assertIsArray( $user_roles['assistant-organizers'], 'Failed to assert user role is an array.' );
-		$this->assertIsArray( $user_roles['event-organizers'], 'Failed to assert user role is an array.' );
-		$this->assertIsArray( $user_roles['event-assistants'], 'Failed to assert user role is an array.' );
 	}
 
 }

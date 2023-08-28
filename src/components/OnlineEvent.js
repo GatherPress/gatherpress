@@ -3,20 +3,9 @@
  */
 import { __ } from '@wordpress/i18n';
 import { Flex, FlexItem, Icon } from '@wordpress/components';
-import { useState } from '@wordpress/element';
 
-/**
- * Internal dependencies.
- */
-import { Listener } from '../helpers/broadcasting';
-
-const OnlineEvent = ({ eventId, onlineEventLinkDefault = '' }) => {
+const OnlineEvent = ({ onlineEventLink = '' }) => {
 	const text = __('Online event', 'gatherpress');
-	const [onlineEventLink, setOnlineEventLink] = useState(
-		onlineEventLinkDefault
-	);
-
-	Listener({ setOnlineEventLink }, eventId);
 
 	return (
 		<Flex justify="normal" gap="4">

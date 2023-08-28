@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import HtmlReactParser from 'html-react-parser';
-
-/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
@@ -16,7 +11,7 @@ import { useEffect, useState } from '@wordpress/element';
  */
 import { Broadcaster } from '../helpers/broadcasting';
 
-const VenueSelectorPanel = () => {
+const VenueSelector = () => {
 	const [venue, setVenue] = useState('');
 	const editPost = useDispatch('core/editor').editPost;
 	const { unlockPostSaving } = useDispatch('core/editor');
@@ -28,6 +23,7 @@ const VenueSelectorPanel = () => {
 	);
 	const venueSlug = venueTerm?.slug.slice(1, venueTerm?.slug.length);
 	const venueValue = venueTermId + ':' + venueSlug;
+
 	useEffect(() => {
 		setVenue(String(venueValue) ?? '');
 		Broadcaster({
@@ -44,7 +40,7 @@ const VenueSelectorPanel = () => {
 
 	if (venues) {
 		venues = venues.map((item) => ({
-			label: HtmlReactParser(item.name),
+			label: item.name,
 			value: item.id + ':' + item.slug.slice(1, item.slug.length),
 		}));
 
@@ -81,4 +77,4 @@ const VenueSelectorPanel = () => {
 	);
 };
 
-export default VenueSelectorPanel;
+export default VenueSelector;

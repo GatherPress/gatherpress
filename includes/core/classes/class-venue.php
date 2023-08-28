@@ -62,7 +62,7 @@ class Venue {
 	public function add_venue_term( int $post_id, WP_Post $post, bool $update ): void {
 		if ( ! $update ) {
 			$term_slug = $this->get_venue_term_slug( $post->post_name );
-			$title     = get_the_title( $post_id );
+			$title     = html_entity_decode( get_the_title( $post_id ) );
 			$term      = term_exists( $term_slug, self::TAXONOMY );
 
 			if ( empty( $term ) ) {
@@ -97,7 +97,7 @@ class Venue {
 		) {
 			$old_term_slug = $this->get_venue_term_slug( $post_before->post_name );
 			$new_term_slug = $this->get_venue_term_slug( $post_after->post_name );
-			$title         = get_the_title( $post_id );
+			$title         = html_entity_decode( get_the_title( $post_id ) );
 			$term          = term_exists( $old_term_slug, self::TAXONOMY );
 
 			if ( empty( $term ) ) {
