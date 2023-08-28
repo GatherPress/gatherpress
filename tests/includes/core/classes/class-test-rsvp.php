@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Attendee.
+ * Class handles unit tests for GatherPress\Core\Rsvp.
  *
  * @package GatherPress
  * @subpackage Core
@@ -9,15 +9,15 @@
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\RSVP;
+use GatherPress\Core\Rsvp;
 use PMC\Unit_Test\Base;
 
 /**
- * Class Test_Attendee.
+ * Class Test_Rsvp.
  *
- * @coversDefaultClass \GatherPress\Core\RSVP
+ * @coversDefaultClass \GatherPress\Core\Rsvp
  */
-class Test_RSVP extends Base {
+class Test_Rsvp extends Base {
 
 	/**
 	 * Coverage for get method.
@@ -32,7 +32,7 @@ class Test_RSVP extends Base {
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$attendee = new RSVP( $post->ID );
+		$attendee = new Rsvp( $post->ID );
 		$user     = $this->mock->user()->get();
 		$status   = 'attending';
 
@@ -62,7 +62,7 @@ class Test_RSVP extends Base {
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$attendee = new RSVP( $post->ID );
+		$attendee = new Rsvp( $post->ID );
 		$user     = $this->mock->user()->get();
 		$status   = 'attending';
 
@@ -92,7 +92,7 @@ class Test_RSVP extends Base {
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$attendee = new RSVP( $post->ID );
+		$attendee = new Rsvp( $post->ID );
 
 		$this->assertSame( 0, $attendee->check_waiting_list(), 'Failed to assert expected waiting list value.' );
 	}
@@ -110,7 +110,7 @@ class Test_RSVP extends Base {
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$attendee = new RSVP( $post->ID );
+		$attendee = new Rsvp( $post->ID );
 
 		$this->assertFalse(
 			$attendee->attending_limit_reached( 'attending' ),
@@ -132,7 +132,7 @@ class Test_RSVP extends Base {
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$attendee  = new RSVP( $post->ID );
+		$attendee  = new Rsvp( $post->ID );
 		$user_id_1 = wp_create_user( 'user_1', 'unittest' );
 		$user_id_2 = wp_create_user( 'user_2', 'unittest' );
 
@@ -167,7 +167,7 @@ class Test_RSVP extends Base {
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$attendee = new RSVP( $post->ID );
+		$attendee = new Rsvp( $post->ID );
 		$newer    = array( 'timestamp' => '2023-05-11 08:30:00' );
 		$older    = array( 'timestamp' => '2022-05-11 08:30:00' );
 

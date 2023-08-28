@@ -422,7 +422,7 @@ class Setup {
 		global $wpdb;
 
 		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
-		$tables[] = sprintf( RSVP::TABLE_FORMAT, $wpdb->prefix );
+		$tables[] = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
 
 		return $tables;
 	}
@@ -461,7 +461,7 @@ class Setup {
 	public function maybe_rename_table(): void {
 		global $wpdb;
 
-		$new_table = sprintf( RSVP::TABLE_FORMAT, $wpdb->prefix );
+		$new_table = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
 		$old_table = sprintf( '%sgp_attendees', $wpdb->prefix );
 
 		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -545,7 +545,7 @@ class Setup {
 					KEY datetime_end_gmt (datetime_end_gmt)
 				) {$charset_collate};";
 
-		$table = sprintf( RSVP::TABLE_FORMAT, $wpdb->prefix );
+		$table = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
 		$sql[] = "CREATE TABLE {$table} (
 					id bigint(20) unsigned NOT NULL auto_increment,
 					post_id bigint(20) unsigned NOT NULL default '0',

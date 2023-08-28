@@ -9,8 +9,8 @@
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\RSVP;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
 use WP_Post;
@@ -40,7 +40,7 @@ class Test_Event extends Base {
 		$event = new Event( $post->ID );
 
 		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'event' ) );
-		$this->assertInstanceOf( RSVP::class, Utility::get_hidden_property( $event, 'rsvp' ) );
+		$this->assertInstanceOf( Rsvp::class, Utility::get_hidden_property( $event, 'rsvp' ) );
 	}
 
 	/**

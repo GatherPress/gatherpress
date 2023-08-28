@@ -417,7 +417,7 @@ class Rest_Api {
 	 */
 	public function get_members( array $send, int $post_id ): array {
 		$member_ids    = array();
-		$rsvp          = new RSVP( $post_id );
+		$rsvp          = new Rsvp( $post_id );
 		$all_attendees = $rsvp->attendees();
 
 		if ( ! empty( $send['all'] ) ) {
