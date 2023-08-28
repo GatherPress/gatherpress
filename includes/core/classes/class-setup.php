@@ -392,7 +392,7 @@ class Setup {
 				$term_name,
 				Venue::TAXONOMY,
 				array(
-					'slug' => $term_slug
+					'slug' => $term_slug,
 				)
 			);
 		} else {
