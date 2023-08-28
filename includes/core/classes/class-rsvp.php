@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
  */
 class RSVP {
 
-	const TABLE_FORMAT       = '%sgp_rsvps';
+	const TABLE_FORMAT   = '%sgp_rsvps';
 	const RSVP_CACHE_KEY = 'gp_rsvp_%d';
 
 	/**

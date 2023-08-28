@@ -463,7 +463,7 @@ class Setup {
 		$new_table = sprintf( RSVP::TABLE_FORMAT, $wpdb->prefix );
 		$old_table = sprintf( '%sgp_attendees', $wpdb->prefix );
 
-		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" );
+		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**
