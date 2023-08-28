@@ -159,7 +159,6 @@ class Event {
 			}
 		}
 
-
 		if ( is_a( $venue, 'WP_Post' ) ) {
 			$venue_meta                        = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
