@@ -376,7 +376,7 @@ class Setup {
 	}
 
 	/**
-	 * Add any default terms for taxonomies.
+	 * Add online event term.
 	 *
 	 * @since 1.0.0
 	 *
