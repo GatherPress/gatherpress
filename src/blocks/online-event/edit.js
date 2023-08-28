@@ -10,6 +10,7 @@ import { useSelect } from '@wordpress/data';
  */
 import OnlineEvent from '../../components/OnlineEvent';
 import OnlineEventLink from '../../components/OnlineEventLink';
+import EditCover from '../../components/EditCover';
 
 const Edit = ({ isSelected }) => {
 	const blockProps = useBlockProps();
@@ -21,16 +22,18 @@ const Edit = ({ isSelected }) => {
 
 	return (
 		<div {...blockProps}>
-			{isSelected && (
-				<Flex justify="normal">
-					<FlexItem>
-						<OnlineEventLink />
-					</FlexItem>
-				</Flex>
-			)}
-			{!isSelected && (
-				<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
-			)}
+			<EditCover isSelected={isSelected}>
+				{isSelected && (
+					<Flex justify="normal">
+						<FlexItem>
+							<OnlineEventLink />
+						</FlexItem>
+					</Flex>
+				)}
+				{!isSelected && (
+					<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
+				)}
+			</EditCover>
 		</div>
 	);
 };

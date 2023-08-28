@@ -7,6 +7,7 @@ import { useBlockProps } from '@wordpress/block-editor';
  */
 import Rsvp from '../../components/Rsvp';
 import { getFromGlobal } from '../../helpers/globals';
+import EditCover from '../../components/EditCover';
 
 const Edit = () => {
 	const blockProps = useBlockProps();
@@ -15,11 +16,13 @@ const Edit = () => {
 
 	return (
 		<div {...blockProps}>
-			<Rsvp
-				eventId={postId}
-				currentUser={currentUser}
-				type={'upcoming'}
-			/>
+			<EditCover>
+				<Rsvp
+					eventId={postId}
+					currentUser={currentUser}
+					type={'upcoming'}
+				/>
+			</EditCover>
 		</div>
 	);
 };

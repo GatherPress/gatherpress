@@ -28,6 +28,7 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import EventsList from '../../components/EventsList';
+import EditCover from '../../components/EditCover';
 
 const Edit = (props) => {
 	const { attributes, setAttributes } = props;
@@ -115,7 +116,7 @@ const Edit = (props) => {
 		{ label: 'Large', value: 'large' },
 	];
 	return (
-		<div {...blockProps}>
+		<>
 			<InspectorControls>
 				<PanelBody>
 					<p>{__('Event List type', 'gatherpress')}</p>
@@ -335,14 +336,18 @@ const Edit = (props) => {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<EventsList
-				eventOptions={attributes.eventOptions}
-				maxNumberOfEvents={attributes.maxNumberOfEvents}
-				type={attributes.type}
-				topics={attributes.topics}
-				venues={attributes.venues}
-			/>
-		</div>
+			<div {...blockProps}>
+				<EditCover>
+					<EventsList
+						eventOptions={attributes.eventOptions}
+						maxNumberOfEvents={attributes.maxNumberOfEvents}
+						type={attributes.type}
+						topics={attributes.topics}
+						venues={attributes.venues}
+					/>
+				</EditCover>
+			</div>
+		</>
 	);
 };
 

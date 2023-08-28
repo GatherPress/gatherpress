@@ -21,6 +21,7 @@ import MapEmbed from '../../components/MapEmbed';
 import VenueInformation from '../../components/VenueInformation';
 import VenueSelector from '../../components/VenueSelector';
 import OnlineEventLink from '../../components/OnlineEventLink';
+import EditCover from '../../components/EditCover';
 
 const Edit = ({ attributes, setAttributes }) => {
 	const { mapHeight, mapShow, mapType, mapZoomLevel } = attributes;
@@ -185,7 +186,9 @@ const Edit = ({ attributes, setAttributes }) => {
 				)}
 			</InspectorControls>
 			<div {...blockProps}>
-				<Venue venue={venuePost} onlineEvent={onlineEventTerm} />
+				<EditCover>
+					<Venue venue={venuePost} onlineEvent={onlineEventTerm} />
+				</EditCover>
 			</div>
 		</>
 	);

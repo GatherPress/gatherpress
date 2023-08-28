@@ -23,6 +23,7 @@ import { useEffect } from '@wordpress/element';
  */
 import MapEmbed from '../../components/MapEmbed';
 import VenueInformation from '../../components/VenueInformation';
+import EditCover from '../../components/EditCover';
 
 const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const {
@@ -137,82 +138,84 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<div className="gp-venue">
-					{!isSelected && (
-						<>
-							{!fullAddress && !phoneNumber && !website && (
-								<Flex justify="normal">
-									<FlexItem display="flex">
-										<Icon icon="location" />
-									</FlexItem>
-									<FlexItem>
-										<em>
-											{__(
-												'Add venue information.',
+				<EditCover isSelected={isSelected}>
+					<div className="gp-venue">
+						{!isSelected && (
+							<>
+								{!fullAddress && !phoneNumber && !website && (
+									<Flex justify="normal">
+										<FlexItem display="flex">
+											<Icon icon="location" />
+										</FlexItem>
+										<FlexItem>
+											<em>
+												{__(
+													'Add venue information.',
+													'gatherpress'
+												)}
+											</em>
+										</FlexItem>
+									</Flex>
+								)}
+								<VenueInformation
+									fullAddress={fullAddress}
+									phoneNumber={phoneNumber}
+									website={website}
+								/>
+							</>
+						)}
+						{isSelected && (
+							<>
+								<Flex>
+									<FlexBlock>
+										<TextControl
+											label={__(
+												'Full Address',
 												'gatherpress'
 											)}
-										</em>
-									</FlexItem>
+											value={fullAddress}
+											onChange={(value) => {
+												onUpdate('fullAddress', value);
+											}}
+										/>
+									</FlexBlock>
 								</Flex>
-							)}
-							<VenueInformation
-								fullAddress={fullAddress}
-								phoneNumber={phoneNumber}
-								website={website}
+								<Flex>
+									<FlexBlock>
+										<TextControl
+											label={__(
+												'Phone Number',
+												'gatherpress'
+											)}
+											value={phoneNumber}
+											onChange={(value) => {
+												onUpdate('phoneNumber', value);
+											}}
+										/>
+									</FlexBlock>
+									<FlexBlock>
+										<TextControl
+											label={__('Website', 'gatherpress')}
+											value={website}
+											type="url"
+											onChange={(value) => {
+												onUpdate('website', value);
+											}}
+										/>
+									</FlexBlock>
+								</Flex>
+							</>
+						)}
+						{mapShow && fullAddress && (
+							<MapEmbed
+								location={fullAddress}
+								zoom={mapZoomLevel}
+								type={mapType}
+								height={mapHeight}
 							/>
-						</>
-					)}
-					{isSelected && (
-						<>
-							<Flex>
-								<FlexBlock>
-									<TextControl
-										label={__(
-											'Full Address',
-											'gatherpress'
-										)}
-										value={fullAddress}
-										onChange={(value) => {
-											onUpdate('fullAddress', value);
-										}}
-									/>
-								</FlexBlock>
-							</Flex>
-							<Flex>
-								<FlexBlock>
-									<TextControl
-										label={__(
-											'Phone Number',
-											'gatherpress'
-										)}
-										value={phoneNumber}
-										onChange={(value) => {
-											onUpdate('phoneNumber', value);
-										}}
-									/>
-								</FlexBlock>
-								<FlexBlock>
-									<TextControl
-										label={__('Website', 'gatherpress')}
-										value={website}
-										type="url"
-										onChange={(value) => {
-											onUpdate('website', value);
-										}}
-									/>
-								</FlexBlock>
-							</Flex>
-						</>
-					)}
-					{mapShow && fullAddress && (
-						<MapEmbed
-							location={fullAddress}
-							zoom={mapZoomLevel}
-							type={mapType}
-							height={mapHeight}
-						/>
-					)}
-				</div>
+						)}
+					</div>
+				</EditCover>
 			</div>
 		</>
 	);
