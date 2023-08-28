@@ -18,7 +18,7 @@ domReady(() => {
 		const attrs = JSON.parse(containers[i].dataset.gp_block_attrs);
 
 		createRoot(containers[i]).render(
-			<OnlineEvent onlineEventLink={attrs.onlineEventLink ?? ''} />
+			<OnlineEvent onlineEventLinkDefault={attrs.onlineEventLink ?? ''} />
 		);
 	}
 });

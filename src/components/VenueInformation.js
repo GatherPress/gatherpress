@@ -88,7 +88,9 @@ const VenueInformation = ({
 					)}
 				</Flex>
 			)}
-			{onlineEvent && <OnlineEvent onlineEventLink={onlineEventLink} />}
+			{onlineEvent && (
+				<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
+			)}
 		</>
 	);
 };
