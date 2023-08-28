@@ -120,6 +120,7 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin() {
+		$this->maybe_rename_table();
 		$this->maybe_create_custom_table();
 
 		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
@@ -450,11 +451,29 @@ class Setup {
 	}
 
 	/**
+	 * Rename attendees table to rsvps.
+	 *
+	 * @todo remove this code, just temporary to address a breaking change.
+	 *
+	 * @return void
+	 */
+	public function maybe_rename_table(): void {
+		global $wpdb;
+
+		$new_table = sprintf( Attendee::TABLE_FORMAT, $wpdb->prefix );
+		$old_table = sprintf( '%sgp_attendees', $wpdb->prefix );
+
+		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" );
+	}
+
+	/**
 	 * Maybe create custom table if doesn't exist for main site or current site in network.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
-	public function maybe_create_custom_table() {
+	public function maybe_create_custom_table(): void {
 		$this->create_tables();
 
 		if ( is_multisite() ) {
@@ -475,7 +494,7 @@ class Setup {
 		global $wpdb;
 
 		$sql             = array();
-		$charset_collate = $GLOBALS['wpdb']->get_charset_collate();
+		$charset_collate = $wpdb->get_charset_collate();
 
 		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$sql[] = "CREATE TABLE {$table} (

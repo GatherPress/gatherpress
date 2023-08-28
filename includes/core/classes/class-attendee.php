@@ -18,8 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
  */
 class Attendee {
 
-	const TABLE_FORMAT       = '%sgp_attendees';
-	const ATTENDEE_CACHE_KEY = 'attendee_%d';
+	const TABLE_FORMAT       = '%sgp_rsvps';
+	const ATTENDEE_CACHE_KEY = 'gp_rsvp_%d';
 
 	/**
 	 * Attendance statuses.
