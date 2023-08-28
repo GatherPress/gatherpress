@@ -28,12 +28,12 @@ class Block {
 	 */
 	protected $blocks = array(
 		'add-to-calendar',
+		'attendance-list',
+		'attendance-selector',
 		'event-date',
 		'events-list',
 		'event-venue',
 		'online-event',
-		'rsvp',
-		'rsvp-response',
 		'venue-information',
 	);
 

@@ -214,20 +214,20 @@ const Edit = (props) => {
 				</PanelBody>
 				<PanelBody>
 					<ToggleControl
-						label={__('Show/Hide RSVP Response', 'gatherpress')}
+						label={__('Show/Hide Attendee list', 'gatherpress')}
 						help={
-							attributes.eventOptions.showRsvpResponse
-								? __('Show RSVP Response', 'gatherpress')
-								: __('Hide RSVP Response', 'gatherpress')
+							attributes.eventOptions.showAttendeeList
+								? __('Show Attendee List', 'gatherpress')
+								: __('Hide Attendee List', 'gatherpress')
 						}
 						checked={
-							attributes.eventOptions.showRsvpResponse ?? true
+							attributes.eventOptions.showAttendeeList ?? true
 						}
 						onChange={(value) => {
 							setAttributes({
 								eventOptions: {
 									...attributes.eventOptions,
-									showRsvpResponse: value,
+									showAttendeeList: value,
 								},
 							});
 						}}
@@ -263,7 +263,7 @@ const Edit = (props) => {
 						}}
 					/>
 					<ToggleControl
-						label={__('Show/Hide Description', 'gatherpress')}
+						label={__('Show/Description', 'gatherpress')}
 						help={
 							attributes.eventOptions.showDescription
 								? __('Show Description', 'gatherpress')
@@ -300,18 +300,18 @@ const Edit = (props) => {
 						type="number"
 					/>
 					<ToggleControl
-						label={__('Show/RSVP')}
+						label={__('Show/RSVP Button')}
 						help={
-							attributes.eventOptions.showRsvp
-								? __('Show RSVP')
-								: __('Hide RSVP')
+							attributes.eventOptions.showRsvpButton
+								? __('Show RSVP Button')
+								: __('Hide RSVP Button')
 						}
-						checked={attributes.eventOptions.showRsvp}
+						checked={attributes.eventOptions.showRsvpButton}
 						onChange={(value) => {
 							setAttributes({
 								eventOptions: {
 									...attributes.eventOptions,
-									showRsvp: value,
+									showRsvpButton: value,
 								},
 							});
 						}}

@@ -120,7 +120,6 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin() {
-		$this->maybe_rename_blocks();
 		$this->maybe_rename_table();
 		$this->maybe_create_custom_table();
 
@@ -228,14 +227,14 @@ class Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/rsvp' ),
+					array( 'gatherpress/attendance-selector' ),
 					array(
 						'core/paragraph',
 						array(
 							'placeholder' => __( 'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', 'gatherpress' ),
 						),
 					),
-					array( 'gatherpress/rsvp-response' ),
+					array( 'gatherpress/attendance-list' ),
 					array( 'gatherpress/event-venue' ),
 				),
 				'menu_position' => 4,
@@ -465,41 +464,6 @@ class Setup {
 		$old_table = sprintf( '%sgp_attendees', $wpdb->prefix );
 
 		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-	}
-
-	/**
-	 * Rename attendance blocks to rsvp.
-	 *
-	 * @todo remove this code, just temporary to address a breaking change.
-	 *
-	 * @return void
-	 */
-	public function maybe_rename_blocks(): void {
-		$events = get_posts(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'numberposts' => -1,
-				'post_status' => 'any',
-			)
-		);
-
-		if ( $events ) {
-			foreach ( $events as $event ) {
-				$event->post_content = str_replace(
-					'wp:gatherpress/attendance-selector',
-					'wp:gatherpress/rsvp',
-					$event->post_content
-				);
-
-				$event->post_content = str_replace(
-					'wp:gatherpress/attendance-list',
-					'wp:gatherpress/rsvp-response',
-					$event->post_content
-				);
-
-				wp_update_post( $event );
-			}
-		}
 	}
 
 	/**

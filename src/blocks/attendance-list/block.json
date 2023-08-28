@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "gatherpress/attendance-list",
+	"version": "1.0.0",
+	"title": "Attendance List",
+	"category": "gatherpress",
+	"icon": "groups",
+	"example": {},
+	"description": "The block with attendance list.",
+	"attributes": {
+		"blockId": {
+			"type": "string"
+		},
+		"content": {
+			"type": "string"
+		},
+		"color": {
+			"type": "string"
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./attendance-list.js",
+	"render": "file:./render.php"
+}

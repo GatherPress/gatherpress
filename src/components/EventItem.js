@@ -6,9 +6,9 @@ import HtmlReactParser from 'html-react-parser';
 /**
  * Internal dependencies.
  */
-import Rsvp from './Rsvp';
-import RsvpResponseCard from './RsvpResponseCard';
-import RsvpStatusResponse from './RsvpStatusResponse';
+import AttendanceSelector from './AttendanceSelector';
+import AttendeeList from './AttendeeList';
+import AttendeeResponse from './AttendeeResponse';
 
 const EventItem = (props) => {
 	const { type, event, eventOptions } = props;
@@ -77,9 +77,9 @@ const EventItem = (props) => {
 				</div>
 			</div>
 			<div className={`${eventClass}__footer`}>
-				{eventOptions.showRsvpResponse && (
-					<div className="gp-rsvp-response__items">
-						<RsvpResponseCard
+				{eventOptions.showAttendeeList && (
+					<div className="gp-attendance-list__items">
+						<AttendeeList
 							eventId={event.ID}
 							value="attending"
 							attendees={event.attendees}
@@ -88,8 +88,8 @@ const EventItem = (props) => {
 						/>
 					</div>
 				)}
-				{'upcoming' === type && eventOptions.showRsvp && (
-					<Rsvp
+				{'upcoming' === type && eventOptions.showRsvpButton && (
+					<AttendanceSelector
 						eventId={event.ID}
 						currentUser={event.current_user}
 						type={type}
@@ -97,9 +97,9 @@ const EventItem = (props) => {
 				)}
 
 				{'past' === type &&
-					eventOptions.showRsvp &&
+					eventOptions.showRsvpButton &&
 					'' !== event.current_user && (
-						<RsvpStatusResponse
+						<AttendeeResponse
 							type={type}
 							status={event.current_user?.status}
 						/>

@@ -270,21 +270,21 @@ class Assets {
 			case Venue::POST_TYPE:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
+					'gatherpress/attendance-list',
+					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
 					'gatherpress/event-venue',
 					'gatherpress/online-event',
-					'gatherpress/rsvp',
-					'gatherpress/rsvp-response',
 				);
 				break;
 			default:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
+					'gatherpress/attendance-list',
+					'gatherpress/attendance-selector',
 					'gatherpress/event-date',
 					'gatherpress/event-venue',
 					'gatherpress/online-event',
-					'gatherpress/rsvp',
-					'gatherpress/rsvp-response',
 					'gatherpress/venue-information',
 				);
 		}
