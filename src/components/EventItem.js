@@ -27,8 +27,9 @@ const EventItem = (props) => {
 	const featuredImage = HtmlReactParser(event[size]);
 	const eventClass = `gp-events-list`;
 	let icon = 'location';
+	const isOnlineEvent = event.venue?.is_online_event;
 
-	if (event.venue.is_online_event) {
+	if (isOnlineEvent) {
 		icon = 'video-alt2';
 	}
 
@@ -56,12 +57,12 @@ const EventItem = (props) => {
 							<span
 								className={`dashicons dashicons-${icon}`}
 							></span>
-							{!event.venue.is_online_event && (
+							{!isOnlineEvent && (
 								<a href={event.venue.permalink}>
 									{HtmlReactParser(event.venue.name)}
 								</a>
 							)}
-							{event.venue.is_online_event && (
+							{isOnlineEvent && (
 								<span>{HtmlReactParser(event.venue.name)}</span>
 							)}
 						</div>
