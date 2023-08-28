@@ -24,6 +24,7 @@ import {
 	getUtcOffset,
 } from '../../helpers/datetime';
 import TimeZone from '../../components/TimeZone';
+import EditCover from '../../components/EditCover';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -66,31 +67,33 @@ const Edit = () => {
 
 	return (
 		<div {...blockProps}>
-			<Flex justify="normal" align="flex-start" gap="4">
-				<FlexItem display="flex" className="gp-event-date__icon">
-					<Icon icon="clock" />
-				</FlexItem>
-				<FlexItem>
-					{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
-				</FlexItem>
-				<InspectorControls>
-					<PanelBody>
-						<h3>{__('Date & time', 'gatherpress')}</h3>
-						<DateTimeStart
-							dateTimeStart={dateTimeStart}
-							setDateTimeStart={setDateTimeStart}
-						/>
-						<DateTimeEnd
-							dateTimeEnd={dateTimeEnd}
-							setDateTimeEnd={setDateTimeEnd}
-						/>
-						<TimeZone
-							timezone={timezone}
-							setTimezone={setTimezone}
-						/>
-					</PanelBody>
-				</InspectorControls>
-			</Flex>
+			<EditCover>
+				<Flex justify="normal" align="flex-start" gap="4">
+					<FlexItem display="flex" className="gp-event-date__icon">
+						<Icon icon="clock" />
+					</FlexItem>
+					<FlexItem>
+						{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
+					</FlexItem>
+					<InspectorControls>
+						<PanelBody>
+							<h3>{__('Date & time', 'gatherpress')}</h3>
+							<DateTimeStart
+								dateTimeStart={dateTimeStart}
+								setDateTimeStart={setDateTimeStart}
+							/>
+							<DateTimeEnd
+								dateTimeEnd={dateTimeEnd}
+								setDateTimeEnd={setDateTimeEnd}
+							/>
+							<TimeZone
+								timezone={timezone}
+								setTimezone={setTimezone}
+							/>
+						</PanelBody>
+					</InspectorControls>
+				</Flex>
+			</EditCover>
 		</div>
 	);
 };

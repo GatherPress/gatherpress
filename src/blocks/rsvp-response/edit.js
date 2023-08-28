@@ -7,13 +7,16 @@ import { useBlockProps } from '@wordpress/block-editor';
  * Internal dependencies.
  */
 import RsvpResponse from '../../components/RsvpResponse';
+import EditCover from '../../components/EditCover';
 
 const Edit = () => {
 	const blockProps = useBlockProps();
 
 	return (
 		<div {...blockProps}>
-			<RsvpResponse />
+			<EditCover>
+				<RsvpResponse />
+			</EditCover>
 		</div>
 	);
 };
