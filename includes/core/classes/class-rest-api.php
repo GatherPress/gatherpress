@@ -154,10 +154,10 @@ class Rest_Api {
 				),
 			),
 			array(
-				'route' => 'attendance',
+				'route' => 'rsvp',
 				'args'  => array(
 					'methods'             => WP_REST_Server::EDITABLE,
-					'callback'            => array( $this, 'update_attendance' ),
+					'callback'            => array( $this, 'update_rsvp' ),
 					'permission_callback' => '__return_true',
 					'args'                => array(
 						'_wpnonce' => array(
@@ -179,7 +179,7 @@ class Rest_Api {
 						// ],
 						'status'   => array(
 							'required'          => true,
-							'validate_callback' => array( $this, 'validate_attendance_status' ),
+							'validate_callback' => array( $this, 'validate_rsvp_status' ),
 						),
 					),
 				),
@@ -217,13 +217,13 @@ class Rest_Api {
 	}
 
 	/**
-	 * Validate attendance status.
+	 * Validate rsvp status.
 	 *
-	 * @param string $param An attendance status.
+	 * @param string $param An rsvp status.
 	 *
 	 * @return bool
 	 */
-	public function validate_attendance_status( $param ): bool {
+	public function validate_rsvp_status( $param ): bool {
 		return ( 'attending' === $param || 'not_attending' === $param );
 	}
 
@@ -522,13 +522,13 @@ class Rest_Api {
 	}
 
 	/**
-	 * Update the attendance status for a user to an event.
+	 * Update the RSVP status for a user to an event.
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
 	 *
 	 * @return WP_REST_Response
 	 */
-	public function update_attendance( WP_REST_Request $request ) {
+	public function update_rsvp( WP_REST_Request $request ) {
 		$params          = $request->get_params();
 		$success         = false;
 		$current_user_id = get_current_user_id();

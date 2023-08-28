@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "gatherpress/rsvp",
+  "version": "1.0.0",
+  "title": "RSVP",
+  "category": "gatherpress",
+  "icon": "insert",
+  "example": {},
+  "description": "The block with RSVP.",
+  "attributes": {
+    "content": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string"
+    }
+  },
+  "supports": {
+    "html": false
+  },
+  "textdomain": "gatherpress",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./rsvp.js",
+  "render": "file:./render.php"
+}
