@@ -33,11 +33,11 @@ class Event {
 	protected $event = null;
 
 	/**
-	 * Attendee instance.
+	 * RSVP instance.
 	 *
-	 * @var Attendee
+	 * @var RSVP
 	 */
-	public $attendee;
+	public $rsvp;
 
 	/**
 	 * Event constructor.
@@ -49,8 +49,8 @@ class Event {
 			return null;
 		}
 
-		$this->event    = get_post( $post_id );
-		$this->attendee = new Attendee( $post_id );
+		$this->event = get_post( $post_id );
+		$this->rsvp  = new RSVP( $post_id );
 
 		return $this->event;
 	}
@@ -153,10 +153,10 @@ class Event {
 		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
 			$venue_information['name'] = $term->name;
 			$venue                     = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
-		}
 
-		if ( 'online-event' === $term->slug ) {
-			$venue_information['is_online_event'] = true;
+			if ( 'online-event' === $term->slug ) {
+				$venue_information['is_online_event'] = true;
+			}
 		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {
@@ -635,11 +635,11 @@ class Event {
 	 * @return string
 	 */
 	public function maybe_get_online_event_link(): string {
-		if ( ! $this->attendee ) {
+		if ( ! $this->rsvp ) {
 			return '';
 		}
 
-		$user = $this->attendee->get( get_current_user_id() );
+		$user = $this->rsvp->get( get_current_user_id() );
 
 		if (
 			! isset( $user['status'] ) ||

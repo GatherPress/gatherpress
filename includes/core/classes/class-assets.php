@@ -197,8 +197,8 @@ class Assets {
 		$settings = Settings::get_instance();
 
 		return array(
-			'attendees'         => ( $event->attendee ) ? $event->attendee->attendees() : array(), // @todo cleanup
-			'current_user'      => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '', // @todo cleanup
+			'attendees'         => ( $event->rsvp ) ? $event->rsvp->attendees() : array(), // @todo cleanup
+			'current_user'      => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) ) ? $event->rsvp->get( get_current_user_id() ) : '', // @todo cleanup
 			'default_timezone'  => sanitize_text_field( wp_timezone_string() ),
 			'event_announced'   => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
 			'event_datetime'    => $event->get_datetime(),

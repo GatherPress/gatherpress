@@ -9,7 +9,7 @@
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\Attendee;
+use GatherPress\Core\RSVP;
 use GatherPress\Core\Event;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
@@ -34,13 +34,13 @@ class Test_Event extends Base {
 		$event = new Event( $post->ID );
 
 		$this->assertNull( Utility::get_hidden_property( $event, 'event' ) );
-		$this->assertNull( Utility::get_hidden_property( $event, 'attendee' ) );
+		$this->assertNull( Utility::get_hidden_property( $event, 'rsvp' ) );
 
 		$post  = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$event = new Event( $post->ID );
 
 		$this->assertInstanceOf( WP_Post::class, Utility::get_hidden_property( $event, 'event' ) );
-		$this->assertInstanceOf( Attendee::class, Utility::get_hidden_property( $event, 'attendee' ) );
+		$this->assertInstanceOf( RSVP::class, Utility::get_hidden_property( $event, 'rsvp' ) );
 	}
 
 	/**

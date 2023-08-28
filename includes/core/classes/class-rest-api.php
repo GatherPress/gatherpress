@@ -417,8 +417,8 @@ class Rest_Api {
 	 */
 	public function get_members( array $send, int $post_id ): array {
 		$member_ids    = array();
-		$attendees     = new Attendee( $post_id );
-		$all_attendees = $attendees->attendees();
+		$rsvp          = new RSVP( $post_id );
+		$all_attendees = $rsvp->attendees();
 
 		if ( ! empty( $send['all'] ) ) {
 			return get_users();
@@ -493,8 +493,8 @@ class Rest_Api {
 					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
-					'attendees'                => ( $event->attendee ) ? $event->attendee->attendees() : array(),
-					'current_user'             => ( $event->attendee && $event->attendee->get( get_current_user_id() ) ) ? $event->attendee->get( get_current_user_id() ) : '',
+					'attendees'                => ( $event->rsvp ) ? $event->rsvp->attendees() : array(),
+					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) ) ? $event->rsvp->get( get_current_user_id() ) : '',
 					'venue'                    => ( $venue_information['name'] ? $event->get_venue_information() : null ),
 				);
 			}
@@ -563,9 +563,9 @@ class Rest_Api {
 			&& is_user_member_of_blog( $user_id )
 			&& ! $event->has_event_past()
 		) {
-			$status = $event->attendee->save( $user_id, $status, $guests );
+			$status = $event->rsvp->save( $user_id, $status, $guests );
 
-			if ( in_array( $status, $event->attendee->statuses, true ) ) {
+			if ( in_array( $status, $event->rsvp->statuses, true ) ) {
 				$success = true;
 			}
 		}
@@ -575,7 +575,7 @@ class Rest_Api {
 			'success'     => (bool) $success,
 			'status'      => $status,
 			'guests'      => $guests,
-			'attendees'   => $event->attendee->attendees(),
+			'attendees'   => $event->rsvp->attendees(),
 			'online_link' => ( 'attending' === $status ) ? $online_link : '',
 		);
 
