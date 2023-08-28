@@ -1,6 +1,6 @@
 @import "../mixins";
-@import "../attendance-list/style";
-@import "../attendance-selector/style";
+@import "../rsvp-response/style";
+@import "../rsvp/style";
 
 .gp-events-list {
 
@@ -58,7 +58,7 @@
 		padding-bottom: 2rem;
 		display: flex;
 
-		.gp-attendance-list {
+		.gp-rsvp-response {
 
 			&__items {
 				display: flex;
@@ -89,7 +89,7 @@
 			}
 		}
 
-		.gp-attendance-selector {
+		.gp-rsvp {
 			margin-bottom: 0;
 		}
 	}

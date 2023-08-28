@@ -55,29 +55,29 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
-	 * Coverage for validate_attendance_status method.
+	 * Coverage for validate_rsvp_status method.
 	 *
-	 * @covers ::validate_attendance_status
+	 * @covers ::validate_rsvp_status
 	 *
 	 * @return void
 	 */
-	public function test_validate_attendance_status(): void {
+	public function test_validate_rsvp_status(): void {
 		$instance = Rest_Api::get_instance();
 
 		$this->assertTrue(
-			$instance->validate_attendance_status( 'attending' ),
+			$instance->validate_rsvp_status( 'attending' ),
 			'Failed to assert valid attendance status.'
 		);
 		$this->assertTrue(
-			$instance->validate_attendance_status( 'not_attending' ),
+			$instance->validate_rsvp_status( 'not_attending' ),
 			'Failed to assert valid attendance status.'
 		);
 		$this->assertFalse(
-			$instance->validate_attendance_status( 'attend' ),
+			$instance->validate_rsvp_status( 'attend' ),
 			'Failed to assert invalid attendance status.'
 		);
 		$this->assertFalse(
-			$instance->validate_attendance_status( 'wait_list' ),
+			$instance->validate_rsvp_status( 'wait_list' ),
 			'Failed to assert invalid attendance status.'
 		);
 	}

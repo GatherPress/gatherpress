@@ -50,7 +50,7 @@ class Event {
 		}
 
 		$this->event = get_post( $post_id );
-		$this->rsvp  = new RSVP( $post_id );
+		$this->rsvp  = new Rsvp( $post_id );
 
 		return $this->event;
 	}

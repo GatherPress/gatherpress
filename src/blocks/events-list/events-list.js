@@ -23,10 +23,10 @@ domReady(() => {
 					attrs.eventOptions ?? {
 						descriptionLimit: 55,
 						imageSize: 'default',
-						showAttendeeList: true,
+						showRsvpResponse: true,
 						showDescription: true,
 						showFeaturedImage: true,
-						showRsvpButton: true,
+						showRsvp: true,
 						showVenue: true,
 					}
 				}
