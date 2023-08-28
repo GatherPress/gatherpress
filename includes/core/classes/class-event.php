@@ -400,6 +400,7 @@ class Event {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
 
+		/* translators: %s: event link. */
 		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		return add_query_arg(
@@ -442,6 +443,7 @@ class Event {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
 
+		/* translators: %s: event link. */
 		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		return add_query_arg(
@@ -482,6 +484,7 @@ class Event {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
 
+		/* translators: %s: event link. */
 		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		$args = array(
