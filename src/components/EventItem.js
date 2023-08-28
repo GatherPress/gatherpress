@@ -26,6 +26,11 @@ const EventItem = (props) => {
 			: 'featured_image_' + eventOptions.imageSize;
 	const featuredImage = HtmlReactParser(event[size]);
 	const eventClass = `gp-events-list`;
+	let icon = 'location';
+
+	if (event.venue.is_online_event) {
+		icon = 'video-alt2';
+	}
 
 	return (
 		<div className={`${eventClass}`}>
@@ -48,10 +53,17 @@ const EventItem = (props) => {
 					</div>
 					{event.venue && eventOptions.showVenue && (
 						<div className={`${eventClass}__venue`}>
-							<span className="dashicons dashicons-location"></span>
-							<a href={event.venue.permalink}>
-								{HtmlReactParser(event.venue.name)}
-							</a>
+							<span
+								className={`dashicons dashicons-${icon}`}
+							></span>
+							{!event.venue.is_online_event && (
+								<a href={event.venue.permalink}>
+									{HtmlReactParser(event.venue.name)}
+								</a>
+							)}
+							{event.venue.is_online_event && (
+								<span>{HtmlReactParser(event.venue.name)}</span>
+							)}
 						</div>
 					)}
 					{eventOptions.showDescription && (

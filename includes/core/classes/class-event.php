@@ -139,11 +139,12 @@ class Event {
 	 */
 	public function get_venue_information(): array {
 		$venue_information = array(
-			'name'         => '',
-			'full_address' => '',
-			'phone_number' => '',
-			'website'      => '',
-			'permalink'    => '',
+			'name'            => '',
+			'full_address'    => '',
+			'phone_number'    => '',
+			'website'         => '',
+			'permalink'       => '',
+			'is_online_event' => false,
 		);
 
 		$term  = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
@@ -152,6 +153,10 @@ class Event {
 		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
 			$venue_information['name'] = $term->name;
 			$venue                     = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
+		}
+
+		if ('online-event' === $term->slug) {
+			$venue_information['is_online_event'] = true;
 		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {
