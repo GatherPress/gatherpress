@@ -153,11 +153,12 @@ class Event {
 		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
 			$venue_information['name'] = $term->name;
 			$venue                     = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
+
+			if ( 'online-event' === $term->slug ) {
+				$venue_information['is_online_event'] = true;
+			}
 		}
 
-		if ( 'online-event' === $term->slug ) {
-			$venue_information['is_online_event'] = true;
-		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {
 			$venue_meta                        = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
