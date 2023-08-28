@@ -155,7 +155,7 @@ class Event {
 			$venue                     = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
 		}
 
-		if ('online-event' === $term->slug) {
+		if ( 'online-event' === $term->slug ) {
 			$venue_information['is_online_event'] = true;
 		}
 
