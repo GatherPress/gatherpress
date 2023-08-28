@@ -28,7 +28,9 @@ const Edit = ({ isSelected }) => {
 					</FlexItem>
 				</Flex>
 			)}
-			{!isSelected && <OnlineEvent onlineEventLink={onlineEventLink} />}
+			{!isSelected && (
+				<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
+			)}
 		</div>
 	);
 };
