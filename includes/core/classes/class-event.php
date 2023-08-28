@@ -353,8 +353,6 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @todo need to add venue location for all calendar methods when feature is done.
-	 *
 	 * @return array
 	 */
 	public function get_calendar_links(): array {
@@ -396,14 +394,22 @@ class Event {
 		$time_end   = $this->get_formatted_datetime( 'His', 'end', false );
 		$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
 		$venue      = $this->get_venue_information();
+		$location   = $venue['name'];
+
+		if ( ! empty( $venue['full_address'] ) ) {
+			$location .= sprintf( ', %s', $venue['full_address'] );
+		}
+
+		/* translators: %s: event link. */
+		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		return add_query_arg(
 			array(
 				'action'   => 'TEMPLATE',
 				'text'     => sanitize_text_field( $this->event->post_title ),
 				'dates'    => sanitize_text_field( $datetime ),
-				'details'  => sanitize_text_field( $this->event->post_content ),
-				'location' => sanitize_text_field( $venue['name'] . ' (' . $venue['full_address'] . ')' ),
+				'details'  => sanitize_text_field( $description ),
+				'location' => sanitize_text_field( $location ),
 				'sprop'    => 'name:',
 			),
 			'https://www.google.com/calendar/event'
@@ -431,6 +437,14 @@ class Event {
 		$hours      = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
 		$minutes    = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
 		$venue      = $this->get_venue_information();
+		$location   = $venue['name'];
+
+		if ( ! empty( $venue['full_address'] ) ) {
+			$location .= sprintf( ', %s', $venue['full_address'] );
+		}
+
+		/* translators: %s: event link. */
+		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		return add_query_arg(
 			array(
@@ -440,8 +454,8 @@ class Event {
 				'title'  => sanitize_text_field( $this->event->post_title ),
 				'st'     => sanitize_text_field( $datetime_start ),
 				'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
-				'desc'   => sanitize_text_field( $this->event->post_content ),
-				'in_loc' => sanitize_text_field( $venue['name'] . ' (' . $venue['full_address'] . ')' ),
+				'desc'   => sanitize_text_field( $description ),
+				'in_loc' => sanitize_text_field( $location ),
 			),
 			'https://calendar.yahoo.com/'
 		);
@@ -464,6 +478,14 @@ class Event {
 		$modified_date  = strtotime( $this->event->post_modified );
 		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
 		$venue          = $this->get_venue_information();
+		$location       = $venue['name'];
+
+		if ( ! empty( $venue['full_address'] ) ) {
+			$location .= sprintf( ', %s', $venue['full_address'] );
+		}
+
+		/* translators: %s: event link. */
+		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		$args = array(
 			'BEGIN:VCALENDAR',
@@ -475,8 +497,8 @@ class Event {
 			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
 			sprintf( 'SUMMARY:%s', sanitize_text_field( $this->event->post_title ) ),
-			sprintf( 'DESCRIPTION:%s', sanitize_text_field( $this->event->post_content ) ),
-			sprintf( 'LOCATION:%s', sanitize_text_field( $venue['name'] . ' (' . $venue['full_address'] ) . ')' ),
+			sprintf( 'DESCRIPTION:%s', sanitize_text_field( $description ) ),
+			sprintf( 'LOCATION:%s', sanitize_text_field( $location ) ),
 			'UID:gatherpress_' . intval( $this->event->ID ),
 			'END:VEVENT',
 			'END:VCALENDAR',

@@ -278,7 +278,7 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_calendar_links(): void {
-		$post   = $this->mock->post(
+		$post        = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
 				'post_type'    => 'gp_event',
@@ -286,8 +286,9 @@ class Test_Event extends Base {
 				'post_date'    => '2020-05-11 00:00:00',
 			)
 		)->get();
-		$event  = new Event( $post->ID );
-		$params = array(
+		$event       = new Event( $post->ID );
+		$description = sanitize_text_field( sprintf( 'For details go to %s', get_the_permalink( $post ) ) );
+		$params      = array(
 			'datetime_start' => '2020-05-11 15:00:00',
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
@@ -298,19 +299,19 @@ class Test_Event extends Base {
 		$expects = array(
 			'google'  => array(
 				'name' => 'Google Calendar',
-				'link' => 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit Test Event&dates=20200511T150000Z/20200511T170000Z&details=Unit Test description.&location=()&sprop=name:',
+				'link' => 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit Test Event&dates=20200511T150000Z/20200511T170000Z&details=' . $description . '&location&sprop=name:',
 			),
 			'ical'    => array(
 				'name'     => 'iCal',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:Unit Test description.%0ALOCATION:()%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
 			),
 			'outlook' => array(
 				'name'     => 'Outlook',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:Unit Test description.%0ALOCATION:()%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',
-				'link' => 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit Test Event&st=20200511T150000Z&dur=0200&desc=Unit Test description.&in_loc=()',
+				'link' => 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit Test Event&st=20200511T150000Z&dur=0200&desc=' . $description . '&in_loc',
 			),
 		);
 
