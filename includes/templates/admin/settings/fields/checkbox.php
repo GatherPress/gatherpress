@@ -7,17 +7,17 @@
  * @since 1.0.0
  */
 
-if ( ! isset( $name, $option, $value, $description ) ) {
+if ( ! isset( $name, $label, $option, $value, $description ) ) {
 	return;
 }
 ?>
-<label for="<?php echo esc_attr( $option ); ?>"></label>
-<input id="<?php echo esc_attr( $option ); ?>" type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
+<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
 <input id="<?php echo esc_attr( $option ); ?>"
 	type="checkbox"
 	name="<?php echo esc_attr( $name ); ?>"
 	value="1"
 	<?php checked( 1, rest_sanitize_boolean( $value ), true ); ?> />
+<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
 
 <?php
 if ( ! empty( $description ) ) {

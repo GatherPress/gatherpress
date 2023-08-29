@@ -162,8 +162,7 @@ class Settings {
 								$option_settings['labels']['name'],
 								$option_settings['callback'],
 								Utility::prefix_key( $sub_page ),
-								$section,
-								array( 'label_for' => Utility::prefix_key( $option ) )
+								$section
 							);
 						}
 					}
@@ -218,6 +217,7 @@ class Settings {
 				'name'        => $name,
 				'option'      => Utility::prefix_key( $option ),
 				'value'       => $value,
+				'label'       => $option_settings['field']['label'] ?? '',
 				'description' => $option_settings['description'] ?? '',
 			),
 			true
@@ -409,9 +409,10 @@ class Settings {
 					'options'     => array(
 						'post_or_event_date' => array(
 							'labels' => array(
-								'name' => __( 'Show publish date as event date for events', 'gatherpress' ),
+								'name' => __( 'Publish Date', 'gatherpress' ),
 							),
 							'field'  => array(
+								'label'   => __( 'Show publish date as event date for events', 'gatherpress' ),
 								'type'    => 'checkbox',
 								'options' => array(
 									'default' => '1',
@@ -432,7 +433,7 @@ class Settings {
 								'type'    => 'autocomplete',
 								'options' => array(
 									'type'  => 'page',
-									'label' => __( 'Select Page', 'gatherpress' ),
+									'label' => __( 'Select Upcoming Events Archive Page', 'gatherpress' ),
 									'limit' => 1,
 								),
 							),
@@ -445,7 +446,7 @@ class Settings {
 								'type'    => 'autocomplete',
 								'options' => array(
 									'type'  => 'page',
-									'label' => __( 'Select Page', 'gatherpress' ),
+									'label' => __( 'Select Past Events Archive Page', 'gatherpress' ),
 									'limit' => 1,
 								),
 							),
@@ -473,7 +474,7 @@ class Settings {
 					'type'    => 'autocomplete',
 					'options' => array(
 						'type'  => 'user',
-						'label' => __( 'Select Users', 'gatherpress' ),
+						'label' => __( 'Select Organizers', 'gatherpress' ),
 					),
 				),
 			),
@@ -544,7 +545,7 @@ class Settings {
 	/**
 	 * Get list of user roles.
 	 *
-	 * @todo add to class-attendee.php
+	 * @todo add to class-rsvp.php
 	 *
 	 * @return array
 	 */
@@ -558,7 +559,7 @@ class Settings {
 	/**
 	 * Return role of the user.
 	 *
-	 * @todo add to class-attendee.php
+	 * @todo add to class-rsvp.php
 	 *
 	 * @param int $user_id User ID.
 	 *
