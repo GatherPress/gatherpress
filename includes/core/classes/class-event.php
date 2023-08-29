@@ -632,9 +632,17 @@ class Event {
 	/**
 	 * Get online event link if user is attending and event hasn't past.
 	 *
+	 * @todo clean up this method, messy and too many conditionals.
+	 *
 	 * @return string
 	 */
 	public function maybe_get_online_event_link(): string {
+		$event_link = (string) get_post_meta( $this->event->ID, '_online_event_link', true );
+
+		if ( is_admin() ) {
+			return $event_link;
+		}
+
 		if ( ! $this->rsvp ) {
 			return '';
 		}
@@ -649,7 +657,7 @@ class Event {
 			return '';
 		}
 
-		return (string) get_post_meta( $this->event->ID, '_online_event_link', true );
+		return $event_link;
 	}
 
 	/**

@@ -10,6 +10,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import { Broadcaster, Listener } from '../helpers/broadcasting';
+import { getFromGlobal } from '../helpers/globals';
 
 const OnlineEventLink = () => {
 	const { editPost, unlockPostSaving } = useDispatch('core/editor');
@@ -26,11 +27,11 @@ const OnlineEventLink = () => {
 
 		editPost({ meta });
 		setOnlineEventLink(value);
-		Broadcaster({ setOnlineEventLink: value });
+		Broadcaster({ setOnlineEventLink: value }, getFromGlobal('post_id'));
 		unlockPostSaving();
 	};
 
-	Listener({ setOnlineEventLink });
+	Listener({ setOnlineEventLink }, getFromGlobal('post_id'));
 
 	return (
 		<TextControl
