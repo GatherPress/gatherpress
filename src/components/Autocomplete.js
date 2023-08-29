@@ -14,6 +14,7 @@ import { useSelect } from '@wordpress/data';
 
 const Autocomplete = (props) => {
 	const { name, option, value, fieldOptions } = props.attrs;
+	const showHowTo = 1 !== fieldOptions.limit;
 	const [content, setContent] = useState(JSON.parse(value) ?? '[]');
 	const { contentList } = useSelect(
 		(select) => {
@@ -80,6 +81,7 @@ const Autocomplete = (props) => {
 				onChange={selectContent}
 				maxSuggestions={fieldOptions.max_suggestions || 20}
 				maxLength={fieldOptions.limit || 0}
+				__experimentalShowHowTo={showHowTo}
 			/>
 			<input
 				type="hidden"
