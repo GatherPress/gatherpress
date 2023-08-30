@@ -26,9 +26,8 @@ const VenueSelector = () => {
 	const venueTerm = useSelect((select) =>
 		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
 	);
-	const [venueSlug, setVenueSlug] = useState(
-		venueTerm?.slug.replace(/^_/, '')
-	);
+	const slug = venueTerm?.slug.replace(/^_/, '');
+	const [venueSlug, setVenueSlug] = useState('');
 	const venueValue = venueTermId + ':' + venueSlug;
 	const venuePost = useSelect((select) =>
 		select('core').getEntityRecords('postType', 'gp_venue', {
@@ -36,6 +35,14 @@ const VenueSelector = () => {
 			slug: venueSlug,
 		})
 	);
+
+	useEffect(() => {
+		if (slug) {
+			setVenueSlug(slug);
+		}
+
+		setVenue(String(venueValue) ?? '');
+	});
 
 	useEffect(() => {
 		if (venueSlug && Array.isArray(venuePost)) {
@@ -61,7 +68,6 @@ const VenueSelector = () => {
 				});
 			}
 		}
-		// console.log(venuePost?.meta);
 	}, [venueSlug, venuePost]);
 
 	// useEffect(() => {
