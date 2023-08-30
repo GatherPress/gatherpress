@@ -111,7 +111,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		<>
 			<InspectorControls>
 				<PanelBody
-					title={__('Venue Settings', 'gatherpress')}
+					title={__('Venue settings', 'gatherpress')}
 					initialOpen={true}
 				>
 					<PanelRow>

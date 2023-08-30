@@ -5,9 +5,7 @@ import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
 	Flex,
-	FlexItem,
 	FlexBlock,
-	Icon,
 	PanelBody,
 	PanelRow,
 	RadioControl,
@@ -40,12 +38,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const editPost = useDispatch('core/editor').editPost;
 
 	Listener({ setName, setFullAddress, setPhoneNumber, setWebsite });
-
-	let venueDefaultText = __('Add venue information.', 'gatherpress');
-
-	if (isEventPostType()) {
-		venueDefaultText = __('No venue selected.', 'gatherpress');
-	}
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
@@ -99,7 +91,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 					</PanelBody>
 				)}
 				<PanelBody
-					title={__('Map Settings', 'gatherpress')}
+					title={__('Map settings', 'gatherpress')}
 					initialOpen={true}
 				>
 					<PanelRow>
@@ -158,27 +150,15 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<EditCover isSelected={isSelected}>
+				<EditCover isSelected={isSelected && !isEventPostType()}>
 					<div className="gp-venue">
 						{(!isVenuePostType() || !isSelected) && (
-							<>
-								{!fullAddress && !phoneNumber && !website && (
-									<Flex justify="normal">
-										<FlexItem display="flex">
-											<Icon icon="location" />
-										</FlexItem>
-										<FlexItem>
-											<strong>{venueDefaultText}</strong>
-										</FlexItem>
-									</Flex>
-								)}
-								<VenueOrOnlineEvent
-									name={name}
-									fullAddress={fullAddress}
-									phoneNumber={phoneNumber}
-									website={website}
-								/>
-							</>
+							<VenueOrOnlineEvent
+								name={name}
+								fullAddress={fullAddress}
+								phoneNumber={phoneNumber}
+								website={website}
+							/>
 						)}
 						{isVenuePostType() && isSelected && (
 							<>
