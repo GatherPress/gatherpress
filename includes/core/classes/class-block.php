@@ -34,7 +34,7 @@ class Block {
 		'online-event',
 		'rsvp',
 		'rsvp-response',
-		'venue-information',
+		'venue',
 	);
 
 	/**

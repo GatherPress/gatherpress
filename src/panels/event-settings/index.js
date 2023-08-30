@@ -26,7 +26,6 @@ const EventSettings = () => {
 				title={__('Event settings', 'gatherpress')}
 				initialOpen={true}
 				className="gp-event-settings"
-				icon="nametag"
 			>
 				<VStack spacing={6}>
 					<DateTimePanel />

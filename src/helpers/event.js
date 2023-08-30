@@ -17,10 +17,7 @@ import { getFromGlobal } from './globals';
 import { Broadcaster } from './broadcasting';
 
 export function isEventPostType() {
-	return (
-		getFromGlobal('post_type') ===
-		select('core/editor').getCurrentPostType()
-	);
+	return 'gp_event' === select('core/editor').getCurrentPostType();
 }
 
 export function CheckCurrentPostType() {

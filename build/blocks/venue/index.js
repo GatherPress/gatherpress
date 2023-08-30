@@ -1,10 +1,10 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/blocks/event-venue/edit.js":
-/*!****************************************!*\
-  !*** ./src/blocks/event-venue/edit.js ***!
-  \****************************************/
+/***/ "./src/blocks/venue/edit.js":
+/*!**********************************!*\
+  !*** ./src/blocks/venue/edit.js ***!
+  \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -18,16 +18,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
-/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../helpers/broadcasting */ "./src/helpers/broadcasting.js");
-/* harmony import */ var _components_MapEmbed__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../components/MapEmbed */ "./src/components/MapEmbed.js");
-/* harmony import */ var _components_VenueOrOnlineEvent__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../components/VenueOrOnlineEvent */ "./src/components/VenueOrOnlineEvent.js");
-/* harmony import */ var _components_VenueSelector__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ../../components/VenueSelector */ "./src/components/VenueSelector.js");
-/* harmony import */ var _components_OnlineEventLink__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ../../components/OnlineEventLink */ "./src/components/OnlineEventLink.js");
-/* harmony import */ var _components_EditCover__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ../../components/EditCover */ "./src/components/EditCover.js");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _components_MapEmbed__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../components/MapEmbed */ "./src/components/MapEmbed.js");
+/* harmony import */ var _components_VenueOrOnlineEvent__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../components/VenueOrOnlineEvent */ "./src/components/VenueOrOnlineEvent.js");
+/* harmony import */ var _components_EditCover__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../components/EditCover */ "./src/components/EditCover.js");
 
 /**
  * WordPress dependencies.
@@ -44,94 +41,57 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
-
-
 const Edit = ({
   attributes,
-  setAttributes
+  setAttributes,
+  isSelected
 }) => {
   const {
-    mapHeight,
     mapShow,
+    mapZoomLevel,
     mapType,
-    mapZoomLevel
+    mapHeight
   } = attributes;
+  const [fullAddress, setFullAddress] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
+  const [phoneNumber, setPhoneNumber] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
+  const [website, setWebsite] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.useBlockProps)();
-  const [venueSlug, setVenueSlug] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
-  const venueTermId = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core/editor').getEditedPostAttribute('_gp_venue'));
-  const venueTerm = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId));
-  let onlineEventTerm = false;
-  if ('online-event' === venueTerm?.slug) {
-    onlineEventTerm = true;
+  const editPost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useDispatch)('core/editor').editPost;
+  let venueInformationMetaData = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => select('core/editor').getEditedPostAttribute('meta')._venue_information);
+  if (venueInformationMetaData) {
+    venueInformationMetaData = JSON.parse(venueInformationMetaData);
+  } else {
+    venueInformationMetaData = {};
   }
-  let venuePost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core').getEntityRecords('postType', 'gp_venue', {
-    per_page: 1,
-    slug: venueSlug
-  }));
-  let slug = null;
-  if (venueTerm) {
-    // Convert venue term slug to venue post type slug by removing leading underscore.
-    slug = venueTerm.slug.replace(/^_/, '');
-  }
-  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    setVenueSlug(slug);
-  }, [slug]);
-  (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_5__.Listener)({
-    setVenueSlug
-  });
-  if (!venueSlug) {
-    venuePost = null;
-  }
-  const Venue = ({
-    venue,
-    onlineEvent
-  }) => {
-    var _venue$title$rendered, _venueInformation$ful, _venueInformation$pho, _venueInformation$web;
-    let jsonString = '';
-    if (Array.isArray(venue)) {
-      var _venue$meta$_venue_in;
-      venue = venue[0];
-      jsonString = (_venue$meta$_venue_in = venue?.meta?._venue_information) !== null && _venue$meta$_venue_in !== void 0 ? _venue$meta$_venue_in : '{}';
-    }
-    let name = (_venue$title$rendered = venue?.title.rendered) !== null && _venue$title$rendered !== void 0 ? _venue$title$rendered : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('No venue selected.', 'gatherpress');
-    if (onlineEvent) {
-      var _onlineEvent$name;
-      name = (_onlineEvent$name = onlineEvent?.name) !== null && _onlineEvent$name !== void 0 ? _onlineEvent$name : name;
-    }
-    jsonString = '' !== jsonString ? jsonString : '{}';
-    const venueInformation = JSON.parse(jsonString);
-    const fullAddress = (_venueInformation$ful = venueInformation?.fullAddress) !== null && _venueInformation$ful !== void 0 ? _venueInformation$ful : '';
-    const phoneNumber = (_venueInformation$pho = venueInformation?.phoneNumber) !== null && _venueInformation$pho !== void 0 ? _venueInformation$pho : '';
-    const website = (_venueInformation$web = venueInformation?.website) !== null && _venueInformation$web !== void 0 ? _venueInformation$web : '';
-    return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "gp-venue"
-    }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(Venue, {
-      name: name,
-      fullAddress: fullAddress,
-      phoneNumber: phoneNumber,
-      website: website,
-      onlineEvent: onlineEvent
-    }), fullAddress && mapShow && !onlineEvent && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_MapEmbed__WEBPACK_IMPORTED_MODULE_6__["default"], {
-      location: fullAddress,
-      zoom: mapZoomLevel,
-      type: mapType,
-      height: mapHeight
-    }));
+  const onUpdate = (key, value) => {
+    const payload = JSON.stringify({
+      ...venueInformationMetaData,
+      [key]: value
+    });
+    const meta = {
+      _venue_information: payload
+    };
+    editPost({
+      meta
+    });
   };
-  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.InspectorControls, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.PanelBody, {
-    title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Venue Settings', 'gatherpress'),
-    initialOpen: true
-  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_VenueSelector__WEBPACK_IMPORTED_MODULE_8__["default"], null)), onlineEventTerm && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_OnlineEventLink__WEBPACK_IMPORTED_MODULE_9__["default"], null))), !onlineEventTerm && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.PanelBody, {
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    setFullAddress(venueInformationMetaData.fullAddress);
+    setPhoneNumber(venueInformationMetaData.phoneNumber);
+    setWebsite(venueInformationMetaData.website);
+  }, [venueInformationMetaData.fullAddress, venueInformationMetaData.phoneNumber, venueInformationMetaData.website]);
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.InspectorControls, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
     title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Map Settings', 'gatherpress'),
     initialOpen: true
-  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.PanelRow, null, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Show map on Event', 'gatherpress')), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.ToggleControl, {
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelRow, null, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Show map on Venue', 'gatherpress')), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.ToggleControl, {
     label: mapShow ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Display the map', 'gatherpress') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Hide the map', 'gatherpress'),
     checked: mapShow,
-    onChange: value => setAttributes({
-      mapShow: value
-    })
-  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.RangeControl, {
+    onChange: value => {
+      setAttributes({
+        mapShow: value
+      });
+    }
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.RangeControl, {
     label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Zoom Level', 'gatherpress'),
     beforeIcon: "search",
     value: mapZoomLevel,
@@ -140,7 +100,7 @@ const Edit = ({
     }),
     min: 1,
     max: 22
-  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.RadioControl, {
+  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.RadioControl, {
     label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Map Type', 'gatherpress'),
     selected: mapType,
     options: [{
@@ -155,37 +115,72 @@ const Edit = ({
         mapType: value
       });
     }
-  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.RangeControl, {
+  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.RangeControl, {
     label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Map Height', 'gatherpress'),
     beforeIcon: "location",
     value: mapHeight,
     onChange: height => setAttributes({
       mapHeight: height
     }),
-    min: 50,
+    min: 100,
     max: 1000
-  }))), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", blockProps, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_EditCover__WEBPACK_IMPORTED_MODULE_10__["default"], null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(Venue, {
-    venue: venuePost,
-    onlineEvent: onlineEventTerm
-  }))));
+  }))), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", blockProps, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_EditCover__WEBPACK_IMPORTED_MODULE_7__["default"], {
+    isSelected: isSelected
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+    className: "gp-venue"
+  }, !isSelected && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, !fullAddress && !phoneNumber && !website && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Flex, {
+    justify: "normal"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.FlexItem, {
+    display: "flex"
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Icon, {
+    icon: "location"
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.FlexItem, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("em", null, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Add venue information.', 'gatherpress')))), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_VenueOrOnlineEvent__WEBPACK_IMPORTED_MODULE_6__["default"], {
+    fullAddress: fullAddress,
+    phoneNumber: phoneNumber,
+    website: website
+  })), isSelected && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Flex, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.FlexBlock, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.TextControl, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Full Address', 'gatherpress'),
+    value: fullAddress,
+    onChange: value => {
+      onUpdate('fullAddress', value);
+    }
+  }))), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Flex, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.FlexBlock, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.TextControl, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Phone Number', 'gatherpress'),
+    value: phoneNumber,
+    onChange: value => {
+      onUpdate('phoneNumber', value);
+    }
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.FlexBlock, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.TextControl, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Website', 'gatherpress'),
+    value: website,
+    type: "url",
+    onChange: value => {
+      onUpdate('website', value);
+    }
+  })))), mapShow && fullAddress && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_MapEmbed__WEBPACK_IMPORTED_MODULE_5__["default"], {
+    location: fullAddress,
+    zoom: mapZoomLevel,
+    type: mapType,
+    height: mapHeight
+  })))));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Edit);
 
 /***/ }),
 
-/***/ "./src/blocks/event-venue/index.js":
-/*!*****************************************!*\
-  !*** ./src/blocks/event-venue/index.js ***!
-  \*****************************************/
+/***/ "./src/blocks/venue/index.js":
+/*!***********************************!*\
+  !*** ./src/blocks/venue/index.js ***!
+  \***********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
 /* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./edit */ "./src/blocks/event-venue/edit.js");
-/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./block.json */ "./src/blocks/event-venue/block.json");
-/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/event-venue/style.scss");
+/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./edit */ "./src/blocks/venue/edit.js");
+/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./block.json */ "./src/blocks/venue/block.json");
+/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/venue/style.scss");
 /**
  * WordPress dependencies.
  */
@@ -199,7 +194,7 @@ __webpack_require__.r(__webpack_exports__);
 
 (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_2__, {
   edit: _edit__WEBPACK_IMPORTED_MODULE_1__["default"],
-  save: () => null
+  save: () => {}
 });
 
 /***/ }),
@@ -345,77 +340,6 @@ const OnlineEvent = ({
 
 /***/ }),
 
-/***/ "./src/components/OnlineEventLink.js":
-/*!*******************************************!*\
-  !*** ./src/components/OnlineEventLink.js ***!
-  \*******************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
-/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
-/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../helpers/globals */ "./src/helpers/globals.js");
-
-/**
- * WordPress dependencies.
- */
-
-
-
-
-
-/**
- * Internal dependencies.
- */
-
-
-const OnlineEventLink = () => {
-  const {
-    editPost,
-    unlockPostSaving
-  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useDispatch)('core/editor');
-  const onlineEventLinkMetaData = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core/editor').getEditedPostAttribute('meta')._online_event_link);
-  const [onlineEventLink, setOnlineEventLink] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(onlineEventLinkMetaData);
-  const updateEventLink = value => {
-    const meta = {
-      _online_event_link: value
-    };
-    editPost({
-      meta
-    });
-    setOnlineEventLink(value);
-    (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Broadcaster)({
-      setOnlineEventLink: value
-    }, (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_5__.getFromGlobal)('post_id'));
-    unlockPostSaving();
-  };
-  (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Listener)({
-    setOnlineEventLink
-  }, (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_5__.getFromGlobal)('post_id'));
-  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.TextControl, {
-    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Online event link', 'gatherpress'),
-    value: onlineEventLink,
-    placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Add link to online event', 'gatherpress'),
-    onChange: value => {
-      updateEventLink(value);
-    }
-  });
-};
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (OnlineEventLink);
-
-/***/ }),
-
 /***/ "./src/components/Venue.js":
 /*!*********************************!*\
   !*** ./src/components/Venue.js ***!
@@ -533,99 +457,6 @@ const VenueOrOnlineEvent = ({
   }));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (VenueOrOnlineEvent);
-
-/***/ }),
-
-/***/ "./src/components/VenueSelector.js":
-/*!*****************************************!*\
-  !*** ./src/components/VenueSelector.js ***!
-  \*****************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
-/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
-
-/**
- * WordPress dependencies.
- */
-
-
-
-
-
-/**
- * Internal dependencies.
- */
-
-const VenueSelector = () => {
-  const [venue, setVenue] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)('');
-  const editPost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useDispatch)('core/editor').editPost;
-  const {
-    unlockPostSaving
-  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useDispatch)('core/editor');
-  const venueTermId = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core/editor').getEditedPostAttribute('_gp_venue'));
-  const venueTerm = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId));
-  const venueSlug = venueTerm?.slug.replace(/^_/, '');
-  const venueValue = venueTermId + ':' + venueSlug;
-  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
-    var _String;
-    setVenue((_String = String(venueValue)) !== null && _String !== void 0 ? _String : '');
-    (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Broadcaster)({
-      setVenueSlug: venueSlug
-    });
-  }, [venueValue, venueSlug]);
-  let venues = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => {
-    return select('core').getEntityRecords('taxonomy', '_gp_venue', {
-      per_page: -1,
-      context: 'view'
-    });
-  }, []);
-  if (venues) {
-    venues = venues.map(item => ({
-      label: item.name,
-      value: item.id + ':' + item.slug.replace(/^_/, '')
-    }));
-    venues.unshift({
-      value: ':',
-      label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Choose a venue', 'gatherpress')
-    });
-  } else {
-    venues = [];
-  }
-  const updateTerm = value => {
-    setVenue(value);
-    value = value.split(':');
-    const term = '' !== value[0] ? [value[0]] : [];
-    editPost({
-      _gp_venue: term
-    });
-    (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Broadcaster)({
-      setVenueSlug: value[1]
-    });
-    unlockPostSaving();
-  };
-  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelRow, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
-    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Venue Selector', 'gatherpress'),
-    value: venue,
-    onChange: value => {
-      updateTerm(value);
-    },
-    options: venues
-  }));
-};
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (VenueSelector);
 
 /***/ }),
 
@@ -2595,10 +2426,10 @@ function trim(str) {
 
 /***/ }),
 
-/***/ "./src/blocks/event-venue/style.scss":
-/*!*******************************************!*\
-  !*** ./src/blocks/event-venue/style.scss ***!
-  \*******************************************/
+/***/ "./src/blocks/venue/style.scss":
+/*!*************************************!*\
+  !*** ./src/blocks/venue/style.scss ***!
+  \*************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -3679,14 +3510,14 @@ var Text = _index_js__WEBPACK_IMPORTED_MODULE_0__.Text;
 
 /***/ }),
 
-/***/ "./src/blocks/event-venue/block.json":
-/*!*******************************************!*\
-  !*** ./src/blocks/event-venue/block.json ***!
-  \*******************************************/
+/***/ "./src/blocks/venue/block.json":
+/*!*************************************!*\
+  !*** ./src/blocks/venue/block.json ***!
+  \*************************************/
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/event-venue","version":"1.0.0","title":"Event Venue","category":"gatherpress","icon":"location","example":{},"description":"The block used for displaying the event\'s venue.","attributes":{"mapShow":{"type":"boolean","default":true},"mapZoomLevel":{"type":"number","default":10},"mapType":{"type":"string","default":"m"},"mapHeight":{"type":"number","default":300}},"supports":{"align":["wide"],"html":true},"textdomain":"gatherpress","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./event-venue.js","render":"file:./render.php"}');
+module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/venue","version":"1.0.0","title":"Venue","category":"gatherpress","icon":"location","example":{},"description":"The venue block.","attributes":{"mapShow":{"type":"boolean","default":true},"mapAlign":{"type":"string","default":""},"mapZoomLevel":{"type":"number","default":10},"mapType":{"type":"string","default":"m"},"mapHeight":{"type":"number","default":300}},"supports":{"align":["wide"],"html":false,"multiple":false},"textdomain":"gatherpress","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./venue.js","render":"file:./render.php"}');
 
 /***/ })
 
@@ -3800,8 +3631,8 @@ module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			"blocks/event-venue/index": 0,
-/******/ 			"blocks/event-venue/style-index": 0
+/******/ 			"blocks/venue/index": 0,
+/******/ 			"blocks/venue/style-index": 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -3851,7 +3682,7 @@ module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/event-venue/style-index"], () => (__webpack_require__("./src/blocks/event-venue/index.js")))
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/venue/style-index"], () => (__webpack_require__("./src/blocks/venue/index.js")))
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

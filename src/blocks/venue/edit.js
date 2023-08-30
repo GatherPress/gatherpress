@@ -16,26 +16,20 @@ import {
 	ToggleControl,
 } from '@wordpress/components';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import MapEmbed from '../../components/MapEmbed';
-import VenueInformation from '../../components/VenueInformation';
+import VenueOrOnlineEvent from '../../components/VenueOrOnlineEvent';
 import EditCover from '../../components/EditCover';
 
 const Edit = ({ attributes, setAttributes, isSelected }) => {
-	const {
-		mapShow,
-		fullAddress,
-		phoneNumber,
-		website,
-		mapZoomLevel,
-		mapType,
-		mapHeight,
-	} = attributes;
-
+	const { mapShow, mapZoomLevel, mapType, mapHeight } = attributes;
+	const [fullAddress, setFullAddress] = useState('');
+	const [phoneNumber, setPhoneNumber] = useState('');
+	const [website, setWebsite] = useState('');
 	const blockProps = useBlockProps();
 	const editPost = useDispatch('core/editor').editPost;
 
@@ -58,18 +52,14 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		});
 		const meta = { _venue_information: payload };
 
-		setAttributes({ [key]: value });
 		editPost({ meta });
 	};
 
 	useEffect(() => {
-		setAttributes({
-			fullAddress: venueInformationMetaData.fullAddress,
-			phoneNumber: venueInformationMetaData.phoneNumber ?? '',
-			website: venueInformationMetaData.website ?? '',
-		});
+		setFullAddress(venueInformationMetaData.fullAddress);
+		setPhoneNumber(venueInformationMetaData.phoneNumber);
+		setWebsite(venueInformationMetaData.website);
 	}, [
-		setAttributes,
 		venueInformationMetaData.fullAddress,
 		venueInformationMetaData.phoneNumber,
 		venueInformationMetaData.website,
@@ -157,7 +147,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 										</FlexItem>
 									</Flex>
 								)}
-								<VenueInformation
+								<VenueOrOnlineEvent
 									fullAddress={fullAddress}
 									phoneNumber={phoneNumber}
 									website={website}

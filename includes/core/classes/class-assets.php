@@ -263,15 +263,12 @@ class Assets {
 
 		switch ( get_post_type() ) {
 			case Event::POST_TYPE:
-				$blocks = array(
-					'gatherpress/venue-information',
-				);
+				$blocks;
 				break;
 			case Venue::POST_TYPE:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
-					'gatherpress/event-venue',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
 					'gatherpress/rsvp-response',
@@ -281,11 +278,10 @@ class Assets {
 				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
-					'gatherpress/event-venue',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
 					'gatherpress/rsvp-response',
-					'gatherpress/venue-information',
+					'gatherpress/venue',
 				);
 		}
 

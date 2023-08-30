@@ -18,7 +18,7 @@ import {
  */
 import { Listener } from '../../helpers/broadcasting';
 import MapEmbed from '../../components/MapEmbed';
-import VenueInformation from '../../components/VenueInformation';
+import VenueOrOnlineEvent from '../../components/VenueOrOnlineEvent';
 import VenueSelector from '../../components/VenueSelector';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import EditCover from '../../components/EditCover';
@@ -34,10 +34,10 @@ const Edit = ({ attributes, setAttributes }) => {
 		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
 	);
 
-	let onlineEventTerm = null;
+	let onlineEventTerm = false;
 
 	if ('online-event' === venueTerm?.slug) {
-		onlineEventTerm = venueTerm;
+		onlineEventTerm = true;
 	}
 
 	let venuePost = useSelect((select) =>
@@ -88,7 +88,7 @@ const Edit = ({ attributes, setAttributes }) => {
 
 		return (
 			<div className="gp-venue">
-				<VenueInformation
+				<Venue
 					name={name}
 					fullAddress={fullAddress}
 					phoneNumber={phoneNumber}

@@ -162,4 +162,41 @@ class Venue {
 		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, self::POST_TYPE );
 	}
 
+	/**
+	 * @param int    $post_id
+	 * @param string $post_type
+	 *
+	 * @return array
+	 */
+	public function get_venue_meta( int $post_id, string $post_type ): array {
+		$venue_post = null;
+		$venue_meta = array();
+
+		if ( Event::POST_TYPE === $post_type ) {
+			$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
+
+			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
+				$venue_term = $venue_terms[0];
+
+				if ( is_a( $venue_term, 'WP_Term' ) ) {
+					$venue_post = $this->get_venue_post_from_term_slug( $venue_term->slug );
+				}
+			}
+		}
+
+		if ( self::POST_TYPE === $post_type ) {
+			$venue_post = get_post( $post_id );
+		}
+
+		if ( is_a( $venue_post, 'WP_Post' ) ) {
+			$venue_meta['name'] = get_the_title( $venue_post );
+			$venue_meta = array_merge(
+				$venue_meta,
+				(array) json_decode( get_post_meta( $venue_post->ID, '_venue_information', true ) )
+			);
+		}
+
+		return $venue_meta;
+	}
+
 }

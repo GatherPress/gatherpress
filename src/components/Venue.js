@@ -1,31 +1,10 @@
-/**
- * External dependencies.
- */
+import { Flex, FlexItem, Icon } from '@wordpress/components';
 import HtmlReactParser from 'html-react-parser';
 
-/**
- * WordPress dependencies.
- */
-import { Flex, FlexItem, Icon } from '@wordpress/components';
-import OnlineEvent from './OnlineEvent';
-import { useSelect } from '@wordpress/data';
-
-const VenueInformation = ({
-	name,
-	fullAddress,
-	phoneNumber,
-	website,
-	onlineEvent = null,
-}) => {
-	const onlineEventLink = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
-				._online_event_link
-	);
-
+const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 	return (
 		<>
-			{!onlineEvent && (name || fullAddress) && (
+			{(name || fullAddress) && (
 				<Flex justify="normal" align="flex-start" gap="4">
 					<FlexItem display="flex" className="gp-venue__icon">
 						<Icon icon="location" />
@@ -44,7 +23,7 @@ const VenueInformation = ({
 					</FlexItem>
 				</Flex>
 			)}
-			{!onlineEvent && (phoneNumber || website) && (
+			{(phoneNumber || website) && (
 				<Flex justify="normal" gap="8">
 					{phoneNumber && (
 						<FlexItem>
@@ -88,11 +67,8 @@ const VenueInformation = ({
 					)}
 				</Flex>
 			)}
-			{onlineEvent && (
-				<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
-			)}
 		</>
 	);
 };
 
-export default VenueInformation;
+export default Venue;
