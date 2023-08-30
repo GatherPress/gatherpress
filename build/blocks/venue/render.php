@@ -2,8 +2,7 @@
 /**
  * Render Venue block.
  *
- * @package GatherPress
- * @subpackage Core
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
@@ -28,7 +27,10 @@ if (
 	return;
 }
 
-//$gatherpress_full_address = $attributes['fullAddress'];
+// Don't render name on venue post.
+if ( Venue::POST_TYPE === get_post_type() ) {
+	$attributes['name'] = '';
+}
 
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>

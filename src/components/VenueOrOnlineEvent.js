@@ -10,7 +10,7 @@ import OnlineEvent from './OnlineEvent';
 import Venue from './Venue';
 
 const VenueOrOnlineEvent = ({
-	name,
+	name = '',
 	fullAddress,
 	phoneNumber,
 	website,

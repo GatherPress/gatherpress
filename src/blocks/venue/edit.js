@@ -24,14 +24,28 @@ import { useEffect, useState } from '@wordpress/element';
 import MapEmbed from '../../components/MapEmbed';
 import VenueOrOnlineEvent from '../../components/VenueOrOnlineEvent';
 import EditCover from '../../components/EditCover';
+import { isEventPostType } from '../../helpers/event';
+import { isVenuePostType } from '../../helpers/venue';
+import VenueSelector from '../../components/VenueSelector';
+import OnlineEventLink from '../../components/OnlineEventLink';
+import { Listener } from '../../helpers/broadcasting';
 
 const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapShow, mapZoomLevel, mapType, mapHeight } = attributes;
+	const [name, setName] = useState('');
 	const [fullAddress, setFullAddress] = useState('');
 	const [phoneNumber, setPhoneNumber] = useState('');
 	const [website, setWebsite] = useState('');
 	const blockProps = useBlockProps();
 	const editPost = useDispatch('core/editor').editPost;
+
+	Listener({ setName, setFullAddress, setPhoneNumber, setWebsite });
+
+	let venueDefaultText = __('Add venue information.', 'gatherpress');
+
+	if (isEventPostType()) {
+		venueDefaultText = __('No venue selected.', 'gatherpress');
+	}
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
@@ -64,10 +78,26 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		venueInformationMetaData.phoneNumber,
 		venueInformationMetaData.website,
 	]);
-
+	// remove
+	const onlineEventTerm = false;
 	return (
 		<>
 			<InspectorControls>
+				{!isVenuePostType() && (
+					<PanelBody
+						title={__('Venue Settings', 'gatherpress')}
+						initialOpen={true}
+					>
+						<PanelRow>
+							<VenueSelector />
+						</PanelRow>
+						{onlineEventTerm && (
+							<PanelRow>
+								<OnlineEventLink />
+							</PanelRow>
+						)}
+					</PanelBody>
+				)}
 				<PanelBody
 					title={__('Map Settings', 'gatherpress')}
 					initialOpen={true}
@@ -130,7 +160,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			<div {...blockProps}>
 				<EditCover isSelected={isSelected}>
 					<div className="gp-venue">
-						{!isSelected && (
+						{(!isVenuePostType() || !isSelected) && (
 							<>
 								{!fullAddress && !phoneNumber && !website && (
 									<Flex justify="normal">
@@ -138,23 +168,19 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 											<Icon icon="location" />
 										</FlexItem>
 										<FlexItem>
-											<em>
-												{__(
-													'Add venue information.',
-													'gatherpress'
-												)}
-											</em>
+											<strong>{venueDefaultText}</strong>
 										</FlexItem>
 									</Flex>
 								)}
 								<VenueOrOnlineEvent
+									name={name}
 									fullAddress={fullAddress}
 									phoneNumber={phoneNumber}
 									website={website}
 								/>
 							</>
 						)}
-						{isSelected && (
+						{isVenuePostType() && isSelected && (
 							<>
 								<Flex>
 									<FlexBlock>

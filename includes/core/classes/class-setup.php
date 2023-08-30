@@ -228,6 +228,7 @@ class Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
+					array( 'gatherpress/venue' ),
 					array( 'gatherpress/rsvp' ),
 					array(
 						'core/paragraph',
@@ -236,7 +237,6 @@ class Setup {
 						),
 					),
 					array( 'gatherpress/rsvp-response' ),
-					array( 'gatherpress/event-venue' ),
 				),
 				'menu_position' => 4,
 				'supports'      => array(
@@ -299,7 +299,7 @@ class Setup {
 				),
 				'menu_icon'    => 'dashicons-location',
 				'template'     => array(
-					array( 'gatherpress/venue-information' ),
+					array( 'gatherpress/venue' ),
 				),
 				'rewrite'      => array(
 					'slug' => 'venues',

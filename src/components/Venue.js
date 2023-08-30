@@ -1,5 +1,12 @@
-import { Flex, FlexItem, Icon } from '@wordpress/components';
+/**
+ * External dependencies.
+ */
 import HtmlReactParser from 'html-react-parser';
+
+/**
+ * WordPress dependencies.
+ */
+import { Flex, FlexItem, Icon } from '@wordpress/components';
 
 const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 	return (
