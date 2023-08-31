@@ -60,7 +60,6 @@ const VenueSelector = () => {
 		const phoneNumberUpdated = venueInformation?.phoneNumber ?? '';
 		const websiteUpdated = venueInformation?.website ?? '';
 
-		setVenueSlug(slug);
 		setVenue(String(venueValue) ?? '');
 
 		setName(nameUpdated);
