@@ -1,9 +1,4 @@
 /**
- * WordPress dependencies.
- */
-import { useSelect } from '@wordpress/data';
-
-/**
  * Internal dependencies.
  */
 import OnlineEvent from './OnlineEvent';

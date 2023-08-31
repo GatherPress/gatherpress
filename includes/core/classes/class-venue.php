@@ -163,8 +163,10 @@ class Venue {
 	}
 
 	/**
-	 * @param int    $post_id
-	 * @param string $post_type
+	 * Get venue information from meta data.
+	 *
+	 * @param int    $post_id   the post ID.
+	 * @param string $post_type the post type.
 	 *
 	 * @return array
 	 */
@@ -177,7 +179,7 @@ class Venue {
 		$venue_meta['onlineEventLink']   = '';
 
 		if ( Event::POST_TYPE === $post_type ) {
-			$event = new Event( $post_id );
+			$event       = new Event( $post_id );
 			$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
 
 			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
@@ -199,7 +201,7 @@ class Venue {
 
 		if ( is_a( $venue_post, 'WP_Post' ) ) {
 			$venue_meta['name'] = get_the_title( $venue_post );
-			$venue_meta = array_merge(
+			$venue_meta         = array_merge(
 				$venue_meta,
 				(array) json_decode( get_post_meta( $venue_post->ID, '_venue_information', true ) )
 			);

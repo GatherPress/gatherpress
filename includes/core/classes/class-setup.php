@@ -477,7 +477,7 @@ class Setup {
 	public function maybe_rename_blocks(): void {
 		$posts = get_posts(
 			array(
-				'post_type'   => [ Event::POST_TYPE, Venue::POST_TYPE ],
+				'post_type'   => array( Event::POST_TYPE, Venue::POST_TYPE ),
 				'numberposts' => -1,
 				'post_status' => 'any',
 			)

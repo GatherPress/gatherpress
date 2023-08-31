@@ -60,6 +60,11 @@ const VenueSelector = () => {
 		const phoneNumberUpdated = venueInformation?.phoneNumber ?? '';
 		const websiteUpdated = venueInformation?.website ?? '';
 
+		// Will unset the venue if slug is `undefined` here.
+		if (slug) {
+			setVenueSlug(slug);
+		}
+
 		setVenue(String(venueValue) ?? '');
 
 		setName(nameUpdated);
@@ -74,7 +79,7 @@ const VenueSelector = () => {
 			setWebsite: websiteUpdated,
 			setIsOnlineEventTerm: venueSlug === 'online-event',
 		});
-	}, [venueSlug, venuePost]);
+	}, [venueSlug, venuePost, slug, venueValue]);
 
 	let venues = useSelect((select) => {
 		return select('core').getEntityRecords('taxonomy', '_gp_venue', {
