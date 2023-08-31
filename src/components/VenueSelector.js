@@ -20,6 +20,8 @@ const VenueSelector = () => {
 	const [phoneNumber, setPhoneNumber] = useState('');
 	// eslint-disable-next-line no-unused-vars
 	const [website, setWebsite] = useState('');
+	// eslint-disable-next-line no-unused-vars
+	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 
 	const [venue, setVenue] = useState('');
 	const editPost = useDispatch('core/editor').editPost;
@@ -71,6 +73,7 @@ const VenueSelector = () => {
 			setFullAddress: fullAddressUpdated,
 			setPhoneNumber: phoneNumberUpdated,
 			setWebsite: websiteUpdated,
+			setIsOnlineEventTerm: venueSlug === 'online-event',
 		});
 	}, [venueSlug, venuePost]);
 

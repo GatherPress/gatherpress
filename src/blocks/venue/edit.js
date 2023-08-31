@@ -34,10 +34,22 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const [fullAddress, setFullAddress] = useState('');
 	const [phoneNumber, setPhoneNumber] = useState('');
 	const [website, setWebsite] = useState('');
+	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
 	const editPost = useDispatch('core/editor').editPost;
+	const onlineEventLink = useSelect(
+		(select) =>
+			select('core/editor').getEditedPostAttribute('meta')
+				._online_event_link
+	);
 
-	Listener({ setName, setFullAddress, setPhoneNumber, setWebsite });
+	Listener({
+		setName,
+		setFullAddress,
+		setPhoneNumber,
+		setWebsite,
+		setIsOnlineEventTerm,
+	});
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
@@ -70,8 +82,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		venueInformationMetaData.phoneNumber,
 		venueInformationMetaData.website,
 	]);
-	// remove
-	const onlineEventTerm = false;
+
 	return (
 		<>
 			<InspectorControls>
@@ -83,7 +94,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						<PanelRow>
 							<VenueSelector />
 						</PanelRow>
-						{onlineEventTerm && (
+						{isOnlineEventTerm && (
 							<PanelRow>
 								<OnlineEventLink />
 							</PanelRow>
@@ -158,6 +169,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 								fullAddress={fullAddress}
 								phoneNumber={phoneNumber}
 								website={website}
+								isOnlineEventTerm={isOnlineEventTerm}
+								onlineEventLink={onlineEventLink}
 							/>
 						)}
 						{isVenuePostType() && isSelected && (

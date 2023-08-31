@@ -7,8 +7,8 @@ import { createRoot } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import Venue from '../../components/Venue';
 import MapEmbed from '../../components/MapEmbed';
+import VenueOrOnlineEvent from '../../components/VenueOrOnlineEvent';
 
 domReady(() => {
 	let containers = document.querySelectorAll(`[data-gp_block_name="venue"]`);
@@ -17,11 +17,13 @@ domReady(() => {
 		const attrs = JSON.parse(containers[i].dataset.gp_block_attrs);
 
 		createRoot(containers[i]).render(
-			<Venue
+			<VenueOrOnlineEvent
 				name={attrs.name ?? ''}
 				fullAddress={attrs.fullAddress ?? ''}
 				phoneNumber={attrs.phoneNumber ?? ''}
 				website={attrs.website ?? ''}
+				isOnlineEventTerm={attrs.isOnlineEventTerm ?? false}
+				onlineEventLink={attrs.onlineEventLink ?? ''}
 			/>
 		);
 	}
@@ -30,6 +32,10 @@ domReady(() => {
 
 	for (let i = 0; i < containers.length; i++) {
 		const attrs = JSON.parse(containers[i].dataset.gp_block_attrs);
+
+		if (attrs.isOnlineEventTerm) {
+			continue;
+		}
 
 		createRoot(containers[i]).render(
 			<MapEmbed

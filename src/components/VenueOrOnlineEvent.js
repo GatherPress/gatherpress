@@ -14,17 +14,12 @@ const VenueOrOnlineEvent = ({
 	fullAddress,
 	phoneNumber,
 	website,
-	onlineEvent = false,
+	isOnlineEventTerm = false,
+	onlineEventLink = '',
 }) => {
-	const onlineEventLink = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
-				._online_event_link
-	);
-
 	return (
 		<>
-			{!onlineEvent && (
+			{!isOnlineEventTerm && (
 				<Venue
 					name={name}
 					fullAddress={fullAddress}
@@ -33,7 +28,7 @@ const VenueOrOnlineEvent = ({
 				/>
 			)}
 
-			{onlineEvent && (
+			{isOnlineEventTerm && (
 				<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
 			)}
 		</>

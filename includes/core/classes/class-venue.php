@@ -170,18 +170,27 @@ class Venue {
 	 */
 	public function get_venue_meta( int $post_id, string $post_type ): array {
 		$venue_post = null;
+		$venue_slug = null;
 		$venue_meta = array();
 
+		$venue_meta['isOnlineEventTerm'] = false;
+		$venue_meta['onlineEventLink']   = '';
+
 		if ( Event::POST_TYPE === $post_type ) {
+			$event = new Event( $post_id );
 			$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
 
 			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
 				$venue_term = $venue_terms[0];
+				$venue_slug = $venue_term->slug;
 
 				if ( is_a( $venue_term, 'WP_Term' ) ) {
-					$venue_post = $this->get_venue_post_from_term_slug( $venue_term->slug );
+					$venue_post = $this->get_venue_post_from_term_slug( $venue_slug );
 				}
 			}
+
+			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );
+			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
 		}
 
 		if ( self::POST_TYPE === $post_type ) {
