@@ -14,6 +14,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
  * Internal dependencies.
  */
 import { isVenuePostType } from '../../helpers/venue';
+import VenueInformationPanel from './venue-information';
 
 const VenueSettings = () => {
 	return (
@@ -24,7 +25,9 @@ const VenueSettings = () => {
 				initialOpen={true}
 				className="gp-venue-settings"
 			>
-				<VStack spacing={6}></VStack>
+				<VStack spacing={6}>
+					<VenueInformationPanel />
+				</VStack>
 			</PluginDocumentSettingPanel>
 		)
 	);

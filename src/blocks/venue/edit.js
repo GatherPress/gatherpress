@@ -10,10 +10,9 @@ import {
 	PanelRow,
 	RadioControl,
 	RangeControl,
-	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
@@ -27,6 +26,11 @@ import { isVenuePostType } from '../../helpers/venue';
 import VenueSelector from '../../components/VenueSelector';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
+import {
+	FullAddress,
+	PhoneNumber,
+	Website,
+} from '../../components/VenueInformation';
 
 const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapShow, mapZoomLevel, mapType, mapHeight } = attributes;
@@ -36,20 +40,11 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const [website, setWebsite] = useState('');
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
-	const editPost = useDispatch('core/editor').editPost;
 	const onlineEventLink = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
 				._online_event_link
 	);
-
-	Listener({
-		setName,
-		setFullAddress,
-		setPhoneNumber,
-		setWebsite,
-		setIsOnlineEventTerm,
-	});
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
@@ -63,24 +58,31 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		venueInformationMetaData = {};
 	}
 
-	const onUpdate = (key, value) => {
-		const payload = JSON.stringify({
-			...venueInformationMetaData,
-			[key]: value,
-		});
-		const meta = { _venue_information: payload };
-
-		editPost({ meta });
-	};
+	Listener({
+		setName,
+		setFullAddress,
+		setPhoneNumber,
+		setWebsite,
+		setIsOnlineEventTerm,
+	});
 
 	useEffect(() => {
 		setFullAddress(venueInformationMetaData.fullAddress);
 		setPhoneNumber(venueInformationMetaData.phoneNumber);
 		setWebsite(venueInformationMetaData.website);
+
+		if (isVenuePostType() && !fullAddress && !phoneNumber && !website) {
+			setName(__('Add venue information.', 'gatherpress'));
+		} else {
+			setName('');
+		}
 	}, [
 		venueInformationMetaData.fullAddress,
 		venueInformationMetaData.phoneNumber,
 		venueInformationMetaData.website,
+		fullAddress,
+		phoneNumber,
+		website,
 	]);
 
 	return (
@@ -88,7 +90,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			<InspectorControls>
 				{!isVenuePostType() && (
 					<PanelBody
-						title={__('Venue Settings', 'gatherpress')}
+						title={__('Venue settings', 'gatherpress')}
 						initialOpen={true}
 					>
 						<PanelRow>
@@ -106,7 +108,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 					initialOpen={true}
 				>
 					<PanelRow>
-						{__('Show map on Venue', 'gatherpress')}
+						{__('Show map on venue', 'gatherpress')}
 					</PanelRow>
 					<PanelRow>
 						<ToggleControl
@@ -122,7 +124,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						/>
 					</PanelRow>
 					<RangeControl
-						label={__('Zoom Level', 'gatherpress')}
+						label={__('Zoom level', 'gatherpress')}
 						beforeIcon="search"
 						value={mapZoomLevel}
 						onChange={(value) =>
@@ -132,7 +134,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						max={22}
 					/>
 					<RadioControl
-						label={__('Map Type', 'gatherpress')}
+						label={__('Map type', 'gatherpress')}
 						selected={mapType}
 						options={[
 							{
@@ -149,7 +151,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						}}
 					/>
 					<RangeControl
-						label={__('Map Height', 'gatherpress')}
+						label={__('Map height', 'gatherpress')}
 						beforeIcon="location"
 						value={mapHeight}
 						onChange={(height) =>
@@ -177,40 +179,15 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							<>
 								<Flex>
 									<FlexBlock>
-										<TextControl
-											label={__(
-												'Full Address',
-												'gatherpress'
-											)}
-											value={fullAddress}
-											onChange={(value) => {
-												onUpdate('fullAddress', value);
-											}}
-										/>
+										<FullAddress />
 									</FlexBlock>
 								</Flex>
 								<Flex>
 									<FlexBlock>
-										<TextControl
-											label={__(
-												'Phone Number',
-												'gatherpress'
-											)}
-											value={phoneNumber}
-											onChange={(value) => {
-												onUpdate('phoneNumber', value);
-											}}
-										/>
+										<PhoneNumber />
 									</FlexBlock>
 									<FlexBlock>
-										<TextControl
-											label={__('Website', 'gatherpress')}
-											value={website}
-											type="url"
-											onChange={(value) => {
-												onUpdate('website', value);
-											}}
-										/>
+										<Website />
 									</FlexBlock>
 								</Flex>
 							</>
