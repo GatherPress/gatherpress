@@ -1,8 +1,8 @@
 /**
  * WordPress dependencies.
  */
-import { useBlockProps } from '@wordpress/block-editor';
-import { Flex, FlexItem } from '@wordpress/components';
+import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+import { PanelBody, PanelRow } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
 /**
@@ -21,20 +21,20 @@ const Edit = ({ isSelected }) => {
 	);
 
 	return (
-		<div {...blockProps}>
-			<EditCover isSelected={isSelected}>
-				{isSelected && (
-					<Flex justify="normal">
-						<FlexItem>
-							<OnlineEventLink />
-						</FlexItem>
-					</Flex>
-				)}
-				{!isSelected && (
+		<>
+			<InspectorControls>
+				<PanelBody>
+					<PanelRow>
+						<OnlineEventLink />
+					</PanelRow>
+				</PanelBody>
+			</InspectorControls>
+			<div {...blockProps}>
+				<EditCover isSelected={isSelected}>
 					<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
-				)}
-			</EditCover>
-		</div>
+				</EditCover>
+			</div>
+		</>
 	);
 };
 
