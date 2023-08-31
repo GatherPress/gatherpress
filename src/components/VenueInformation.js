@@ -14,7 +14,6 @@ const updateVenueMeta = (key, value, editPost, venueInformationMetaData) => {
 	});
 	const meta = { _venue_information: payload };
 
-	Broadcaster({ setFullAddress: value });
 	editPost({ meta });
 };
 
@@ -44,7 +43,7 @@ export const FullAddress = () => {
 			label={__('Full Address', 'gatherpress')}
 			value={fullAddress}
 			onChange={(value) => {
-				setFullAddress(value);
+				Broadcaster({ setFullAddress: value });
 				updateVenueMeta(
 					'fullAddress',
 					value,
@@ -82,7 +81,7 @@ export const PhoneNumber = () => {
 			label={__('Phone Number', 'gatherpress')}
 			value={phoneNumber}
 			onChange={(value) => {
-				setPhoneNumber(value);
+				Broadcaster({ setPhoneNumber: value });
 				updateVenueMeta(
 					'phoneNumber',
 					value,
@@ -121,7 +120,7 @@ export const Website = () => {
 			value={website}
 			type="url"
 			onChange={(value) => {
-				setWebsite(value);
+				Broadcaster({ setWebsite: value });
 				updateVenueMeta(
 					'website',
 					value,

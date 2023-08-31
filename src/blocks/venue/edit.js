@@ -4,8 +4,6 @@
 import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
-	Flex,
-	FlexBlock,
 	PanelBody,
 	PanelRow,
 	RadioControl,
@@ -21,16 +19,11 @@ import { useEffect, useState } from '@wordpress/element';
 import MapEmbed from '../../components/MapEmbed';
 import VenueOrOnlineEvent from '../../components/VenueOrOnlineEvent';
 import EditCover from '../../components/EditCover';
-import { isEventPostType } from '../../helpers/event';
 import { isVenuePostType } from '../../helpers/venue';
 import VenueSelector from '../../components/VenueSelector';
+import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
-import {
-	FullAddress,
-	PhoneNumber,
-	Website,
-} from '../../components/VenueInformation';
 
 const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapShow, mapZoomLevel, mapType, mapHeight } = attributes;
@@ -67,14 +60,16 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	});
 
 	useEffect(() => {
-		setFullAddress(venueInformationMetaData.fullAddress);
-		setPhoneNumber(venueInformationMetaData.phoneNumber);
-		setWebsite(venueInformationMetaData.website);
+		if (isVenuePostType()) {
+			setFullAddress(venueInformationMetaData.fullAddress);
+			setPhoneNumber(venueInformationMetaData.phoneNumber);
+			setWebsite(venueInformationMetaData.website);
 
-		if (isVenuePostType() && !fullAddress && !phoneNumber && !website) {
-			setName(__('Add venue information.', 'gatherpress'));
-		} else {
-			setName('');
+			if (!fullAddress && !phoneNumber && !website) {
+				setName(__('Add venue information.', 'gatherpress'));
+			} else {
+				setName('');
+			}
 		}
 	}, [
 		venueInformationMetaData.fullAddress,
@@ -88,21 +83,20 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	return (
 		<>
 			<InspectorControls>
-				{!isVenuePostType() && (
-					<PanelBody
-						title={__('Venue settings', 'gatherpress')}
-						initialOpen={true}
-					>
+				<PanelBody
+					title={__('Venue settings', 'gatherpress')}
+					initialOpen={true}
+				>
+					<PanelRow>
+						{!isVenuePostType() && <VenueSelector />}
+						{isVenuePostType() && <VenueInformation />}
+					</PanelRow>
+					{isOnlineEventTerm && (
 						<PanelRow>
-							<VenueSelector />
+							<OnlineEventLink />
 						</PanelRow>
-						{isOnlineEventTerm && (
-							<PanelRow>
-								<OnlineEventLink />
-							</PanelRow>
-						)}
-					</PanelBody>
-				)}
+					)}
+				</PanelBody>
 				<PanelBody
 					title={__('Map settings', 'gatherpress')}
 					initialOpen={true}
@@ -163,35 +157,16 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<EditCover isSelected={isSelected && !isEventPostType()}>
+				<EditCover isSelected={isSelected}>
 					<div className="gp-venue">
-						{(!isVenuePostType() || !isSelected) && (
-							<VenueOrOnlineEvent
-								name={name}
-								fullAddress={fullAddress}
-								phoneNumber={phoneNumber}
-								website={website}
-								isOnlineEventTerm={isOnlineEventTerm}
-								onlineEventLink={onlineEventLink}
-							/>
-						)}
-						{isVenuePostType() && isSelected && (
-							<>
-								<Flex>
-									<FlexBlock>
-										<FullAddress />
-									</FlexBlock>
-								</Flex>
-								<Flex>
-									<FlexBlock>
-										<PhoneNumber />
-									</FlexBlock>
-									<FlexBlock>
-										<Website />
-									</FlexBlock>
-								</Flex>
-							</>
-						)}
+						<VenueOrOnlineEvent
+							name={name}
+							fullAddress={fullAddress}
+							phoneNumber={phoneNumber}
+							website={website}
+							isOnlineEventTerm={isOnlineEventTerm}
+							onlineEventLink={onlineEventLink}
+						/>
 						{mapShow && fullAddress && (
 							<MapEmbed
 								location={fullAddress}

@@ -60,7 +60,15 @@ class Venue {
 	 * @return void
 	 */
 	public function add_venue_term( int $post_id, WP_Post $post, bool $update ): void {
-		if ( ! $update ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		if (
+			! $update &&
+			! empty( $post->post_name ) &&
+			'publish' === $post->post_status
+		) {
 			$term_slug = $this->get_venue_term_slug( $post->post_name );
 			$title     = html_entity_decode( get_the_title( $post_id ) );
 			$term      = term_exists( $term_slug, self::TAXONOMY );
