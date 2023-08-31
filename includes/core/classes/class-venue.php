@@ -99,6 +99,10 @@ class Venue {
 			return;
 		}
 
+		if ( 'publish' !== $post_after->post_status ) {
+			return;
+		}
+
 		if (
 			$post_before->post_name !== $post_after->post_name ||
 			$post_before->post_title !== $post_after->post_title
