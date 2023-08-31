@@ -99,11 +99,10 @@ class Test_Assets extends Base {
 				array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
-					'gatherpress/event-venue',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
 					'gatherpress/rsvp-response',
-					'gatherpress/venue-information',
+					'gatherpress/venue',
 				),
 			),
 			array(
@@ -111,25 +110,21 @@ class Test_Assets extends Base {
 				array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
-					'gatherpress/event-venue',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
 					'gatherpress/rsvp-response',
-					'gatherpress/venue-information',
+					'gatherpress/venue',
 				),
 			),
 			array(
 				'gp_event',
-				array(
-					'gatherpress/venue-information',
-				),
+				array(),
 			),
 			array(
 				'gp_venue',
 				array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
-					'gatherpress/event-venue',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
 					'gatherpress/rsvp-response',

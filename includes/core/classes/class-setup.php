@@ -228,6 +228,7 @@ class Setup {
 				'template'      => array(
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
+					array( 'gatherpress/venue' ),
 					array( 'gatherpress/rsvp' ),
 					array(
 						'core/paragraph',
@@ -236,7 +237,6 @@ class Setup {
 						),
 					),
 					array( 'gatherpress/rsvp-response' ),
-					array( 'gatherpress/event-venue' ),
 				),
 				'menu_position' => 4,
 				'supports'      => array(
@@ -299,7 +299,7 @@ class Setup {
 				),
 				'menu_icon'    => 'dashicons-location',
 				'template'     => array(
-					array( 'gatherpress/venue-information' ),
+					array( 'gatherpress/venue' ),
 				),
 				'rewrite'      => array(
 					'slug' => 'venues',
@@ -475,29 +475,41 @@ class Setup {
 	 * @return void
 	 */
 	public function maybe_rename_blocks(): void {
-		$events = get_posts(
+		$posts = get_posts(
 			array(
-				'post_type'   => Event::POST_TYPE,
+				'post_type'   => array( Event::POST_TYPE, Venue::POST_TYPE ),
 				'numberposts' => -1,
 				'post_status' => 'any',
 			)
 		);
 
-		if ( $events ) {
-			foreach ( $events as $event ) {
-				$event->post_content = str_replace(
+		if ( $posts ) {
+			foreach ( $posts as $post ) {
+				$post->post_content = str_replace(
 					'wp:gatherpress/attendance-selector',
 					'wp:gatherpress/rsvp',
-					$event->post_content
+					$post->post_content
 				);
 
-				$event->post_content = str_replace(
+				$post->post_content = str_replace(
 					'wp:gatherpress/attendance-list',
 					'wp:gatherpress/rsvp-response',
-					$event->post_content
+					$post->post_content
 				);
 
-				wp_update_post( $event );
+				$post->post_content = str_replace(
+					'wp:gatherpress/event-venue',
+					'wp:gatherpress/venue',
+					$post->post_content
+				);
+
+				$post->post_content = str_replace(
+					'wp:gatherpress/venue-information',
+					'wp:gatherpress/venue',
+					$post->post_content
+				);
+
+				wp_update_post( $post );
 			}
 		}
 	}

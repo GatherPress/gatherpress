@@ -60,7 +60,15 @@ class Venue {
 	 * @return void
 	 */
 	public function add_venue_term( int $post_id, WP_Post $post, bool $update ): void {
-		if ( ! $update ) {
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		if (
+			! $update &&
+			! empty( $post->post_name ) &&
+			'publish' === $post->post_status
+		) {
 			$term_slug = $this->get_venue_term_slug( $post->post_name );
 			$title     = html_entity_decode( get_the_title( $post_id ) );
 			$term      = term_exists( $term_slug, self::TAXONOMY );
@@ -88,6 +96,10 @@ class Venue {
 	 */
 	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ): void {
 		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
+			return;
+		}
+
+		if ( 'publish' !== $post_after->post_status ) {
 			return;
 		}
 
@@ -160,6 +172,54 @@ class Venue {
 	 */
 	public function get_venue_post_from_term_slug( string $slug ): ?WP_Post {
 		return get_page_by_path( ltrim( $slug, '_' ), OBJECT, self::POST_TYPE );
+	}
+
+	/**
+	 * Get venue information from meta data.
+	 *
+	 * @param int    $post_id   the post ID.
+	 * @param string $post_type the post type.
+	 *
+	 * @return array
+	 */
+	public function get_venue_meta( int $post_id, string $post_type ): array {
+		$venue_post = null;
+		$venue_slug = null;
+		$venue_meta = array();
+
+		$venue_meta['isOnlineEventTerm'] = false;
+		$venue_meta['onlineEventLink']   = '';
+
+		if ( Event::POST_TYPE === $post_type ) {
+			$event       = new Event( $post_id );
+			$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
+
+			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
+				$venue_term = $venue_terms[0];
+				$venue_slug = $venue_term->slug;
+
+				if ( is_a( $venue_term, 'WP_Term' ) ) {
+					$venue_post = $this->get_venue_post_from_term_slug( $venue_slug );
+				}
+			}
+
+			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );
+			$venue_meta['onlineEventLink']   = $event->maybe_get_online_event_link();
+		}
+
+		if ( self::POST_TYPE === $post_type ) {
+			$venue_post = get_post( $post_id );
+		}
+
+		if ( is_a( $venue_post, 'WP_Post' ) ) {
+			$venue_meta['name'] = get_the_title( $venue_post );
+			$venue_meta         = array_merge(
+				$venue_meta,
+				(array) json_decode( get_post_meta( $venue_post->ID, '_venue_information', true ) )
+			);
+		}
+
+		return $venue_meta;
 	}
 
 }

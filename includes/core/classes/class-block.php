@@ -30,11 +30,10 @@ class Block {
 		'add-to-calendar',
 		'event-date',
 		'events-list',
-		'event-venue',
 		'online-event',
 		'rsvp',
 		'rsvp-response',
-		'venue-information',
+		'venue',
 	);
 
 	/**

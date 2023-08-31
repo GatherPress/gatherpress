@@ -1,96 +1,75 @@
 /**
- * External dependencies.
- */
-import HtmlReactParser from 'html-react-parser';
-
-/**
  * WordPress dependencies.
  */
-import { Flex, FlexItem, Icon } from '@wordpress/components';
-import OnlineEvent from './OnlineEvent';
-import { useSelect } from '@wordpress/data';
+import { TextControl } from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
+import { useDispatch, useSelect } from '@wordpress/data';
+import { useState } from '@wordpress/element';
+import { Broadcaster, Listener } from '../helpers/broadcasting';
 
-const VenueInformation = ({
-	name,
-	fullAddress,
-	phoneNumber,
-	website,
-	onlineEvent = null,
-}) => {
-	const onlineEventLink = useSelect(
+const VenueInformation = () => {
+	const editPost = useDispatch('core/editor').editPost;
+	const updateVenueMeta = (key, value) => {
+		const payload = JSON.stringify({
+			...venueInformationMetaData,
+			[key]: value,
+		});
+		const meta = { _venue_information: payload };
+
+		editPost({ meta });
+	};
+
+	let venueInformationMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
-				._online_event_link
+				._venue_information
 	);
+
+	if (venueInformationMetaData) {
+		venueInformationMetaData = JSON.parse(venueInformationMetaData);
+	} else {
+		venueInformationMetaData = {};
+	}
+
+	const [fullAddress, setFullAddress] = useState(
+		venueInformationMetaData.fullAddress ?? ''
+	);
+	const [phoneNumber, setPhoneNumber] = useState(
+		venueInformationMetaData.phoneNumber ?? ''
+	);
+	const [website, setWebsite] = useState(
+		venueInformationMetaData.website ?? ''
+	);
+
+	Listener({ setFullAddress, setPhoneNumber, setWebsite });
 
 	return (
 		<>
-			{!onlineEvent && (name || fullAddress) && (
-				<Flex justify="normal" align="flex-start" gap="4">
-					<FlexItem display="flex" className="gp-venue__icon">
-						<Icon icon="location" />
-					</FlexItem>
-					<FlexItem>
-						{name && (
-							<div className="gp-venue_information__name has-medium-font-size">
-								<strong>{HtmlReactParser(name)}</strong>
-							</div>
-						)}
-						{fullAddress && (
-							<div className="gp-venue__full-address">
-								{HtmlReactParser(fullAddress)}
-							</div>
-						)}
-					</FlexItem>
-				</Flex>
-			)}
-			{!onlineEvent && (phoneNumber || website) && (
-				<Flex justify="normal" gap="8">
-					{phoneNumber && (
-						<FlexItem>
-							<Flex justify="normal" gap="4">
-								<FlexItem
-									display="flex"
-									className="gp-venue__icon"
-								>
-									<Icon icon="phone" />
-								</FlexItem>
-								<FlexItem>
-									<div className="gp-venue__phone-number">
-										{phoneNumber}
-									</div>
-								</FlexItem>
-							</Flex>
-						</FlexItem>
-					)}
-					{website && (
-						<FlexItem>
-							<Flex justify="normal" gap="4">
-								<FlexItem
-									display="flex"
-									className="gp-venue__icon"
-								>
-									<Icon icon="admin-site-alt3" />
-								</FlexItem>
-								<FlexItem>
-									<div className="gp-venue__website">
-										<a
-											href={website}
-											target="_blank"
-											rel="noreferrer noopener"
-										>
-											{website}
-										</a>
-									</div>
-								</FlexItem>
-							</Flex>
-						</FlexItem>
-					)}
-				</Flex>
-			)}
-			{onlineEvent && (
-				<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
-			)}
+			<TextControl
+				label={__('Full Address', 'gatherpress')}
+				value={fullAddress}
+				onChange={(value) => {
+					Broadcaster({ setFullAddress: value });
+					updateVenueMeta('fullAddress', value);
+				}}
+			/>
+			<TextControl
+				label={__('Phone Number', 'gatherpress')}
+				value={phoneNumber}
+				onChange={(value) => {
+					Broadcaster({ setPhoneNumber: value });
+					updateVenueMeta('phoneNumber', value);
+				}}
+			/>
+			<TextControl
+				label={__('Website', 'gatherpress')}
+				value={website}
+				type="url"
+				onChange={(value) => {
+					Broadcaster({ setWebsite: value });
+					updateVenueMeta('website', value);
+				}}
+			/>
 		</>
 	);
 };

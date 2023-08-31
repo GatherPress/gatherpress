@@ -13,34 +13,30 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
 /**
  * Internal dependencies.
  */
-import { isEventPostType } from '../../helpers/event';
-import DateTimePanel from './datetime';
-import VenueSelectorPanel from './venue-selector';
-import OnlineEventLinkPanel from './online-link';
+import { isVenuePostType } from '../../helpers/venue';
+import VenueInformationPanel from './venue-information';
 
-const EventSettings = () => {
+const VenueSettings = () => {
 	return (
-		isEventPostType() && (
+		isVenuePostType() && (
 			<PluginDocumentSettingPanel
-				name="gp-event-settings"
-				title={__('Event settings', 'gatherpress')}
+				name="gp-venue-settings"
+				title={__('Venue settings', 'gatherpress')}
 				initialOpen={true}
-				className="gp-event-settings"
+				className="gp-venue-settings"
 			>
 				<VStack spacing={6}>
-					<DateTimePanel />
-					<VenueSelectorPanel />
-					<OnlineEventLinkPanel />
+					<VenueInformationPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
 		)
 	);
 };
 
-registerPlugin('gp-event-settings', {
-	render: EventSettings,
+registerPlugin('gp-venue-settings', {
+	render: VenueSettings,
 });
 
 dispatch('core/edit-post').toggleEditorPanelOpened(
-	'gp-event-settings/gp-event-settings'
+	'gp-venue-settings/gp-venue-settings'
 );
