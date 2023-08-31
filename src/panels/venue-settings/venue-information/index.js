@@ -1,15 +1,12 @@
-import {
-	FullAddress,
-	PhoneNumber,
-	Website,
-} from '../../../components/VenueInformation';
+/**
+ * Internal dependencies.
+ */
+import VenueInformation from '../../../components/VenueInformation';
 
 const VenueInformationPanel = () => {
 	return (
 		<section>
-			<FullAddress />
-			<PhoneNumber />
-			<Website />
+			<VenueInformation />
 		</section>
 	);
 };
