@@ -25,7 +25,7 @@ trait Singleton {
 	 *
 	 * @var ?self|null The instance of the class.
 	 */
-	private static ?self $instance = null;
+	private static $instance = null;
 
 	/**
 	 * Get the instance of the Singleton class.
@@ -34,7 +34,7 @@ trait Singleton {
 	 *
 	 * @return self The instance of the class.
 	 */
-	public static function get_instance() {
+	public static function get_instance(): self {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
