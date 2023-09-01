@@ -1,53 +1,61 @@
 <?php
 /**
- * Class is responsible for WP-CLI commands.
+ * Class responsible for WP-CLI commands within GatherPress.
  *
- * @package GatherPress
- * @subpackage Core
+ * This class handles WP-CLI commands specific to the GatherPress plugin,
+ * allowing developers to interact with and manage plugin functionality via the command line.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
 namespace GatherPress\Core;
 
-if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
-	exit; // @codeCoverageIgnore
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // @codeCoverageIgnore Prevent direct access.
 }
 
 use WP_CLI;
 
 /**
- * Class Cli.
+ * Class for managing WP-CLI commands in GatherPress.
+ *
+ * The Cli class extends WP-CLI and provides custom WP-CLI commands
+ * for interacting with and managing GatherPress functionality via the command line.
+ *
+ * @since 1.0.0
  */
-class CLI extends WP_CLI {
+class Cli extends WP_CLI {
 
 	/**
-	 * Make changes to an event.
+	 * Perform actions on an event.
 	 *
-	 * @param array $args       Arguments of the script.
-	 * @param array $assoc_args Associative arguments of the script.
+	 * @param array $args       Positional arguments for the script.
+	 * @param array $assoc_args Associative arguments for the script.
 	 *
 	 * @return void
 	 */
-	public function event( array $args = array(), array $assoc_args = array() ) {
+	public function event( array $args = array(), array $assoc_args = array() ): void {
 		$event_id = (int) $args[0];
 		$action   = (string) $args[1];
 
-		switch ( $action ) {
-			case 'add-attendee':
-				$this->add_attendee( $event_id, $assoc_args );
-				break;
+		if ( $action == 'add-attendee' ) {
+			$this->add_attendee( $event_id, $assoc_args );
 		}
 	}
 
 	/**
-	 * Generate credits for credits page.
+	 * Generate credits data for the credits page.
 	 *
-	 * @param array $args       Arguments of the script.
-	 * @param array $assoc_args Associative arguments of the script.
+	 * This method generates credits data for displaying on the credits page.
+	 * It retrieves user data from WordPress.org profiles based on the provided version.
+	 *
+	 * @param array $args       Positional arguments for the script.
+	 * @param array $assoc_args Associative arguments for the script.
 	 *
 	 * @return void
 	 */
-	public function generate_credits( array $args = array(), array $assoc_args = array() ) {
+	public function generate_credits( array $args = array(), array $assoc_args = array() ): void {
 		$credits = require_once GATHERPRESS_CORE_PATH . '/includes/data/credits/credits.php';
 		$version = $assoc_args['version'] ?? GATHERPRESS_VERSION;
 		$latest  = GATHERPRESS_CORE_PATH . '/includes/data/credits/latest.php';
@@ -82,12 +90,14 @@ class CLI extends WP_CLI {
 	/**
 	 * Add an attendee to an event.
 	 *
-	 * @param int   $event_id   Post ID of the event.
-	 * @param array $assoc_args Associative arguments for script.
+	 * This method adds an attendee to the specified event, identified by its Post ID.
+	 *
+	 * @param int   $event_id   The Post ID of the event.
+	 * @param array $assoc_args Associative arguments for the script, including 'user_id', 'status', and 'guests'.
 	 *
 	 * @return void
 	 */
-	private function add_attendee( int $event_id, array $assoc_args ) {
+	private function add_attendee( int $event_id, array $assoc_args ): void {
 		$event   = new Event( $event_id );
 		$user_id = $assoc_args['user_id'];
 		$status  = $assoc_args['status'];
@@ -95,7 +105,7 @@ class CLI extends WP_CLI {
 
 		$response = $event->rsvp->save( $user_id, $status, $guests );
 
-		\WP_CLI::success( $response );
+		WP_CLI::success( $response );
 	}
 
 }
