@@ -21,20 +21,6 @@ if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
 class Block {
 
 	use Singleton;
-	/**
-	 * List of React blocks.
-	 *
-	 * @var array List of block names.
-	 */
-	protected $blocks = array(
-		'add-to-calendar',
-		'event-date',
-		'events-list',
-		'online-event',
-		'rsvp',
-		'rsvp-response',
-		'venue',
-	);
 
 	/**
 	 * Block constructor.
@@ -56,7 +42,9 @@ class Block {
 	 * @return void
 	 */
 	public function register_blocks() {
-		foreach ( $this->blocks as $block ) {
+		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
+		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
+		foreach ( $blocks as $block ) {
 			register_block_type( sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block ) );
 		}
 	}

@@ -52,11 +52,14 @@ class Test_Block extends Base {
 	 */
 	public function test_register_blocks(): void {
 		$instance            = Block::get_instance();
-		$blocks              = array_map(
-			function( $value ) {
-				return sprintf( 'gatherpress/%s', $value );
-			},
-			Utility::get_hidden_property( $instance, 'blocks' )
+		$blocks              = array(
+			'gatherpress/add-to-calendar',
+			'gatherpress/event-date',
+			'gatherpress/events-list',
+			'gatherpress/online-event',
+			'gatherpress/rsvp',
+			'gatherpress/rsvp-response',
+			'gatherpress/venue',
 		);
 		$block_type_registry = WP_Block_Type_Registry::get_instance();
 
