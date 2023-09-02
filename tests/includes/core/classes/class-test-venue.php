@@ -245,35 +245,37 @@ class Test_Venue extends Base {
 	 * @return void
 	 */
 	public function test_get_venue_meta(): void {
-		$event  = $this->mock->post(
+		$event = $this->mock->post(
 			array(
 				'post_type' => Event::POST_TYPE,
 				'post_name' => 'unit-test-event',
 			)
 		)->get();
-		wp_set_post_terms( $event->ID, 'dummy-venue', Venue::TAXONOMY);
-		
+		wp_set_post_terms( $event->ID, 'dummy-venue', Venue::TAXONOMY );
+
 		$venue_meta = Venue::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
-        
-		//Generic test for an in person event
-		$this->assertFalse($venue_meta['isOnlineEventTerm']);
-		$this->assertEmpty($venue_meta['onlineEventLink']);
-		
+
+		// Generic test for an in person event.
+		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
+		$this->assertEmpty( $venue_meta['onlineEventLink'] );
+
 		$venue_title = 'Unit Test Venue';
+
 		$venue  = $this->mock->post(
 			array(
-				'post_type' => Venue::POST_TYPE,
-				'post_name' => 'unit-test-venue',
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'unit-test-venue',
 				'post_title' => $venue_title,
 			)
 		)->get();
+
 		$venue_meta = Venue::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
 
-		//Test for a venue post
+		// Test for a venue post.
 		$this->assertEquals(
-			$venue_title,
-			$venue_meta['name'],
-			'Failed to assert venue title matches the venue meta title.'
+            $venue_title,
+            $venue_meta['name'],
+            'Failed to assert venue title matches the venue meta title.'
 		);		
 	}
 
