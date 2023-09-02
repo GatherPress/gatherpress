@@ -273,10 +273,10 @@ class Test_Venue extends Base {
 
 		// Test for a venue post.
 		$this->assertEquals(
-            $venue_title,
-            $venue_meta['name'],
-            'Failed to assert venue title matches the venue meta title.'
-		);		
+			$venue_title,
+			$venue_meta['name'],
+			'Failed to assert venue title matches the venue meta title.'
+		);
 	}
 
 }
