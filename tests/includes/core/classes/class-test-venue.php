@@ -259,6 +259,22 @@ class Test_Venue extends Base {
 		$this->assertFalse($venue_meta['isOnlineEventTerm']);
 		$this->assertEmpty($venue_meta['onlineEventLink']);
 		
+		$venue_title = 'Unit Test Venue';
+		$venue  = $this->mock->post(
+			array(
+				'post_type' => Venue::POST_TYPE,
+				'post_name' => 'unit-test-venue',
+				'post_title' => $venue_title,
+			)
+		)->get();
+		$venue_meta = Venue::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
+
+		//Test for a venue post
+		$this->assertEquals(
+			$venue_title,
+			$venue_meta['name'],
+			'Failed to assert venue title matches the venue meta title.'
+		);		
 	}
 
 }
