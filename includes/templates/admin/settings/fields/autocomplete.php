@@ -14,7 +14,6 @@
  * @param array  $field_options  Additional options for customizing the field behavior.
  */
 
-
 if ( ! isset( $name, $option, $value, $description, $field_options ) ) {
 	return;
 }
