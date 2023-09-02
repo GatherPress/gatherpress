@@ -1,11 +1,19 @@
 <?php
 /**
- * Autocomplete Field template.
+ * Template for rendering an autocomplete input field.
  *
- * @package GatherPress
- * @subpackage Core
+ * This template is used to display an autocomplete input field in GatherPress settings pages.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
+ *
+ * @param string $name           The name attribute for the input field.
+ * @param string $option         The option name in which the field value is stored.
+ * @param string $value          The current value of the input field.
+ * @param string $description    The description or tooltip text for the field.
+ * @param array  $field_options  Additional options for customizing the field behavior.
  */
+
 
 if ( ! isset( $name, $option, $value, $description, $field_options ) ) {
 	return;

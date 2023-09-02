@@ -1,10 +1,14 @@
 <?php
 /**
- * Settings template.
+ * Template for GatherPress settings pages.
  *
- * @package GatherPress
- * @subpackage Core
+ * This template is used to display and manage settings for the GatherPress plugin.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
+ *
+ * @param array  $sub_pages An array of sub-pages and their corresponding values.
+ * @param string $page      The current settings page.
  */
 
 use GatherPress\Core\Settings;

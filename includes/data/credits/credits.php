@@ -2,9 +2,13 @@
 /**
  * Credits for each version of GatherPress. Used to generate latest.json.
  *
- * @package GatherPress
- * @subpackage Core
+ * This array contains credits for various versions of the GatherPress project.
+ * It includes project leads, the GatherPress team, and contributors for each version.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
+ *
+ * @return array An associative array with version numbers as keys and credit arrays as values.
  */
 
 return array(
