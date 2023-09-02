@@ -123,17 +123,24 @@ class Test_Query extends Base {
 	/**
 	 * Coverage for get_past_events method.
 	 *
-	 * @covers ::admin_order_events
+	 * @covers ::adjust_admin_event_sorting
 	 *
 	 * @return void
 	 */
-	public function test_admin_order_events(): void {
-		//This works perfectly except it won't get past is_admin(commenting out is_admin does the trick)
+	public function test_adjust_admin_event_sorting(): void {
+		/** This works perfectly except it won't get past is_admin(commenting out is_admin does the trick. 
+		 * We need to determine how to mock `is_admin` as false.
+		 **/
+		
+		//set 'orderby' admin query to 'datetime'
 		global $wp_query;
 		$wp_query->set('orderby', 'datetime');
+
+		//Run function with empty array passed as 'pieces' argument.
 		$instance = Query::get_instance();
-		$pieces = [];
-		$response = $instance->admin_order_events($pieces);
+		$response = $instance->adjust_admin_event_sorting(array());
+
+	    // Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful
 		$this->assertNotEmpty( $response, 'Array generated.' );
 	}
 
