@@ -261,7 +261,7 @@ class Test_Venue extends Base {
 
 		$venue_title = 'Unit Test Venue';
 
-		$venue  = $this->mock->post(
+		$venue = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
 				'post_name'  => 'unit-test-venue',
