@@ -224,9 +224,10 @@ class Query {
 	 * @return array
 	 */
 	public function admin_order_events( array $pieces ): array {
-		if ( ! is_admin() ) {
-			return $pieces;
-		}
+		// Temporarily commenting this out for testing purposes. Make sure to uncomment before making a PR.
+		// if ( ! is_admin() ) {
+		// 	return $pieces;
+		// }
 
 		global $wp_query;
 

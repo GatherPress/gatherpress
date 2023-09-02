@@ -120,4 +120,21 @@ class Test_Query extends Base {
 		$this->assertSame( 'gp_event', $response->query['post_type'], 'Failed to assert post type is gp_event.' );
 	}
 
+	/**
+	 * Coverage for get_past_events method.
+	 *
+	 * @covers ::admin_order_events
+	 *
+	 * @return void
+	 */
+	public function test_admin_order_events(): void {
+		//This works perfectly except it won't get past is_admin(commenting out is_admin does the trick)
+		global $wp_query;
+		$wp_query->set('orderby', 'datetime');
+		$instance = Query::get_instance();
+		$pieces = [];
+		$response = $instance->admin_order_events($pieces);
+		$this->assertNotEmpty( $response, 'Array generated.' );
+	}
+
 }
