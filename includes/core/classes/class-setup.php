@@ -45,7 +45,7 @@ class Setup {
 		// BuddyPress::get_instance();
 		// Email::get_instance();
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			WP_CLI::add_command( 'gatherpress', CLI::class );
+			WP_CLI::add_command( 'gatherpress', Cli::class );
 		}
 	}
 

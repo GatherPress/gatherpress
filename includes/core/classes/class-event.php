@@ -1,22 +1,30 @@
 <?php
 /**
- * Class is responsible for instances of events.
+ * Class responsible for representing and managing event instances.
  *
- * @package GatherPress
- * @subpackage Core
+ * The Event class is responsible for creating and managing instances of events within the GatherPress plugin.
+ * It provides methods for working with event data, such as retrieving event details and managing RSVPs.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
 namespace GatherPress\Core;
 
 use DateTimeZone;
+use Exception;
+use WP_Post;
 
-if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
-	exit; // @codeCoverageIgnore
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // @codeCoverageIgnore Prevent direct access.
 }
 
 /**
  * Class Event.
+ *
+ * Represents individual events within the GatherPress plugin and provides event-related functionality.
+ *
+ * @since 1.0.0
  */
 class Event {
 
@@ -28,7 +36,7 @@ class Event {
 	/**
 	 * Event post object.
 	 *
-	 * @var array|\WP_Post|null
+	 * @var array|WP_Post|null
 	 */
 	protected $event = null;
 
@@ -40,7 +48,11 @@ class Event {
 	public $rsvp;
 
 	/**
-	 * Event constructor.
+	 * Class constructor.
+	 *
+	 * @since 1.0.0
+	 *
+	 * This method initializes the object and sets up necessary hooks.
 	 *
 	 * @param int $post_id An event post ID.
 	 */
@@ -56,11 +68,14 @@ class Event {
 	}
 
 	/**
-	 * Get display DateTime.
+	 * Retrieve the formatted display date and time for the event.
+	 *
+	 * Returns a human-readable representation of the event's start and end date/time,
+	 * taking into account whether they fall on the same date or different dates.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string
+	 * @return string The formatted display date and time or an em dash if not available.
 	 */
 	public function get_display_datetime(): string {
 		if ( $this->is_same_date() ) {
@@ -79,11 +94,14 @@ class Event {
 	}
 
 	/**
-	 * Check if start DateTime and end DateTime is same date.
+	 * Check if the start DateTime and end DateTime fall on the same date.
+	 *
+	 * This method compares the date portion of the start and end DateTime objects to determine
+	 * if they represent the same date.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return bool
+	 * @return bool True if the start and end DateTime are on the same date, false otherwise.
 	 */
 	public function is_same_date(): bool {
 		$datetime_start = $this->get_datetime_start( 'Y-m-d' );
@@ -101,11 +119,14 @@ class Event {
 	}
 
 	/**
-	 * Check if event is in the past.
+	 * Check if the event has already occurred (in the past).
+	 *
+	 * This method compares the end datetime of the event with the current time
+	 * to determine if the event has already taken place.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return bool
+	 * @return bool True if the event is in the past, false otherwise.
 	 */
 	public function has_event_past(): bool {
 		$data    = $this->get_datetime();
@@ -120,80 +141,58 @@ class Event {
 	}
 
 	/**
-	 * Get datetime start.
+	 * Get the formatted start datetime of the event.
+	 *
+	 * This method retrieves and formats the start datetime of the event using the
+	 * specified PHP date format.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $format  PHP date format.
+	 * @param string $format Optional. PHP date format. Default is 'D, M j, Y, g:i a T'.
 	 *
-	 * @return string
+	 * @return string The formatted start datetime of the event.
 	 */
 	public function get_datetime_start( string $format = 'D, M j, Y, g:i a T' ): string {
 		return $this->get_formatted_datetime( $format, 'start' );
 	}
 
 	/**
-	 * Get venue information from event.
+	 * Get the end date and time of the event.
 	 *
-	 * @return array
-	 */
-	public function get_venue_information(): array {
-		$venue_information = array(
-			'name'            => '',
-			'full_address'    => '',
-			'phone_number'    => '',
-			'website'         => '',
-			'permalink'       => '',
-			'is_online_event' => false,
-		);
-
-		$term  = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
-		$venue = null;
-
-		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
-			$venue_information['name'] = $term->name;
-			$venue                     = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
-
-			if ( 'online-event' === $term->slug ) {
-				$venue_information['is_online_event'] = true;
-			}
-		}
-
-		if ( is_a( $venue, 'WP_Post' ) ) {
-			$venue_meta                        = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
-			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$venue_information['website']      = $venue_meta->website ?? '';
-			$venue_information['permalink']    = get_permalink( $venue->ID ) ?? '';
-		}
-
-		return $venue_information;
-	}
-
-	/**
-	 * Get datetime end.
+	 * This method retrieves the end date and time of the event and formats it according to the specified PHP date format.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $format  PHP date format.
+	 * @param string $format  Optional. The PHP date format in which to return the end date and time.
+	 *                       Default is 'D, F j, g:ia T'.
 	 *
-	 * @return string
+	 * @return string The formatted end date and time of the event.
 	 */
 	public function get_datetime_end( string $format = 'D, F j, g:ia T' ): string {
 		return $this->get_formatted_datetime( $format, 'end' );
 	}
 
 	/**
-	 * Format datetime for display.
+	 * Format a datetime value for display.
 	 *
-	 * @param string  $format  PHP date format.
-	 * @param string  $which   The datetime field in event table.
-	 * @param boolean $local   Whether to format date in local time or GMT.
+	 * This method takes a datetime value from the event table, formats it according to the specified PHP date format,
+	 * and allows you to choose between displaying the date in local time or GMT.
 	 *
-	 * @return string
 	 * @since 1.0.0
+	 *
+	 * @param string $format Optional. The PHP date format in which to format the datetime. Default is 'D, F j, g:ia T'.
+	 * @param string $which  Optional. The datetime field in the event table to format ('start' or 'end'). Default is 'start'.
+	 * @param bool   $local  Optional. Whether to format the date in local time (true) or GMT (false). Default is true.
+	 *
+	 * @return string The formatted datetime value.
+	 *
+	 * @throws Exception If an error occurs during datetime formatting.
 	 */
-	protected function get_formatted_datetime( string $format = 'D, F j, g:ia T', string $which = 'start', bool $local = true ): string {
+	protected function get_formatted_datetime(
+		string $format = 'D, F j, g:ia T',
+		string $which = 'start',
+		bool $local = true
+	): string {
 		$dt             = $this->get_datetime();
 		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = static::maybe_convert_offset( $dt['timezone'] );
@@ -218,11 +217,16 @@ class Event {
 	}
 
 	/**
-	 * Maybe convert the UTC offset to format that can be passed to DateTimeZone.
+	 * Convert a UTC offset to a format compatible with DateTimeZone.
 	 *
-	 * @param string $timezone The time zone.
+	 * This method takes a UTC offset in the form of "+HH:mm" or "-HH:mm" and converts it to a format
+	 * that can be used with the DateTimeZone constructor.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @param string $timezone The UTC offset to convert, e.g., "+05:30" or "-08:00".
+	 *
+	 * @return string The converted timezone format, e.g., "+0530" or "-0800".
 	 */
 	public static function maybe_convert_offset( string $timezone ): string {
 		// Regex: https://regex101.com/r/wxhjIu/1.
@@ -242,12 +246,19 @@ class Event {
 	}
 
 	/**
-	 * Lists all timezones and UTC offsets.
+	 * Get a list of all timezones and UTC offsets.
 	 *
-	 * @return array
+	 * This method returns an array containing all available timezones along with standard UTC offsets.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array of timezone identifiers and UTC offsets.
 	 */
 	public static function list_identifiers(): array {
-		$identifiers  = timezone_identifiers_list();
+		// Get a list of all available timezone identifiers.
+		$identifiers = timezone_identifiers_list();
+
+		// Define an array of standard UTC offsets.
 		$offset_range = array(
 			'-12:00',
 			'-11:30',
@@ -306,15 +317,25 @@ class Event {
 			'+14:00',
 		);
 
+		// Merge the timezone identifiers and UTC offsets into a single array.
 		return array_merge( $identifiers, $offset_range );
 	}
 
 	/**
-	 * Get the datetime from custom table.
+	 * Retrieve event date and time from the custom table.
+	 *
+	 * This method retrieves the event date, start and end times, as well as the timezone information
+	 * from the custom database table for the event. If the event data is not found in the cache, it
+	 * will fetch it from the database and store it in the cache for future use.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array
+	 * @return array An associative array containing the event date, start and end times, and timezone:
+	 *     - 'datetime_start'     (string) The event start date and time.
+	 *     - 'datetime_start_gmt' (string) The event start date and time in GMT.
+	 *     - 'datetime_end'       (string) The event end date and time.
+	 *     - 'datetime_end_gmt'   (string) The event end date and time in GMT.
+	 *     - 'timezone'           (string) The timezone of the event.
 	 */
 	public function get_datetime(): array {
 		global $wpdb;
@@ -349,11 +370,93 @@ class Event {
 	}
 
 	/**
-	 * Get all supported add to calendar links for event.
+	 * Convert a given date to GMT time zone.
+	 *
+	 * This method takes a date and a specified time zone and converts the date to the equivalent
+	 * date and time in the GMT (UTC) time zone. It ensures that the date remains in the correct
+	 * format.
+	 *
+	 * @param string       $date     The date to be converted.
+	 * @param DateTimeZone $timezone The time zone to use for date conversion.
+	 *
+	 * @return string The converted date in GMT (UTC) time zone in 'Y-m-d H:i:s' format.
+	 */
+	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
+		$format   = 'Y-m-d H:i:s';
+		$datetime = date_create( $date, $timezone );
+
+		if ( false === $datetime ) {
+			return gmdate( $format, 0 );
+		}
+
+		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( $format );
+	}
+
+	/**
+	 * Get venue information associated with the event.
+	 *
+	 * This method retrieves information about the venue associated with the event,
+	 * including its name, full address, phone number, website, permalink, and whether it's an online event.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array
+	 * @return array An array containing venue information:
+	 *               - 'name' (string): The name of the venue.
+	 *               - 'full_address' (string): The full address of the venue.
+	 *               - 'phone_number' (string): The phone number of the venue.
+	 *               - 'website' (string): The website URL of the venue.
+	 *               - 'permalink' (string): The permalink (URL) of the venue.
+	 *               - 'is_online_event' (bool): Indicates whether the event is an online event (true/false).
+	 */
+	public function get_venue_information(): array {
+		$venue_information = array(
+			'name'            => '',
+			'full_address'    => '',
+			'phone_number'    => '',
+			'website'         => '',
+			'permalink'       => '',
+			'is_online_event' => false,
+		);
+
+		$term  = current( (array) get_the_terms( $this->event, Venue::TAXONOMY ) );
+		$venue = null;
+
+		if ( ! empty( $term ) && is_a( $term, 'WP_Term' ) ) {
+			$venue_information['name'] = $term->name;
+			$venue                     = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
+
+			if ( 'online-event' === $term->slug ) {
+				$venue_information['is_online_event'] = true;
+			}
+		}
+
+		if ( is_a( $venue, 'WP_Post' ) ) {
+			$venue_meta                        = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
+			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_information['website']      = $venue_meta->website ?? '';
+			$venue_information['permalink']    = get_permalink( $venue->ID ) ?? '';
+		}
+
+		return $venue_information;
+	}
+
+	/**
+	 * Retrieve all supported add to calendar links for the event.
+	 *
+	 * This method generates and returns an array of supported add to calendar links for the event,
+	 * including Google Calendar, iCal, Outlook, and Yahoo Calendar. Each link is represented as an
+	 * associative array with a name and a corresponding link or download URL.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @throws Exception If an error occurs while generating the calendar links.
+	 *
+	 * @return array An associative array containing supported calendar links:
+	 *     - 'google'  (array) Google Calendar link information with 'name' and 'link' keys.
+	 *     - 'ical'    (array) iCal download link information with 'name' and 'download' keys.
+	 *     - 'outlook' (array) Outlook download link information with 'name' and 'download' keys.
+	 *     - 'yahoo'   (array) Yahoo Calendar link information with 'name' and 'link' keys.
 	 */
 	public function get_calendar_links(): array {
 		if ( ! $this->event ) {
@@ -381,11 +484,17 @@ class Event {
 	}
 
 	/**
-	 * Get add to Google calendar link for event.
+	 * Get the Google Calendar add event link for the event.
+	 *
+	 * This method generates and returns a Google Calendar link that allows users to add the event to their
+	 * Google Calendar. The link includes event details such as the event name, date, time, location, and a
+	 * link to the event's details page.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string
+	 * @throws Exception If an error occurs while generating the Google Calendar link.
+	 *
+	 * @return string The Google Calendar add event link for the event.
 	 */
 	protected function get_google_calendar_link(): string {
 		$date_start = $this->get_formatted_datetime( 'Ymd', 'start', false );
@@ -417,11 +526,16 @@ class Event {
 	}
 
 	/**
-	 * Get add to Yahoo! calendar link for event.
+	 * Get the "Add to Yahoo! Calendar" link for the event.
+	 *
+	 * This method generates and returns a URL that allows users to add the event to their Yahoo! Calendar.
+	 * The URL includes event details such as the event title, start time, duration, description, and location.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string
+	 * @throws Exception If an error occurs while generating the Yahoo! Calendar link.
+	 *
+	 * @return string The Yahoo! Calendar link for adding the event.
 	 */
 	protected function get_yahoo_calendar_link(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
@@ -462,11 +576,16 @@ class Event {
 	}
 
 	/**
-	 * Get ICS download for event.
+	 * Get the ICS download link for the event.
+	 *
+	 * This method generates and returns a URL that allows users to download the event in ICS (iCalendar) format.
+	 * The URL includes event details such as the event title, start time, end time, description, location, and more.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string
+	 * @throws Exception If an error occurs while generating the ICS download link.
+	 *
+	 * @return string The ICS download link for the event.
 	 */
 	protected function get_ics_calendar_download(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
@@ -508,17 +627,21 @@ class Event {
 	}
 
 	/**
-	 * Adjust SQL for Event queries to join on gp_event_extended table.
+	 * Adjust SQL clauses for Event queries to join on the gp_event_extended table.
 	 *
-	 * @todo remove this static method from Event class and add it to Query class.
+	 * This method adjusts various SQL clauses (e.g., join, where, orderby) for Event queries to include
+	 * the `gp_event_extended` table in the database join. It allows querying events based on different
+	 * criteria such as upcoming or past events and specifying the event order (DESC or ASC).
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array  $pieces Includes pieces of the query like join, where, orderby, et al.
-	 * @param string $type   Options are all, upcoming, or past.
-	 * @param string $order  Event order DESC or ASC.
+	 * @todo Consider moving this static method from the Event class to a more appropriate class, such as Query.
 	 *
-	 * @return array
+	 * @param array  $pieces An array of query pieces, including join, where, orderby, and more.
+	 * @param string $type   The type of events to query (options: 'all', 'upcoming', 'past').
+	 * @param string $order  The event order ('DESC' for descending or 'ASC' for ascending).
+	 *
+	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public static function adjust_sql( array $pieces, string $type = 'all', string $order = 'DESC' ): array {
 		global $wpdb;
@@ -558,20 +681,26 @@ class Event {
 	}
 
 	/**
-	 * Save the start and end datetimes for an event.
+	 * Save the start and end datetimes for an event to the custom event table.
+	 *
+	 * This method allows you to save the start and end datetimes, along with the timezone,
+	 * for an event into the custom event table. It provides a structured way to store event data
+	 * and ensures consistency in the format of datetime values.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param array $params {
-	 *     An array of arguments used to save event data to custom event table.
+	 *     An array of arguments used to save event data to the custom event table.
 	 *
-	 *     @type string  $datetime_start Start DateTime to save for event.
-	 *     @type string  $datetime_end   End DateTime to save for event.
-	 *     @type string  $timezone       Timezone of the event.
-	 *
+	 *     @type int    $post_id        The event's post ID.
+	 *     @type string $datetime_start Start DateTime in local time to save for the event.
+	 *     @type string $datetime_end   End DateTime in local time to save for the event.
+	 *     @type string $timezone       The timezone of the event.
 	 * }
 	 *
-	 * @return bool
+	 * @throws Exception If there is an issue with datetime conversion or database operations.
+	 *
+	 * @return bool True if the data was successfully saved, false otherwise.
 	 */
 	public function save_datetimes( array $params ): bool {
 		global $wpdb;
@@ -630,11 +759,16 @@ class Event {
 	}
 
 	/**
-	 * Get online event link if user is attending and event hasn't past.
+	 * Get the online event link if the user is attending and the event hasn't passed.
 	 *
-	 * @todo clean up this method, messy and too many conditionals.
+	 * This method retrieves the online event link for a user who is attending an event
+	 * and ensures that the event has not already occurred. It evaluates various conditions
+	 * to determine whether to provide the online event link. The method is marked with a @todo
+	 * to indicate that it should be refactored for improved readability and reduced conditionals.
 	 *
-	 * @return string
+	 * @todo Clean up this method as it contains multiple conditionals and needs refactoring for clarity.
+	 *
+	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
 	public function maybe_get_online_event_link(): string {
 		$event_link = (string) get_post_meta( $this->event->ID, '_online_event_link', true );
@@ -658,25 +792,6 @@ class Event {
 		}
 
 		return $event_link;
-	}
-
-	/**
-	 * Convert the date to GMT.
-	 *
-	 * @param string       $date     The date to be converted.
-	 * @param DateTimeZone $timezone Time zone to use for date conversion.
-	 *
-	 * @return string
-	 */
-	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
-		$format   = 'Y-m-d H:i:s';
-		$datetime = date_create( $date, $timezone );
-
-		if ( false === $datetime ) {
-			return gmdate( $format, 0 );
-		}
-
-		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( $format );
 	}
 
 }

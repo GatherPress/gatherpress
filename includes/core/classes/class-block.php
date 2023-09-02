@@ -1,9 +1,10 @@
 <?php
 /**
- * Class is responsible for all block related functionality.
+ * Main class for managing custom blocks in GatherPress.
  *
- * @package GatherPress
- * @subpackage Core
+ * This class handles the registration and management of custom blocks used in the GatherPress plugin.
+ *
+ * @package GatherPress/Core
  * @since 1.0.0
  */
 
@@ -11,37 +12,52 @@ namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
 
-if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
-	exit; // @codeCoverageIgnore
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // @codeCoverageIgnore Prevent direct access.
 }
 
 /**
  * Class Block.
+ *
+ * Core class for handling blocks in GatherPress.
+ *
+ * @since 1.0.0
  */
 class Block {
 
 	use Singleton;
 
 	/**
-	 * Block constructor.
+	 * Class constructor.
+	 *
+	 * This method initializes the object and sets up necessary hooks.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
 	}
 
 	/**
-	 * Setup hooks.
+	 * Set up hooks for various purposes.
+	 *
+	 * This method adds hooks for different purposes as needed.
+	 *
+	 * @since 1.0.0
 	 */
-	protected function setup_hooks() {
+	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_blocks' ) );
 	}
 
 	/**
-	 * Register blocks.
+	 * Register custom blocks.
 	 *
+	 * This method scans a directory for custom block definitions and registers them.
+	 *
+	 * @since 1.0.0
 	 * @return void
 	 */
-	public function register_blocks() {
+	public function register_blocks(): void {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
 		foreach ( $blocks as $block ) {

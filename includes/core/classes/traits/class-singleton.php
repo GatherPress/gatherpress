@@ -1,36 +1,44 @@
 <?php
 /**
- * Trait is responsible for setting a class as a singleton.
+ * The Singleton trait defines a method for ensuring a class has only one instance.
  *
- * @package GatherPress
- * @subpackage Core
+ * This trait is responsible for implementing the Singleton design pattern in classes
+ * that need to have a single instance throughout the application.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
 namespace GatherPress\Core\Traits;
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+	exit; // @codeCoverageIgnore Prevent direct access.
 }
 
 /**
- * Trait Singleton.
+ * Singleton Trait.
+ *
+ * A reusable trait for implementing the singleton design pattern in PHP classes.
+ *
+ * @since 1.0.0
  */
 trait Singleton {
 
 	/**
-	 * Instance of class.
+	 * The single instance of the class.
 	 *
-	 * @var null
+	 * @var ?self|null The instance of the class.
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get the instance of the Singleton class.
 	 *
-	 * @return object
+	 * If an instance does not exist, it creates one; otherwise, it returns the existing instance.
+	 *
+	 * @return self The instance of the class.
 	 */
-	public static function get_instance() {
+	public static function get_instance(): self {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
