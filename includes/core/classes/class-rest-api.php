@@ -1,41 +1,60 @@
 <?php
 /**
- * Class is responsible for registering REST API endpoints.
+ * Handles the registration of REST API endpoints.
  *
- * @package GatherPress
- * @subpackage Core
+ * This file contains the Rest_Api class, which is responsible for registering and managing
+ * various REST API endpoints within the GatherPress plugin.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
 namespace GatherPress\Core;
 
+use Exception;
 use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 
-if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
-	exit; // @codeCoverageIgnore
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // @codeCoverageIgnore Prevent direct access.
 }
 
 /**
  * Class Rest_Api.
+ *
+ * The Rest_Api class is responsible for registering and managing various REST API endpoints
+ * used by the GatherPress plugin. It provides methods for defining routes, handling requests,
+ * and delivering responses via the WordPress REST API infrastructure.
+ *
+ * @since 1.0.0
  */
 class Rest_Api {
 
 	use Singleton;
 
 	/**
-	 * Query constructor.
+	 * Class constructor.
+	 *
+	 * This method initializes the object and sets up necessary hooks.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
 	}
 
 	/**
-	 * Setup hooks.
+	 * Set up hooks for various purposes.
+	 *
+	 * This method adds hooks for different purposes as needed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
-	protected function setup_hooks() {
+	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 		add_filter( 'rest_send_nocache_headers', array( $this, 'nocache_headers_for_endpoint' ) );
@@ -43,12 +62,16 @@ class Rest_Api {
 	}
 
 	/**
-	 * REST API endpoints for GatherPress events.
+	 * Registers REST API endpoints for GatherPress events.
 	 *
-	 * @todo needs some current user can check.
+	 * Registers various REST API endpoints for interacting with GatherPress events.
+	 * The registered routes include endpoints for event creation, retrieval, updating, and deletion.
+	 *
+	 * @todo Implement access control to restrict certain operations to authorized users.
+	 *
+	 * @return void
 	 */
-	public function register_endpoints() {
-
+	public function register_endpoints(): void {
 		// All event routes.
 		$routes = $this->get_event_routes();
 
@@ -62,11 +85,17 @@ class Rest_Api {
 	}
 
 	/**
-	 * Prevent caching nonce for some endpoints for non-logged in visitors.
+	 * Prevents caching of nonce for specified REST API endpoints for non-logged-in visitors.
 	 *
-	 * @param bool $rest_send_nocache_headers Boolean value, if true will not cache nonce.
+	 * This method checks if the requested REST API endpoint is in a list of endpoints that should
+	 * not cache the nonce. If the endpoint matches, it sets the `rest_send_nocache_headers` flag to true,
+	 * preventing caching of the nonce for non-logged-in visitors.
 	 *
-	 * @return bool
+	 * @since 1.0.0
+	 *
+	 * @param bool $rest_send_nocache_headers A boolean value indicating whether to prevent caching of the nonce.
+	 *
+	 * @return bool The modified value of $rest_send_nocache_headers after processing.
 	 */
 	public function nocache_headers_for_endpoint( bool $rest_send_nocache_headers ): bool {
 		global $wp;
@@ -85,9 +114,15 @@ class Rest_Api {
 	/**
 	 * Get the event routes.
 	 *
-	 * @return array[]
+	 * Retrieves an array of REST API routes for GatherPress events.
+	 *
+	 * @todo Refactor each route into small protected methods to improve readability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array[] An array of route definitions for GatherPress events.
 	 */
-	protected function get_event_routes() {
+	protected function get_event_routes(): array {
 		return array(
 			array(
 				'route' => 'datetime',
@@ -217,11 +252,15 @@ class Rest_Api {
 	}
 
 	/**
-	 * Validate rsvp status.
+	 * Validate RSVP status.
 	 *
-	 * @param string $param An rsvp status.
+	 * Validates whether a given parameter is a valid RSVP status.
 	 *
-	 * @return bool
+	 * @param string $param An RSVP status to validate.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
 	 */
 	public function validate_rsvp_status( $param ): bool {
 		return ( 'attending' === $param || 'not_attending' === $param );
@@ -230,9 +269,13 @@ class Rest_Api {
 	/**
 	 * Validate Event Post ID.
 	 *
+	 * Validates whether a given parameter is a valid Event Post ID.
+	 *
 	 * @param int|string $param A Post ID to validate.
 	 *
-	 * @return bool
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the parameter is a valid Event Post ID, false otherwise.
 	 */
 	public function validate_event_post_id( $param ): bool {
 		return (
@@ -242,11 +285,17 @@ class Rest_Api {
 	}
 
 	/**
-	 * Validate who to send emails to.
+	 * Validate recipients for sending emails.
 	 *
-	 * @param mixed $param Array of sends.
+	 * Validates an array of email recipient options to ensure they are correctly structured.
 	 *
-	 * @return bool
+	 * @param mixed $param An array of email recipients.
+	 *
+	 * @todo Refactor this method for improved readability and simplicity.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the parameter is a valid array of email recipients, false otherwise.
 	 */
 	public function validate_send( $param ): bool {
 		if (
@@ -267,11 +316,15 @@ class Rest_Api {
 	}
 
 	/**
-	 * Validate number.
+	 * Validate a numeric value.
 	 *
-	 * @param int|string $param A Post ID to validate.
+	 * Validates whether the given parameter is a valid numeric value greater than zero.
 	 *
-	 * @return bool
+	 * @param int|string $param The value to validate.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the parameter is a valid numeric value greater than zero, false otherwise.
 	 */
 	public function validate_number( $param ): bool {
 		return (
@@ -281,46 +334,65 @@ class Rest_Api {
 	}
 
 	/**
-	 * Validate event list type.
+	 * Validate an event list type.
 	 *
-	 * @param string $param event list type.
+	 * Validates whether the given event list type parameter is valid (either 'upcoming' or 'past').
 	 *
-	 * @return bool
+	 * @param string $param The event list type to validate.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the parameter is a valid event list type, false otherwise.
 	 */
 	public function validate_event_list_type( string $param ): bool {
 		return in_array( $param, array( 'upcoming', 'past' ), true );
 	}
 
 	/**
-	 * Validate Datetime.
+	 * Validate a datetime string.
 	 *
-	 * @param string $param A Date time to validate.
+	 * Validates whether the given datetime string parameter is in the valid 'Y-m-d H:i:s' format.
 	 *
-	 * @return bool
+	 * @param string $param The datetime string to validate.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the parameter is a valid datetime string, false otherwise.
 	 */
-	public function validate_datetime( $param ): bool {
+	public function validate_datetime( string $param ): bool {
 		return (bool) \DateTime::createFromFormat( 'Y-m-d H:i:s', $param );
 	}
 
 	/**
-	 * Validate timezone.
+	 * Validate a timezone identifier.
 	 *
-	 * @param string $param A timezone to validate.
+	 * Validates whether the given timezone identifier parameter is valid.
 	 *
-	 * @return bool
+	 * @param string $param The timezone identifier to validate.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the parameter is a valid timezone identifier, false otherwise.
 	 */
-	public function validate_timezone( $param ): bool {
+	public function validate_timezone( string $param ): bool {
 		return in_array( Event::maybe_convert_offset( $param ), Event::list_identifiers(), true );
 	}
 
 	/**
-	 * Update custom event table with start and end Datetime.
+	 * Update the custom event table with start and end Datetime.
+	 *
+	 * This method is used to update the custom event table with new start and end Datetimes for a specific event.
+	 * It checks the user's capability to edit posts before making any changes. If the user doesn't have the required
+	 * capability, the method returns a response with 'success' set to false.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
 	 *
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response The response indicating the success of the operation.
+	 * @throws Exception When an exception occurs during the process.
 	 */
-	public function update_datetime( WP_REST_Request $request ) {
+	public function update_datetime( WP_REST_Request $request ): WP_REST_Response {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return new WP_REST_Response(
 				array(
@@ -344,13 +416,19 @@ class Rest_Api {
 	}
 
 	/**
-	 * Email an event to members.
+	 * Send an event email notification to members.
+	 *
+	 * This method allows sending an email notification about a specific event to members. It checks the user's capability
+	 * to edit posts before initiating the email sending process. If the user doesn't have the required capability,
+	 * the method returns a response with 'success' set to false.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
 	 *
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
 	 */
-	public function email( WP_REST_Request $request ) {
+	public function email( WP_REST_Request $request ): WP_REST_Response {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return new WP_REST_Response(
 				array(
@@ -372,10 +450,17 @@ class Rest_Api {
 	}
 
 	/**
-	 * Send emails.
+	 * Send event-related emails to selected members.
+	 *
+	 * This method is responsible for sending event-related emails to specific members. It first checks if the given
+	 * `$post_id` corresponds to an event post type, and if not, it returns early. Then, it retrieves a list of members
+	 * to send the email to and constructs the email subject, body, and headers. Finally, it sends the email to each
+	 * selected member.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param int    $post_id Event Post ID.
-	 * @param array  $send    Members to send to.
+	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
 	 *
 	 * @return void
@@ -408,12 +493,19 @@ class Rest_Api {
 	}
 
 	/**
-	 * Get the members to send an email to about the event.
+	 * Get the list of members to send event-related emails to.
 	 *
-	 * @param array $send    Who to send emails to.
-	 * @param int   $post_id Event Post ID.
+	 * This method retrieves the list of members to whom event-related emails should be sent based on the given `$send`
+	 * parameter and the specified event `$post_id`. It checks the `$send` array for specific email recipient categories,
+	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a list of corresponding member IDs.
+	 * If no matching categories are found, an empty array is returned.
 	 *
-	 * @return array
+	 * @since 1.0.0
+	 *
+	 * @param array $send    An array specifying who to send emails to.
+	 * @param int   $post_id The Event Post ID.
+	 *
+	 * @return array An array containing the member data of recipients.
 	 */
 	public function get_members( array $send, int $post_id ): array {
 		$member_ids    = array();
@@ -446,13 +538,20 @@ class Rest_Api {
 	}
 
 	/**
-	 * Returns events list.
+	 * Retrieve a list of events based on specified criteria.
 	 *
-	 * @param WP_REST_Request $request Contains data from the request.
+	 * This method handles the retrieval of a list of events based on the parameters provided in the REST API request.
+	 * It takes the `event_list_type` to determine whether to fetch upcoming or past events, the `max_number` to
+	 * limit the number of events in the response, and optional `topics` and `venues` to filter events by specific
+	 * topic and venue slugs.
 	 *
-	 * @return WP_REST_Response
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request Contains data from the REST API request.
+	 *
+	 * @return WP_REST_Response The REST API response containing an array of event data.
 	 */
-	public function events_list( WP_REST_Request $request ) {
+	public function events_list( WP_REST_Request $request ): WP_REST_Response {
 		$params          = $request->get_params();
 		$event_list_type = $params['event_list_type'];
 		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
@@ -462,7 +561,7 @@ class Rest_Api {
 
 		if ( ! empty( $params['topics'] ) ) {
 			$topics = array_map(
-				function( $slug ) {
+				static function( $slug ): string {
 					return sanitize_key( $slug );
 				},
 				explode( ',', $params['topics'] )
@@ -471,7 +570,7 @@ class Rest_Api {
 
 		if ( ! empty( $params['venues'] ) ) {
 			$venues = array_map(
-				function( $slug ) {
+				static function( $slug ): string {
 					return sanitize_key( $slug );
 				},
 				explode( ',', $params['venues'] )
@@ -506,12 +605,17 @@ class Rest_Api {
 	}
 
 	/**
-	 * Check that max_number is 5 or less.
+	 * Ensure that the provided number does not exceed the maximum number allowed.
 	 *
-	 * @param int $number     Actual number.
-	 * @param int $max_number Maximum number.
+	 * This method checks if the provided `$number` is greater than the specified `$max_number` and
+	 * returns the lower of the two values to ensure it does not exceed the maximum limit.
 	 *
-	 * @return int
+	 * @since 1.0.0
+	 *
+	 * @param int $number     The actual number.
+	 * @param int $max_number The maximum number allowed.
+	 *
+	 * @return int The sanitized number, ensuring it does not exceed the maximum limit.
 	 */
 	protected function max_number( int $number, int $max_number ): int {
 		if ( $max_number < $number ) {
@@ -524,11 +628,17 @@ class Rest_Api {
 	/**
 	 * Update the RSVP status for a user to an event.
 	 *
+	 * This method handles the update of the RSVP status for a user to an event, including handling guest count.
+	 * It checks the user's permissions and the event's status to ensure a valid update. If the update is successful,
+	 * it returns relevant information, including the updated status, guest count, and attendees.
+	 *
+	 * @since 1.0.0
+	 *
 	 * @param WP_REST_Request $request Contains data from the request.
 	 *
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response An instance of WP_REST_Response containing the response data.
 	 */
-	public function update_rsvp( WP_REST_Request $request ) {
+	public function update_rsvp( WP_REST_Request $request ): WP_REST_Response {
 		$params          = $request->get_params();
 		$success         = false;
 		$current_user_id = get_current_user_id();
@@ -583,16 +693,24 @@ class Rest_Api {
 	}
 
 	/**
-	 * Edit data from event endpoint.
+	 * Prepare event data for the response.
 	 *
-	 * @param WP_REST_Response $response The response object.
+	 * This method prepares and enhances the event data for the response object. It retrieves additional meta information,
+	 * such as the online event link, based on specific conditions. The enhanced data is then added to the response.
 	 *
-	 * @return WP_REST_Response
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Response $response The response object containing event data.
+	 *
+	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
-	public function prepare_event_data( WP_REST_Response $response ) {
+	public function prepare_event_data( WP_REST_Response $response ): WP_REST_Response {
 		$event = new Event( $response->data['id'] );
 
-		// Only get the online event link if user is attending and event hasn't past.
+		// Retrieve the online event link only if:
+		// - The user is attending the event.
+		// - The event is in the future.
+		// - The code is not in an admin context.
 		$response->data['meta']['_online_event_link'] = $event->maybe_get_online_event_link();
 
 		return $response;

@@ -48,13 +48,13 @@ class Event {
 	public $rsvp;
 
 	/**
-	 * Class constructor.
+	 * Event constructor.
+	 *
+	 * Initializes an Event object for a specific event post.
 	 *
 	 * @since 1.0.0
 	 *
-	 * This method initializes the object and sets up necessary hooks.
-	 *
-	 * @param int $post_id An event post ID.
+	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
 		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
