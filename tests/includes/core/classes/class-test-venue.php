@@ -251,6 +251,7 @@ class Test_Venue extends Base {
 				'post_name' => 'unit-test-event',
 			)
 		)->get();
+		wp_set_post_terms( $event->ID, 'dummy-venue', Venue::TAXONOMY);
 		
 		$venue_meta = Venue::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
         
