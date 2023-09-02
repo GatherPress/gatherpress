@@ -24,6 +24,7 @@ import VenueSelector from '../../components/VenueSelector';
 import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
+import { isEventPostType } from '../../helpers/event';
 
 const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapShow, mapZoomLevel, mapType, mapHeight } = attributes;
@@ -67,6 +68,14 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 
 			if (!fullAddress && !phoneNumber && !website) {
 				setName(__('Add venue information.', 'gatherpress'));
+			} else {
+				setName('');
+			}
+		}
+
+		if (isEventPostType()) {
+			if (!fullAddress && !phoneNumber && !website) {
+				setName(__('No venue selected.', 'gatherpress'));
 			} else {
 				setName('');
 			}

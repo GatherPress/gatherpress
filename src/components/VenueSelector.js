@@ -13,7 +13,7 @@ import { Broadcaster } from '../helpers/broadcasting';
 
 const VenueSelector = () => {
 	// eslint-disable-next-line no-unused-vars
-	const [name, setName] = useState('No venue selected.');
+	const [name, setName] = useState('');
 	// eslint-disable-next-line no-unused-vars
 	const [fullAddress, setFullAddress] = useState('');
 	// eslint-disable-next-line no-unused-vars

@@ -1,75 +1,110 @@
 <?php
 /**
- * Class is responsible for all query related functionality.
+ * Manages event-related queries and filtering.
  *
- * @package GatherPress
- * @subpackage Core
+ * This class is responsible for handling all queries related to events, including retrieving
+ * upcoming and past events, applying filters, and ordering events. It also handles adjustments
+ * for event pages and admin queries.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
 namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
+use WP_Query;
 
-if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
-	exit; // @codeCoverageIgnore
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // @codeCoverageIgnore Prevent direct access.
 }
 
 /**
  * Class Query.
+ *
+ * Responsible for managing event-related queries and customizations.
+ *
+ * @since 1.0.0
  */
 class Query {
 
 	use Singleton;
 
 	/**
-	 * Query constructor.
+	 * Class constructor.
+	 *
+	 * This method initializes the object and sets up necessary hooks.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
 	}
 
 	/**
-	 * Setup hooks.
+	 * Set up hooks for various purposes.
+	 *
+	 * This method adds hooks for different purposes as needed.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function setup_hooks() {
-		add_action( 'pre_get_posts', array( $this, 'pre_get_posts' ) );
-		add_filter( 'posts_clauses', array( $this, 'admin_order_events' ) );
+		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
+		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ) );
 	}
 
 	/**
-	 * Get upcoming events.
+	 * Retrieve upcoming events.
 	 *
-	 * @param int $number Maximum number of events to display.
+	 * Retrieves a list of upcoming events with optional filtering by the maximum number to display.
 	 *
-	 * @return \WP_Query
+	 * @since 1.0.0
+	 *
+	 * @param int $number Maximum number of upcoming events to retrieve.
+	 *
+	 * @return WP_Query A WordPress query object containing the list of upcoming events.
 	 */
-	public function get_upcoming_events( int $number = 5 ): \WP_Query {
+	public function get_upcoming_events( int $number = 5 ): WP_Query {
 		return $this->get_events_list( 'upcoming', $number );
 	}
 
 	/**
-	 * Get past events.
+	 * Retrieve past events.
 	 *
-	 * @param int $number Maximum number of events to display.
+	 * Retrieves a list of past events with optional filtering by the maximum number to display.
 	 *
-	 * @return \WP_Query
+	 * @since 1.0.0
+	 *
+	 * @param int $number Maximum number of past events to retrieve.
+	 *
+	 * @return WP_Query A WordPress query object containing the list of past events.
 	 */
-	public function get_past_events( int $number = 5 ): \WP_Query {
+	public function get_past_events( int $number = 5 ): WP_Query {
 		return $this->get_events_list( 'past', $number );
 	}
 
 	/**
-	 * Query that returns a list of events.
+	 * Retrieve a list of events based on specified criteria.
 	 *
-	 * @param string $event_list_type  Type of event list: upcoming or past.
-	 * @param int    $number           Maximum number of events.
-	 * @param array  $topics           Array of topic slugs.
-	 * @param array  $venues           Array of venue slugs.
+	 * This method queries and returns a list of events based on the event list type (upcoming or past),
+	 * maximum number to display, optional topics, and venues for filtering. The results are returned as
+	 * a WordPress query object.
 	 *
-	 * @return \WP_Query
+	 * @since 1.0.0
+	 *
+	 * @param string $event_list_type Type of event list: 'upcoming' or 'past'.
+	 * @param int    $number          Maximum number of events to retrieve.
+	 * @param array  $topics          Array of topic slugs for additional filtering.
+	 * @param array  $venues          Array of venue slugs for additional filtering.
+	 *
+	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
-	public function get_events_list( string $event_list_type = '', int $number = 5, array $topics = array(), array $venues = array() ): \WP_Query {
+	public function get_events_list(
+		string $event_list_type = '',
+		int $number = 5,
+		array $topics = array(),
+		array $venues = array()
+	): WP_Query {
 		$args = array(
 			'post_type'       => Event::POST_TYPE,
 			'fields'          => 'ids',
@@ -115,15 +150,23 @@ class Query {
 
 		$args['tax_query'] = $tax_query; //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 
-		return new \WP_Query( $args );
+		return new WP_Query( $args );
 	}
 
 	/**
-	 * Set event query and order adjustments before query is made.
+	 * Set event query and order adjustments before a query is executed.
 	 *
-	 * @param \WP_Query $query An instance of \WP_Query.
+	 * This method prepares and adjusts the event query based on specified criteria before it is executed.
+	 * It primarily handles adjustments for event archive pages, such as changing the post type, ordering,
+	 * and filtering. This method is typically hooked into the 'pre_get_posts' action.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Query $query An instance of WP_Query representing the event query.
+	 *
+	 * @return void
 	 */
-	public function pre_get_posts( $query ) {
+	public function prepare_event_query_before_execution( WP_Query $query ): void {
 		$events_query = $query->get( 'gp_events_query' );
 
 		if ( ! is_admin() && $query->is_main_query() ) {
@@ -192,61 +235,69 @@ class Query {
 
 		switch ( $events_query ) {
 			case 'upcoming':
-				remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
-				add_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
+				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
 				break;
 			case 'past':
-				add_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
-				remove_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
+				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
 				break;
 			default:
-				remove_filter( 'posts_clauses', array( $this, 'order_past_events' ) );
-				remove_filter( 'posts_clauses', array( $this, 'order_upcoming_events' ) );
+				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
 		}
 	}
 
 	/**
-	 * Order events by start datetime for ones that happened in past.
+	 * Adjust the sorting criteria for upcoming events in a query.
 	 *
-	 * @param array $pieces Includes pieces of the query like join, where, orderby, et al.
+	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
+	 * for upcoming events in the query. It ensures that events are ordered by their start datetime in ascending order.
 	 *
-	 * @return array
+	 * @param array $query_pieces An array containing pieces of the SQL query.
+	 *
+	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
-	public function order_past_events( array $pieces ): array {
-		return Event::adjust_sql( $pieces, 'past' );
+	public function adjust_sorting_for_upcoming_events( array $query_pieces ): array {
+		return Event::adjust_sql( $query_pieces, 'upcoming', 'ASC' );
 	}
 
 	/**
-	 * Set sorting for Event admin.
+	 * Adjust the sorting criteria for past events in a query.
 	 *
-	 * @param array $pieces Includes pieces of the query like join, where, orderby, et al.
+	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
+	 * for past events in the query. It ensures that events are ordered by their start datetime in the desired order.
 	 *
-	 * @return array
+	 * @param array $query_pieces An array containing pieces of the SQL query.
+	 *
+	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
-	public function admin_order_events( array $pieces ): array {
-		// Temporarily commenting this out for testing purposes. Make sure to uncomment before making a PR.
-		// if ( ! is_admin() ) {
-		// 	return $pieces;
-		// }
+	public function adjust_sorting_for_past_events( array $query_pieces ): array {
+		return Event::adjust_sql( $query_pieces, 'past' );
+	}
+
+	/**
+	 * Adjust event sorting criteria for the WordPress admin panel.
+	 *
+	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
+	 * for events when viewing them in the WordPress admin panel. It specifically handles sorting by event datetime.
+	 *
+	 * @param array $query_pieces An array containing pieces of the SQL query.
+	 *
+	 * @return array The modified SQL query pieces with adjusted sorting criteria.
+	 */
+	public function adjust_admin_event_sorting( array $query_pieces ): array {
+		if ( ! is_admin() ) {
+			return $query_pieces;
+		}
 
 		global $wp_query;
 
 		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
-			$pieces = Event::adjust_sql( $pieces, 'all', $wp_query->get( 'order' ) );
+			$query_pieces = Event::adjust_sql( $query_pieces, 'all', $wp_query->get( 'order' ) );
 		}
 
-		return $pieces;
-	}
-
-	/**
-	 * Order events by start datetime for ones that are upcoming.
-	 *
-	 * @param array $pieces Includes pieces of the query like join, where, orderby, et al.
-	 *
-	 * @return array
-	 */
-	public function order_upcoming_events( array $pieces ): array {
-		return Event::adjust_sql( $pieces, 'upcoming', 'ASC' );
+		return $query_pieces;
 	}
 
 }

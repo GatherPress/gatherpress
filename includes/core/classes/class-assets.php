@@ -1,9 +1,9 @@
 <?php
 /**
- * Class is responsible for loading all static assets.
+ * Class is responsible for loading and managing static assets like stylesheets and JavaScript files,
+ * as well as localizing data as JavaScript objects on the page.
  *
- * @package GatherPress
- * @subpackage Core
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
@@ -11,49 +11,73 @@ namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
 
-if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
-	exit; // @codeCoverageIgnore
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // @codeCoverageIgnore Prevent direct access.
 }
 
 /**
  * Class Assets.
+ *
+ * This class handles the loading and management of static assets, including stylesheets and JavaScript files.
+ * Additionally, it provides a mechanism for localizing data as JavaScript objects,
+ * enabling seamless integration of server-side data with client-side scripts.
+ *
+ * @since 1.0.0
  */
 class Assets {
 
 	use Singleton;
 
 	/**
-	 * Cache data assets.
+	 * An array used to cache data assets.
+	 *
+	 * This property stores data assets in an array for efficient access and management.
 	 *
 	 * @var array
 	 */
 	protected array $asset_data = array();
 
 	/**
-	 * URL to `build` directory.
+	 * The URL to the 'build' directory.
+	 *
+	 * This property holds the URL to the 'build' directory, which is used to reference built assets
+	 * such as stylesheets and JavaScript files.
 	 *
 	 * @var string
 	 */
 	protected string $build = GATHERPRESS_CORE_URL . 'build/';
 
 	/**
-	 * Path to `build` directory.
+	 * The file system path to the 'build' directory.
+	 *
+	 * This property holds the file system path to the 'build' directory, which contains compiled assets
+	 * such as minified stylesheets and JavaScript files. It is used for referencing these assets within
+	 * the application.
 	 *
 	 * @var string
 	 */
 	protected string $path = GATHERPRESS_CORE_PATH . '/build/';
 
 	/**
-	 * Assets constructor.
+	 * Class constructor.
+	 *
+	 * This method initializes the object and sets up necessary hooks.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
 	}
 
 	/**
-	 * Setup hooks.
+	 * Set up hooks for various purposes.
+	 *
+	 * This method adds hooks for different purposes as needed.
+	 *
+	 * @since 1.0.0
+	 * @return void
 	 */
-	protected function setup_hooks() {
+	protected function setup_hooks(): void {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
@@ -64,11 +88,16 @@ class Assets {
 	}
 
 	/**
-	 * Localize the global GatherPress js object for use in the build scripts.
+	 * Localize the global GatherPress JavaScript object for use in build scripts.
 	 *
+	 * This method generates JavaScript code to create a global 'GatherPress' object containing localized data.
+	 * This object is made available for use in JavaScript build scripts, enabling seamless integration of
+	 * server-side data with client-side functionality.
+	 *
+	 * @since 1.0.0
 	 * @return void
 	 */
-	public function add_global_object() {
+	public function add_global_object(): void {
 		?>
 		<script>
 			const GatherPress = <?php echo wp_json_encode( $this->localize( get_the_ID() ?? 0 ) ); ?>
@@ -77,22 +106,31 @@ class Assets {
 	}
 
 	/**
-	 * Enqueue frontend styles and scripts.
+	 * Enqueue necessary frontend styles and scripts.
 	 *
+	 * This method is responsible for enqueuing essential frontend styles and scripts
+	 * required for the proper functioning of the plugin on the frontend.
+	 *
+	 * @since 1.0.0
 	 * @return void
 	 */
-	public function enqueue_scripts() {
+	public function enqueue_scripts(): void {
 		wp_enqueue_style( 'dashicons' );
 	}
 
 	/**
-	 * Enqueue backend styles and scripts.
+	 * Enqueue backend styles and scripts for the WordPress admin.
 	 *
-	 * @param string $hook Name of file.
+	 * This method is responsible for enqueuing backend styles and scripts necessary for the
+	 * proper functioning of the WordPress admin area. It conditionally loads assets based on
+	 * the admin page's context, such as post editing, settings pages, or general admin pages.
 	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $hook The name of the current admin page.
 	 * @return void
 	 */
-	public function admin_enqueue_scripts( $hook ) {
+	public function admin_enqueue_scripts( string $hook ): void {
 		if ( 'post-new.php' === $hook || 'post.php' === $hook ) {
 			$asset = $this->get_asset_data( 'panels' );
 
@@ -158,8 +196,12 @@ class Assets {
 	}
 
 	/**
-	 * Enqueue backend styles and scripts.
+	 * Enqueue backend styles and scripts for the WordPress block editor.
 	 *
+	 * This method is responsible for enqueuing backend styles and scripts required for the proper functioning
+	 * of the WordPress block editor (Gutenberg). It ensures that the editor has access to necessary assets.
+	 *
+	 * @since 1.0.0
 	 * @return void
 	 */
 	public function editor_enqueue_scripts(): void {
@@ -175,8 +217,12 @@ class Assets {
 	}
 
 	/**
-	 * Adds markup to event edit page to store communication modal.
+	 * Adds markup to the event edit page for storing the communication modal.
 	 *
+	 * This method inserts HTML markup on the event edit page specifically for storing the communication modal.
+	 * It is responsible for creating a designated container for the modal's content.
+	 *
+	 * @since 1.0.0
 	 * @return void
 	 */
 	public function event_communication_modal(): void {
@@ -186,11 +232,16 @@ class Assets {
 	}
 
 	/**
-	 * Localize data to JavaScript.
+	 * Localize data for JavaScript usage.
 	 *
-	 * @param int $post_id Post ID for an event.
+	 * This method prepares and localizes data for use in JavaScript scripts. It collects various event-related
+	 * information and settings, making them available in the client-side context. The localized data includes
+	 * attendee details, current user information, time zone settings, event properties, and more.
 	 *
-	 * @return array
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id The Post ID for an event.
+	 * @return array An associative array containing localized data for JavaScript.
 	 */
 	protected function localize( int $post_id ): array {
 		$event    = new Event( $post_id );
@@ -219,11 +270,15 @@ class Assets {
 	}
 
 	/**
-	 * Get the login URL.
+	 * Retrieve the login URL for the event.
 	 *
-	 * @param int $post_id Post ID of event.
+	 * This method generates and returns the URL for logging in or accessing event-specific content.
+	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
+	 * @return string The login URL for the event.
 	 */
 	public function get_login_url( int $post_id = 0 ): string {
 		$permalink = get_the_permalink( $post_id );
@@ -232,11 +287,15 @@ class Assets {
 	}
 
 	/**
-	 * Get the registration url.
+	 * Retrieve the registration URL for the event.
 	 *
-	 * @param int $post_id Post ID of event.
+	 * This method generates and returns the URL for user registration or accessing event-specific registration.
+	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
+	 * @return string The registration URL for the event, or an empty string if user registration is disabled.
 	 */
 	public function get_registration_url( int $post_id = 0 ): string {
 		$permalink = get_the_permalink( $post_id );
@@ -250,9 +309,15 @@ class Assets {
 	}
 
 	/**
-	 * List of blocks to unregistered based on post type.
+	 * Retrieve a list of blocks to unregister based on the current post type.
 	 *
-	 * @return array
+	 * This method determines which blocks should be unregistered on the current page
+	 * in the WordPress admin based on the post type. It returns an array of block names
+	 * that should be removed from the block editor for the given post type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array of block names to unregister.
 	 */
 	protected function unregister_blocks(): array {
 		$blocks = array();
@@ -289,14 +354,16 @@ class Assets {
 	}
 
 	/**
-	 * Retrieve asset data generated by build script.
+	 * Retrieve asset data generated by the build script.
 	 *
-	 * Data is cached as `require_once` only returns the file contents on the
-	 * first request, returning `true` thereafter.
+	 * This method fetches data related to a specific asset that has been generated by the build script.
+	 * The data is cached to ensure efficient retrieval, as `require_once` only loads the file contents
+	 * on the first request and returns `true` thereafter.
 	 *
-	 * @param string $asset File name of the asset.
+	 * @since 1.0.0
 	 *
-	 * @return array
+	 * @param string $asset The file name of the asset.
+	 * @return array An array containing asset-related data.
 	 */
 	protected function get_asset_data( string $asset ): array {
 		if ( empty( $this->asset_data[ $asset ] ) ) {
