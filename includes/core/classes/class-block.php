@@ -44,6 +44,8 @@ class Block {
 	 * This method adds hooks for different purposes as needed.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_blocks' ) );

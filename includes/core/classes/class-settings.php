@@ -1,9 +1,11 @@
 <?php
 /**
- * Class is responsible for managing plugin settings.
+ * Provides settings management for the GatherPress plugin.
  *
- * @package GatherPress
- * @subpackage Core
+ * This class is responsible for handling various plugin settings and options,
+ * including the administration menu, settings registration, and rendering.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
@@ -11,12 +13,17 @@ namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
 
-if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
-	exit; // @codeCoverageIgnore
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // @codeCoverageIgnore Prevent direct access.
 }
 
 /**
  * Class Settings.
+ *
+ * This class handles the management of plugin settings, including options
+ * related to event display, roles, and credits.
+ *
+ * @since 1.0.0
  */
 class Settings {
 
@@ -25,39 +32,52 @@ class Settings {
 	const PARENT_SLUG = 'edit.php?post_type=gp_event';
 
 	/**
-	 * Current page.
+	 * The current page being accessed within the settings.
 	 *
 	 * @var string
 	 */
-	protected $page = '';
+	protected string $current_page = '';
 
 	/**
-	 * Role constructor.
+	 * Constructor for the Settings class.
+	 *
+	 * Initializes the settings object, sets the current page, and sets up hooks.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
-		$this->set_page();
+		$this->set_current_page();
 		$this->setup_hooks();
 	}
 
 	/**
-	 * Helper to set the current page.
+	 * Helper method to set the current page based on the 'page' query parameter.
 	 *
-	 * phpcs:disable WordPress.Security.NonceVerification.Recommended
+	 * This method retrieves and sanitizes the 'page' query parameter from the request.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	protected function set_page() {
+	protected function set_current_page(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['page'] ) ) {
-			$this->page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
+			$this->current_page = sanitize_text_field( wp_unslash( $_GET['page'] ) );
 		}
 
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
-	 * Setup Hooks.
+	 * Set up hooks for various purposes.
+	 *
+	 * This method adds hooks for different purposes as needed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
-	protected function setup_hooks() {
+	protected function setup_hooks(): void {
 		add_action( 'admin_menu', array( $this, 'options_page' ) );
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -66,9 +86,16 @@ class Settings {
 	}
 
 	/**
-	 * Setup options page.
+	 * Setup and register submenu pages under the GatherPress settings menu.
+	 *
+	 * This method adds submenu pages for various sections of GatherPress settings,
+	 * allowing users to configure different aspects of the plugin.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
-	public function options_page() {
+	public function options_page(): void {
 		add_submenu_page(
 			self::PARENT_SLUG,
 			__( 'Settings', 'gatherpress' ),
@@ -100,9 +127,17 @@ class Settings {
 	}
 
 	/**
-	 * Remove submenu pages from Settings menu.
+	 * Remove submenu pages from the GatherPress Settings menu.
+	 *
+	 * This method removes submenu pages that were added under the GatherPress Settings menu.
+	 * It ensures that only the necessary submenu pages are displayed to users based on their
+	 * role and permissions.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
-	public function remove_sub_options() {
+	public function remove_sub_options(): void {
 		$sub_pages = $this->get_sub_pages();
 
 		foreach ( $sub_pages as $sub_page => $setting ) {
@@ -115,11 +150,17 @@ class Settings {
 	}
 
 	/**
-	 * Register settings page.
+	 * Register the settings pages and fields.
+	 *
+	 * This method is responsible for registering the main plugin settings as well as any additional
+	 * settings sections and fields for sub-pages. It sets up the necessary WordPress settings and
+	 * fields, including their callbacks, for each defined section and option.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	public function register_settings() {
+	public function register_settings(): void {
 		$sub_pages = $this->get_sub_pages();
 
 		register_setting(
@@ -172,7 +213,13 @@ class Settings {
 	}
 
 	/**
-	 * Outputs a text input field.
+	 * Outputs a text input field for a settings option.
+	 *
+	 * This method is responsible for rendering a text input field as a part of the plugin's settings page.
+	 * It takes the sub-page, section, option, and option settings as parameters and displays the input field
+	 * with the specified name, value, and description.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $sub_page        The sub page for the text field.
 	 * @param string $section         The section for the text field.
@@ -181,7 +228,7 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	public function text( string $sub_page, string $section, string $option, array $option_settings ) {
+	public function text( string $sub_page, string $section, string $option, array $option_settings ): void {
 		$name  = $this->get_name_field( $sub_page, $section, $option );
 		$value = $this->get_value( $sub_page, $section, $option );
 
@@ -198,7 +245,13 @@ class Settings {
 	}
 
 	/**
-	 * Outputs a checkbox input field.
+	 * Outputs a checkbox input field for a settings option.
+	 *
+	 * This method is responsible for rendering a checkbox input field as a part of the plugin's settings page.
+	 * It takes the sub-page, section, option, and option settings as parameters and displays the checkbox input field
+	 * with the specified name, value, label, and description.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param string $sub_page        The sub page for the checkbox field.
 	 * @param string $section         The section for the checkbox field.
@@ -207,7 +260,7 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	public function checkbox( string $sub_page, string $section, string $option, array $option_settings ) {
+	public function checkbox( string $sub_page, string $section, string $option, array $option_settings ): void {
 		$name  = $this->get_name_field( $sub_page, $section, $option );
 		$value = $this->get_value( $sub_page, $section, $option );
 
@@ -225,16 +278,22 @@ class Settings {
 	}
 
 	/**
-	 * Outputs a dynamic select field for a type of content.
+	 * Outputs a dynamic select field for a type of content in the settings page.
 	 *
-	 * @param string $sub_page        The sub page for the text field.
-	 * @param string $section         The section for the text field.
-	 * @param string $option          The option for the text field.
+	 * This method is responsible for rendering a dynamic select input field on the plugin's settings page.
+	 * It takes the sub-page, section, option, and option settings as parameters and displays the select input field
+	 * with the specified name, value, description, and field options.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $sub_page        The sub page for the select field.
+	 * @param string $section         The section for the select field.
+	 * @param string $option          The option for the select field.
 	 * @param array  $option_settings The option settings.
 	 *
 	 * @return void
 	 */
-	public function autocomplete( string $sub_page, string $section, string $option, array $option_settings ) {
+	public function autocomplete( string $sub_page, string $section, string $option, array $option_settings ): void {
 		$name  = $this->get_name_field( $sub_page, $section, $option );
 		$value = $this->get_value( $sub_page, $section, $option );
 
@@ -252,16 +311,22 @@ class Settings {
 	}
 
 	/**
-	 * Outputs credits to people set in latest.json.
+	 * Outputs credits to people set in latest.json on the settings page.
 	 *
-	 * @param string $sub_page        The sub page for the text field.
-	 * @param string $section         The section for the text field.
-	 * @param string $option          The option for the text field.
+	 * This method is responsible for displaying credits to individuals or contributors
+	 * that are set in the latest.json file on the plugin's settings page. It takes the
+	 * sub-page, section, option, and option settings as parameters and renders the credits.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $sub_page        The sub page for displaying credits.
+	 * @param string $section         The section for displaying credits.
+	 * @param string $option          The option for displaying credits.
 	 * @param array  $option_settings The option settings.
 	 *
 	 * @return void
 	 */
-	public function credits( string $sub_page, string $section, string $option, array $option_settings ) {
+	public function credits( string $sub_page, string $section, string $option, array $option_settings ): void {
 		$credits = include sprintf( '%s/includes/data/credits/latest.php', GATHERPRESS_CORE_PATH );
 
 		Utility::render_template(
@@ -275,13 +340,19 @@ class Settings {
 	}
 
 	/**
-	 * Gets the value.
+	 * Get the value of a specific option from plugin settings.
 	 *
-	 * @param string $sub_page The sub page of the value.
-	 * @param string $section  The section of the value.
-	 * @param string $option   The option of the value.
+	 * This method retrieves the value of a specific option from the plugin settings
+	 * based on the provided sub-page, section, and option names. If the option is set,
+	 * its value is returned; otherwise, the default value is returned.
 	 *
-	 * @return mixed
+	 * @since 1.0.0
+	 *
+	 * @param string $sub_page The sub-page associated with the value.
+	 * @param string $section  The section within the sub-page where the option is located.
+	 * @param string $option   The name of the option to retrieve.
+	 *
+	 * @return mixed The value of the option or its default value.
 	 */
 	public function get_value( string $sub_page, string $section = '', string $option = '' ) {
 		$options = $this->get_options( $sub_page );
@@ -294,13 +365,19 @@ class Settings {
 	}
 
 	/**
-	 * Get the default value.
+	 * Get the default value for a specific option from plugin settings.
 	 *
-	 * @param string $sub_page The sub page of the value.
-	 * @param string $section  The section of the value.
-	 * @param string $option   The option of the value.
+	 * This method retrieves the default value of a specific option from the plugin settings
+	 * based on the provided sub-page, section, and option names. If a default value is defined
+	 * for the option, it will be returned; otherwise, an empty string is returned.
 	 *
-	 * @return mixed
+	 * @since 1.0.0
+	 *
+	 * @param string $sub_page The sub-page associated with the value.
+	 * @param string $section  The section within the sub-page where the option is located.
+	 * @param string $option   The name of the option to retrieve the default value for.
+	 *
+	 * @return mixed The default value of the option or an empty string if not defined.
 	 */
 	public function get_default_value( string $sub_page, string $section = '', string $option = '' ) {
 		$sub_pages = $this->get_sub_pages();
@@ -310,11 +387,18 @@ class Settings {
 	}
 
 	/**
-	 * Get currently set options from a GatherPress sub page.
+	 * Get the currently set options for a specific GatherPress sub-page.
 	 *
-	 * @param string $sub_page The sub page to get options.
+	 * This method retrieves the options currently set for a GatherPress sub-page
+	 * from the WordPress database. If the options exist and are in an array format,
+	 * they will be returned. If the options are not set or not found in the database,
+	 * the default options for the sub-page will be returned.
 	 *
-	 * @return array
+	 * @since 1.0.0
+	 *
+	 * @param string $sub_page The sub-page for which to retrieve the options.
+	 *
+	 * @return array An array of currently set options for the sub-page or its default options.
 	 */
 	public function get_options( string $sub_page ): array {
 		$option = get_option( $sub_page );
@@ -327,11 +411,17 @@ class Settings {
 	}
 
 	/**
-	 * Default options for GatherPress sub pages.
+	 * Retrieve the default options for a specific GatherPress sub-page.
 	 *
-	 * @param string $option The option to get the default.
+	 * This method fetches the default options defined for a GatherPress sub-page
+	 * based on the provided option name. It compiles the default options from the
+	 * sub-page's sections and their associated options.
 	 *
-	 * @return array
+	 * @since 1.0.0
+	 *
+	 * @param string $option The option for which to retrieve default values.
+	 *
+	 * @return array An array of default values for the specified sub-page option.
 	 */
 	public function get_option_defaults( string $option ): array {
 		$sub_pages = $this->get_sub_pages();
@@ -354,13 +444,19 @@ class Settings {
 	}
 
 	/**
-	 * Create name field for setting.
+	 * Generate the name attribute for a setting field.
 	 *
-	 * @param string $sub_page Sub page of name field.
-	 * @param string $section  Section of name field.
-	 * @param string $option   Option of name field.
+	 * This method constructs the name attribute for a setting field based on the provided
+	 * sub-page, section, and option names. The resulting name attribute is used to associate
+	 * the field's value with its location within the settings structure.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @param string $sub_page Sub-page of the setting field.
+	 * @param string $section  Section of the setting field.
+	 * @param string $option   Option of the setting field.
+	 *
+	 * @return string The generated name attribute for the setting field.
 	 */
 	public function get_name_field( string $sub_page, string $section, string $option ): string {
 		return sprintf(
@@ -372,9 +468,15 @@ class Settings {
 	}
 
 	/**
-	 * Get sub pages for options page.
+	 * Retrieve an array of sub-pages for the options page.
 	 *
-	 * @return array
+	 * This method fetches and organizes the sub-pages associated with the main options page.
+	 * The sub-pages include information such as their settings and priority. Filters can be
+	 * applied to modify the sub-pages before they are returned.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array of sub-pages, each with settings and priority information.
 	 */
 	public function get_sub_pages(): array {
 		$sub_pages               = array();
@@ -390,9 +492,16 @@ class Settings {
 	}
 
 	/**
-	 * General page.
+	 * Retrieve settings for the General page.
 	 *
-	 * @return array
+	 * This method returns an array of settings and options for the General page of the
+	 * GatherPress settings. The General page includes settings related to event dates and
+	 * event archive pages. Each section within the General page is defined with its own
+	 * settings and options.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the General page settings and options.
 	 */
 	public function get_general_page(): array {
 		return array(
@@ -458,9 +567,15 @@ class Settings {
 	}
 
 	/**
-	 * Leadership page.
+	 * Retrieve settings for the Leadership page.
 	 *
-	 * @return array
+	 * This method returns an array of settings and options for the Leadership page of the
+	 * GatherPress settings. The Leadership page includes settings related to roles and organizers.
+	 * You can customize role labels and select organizers for each role.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the Leadership page settings and options.
 	 */
 	public function get_leadership_page(): array {
 		$roles = array(
@@ -494,9 +609,15 @@ class Settings {
 	}
 
 	/**
-	 * Credits page.
+	 * Retrieve settings for the Credits page.
 	 *
-	 * @return array
+	 * This method returns an array of settings and options for the Credits page of the GatherPress settings.
+	 * The Credits page displays credits to individuals and contributors behind the GatherPress project.
+	 * Users can get involved and see their names on this page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the Credits page settings and options.
 	 */
 	public function get_credits_page(): array {
 		return array(
@@ -543,11 +664,14 @@ class Settings {
 	}
 
 	/**
-	 * Get list of user roles.
+	 * Retrieve a list of user roles.
 	 *
-	 * @todo add to class-rsvp.php
+	 * This method returns an array of user roles defined for GatherPress. User roles
+	 * are used to customize role labels to be more appropriate for events.
 	 *
-	 * @return array
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing user roles and their corresponding settings.
 	 */
 	public function get_user_roles(): array {
 		$sub_pages = $this->get_sub_pages();
@@ -557,13 +681,15 @@ class Settings {
 	}
 
 	/**
-	 * Return role of the user.
+	 * Retrieve the role of a user.
 	 *
-	 * @todo add to class-rsvp.php
+	 * This method returns the role of a user identified by their User ID.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param int $user_id User ID.
 	 *
-	 * @return string
+	 * @return string The role of the user, or 'Member' if no matching role is found.
 	 */
 	public function get_user_role( int $user_id ): string {
 		$leadership = get_option( Utility::prefix_key( 'leadership' ) );
@@ -584,12 +710,19 @@ class Settings {
 	}
 
 	/**
-	 * Sort associative array by priority. 10 is default.
+	 * Sort an associative array of sub-pages by priority.
 	 *
-	 * @param array $first  First to compare priority.
-	 * @param array $second Second to compare priority.
+	 * This method compares the priority of two sub-pages and is used for sorting them.
+	 * The default priority is 10 if not explicitly set.
 	 *
-	 * @return int
+	 * @since 1.0.0
+	 *
+	 * @param array $first  The first sub-page to compare by priority.
+	 * @param array $second The second sub-page to compare by priority.
+	 *
+	 * @return int Returns a negative number if the first sub-page has a lower priority,
+	 *             a positive number if the second sub-page has a lower priority,
+	 *             or 0 if their priorities are equal.
 	 */
 	public function sort_sub_pages_by_priority( array $first, array $second ): int {
 		$first['priority']  = isset( $first['priority'] ) ? intval( $first['priority'] ) : 10;
@@ -599,32 +732,45 @@ class Settings {
 	}
 
 	/**
-	 * Render the options page.
+	 * Render the options page for GatherPress settings.
+	 *
+	 * This method is responsible for rendering the primary options page of the GatherPress plugin.
+	 * It displays settings and configurations for various sub-pages within the plugin's administration panel.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
-	public function settings_page() {
+	public function settings_page(): void {
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/settings/index.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'sub_pages' => $this->get_sub_pages(),
-				'page'      => $this->page,
+				'page'      => $this->current_page,
 			),
 			true
 		);
 	}
 
 	/**
-	 * Select GatherPress in menu for all sub pages.
+	 * Select the GatherPress menu for all sub pages.
 	 *
-	 * @param string $submenu Name of sub menu page.
+	 * This method ensures that the GatherPress menu is selected in the WordPress admin menu for all sub pages.
+	 * It checks if the provided submenu name is empty and, if so, determines whether to select the 'General' subpage
+	 * based on the current page. This helps maintain consistent menu selection across GatherPress settings pages.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @param string $submenu The name of the sub menu page.
+	 *
+	 * @return string The selected submenu name, either the provided one or 'general'.
 	 */
 	public function select_menu( $submenu ): string {
 		if ( empty( $submenu ) ) {
 			$sub_pages = $this->get_sub_pages();
 
 			if ( ! empty( $sub_pages ) ) {
-				$page = Utility::unprefix_key( $this->page );
+				$page = Utility::unprefix_key( $this->current_page );
 
 				if ( isset( $sub_pages[ $page ] ) ) {
 					$submenu = Utility::prefix_key( 'general' );
