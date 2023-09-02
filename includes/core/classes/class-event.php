@@ -20,10 +20,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class representing GatherPress events.
+ * Class Event.
  *
- * The Event class is responsible for representing individual events within the GatherPress plugin.
- * It provides methods and properties to work with event data and perform various event-related operations.
+ * Represents individual events within the GatherPress plugin and provides event-related functionality.
  *
  * @since 1.0.0
  */
@@ -181,15 +180,19 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string  $format  Optional. The PHP date format in which to format the datetime. Default is 'D, F j, g:ia T'.
-	 * @param string  $which   Optional. The datetime field in the event table to format ('start' or 'end'). Default is 'start'.
-	 * @param bool    $local   Optional. Whether to format the date in local time (true) or GMT (false). Default is true.
+	 * @param string $format Optional. The PHP date format in which to format the datetime. Default is 'D, F j, g:ia T'.
+	 * @param string $which  Optional. The datetime field in the event table to format ('start' or 'end'). Default is 'start'.
+	 * @param bool   $local  Optional. Whether to format the date in local time (true) or GMT (false). Default is true.
 	 *
 	 * @return string The formatted datetime value.
 	 *
 	 * @throws Exception If an error occurs during datetime formatting.
 	 */
-	protected function get_formatted_datetime( string $format = 'D, F j, g:ia T', string $which = 'start', bool $local = true ): string {
+	protected function get_formatted_datetime(
+		string $format = 'D, F j, g:ia T',
+		string $which = 'start',
+		bool $local = true
+	): string {
 		$dt             = $this->get_datetime();
 		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = static::maybe_convert_offset( $dt['timezone'] );

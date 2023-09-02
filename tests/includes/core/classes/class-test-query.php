@@ -35,13 +35,13 @@ class Test_Query extends Base {
 				'type'     => 'action',
 				'name'     => 'pre_get_posts',
 				'priority' => 10,
-				'callback' => array( $instance, 'pre_get_posts' ),
+				'callback' => array( $instance, 'prepare_event_query_before_execution' ),
 			),
 			array(
 				'type'     => 'filter',
 				'name'     => 'posts_clauses',
 				'priority' => 10,
-				'callback' => array( $instance, 'admin_order_events' ),
+				'callback' => array( $instance, 'adjust_admin_event_sorting' ),
 			),
 		);
 
@@ -52,7 +52,7 @@ class Test_Query extends Base {
 	 * Coverage for get_upcoming_events method.
 	 *
 	 * @covers ::get_upcoming_events
-	 * @covers ::order_upcoming_events
+	 * @covers ::adjust_sorting_for_upcoming_events
 	 * @covers ::get_events_list
 	 *
 	 * @return void
@@ -88,7 +88,7 @@ class Test_Query extends Base {
 	 * Coverage for get_past_events method.
 	 *
 	 * @covers ::get_past_events
-	 * @covers ::order_past_events
+	 * @covers ::adjust_sorting_for_past_events
 	 * @covers ::get_events_list
 	 *
 	 * @return void

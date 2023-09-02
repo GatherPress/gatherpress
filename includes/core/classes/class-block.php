@@ -2,7 +2,7 @@
 /**
  * Main class for managing custom blocks in GatherPress.
  *
- * This class handles the registration and management of custom blocks used in the GatherPress theme.
+ * This class handles the registration and management of custom blocks used in the GatherPress plugin.
  *
  * @package GatherPress/Core
  * @since 1.0.0
@@ -19,8 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Block.
  *
- * This class is responsible for registering blocks and utilizes the Singleton pattern.
- * It ensures that only one instance of this class can exist.
+ * Core class for handling blocks in GatherPress.
  *
  * @since 1.0.0
  */

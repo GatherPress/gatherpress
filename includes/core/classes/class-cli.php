@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use WP_CLI;
 
 /**
- * Class for managing WP-CLI commands in GatherPress.
+ * Class Cli.
  *
  * The Cli class extends WP-CLI and provides custom WP-CLI commands
  * for interacting with and managing GatherPress functionality via the command line.
@@ -39,7 +39,7 @@ class Cli extends WP_CLI {
 		$event_id = (int) $args[0];
 		$action   = (string) $args[1];
 
-		if ( $action == 'add-attendee' ) {
+		if ( 'add-attendee' === $action ) {
 			$this->add_attendee( $event_id, $assoc_args );
 		}
 	}

@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class for managing static assets and localizing data as JavaScript objects.
+ * Class Assets.
  *
  * This class handles the loading and management of static assets, including stylesheets and JavaScript files.
  * Additionally, it provides a mechanism for localizing data as JavaScript objects,

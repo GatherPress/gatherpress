@@ -17,7 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class for autoloading GatherPress class files.
+ * Class Autoloader.
+ *
+ * This class is responsible for automatic loading of classes and namespaces.
  *
  * @since 1.0.0
  */

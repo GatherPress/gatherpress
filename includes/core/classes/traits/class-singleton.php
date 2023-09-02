@@ -17,6 +17,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Singleton Trait.
+ *
+ * A reusable trait for implementing the singleton design pattern in PHP classes.
+ *
+ * @since 1.0.0
  */
 trait Singleton {
 
