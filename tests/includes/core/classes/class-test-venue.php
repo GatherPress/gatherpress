@@ -9,6 +9,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
 
@@ -234,6 +235,29 @@ class Test_Venue extends Base {
 			$venue_from_term_slug->ID,
 			'Failed to assert that IDs match.'
 		);
+	}
+
+	/**
+	 * Coverage for get_venue_meta method.
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta(): void {
+		$event  = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'unit-test-event',
+			)
+		)->get();
+		
+		$venue_meta = Venue::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
+        
+		//Generic test for an in person event
+		$this->assertFalse($venue_meta['isOnlineEventTerm']);
+		$this->assertEmpty($venue_meta['onlineEventLink']);
+		
 	}
 
 }
