@@ -508,11 +508,11 @@ class Rest_Api {
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
 	 *
-	 * @return void
+	 * @return bool
 	 */
-	public function send_emails( int $post_id, array $send, string $message ): void {
+	public function send_emails( int $post_id, array $send, string $message ): bool {
 		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			return;
+			return false;
 		}
 
 		$members = $this->get_members( $send, $post_id );
@@ -535,6 +535,8 @@ class Rest_Api {
 				wp_mail( $to, $subject, $body, $headers );
 			}
 		}
+
+		return true;
 	}
 
 	/**
@@ -579,7 +581,7 @@ class Rest_Api {
 			return get_users( array( 'include' => $member_ids ) );
 		}
 
-		return $member_ids;
+		return array();
 	}
 
 	/**
