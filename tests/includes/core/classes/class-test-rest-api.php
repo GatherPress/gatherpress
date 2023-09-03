@@ -466,18 +466,18 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_members(): void {
-		$instance  = Rest_Api::get_instance();
-		$event_id  = $this->mock->post(
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$send      = array(
+		$send     = array(
 			'all'           => false,
 			'attending'     => false,
 			'waiting_list'  => false,
 			'not_attending' => false,
 		);
-		$event     = new Event( $event_id );
-		$members   = $instance->get_members( $send, $event_id );
+		$event    = new Event( $event_id );
+		$members  = $instance->get_members( $send, $event_id );
 
 		$this->assertEmpty( $members );
 
