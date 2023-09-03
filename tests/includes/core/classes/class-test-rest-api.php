@@ -166,7 +166,7 @@ class Test_Rest_Api extends Base {
 	 *
 	 * @covers ::validate_send
 	 *
-	 * @param array $params  The parameters to send for validation
+	 * @param array $params  The parameters to send for validation.
 	 * @param bool  $expects Expected response.
 	 *
 	 * @return void
