@@ -535,9 +535,12 @@ class Test_Rest_Api extends Base {
 	 * @return array
 	 */
 	protected function get_member_ids( array $members ): array {
-		return array_map( static function( $member ): int {
-			return $member->ID;
-		}, $members );
+		return array_map(
+			static function( $member ): int {
+				return $member->ID;
+			},
+			$members
+		);
 	}
 
 	/**
