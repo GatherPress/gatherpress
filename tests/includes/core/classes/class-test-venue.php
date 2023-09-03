@@ -9,6 +9,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
 
@@ -233,6 +234,48 @@ class Test_Venue extends Base {
 			$venue->ID,
 			$venue_from_term_slug->ID,
 			'Failed to assert that IDs match.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_meta method.
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta(): void {
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'unit-test-event',
+			)
+		)->get();
+		wp_set_post_terms( $event->ID, 'dummy-venue', Venue::TAXONOMY );
+
+		$venue_meta = Venue::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
+
+		// Generic test for an in person event.
+		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
+		$this->assertEmpty( $venue_meta['onlineEventLink'] );
+
+		$venue_title = 'Unit Test Venue';
+
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'unit-test-venue',
+				'post_title' => $venue_title,
+			)
+		)->get();
+
+		$venue_meta = Venue::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
+
+		// Test for a venue post.
+		$this->assertEquals(
+			$venue_title,
+			$venue_meta['name'],
+			'Failed to assert venue title matches the venue meta title.'
 		);
 	}
 
