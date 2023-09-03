@@ -384,14 +384,13 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_email(): void {
-		$instance = Rest_Api::get_instance();
+		add_filter( 'pre_wp_mail', '__return_false' );
 
+		$instance = Rest_Api::get_instance();
 		$request  = new WP_REST_Request( 'POST' );
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-
-		add_filter( 'pre_wp_mail', '__return_false' );
 
 		$request->set_query_params(
 			array(
@@ -418,6 +417,127 @@ class Test_Rest_Api extends Base {
 		$response = $instance->email( $request );
 
 		$this->assertEquals( 1, $response->data['success'], 'Failed to assert that success was true.' );
+	}
+
+	/**
+	 * Coverage for send_emails method.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_email(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$post_id  = $this->mock->post(
+			array( 'post_type' => 'post' )
+		)->get()->ID;
+		$user_id  = $this->mock->user()->get()->ID;
+		$message  = 'Unit test.';
+		$send     = array(
+			'all'           => false,
+			'attending'     => true,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+
+		$event = new Event( $event_id );
+		$event->rsvp->save( $user_id, 'attending' );
+
+		$this->assertFalse(
+			$instance->send_emails( $post_id, $send, $message ),
+			'Failed to assert false for sending email.'
+		);
+		$this->assertTrue(
+			$instance->send_emails( $event_id, $send, $message ),
+			'Failed to assert true for sending email.'
+		);
+	}
+
+	/**
+	 * Coverage for get_members method.
+	 *
+	 * @covers ::get_members
+	 *
+	 * @return void
+	 */
+	public function test_get_members(): void {
+		$instance  = Rest_Api::get_instance();
+		$event_id  = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$send      = array(
+			'all'           => false,
+			'attending'     => false,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+		$event     = new Event( $event_id );
+		$user_1_id = $this->factory->user->create();
+		$user_2_id = $this->factory->user->create();
+		$user_3_id = $this->factory->user->create();
+		$user_4_id = $this->factory->user->create();
+
+		$event->rsvp->save( $user_1_id, 'attending' );
+		$event->rsvp->save( $user_2_id, 'not_attending' );
+		$event->rsvp->save( $user_3_id, 'attending' );
+		$event->rsvp->save( $user_4_id, 'waiting_list' );
+
+		$send['all'] = true;
+		$members     = $instance->get_members( $send, $event_id );
+		$member_ids  = $this->get_member_ids( $members );
+
+		$this->assertContains( $user_1_id, $member_ids, 'Failed to assert user ID is in array.' );
+		$this->assertContains( $user_2_id, $member_ids, 'Failed to assert user ID is in array.' );
+		$this->assertContains( $user_3_id, $member_ids, 'Failed to assert user ID is in array.' );
+		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
+
+		$send['all']       = false;
+		$send['attending'] = true;
+		$members           = $instance->get_members( $send, $event_id );
+		$member_ids        = $this->get_member_ids( $members );
+
+		$this->assertContains( $user_1_id, $member_ids, 'Failed to assert user ID is in array.' );
+		$this->assertNotContains( $user_2_id, $member_ids, 'Failed to assert user ID is not in array.' );
+		$this->assertContains( $user_3_id, $member_ids, 'Failed to assert user ID is in array.' );
+		$this->assertNotContains( $user_4_id, $member_ids, 'Failed to assert user ID is not in array.' );
+
+		$send['attending']    = false;
+		$send['waiting_list'] = true;
+		$members              = $instance->get_members( $send, $event_id );
+		$member_ids           = $this->get_member_ids( $members );
+
+		$this->assertNotContains( $user_1_id, $member_ids, 'Failed to assert user ID is not in array.' );
+		$this->assertNotContains( $user_2_id, $member_ids, 'Failed to assert user ID is not in array.' );
+		$this->assertNotContains( $user_3_id, $member_ids, 'Failed to assert user ID is not in array.' );
+		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
+
+		$send['not_attending'] = true;
+		$send['waiting_list']  = true;
+		$members               = $instance->get_members( $send, $event_id );
+		$member_ids            = $this->get_member_ids( $members );
+
+		$this->assertNotContains( $user_1_id, $member_ids, 'Failed to assert user ID is not in array.' );
+		$this->assertContains( $user_2_id, $member_ids, 'Failed to assert user ID is in array.' );
+		$this->assertNotContains( $user_3_id, $member_ids, 'Failed to assert user ID is not in array.' );
+		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
+	}
+
+	/**
+	 * Helper to get members IDs for test.
+	 *
+	 * @param array $members Array of user objects.
+	 *
+	 * @return array
+	 */
+	protected function get_member_ids( array $members ): array {
+		return array_map( static function( $member ): int {
+			return $member->ID;
+		}, $members );
 	}
 
 	/**
