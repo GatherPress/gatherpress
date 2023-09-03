@@ -57,6 +57,51 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for register_endpoints method.
+	 *
+	 * @covers ::register_endpoints
+	 *
+	 * @return void
+	 */
+	public function test_register_endpoints(): void {
+		$instance = Rest_Api::get_instance();
+
+		$instance->register_endpoints();
+
+		$rest_server = rest_get_server();
+		$namespace   = Utility::get_hidden_property(
+			$rest_server,
+			'namespaces'
+		)[ sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE ) ];
+
+		$this->assertEquals(
+			1,
+			$namespace[ sprintf( '/%s/event', GATHERPRESS_REST_NAMESPACE ) ],
+			'Failed to assert general event endpoint is registered'
+		);
+		$this->assertEquals(
+			1,
+			$namespace[ sprintf( '/%s/event/datetime', GATHERPRESS_REST_NAMESPACE ) ],
+			'Failed to assert datetime endpoint is registered'
+		);
+		$this->assertEquals(
+			1,
+			$namespace[ sprintf( '/%s/event/email', GATHERPRESS_REST_NAMESPACE ) ],
+			'Failed to assert email endpoint is registered'
+		);
+		$this->assertEquals(
+			1,
+			$namespace[ sprintf( '/%s/event/rsvp', GATHERPRESS_REST_NAMESPACE ) ],
+			'Failed to assert rsvp endpoint is registered'
+		);
+		$this->assertEquals(
+			1,
+			$namespace[ sprintf( '/%s/event/events-list', GATHERPRESS_REST_NAMESPACE ) ],
+			'Failed to assert events-list endpoint is registered'
+		);
+	}
+
+	/**
 	 * Coverage for get_event_routes method.
 	 *
 	 * @covers ::get_event_routes
@@ -148,6 +193,14 @@ class Test_Rest_Api extends Base {
 				false,
 			),
 			array(
+				null,
+				false,
+			),
+			array(
+				'unit-test',
+				false,
+			),
+			array(
 				array(
 					'all'           => null,
 					'attending'     => false,
@@ -166,12 +219,12 @@ class Test_Rest_Api extends Base {
 	 *
 	 * @covers ::validate_send
 	 *
-	 * @param array $params  The parameters to send for validation.
+	 * @param mixed $params  The parameters to send for validation.
 	 * @param bool  $expects Expected response.
 	 *
 	 * @return void
 	 */
-	public function test_validate_send( array $params, bool $expects ): void {
+	public function test_validate_send( $params, bool $expects ): void {
 		$instance = Rest_Api::get_instance();
 
 		$this->assertSame( $expects, $instance->validate_send( $params ) );
