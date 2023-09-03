@@ -12,6 +12,8 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rest_Api;
 use PMC\Unit_Test\Base;
+use PMC\Unit_Test\Utility;
+use WP_REST_Server;
 
 /**
  * Class Test_Query.
@@ -55,6 +57,47 @@ class Test_Rest_Api extends Base {
 	}
 
 	/**
+	 * Coverage for get_event_routes method.
+	 *
+	 * @covers ::get_event_routes
+	 * @covers ::datetime_route
+	 * @covers ::email_route
+	 * @covers ::rsvp_route
+	 * @covers ::events_list_route
+	 *
+	 * @return void
+	 */
+	public function test_get_event_routes(): void {
+		$instance = Rest_Api::get_instance();
+		$routes   = Utility::invoke_hidden_method( $instance, 'get_event_routes' );
+
+		$this->assertSame( 'datetime', $routes[0]['route'], 'Failed to assert route is datetime.' );
+		$this->assertSame(
+			WP_REST_Server::EDITABLE,
+			$routes[0]['args']['methods'],
+			'Failed to assert methods is POST, PUT, PATCH.'
+		);
+		$this->assertSame( 'email', $routes[1]['route'], 'Failed to assert route is email.' );
+		$this->assertSame(
+			WP_REST_Server::EDITABLE,
+			$routes[1]['args']['methods'],
+			'Failed to assert methods is POST, PUT, PATCH.'
+		);
+		$this->assertSame( 'rsvp', $routes[2]['route'], 'Failed to assert route is rsvp.' );
+		$this->assertSame(
+			WP_REST_Server::EDITABLE,
+			$routes[2]['args']['methods'],
+			'Failed to assert methods is POST, PUT, PATCH.'
+		);
+		$this->assertSame( 'events-list', $routes[3]['route'], 'Failed to assert route is rsvp.' );
+		$this->assertSame(
+			WP_REST_Server::READABLE,
+			$routes[3]['args']['methods'],
+			'Failed to assert methods is GET.'
+		);
+	}
+
+	/**
 	 * Coverage for validate_rsvp_status method.
 	 *
 	 * @covers ::validate_rsvp_status
@@ -80,6 +123,58 @@ class Test_Rest_Api extends Base {
 			$instance->validate_rsvp_status( 'wait_list' ),
 			'Failed to assert invalid attendance status.'
 		);
+	}
+
+	/**
+	 * Data provider for validate_send test.
+	 *
+	 * @return array[]
+	 */
+	public function data_validate_send(): array {
+		return array(
+			array(
+				array(
+					'all'           => true,
+					'attending'     => false,
+					'waiting_list'  => false,
+					'not_attending' => false,
+				),
+				true,
+			),
+			array(
+				array(
+					'unit_test' => true,
+				),
+				false,
+			),
+			array(
+				array(
+					'all'           => null,
+					'attending'     => false,
+					'waiting_list'  => false,
+					'not_attending' => false,
+				),
+				false,
+			),
+		);
+	}
+
+	/**
+	 * Coverage for validate_send method.
+	 *
+	 * @dataProvider data_validate_send
+	 *
+	 * @covers ::validate_send
+	 *
+	 * @param array $params  The parameters to send for validation.
+	 * @param bool  $expects Expected response.
+	 *
+	 * @return void
+	 */
+	public function test_validate_send( array $params, bool $expects ): void {
+		$instance = Rest_Api::get_instance();
+
+		$this->assertSame( $expects, $instance->validate_send( $params ) );
 	}
 
 	/**

@@ -112,135 +112,185 @@ class Rest_Api {
 	 *
 	 * Retrieves an array of REST API routes for GatherPress events.
 	 *
-	 * @todo Refactor each route into small protected methods to improve readability.
-	 *
 	 * @since 1.0.0
 	 *
 	 * @return array[] An array of route definitions for GatherPress events.
 	 */
 	protected function get_event_routes(): array {
 		return array(
-			array(
-				'route' => 'datetime',
-				'args'  => array(
-					'methods'             => WP_REST_Server::EDITABLE,
-					'callback'            => array( $this, 'update_datetime' ),
-					'permission_callback' => '__return_true',
-					'args'                => array(
-						'_wpnonce'       => array(
-							/**
-							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-							 *
-							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-							 */
-							'required' => true,
-						),
-						'post_id'        => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_event_post_id' ),
-						),
-						'datetime_start' => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_datetime' ),
-						),
-						'datetime_end'   => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_datetime' ),
-						),
-						'timezone'       => array(
-							'required'          => false,
-							'validate_callback' => array( $this, 'validate_timezone' ),
-						),
+			$this->datetime_route(),
+			$this->email_route(),
+			$this->rsvp_route(),
+			$this->events_list_route(),
+		);
+	}
+
+	/**
+	 * Define the REST route for updating event date and time.
+	 *
+	 * This method sets up the REST route for updating the date and time of an event.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
+	protected function datetime_route(): array {
+		return array(
+			'route' => 'datetime',
+			'args'  => array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_datetime' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'_wpnonce'       => array(
+						/**
+						 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
+						 *
+						 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
+						 */
+						'required' => true,
+					),
+					'post_id'        => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_event_post_id' ),
+					),
+					'datetime_start' => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_datetime' ),
+					),
+					'datetime_end'   => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_datetime' ),
+					),
+					'timezone'       => array(
+						'required'          => false,
+						'validate_callback' => array( $this, 'validate_timezone' ),
 					),
 				),
 			),
-			array(
-				'route' => 'email',
-				'args'  => array(
-					'methods'             => WP_REST_Server::EDITABLE,
-					'callback'            => array( $this, 'email' ),
-					'permission_callback' => '__return_true',
-					'args'                => array(
-						'_wpnonce' => array(
-							/**
-							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-							 *
-							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-							 */
-							'required' => true,
-						),
-						'post_id'  => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_event_post_id' ),
-						),
-						'message'  => array(
-							'required'          => false,
-							'validate_callback' => 'sanitize_text_field',
-						),
-						'send'     => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_send' ),
-						),
+		);
+	}
+
+	/**
+	 * Define the REST route for sending event-related emails.
+	 *
+	 * This method sets up the REST route for sending emails related to an event.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
+	protected function email_route(): array {
+		return array(
+			'route' => 'email',
+			'args'  => array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'email' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'_wpnonce' => array(
+						/**
+						 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
+						 *
+						 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
+						 */
+						'required' => true,
+					),
+					'post_id'  => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_event_post_id' ),
+					),
+					'message'  => array(
+						'required'          => false,
+						'validate_callback' => 'sanitize_text_field',
+					),
+					'send'     => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_send' ),
 					),
 				),
 			),
-			array(
-				'route' => 'rsvp',
-				'args'  => array(
-					'methods'             => WP_REST_Server::EDITABLE,
-					'callback'            => array( $this, 'update_rsvp' ),
-					'permission_callback' => '__return_true',
-					'args'                => array(
-						'_wpnonce' => array(
-							/**
-							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-							 *
-							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-							 */
-							'required' => true,
-						),
-						'post_id'  => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_event_post_id' ),
-						),
-						// @todo add logic for allowing event organizers to add people to events as attendees.
-						// 'user_id'        => [
-						// 'required'          => false,
-						// 'validate_callback' => [ $this, 'validate_event_post_id' ],
-						// ],
-						'status'   => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_rsvp_status' ),
-						),
+		);
+	}
+
+	/**
+	 * Define the REST route for updating event RSVP status.
+	 *
+	 * This method sets up the REST route for updating the RSVP status of an event.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
+	protected function rsvp_route(): array {
+		return array(
+			'route' => 'rsvp',
+			'args'  => array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_rsvp' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'_wpnonce' => array(
+						/**
+						 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
+						 *
+						 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
+						 */
+						'required' => true,
+					),
+					'post_id'  => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_event_post_id' ),
+					),
+					// @todo add logic for allowing event organizers to add people to events as attendees.
+					// 'user_id'        => [
+					// 'required'          => false,
+					// 'validate_callback' => [ $this, 'validate_event_post_id' ],
+					// ],
+					'status'   => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_rsvp_status' ),
 					),
 				),
 			),
-			array(
-				'route' => 'events-list',
-				'args'  => array(
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'events_list' ),
-					'permission_callback' => '__return_true',
-					'args'                => array(
-						'_wpnonce'        => array(
-							/**
-							 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-							 *
-							 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-							 */
-							'required' => false,
-						),
-						'event_list_type' => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_event_list_type' ),
-						),
-						'max_number'      => array(
-							'required'          => true,
-							'validate_callback' => array( $this, 'validate_number' ),
-						),
-						'topics'          => array(
-							'required' => false,
-						),
+		);
+	}
+
+	/**
+	 * Define the REST route for retrieving a list of events.
+	 *
+	 * This method sets up the REST route for retrieving a list of events based on specified parameters.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
+	protected function events_list_route(): array {
+		return array(
+			'route' => 'events-list',
+			'args'  => array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'events_list' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'_wpnonce'        => array(
+						/**
+						 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
+						 *
+						 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
+						 */
+						'required' => false,
+					),
+					'event_list_type' => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_event_list_type' ),
+					),
+					'max_number'      => array(
+						'required'          => true,
+						'validate_callback' => array( $this, 'validate_number' ),
+					),
+					'topics'          => array(
+						'required' => false,
 					),
 				),
 			),
@@ -287,24 +337,23 @@ class Rest_Api {
 	 *
 	 * @param mixed $param An array of email recipients.
 	 *
-	 * @todo Refactor this method for improved readability and simplicity.
-	 *
 	 * @since 1.0.0
 	 *
 	 * @return bool True if the parameter is a valid array of email recipients, false otherwise.
 	 */
 	public function validate_send( $param ): bool {
-		if (
-			is_array( $param ) &&
-			array_key_exists( 'all', $param ) &&
-			is_bool( $param['all'] ) &&
-			array_key_exists( 'attending', $param ) &&
-			is_bool( $param['attending'] ) &&
-			array_key_exists( 'waiting_list', $param ) &&
-			is_bool( $param['waiting_list'] ) &&
-			array_key_exists( 'not_attending', $param ) &&
-			is_bool( $param['not_attending'] )
-		) {
+		$expected_params = array( 'all', 'attending', 'waiting_list', 'not_attending' );
+
+		if ( is_array( $param ) ) {
+			foreach ( $expected_params as $expected_param ) {
+				if (
+					! array_key_exists( $expected_param, $param ) ||
+					! is_bool( $param[ $expected_param ] )
+				) {
+					return false;
+				}
+			}
+
 			return true;
 		}
 
