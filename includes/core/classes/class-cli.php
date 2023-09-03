@@ -11,10 +11,6 @@
 
 namespace GatherPress\Core;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 use WP_CLI;
 
 /**

@@ -12,10 +12,6 @@ namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 /**
  * Class Block.
  *

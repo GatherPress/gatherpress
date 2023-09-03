@@ -15,10 +15,6 @@ namespace GatherPress\Core;
 use GatherPress\Core\Traits\Singleton;
 use WP_Query;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 /**
  * Class Query.
  *

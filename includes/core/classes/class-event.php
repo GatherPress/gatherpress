@@ -15,10 +15,6 @@ use DateTimeZone;
 use Exception;
 use WP_Post;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 /**
  * Class Event.
  *

@@ -16,10 +16,6 @@ use GatherPress\Core\Traits\Singleton;
 use WP_CLI;
 use WP_Post;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 /**
  * Class Setup.
  *
