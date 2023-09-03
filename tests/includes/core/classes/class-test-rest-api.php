@@ -13,6 +13,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rest_Api;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
+use WP_REST_Request;
 use WP_REST_Server;
 
 /**
@@ -327,6 +328,96 @@ class Test_Rest_Api extends Base {
 			$instance->validate_timezone( 'America/New_York' ),
 			'Failed to assert valid timezone.'
 		);
+	}
+
+	/**
+	 * Coverage for update_datetime method.
+	 *
+	 * @covers ::update_datetime
+	 *
+	 * @return void
+	 */
+	public function test_update_datetime(): void {
+		$instance = Rest_Api::get_instance();
+
+		$request  = new WP_REST_Request( 'POST' );
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		$request->set_query_params(
+			array(
+				'datetime_end'   => '2023-09-13 20:00:00',
+				'datetime_start' => '2023-09-13 19:00:00',
+				'post_id'        => $event_id,
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$this->mock->user( true, 'subscriber' );
+
+		$response = $instance->update_datetime( $request );
+
+		// Success is false because user cannot update event.
+		$this->assertEmpty( $response->data['success'], 'Failed to assert that success was false.' );
+
+		$this->mock->user( true, 'admin' );
+
+		$response = $instance->update_datetime( $request );
+
+		$this->assertEquals( 1, $response->data['success'], 'Failed to assert that success was true.' );
+
+		$event = new Event( $event_id );
+
+		$this->assertSame(
+			'Wednesday, September 13, 2023 7:00 PM to 8:00 PM EDT',
+			$event->get_display_datetime(),
+			'Failed to assert datetime display matches.'
+		);
+	}
+
+	/**
+	 * Coverage for email method.
+	 *
+	 * @covers ::email
+	 *
+	 * @return void
+	 */
+	public function test_email(): void {
+		$instance = Rest_Api::get_instance();
+
+		$request  = new WP_REST_Request( 'POST' );
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$request->set_query_params(
+			array(
+				'post_id' => $event_id,
+				'message' => 'Unit test',
+				'send'    => array(
+					'all'           => false,
+					'attending'     => false,
+					'waiting_list'  => false,
+					'not_attending' => true,
+				),
+			)
+		);
+
+		$this->mock->user( true, 'subscriber' );
+
+		$response = $instance->email( $request );
+
+		// Success is false because user cannot update event.
+		$this->assertEmpty( $response->data['success'], 'Failed to assert that success was false.' );
+
+		$this->mock->user( true, 'admin' );
+
+		$response = $instance->email( $request );
+
+		$this->assertEquals( 1, $response->data['success'], 'Failed to assert that success was true.' );
 	}
 
 	/**
