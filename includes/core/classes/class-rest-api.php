@@ -633,6 +633,7 @@ class Rest_Api {
 				$posts[]           = array(
 					'ID'                       => $post_id,
 					'datetime_start'           => $event->get_datetime_start(),
+					'datetime_end'             => $event->get_datetime_end(),
 					'permalink'                => get_the_permalink( $post_id ),
 					'title'                    => get_the_title( $post_id ),
 					'excerpt'                  => get_the_excerpt( $post_id ),

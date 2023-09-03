@@ -466,17 +466,21 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_members(): void {
-		$instance  = Rest_Api::get_instance();
-		$event_id  = $this->mock->post(
+		$instance = Rest_Api::get_instance();
+		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$send      = array(
+		$send     = array(
 			'all'           => false,
 			'attending'     => false,
 			'waiting_list'  => false,
 			'not_attending' => false,
 		);
-		$event     = new Event( $event_id );
+		$event    = new Event( $event_id );
+		$members  = $instance->get_members( $send, $event_id );
+
+		$this->assertEmpty( $members );
+
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
 		$user_3_id = $this->factory->user->create();
@@ -541,6 +545,96 @@ class Test_Rest_Api extends Base {
 			},
 			$members
 		);
+	}
+
+	/**
+	 * Coverage for events_list method.
+	 *
+	 * @covers ::events_list
+	 *
+	 * @return void
+	 */
+	public function test_events_list(): void {
+		$instance          = Rest_Api::get_instance();
+		$request           = new WP_REST_Request( 'POST' );
+		$upcoming_event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$past_event_id     = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$upcoming_event    = new Event( $upcoming_event_id );
+		$past_event        = new Event( $past_event_id );
+
+		$request->set_query_params(
+			array(
+				'event_list_type' => 'upcoming',
+			)
+		);
+
+		$upcoming_event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$past_event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '-2 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '-1 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$response  = $instance->events_list( $request );
+		$event_ids = $this->get_event_ids( $response->data );
+
+		$this->assertContains( $upcoming_event_id, $event_ids, 'Failed to assert event ID is in array.' );
+		$this->assertNotContains( $past_event_id, $event_ids, 'Failed to asssert event ID is not in array.' );
+
+		$request->set_query_params(
+			array(
+				'event_list_type' => 'past',
+			)
+		);
+
+		$response  = $instance->events_list( $request );
+		$event_ids = $this->get_event_ids( $response->data );
+
+		$this->assertContains( $past_event_id, $event_ids, 'Failed to assert event ID is in array.' );
+		$this->assertNotContains( $upcoming_event_id, $event_ids, 'Failed to assert event ID is not in array.' );
+	}
+
+	/**
+	 * Helper to get members IDs for test.
+	 *
+	 * @param array $events Response from events_list.
+	 *
+	 * @return array
+	 */
+	protected function get_event_ids( array $events ): array {
+		return array_map(
+			static function( $event ): int {
+				return $event['ID'];
+			},
+			$events
+		);
+	}
+
+	/**
+	 * Coverage for max_number method.
+	 *
+	 * @covers ::max_number
+	 *
+	 * @return void
+	 */
+	public function test_max_number(): void {
+		$instance = Rest_Api::get_instance();
+
+		$this->assertEquals( 5, Utility::invoke_hidden_method( $instance, 'max_number', array( 6, 5 ) ) );
+		$this->assertEquals( 3, Utility::invoke_hidden_method( $instance, 'max_number', array( 3, 5 ) ) );
 	}
 
 	/**
