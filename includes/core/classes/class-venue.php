@@ -80,8 +80,8 @@ class Venue {
 	 * @return void
 	 */
 	public function add_venue_term( int $post_id, WP_Post $post, bool $update ): void {
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-			return;
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) { // @codeCoverageIgnore
+			return; // @codeCoverageIgnore
 		}
 
 		if (

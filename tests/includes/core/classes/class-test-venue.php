@@ -173,6 +173,34 @@ class Test_Venue extends Base {
 			$instance->get_venue_term_slug( $venue_after->post_name ),
 			'Failed to assert that slugs match.'
 		);
+
+		$venue_before = clone $venue_after;
+
+		$venue_after->post_name .= '-third';
+
+		// Setting to draft should not update term.
+		$venue_after->post_status = 'draft';
+		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
+
+		$term_object = get_term( $term['term_id'] );
+
+		$this->assertNotSame(
+			$term_object->slug,
+			$instance->get_venue_term_slug( $venue_after->post_name ),
+			'Failed to assert that slugs do not match.'
+		);
+
+		// Setting back to publish should update the term.
+		$venue_after->post_status = 'publish';
+		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
+
+		$term_object = get_term( $term['term_id'] );
+
+		$this->assertSame(
+			$term_object->slug,
+			$instance->get_venue_term_slug( $venue_after->post_name ),
+			'Failed to assert that slugs match.'
+		);
 	}
 
 	/**
