@@ -28,6 +28,7 @@ class Event {
 	const TAXONOMY           = 'gp_topic';
 	const TABLE_FORMAT       = '%sgp_events';
 	const DATETIME_CACHE_KEY = 'datetime_%d';
+	const DATETIME_FORMAT    = 'Y-m-d H:i:s';
 
 	/**
 	 * Event post object.
@@ -378,14 +379,13 @@ class Event {
 	 * @return string The converted date in GMT (UTC) time zone in 'Y-m-d H:i:s' format.
 	 */
 	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
-		$format   = 'Y-m-d H:i:s';
 		$datetime = date_create( $date, $timezone );
 
 		if ( false === $datetime ) {
-			return gmdate( $format, 0 );
+			return gmdate( self::DATETIME_FORMAT, 0 );
 		}
 
-		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( $format );
+		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( self::DATETIME_FORMAT );
 	}
 
 	/**
@@ -539,8 +539,8 @@ class Event {
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 
 		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start = $this->get_formatted_datetime( 'Y-m-d H:i:s', 'start', false );
-		$diff_end   = $this->get_formatted_datetime( 'Y-m-d H:i:s', 'end', false );
+		$diff_start = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
+		$diff_end   = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'end', false );
 		$duration   = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
 		$full       = intval( $duration );
 		$fraction   = ( $duration - $full );
@@ -661,7 +661,7 @@ class Event {
 		}
 
 		if ( 'all' !== $type ) {
-			$current = gmdate( 'Y-m-d H:i:s', time() );
+			$current = gmdate( self::DATETIME_FORMAT, time() );
 
 			switch ( $type ) {
 				case 'upcoming':
@@ -730,7 +730,7 @@ class Event {
 		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( $fields['datetime_start'], $timezone );
 		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( $fields['datetime_end'], $timezone );
 
-		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo Add caching to this and create new method to check existence.
 		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
