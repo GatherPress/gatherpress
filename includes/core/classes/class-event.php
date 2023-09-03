@@ -130,7 +130,7 @@ class Event {
 		$end     = $data['datetime_end_gmt'];
 		$current = time();
 
-		if ( $current > strtotime( $end ) ) {
+		if ( ! empty( $end ) && $current > strtotime( $end ) ) {
 			return true;
 		}
 
