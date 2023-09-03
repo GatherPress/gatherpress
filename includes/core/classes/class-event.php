@@ -493,20 +493,18 @@ class Event {
 	 * @return string The Google Calendar add event link for the event.
 	 */
 	protected function get_google_calendar_link(): string {
-		$date_start = $this->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start = $this->get_formatted_datetime( 'His', 'start', false );
-		$date_end   = $this->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end   = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
-		$venue      = $this->get_venue_information();
-		$location   = $venue['name'];
+		$date_start  = $this->get_formatted_datetime( 'Ymd', 'start', false );
+		$time_start  = $this->get_formatted_datetime( 'His', 'start', false );
+		$date_end    = $this->get_formatted_datetime( 'Ymd', 'end', false );
+		$time_end    = $this->get_formatted_datetime( 'His', 'end', false );
+		$datetime    = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		$venue       = $this->get_venue_information();
+		$location    = $venue['name'];
+		$description = $this->get_calendar_description();
 
 		if ( ! empty( $venue['full_address'] ) ) {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
-
-		/* translators: %s: event link. */
-		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		return add_query_arg(
 			array(
@@ -539,22 +537,20 @@ class Event {
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 
 		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
-		$diff_end   = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'end', false );
-		$duration   = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
-		$full       = intval( $duration );
-		$fraction   = ( $duration - $full );
-		$hours      = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes    = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
-		$venue      = $this->get_venue_information();
-		$location   = $venue['name'];
+		$diff_start  = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
+		$diff_end    = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'end', false );
+		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
+		$full        = intval( $duration );
+		$fraction    = ( $duration - $full );
+		$hours       = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
+		$minutes     = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+		$venue       = $this->get_venue_information();
+		$location    = $venue['name'];
+		$description = $this->get_calendar_description();
 
 		if ( ! empty( $venue['full_address'] ) ) {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
-
-		/* translators: %s: event link. */
-		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		return add_query_arg(
 			array(
@@ -594,13 +590,11 @@ class Event {
 		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
 		$venue          = $this->get_venue_information();
 		$location       = $venue['name'];
+		$description    = $this->get_calendar_description();
 
 		if ( ! empty( $venue['full_address'] ) ) {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
-
-		/* translators: %s: event link. */
-		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		$args = array(
 			'BEGIN:VCALENDAR',
@@ -620,6 +614,21 @@ class Event {
 		);
 
 		return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
+	}
+
+	/**
+	 * Generate a calendar event description with a link to the event details.
+	 *
+	 * This method generates a descriptive text for a calendar event, including a link to the event details page.
+	 * The generated description can be used in calendar applications or event listings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The calendar event description with the event details link.
+	 */
+	protected function get_calendar_description(): string {
+		/* translators: %s: event link. */
+		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 	}
 
 	/**
