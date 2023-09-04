@@ -52,8 +52,9 @@ class Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 		add_action( 'gatherpress_send_emails', array( $this, 'send_emails' ), 10, 3 );
+		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
+		add_filter( 'rest_send_nocache_headers', array( $this, 'nocache_headers_for_endpoint' ) );
 	}
 
 	/**
@@ -62,7 +63,7 @@ class Rest_Api {
 	 * Registers various REST API endpoints for interacting with GatherPress events.
 	 * The registered routes include endpoints for event creation, retrieval, updating, and deletion.
 	 *
-	 * @todo Implement access control to restrict certain operations to authorized users.
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
@@ -112,16 +113,10 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_datetime' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => static function(): bool {
+					return current_user_can( 'edit_posts' );
+				},
 				'args'                => array(
-					'_wpnonce'       => array(
-						/**
-						 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-						 *
-						 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-						 */
-						'required' => true,
-					),
 					'post_id'        => array(
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_event_post_id' ),
@@ -158,25 +153,19 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'email' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => static function(): bool {
+					return current_user_can( 'edit_posts' );
+				},
 				'args'                => array(
-					'_wpnonce' => array(
-						/**
-						 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-						 *
-						 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-						 */
-						'required' => true,
-					),
-					'post_id'  => array(
+					'post_id' => array(
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_event_post_id' ),
 					),
-					'message'  => array(
+					'message' => array(
 						'required'          => false,
 						'validate_callback' => 'sanitize_text_field',
 					),
-					'send'     => array(
+					'send'    => array(
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_send' ),
 					),
@@ -200,26 +189,15 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => static function(): bool {
+					return is_user_logged_in();
+				},
 				'args'                => array(
-					'_wpnonce' => array(
-						/**
-						 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-						 *
-						 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-						 */
-						'required' => true,
-					),
-					'post_id'  => array(
+					'post_id' => array(
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_event_post_id' ),
 					),
-					// @todo add logic for allowing event organizers to add people to events.
-					// 'user_id'        => [
-					// 'required'          => false,
-					// 'validate_callback' => [ $this, 'validate_event_post_id' ],
-					// ],
-					'status'   => array(
+					'status'  => array(
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_rsvp_status' ),
 					),
@@ -245,14 +223,6 @@ class Rest_Api {
 				'callback'            => array( $this, 'events_list' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'_wpnonce'        => array(
-						/**
-						 * WordPress will verify the nonce cookie, we just want to ensure nonce was passed as param.
-						 *
-						 * @see https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
-						 */
-						'required' => false,
-					),
 					'event_list_type' => array(
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_event_list_type' ),
@@ -410,14 +380,6 @@ class Rest_Api {
 	 * @throws Exception When an exception occurs during the process.
 	 */
 	public function update_datetime( WP_REST_Request $request ): WP_REST_Response {
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			return new WP_REST_Response(
-				array(
-					'success' => false,
-				)
-			);
-		}
-
 		$params             = wp_parse_args( $request->get_params(), $request->get_default_params() );
 		$params['timezone'] = Event::maybe_convert_offset( $params['timezone'] );
 		$event              = new Event( $params['post_id'] );
@@ -446,14 +408,6 @@ class Rest_Api {
 	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
 	 */
 	public function email( WP_REST_Request $request ): WP_REST_Response {
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			return new WP_REST_Response(
-				array(
-					'success' => false,
-				)
-			);
-		}
-
 		$params   = $request->get_params();
 		$post_id  = intval( $params['post_id'] );
 		$message  = $params['message'] ?? '';
@@ -672,9 +626,9 @@ class Rest_Api {
 
 		// If managing user is adding someone to an event.
 		if (
-			intval( $current_user_id )
-			&& intval( $user_id )
-			&& $current_user_id !== $user_id
+			$current_user_id &&
+			$user_id &&
+			$current_user_id !== $user_id
 		) {
 			if ( ! current_user_can( 'edit_posts' ) ) {
 				$user_id = 0;
@@ -688,10 +642,9 @@ class Rest_Api {
 		}
 
 		if (
-			intval( $user_id )
-			&& current_user_can( 'read' )
-			&& is_user_member_of_blog( $user_id )
-			&& ! $event->has_event_past()
+			$user_id &&
+			is_user_member_of_blog( $user_id ) &&
+			! $event->has_event_past()
 		) {
 			$status = $event->rsvp->save( $user_id, $status, $guests );
 
@@ -702,7 +655,7 @@ class Rest_Api {
 
 		$response = array(
 			'event_id'    => $post_id,
-			'success'     => (bool) $success,
+			'success'     => $success,
 			'status'      => $status,
 			'guests'      => $guests,
 			'responses'   => $event->rsvp->responses(),
@@ -734,6 +687,28 @@ class Rest_Api {
 		$response->data['meta']['_online_event_link'] = $event->maybe_get_online_event_link();
 
 		return $response;
+	}
+
+
+	/**
+	 * Prevent caching nonce for some endpoints for non-logged in visitors.
+	 *
+	 * @param bool $rest_send_nocache_headers Boolean value, if true will not cache nonce.
+	 *
+	 * @return bool
+	 */
+	public function nocache_headers_for_endpoint( bool $rest_send_nocache_headers ): bool {
+		global $wp;
+
+		$endpoints = array(
+			sprintf( '/%s/event/events-list', GATHERPRESS_REST_NAMESPACE ),
+		);
+
+		if ( in_array( $wp->query_vars['rest_route'], $endpoints, true ) ) {
+			$rest_send_nocache_headers = true;
+		}
+
+		return $rest_send_nocache_headers;
 	}
 
 }
