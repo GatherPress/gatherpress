@@ -47,10 +47,10 @@ class Test_Rest_Api extends Base {
 				'callback' => array( $instance, 'prepare_event_data' ),
 			),
 			array(
-				'type'     => 'filter',
-				'name'     => 'rest_send_nocache_headers',
+				'type'     => 'action',
+				'name'     => 'gatherpress_send_emails',
 				'priority' => 10,
-				'callback' => array( $instance, 'nocache_headers_for_endpoint' ),
+				'callback' => array( $instance, 'send_emails' ),
 			),
 		);
 
@@ -692,25 +692,6 @@ class Test_Rest_Api extends Base {
 			$response->data['event_id'],
 			'Failed to assert that event ID matches.'
 		);
-	}
-
-	/**
-	 * Coverage for nocache_headers_for_endpoint method.
-	 *
-	 * @covers ::nocache_headers_for_endpoint
-	 *
-	 * @return void
-	 */
-	public function test_nocache_headers_for_endpoint(): void {
-		global $wp;
-
-		$instance = Rest_Api::get_instance();
-
-		$this->assertFalse( $instance->nocache_headers_for_endpoint( false ) );
-
-		$wp->query_vars['rest_route'] = '/gatherpress/v1/event/events-list';
-
-		$this->assertTrue( $instance->nocache_headers_for_endpoint( false ) );
 	}
 
 }

@@ -53,7 +53,6 @@ class Rest_Api {
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
-		add_filter( 'rest_send_nocache_headers', array( $this, 'nocache_headers_for_endpoint' ) );
 		add_action( 'gatherpress_send_emails', array( $this, 'send_emails' ), 10, 3 );
 	}
 
@@ -78,33 +77,6 @@ class Rest_Api {
 				$route['args']
 			);
 		}
-	}
-
-	/**
-	 * Prevents caching of nonce for specified REST API endpoints for non-logged-in visitors.
-	 *
-	 * This method checks if the requested REST API endpoint is in a list of endpoints that should
-	 * not cache the nonce. If the endpoint matches, it sets the `rest_send_nocache_headers` flag to true,
-	 * preventing caching of the nonce for non-logged-in visitors.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param bool $rest_send_nocache_headers A boolean value indicating whether to prevent caching of the nonce.
-	 *
-	 * @return bool The modified value of $rest_send_nocache_headers after processing.
-	 */
-	public function nocache_headers_for_endpoint( bool $rest_send_nocache_headers ): bool {
-		global $wp;
-
-		$endpoints = array(
-			sprintf( '/%s/event/events-list', GATHERPRESS_REST_NAMESPACE ),
-		);
-
-		if ( in_array( $wp->query_vars['rest_route'], $endpoints, true ) ) {
-			$rest_send_nocache_headers = true;
-		}
-
-		return $rest_send_nocache_headers;
 	}
 
 	/**
