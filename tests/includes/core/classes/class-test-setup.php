@@ -24,6 +24,7 @@ class Test_Setup extends Base {
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::__construct
+	 * @covers ::instantiate_classes
 	 * @covers ::setup_hooks
 	 *
 	 * @return void
@@ -112,6 +113,34 @@ class Test_Setup extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for filter_plugin_action_links method.
+	 *
+	 * @covers ::filter_plugin_action_links
+	 *
+	 * @return void
+	 */
+	public function test_filter_plugin_action_links(): void {
+		$instance = Setup::get_instance();
+
+		$actions = array(
+			'unit-test' => '<a href="https://unit.test">Unit Test</a>',
+		);
+
+		$response = $instance->filter_plugin_action_links( $actions );
+
+		$this->assertSame(
+			'<a href="https://unit.test">Unit Test</a>',
+			$response['unit-test'],
+			'Failed to assert unit-test link matches.'
+		);
+		$this->assertSame(
+			'<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">Settings</a>',
+			$response['settings'],
+			'Failed to assert settings link matches.'
+		);
 	}
 
 	/**

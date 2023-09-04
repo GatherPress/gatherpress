@@ -56,8 +56,8 @@ class Setup {
 		Settings::get_instance();
 		Venue::get_instance();
 
-		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			WP_CLI::add_command( 'gatherpress', Cli::class );
+		if ( defined( 'WP_CLI' ) && WP_CLI ) { // @codeCoverageIgnore
+			WP_CLI::add_command( 'gatherpress', Cli::class ); // @codeCoverageIgnore
 		}
 	}
 
@@ -523,6 +523,8 @@ class Setup {
 	/**
 	 * Rename the attendees table to rsvps.
 	 *
+	 * @coverCoverageIgnore
+	 *
 	 * @todo Remove this code with 1.0.0; it's temporary to address a breaking change.
 	 *
 	 * This method renames the attendees table to rsvps, but it's intended as a temporary solution
@@ -543,6 +545,8 @@ class Setup {
 
 	/**
 	 * Rename attendance blocks to RSVP blocks.
+	 *
+	 * @codeCoverageIgnore
 	 *
 	 * @todo Remove this code with 1.0.0; it's temporary to address a breaking change.
 	 *
