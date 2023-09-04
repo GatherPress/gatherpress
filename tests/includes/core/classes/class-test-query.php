@@ -120,4 +120,31 @@ class Test_Query extends Base {
 		$this->assertSame( 'gp_event', $response->query['post_type'], 'Failed to assert post type is gp_event.' );
 	}
 
+	/**
+	 * Coverage for adjust_admin_event_sorting method.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting(): void {
+		$instance = Query::get_instance();
+
+		$this->mock->user( false, 'admin' );
+		$response = $instance->adjust_admin_event_sorting( array() );
+		$this->assertEmpty( $response, 'Failed to assert array is not empty' );
+
+		$this->mock->user( true, 'admin' );
+
+		// Set 'orderby' admin query to 'datetime'.
+		global $wp_query;
+		$wp_query->set( 'orderby', 'datetime' );
+
+		// Run function with empty array passed as 'pieces' argument.
+		$response = $instance->adjust_admin_event_sorting( array() );
+
+		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
+		$this->assertNotEmpty( $response, 'Failed to assert array is empty' );
+	}
+
 }
