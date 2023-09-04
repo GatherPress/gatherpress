@@ -2,7 +2,6 @@
  * WordPress dependencies.
  */
 import { useState, useEffect } from '@wordpress/element';
-import apiFetch from '@wordpress/api-fetch';
 import { Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
@@ -10,6 +9,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import EventItem from './EventItem';
+import { getFromGlobal } from '../helpers/globals';
 
 const EventsList = (props) => {
 	const { eventOptions, maxNumberOfEvents, type, topics, venues } = props;
@@ -59,12 +59,23 @@ const EventsList = (props) => {
 				?.join(',');
 		}
 
-		apiFetch({
-			path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`,
-		}).then((e) => {
-			setLoaded(true);
-			setEvents(e);
-		});
+		const endpoint =
+			getFromGlobal('event_rest_api') +
+			`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`;
+
+		/**
+		 * Not using apiFetch helper here as it will use X-Wp-Nonce and cache it when page caching is on causing a 403.
+		 *
+		 * @see https://github.com/GatherPress/gatherpress/issues/300
+		 */
+		fetch(endpoint)
+			.then((response) => {
+				return response.json();
+			})
+			.then((data) => {
+				setLoaded(true);
+				setEvents(data);
+			});
 	}, [setEvents, maxNumberOfEvents, type, topics, venues]);
 
 	return (
