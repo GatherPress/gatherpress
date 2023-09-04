@@ -107,10 +107,10 @@ class Test_Settings extends Base {
 				'option',
 				array(
 					'field'       => array(
-						'label'   => 'Unit test',
+						'label' => 'Unit test',
 					),
 					'description' => 'unit test description',
-				)
+				),
 			)
 		);
 
@@ -148,10 +148,10 @@ class Test_Settings extends Base {
 				'option',
 				array(
 					'field'       => array(
-						'label' => 'Unit test'
+						'label' => 'Unit test',
 					),
 					'description' => 'unit test description',
-				)
+				),
 			)
 		);
 
@@ -201,7 +201,7 @@ class Test_Settings extends Base {
 							'unit' => 'test',
 						),
 					),
-				)
+				),
 			)
 		);
 
