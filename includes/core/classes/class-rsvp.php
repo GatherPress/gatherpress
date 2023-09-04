@@ -43,7 +43,7 @@ class Rsvp {
 	 *
 	 * @var int
 	 */
-	public int $limit = 2000;
+	protected int $limit = 2000;
 
 	/**
 	 * The event post object associated with this RSVP instance.

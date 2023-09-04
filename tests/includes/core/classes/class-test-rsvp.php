@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Rsvp;
 use PMC\Unit_Test\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Rsvp.
@@ -87,14 +88,29 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_check_waiting_list(): void {
-		$post     = $this->mock->post(
+		$event_id = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',
 			)
-		)->get();
-		$attendee = new Rsvp( $post->ID );
+		)->get()->ID;
+		$rsvp     = new Rsvp( $event_id );
 
-		$this->assertSame( 0, $attendee->check_waiting_list(), 'Failed to assert expected waiting list value.' );
+		$this->assertSame( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
+
+		Utility::set_and_get_hidden_property( $rsvp, 'limit', 1 );
+
+		$user_1_id = $this->factory->user->create();
+		$user_2_id = $this->factory->user->create();
+
+		$rsvp->save( $user_1_id, 'attending' );
+		$rsvp->save( $user_2_id, 'attending' );
+
+		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.');
+		$this->assertSame( 'waiting_list', $rsvp->get( $user_2_id )['status'], 'Failed to asser user 2 is on waiting list.' );
+
+		$rsvp->save( $user_1_id, 'not_attending' );
+
+		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to asser user 2 is on attending.' );
 	}
 
 	/**
