@@ -14,17 +14,18 @@
  * @param string $description (Optional) Additional information or instructions for the field.
  */
 
-if ( ! isset( $name, $option, $value, $description ) ) {
+if ( ! isset( $name, $label, $option, $value, $description ) ) {
 	return;
 }
 ?>
-<label for="<?php echo esc_attr( $option ); ?>"></label>
-<input id="<?php echo esc_attr( $option ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_attr( $value ); ?>" />
-<?php
-if ( ! empty( $description ) ) {
-	?>
-	<p class="description">
-		<?php echo esc_html( $description ); ?>
-	</p>
+<div class="form-wrap">
+	<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
+	<input id="<?php echo esc_attr( $option ); ?>" type="text" name="<?php echo esc_attr( $name ); ?>" class="regular-text" value="<?php echo esc_attr( $value ); ?>" />
 	<?php
-}
+	if ( ! empty( $description ) ) {
+		?>
+		<p class="description"><?php echo esc_html( $description ); ?></p>
+		<?php
+	}
+	?>
+</div>

@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Settings;
 use PMC\Unit_Test\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Settings.
@@ -57,6 +58,158 @@ class Test_Settings extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for set_current_page method.
+	 *
+	 * @covers ::set_current_page
+	 *
+	 * @return void
+	 */
+	public function test_set_current_page(): void {
+		$instance = Settings::get_instance();
+
+		$this->assertEmpty(
+			Utility::get_hidden_property( $instance, 'current_page' ),
+			'Failed to assert current_page is empty.'
+		);
+
+		$this->mock->input(
+			array(
+				'GET' => array( 'page' => 'unit-test' ),
+			)
+		);
+
+		Utility::invoke_hidden_method( $instance, 'set_current_page' );
+
+		$this->assertSame(
+			'unit-test',
+			Utility::get_hidden_property( $instance, 'current_page' ),
+			'Failed to assert current_page is set to unit-test.'
+		);
+	}
+
+	/**
+	 * Coverage for text method.
+	 *
+	 * @covers ::text
+	 *
+	 * @return void
+	 */
+	public function test_text(): void {
+		$instance = Settings::get_instance();
+		$text     = Utility::buffer_and_return(
+			array( $instance, 'text' ),
+			array(
+				'sub_page',
+				'section',
+				'option',
+				array(
+					'field'       => array(
+						'label'   => 'Unit test',
+					),
+					'description' => 'unit test description',
+				)
+			)
+		);
+
+		$this->assertStringContainsString(
+			'<label for="gp_option">Unit test</label>',
+			$text,
+			'Failed to assert that label matches.'
+		);
+		$this->assertStringContainsString(
+			'<input id="gp_option" type="text" name="sub_page[section][option]" class="regular-text" value="" />',
+			$text,
+			'Failed to assert that input matches.'
+		);
+		$this->assertStringContainsString(
+			'<p class="description">unit test description</p>',
+			$text,
+			'Failed to assert that description matches.'
+		);
+	}
+
+	/**
+	 * Coverage for checkbox method.
+	 *
+	 * @covers ::checkbox
+	 *
+	 * @return void
+	 */
+	public function test_checkbox(): void {
+		$instance = Settings::get_instance();
+		$checkbox = Utility::buffer_and_return(
+			array( $instance, 'checkbox' ),
+			array(
+				'sub_page',
+				'section',
+				'option',
+				array(
+					'field'       => array(
+						'label' => 'Unit test'
+					),
+					'description' => 'unit test description',
+				)
+			)
+		);
+
+		$this->assertStringContainsString(
+			'<label for="gp_option">Unit test</label>',
+			$checkbox,
+			'Failed to assert that label matches.'
+		);
+		$this->assertStringContainsString(
+			'<input id="gp_option" type="checkbox" name="sub_page[section][option]" value="1"  />',
+			$checkbox,
+			'Failed to assert that input matches.'
+		);
+		$this->assertStringContainsString(
+			'<input type="hidden" name="sub_page[section][option]" value="0" />',
+			$checkbox,
+			'Failed to assert that hidden input matches.'
+		);
+		$this->assertStringContainsString(
+			'<p class="description">unit test description</p>',
+			$checkbox,
+			'Failed to assert that description matches.'
+		);
+	}
+
+	/**
+	 * Coverage for autocomplete method.
+	 *
+	 * @covers ::autocomplete
+	 *
+	 * @return void
+	 */
+	public function test_autocomplete(): void {
+		$instance     = Settings::get_instance();
+		$autocomplete = Utility::buffer_and_return(
+			array( $instance, 'autocomplete' ),
+			array(
+				'sub_page',
+				'section',
+				'option',
+				array(
+					'type'  => 'page',
+					'label' => 'Select unit test page',
+					'limit' => 2,
+					'field' => array(
+						'options' => array(
+							'unit' => 'test',
+						),
+					),
+				)
+			)
+		);
+
+		$this->assertStringContainsString(
+			'<div class="regular-text" data-gp_component_name="autocomplete" data-gp_component_attrs="{&quot;name&quot;:&quot;sub_page[section][option]&quot;,&quot;option&quot;:&quot;gp_option&quot;,&quot;value&quot;:&quot;[]&quot;,&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;}}"></div>',
+			$autocomplete,
+			'Failed to assert that markup matches.'
+		);
 	}
 
 	/**

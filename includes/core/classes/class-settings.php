@@ -47,6 +47,23 @@ class Settings {
 	}
 
 	/**
+	 * Set up hooks for various purposes.
+	 *
+	 * This method adds hooks for different purposes as needed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function setup_hooks(): void {
+		add_action( 'admin_menu', array( $this, 'options_page' ) );
+		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
+
+		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
+	}
+
+	/**
 	 * Helper method to set the current page based on the 'page' query parameter.
 	 *
 	 * This method retrieves and sanitizes the 'page' query parameter from the request.
@@ -62,23 +79,6 @@ class Settings {
 		}
 
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
-	}
-
-	/**
-	 * Set up hooks for various purposes.
-	 *
-	 * This method adds hooks for different purposes as needed.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	protected function setup_hooks(): void {
-		add_action( 'admin_menu', array( $this, 'options_page' ) );
-		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
-		add_action( 'admin_init', array( $this, 'register_settings' ) );
-
-		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 	}
 
 	/**
@@ -234,6 +234,7 @@ class Settings {
 				'name'        => $name,
 				'option'      => Utility::prefix_key( $option ),
 				'value'       => $value,
+				'label'       => $option_settings['field']['label'] ?? '',
 				'description' => $option_settings['description'] ?? '',
 			),
 			true
