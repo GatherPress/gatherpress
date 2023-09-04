@@ -128,20 +128,19 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_adjust_admin_event_sorting(): void {
-
 		$instance = Query::get_instance();
-		
+
 		$this->mock->user( false, 'admin' );
 		$response = $instance->adjust_admin_event_sorting( array() );
-		$this->assertEmpty($response, 'The array is not empty.');
+		$this->assertEmpty( $response, 'The array is not empty.' );
 
 		$this->mock->user( true, 'admin' );
 
-		//Set 'orderby' admin query to 'datetime'.
+		// Set 'orderby' admin query to 'datetime'.
 		global $wp_query;
 		$wp_query->set( 'orderby', 'datetime' );
 
-		//Run function with empty array passed as 'pieces' argument.
+		// Run function with empty array passed as 'pieces' argument.
 		$response = $instance->adjust_admin_event_sorting( array() );
 
 	    // Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
