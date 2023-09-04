@@ -82,7 +82,7 @@ const EventItem = (props) => {
 						<RsvpResponseCard
 							eventId={event.ID}
 							value="attending"
-							attendees={event.attendees}
+							responses={event.responses}
 							limit="3"
 							avatarOnly={true}
 						/>

@@ -36,8 +36,8 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 1. Go to the WP Admin > Events
 2. Add an event
 3. Populate a date/time
-4. Add the `Attendance Selector` block where you wish to display the CTA for this event
-5. Add the `Attendance List` block (if desired) to display the list of attendees
+4. Add the `RSVP` block where you wish to display the CTA for this event
+5. Add the `RSVP Response` block (if desired) to display the list of folks responding to this event
 6. Done
 
 ## 3. Settings

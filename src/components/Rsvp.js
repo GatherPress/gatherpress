@@ -86,13 +86,13 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 					waiting_list: 0, // eslint-disable-line camelcase
 				};
 
-				for (const [key, value] of Object.entries(res.attendees)) {
+				for (const [key, value] of Object.entries(res.responses)) {
 					count[key] = value.count;
 				}
 
 				const payload = {
 					setRsvpStatus: res.status,
-					setRsvpResponse: res.attendees,
+					setRsvpResponse: res.responses,
 					setRsvpCount: count,
 					setOnlineEventLink: res.online_link,
 				};

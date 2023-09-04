@@ -3,7 +3,7 @@
  * Manages RSVP related functionality for events.
  *
  * This class is responsible for handling all operations related to RSVPs for events, including
- * retrieving RSVP information, saving RSVPs, checking attendee limits, and more.
+ * retrieving RSVP information, saving RSVPs, checking attending limits, and more.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -16,7 +16,7 @@ use WP_Post;
 /**
  * Class Rsvp.
  *
- * Manages RSVP functionality for events, including attendee status tracking and limits.
+ * Manages RSVP functionality for events, including response status tracking and limits.
  */
 class Rsvp {
 
@@ -35,7 +35,7 @@ class Rsvp {
 	);
 
 	/**
-	 * The maximum limit for attendees (temporary).
+	 * The maximum limit for attending response (temporary).
 	 *
 	 * @todo Temporary limit.
 	 *       Configuration options will be available in the future.
@@ -138,7 +138,7 @@ class Rsvp {
 		}
 
 		$table         = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$attendee      = $this->get( $user_id );
+		$response      = $this->get( $user_id );
 		$limit_reached = $this->attending_limit_reached( $status );
 
 		if ( $limit_reached && ! $guests ) {
@@ -153,9 +153,9 @@ class Rsvp {
 			'guests'    => intval( $guests ),
 		);
 
-		if ( intval( $attendee['id'] ) ) {
+		if ( intval( $response['id'] ) ) {
 			$where = array(
-				'id' => intval( $attendee['id'] ),
+				'id' => intval( $response['id'] ),
 			);
 			$save  = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		} else {
@@ -176,38 +176,38 @@ class Rsvp {
 	}
 
 	/**
-	 * Check the waiting list and move attendees to attending if spots are available.
+	 * Check the waiting list and move response to attending if spots are available.
 	 *
-	 * This method checks if there are spots available in the attending list and moves attendees
+	 * This method checks if there are spots available in the attending list and moves response
 	 * from the waiting list to attending based on their timestamp.
 	 *
-	 * @return int The number of attendees from the waiting list that were moved to attending.
+	 * @return int The number of responses from the waiting list that were moved to attending.
 	 * @since 1.0.0
 	 */
 	public function check_waiting_list(): int {
-		$attendees = $this->attendees();
+		$responses = $this->responses();
 		$total     = 0;
 
 		if (
-			intval( $attendees['attending']['count'] ) < $this->limit
-			&& intval( $attendees['waiting_list']['count'] )
+			intval( $responses['attending']['count'] ) < $this->limit
+			&& intval( $responses['waiting_list']['count'] )
 		) {
-			$waiting_list = $attendees['waiting_list']['attendees'];
+			$waiting_list = $responses['waiting_list']['responses'];
 
 			// People longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
-			$total = $this->limit - intval( $attendees['attending']['count'] );
+			$total = $this->limit - intval( $responses['attending']['count'] );
 			$i     = 0;
 
 			while ( $i < $total ) {
 				// Check that we have enough on the waiting_list to run this.
-				if ( ( $i + 1 ) > intval( $attendees['waiting_list']['count'] ) ) {
+				if ( ( $i + 1 ) > intval( $responses['waiting_list']['count'] ) ) {
 					break;
 				}
 
-				$attendee = $waiting_list[ $i ];
-				$this->save( $attendee['id'], 'attending' );
+				$response = $waiting_list[ $i ];
+				$this->save( $response['id'], 'attending' );
 				$i++;
 			}
 		}
@@ -218,8 +218,8 @@ class Rsvp {
 	/**
 	 * Check if the attending limit has been reached for an event.
 	 *
-	 * This method determines whether the maximum attendee limit for the 'attending' status
-	 * has been reached for the event. It checks the current number of 'attending' attendees
+	 * This method determines whether the maximum response limit for the 'attending' status
+	 * has been reached for the event. It checks the current number of 'attending' responses
 	 * and compares it to the defined limit.
 	 *
 	 * @param string $status Desired attendance status.
@@ -229,11 +229,11 @@ class Rsvp {
 	 * @since 1.0.0
 	 */
 	public function attending_limit_reached( string $status ): bool {
-		$attendees = $this->attendees();
+		$responses = $this->responses();
 
 		if (
-			! empty( $attendees['attending'] )
-			&& intval( $attendees['attending']['count'] ) >= $this->limit
+			! empty( $responses['attending'] )
+			&& intval( $responses['attending']['count'] ) >= $this->limit
 			&& 'attending' === $status
 		) {
 			return true;
@@ -243,19 +243,17 @@ class Rsvp {
 	}
 
 	/**
-	 * Get all attendees for an event.
+	 * Get all responses for an event.
 	 *
-	 * This method retrieves and organizes information about attendees for the event.
-	 * It provides an array containing attendee details grouped by RSVP status ('attending', 'not_attending', 'waiting_list'),
-	 * along with counts and additional attendee data.
+	 * This method retrieves and organizes information about responses for the event.
+	 * It provides an array containing response details grouped by RSVP status ('attending', 'not_attending', 'waiting_list'),
+	 * along with counts and additional response data.
 	 *
-	 * @return array An array containing attendee information grouped by RSVP status.
-	 *
-	 * @todo Consider refactoring this method into the Event class for improved code organization and potentially renaming it.
+	 * @return array An array containing response information grouped by RSVP status.
 	 *
 	 * @since 1.0.0
 	 */
-	public function attendees(): array {
+	public function responses(): array {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
@@ -269,7 +267,7 @@ class Rsvp {
 
 		$retval = array(
 			'all' => array(
-				'attendees' => array(),
+				'responses' => array(),
 				'count'     => 0,
 			),
 		);
@@ -283,24 +281,24 @@ class Rsvp {
 		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $event_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
-		$attendees   = array();
+		$responses   = array();
 		$all_guests  = 0;
 
 		foreach ( $this->statuses as $status ) {
 			$retval[ $status ] = array(
-				'attendees' => array(),
+				'responses' => array(),
 				'count'     => 0,
 			);
 		}
 
-		foreach ( $data as $attendee ) {
-			// @todo Currently, the number of guests for attendees is set to 0 as this feature is not yet available.
+		foreach ( $data as $response ) {
+			// @todo Currently, the number of guests for attending response is set to 0 as this feature is not yet available.
 			// We plan to implement this feature in a future version of GatherPress.
-			$attendee['guests'] = 0;
+			$response['guests'] = 0;
 
-			$user_id     = intval( $attendee['user_id'] );
-			$user_status = sanitize_key( $attendee['status'] );
-			$user_guests = intval( $attendee['guests'] );
+			$user_id     = intval( $response['user_id'] );
+			$user_status = sanitize_key( $response['status'] );
+			$user_guests = intval( $response['guests'] );
 			$all_guests += $user_guests;
 
 			if ( 1 > $user_id ) {
@@ -312,7 +310,7 @@ class Rsvp {
 			}
 
 			$user_info   = get_userdata( $user_id );
-			$attendees[] = array(
+			$responses[] = array(
 				'id'        => $user_id,
 				'name'      => $user_info->display_name,
 				'photo'     => get_avatar_url( $user_id ),
@@ -320,34 +318,34 @@ class Rsvp {
 				// 'profile'   => bp_core_get_user_domain( $user_id ),
 				'profile'   => get_author_posts_url( $user_id ),
 				'role'      => Settings::get_instance()->get_user_role( $user_id ),
-				'timestamp' => sanitize_text_field( $attendee['timestamp'] ),
+				'timestamp' => sanitize_text_field( $response['timestamp'] ),
 				'status'    => $user_status,
 				'guests'    => $user_guests,
 			);
 		}
 
 		// Sort before breaking down statuses in return array.
-		usort( $attendees, array( $this, 'sort_by_role' ) );
+		usort( $responses, array( $this, 'sort_by_role' ) );
 
-		$retval['all']['attendees'] = $attendees;
-		$retval['all']['count']     = count( $retval['all']['attendees'] ) + $all_guests;
+		$retval['all']['responses'] = $responses;
+		$retval['all']['count']     = count( $retval['all']['responses'] ) + $all_guests;
 
 		foreach ( $this->statuses as $status ) {
-			$retval[ $status ]['attendees'] = array_filter(
-				$attendees,
-				function( $attendee ) use ( $status ) {
-					return ( $status === $attendee['status'] );
+			$retval[ $status ]['responses'] = array_filter(
+				$responses,
+				function( $response ) use ( $status ) {
+					return ( $status === $response['status'] );
 				}
 			);
 
 			$guests = 0;
 
-			foreach ( $retval[ $status ]['attendees'] as $attendee ) {
-				$guests += intval( $attendee['guests'] );
+			foreach ( $retval[ $status ]['responses'] as $response ) {
+				$guests += intval( $response['guests'] );
 			}
 
-			$retval[ $status ]['attendees'] = array_values( $retval[ $status ]['attendees'] );
-			$retval[ $status ]['count']     = count( $retval[ $status ]['attendees'] ) + $guests;
+			$retval[ $status ]['responses'] = array_values( $retval[ $status ]['responses'] );
+			$retval[ $status ]['count']     = count( $retval[ $status ]['responses'] ) + $guests;
 		}
 
 		wp_cache_set( $cache_key, $retval, 15 * MINUTE_IN_SECONDS );
@@ -356,13 +354,13 @@ class Rsvp {
 	}
 
 	/**
-	 * Sort attendees by their role.
+	 * Sort responses by their role.
 	 *
-	 * This method compares two attendees based on their user roles and returns
+	 * This method compares two responses based on their user roles and returns
 	 * an integer (-1, 0, or 1) to determine their order in the sorted list.
 	 *
-	 * @param array $first  The first attendee to compare in the sort.
-	 * @param array $second The second attendee to compare in the sort.
+	 * @param array $first  The first response to compare in the sort.
+	 * @param array $second The second response to compare in the sort.
 	 *
 	 * @return int An integer indicating the sorting order:
 	 *             -1 if $first should come before $second,
@@ -388,15 +386,15 @@ class Rsvp {
 	}
 
 	/**
-	 * Sort attendees by their RSVP timestamp.
+	 * Sort responses by their RSVP timestamp.
 	 *
-	 * This method compares two attendees based on their RSVP timestamps and is used to sort attendees
-	 * from the waiting list, with the earliest timestamp attendees appearing first.
+	 * This method compares two responses based on their RSVP timestamps and is used to sort responses
+	 * from the waiting list, with the earliest timestamp responses appearing first.
 	 *
-	 * @param array $first  First attendee to compare in the sort.
-	 * @param array $second Second attendee to compare in the sort.
+	 * @param array $first  First response to compare in the sort.
+	 * @param array $second Second response to compare in the sort.
 	 *
-	 * @return bool Returns true if the first attendee's timestamp is earlier than the second attendee's timestamp; otherwise, false.
+	 * @return bool Returns true if the first response's timestamp is earlier than the second response's timestamp; otherwise, false.
 	 *
 	 * @since 1.0.0
 	 */
