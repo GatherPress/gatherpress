@@ -1,31 +1,38 @@
 <?php
 /**
- * Class is responsible for all utility related functionality.
+ * Utility class responsible for various utility-related functionality.
  *
- * @package GatherPress
- * @subpackage Core
+ * This class provides utility methods for common tasks such as rendering templates, handling key prefixes, and
+ * converting time zone markup to an array of choices. It encapsulates these utilities for use throughout the GatherPress
+ * plugin.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
 namespace GatherPress\Core;
 
-if ( ! defined( 'ABSPATH' ) ) { // @codeCoverageIgnore
-	exit; // @codeCoverageIgnore
-}
-
 /**
  * Class Utility.
+ *
+ * Essential utility functions for the GatherPress plugin.
+ *
+ * @since 1.0.0
  */
 class Utility {
 
 	/**
-	 * Render template.
+	 * Renders a template file.
 	 *
-	 * @param string $path      Path to template.
-	 * @param array  $variables Array of variables to pass to template.
-	 * @param bool   $echo      Echo or return the template.
+	 * This method loads and renders a template file located at the specified path.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @param string $path      The path to the template file.
+	 * @param array  $variables An array of variables to pass to the template.
+	 * @param bool   $echo      Whether to echo the template (true) or return it (false).
+	 *
+	 * @return string The rendered template as a string.
 	 */
 	public static function render_template( string $path, array $variables = array(), bool $echo = false ): string {
 		if ( ! file_exists( $path ) ) {
@@ -47,31 +54,44 @@ class Utility {
 	}
 
 	/**
-	 * Add gp- prefix.
+	 * Prefixes a key with 'gp_'.
 	 *
-	 * @param string $key The key for adding prefix.
+	 * This method adds the 'gp_' prefix to the provided key and returns the modified key.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @param string $key The key to which the prefix will be added.
+	 *
+	 * @return string The key with the 'gp_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
 		return sprintf( 'gp_%s', $key );
 	}
 
 	/**
-	 * Remove gp- prefix.
+	 * Remove the 'gp_' prefix from a key.
 	 *
-	 * @param string $key The key for removing prefix.
+	 * This method removes the 'gp_' prefix from the provided key and returns the modified key.
 	 *
-	 * @return string
+	 * @since 1.0.0
+	 *
+	 * @param string $key The key from which the prefix will be removed.
+	 *
+	 * @return string The key with the 'gp_' prefix removed.
 	 */
 	public static function unprefix_key( string $key ): string {
 		return preg_replace( '/^gp_/', '', $key );
 	}
 
 	/**
-	 * Convert Time Zone markup to an array.
+	 * Retrieve an array of time zone choices.
 	 *
-	 * @return array
+	 * This method converts the Time Zone markup returned by WordPress into an associative array
+	 * of time zones grouped by their labels. The array is used to populate select input fields.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array of time zones with labels as keys and time zone choices as values.
 	 */
 	public static function timezone_choices(): array {
 		$timezones_raw   = explode( PHP_EOL, wp_timezone_choice( 'UTC' ) );

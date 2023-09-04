@@ -24,6 +24,7 @@ class Test_Setup extends Base {
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::__construct
+	 * @covers ::instantiate_classes
 	 * @covers ::setup_hooks
 	 *
 	 * @return void
@@ -53,7 +54,7 @@ class Test_Setup extends Base {
 				'type'     => 'filter',
 				'name'     => 'block_categories_all',
 				'priority' => 10,
-				'callback' => array( $instance, 'block_category' ),
+				'callback' => array( $instance, 'register_gatherpress_block_category' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -89,7 +90,7 @@ class Test_Setup extends Base {
 				'type'     => 'filter',
 				'name'     => 'body_class',
 				'priority' => 10,
-				'callback' => array( $instance, 'body_class' ),
+				'callback' => array( $instance, 'add_gatherpress_body_classes' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -115,13 +116,41 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for body_class method.
+	 * Coverage for filter_plugin_action_links method.
 	 *
-	 * @covers ::body_class
+	 * @covers ::filter_plugin_action_links
 	 *
 	 * @return void
 	 */
-	public function test_body_class(): void {
+	public function test_filter_plugin_action_links(): void {
+		$instance = Setup::get_instance();
+
+		$actions = array(
+			'unit-test' => '<a href="https://unit.test">Unit Test</a>',
+		);
+
+		$response = $instance->filter_plugin_action_links( $actions );
+
+		$this->assertSame(
+			'<a href="https://unit.test">Unit Test</a>',
+			$response['unit-test'],
+			'Failed to assert unit-test link matches.'
+		);
+		$this->assertSame(
+			'<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">Settings</a>',
+			$response['settings'],
+			'Failed to assert settings link matches.'
+		);
+	}
+
+	/**
+	 * Coverage for add_gatherpress_body_classes method.
+	 *
+	 * @covers ::add_gatherpress_body_classes
+	 *
+	 * @return void
+	 */
+	public function test_add_gatherpress_body_classes(): void {
 		$instance = Setup::get_instance();
 		$classes  = array( 'unit-test' );
 		$expects  = array(
@@ -132,19 +161,19 @@ class Test_Setup extends Base {
 
 		$this->assertSame(
 			$expects,
-			$instance->body_class( $classes ),
+			$instance->add_gatherpress_body_classes( $classes ),
 			'Failed to assert the array of body classes matches.'
 		);
 	}
 
 	/**
-	 * Coverage for block_category method.
+	 * Coverage for register_gatherpress_block_category method.
 	 *
-	 * @covers ::block_category
+	 * @covers ::register_gatherpress_block_category
 	 *
 	 * @return void
 	 */
-	public function test_block_category(): void {
+	public function test_register_gatherpress_block_category(): void {
 		$instance = Setup::get_instance();
 		$default  = array(
 			array(
@@ -168,7 +197,7 @@ class Test_Setup extends Base {
 
 		$this->assertSame(
 			$expects,
-			$instance->block_category( $default ),
+			$instance->register_gatherpress_block_category( $default ),
 			'Failed to assert correct block categories.'
 		);
 	}

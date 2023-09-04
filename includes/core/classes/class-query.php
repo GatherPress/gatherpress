@@ -15,10 +15,6 @@ namespace GatherPress\Core;
 use GatherPress\Core\Traits\Singleton;
 use WP_Query;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 /**
  * Class Query.
  *
@@ -47,8 +43,10 @@ class Query {
 	 * This method adds hooks for different purposes as needed.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
-	protected function setup_hooks() {
+	protected function setup_hooks(): void {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
 		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ) );
 	}

@@ -10,6 +10,9 @@
  * Text Domain:         gatherpress
  * License:             GPLv2 or later (license.txt)
  *
+ * This file serves as the main plugin file for GatherPress. It defines the plugin's basic information,
+ * constants, and initializes the plugin.
+ *
  * @package GatherPress
  */
 
@@ -21,13 +24,15 @@ define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
 define( 'GATHERPRESS_REST_NAMESPACE', 'gatherpress/v1' );
 
-// Bail if things do not meet minimum plugin requirements.
-if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/preflight.php' ) {
+// Check if the minimum plugin requirements are not met and prevent further execution if necessary.
+if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/requirements-check.php' ) {
 	return;
 }
 
+// Include and register the autoloader class for automatic loading of plugin classes.
 require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php';
-
 GatherPress\Core\Autoloader::register();
+
+// Initialize setups.
 GatherPress\Core\Setup::get_instance();
 GatherPress\BuddyPress\Setup::get_instance();

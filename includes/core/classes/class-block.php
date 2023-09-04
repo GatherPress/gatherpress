@@ -12,10 +12,6 @@ namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 /**
  * Class Block.
  *
@@ -44,6 +40,8 @@ class Block {
 	 * This method adds hooks for different purposes as needed.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_blocks' ) );

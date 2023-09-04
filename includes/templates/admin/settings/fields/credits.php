@@ -1,10 +1,15 @@
 <?php
 /**
- * Credits template.
+ * Template for displaying credits in GatherPress settings.
  *
- * @package GatherPress
- * @subpackage Core
+ * This template is used to display a list of credits, typically for contributors and project leads,
+ * in GatherPress settings pages.
+ *
+ * @package GatherPress\Core
  * @since 1.0.0
+ *
+ * @param string $option   The option name for retrieving the credits data.
+ * @param array  $credits  An array of credit data containing names, slugs, and avatar URLs.
  */
 
 if ( ! isset( $option, $credits ) ) {

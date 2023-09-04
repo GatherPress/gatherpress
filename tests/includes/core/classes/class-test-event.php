@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
 use WP_Post;
@@ -44,6 +45,53 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for get_post_type_registration_args method.
+	 *
+	 * @covers ::get_post_type_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_post_type_registration_args(): void {
+		$args = Event::get_post_type_registration_args();
+
+		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
+		$this->assertTrue( $args['show_in_rest'], 'Failed to assert that show_in_rest is true.' );
+		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
+		$this->assertSame( 'dashicons-nametag', $args['menu_icon'], 'Failed to assert that menu_icon is nametag.' );
+		$this->assertSame( 'events', $args['rewrite']['slug'], 'Failed to assert that slug is events.' );
+	}
+
+	/**
+	 * Coverage for get_post_meta_registration_args method.
+	 *
+	 * @covers ::get_post_meta_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_post_meta_registration_args(): void {
+		$args = Event::get_post_meta_registration_args();
+
+		$this->assertIsArray( $args['_online_event_link'], 'Failed to assert that _online_event_link is an array.' );
+	}
+
+	/**
+	 * Coverage for get_taxonomy_registration_args method.
+	 *
+	 * @covers ::get_taxonomy_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy_registration_args(): void {
+		$args = Event::get_taxonomy_registration_args();
+
+		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
+		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
+		$this->assertTrue( $args['show_ui'], 'Failed to assert that show_ui is true.' );
+		$this->assertTrue( $args['hierarchical'], 'Failed to assert that hierarchical is true.' );
+		$this->assertSame( 'topic', $args['rewrite']['slug'], 'Failed to assert that slug is topic.' );
+	}
+
+	/**
 	 * Data provider for get_display_datetime test.
 	 *
 	 * @return array
@@ -73,6 +121,10 @@ class Test_Event extends Base {
 				),
 				'expects' => 'Monday, May 11, 2020, 3:00 PM to Tuesday, May 12, 2020, 5:00 PM EDT',
 			),
+			array(
+				'params'  => array(),
+				'expects' => '—',
+			),
 		);
 	}
 
@@ -101,9 +153,12 @@ class Test_Event extends Base {
 		)->get();
 		$event = new Event( $post->ID );
 
-		$output = $event->save_datetimes( $params );
+		if ( ! empty( $params ) ) {
+			$output = $event->save_datetimes( $params );
 
-		$this->assertTrue( $output, 'Failed to assert that datetimes saved.' );
+			$this->assertTrue( $output, 'Failed to assert that datetimes saved.' );
+		}
+
 		$this->assertSame( $expects, $event->get_display_datetime() );
 	}
 
@@ -268,12 +323,102 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for get_venue_information method.
+	 *
+	 * @covers ::get_venue_information
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_information(): void {
+		$venue      = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Unit Test Venue',
+				'post_name'  => 'unit-test-venue',
+			)
+		)->get();
+		$event_id   = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get()->ID;
+		$event      = new Event( $event_id );
+		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
+
+		update_post_meta( $venue->ID, '_venue_information', $venue_info );
+		wp_set_post_terms( $event_id, '_unit-test-venue', Venue::TAXONOMY );
+
+		$response = $event->get_venue_information();
+
+		$this->assertSame(
+			'Unit Test Venue',
+			$response['name'],
+			'Failed to assert that name matches.'
+		);
+		$this->assertSame(
+			'123 Main Street, Montclair, NJ 07042',
+			$response['full_address'],
+			'Failed to assert that full address matches.'
+		);
+		$this->assertSame(
+			'(123) 123-1234',
+			$response['phone_number'],
+			'Failed to assert that phone number matches.'
+		);
+		$this->assertSame(
+			'https://gatherpress.org/',
+			$response['website'],
+			'Failed to assert that website matches.'
+		);
+		$this->assertSame(
+			get_the_permalink( $venue->ID ),
+			$response['permalink'],
+			'Failed to assert that permalink matches.'
+		);
+		$this->assertEmpty(
+			$response['is_online_event'],
+			'Failed to assert that is online event is false.'
+		);
+
+		wp_set_post_terms( $event_id, 'Online event', Venue::TAXONOMY );
+
+		$response = $event->get_venue_information();
+
+		$this->assertSame(
+			'Online event',
+			$response['name'],
+			'Failed to assert that name matches.'
+		);
+
+		$this->assertEmpty(
+			$response['full_address'],
+			'Failed to assert that full address is empty.'
+		);
+
+		$this->assertEmpty(
+			$response['phone_number'],
+			'Failed to assert that phone number is empty.'
+		);
+
+		$this->assertEmpty(
+			$response['website'],
+			'Failed to assert that website is empty.'
+		);
+
+		$this->assertTrue(
+			$response['is_online_event'],
+			'Failed to assert that is online event is true.'
+		);
+	}
+
+	/**
 	 * Coverage for get_calendar_links method.
 	 *
 	 * @covers ::get_calendar_links
 	 * @covers ::get_google_calendar_link
 	 * @covers ::get_ics_calendar_download
 	 * @covers ::get_yahoo_calendar_link
+	 * @covers ::get_calendar_description
 	 *
 	 * @return void
 	 */
@@ -381,6 +526,46 @@ class Test_Event extends Base {
 
 		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
+	}
+
+	/**
+	 * Coverage for maybe_get_online_event_link method.
+	 *
+	 * @covers ::maybe_get_online_event_link
+	 *
+	 * @return void
+	 */
+	public function test_maybe_get_online_event_link(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get()->ID;
+		$event    = new Event( $event_id );
+		$year     = gmdate( 'Y' );
+		$params   = array(
+			'datetime_start' => sprintf( '%d-05-11 15:00:00', $year + 1 ),
+			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year + 1 ),
+		);
+		$user_id  = $this->mock->user()->get()->ID;
+		$link     = 'https:://unittest.com/video/';
+
+		$event->save_datetimes( $params );
+
+		update_post_meta( $event_id, '_online_event_link', $link );
+
+		$this->assertEmpty(
+			$event->maybe_get_online_event_link(),
+			'Failed to assert online event link is empty.'
+		);
+
+		$event->rsvp->save( $user_id, 'attending' );
+
+		$this->assertSame(
+			$link,
+			$event->maybe_get_online_event_link(),
+			'Failed to assert online event link is present.'
+		);
 	}
 
 }

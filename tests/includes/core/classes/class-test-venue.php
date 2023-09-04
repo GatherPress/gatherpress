@@ -9,6 +9,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
 
@@ -51,6 +52,53 @@ class Test_Venue extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for get_post_type_registration_args method.
+	 *
+	 * @covers ::get_post_type_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_post_type_registration_args(): void {
+		$args = Venue::get_post_type_registration_args();
+
+		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
+		$this->assertTrue( $args['show_in_rest'], 'Failed to assert that show_in_rest is true.' );
+		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
+		$this->assertSame( 'dashicons-location', $args['menu_icon'], 'Failed to assert that menu_icon is location.' );
+		$this->assertSame( 'venues', $args['rewrite']['slug'], 'Failed to assert that slug is events.' );
+	}
+
+	/**
+	 * Coverage for get_post_meta_registration_args method.
+	 *
+	 * @covers ::get_post_meta_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_post_meta_registration_args(): void {
+		$args = Venue::get_post_meta_registration_args();
+
+		$this->assertIsArray( $args['_venue_information'], 'Failed to assert that _online_event_link is an array.' );
+	}
+
+	/**
+	 * Coverage for get_taxonomy_registration_args method.
+	 *
+	 * @covers ::get_taxonomy_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy_registration_args(): void {
+		$args = Venue::get_taxonomy_registration_args();
+
+		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
+		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
+		$this->assertFalse( $args['show_ui'], 'Failed to assert that show_ui is false.' );
+		$this->assertFalse( $args['hierarchical'], 'Failed to assert that hierarchical is false.' );
+		$this->assertFalse( $args['show_admin_column'], 'Failed to assert that show_admin_column is false.' );
 	}
 
 	/**
@@ -172,6 +220,34 @@ class Test_Venue extends Base {
 			$instance->get_venue_term_slug( $venue_after->post_name ),
 			'Failed to assert that slugs match.'
 		);
+
+		$venue_before = clone $venue_after;
+
+		$venue_after->post_name .= '-third';
+
+		// Setting to draft should not update term.
+		$venue_after->post_status = 'draft';
+		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
+
+		$term_object = get_term( $term['term_id'] );
+
+		$this->assertNotSame(
+			$term_object->slug,
+			$instance->get_venue_term_slug( $venue_after->post_name ),
+			'Failed to assert that slugs do not match.'
+		);
+
+		// Setting back to publish should update the term.
+		$venue_after->post_status = 'publish';
+		$instance->maybe_update_term_slug( $venue_before->ID, $venue_after, $venue_before );
+
+		$term_object = get_term( $term['term_id'] );
+
+		$this->assertSame(
+			$term_object->slug,
+			$instance->get_venue_term_slug( $venue_after->post_name ),
+			'Failed to assert that slugs match.'
+		);
 	}
 
 	/**
@@ -233,6 +309,48 @@ class Test_Venue extends Base {
 			$venue->ID,
 			$venue_from_term_slug->ID,
 			'Failed to assert that IDs match.'
+		);
+	}
+
+	/**
+	 * Coverage for get_venue_meta method.
+	 *
+	 * @covers ::get_venue_meta
+	 *
+	 * @return void
+	 */
+	public function test_get_venue_meta(): void {
+		$event = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'post_name' => 'unit-test-event',
+			)
+		)->get();
+		wp_set_post_terms( $event->ID, 'dummy-venue', Venue::TAXONOMY );
+
+		$venue_meta = Venue::get_instance()->get_venue_meta( $event->ID, Event::POST_TYPE );
+
+		// Generic test for an in person event.
+		$this->assertFalse( $venue_meta['isOnlineEventTerm'] );
+		$this->assertEmpty( $venue_meta['onlineEventLink'] );
+
+		$venue_title = 'Unit Test Venue';
+
+		$venue = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_name'  => 'unit-test-venue',
+				'post_title' => $venue_title,
+			)
+		)->get();
+
+		$venue_meta = Venue::get_instance()->get_venue_meta( $venue->ID, Venue::POST_TYPE );
+
+		// Test for a venue post.
+		$this->assertEquals(
+			$venue_title,
+			$venue_meta['name'],
+			'Failed to assert venue title matches the venue meta title.'
 		);
 	}
 

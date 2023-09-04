@@ -11,10 +11,6 @@
 
 namespace GatherPress\Core\Traits;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 /**
  * Singleton Trait.
  *

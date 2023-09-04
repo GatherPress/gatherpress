@@ -15,10 +15,6 @@ use DateTimeZone;
 use Exception;
 use WP_Post;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // @codeCoverageIgnore Prevent direct access.
-}
-
 /**
  * Class Event.
  *
@@ -32,6 +28,7 @@ class Event {
 	const TAXONOMY           = 'gp_topic';
 	const TABLE_FORMAT       = '%sgp_events';
 	const DATETIME_CACHE_KEY = 'datetime_%d';
+	const DATETIME_FORMAT    = 'Y-m-d H:i:s';
 
 	/**
 	 * Event post object.
@@ -48,13 +45,13 @@ class Event {
 	public $rsvp;
 
 	/**
-	 * Class constructor.
+	 * Event constructor.
+	 *
+	 * Initializes an Event object for a specific event post.
 	 *
 	 * @since 1.0.0
 	 *
-	 * This method initializes the object and sets up necessary hooks.
-	 *
-	 * @param int $post_id An event post ID.
+	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
 		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
@@ -65,6 +62,118 @@ class Event {
 		$this->rsvp  = new Rsvp( $post_id );
 
 		return $this->event;
+	}
+
+	/**
+	 * Get the arguments for registering the 'Event' custom post type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the registration arguments for the custom post type.
+	 */
+	public static function get_post_type_registration_args(): array {
+		return array(
+			'labels'        => array(
+				'name'               => _x( 'Events', 'Post Type General Name', 'gatherpress' ),
+				'singular_name'      => _x( 'Event', 'Post Type Singular Name', 'gatherpress' ),
+				'menu_name'          => __( 'Events', 'gatherpress' ),
+				'all_items'          => __( 'All Events', 'gatherpress' ),
+				'view_item'          => __( 'View Event', 'gatherpress' ),
+				'add_new_item'       => __( 'Add New Event', 'gatherpress' ),
+				'add_new'            => __( 'Add New', 'gatherpress' ),
+				'edit_item'          => __( 'Edit Event', 'gatherpress' ),
+				'update_item'        => __( 'Update Event', 'gatherpress' ),
+				'search_items'       => __( 'Search Events', 'gatherpress' ),
+				'not_found'          => __( 'Not Found', 'gatherpress' ),
+				'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+			),
+			'show_in_rest'  => true,
+			'public'        => true,
+			'hierarchical'  => false,
+			'template'      => array(
+				array( 'gatherpress/event-date' ),
+				array( 'gatherpress/add-to-calendar' ),
+				array( 'gatherpress/venue' ),
+				array( 'gatherpress/rsvp' ),
+				array(
+					'core/paragraph',
+					array(
+						'placeholder' => __( 'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', 'gatherpress' ),
+					),
+				),
+				array( 'gatherpress/rsvp-response' ),
+			),
+			'menu_position' => 4,
+			'supports'      => array(
+				'title',
+				'editor',
+				'excerpt',
+				'thumbnail',
+				'comments',
+				'revisions',
+				'custom-fields',
+			),
+			'menu_icon'     => 'dashicons-nametag',
+			'rewrite'       => array(
+				'slug' => 'events',
+			),
+		);
+	}
+
+	/**
+	 * Get the registration arguments for custom post meta fields.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the registration arguments for custom post meta fields.
+	 */
+	public static function get_post_meta_registration_args(): array {
+		return array(
+			'_online_event_link' => array(
+				'auth_callback'     => function() {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+		);
+	}
+
+	/**
+	 * Get the registration arguments for the custom 'Topic' taxonomy.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The registration arguments for the 'Topic' taxonomy.
+	 */
+	public static function get_taxonomy_registration_args(): array {
+		return array(
+			'labels'            => array(
+				'name'              => _x( 'Topics', 'taxonomy general name', 'gatherpress' ),
+				'singular_name'     => _x( 'Topic', 'taxonomy singular name', 'gatherpress' ),
+				'search_items'      => __( 'Search Topics', 'gatherpress' ),
+				'all_items'         => __( 'All Topics', 'gatherpress' ),
+				'view_item'         => __( 'View Topic', 'gatherpress' ),
+				'parent_item'       => __( 'Parent Topic', 'gatherpress' ),
+				'parent_item_colon' => __( 'Parent Topic:', 'gatherpress' ),
+				'edit_item'         => __( 'Edit Topic', 'gatherpress' ),
+				'update_item'       => __( 'Update Topic', 'gatherpress' ),
+				'add_new_item'      => __( 'Add New Topic', 'gatherpress' ),
+				'new_item_name'     => __( 'New Topic Name', 'gatherpress' ),
+				'not_found'         => __( 'No Topics Found', 'gatherpress' ),
+				'back_to_items'     => __( 'Back to Topics', 'gatherpress' ),
+				'menu_name'         => __( 'Topics', 'gatherpress' ),
+			),
+			'hierarchical'      => true,
+			'public'            => true,
+			'show_ui'           => true,
+			'show_admin_column' => true,
+			'query_var'         => true,
+			'rewrite'           => array( 'slug' => 'topic' ),
+			'show_in_rest'      => true,
+		);
 	}
 
 	/**
@@ -133,7 +242,7 @@ class Event {
 		$end     = $data['datetime_end_gmt'];
 		$current = time();
 
-		if ( $current > strtotime( $end ) ) {
+		if ( ! empty( $end ) && $current > strtotime( $end ) ) {
 			return true;
 		}
 
@@ -382,14 +491,13 @@ class Event {
 	 * @return string The converted date in GMT (UTC) time zone in 'Y-m-d H:i:s' format.
 	 */
 	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
-		$format   = 'Y-m-d H:i:s';
 		$datetime = date_create( $date, $timezone );
 
 		if ( false === $datetime ) {
-			return gmdate( $format, 0 );
+			return gmdate( self::DATETIME_FORMAT, 0 );
 		}
 
-		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( $format );
+		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( self::DATETIME_FORMAT );
 	}
 
 	/**
@@ -497,20 +605,18 @@ class Event {
 	 * @return string The Google Calendar add event link for the event.
 	 */
 	protected function get_google_calendar_link(): string {
-		$date_start = $this->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start = $this->get_formatted_datetime( 'His', 'start', false );
-		$date_end   = $this->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end   = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime   = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
-		$venue      = $this->get_venue_information();
-		$location   = $venue['name'];
+		$date_start  = $this->get_formatted_datetime( 'Ymd', 'start', false );
+		$time_start  = $this->get_formatted_datetime( 'His', 'start', false );
+		$date_end    = $this->get_formatted_datetime( 'Ymd', 'end', false );
+		$time_end    = $this->get_formatted_datetime( 'His', 'end', false );
+		$datetime    = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		$venue       = $this->get_venue_information();
+		$location    = $venue['name'];
+		$description = $this->get_calendar_description();
 
 		if ( ! empty( $venue['full_address'] ) ) {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
-
-		/* translators: %s: event link. */
-		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		return add_query_arg(
 			array(
@@ -543,22 +649,20 @@ class Event {
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
 
 		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start = $this->get_formatted_datetime( 'Y-m-d H:i:s', 'start', false );
-		$diff_end   = $this->get_formatted_datetime( 'Y-m-d H:i:s', 'end', false );
-		$duration   = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
-		$full       = intval( $duration );
-		$fraction   = ( $duration - $full );
-		$hours      = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes    = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
-		$venue      = $this->get_venue_information();
-		$location   = $venue['name'];
+		$diff_start  = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
+		$diff_end    = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'end', false );
+		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
+		$full        = intval( $duration );
+		$fraction    = ( $duration - $full );
+		$hours       = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
+		$minutes     = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+		$venue       = $this->get_venue_information();
+		$location    = $venue['name'];
+		$description = $this->get_calendar_description();
 
 		if ( ! empty( $venue['full_address'] ) ) {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
-
-		/* translators: %s: event link. */
-		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		return add_query_arg(
 			array(
@@ -598,13 +702,11 @@ class Event {
 		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
 		$venue          = $this->get_venue_information();
 		$location       = $venue['name'];
+		$description    = $this->get_calendar_description();
 
 		if ( ! empty( $venue['full_address'] ) ) {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
-
-		/* translators: %s: event link. */
-		$description = sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 
 		$args = array(
 			'BEGIN:VCALENDAR',
@@ -624,6 +726,21 @@ class Event {
 		);
 
 		return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
+	}
+
+	/**
+	 * Generate a calendar event description with a link to the event details.
+	 *
+	 * This method generates a descriptive text for a calendar event, including a link to the event details page.
+	 * The generated description can be used in calendar applications or event listings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The calendar event description with the event details link.
+	 */
+	protected function get_calendar_description(): string {
+		/* translators: %s: event link. */
+		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 	}
 
 	/**
@@ -665,7 +782,7 @@ class Event {
 		}
 
 		if ( 'all' !== $type ) {
-			$current = gmdate( 'Y-m-d H:i:s', time() );
+			$current = gmdate( self::DATETIME_FORMAT, time() );
 
 			switch ( $type ) {
 				case 'upcoming':
@@ -734,7 +851,7 @@ class Event {
 		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( $fields['datetime_start'], $timezone );
 		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( $fields['datetime_end'], $timezone );
 
-		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo Add caching to this and create new method to check existence.
 		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -766,29 +883,28 @@ class Event {
 	 * to determine whether to provide the online event link. The method is marked with a @todo
 	 * to indicate that it should be refactored for improved readability and reduced conditionals.
 	 *
-	 * @todo Clean up this method as it contains multiple conditionals and needs refactoring for clarity.
-	 *
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
 	public function maybe_get_online_event_link(): string {
 		$event_link = (string) get_post_meta( $this->event->ID, '_online_event_link', true );
 
-		if ( is_admin() ) {
-			return $event_link;
-		}
-
-		if ( ! $this->rsvp ) {
-			return '';
-		}
-
-		$user = $this->rsvp->get( get_current_user_id() );
-
 		if (
-			! isset( $user['status'] ) ||
-			'attending' !== $user['status'] ||
-			$this->has_event_past()
+			! apply_filters( 'gatherpress_force_online_event_link', false ) &&
+			! is_admin()
 		) {
-			return '';
+			if ( ! $this->rsvp ) {
+				return '';
+			}
+
+			$user = $this->rsvp->get( get_current_user_id() );
+
+			if (
+				! isset( $user['status'] ) ||
+				'attending' !== $user['status'] ||
+				$this->has_event_past()
+			) {
+				return '';
+			}
 		}
 
 		return $event_link;
