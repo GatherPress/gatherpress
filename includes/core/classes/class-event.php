@@ -65,6 +65,118 @@ class Event {
 	}
 
 	/**
+	 * Get the arguments for registering the 'Event' custom post type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the registration arguments for the custom post type.
+	 */
+	public static function get_post_type_registration_args(): array {
+		return array(
+			'labels'        => array(
+				'name'               => _x( 'Events', 'Post Type General Name', 'gatherpress' ),
+				'singular_name'      => _x( 'Event', 'Post Type Singular Name', 'gatherpress' ),
+				'menu_name'          => __( 'Events', 'gatherpress' ),
+				'all_items'          => __( 'All Events', 'gatherpress' ),
+				'view_item'          => __( 'View Event', 'gatherpress' ),
+				'add_new_item'       => __( 'Add New Event', 'gatherpress' ),
+				'add_new'            => __( 'Add New', 'gatherpress' ),
+				'edit_item'          => __( 'Edit Event', 'gatherpress' ),
+				'update_item'        => __( 'Update Event', 'gatherpress' ),
+				'search_items'       => __( 'Search Events', 'gatherpress' ),
+				'not_found'          => __( 'Not Found', 'gatherpress' ),
+				'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+			),
+			'show_in_rest'  => true,
+			'public'        => true,
+			'hierarchical'  => false,
+			'template'      => array(
+				array( 'gatherpress/event-date' ),
+				array( 'gatherpress/add-to-calendar' ),
+				array( 'gatherpress/venue' ),
+				array( 'gatherpress/rsvp' ),
+				array(
+					'core/paragraph',
+					array(
+						'placeholder' => __( 'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', 'gatherpress' ),
+					),
+				),
+				array( 'gatherpress/rsvp-response' ),
+			),
+			'menu_position' => 4,
+			'supports'      => array(
+				'title',
+				'editor',
+				'excerpt',
+				'thumbnail',
+				'comments',
+				'revisions',
+				'custom-fields',
+			),
+			'menu_icon'     => 'dashicons-nametag',
+			'rewrite'       => array(
+				'slug' => 'events',
+			),
+		);
+	}
+
+	/**
+	 * Get the registration arguments for custom post meta fields.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the registration arguments for custom post meta fields.
+	 */
+	public static function get_post_meta_registration_args(): array {
+		return array(
+			'_online_event_link' => array(
+				'auth_callback'     => function() {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+		);
+	}
+
+	/**
+	 * Get the registration arguments for the custom 'Topic' taxonomy.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The registration arguments for the 'Topic' taxonomy.
+	 */
+	public static function get_taxonomy_registration_args(): array {
+		return array(
+			'labels'            => array(
+				'name'              => _x( 'Topics', 'taxonomy general name', 'gatherpress' ),
+				'singular_name'     => _x( 'Topic', 'taxonomy singular name', 'gatherpress' ),
+				'search_items'      => __( 'Search Topics', 'gatherpress' ),
+				'all_items'         => __( 'All Topics', 'gatherpress' ),
+				'view_item'         => __( 'View Topic', 'gatherpress' ),
+				'parent_item'       => __( 'Parent Topic', 'gatherpress' ),
+				'parent_item_colon' => __( 'Parent Topic:', 'gatherpress' ),
+				'edit_item'         => __( 'Edit Topic', 'gatherpress' ),
+				'update_item'       => __( 'Update Topic', 'gatherpress' ),
+				'add_new_item'      => __( 'Add New Topic', 'gatherpress' ),
+				'new_item_name'     => __( 'New Topic Name', 'gatherpress' ),
+				'not_found'         => __( 'No Topics Found', 'gatherpress' ),
+				'back_to_items'     => __( 'Back to Topics', 'gatherpress' ),
+				'menu_name'         => __( 'Topics', 'gatherpress' ),
+			),
+			'hierarchical'      => true,
+			'public'            => true,
+			'show_ui'           => true,
+			'show_admin_column' => true,
+			'query_var'         => true,
+			'rewrite'           => array( 'slug' => 'topic' ),
+			'show_in_rest'      => true,
+		);
+	}
+
+	/**
 	 * Retrieve the formatted display date and time for the event.
 	 *
 	 * Returns a human-readable representation of the event's start and end date/time,
