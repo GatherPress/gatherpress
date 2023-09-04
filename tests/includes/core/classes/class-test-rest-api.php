@@ -52,6 +52,12 @@ class Test_Rest_Api extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'prepare_event_data' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'rest_send_nocache_headers',
+				'priority' => 10,
+				'callback' => array( $instance, 'nocache_headers_for_endpoint' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
