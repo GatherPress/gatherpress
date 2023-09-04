@@ -784,13 +784,17 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	function check_users_can_register() {
-		if ( filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN) ) {
+	public function check_users_can_register() {
+		if ( filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ) {
 			return;
 		}
 		?>
 			<div class="notice notice-warning is-dismissible">
-				<p><?php echo sprintf( __( 'For GatherPress to work, you will want to allow users to <a href=%s>register</a>.', 'gatherpress' ), esc_url( admin_url( 'options-general.php#users_can_register' ) ) ); ?></p>
+				<p>
+					<?php
+					/* translators: %s: search term */
+					echo sprintf( esc_html__( 'For GatherPress to work, you will want to allow users to <a href=%s>register</a>.', 'gatherpress' ), esc_url( admin_url( 'options-general.php#users_can_register' ) ) ); ?>
+				</p>
 			</div>
 		<?php
 	}
