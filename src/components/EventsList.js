@@ -67,9 +67,9 @@ const EventsList = (props) => {
 		if (getFromGlobal('is_user_logged_in')) {
 			apiFetch({
 				path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`,
-			}).then((e) => {
+			}).then((data) => {
 				setLoaded(true);
-				setEvents(e);
+				setEvents(data);
 			});
 		} else {
 			const endpoint =
