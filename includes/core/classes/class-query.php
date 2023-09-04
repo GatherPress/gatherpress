@@ -285,9 +285,9 @@ class Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria.
 	 */
 	public function adjust_admin_event_sorting( array $query_pieces ): array {
-		// if ( ! is_admin() ) {
-		// 	return $query_pieces;
-		// }
+		if ( ! is_admin() ) {
+			return $query_pieces;
+		}
 
 		global $wp_query;
 
