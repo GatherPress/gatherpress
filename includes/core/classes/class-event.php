@@ -771,29 +771,28 @@ class Event {
 	 * to determine whether to provide the online event link. The method is marked with a @todo
 	 * to indicate that it should be refactored for improved readability and reduced conditionals.
 	 *
-	 * @todo Clean up this method as it contains multiple conditionals and needs refactoring for clarity.
-	 *
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
 	public function maybe_get_online_event_link(): string {
 		$event_link = (string) get_post_meta( $this->event->ID, '_online_event_link', true );
 
-		if ( is_admin() ) {
-			return $event_link;
-		}
-
-		if ( ! $this->rsvp ) {
-			return '';
-		}
-
-		$user = $this->rsvp->get( get_current_user_id() );
-
 		if (
-			! isset( $user['status'] ) ||
-			'attending' !== $user['status'] ||
-			$this->has_event_past()
+			! apply_filters( 'gatherpress_force_online_event_link', false ) &&
+			! is_admin()
 		) {
-			return '';
+			if ( ! $this->rsvp ) {
+				return '';
+			}
+
+			$user = $this->rsvp->get( get_current_user_id() );
+
+			if (
+				! isset( $user['status'] ) ||
+				'attending' !== $user['status'] ||
+				$this->has_event_past()
+			) {
+				return '';
+			}
 		}
 
 		return $event_link;
