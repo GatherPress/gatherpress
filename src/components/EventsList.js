@@ -54,7 +54,7 @@ const EventsList = (props) => {
 		if ('object' === typeof venues) {
 			venuesString = venues
 				.map((venue) => {
-					return '_' + venue.slug;
+					return venue.slug;
 				})
 				?.join(',');
 		}
