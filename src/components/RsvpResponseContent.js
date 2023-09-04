@@ -6,7 +6,7 @@ import { getFromGlobal } from '../helpers/globals';
 
 const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
 	const postId = getFromGlobal('post_id');
-	const attendees = getFromGlobal('attendees');
+	const responses = getFromGlobal('responses');
 	const renderedItems = items.map((item, index) => {
 		const { value } = item;
 		const active = value === activeValue ? 'active' : 'hidden';
@@ -23,7 +23,7 @@ const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
 					eventId={postId}
 					value={value}
 					limit={limit}
-					attendees={attendees}
+					responses={responses}
 				/>
 			</div>
 		);

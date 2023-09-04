@@ -214,7 +214,7 @@ class Rest_Api {
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_event_post_id' ),
 					),
-					// @todo add logic for allowing event organizers to add people to events as attendees.
+					// @todo add logic for allowing event organizers to add people to events.
 					// 'user_id'        => [
 					// 'required'          => false,
 					// 'validate_callback' => [ $this, 'validate_event_post_id' ],
@@ -529,7 +529,7 @@ class Rest_Api {
 	public function get_members( array $send, int $post_id ): array {
 		$member_ids    = array();
 		$rsvp          = new Rsvp( $post_id );
-		$all_attendees = $rsvp->attendees();
+		$all_responses = $rsvp->responses();
 
 		if ( ! empty( $send['all'] ) ) {
 			return get_users();
@@ -543,7 +543,7 @@ class Rest_Api {
 						static function( $member ) {
 							return $member['id'];
 						},
-						$all_attendees[ $status ]['attendees']
+						$all_responses[ $status ]['responses']
 					)
 				);
 			}
@@ -612,7 +612,7 @@ class Rest_Api {
 					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
-					'attendees'                => ( $event->rsvp ) ? $event->rsvp->attendees() : array(),
+					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
 					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) ) ? $event->rsvp->get( get_current_user_id() ) : '',
 					'venue'                    => ( $venue_information['name'] ? $event->get_venue_information() : null ),
 				);
@@ -650,7 +650,7 @@ class Rest_Api {
 	 *
 	 * This method handles the update of the RSVP status for a user to an event, including handling guest count.
 	 * It checks the user's permissions and the event's status to ensure a valid update. If the update is successful,
-	 * it returns relevant information, including the updated status, guest count, and attendees.
+	 * it returns relevant information, including the updated status, guest count, and responses.
 	 *
 	 * @since 1.0.0
 	 *
@@ -705,7 +705,7 @@ class Rest_Api {
 			'success'     => (bool) $success,
 			'status'      => $status,
 			'guests'      => $guests,
-			'attendees'   => $event->rsvp->attendees(),
+			'responses'   => $event->rsvp->responses(),
 			'online_link' => ( 'attending' === $status ) ? $online_link : '',
 		);
 

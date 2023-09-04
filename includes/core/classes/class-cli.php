@@ -35,8 +35,8 @@ class Cli extends WP_CLI {
 		$event_id = (int) $args[0];
 		$action   = (string) $args[1];
 
-		if ( 'add-attendee' === $action ) {
-			$this->add_attendee( $event_id, $assoc_args );
+		if ( 'add-response' === $action ) {
+			$this->add_response( $event_id, $assoc_args );
 		}
 	}
 
@@ -84,16 +84,16 @@ class Cli extends WP_CLI {
 	}
 
 	/**
-	 * Add an attendee to an event.
+	 * Add response to an event.
 	 *
-	 * This method adds an attendee to the specified event, identified by its Post ID.
+	 * This method adds a response to the specified event, identified by its Post ID.
 	 *
 	 * @param int   $event_id   The Post ID of the event.
 	 * @param array $assoc_args Associative arguments for the script, including 'user_id', 'status', and 'guests'.
 	 *
 	 * @return void
 	 */
-	private function add_attendee( int $event_id, array $assoc_args ): void {
+	private function add_response( int $event_id, array $assoc_args ): void {
 		$event   = new Event( $event_id );
 		$user_id = $assoc_args['user_id'];
 		$status  = $assoc_args['status'];

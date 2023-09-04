@@ -230,7 +230,7 @@ class Assets {
 	 *
 	 * This method prepares and localizes data for use in JavaScript scripts. It collects various event-related
 	 * information and settings, making them available in the client-side context. The localized data includes
-	 * attendee details, current user information, time zone settings, event properties, and more.
+	 * response details, current user information, time zone settings, event properties, and more.
 	 *
 	 * @since 1.0.0
 	 *
@@ -242,7 +242,7 @@ class Assets {
 		$settings = Settings::get_instance();
 
 		return array(
-			'attendees'         => ( $event->rsvp ) ? $event->rsvp->attendees() : array(), // @todo cleanup
+			'responses'         => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
 			'current_user'      => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) ) ? $event->rsvp->get( get_current_user_id() ) : '', // @todo cleanup
 			'default_timezone'  => sanitize_text_field( wp_timezone_string() ),
 			'event_announced'   => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,

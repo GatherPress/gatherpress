@@ -14,10 +14,10 @@ const RsvpResponseCard = ({
 	eventId,
 	value,
 	limit,
-	attendees = [],
+	responses = [],
 	avatarOnly = false,
 }) => {
-	const [rsvpResponse, setRsvpResponse] = useState(attendees);
+	const [rsvpResponse, setRsvpResponse] = useState(responses);
 
 	Listener({ setRsvpResponse }, eventId);
 
@@ -27,15 +27,15 @@ const RsvpResponseCard = ({
 		'object' === typeof rsvpResponse &&
 		'undefined' !== typeof rsvpResponse[value]
 	) {
-		attendees = [...rsvpResponse[value].attendees];
+		responses = [...rsvpResponse[value].responses];
 
 		if (limit) {
-			attendees = attendees.splice(0, limit);
+			responses = responses.splice(0, limit);
 		}
 
-		renderedItems = attendees.map((attendee, index) => {
-			const { profile, name, photo, role } = attendee;
-			let { guests } = attendee;
+		renderedItems = responses.map((response, index) => {
+			const { profile, name, photo, role } = response;
+			let { guests } = response;
 
 			if (guests) {
 				guests = ' +' + guests + ' guest(s)';
@@ -73,7 +73,7 @@ const RsvpResponseCard = ({
 			{'attending' === value &&
 				0 === renderedItems.length &&
 				false === avatarOnly && (
-					<div className="gp-rsvp-response__no-attendees">
+					<div className="gp-rsvp-response__no-responses">
 						{false === getFromGlobal('has_event_past')
 							? __(
 									'No one is attending this event yet.',

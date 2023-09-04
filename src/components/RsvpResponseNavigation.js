@@ -18,7 +18,7 @@ const RsvpResponseNavigation = ({ items, activeValue, onTitleClick }) => {
 		waiting_list: 0, // eslint-disable-line camelcase
 	};
 
-	for (const [key, value] of Object.entries(getFromGlobal('attendees'))) {
+	for (const [key, value] of Object.entries(getFromGlobal('responses'))) {
 		defaultCount[key] = value.count;
 	}
 

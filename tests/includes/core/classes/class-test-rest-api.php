@@ -681,10 +681,9 @@ class Test_Rest_Api extends Base {
 		$response = $instance->update_rsvp( $request );
 
 		$this->assertEquals( 0, $response->data['guests'] );
-		// @todo changes `attendees` to `responses`.
 		$this->assertSame(
 			$user_id,
-			$response->data['attendees']['attending']['attendees'][0]['id'],
+			$response->data['responses']['attending']['responses'][0]['id'],
 			'Failed to assert that user ID matches.'
 		);
 		$this->assertSame(
