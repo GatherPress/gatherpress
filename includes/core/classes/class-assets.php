@@ -95,9 +95,7 @@ class Assets {
 	 */
 	public function add_global_object(): void {
 		?>
-		<script>
-			const GatherPress = <?php echo wp_json_encode( $this->localize( get_the_ID() ?? 0 ) ); ?>
-		</script>
+		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( get_the_ID() ?? 0 ) ); ?></script>
 		<?php
 	}
 
