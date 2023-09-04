@@ -59,6 +59,7 @@ class Settings {
 		add_action( 'admin_menu', array( $this, 'options_page' ) );
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 	}
@@ -776,6 +777,22 @@ class Settings {
 		}
 
 		return (string) $submenu;
+	}
+
+	/**
+	 *  Display notice if users can't register
+	 *
+	 * @return void
+	 */
+	function check_users_can_register() {
+		if ( filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN) ) {
+			return;
+		}
+		?>
+			<div class="notice notice-warning is-dismissible">
+				<p><?php echo sprintf( __( 'For GatherPress to work, you will want to allow users to <a href=%s>register</a>.', 'gatherpress' ), esc_url( admin_url( 'options-general.php#users_can_register' ) ) ); ?></p>
+			</div>
+		<?php
 	}
 
 }
