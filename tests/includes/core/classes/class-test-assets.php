@@ -89,7 +89,7 @@ class Test_Assets extends Base {
 
 		$this->assertMatchesRegularExpression( '#<script>window.GatherPress = {.*}</script>#', $object, 'Failed to assert regex of global object matches.' );
 	}
-	
+
 	/**
 	 * Coverage for event_communication_modal method.
 	 *
