@@ -105,7 +105,7 @@ class Test_Rsvp extends Base {
 		$rsvp->save( $user_1_id, 'attending' );
 		$rsvp->save( $user_2_id, 'attending' );
 
-		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.');
+		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.' );
 		$this->assertSame( 'waiting_list', $rsvp->get( $user_2_id )['status'], 'Failed to asser user 2 is on waiting list.' );
 
 		$rsvp->save( $user_1_id, 'not_attending' );
