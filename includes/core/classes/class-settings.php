@@ -792,8 +792,9 @@ class Settings {
 			<div class="notice notice-warning is-dismissible">
 				<p>
 					<?php
-					/* translators: %s: search term */
-					echo sprintf( esc_html__( 'For GatherPress to work, you will want to allow users to <a href=%s>register</a>.', 'gatherpress' ), esc_url( admin_url( 'options-general.php#users_can_register' ) ) ); ?>
+						/* translators: %s: search term */
+						echo sprintf( esc_html__( 'For GatherPress to work, you will want to allow users to <a href=%s>register</a>.', 'gatherpress' ), esc_url( admin_url( 'options-general.php#users_can_register' ) ) );
+					?>
 				</p>
 			</div>
 		<?php
