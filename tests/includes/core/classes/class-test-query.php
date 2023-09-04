@@ -143,7 +143,7 @@ class Test_Query extends Base {
 		// Run function with empty array passed as 'pieces' argument.
 		$response = $instance->adjust_admin_event_sorting( array() );
 
-	// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
+		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
 		$this->assertNotEmpty( $response, 'The array is empty.' );
 	}
 
