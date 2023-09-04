@@ -89,7 +89,7 @@ class Test_Assets extends Base {
 
 		$this->assertMatchesRegularExpression( '#<script>window.GatherPress = {.*}</script>#', $object, 'Failed to assert regex of global object matches.' );
 	}
-
+	
 	/**
 	 * Coverage for event_communication_modal method.
 	 *
@@ -114,6 +114,22 @@ class Test_Assets extends Base {
 			$output,
 			'Failed to assert event_communication_modal output div.'
 		);
+	}
+
+
+	/**
+	 * Coverage Enqueue scripts
+	 *
+	 * @covers ::enqueue_scripts
+	 *
+	 * @return void
+	 */
+
+	public function test_enqueue_scripts(): void {
+		$instance = Assets::get_instance();
+		$instance->enqueue_scripts();
+
+		$this->assertTrue( wp_style_is( 'dashicons', 'enqueued' ) );
 	}
 
 	/**
