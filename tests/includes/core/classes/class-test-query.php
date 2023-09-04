@@ -121,7 +121,7 @@ class Test_Query extends Base {
 	}
 
 	/**
-	 * Coverage for get_past_events method.
+	 * Coverage for adjust_admin_event_sorting method.
 	 *
 	 * @covers ::adjust_admin_event_sorting
 	 *
