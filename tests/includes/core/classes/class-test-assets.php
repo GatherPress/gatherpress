@@ -124,7 +124,6 @@ class Test_Assets extends Base {
 	 *
 	 * @return void
 	 */
-
 	public function test_enqueue_scripts(): void {
 		$instance = Assets::get_instance();
 		$instance->enqueue_scripts();
