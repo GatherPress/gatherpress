@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Setup;
+use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
 
 /**
@@ -200,6 +201,49 @@ class Test_Setup extends Base {
 			$instance->register_gatherpress_block_category( $default ),
 			'Failed to assert correct block categories.'
 		);
+	}
+
+	/**
+	 * Coverage for add_online_event_term method.
+	 *
+	 * @covers ::add_online_event_term
+	 *
+	 * @return void
+	 */
+	public function test_add_online_event_term(): void {
+		$instance = Setup::get_instance();
+		$slug     = 'online-event';
+
+		$this->assertEmpty(
+			term_exists( $slug, Venue::TAXONOMY ),
+			'Failed to assert online-event term does not exist.'
+		);
+
+		$instance->add_online_event_term();
+
+		$term_ids = term_exists( $slug, Venue::TAXONOMY );
+		$term     = get_term_by( 'term_id', $term_ids['term_id'], Venue::TAXONOMY );
+
+		$this->assertSame( $slug, $term->slug, 'Failed to assert that term slugs match.' );
+		$this->assertSame( 'Online event', $term->name, 'Failed to assert that term names match.' );
+
+		add_filter(
+			'gettext',
+			static function( $translation ): string {
+				if ( 'Online event' === $translation ) {
+					return 'Online';
+				}
+
+				return $translation;
+			}
+		);
+
+		$instance->add_online_event_term();
+
+		$term = get_term_by( 'term_id', $term->term_id, Venue::TAXONOMY );
+
+		$this->assertSame( $slug, $term->slug, 'Failed to assert that term slugs match.' );
+		$this->assertSame( 'Online', $term->name, 'Failed to assert that term names match.' );
 	}
 
 	/**

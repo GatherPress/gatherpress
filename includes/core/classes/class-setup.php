@@ -325,7 +325,7 @@ class Setup {
 	public function add_online_event_term(): void {
 		$term_name = __( 'Online event', 'gatherpress' );
 		$term_slug = 'online-event';
-		$term      = term_exists( 'Online', Venue::TAXONOMY );
+		$term      = term_exists( $term_slug, Venue::TAXONOMY );
 
 		if ( ! $term ) {
 			wp_insert_term(
