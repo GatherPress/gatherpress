@@ -55,6 +55,53 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Coverage for get_post_type_registration_args method.
+	 *
+	 * @covers ::get_post_type_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_post_type_registration_args(): void {
+		$args = Venue::get_post_type_registration_args();
+
+		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
+		$this->assertTrue( $args['show_in_rest'], 'Failed to assert that show_in_rest is true.' );
+		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
+		$this->assertSame( 'dashicons-location', $args['menu_icon'], 'Failed to assert that menu_icon is location.' );
+		$this->assertSame( 'venues', $args['rewrite']['slug'], 'Failed to assert that slug is events.' );
+	}
+
+	/**
+	 * Coverage for get_post_meta_registration_args method.
+	 *
+	 * @covers ::get_post_meta_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_post_meta_registration_args(): void {
+		$args = Venue::get_post_meta_registration_args();
+
+		$this->assertIsArray( $args['_venue_information'], 'Failed to assert that _online_event_link is an array.' );
+	}
+
+	/**
+	 * Coverage for get_taxonomy_registration_args method.
+	 *
+	 * @covers ::get_taxonomy_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy_registration_args(): void {
+		$args = Venue::get_taxonomy_registration_args();
+
+		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
+		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
+		$this->assertFalse( $args['show_ui'], 'Failed to assert that show_ui is false.' );
+		$this->assertFalse( $args['hierarchical'], 'Failed to assert that hierarchical is false.' );
+		$this->assertFalse( $args['show_admin_column'], 'Failed to assert that show_admin_column is false.' );
+	}
+
+	/**
 	 * Coverage for add_venue_term.
 	 *
 	 * @covers ::add_venue_term

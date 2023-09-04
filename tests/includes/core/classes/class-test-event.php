@@ -45,6 +45,53 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for get_post_type_registration_args method.
+	 *
+	 * @covers ::get_post_type_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_post_type_registration_args(): void {
+		$args = Event::get_post_type_registration_args();
+
+		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
+		$this->assertTrue( $args['show_in_rest'], 'Failed to assert that show_in_rest is true.' );
+		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
+		$this->assertSame( 'dashicons-nametag', $args['menu_icon'], 'Failed to assert that menu_icon is nametag.' );
+		$this->assertSame( 'events', $args['rewrite']['slug'], 'Failed to assert that slug is events.' );
+	}
+
+	/**
+	 * Coverage for get_post_meta_registration_args method.
+	 *
+	 * @covers ::get_post_meta_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_post_meta_registration_args(): void {
+		$args = Event::get_post_meta_registration_args();
+
+		$this->assertIsArray( $args['_online_event_link'], 'Failed to assert that _online_event_link is an array.' );
+	}
+
+	/**
+	 * Coverage for get_taxonomy_registration_args method.
+	 *
+	 * @covers ::get_taxonomy_registration_args
+	 *
+	 * @return void
+	 */
+	public function test_get_taxonomy_registration_args(): void {
+		$args = Event::get_taxonomy_registration_args();
+
+		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
+		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
+		$this->assertTrue( $args['show_ui'], 'Failed to assert that show_ui is true.' );
+		$this->assertTrue( $args['hierarchical'], 'Failed to assert that hierarchical is true.' );
+		$this->assertSame( 'topic', $args['rewrite']['slug'], 'Failed to assert that slug is topic.' );
+	}
+
+	/**
 	 * Data provider for get_display_datetime test.
 	 *
 	 * @return array

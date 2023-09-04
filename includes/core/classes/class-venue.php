@@ -66,6 +66,90 @@ class Venue {
 	}
 
 	/**
+	 * Get the arguments for registering the 'Venue' custom post type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the registration arguments for the custom post type.
+	 */
+	public static function get_post_type_registration_args(): array {
+		return array(
+			'labels'       => array(
+				'name'               => _x( 'Venues', 'Post Type General Name', 'gatherpress' ),
+				'singular_name'      => _x( 'Venue', 'Post Type Singular Name', 'gatherpress' ),
+				'menu_name'          => __( 'Venues', 'gatherpress' ),
+				'all_items'          => __( 'Venues', 'gatherpress' ),
+				'view_item'          => __( 'View Venue', 'gatherpress' ),
+				'add_new_item'       => __( 'Add New Venue', 'gatherpress' ),
+				'add_new'            => __( 'Add New', 'gatherpress' ),
+				'edit_item'          => __( 'Edit Venue', 'gatherpress' ),
+				'update_item'        => __( 'Update Venue', 'gatherpress' ),
+				'search_items'       => __( 'Search Venues', 'gatherpress' ),
+				'not_found'          => __( 'Not Found', 'gatherpress' ),
+				'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+			),
+			'show_in_rest' => true,
+			'public'       => true,
+			'hierarchical' => false,
+			'show_in_menu' => 'edit.php?post_type=gp_event',
+			'supports'     => array(
+				'title',
+				'editor',
+				'thumbnail',
+				'revisions',
+				'custom-fields',
+			),
+			'menu_icon'    => 'dashicons-location',
+			'template'     => array(
+				array( 'gatherpress/venue' ),
+			),
+			'rewrite'      => array(
+				'slug' => 'venues',
+			),
+		);
+	}
+
+	/**
+	 * Get the registration arguments for custom post meta fields.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing the registration arguments for custom post meta fields.
+	 */
+	public static function get_post_meta_registration_args(): array {
+		return array(
+			'_venue_information' => array(
+				'auth_callback'     => function() {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+		);
+	}
+
+	/**
+	 * Get the registration arguments for the custom 'Venue' taxonomy.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The registration arguments for the 'Venue' taxonomy.
+	 */
+	public static function get_taxonomy_registration_args(): array {
+		return array(
+			'labels'            => array(),
+			'hierarchical'      => false,
+			'public'            => true,
+			'show_ui'           => false,
+			'show_admin_column' => false,
+			'query_var'         => true,
+			'show_in_rest'      => true,
+		);
+	}
+
+	/**
 	 * Add a venue term when a venue post type is first saved.
 	 *
 	 * This method is responsible for automatically adding a term to the venue taxonomy
