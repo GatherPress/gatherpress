@@ -633,8 +633,65 @@ class Test_Rest_Api extends Base {
 	public function test_max_number(): void {
 		$instance = Rest_Api::get_instance();
 
-		$this->assertEquals( 5, Utility::invoke_hidden_method( $instance, 'max_number', array( 6, 5 ) ) );
-		$this->assertEquals( 3, Utility::invoke_hidden_method( $instance, 'max_number', array( 3, 5 ) ) );
+		$this->assertEquals(
+			5,
+			Utility::invoke_hidden_method( $instance, 'max_number', array( 6, 5 ) ),
+			'Failed to assert that numbers are equal.'
+		);
+		$this->assertEquals(
+			3,
+			Utility::invoke_hidden_method( $instance, 'max_number', array( 3, 5 ) ),
+			'Failed to assert that numbers are equal.'
+		);
+	}
+
+	/**
+	 * Coverage for update_rsvp method.
+	 *
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp(): void {
+		$instance = Rest_Api::get_instance();
+		$request  = new WP_REST_Request( 'POST' );
+		$user_id  = $this->mock->user( true, 'admin' )->get()->ID;
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		$event->save_datetimes(
+			array(
+				'datetime_start' => gmdate( Event::DATETIME_FORMAT, strtotime( '+1 day' ) ),
+				'datetime_end'   => gmdate( Event::DATETIME_FORMAT, strtotime( '+2 day' ) ),
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$request->set_query_params(
+			array(
+				'user_id' => $user_id,
+				'post_id' => $event_id,
+				'status'  => 'attending',
+				'guests'  => 0,
+			)
+		);
+
+		$response = $instance->update_rsvp( $request );
+
+		$this->assertEquals( 0, $response->data['guests'] );
+		// @todo changes `attendees` to `responses`.
+		$this->assertSame(
+			$user_id,
+			$response->data['attendees']['attending']['attendees'][0]['id'],
+			'Failed to assert that user ID matches.'
+		);
+		$this->assertSame(
+			$event_id,
+			$response->data['event_id'],
+			'Failed to assert that event ID matches.'
+		);
 	}
 
 	/**
