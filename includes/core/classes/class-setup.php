@@ -82,6 +82,7 @@ class Setup {
 			2
 		);
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
+		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
@@ -677,6 +678,29 @@ class Setup {
 		}
 
 		return $post_states;
+	}
+
+	/**
+	 *  Display notice if users can't register
+	 *
+	 * @return void
+	 */
+	public function check_users_can_register() {
+		if ( filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) || filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) ) {
+			return;
+		}
+
+		if ( isset( $_REQUEST['action'] ) && 'suppress_gp_membership_notification' === $_REQUEST['action'] ) {
+			update_option( 'gp_suppress_membership_notification', true, '', 'yes' );
+		} else {
+			Utility::render_template(
+				sprintf( '%s/includes/templates/admin/settings/dismiss-notification.php', GATHERPRESS_CORE_PATH ),
+				array(
+
+				),
+				true
+			);
+		}
 	}
 
 }
