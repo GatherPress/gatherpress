@@ -28,7 +28,7 @@ wp_nonce_field( 'suppress_gp_membership_notification', 'suppress_gp_membership' 
 						'gatherpress'
 					)
 				);
-			?>
+				?>
 		</p>
 	</div>
 <?php
