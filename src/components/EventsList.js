@@ -9,6 +9,7 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies.
  */
 import EventItem from './EventItem';
+import { getFromGlobal } from '../helpers/globals';
 import apiFetch from '@wordpress/api-fetch';
 
 const EventsList = (props) => {
@@ -59,12 +60,36 @@ const EventsList = (props) => {
 				?.join(',');
 		}
 
-		apiFetch({
-			path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`,
-		}).then((data) => {
-			setLoaded(true);
-			setEvents(data);
-		});
+		/**
+		 * Check if user is logged in, so we have current_user for the event present, which
+		 * allows them to interact with the block.
+		 */
+		if (getFromGlobal('is_user_logged_in')) {
+			apiFetch({
+				path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`,
+			}).then((data) => {
+				setLoaded(true);
+				setEvents(data);
+			});
+		} else {
+			const endpoint =
+				getFromGlobal('event_rest_api') +
+				`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`;
+
+			/**
+			 * Not using apiFetch helper here as it will use X-Wp-Nonce and cache it when page caching is on causing a 403.
+			 *
+			 * @see https://github.com/GatherPress/gatherpress/issues/300
+			 */
+			fetch(endpoint)
+				.then((response) => {
+					return response.json();
+				})
+				.then((data) => {
+					setLoaded(true);
+					setEvents(data);
+				});
+		}
 	}, [setEvents, maxNumberOfEvents, type, topics, venues]);
 
 	return (

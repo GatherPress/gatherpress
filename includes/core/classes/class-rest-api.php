@@ -54,7 +54,6 @@ class Rest_Api {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_action( 'gatherpress_send_emails', array( $this, 'send_emails' ), 10, 3 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
-		add_filter( 'rest_send_nocache_headers', array( $this, 'nocache_headers_for_endpoint' ) );
 	}
 
 	/**
@@ -687,28 +686,6 @@ class Rest_Api {
 		$response->data['meta']['_online_event_link'] = $event->maybe_get_online_event_link();
 
 		return $response;
-	}
-
-
-	/**
-	 * Prevent caching nonce for some endpoints for non-logged in visitors.
-	 *
-	 * @param bool $rest_send_nocache_headers Boolean value, if true will not cache nonce.
-	 *
-	 * @return bool
-	 */
-	public function nocache_headers_for_endpoint( bool $rest_send_nocache_headers ): bool {
-		global $wp;
-
-		$endpoints = array(
-			sprintf( '/%s/event/events-list', GATHERPRESS_REST_NAMESPACE ),
-		);
-
-		if ( in_array( $wp->query_vars['rest_route'], $endpoints, true ) ) {
-			$rest_send_nocache_headers = true;
-		}
-
-		return $rest_send_nocache_headers;
 	}
 
 }
