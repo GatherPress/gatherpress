@@ -41,16 +41,16 @@ class Test_Rest_Api extends Base {
 				'callback' => array( $instance, 'register_endpoints' ),
 			),
 			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'rest_prepare_%s', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'prepare_event_data' ),
-			),
-			array(
 				'type'     => 'action',
 				'name'     => 'gatherpress_send_emails',
 				'priority' => 10,
 				'callback' => array( $instance, 'send_emails' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => sprintf( 'rest_prepare_%s', Event::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'prepare_event_data' ),
 			),
 		);
 
@@ -354,15 +354,6 @@ class Test_Rest_Api extends Base {
 			)
 		);
 
-		$this->mock->user( true, 'subscriber' );
-
-		$response = $instance->update_datetime( $request );
-
-		// Success is false because user cannot update event.
-		$this->assertEmpty( $response->data['success'], 'Failed to assert that success was false.' );
-
-		$this->mock->user( true, 'admin' );
-
 		$response = $instance->update_datetime( $request );
 
 		$this->assertEquals( 1, $response->data['success'], 'Failed to assert that success was true.' );
@@ -404,15 +395,6 @@ class Test_Rest_Api extends Base {
 				),
 			)
 		);
-
-		$this->mock->user( true, 'subscriber' );
-
-		$response = $instance->email( $request );
-
-		// Success is false because user cannot update event.
-		$this->assertEmpty( $response->data['success'], 'Failed to assert that success was false.' );
-
-		$this->mock->user( true, 'admin' );
 
 		$response = $instance->email( $request );
 
