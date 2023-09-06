@@ -682,14 +682,14 @@ class Setup {
 
 	/**
 	 *  Display notice if users can't register
-	 * // if ( null !== $_GET['_wpnonce'] && ! wp_verify_nonce(  $_GET['_wpnonce'], 'clear-notification' ) ) {
-	 * // echo $_GET['_wpnonce'] . ' line ' . __LINE__;
-	 * // }
 	 *
 	 * @return void
 	 */
 	public function check_users_can_register() : void {
-		if ( filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) || filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) ) {
+		if (
+			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
+			filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN
+			) ) {
 			return;
 		}
 
