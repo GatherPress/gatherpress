@@ -681,15 +681,16 @@ class Setup {
 	}
 
 	/**
-	 *  Display notice if users can't register
+	 * Display a notification to recommend enabling user registration for GatherPress functionality.
+	 *
+	 * This method checks if user registration is enabled in WordPress settings and displays a
+	 * notification encouraging users to enable registration for optimal GatherPress functionality.
+	 * Users have the option to suppress this notification permanently.
 	 *
 	 * @return void
 	 */
 	public function check_users_can_register() : void {
-		if (
-			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN
-			) ) {
+		if ( filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) || filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) ) {
 			return;
 		}
 
