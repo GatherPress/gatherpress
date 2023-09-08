@@ -18,7 +18,7 @@
 					esc_html__( 'enabling user registration here', 'gatherpress' ),
 					esc_url( wp_nonce_url( add_query_arg( 'action', 'suppress_gp_membership_notification' ), 'clear-notification' ) )
 				);
-				?>
+			?>
 		</p>
 	</div>
 <?php
