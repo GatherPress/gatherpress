@@ -299,10 +299,10 @@ class Event_Query {
 	}
 
 	/**
-	 * Adjust SQL clauses for Event queries to join on the gp_event_extended table.
+	 * Adjust SQL clauses for Event queries to join on the gp_events table.
 	 *
 	 * This method adjusts various SQL clauses (e.g., join, where, orderby) for Event queries to include
-	 * the `gp_event_extended` table in the database join. It allows querying events based on different
+	 * the `gp_events` table in the database join. It allows querying events based on different
 	 * criteria such as upcoming or past events and specifying the event order (DESC or ASC).
 	 *
 	 * @since 1.0.0
