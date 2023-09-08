@@ -104,7 +104,7 @@ class Venue {
 				array( 'gatherpress/venue' ),
 			),
 			'rewrite'      => array(
-				'slug' => 'venues',
+				'slug' => 'venue',
 			),
 		);
 	}

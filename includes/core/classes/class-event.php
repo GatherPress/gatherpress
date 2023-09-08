@@ -115,7 +115,7 @@ class Event {
 			),
 			'menu_icon'     => 'dashicons-nametag',
 			'rewrite'       => array(
-				'slug' => 'events',
+				'slug' => 'event',
 			),
 		);
 	}
