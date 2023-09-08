@@ -337,13 +337,10 @@ class Event_Query {
 		if ( 'all' !== $type ) {
 			$current = gmdate( Event::DATETIME_FORMAT, time() );
 
-			switch ( $type ) {
-				case 'upcoming':
-					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
-					break;
-				case 'past':
-					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
-					break;
+			if ( 'upcoming' === $type ) {
+				$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
+			} elseif ( 'past' === $type ) {
+				$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
 			}
 		}
 
