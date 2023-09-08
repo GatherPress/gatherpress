@@ -22,7 +22,12 @@ class Test_GatherPress extends Base {
 	 * @return void
 	 */
 	public function test_plugin_version(): void {
-		$package_json = json_decode( file_get_contents( sprintf( '%s/package.json', GATHERPRESS_CORE_PATH ) ), true );
+		$package_json = json_decode(
+			file_get_contents( // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+				sprintf( '%s/package.json', GATHERPRESS_CORE_PATH )
+			),
+			true
+		);
 
 		$this->assertSame(
 			$package_json['version'],
