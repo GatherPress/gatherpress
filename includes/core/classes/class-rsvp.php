@@ -17,16 +17,32 @@ use WP_Post;
  * Class Rsvp.
  *
  * Manages RSVP functionality for events, including response status tracking and limits.
+ *
+ * @since 1.0.0
  */
 class Rsvp {
 
-	const TABLE_FORMAT   = '%sgp_rsvps';
+	/**
+	 * Table format for RSVPs.
+	 *
+	 * @var string
+	 * @since 1.0.0
+	 */
+	const TABLE_FORMAT = '%sgp_rsvps';
+
+	/**
+	 * Cache key format for RSVPs.
+	 *
+	 * @var string
+	 * @since 1.0.0
+	 */
 	const RSVP_CACHE_KEY = 'gp_rsvp_%d';
 
 	/**
 	 * An array of RSVP statuses.
 	 *
 	 * @var string[] Contains RSVP statuses such as 'attending', 'not_attending', and 'waiting_list'.
+	 * @since 1.0.0
 	 */
 	public array $statuses = array(
 		'attending',
@@ -42,6 +58,7 @@ class Rsvp {
 	 *       See https://github.com/mauteri/gatherpress/issues/56
 	 *
 	 * @var int
+	 * @since 1.0.0
 	 */
 	protected int $limit = 2000;
 
@@ -49,6 +66,7 @@ class Rsvp {
 	 * The event post object associated with this RSVP instance.
 	 *
 	 * @var WP_Post|null
+	 * @since 1.0.0
 	 */
 	protected $event;
 
@@ -182,6 +200,7 @@ class Rsvp {
 	 * from the waiting list to attending based on their timestamp.
 	 *
 	 * @return int The number of responses from the waiting list that were moved to attending.
+	 *
 	 * @since 1.0.0
 	 */
 	public function check_waiting_list(): int {

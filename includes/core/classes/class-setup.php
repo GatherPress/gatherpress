@@ -51,7 +51,7 @@ class Setup {
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
 		Block::get_instance();
-		Query::get_instance();
+		Event_Query::get_instance();
 		Rest_Api::get_instance();
 		Settings::get_instance();
 		Venue::get_instance();
