@@ -549,7 +549,7 @@ class Rest_Api {
 			);
 		}
 
-		$query = Query::get_instance()->get_events_list( $event_list_type, $max_number, $topics, $venues );
+		$query = Event_Query::get_instance()->get_events_list( $event_list_type, $max_number, $topics, $venues );
 
 		if ( $query->have_posts() ) {
 			foreach ( $query->posts as $post_id ) {

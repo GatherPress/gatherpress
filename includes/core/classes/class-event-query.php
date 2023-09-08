@@ -16,13 +16,13 @@ use GatherPress\Core\Traits\Singleton;
 use WP_Query;
 
 /**
- * Class Query.
+ * Class Event_Query.
  *
  * Responsible for managing event-related queries and customizations.
  *
  * @since 1.0.0
  */
-class Query {
+class Event_Query {
 
 	use Singleton;
 
@@ -257,7 +257,7 @@ class Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces ): array {
-		return Event::adjust_sql( $query_pieces, 'upcoming', 'ASC' );
+		return $this->adjust_event_sql( $query_pieces, 'upcoming', 'ASC' );
 	}
 
 	/**
@@ -271,7 +271,7 @@ class Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
 	public function adjust_sorting_for_past_events( array $query_pieces ): array {
-		return Event::adjust_sql( $query_pieces, 'past' );
+		return $this->adjust_event_sql( $query_pieces, 'past' );
 	}
 
 	/**
@@ -292,10 +292,62 @@ class Query {
 		global $wp_query;
 
 		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
-			$query_pieces = Event::adjust_sql( $query_pieces, 'all', $wp_query->get( 'order' ) );
+			$query_pieces = $this->adjust_event_sql( $query_pieces, 'all', $wp_query->get( 'order' ) );
 		}
 
 		return $query_pieces;
+	}
+
+	/**
+	 * Adjust SQL clauses for Event queries to join on the gp_event_extended table.
+	 *
+	 * This method adjusts various SQL clauses (e.g., join, where, orderby) for Event queries to include
+	 * the `gp_event_extended` table in the database join. It allows querying events based on different
+	 * criteria such as upcoming or past events and specifying the event order (DESC or ASC).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $pieces An array of query pieces, including join, where, orderby, and more.
+	 * @param string $type   The type of events to query (options: 'all', 'upcoming', 'past').
+	 * @param string $order  The event order ('DESC' for descending or 'ASC' for ascending).
+	 *
+	 * @return array An array containing adjusted SQL clauses for the Event query.
+	 */
+	public function adjust_event_sql( array $pieces, string $type = 'all', string $order = 'DESC' ): array {
+		global $wpdb;
+
+		$defaults        = array(
+			'where'    => '',
+			'groupby'  => '',
+			'join'     => '',
+			'orderby'  => '',
+			'distinct' => '',
+			'fields'   => '',
+			'limits'   => '',
+		);
+		$pieces          = array_merge( $defaults, $pieces );
+		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
+		$order           = strtoupper( $order );
+
+		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
+			$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
+		}
+
+		if ( 'all' !== $type ) {
+			$current = gmdate( Event::DATETIME_FORMAT, time() );
+
+			switch ( $type ) {
+				case 'upcoming':
+					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
+					break;
+				case 'past':
+					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
+					break;
+			}
+		}
+
+		return $pieces;
 	}
 
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Query.
+ * Class handles unit tests for GatherPress\Core\Event_Query.
  *
  * @package GatherPress
  * @subpackage Core
@@ -10,15 +10,15 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Query;
+use GatherPress\Core\Event_Query;
 use PMC\Unit_Test\Base;
 
 /**
- * Class Test_Query.
+ * Class Test_Event_Query.
  *
- * @coversDefaultClass \GatherPress\Core\Query
+ * @coversDefaultClass \GatherPress\Core\Event_Query
  */
-class Test_Query extends Base {
+class Test_Event_Query extends Base {
 
 	/**
 	 * Coverage for setup_hooks method.
@@ -29,7 +29,7 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Query::get_instance();
+		$instance = Event_Query::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -58,7 +58,7 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_get_upcoming_events(): void {
-		$instance = Query::get_instance();
+		$instance = Event_Query::get_instance();
 		$response = $instance->get_upcoming_events();
 
 		$this->assertEmpty( $response->posts, 'Failed to assert that posts array is empty.' );
@@ -94,7 +94,7 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_get_past_events(): void {
-		$instance = Query::get_instance();
+		$instance = Event_Query::get_instance();
 		$response = $instance->get_past_events();
 
 		$this->assertEmpty( $response->posts, 'Failed to assert that posts array is empty.' );
@@ -128,7 +128,7 @@ class Test_Query extends Base {
 	 * @return void
 	 */
 	public function test_adjust_admin_event_sorting(): void {
-		$instance = Query::get_instance();
+		$instance = Event_Query::get_instance();
 
 		$this->mock->user( false, 'admin' );
 		$response = $instance->adjust_admin_event_sorting( array() );
@@ -145,6 +145,35 @@ class Test_Query extends Base {
 
 		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
 		$this->assertNotEmpty( $response, 'Failed to assert array is empty' );
+	}
+
+	/**
+	 * Coverage for adjust_event_sql method.
+	 *
+	 * @covers ::adjust_event_sql
+	 *
+	 * @return void
+	 */
+	public function test_adjust_event_sql(): void {
+		global $wpdb;
+
+		$instance = Event_Query::get_instance();
+
+		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+		$retval = $instance->adjust_event_sql( array(), 'all', 'DESC' );
+
+		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertEmpty( $retval['where'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc' );
+
+		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt <", $retval['where'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'ASC' );
+
+		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
 	}
 
 }

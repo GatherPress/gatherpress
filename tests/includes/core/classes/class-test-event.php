@@ -502,33 +502,6 @@ class Test_Event extends Base {
 	}
 
 	/**
-	 * Coverage for adjust_sql method.
-	 *
-	 * @covers ::adjust_sql
-	 *
-	 * @return void
-	 */
-	public function test_adjust_sql(): void {
-		global $wpdb;
-
-		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
-		$retval = Event::adjust_sql( array(), 'all', 'DESC' );
-
-		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
-		$this->assertEmpty( $retval['where'] );
-
-		$retval = Event::adjust_sql( array(), 'past', 'desc' );
-
-		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
-		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt <", $retval['where'] );
-
-		$retval = Event::adjust_sql( array(), 'upcoming', 'ASC' );
-
-		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
-		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
-	}
-
-	/**
 	 * Coverage for maybe_get_online_event_link method.
 	 *
 	 * @covers ::maybe_get_online_event_link

@@ -24,25 +24,57 @@ use WP_Post;
  */
 class Event {
 
-	const POST_TYPE          = 'gp_event';
-	const TAXONOMY           = 'gp_topic';
-	const TABLE_FORMAT       = '%sgp_events';
+	/**
+	 * Cache key format for storing and retrieving event datetimes.
+	 *
+	 * @since 1.0.0
+	 */
 	const DATETIME_CACHE_KEY = 'datetime_%d';
-	const DATETIME_FORMAT    = 'Y-m-d H:i:s';
+
+	/**
+	 * Date and time format used within GatherPress.
+	 *
+	 * @since 1.0.0
+	 */
+	const DATETIME_FORMAT = 'Y-m-d H:i:s';
+
+	/**
+	 * The post type name for GatherPress events.
+	 *
+	 * @since 1.0.0
+	 */
+	const POST_TYPE = 'gp_event';
+
+	/**
+	 * Format for the database table name used by GatherPress events.
+	 *
+	 * @since 1.0.0
+	 */
+	const TABLE_FORMAT = '%sgp_events';
+
+	/**
+	 * The taxonomy name for GatherPress event topics.
+	 *
+	 * @since 1.0.0
+	 */
+	const TAXONOMY = 'gp_topic';
+
 
 	/**
 	 * Event post object.
 	 *
 	 * @var array|WP_Post|null
+	 * @since 1.0.0
 	 */
 	protected $event = null;
 
 	/**
 	 * RSVP instance.
 	 *
-	 * @var RSVP
+	 * @var Rsvp|null
+	 * @since 1.0.0
 	 */
-	public $rsvp;
+	public ?Rsvp $rsvp = null;
 
 	/**
 	 * Event constructor.
@@ -741,60 +773,6 @@ class Event {
 	protected function get_calendar_description(): string {
 		/* translators: %s: event link. */
 		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
-	}
-
-	/**
-	 * Adjust SQL clauses for Event queries to join on the gp_event_extended table.
-	 *
-	 * This method adjusts various SQL clauses (e.g., join, where, orderby) for Event queries to include
-	 * the `gp_event_extended` table in the database join. It allows querying events based on different
-	 * criteria such as upcoming or past events and specifying the event order (DESC or ASC).
-	 *
-	 * @since 1.0.0
-	 *
-	 * @todo Consider moving this static method from the Event class to a more appropriate class, such as Query.
-	 *
-	 * @param array  $pieces An array of query pieces, including join, where, orderby, and more.
-	 * @param string $type   The type of events to query (options: 'all', 'upcoming', 'past').
-	 * @param string $order  The event order ('DESC' for descending or 'ASC' for ascending).
-	 *
-	 * @return array An array containing adjusted SQL clauses for the Event query.
-	 */
-	public static function adjust_sql( array $pieces, string $type = 'all', string $order = 'DESC' ): array {
-		global $wpdb;
-
-		$defaults        = array(
-			'where'    => '',
-			'groupby'  => '',
-			'join'     => '',
-			'orderby'  => '',
-			'distinct' => '',
-			'fields'   => '',
-			'limits'   => '',
-		);
-		$pieces          = array_merge( $defaults, $pieces );
-		$table           = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
-		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
-		$order           = strtoupper( $order );
-
-		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
-			$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
-		}
-
-		if ( 'all' !== $type ) {
-			$current = gmdate( self::DATETIME_FORMAT, time() );
-
-			switch ( $type ) {
-				case 'upcoming':
-					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
-					break;
-				case 'past':
-					$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
-					break;
-			}
-		}
-
-		return $pieces;
 	}
 
 	/**
