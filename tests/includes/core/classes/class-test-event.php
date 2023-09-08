@@ -58,7 +58,7 @@ class Test_Event extends Base {
 		$this->assertTrue( $args['show_in_rest'], 'Failed to assert that show_in_rest is true.' );
 		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
 		$this->assertSame( 'dashicons-nametag', $args['menu_icon'], 'Failed to assert that menu_icon is nametag.' );
-		$this->assertSame( 'events', $args['rewrite']['slug'], 'Failed to assert that slug is events.' );
+		$this->assertSame( 'event', $args['rewrite']['slug'], 'Failed to assert that slug is events.' );
 	}
 
 	/**
