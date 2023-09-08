@@ -10,9 +10,9 @@
 	<div class="notice notice-warning is-dismissible" id="gp-membership">
 		<p>
 			<?php
-				/* translators: %s: search term */
+				/* translators: %2$s: Registration URL, %4$s: Dismiss URL. */
 				printf(
-					'%s <a href=%s>%s</a>. <a href=%s><button>Dismiss forever</button></a>',
+					' %1$s <a href= %2$s> %3$s</a>. <a href= %4$s><button>Dismiss forever</button></a>',
 					esc_html__( 'To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by', 'gatherpress' ),
 					esc_url( admin_url( 'options-general.php#users_can_register' ) ),
 					esc_html__( 'enabling user registration here', 'gatherpress' ),
