@@ -8,17 +8,17 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies.
  */
-import { saveDateTime } from '../../../helpers/datetime';
-import DateTimeStart from '../../../components/DateTimeStart';
-import DateTimeEnd from '../../../components/DateTimeEnd';
-import TimeZone from '../../../components/TimeZone';
+import { saveDateTime } from '../helpers/datetime';
+import DateTimeStart from '../components/DateTimeStart';
+import DateTimeEnd from '../components/DateTimeEnd';
+import TimeZone from '../components/TimeZone';
 
-subscribe(saveDateTime);
-
-const DateTimePanel = () => {
+const DateTimeRange = () => {
 	const [dateTimeStart, setDateTimeStart] = useState();
 	const [dateTimeEnd, setDateTimeEnd] = useState();
 	const [timezone, setTimezone] = useState();
+
+	subscribe(saveDateTime);
 
 	return (
 		<>
@@ -40,4 +40,4 @@ const DateTimePanel = () => {
 	);
 };
 
-export default DateTimePanel;
+export default DateTimeRange;
