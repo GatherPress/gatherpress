@@ -114,6 +114,30 @@ class Test_Setup extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+		
+	}
+
+	/**
+	 * Coverage for check_users_can_register method.
+	 *
+	 * @covers ::check_users_can_register
+	 *
+	 * @return void
+	 */
+	public function test_check_users_can_register(): void {
+		$instance = Setup::get_instance();
+		$users_can_register_name    = 'users_can_register';
+		$users_can_register_default = get_option( $users_can_register_name );
+		update_option( $users_can_register_name, 1 );
+		$instance->check_users_can_register();
+		$this->assertEquals(
+			get_option( $users_can_register_name ),
+			1,
+			'Failed to assert user registration option was set.'
+		);
+
+		// How do we mock this?
+		// wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) )
 	}
 
 	/**
