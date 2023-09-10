@@ -1,7 +1,5 @@
 {
-	"plugins": [
-		"."
-	],
+	"plugins": ["."],
 	"mappings": {
 		"wp-content/plugins": "./wp-core/plugins",
 		"wp-content/themes": "./wp-core/themes"
