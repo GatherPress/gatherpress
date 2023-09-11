@@ -11,6 +11,7 @@
 
 namespace GatherPress\Core;
 
+use GatherPress\Core\Settings\Leadership;
 use WP_Post;
 
 /**
@@ -51,16 +52,12 @@ class Rsvp {
 	);
 
 	/**
-	 * The maximum limit for attending response (temporary).
-	 *
-	 * @todo Temporary limit.
-	 *       Configuration options will be available in the future.
-	 *       See https://github.com/mauteri/gatherpress/issues/56
+	 * The maximum limit for attending responses (RSVPs).
 	 *
 	 * @var int
 	 * @since 1.0.0
 	 */
-	protected int $limit = 2000;
+	protected int $max_attending_limit;
 
 	/**
 	 * The event post object associated with this RSVP instance.
@@ -81,7 +78,8 @@ class Rsvp {
 	 * @since 1.0.0
 	 */
 	public function __construct( int $post_id ) {
-		$this->event = get_post( $post_id );
+		$this->event               = get_post( $post_id );
+		$this->max_attending_limit = Settings::get_instance()->get_value( 'gp_general', 'general', 'max_attending_limit' );
 	}
 
 	/**
@@ -208,7 +206,7 @@ class Rsvp {
 		$total     = 0;
 
 		if (
-			intval( $responses['attending']['count'] ) < $this->limit
+			intval( $responses['attending']['count'] ) < $this->max_attending_limit
 			&& intval( $responses['waiting_list']['count'] )
 		) {
 			$waiting_list = $responses['waiting_list']['responses'];
@@ -216,7 +214,7 @@ class Rsvp {
 			// People longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
-			$total = $this->limit - intval( $responses['attending']['count'] );
+			$total = $this->max_attending_limit - intval( $responses['attending']['count'] );
 			$i     = 0;
 
 			while ( $i < $total ) {
@@ -252,7 +250,7 @@ class Rsvp {
 
 		if (
 			! empty( $responses['attending'] )
-			&& intval( $responses['attending']['count'] ) >= $this->limit
+			&& intval( $responses['attending']['count'] ) >= $this->max_attending_limit
 			&& 'attending' === $status
 		) {
 			return true;
@@ -336,7 +334,7 @@ class Rsvp {
 				// @todo make a filter so we can use this function if gp-buddypress plugin is activated.
 				// 'profile'   => bp_core_get_user_domain( $user_id ),
 				'profile'   => get_author_posts_url( $user_id ),
-				'role'      => Settings::get_instance()->get_user_role( $user_id ),
+				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
 				'timestamp' => sanitize_text_field( $response['timestamp'] ),
 				'status'    => $user_status,
 				'guests'    => $user_guests,
@@ -394,7 +392,7 @@ class Rsvp {
 				function( $role ) {
 					return $role['labels']['singular_name'];
 				},
-				Settings::get_instance()->get_user_roles()
+				Leadership::get_instance()->get_user_roles()
 			)
 		);
 		$roles[]     = __( 'Member', 'gatherpress' );

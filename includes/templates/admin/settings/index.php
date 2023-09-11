@@ -40,14 +40,5 @@ $gatherpress_settings = Settings::get_instance();
 		}
 		?>
 	</h2>
-	<?php if ( Utility::prefix_key( 'credits' ) === $page ) : ?>
-		<?php do_settings_sections( $page ); ?>
-	<?php else : ?>
-		<form method="post" action="options.php">
-			<?php settings_fields( $page ); ?>
-			<?php do_settings_sections( $page ); ?>
-
-			<?php submit_button( __( 'Save Settings', 'gatherpress' ) ); ?>
-		</form>
-	<?php endif; ?>
+	<?php do_action( 'gatherpress_settings_section', $page ); ?>
 </div>

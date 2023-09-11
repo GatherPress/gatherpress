@@ -46,8 +46,9 @@ class Autoloader {
 
 				switch ( $class_type ) {
 					case 'traits':
+					case 'settings':
 						array_pop( $structure );
-						array_push( $structure, 'classes', 'traits' );
+						array_push( $structure, 'classes', $class_type );
 						break;
 					default:
 						$structure[] = 'classes';

@@ -12,29 +12,9 @@
  */
 
 return array(
-	'0.21.0' => array(
-		'project-leads'    => array( 'mauteri', 'hrmervin' ),
+	'0.23.2' => array(
+		'project-leaders'  => array( 'mauteri', 'hrmervin' ),
 		'gatherpress-team' => array( 'pbrocks', 'jmarx', 'meaganhanes', 'calebthedev' ),
 		'contributors'     => array( 'hauvong', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett' ),
-	),
-	'0.19.0' => array(
-		'project-leads'    => array( 'mauteri', 'hrmervin' ),
-		'gatherpress-team' => array( 'pbrocks', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett', 'jmarx', 'calebthedev', 'meaganhanes' ),
-		'contributors'     => array( 'hauvong' ),
-	),
-	'0.17.0' => array(
-		'project-leads'    => array( 'mauteri', 'hrmervin' ),
-		'gatherpress-team' => array( 'pbrocks', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett', 'jmarx', 'calebthedev' ),
-		'contributors'     => array( 'hauvong' ),
-	),
-	'0.10.0' => array(
-		'project-leads'    => array( 'mauteri', 'hrmervin' ),
-		'gatherpress-team' => array( 'pbrocks', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett', 'jmarx' ),
-		'contributors'     => array( 'hauvong' ),
-	),
-	'0.4.0'  => array(
-		'project-leads'    => array( 'mauteri', 'hrmervin' ),
-		'gatherpress-team' => array( 'pbrocks', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett' ),
-		'contributors'     => array( 'hauvong' ),
 	),
 );

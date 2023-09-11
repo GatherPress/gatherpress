@@ -149,6 +149,7 @@ class Setup {
 		$this->maybe_rename_blocks();
 		$this->maybe_rename_table();
 		$this->maybe_create_custom_table();
+		$this->add_online_event_term();
 
 		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
@@ -243,7 +244,6 @@ class Setup {
 	public function register(): void {
 		$this->register_post_types();
 		$this->register_taxonomies();
-		$this->add_online_event_term();
 	}
 
 	/**
