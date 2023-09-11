@@ -70,6 +70,19 @@
         96 => '//www.gravatar.com/avatar/052d4e778920f20d9f6611bf5c027528?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    3 => 
+    array (
+      'id' => 20244435,
+      'name' => 'Caleb Matteis',
+      'link' => 'https://profiles.wordpress.org/author/calebthedev/',
+      'slug' => 'calebthedev',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
@@ -149,19 +162,6 @@
         24 => '//www.gravatar.com/avatar/1e12bb14c1bf783f1560e082e55b0481?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/1e12bb14c1bf783f1560e082e55b0481?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/1e12bb14c1bf783f1560e082e55b0481?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    6 => 
-    array (
-      'id' => 20244435,
-      'name' => 'Caleb Matteis',
-      'link' => 'https://profiles.wordpress.org/author/calebthedev/',
-      'slug' => 'calebthedev',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),

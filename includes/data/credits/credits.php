@@ -14,7 +14,7 @@
 return array(
 	'0.23.2' => array(
 		'project-leaders'  => array( 'mauteri', 'hrmervin' ),
-		'gatherpress-team' => array( 'pbrocks', 'jmarx', 'meaganhanes' ),
-		'contributors'     => array( 'hauvong', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett', 'calebthedev' ),
+		'gatherpress-team' => array( 'pbrocks', 'jmarx', 'meaganhanes', 'calebthedev' ),
+		'contributors'     => array( 'hauvong', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett' ),
 	),
 );
