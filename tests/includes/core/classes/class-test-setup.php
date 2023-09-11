@@ -112,9 +112,8 @@ class Test_Setup extends Base {
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
 			),
 		);
-
-		$this->assert_hooks( $hooks, $instance );
 		
+		$this->assert_hooks( $hooks, $instance );	
 	}
 
 	/**
@@ -125,7 +124,7 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_check_users_can_register(): void {
-		$instance = Setup::get_instance();
+		$instance                   = Setup::get_instance();
 		$users_can_register_name    = 'users_can_register';
 		$users_can_register_default = get_option( $users_can_register_name );
 		update_option( $users_can_register_name, 1 );
@@ -136,8 +135,6 @@ class Test_Setup extends Base {
 			'Failed to assert user registration option was set.'
 		);
 
-		// How do we mock this?
-		// wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) )
 	}
 
 	/**

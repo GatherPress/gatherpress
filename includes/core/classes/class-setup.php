@@ -690,11 +690,18 @@ class Setup {
 	 * @return void
 	 */
 	public function check_users_can_register() : void {
-		if ( filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) || filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) ) {
+		if ( 
+			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) || 
+			filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) 
+			) {
 			return;
 		}
 
-		if ( null !== filter_input( INPUT_GET, 'action' ) && 'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) && ! empty( filter_input( INPUT_GET, '_wpnonce' ) ) && wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' ) ) {
+		if ( 
+			null !== filter_input( INPUT_GET, 'action' ) && 'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) && 
+			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) && 
+			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' ) 
+			) {
 			update_option( 'gp_suppress_membership_notification', true );
 		} else {
 			Utility::render_template(
