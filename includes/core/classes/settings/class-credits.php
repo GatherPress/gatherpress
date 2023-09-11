@@ -75,7 +75,7 @@ class Credits extends Base {
 	 */
 	protected function credits_page(): void {
 		// Load credits data.
-		$credits = include sprintf( '%s/includes/data/credits/latest.php', GATHERPRESS_CORE_PATH );
+		$credits = include_once sprintf( '%s/includes/data/credits/latest.php', GATHERPRESS_CORE_PATH );
 
 		// Render the credits page template with data.
 		Utility::render_template(
