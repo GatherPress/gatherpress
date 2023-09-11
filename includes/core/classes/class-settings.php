@@ -299,6 +299,39 @@ class Settings {
 	}
 
 	/**
+	 * Render a number input field in GatherPress settings.
+	 *
+	 * This method is responsible for rendering a number input field in GatherPress settings.
+	 * It generates the HTML markup for the input field, including labels, attributes, and descriptions.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @package GatherPress\Core\Settings\Fields
+	 * @param string $sub_page        The slug of the sub-page within settings.
+	 * @param string $section         The slug of the settings section.
+	 * @param string $option          The name of the option.
+	 * @param array  $option_settings An array containing option settings.
+	 *
+	 * @return void
+	 */
+	public function number( string $sub_page, string $section, string $option, array $option_settings ): void {
+		$name  = $this->get_name_field( $sub_page, $section, $option );
+		$value = $this->get_value( $sub_page, $section, $option );
+
+		Utility::render_template(
+			sprintf( '%s/includes/templates/admin/settings/fields/number.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'name'        => $name,
+				'option'      => Utility::prefix_key( $option ),
+				'value'       => $value,
+				'label'       => $option_settings['field']['label'] ?? '',
+				'description' => $option_settings['description'] ?? '',
+			),
+			true
+		);
+	}
+
+	/**
 	 * Outputs a checkbox input field for a settings option.
 	 *
 	 * This method is responsible for rendering a checkbox input field as a part of the plugin's settings page.

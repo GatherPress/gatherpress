@@ -63,7 +63,7 @@ class General extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'post_or_event_date' => array(
+					'post_or_event_date'  => array(
 						'labels' => array(
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),
@@ -72,6 +72,18 @@ class General extends Base {
 							'type'    => 'checkbox',
 							'options' => array(
 								'default' => '1',
+							),
+						),
+					),
+					'max_attending_limit' => array(
+						'labels' => array(
+							'name' => __( 'Maximum Attending Limit', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __( 'The default maximum limit of attendees to an event.', 'gatherpress' ),
+							'type'    => 'number',
+							'options' => array(
+								'default' => '50',
 							),
 						),
 					),

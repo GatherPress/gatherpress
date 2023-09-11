@@ -97,7 +97,7 @@ class Test_Rsvp extends Base {
 
 		$this->assertSame( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
 
-		Utility::set_and_get_hidden_property( $rsvp, 'limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attending_limit', 1 );
 
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
