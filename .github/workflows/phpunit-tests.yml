@@ -1,58 +1,58 @@
 name: PHPUnit Tests
 on:
-    push:
-        branches:
-            - main
-    pull_request:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-    test-php:
-        name: ${{ matrix.php_versions }} on ${{ matrix.os }}
-        runs-on: ${{ matrix.os }}
-        strategy:
-            matrix:
-                os: [ubuntu-latest]
-                php_versions: ['7.4', '8.0', '8.1', '8.2']
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v2
+  test-php:
+    name: ${{ matrix.php_versions }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest ]
+        php_versions: [ '7.4', '8.0', '8.1', '8.2' ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
-            - name: Setup PHP
-              uses: shivammathur/setup-php@v2
-              with:
-                  php-version: ${{ matrix.php_versions }}
-                  coverage: xdebug
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php_versions }}
+          coverage: xdebug
 
-            - name: Composer Install
-              run: composer install --optimize-autoloader --prefer-dist
+      - name: Composer Install
+        run: composer install --optimize-autoloader --prefer-dist
 
-            - name: Install NodeJS
-              uses: actions/setup-node@v2
-              with:
-                  node-version-file: '.nvmrc'
+      - name: Install NodeJS
+        uses: actions/setup-node@v2
+        with:
+          node-version-file: '.nvmrc'
 
-            - name: Log debug information
-              run: |
-                  npm --version
-                  node --version
-                  git --version
-                  php --version
-                  composer --version
+      - name: Log debug information
+        run: |
+          npm --version
+          node --version
+          git --version
+          php --version
+          composer --version
 
-            - name: Running PHPUnit Tests
-              run: |
-                  php --version
-                  npm i -g @wordpress/env
-                  npm run test:unit:php
-                  docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
-              if: ${{ success() || failure() }}
+      - name: Running PHPUnit Tests
+        run: |
+          php --version
+          npm i -g @wordpress/env
+          npm run test:unit:php
+          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
+        if: ${{ success() || failure() }}
 
-            - name: Fix Code Coverage Paths
-              run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+      - name: Fix Code Coverage Paths
+        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
 
-            - name: SonarCloud Scan
-              if: github.ref == 'refs/heads/main'
-              uses: SonarSource/sonarcloud-github-action@master
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: SonarCloud Scan
+        if: github.ref == 'refs/heads/main'
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
