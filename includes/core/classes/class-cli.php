@@ -64,6 +64,8 @@ class Cli extends WP_CLI {
 		unlink( $latest );
 		$file = fopen( $latest, 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fopen
 
+		$data['version'] = $version;
+
 		foreach ( $credits[ $version ] as $group => $users ) {
 			$data[ $group ] = array();
 

@@ -1,26 +1,54 @@
 .gp-settings {
 
 	&__credits {
+		a {
+			text-decoration: none;
+
+			&:hover {
+				text-decoration: underline;
+			}
+		}
+	}
+
+	&__credits-featured {
 		display: flex;
+		gap: 1rem;
 		flex-wrap: wrap;
+		margin-bottom: 2rem;
 
 		li {
-			width: 25%;
 			text-align: center;
-
-			@media screen and (max-width: 37.5rem) {
-				width: 50%;
-			}
+			width: 10rem;
 		}
 
 		a {
 			display: block;
 			padding: 1rem;
-			font-size: 1.1rem;
+			font-size: 1.2rem;
+			font-weight: 600;
 		}
 
 		img {
 			border-radius: 999rem;
+			margin-bottom: 0.5rem;
+		}
+	}
+
+	&__credits-list {
+		li {
+			display: inline-block;
+			position: relative;
+			margin-right: 4px;
+
+			&:after {
+				content: ',';
+				position: absolute;
+				right: -4px;
+			}
+
+			&:last-child:after {
+				content: '.';
+			}
 		}
 	}
 

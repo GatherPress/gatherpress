@@ -50,6 +50,12 @@ class Test_Settings extends Base {
 				'callback' => array( $instance, 'register_settings' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'gatherpress_settings_section',
+				'priority' => 10,
+				'callback' => array( $instance, 'render_settings_form' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'submenu_file',
 				'priority' => 10,
@@ -58,6 +64,26 @@ class Test_Settings extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for set_main_sub_page method.
+	 *
+	 * @covers ::set_main_sub_page
+	 *
+	 * @return void
+	 */
+	public function test_set_main_sub_page(): void {
+		$instance = Settings::get_instance();
+
+		Utility::set_and_get_hidden_property( $instance, 'main_sub_page', '' );
+		Utility::invoke_hidden_method( $instance, 'set_main_sub_page' );
+
+		$this->assertSame(
+			'general',
+			Utility::get_hidden_property( $instance, 'main_sub_page' ),
+			'Failed to assert main sub page is set to general'
+		);
 	}
 
 	/**
@@ -88,6 +114,20 @@ class Test_Settings extends Base {
 			Utility::get_hidden_property( $instance, 'current_page' ),
 			'Failed to assert current_page is set to unit-test.'
 		);
+	}
+
+	/**
+	 * Coverage for render_settings_form method.
+	 *
+	 * @covers ::render_settings_form
+	 *
+	 * @return void
+	 */
+	public function test_render_settings_form(): void {
+		$instance = Settings::get_instance();
+
+		$response = Utility::buffer_and_return( array( $instance, 'render_settings_form' ), array( 'gp_general' ) );
+		$this->assertStringContainsString( 'value=\'gp_general\'', $response, 'Failed to assert general form rendered.' );
 	}
 
 	/**
@@ -230,9 +270,6 @@ class Test_Settings extends Base {
 	 * Coverage for get_sub_pages method.
 	 *
 	 * @covers ::get_sub_pages
-	 * @covers ::get_general_page
-	 * @covers ::get_leadership_page
-	 * @covers ::get_credits_page
 	 *
 	 * @return void
 	 */
@@ -253,20 +290,6 @@ class Test_Settings extends Base {
 			array_key_last( $sub_pages ),
 			'Failed to assert that credits is last key.'
 		);
-	}
-
-	/**
-	 * Coverage for get_user_roles method.
-	 *
-	 * @covers ::get_user_roles
-	 *
-	 * @return void
-	 */
-	public function test_get_user_roles(): void {
-		$instance   = Settings::get_instance();
-		$user_roles = $instance->get_user_roles();
-
-		$this->assertIsArray( $user_roles['organizers'], 'Failed to assert user role is an array.' );
 	}
 
 }

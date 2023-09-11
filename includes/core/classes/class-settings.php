@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core;
 
+use GatherPress\Core\Settings\Credits;
+use GatherPress\Core\Settings\General;
+use GatherPress\Core\Settings\Leadership;
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -35,6 +38,14 @@ class Settings {
 	protected string $current_page = '';
 
 	/**
+	 * The main sub-page identifier used for the settings.
+	 *
+	 * @var string
+	 * @since 1.0.0
+	 */
+	protected string $main_sub_page = '';
+
+	/**
 	 * Constructor for the Settings class.
 	 *
 	 * Initializes the settings object, sets the current page, and sets up hooks.
@@ -42,8 +53,23 @@ class Settings {
 	 * @since 1.0.0
 	 */
 	protected function __construct() {
+		$this->instantiate_classes();
 		$this->set_current_page();
+		$this->set_main_sub_page();
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Instantiate and initialize various settings classes.
+	 *
+	 * This method creates instances of the settings-related classes and initializes them.
+	 *
+	 * @since 1.0.0
+	 */
+	protected function instantiate_classes(): void {
+		Credits::get_instance();
+		General::get_instance();
+		Leadership::get_instance();
 	}
 
 	/**
@@ -59,8 +85,21 @@ class Settings {
 		add_action( 'admin_menu', array( $this, 'options_page' ) );
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
+	}
+
+	/**
+	 * Set the main sub-page identifier.
+	 *
+	 * This method sets the main sub-page identifier based on the first sub-page key.
+	 *
+	 * @since 1.0.0
+	 */
+	protected function set_main_sub_page(): void {
+		$sub_pages           = $this->get_sub_pages();
+		$this->main_sub_page = array_key_first( $sub_pages ) ?? '';
 	}
 
 	/**
@@ -82,6 +121,24 @@ class Settings {
 	}
 
 	/**
+	 * Render a settings form section using a template file.
+	 *
+	 * This method is responsible for rendering a settings form section on a settings page
+	 * using a template file. It accepts the current settings page identifier as a parameter.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $page The slug of the current settings page.
+	 */
+	public function render_settings_form( string $page ): void {
+		Utility::render_template(
+			sprintf( '%s/includes/templates/admin/settings/settings-form.php', GATHERPRESS_CORE_PATH ),
+			array( 'page' => $page ),
+			true
+		);
+	}
+
+	/**
 	 * Setup and register submenu pages under the GatherPress settings menu.
 	 *
 	 * This method adds submenu pages for various sections of GatherPress settings,
@@ -97,7 +154,7 @@ class Settings {
 			__( 'Settings', 'gatherpress' ),
 			__( 'Settings', 'gatherpress' ),
 			'manage_options',
-			Utility::prefix_key( 'general' ),
+			Utility::prefix_key( $this->main_sub_page ),
 			array( $this, 'settings_page' ),
 			6
 		);
@@ -105,7 +162,7 @@ class Settings {
 		$sub_pages = $this->get_sub_pages();
 
 		foreach ( $sub_pages as $sub_page => $setting ) {
-			if ( 'general' === $sub_page ) {
+			if ( $this->main_sub_page === $sub_page ) {
 				continue;
 			}
 
@@ -137,7 +194,7 @@ class Settings {
 		$sub_pages = $this->get_sub_pages();
 
 		foreach ( $sub_pages as $sub_page => $setting ) {
-			if ( 'general' === $sub_page ) {
+			if ( $this->main_sub_page === $sub_page ) {
 				continue;
 			}
 
@@ -308,35 +365,6 @@ class Settings {
 	}
 
 	/**
-	 * Outputs credits to people set in latest.json on the settings page.
-	 *
-	 * This method is responsible for displaying credits to individuals or contributors
-	 * that are set in the latest.json file on the plugin's settings page. It takes the
-	 * sub-page, section, option, and option settings as parameters and renders the credits.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $sub_page        The sub page for displaying credits.
-	 * @param string $section         The section for displaying credits.
-	 * @param string $option          The option for displaying credits.
-	 * @param array  $option_settings The option settings.
-	 *
-	 * @return void
-	 */
-	public function credits( string $sub_page, string $section, string $option, array $option_settings ): void {
-		$credits = include sprintf( '%s/includes/data/credits/latest.php', GATHERPRESS_CORE_PATH );
-
-		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/settings/fields/credits.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'option'  => $option,
-				'credits' => $credits[ $option ],
-			),
-			true
-		);
-	}
-
-	/**
 	 * Get the value of a specific option from plugin settings.
 	 *
 	 * This method retrieves the value of a specific option from the plugin settings
@@ -476,234 +504,11 @@ class Settings {
 	 * @return array An array of sub-pages, each with settings and priority information.
 	 */
 	public function get_sub_pages(): array {
-		$sub_pages               = array();
-		$sub_pages['general']    = $this->get_general_page();
-		$sub_pages['leadership'] = $this->get_leadership_page();
-		$sub_pages['credits']    = $this->get_credits_page();
-
-		$sub_pages = (array) apply_filters( 'gatherpress_sub_pages', $sub_pages );
+		$sub_pages = (array) apply_filters( 'gatherpress_sub_pages', array() );
 
 		uasort( $sub_pages, array( $this, 'sort_sub_pages_by_priority' ) );
 
 		return $sub_pages;
-	}
-
-	/**
-	 * Retrieve settings for the General page.
-	 *
-	 * This method returns an array of settings and options for the General page of the
-	 * GatherPress settings. The General page includes settings related to event dates and
-	 * event archive pages. Each section within the General page is defined with its own
-	 * settings and options.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array containing the General page settings and options.
-	 */
-	public function get_general_page(): array {
-		return array(
-			'name'        => __( 'General', 'gatherpress' ),
-			'description' => __( 'Settings for GatherPress.', 'gatherpress' ),
-			'priority'    => PHP_INT_MIN,
-			'sections'    => array(
-				'general' => array(
-					'name'        => __( 'General Settings', 'gatherpress' ),
-					'description' => __(
-						'GatherPress allows you to set event dates to reflect either the post date or event date. Default: show as event date.',
-						'gatherpress'
-					),
-					'options'     => array(
-						'post_or_event_date' => array(
-							'labels' => array(
-								'name' => __( 'Publish Date', 'gatherpress' ),
-							),
-							'field'  => array(
-								'label'   => __( 'Show publish date as event date for events', 'gatherpress' ),
-								'type'    => 'checkbox',
-								'options' => array(
-									'default' => '1',
-								),
-							),
-						),
-					),
-				),
-				'pages'   => array(
-					'name'        => __( 'Event Archive Pages', 'gatherpress' ),
-					'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
-					'options'     => array(
-						'upcoming_events' => array(
-							'labels' => array(
-								'name' => __( 'Upcoming Events', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'page',
-									'label' => __( 'Select Upcoming Events Archive Page', 'gatherpress' ),
-									'limit' => 1,
-								),
-							),
-						),
-						'past_events'     => array(
-							'labels' => array(
-								'name' => __( 'Past Events', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type'    => 'autocomplete',
-								'options' => array(
-									'type'  => 'page',
-									'label' => __( 'Select Past Events Archive Page', 'gatherpress' ),
-									'limit' => 1,
-								),
-							),
-						),
-					),
-				),
-			),
-		);
-	}
-
-	/**
-	 * Retrieve settings for the Leadership page.
-	 *
-	 * This method returns an array of settings and options for the Leadership page of the
-	 * GatherPress settings. The Leadership page includes settings related to roles and organizers.
-	 * You can customize role labels and select organizers for each role.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array containing the Leadership page settings and options.
-	 */
-	public function get_leadership_page(): array {
-		$roles = array(
-			'organizers' => array(
-				'labels' => array(
-					'name'          => __( 'Organizers', 'gatherpress' ),
-					'singular_name' => __( 'Organizer', 'gatherpress' ),
-					'plural_name'   => __( 'Organizers', 'gatherpress' ),
-				),
-				'field'  => array(
-					'type'    => 'autocomplete',
-					'options' => array(
-						'type'  => 'user',
-						'label' => __( 'Select Organizers', 'gatherpress' ),
-					),
-				),
-			),
-		);
-
-		return array(
-			'name'        => __( 'Leadership', 'gatherpress' ),
-			'description' => __( 'Leadership for GatherPress.', 'gatherpress' ),
-			'sections'    => array(
-				'roles' => array(
-					'name'        => __( 'Roles', 'gatherpress' ),
-					'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
-					'options'     => apply_filters( 'gatherpress_roles', $roles ),
-				),
-			),
-		);
-	}
-
-	/**
-	 * Retrieve settings for the Credits page.
-	 *
-	 * This method returns an array of settings and options for the Credits page of the GatherPress settings.
-	 * The Credits page displays credits to individuals and contributors behind the GatherPress project.
-	 * Users can get involved and see their names on this page.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array containing the Credits page settings and options.
-	 */
-	public function get_credits_page(): array {
-		return array(
-			'name'     => __( 'Credits', 'gatherpress' ),
-			'priority' => PHP_INT_MAX,
-			'sections' => array(
-				'credits' => array(
-					'name'        => __( 'Credits', 'gatherpress' ),
-					'description' => sprintf(
-					/* translators: %1$s: opening anchor tag, %2$s closing anchor tag. */
-						__( 'Meet the folks behind GatherPress. Want to see your name here? %1$sGet Involved!%2$s', 'gatherpress' ),
-						'<a href="https://github.com/GatherPress/gatherpress" target="_blank">',
-						'</a>'
-					),
-					'options'     => array(
-						'project-leads'    => array(
-							'labels' => array(
-								'name' => __( 'Project Leads', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type' => 'credits',
-							),
-						),
-						'gatherpress-team' => array(
-							'labels' => array(
-								'name' => __( 'GatherPress Team', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type' => 'credits',
-							),
-						),
-						'contributors'     => array(
-							'labels' => array(
-								'name' => __( 'Contributors', 'gatherpress' ),
-							),
-							'field'  => array(
-								'type' => 'credits',
-							),
-						),
-					),
-				),
-			),
-		);
-	}
-
-	/**
-	 * Retrieve a list of user roles.
-	 *
-	 * This method returns an array of user roles defined for GatherPress. User roles
-	 * are used to customize role labels to be more appropriate for events.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array containing user roles and their corresponding settings.
-	 */
-	public function get_user_roles(): array {
-		$sub_pages = $this->get_sub_pages();
-		$options   = (array) $sub_pages['leadership']['sections']['roles']['options'];
-
-		return $options ?? array();
-	}
-
-	/**
-	 * Retrieve the role of a user.
-	 *
-	 * This method returns the role of a user identified by their User ID.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $user_id User ID.
-	 *
-	 * @return string The role of the user, or 'Member' if no matching role is found.
-	 */
-	public function get_user_role( int $user_id ): string {
-		$leadership = get_option( Utility::prefix_key( 'leadership' ) );
-		$roles      = $leadership['roles'] ?? array();
-		$default    = __( 'Member', 'gatherpress' );
-
-		foreach ( $roles as $role => $users ) {
-			foreach ( json_decode( $users ) as $user ) {
-				if ( intval( $user->id ) === $user_id ) {
-					$roles = $this->get_user_roles();
-
-					return $roles[ $role ]['labels']['singular_name'] ?? $default;
-				}
-			}
-		}
-
-		return $default;
 	}
 
 	/**
@@ -770,7 +575,7 @@ class Settings {
 				$page = Utility::unprefix_key( $this->current_page );
 
 				if ( isset( $sub_pages[ $page ] ) ) {
-					$submenu = Utility::prefix_key( 'general' );
+					$submenu = Utility::prefix_key( $this->main_sub_page );
 				}
 			}
 		}

@@ -11,6 +11,7 @@
 
 namespace GatherPress\Core;
 
+use GatherPress\Core\Settings\Leadership;
 use WP_Post;
 
 /**
@@ -336,7 +337,7 @@ class Rsvp {
 				// @todo make a filter so we can use this function if gp-buddypress plugin is activated.
 				// 'profile'   => bp_core_get_user_domain( $user_id ),
 				'profile'   => get_author_posts_url( $user_id ),
-				'role'      => Settings::get_instance()->get_user_role( $user_id ),
+				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
 				'timestamp' => sanitize_text_field( $response['timestamp'] ),
 				'status'    => $user_status,
 				'guests'    => $user_guests,
@@ -394,7 +395,7 @@ class Rsvp {
 				function( $role ) {
 					return $role['labels']['singular_name'];
 				},
-				Settings::get_instance()->get_user_roles()
+				Leadership::get_instance()->get_user_roles()
 			)
 		);
 		$roles[]     = __( 'Member', 'gatherpress' );
