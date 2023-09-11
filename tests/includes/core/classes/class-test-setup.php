@@ -113,7 +113,7 @@ class Test_Setup extends Base {
 			),
 		);
 
-	    $this->assert_hooks( $hooks, $instance );
+		$this->assert_hooks( $hooks, $instance );
 	}
 
 	/**
