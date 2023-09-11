@@ -22,7 +22,7 @@ if ( ! isset( $credits ) ) {
 	<h2><?php esc_html_e( 'Credits', 'gatherpress' ); ?></h2>
 	<p class="description">
 		<?php esc_html_e( 'Meet the folks behind GatherPress. Want to see your name here?', 'gatherpress' ); ?>
-		<a href="https://github.com/GatherPress/gatherpress" target="_blank"><?php esc_html_e( 'Get Involved', 'gatherpress' ); ?></a>.
+		<a href="https://github.com/GatherPress/gatherpress" rel="noopener" target="_blank"><?php esc_html_e( 'Get Involved', 'gatherpress' ); ?></a>.
 	</p>
 	<h3><?php esc_html_e( 'Project Leaders', 'gatherpress' ); ?></h3>
 	<ul class="gp-settings__credits-featured">
