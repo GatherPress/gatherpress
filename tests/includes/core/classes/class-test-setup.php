@@ -112,8 +112,8 @@ class Test_Setup extends Base {
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
 			),
 		);
-		
-		$this->assert_hooks( $hooks, $instance );	
+
+	    $this->assert_hooks( $hooks, $instance );
 	}
 
 	/**
@@ -134,7 +134,6 @@ class Test_Setup extends Base {
 			1,
 			'Failed to assert user registration option was set.'
 		);
-
 	}
 
 	/**
