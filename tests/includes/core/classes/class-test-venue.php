@@ -82,6 +82,20 @@ class Test_Venue extends Base {
 		$args = Venue::get_post_meta_registration_args();
 
 		$this->assertIsArray( $args['_venue_information'], 'Failed to assert that _online_event_link is an array.' );
+
+		$this->mock->user( 'subscriber' );
+
+		$this->assertFalse(
+			$args['_venue_information']['auth_callback'](),
+			'Failed to assert false on auth_callback for subscriber'
+		);
+
+		$this->mock->user( 'admin' );
+
+		$this->assertTrue(
+			$args['_venue_information']['auth_callback'](),
+			'Failed to assert true on auth_callback for admin'
+		);
 	}
 
 	/**

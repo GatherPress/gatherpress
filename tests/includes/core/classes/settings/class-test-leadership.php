@@ -13,7 +13,7 @@ use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
 
 /**
- * Class Test_Settings.
+ * Class Test_Leadership.
  *
  * @coversDefaultClass \GatherPress\Core\Settings\Leadership
  */
@@ -28,6 +28,8 @@ class Test_Leadership extends Base {
 	 */
 	public function test___construct(): void {
 		$instance = Leadership::get_instance();
+
+		Utility::invoke_hidden_method( $instance, '__construct' );
 
 		$this->assertSame(
 			'Leadership',
