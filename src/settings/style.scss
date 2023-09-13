@@ -34,24 +34,6 @@
 		}
 	}
 
-	&__credits-list {
-		li {
-			display: inline-block;
-			position: relative;
-			margin-right: 4px;
-
-			&:after {
-				content: ',';
-				position: absolute;
-				right: -4px;
-			}
-
-			&:last-child:after {
-				content: '.';
-			}
-		}
-	}
-
 	.components-form-token-field__input-container {
 		background: #fff;
 	}
