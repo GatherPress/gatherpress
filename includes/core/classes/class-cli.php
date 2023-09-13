@@ -67,6 +67,10 @@ class Cli extends WP_CLI {
 		$data['version'] = $version;
 
 		foreach ( $credits[ $version ] as $group => $users ) {
+			if ( 'contributors' === $group ) {
+				sort( $users );
+			}
+
 			$data[ $group ] = array();
 
 			foreach ( $users as $user ) {
