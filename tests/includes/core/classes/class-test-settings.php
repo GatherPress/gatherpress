@@ -2,8 +2,7 @@
 /**
  * Class handles unit tests for GatherPress\Core\Settings.
  *
- * @package GatherPress
- * @subpackage Core
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
