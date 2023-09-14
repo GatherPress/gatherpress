@@ -105,7 +105,7 @@ const EventCommuncationModal = () => {
 		<>
 			{isOpen && (
 				<Modal
-					title={__('Email members about this event', 'gatherpress')}
+					title={__('Notify Members', 'gatherpress')}
 					onRequestClose={closeModal}
 					shouldCloseOnClickOutside={false}
 				>
@@ -114,6 +114,12 @@ const EventCommuncationModal = () => {
 						value={message}
 						onChange={(value) => setMessage(value)}
 					/>
+					<p className="description">
+						{__(
+							'Select the recipients for your message by checking the relevant boxes.',
+							'gatherpress'
+						)}
+					</p>
 					<Flex gap="8">
 						<FlexItem>
 							<CheckboxControl

@@ -63,7 +63,7 @@ export function triggerEventCommuncation() {
 	) {
 		notices.createNotice(
 			'success',
-			__('Update members about this event via email?', 'gatherpress'),
+			__('Send an event update to members via email?', 'gatherpress'),
 			{
 				id,
 				isDismissible: true,
@@ -74,7 +74,7 @@ export function triggerEventCommuncation() {
 								setOpen: true,
 							});
 						},
-						label: __('Create Message', 'gatherpress'),
+						label: __('Compose Message', 'gatherpress'),
 					},
 				],
 			}
