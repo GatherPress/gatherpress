@@ -83,6 +83,11 @@ const Autocomplete = (props) => {
 				maxLength={fieldOptions.limit || 0}
 				__experimentalShowHowTo={showHowTo}
 			/>
+			{false === showHowTo && (
+				<p className="description">
+					{__('Choose only one item.', 'gatherpress')}
+				</p>
+			)}
 			<input
 				type="hidden"
 				id={option}
