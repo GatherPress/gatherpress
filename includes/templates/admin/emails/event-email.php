@@ -30,7 +30,7 @@ $gatherpress_venue = $gatherpress_event->get_venue_information()['name'];
 	<body style="font-family: Arial, sans-serif;">
 		<?php if ( ! empty( $message ) ) : ?>
 			<p style="margin-bottom: 16px;">
-				<?php echo esc_html( $message ); ?>
+				<?php echo wp_kses( nl2br( $message ), array( 'br' => array() ) ); ?>
 			</p>
 		<?php endif; ?>
 		<!-- Feature Image -->
