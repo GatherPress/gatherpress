@@ -58,7 +58,7 @@ export function triggerEventCommuncation() {
 	notices.removeNotice(id);
 
 	if (
-		select('core/editor').getEditedPostAttribute('status') === 'publish' &&
+		'publish' === select('core/editor').getEditedPostAttribute('status') &&
 		!hasEventPast()
 	) {
 		notices.createNotice(

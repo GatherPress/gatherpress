@@ -94,12 +94,12 @@ const EventCommuncationModal = () => {
 		<>
 			{isOpen && (
 				<Modal
-					title={__('Notify Members', 'gatherpress')}
+					title={__('Notify members via email', 'gatherpress')}
 					onRequestClose={closeModal}
 					shouldCloseOnClickOutside={false}
 				>
 					<TextareaControl
-						label={__('Optional Message', 'gatherpress')}
+						label={__('Optional message', 'gatherpress')}
 						value={message}
 						onChange={(value) => setMessage(value)}
 					/>
