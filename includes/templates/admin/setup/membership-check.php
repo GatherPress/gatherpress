@@ -9,9 +9,9 @@
 ?>
 	<div class="gp-admin__membership-check notice notice-warning">
 		<div>
-			<?php esc_html_e( 'To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by' ); ?>
+			<?php esc_html_e( 'To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by', 'gatherpress' ); ?>
 			<a href="<?php echo esc_url( admin_url( 'options-general.php#users_can_register' ) ); ?>">
-				<?php esc_html_e( 'enabling user registration here' ); ?>
+				<?php esc_html_e( 'enabling user registration here', 'gatherpress' ); ?>
 			</a>.
 		</div>
 		<div>
