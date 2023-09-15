@@ -329,7 +329,7 @@ class Rsvp {
 			$user_info   = get_userdata( $user_id );
 			$responses[] = array(
 				'id'        => $user_id,
-				'name'      => $user_info->display_name,
+				'name'      => $user_info->display_name ?? __( 'Anonymous', 'gatherpress' ),
 				'photo'     => get_avatar_url( $user_id ),
 				// @todo make a filter so we can use this function if gp-buddypress plugin is activated.
 				// 'profile'   => bp_core_get_user_domain( $user_id ),
