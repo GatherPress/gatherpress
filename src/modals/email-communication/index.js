@@ -62,17 +62,6 @@ const EventCommuncationModal = () => {
 	};
 
 	useEffect(() => {
-		if (
-			isAttendingChecked &&
-			isWaitingListChecked &&
-			isNotAttendingChecked
-		) {
-			setAllChecked(true);
-			setAttendingChecked(false);
-			setWaitingListChecked(false);
-			setNotAttendingChecked(false);
-		}
-
 		if (isAllChecked) {
 			setCheckBoxDisabled(true);
 			setAttendingChecked(false);
@@ -105,12 +94,12 @@ const EventCommuncationModal = () => {
 		<>
 			{isOpen && (
 				<Modal
-					title={__('Notify Members', 'gatherpress')}
+					title={__('Notify members via email', 'gatherpress')}
 					onRequestClose={closeModal}
 					shouldCloseOnClickOutside={false}
 				>
 					<TextareaControl
-						label={__('Optional Message', 'gatherpress')}
+						label={__('Optional message', 'gatherpress')}
 						value={message}
 						onChange={(value) => setMessage(value)}
 					/>
@@ -123,7 +112,7 @@ const EventCommuncationModal = () => {
 					<Flex gap="8">
 						<FlexItem>
 							<CheckboxControl
-								label={__('All', 'gatherpress')}
+								label={__('All Members', 'gatherpress')}
 								checked={isAllChecked}
 								onChange={setAllChecked}
 							/>

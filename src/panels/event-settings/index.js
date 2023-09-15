@@ -17,6 +17,7 @@ import { isEventPostType } from '../../helpers/event';
 import VenueSelectorPanel from './venue-selector';
 import OnlineEventLinkPanel from './online-link';
 import DateTimeRangePanel from './datetime-range';
+import NotifyMembersPanel from './notify-members';
 
 const EventSettings = () => {
 	return (
@@ -31,6 +32,7 @@ const EventSettings = () => {
 					<DateTimeRangePanel />
 					<VenueSelectorPanel />
 					<OnlineEventLinkPanel />
+					<NotifyMembersPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
 		)
