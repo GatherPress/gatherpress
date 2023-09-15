@@ -82,6 +82,7 @@ class Setup {
 			2
 		);
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
+		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
@@ -677,6 +678,39 @@ class Setup {
 		}
 
 		return $post_states;
+	}
+
+	/**
+	 * Display a notification to recommend enabling user registration for GatherPress functionality.
+	 *
+	 * This method checks if user registration is enabled in WordPress settings and displays a
+	 * notification encouraging users to enable registration for optimal GatherPress functionality.
+	 * Users have the option to suppress this notification permanently.
+	 *
+	 * @return void
+	 */
+	public function check_users_can_register() : void {
+		if (
+			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
+			filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN )
+			) {
+			return;
+		}
+
+		if (
+			null !== filter_input( INPUT_GET, 'action' ) &&
+			'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
+			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&
+			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' )
+		) {
+			update_option( 'gp_suppress_membership_notification', true );
+		} else {
+			Utility::render_template(
+				sprintf( '%s/includes/templates/admin/setup/dismiss-notification.php', GATHERPRESS_CORE_PATH ),
+				array(),
+				true
+			);
+		}
 	}
 
 }
