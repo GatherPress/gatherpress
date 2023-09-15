@@ -698,14 +698,15 @@ class Setup {
 		}
 
 		if (
-			null !== filter_input( INPUT_GET, 'action' ) && 'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
+			null !== filter_input( INPUT_GET, 'action' ) && 
+            'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
 			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&
-			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET,'_wpnonce' ) ) ), 'clear-notification' ) 
-			) {
+			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' ) 
+		) {
 			update_option( 'gp_suppress_membership_notification', true );
 		} else {
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/settings/dismiss-notification.php', GATHERPRESS_CORE_PATH ),
+				sprintf( '%s/includes/templates/admin/setup/dismiss-notification.php', GATHERPRESS_CORE_PATH ),
 				array(),
 				true
 			);
