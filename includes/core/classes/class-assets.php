@@ -125,6 +125,15 @@ class Assets {
 	 * @return void
 	 */
 	public function admin_enqueue_scripts( string $hook ): void {
+		$asset = $this->get_asset_data( 'admin_style' );
+
+		wp_enqueue_style(
+			'gatherpress-admin-style',
+			$this->build . 'admin_style.css',
+			$asset['dependencies'],
+			$asset['version']
+		);
+
 		if ( 'post-new.php' === $hook || 'post.php' === $hook ) {
 			$asset = $this->get_asset_data( 'panels' );
 
