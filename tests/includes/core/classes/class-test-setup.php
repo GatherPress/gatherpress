@@ -137,7 +137,7 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for filter_plugin_action_links method!!!!!
+	 * Coverage for filter_plugin_action_links method.
 	 *
 	 * @covers ::filter_plugin_action_links
 	 *
