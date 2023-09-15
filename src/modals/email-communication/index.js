@@ -62,17 +62,6 @@ const EventCommuncationModal = () => {
 	};
 
 	useEffect(() => {
-		if (
-			isAttendingChecked &&
-			isWaitingListChecked &&
-			isNotAttendingChecked
-		) {
-			setAllChecked(true);
-			setAttendingChecked(false);
-			setWaitingListChecked(false);
-			setNotAttendingChecked(false);
-		}
-
 		if (isAllChecked) {
 			setCheckBoxDisabled(true);
 			setAttendingChecked(false);
@@ -123,7 +112,7 @@ const EventCommuncationModal = () => {
 					<Flex gap="8">
 						<FlexItem>
 							<CheckboxControl
-								label={__('All', 'gatherpress')}
+								label={__('All Members', 'gatherpress')}
 								checked={isAllChecked}
 								onChange={setAllChecked}
 							/>
