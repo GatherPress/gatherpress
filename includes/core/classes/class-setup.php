@@ -699,7 +699,7 @@ class Setup {
 
 		if (
 			null !== filter_input( INPUT_GET, 'action' ) &&
-            'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
+			'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
 			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&
 			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' )
 		) {
