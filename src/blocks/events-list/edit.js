@@ -221,8 +221,8 @@ const Edit = (props) => {
 						)}
 						help={
 							attributes.eventOptions.showRsvpResponse
-								? __('Show RSVP Response', 'gatherpress')
-								: __('Hide RSVP Response', 'gatherpress')
+								? __('Show All RSVP Responses', 'gatherpress')
+								: __('Hide All RSVP Responses', 'gatherpress')
 						}
 						checked={
 							attributes.eventOptions.showRsvpResponse ?? true
@@ -240,8 +240,8 @@ const Edit = (props) => {
 						label={__('Show/Hide My RSVP Response')}
 						help={
 							attributes.eventOptions.showRsvp
-								? __('Show RSVP')
-								: __('Hide RSVP')
+								? __('Show My RSVP Response')
+								: __('Hide My RSVP Response')
 						}
 						checked={attributes.eventOptions.showRsvp}
 						onChange={(value) => {
