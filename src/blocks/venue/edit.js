@@ -106,6 +106,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						</PanelRow>
 					)}
 				</PanelBody>
+				{ ! isOnlineEventTerm && (
 				<PanelBody
 					title={__('Map settings', 'gatherpress')}
 					initialOpen={true}
@@ -164,6 +165,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						max={1000}
 					/>
 				</PanelBody>
+				)}
 			</InspectorControls>
 			<div {...blockProps}>
 				<EditCover isSelected={isSelected}>
