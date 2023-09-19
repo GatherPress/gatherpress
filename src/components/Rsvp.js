@@ -195,7 +195,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 
 		return (
 			<div className="gp-modal gp-modal__rsvp">
-				<div className="gp-modal__header has-large-font-size">
+				<div className="gp-modal__header">
 					{getModalLabel(rsvpStatus) ? (
 						getModalLabel(rsvpStatus)
 					) : (

@@ -2,6 +2,21 @@
 
 .gp-rsvp-response {
 
+	&__header {
+		display: flex;
+	}
+
+	&__see-all {
+		margin-left: auto;
+		margin-bottom: 1rem;
+	}
+
+	&__title {
+		font-weight: 600;
+		font-size: var(--wp--preset--font-size--medium);
+		margin-bottom: 1rem;
+	}
+
 	&__navigation {
 		display: flex;
 		gap: 1rem;
@@ -16,14 +31,18 @@
 
 	&__items {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+		grid-template-columns: 1fr 1fr 1fr 1fr;
 		gap: 1rem;
 
 	}
 
 	&__item {
-		margin-bottom: 1rem;
+		text-align: center;
 		gap: 1rem;
+		box-shadow: 0 0 0.25rem 0 #CCCCCC;
+		border-radius: 0.25rem;
+		padding: 1rem;
+		background-color: #FFFFFF;
 	}
 
 	&__active {
@@ -47,6 +66,7 @@
 
 	&__member-role {
 		font-size: var(--wp--preset--font-size--small);
+		color: #646970;
 	}
 
 	&__anchor {

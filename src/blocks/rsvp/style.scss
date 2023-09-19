@@ -10,3 +10,12 @@
 	align-items: center;
 	margin-bottom: 1rem;
 }
+
+.gp-modal__rsvp {
+	.gp-modal {
+		&__header {
+			font-size: var(--wp--preset--font-size--medium);
+			font-weight: 600;
+		}
+	}
+}
