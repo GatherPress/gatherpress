@@ -12,7 +12,7 @@
  */
 
 return array(
-	'0.24.0' => array(
+	'0.24.1' => array(
 		'project-leaders'  => array( 'mauteri', 'hrmervin' ),
 		'gatherpress-team' => array( 'pbrocks', 'jmarx', 'meaganhanes', 'calebthedev' ),
 		'contributors'     => array( 'hauvong', 'phoopee3', 'courane01', 'evertiro', 'newyorkerlaura', 'cameronbarrett' ),
