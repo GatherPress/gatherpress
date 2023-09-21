@@ -10,7 +10,12 @@ import RsvpResponseNavigationItem from './RsvpResponseNavigationItem';
 import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
-const RsvpResponseNavigation = ({ items, activeValue, onTitleClick }) => {
+const RsvpResponseNavigation = ({
+	items,
+	activeValue,
+	onTitleClick,
+	rsvpLimit,
+}) => {
 	const defaultCount = {
 		all: 0,
 		attending: 0,
@@ -27,21 +32,26 @@ const RsvpResponseNavigation = ({ items, activeValue, onTitleClick }) => {
 	Listener({ setRsvpCount }, getFromGlobal('post_id'));
 
 	const renderedItems = items.map((item, index) => {
-		const additionalClasses =
-			item.value === activeValue ? 'gp-rsvp-response__current' : '';
+		const activeItem = item.value === activeValue;
 
 		return (
 			<RsvpResponseNavigationItem
 				key={index}
 				item={item}
 				count={rsvpCount[item.value]}
-				additionalClasses={additionalClasses}
+				activeItem={activeItem}
 				onTitleClick={onTitleClick}
+				rsvpLimit={rsvpLimit}
 			/>
 		);
 	});
 
-	return <nav className="gp-rsvp-response__navigation">{renderedItems}</nav>;
+	return (
+		<div>
+			<div className="dashicons dashicons-groups"></div>
+			<nav className="gp-rsvp-response__navigation">{renderedItems}</nav>
+		</div>
+	);
 };
 
 export default RsvpResponseNavigation;

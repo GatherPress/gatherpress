@@ -1,18 +1,33 @@
+/**
+ * Internal dependencies.
+ */
+import { Broadcaster } from '../helpers/broadcasting';
+import { getFromGlobal } from '../helpers/globals';
+
 const RsvpResponseNavigationItem = ({
 	item,
-	additionalClasses,
+	activeItem = false,
 	count,
 	onTitleClick,
+	rsvpLimit,
 }) => {
 	const { title, value } = item;
 	const active = 0 === count && 'attending' !== value ? 'hidden' : 'active';
+	const Tag = activeItem ? `span` : `a`;
+	const eventId = getFromGlobal('post_id');
+
+	const rsvpSeeAllLink = count > rsvpLimit ? 'active' : 'hidden';
+
+	if (activeItem) {
+		Broadcaster({ setRsvpSeeAllLink: rsvpSeeAllLink }, eventId);
+	}
 
 	return (
 		<div
-			className={`gp-rsvp-response__navigation-item gp-rsvp-response__${active} ${additionalClasses}`}
+			className={`gp-rsvp-response__navigation-item gp-rsvp-response__${active}`}
 		>
 			{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-			<a
+			<Tag
 				className="gp-rsvp-response__anchor"
 				data-item={value}
 				data-toggle="tab"
@@ -22,7 +37,7 @@ const RsvpResponseNavigationItem = ({
 				onClick={(e) => onTitleClick(e, value)}
 			>
 				{title}
-			</a>
+			</Tag>
 			<span className="gp-rsvp-response__count">({count})</span>
 		</div>
 	);
