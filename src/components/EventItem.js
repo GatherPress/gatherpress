@@ -8,6 +8,7 @@ import HtmlReactParser from 'html-react-parser';
  */
 import Rsvp from './Rsvp';
 import RsvpResponseCard from './RsvpResponseCard';
+import RsvpResponseAvatarOnly from './RsvpResponseAvatarOnly';
 import RsvpStatusResponse from './RsvpStatusResponse';
 
 const EventItem = (props) => {
@@ -79,12 +80,11 @@ const EventItem = (props) => {
 			<div className={`${eventClass}__footer`}>
 				{eventOptions.showRsvpResponse && (
 					<div className="gp-rsvp-response__items">
-						<RsvpResponseCard
+						<RsvpResponseAvatarOnly
 							eventId={event.ID}
 							value="attending"
 							responses={event.responses}
 							limit="3"
-							avatarOnly={true}
 						/>
 					</div>
 				)}

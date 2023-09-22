@@ -38,43 +38,14 @@ const RsvpResponseCard = ({ eventId, value, limit, responses = [] }) => {
 			}
 
 			return (
-				<div key={index} className="gp-rsvp-response__item">
-					<figure className="gp-rsvp-response__member-avatar">
-						<a href={profile}>
-							<img alt={name} title={name} src={photo} />
-						</a>
-					</figure>
-					<div className="gp-rsvp-response__member-info">
-						<div className="gp-rsvp-response__member-name">
-							<a href={profile}>{name}</a>
-						</div>
-						<div className="gp-rsvp-response__member-role">
-							{role}
-						</div>
-						<small className="gp-rsvp-response__guests">
-							{guests}
-						</small>
-					</div>
-				</div>
+				<figure key={index} className="gp-rsvp-response__member-avatar">
+					<img alt={name} title={name} src={photo} />
+				</figure>
 			);
 		});
 	}
 
-	return (
-		<>
-			{'attending' === value && 0 === renderedItems.length && (
-				<div className="gp-rsvp-response__no-responses">
-					{false === getFromGlobal('has_event_past')
-						? __(
-								'No one is attending this event yet.',
-								'gatherpress'
-						  )
-						: __('No one went to this event.', 'gatherpress')}
-				</div>
-			)}
-			{renderedItems}
-		</>
-	);
+	return <>{renderedItems}</>;
 };
 
 export default RsvpResponseCard;

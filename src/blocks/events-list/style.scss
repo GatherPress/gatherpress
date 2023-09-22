@@ -66,9 +66,10 @@
 				flex-grow: 2;
 			}
 
-			&__item {
+			&__member-avatar {
 				margin-left: -1rem;
 				margin-bottom: 0;
+				width: 3.125rem;
 				display: flex;
 				align-items: center;
 
@@ -78,13 +79,6 @@
 
 				img {
 					width: 3.125rem;
-				}
-			}
-
-			&__member-avatar {
-
-				a {
-					display: flex;
 				}
 			}
 		}
