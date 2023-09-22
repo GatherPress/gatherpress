@@ -29,6 +29,8 @@ const RsvpResponseNavigation = ({
 
 	const [rsvpCount, setRsvpCount] = useState(defaultCount);
 	const [showNavigationDropdown, setShowNavigationDropdown] = useState(false);
+	const [hideNavigationDropdown, setHideNavigationDropdown] = useState(true);
+	const Tag = hideNavigationDropdown ? `span` : `a`;
 
 	Listener({ setRsvpCount }, getFromGlobal('post_id'));
 
@@ -67,6 +69,14 @@ const RsvpResponseNavigation = ({
 		});
 	});
 
+	useEffect(() => {
+		if (0 === rsvpCount.not_attending && 0 === rsvpCount.waiting_list) {
+			setHideNavigationDropdown(true);
+		} else {
+			setHideNavigationDropdown(false);
+		}
+	}, [rsvpCount]);
+
 	const toggleNavigation = (e) => {
 		e.preventDefault();
 
@@ -77,17 +87,17 @@ const RsvpResponseNavigation = ({
 		<div className="gp-rsvp-response__navigation-wrapper">
 			<div>
 				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-				<a
+				<Tag
 					href="#"
 					className="gp-rsvp-response__navigation-active"
 					onClick={(e) => toggleNavigation(e)}
 				>
 					{items[activeIndex].title}
-				</a>
+				</Tag>
 				&nbsp;
 				<span>({rsvpCount[activeValue]})</span>
 			</div>
-			{showNavigationDropdown && (
+			{!hideNavigationDropdown && showNavigationDropdown && (
 				<nav className="gp-rsvp-response__navigation">
 					{renderedItems}
 				</nav>
