@@ -9,14 +9,14 @@ const RsvpResponseNavigationItem = ({
 	activeItem = false,
 	count,
 	onTitleClick,
-	rsvpLimit,
+	defaultLimit,
 }) => {
 	const { title, value } = item;
 	const active = 0 === count && 'attending' !== value ? 'hidden' : 'active';
 	const Tag = activeItem ? `span` : `a`;
 	const eventId = getFromGlobal('post_id');
 
-	const rsvpSeeAllLink = count > rsvpLimit;
+	const rsvpSeeAllLink = count > defaultLimit;
 
 	if (activeItem) {
 		Broadcaster({ setRsvpSeeAllLink: rsvpSeeAllLink }, eventId);

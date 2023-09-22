@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import {useEffect, useState} from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -14,7 +14,7 @@ const RsvpResponseNavigation = ({
 	items,
 	activeValue,
 	onTitleClick,
-	rsvpLimit,
+	defaultLimit,
 }) => {
 	const defaultCount = {
 		all: 0,
@@ -48,7 +48,7 @@ const RsvpResponseNavigation = ({
 				count={rsvpCount[item.value]}
 				activeItem={activeItem}
 				onTitleClick={onTitleClick}
-				rsvpLimit={rsvpLimit}
+				defaultLimit={defaultLimit}
 			/>
 		);
 	});

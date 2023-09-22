@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import {__} from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
@@ -50,7 +50,7 @@ const RsvpResponseHeader = ({
 				items={items}
 				activeValue={activeValue}
 				onTitleClick={onTitleClick}
-				rsvpLimit={rsvpLimit}
+				defaultLimit={defaultLimit}
 			/>
 			{rsvpSeeAllLink && (
 				<div className="gp-rsvp-response__see-all">
