@@ -24,13 +24,26 @@
 	}
 
 	&__navigation {
-		display: flex;
-		gap: 1rem;
+		flex-direction: column;
+		border-radius: 0.4rem;
+		border: 1px solid #CCCCCC;
+		overflow: hidden;
+		width: 15rem;
+		position: absolute;
 	}
 
 	&__navigation-item {
-		gap: 0.2rem;
+		background-color: #FFFFFF;
+		border-top: 1px solid #CCCCCC;
+		margin-top: -1px;
 		display: flex;
+		align-items: center;
+	}
+
+	&__anchor {
+		color: #000000;
+		display: block;
+		padding: 0.5rem;
 	}
 
 	&__items {

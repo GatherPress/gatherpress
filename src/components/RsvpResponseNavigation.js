@@ -30,9 +30,14 @@ const RsvpResponseNavigation = ({
 	const [rsvpCount, setRsvpCount] = useState(defaultCount);
 
 	Listener({ setRsvpCount }, getFromGlobal('post_id'));
+	let activeIndex = 0;
 
 	const renderedItems = items.map((item, index) => {
 		const activeItem = item.value === activeValue;
+
+		if (activeItem) {
+			activeIndex = index;
+		}
 
 		return (
 			<RsvpResponseNavigationItem
@@ -46,7 +51,14 @@ const RsvpResponseNavigation = ({
 		);
 	});
 
-	return <nav className="gp-rsvp-response__navigation">{renderedItems}</nav>;
+	return (
+		<div className="gp-rsvp-response__navigation-wrapper">
+			<div className="gp-rsvp-response__navigation-active">
+				{items[activeIndex].title} ({rsvpCount[activeValue]})
+			</div>
+			<nav className="gp-rsvp-response__navigation">{renderedItems}</nav>
+		</div>
+	);
 };
 
 export default RsvpResponseNavigation;
