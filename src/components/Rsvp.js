@@ -94,6 +94,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 					setRsvpStatus: res.status,
 					setRsvpResponse: res.responses,
 					setRsvpCount: count,
+					setRsvpSeeAllLink: count[res.status] > 8, // @todo make defaultLimit a setting, not hardcoded.
 					setOnlineEventLink: res.online_link,
 				};
 
