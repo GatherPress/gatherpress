@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { useState } from '@wordpress/element';
+import {useEffect, useState} from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -28,8 +28,10 @@ const RsvpResponseNavigation = ({
 	}
 
 	const [rsvpCount, setRsvpCount] = useState(defaultCount);
+	const [showNavigationDropdown, setShowNavigationDropdown] = useState(false);
 
 	Listener({ setRsvpCount }, getFromGlobal('post_id'));
+
 	let activeIndex = 0;
 
 	const renderedItems = items.map((item, index) => {
@@ -51,12 +53,45 @@ const RsvpResponseNavigation = ({
 		);
 	});
 
+	useEffect(() => {
+		global.document.addEventListener('click', ({ target }) => {
+			if (!target.closest('.gp-rsvp-response__navigation-active')) {
+				setShowNavigationDropdown(false);
+			}
+		});
+
+		global.document.addEventListener('keydown', ({ key }) => {
+			if ('Escape' === key) {
+				setShowNavigationDropdown(false);
+			}
+		});
+	});
+
+	const toggleNavigation = (e) => {
+		e.preventDefault();
+
+		setShowNavigationDropdown(!showNavigationDropdown);
+	};
+
 	return (
 		<div className="gp-rsvp-response__navigation-wrapper">
-			<div className="gp-rsvp-response__navigation-active">
-				{items[activeIndex].title} ({rsvpCount[activeValue]})
+			<div>
+				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+				<a
+					href="#"
+					className="gp-rsvp-response__navigation-active"
+					onClick={(e) => toggleNavigation(e)}
+				>
+					{items[activeIndex].title}
+				</a>
+				&nbsp;
+				<span>({rsvpCount[activeValue]})</span>
 			</div>
-			<nav className="gp-rsvp-response__navigation">{renderedItems}</nav>
+			{showNavigationDropdown && (
+				<nav className="gp-rsvp-response__navigation">
+					{renderedItems}
+				</nav>
+			)}
 		</div>
 	);
 };

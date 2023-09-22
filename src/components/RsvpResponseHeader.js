@@ -37,7 +37,9 @@ const RsvpResponseHeader = ({
 		loadListText = __('See all', 'gatherpress');
 	}
 
-	const [rsvpSeeAllLink, setRsvpSeeAllLink] = useState('hidden');
+	const [rsvpSeeAllLink, setRsvpSeeAllLink] = useState(
+		getFromGlobal('responses')[activeValue].count > defaultLimit
+	);
 
 	Listener({ setRsvpSeeAllLink }, getFromGlobal('post_id'));
 
@@ -50,14 +52,14 @@ const RsvpResponseHeader = ({
 				onTitleClick={onTitleClick}
 				rsvpLimit={rsvpLimit}
 			/>
-			<div
-				className={`gp-rsvp-response__see-all gp-rsvp-response__see-all--${rsvpSeeAllLink}`}
-			>
-				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-				<a href="#" onClick={(e) => updateLimit(e)}>
-					{loadListText}
-				</a>
-			</div>
+			{rsvpSeeAllLink && (
+				<div className="gp-rsvp-response__see-all">
+					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+					<a href="#" onClick={(e) => updateLimit(e)}>
+						{loadListText}
+					</a>
+				</div>
+			)}
 		</div>
 	);
 };

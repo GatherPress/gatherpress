@@ -7,9 +7,8 @@ import { getFromGlobal } from '../helpers/globals';
 
 const RsvpResponse = () => {
 	const defaultLimit = 8;
-	let defaultStatus = 'attending';
+	const defaultStatus = 'attending';
 	const hasEventPast = getFromGlobal('has_event_past');
-	const currentUserStatus = getFromGlobal('current_user.status');
 	const items = [
 		{
 			title:
@@ -33,14 +32,6 @@ const RsvpResponse = () => {
 			value: 'not_attending',
 		},
 	];
-
-	// @todo redo this logic and have it come from API and not GatherPress object.
-	defaultStatus =
-		'undefined' !== typeof currentUserStatus &&
-		'attend' !== currentUserStatus &&
-		'' !== currentUserStatus
-			? currentUserStatus
-			: defaultStatus;
 
 	const [rsvpStatus, setRsvpStatus] = useState(defaultStatus);
 	const [rsvpLimit, setRsvpLimit] = useState(defaultLimit);

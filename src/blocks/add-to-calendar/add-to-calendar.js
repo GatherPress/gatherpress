@@ -40,6 +40,14 @@ const addToCalendarInit = () => {
 				).style.display = 'none';
 			}
 		});
+
+		document.addEventListener('keydown', ({ key }) => {
+			if ('Escape' === key) {
+				containers[i].querySelector(
+					'.gp-add-to-calendar__list'
+				).style.display = 'none';
+			}
+		});
 	}
 };
 
