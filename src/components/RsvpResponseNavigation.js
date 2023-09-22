@@ -46,12 +46,7 @@ const RsvpResponseNavigation = ({
 		);
 	});
 
-	return (
-		<div>
-			<div className="dashicons dashicons-groups"></div>
-			<nav className="gp-rsvp-response__navigation">{renderedItems}</nav>
-		</div>
-	);
+	return <nav className="gp-rsvp-response__navigation">{renderedItems}</nav>;
 };
 
 export default RsvpResponseNavigation;

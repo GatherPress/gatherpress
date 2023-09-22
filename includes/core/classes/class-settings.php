@@ -292,6 +292,7 @@ class Settings {
 				'option'      => Utility::prefix_key( $option ),
 				'value'       => $value,
 				'label'       => $option_settings['field']['label'] ?? '',
+				'size'        => $option_settings['field']['size'] ?? 'regular',
 				'description' => $option_settings['description'] ?? '',
 			),
 			true
@@ -325,6 +326,7 @@ class Settings {
 				'option'      => Utility::prefix_key( $option ),
 				'value'       => $value,
 				'label'       => $option_settings['field']['label'] ?? '',
+				'size'        => $option_settings['field']['size'] ?? 'regular',
 				'description' => $option_settings['description'] ?? '',
 			),
 			true

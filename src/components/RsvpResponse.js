@@ -1,6 +1,6 @@
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import RsvpResponseNavigation from './RsvpResponseNavigation';
+import RsvpResponseHeader from './RsvpResponseHeader';
 import RsvpResponseContent from './RsvpResponseContent';
 import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
@@ -44,52 +44,29 @@ const RsvpResponse = () => {
 
 	const [rsvpStatus, setRsvpStatus] = useState(defaultStatus);
 	const [rsvpLimit, setRsvpLimit] = useState(defaultLimit);
-	const [rsvpSeeAllLink, setRsvpSeeAllLink] = useState('hidden');
-
-	Listener({ setRsvpStatus, setRsvpSeeAllLink }, getFromGlobal('post_id'));
 
 	const onTitleClick = (e, value) => {
 		e.preventDefault();
 		setRsvpStatus(value);
 	};
 
-	const updateLimit = (e) => {
-		e.preventDefault();
-		if (false !== rsvpLimit) {
-			setRsvpLimit(false);
-		} else {
-			setRsvpLimit(defaultLimit);
-		}
-	};
-
-	let loadListText;
-	if (false === rsvpLimit) {
-		loadListText = __('See fewer', 'gatherpress');
-	} else {
-		loadListText = __('See all', 'gatherpress');
-	}
+	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
 
 	return (
 		<div className="gp-rsvp-response">
-			<RsvpResponseNavigation
+			<RsvpResponseHeader
 				items={items}
 				activeValue={rsvpStatus}
 				onTitleClick={onTitleClick}
 				rsvpLimit={rsvpLimit}
+				setRsvpLimit={setRsvpLimit}
+				defaultLimit={defaultLimit}
 			/>
 			<RsvpResponseContent
 				items={items}
 				activeValue={rsvpStatus}
 				limit={rsvpLimit}
 			/>
-			<div
-				className={`gp-rsvp-response__see-all gp-rsvp-response__see-all--${rsvpSeeAllLink}`}
-			>
-				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-				<a href="#" onClick={(e) => updateLimit(e)}>
-					{loadListText}
-				</a>
-			</div>
 		</div>
 	);
 };
