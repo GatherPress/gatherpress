@@ -3,10 +3,17 @@
  */
 import RsvpResponseCard from './RsvpResponseCard';
 import { getFromGlobal } from '../helpers/globals';
+import { useState } from '@wordpress/element';
+import { Listener } from '../helpers/broadcasting';
 
 const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
-	const postId = getFromGlobal('post_id');
-	const responses = getFromGlobal('responses');
+	const eventId = getFromGlobal('post_id');
+	const [rsvpResponse, setRsvpResponse] = useState(
+		getFromGlobal('responses')
+	);
+
+	Listener({ setRsvpResponse }, eventId);
+
 	const renderedItems = items.map((item, index) => {
 		const { value } = item;
 		const active = value === activeValue;
@@ -15,16 +22,15 @@ const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
 			return (
 				<div
 					key={index}
-					className={`gp-rsvp-response__items gp-rsvp-response__${active}`}
+					className="gp-rsvp-response__items"
 					id={`gp-rsvp-${value}`}
 					role="tabpanel"
 					aria-labelledby={`gp-rsvp-${value}-tab`}
 				>
 					<RsvpResponseCard
-						eventId={postId}
 						value={value}
 						limit={limit}
-						responses={responses}
+						responses={rsvpResponse}
 					/>
 				</div>
 			);

@@ -47,6 +47,10 @@
 		grid-template-columns: 1fr 1fr 1fr 1fr;
 		gap: 1rem;
 
+		@include for-core-mobile {
+			grid-template-columns: 1fr 1fr;
+		}
+
 	}
 
 	&__item {
@@ -56,13 +60,6 @@
 		border-radius: 0.25rem;
 		padding: 1rem;
 		background-color: #FFFFFF;
-	}
-
-	&__active {
-
-		@include for-core-mobile {
-			grid-template-columns: 1fr 1fr;
-		}
 	}
 
 	&__member-avatar {

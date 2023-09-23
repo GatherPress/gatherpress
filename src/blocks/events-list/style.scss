@@ -57,6 +57,7 @@
 		border-bottom: 1px solid #ccc;
 		padding-bottom: 2rem;
 		display: flex;
+		line-height: 2.75rem;
 
 		.gp-rsvp-response {
 
@@ -85,6 +86,10 @@
 
 		.gp-rsvp {
 			margin-bottom: 0;
+
+			@include for-core-mobile {
+				flex-direction: column;
+			}
 		}
 	}
 }

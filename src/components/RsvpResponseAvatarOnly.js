@@ -2,13 +2,11 @@
  * WordPress dependencies.
  */
 import { useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
 import { Listener } from '../helpers/broadcasting';
-import { getFromGlobal } from '../helpers/globals';
 
 const RsvpResponseCard = ({ eventId, value, limit, responses = [] }) => {
 	const [rsvpResponse, setRsvpResponse] = useState(responses);
@@ -28,14 +26,7 @@ const RsvpResponseCard = ({ eventId, value, limit, responses = [] }) => {
 		}
 
 		renderedItems = responses.map((response, index) => {
-			const { profile, name, photo, role } = response;
-			let { guests } = response;
-
-			if (guests) {
-				guests = ' +' + guests + ' guest(s)';
-			} else {
-				guests = '';
-			}
+			const { name, photo } = response;
 
 			return (
 				<figure key={index} className="gp-rsvp-response__member-avatar">

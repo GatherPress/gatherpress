@@ -1,27 +1,21 @@
 /**
  * WordPress dependencies.
  */
-import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
-import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
-const RsvpResponseCard = ({ eventId, value, limit, responses = [] }) => {
-	const [rsvpResponse, setRsvpResponse] = useState(responses);
-
-	Listener({ setRsvpResponse }, eventId);
-
+const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 	let renderedItems = '';
 
 	if (
-		'object' === typeof rsvpResponse &&
-		'undefined' !== typeof rsvpResponse[value]
+		'object' === typeof responses &&
+		'undefined' !== typeof responses[value]
 	) {
-		responses = [...rsvpResponse[value].responses];
+		responses = [...responses[value].responses];
 
 		if (limit) {
 			responses = responses.splice(0, limit);

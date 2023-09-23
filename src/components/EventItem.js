@@ -7,7 +7,6 @@ import HtmlReactParser from 'html-react-parser';
  * Internal dependencies.
  */
 import Rsvp from './Rsvp';
-import RsvpResponseCard from './RsvpResponseCard';
 import RsvpResponseAvatarOnly from './RsvpResponseAvatarOnly';
 import RsvpStatusResponse from './RsvpStatusResponse';
 
