@@ -3,18 +3,13 @@
 	flex-direction: column;
 	gap: 0.5rem;
 
-	&__row {
-		display: flex;
-		justify-content: flex-start;
-	}
-
-	&__name {
-		font-size: var(--wp--preset--font-size--medium);
+	&__gap {
+		gap: 2rem;
 	}
 
 	&__icon {
-		display: flex;
 		align-items: flex-start;
+		display: flex;
 		padding-top: 0.4rem;
 	}
 
@@ -23,7 +18,12 @@
 		gap: 1rem;
 	}
 
-	&__gap {
-		gap: 2rem;
+	&__name {
+		font-size: var(--wp--preset--font-size--medium);
+	}
+
+	&__row {
+		display: flex;
+		justify-content: flex-start;
 	}
 }

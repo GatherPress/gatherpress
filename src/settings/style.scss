@@ -1,5 +1,4 @@
 .gp-settings {
-
 	&__credits {
 		a {
 			text-decoration: none;
@@ -12,25 +11,25 @@
 
 	&__credits-featured {
 		display: flex;
-		gap: 1rem;
 		flex-wrap: wrap;
+		gap: 1rem;
 		margin-bottom: 2rem;
-
-		li {
-			text-align: center;
-			width: 10rem;
-		}
 
 		a {
 			display: block;
-			padding: 1rem;
 			font-size: 1.2rem;
 			font-weight: 600;
+			padding: 1rem;
 		}
 
 		img {
 			border-radius: 999rem;
 			margin-bottom: 0.5rem;
+		}
+
+		li {
+			text-align: center;
+			width: 10rem;
 		}
 	}
 

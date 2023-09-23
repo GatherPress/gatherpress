@@ -1,14 +1,12 @@
 .gp-admin {
-
 	&__membership-check {
-		padding: 0.5rem;
+		align-items: center;
 		display: flex;
 		gap: 1rem;
-		align-items: center;
+		padding: 0.5rem;
 
 		> div:last-child {
 			margin-left: auto;
 		}
 	}
-
 }
