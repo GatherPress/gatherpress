@@ -42,9 +42,7 @@ const EventItem = (props) => {
 							<a href={event.permalink}>{featuredImage}</a>
 						</figure>
 					)}
-					<div
-						className={`${eventClass}__datetime`}
-					>
+					<div className={`${eventClass}__datetime`}>
 						<strong>{event.datetime_start}</strong>
 					</div>
 					<div className={`${eventClass}__title`}>
