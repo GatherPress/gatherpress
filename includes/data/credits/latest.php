@@ -1,5 +1,5 @@
 <?php return array (
-  'version' => '0.24.1',
+  'version' => '0.25.0',
   'project-leaders' => 
   array (
     0 => 
@@ -83,6 +83,32 @@
         96 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    4 => 
+    array (
+      'id' => 2451432,
+      'name' => 'Courtney Robertson',
+      'link' => 'https://profiles.wordpress.org/author/courane01/',
+      'slug' => 'courane01',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/03ff681abf60368b6ce5f5edcf9be310?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/03ff681abf60368b6ce5f5edcf9be310?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/03ff681abf60368b6ce5f5edcf9be310?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    5 => 
+    array (
+      'id' => 14692152,
+      'name' => 'Laura Byrne',
+      'link' => 'https://profiles.wordpress.org/author/newyorkerlaura/',
+      'slug' => 'newyorkerlaura',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
@@ -101,32 +127,6 @@
     ),
     1 => 
     array (
-      'id' => 2451432,
-      'name' => 'Courtney Robertson',
-      'link' => 'https://profiles.wordpress.org/author/courane01/',
-      'slug' => 'courane01',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/03ff681abf60368b6ce5f5edcf9be310?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/03ff681abf60368b6ce5f5edcf9be310?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/03ff681abf60368b6ce5f5edcf9be310?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    2 => 
-    array (
-      'id' => 15706310,
-      'name' => 'Dan Griffiths',
-      'link' => 'https://profiles.wordpress.org/author/evertiro/',
-      'slug' => 'evertiro',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/d91c15fa32ff542598c931e939bf6040?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/d91c15fa32ff542598c931e939bf6040?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/d91c15fa32ff542598c931e939bf6040?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    3 => 
-    array (
       'id' => 11704207,
       'name' => 'hauvong',
       'link' => 'https://profiles.wordpress.org/author/hauvong/',
@@ -138,20 +138,7 @@
         96 => '//www.gravatar.com/avatar/b3bb6b6a8a28be5c130db072cd4b553e?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    4 => 
-    array (
-      'id' => 14692152,
-      'name' => 'Laura Byrne',
-      'link' => 'https://profiles.wordpress.org/author/newyorkerlaura/',
-      'slug' => 'newyorkerlaura',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    5 => 
+    2 => 
     array (
       'id' => 15490728,
       'name' => 'Jason Lawton',
