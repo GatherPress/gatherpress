@@ -2,39 +2,64 @@
 
 .gp-rsvp-response {
 
-	&__navigation {
+	&__header {
 		display: flex;
-		gap: 1rem;
+		gap: 0.75rem;
+		align-items: center;
+		margin-bottom: 1rem;
+	}
+
+	&__see-all {
+		margin-left: auto;
+	}
+
+	&__title {
+		font-weight: 600;
+		font-size: var(--wp--preset--font-size--medium);
+		margin-bottom: 1rem;
+	}
+
+	&__navigation {
+		flex-direction: column;
+		border-radius: 0.4rem;
+		border: 1px solid #CCCCCC;
+		overflow: hidden;
+		width: 15rem;
+		position: absolute;
 	}
 
 	&__navigation-item {
-		margin-bottom: 1rem;
-		gap: 0.2rem;
-		opacity: 0.65;
+		background-color: #FFFFFF;
+		border-top: 1px solid #CCCCCC;
+		margin-top: -1px;
 		display: flex;
+		align-items: center;
+	}
+
+	&__anchor {
+		color: #000000;
+		display: block;
+		padding: 0.5rem;
 	}
 
 	&__items {
 		display: grid;
-		grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+		grid-template-columns: 1fr 1fr 1fr 1fr;
 		gap: 1rem;
-
-	}
-
-	&__item {
-		margin-bottom: 1rem;
-		gap: 1rem;
-	}
-
-	&__active {
 
 		@include for-core-mobile {
 			grid-template-columns: 1fr 1fr;
 		}
+
 	}
 
-	&__hidden {
-		display: none;
+	&__item {
+		text-align: center;
+		gap: 1rem;
+		box-shadow: 0 0 0.25rem 0 #CCCCCC;
+		border-radius: 0.25rem;
+		padding: 1rem;
+		background-color: #FFFFFF;
 	}
 
 	&__member-avatar {
@@ -47,14 +72,11 @@
 
 	&__member-role {
 		font-size: var(--wp--preset--font-size--small);
+		color: #646970;
 	}
 
 	&__anchor {
 		white-space: nowrap;
-	}
-
-	&__current {
-		opacity: 1;
 	}
 
 	&__no-responses {

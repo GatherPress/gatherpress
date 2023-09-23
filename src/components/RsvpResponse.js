@@ -1,15 +1,14 @@
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import RsvpResponseNavigation from './RsvpResponseNavigation';
+import RsvpResponseHeader from './RsvpResponseHeader';
 import RsvpResponseContent from './RsvpResponseContent';
 import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
 const RsvpResponse = () => {
-	const defaultLimit = 10;
-	let defaultStatus = 'attending';
+	const defaultLimit = 8;
+	const defaultStatus = 'attending';
 	const hasEventPast = getFromGlobal('has_event_past');
-	const currentUserStatus = getFromGlobal('current_user.status');
 	const items = [
 		{
 			title:
@@ -34,62 +33,32 @@ const RsvpResponse = () => {
 		},
 	];
 
-	// @todo redo this logic and have it come from API and not GatherPress object.
-	defaultStatus =
-		'undefined' !== typeof currentUserStatus &&
-		'attend' !== currentUserStatus &&
-		'' !== currentUserStatus
-			? currentUserStatus
-			: defaultStatus;
-
 	const [rsvpStatus, setRsvpStatus] = useState(defaultStatus);
 	const [rsvpLimit, setRsvpLimit] = useState(defaultLimit);
 
-	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
-
 	const onTitleClick = (e, value) => {
 		e.preventDefault();
-
 		setRsvpStatus(value);
 	};
 
-	const updateLimit = (e) => {
-		e.preventDefault();
-		if (false !== rsvpLimit) {
-			setRsvpLimit(false);
-		} else {
-			setRsvpLimit(defaultLimit);
-		}
-	};
-
-	let loadListText;
-	if (false === rsvpLimit) {
-		loadListText = __('See less', 'gatherpress');
-	} else {
-		loadListText = __('See more', 'gatherpress');
-	}
+	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
 
 	return (
-		<>
-			<div className="gp-rsvp-response">
-				<RsvpResponseNavigation
-					items={items}
-					activeValue={rsvpStatus}
-					onTitleClick={onTitleClick}
-				/>
-				<RsvpResponseContent
-					items={items}
-					activeValue={rsvpStatus}
-					limit={rsvpLimit}
-				/>
-			</div>
-			<div className="has-text-align-right">
-				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-				<a href="#" onClick={(e) => updateLimit(e)}>
-					{loadListText}
-				</a>
-			</div>
-		</>
+		<div className="gp-rsvp-response">
+			<RsvpResponseHeader
+				items={items}
+				activeValue={rsvpStatus}
+				onTitleClick={onTitleClick}
+				rsvpLimit={rsvpLimit}
+				setRsvpLimit={setRsvpLimit}
+				defaultLimit={defaultLimit}
+			/>
+			<RsvpResponseContent
+				items={items}
+				activeValue={rsvpStatus}
+				limit={rsvpLimit}
+			/>
+		</div>
 	);
 };
 

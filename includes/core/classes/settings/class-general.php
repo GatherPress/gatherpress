@@ -82,6 +82,7 @@ class General extends Base {
 						'field'  => array(
 							'label'   => __( 'The default maximum limit of attendees to an event.', 'gatherpress' ),
 							'type'    => 'number',
+							'size'    => 'small',
 							'options' => array(
 								'default' => '50',
 							),

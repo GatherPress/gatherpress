@@ -20,7 +20,7 @@ const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 	Listener({ setOnlineEventLink }, getFromGlobal('post_id'));
 
 	return (
-		<Flex justify="normal" gap="4">
+		<Flex justify="normal" gap="3">
 			<FlexItem display="flex">
 				<Icon icon="video-alt2" />
 			</FlexItem>

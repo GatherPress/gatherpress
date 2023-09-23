@@ -7,7 +7,7 @@ import HtmlReactParser from 'html-react-parser';
  * Internal dependencies.
  */
 import Rsvp from './Rsvp';
-import RsvpResponseCard from './RsvpResponseCard';
+import RsvpResponseAvatarOnly from './RsvpResponseAvatarOnly';
 import RsvpStatusResponse from './RsvpStatusResponse';
 
 const EventItem = (props) => {
@@ -42,12 +42,10 @@ const EventItem = (props) => {
 							<a href={event.permalink}>{featuredImage}</a>
 						</figure>
 					)}
-					<div
-						className={`${eventClass}__datetime has-small-font-size`}
-					>
+					<div className={`${eventClass}__datetime`}>
 						<strong>{event.datetime_start}</strong>
 					</div>
-					<div className={`${eventClass}__title has-large-font-size`}>
+					<div className={`${eventClass}__title`}>
 						<a href={event.permalink}>
 							{HtmlReactParser(event.title)}
 						</a>
@@ -79,12 +77,11 @@ const EventItem = (props) => {
 			<div className={`${eventClass}__footer`}>
 				{eventOptions.showRsvpResponse && (
 					<div className="gp-rsvp-response__items">
-						<RsvpResponseCard
+						<RsvpResponseAvatarOnly
 							eventId={event.ID}
 							value="attending"
 							responses={event.responses}
 							limit="3"
-							avatarOnly={true}
 						/>
 					</div>
 				)}

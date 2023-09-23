@@ -1,33 +1,21 @@
 /**
  * WordPress dependencies.
  */
-import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
-import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
-const RsvpResponseCard = ({
-	eventId,
-	value,
-	limit,
-	responses = [],
-	avatarOnly = false,
-}) => {
-	const [rsvpResponse, setRsvpResponse] = useState(responses);
-
-	Listener({ setRsvpResponse }, eventId);
-
+const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 	let renderedItems = '';
 
 	if (
-		'object' === typeof rsvpResponse &&
-		'undefined' !== typeof rsvpResponse[value]
+		'object' === typeof responses &&
+		'undefined' !== typeof responses[value]
 	) {
-		responses = [...rsvpResponse[value].responses];
+		responses = [...responses[value].responses];
 
 		if (limit) {
 			responses = responses.splice(0, limit);
@@ -50,19 +38,17 @@ const RsvpResponseCard = ({
 							<img alt={name} title={name} src={photo} />
 						</a>
 					</figure>
-					{false === avatarOnly && (
-						<div className="gp-rsvp-response__member-info">
-							<div className="gp-rsvp-response__member-name">
-								<a href={profile}>{name}</a>
-							</div>
-							<div className="gp-rsvp-response__member-role">
-								{role}
-							</div>
-							<small className="gp-rsvp-response__guests">
-								{guests}
-							</small>
+					<div className="gp-rsvp-response__member-info">
+						<div className="gp-rsvp-response__member-name">
+							<a href={profile}>{name}</a>
 						</div>
-					)}
+						<div className="gp-rsvp-response__member-role">
+							{role}
+						</div>
+						<small className="gp-rsvp-response__guests">
+							{guests}
+						</small>
+					</div>
 				</div>
 			);
 		});
@@ -70,18 +56,16 @@ const RsvpResponseCard = ({
 
 	return (
 		<>
-			{'attending' === value &&
-				0 === renderedItems.length &&
-				false === avatarOnly && (
-					<div className="gp-rsvp-response__no-responses">
-						{false === getFromGlobal('has_event_past')
-							? __(
-									'No one is attending this event yet.',
-									'gatherpress'
-							  )
-							: __('No one went to this event.', 'gatherpress')}
-					</div>
-				)}
+			{'attending' === value && 0 === renderedItems.length && (
+				<div className="gp-rsvp-response__no-responses">
+					{false === getFromGlobal('has_event_past')
+						? __(
+								'No one is attending this event yet.',
+								'gatherpress'
+						  )
+						: __('No one went to this event.', 'gatherpress')}
+				</div>
+			)}
 			{renderedItems}
 		</>
 	);
