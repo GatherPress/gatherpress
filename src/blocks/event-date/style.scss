@@ -1,19 +1,18 @@
 @import "../mixins";
 
 .gp-event-date {
-
-	&__row {
-		display: flex;
-	}
-
 	&__icon {
-		display: flex;
 		align-items: flex-start;
+		display: flex;
 	}
 
 	&__item {
+		align-items: center;
 		display: flex;
 		gap: 0.75rem;
-		align-items: center;
+	}
+
+	&__row {
+		display: flex;
 	}
 }

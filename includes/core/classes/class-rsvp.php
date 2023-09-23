@@ -26,24 +26,24 @@ class Rsvp {
 	/**
 	 * Table format for RSVPs.
 	 *
-	 * @var string
 	 * @since 1.0.0
+	 * @var string $TABLE_FORMAT
 	 */
 	const TABLE_FORMAT = '%sgp_rsvps';
 
 	/**
 	 * Cache key format for RSVPs.
 	 *
-	 * @var string
 	 * @since 1.0.0
+	 * @var string $RSVP_CACHE_KEY
 	 */
 	const RSVP_CACHE_KEY = 'gp_rsvp_%d';
 
 	/**
 	 * An array of RSVP statuses.
 	 *
-	 * @var string[] Contains RSVP statuses such as 'attending', 'not_attending', and 'waiting_list'.
 	 * @since 1.0.0
+	 * @var string[] Contains RSVP statuses such as 'attending', 'not_attending', and 'waiting_list'.
 	 */
 	public array $statuses = array(
 		'attending',
@@ -54,16 +54,16 @@ class Rsvp {
 	/**
 	 * The maximum limit for attending responses (RSVPs).
 	 *
-	 * @var int
 	 * @since 1.0.0
+	 * @var int Represents the maximum number of attendees allowed for an event.
 	 */
 	protected int $max_attending_limit;
 
 	/**
 	 * The event post object associated with this RSVP instance.
 	 *
-	 * @var WP_Post|null
 	 * @since 1.0.0
+	 * @var WP_Post|null
 	 */
 	protected $event;
 
@@ -73,9 +73,9 @@ class Rsvp {
 	 *
 	 * Initializes an RSVP instance for a specific event.
 	 *
-	 * @param int $post_id The event post ID.
-	 *
 	 * @since 1.0.0
+	 *
+	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
 		$this->event               = get_post( $post_id );
@@ -90,11 +90,10 @@ class Rsvp {
 	 * and the number of guests accompanying the user. If no RSVP information is found for the user and event,
 	 * default values are provided.
 	 *
-	 * @param int $user_id A user ID.
-	 *
-	 * @return array An array containing RSVP information, including ID, post ID, user ID, timestamp, status, and guests.
-	 *
 	 * @since 1.0.0
+	 *
+	 * @param int $user_id A user ID.
+	 * @return array An array containing RSVP information, including ID, post ID, user ID, timestamp, status, and guests.
 	 */
 	public function get( int $user_id ): array {
 		global $wpdb;
@@ -130,13 +129,12 @@ class Rsvp {
 	 * optionally specify the number of guests accompanying them. The method handles the storage
 	 * of this information in the database and updates the RSVP status accordingly.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param int    $user_id A user ID.
 	 * @param string $status  RSVP status ('attending', 'not_attending', 'waiting_list').
 	 * @param int    $guests  Number of guests accompanying the user.
-	 *
 	 * @return string The updated RSVP status ('attending', 'not_attending', 'waiting_list').
-	 *
-	 * @since 1.0.0
 	 */
 	public function save( int $user_id, string $status, int $guests = 0 ): string {
 		global $wpdb;
@@ -197,9 +195,9 @@ class Rsvp {
 	 * This method checks if there are spots available in the attending list and moves response
 	 * from the waiting list to attending based on their timestamp.
 	 *
-	 * @return int The number of responses from the waiting list that were moved to attending.
-	 *
 	 * @since 1.0.0
+	 *
+	 * @return int The number of responses from the waiting list that were moved to attending.
 	 */
 	public function check_waiting_list(): int {
 		$responses = $this->responses();
@@ -239,11 +237,10 @@ class Rsvp {
 	 * has been reached for the event. It checks the current number of 'attending' responses
 	 * and compares it to the defined limit.
 	 *
-	 * @param string $status Desired attendance status.
-	 *
-	 * @return bool True if the 'attending' limit has been reached, false otherwise.
-	 *
 	 * @since 1.0.0
+	 *
+	 * @param string $status Desired attendance status.
+	 * @return bool True if the 'attending' limit has been reached, false otherwise.
 	 */
 	public function attending_limit_reached( string $status ): bool {
 		$responses = $this->responses();
@@ -266,9 +263,9 @@ class Rsvp {
 	 * It provides an array containing response details grouped by RSVP status ('attending', 'not_attending', 'waiting_list'),
 	 * along with counts and additional response data.
 	 *
-	 * @return array An array containing response information grouped by RSVP status.
-	 *
 	 * @since 1.0.0
+	 *
+	 * @return array An array containing response information grouped by RSVP status.
 	 */
 	public function responses(): array {
 		global $wpdb;
@@ -376,15 +373,14 @@ class Rsvp {
 	 * This method compares two responses based on their user roles and returns
 	 * an integer (-1, 0, or 1) to determine their order in the sorted list.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $first  The first response to compare in the sort.
 	 * @param array $second The second response to compare in the sort.
-	 *
 	 * @return int An integer indicating the sorting order:
 	 *             -1 if $first should come before $second,
 	 *              0 if they have the same sorting order,
 	 *              1 if $first should come after $second.
-	 *
-	 * @since 1.0.0
 	 */
 	public function sort_by_role( array $first, array $second ): int {
 		$roles       = array_values(
@@ -408,12 +404,11 @@ class Rsvp {
 	 * This method compares two responses based on their RSVP timestamps and is used to sort responses
 	 * from the waiting list, with the earliest timestamp responses appearing first.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $first  First response to compare in the sort.
 	 * @param array $second Second response to compare in the sort.
-	 *
 	 * @return bool Returns true if the first response's timestamp is earlier than the second response's timestamp; otherwise, false.
-	 *
-	 * @since 1.0.0
 	 */
 	public function sort_by_timestamp( array $first, array $second ): bool {
 		return ( strtotime( $first['timestamp'] ) < strtotime( $second['timestamp'] ) );

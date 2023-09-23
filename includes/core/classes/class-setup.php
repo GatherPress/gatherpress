@@ -31,6 +31,8 @@ class Setup {
 	 * Constructor for the Setup class.
 	 *
 	 * Initializes and sets up various components of the plugin.
+	 *
+	 * @since 1.0.0
 	 */
 	protected function __construct() {
 		$this->instantiate_classes();
@@ -44,9 +46,11 @@ class Setup {
 	 * and adds a WP-CLI command if WP_CLI is defined. It may throw an Exception
 	 * if there are issues instantiating the classes.
 	 *
-	 * @return void
-	 * @throws Exception If there are issues instantiating singleton classes.
 	 * @since 1.0.0
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If there are issues instantiating singleton classes.
 	 */
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
@@ -66,8 +70,9 @@ class Setup {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @return void
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	protected function setup_hooks(): void {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
@@ -121,11 +126,10 @@ class Setup {
 	 *
 	 * This method adds a 'Settings' link to the plugin's action links in the WordPress plugins list.
 	 *
-	 * @param array $actions An array of existing action links.
-	 *
-	 * @return array An updated array of action links, including the 'Settings' link.
-	 *
 	 * @since 1.0.0
+	 *
+	 * @param array $actions An array of existing action links.
+	 * @return array An updated array of action links, including the 'Settings' link.
 	 */
 	public function filter_plugin_action_links( array $actions ): array {
 		return array_merge(
@@ -197,7 +201,6 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param array $classes Existing body classes.
-	 *
 	 * @return array An updated array of body classes.
 	 */
 	public function add_gatherpress_body_classes( array $classes ): array {
@@ -216,7 +219,6 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param array $block_categories Array of registered block categories.
-	 *
 	 * @return array An updated array of block categories.
 	 */
 	public function register_gatherpress_block_category( array $block_categories ): array {
@@ -358,7 +360,6 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param array $tables An array of names of the site tables to be dropped.
-	 *
 	 * @return array An updated array of table names to be deleted during site deletion.
 	 */
 	public function on_site_delete( array $tables ): array {
@@ -379,7 +380,6 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id An event post ID.
-	 *
 	 * @return void
 	 */
 	public function delete_event( int $post_id ): void {
@@ -558,7 +558,6 @@ class Setup {
 	 *
 	 * @param string $column  The name of the column to display.
 	 * @param int    $post_id The current post ID.
-	 *
 	 * @return void
 	 */
 	public function custom_columns( string $column, int $post_id ): void {
@@ -578,7 +577,6 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param array $columns An associative array of column headings.
-	 *
 	 * @return array An updated array of column headings, including the custom columns.
 	 */
 	public function set_custom_columns( array $columns ): array {
@@ -599,7 +597,6 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param array $columns An array of sortable columns.
-	 *
 	 * @return array An updated array of sortable columns.
 	 */
 	public function sortable_columns( array $columns ): array {
@@ -619,7 +616,6 @@ class Setup {
 	 * @since 1.0.0
 	 *
 	 * @param string $the_date The formatted date.
-	 *
 	 * @return string The updated date string, representing the event date.
 	 */
 	public function get_the_event_date( $the_date ): string {
@@ -648,7 +644,6 @@ class Setup {
 	 *
 	 * @param array   $post_states An array of post display states.
 	 * @param WP_Post $post        The current post object.
-	 *
 	 * @return array An updated array of post display states with custom labels if applicable.
 	 */
 	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
@@ -686,6 +681,8 @@ class Setup {
 	 * This method checks if user registration is enabled in WordPress settings and displays a
 	 * notification encouraging users to enable registration for optimal GatherPress functionality.
 	 * Users have the option to suppress this notification permanently.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */

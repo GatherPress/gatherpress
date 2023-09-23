@@ -25,6 +25,7 @@ class Autoloader {
 	 * Register method for autoloader.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	public static function register(): void {

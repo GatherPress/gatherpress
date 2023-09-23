@@ -23,6 +23,7 @@ trait Singleton {
 	/**
 	 * The single instance of the class.
 	 *
+	 * @since 1.0.0
 	 * @var ?self|null The instance of the class.
 	 */
 	private static $instance = null;
@@ -31,6 +32,8 @@ trait Singleton {
 	 * Get the instance of the Singleton class.
 	 *
 	 * If an instance does not exist, it creates one; otherwise, it returns the existing instance.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return self The instance of the class.
 	 */

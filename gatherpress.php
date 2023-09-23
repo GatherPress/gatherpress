@@ -35,4 +35,3 @@ GatherPress\Core\Autoloader::register();
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
-GatherPress\BuddyPress\Setup::get_instance();

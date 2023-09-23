@@ -243,10 +243,9 @@ class Rest_Api {
 	 *
 	 * Validates whether a given parameter is a valid RSVP status.
 	 *
-	 * @param string $param An RSVP status to validate.
-	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $param An RSVP status to validate.
 	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
 	 */
 	public function validate_rsvp_status( $param ): bool {
@@ -258,10 +257,9 @@ class Rest_Api {
 	 *
 	 * Validates whether a given parameter is a valid Event Post ID.
 	 *
-	 * @param int|string $param A Post ID to validate.
-	 *
 	 * @since 1.0.0
 	 *
+	 * @param int|string $param A Post ID to validate.
 	 * @return bool True if the parameter is a valid Event Post ID, false otherwise.
 	 */
 	public function validate_event_post_id( $param ): bool {
@@ -276,10 +274,9 @@ class Rest_Api {
 	 *
 	 * Validates an array of email recipient options to ensure they are correctly structured.
 	 *
-	 * @param mixed $param An array of email recipients.
-	 *
 	 * @since 1.0.0
 	 *
+	 * @param mixed $param An array of email recipients.
 	 * @return bool True if the parameter is a valid array of email recipients, false otherwise.
 	 */
 	public function validate_send( $param ): bool {
@@ -306,10 +303,9 @@ class Rest_Api {
 	 *
 	 * Validates whether the given parameter is a valid numeric value greater than zero.
 	 *
-	 * @param int|string $param The value to validate.
-	 *
 	 * @since 1.0.0
 	 *
+	 * @param int|string $param The value to validate.
 	 * @return bool True if the parameter is a valid numeric value greater than zero, false otherwise.
 	 */
 	public function validate_number( $param ): bool {
@@ -324,10 +320,9 @@ class Rest_Api {
 	 *
 	 * Validates whether the given event list type parameter is valid (either 'upcoming' or 'past').
 	 *
-	 * @param string $param The event list type to validate.
-	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $param The event list type to validate.
 	 * @return bool True if the parameter is a valid event list type, false otherwise.
 	 */
 	public function validate_event_list_type( string $param ): bool {
@@ -339,10 +334,9 @@ class Rest_Api {
 	 *
 	 * Validates whether the given datetime string parameter is in the valid 'Y-m-d H:i:s' format.
 	 *
-	 * @param string $param The datetime string to validate.
-	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $param The datetime string to validate.
 	 * @return bool True if the parameter is a valid datetime string, false otherwise.
 	 */
 	public function validate_datetime( string $param ): bool {
@@ -354,10 +348,9 @@ class Rest_Api {
 	 *
 	 * Validates whether the given timezone identifier parameter is valid.
 	 *
-	 * @param string $param The timezone identifier to validate.
-	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $param The timezone identifier to validate.
 	 * @return bool True if the parameter is a valid timezone identifier, false otherwise.
 	 */
 	public function validate_timezone( string $param ): bool {
@@ -374,8 +367,8 @@ class Rest_Api {
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
-	 *
 	 * @return WP_REST_Response The response indicating the success of the operation.
+	 *
 	 * @throws Exception When an exception occurs during the process.
 	 */
 	public function update_datetime( WP_REST_Request $request ): WP_REST_Response {
@@ -403,7 +396,6 @@ class Rest_Api {
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
-	 *
 	 * @return WP_REST_Response The response indicating the success of the email scheduling process.
 	 */
 	public function email( WP_REST_Request $request ): WP_REST_Response {
@@ -432,7 +424,6 @@ class Rest_Api {
 	 * @param int    $post_id Event Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
-	 *
 	 * @return bool
 	 */
 	public function send_emails( int $post_id, array $send, string $message ): bool {
@@ -476,7 +467,6 @@ class Rest_Api {
 	 *
 	 * @param array $send    An array specifying who to send emails to.
 	 * @param int   $post_id The Event Post ID.
-	 *
 	 * @return array An array containing the member data of recipients.
 	 */
 	public function get_members( array $send, int $post_id ): array {
@@ -520,8 +510,9 @@ class Rest_Api {
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the REST API request.
-	 *
 	 * @return WP_REST_Response The REST API response containing an array of event data.
+	 *
+	 * @throws Exception If there is an issue while retrieving the list of events.
 	 */
 	public function events_list( WP_REST_Request $request ): WP_REST_Response {
 		$params          = $request->get_params();
@@ -587,7 +578,6 @@ class Rest_Api {
 	 *
 	 * @param int $number     The actual number.
 	 * @param int $max_number The maximum number allowed.
-	 *
 	 * @return int The sanitized number, ensuring it does not exceed the maximum limit.
 	 */
 	protected function max_number( int $number, int $max_number ): int {
@@ -608,7 +598,6 @@ class Rest_Api {
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Request $request Contains data from the request.
-	 *
 	 * @return WP_REST_Response An instance of WP_REST_Response containing the response data.
 	 */
 	public function update_rsvp( WP_REST_Request $request ): WP_REST_Response {
@@ -673,7 +662,6 @@ class Rest_Api {
 	 * @since 1.0.0
 	 *
 	 * @param WP_REST_Response $response The response object containing event data.
-	 *
 	 * @return WP_REST_Response The response object with enhanced event data.
 	 */
 	public function prepare_event_data( WP_REST_Response $response ): WP_REST_Response {

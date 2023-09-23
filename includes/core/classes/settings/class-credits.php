@@ -41,9 +41,13 @@ class Credits extends Base {
 	}
 
 	/**
-	 * Setup hooks for the "Credits" settings page.
+	 * Set up hooks for various purposes.
+	 *
+	 * This method adds hooks for different purposes as needed.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	protected function setup_hooks(): void {
 		parent::setup_hooks();
@@ -54,10 +58,13 @@ class Credits extends Base {
 	/**
 	 * Callback function to render the settings section on the "Credits" page.
 	 *
-	 * @param string $page The current settings page slug.
+	 * This method serves as a callback function to render the settings section when the current settings page slug matches the plugin's slug.
+	 * It removes the default action to render the settings form and instead calls the `credits_page` method to render content specific to the "Credits" page.
 	 *
-	 * @return void
 	 * @since 1.0.0
+	 *
+	 * @param string $page The current settings page slug.
+	 * @return void
 	 */
 	public function settings_section( string $page ): void {
 		if ( Utility::unprefix_key( $page ) === $this->slug ) {
@@ -70,8 +77,12 @@ class Credits extends Base {
 	/**
 	 * Render the custom credits page.
 	 *
-	 * @return void
+	 * This method is responsible for rendering the custom "Credits" page in the plugin's settings.
+	 * It loads credits data and uses a template to display the credits information.
+	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	protected function credits_page(): void {
 		// Load credits data.

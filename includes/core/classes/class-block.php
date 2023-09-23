@@ -53,6 +53,7 @@ class Block {
 	 * This method scans a directory for custom block definitions and registers them.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	public function register_blocks(): void {

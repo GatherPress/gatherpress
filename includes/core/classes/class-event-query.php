@@ -59,7 +59,6 @@ class Event_Query {
 	 * @since 1.0.0
 	 *
 	 * @param int $number Maximum number of upcoming events to retrieve.
-	 *
 	 * @return WP_Query A WordPress query object containing the list of upcoming events.
 	 */
 	public function get_upcoming_events( int $number = 5 ): WP_Query {
@@ -74,7 +73,6 @@ class Event_Query {
 	 * @since 1.0.0
 	 *
 	 * @param int $number Maximum number of past events to retrieve.
-	 *
 	 * @return WP_Query A WordPress query object containing the list of past events.
 	 */
 	public function get_past_events( int $number = 5 ): WP_Query {
@@ -94,7 +92,6 @@ class Event_Query {
 	 * @param int    $number          Maximum number of events to retrieve.
 	 * @param array  $topics          Array of topic slugs for additional filtering.
 	 * @param array  $venues          Array of venue slugs for additional filtering.
-	 *
 	 * @return WP_Query A WordPress query object containing the list of events.
 	 */
 	public function get_events_list(
@@ -161,7 +158,6 @@ class Event_Query {
 	 * @since 1.0.0
 	 *
 	 * @param WP_Query $query An instance of WP_Query representing the event query.
-	 *
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
@@ -252,8 +248,9 @@ class Event_Query {
 	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
 	 * for upcoming events in the query. It ensures that events are ordered by their start datetime in ascending order.
 	 *
-	 * @param array $query_pieces An array containing pieces of the SQL query.
+	 * @since 1.0.0
 	 *
+	 * @param array $query_pieces An array containing pieces of the SQL query.
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces ): array {
@@ -280,8 +277,9 @@ class Event_Query {
 	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
 	 * for events when viewing them in the WordPress admin panel. It specifically handles sorting by event datetime.
 	 *
-	 * @param array $query_pieces An array containing pieces of the SQL query.
+	 * @since 1.0.0
 	 *
+	 * @param array $query_pieces An array containing pieces of the SQL query.
 	 * @return array The modified SQL query pieces with adjusted sorting criteria.
 	 */
 	public function adjust_admin_event_sorting( array $query_pieces ): array {
@@ -310,7 +308,6 @@ class Event_Query {
 	 * @param array  $pieces An array of query pieces, including join, where, orderby, and more.
 	 * @param string $type   The type of events to query (options: 'all', 'upcoming', 'past').
 	 * @param string $order  The event order ('DESC' for descending or 'ASC' for ascending).
-	 *
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql( array $pieces, string $type = 'all', string $order = 'DESC' ): array {

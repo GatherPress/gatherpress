@@ -33,6 +33,7 @@ class Settings {
 	/**
 	 * The current page being accessed within the settings.
 	 *
+	 * @since 1.0.0
 	 * @var string
 	 */
 	protected string $current_page = '';
@@ -40,8 +41,8 @@ class Settings {
 	/**
 	 * The main sub-page identifier used for the settings.
 	 *
-	 * @var string
 	 * @since 1.0.0
+	 * @var string
 	 */
 	protected string $main_sub_page = '';
 
@@ -65,6 +66,7 @@ class Settings {
 	 * This method creates instances of the settings-related classes and initializes them.
 	 *
 	 * @since 1.0.0
+	 * @return void
 	 */
 	protected function instantiate_classes(): void {
 		Credits::get_instance();
@@ -96,6 +98,8 @@ class Settings {
 	 * This method sets the main sub-page identifier based on the first sub-page key.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	protected function set_main_sub_page(): void {
 		$sub_pages           = $this->get_sub_pages();
@@ -278,7 +282,6 @@ class Settings {
 	 * @param string $section         The section for the text field.
 	 * @param string $option          The option for the text field.
 	 * @param array  $option_settings The option settings.
-	 *
 	 * @return void
 	 */
 	public function text( string $sub_page, string $section, string $option, array $option_settings ): void {
@@ -307,12 +310,10 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @package GatherPress\Core\Settings\Fields
 	 * @param string $sub_page        The slug of the sub-page within settings.
 	 * @param string $section         The slug of the settings section.
 	 * @param string $option          The name of the option.
 	 * @param array  $option_settings An array containing option settings.
-	 *
 	 * @return void
 	 */
 	public function number( string $sub_page, string $section, string $option, array $option_settings ): void {
@@ -346,7 +347,6 @@ class Settings {
 	 * @param string $section         The section for the checkbox field.
 	 * @param string $option          The option for the checkbox field.
 	 * @param array  $option_settings The option settings.
-	 *
 	 * @return void
 	 */
 	public function checkbox( string $sub_page, string $section, string $option, array $option_settings ): void {
@@ -379,7 +379,6 @@ class Settings {
 	 * @param string $section         The section for the select field.
 	 * @param string $option          The option for the select field.
 	 * @param array  $option_settings The option settings.
-	 *
 	 * @return void
 	 */
 	public function autocomplete( string $sub_page, string $section, string $option, array $option_settings ): void {
@@ -411,7 +410,6 @@ class Settings {
 	 * @param string $sub_page The sub-page associated with the value.
 	 * @param string $section  The section within the sub-page where the option is located.
 	 * @param string $option   The name of the option to retrieve.
-	 *
 	 * @return mixed The value of the option or its default value.
 	 */
 	public function get_value( string $sub_page, string $section = '', string $option = '' ) {
@@ -436,7 +434,6 @@ class Settings {
 	 * @param string $sub_page The sub-page associated with the value.
 	 * @param string $section  The section within the sub-page where the option is located.
 	 * @param string $option   The name of the option to retrieve the default value for.
-	 *
 	 * @return mixed The default value of the option or an empty string if not defined.
 	 */
 	public function get_default_value( string $sub_page, string $section = '', string $option = '' ) {
@@ -457,7 +454,6 @@ class Settings {
 	 * @since 1.0.0
 	 *
 	 * @param string $sub_page The sub-page for which to retrieve the options.
-	 *
 	 * @return array An array of currently set options for the sub-page or its default options.
 	 */
 	public function get_options( string $sub_page ): array {
@@ -480,7 +476,6 @@ class Settings {
 	 * @since 1.0.0
 	 *
 	 * @param string $option The option for which to retrieve default values.
-	 *
 	 * @return array An array of default values for the specified sub-page option.
 	 */
 	public function get_option_defaults( string $option ): array {
@@ -515,7 +510,6 @@ class Settings {
 	 * @param string $sub_page Sub-page of the setting field.
 	 * @param string $section  Section of the setting field.
 	 * @param string $option   Option of the setting field.
-	 *
 	 * @return string The generated name attribute for the setting field.
 	 */
 	public function get_name_field( string $sub_page, string $section, string $option ): string {
@@ -556,7 +550,6 @@ class Settings {
 	 *
 	 * @param array $first  The first sub-page to compare by priority.
 	 * @param array $second The second sub-page to compare by priority.
-	 *
 	 * @return int Returns a negative number if the first sub-page has a lower priority,
 	 *             a positive number if the second sub-page has a lower priority,
 	 *             or 0 if their priorities are equal.
@@ -599,7 +592,6 @@ class Settings {
 	 * @since 1.0.0
 	 *
 	 * @param string $submenu The name of the sub menu page.
-	 *
 	 * @return string The selected submenu name, either the provided one or 'general'.
 	 */
 	public function select_menu( $submenu ): string {

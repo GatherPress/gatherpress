@@ -51,8 +51,9 @@ class General extends Base {
 	 * in GatherPress. It provides structured data that represents the configuration choices available
 	 * to users on this page.
 	 *
-	 * @return array An array representing the sections and options for the "General" settings page.
 	 * @since 1.0.0
+	 *
+	 * @return array An array representing the sections and options for the "General" settings page.
 	 */
 	protected function get_section(): array {
 		return array(
