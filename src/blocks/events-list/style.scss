@@ -59,7 +59,10 @@
 		border-bottom: 1px solid #ccc;
 		padding-bottom: 2rem;
 		display: flex;
-		line-height: 2.75rem;
+
+		@include for-core-mobile {
+			line-height: 2.75rem;
+		}
 
 		.gp-rsvp-response {
 
