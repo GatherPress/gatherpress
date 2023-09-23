@@ -26,14 +26,24 @@ class Venue {
 	use Singleton;
 
 	/**
-	 * Constants for Venue Post Type and Taxonomy.
+	 * Constant representing the Venue Post Type.
 	 *
-	 * Defines constants for the Venue post type and its associated taxonomy.
+	 * This constant defines the post type for venues in your application.
 	 *
 	 * @since 1.0.0
+	 * @var string
 	 */
 	const POST_TYPE = 'gp_venue';
-	const TAXONOMY  = '_gp_venue';
+
+	/**
+	 * Constant representing the Venue Taxonomy.
+	 *
+	 * This constant defines the associated taxonomy for venues.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const TAXONOMY = '_gp_venue';
 
 	/**
 	 * Class constructor.
@@ -51,8 +61,9 @@ class Venue {
 	 *
 	 * This method adds hooks for different purposes as needed.
 	 *
-	 * @return void
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	protected function setup_hooks(): void {
 		add_action(
@@ -68,9 +79,13 @@ class Venue {
 	/**
 	 * Get the arguments for registering the 'Venue' custom post type.
 	 *
+	 * This method returns an array containing the registration arguments for the custom post type 'Venue.'
+	 * These arguments define various aspects of the post type, such as labels, REST API support, visibility in the admin menu,
+	 * supported features, icons, and rewrite rules.
+	 *
 	 * @since 1.0.0
 	 *
-	 * @return array An array containing the registration arguments for the custom post type.
+	 * @return array An array containing the registration arguments for the 'Venue' custom post type.
 	 */
 	public static function get_post_type_registration_args(): array {
 		return array(
@@ -112,6 +127,9 @@ class Venue {
 	/**
 	 * Get the registration arguments for custom post meta fields.
 	 *
+	 * This method returns an array containing the registration arguments for custom post meta fields associated with the 'Venue' custom post type.
+	 * These arguments include callbacks for authorization and data sanitization, support for the REST API, data type, and more.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return array An array containing the registration arguments for custom post meta fields.
@@ -132,6 +150,10 @@ class Venue {
 
 	/**
 	 * Get the registration arguments for the custom 'Venue' taxonomy.
+	 *
+	 * This method returns an array containing the registration arguments for the custom 'Venue' taxonomy.
+	 * These arguments define various aspects of the taxonomy, including labels, hierarchical structure, visibility in the admin interface,
+	 * and support for querying the taxonomy in the REST API.
 	 *
 	 * @since 1.0.0
 	 *
@@ -160,7 +182,6 @@ class Venue {
 	 * @param int     $post_id Post ID of the venue post.
 	 * @param WP_Post $post    The venue post object.
 	 * @param bool    $update  Whether this is an existing post being updated.
-	 *
 	 * @return void
 	 */
 	public function add_venue_term( int $post_id, WP_Post $post, bool $update ): void {
@@ -201,7 +222,6 @@ class Venue {
 	 * @param int     $post_id     Post ID of the venue post.
 	 * @param WP_Post $post_after  Post object after the save operation.
 	 * @param WP_Post $post_before Post object before the save operation.
-	 *
 	 * @return void
 	 */
 	public function maybe_update_term_slug( int $post_id, WP_Post $post_after, WP_Post $post_before ): void {
@@ -262,7 +282,6 @@ class Venue {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id Post ID of the Venue post being deleted.
-	 *
 	 * @return void
 	 */
 	public function delete_venue_term( int $post_id ): void {
@@ -294,7 +313,6 @@ class Venue {
 	 * @since 1.0.0
 	 *
 	 * @param string $post_name Post name (slug) of the Venue post.
-	 *
 	 * @return string The generated term slug.
 	 */
 	public function get_venue_term_slug( string $post_name ): string {
@@ -312,7 +330,6 @@ class Venue {
 	 * @since 1.0.0
 	 *
 	 * @param string $slug Slug of the Venue taxonomy to retrieve the Venue post.
-	 *
 	 * @return null|WP_Post The Venue post object if found; otherwise, null.
 	 */
 	public function get_venue_post_from_term_slug( string $slug ): ?WP_Post {
@@ -332,7 +349,6 @@ class Venue {
 	 *
 	 * @param int    $post_id   The post ID for which to retrieve venue information.
 	 * @param string $post_type The post type of the provided post ID.
-	 *
 	 * @return array An array containing venue-related information.
 	 */
 	public function get_venue_meta( int $post_id, string $post_type ): array {

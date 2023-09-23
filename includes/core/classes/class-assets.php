@@ -29,6 +29,7 @@ class Assets {
 	 *
 	 * This property stores data assets in an array for efficient access and management.
 	 *
+	 * @since 1.0.0
 	 * @var array
 	 */
 	protected array $asset_data = array();
@@ -39,6 +40,7 @@ class Assets {
 	 * This property holds the URL to the 'build' directory, which is used to reference built assets
 	 * such as stylesheets and JavaScript files.
 	 *
+	 * @since 1.0.0
 	 * @var string
 	 */
 	protected string $build = GATHERPRESS_CORE_URL . 'build/';
@@ -50,6 +52,7 @@ class Assets {
 	 * such as minified stylesheets and JavaScript files. It is used for referencing these assets within
 	 * the application.
 	 *
+	 * @since 1.0.0
 	 * @var string
 	 */
 	protected string $path = GATHERPRESS_CORE_PATH . '/build/';
@@ -71,6 +74,7 @@ class Assets {
 	 * This method adds hooks for different purposes as needed.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
@@ -91,6 +95,7 @@ class Assets {
 	 * server-side data with client-side functionality.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	public function add_global_object(): void {
@@ -106,6 +111,7 @@ class Assets {
 	 * required for the proper functioning of the plugin on the frontend.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	public function enqueue_scripts(): void {
@@ -205,6 +211,7 @@ class Assets {
 	 * of the WordPress block editor (Gutenberg). It ensures that the editor has access to necessary assets.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	public function editor_enqueue_scripts(): void {
@@ -226,6 +233,7 @@ class Assets {
 	 * It is responsible for creating a designated container for the modal's content.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	public function event_communication_modal(): void {

@@ -28,6 +28,7 @@ class Event {
 	 * Cache key format for storing and retrieving event datetimes.
 	 *
 	 * @since 1.0.0
+	 * @var string $DATETIME_CACHE_KEY
 	 */
 	const DATETIME_CACHE_KEY = 'datetime_%d';
 
@@ -35,6 +36,7 @@ class Event {
 	 * Date and time format used within GatherPress.
 	 *
 	 * @since 1.0.0
+	 * @var string $DATETIME_FORMAT
 	 */
 	const DATETIME_FORMAT = 'Y-m-d H:i:s';
 
@@ -42,6 +44,7 @@ class Event {
 	 * The post type name for GatherPress events.
 	 *
 	 * @since 1.0.0
+	 * @var string $POST_TYPE
 	 */
 	const POST_TYPE = 'gp_event';
 
@@ -49,6 +52,7 @@ class Event {
 	 * Format for the database table name used by GatherPress events.
 	 *
 	 * @since 1.0.0
+	 * @var string $TABLE_FORMAT
 	 */
 	const TABLE_FORMAT = '%sgp_events';
 
@@ -56,6 +60,7 @@ class Event {
 	 * The taxonomy name for GatherPress event topics.
 	 *
 	 * @since 1.0.0
+	 * @var string $TAXONOMY
 	 */
 	const TAXONOMY = 'gp_topic';
 
@@ -63,8 +68,8 @@ class Event {
 	/**
 	 * Event post object.
 	 *
-	 * @var array|WP_Post|null
 	 * @since 1.0.0
+	 * @var array|WP_Post|null
 	 */
 	protected $event = null;
 
@@ -98,6 +103,9 @@ class Event {
 
 	/**
 	 * Get the arguments for registering the 'Event' custom post type.
+	 *
+	 * This method retrieves an array containing the registration arguments for the custom post type 'Event'.
+	 * These arguments define how the Event post type behaves and appears in the WordPress admin.
 	 *
 	 * @since 1.0.0
 	 *
@@ -155,6 +163,9 @@ class Event {
 	/**
 	 * Get the registration arguments for custom post meta fields.
 	 *
+	 * This method retrieves an array containing the registration arguments for custom post meta fields.
+	 * These arguments define how specific custom meta fields behave and are used in WordPress.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return array An array containing the registration arguments for custom post meta fields.
@@ -175,6 +186,9 @@ class Event {
 
 	/**
 	 * Get the registration arguments for the custom 'Topic' taxonomy.
+	 *
+	 * This method retrieves an array containing the registration arguments for the custom 'Topic' taxonomy.
+	 * These arguments define how the 'Topic' taxonomy behaves and is used in WordPress.
 	 *
 	 * @since 1.0.0
 	 *
@@ -290,8 +304,9 @@ class Event {
 	 * @since 1.0.0
 	 *
 	 * @param string $format Optional. PHP date format. Default is 'D, M j, Y, g:i a T'.
-	 *
 	 * @return string The formatted start datetime of the event.
+	 *
+	 * @throws Exception If there is an issue formatting the start datetime.
 	 */
 	public function get_datetime_start( string $format = 'D, M j, Y, g:i a T' ): string {
 		return $this->get_formatted_datetime( $format, 'start' );
@@ -304,10 +319,11 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $format  Optional. The PHP date format in which to return the end date and time.
+	 * @param string $format Optional. The PHP date format in which to return the end date and time.
 	 *                       Default is 'D, F j, g:ia T'.
-	 *
 	 * @return string The formatted end date and time of the event.
+	 *
+	 * @throws Exception If there is an issue formatting the end date and time.
 	 */
 	public function get_datetime_end( string $format = 'D, F j, g:ia T' ): string {
 		return $this->get_formatted_datetime( $format, 'end' );
@@ -324,10 +340,9 @@ class Event {
 	 * @param string $format Optional. The PHP date format in which to format the datetime. Default is 'D, F j, g:ia T'.
 	 * @param string $which  Optional. The datetime field in the event table to format ('start' or 'end'). Default is 'start'.
 	 * @param bool   $local  Optional. Whether to format the date in local time (true) or GMT (false). Default is true.
-	 *
 	 * @return string The formatted datetime value.
 	 *
-	 * @throws Exception If an error occurs during datetime formatting.
+	 * @throws Exception If there is an issue while formatting the datetime value.
 	 */
 	protected function get_formatted_datetime(
 		string $format = 'D, F j, g:ia T',
@@ -366,7 +381,6 @@ class Event {
 	 * @since 1.0.0
 	 *
 	 * @param string $timezone The UTC offset to convert, e.g., "+05:30" or "-08:00".
-	 *
 	 * @return string The converted timezone format, e.g., "+0530" or "-0800".
 	 */
 	public static function maybe_convert_offset( string $timezone ): string {
@@ -517,9 +531,10 @@ class Event {
 	 * date and time in the GMT (UTC) time zone. It ensures that the date remains in the correct
 	 * format.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string       $date     The date to be converted.
 	 * @param DateTimeZone $timezone The time zone to use for date conversion.
-	 *
 	 * @return string The converted date in GMT (UTC) time zone in 'Y-m-d H:i:s' format.
 	 */
 	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
@@ -590,13 +605,13 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @throws Exception If an error occurs while generating the calendar links.
-	 *
 	 * @return array An associative array containing supported calendar links:
 	 *     - 'google'  (array) Google Calendar link information with 'name' and 'link' keys.
 	 *     - 'ical'    (array) iCal download link information with 'name' and 'download' keys.
 	 *     - 'outlook' (array) Outlook download link information with 'name' and 'download' keys.
 	 *     - 'yahoo'   (array) Yahoo Calendar link information with 'name' and 'link' keys.
+	 *
+	 * @throws Exception If there is an issue while generating calendar links.
 	 */
 	public function get_calendar_links(): array {
 		if ( ! $this->event ) {
@@ -632,9 +647,9 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @throws Exception If an error occurs while generating the Google Calendar link.
-	 *
 	 * @return string The Google Calendar add event link for the event.
+	 *
+	 * @throws Exception If there is an issue while generating the Google Calendar link.
 	 */
 	protected function get_google_calendar_link(): string {
 		$date_start  = $this->get_formatted_datetime( 'Ymd', 'start', false );
@@ -671,9 +686,9 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @throws Exception If an error occurs while generating the Yahoo! Calendar link.
-	 *
 	 * @return string The Yahoo! Calendar link for adding the event.
+	 *
+	 * @throws Exception If an error occurs while generating the Yahoo! Calendar link.
 	 */
 	protected function get_yahoo_calendar_link(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
@@ -719,9 +734,9 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @throws Exception If an error occurs while generating the ICS download link.
-	 *
 	 * @return string The ICS download link for the event.
+	 *
+	 * @throws Exception If an error occurs while generating the ICS download link.
 	 */
 	protected function get_ics_calendar_download(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
@@ -792,10 +807,9 @@ class Event {
 	 *     @type string $datetime_end   End DateTime in local time to save for the event.
 	 *     @type string $timezone       The timezone of the event.
 	 * }
+	 * @return bool True if the data was successfully saved, false otherwise.
 	 *
 	 * @throws Exception If there is an issue with datetime conversion or database operations.
-	 *
-	 * @return bool True if the data was successfully saved, false otherwise.
 	 */
 	public function save_datetimes( array $params ): bool {
 		global $wpdb;

@@ -26,9 +26,12 @@ class Cli extends WP_CLI {
 	/**
 	 * Perform actions on an event.
 	 *
+	 * This method allows you to perform various actions related to events, such as adding responses.
+	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $args       Positional arguments for the script.
 	 * @param array $assoc_args Associative arguments for the script.
-	 *
 	 * @return void
 	 */
 	public function event( array $args = array(), array $assoc_args = array() ): void {
@@ -46,9 +49,10 @@ class Cli extends WP_CLI {
 	 * This method generates credits data for displaying on the credits page.
 	 * It retrieves user data from WordPress.org profiles based on the provided version.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $args       Positional arguments for the script.
 	 * @param array $assoc_args Associative arguments for the script.
-	 *
 	 * @return void
 	 */
 	public function generate_credits( array $args = array(), array $assoc_args = array() ): void {
@@ -94,9 +98,10 @@ class Cli extends WP_CLI {
 	 *
 	 * This method adds a response to the specified event, identified by its Post ID.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param int   $event_id   The Post ID of the event.
 	 * @param array $assoc_args Associative arguments for the script, including 'user_id', 'status', and 'guests'.
-	 *
 	 * @return void
 	 */
 	private function add_response( int $event_id, array $assoc_args ): void {

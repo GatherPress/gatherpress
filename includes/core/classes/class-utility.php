@@ -31,7 +31,6 @@ class Utility {
 	 * @param string $path      The path to the template file.
 	 * @param array  $variables An array of variables to pass to the template.
 	 * @param bool   $echo      Whether to echo the template (true) or return it (false).
-	 *
 	 * @return string The rendered template as a string.
 	 */
 	public static function render_template( string $path, array $variables = array(), bool $echo = false ): string {
@@ -61,7 +60,6 @@ class Utility {
 	 * @since 1.0.0
 	 *
 	 * @param string $key The key to which the prefix will be added.
-	 *
 	 * @return string The key with the 'gp_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
@@ -76,7 +74,6 @@ class Utility {
 	 * @since 1.0.0
 	 *
 	 * @param string $key The key from which the prefix will be removed.
-	 *
 	 * @return string The key with the 'gp_' prefix removed.
 	 */
 	public static function unprefix_key( string $key ): string {
