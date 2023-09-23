@@ -143,7 +143,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 	const LoggedOutModal = () => {
 		return (
 			<div className="gp-modal gp-modal__rsvp">
-				<div className="gp-modal__header has-large-font-size">
+				<div className="gp-modal__header">
 					{__('Login Required', 'gatherpress')}
 				</div>
 				<div className="gp-modal__content">
@@ -167,7 +167,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 					)}
 				</div>
 				<ButtonGroup className="gp-buttons wp-block-buttons">
-					<div className="gp-buttons__container wp-block-button has-small-font-size">
+					<div className="gp-buttons__container wp-block-button">
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"
@@ -237,7 +237,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 					{/*	/>*/}
 				</div>
 				<ButtonGroup className="gp-buttons wp-block-buttons">
-					<div className="gp-buttons__container wp-block-button is-style-outline has-small-font-size">
+					<div className="gp-buttons__container wp-block-button is-style-outline">
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"
@@ -247,7 +247,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 							{buttonLabel}
 						</a>
 					</div>
-					<div className="gp-buttons__container wp-block-button has-small-font-size">
+					<div className="gp-buttons__container wp-block-button">
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"

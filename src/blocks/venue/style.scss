@@ -8,6 +8,10 @@
 		justify-content: flex-start;
 	}
 
+	&__name {
+		font-size: var(--wp--preset--font-size--medium);
+	}
+
 	&__icon {
 		display: flex;
 		align-items: flex-start;

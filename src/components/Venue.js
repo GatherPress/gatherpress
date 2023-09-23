@@ -18,7 +18,7 @@ const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 					</FlexItem>
 					<FlexItem>
 						{name && (
-							<div className="gp-venue_information__name has-medium-font-size">
+							<div className="gp-venue__name">
 								<strong>{HtmlReactParser(name)}</strong>
 							</div>
 						)}

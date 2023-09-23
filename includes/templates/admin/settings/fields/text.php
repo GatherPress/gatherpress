@@ -13,6 +13,7 @@
  * @param string $option      The option name for retrieving the field's value.
  * @param string $value       The current value of the text input field.
  * @param string $description (Optional) Additional information or instructions for the field.
+ * @param string $size        The size class for styling (e.g., 'regular', 'large', or 'small').
  */
 
 if ( ! isset( $name, $label, $option, $value, $description, $size ) ) {

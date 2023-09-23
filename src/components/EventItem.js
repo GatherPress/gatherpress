@@ -43,11 +43,11 @@ const EventItem = (props) => {
 						</figure>
 					)}
 					<div
-						className={`${eventClass}__datetime has-small-font-size`}
+						className={`${eventClass}__datetime`}
 					>
 						<strong>{event.datetime_start}</strong>
 					</div>
-					<div className={`${eventClass}__title has-large-font-size`}>
+					<div className={`${eventClass}__title`}>
 						<a href={event.permalink}>
 							{HtmlReactParser(event.title)}
 						</a>

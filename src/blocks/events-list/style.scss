@@ -29,11 +29,13 @@
 		margin-bottom: 0.5rem;
 		padding: 0;
 		text-transform: uppercase;
+		font-size: var(--wp--preset--font-size--small);
 	}
 
 	&__title {
 		margin-bottom: 1rem;
 		padding: 0;
+		font-size: var(--wp--preset--font-size--large);
 	}
 
 	&__excerpt {
