@@ -109,37 +109,32 @@ class Event_Query {
 		);
 
 		$tax_query = array();
-		if ( ! empty( $topics ) ) {
+
+		if ( ! empty( $venues ) && ! empty( $topics ) ) {
+			$tax_query[] = array(
+				'relation' => 'AND',
+				array(
+					'taxonomy' => Event::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => $topics,
+				),
+				array(
+					'taxonomy' => Venue::TAXONOMY,
+					'field'    => 'slug',
+					'terms'    => $venues,
+				),
+			);
+		} elseif ( ! empty( $topics ) ) {
 			$tax_query[] = array(
 				'taxonomy' => Event::TAXONOMY,
 				'field'    => 'slug',
 				'terms'    => $topics,
 			);
-		}
-
-		if ( ! empty( $venues ) ) {
+		} elseif ( ! empty( $venues ) ) {
 			$tax_query[] = array(
 				'taxonomy' => Venue::TAXONOMY,
 				'field'    => 'slug',
 				'terms'    => $venues,
-			);
-		}
-
-		if ( ! empty( $venues ) && ! empty( $topics ) ) {
-			$tax_query[] = array(
-				'relation' => 'AND',
-				'queries'  => array(
-					array(
-						'taxonomy' => Event::TAXONOMY,
-						'field'    => 'slug',
-						'terms'    => $topics,
-					),
-					array(
-						'taxonomy' => Venue::TAXONOMY,
-						'field'    => 'slug',
-						'terms'    => $venues,
-					),
-				),
 			);
 		}
 
@@ -184,6 +179,7 @@ class Event_Query {
 			foreach ( $archive_pages as $key => $value ) {
 				if ( ! empty( $value ) && is_array( $value ) ) {
 					$page = $value[0];
+
 					if ( $page->id === $query->queried_object_id ) {
 						$query->set( 'post_type', 'gp_event' );
 
