@@ -80,7 +80,7 @@ class Venue {
 	 * Get the arguments for registering the 'Venue' custom post type.
 	 *
 	 * This method returns an array containing the registration arguments for the custom post type 'Venue.'
-	 * These arguments define various aspects of the post type, such as labels, REST API support, visibility in the admin menu,
+	 * These arguments define aspects of the post type, such as labels, REST API support, visibility in the admin menu,
 	 * supported features, icons, and rewrite rules.
 	 *
 	 * @since 1.0.0
@@ -127,8 +127,9 @@ class Venue {
 	/**
 	 * Get the registration arguments for custom post meta fields.
 	 *
-	 * This method returns an array containing the registration arguments for custom post meta fields associated with the 'Venue' custom post type.
-	 * These arguments include callbacks for authorization and data sanitization, support for the REST API, data type, and more.
+	 * This method returns an array containing the registration arguments for custom post meta fields
+	 * associated with the 'Venue' custom post type. These arguments include callbacks for authorization
+	 * and data sanitization, support for the REST API, data type, and more.
 	 *
 	 * @since 1.0.0
 	 *
@@ -152,8 +153,8 @@ class Venue {
 	 * Get the registration arguments for the custom 'Venue' taxonomy.
 	 *
 	 * This method returns an array containing the registration arguments for the custom 'Venue' taxonomy.
-	 * These arguments define various aspects of the taxonomy, including labels, hierarchical structure, visibility in the admin interface,
-	 * and support for querying the taxonomy in the REST API.
+	 * These arguments define various aspects of the taxonomy, including labels, hierarchical structure,
+	 * visibility in the admin interface, and support for querying the taxonomy in the REST API.
 	 *
 	 * @since 1.0.0
 	 *

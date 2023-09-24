@@ -260,7 +260,9 @@ class Assets {
 
 		return array(
 			'responses'         => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-			'current_user'      => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) ) ? $event->rsvp->get( get_current_user_id() ) : '', // @todo cleanup
+			'current_user'      => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
+				? $event->rsvp->get( get_current_user_id() )
+				: '', // Cleanup needed.
 			'is_user_logged_in' => is_user_logged_in(),
 			'default_timezone'  => sanitize_text_field( wp_timezone_string() ),
 			'event_announced'   => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,

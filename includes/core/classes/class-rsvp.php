@@ -260,7 +260,7 @@ class Rsvp {
 	 * Get all responses for an event.
 	 *
 	 * This method retrieves and organizes information about responses for the event.
-	 * It provides an array containing response details grouped by RSVP status ('attending', 'not_attending', 'waiting_list'),
+	 * It provides an array with response details grouped by RSVP status ('attending', 'not_attending', 'waiting_list'),
 	 * along with counts and additional response data.
 	 *
 	 * @since 1.0.0
@@ -408,7 +408,7 @@ class Rsvp {
 	 *
 	 * @param array $first  First response to compare in the sort.
 	 * @param array $second Second response to compare in the sort.
-	 * @return bool Returns true if the first response's timestamp is earlier than the second response's timestamp; otherwise, false.
+	 * @return bool True if the first response's timestamp is earlier than the second response's timestamp; otherwise, false.
 	 */
 	public function sort_by_timestamp( array $first, array $second ): bool {
 		return ( strtotime( $first['timestamp'] ) < strtotime( $second['timestamp'] ) );

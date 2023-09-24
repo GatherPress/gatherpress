@@ -3,8 +3,8 @@
  * Utility class responsible for various utility-related functionality.
  *
  * This class provides utility methods for common tasks such as rendering templates, handling key prefixes, and
- * converting time zone markup to an array of choices. It encapsulates these utilities for use throughout the GatherPress
- * plugin.
+ * converting time zone markup to an array of choices. It encapsulates these utilities for use throughout the
+ * GatherPress plugin.
  *
  * @package GatherPress\Core
  * @since 1.0.0

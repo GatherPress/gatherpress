@@ -557,7 +557,9 @@ class Rest_Api {
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) ) ? $event->rsvp->get( get_current_user_id() ) : '',
+					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
+						? $event->rsvp->get( get_current_user_id() )
+						: '',
 					'venue'                    => ( $venue_information['name'] ? $event->get_venue_information() : null ),
 				);
 			}
