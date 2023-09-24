@@ -182,6 +182,13 @@ class Test_Event extends Base {
 		);
 	}
 
+	/**
+	 * Coverage for save_datetimes method.
+	 *
+	 * @covers ::save_datetimes
+	 *
+	 * @return void
+	 */
 	public function test_save_datetimes(): void {
 		$post   = $this->mock->post(
 			array(
@@ -514,7 +521,7 @@ class Test_Event extends Base {
 				'post_date'    => '2020-05-11 00:00:00',
 			)
 		)->get();
-		$venue      = $this->mock->post(
+		$venue       = $this->mock->post(
 			array(
 				'post_type'  => Venue::POST_TYPE,
 				'post_title' => 'Unit Test Venue',
