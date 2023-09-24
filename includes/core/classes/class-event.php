@@ -544,7 +544,7 @@ class Event {
 		$datetime = date_create( $date, $timezone );
 
 		if ( false === $datetime ) {
-			return gmdate( self::DATETIME_FORMAT, 0 );
+			return '0000-00-00 00:00:00';
 		}
 
 		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( self::DATETIME_FORMAT );

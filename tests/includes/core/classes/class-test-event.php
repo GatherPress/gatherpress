@@ -9,6 +9,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use DateTimeZone;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Venue;
@@ -71,7 +72,22 @@ class Test_Event extends Base {
 	public function test_get_post_meta_registration_args(): void {
 		$args = Event::get_post_meta_registration_args();
 
-		$this->assertIsArray( $args['_online_event_link'], 'Failed to assert that _online_event_link is an array.' );
+		$this->assertIsArray(
+			$args['_online_event_link'],
+			'Failed to assert that _online_event_link is an array.'
+		);
+
+		$this->mock->user( 'subscriber' );
+		$this->assertFalse(
+			$args['_online_event_link']['auth_callback'](),
+			'Failed to assert that user cannot edit posts.'
+		);
+
+		$this->mock->user( 'admin' );
+		$this->assertTrue(
+			$args['_online_event_link']['auth_callback'](),
+			'Failed to assert that user can edit posts.'
+		);
 	}
 
 	/**
@@ -159,7 +175,50 @@ class Test_Event extends Base {
 			$this->assertTrue( $output, 'Failed to assert that datetimes saved.' );
 		}
 
-		$this->assertSame( $expects, $event->get_display_datetime() );
+		$this->assertSame(
+			$expects,
+			$event->get_display_datetime(),
+			'Failed to assert display date times match.'
+		);
+	}
+
+	public function test_save_datetimes(): void {
+		$post   = $this->mock->post(
+			array(
+				'post_title'   => 'Unit Test Event',
+				'post_type'    => 'gp_event',
+				'post_content' => 'Unit Test description.',
+			)
+		)->get();
+		$event  = new Event( $post->ID );
+		$params = array(
+			'datetime_start' => '2020-05-11 15:00:00',
+			'datetime_end'   => '2020-05-11 17:00:00',
+			'timezone'       => 'America/New_York',
+		);
+
+		$this->assertTrue(
+			$event->save_datetimes( $params ),
+			'Failed to insert date times.'
+		);
+
+		$params = array(
+			'datetime_start' => '2020-05-11 16:00:00',
+			'datetime_end'   => '2020-05-11 18:00:00',
+			'timezone'       => 'America/New_York',
+		);
+
+		$this->assertTrue(
+			$event->save_datetimes( $params ),
+			'Failed to update date times.'
+		);
+
+		Utility::set_and_get_hidden_property( $event, 'event', (object) array( 'ID' => 0 ) );
+
+		$this->assertFalse(
+			$event->save_datetimes( $params ),
+			'Failed to assert false due to post ID less than 1.'
+		);
 	}
 
 	/**
@@ -241,6 +300,30 @@ class Test_Event extends Base {
 		$this->assertSame(
 			'Tue, May 12, 9:00pm GMT+0000',
 			Utility::invoke_hidden_method( $event, 'get_formatted_datetime', array( 'D, F j, g:ia T', 'end', false ) )
+		);
+	}
+
+	/**
+	 * Coverage for get_gmt_datetime method.
+	 *
+	 * @covers ::get_gmt_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_gmt_datetime(): void {
+		$post     = $this->mock->post(
+			array(
+				'post_title'   => 'Unit Test Event',
+				'post_type'    => 'gp_event',
+				'post_content' => 'Unit Test description.',
+			)
+		)->get();
+		$event    = new Event( $post->ID );
+		$timezone = new DateTimeZone( 'America/New_York' );
+		$this->assertSame(
+			'0000-00-00 00:00:00',
+			Utility::invoke_hidden_method( $event, 'get_gmt_datetime', array( 'unit-test', $timezone ) ),
+			'Failed to assert that gmt datetime matches.'
 		);
 	}
 
@@ -431,6 +514,14 @@ class Test_Event extends Base {
 				'post_date'    => '2020-05-11 00:00:00',
 			)
 		)->get();
+		$venue      = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Unit Test Venue',
+				'post_name'  => 'unit-test-venue',
+			)
+		)->get();
+		$venue_info  = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 		$event       = new Event( $post->ID );
 		$description = sanitize_text_field( sprintf( 'For details go to %s', get_the_permalink( $post ) ) );
 		$params      = array(
@@ -438,29 +529,39 @@ class Test_Event extends Base {
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
+		update_post_meta( $venue->ID, '_venue_information', $venue_info );
+		wp_set_post_terms( $post->ID, '_unit-test-venue', Venue::TAXONOMY );
+
 		$event->save_datetimes( $params );
 
 		$output  = $event->get_calendar_links();
 		$expects = array(
 			'google'  => array(
 				'name' => 'Google Calendar',
-				'link' => 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit Test Event&dates=20200511T150000Z/20200511T170000Z&details=' . $description . '&location&sprop=name:',
+				'link' => 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit Test Event&dates=20200511T150000Z/20200511T170000Z&details=' . $description . '&location=Unit Test Venue, 123 Main Street, Montclair, NJ 07042&sprop=name:',
 			),
 			'ical'    => array(
 				'name'     => 'iCal',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
 			),
 			'outlook' => array(
 				'name'     => 'Outlook',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',
-				'link' => 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit Test Event&st=20200511T150000Z&dur=0200&desc=' . $description . '&in_loc',
+				'link' => 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit Test Event&st=20200511T150000Z&dur=0200&desc=' . $description . '&in_loc=Unit Test Venue, 123 Main Street, Montclair, NJ 07042',
 			),
 		);
 
 		$this->assertSame( $expects, $output );
+
+		Utility::set_and_get_hidden_property( $event, 'event', null );
+
+		$this->assertEmpty(
+			$event->get_calendar_links(),
+			'Failed to assert that calendar links are empty.'
+		);
 	}
 
 	/**
@@ -538,6 +639,13 @@ class Test_Event extends Base {
 			$link,
 			$event->maybe_get_online_event_link(),
 			'Failed to assert online event link is present.'
+		);
+
+		Utility::set_and_get_hidden_property( $event, 'rsvp', null );
+
+		$this->assertEmpty(
+			$event->maybe_get_online_event_link(),
+			'Failed to assert empty string due to RSVP being set to null.'
 		);
 	}
 
