@@ -134,7 +134,8 @@ class Setup {
 	public function filter_plugin_action_links( array $actions ): array {
 		return array_merge(
 			array(
-				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
+				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">'
+					. esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions
 		);
@@ -419,7 +420,8 @@ class Setup {
 		$new_table = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
 		$old_table = sprintf( '%sgp_attendees', $wpdb->prefix );
 
-		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" );
 	}
 
 	/**

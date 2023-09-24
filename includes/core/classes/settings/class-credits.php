@@ -58,8 +58,9 @@ class Credits extends Base {
 	/**
 	 * Callback function to render the settings section on the "Credits" page.
 	 *
-	 * This method serves as a callback function to render the settings section when the current settings page slug matches the plugin's slug.
-	 * It removes the default action to render the settings form and instead calls the `credits_page` method to render content specific to the "Credits" page.
+	 * This method serves as a callback function to render the settings section when the current settings page slug
+	 * matches the plugin's slug. It removes the default action to render the settings form and instead calls the
+	 * `credits_page` method to render content specific to the "Credits" page.
 	 *
 	 * @since 1.0.0
 	 *

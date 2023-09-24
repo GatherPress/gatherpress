@@ -60,7 +60,7 @@ class General extends Base {
 			'general' => array(
 				'name'        => __( 'General Settings', 'gatherpress' ),
 				'description' => __(
-					'GatherPress allows you to set event dates to reflect either the post date or event date. Default: show as event date.',
+					'GatherPress allows you to set event dates to reflect either the post date or event date. Default: event date.',
 					'gatherpress'
 				),
 				'options'     => array(

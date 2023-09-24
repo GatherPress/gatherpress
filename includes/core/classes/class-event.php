@@ -138,7 +138,10 @@ class Event {
 				array(
 					'core/paragraph',
 					array(
-						'placeholder' => __( 'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', 'gatherpress' ),
+						'placeholder' => __(
+							'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
+							'gatherpress'
+						),
 					),
 				),
 				array( 'gatherpress/rsvp-response' ),
@@ -338,7 +341,7 @@ class Event {
 	 * @since 1.0.0
 	 *
 	 * @param string $format Optional. The PHP date format in which to format the datetime. Default is 'D, F j, g:ia T'.
-	 * @param string $which  Optional. The datetime field in the event table to format ('start' or 'end'). Default is 'start'.
+	 * @param string $which  Optional. Datetime field in event table to format ('start' or 'end'). Default is 'start'.
 	 * @param bool   $local  Optional. Whether to format the date in local time (true) or GMT (false). Default is true.
 	 * @return string The formatted datetime value.
 	 *

@@ -69,7 +69,7 @@ class Leadership extends Base {
 		return array(
 			'roles' => array(
 				'name'        => __( 'Roles', 'gatherpress' ),
-				'description' => __( 'GatherPress allows you to customize role labels to be more appropriate for events.', 'gatherpress' ),
+				'description' => __( 'Customize role labels to be more appropriate for events.', 'gatherpress' ),
 				'options'     => apply_filters( 'gatherpress_roles', $roles ),
 			),
 		);

@@ -324,7 +324,8 @@ class Event_Query {
 		);
 		$pieces          = array_merge( $defaults, $pieces );
 		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
-		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID=' . esc_sql( $table ) . '.post_id';
+		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID='
+						. esc_sql( $table ) . '.post_id';
 		$order           = strtoupper( $order );
 
 		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
