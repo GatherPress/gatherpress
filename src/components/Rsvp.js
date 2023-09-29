@@ -27,6 +27,9 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 	const [modalIsOpen, setIsOpen] = useState(false);
 
 	const customStyles = {
+		overlay: {
+			zIndex: 999999999,
+		},
 		content: {
 			top: '50%',
 			left: '50%',
