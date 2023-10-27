@@ -18,10 +18,10 @@
 	&__items {
 		display: grid;
 		gap: 1rem;
-		grid-template-columns: 1fr 1fr 1fr 1fr;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
 
 		@include for-core-mobile {
-			grid-template-columns: 1fr 1fr;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 
@@ -32,6 +32,13 @@
 		gap: 1rem;
 		padding: 1rem;
 		text-align: center;
+
+		a {
+			display: block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
 	}
 
 	&__member-avatar {

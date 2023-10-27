@@ -40,7 +40,9 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 					</figure>
 					<div className="gp-rsvp-response__member-info">
 						<div className="gp-rsvp-response__member-name">
-							<a href={profile}>{name}</a>
+							<a href={profile} title={name}>
+								{name}
+							</a>
 						</div>
 						<div className="gp-rsvp-response__member-role">
 							{role}
