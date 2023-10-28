@@ -58,7 +58,7 @@ class Base {
 	 *
 	 * @since 1.0.0
 	 */
-	protected function __construct() {
+	public function __construct() {
 		$this->setup_hooks();
 	}
 

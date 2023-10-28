@@ -28,7 +28,7 @@ class Test_Base extends Base_Unit_Test {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Base::get_instance();
+		$instance = new Base();
 		$hooks    = array(
 			array(
 				'type'     => 'filter',
@@ -50,7 +50,7 @@ class Test_Base extends Base_Unit_Test {
 	 * @return void
 	 */
 	public function test_set_sub_page(): void {
-		$instance  = Base::get_instance();
+		$instance  = new Base();
 		$name      = Utility::set_and_get_hidden_property( $instance, 'name', 'Unit Test' );
 		$slug      = Utility::set_and_get_hidden_property( $instance, 'slug', 'unit-test' );
 		$sub_pages = $instance->set_sub_page( array() );
@@ -69,7 +69,7 @@ class Test_Base extends Base_Unit_Test {
 	 * @return void
 	 */
 	public function test_get(): void {
-		$instance = Base::get_instance();
+		$instance = new Base();
 		$slug     = Utility::set_and_get_hidden_property( $instance, 'slug', 'unit-test' );
 
 		$this->assertNull( $instance->get( 'unit-test' ), 'Failed to assert property is null.' );
