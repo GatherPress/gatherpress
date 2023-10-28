@@ -12,8 +12,6 @@
 
 namespace GatherPress\Core\Settings;
 
-use GatherPress\Core\Traits\Singleton;
-
 /**
  * Class Base.
  *
@@ -22,8 +20,6 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Base {
-
-	use Singleton;
 
 	/**
 	 * The name of the settings page.
@@ -62,7 +58,7 @@ class Base {
 	 *
 	 * @since 1.0.0
 	 */
-	protected function __construct() {
+	public function __construct() {
 		$this->setup_hooks();
 	}
 

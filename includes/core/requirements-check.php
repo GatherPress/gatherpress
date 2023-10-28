@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-$gatherpress_preflight_return = true;
+$gatherpress_activation = true;
 
 // Check the PHP version to ensure compatibility with the plugin.
 if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
@@ -35,7 +35,7 @@ if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
 		}
 	);
 
-	$gatherpress_preflight_return = false;
+	$gatherpress_activation = false;
 }
 
-return $gatherpress_preflight_return;
+return $gatherpress_activation;
