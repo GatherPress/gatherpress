@@ -327,9 +327,7 @@ class Setup {
 	 * @return void
 	 */
 	public function add_online_event_term(): void {
-		if ( ! taxonomy_exists( Venue::TAXONOMY ) ) {
-			$this->register_taxonomies();
-		}
+		$this->register_taxonomies();	
 		$term_name = __( 'Online event', 'gatherpress' );
 		$term_slug = 'online-event';
 		$term      = term_exists( $term_slug, Venue::TAXONOMY );
