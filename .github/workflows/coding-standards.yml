@@ -60,7 +60,7 @@ jobs:
         run: vendor/bin/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
       - name: Check test suite files for warnings
-        run: vendor/bin/phpcs tests --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
+        run: vendor/bin/phpcs test --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
   # Runs the JavaScript coding standards checks.
   #
