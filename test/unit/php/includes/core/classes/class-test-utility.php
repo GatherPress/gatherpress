@@ -33,7 +33,7 @@ class Test_Utility extends Base {
 		$this->assertEmpty( Utility::render_template( '' ) );
 
 		$description   = 'This is a template for testing.';
-		$template_path = GATHERPRESS_CORE_PATH . '/tests/assets/templates/test-template.php';
+		$template_path = GATHERPRESS_CORE_PATH . '/test/unit/php/assets/templates/test-template.php';
 		$template      = Utility::render_template( $template_path, array( 'description' => $description ) );
 		$this->assertStringContainsString( $description, $template );
 
