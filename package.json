@@ -23,6 +23,7 @@
 		"plugin-zip": "wp-scripts plugin-zip",
 		"start": "wp-scripts start",
 		"test:e2e": "wp-scripts test-e2e",
+		"tests:e2e-all": "playwright test --config=playwright.config.js",
 		"test:unit:js": "wp-scripts test-unit-js",
 		"pretest:unit:php": "wp-env start --xdebug",
 		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report"
@@ -59,6 +60,7 @@
 		"@wordpress/plugins": "^6.3.0",
 		"@wordpress/scripts": "^26.6.0",
 		"classnames": "^2.3.2",
+		"dotenv": "^16.3.1",
 		"eslint": "^8.42.0",
 		"html-react-parser": "^4.0.0",
 		"lodash": "^4.17.21",
