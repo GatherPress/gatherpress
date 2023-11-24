@@ -57,7 +57,7 @@
 		"@wordpress/eslint-plugin": "^14.8.0",
 		"@wordpress/i18n": "^4.35.0",
 		"@wordpress/plugins": "^6.3.0",
-		"@wordpress/scripts": "^26.6.0",
+		"@wordpress/scripts": "^18.0.1",
 		"classnames": "^2.3.2",
 		"dotenv": "^16.3.1",
 		"eslint": "^8.42.0",
