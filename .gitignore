@@ -40,4 +40,8 @@ wp-core
 coverage.xml
 .env
 
+# playwright #
+playwright-report/
+test-results/
+
 *.zip
