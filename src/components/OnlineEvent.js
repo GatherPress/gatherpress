@@ -1,4 +1,8 @@
 /**
+ * External dependencies.
+ */
+import { Tooltip } from 'react-tooltip';
+/**
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
@@ -6,7 +10,7 @@ import { Flex, FlexItem, Icon } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
 /**
- * Internal dependencies
+ * Internal dependencies.
  */
 import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
@@ -25,7 +29,21 @@ const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 				<Icon icon="video-alt2" />
 			</FlexItem>
 			<FlexItem>
-				{!onlineEventLink && <span>{text}</span>}
+				{!onlineEventLink && (
+					<>
+						<span
+							className="gp-tooltip"
+							data-tooltip-id="gp-online-event"
+							data-tooltip-content={__(
+								'Link active during event.',
+								'gatherpress'
+							)}
+						>
+							{text}
+						</span>
+						<Tooltip id="gp-online-event" />
+					</>
+				)}
 				{onlineEventLink && (
 					<a href={onlineEventLink} rel="noreferrer" target="_blank">
 						{text}
