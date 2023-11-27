@@ -38,5 +38,10 @@ vendor
 wp-core
 .phpunit.result.cache
 coverage.xml
+.env
+
+# playwright #
+playwright-report/
+test-results/
 
 *.zip
