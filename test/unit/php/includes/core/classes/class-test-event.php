@@ -9,6 +9,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use DateTime;
 use DateTimeZone;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
@@ -572,6 +573,54 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Cover for has_event_started method.
+	 *
+	 * @covers ::has_event_started
+	 *
+	 * @return void
+	 */
+	public function test_has_event_started(): void {
+		$post  = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get();
+		$event = new Event( $post->ID );
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$end->modify( '+2 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
+
+		$output = $event->has_event_started();
+
+		$this->assertTrue( $output );
+
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$start->modify( '+1 hour' );
+		$end->modify( '+3 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
+
+		$output = $event->has_event_started();
+
+		$this->assertFalse( $output );
+	}
+
+	/**
 	 * Cover for has_event_past method.
 	 *
 	 * @covers ::has_event_past
@@ -579,16 +628,21 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_has_event_past(): void {
-		$post   = $this->mock->post(
+		$post  = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$event  = new Event( $post->ID );
-		$year   = gmdate( 'Y' );
+		$event = new Event( $post->ID );
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$start->modify( '-3 hours' );
+		$end->modify( '-1 hours' );
+
 		$params = array(
-			'datetime_start' => sprintf( '%d-05-11 15:00:00', $year - 1 ),
-			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year - 1 ),
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
 		);
 
 		$event->save_datetimes( $params );
@@ -597,14 +651,68 @@ class Test_Event extends Base {
 
 		$this->assertTrue( $output );
 
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$start->modify( '+1 hours' );
+		$end->modify( '+3 hours' );
+
 		$params = array(
-			'datetime_start' => sprintf( '%d-05-11 15:00:00', $year + 1 ),
-			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year + 1 ),
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
 		);
 
 		$event->save_datetimes( $params );
 
 		$output = $event->has_event_past();
+
+		$this->assertFalse( $output );
+	}
+
+	/**
+	 * Cover for is_event_happening method.
+	 *
+	 * @covers ::is_event_happening
+	 *
+	 * @return void
+	 */
+	public function test_is_event_happening(): void {
+		$post  = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get();
+		$event = new Event( $post->ID );
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$end->modify( '+2 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
+
+		$output = $event->is_event_happening();
+
+		$this->assertTrue( $output );
+
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$start->modify( '-3 hours' );
+		$end->modify( '-1 hour' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
+
+		$output = $event->is_event_happening();
 
 		$this->assertFalse( $output );
 	}
@@ -623,13 +731,18 @@ class Test_Event extends Base {
 			)
 		)->get()->ID;
 		$event    = new Event( $event_id );
-		$year     = gmdate( 'Y' );
-		$params   = array(
-			'datetime_start' => sprintf( '%d-05-11 15:00:00', $year + 1 ),
-			'datetime_end'   => sprintf( '%d-05-11 17:00:00', $year + 1 ),
+		$start    = new DateTime( 'now' );
+		$end      = new DateTime( 'now' );
+
+		$end->modify( '+2 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
 		);
-		$user_id  = $this->mock->user()->get()->ID;
-		$link     = 'https:://unittest.com/video/';
+
+		$user_id = $this->mock->user()->get()->ID;
+		$link    = 'https:://unittest.com/video/';
 
 		$event->save_datetimes( $params );
 

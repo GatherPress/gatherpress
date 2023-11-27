@@ -277,6 +277,24 @@ class Event {
 	}
 
 	/**
+	 * Check if the event has yet to occur (in the future).
+	 *
+	 * This method compares the start datetime of the event with the current time
+	 * to determine if the event has yet to take place.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the event is in the future, false otherwise.
+	 */
+	public function has_event_started(): bool {
+		$data    = $this->get_datetime();
+		$start   = $data['datetime_start_gmt'];
+		$current = time();
+
+		return ( ! empty( $start ) && $current >= strtotime( $start ) );
+	}
+
+	/**
 	 * Check if the event has already occurred (in the past).
 	 *
 	 * This method compares the end datetime of the event with the current time
@@ -291,11 +309,20 @@ class Event {
 		$end     = $data['datetime_end_gmt'];
 		$current = time();
 
-		if ( ! empty( $end ) && $current > strtotime( $end ) ) {
-			return true;
-		}
+		return ( ! empty( $end ) && $current > strtotime( $end ) );
+	}
 
-		return false;
+	/**
+	 * Check if the event is currently happening.
+	 *
+	 * This method determines whether the event has started and is not in the past.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if the event has started and is not in the past, false otherwise.
+	 */
+	public function is_event_happening(): bool {
+		return $this->has_event_started() && ! $this->has_event_past();
 	}
 
 	/**
@@ -896,7 +923,7 @@ class Event {
 			if (
 				! isset( $user['status'] ) ||
 				'attending' !== $user['status'] ||
-				$this->has_event_past()
+				! $this->is_event_happening()
 			) {
 				return '';
 			}
