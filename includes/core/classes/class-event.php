@@ -291,11 +291,7 @@ class Event {
 		$start   = $data['datetime_start_gmt'];
 		$current = time();
 
-		if ( ! empty( $start ) && $current >= strtotime( $start ) ) {
-			return true;
-		}
-
-		return false;
+		return ( ! empty( $start ) && $current >= strtotime( $start ) );
 	}
 
 	/**
@@ -313,11 +309,7 @@ class Event {
 		$end     = $data['datetime_end_gmt'];
 		$current = time();
 
-		if ( ! empty( $end ) && $current > strtotime( $end ) ) {
-			return true;
-		}
-
-		return false;
+		return ( ! empty( $end ) && $current > strtotime( $end ) );
 	}
 
 	/**
