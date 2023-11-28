@@ -12,9 +12,9 @@
  */
 
 return array(
-	'0.25.3' => array(
+	'0.26.0' => array(
 		'project-leaders'  => array( 'mauteri', 'hrmervin' ),
-		'gatherpress-team' => array( 'pbrocks', 'jmarx', 'meaganhanes', 'calebthedev', 'courane01', 'newyorkerlaura' ),
-		'contributors'     => array( 'hauvong', 'phoopee3', 'cameronbarrett' ),
+		'gatherpress-team' => array( 'jmarx', 'meaganhanes', 'pbrocks' ),
+		'contributors'     => array( 'hauvong', 'phoopee3', 'cameronbarrett', 'prashantabellad', 'courane01', 'newyorkerlaura', 'calebthedev' ),
 	),
 );
