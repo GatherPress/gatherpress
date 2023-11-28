@@ -1,6 +1,6 @@
 {
 	"name": "gatherpress",
-	"version": "0.25.3",
+	"version": "0.26.0",
 	"description": "Powering Communities with WordPress",
 	"main": "index.js",
 	"scripts": {
