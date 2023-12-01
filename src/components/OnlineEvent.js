@@ -32,7 +32,7 @@ const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 				{!onlineEventLink && (
 					<>
 						<span
-							tabindex="0"
+							tabIndex="0"
 							className="gp-tooltip"
 							data-tooltip-id="gp-online-event"
 							data-tooltip-content={__(
