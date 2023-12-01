@@ -5,7 +5,7 @@
  * @param {*} password
  */
 const login = async ({ page, username, password = process.env.WP_ADMIN_PASSWORD }) => {
-	page.goto("/wp-login.php", {
+	page.goto("https://develop.gatherpress.org/wp-admin", {
 		timeout: 40000,
 	});
 
@@ -16,7 +16,7 @@ const login = async ({ page, username, password = process.env.WP_ADMIN_PASSWORD 
 
 	await page
 		.getByLabel("Password", { exact: true })
-		.fill(password);
+		.fill("zm86079&volj&!R5maIWEYX4");
 
 	await page.getByRole("button", { name: "Log In" }).click();
 };
