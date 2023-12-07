@@ -11,6 +11,7 @@ require('dotenv').config();
  * @see https://playwright.dev/docs/test-configuration
  */
 module.exports = defineConfig({
+<<<<<<< HEAD
   testDir: "./test",
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -20,6 +21,17 @@ module.exports = defineConfig({
   retries: process.env.CI ? 2 : 2,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
+=======
+	testDir: './test',
+	/* Run tests in files in parallel */
+	fullyParallel: true,
+	/* Fail the build on CI if you accidentally left test.only in the source code. */
+	forbidOnly: !!process.env.CI,
+	/* Retry on CI only */
+	retries: 2,
+	/* Opt out of parallel tests on CI. */
+	workers: process.env.CI ? 1 : undefined,
+>>>>>>> 01849c50ceb2b3861ed3263bbe59846ed9cae053
 
 
   timeout: 30000,
