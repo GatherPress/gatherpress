@@ -1,4 +1,7 @@
 /**
+ * This file will contain common user steps that may be required in multiple different tests
+ */
+/**
  * Login user flow
  * @param {*} root0
  * @param {*} root0.page
