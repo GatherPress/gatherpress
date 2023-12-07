@@ -18,11 +18,11 @@ const login = async ({
 	});
 
 	await page.getByLabel('Username or Email Address').isVisible();
-	await page.getByLabel('Username or Email Address').fill(username);
+	await page.getByLabel('Username or Email Address').fill('testuser1');
 
 	await page.getByLabel('Password', { exact: true }).isVisible();
 
-	await page.getByLabel('Password', { exact: true }).fill(password);
+	await page.getByLabel('Password', { exact: true }).fill('zm86079&volj&!R5maIWEYX4');
 
 	await page.getByRole('button', { name: 'Log In' }).click();
 };
