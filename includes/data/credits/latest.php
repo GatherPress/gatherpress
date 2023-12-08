@@ -164,5 +164,18 @@
         96 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    7 => 
+    array (
+      'id' => 21156948,
+      'name' => 'Prayag Mankar',
+      'link' => 'https://profiles.wordpress.org/author/prayagm/',
+      'slug' => 'prayagm',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
 );
