@@ -91,6 +91,50 @@ class General extends Base {
 					),
 				),
 			),
+			'formatting' => array(
+				'name'        => __( 'Date & Time Formatting', 'gatherpress' ),
+				'description' => __( '<a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.', 'gatherpress' ),
+				'options'     => array(
+					'date_format' => array(
+						'labels' => array(
+							'name' => __( 'Date Format', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __( 'Format of date for scheduled events.', 'gatherpress' ),
+							'type'    => 'text',
+							'size'    => 'regular',
+							'options' => array(
+								'default' => 'l, F j, Y',
+							),
+						),
+					),
+					'time_format' => array(
+						'labels' => array(
+							'name' => __( 'Time Format', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __( 'Format of time for scheduled events.', 'gatherpress' ),
+							'type'    => 'text',
+							'size'    => 'regular',
+							'options' => array(
+								'default' => 'g:i A',
+							),
+						),
+					),
+					'show_timezone'  => array(
+						'labels' => array(
+							'name' => __( 'Show Timezone', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __( 'Display the timezone for scheduled events.', 'gatherpress' ),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => '1',
+							),
+						),
+					),
+				)
+			),
 			'pages'   => array(
 				'name'        => __( 'Event Archive Pages', 'gatherpress' ),
 				'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
