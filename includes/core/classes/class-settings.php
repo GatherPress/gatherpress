@@ -88,7 +88,7 @@ class Settings {
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
-		add_action( 'gatherpress_text_after', array ( $this, 'datetime_preview' ), 10, 2 );
+		add_action( 'gatherpress_text_after', array( $this, 'datetime_preview' ), 10, 2 );
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 	}
 
@@ -296,7 +296,7 @@ class Settings {
 				'value'       => $value,
 				'label'       => $option_settings['field']['label'] ?? '',
 				'size'        => $option_settings['field']['size'] ?? 'regular',
-				'description' => $option_settings['field']['description'] ?? '',
+				'description' => $option_settings['description'] ?? '',
 			),
 			true
 		);
@@ -328,7 +328,7 @@ class Settings {
 				'value'       => $value,
 				'label'       => $option_settings['field']['label'] ?? '',
 				'size'        => $option_settings['field']['size'] ?? 'regular',
-				'description' => $option_settings['field']['description'] ?? '',
+				'description' => $option_settings['description'] ?? '',
 			),
 			true
 		);
@@ -360,7 +360,7 @@ class Settings {
 				'option'      => Utility::prefix_key( $option ),
 				'value'       => $value,
 				'label'       => $option_settings['field']['label'] ?? '',
-				'description' => $option_settings['field']['description'] ?? '',
+				'description' => $option_settings['description'] ?? '',
 			),
 			true
 		);
@@ -391,7 +391,7 @@ class Settings {
 				'name'          => $name,
 				'option'        => Utility::prefix_key( $option ),
 				'value'         => $value,
-				'description'   => $option_settings['field']['description'] ?? '',
+				'description'   => $option_settings['description'] ?? '',
 				'field_options' => $option_settings['field']['options'] ?? array(),
 			),
 			true
@@ -611,13 +611,25 @@ class Settings {
 		return (string) $submenu;
 	}
 
-	public function datetime_preview( $name, $value ): void {
+	/**
+	 * Display a preview of the formatted datetime based on the specified name and value.
+	 *
+	 * This method is used to display a preview of the formatted datetime based on the specified
+	 * name and value.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $name  The name of the datetime format option.
+	 * @param string $value The value of the datetime format option.
+	 * @return void
+	 */
+	public function datetime_preview( string $name, string $value ): void {
 		if (
 			'gp_general[formatting][date_format]' === $name ||
 			'gp_general[formatting][time_format]' === $name
 		) {
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/settings/partials/datetime_preview.php', GATHERPRESS_CORE_PATH ),
+				sprintf( '%s/includes/templates/admin/settings/partials/datetime-preview.php', GATHERPRESS_CORE_PATH ),
 				array(
 					'name'  => $name,
 					'value' => $value,

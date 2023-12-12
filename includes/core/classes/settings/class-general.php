@@ -57,7 +57,7 @@ class General extends Base {
 	 */
 	protected function get_section(): array {
 		return array(
-			'general' => array(
+			'general'    => array(
 				'name'        => __( 'General Settings', 'gatherpress' ),
 				'description' => __(
 					'GatherPress allows you to set event dates to reflect either the post date or event date. Default: event date.',
@@ -95,7 +95,7 @@ class General extends Base {
 				'name'        => __( 'Date & Time Formatting', 'gatherpress' ),
 				'description' => __( '<a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.', 'gatherpress' ),
 				'options'     => array(
-					'date_format' => array(
+					'date_format'   => array(
 						'labels' => array(
 							'name' => __( 'Date Format', 'gatherpress' ),
 						),
@@ -108,7 +108,7 @@ class General extends Base {
 							),
 						),
 					),
-					'time_format' => array(
+					'time_format'   => array(
 						'labels' => array(
 							'name' => __( 'Time Format', 'gatherpress' ),
 						),
@@ -121,7 +121,7 @@ class General extends Base {
 							),
 						),
 					),
-					'show_timezone'  => array(
+					'show_timezone' => array(
 						'labels' => array(
 							'name' => __( 'Show Timezone', 'gatherpress' ),
 						),
@@ -133,9 +133,9 @@ class General extends Base {
 							),
 						),
 					),
-				)
+				),
 			),
-			'pages'   => array(
+			'pages'      => array(
 				'name'        => __( 'Event Archive Pages', 'gatherpress' ),
 				'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
 				'options'     => array(

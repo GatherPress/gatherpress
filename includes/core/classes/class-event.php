@@ -236,7 +236,7 @@ class Event {
 	 * @return string The formatted display date and time or an em dash if not available.
 	 */
 	public function get_display_datetime(): string {
-		$settings = Settings::get_instance();
+		$settings    = Settings::get_instance();
 		$date_format = $settings->get_value( 'general', 'formatting', 'date_format' );
 		$time_format = $settings->get_value( 'general', 'formatting', 'time_format' );
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
