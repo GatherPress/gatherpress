@@ -3,6 +3,7 @@
  */
 /**
  * Login user flow
+ *
  * @param {*} root0
  * @param {*} root0.page
  * @param {*} root0.username
@@ -21,7 +22,7 @@ const login = async ({
 	await page.getByLabel('Username or Email Address').fill(username);
 
 	await page.getByLabel('Password', { exact: true }).isVisible();
-
+	await page.getByLabel('Password', { exact: true }).fill(password);
 
 	await page.getByRole('button', { name: 'Log In' }).click();
 };
