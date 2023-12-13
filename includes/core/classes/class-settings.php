@@ -89,6 +89,7 @@ class Settings {
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
 		add_action( 'gatherpress_text_after', array( $this, 'datetime_preview' ), 10, 2 );
+
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 	}
 

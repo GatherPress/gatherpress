@@ -93,7 +93,7 @@ class General extends Base {
 			),
 			'formatting' => array(
 				'name'        => __( 'Date & Time Formatting', 'gatherpress' ),
-				'description' => __( '<a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.', 'gatherpress' ),
+				'description' => __( 'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.', 'gatherpress' ),
 				'options'     => array(
 					'date_format'   => array(
 						'labels' => array(
