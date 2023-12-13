@@ -16,10 +16,7 @@ test.describe(' e2e test for venue through admin side', () => {
 		await page.getByRole('link', { name: 'Venues' }).click();
 		await page.screenshot({ path: 'vanue-page.png' });
 
-		await page
-			.locator('#wpbody-content')
-			.getByRole('link', { name: 'Add New' })
-			.click();
+		await page.locator('#wpbody-content').getByRole('link', { name: 'Add New' }).click();
 
 		await page.getByLabel('Add title').isVisible();
 		await page.getByLabel('Add title').fill('Test venue');
@@ -28,9 +25,7 @@ test.describe(' e2e test for venue through admin side', () => {
 		const venue = await page.$('.gp-venue__name');
 		await venue.press('Backspace');
 
-		await page
-			.getByLabel('Empty block; start writing or')
-			.fill('test venue information');
+		await page.getByLabel('Empty block; start writing or').fill('test venue information');
 
 		await page.getByLabel('Toggle block inserter').click();
 		await page.getByRole('option', { name: 'Paragraph' }).click();
