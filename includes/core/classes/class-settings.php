@@ -88,6 +88,7 @@ class Settings {
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
+		add_action( 'gatherpress_text_after', array( $this, 'datetime_preview' ), 10, 2 );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 	}
@@ -413,8 +414,9 @@ class Settings {
 	 * @return mixed The value of the option or its default value.
 	 */
 	public function get_value( string $sub_page, string $section = '', string $option = '' ) {
-		$options = $this->get_options( $sub_page );
-		$default = $this->get_default_value( $sub_page, $section, $option );
+		$sub_page = Utility::prefix_key( $sub_page );
+		$options  = $this->get_options( $sub_page );
+		$default  = $this->get_default_value( $sub_page, $section, $option );
 
 		return (
 			isset( $options[ $section ][ $option ] )
@@ -608,6 +610,34 @@ class Settings {
 		}
 
 		return (string) $submenu;
+	}
+
+	/**
+	 * Display a preview of the formatted datetime based on the specified name and value.
+	 *
+	 * This method is used to display a preview of the formatted datetime based on the specified
+	 * name and value.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $name  The name of the datetime format option.
+	 * @param string $value The value of the datetime format option.
+	 * @return void
+	 */
+	public function datetime_preview( string $name, string $value ): void {
+		if (
+			'gp_general[formatting][date_format]' === $name ||
+			'gp_general[formatting][time_format]' === $name
+		) {
+			Utility::render_template(
+				sprintf( '%s/includes/templates/admin/settings/partials/datetime-preview.php', GATHERPRESS_CORE_PATH ),
+				array(
+					'name'  => $name,
+					'value' => $value,
+				),
+				true
+			);
+		}
 	}
 
 }

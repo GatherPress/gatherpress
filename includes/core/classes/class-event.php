@@ -236,12 +236,17 @@ class Event {
 	 * @return string The formatted display date and time or an em dash if not available.
 	 */
 	public function get_display_datetime(): string {
+		$settings    = Settings::get_instance();
+		$date_format = $settings->get_value( 'general', 'formatting', 'date_format' );
+		$time_format = $settings->get_value( 'general', 'formatting', 'time_format' );
+		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
+
 		if ( $this->is_same_date() ) {
-			$start = $this->get_datetime_start( 'l, F j, Y g:i A' );
-			$end   = $this->get_datetime_end( 'g:i A T' );
+			$start = $this->get_datetime_start( $date_format . ' ' . $time_format );
+			$end   = $this->get_datetime_end( $time_format . $timezone );
 		} else {
-			$start = $this->get_datetime_start( 'l, F j, Y, g:i A' );
-			$end   = $this->get_datetime_end( 'l, F j, Y, g:i A T' );
+			$start = $this->get_datetime_start( $date_format . ', ' . $time_format );
+			$end   = $this->get_datetime_end( $date_format . ', ' . $time_format . $timezone );
 		}
 
 		if ( ! empty( $start ) && ! empty( $end ) ) {
