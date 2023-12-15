@@ -27,7 +27,7 @@ if ( ! isset( $name, $label, $option, $value, $description, $size ) ) {
 	<?php
 	if ( ! empty( $description ) ) {
 		?>
-		<p class="description"><?php echo esc_html( $description ); ?></p>
+		<p class="description"><?php echo wp_kses_post( $description ); ?></p>
 		<?php
 	}
 	?>

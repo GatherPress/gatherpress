@@ -63,7 +63,11 @@ class Utility {
 	 * @return string The key with the 'gp_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
-		return sprintf( 'gp_%s', $key );
+		if ( 0 !== strpos( $key, 'gp_' ) ) {
+			$key = sprintf( 'gp_%s', $key );
+		}
+
+		return $key;
 	}
 
 	/**

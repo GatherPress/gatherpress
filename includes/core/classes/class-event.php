@@ -236,12 +236,17 @@ class Event {
 	 * @return string The formatted display date and time or an em dash if not available.
 	 */
 	public function get_display_datetime(): string {
+		$settings    = Settings::get_instance();
+		$date_format = $settings->get_value( 'general', 'formatting', 'date_format' );
+		$time_format = $settings->get_value( 'general', 'formatting', 'time_format' );
+		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
+
 		if ( $this->is_same_date() ) {
-			$start = $this->get_datetime_start( 'l, F j, Y g:i A' );
-			$end   = $this->get_datetime_end( 'g:i A T' );
+			$start = $this->get_datetime_start( $date_format . ' ' . $time_format );
+			$end   = $this->get_datetime_end( $time_format . $timezone );
 		} else {
-			$start = $this->get_datetime_start( 'l, F j, Y, g:i A' );
-			$end   = $this->get_datetime_end( 'l, F j, Y, g:i A T' );
+			$start = $this->get_datetime_start( $date_format . ', ' . $time_format );
+			$end   = $this->get_datetime_end( $date_format . ', ' . $time_format . $timezone );
 		}
 
 		if ( ! empty( $start ) && ! empty( $end ) ) {
@@ -284,14 +289,18 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param int $offset The time offset, in minutes, to adjust the consideration of the event end time.
+	 *                    A positive value extends the period of considering the event ongoing,
+	 *                    while a negative value checks for an earlier end.
+	 *                    Default is 0, checking if the event is ongoing at the exact current time.
 	 * @return bool True if the event is in the future, false otherwise.
 	 */
-	public function has_event_started(): bool {
+	public function has_event_started( int $offset = 0 ): bool {
 		$data    = $this->get_datetime();
 		$start   = $data['datetime_start_gmt'];
 		$current = time();
 
-		return ( ! empty( $start ) && $current >= strtotime( $start ) );
+		return ( ! empty( $start ) && $current >= ( strtotime( $start ) + ( $offset * 60 ) ) );
 	}
 
 	/**
@@ -302,14 +311,17 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param int $offset The time offset, in minutes, to adjust the consideration of the event start time.
+	 *                    A positive value delays the event start, while a negative value checks for an earlier start.
+	 *                    Default is 0, checking if the event has started at the exact current time.
 	 * @return bool True if the event is in the past, false otherwise.
 	 */
-	public function has_event_past(): bool {
+	public function has_event_past( int $offset = 0 ): bool {
 		$data    = $this->get_datetime();
 		$end     = $data['datetime_end_gmt'];
-		$current = time();
+		$current = time() - ( $offset * 60 );
 
-		return ( ! empty( $end ) && $current > strtotime( $end ) );
+		return ( ! empty( $end ) && $current > ( strtotime( $end ) + ( $offset * 60 ) ) );
 	}
 
 	/**
@@ -319,10 +331,17 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param int $started_offset The time offset, in minutes, to adjust the consideration of the event start time.
+	 *                            A positive value delays the event start, while a negative value checks for an earlier start.
+	 *                            Default is 0, checking if the event has started at the exact current time.
+	 * @param int $past_offset    The time offset, in minutes, to adjust the consideration of the event end time.
+	 *                            A positive value extends the period of considering the event ongoing,
+	 *                            while a negative value checks for an earlier end.
+	 *                            Default is 0, checking if the event is ongoing at the exact current time.
 	 * @return bool True if the event has started and is not in the past, false otherwise.
 	 */
-	public function is_event_happening(): bool {
-		return $this->has_event_started() && ! $this->has_event_past();
+	public function is_event_happening( int $started_offset = 0, int $past_offset = 0 ): bool {
+		return $this->has_event_started( $started_offset ) && ! $this->has_event_past( $past_offset );
 	}
 
 	/**
@@ -923,7 +942,7 @@ class Event {
 			if (
 				! isset( $user['status'] ) ||
 				'attending' !== $user['status'] ||
-				! $this->is_event_happening()
+				! $this->is_event_happening( -5 )
 			) {
 				return '';
 			}

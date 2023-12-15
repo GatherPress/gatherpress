@@ -600,7 +600,37 @@ class Test_Event extends Base {
 
 		$output = $event->has_event_started();
 
-		$this->assertTrue( $output );
+		$this->assertTrue(
+			$output,
+			'Failed to assert that event has started.'
+		);
+
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$start->modify( '+2 minutes' );
+		$end->modify( '+2 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
+
+		$output = $event->has_event_started();
+
+		$this->assertFalse(
+			$output,
+			'Failed to assert that event has not started.'
+		);
+
+		$output = $event->has_event_started( -3 );
+
+		$this->assertTrue(
+			$output,
+			'Failed to assert that event has started with offset.'
+		);
 
 		$start = new DateTime( 'now' );
 		$end   = new DateTime( 'now' );
@@ -617,7 +647,10 @@ class Test_Event extends Base {
 
 		$output = $event->has_event_started();
 
-		$this->assertFalse( $output );
+		$this->assertFalse(
+			$output,
+			'Failed to assert that event has not started.'
+		);
 	}
 
 	/**
@@ -649,7 +682,10 @@ class Test_Event extends Base {
 
 		$output = $event->has_event_past();
 
-		$this->assertTrue( $output );
+		$this->assertTrue(
+			$output,
+			'Failed to assert that event has past.'
+		);
 
 		$start = new DateTime( 'now' );
 		$end   = new DateTime( 'now' );
@@ -667,6 +703,33 @@ class Test_Event extends Base {
 		$output = $event->has_event_past();
 
 		$this->assertFalse( $output );
+
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$start->modify( '-1 hour' );
+		$end->modify( '-1 minute' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
+
+		$output = $event->has_event_past();
+
+		$this->assertTrue(
+			$output,
+			'Failed to assert that event has past.'
+		);
+
+		$output = $event->has_event_past( 5 );
+
+		$this->assertFalse(
+			$output,
+			'Failed to assert that event has not past with offset.'
+		);
 	}
 
 	/**
@@ -697,7 +760,10 @@ class Test_Event extends Base {
 
 		$output = $event->is_event_happening();
 
-		$this->assertTrue( $output );
+		$this->assertTrue(
+			$output,
+			'Failed to assert that event is happening'
+		);
 
 		$start = new DateTime( 'now' );
 		$end   = new DateTime( 'now' );
@@ -714,7 +780,10 @@ class Test_Event extends Base {
 
 		$output = $event->is_event_happening();
 
-		$this->assertFalse( $output );
+		$this->assertFalse(
+			$output,
+			'Failed to assert event is not happening.'
+		);
 	}
 
 	/**
