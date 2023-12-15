@@ -152,8 +152,6 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin(): void {
-		$this->maybe_rename_blocks();
-		$this->maybe_rename_table();
 		$this->maybe_create_custom_table();
 		$this->add_online_event_term();
 
@@ -400,85 +398,6 @@ class Setup {
 				'post_id' => $post_id,
 			)
 		);
-	}
-
-	/**
-	 * Rename the attendees table to rsvps.
-	 *
-	 * @coverCoverageIgnore
-	 *
-	 * @todo Remove this code with 1.0.0; it's temporary to address a breaking change.
-	 *
-	 * This method renames the attendees table to rsvps, but it's intended as a temporary solution
-	 * to handle a breaking change. Evaluate whether this code can be removed in the future.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function maybe_rename_table(): void {
-		global $wpdb;
-
-		$new_table = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
-		$old_table = sprintf( '%sgp_attendees', $wpdb->prefix );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" );
-	}
-
-	/**
-	 * Rename attendance blocks to RSVP blocks.
-	 *
-	 * @codeCoverageIgnore
-	 *
-	 * @todo Remove this code with 1.0.0; it's temporary to address a breaking change.
-	 *
-	 * This method scans and updates content for all posts of specified types, replacing
-	 * occurrences of attendance-related blocks with RSVP-related blocks. It's recommended
-	 * to review and potentially remove this code once the transition is complete.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function maybe_rename_blocks(): void {
-		$posts = get_posts(
-			array(
-				'post_type'   => array( Event::POST_TYPE, Venue::POST_TYPE ),
-				'numberposts' => -1,
-				'post_status' => 'any',
-			)
-		);
-
-		if ( $posts ) {
-			foreach ( $posts as $post ) {
-				$post->post_content = str_replace(
-					'wp:gatherpress/attendance-selector',
-					'wp:gatherpress/rsvp',
-					$post->post_content
-				);
-
-				$post->post_content = str_replace(
-					'wp:gatherpress/attendance-list',
-					'wp:gatherpress/rsvp-response',
-					$post->post_content
-				);
-
-				$post->post_content = str_replace(
-					'wp:gatherpress/event-venue',
-					'wp:gatherpress/venue',
-					$post->post_content
-				);
-
-				$post->post_content = str_replace(
-					'wp:gatherpress/venue-information',
-					'wp:gatherpress/venue',
-					$post->post_content
-				);
-
-				wp_update_post( $post );
-			}
-		}
 	}
 
 	/**
