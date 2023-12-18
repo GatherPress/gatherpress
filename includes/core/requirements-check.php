@@ -11,7 +11,7 @@
 $gatherpress_activation = true;
 
 // Check the PHP version to ensure compatibility with the plugin.
-if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
+if ( version_compare( PHP_VERSION_ID, GATHERPRESS_REQUIRES_PHP, '<' ) ) {
 	add_action(
 		'admin_notices',
 		static function () {
@@ -25,7 +25,7 @@ if ( version_compare( PHP_VERSION_ID, GATHERPRESS_MINIMUM_PHP_VERSION, '<' ) ) {
 							'GatherPress requires PHP %1$s or higher. Your current PHP version is %2$s. Please upgrade.',
 							'gatherpress'
 						),
-						esc_html( GATHERPRESS_MINIMUM_PHP_VERSION ),
+						esc_html( GATHERPRESS_REQUIRES_PHP ),
 						esc_html( phpversion() )
 					);
 					?>

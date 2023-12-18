@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name:         GatherPress
- * Plugin URI:          https://gatherpress.org/
- * Description:         Powering Communities with WordPress.
- * Author:              The GatherPress Community
- * Author URI:          https://gatherpess.org/
- * Version:             0.26.0
- * Minimum PHP Version: 7.4
- * Text Domain:         gatherpress
- * License:             GPLv2 or later (license.txt)
+ * Plugin Name:  GatherPress
+ * Plugin URI:   https://gatherpress.org/
+ * Description:  Powering Communities with WordPress.
+ * Author:       The GatherPress Community
+ * Author URI:   https://gatherpess.org/
+ * Version:      0.26.0
+ * Requires PHP: 7.4
+ * Text Domain:  gatherpress
+ * License:      GPLv2 or later (license.txt)
  *
  * This file serves as the main plugin file for GatherPress. It defines the plugin's basic information,
  * constants, and initializes the plugin.
@@ -18,7 +18,7 @@
 
 // Constants.
 define( 'GATHERPRESS_VERSION', current( get_file_data( __FILE__, array( 'Version' ), 'plugin' ) ) );
-define( 'GATHERPRESS_MINIMUM_PHP_VERSION', current( get_file_data( __FILE__, array( 'Minimum PHP Version' ), 'plugin' ) ) );
+define( 'GATHERPRESS_REQUIRES_PHP', current( get_file_data( __FILE__, array( 'Requires PHP' ), 'plugin' ) ) );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
