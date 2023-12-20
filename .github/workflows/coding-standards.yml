@@ -6,20 +6,6 @@ on:
   pull_request:
 
 jobs:
-  # Runs PHP coding standards checks.
-  #
-  # Violations are reported inline with annotations.
-  #
-  # Performs the following steps:
-  # - Checks out the repository.
-  # - Configures caching for Composer.
-  # - Sets up PHP.
-  # - Logs debug information.
-  # - Installs Composer dependencies (from cache if possible).
-  # - Logs PHP_CodeSniffer debug information.
-  # - Runs PHPCS on the full codebase with warnings suppressed.
-  # - Runs PHPCS on the `tests` directory without warnings suppressed.
-  # - todo: Configure Slack notifications for failing scans.
   phpcs:
     name: PHP Coding Standards
     runs-on: ubuntu-latest
@@ -62,17 +48,6 @@ jobs:
       - name: Check test suite files for warnings
         run: vendor/bin/phpcs test --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .
 
-  # Runs the JavaScript coding standards checks.
-  #
-  # Performs the following steps:
-  # - Checks out the repository.
-  # - Logs debug information about the runner container.
-  # - Installs NodeJS 12 (todo: install the version of NPM specified in the `.nvmrc` file to support older branches)
-  # - Sets up caching for NPM.
-  # - Logs updated debug information.
-  # _ Installs NPM dependencies.
-  # - Run the WordPress JSHint checks.
-  # - todo: Configure Slack notifications for failing tests.
   jshint:
     name: JavaScript Coding Standards
     runs-on: ubuntu-latest

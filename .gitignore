@@ -43,5 +43,7 @@ coverage.xml
 # playwright #
 playwright-report/
 test-results/
+add-new-event.png
+event-page.png
 
 *.zip
