@@ -32,5 +32,8 @@ jobs:
         run: npx playwright install
 
       - name: Run Playwright
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WP_ADMIN_PASSWORD: ${{ secrets.WP_ADMIN_PASSWORD }}
         run: npm run test:e2e
         if: ${{ success() || failure() }}
