@@ -6,9 +6,7 @@ import { expect, test } from '@jest/globals';
 /**
  * Internal dependencies.
  */
-import {
-	maybeConvertUtcOffsetForDatabase
-} from '../../../../../src/helpers/datetime';
+import { maybeConvertUtcOffsetForDatabase } from '../../../../../src/helpers/datetime';
 
 /**
  * Coverage for maybeConvertUtcOffsetForDatabase.
