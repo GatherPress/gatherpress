@@ -26,6 +26,9 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
+      - name: NPM install
+        run: npm ci --legacy-peer-deps
+
       - name: Log debug information
         run: |
           npm --version
