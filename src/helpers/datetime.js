@@ -21,6 +21,14 @@ export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
 export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
 export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
 
+/**
+ * Retrieves the timezone for the application based on the provided timezone or the global setting.
+ * If the provided timezone is invalid, the default timezone is set to 'GMT'.
+ *
+ * @param {string} timezone - The timezone to be used, defaults to the global setting 'event_datetime.timezone'.
+ *
+ * @return {string} The retrieved timezone, or 'GMT' if the provided timezone is invalid.
+ */
 export const getTimeZone = (
 	timezone = getFromGlobal('event_datetime.timezone')
 ) => {
@@ -31,6 +39,14 @@ export const getTimeZone = (
 	return __('GMT', 'gatherpress');
 };
 
+/**
+ * Retrieves the UTC offset for a given timezone.
+ * If the timezone is not set to 'GMT', an empty string is returned.
+ *
+ * @param {string} timezone - The timezone for which to retrieve the UTC offset.
+ *
+ * @return {string} UTC offset without the colon if the timezone is set to 'GMT', otherwise an empty string.
+ */
 export const getUtcOffset = (timezone) => {
 	timezone = getTimeZone(timezone);
 
@@ -43,10 +59,27 @@ export const getUtcOffset = (timezone) => {
 	return maybeConvertUtcOffsetForDisplay(offset);
 };
 
+/**
+ * Converts a UTC offset string to a format suitable for display,
+ * removing the colon (:) between hours and minutes.
+ *
+ * @param {string} offset - The UTC offset string to be converted.
+ *
+ * @return {string} Converted UTC offset without the colon, suitable for display.
+ */
 export const maybeConvertUtcOffsetForDisplay = (offset = '') => {
 	return offset.replace(':', '');
 };
 
+/**
+ * Converts a UTC offset string to a standardized format suitable for database storage.
+ * The function accepts offsets in the form of 'UTC+HH:mm', 'UTC-HH:mm', 'UTC+HH', or 'UTC-HH'.
+ * The resulting format is '+HH:mm' or '-HH:mm'.
+ *
+ * @param {string} offset - The UTC offset string to be converted.
+ *
+ * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
+ */
 export const maybeConvertUtcOffsetForDatabase = (offset = '') => {
 	// Regex: https://regex101.com/r/9bMgJd/1.
 	const pattern = /^UTC(\+|-)(\d+)(.\d+)?$/;
@@ -71,6 +104,14 @@ export const maybeConvertUtcOffsetForDatabase = (offset = '') => {
 	return offset;
 };
 
+/**
+ * Converts a UTC offset string to a format suitable for dropdown selection,
+ * specifically in the format '+HH:mm' or '-HH:mm'.
+ *
+ * @param {string} offset - The UTC offset string to be converted.
+ *
+ * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
+ */
 export const maybeConvertUtcOffsetForSelect = (offset = '') => {
 	// Regex: https://regex101.com/r/nOXCPo/1
 	const pattern = /^(\+|-)(\d{2}):(00|15|30|45)$/;
