@@ -40,10 +40,16 @@ wp-core
 coverage.xml
 .env
 
-# playwright #
+# Playwright #
+##########
 playwright-report/
 test-results/
 add-new-event.png
 event-page.png
+
+# Jest / SonarCloud #
+##########
+coverage
+test-report.xml
 
 *.zip

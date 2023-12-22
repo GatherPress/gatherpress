@@ -23,7 +23,7 @@
 		"plugin-zip": "wp-scripts plugin-zip",
 		"start": "wp-scripts start",
 		"test:e2e": "playwright test --config=playwright.config.js",
-		"test:unit:js": "wp-scripts test-unit-js",
+		"test:unit:js": "wp-scripts test-unit-js --coverage --testResultsProcessor=jest-sonar-reporter",
 		"pretest:unit:php": "wp-env start --xdebug",
 		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report"
 	},
@@ -42,6 +42,7 @@
 	},
 	"homepage": "https://github.com/GatherPress/gatherpress#readme",
 	"devDependencies": {
+		"@jest/globals": "^29.7.0",
 		"@playwright/test": "^1.40.1",
 		"@wordpress/api-fetch": "^6.45.0",
 		"@wordpress/block-editor": "^12.16.0",
@@ -62,6 +63,7 @@
 		"dotenv": "^16.3.1",
 		"eslint": "^8.56.0",
 		"html-react-parser": "^5.0.9",
+		"jest-sonar-reporter": "^2.0.0",
 		"lodash": "^4.17.21",
 		"moment": "^2.29.4",
 		"playwright": "^1.40.1",
