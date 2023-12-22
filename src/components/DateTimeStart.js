@@ -51,7 +51,7 @@ const DateTimeStart = (props) => {
 				<FlexItem>{__('Start', 'gatherpress')}</FlexItem>
 				<FlexItem>
 					<Dropdown
-						position="bottom left"
+						popoverProps={{ placement: 'bottom-end' }}
 						renderToggle={({ isOpen, onToggle }) => (
 							<Button
 								onClick={onToggle}
