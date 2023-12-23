@@ -105,9 +105,7 @@ test('maybeConvertUtcOffsetForDatabase converts UTC+12 to correct format', () =>
 });
 
 test('maybeConvertUtcOffsetForDatabase does not convert default empty argument', () => {
-	const offset = '';
-
-	expect(maybeConvertUtcOffsetForDatabase(offset)).toBe('');
+	expect(maybeConvertUtcOffsetForDatabase()).toBe('');
 });
 
 /**
@@ -138,9 +136,7 @@ test('maybeConvertUtcOffsetForSelect does not convert non-pattern', () => {
 });
 
 test('maybeConvertUtcOffsetForSelect does not convert non-pattern (default empty argument)', () => {
-	const offset = '';
-
-	expect(maybeConvertUtcOffsetForSelect(offset)).toBe('');
+	expect(maybeConvertUtcOffsetForSelect()).toBe('');
 });
 
 /**
