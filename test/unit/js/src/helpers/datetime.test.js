@@ -110,3 +110,9 @@ test('maybeConvertUtcOffsetForSelect converts -01:15 to correct format', () => {
 
 	expect(maybeConvertUtcOffsetForSelect(offset)).toBe('UTC-1.25');
 });
+
+test('maybeConvertUtcOffsetForSelect does not convert non-pattern', () => {
+	const offset = 'UTC';
+
+	expect(maybeConvertUtcOffsetForSelect(offset)).toBe('UTC');
+});

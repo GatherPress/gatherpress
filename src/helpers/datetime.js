@@ -81,8 +81,8 @@ export const maybeConvertUtcOffsetForDisplay = (offset = '') => {
  * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
  */
 export const maybeConvertUtcOffsetForDatabase = (offset = '') => {
-	// Regex: https://regex101.com/r/9bMgJd/1.
-	const pattern = /^UTC(\+|-)(\d+)(.\d+)?$/;
+	// Regex: https://regex101.com/r/9bMgJd/2.
+	const pattern = /^UTC([+-])(\d+)(.\d+)?$/;
 	const sign = offset.replace(pattern, '$1');
 
 	if (sign !== offset) {
@@ -113,8 +113,8 @@ export const maybeConvertUtcOffsetForDatabase = (offset = '') => {
  * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
  */
 export const maybeConvertUtcOffsetForSelect = (offset = '') => {
-	// Regex: https://regex101.com/r/nOXCPo/1
-	const pattern = /^(\+|-)(\d{2}):(00|15|30|45)$/;
+	// Regex: https://regex101.com/r/nOXCPo/2.
+	const pattern = /^([+-])(\d{2}):(00|15|30|45)$/;
 	const sign = offset.replace(pattern, '$1');
 
 	if (sign !== offset) {
