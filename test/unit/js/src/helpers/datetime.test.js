@@ -7,6 +7,8 @@ import { expect, test } from '@jest/globals';
  * Internal dependencies.
  */
 import {
+	defaultDateTimeEnd,
+	defaultDateTimeStart,
 	getDateTimeEnd,
 	getDateTimeStart,
 	getTimeZone,
@@ -156,6 +158,16 @@ test('getDateTimeStart converts format of date/time start from global', () => {
 	expect(getDateTimeStart()).toBe('2023-12-28T12:26:00');
 });
 
+test('getDateTimeStart converts format of date/time start from default', () => {
+	global.GatherPress = {
+		event_datetime: {
+			datetime_start: '',
+		},
+	};
+
+	expect(getDateTimeStart()).toBe(defaultDateTimeStart);
+});
+
 /**
  * Coverage for getDateTimeEnd.
  */
@@ -167,4 +179,14 @@ test('getDateTimeEnd converts format of date/time end from global', () => {
 	};
 
 	expect(getDateTimeEnd()).toBe('2023-12-28T12:26:00');
+});
+
+test('getDateTimeEnd converts format of date/time end from default', () => {
+	global.GatherPress = {
+		event_datetime: {
+			datetime_end: '',
+		},
+	};
+
+	expect(getDateTimeEnd()).toBe(defaultDateTimeEnd);
 });
