@@ -71,6 +71,10 @@ test('maybeConvertUtcOffsetForDisplay converts offset correctly for display', ()
 	expect(maybeConvertUtcOffsetForDisplay(offset)).toBe('+0100');
 });
 
+test('maybeConvertUtcOffsetForDisplay does not convert with empty argument', () => {
+	expect(maybeConvertUtcOffsetForDisplay()).toBe('');
+});
+
 /**
  * Coverage for maybeConvertUtcOffsetForDatabase.
  */
