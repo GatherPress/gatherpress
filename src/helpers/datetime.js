@@ -150,7 +150,7 @@ export const defaultDateTimeEnd = moment
  * If the start date and time is not set, it defaults to a predefined value.
  * The formatted datetime is then stored in the global settings for future access.
  *
- * @returns {string} The formatted start date and time for the event.
+ * @return {string} The formatted start date and time for the event.
  */
 export const getDateTimeStart = () => {
 	let dateTime = getFromGlobal('event_datetime.datetime_start');
@@ -170,7 +170,7 @@ export const getDateTimeStart = () => {
  * If the end date and time is not set, it defaults to a predefined value.
  * The formatted datetime is then stored in the global settings for future access.
  *
- * @returns {string} The formatted end date and time for the event.
+ * @return {string} The formatted end date and time for the event.
  */
 export const getDateTimeEnd = () => {
 	let dateTime = getFromGlobal('event_datetime.datetime_end');
