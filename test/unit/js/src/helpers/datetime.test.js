@@ -7,6 +7,8 @@ import { expect, test } from '@jest/globals';
  * Internal dependencies.
  */
 import {
+	defaultDateTimeEnd,
+	defaultDateTimeStart,
 	getDateTimeEnd,
 	getDateTimeStart,
 	getTimeZone,
@@ -71,6 +73,10 @@ test('maybeConvertUtcOffsetForDisplay converts offset correctly for display', ()
 	expect(maybeConvertUtcOffsetForDisplay(offset)).toBe('+0100');
 });
 
+test('maybeConvertUtcOffsetForDisplay does not convert with empty argument', () => {
+	expect(maybeConvertUtcOffsetForDisplay()).toBe('');
+});
+
 /**
  * Coverage for maybeConvertUtcOffsetForDatabase.
  */
@@ -105,9 +111,7 @@ test('maybeConvertUtcOffsetForDatabase converts UTC+12 to correct format', () =>
 });
 
 test('maybeConvertUtcOffsetForDatabase does not convert default empty argument', () => {
-	const offset = '';
-
-	expect(maybeConvertUtcOffsetForDatabase(offset)).toBe('');
+	expect(maybeConvertUtcOffsetForDatabase()).toBe('');
 });
 
 /**
@@ -138,9 +142,7 @@ test('maybeConvertUtcOffsetForSelect does not convert non-pattern', () => {
 });
 
 test('maybeConvertUtcOffsetForSelect does not convert non-pattern (default empty argument)', () => {
-	const offset = '';
-
-	expect(maybeConvertUtcOffsetForSelect(offset)).toBe('');
+	expect(maybeConvertUtcOffsetForSelect()).toBe('');
 });
 
 /**
@@ -156,6 +158,16 @@ test('getDateTimeStart converts format of date/time start from global', () => {
 	expect(getDateTimeStart()).toBe('2023-12-28T12:26:00');
 });
 
+test('getDateTimeStart converts format of date/time start from default', () => {
+	global.GatherPress = {
+		event_datetime: {
+			datetime_start: '',
+		},
+	};
+
+	expect(getDateTimeStart()).toBe(defaultDateTimeStart);
+});
+
 /**
  * Coverage for getDateTimeEnd.
  */
@@ -167,4 +179,14 @@ test('getDateTimeEnd converts format of date/time end from global', () => {
 	};
 
 	expect(getDateTimeEnd()).toBe('2023-12-28T12:26:00');
+});
+
+test('getDateTimeEnd converts format of date/time end from default', () => {
+	global.GatherPress = {
+		event_datetime: {
+			datetime_end: '',
+		},
+	};
+
+	expect(getDateTimeEnd()).toBe(defaultDateTimeEnd);
 });
