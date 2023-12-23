@@ -7,11 +7,13 @@ import { expect, test } from '@jest/globals';
  * Internal dependencies.
  */
 import {
+	getDateTimeEnd,
+	getDateTimeStart,
 	getTimeZone,
 	getUtcOffset,
 	maybeConvertUtcOffsetForDatabase,
-	maybeConvertUtcOffsetForSelect,
 	maybeConvertUtcOffsetForDisplay,
+	maybeConvertUtcOffsetForSelect,
 } from '../../../../../src/helpers/datetime';
 
 /**
@@ -90,6 +92,24 @@ test('maybeConvertUtcOffsetForDatabase converts UTC-1.75 to correct format', () 
 	expect(maybeConvertUtcOffsetForDatabase(offset)).toBe('-01:45');
 });
 
+test('maybeConvertUtcOffsetForDatabase converts UTC-1.75 to correct format', () => {
+	const offset = 'UTC-1.75';
+
+	expect(maybeConvertUtcOffsetForDatabase(offset)).toBe('-01:45');
+});
+
+test('maybeConvertUtcOffsetForDatabase converts UTC+12 to correct format', () => {
+	const offset = 'UTC+12';
+
+	expect(maybeConvertUtcOffsetForDatabase(offset)).toBe('+12:00');
+});
+
+test('maybeConvertUtcOffsetForDatabase does not convert default empty argument', () => {
+	const offset = '';
+
+	expect(maybeConvertUtcOffsetForDatabase(offset)).toBe('');
+});
+
 /**
  * Coverage for maybeConvertUtcOffsetForSelect.
  */
@@ -115,4 +135,36 @@ test('maybeConvertUtcOffsetForSelect does not convert non-pattern', () => {
 	const offset = 'UTC';
 
 	expect(maybeConvertUtcOffsetForSelect(offset)).toBe('UTC');
+});
+
+test('maybeConvertUtcOffsetForSelect does not convert non-pattern (default empty argument)', () => {
+	const offset = '';
+
+	expect(maybeConvertUtcOffsetForSelect(offset)).toBe('');
+});
+
+/**
+ * Coverage for getDateTimeStart.
+ */
+test('getDateTimeStart converts format of date/time start from global', () => {
+	global.GatherPress = {
+		event_datetime: {
+			datetime_start: '2023-12-28 12:26:00',
+		},
+	};
+
+	expect(getDateTimeStart()).toBe('2023-12-28T12:26:00');
+});
+
+/**
+ * Coverage for getDateTimeEnd.
+ */
+test('getDateTimeEnd converts format of date/time end from global', () => {
+	global.GatherPress = {
+		event_datetime: {
+			datetime_end: '2023-12-28 12:26:00',
+		},
+	};
+
+	expect(getDateTimeEnd()).toBe('2023-12-28T12:26:00');
 });
