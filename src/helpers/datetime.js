@@ -132,6 +132,12 @@ export const maybeConvertUtcOffsetForSelect = (offset = '') => {
 	return offset;
 };
 
+/**
+ * The default start date and time for an event.
+ * It is set to the current date and time plus one day at 18:00:00 in the application's timezone.
+ *
+ * @type {string} Formatted default start date and time in the application's timezone.
+ */
 export const defaultDateTimeStart = moment
 	.tz(getTimeZone())
 	.add(1, 'day')
@@ -140,6 +146,12 @@ export const defaultDateTimeStart = moment
 	.set('second', 0)
 	.format(dateTimeMomentFormat);
 
+/**
+ * The default end date and time for an event.
+ * It is calculated based on the default start date and time plus two hours in the application's timezone.
+ *
+ * @type {string} Formatted default end date and time in the application's timezone.
+ */
 export const defaultDateTimeEnd = moment
 	.tz(defaultDateTimeStart, getTimeZone())
 	.add(2, 'hours')
@@ -185,6 +197,14 @@ export const getDateTimeEnd = () => {
 	return dateTime;
 };
 
+/**
+ * Updates the start date and time for an event, performs validation, and triggers the save functionality.
+ *
+ * @param {string}   date             - The new start date and time to be set.
+ * @param {Function} setDateTimeStart - Optional callback function to update the state or perform additional actions.
+ *
+ * @return {void}
+ */
 export const updateDateTimeStart = (date, setDateTimeStart = null) => {
 	validateDateTimeStart(date);
 
