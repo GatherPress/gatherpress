@@ -195,7 +195,18 @@ test('getDateTimeEnd converts format of date/time end from default', () => {
 /**
  * Coverage for updateDateTimeStart.
  */
-test('updateDateTimeStart', () => {
+test('updateDateTimeStart with second argument', () => {
+	const date = '2023-12-29 12:26:00';
+	const setDateTimeStart = (arg) => {
+		return arg;
+	};
+
+	updateDateTimeStart(date, setDateTimeStart);
+
+	expect(global.GatherPress.event_datetime.datetime_start).toBe(date);
+});
+
+test('updateDateTimeStart without second argument', () => {
 	const date = '2023-12-28 12:26:00';
 
 	updateDateTimeStart(date);
