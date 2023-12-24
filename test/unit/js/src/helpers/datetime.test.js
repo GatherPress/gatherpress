@@ -16,6 +16,7 @@ import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForDisplay,
 	maybeConvertUtcOffsetForSelect,
+	updateDateTimeStart,
 } from '../../../../../src/helpers/datetime';
 
 /**
@@ -189,4 +190,15 @@ test('getDateTimeEnd converts format of date/time end from default', () => {
 	};
 
 	expect(getDateTimeEnd()).toBe(defaultDateTimeEnd);
+});
+
+/**
+ * Coverage for updateDateTimeStart.
+ */
+test('updateDateTimeStart', () => {
+	const date = '2023-12-28 12:26:00';
+
+	updateDateTimeStart(date);
+
+	expect(global.GatherPress.event_datetime.datetime_start).toBe(date);
 });
