@@ -16,6 +16,7 @@ import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForDisplay,
 	maybeConvertUtcOffsetForSelect,
+	updateDateTimeEnd,
 	updateDateTimeStart,
 } from '../../../../../src/helpers/datetime';
 
@@ -212,4 +213,26 @@ test('updateDateTimeStart without second argument', () => {
 	updateDateTimeStart(date);
 
 	expect(global.GatherPress.event_datetime.datetime_start).toBe(date);
+});
+
+/**
+ * Coverage for updateDateTimeEnd.
+ */
+test('updateDateTimeEnd with second argument', () => {
+	const date = '2023-12-29 12:26:00';
+	const setDateTimeEnd = (arg) => {
+		return arg;
+	};
+
+	updateDateTimeEnd(date, setDateTimeEnd);
+
+	expect(global.GatherPress.event_datetime.datetime_end).toBe(date);
+});
+
+test('updateDateTimeEnd without second argument', () => {
+	const date = '2023-12-28 12:26:00';
+
+	updateDateTimeEnd(date);
+
+	expect(global.GatherPress.event_datetime.datetime_end).toBe(date);
 });
