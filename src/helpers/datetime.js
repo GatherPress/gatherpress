@@ -25,6 +25,8 @@ export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
  * Retrieves the timezone for the application based on the provided timezone or the global setting.
  * If the provided timezone is invalid, the default timezone is set to 'GMT'.
  *
+ * @since 1.0.0
+ *
  * @param {string} timezone - The timezone to be used, defaults to the global setting 'event_datetime.timezone'.
  *
  * @return {string} The retrieved timezone, or 'GMT' if the provided timezone is invalid.
@@ -42,6 +44,8 @@ export const getTimeZone = (
 /**
  * Retrieves the UTC offset for a given timezone.
  * If the timezone is not set to 'GMT', an empty string is returned.
+ *
+ * @since 1.0.0
  *
  * @param {string} timezone - The timezone for which to retrieve the UTC offset.
  *
@@ -63,6 +67,8 @@ export const getUtcOffset = (timezone) => {
  * Converts a UTC offset string to a format suitable for display,
  * removing the colon (:) between hours and minutes.
  *
+ * @since 1.0.0
+ *
  * @param {string} offset - The UTC offset string to be converted.
  *
  * @return {string} Converted UTC offset without the colon, suitable for display.
@@ -75,6 +81,8 @@ export const maybeConvertUtcOffsetForDisplay = (offset = '') => {
  * Converts a UTC offset string to a standardized format suitable for database storage.
  * The function accepts offsets in the form of 'UTC+HH:mm', 'UTC-HH:mm', 'UTC+HH', or 'UTC-HH'.
  * The resulting format is '+HH:mm' or '-HH:mm'.
+ *
+ * @since 1.0.0
  *
  * @param {string} offset - The UTC offset string to be converted.
  *
@@ -108,6 +116,8 @@ export const maybeConvertUtcOffsetForDatabase = (offset = '') => {
  * Converts a UTC offset string to a format suitable for dropdown selection,
  * specifically in the format '+HH:mm' or '-HH:mm'.
  *
+ * @since 1.0.0
+ *
  * @param {string} offset - The UTC offset string to be converted.
  *
  * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
@@ -136,6 +146,8 @@ export const maybeConvertUtcOffsetForSelect = (offset = '') => {
  * The default start date and time for an event.
  * It is set to the current date and time plus one day at 18:00:00 in the application's timezone.
  *
+ * @since 1.0.0
+ *
  * @type {string} Formatted default start date and time in the application's timezone.
  */
 export const defaultDateTimeStart = moment
@@ -150,6 +162,8 @@ export const defaultDateTimeStart = moment
  * The default end date and time for an event.
  * It is calculated based on the default start date and time plus two hours in the application's timezone.
  *
+ * @since 1.0.0
+ *
  * @type {string} Formatted default end date and time in the application's timezone.
  */
 export const defaultDateTimeEnd = moment
@@ -161,6 +175,8 @@ export const defaultDateTimeEnd = moment
  * Retrieves the start date and time for an event, formatted based on the plugin's timezone.
  * If the start date and time is not set, it defaults to a predefined value.
  * The formatted datetime is then stored in the global settings for future access.
+ *
+ * @since 1.0.0
  *
  * @return {string} The formatted start date and time for the event.
  */
@@ -182,6 +198,8 @@ export const getDateTimeStart = () => {
  * If the end date and time is not set, it defaults to a predefined value.
  * The formatted datetime is then stored in the global settings for future access.
  *
+ * @since 1.0.0
+ *
  * @return {string} The formatted end date and time for the event.
  */
 export const getDateTimeEnd = () => {
@@ -199,6 +217,8 @@ export const getDateTimeEnd = () => {
 
 /**
  * Updates the start date and time for an event, performs validation, and triggers the save functionality.
+ *
+ * @since 1.0.0
  *
  * @param {string}   date             - The new start date and time to be set.
  * @param {Function} setDateTimeStart - Optional callback function to update the state or perform additional actions.

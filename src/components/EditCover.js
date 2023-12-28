@@ -1,6 +1,8 @@
 /**
  * EditCover component provides an overlay for content to indicate its editability.
  *
+ * @since 1.0.0
+ *
  * @param {Object}      props            - The properties passed to the component.
  * @param {boolean}     props.isSelected - Indicates whether the content is selected for editing.
  * @param {JSX.Element} props.children   - The child elements to be rendered within the component.
