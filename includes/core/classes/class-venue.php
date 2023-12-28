@@ -104,6 +104,7 @@ class Venue {
 				'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
 			),
 			'show_in_rest' => true,
+			'rest_base'    => 'gp_venues',
 			'public'       => true,
 			'hierarchical' => false,
 			'show_in_menu' => 'edit.php?post_type=gp_event',
