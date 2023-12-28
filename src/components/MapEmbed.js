@@ -1,16 +1,34 @@
+/**
+ * MapEmbed component renders an embedded Google Map based on provided location and settings.
+ *
+ * @param {number} props             - The properties passed to the component.
+ * @param {string} props.location    - The location to be displayed on the map (address or coordinates).
+ * @param {number} [props.zoom=1]    - The zoom level of the map.
+ * @param {string} [props.type='']   - The map type (e.g., 'roadmap', 'satellite').
+ * @param {number} [props.height]    - The height of the embedded map.
+ * @param {string} [props.className] - Additional CSS class names for styling.
+ *
+ * @return {JSX.Element} The rendered MapEmbed component.
+ */
 const MapEmbed = (props) => {
-	const { location, zoom, type, height, className } = props;
+	const { location, zoom, type, className } = props;
+	let { height } = props;
+
+	if (!height) {
+		height = 300;
+	}
+
 	const style = { border: 0, height, width: '100%' };
 	const baseUrl = 'https://maps.google.com/maps';
 
 	if (!location) {
-		return '';
+		return <></>;
 	}
 
 	const params = new URLSearchParams({
 		q: location,
-		z: zoom || 1,
-		t: type,
+		z: zoom || 10,
+		t: type || 'm',
 		output: 'embed',
 	});
 
