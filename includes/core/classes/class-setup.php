@@ -13,7 +13,6 @@ namespace GatherPress\Core;
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
-use WP_CLI;
 use WP_Post;
 
 /**
@@ -55,14 +54,12 @@ class Setup {
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
 		Block::get_instance();
+		Cli::get_instance();
 		Event_Query::get_instance();
 		Rest_Api::get_instance();
 		Settings::get_instance();
 		Venue::get_instance();
 
-		if ( defined( 'WP_CLI' ) && WP_CLI ) { // @codeCoverageIgnore
-			WP_CLI::add_command( 'gatherpress', Cli::class ); // @codeCoverageIgnore
-		}
 	}
 
 	/**

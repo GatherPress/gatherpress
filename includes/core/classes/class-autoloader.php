@@ -46,8 +46,9 @@ class Autoloader {
 				array_unshift( $structure, 'includes' );
 
 				switch ( $class_type ) {
-					case 'traits':
+					case 'commands':
 					case 'settings':
+					case 'traits':
 						array_pop( $structure );
 						array_push( $structure, 'classes', $class_type );
 						break;
