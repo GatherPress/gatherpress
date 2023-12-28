@@ -15,6 +15,16 @@ import { useState } from '@wordpress/element';
 import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
+/**
+ * OnlineEvent component displays information about an online event and provides a link to the event if available.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props                             - The properties passed to the component.
+ * @param {string} [props.onlineEventLinkDefault=''] - The default link for the online event.
+ *
+ * @return {JSX.Element} The rendered OnlineEvent component.
+ */
 const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 	const text = __('Online event', 'gatherpress');
 	const [onlineEventLink, setOnlineEventLink] = useState(

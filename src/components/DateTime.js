@@ -20,6 +20,8 @@ import {
  * Formats the provided start date and time according to the specified label format
  * and returns the formatted result in the time zone configured for the plugin.
  *
+ * @since 1.0.0
+ *
  * @param {Object} props               - The properties object containing the start date and time.
  * @param {string} props.dateTimeStart - The start date and time to be formatted.
  *
@@ -34,6 +36,8 @@ export const DateTimeStartLabel = (props) => {
 /**
  * Formats the provided end date and time according to the specified label format
  * and returns the formatted result in the time zone configured for the plugin.
+ *
+ * @since 1.0.0
  *
  * @param {Object} props               - The properties object containing the end date and time.
  * @param {string} props.dateTimeStart - The end date and time to be formatted.

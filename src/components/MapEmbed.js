@@ -1,6 +1,8 @@
 /**
  * MapEmbed component renders an embedded Google Map based on provided location and settings.
  *
+ * @since 1.0.0
+ *
  * @param {number} props             - The properties passed to the component.
  * @param {string} props.location    - The location to be displayed on the map (address or coordinates).
  * @param {number} [props.zoom=1]    - The zoom level of the map.
