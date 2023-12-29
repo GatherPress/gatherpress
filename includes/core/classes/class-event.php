@@ -250,7 +250,7 @@ class Event {
 		}
 
 		if ( ! empty( $start ) && ! empty( $end ) ) {
-			return sprintf( '%s to %s', $start, $end );
+			return sprintf( __( '%s to %s', 'gatherpress' ), $start, $end );
 		}
 
 		return __( '—', 'gatherpress' );
