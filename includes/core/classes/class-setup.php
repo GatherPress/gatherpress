@@ -61,7 +61,6 @@ class Setup {
 		Rest_Api::get_instance();
 		Settings::get_instance();
 		Venue::get_instance();
-
 	}
 
 	/**

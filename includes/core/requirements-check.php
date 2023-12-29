@@ -20,7 +20,7 @@ if ( version_compare( PHP_VERSION_ID, GATHERPRESS_REQUIRES_PHP, '<' ) ) {
 				<p>
 					<?php
 					echo sprintf(
-						/* translators: %1$s: minimum PHP version, %2$s current PHP version. */
+						/* translators: %1$s: minimum PHP version, %2$s: current PHP version. */
 						esc_html__(
 							'GatherPress requires PHP %1$s or higher. Your current PHP version is %2$s. Please upgrade.',
 							'gatherpress'
