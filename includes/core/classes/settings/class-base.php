@@ -20,7 +20,6 @@ namespace GatherPress\Core\Settings;
  * @since 1.0.0
  */
 class Base {
-
 	/**
 	 * The name of the settings page.
 	 *
@@ -123,5 +122,4 @@ class Base {
 			'sections' => $this->sections,
 		);
 	}
-
 }

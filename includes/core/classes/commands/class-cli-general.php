@@ -33,6 +33,12 @@ class Cli_General extends WP_CLI {
 	 * [--version=<version>]
 	 * : Plugin version to generate.
 	 *
+	 * ## EXAMPLES
+	 *
+	 *    # Generate credits.
+	 *    $ wp gatherpress generate_credits --version=1.0.0
+	 *    Success: New latest.php file has been generated.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param array $args       Positional arguments for the script.

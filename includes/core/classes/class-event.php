@@ -23,7 +23,6 @@ use WP_Post;
  * @since 1.0.0
  */
 class Event {
-
 	/**
 	 * Cache key format for storing and retrieving event datetimes.
 	 *
@@ -951,5 +950,4 @@ class Event {
 
 		return $event_link;
 	}
-
 }

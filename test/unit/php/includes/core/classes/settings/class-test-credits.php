@@ -19,7 +19,6 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Credits
  */
 class Test_Credits extends Base {
-
 	/**
 	 * Coverage for __construct method.
 	 *
@@ -100,5 +99,4 @@ class Test_Credits extends Base {
 
 		$this->assertNotEmpty( $response, 'Failed to assert markup was returned.' );
 	}
-
 }

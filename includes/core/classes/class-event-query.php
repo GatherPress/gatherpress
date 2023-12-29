@@ -23,7 +23,9 @@ use WP_Query;
  * @since 1.0.0
  */
 class Event_Query {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -340,5 +342,4 @@ class Event_Query {
 
 		return $pieces;
 	}
-
 }

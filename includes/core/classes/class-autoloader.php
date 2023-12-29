@@ -20,7 +20,6 @@ namespace GatherPress\Core;
  * @since 1.0.0
  */
 class Autoloader {
-
 	/**
 	 * Register method for autoloader.
 	 *
@@ -70,5 +69,4 @@ class Autoloader {
 			}
 		);
 	}
-
 }

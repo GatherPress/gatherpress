@@ -23,7 +23,9 @@ use GatherPress\Core\Utility;
  * @since 1.0.0
  */
 class Leadership extends Base {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -118,5 +120,4 @@ class Leadership extends Base {
 
 		return $default;
 	}
-
 }

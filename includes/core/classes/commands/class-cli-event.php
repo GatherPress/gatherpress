@@ -1,33 +1,33 @@
 <?php
 /**
- * Class responsible for WP-CLI commands within GatherPress.
+ * Class responsible for WP-CLI commands related to events within GatherPress.
  *
- * This class handles WP-CLI commands specific to the GatherPress plugin,
- * allowing developers to interact with and manage plugin functionality via the command line.
+ * This class handles various WP-CLI commands specific to managing events in the GatherPress plugin.
+ * Developers can use these commands to interact with and manage event-related functionalities via the command line.
  *
  * @package GatherPress\Core
  * @since 1.0.0
  */
 
 namespace GatherPress\Core\Commands;
-use GatherPress\Core\Event;
 
+use GatherPress\Core\Event;
 use WP_CLI;
 
 /**
- * Class Cli.
+ * WP-CLI commands for managing events within GatherPress.
  *
- * The Cli class extends WP-CLI and provides custom WP-CLI commands
- * for interacting with and managing GatherPress functionality via the command line.
+ * This class contains WP-CLI commands specifically designed for managing events in the GatherPress plugin.
+ * Developers can use these commands to perform various actions on events, such as updating RSVP status.
  *
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 class Cli_Event extends WP_CLI {
-
 	/**
-	 * Perform actions on an event.
+	 * Update RSVP status for an event.
 	 *
-	 * This method allows you to perform various actions related to events, such as adding responses.
+	 * This WP-CLI command allows you to update the RSVP status for a user attending an event.
 	 *
 	 * ## OPTIONS
 	 *
@@ -46,10 +46,17 @@ class Cli_Event extends WP_CLI {
 	 *  - not_attending
 	 *  - waiting_list
 	 *
+	 * ## EXAMPLES
+	 *
+	 *    # Update RSVP for an event.
+	 *    $ wp gatherpress event rsvp --event_id=525 --user_id=1 --status="not_attending"
+	 *    Success: The RSVP status for Event ID "525" has been successfully set to "not_attending" for User ID "1".
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param array $args       Positional arguments for the script.
 	 * @param array $assoc_args Associative arguments for the script.
+	 *
 	 * @return void
 	 */
 	public function rsvp( array $args = array(), array $assoc_args = array() ): void {
@@ -69,5 +76,4 @@ class Cli_Event extends WP_CLI {
 			),
 		);
 	}
-
 }
