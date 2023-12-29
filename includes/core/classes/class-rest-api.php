@@ -27,7 +27,9 @@ use WP_REST_Server;
  * @since 1.0.0
  */
 class Rest_Api {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -677,5 +679,4 @@ class Rest_Api {
 
 		return $response;
 	}
-
 }

@@ -18,7 +18,6 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\General
  */
 class Test_General extends Base {
-
 	/**
 	 * Coverage for __construct method.
 	 *
@@ -67,5 +66,4 @@ class Test_General extends Base {
 			'Failed to assert pages section is an array.'
 		);
 	}
-
 }

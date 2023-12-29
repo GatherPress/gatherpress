@@ -22,7 +22,6 @@ use WP_Post;
  * @since 1.0.0
  */
 class Rsvp {
-
 	/**
 	 * Table format for RSVPs.
 	 *
@@ -413,5 +412,4 @@ class Rsvp {
 	public function sort_by_timestamp( array $first, array $second ): bool {
 		return ( strtotime( $first['timestamp'] ) < strtotime( $second['timestamp'] ) );
 	}
-
 }

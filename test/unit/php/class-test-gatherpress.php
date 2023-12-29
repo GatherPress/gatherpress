@@ -15,7 +15,6 @@ use PMC\Unit_Test\Base;
  * Class Test_GatherPress.
  */
 class Test_GatherPress extends Base {
-
 	/**
 	 * Check plugin version.
 	 *
@@ -42,5 +41,4 @@ class Test_GatherPress extends Base {
 			'Failed to assert version in gatherpress.php matches version in package.json.'
 		);
 	}
-
 }

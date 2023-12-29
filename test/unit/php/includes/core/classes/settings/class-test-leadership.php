@@ -18,7 +18,6 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Leadership
  */
 class Test_Leadership extends Base {
-
 	/**
 	 * Coverage for __construct method.
 	 *
@@ -110,5 +109,4 @@ class Test_Leadership extends Base {
 
 		delete_option( 'gp_leadership' );
 	}
-
 }

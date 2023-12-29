@@ -20,7 +20,9 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Block {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -63,5 +65,4 @@ class Block {
 			register_block_type( sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block ) );
 		}
 	}
-
 }

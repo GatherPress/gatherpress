@@ -20,7 +20,6 @@ use WP_Block_Type_Registry;
  * @coversDefaultClass \GatherPress\Core\Block
  */
 class Test_Block extends Base {
-
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -73,5 +72,4 @@ class Test_Block extends Base {
 
 		$this->assertSame( $blocks, $expected );
 	}
-
 }

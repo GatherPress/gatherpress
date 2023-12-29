@@ -24,7 +24,9 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class General extends Base {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -169,5 +171,4 @@ class General extends Base {
 			),
 		);
 	}
-
 }

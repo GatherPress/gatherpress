@@ -23,7 +23,6 @@ use WP_Post;
  * @since 1.0.0
  */
 class Event {
-
 	/**
 	 * Cache key format for storing and retrieving event datetimes.
 	 *
@@ -251,7 +250,8 @@ class Event {
 		}
 
 		if ( ! empty( $start ) && ! empty( $end ) ) {
-			return sprintf( '%s to %s', $start, $end );
+			/* translators: %1$s: start datetime, %2$s: end datetime. */
+			return sprintf( __( '%1$s to %2$s', 'gatherpress' ), $start, $end );
 		}
 
 		return __( '—', 'gatherpress' );
@@ -951,5 +951,4 @@ class Event {
 
 		return $event_link;
 	}
-
 }

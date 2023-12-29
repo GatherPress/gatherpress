@@ -18,7 +18,6 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Base
  */
 class Test_Base extends Base_Unit_Test {
-
 	/**
 	 * Coverage for setup_up method.
 	 *
@@ -75,5 +74,4 @@ class Test_Base extends Base_Unit_Test {
 		$this->assertNull( $instance->get( 'unit-test' ), 'Failed to assert property is null.' );
 		$this->assertSame( $slug, $instance->get( 'slug' ), 'Failed to assert property is unit-test.' );
 	}
-
 }

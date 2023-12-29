@@ -19,7 +19,6 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Rsvp
  */
 class Test_Rsvp extends Base {
-
 	/**
 	 * Coverage for get method.
 	 *
@@ -196,5 +195,4 @@ class Test_Rsvp extends Base {
 			'Failed to assert correct sorting of timestamp.'
 		);
 	}
-
 }
