@@ -1,8 +1,8 @@
 <?php
 /**
- * Class responsible for WP-CLI commands within GatherPress.
+ * Class responsible for registering WP-CLI commands within GatherPress.
  *
- * This class handles WP-CLI commands specific to the GatherPress plugin,
+ * This class registers WP-CLI commands specific to the GatherPress plugin,
  * allowing developers to interact with and manage plugin functionality via the command line.
  *
  * @package GatherPress\Core
@@ -13,6 +13,7 @@ namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Commands\Cli_Event;
+use GatherPress\Core\Commands\Cli_General;
 use WP_CLI;
 
 /**
@@ -27,9 +28,18 @@ class Cli {
 
 	use Singleton;
 
+	/**
+	 * Constructor for the Setup class.
+	 *
+	 * Registers WP-CLI commands for GatherPress if WP-CLI is present.
+	 *
+	 * @since 1.0.0
+	 */
 	protected function __construct() {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) { // @codeCoverageIgnore
+			WP_CLI::add_command( 'gatherpress', Cli_General::class ); // @codeCoverageIgnore
 			WP_CLI::add_command( 'gatherpress event', Cli_Event::class ); // @codeCoverageIgnore
 		}
 	}
+
 }
