@@ -272,9 +272,11 @@ class Rsvp {
 		$retval    = wp_cache_get( $cache_key );
 
 		// @todo add testing with cache.
-		if ( ! empty( $retval ) && is_array( $retval ) ) { // @codeCoverageIgnore will eventually add test to cover caching.
-			return $retval; // @codeCoverageIgnore will eventually add test to cover caching.
+		// @codeCoverageIgnoreStart
+		if ( ! empty( $retval ) && is_array( $retval ) ) {
+			return $retval;
 		}
+		// @codeCoverageIgnoreEnd
 
 		$retval = array(
 			'all' => array(
