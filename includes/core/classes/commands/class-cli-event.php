@@ -67,7 +67,7 @@ class Cli_Event extends WP_CLI {
 
 		$response = $event->rsvp->save( $user_id, $status );
 
-		WP_CLI::success(
+		static::success(
 			sprintf(
 				/* translators: %1$d: event ID, %2$s: attendance status, %3$d: user ID. */
 				__( 'The RSVP status for Event ID "%1$d" has been successfully set to "%2$s" for User ID "%3$d".', 'gatherpress' ),

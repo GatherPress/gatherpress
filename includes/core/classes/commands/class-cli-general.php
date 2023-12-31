@@ -39,6 +39,8 @@ class Cli_General extends WP_CLI {
 	 *    $ wp gatherpress generate_credits --version=1.0.0
 	 *    Success: New latest.php file has been generated.
 	 *
+	 * @codeCoverageIgnore Command is for internal purposes only.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param array $args       Positional arguments for the script.
@@ -81,6 +83,6 @@ class Cli_General extends WP_CLI {
 		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
 
-		WP_CLI::success( 'New latest.php file has been generated.' );
+		static::success( 'New latest.php file has been generated.' );
 	}
 }
