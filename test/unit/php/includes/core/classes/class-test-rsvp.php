@@ -179,8 +179,6 @@ class Test_Rsvp extends Base {
 	 * @covers ::responses
 	 * @covers ::sort_by_role
 	 *
-	 * @group foobar
-	 *
 	 * @return void
 	 */
 	public function test_responses(): void {
