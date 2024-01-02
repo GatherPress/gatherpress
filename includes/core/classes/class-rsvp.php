@@ -79,7 +79,7 @@ class Rsvp {
 	 */
 	public function __construct( int $post_id ) {
 		$this->event               = get_post( $post_id );
-		$this->max_attending_limit = Settings::get_instance()->get_value( 'gp_general', 'general', 'max_attending_limit' );
+		$this->max_attending_limit = Settings::get_instance()->get_value( 'general', 'general', 'max_attending_limit' );
 	}
 
 	/**

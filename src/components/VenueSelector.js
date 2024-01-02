@@ -65,7 +65,7 @@ const VenueSelector = () => {
 			setVenueSlug(slug);
 		}
 
-		setVenue(String(venueValue) ?? '');
+		setVenue(venueValue ? String(venueValue) : '');
 
 		setName(nameUpdated);
 		setFullAddress(fullAddressUpdated);

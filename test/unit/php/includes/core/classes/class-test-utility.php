@@ -66,7 +66,16 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_prefix_key(): void {
-		$this->assertSame( 'gp_unittest', Utility::prefix_key( 'unittest' ) );
+		$this->assertSame(
+			'gp_unittest',
+			Utility::prefix_key( 'unittest' ),
+			'Assert failed that gp_ prefix is applied.'
+		);
+		$this->assertSame(
+			'gp_unittest',
+			Utility::prefix_key( 'gp_unittest' ),
+			'Assert failed that gp_ prefix is not reapplied if it exists already.'
+		);
 	}
 
 	/**

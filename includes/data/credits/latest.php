@@ -70,6 +70,19 @@
         96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    3 => 
+    array (
+      'id' => 7586875,
+      'name' => 'Patricia BT',
+      'link' => 'https://profiles.wordpress.org/author/patricia70/',
+      'slug' => 'patricia70',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
@@ -162,6 +175,19 @@
         24 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    7 => 
+    array (
+      'id' => 21156948,
+      'name' => 'Prayag Mankar',
+      'link' => 'https://profiles.wordpress.org/author/prayagm/',
+      'slug' => 'prayagm',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),

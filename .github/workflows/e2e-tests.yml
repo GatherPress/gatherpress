@@ -1,0 +1,39 @@
+name: E2E Tests
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  playwright:
+    name: Playwright Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Log debug information
+        run: |
+          npm --version
+          node --version
+          git --version
+          php --version
+          composer --version
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v2
+        with:
+            node-version-file: '.nvmrc'
+
+      - name: NPM install
+        run: npm ci --legacy-peer-deps
+
+      - name: Playwright install
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WP_ADMIN_PASSWORD: ${{ secrets.WP_ADMIN_PASSWORD }}
+        run: npm run test:e2e
+        if: ${{ success() || failure() }}
