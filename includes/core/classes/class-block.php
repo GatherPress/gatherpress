@@ -47,6 +47,29 @@ class Block {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_blocks' ) );
+		add_filter( 'load_script_translation_file', array( $this, 'fix_translation_location' ), 10, 3 );
+	}
+
+	/**
+	 * Fix translation file location for a specific Gutenberg block.
+	 *
+	 * @todo A fix will come eventually. See Issue #1: .json-file is not loaded.
+	 *       More info: https://awhitepixel.com/how-to-translate-custom-gutenberg-blocks-with-block-json/.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $file    The current translation file path.
+	 * @param string $handle  The script or style's registered handle.
+	 * @param string $domain  The translation text domain.
+	 *
+	 * @return string The modified translation file path.
+	 */
+	public function fix_translation_location( string $file, string $handle, string $domain ): string {
+		if ( false !== strpos( $handle, 'gatherpress' ) && 'gatherpress' === $domain ) {
+			$file = str_replace( WP_LANG_DIR . '/plugins', GATHERPRESS_CORE_PATH . '/languages', $file );
+		}
+
+		return $file;
 	}
 
 	/**
