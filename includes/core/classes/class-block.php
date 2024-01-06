@@ -85,7 +85,9 @@ class Block {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
 		foreach ( $blocks as $block ) {
-			register_block_type( sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block ) );
+			register_block_type(
+				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
+			);
 		}
 	}
 }

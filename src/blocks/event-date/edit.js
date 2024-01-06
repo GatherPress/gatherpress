@@ -6,6 +6,7 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
+import { __, sprintf } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
 import { useState } from '@wordpress/element';
@@ -46,10 +47,11 @@ const displayDateTime = (start, end, tz) => {
 		endFormat = timeFormat + ' ' + timeZoneFormat;
 	}
 
-	return (
-		moment.tz(start, timeZone).format(startFormat) +
-		' to ' +
-		moment.tz(end, timeZone).format(endFormat) +
+	return sprintf(
+		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
+		__('%1$s to %2$s %3$s'),
+		moment.tz(start, timeZone).format(startFormat),
+		moment.tz(end, timeZone).format(endFormat),
 		getUtcOffset(timeZone)
 	);
 };

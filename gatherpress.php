@@ -8,6 +8,7 @@
  * Version:      0.26.0
  * Requires PHP: 7.4
  * Text Domain:  gatherpress
+ * Domain Path: /languages
  * License:      GPLv2 or later (license.txt)
  *
  * This file serves as the main plugin file for GatherPress. It defines the plugin's basic information,
