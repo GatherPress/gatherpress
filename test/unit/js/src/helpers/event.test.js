@@ -12,7 +12,7 @@ import { hasEventPast } from '../../../../../src/helpers/event';
 import { dateTimeMomentFormat } from '../../../../../src/helpers/datetime';
 
 /**
- * Coverage for getTimeZone.
+ * Coverage for hasEventPast.
  */
 test('hasEventPast returns true', () => {
 	global.GatherPress = {
