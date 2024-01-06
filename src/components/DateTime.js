@@ -4,7 +4,6 @@
 import { getSettings } from '@wordpress/date';
 import { DateTimePicker } from '@wordpress/components';
 import moment from 'moment';
-import 'moment-timezone';
 
 /**
  * Internal dependencies.
