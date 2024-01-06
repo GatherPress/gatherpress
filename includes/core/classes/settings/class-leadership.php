@@ -29,18 +29,29 @@ class Leadership extends Base {
 	use Singleton;
 
 	/**
-	 * Leadership constructor.
+	 * Get the slug for the leadership section.
 	 *
-	 * Sets up the Leadership settings page with its name, description, sections, and slug.
+	 * This method returns the slug used to identify the leadership section.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return string The slug for the leadership section.
 	 */
-	protected function __construct() {
-		parent::__construct();
+	protected function get_slug(): string {
+		return 'leadership';
+	}
 
-		$this->name     = __( 'Leadership', 'gatherpress' );
-		$this->sections = $this->get_section();
-		$this->slug     = 'leadership';
+	/**
+	 * Get the name for the leadership section.
+	 *
+	 * This method returns the localized name for the leadership section.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The localized name for the leadership section.
+	 */
+	protected function get_name(): string {
+		return __( 'Leadership', 'gatherpress' );
 	}
 
 	/**
@@ -50,7 +61,7 @@ class Leadership extends Base {
 	 *
 	 * @return array An array of sections and their settings.
 	 */
-	protected function get_section(): array {
+	protected function get_sections(): array {
 		$roles = array(
 			'organizer' => array(
 				'labels' => array(

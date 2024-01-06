@@ -193,6 +193,8 @@ class Assets {
 				$asset['version'],
 				true
 			);
+
+			wp_set_script_translations( 'gatherpress-settings', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 		}
 
 		$asset = $this->get_asset_data( 'admin' );
