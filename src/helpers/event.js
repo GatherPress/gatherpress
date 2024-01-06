@@ -24,6 +24,14 @@ export function CheckCurrentPostType() {
 	return select('core/editor').getCurrentPostType();
 }
 
+/**
+ * Check if the event has already passed.
+ *
+ * This function compares the current time with the end time of the event
+ * to determine if the event has already taken place.
+ *
+ * @return {boolean} True if the event has passed; false otherwise.
+ */
 export function hasEventPast() {
 	const dateTimeEnd = moment.tz(
 		getFromGlobal('event_datetime.datetime_end'),
