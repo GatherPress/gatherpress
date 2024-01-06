@@ -46,7 +46,8 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'init', array( $this, 'register_blocks' ) );
+		// Priority 11 needed for block.json translations of title and description.
+		add_action( 'init', array( $this, 'register_blocks' ), 11 );
 		add_filter( 'load_script_translation_file', array( $this, 'fix_translation_location' ), 10, 3 );
 	}
 
