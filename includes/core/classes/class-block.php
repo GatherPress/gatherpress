@@ -46,7 +46,8 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'init', array( $this, 'register_blocks' ) );
+		// Priority 11 needed for block.json translations of title and description.
+		add_action( 'init', array( $this, 'register_blocks' ), 11 );
 		add_filter( 'load_script_translation_file', array( $this, 'fix_translation_location' ), 10, 3 );
 	}
 
@@ -85,7 +86,9 @@ class Block {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
 		foreach ( $blocks as $block ) {
-			register_block_type( sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block ) );
+			register_block_type(
+				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
+			);
 		}
 	}
 }
