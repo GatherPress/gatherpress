@@ -34,7 +34,7 @@ class Test_Block extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
+				'priority' => 11,
 				'callback' => array( $instance, 'register_blocks' ),
 			),
 			array(
