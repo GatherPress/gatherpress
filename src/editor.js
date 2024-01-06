@@ -3,6 +3,7 @@
  */
 import domReady from '@wordpress/dom-ready';
 import { dispatch, select } from '@wordpress/data';
+import { hasEventPastNotice } from './helpers/event';
 
 /**
  * Ensure panels are open for Events.
@@ -28,4 +29,6 @@ domReady(() => {
 			'gp-event-settings/gp-event-settings'
 		);
 	}
+
+	hasEventPastNotice();
 });

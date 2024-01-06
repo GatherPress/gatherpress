@@ -20,10 +20,6 @@ export function isEventPostType() {
 	return 'gp_event' === select('core/editor').getCurrentPostType();
 }
 
-export function CheckCurrentPostType() {
-	return select('core/editor').getCurrentPostType();
-}
-
 /**
  * Check if the event has already passed.
  *
