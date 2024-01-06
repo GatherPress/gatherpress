@@ -22,20 +22,16 @@ const DateTimeRange = () => {
 
 	return (
 		<>
-			<section>
-				<h3>{__('Date & time', 'gatherpress')}</h3>
-				<DateTimeStart
-					dateTimeStart={dateTimeStart}
-					setDateTimeStart={setDateTimeStart}
-				/>
-				<DateTimeEnd
-					dateTimeEnd={dateTimeEnd}
-					setDateTimeEnd={setDateTimeEnd}
-				/>
-			</section>
-			<section>
-				<TimeZone timezone={timezone} setTimezone={setTimezone} />
-			</section>
+			<h3>{__('Date & time', 'gatherpress')}</h3>
+			<DateTimeStart
+				dateTimeStart={dateTimeStart}
+				setDateTimeStart={setDateTimeStart}
+			/>
+			<DateTimeEnd
+				dateTimeEnd={dateTimeEnd}
+				setDateTimeEnd={setDateTimeEnd}
+			/>
+			<TimeZone timezone={timezone} setTimezone={setTimezone} />
 		</>
 	);
 };

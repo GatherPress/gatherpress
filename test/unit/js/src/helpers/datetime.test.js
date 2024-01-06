@@ -9,6 +9,7 @@ import 'moment-timezone';
  */
 import {
 	convertPHPToMomentFormat,
+	dateTimeLabelFormat,
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
 	getDateTimeEnd,
@@ -21,6 +22,20 @@ import {
 	updateDateTimeEnd,
 	updateDateTimeStart,
 } from '../../../../../src/helpers/datetime';
+
+/**
+ * Coverage for dateTimeLabelFormat.
+ */
+test('dateTimeLabelFormat returns correct format', () => {
+	global.GatherPress = {
+		settings: {
+			date_format: 'F j, Y',
+			time_format: 'g:i a',
+		},
+	};
+
+	expect(dateTimeLabelFormat()).toBe('MMMM D, YYYY h:mm a');
+});
 
 /**
  * Coverage for getTimeZone.

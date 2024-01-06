@@ -18,7 +18,27 @@ import { isEventPostType, triggerEventCommuncation } from './event';
 
 export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
 export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
-export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
+
+/**
+ * Get the combined date and time format for event labels.
+ *
+ * This function retrieves the date and time formats from global settings
+ * and combines them to create a formatted label for event start and end times.
+ *
+ * @since 1.0.0
+ *
+ * @return {string} The combined date and time format for event labels.
+ */
+export const dateTimeLabelFormat = () => {
+	const dateFormat = convertPHPToMomentFormat(
+		getFromGlobal('settings.date_format')
+	);
+	const timeFormat = convertPHPToMomentFormat(
+		getFromGlobal('settings.time_format')
+	);
+
+	return dateFormat + ' ' + timeFormat;
+};
 
 /**
  * Retrieves the timezone for the application based on the provided timezone or the global setting.
@@ -366,7 +386,7 @@ export function convertPHPToMomentFormat(format) {
 		U: 'X',
 	};
 
-	return format
+	return String(format)
 		.split('')
 		.map((chr) => (chr in replacements ? replacements[chr] : chr))
 		.join('');
