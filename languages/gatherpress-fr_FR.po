@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: GatherPress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-12-15 08:38+0000\n"
-"PO-Revision-Date: 2024-01-05 07:37+0000\n"
+"PO-Revision-Date: 2024-01-06 16:08+0000\n"
 "Last-Translator: \n"
 "Language-Team: Français\n"
 "Language: fr_FR\n"
@@ -46,10 +46,11 @@ msgstr ""
 msgid "Add link to online event"
 msgstr "Ajouter un lien vers l'évènement en ligne"
 
+# Pour rester consistant avec "Ajouter un article", "Ajouter une page"
 #: includes/core/classes/class-event.php:122
 #: includes/core/classes/class-venue.php:101
 msgid "Add New"
-msgstr "Ajouter un nouveau"
+msgstr "Ajouter un évènement"
 
 #: includes/core/classes/class-event.php:121
 msgid "Add New Event"
@@ -99,7 +100,7 @@ msgstr "Participer"
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
 msgid "Attending"
-msgstr "Participe"
+msgstr "Participe(nt)"
 
 #: includes/core/classes/class-event.php:215
 msgid "Back to Topics"
@@ -212,7 +213,7 @@ msgstr "Crédits"
 #: includes/core/classes/settings/class-leadership.php:74
 msgid "Customize role labels to be more appropriate for events."
 msgstr ""
-"Personnaliser les étiquettes des rôle pour qu'elles soient plus appropriées "
+"Personnaliser les étiquettes des rôles pour qu'elles soient plus appropriées "
 "aux évènements."
 
 #: build/blocks/event-date/index.js:1 build/panels.js:1
@@ -237,7 +238,7 @@ msgstr "Date : %s"
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "Didn't Go"
-msgstr "N'a pas participé"
+msgstr "N'a ou n'ont pas participé"
 
 #: includes/templates/admin/setup/membership-check.php:19
 msgid "Dismiss forever"
@@ -423,7 +424,7 @@ msgstr "Options de taille d'image"
 
 #: includes/core/classes/settings/class-leadership.php:41
 msgid "Leadership"
-msgstr "Leadership"
+msgstr "Direction"
 
 #: build/blocks/online-event/index.js:1
 #: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
@@ -501,7 +502,7 @@ msgstr "Aucun lieu n'a été sélectionné."
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
 msgid "Not Attending"
-msgstr "Ne participe pas"
+msgstr "Ne participe(nt) pas"
 
 #: includes/core/classes/class-event.php:126
 #: includes/core/classes/class-venue.php:105
@@ -594,9 +595,10 @@ msgstr "Les communautés se développent grâce à WordPress."
 msgid "Preview:"
 msgstr "Prévisualisation :"
 
+# Pour l'instant 2 hommes, à modifier en Chef·fes si une femme rejoint les Project Leads
 #: includes/templates/admin/settings/credits/index.php:27
 msgid "Project Leaders"
-msgstr "Chef·fes de projet"
+msgstr "Chefs de projet"
 
 #: includes/core/classes/settings/class-general.php:71
 msgid "Publish Date"
@@ -608,9 +610,10 @@ msgstr "Date de publication"
 msgid "Register"
 msgstr "S’inscrire"
 
+# Par opposition à Satellite pour l'affichage de la carte
 #: build/blocks/venue/index.js:1
 msgid "Roadmap"
-msgstr "Feuille de route"
+msgstr "Plan"
 
 #: includes/core/classes/settings/class-leadership.php:73
 msgid "Roles"
@@ -719,9 +722,10 @@ msgid "Show map on venue"
 msgstr "Afficher la carte du lieu"
 
 #: includes/core/classes/settings/class-general.php:74
-msgid "Show publish date as event date for events"
+#| msgid "Show publish date as event date for events"
+msgid "Show publish date as event date for events."
 msgstr ""
-"Afficher la date de publication comme date d'évènement pour les évènements"
+"Afficher la date de publication comme date d'évènement pour les évènements."
 
 #: includes/core/classes/settings/class-general.php:128
 msgid "Show Timezone"
@@ -886,7 +890,7 @@ msgstr "Site"
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "Went"
-msgstr "A participé"
+msgstr "A ou ont participé"
 
 #: includes/core/classes/class-event.php:685
 msgid "Yahoo Calendar"
