@@ -18,7 +18,20 @@ import { isEventPostType, triggerEventCommuncation } from './event';
 
 export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
 export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
-export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
+
+// export const dateTimeLabelFormat = 'MMMM D, YYYY h:mm a';
+
+export const dateTimeLabelFormat = () => {
+	// return 'MMMM D, YYYY h:mm a';
+	const dateFormat = convertPHPToMomentFormat(
+		getFromGlobal('settings.date_format')
+	);
+	const timeFormat = convertPHPToMomentFormat(
+		getFromGlobal('settings.time_format')
+	);
+
+	return dateFormat + ' ' + timeFormat;
+};
 
 /**
  * Retrieves the timezone for the application based on the provided timezone or the global setting.

@@ -47,13 +47,18 @@ const DateTimeStart = (props) => {
 
 	return (
 		<PanelRow>
-			<Flex>
-				<FlexItem>{__('Start', 'gatherpress')}</FlexItem>
+			<Flex direction="column" gap="0">
+				<FlexItem>
+					<label htmlFor="gp-datetime-start">
+						{__('Start', 'gatherpress')}
+					</label>
+				</FlexItem>
 				<FlexItem>
 					<Dropdown
 						popoverProps={{ placement: 'bottom-end' }}
 						renderToggle={({ isOpen, onToggle }) => (
 							<Button
+								id="gp-datetime-start"
 								onClick={onToggle}
 								aria-expanded={isOpen}
 								isLink

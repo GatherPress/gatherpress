@@ -29,7 +29,9 @@ import {
 export const DateTimeStartLabel = (props) => {
 	const { dateTimeStart } = props;
 
-	return moment.tz(dateTimeStart, getTimeZone()).format(dateTimeLabelFormat);
+	return moment
+		.tz(dateTimeStart, getTimeZone())
+		.format(dateTimeLabelFormat());
 };
 
 /**
@@ -46,7 +48,7 @@ export const DateTimeStartLabel = (props) => {
 export const DateTimeEndLabel = (props) => {
 	const { dateTimeEnd } = props;
 
-	return moment.tz(dateTimeEnd, getTimeZone()).format(dateTimeLabelFormat);
+	return moment.tz(dateTimeEnd, getTimeZone()).format(dateTimeLabelFormat());
 };
 
 export const DateTimeStartPicker = (props) => {
