@@ -16,6 +16,7 @@ import { useState } from '@wordpress/element';
  */
 import { Listener } from '../../helpers/broadcasting';
 import {
+	convertPHPToMomentFormat,
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
 	getTimeZone,
@@ -23,6 +24,7 @@ import {
 } from '../../helpers/datetime';
 import EditCover from '../../components/EditCover';
 import DateTimeRange from '../../components/DateTimeRange';
+import { getFromGlobal } from '../../helpers/globals';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -33,9 +35,13 @@ import DateTimeRange from '../../components/DateTimeRange';
  * @return {string} Displayed date.
  */
 const displayDateTime = (start, end, tz) => {
-	const dateFormat = 'dddd, MMMM D, YYYY';
-	const timeFormat = 'h:mm A';
-	const timeZoneFormat = 'z';
+	const dateFormat = convertPHPToMomentFormat(
+		getFromGlobal('settings.date_format')
+	);
+	const timeFormat = convertPHPToMomentFormat(
+		getFromGlobal('settings.time_format')
+	);
+	const timeZoneFormat = getFromGlobal('settings.show_timezone') ? 'z' : '';
 	const startFormat = dateFormat + ' ' + timeFormat;
 	const timeZone = getTimeZone(tz);
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;

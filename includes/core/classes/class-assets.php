@@ -286,7 +286,9 @@ class Assets {
 			'post_id'           => $post_id,
 			'post_type'         => Event::POST_TYPE,
 			'settings'          => array(
-				// @todo settings to come...
+				'date_format'   => $settings->get_value( 'general', 'formatting', 'date_format' ),
+				'time_format'   => $settings->get_value( 'general', 'formatting', 'time_format' ),
+				'show_timezone' => ( '1' === $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
 			),
 			'login_url'         => $this->get_login_url( $post_id ),
 			'registration_url'  => $this->get_registration_url( $post_id ),

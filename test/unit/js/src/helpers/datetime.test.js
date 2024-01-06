@@ -8,6 +8,7 @@ import 'moment-timezone';
  * Internal dependencies.
  */
 import {
+	convertPHPToMomentFormat,
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
 	getDateTimeEnd,
@@ -236,4 +237,19 @@ test('updateDateTimeEnd without second argument', () => {
 	updateDateTimeEnd(date);
 
 	expect(global.GatherPress.event_datetime.datetime_end).toBe(date);
+});
+
+/**
+ * Coverage for convertPHPToMomentFormat.
+ */
+test('convertPHPToMomentFormat returns correct date format', () => {
+	const format = convertPHPToMomentFormat('F j, Y');
+
+	expect(format).toBe('MMMM D, YYYY');
+});
+
+test('convertPHPToMomentFormat returns correct time format', () => {
+	const format = convertPHPToMomentFormat('g:i a');
+
+	expect(format).toBe('h:mm a');
 });
