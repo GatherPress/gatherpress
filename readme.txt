@@ -6,7 +6,7 @@ License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 Requires PHP:      7.4
 Requires at least: 6.4
 Tested up to:      6.4
-Stable tag:        0.26.0
+Stable tag:        0.27.0
 
 GatherPress, a plugin created by and for the WordPress community, is a response to the community's desire for novel event management tools. Its agenda and roadmap align with that of the WordPress community, ensuring that it evolves in tandem with our collective wants and needs.
 
