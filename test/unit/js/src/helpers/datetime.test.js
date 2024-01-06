@@ -2,6 +2,7 @@
  * External dependencies.
  */
 import { expect, test } from '@jest/globals';
+import 'moment-timezone';
 
 /**
  * Internal dependencies.

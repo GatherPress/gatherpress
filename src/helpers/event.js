@@ -25,12 +25,12 @@ export function CheckCurrentPostType() {
 }
 
 export function hasEventPast() {
-	const dateTimeEnd = moment(getFromGlobal('event_datetime.datetime_end'));
-
-	return (
-		moment.tz(getTimeZone()).valueOf() >
-		dateTimeEnd.tz(getTimeZone()).valueOf()
+	const dateTimeEnd = moment.tz(
+		getFromGlobal('event_datetime.datetime_end'),
+		getTimeZone()
 	);
+
+	return moment.tz(getTimeZone()).valueOf() > dateTimeEnd.valueOf();
 }
 
 export function hasEventPastNotice() {

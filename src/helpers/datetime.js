@@ -2,7 +2,6 @@
  * External dependencies.
  */
 import moment from 'moment';
-import 'moment-timezone';
 
 /**
  * WordPress dependencies.
