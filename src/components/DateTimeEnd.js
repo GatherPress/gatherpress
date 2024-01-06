@@ -55,7 +55,7 @@ const DateTimeEnd = (props) => {
 				</FlexItem>
 				<FlexItem>
 					<Dropdown
-					popoverProps={{ placement: 'bottom-end' }}
+						popoverProps={{ placement: 'bottom-end' }}
 						renderToggle={({ isOpen, onToggle }) => (
 							<Button
 								id="gp-datetime-end"
