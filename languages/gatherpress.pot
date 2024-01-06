@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "POT-Creation-Date: 2024-01-05T06:11:20+00:00\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2024-01-06T16:19:50+00:00\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: gatherpress\n"
 
@@ -278,7 +278,7 @@ msgid "Publish Date"
 msgstr ""
 
 #: includes/core/classes/settings/class-general.php:74
-msgid "Show publish date as event date for events"
+msgid "Show publish date as event date for events."
 msgstr ""
 
 #: includes/core/classes/settings/class-general.php:83
