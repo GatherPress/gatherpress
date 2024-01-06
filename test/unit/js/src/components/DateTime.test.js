@@ -19,6 +19,13 @@ import {
  * Coverage for DateTimeStartLabel.
  */
 test('DateTimeStartLabel displays correct format', () => {
+	global.GatherPress = {
+		settings: {
+			date_format: 'F j, Y',
+			time_format: 'g:i a',
+		},
+	};
+
 	const props = {
 		dateTimeStart: '2023-12-28T10:26:00',
 	};
@@ -30,6 +37,13 @@ test('DateTimeStartLabel displays correct format', () => {
  * Coverage for DateTimeEndLabel.
  */
 test('DateTimeEndLabel displays correct format', () => {
+	global.GatherPress = {
+		settings: {
+			date_format: 'F j, Y',
+			time_format: 'g:i a',
+		},
+	};
+
 	const props = {
 		dateTimeEnd: '2023-12-28T10:26:00',
 	};
