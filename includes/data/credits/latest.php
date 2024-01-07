@@ -1,5 +1,5 @@
 <?php return array (
-  'version' => '0.26.0',
+  'version' => '0.27.0',
   'project-leaders' => 
   array (
     0 => 
