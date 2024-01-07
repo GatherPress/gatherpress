@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: GatherPress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-12-15 08:38+0000\n"
-"PO-Revision-Date: 2024-01-06 16:08+0000\n"
+"PO-Revision-Date: 2024-01-07 15:30+0000\n"
 "Last-Translator: \n"
 "Language-Team: Français\n"
 "Language: fr_FR\n"
@@ -79,7 +79,7 @@ msgstr "Tous les évènements"
 
 #: build/modals.js:1
 msgid "All Members"
-msgstr "Tous les membres"
+msgstr "Tous·tes les membres"
 
 #: includes/core/classes/class-event.php:206
 msgid "All Topics"
@@ -129,7 +129,7 @@ msgstr "Afficher et modifier les dates des évènements."
 #: build/blocks/rsvp-response/block.json
 msgctxt "block description"
 msgid "The block with RSVP response."
-msgstr "Le bloc avec la réponse RSVP."
+msgstr "Le bloc avec le statut RSVP."
 
 #: build/blocks/rsvp/block.json
 msgctxt "block description"
@@ -169,7 +169,7 @@ msgstr "RSVP"
 #: build/blocks/rsvp-response/block.json
 msgctxt "block title"
 msgid "RSVP Response"
-msgstr "Réponse RSVP"
+msgstr "Statut RSVP"
 
 #: build/blocks/venue/block.json
 msgctxt "block title"
@@ -205,12 +205,12 @@ msgstr "Confirmer que vous être prêt·e à envoyer ?"
 msgid "Contributors to GatherPress %s"
 msgstr "Les contributeur·rices à GatherPress %s"
 
-#: includes/core/classes/settings/class-credits.php:38
+#: includes/core/classes/settings/class-credits.php:68
 #: includes/templates/admin/settings/credits/index.php:22
 msgid "Credits"
 msgstr "Crédits"
 
-#: includes/core/classes/settings/class-leadership.php:74
+#: includes/core/classes/settings/class-leadership.php:85
 msgid "Customize role labels to be more appropriate for events."
 msgstr ""
 "Personnaliser les étiquettes des rôles pour qu'elles soient plus appropriées "
@@ -220,11 +220,11 @@ msgstr ""
 msgid "Date & time"
 msgstr "Date et heure"
 
-#: includes/core/classes/settings/class-general.php:97
+#: includes/core/classes/settings/class-general.php:119
 msgid "Date & Time Formatting"
 msgstr "Format de la date et de l'heure"
 
-#: includes/core/classes/settings/class-general.php:102
+#: includes/core/classes/settings/class-general.php:124
 msgid "Date Format"
 msgstr "Format de la date"
 
@@ -248,7 +248,7 @@ msgstr "Rejeter définitivement"
 msgid "Display the map"
 msgstr "Afficher la carte"
 
-#: includes/core/classes/settings/class-general.php:131
+#: includes/core/classes/settings/class-general.php:153
 msgid "Display the timezone for scheduled events."
 msgstr "Affiche le fuseau horaire des évènements programmés."
 
@@ -260,7 +260,7 @@ msgstr "Modifier l'évènement"
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "Edit RSVP"
-msgstr "Modifier la RSVP"
+msgstr "Modifier le statut RSVP"
 
 #: includes/core/classes/class-event.php:210
 msgid "Edit Topic"
@@ -278,13 +278,13 @@ msgstr "permettant l'enregistrement des utilisateur·rices ici"
 msgid "End"
 msgstr "Fin"
 
-#: includes/core/classes/settings/class-general.php:141
+#: includes/core/classes/settings/class-general.php:163
 msgid "Event Archive Pages"
 msgstr "Pages d'archives des évènements"
 
 #: includes/core/classes/class-setup.php:545
 msgid "Event date &amp; time"
-msgstr "Date de l'évènement et heure"
+msgstr "Date et heure de l'évènement"
 
 #: includes/templates/admin/emails/event-email.php:37
 msgid "Event Image"
@@ -307,7 +307,7 @@ msgstr "Evènements"
 msgid "For details go to %s"
 msgstr "Pour plus d'informations, voir %s"
 
-#: includes/core/classes/settings/class-general.php:98
+#: includes/core/classes/settings/class-general.php:120
 msgid ""
 "For more information read the <a href=\"https://wordpress."
 "org/documentation/article/customize-date-and-time-format/\">Documentation on "
@@ -317,11 +317,11 @@ msgstr ""
 "org/documentation/article/customize-date-and-time-format/\">documentation "
 "sur le formatage de la date et de l'heure</a>."
 
-#: includes/core/classes/settings/class-general.php:105
+#: includes/core/classes/settings/class-general.php:127
 msgid "Format of date for scheduled events."
 msgstr "Format de la date pour les évènements programmés."
 
-#: includes/core/classes/settings/class-general.php:118
+#: includes/core/classes/settings/class-general.php:140
 msgid "Format of time for scheduled events."
 msgstr "Format de l'heure pour les évènements programmés."
 
@@ -334,13 +334,13 @@ msgstr "Adresse complète"
 msgid "GatherPress"
 msgstr "GatherPress"
 
-#: includes/core/classes/settings/class-general.php:142
+#: includes/core/classes/settings/class-general.php:164
 msgid "GatherPress allows you to set event archives to pages you have created."
 msgstr ""
-"GatherPress vous permet de définir des archives d'évènements pour les pages "
+"GatherPress vous permet de définir les archives d'évènements sur des pages "
 "que vous avez créées."
 
-#: includes/core/classes/settings/class-general.php:64
+#: includes/core/classes/settings/class-general.php:86
 msgid ""
 "GatherPress allows you to set event dates to reflect either the post date or "
 "event date. Default: event date."
@@ -366,11 +366,11 @@ msgstr "Paramètres de GatherPress"
 msgid "GatherPress Team"
 msgstr "L'équipe de GatherPress"
 
-#: includes/core/classes/settings/class-general.php:43
+#: includes/core/classes/settings/class-general.php:55
 msgid "General"
 msgstr "Général"
 
-#: includes/core/classes/settings/class-general.php:63
+#: includes/core/classes/settings/class-general.php:85
 msgid "General Settings"
 msgstr "Paramètres généraux"
 
@@ -378,8 +378,9 @@ msgstr "Paramètres généraux"
 msgid "Get Involved"
 msgstr "Contribuer"
 
-#: build/blocks/event-date/index.js:1 build/blocks/venue/index.js:1
-#: build/panels.js:1
+#. translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone.
+#: build/blocks/event-date/index.js:1 build/blocks/event-date/index.js:2
+#: build/blocks/venue/index.js:1 build/editor.js:1 build/panels.js:1
 msgid "GMT"
 msgstr "GMT"
 
@@ -395,7 +396,7 @@ msgstr "invité·es"
 
 #: build/blocks/events-list/index.js:2
 msgid "Hide All RSVP Responses"
-msgstr "Masquer toutes les réponses RSVP"
+msgstr "Masquer tous les statuts RSVP"
 
 #: build/blocks/events-list/index.js:2
 msgid "Hide Description"
@@ -422,7 +423,7 @@ msgstr "iCal"
 msgid "Image Size Options"
 msgstr "Options de taille d'image"
 
-#: includes/core/classes/settings/class-leadership.php:41
+#: includes/core/classes/settings/class-leadership.php:54
 msgid "Leadership"
 msgstr "Direction"
 
@@ -456,9 +457,9 @@ msgstr "Réglages de la carte"
 msgid "Map type"
 msgstr "Type de carte"
 
-#: includes/core/classes/settings/class-general.php:83
+#: includes/core/classes/settings/class-general.php:105
 msgid "Maximum Attending Limit"
-msgstr "Limite maximale du nombre de participant·es"
+msgstr "Nombre maximal de participant·es"
 
 #: build/blocks/events-list/index.js:2
 msgid "Maximum number of events to display"
@@ -471,7 +472,7 @@ msgstr ""
 "voulez voir votre nom ici ?"
 
 #: includes/core/classes/class-rsvp.php:392
-#: includes/core/classes/settings/class-leadership.php:109
+#: includes/core/classes/settings/class-leadership.php:120
 msgid "Member"
 msgstr "Membre"
 
@@ -534,12 +535,12 @@ msgstr "Lien vers l'évènement en ligne"
 msgid "Optional message"
 msgstr "Message facultatif"
 
-#: includes/core/classes/settings/class-leadership.php:58
+#: includes/core/classes/settings/class-leadership.php:69
 msgid "Organizer"
 msgstr "Organisateur·rice"
 
-#: includes/core/classes/settings/class-leadership.php:57
-#: includes/core/classes/settings/class-leadership.php:59
+#: includes/core/classes/settings/class-leadership.php:68
+#: includes/core/classes/settings/class-leadership.php:70
 msgid "Organizers"
 msgstr "Organisateur·rices"
 
@@ -559,7 +560,7 @@ msgstr "Sujet parent :"
 msgid "Past"
 msgstr "Passé"
 
-#: includes/core/classes/settings/class-general.php:159
+#: includes/core/classes/settings/class-general.php:181
 msgid "Past Events"
 msgstr "Évènements passés"
 
@@ -600,7 +601,7 @@ msgstr "Prévisualisation :"
 msgid "Project Leaders"
 msgstr "Chefs de projet"
 
-#: includes/core/classes/settings/class-general.php:71
+#: includes/core/classes/settings/class-general.php:93
 msgid "Publish Date"
 msgstr "Date de publication"
 
@@ -615,7 +616,7 @@ msgstr "S’inscrire"
 msgid "Roadmap"
 msgstr "Plan"
 
-#: includes/core/classes/settings/class-leadership.php:73
+#: includes/core/classes/settings/class-leadership.php:84
 msgid "Roles"
 msgstr "Rôles"
 
@@ -665,11 +666,11 @@ msgstr "Voir tout"
 msgid "See fewer"
 msgstr "Voir moins"
 
-#: includes/core/classes/settings/class-leadership.php:65
+#: includes/core/classes/settings/class-leadership.php:76
 msgid "Select Organizers"
 msgstr "Sélectionner les organisateur·rices"
 
-#: includes/core/classes/settings/class-general.php:165
+#: includes/core/classes/settings/class-general.php:187
 msgid "Select Past Events Archive Page"
 msgstr "Sélectionner la page d'archives des évènements passés"
 
@@ -683,7 +684,7 @@ msgstr ""
 "Sélectionnez les destinataires de votre message en cochant les cases "
 "correspondantes."
 
-#: includes/core/classes/settings/class-general.php:152
+#: includes/core/classes/settings/class-general.php:174
 msgid "Select Upcoming Events Archive Page"
 msgstr "Sélectionner la page d'archives des évènements à venir"
 
@@ -707,7 +708,7 @@ msgstr "Paramètres"
 
 #: build/blocks/events-list/index.js:2
 msgid "Show All RSVP Responses"
-msgstr "Afficher toutes les réponses aux RSVP"
+msgstr "Afficher tous les statuts RSVP"
 
 #: build/blocks/events-list/index.js:2
 msgid "Show Description"
@@ -721,19 +722,19 @@ msgstr "Afficher l'image mise en avant"
 msgid "Show map on venue"
 msgstr "Afficher la carte du lieu"
 
-#: includes/core/classes/settings/class-general.php:74
+#: includes/core/classes/settings/class-general.php:96
 #| msgid "Show publish date as event date for events"
 msgid "Show publish date as event date for events."
 msgstr ""
 "Afficher la date de publication comme date d'évènement pour les évènements."
 
-#: includes/core/classes/settings/class-general.php:128
+#: includes/core/classes/settings/class-general.php:150
 msgid "Show Timezone"
 msgstr "Afficher le fuseau horaire"
 
 #: build/blocks/events-list/index.js:2
 msgid "Show/Hide All RSVP Responses"
-msgstr "Afficher/Masquer toutes les réponses aux RSVP"
+msgstr "Afficher/Masquer tous les statuts RSVP"
 
 #: build/blocks/events-list/index.js:2
 msgid "Show/Hide Description"
@@ -743,9 +744,10 @@ msgstr "Afficher/Masquer la description"
 msgid "Show/Hide Featured Image"
 msgstr "Afficher/Masquer l'image mise en avant"
 
+# Début de l'évènement
 #: build/blocks/event-date/index.js:1 build/panels.js:1
 msgid "Start"
-msgstr "Commencer"
+msgstr "Début"
 
 #: includes/core/classes/class-event.php:203
 msgctxt "taxonomy general name"
@@ -757,7 +759,7 @@ msgctxt "taxonomy singular name"
 msgid "Topic"
 msgstr "Sujet"
 
-#: includes/core/classes/settings/class-general.php:86
+#: includes/core/classes/settings/class-general.php:108
 msgid "The default maximum limit of attendees to an event."
 msgstr "Limite maximale par défaut du nombre de participants à un évènement."
 
@@ -784,11 +786,11 @@ msgstr "Il n'y a pas d'évènement passé"
 msgid "There are no upcoming events."
 msgstr "Il n'y a pas d'évènement à venir"
 
-#: build/blocks/event-date/index.js:1 build/panels.js:1
+#: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
 msgid "This event has already past."
 msgstr "Cet évènement est déjà passé."
 
-#: includes/core/classes/settings/class-general.php:115
+#: includes/core/classes/settings/class-general.php:137
 msgid "Time Format"
 msgstr "Format de l'heure"
 
@@ -823,7 +825,7 @@ msgstr "Sujets"
 msgid "Upcoming"
 msgstr "A venir"
 
-#: includes/core/classes/settings/class-general.php:146
+#: includes/core/classes/settings/class-general.php:168
 msgid "Upcoming Events"
 msgstr "Évènements à venir"
 
