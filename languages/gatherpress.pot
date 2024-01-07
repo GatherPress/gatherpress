@@ -2,15 +2,15 @@
 # This file is distributed under the GPLv2 or later (license.txt).
 msgid ""
 msgstr ""
-"Project-Id-Version: GatherPress 0.26.0\n"
+"Project-Id-Version: GatherPress 0.27.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/gatherpress\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-01-05T06:11:20+00:00\n"
-"PO-Revision-Date: 2024-01-06T16:19:50+00:00\n"
+"POT-Creation-Date: 2024-01-07T15:17:48+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.7.1\n"
 "X-Domain: gatherpress\n"
 
@@ -193,7 +193,7 @@ msgid "Anonymous"
 msgstr ""
 
 #: includes/core/classes/class-rsvp.php:392
-#: includes/core/classes/settings/class-leadership.php:109
+#: includes/core/classes/settings/class-leadership.php:120
 msgid "Member"
 msgstr ""
 
@@ -256,117 +256,117 @@ msgstr ""
 msgid "The RSVP status for Event ID \"%1$d\" has been successfully set to \"%2$s\" for User ID \"%3$d\"."
 msgstr ""
 
-#: includes/core/classes/settings/class-credits.php:38
+#: includes/core/classes/settings/class-credits.php:68
 #: includes/templates/admin/settings/credits/index.php:22
 msgid "Credits"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:43
+#: includes/core/classes/settings/class-general.php:55
 msgid "General"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:63
+#: includes/core/classes/settings/class-general.php:85
 msgid "General Settings"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:64
+#: includes/core/classes/settings/class-general.php:86
 msgid "GatherPress allows you to set event dates to reflect either the post date or event date. Default: event date."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:71
+#: includes/core/classes/settings/class-general.php:93
 msgid "Publish Date"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:74
+#: includes/core/classes/settings/class-general.php:96
 msgid "Show publish date as event date for events."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:83
+#: includes/core/classes/settings/class-general.php:105
 msgid "Maximum Attending Limit"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:86
+#: includes/core/classes/settings/class-general.php:108
 msgid "The default maximum limit of attendees to an event."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:97
+#: includes/core/classes/settings/class-general.php:119
 msgid "Date & Time Formatting"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:98
+#: includes/core/classes/settings/class-general.php:120
 msgid "For more information read the <a href=\"https://wordpress.org/documentation/article/customize-date-and-time-format/\">Documentation on date and time formatting</a>."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:102
+#: includes/core/classes/settings/class-general.php:124
 msgid "Date Format"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:105
+#: includes/core/classes/settings/class-general.php:127
 msgid "Format of date for scheduled events."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:115
+#: includes/core/classes/settings/class-general.php:137
 msgid "Time Format"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:118
+#: includes/core/classes/settings/class-general.php:140
 msgid "Format of time for scheduled events."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:128
+#: includes/core/classes/settings/class-general.php:150
 msgid "Show Timezone"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:131
+#: includes/core/classes/settings/class-general.php:153
 msgid "Display the timezone for scheduled events."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:141
+#: includes/core/classes/settings/class-general.php:163
 msgid "Event Archive Pages"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:142
+#: includes/core/classes/settings/class-general.php:164
 msgid "GatherPress allows you to set event archives to pages you have created."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:146
+#: includes/core/classes/settings/class-general.php:168
 msgid "Upcoming Events"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:152
+#: includes/core/classes/settings/class-general.php:174
 msgid "Select Upcoming Events Archive Page"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:159
+#: includes/core/classes/settings/class-general.php:181
 msgid "Past Events"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:165
+#: includes/core/classes/settings/class-general.php:187
 msgid "Select Past Events Archive Page"
 msgstr ""
 
-#: includes/core/classes/settings/class-leadership.php:41
+#: includes/core/classes/settings/class-leadership.php:54
 msgid "Leadership"
 msgstr ""
 
-#: includes/core/classes/settings/class-leadership.php:57
-#: includes/core/classes/settings/class-leadership.php:59
+#: includes/core/classes/settings/class-leadership.php:68
+#: includes/core/classes/settings/class-leadership.php:70
 msgid "Organizers"
 msgstr ""
 
-#: includes/core/classes/settings/class-leadership.php:58
+#: includes/core/classes/settings/class-leadership.php:69
 msgid "Organizer"
 msgstr ""
 
-#: includes/core/classes/settings/class-leadership.php:65
+#: includes/core/classes/settings/class-leadership.php:76
 msgid "Select Organizers"
 msgstr ""
 
-#: includes/core/classes/settings/class-leadership.php:73
+#: includes/core/classes/settings/class-leadership.php:84
 msgid "Roles"
 msgstr ""
 
-#: includes/core/classes/settings/class-leadership.php:74
+#: includes/core/classes/settings/class-leadership.php:85
 msgid "Customize role labels to be more appropriate for events."
 msgstr ""
 
@@ -439,12 +439,16 @@ msgid "Dismiss forever"
 msgstr ""
 
 #: build/blocks/event-date/index.js:1
+#: build/editor.js:1
 #: build/panels.js:1
 msgid "This event has already past."
 msgstr ""
 
+#. translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone.
 #: build/blocks/event-date/index.js:1
+#: build/blocks/event-date/index.js:2
 #: build/blocks/venue/index.js:1
+#: build/editor.js:1
 #: build/panels.js:1
 msgid "GMT"
 msgstr ""
