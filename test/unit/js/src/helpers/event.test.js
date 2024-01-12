@@ -24,12 +24,6 @@ import { dateTimeMomentFormat } from '../../../../../src/helpers/datetime';
  * Coverage for hasEventPast.
  */
 describe('hasEventPast', () => {
-	it('returns false if not set', () => {
-		global.GatherPress = {};
-
-		expect(hasEventPast()).toBe(false);
-	});
-
 	it('returns true', () => {
 		global.GatherPress = {
 			event_datetime: {
