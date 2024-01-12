@@ -25,6 +25,8 @@ import { dateTimeMomentFormat } from '../../../../../src/helpers/datetime';
  */
 describe('hasEventPast', () => {
 	it('returns false if not set', () => {
+		global.GatherPress = {};
+
 		expect(hasEventPast()).toBe(false);
 	});
 
