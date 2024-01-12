@@ -37,6 +37,17 @@ export function hasEventPast() {
 	return moment.tz(getTimeZone()).valueOf() > dateTimeEnd.valueOf();
 }
 
+/**
+ * Display a notice if the event has already passed.
+ *
+ * This function checks if the event has passed and displays a warning notice
+ * if so. The notice is non-dismissible to ensure the user is informed about
+ * the event status.
+ *
+ * @since 1.0.0
+ *
+ * @return {void}
+ */
 export function hasEventPastNotice() {
 	const id = 'gp_event_past';
 	const notices = dispatch('core/notices');
@@ -55,6 +66,17 @@ export function hasEventPastNotice() {
 	}
 }
 
+/**
+ * Trigger communication notice for event updates.
+ *
+ * This function checks if the event is published and not yet passed,
+ * then displays a success notice prompting the user to send an event update
+ * to members via email. The notice includes an action to compose the message.
+ *
+ * @since 1.0.0
+ *
+ * @return {void}
+ */
 export function triggerEventCommuncation() {
 	const id = 'gp_event_communcation';
 	const notices = dispatch('core/notices');

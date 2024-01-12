@@ -59,6 +59,7 @@
 		"@wordpress/element": "^5.25.0",
 		"@wordpress/eslint-plugin": "^17.5.0",
 		"@wordpress/i18n": "^4.48.0",
+		"@wordpress/notices": "^4.16.0",
 		"@wordpress/plugins": "^6.16.0",
 		"@wordpress/scripts": "^26.19.0",
 		"classnames": "^2.5.1",

@@ -1,39 +1,86 @@
 /**
  * External dependencies.
  */
-import { expect, test } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 import moment from 'moment';
 import 'moment-timezone';
 
 /**
+ * WordPress dependencies.
+ */
+import { select } from '@wordpress/data';
+import { store as noticesStore } from '@wordpress/notices';
+
+/**
  * Internal dependencies.
  */
-import { hasEventPast } from '../../../../../src/helpers/event';
+import {
+	hasEventPast,
+	hasEventPastNotice,
+} from '../../../../../src/helpers/event';
 import { dateTimeMomentFormat } from '../../../../../src/helpers/datetime';
 
 /**
  * Coverage for hasEventPast.
  */
-test('hasEventPast returns true', () => {
-	global.GatherPress = {
-		event_datetime: {
-			datetime_end: moment()
-				.subtract(1, 'days')
-				.format(dateTimeMomentFormat),
-			timezone: 'America/New_York',
-		},
-	};
+describe('hasEventPast', () => {
+	it('returns false if not set', () => {
+		expect(hasEventPast()).toBe(false);
+	});
 
-	expect(hasEventPast()).toBe(true);
+	it('returns true', () => {
+		global.GatherPress = {
+			event_datetime: {
+				datetime_end: moment()
+					.subtract(1, 'days')
+					.format(dateTimeMomentFormat),
+				timezone: 'America/New_York',
+			},
+		};
+
+		expect(hasEventPast()).toBe(true);
+	});
+
+	it('returns false', () => {
+		global.GatherPress = {
+			event_datetime: {
+				datetime_end: moment()
+					.add(1, 'days')
+					.format(dateTimeMomentFormat),
+				timezone: 'America/New_York',
+			},
+		};
+
+		expect(hasEventPast()).toBe(false);
+	});
 });
 
-test('hasEventPast returns false', () => {
-	global.GatherPress = {
-		event_datetime: {
-			datetime_end: moment().add(1, 'days').format(dateTimeMomentFormat),
-			timezone: 'America/New_York',
-		},
-	};
+/**
+ * Coverage for hasEventPastNotice.
+ */
+describe('hasEventPastNotice', () => {
+	it('no notice if not set', () => {
+		hasEventPastNotice();
 
-	expect(hasEventPast()).toBe(false);
+		const notices = select(noticesStore).getNotices();
+
+		expect(notices).toHaveLength(0);
+	});
+
+	it('notice is set', () => {
+		global.GatherPress = {
+			event_datetime: {
+				datetime_end: moment()
+					.subtract(1, 'days')
+					.format(dateTimeMomentFormat),
+				timezone: 'America/New_York',
+			},
+		};
+
+		hasEventPastNotice();
+
+		const notices = select(noticesStore).getNotices();
+
+		expect(notices[0].content).toBe('This event has already past.');
+	});
 });
