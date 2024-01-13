@@ -7,7 +7,7 @@
   "category": "gatherpress",
   "icon": "video-alt2",
   "example": {},
-  "description": "A block for events that are online.",
+  "description": "Utilized for virtual events, offering the capability to share a direct link to an event.",
   "attributes": {
     "blockId": {
       "type": "string"

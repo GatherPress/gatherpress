@@ -7,7 +7,7 @@
 	"category": "gatherpress",
 	"icon": "groups",
 	"example": {},
-	"description": "The block with RSVP response.",
+	"description": "Displays a list of members who have confirmed their attendance for an event.",
 	"attributes": {
 		"blockId": {
 			"type": "string"
