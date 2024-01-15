@@ -16,6 +16,17 @@ import { getTimeZone } from './datetime';
 import { getFromGlobal } from './globals';
 import { Broadcaster } from './broadcasting';
 
+/**
+ * Checks if the current post type is an event in the GatherPress application.
+ *
+ * This function queries the current post type using the `select` function from the `core/editor` package.
+ * It returns `true` if the current post type is 'gp_event', indicating that the post is an event,
+ * and `false` otherwise.
+ *
+ * @since 1.0.0
+ *
+ * @return {boolean} True if the current post type is 'gp_event', false otherwise.
+ */
 export function isEventPostType() {
 	return 'gp_event' === select('core/editor').getCurrentPostType();
 }

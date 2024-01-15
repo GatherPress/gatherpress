@@ -62,6 +62,25 @@ const displayDateTime = (start, end, tz) => {
 	);
 };
 
+/**
+ * Edit component for the GatherPress Event Date block.
+ *
+ * This component represents the editable view of the GatherPress Event Date block
+ * in the WordPress block editor. It manages the state of date, time, and timezone
+ * for the block and renders the user interface accordingly. The component includes
+ * an icon, displays the formatted date and time, and provides controls to edit the
+ * date and time range via the DateTimeRange component in the InspectorControls.
+ *
+ * @since 1.0.0
+ *
+ * @return {JSX.Element} The rendered Edit component for the GatherPress Event Date block.
+ *
+ * @see {@link DateTimeRange} - Component for editing date and time range.
+ * @see {@link EditCover} - Component for displaying a cover over the block.
+ * @see {@link useBlockProps} - Custom hook for block props.
+ * @see {@link displayDateTime} - Function for formatting and displaying date and time.
+ * @see {@link Listener} - Function for adding event listeners.
+ */
 const Edit = () => {
 	const blockProps = useBlockProps();
 	const [dateTimeStart, setDateTimeStart] = useState(defaultDateTimeStart);

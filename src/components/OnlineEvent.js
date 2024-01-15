@@ -16,14 +16,17 @@ import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
 /**
- * OnlineEvent component displays information about an online event and provides a link to the event if available.
+ * OnlineEvent component for GatherPress.
+ *
+ * This component is used to display information about online events, including an icon
+ * and an optional link for attendees.
  *
  * @since 1.0.0
  *
- * @param {Object} props                             - The properties passed to the component.
- * @param {string} [props.onlineEventLinkDefault=''] - The default link for the online event.
+ * @param {Object} props                             - Component properties.
+ * @param {string} [props.onlineEventLinkDefault=''] - The default online event link.
  *
- * @return {JSX.Element} The rendered OnlineEvent component.
+ * @return {JSX.Element} The rendered React component.
  */
 const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 	const text = __('Online event', 'gatherpress');

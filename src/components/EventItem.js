@@ -10,6 +10,23 @@ import Rsvp from './Rsvp';
 import RsvpResponseAvatarOnly from './RsvpResponseAvatarOnly';
 import RsvpStatusResponse from './RsvpStatusResponse';
 
+/**
+ * EventItem component for GatherPress.
+ *
+ * This component represents an individual event item in the events list.
+ * It displays various details of the event, including the featured image,
+ * date and time, title, venue, and description. It also handles RSVP and
+ * RSVP response components based on the event type.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props              - Component properties.
+ * @param {string} props.type         - The type of the event (upcoming or past).
+ * @param {Object} props.event        - The event data.
+ * @param {Object} props.eventOptions - Options for displaying the event.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const EventItem = (props) => {
 	const { type, event, eventOptions } = props;
 	const limitExcerpt = (excerpt) => {
