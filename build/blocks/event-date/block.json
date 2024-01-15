@@ -7,7 +7,7 @@
   "category": "gatherpress",
   "icon": "clock",
   "example": {},
-  "description": "Display and edit event dates.",
+  "description": "Displays the date and time for an event.",
   "attributes": {
     "eventEnd": {
       "type": "string"

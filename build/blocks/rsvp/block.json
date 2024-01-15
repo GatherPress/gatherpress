@@ -7,7 +7,7 @@
   "category": "gatherpress",
   "icon": "insert",
   "example": {},
-  "description": "The block with RSVP.",
+  "description": "Enables members to easily confirm their attendance for an event.",
   "attributes": {
     "content": {
       "type": "string"
