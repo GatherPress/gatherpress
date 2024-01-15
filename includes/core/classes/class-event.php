@@ -930,10 +930,22 @@ class Event {
 	public function maybe_get_online_event_link(): string {
 		$event_link = (string) get_post_meta( $this->event->ID, '_online_event_link', true );
 
-		if (
-			! apply_filters( 'gatherpress_force_online_event_link', false ) &&
-			! is_admin()
-		) {
+		/**
+		 * Filters whether to force the display of the online event link.
+		 *
+		 * Allows modification of the decision to force the online event link
+		 * display in the `maybe_get_online_event_link` method. Return true to
+		 * force the online event link, or false to allow normal checks.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool $force_online_event_link Whether to force the display of the online event link.
+		 *
+		 * @return bool True to force online event link, false to allow normal checks.
+		 */
+		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
+
+		if ( ! $force_online_event_link && ! is_admin() ) {
 			if ( ! $this->rsvp ) {
 				return '';
 			}

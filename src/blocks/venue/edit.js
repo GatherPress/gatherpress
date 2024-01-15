@@ -26,6 +26,22 @@ import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
 
+/**
+ * Edit component for the GatherPress Venue block.
+ *
+ * This component renders the edit view of the GatherPress Venue block in the WordPress block editor.
+ * It provides an interface for users to add and configure venue information, including map settings.
+ * The component includes controls for selecting a venue, entering venue details, and configuring map display options.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props               - Component properties.
+ * @param {Object}   props.attributes    - Block attributes.
+ * @param {Function} props.setAttributes - Function to set block attributes.
+ * @param {boolean}  props.isSelected    - Flag indicating if the block is selected in the editor.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapShow, mapZoomLevel, mapType, mapHeight } = attributes;
 	const [name, setName] = useState('');

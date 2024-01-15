@@ -19,6 +19,23 @@ import { Broadcaster } from '../helpers/broadcasting';
 import RsvpStatusResponse from './RsvpStatusResponse';
 import { getFromGlobal } from '../helpers/globals';
 
+/**
+ * Rsvp component for GatherPress.
+ *
+ * This component provides functionality for users to RSVP to events. It includes a button
+ * to open a modal for RSVP actions, handles different RSVP statuses, and updates the RSVP
+ * status and guest count accordingly. The component communicates with the server through
+ * REST API calls and broadcasts changes to other components.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props                  - Component props.
+ * @param {number} props.eventId          - The ID of the event.
+ * @param {Object} [props.currentUser=''] - Current user's RSVP information.
+ * @param {string} props.type             - Type of event ('upcoming' or 'past').
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const Rsvp = ({ eventId, currentUser = '', type }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
 	const [rsvpGuests, setRsvpGuests] = useState(currentUser.guests);

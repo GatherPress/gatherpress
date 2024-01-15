@@ -1,13 +1,16 @@
 /**
- * EditCover component provides an overlay for content to indicate its editability.
+ * EditCover component for GatherPress.
+ *
+ * This component is used to create an overlay cover for the block editor.
+ * It is typically used to visually distinguish the selected and unselected states
+ * of a block in the editor.
  *
  * @since 1.0.0
  *
- * @param {Object}      props            - The properties passed to the component.
- * @param {boolean}     props.isSelected - Indicates whether the content is selected for editing.
- * @param {JSX.Element} props.children   - The child elements to be rendered within the component.
+ * @param {Object}  props            - Component properties.
+ * @param {boolean} props.isSelected - Indicates whether the block is selected.
  *
- * @return {JSX.Element} The rendered EditCover component.
+ * @return {JSX.Element} The rendered React component.
  */
 const EditCover = (props) => {
 	const { isSelected } = props;

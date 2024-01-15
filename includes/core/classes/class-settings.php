@@ -537,6 +537,18 @@ class Settings {
 	 * @return array An array of sub-pages, each with settings and priority information.
 	 */
 	public function get_sub_pages(): array {
+		/**
+		 * Filters the list of GatherPress sub pages.
+		 *
+		 * Allows a companion plugin or theme to extend GatherPress settings
+		 * by adding additional sub pages to the settings page.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $sub_pages The array of sub pages.
+		 *
+		 * @return array Modified array of sub pages.
+		 */
 		$sub_pages = (array) apply_filters( 'gatherpress_sub_pages', array() );
 
 		uasort( $sub_pages, array( $this, 'sort_sub_pages_by_priority' ) );

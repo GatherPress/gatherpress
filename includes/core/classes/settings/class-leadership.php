@@ -79,11 +79,25 @@ class Leadership extends Base {
 			),
 		);
 
+		/**
+		 * Filter the list of roles for GatherPress.
+		 *
+		 * This filter allows modification of the list of user roles used by GatherPress.
+		 * By default, GatherPress supports only the 'Organizers' role.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $roles An array of user roles supported by GatherPress.
+		 *                     By default, it includes only the 'Organizers' role.
+		 * @return array The modified array of user roles.
+		 */
+		$roles = apply_filters( 'gatherpress_roles', $roles );
+
 		return array(
 			'roles' => array(
 				'name'        => __( 'Roles', 'gatherpress' ),
 				'description' => __( 'Customize role labels to be more appropriate for events.', 'gatherpress' ),
-				'options'     => apply_filters( 'gatherpress_roles', $roles ),
+				'options'     => $roles,
 			),
 		);
 	}

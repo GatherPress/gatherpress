@@ -11,6 +11,19 @@ import { useEffect, useState } from '@wordpress/element';
  */
 import { Broadcaster } from '../helpers/broadcasting';
 
+/**
+ * VenueSelector component for GatherPress.
+ *
+ * This component is responsible for selecting a venue for an event in the GatherPress application.
+ * It includes a dropdown menu with a list of available venues, and it updates the event's venue
+ * information based on the selected venue. It manages the state for venue-related data such as
+ * name, fullAddress, phoneNumber, website, and isOnlineEventTerm. The selected venue is stored as a
+ * term associated with the event.
+ *
+ * @since 1.0.0
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const VenueSelector = () => {
 	// eslint-disable-next-line no-unused-vars
 	const [name, setName] = useState('');

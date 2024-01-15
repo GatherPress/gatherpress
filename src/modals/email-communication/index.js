@@ -20,6 +20,17 @@ import apiFetch from '@wordpress/api-fetch';
 import { Listener } from '../../helpers/broadcasting';
 import { getFromGlobal } from '../../helpers/globals';
 
+/**
+ * A modal component for notifying event members via email.
+ *
+ * This component provides a modal for event organizers to send email notifications
+ * to specific groups of event members, such as attendees, waiting list members, or those
+ * who have not indicated attendance.
+ *
+ * @since 1.0.0
+ *
+ * @return {JSX.Element} The JSX element for the Event Communication Modal.
+ */
 const EventCommuncationModal = () => {
 	const [isOpen, setOpen] = useState(false);
 	const [isAllChecked, setAllChecked] = useState(false);

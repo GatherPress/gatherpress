@@ -12,6 +12,24 @@ import EventItem from './EventItem';
 import { getFromGlobal } from '../helpers/globals';
 import apiFetch from '@wordpress/api-fetch';
 
+/**
+ * EventsList component for GatherPress.
+ *
+ * This component displays a list of events based on the provided parameters.
+ * It retrieves the events from the server using the WordPress REST API or
+ * GatherPress custom API, depending on whether the user is logged in or not.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props                   - Component properties.
+ * @param {Object} props.eventOptions      - Options for displaying each event in the list.
+ * @param {number} props.maxNumberOfEvents - The maximum number of events to display.
+ * @param {string} props.type              - The type of events to retrieve ('upcoming' or 'past').
+ * @param {Array}  props.topics            - An array of topic objects to filter events by.
+ * @param {Array}  props.venues            - An array of venue objects to filter events by.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const EventsList = (props) => {
 	const { eventOptions, maxNumberOfEvents, type, topics, venues } = props;
 	const [events, setEvents] = useState([]);

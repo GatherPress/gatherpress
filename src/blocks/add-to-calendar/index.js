@@ -7,10 +7,21 @@ import { registerBlockType } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import edit from './edit';
-
 import metadata from './block.json';
-
 import './style.scss';
+
+/**
+ * Register the GatherPress Add to Calendar block.
+ *
+ * This code registers the GatherPress Add to Calendar block in the WordPress block editor.
+ * It utilizes the block metadata from the 'block.json' file and associates it with the
+ * edit component for rendering in the editor. The 'save' function is set to null as
+ * the block doesn't have a front-end representation and is only used in the editor.
+ *
+ * @since 1.0.0
+ *
+ * @return {void}
+ */
 
 registerBlockType(metadata, {
 	edit,
