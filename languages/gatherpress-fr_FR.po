@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: GatherPress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-12-15 08:38+0000\n"
-"PO-Revision-Date: 2024-01-07 15:30+0000\n"
+"PO-Revision-Date: 2024-01-16 14:52+0000\n"
 "Last-Translator: \n"
 "Language-Team: Français\n"
 "Language: fr_FR\n"
@@ -106,40 +106,48 @@ msgstr "Participe(nt)"
 msgid "Back to Topics"
 msgstr "Retour aux sujets"
 
-#: build/blocks/online-event/block.json
-msgctxt "block description"
-msgid "A block for events that are online."
-msgstr "Un bloc pour les évènements en ligne."
-
-#: build/blocks/events-list/block.json
-msgctxt "block description"
-msgid "A block listing events."
-msgstr "Un bloc listant les évènements."
-
 #: build/blocks/add-to-calendar/block.json
 msgctxt "block description"
-msgid "An applet block to add the event to your preferred calendar."
-msgstr "Un bloc d'applet pour ajouter l'évènement à votre calendrier préféré."
-
-#: build/blocks/event-date/block.json
-msgctxt "block description"
-msgid "Display and edit event dates."
-msgstr "Afficher et modifier les dates des évènements."
+msgid "Allows a member to add an event to their preferred calendar."
+msgstr "Permet à un membre d'ajouter un évènement à son calendrier préféré."
 
 #: build/blocks/rsvp-response/block.json
 msgctxt "block description"
-msgid "The block with RSVP response."
-msgstr "Le bloc avec le statut RSVP."
+msgid ""
+"Displays a list of members who have confirmed their attendance for an event."
+msgstr ""
+"Affiche la liste des membres qui ont confirmé leur participation à un "
+"évènement."
+
+#: build/blocks/events-list/block.json
+msgctxt "block description"
+msgid "Displays events that are either upcoming or have occurred in the past."
+msgstr "Affiche les évènements à venir ou passés."
+
+#: build/blocks/event-date/block.json
+msgctxt "block description"
+msgid "Displays the date and time for an event."
+msgstr "Affiche la date et l'heure d'un évènement."
 
 #: build/blocks/rsvp/block.json
 msgctxt "block description"
-msgid "The block with RSVP."
-msgstr "Le bloc avec RSVP."
+msgid "Enables members to easily confirm their attendance for an event."
+msgstr ""
+"Permet aux membres de confirmer facilement leur participation à un évènement."
 
 #: build/blocks/venue/block.json
 msgctxt "block description"
-msgid "The venue block."
-msgstr "Le bloc du lieu."
+msgid "Provides information about an event venue."
+msgstr "Fournit des informations sur un lieu d'évènement."
+
+#: build/blocks/online-event/block.json
+msgctxt "block description"
+msgid ""
+"Utilized for virtual events, offering the capability to share a direct link "
+"to an event."
+msgstr ""
+"Utilisé pour les évènements en ligne, il permet de partager un lien direct "
+"vers un évènement."
 
 #: build/blocks/add-to-calendar/block.json
 msgctxt "block title"
@@ -210,7 +218,7 @@ msgstr "Les contributeur·rices à GatherPress %s"
 msgid "Credits"
 msgstr "Crédits"
 
-#: includes/core/classes/settings/class-leadership.php:85
+#: includes/core/classes/settings/class-leadership.php:99
 msgid "Customize role labels to be more appropriate for events."
 msgstr ""
 "Personnaliser les étiquettes des rôles pour qu'elles soient plus appropriées "
@@ -238,7 +246,7 @@ msgstr "Date : %s"
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "Didn't Go"
-msgstr "N'a ou n'ont pas participé"
+msgstr "Membre(s) n'ayant pas participé"
 
 #: includes/templates/admin/setup/membership-check.php:19
 msgid "Dismiss forever"
@@ -472,7 +480,7 @@ msgstr ""
 "voulez voir votre nom ici ?"
 
 #: includes/core/classes/class-rsvp.php:392
-#: includes/core/classes/settings/class-leadership.php:120
+#: includes/core/classes/settings/class-leadership.php:134
 msgid "Member"
 msgstr "Membre"
 
@@ -503,7 +511,7 @@ msgstr "Aucun lieu n'a été sélectionné."
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
 msgid "Not Attending"
-msgstr "Ne participe(nt) pas"
+msgstr "Membres ne participant pas"
 
 #: includes/core/classes/class-event.php:126
 #: includes/core/classes/class-venue.php:105
@@ -616,7 +624,7 @@ msgstr "S’inscrire"
 msgid "Roadmap"
 msgstr "Plan"
 
-#: includes/core/classes/settings/class-leadership.php:84
+#: includes/core/classes/settings/class-leadership.php:98
 msgid "Roles"
 msgstr "Rôles"
 
@@ -761,7 +769,7 @@ msgstr "Sujet"
 
 #: includes/core/classes/settings/class-general.php:108
 msgid "The default maximum limit of attendees to an event."
-msgstr "Limite maximale par défaut du nombre de participants à un évènement."
+msgstr "Limite maximale par défaut du nombre de participant·es à un évènement."
 
 #. Author of the plugin
 msgid "The GatherPress Community"
@@ -892,7 +900,7 @@ msgstr "Site"
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "Went"
-msgstr "A ou ont participé"
+msgstr "Membre(s) ayant participé"
 
 #: includes/core/classes/class-event.php:685
 msgid "Yahoo Calendar"

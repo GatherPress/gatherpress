@@ -9,9 +9,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-01-07T15:17:48+00:00\n"
+"POT-Creation-Date: 2024-01-16T14:36:19+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI 2.7.1\n"
+"X-Generator: WP-CLI 2.9.0\n"
 "X-Domain: gatherpress\n"
 
 #. Plugin Name of the plugin
@@ -193,7 +193,7 @@ msgid "Anonymous"
 msgstr ""
 
 #: includes/core/classes/class-rsvp.php:392
-#: includes/core/classes/settings/class-leadership.php:120
+#: includes/core/classes/settings/class-leadership.php:134
 msgid "Member"
 msgstr ""
 
@@ -362,11 +362,11 @@ msgstr ""
 msgid "Select Organizers"
 msgstr ""
 
-#: includes/core/classes/settings/class-leadership.php:84
+#: includes/core/classes/settings/class-leadership.php:98
 msgid "Roles"
 msgstr ""
 
-#: includes/core/classes/settings/class-leadership.php:85
+#: includes/core/classes/settings/class-leadership.php:99
 msgid "Customize role labels to be more appropriate for events."
 msgstr ""
 
@@ -880,7 +880,7 @@ msgstr ""
 
 #: build/blocks/add-to-calendar/block.json
 msgctxt "block description"
-msgid "An applet block to add the event to your preferred calendar."
+msgid "Allows a member to add an event to their preferred calendar."
 msgstr ""
 
 #: build/blocks/event-date/block.json
@@ -890,7 +890,7 @@ msgstr ""
 
 #: build/blocks/event-date/block.json
 msgctxt "block description"
-msgid "Display and edit event dates."
+msgid "Displays the date and time for an event."
 msgstr ""
 
 #: build/blocks/events-list/block.json
@@ -900,7 +900,7 @@ msgstr ""
 
 #: build/blocks/events-list/block.json
 msgctxt "block description"
-msgid "A block listing events."
+msgid "Displays events that are either upcoming or have occurred in the past."
 msgstr ""
 
 #: build/blocks/online-event/block.json
@@ -910,7 +910,7 @@ msgstr ""
 
 #: build/blocks/online-event/block.json
 msgctxt "block description"
-msgid "A block for events that are online."
+msgid "Utilized for virtual events, offering the capability to share a direct link to an event."
 msgstr ""
 
 #: build/blocks/rsvp-response/block.json
@@ -920,7 +920,7 @@ msgstr ""
 
 #: build/blocks/rsvp-response/block.json
 msgctxt "block description"
-msgid "The block with RSVP response."
+msgid "Displays a list of members who have confirmed their attendance for an event."
 msgstr ""
 
 #: build/blocks/rsvp/block.json
@@ -930,7 +930,7 @@ msgstr ""
 
 #: build/blocks/rsvp/block.json
 msgctxt "block description"
-msgid "The block with RSVP."
+msgid "Enables members to easily confirm their attendance for an event."
 msgstr ""
 
 #: build/blocks/venue/block.json
@@ -940,5 +940,5 @@ msgstr ""
 
 #: build/blocks/venue/block.json
 msgctxt "block description"
-msgid "The venue block."
+msgid "Provides information about an event venue."
 msgstr ""
