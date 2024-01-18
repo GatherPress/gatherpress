@@ -1,7 +1,7 @@
 /**
- * Internal dependencies.
+ * WordPress dependencies.
  */
-import { getFromGlobal } from './globals';
+import { select } from '@wordpress/data';
 
 /**
  * Check if the current post type is a venue.
@@ -14,5 +14,5 @@ import { getFromGlobal } from './globals';
  * @return {boolean} True if the current post type is a venue; false otherwise.
  */
 export function isVenuePostType() {
-	return 'gp_venue' === getFromGlobal('post_type');
+	return 'gp_venue' === select('core/editor').getCurrentPostType();
 }
