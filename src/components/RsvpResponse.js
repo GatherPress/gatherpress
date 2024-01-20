@@ -69,6 +69,9 @@ const RsvpResponse = () => {
 
 	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
 
+	const currentUser = getFromGlobal('current_user');
+	const userIsAdmin = currentUser.is_admin;
+	
 	return (
 		<div className="gp-rsvp-response">
 			<RsvpResponseHeader
@@ -79,9 +82,11 @@ const RsvpResponse = () => {
 				setRsvpLimit={setRsvpLimit}
 				defaultLimit={defaultLimit}
 			/>
-			<Button variant="secondary" onClick={onEditClick}>
-				Edit Attendees
-			</Button>
+			{userIsAdmin && (
+				<Button variant="secondary" onClick={onEditClick}>
+					Edit Attendees
+				</Button>
+			)}
 			<RsvpResponseContent
 				items={items}
 				activeValue={rsvpStatus}

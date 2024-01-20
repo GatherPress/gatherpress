@@ -269,12 +269,16 @@ class Assets {
 	protected function localize( int $post_id ): array {
 		$event    = new Event( $post_id );
 		$settings = Settings::get_instance();
-
+		$current_user = ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
+		? $event->rsvp->get( get_current_user_id() )
+		: [];
+		$current_user['is_admin'] = false;
+		if ( current_user_can( 'edit_posts' ) ) {
+			$current_user['is_admin'] = true;
+		}	
 		return array(
 			'responses'         => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-			'current_user'      => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
-				? $event->rsvp->get( get_current_user_id() )
-				: '', // Cleanup needed.
+			'current_user'      => $current_user,
 			'is_user_logged_in' => is_user_logged_in(),
 			'default_timezone'  => sanitize_text_field( wp_timezone_string() ),
 			'event_announced'   => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
