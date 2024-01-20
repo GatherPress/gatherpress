@@ -28,14 +28,14 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 # [WIP] Documentation Outline
 
 ## Features
-- Event Scheduling: Set dates, times, and provide event information details.
+
+- Event Scheduling: set dates, times, and provide event information details.
 - Attendee registration.
 - Emailing system: to send emails to all the group members, or a specific event attendees, non-attendees, and those on the waiting list.
 - In person events: add the venue, with an optional map (refer to point 4)
 - Online event management: add the video meeting URL.
 - Multi-event management: capability to handle multiple events simultaneously.
 - Multisite environment: This setup allows for centralized management while providing flexibility for each site to host its own unique events with their settings (language, timezone, date time format) and set of users. 
-- Multisite environment: This setup allows for centralized management, providing flexibility for each site to have its specific settings (language, timezone, date-time format), its set of users and to host its unique events.
 - Works with blocks. 
 - Freedom to add content besides the default event/venue blocks, to remove default blocks, and add synced patterns (useful for adding consistent information across all events).
 
@@ -57,6 +57,7 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 
 ### 2. Settings
 Go to WP Admin > GatherPress  > Settings.
+
 You can change different settings such as:
 - Show publish date as event date for events.
 - The default maximum limit of attendees to an event.
@@ -67,7 +68,8 @@ You can change different settings such as:
 - Past Events page.
 
 ### 3. Create an Event
-Go to the WP Admin > Events
+Go to the WP Admin > Events > Add new
+
 By default, a few blocks are populated, you can keep them or delete them, you can add more blocks.
 
 - The Event date block allows you to define the start and end dates and times of your event, as well as the timezone.
@@ -79,12 +81,14 @@ By default, a few blocks are populated, you can keep them or delete them, you ca
 
 ### 4. Venues
 Go to WP Admin > GatherPress  > Venues
+
 In the Venue block, you can define:
 - The full address, telephone and website of the venue.
 - The map settings.
 
 ### 5. Topics
 Go to WP Admin > GatherPress  > Topics
+
 Topics are like post categories, but for events.
 
 
