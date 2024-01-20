@@ -17,7 +17,7 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 **GitHub Administrators**
 > [Mervin Hernandez](https://github.com/MervinHernandez) and [Mike Auteri](https://github.com/mauteri)
 
-**GatherePress.org**
+**GatherPress.org**
 > Talk to Mervin for access to `gatherpress.org` via SSH and WP Admin login.
 
 # Credits
