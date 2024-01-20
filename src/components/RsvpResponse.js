@@ -3,6 +3,7 @@
  */
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { Button } from '@wordpress/components';
 
 /**
  * Internal dependencies.
@@ -54,10 +55,16 @@ const RsvpResponse = () => {
 
 	const [rsvpStatus, setRsvpStatus] = useState(defaultStatus);
 	const [rsvpLimit, setRsvpLimit] = useState(defaultLimit);
+	const [editMode, setEditMode] = useState(false);
 
 	const onTitleClick = (e, value) => {
 		e.preventDefault();
 		setRsvpStatus(value);
+	};
+
+	const onEditClick = (e) => {
+		e.preventDefault();
+		setEditMode(!editMode);
 	};
 
 	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
@@ -72,10 +79,14 @@ const RsvpResponse = () => {
 				setRsvpLimit={setRsvpLimit}
 				defaultLimit={defaultLimit}
 			/>
+			<Button variant="secondary" onClick={onEditClick}>
+				Edit Attendees
+			</Button>
 			<RsvpResponseContent
 				items={items}
 				activeValue={rsvpStatus}
 				limit={rsvpLimit}
+				editMode={editMode}
 			/>
 		</div>
 	);
