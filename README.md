@@ -35,15 +35,16 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 - In person events: add the venue, with an optional map (refer to point 4)
 - Online event management: add the video meeting URL.
 - Multi-event management: capability to handle multiple events simultaneously.
-- Multisite environment: This setup allows for centralized management while providing flexibility for each site to host its own unique events with their settings (language, timezone, date time format) and set of users. 
+- Multisite environment: This setup allows for centralized management while providing flexibility for each site to host its own unique events with its settings (language, timezone, date time format) and set of users. 
 - Works with blocks. 
+- Fully internationalized.
 - Freedom to add content besides the default event/venue blocks, to remove default blocks, and add synced patterns (useful for adding consistent information across all events).
 
 ## Upcoming features
 
-- Ability for attendees to be listed anonymously (only administrators will see their names)
-- Allow attendees to add guests
-- Import events from meetup.com with an addon plugin (currently in development)
+- Ability for attendees to be listed anonymously (only administrators will see their names).
+- Allow attendees to add guests.
+- Import events from meetup.com with an addon plugin (currently in development).
 - Recurring events.
 - Calendar block.
 - Email notification when event starts.
@@ -51,9 +52,9 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 ## How to Use
 
 ### 1. Setup
-1. Download the plugin: you'll find the latest release on the GatherPress GitHub repository, under Releases > Assets and download gatherpress.zip
-2. Install it in your WordPress instance: go to WP Admin Plugins > Add new plugin. Choose the gatherpress.zip file you just downloaded
-3. Activate the plugin
+1. Download the plugin: you'll find the latest release on the GatherPress GitHub repository, under Releases > Assets and download gatherpress.zip.
+2. Install it in your WordPress instance: go to WP Admin Plugins > Add new plugin. Choose the gatherpress.zip file you just downloaded.
+3. Activate the plugin.
 
 ### 2. Settings
 Go to WP Admin > GatherPress  > Settings.
@@ -61,8 +62,8 @@ Go to WP Admin > GatherPress  > Settings.
 You can change different settings such as:
 - Show publish date as event date for events.
 - The default maximum limit of attendees to an event.
-- Dateformat.
-- Time format.
+- Date Format.
+- Time Format.
 - Display the timezone for scheduled events.
 - Upcoming Events page.
 - Past Events page.
