@@ -4,6 +4,7 @@
 import RsvpResponseCard from './RsvpResponseCard';
 import { getFromGlobal } from '../helpers/globals';
 import { useState } from '@wordpress/element';
+import { Autocomplete } from '@wordpress/components';
 import { Listener } from '../helpers/broadcasting';
 
 /**
@@ -34,9 +35,32 @@ const RsvpResponseContent = ({
 	const [rsvpResponse, setRsvpResponse] = useState(
 		getFromGlobal('responses')
 	);
+	const autocompleters = [
+		{
+			name: 'Attendees',
+			// The prefix that triggers this completer
+			triggerPrefix: '~',
+			// The option data
+			options: rsvpResponse.attending.responses,
+			// Returns a label for an option
+			getOptionLabel: (option) => (
+				<span>
+					<span className="icon">{option.visual}</span>
+					{option.name}
+				</span>
+			),
+			// Declares that options should be matched by their name
+			getOptionKeywords: (option) => [option.name],
+			// Declares that the Grapes option is disabled
+			isOptionDisabled: (option) => option.name === 'Grapes',
+			// Declares completions should be inserted as abbreviations
+			getOptionCompletion: (option) => (
+				<abbr title={option.name}>{option.visual}</abbr>
+			),
+		},
+	];
 
 	Listener({ setRsvpResponse }, eventId);
-
 
 	const renderedItems = items.map((item, index) => {
 		const { value } = item;
@@ -60,9 +84,9 @@ const RsvpResponseContent = ({
 					)}
 					{editMode && (
 						<div>
-							Autocomplete Component goes here Autocomplete
-							Component goes here Autocomplete Component goes here
-							Autocomplete Component goes here
+							<Autocomplete
+								completers={autocompleters}
+							></Autocomplete>
 						</div>
 					)}
 				</div>
