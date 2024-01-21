@@ -84,9 +84,19 @@ const RsvpResponseContent = ({
 					)}
 					{editMode && (
 						<div>
-							<Autocomplete
-								completers={autocompleters}
-							></Autocomplete>
+							<Autocomplete completers={autocompleters}>
+								{({ listBoxId, activeId, onChange }) => (
+									<div>
+										<input
+											onChange={onChange}
+											aria-controls={listBoxId}
+											aria-activedescendant={activeId}
+										/>
+
+										<ul id={listBoxId}></ul>
+									</div>
+								)}
+							</Autocomplete>
 						</div>
 					)}
 				</div>
