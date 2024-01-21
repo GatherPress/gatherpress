@@ -3,8 +3,8 @@ msgstr ""
 "Project-Id-Version: GatherPress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-12-15 08:38+0000\n"
-"PO-Revision-Date: 2024-01-16 14:52+0000\n"
-"Last-Translator: \n"
+"PO-Revision-Date: 2024-01-20 17:29+0000\n"
+"Last-Translator: Patricia BT and Bruno Tritsch\n"
 "Language-Team: Français\n"
 "Language: fr_FR\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
@@ -100,7 +100,7 @@ msgstr "Participer"
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
 msgid "Attending"
-msgstr "Participe(nt)"
+msgstr "Participant"
 
 #: includes/core/classes/class-event.php:215
 msgid "Back to Topics"
@@ -206,7 +206,7 @@ msgstr "Composer un message"
 
 #: build/modals.js:1
 msgid "Confirm you are ready to send?"
-msgstr "Confirmer que vous être prêt·e à envoyer ?"
+msgstr "Confirmer que vous êtes prêt·e à envoyer ?"
 
 #. translators: %s: GatherPress version.
 #: includes/templates/admin/settings/credits/index.php:58
@@ -221,8 +221,8 @@ msgstr "Crédits"
 #: includes/core/classes/settings/class-leadership.php:99
 msgid "Customize role labels to be more appropriate for events."
 msgstr ""
-"Personnaliser les étiquettes des rôles pour qu'elles soient plus appropriées "
-"aux évènements."
+"Personnaliser les libellés des rôles pour qu'ils soient plus appropriés aux "
+"évènements."
 
 #: build/blocks/event-date/index.js:1 build/panels.js:1
 msgid "Date & time"
@@ -258,7 +258,7 @@ msgstr "Afficher la carte"
 
 #: includes/core/classes/settings/class-general.php:153
 msgid "Display the timezone for scheduled events."
-msgstr "Affiche le fuseau horaire des évènements programmés."
+msgstr "Afficher le fuseau horaire des évènements programmés."
 
 #: includes/core/classes/class-event.php:123
 msgid "Edit Event"
@@ -308,7 +308,7 @@ msgstr "Réglages de l'évènement"
 
 #: includes/core/classes/class-event.php:118
 msgid "Events"
-msgstr "Evènements"
+msgstr "Évènements"
 
 #. translators: %s: event link.
 #: includes/core/classes/class-event.php:840
@@ -364,11 +364,11 @@ msgid ""
 "Please upgrade."
 msgstr ""
 "GatherPress nécessite PHP %1$s ou plus. Votre version actuelle de PHP est "
-"%2$s. Veuillez la mettre à jour."
+"%2$s. Veuillez la mettre à niveau."
 
 #: includes/templates/admin/settings/index.php:25
 msgid "GatherPress Settings"
-msgstr "Paramètres de GatherPress"
+msgstr "Réglages de GatherPress"
 
 #: includes/templates/admin/settings/credits/index.php:41
 msgid "GatherPress Team"
@@ -380,7 +380,7 @@ msgstr "Général"
 
 #: includes/core/classes/settings/class-general.php:85
 msgid "General Settings"
-msgstr "Paramètres généraux"
+msgstr "Réglages généraux"
 
 #: includes/templates/admin/settings/credits/index.php:25
 msgid "Get Involved"
@@ -451,7 +451,7 @@ msgstr "Connexion"
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "Login Required"
-msgstr "Connexion requise"
+msgstr "Connexion nécessaire"
 
 #: build/blocks/venue/index.js:1
 msgid "Map height"
@@ -579,7 +579,7 @@ msgstr "Numéro de téléphone"
 #: includes/core/classes/class-event.php:116
 msgctxt "Post Type General Name"
 msgid "Events"
-msgstr "Evènements"
+msgstr "Évènements"
 
 #: includes/core/classes/class-venue.php:95
 msgctxt "Post Type General Name"
@@ -650,11 +650,11 @@ msgstr "Satellite"
 
 #: includes/templates/admin/settings/settings-form.php:22
 msgid "Save Settings"
-msgstr "Sauvegarder les paramètres"
+msgstr "Enregistrer les réglages"
 
 #: includes/core/classes/class-event.php:125
 msgid "Search Events"
-msgstr "Recherche d'évènements"
+msgstr "Rechercher des évènements"
 
 #: includes/core/classes/class-event.php:205
 msgid "Search Topics"
@@ -667,7 +667,7 @@ msgstr "Rechercher les lieux"
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
 msgid "See all"
-msgstr "Voir tout"
+msgstr "Tout voir"
 
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
@@ -680,7 +680,7 @@ msgstr "Sélectionner les organisateur·rices"
 
 #: includes/core/classes/settings/class-general.php:187
 msgid "Select Past Events Archive Page"
-msgstr "Sélectionner la page d'archives des évènements passés"
+msgstr "Sélectionner la page d'archive des évènements passés"
 
 #: build/settings.js:1
 msgid "Select Posts"
@@ -712,7 +712,7 @@ msgstr "Envoyer l'e-mail"
 #: includes/core/classes/class-settings.php:162
 #: includes/core/classes/class-setup.php:175
 msgid "Settings"
-msgstr "Paramètres"
+msgstr "Réglages"
 
 #: build/blocks/events-list/index.js:2
 msgid "Show All RSVP Responses"
@@ -781,18 +781,18 @@ msgid ""
 "The RSVP status for Event ID \"%1$d\" has been successfully set to \"%2$s\" "
 "for User ID \"%3$d\"."
 msgstr ""
-"Le statut RSVP pour l'évènement ID \"%1$d\" a été défini avec succès à "
-"\"%2$s\" pour l'utilisateur ID \"%3$d\"."
+"Le statut RSVP pour l'évènement ID \"%1$d\" a bien été défini à \"%2$s\" "
+"pour l’ID de compte \"%3$d\"."
 
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2
 msgid "There are no past events."
-msgstr "Il n'y a pas d'évènement passé"
+msgstr "Il n’y a aucun évènement passé"
 
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2
 msgid "There are no upcoming events."
-msgstr "Il n'y a pas d'évènement à venir"
+msgstr "Il n’y a aucun évènement à venir"
 
 #: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
 msgid "This event has already past."
@@ -800,7 +800,7 @@ msgstr "Cet évènement est déjà passé."
 
 #: includes/core/classes/settings/class-general.php:137
 msgid "Time Format"
-msgstr "Format de l'heure"
+msgstr "Format horaire"
 
 #: build/blocks/event-date/index.js:1 build/panels.js:1
 msgid "Time Zone"
@@ -851,7 +851,7 @@ msgstr "Mettre à jour le lieu"
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
 msgid "Venue Selector"
-msgstr "Sélection du lieu"
+msgstr "Sélecteur de lieu"
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
 msgid "Venue settings"
@@ -928,7 +928,7 @@ msgstr "Vous ne participez pas"
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "You're wait listed"
-msgstr "Vous être placé·e en liste d'attente"
+msgstr "Vous être placé·e sur liste d'attente"
 
 #: build/blocks/venue/index.js:1
 msgid "Zoom level"
