@@ -121,7 +121,7 @@ class General extends Base {
 							'label'   => __( 'Allow events to permit anonymous RSVPs.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
-								'default' => true,
+								'default' => 1,
 							),
 						),
 					),

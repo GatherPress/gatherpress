@@ -254,7 +254,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 									e,
 									rsvpStatus,
 									rsvpAnonymous,
-									0,
+									rsvpGuests,
 									false
 								);
 							}}
