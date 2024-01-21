@@ -37,8 +37,6 @@ const RsvpResponseContent = ({
 
 	Listener({ setRsvpResponse }, eventId);
 
-	console.log('edit mode prop passed down', editMode);
-	console.log('RSVP responses', rsvpResponse);
 
 	const renderedItems = items.map((item, index) => {
 		const { value } = item;
@@ -53,11 +51,20 @@ const RsvpResponseContent = ({
 					role="tabpanel"
 					aria-labelledby={`gp-rsvp-${value}-tab`}
 				>
-					<RsvpResponseCard
-						value={value}
-						limit={limit}
-						responses={rsvpResponse}
-					/>
+					{!editMode && (
+						<RsvpResponseCard
+							value={value}
+							limit={limit}
+							responses={rsvpResponse}
+						/>
+					)}
+					{editMode && (
+						<div>
+							Autocomplete Component goes here Autocomplete
+							Component goes here Autocomplete Component goes here
+							Autocomplete Component goes here
+						</div>
+					)}
 				</div>
 			);
 		}
