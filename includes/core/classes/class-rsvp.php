@@ -142,7 +142,7 @@ class Rsvp {
 	 * @param int    $guests  Number of guests accompanying the user.
 	 * @return string The updated RSVP status ('attending', 'not_attending', 'waiting_list').
 	 */
-	public function save( int $user_id, string $status, int $anonymous, int $guests = 0 ): string {
+	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): string {
 		global $wpdb;
 
 		$event_id = $this->event->ID;
