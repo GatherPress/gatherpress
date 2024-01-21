@@ -51,8 +51,8 @@ const RsvpResponseContent = ({
 			),
 			// Declares that options should be matched by their name
 			getOptionKeywords: (option) => [option.name],
-			// Declares that the Grapes option is disabled
-			isOptionDisabled: (option) => option.name === 'Grapes',
+			// Declares that this option is disabled
+			isOptionDisabled: (option) => option.name === 'admin',
 			// Declares completions should be inserted as abbreviations
 			getOptionCompletion: (option) => (
 				<abbr title={option.name}>{option.visual}</abbr>
