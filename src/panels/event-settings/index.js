@@ -14,10 +14,11 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
  * Internal dependencies.
  */
 import { isEventPostType } from '../../helpers/event';
-import VenueSelectorPanel from './venue-selector';
-import OnlineEventLinkPanel from './online-link';
+import AnonymousRsvpPanel from './anonymous-rsvp';
 import DateTimeRangePanel from './datetime-range';
 import NotifyMembersPanel from './notify-members';
+import OnlineEventLinkPanel from './online-link';
+import VenueSelectorPanel from './venue-selector';
 
 /**
  * A settings panel for event-specific settings in the block editor.
@@ -44,6 +45,7 @@ const EventSettings = () => {
 					<DateTimeRangePanel />
 					<VenueSelectorPanel />
 					<OnlineEventLinkPanel />
+					<AnonymousRsvpPanel />
 					<NotifyMembersPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>

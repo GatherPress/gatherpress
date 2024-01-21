@@ -285,9 +285,10 @@ class Assets {
 			'nonce'             => wp_create_nonce( 'wp_rest' ),
 			'post_id'           => $post_id,
 			'settings'          => array(
-				'date_format'   => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'time_format'   => $settings->get_value( 'general', 'formatting', 'time_format' ),
-				'show_timezone' => ( '1' === $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'date_format'    => $settings->get_value( 'general', 'formatting', 'date_format' ),
+				'time_format'    => $settings->get_value( 'general', 'formatting', 'time_format' ),
+				'show_timezone'  => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'anonymous_rsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'anonymous_rsvp' ) ),
 			),
 			'login_url'         => $this->get_login_url( $post_id ),
 			'registration_url'  => $this->get_registration_url( $post_id ),
