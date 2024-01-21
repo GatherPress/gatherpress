@@ -38,6 +38,7 @@ import { getFromGlobal } from '../helpers/globals';
  */
 const Rsvp = ({ eventId, currentUser = '', type }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
+	const [rsvpAnonymous, setRsvpAnonymous] = useState(currentUser.anonymous);
 	const [rsvpGuests, setRsvpGuests] = useState(currentUser.guests);
 	const [selectorHidden, setSelectorHidden] = useState('hidden');
 	const [selectorExpanded, setSelectorExpanded] = useState('false');
@@ -78,7 +79,13 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 		setIsOpen(false);
 	};
 
-	const onAnchorClick = async (e, status, guests = 0, close = true) => {
+	const onAnchorClick = async (
+		e,
+		status,
+		anonymous,
+		guests = 0,
+		close = true
+	) => {
 		e.preventDefault();
 
 		if ('attending' !== status) {
@@ -92,6 +99,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 				post_id: eventId,
 				status,
 				guests,
+				anonymous,
 				_wpnonce: getFromGlobal('nonce'),
 			},
 		}).then((res) => {
@@ -236,6 +244,26 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 							)
 						)}
 					</div>
+					<div className="gp-modal__anonymous">
+						<input
+							id="gp-anonymous"
+							type="checkbox"
+							onChange={(e) => {
+								setRsvpAnonymous(Number(e.target.checked));
+								onAnchorClick(
+									e,
+									rsvpStatus,
+									rsvpAnonymous,
+									0,
+									false
+								);
+							}}
+							checked={rsvpAnonymous}
+						/>
+						<label htmlFor="gp-anonymous">
+							{__('List me as anonymous.', 'gatherpress')}
+						</label>
+					</div>
 					{/*@todo Guests feature coming in later version of GatherPress*/}
 					{/*	<label htmlFor="gp-guests">*/}
 					{/*		{__('Number of guests?', 'gatherpress')}*/}
@@ -261,7 +289,9 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"
-							onClick={(e) => onAnchorClick(e, buttonStatus)}
+							onClick={(e) =>
+								onAnchorClick(e, buttonStatus, rsvpAnonymous)
+							}
 							className="gp-buttons__button wp-block-button__link"
 						>
 							{buttonLabel}

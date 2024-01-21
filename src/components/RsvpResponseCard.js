@@ -58,9 +58,12 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 					</figure>
 					<div className="gp-rsvp-response__member-info">
 						<div className="gp-rsvp-response__member-name">
-							<a href={profile} title={name}>
-								{name}
-							</a>
+							{'' !== profile && (
+								<a href={profile} title={name}>
+									{name}
+								</a>
+							)}
+							{'' === profile && <span>{name}</span>}
 						</div>
 						<div className="gp-rsvp-response__member-role">
 							{role}

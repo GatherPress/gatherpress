@@ -113,6 +113,18 @@ class General extends Base {
 							),
 						),
 					),
+					'anonymous_rsvp' => array(
+						'labels' => array(
+							'name' => __( 'Anonymous RSVPs', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __( 'Allow events to permit anonymous RSVPs.', 'gatherpress' ),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => true,
+							),
+						),
+					),
 				),
 			),
 			'formatting' => array(

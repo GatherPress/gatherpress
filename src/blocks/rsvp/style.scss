@@ -9,6 +9,11 @@
 			font-size: var(--wp--preset--font-size--medium);
 			font-weight: 600;
 		}
+
+		&__anonymous {
+			display: flex;
+			gap: 0.5rem;
+		}
 	}
 }
 
