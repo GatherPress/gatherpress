@@ -12,6 +12,24 @@ import { useState } from '@wordpress/element';
 import { store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
 
+/**
+ * Autocomplete component for GatherPress.
+ *
+ * This component renders an autocomplete field for selecting posts or other entities.
+ * It uses a FormTokenField for the input, allowing users to select multiple items.
+ * The selected items are stored in a hidden input field as JSON data.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props                    - Component props.
+ * @param {Object} props.attrs              - Attributes for configuring the Autocomplete field.
+ * @param {string} props.attrs.name         - The name attribute for the input field.
+ * @param {string} props.attrs.option       - The option attribute for identifying the field.
+ * @param {string} props.attrs.value        - The value of the Autocomplete field.
+ * @param {Object} props.attrs.fieldOptions - Additional options for configuring the field.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const Autocomplete = (props) => {
 	const { name, option, value, fieldOptions } = props.attrs;
 	const showHowTo = 1 !== fieldOptions.limit;

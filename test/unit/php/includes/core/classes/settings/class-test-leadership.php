@@ -18,43 +18,59 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Leadership
  */
 class Test_Leadership extends Base {
-
 	/**
-	 * Coverage for __construct method.
+	 * Coverage for get_slug method.
 	 *
-	 * @covers ::__construct
+	 * @covers ::get_slug
 	 *
 	 * @return void
 	 */
-	public function test___construct(): void {
+	public function test_get_slug(): void {
 		$instance = Leadership::get_instance();
+		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		Utility::invoke_hidden_method( $instance, '__construct' );
-
-		$this->assertSame(
-			'Leadership',
-			Utility::get_hidden_property( $instance, 'name' ),
-			'Failed to assert name matches Leadership.'
-		);
-
-		$this->assertSame(
-			'leadership',
-			Utility::get_hidden_property( $instance, 'slug' ),
-			'Failed to assert slug matches leadership.'
-		);
+		$this->assertSame( 'leadership', $slug, 'Failed to assert slug is leadership.' );
 	}
 
 	/**
-	 * Coverage for get_section method.
+	 * Coverage for get_name method.
 	 *
-	 * @covers ::get_section
+	 * @covers ::get_name
 	 *
 	 * @return void
 	 */
-	public function test_get_section(): void {
+	public function test_get_name(): void {
+		$instance = Leadership::get_instance();
+		$name     = Utility::invoke_hidden_method( $instance, 'get_name' );
+
+		$this->assertSame( 'Leadership', $name, 'Failed to assert name is Leadership.' );
+	}
+
+	/**
+	 * Coverage for get_priority method.
+	 *
+	 * @covers ::get_priority
+	 *
+	 * @return void
+	 */
+	public function test_get_priority(): void {
+		$instance = Leadership::get_instance();
+		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
+
+		$this->assertEquals( 10, $priority, 'Failed to assert correct priority.' );
+	}
+
+	/**
+	 * Coverage for get_sections method.
+	 *
+	 * @covers ::get_sections
+	 *
+	 * @return void
+	 */
+	public function test_get_sections(): void {
 		$instance = Leadership::get_instance();
 
-		$section = Utility::invoke_hidden_method( $instance, 'get_section' );
+		$section = Utility::invoke_hidden_method( $instance, 'get_sections' );
 		$this->assertSame( 'Roles', $section['roles']['name'], 'Failed to assert name is Roles.' );
 		$this->assertSame(
 			'Organizers',
@@ -110,5 +126,4 @@ class Test_Leadership extends Base {
 
 		delete_option( 'gp_leadership' );
 	}
-
 }

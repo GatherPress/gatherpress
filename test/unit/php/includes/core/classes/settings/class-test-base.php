@@ -18,7 +18,6 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Base
  */
 class Test_Base extends Base_Unit_Test {
-
 	/**
 	 * Coverage for setup_up method.
 	 *
@@ -51,14 +50,14 @@ class Test_Base extends Base_Unit_Test {
 	 */
 	public function test_set_sub_page(): void {
 		$instance  = new Base();
-		$name      = Utility::set_and_get_hidden_property( $instance, 'name', 'Unit Test' );
 		$slug      = Utility::set_and_get_hidden_property( $instance, 'slug', 'unit-test' );
 		$sub_pages = $instance->set_sub_page( array() );
 
 		$this->assertIsArray( $sub_pages[ $slug ], 'Failed to assert sub page array was set.' );
-		$this->assertSame( $name, $sub_pages[ $slug ]['name'], 'Failed to assert name is Unit Test.' );
+		$this->assertEmpty( $sub_pages[ $slug ]['name'], 'Failed to assert name is empty.' );
 		$this->assertEquals( 10, $sub_pages[ $slug ]['priority'], 'Failed to assert priority is 10.' );
 		$this->assertIsArray( $sub_pages[ $slug ]['sections'], 'Failed to assert sections is an array.' );
+		$this->assertEmpty( $sub_pages[ $slug ]['sections'], 'Failed to assert sections is an empty array.' );
 	}
 
 	/**
@@ -75,5 +74,4 @@ class Test_Base extends Base_Unit_Test {
 		$this->assertNull( $instance->get( 'unit-test' ), 'Failed to assert property is null.' );
 		$this->assertSame( $slug, $instance->get( 'slug' ), 'Failed to assert property is unit-test.' );
 	}
-
 }

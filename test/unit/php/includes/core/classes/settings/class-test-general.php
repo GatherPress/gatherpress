@@ -18,54 +18,63 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\General
  */
 class Test_General extends Base {
-
 	/**
-	 * Coverage for __construct method.
+	 * Coverage for get_slug method.
 	 *
-	 * @covers ::__construct
+	 * @covers ::get_slug
 	 *
 	 * @return void
 	 */
-	public function test___construct(): void {
+	public function test_get_slug(): void {
 		$instance = General::get_instance();
+		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
 
-		Utility::invoke_hidden_method( $instance, '__construct' );
-
-		$this->assertSame(
-			'General',
-			Utility::get_hidden_property( $instance, 'name' ),
-			'Failed to assert name matches General.'
-		);
-
-		$this->assertSame(
-			PHP_INT_MIN,
-			Utility::get_hidden_property( $instance, 'priority' ),
-			'Failed to assert priority matches PHP_INT_MIN.'
-		);
-
-		$this->assertSame(
-			'general',
-			Utility::get_hidden_property( $instance, 'slug' ),
-			'Failed to assert slug matches general.'
-		);
+		$this->assertSame( 'general', $slug, 'Failed to assert slug is general.' );
 	}
 
 	/**
-	 * Coverage for get_section method.
+	 * Coverage for get_name method.
 	 *
-	 * @covers ::get_section
+	 * @covers ::get_name
 	 *
 	 * @return void
 	 */
-	public function test_get_section(): void {
+	public function test_get_name(): void {
+		$instance = General::get_instance();
+		$name     = Utility::invoke_hidden_method( $instance, 'get_name' );
+
+		$this->assertSame( 'General', $name, 'Failed to assert name is General.' );
+	}
+
+	/**
+	 * Coverage for get_priority method.
+	 *
+	 * @covers ::get_priority
+	 *
+	 * @return void
+	 */
+	public function test_get_priority(): void {
+		$instance = General::get_instance();
+		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
+
+		$this->assertEquals( PHP_INT_MIN, $priority, 'Failed to assert correct priority.' );
+	}
+
+	/**
+	 * Coverage for get_sections method.
+	 *
+	 * @covers ::get_sections
+	 *
+	 * @return void
+	 */
+	public function test_get_sections(): void {
 		$instance = General::get_instance();
 
-		$section = Utility::invoke_hidden_method( $instance, 'get_section' );
+		$section = Utility::invoke_hidden_method( $instance, 'get_sections' );
 		$this->assertSame( 'General Settings', $section['general']['name'], 'Failed to assert name is General Settings.' );
 		$this->assertIsArray(
 			$section['pages'],
-			'Failed to assert pages section is an array.'
+			'Failed to assert sections is an array.'
 		);
 	}
-
 }

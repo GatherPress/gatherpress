@@ -10,6 +10,24 @@ import RsvpResponseNavigationItem from './RsvpResponseNavigationItem';
 import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
+/**
+ * RsvpResponseNavigation component for GatherPress.
+ *
+ * This component represents the navigation for different RSVP statuses. It includes a dropdown menu
+ * to switch between RSVP statuses, displaying the count of responses for each status. The active RSVP
+ * status is highlighted, and clicking on it toggles the dropdown menu. The component listens for
+ * document clicks and keyboard events to close the dropdown when clicked outside or on the 'Escape' key.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props              - Component props.
+ * @param {Array}    props.items        - An array of objects representing different RSVP statuses.
+ * @param {string}   props.activeValue  - The currently active RSVP status value.
+ * @param {Function} props.onTitleClick - Callback function triggered when a title is clicked.
+ * @param {number}   props.defaultLimit - The default limit of responses to display.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const RsvpResponseNavigation = ({
 	items,
 	activeValue,

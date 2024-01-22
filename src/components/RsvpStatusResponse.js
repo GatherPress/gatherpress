@@ -1,5 +1,23 @@
+/**
+ * WordPress dependencies.
+ */
 import { __ } from '@wordpress/i18n';
 
+/**
+ * RsvpStatusResponse component for GatherPress.
+ *
+ * This component displays the RSVP status response based on the event type (upcoming or past)
+ * and the provided status. It includes an icon and text representing the corresponding RSVP status.
+ * The component is typically used within the `Rsvp` component to show the user's RSVP status.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props                   - Component props.
+ * @param {string} [props.type='upcoming'] - The type of the event, either 'upcoming' or 'past'.
+ * @param {string} [props.status='attend'] - The RSVP status, such as 'attend', 'attending', 'waiting_list', or 'not_attending'.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const RsvpStatusResponse = ({ type = 'upcoming', status = 'attend' }) => {
 	const responses = {
 		upcoming: {

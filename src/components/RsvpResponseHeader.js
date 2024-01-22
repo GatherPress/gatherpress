@@ -11,6 +11,25 @@ import { useState } from '@wordpress/element';
 import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
+/**
+ * RsvpResponseHeader component for GatherPress.
+ *
+ * This component represents the header of the RSVP response section. It includes the navigation
+ * for different RSVP statuses, a toggle to show/hide more responses, and an icon for visual indication.
+ * The component allows users to toggle the number of responses displayed based on the configured limit.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}         props              - Component props.
+ * @param {Array}          props.items        - An array of objects representing different RSVP statuses.
+ * @param {string}         props.activeValue  - The currently active RSVP status value.
+ * @param {Function}       props.onTitleClick - Callback function triggered when a title is clicked.
+ * @param {number|boolean} props.rsvpLimit    - The current limit of responses to display or false for no limit.
+ * @param {Function}       props.setRsvpLimit - Callback function to set the new RSVP response limit.
+ * @param {number}         props.defaultLimit - The default limit of responses to display.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const RsvpResponseHeader = ({
 	items,
 	activeValue,

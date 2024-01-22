@@ -23,7 +23,6 @@ use WP_Post;
  * @since 1.0.0
  */
 class Event {
-
 	/**
 	 * Cache key format for storing and retrieving event datetimes.
 	 *
@@ -128,6 +127,7 @@ class Event {
 				'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
 			),
 			'show_in_rest'  => true,
+			'rest_base'     => 'gp_events',
 			'public'        => true,
 			'hierarchical'  => false,
 			'template'      => array(
@@ -250,7 +250,8 @@ class Event {
 		}
 
 		if ( ! empty( $start ) && ! empty( $end ) ) {
-			return sprintf( '%s to %s', $start, $end );
+			/* translators: %1$s: start datetime, %2$s: end datetime. */
+			return sprintf( __( '%1$s to %2$s', 'gatherpress' ), $start, $end );
 		}
 
 		return __( '—', 'gatherpress' );
@@ -929,10 +930,22 @@ class Event {
 	public function maybe_get_online_event_link(): string {
 		$event_link = (string) get_post_meta( $this->event->ID, '_online_event_link', true );
 
-		if (
-			! apply_filters( 'gatherpress_force_online_event_link', false ) &&
-			! is_admin()
-		) {
+		/**
+		 * Filters whether to force the display of the online event link.
+		 *
+		 * Allows modification of the decision to force the online event link
+		 * display in the `maybe_get_online_event_link` method. Return true to
+		 * force the online event link, or false to allow normal checks.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool $force_online_event_link Whether to force the display of the online event link.
+		 *
+		 * @return bool True to force online event link, false to allow normal checks.
+		 */
+		$force_online_event_link = apply_filters( 'gatherpress_force_online_event_link', false );
+
+		if ( ! $force_online_event_link && ! is_admin() ) {
 			if ( ! $this->rsvp ) {
 				return '';
 			}
@@ -950,5 +963,4 @@ class Event {
 
 		return $event_link;
 	}
-
 }

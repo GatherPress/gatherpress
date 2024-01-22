@@ -19,41 +19,10 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings\Credits
  */
 class Test_Credits extends Base {
-
-	/**
-	 * Coverage for __construct method.
-	 *
-	 * @covers ::__construct
-	 *
-	 * @return void
-	 */
-	public function test___construct(): void {
-		$instance = Credits::get_instance();
-
-		Utility::invoke_hidden_method( $instance, '__construct' );
-
-		$this->assertSame(
-			'Credits',
-			Utility::get_hidden_property( $instance, 'name' ),
-			'Failed to assert name matches Credits.'
-		);
-
-		$this->assertSame(
-			PHP_INT_MAX,
-			Utility::get_hidden_property( $instance, 'priority' ),
-			'Failed to assert priority matches PHP_INT_MAX.'
-		);
-
-		$this->assertSame(
-			'credits',
-			Utility::get_hidden_property( $instance, 'slug' ),
-			'Failed to assert slug matches credits.'
-		);
-	}
-
 	/**
 	 * Coverage for setup_hooks method.
 	 *
+	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
 	 * @return void
@@ -70,6 +39,48 @@ class Test_Credits extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for get_slug method.
+	 *
+	 * @covers ::get_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_slug(): void {
+		$instance = Credits::get_instance();
+		$slug     = Utility::invoke_hidden_method( $instance, 'get_slug' );
+
+		$this->assertSame( 'credits', $slug, 'Failed to assert slug is credits.' );
+	}
+
+	/**
+	 * Coverage for get_name method.
+	 *
+	 * @covers ::get_name
+	 *
+	 * @return void
+	 */
+	public function test_get_name(): void {
+		$instance = Credits::get_instance();
+		$name     = Utility::invoke_hidden_method( $instance, 'get_name' );
+
+		$this->assertSame( 'Credits', $name, 'Failed to assert name is Credits.' );
+	}
+
+	/**
+	 * Coverage for get_priority method.
+	 *
+	 * @covers ::get_priority
+	 *
+	 * @return void
+	 */
+	public function test_get_priority(): void {
+		$instance = Credits::get_instance();
+		$priority = Utility::invoke_hidden_method( $instance, 'get_priority' );
+
+		$this->assertEquals( PHP_INT_MAX, $priority, 'Failed to assert correct priority.' );
 	}
 
 	/**
@@ -100,5 +111,4 @@ class Test_Credits extends Base {
 
 		$this->assertNotEmpty( $response, 'Failed to assert markup was returned.' );
 	}
-
 }

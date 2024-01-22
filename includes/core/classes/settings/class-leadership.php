@@ -23,22 +23,35 @@ use GatherPress\Core\Utility;
  * @since 1.0.0
  */
 class Leadership extends Base {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
-	 * Leadership constructor.
+	 * Get the slug for the leadership section.
 	 *
-	 * Sets up the Leadership settings page with its name, description, sections, and slug.
+	 * This method returns the slug used to identify the leadership section.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return string The slug for the leadership section.
 	 */
-	protected function __construct() {
-		parent::__construct();
+	protected function get_slug(): string {
+		return 'leadership';
+	}
 
-		$this->name     = __( 'Leadership', 'gatherpress' );
-		$this->sections = $this->get_section();
-		$this->slug     = 'leadership';
+	/**
+	 * Get the name for the leadership section.
+	 *
+	 * This method returns the localized name for the leadership section.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The localized name for the leadership section.
+	 */
+	protected function get_name(): string {
+		return __( 'Leadership', 'gatherpress' );
 	}
 
 	/**
@@ -48,7 +61,7 @@ class Leadership extends Base {
 	 *
 	 * @return array An array of sections and their settings.
 	 */
-	protected function get_section(): array {
+	protected function get_sections(): array {
 		$roles = array(
 			'organizer' => array(
 				'labels' => array(
@@ -66,11 +79,25 @@ class Leadership extends Base {
 			),
 		);
 
+		/**
+		 * Filter the list of roles for GatherPress.
+		 *
+		 * This filter allows modification of the list of user roles used by GatherPress.
+		 * By default, GatherPress supports only the 'Organizers' role.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array $roles An array of user roles supported by GatherPress.
+		 *                     By default, it includes only the 'Organizers' role.
+		 * @return array The modified array of user roles.
+		 */
+		$roles = apply_filters( 'gatherpress_roles', $roles );
+
 		return array(
 			'roles' => array(
 				'name'        => __( 'Roles', 'gatherpress' ),
 				'description' => __( 'Customize role labels to be more appropriate for events.', 'gatherpress' ),
-				'options'     => apply_filters( 'gatherpress_roles', $roles ),
+				'options'     => $roles,
 			),
 		);
 	}
@@ -118,5 +145,4 @@ class Leadership extends Base {
 
 		return $default;
 	}
-
 }

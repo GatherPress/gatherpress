@@ -15,6 +15,21 @@ import {
 	maybeConvertUtcOffsetForSelect,
 } from '../helpers/datetime';
 
+/**
+ * TimeZone component for GatherPress.
+ *
+ * This component allows users to select their preferred time zone from a list of choices.
+ * It includes a SelectControl with options grouped by regions. The selected time zone is
+ * stored in the state and broadcasted using the Broadcaster utility.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props             - Component props.
+ * @param {string}   props.timezone    - The current selected time zone.
+ * @param {Function} props.setTimezone - Callback function to set the selected time zone.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const TimeZone = (props) => {
 	const { timezone, setTimezone } = props;
 	const choices = getFromGlobal('timezone_choices');

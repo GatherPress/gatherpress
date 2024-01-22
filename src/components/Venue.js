@@ -8,6 +8,23 @@ import HtmlReactParser from 'html-react-parser';
  */
 import { Flex, FlexItem, Icon } from '@wordpress/components';
 
+/**
+ * Venue component for GatherPress.
+ *
+ * This component displays information about a venue, including its name, full address,
+ * phone number, and website. It utilizes the Flex component to arrange the information
+ * in a visually appealing manner. Icons are used to represent location, phone, and website.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props             - Component props.
+ * @param {string} props.name        - The name of the venue.
+ * @param {string} props.fullAddress - The full address of the venue.
+ * @param {string} props.phoneNumber - The phone number of the venue.
+ * @param {string} props.website     - The website URL of the venue.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 	return (
 		<>

@@ -22,7 +22,9 @@ use WP_Post;
  * @since 1.0.0
  */
 class Venue {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -104,6 +106,7 @@ class Venue {
 				'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
 			),
 			'show_in_rest' => true,
+			'rest_base'    => 'gp_venues',
 			'public'       => true,
 			'hierarchical' => false,
 			'show_in_menu' => 'edit.php?post_type=gp_event',
@@ -391,5 +394,4 @@ class Venue {
 
 		return $venue_meta;
 	}
-
 }

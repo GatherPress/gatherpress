@@ -22,7 +22,6 @@ use WP_REST_Server;
  * @coversDefaultClass \GatherPress\Core\Rest_Api
  */
 class Test_Rest_Api extends Base {
-
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -674,5 +673,4 @@ class Test_Rest_Api extends Base {
 			'Failed to assert that event ID matches.'
 		);
 	}
-
 }

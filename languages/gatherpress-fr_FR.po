@@ -3,9 +3,9 @@ msgstr ""
 "Project-Id-Version: GatherPress\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-12-15 08:38+0000\n"
-"PO-Revision-Date: 2023-12-15 08:50+0000\n"
-"Last-Translator: \n"
-"Language-Team: French (France)\n"
+"PO-Revision-Date: 2024-01-20 17:29+0000\n"
+"Last-Translator: Patricia BT and Bruno Tritsch\n"
+"Language-Team: Français\n"
 "Language: fr_FR\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
 "MIME-Version: 1.0\n"
@@ -15,130 +15,307 @@ msgstr ""
 "X-Loco-Version: 2.6.6; wp-6.4.2\n"
 "X-Domain: gatherpress"
 
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid " if you do not have an account."
+msgstr " si vous n'avez pas de compte."
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid " to RSVP to events."
+msgstr " pour RSVP à des évènements."
+
+#. translators: %1$s: start datetime, %2$s: end datetime.
+#: includes/core/classes/class-event.php:254
+msgid "%1$s to %2$s"
+msgstr "%1$s à %2$s"
+
 #: includes/core/classes/class-event.php:141
 msgid ""
 "Add a description of the event and let people know what to expect, including "
 "the agenda, what they need to bring, and how to find the group."
 msgstr ""
-"Ajoutez une description de l'événement et informez les gens de ce qui les "
+"Ajoutez une description de l'évènement et informez les gens de ce qui les "
 "attend, notamment l'ordre du jour, ce qu'ils doivent apporter et comment "
 "trouver le groupe."
 
-#: includes/core/classes/class-venue.php:99
-#: includes/core/classes/class-event.php:123
-msgid "Add New"
-msgstr "Ajouter un nouveau"
+#: build/blocks/online-event/index.js:1 build/blocks/venue/index.js:1
+#: build/panels.js:1
+msgid "Add link to online event"
+msgstr "Ajouter un lien vers l'évènement en ligne"
 
+# Pour rester consistant avec "Ajouter un article", "Ajouter une page"
 #: includes/core/classes/class-event.php:122
+#: includes/core/classes/class-venue.php:101
+msgid "Add New"
+msgstr "Ajouter un évènement"
+
+#: includes/core/classes/class-event.php:121
 msgid "Add New Event"
-msgstr "Ajouter un nouvel événement"
+msgstr "Ajouter un nouvel évènement"
 
 #: includes/core/classes/class-event.php:212
 msgid "Add New Topic"
 msgstr "Ajouter un nouveau sujet"
 
-#: includes/core/classes/class-venue.php:98
+#: includes/core/classes/class-venue.php:100
 msgid "Add New Venue"
 msgstr "Ajouter un nouveau lieu"
 
 #: build/blocks/add-to-calendar/render.php:23
+#: build/blocks/add-to-calendar/index.js:1
 msgid "Add to calendar"
 msgstr "Ajouter au calendrier"
 
-#: includes/core/classes/class-event.php:120
+#: build/blocks/venue/index.js:1
+msgid "Add venue information."
+msgstr "Ajouter des informations sur le lieu."
+
+#: includes/core/classes/class-event.php:119
 msgid "All Events"
-msgstr "Tous les événements"
+msgstr "Tous les évènements"
+
+#: build/modals.js:1
+msgid "All Members"
+msgstr "Tous·tes les membres"
 
 #: includes/core/classes/class-event.php:206
 msgid "All Topics"
-msgstr "Tous les thèmes"
+msgstr "Tous les sujets"
 
-#: includes/core/classes/class-rsvp.php:329
+#: includes/core/classes/class-rsvp.php:327
 msgid "Anonymous"
 msgstr "Anonyme"
 
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Attend"
+msgstr "Participer"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Attending"
+msgstr "Participant"
+
 #: includes/core/classes/class-event.php:215
 msgid "Back to Topics"
-msgstr "Retour aux thèmes"
+msgstr "Retour aux sujets"
 
-#. %s: GatherPress version.
+#: build/blocks/add-to-calendar/block.json
+msgctxt "block description"
+msgid "Allows a member to add an event to their preferred calendar."
+msgstr "Permet à un membre d'ajouter un évènement à son calendrier préféré."
+
+#: build/blocks/rsvp-response/block.json
+msgctxt "block description"
+msgid ""
+"Displays a list of members who have confirmed their attendance for an event."
+msgstr ""
+"Affiche la liste des membres qui ont confirmé leur participation à un "
+"évènement."
+
+#: build/blocks/events-list/block.json
+msgctxt "block description"
+msgid "Displays events that are either upcoming or have occurred in the past."
+msgstr "Affiche les évènements à venir ou passés."
+
+#: build/blocks/event-date/block.json
+msgctxt "block description"
+msgid "Displays the date and time for an event."
+msgstr "Affiche la date et l'heure d'un évènement."
+
+#: build/blocks/rsvp/block.json
+msgctxt "block description"
+msgid "Enables members to easily confirm their attendance for an event."
+msgstr ""
+"Permet aux membres de confirmer facilement leur participation à un évènement."
+
+#: build/blocks/venue/block.json
+msgctxt "block description"
+msgid "Provides information about an event venue."
+msgstr "Fournit des informations sur un lieu d'évènement."
+
+#: build/blocks/online-event/block.json
+msgctxt "block description"
+msgid ""
+"Utilized for virtual events, offering the capability to share a direct link "
+"to an event."
+msgstr ""
+"Utilisé pour les évènements en ligne, il permet de partager un lien direct "
+"vers un évènement."
+
+#: build/blocks/add-to-calendar/block.json
+msgctxt "block title"
+msgid "Add to Calendar"
+msgstr "Ajouter au calendrier"
+
+#: build/blocks/event-date/block.json
+msgctxt "block title"
+msgid "Event Date"
+msgstr "Date de l'évènement"
+
+#: build/blocks/events-list/block.json
+msgctxt "block title"
+msgid "Events List"
+msgstr "Liste des évènements"
+
+#: build/blocks/online-event/block.json
+msgctxt "block title"
+msgid "Online Event"
+msgstr "Évènement en ligne"
+
+#: build/blocks/rsvp/block.json
+msgctxt "block title"
+msgid "RSVP"
+msgstr "RSVP"
+
+#: build/blocks/rsvp-response/block.json
+msgctxt "block title"
+msgid "RSVP Response"
+msgstr "Statut RSVP"
+
+#: build/blocks/venue/block.json
+msgctxt "block title"
+msgid "Venue"
+msgstr "Lieu"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Choose a venue"
+msgstr "Choisir un lieu"
+
+#: build/settings.js:1
+msgid "Choose only one item."
+msgstr "Ne choisir qu'une entrée"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:1 build/blocks/events-list/index.js:2
+#: build/blocks/rsvp/index.js:1 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:1 build/blocks/rsvp/rsvp.js:2
+msgid "Close"
+msgstr "Fermer"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Compose Message"
+msgstr "Composer un message"
+
+#: build/modals.js:1
+msgid "Confirm you are ready to send?"
+msgstr "Confirmer que vous êtes prêt·e à envoyer ?"
+
+#. translators: %s: GatherPress version.
 #: includes/templates/admin/settings/credits/index.php:58
-#, php-format
 msgid "Contributors to GatherPress %s"
-msgstr "Les contributeurs à GatherPress %s"
+msgstr "Les contributeur·rices à GatherPress %s"
 
-#: includes/core/classes/settings/class-credits.php:36
+#: includes/core/classes/settings/class-credits.php:68
 #: includes/templates/admin/settings/credits/index.php:22
 msgid "Credits"
 msgstr "Crédits"
 
-#: includes/core/classes/settings/class-leadership.php:72
+#: includes/core/classes/settings/class-leadership.php:99
 msgid "Customize role labels to be more appropriate for events."
 msgstr ""
-"Personnaliser les étiquettes des rôle pour qu'elles soient plus appropriées "
-"aux événements."
+"Personnaliser les libellés des rôles pour qu'ils soient plus appropriés aux "
+"évènements."
 
-#: includes/core/classes/settings/class-general.php:95
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Date & time"
+msgstr "Date et heure"
+
+#: includes/core/classes/settings/class-general.php:119
 msgid "Date & Time Formatting"
 msgstr "Format de la date et de l'heure"
 
-#: includes/core/classes/settings/class-general.php:100
+#: includes/core/classes/settings/class-general.php:124
 msgid "Date Format"
 msgstr "Format de la date"
 
-#. %s: gatherpress_event date and time.
+#. translators: %s: gatherpress_event date and time.
 #: includes/templates/admin/emails/event-email.php:46
-#, php-format
 msgid "Date: %s"
 msgstr "Date : %s"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Didn't Go"
+msgstr "Membre(s) n'ayant pas participé"
 
 #: includes/templates/admin/setup/membership-check.php:19
 msgid "Dismiss forever"
 msgstr "Rejeter définitivement"
 
-#: includes/core/classes/settings/class-general.php:129
-msgid "Display the timezone for scheduled events."
-msgstr "Affiche le fuseau horaire des événements programmés."
+#: build/blocks/venue/index.js:1
+msgid "Display the map"
+msgstr "Afficher la carte"
 
-#: includes/core/classes/class-event.php:124
+#: includes/core/classes/settings/class-general.php:153
+msgid "Display the timezone for scheduled events."
+msgstr "Afficher le fuseau horaire des évènements programmés."
+
+#: includes/core/classes/class-event.php:123
 msgid "Edit Event"
-msgstr "Modifier l'événement"
+msgstr "Modifier l'évènement"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Edit RSVP"
+msgstr "Modifier le statut RSVP"
 
 #: includes/core/classes/class-event.php:210
 msgid "Edit Topic"
 msgstr "Modifier le sujet"
 
-#: includes/core/classes/class-venue.php:100
+#: includes/core/classes/class-venue.php:102
 msgid "Edit Venue"
 msgstr "Modifier le lieu"
 
 #: includes/templates/admin/setup/membership-check.php:14
 msgid "enabling user registration here"
-msgstr "permettant l'enregistrement des utilisateurs ici"
+msgstr "permettant l'enregistrement des utilisateur·rices ici"
 
-#: includes/core/classes/settings/class-general.php:139
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "End"
+msgstr "Fin"
+
+#: includes/core/classes/settings/class-general.php:163
 msgid "Event Archive Pages"
-msgstr "Pages d'archives des événements"
+msgstr "Pages d'archives des évènements"
 
-#: includes/core/classes/class-setup.php:589
+#: includes/core/classes/class-setup.php:545
 msgid "Event date &amp; time"
-msgstr "Date de l'événement &amp ; heure"
+msgstr "Date et heure de l'évènement"
 
 #: includes/templates/admin/emails/event-email.php:37
 msgid "Event Image"
-msgstr "Image de l'événement"
+msgstr "Image de l'évènement"
 
-#: includes/core/classes/class-event.php:119
+#: build/blocks/events-list/index.js:2
+msgid "Event List type"
+msgstr "Type: Liste d'évènements"
+
+#: build/panels.js:1
+msgid "Event settings"
+msgstr "Réglages de l'évènement"
+
+#: includes/core/classes/class-event.php:118
 msgid "Events"
-msgstr "Evénements"
+msgstr "Évènements"
 
-#. %s: event link.
-#: includes/core/classes/class-event.php:839
-#, php-format
+#. translators: %s: event link.
+#: includes/core/classes/class-event.php:840
 msgid "For details go to %s"
 msgstr "Pour plus d'informations, voir %s"
 
-#: includes/core/classes/settings/class-general.php:96
+#: includes/core/classes/settings/class-general.php:120
 msgid ""
 "For more information read the <a href=\"https://wordpress."
 "org/documentation/article/customize-date-and-time-format/\">Documentation on "
@@ -148,96 +325,162 @@ msgstr ""
 "org/documentation/article/customize-date-and-time-format/\">documentation "
 "sur le formatage de la date et de l'heure</a>."
 
-#: includes/core/classes/settings/class-general.php:103
+#: includes/core/classes/settings/class-general.php:127
 msgid "Format of date for scheduled events."
-msgstr "Format de la date pour les événements programmés."
+msgstr "Format de la date pour les évènements programmés."
 
-#: includes/core/classes/settings/class-general.php:116
+#: includes/core/classes/settings/class-general.php:140
 msgid "Format of time for scheduled events."
-msgstr "Format de l'heure pour les événements programmés."
+msgstr "Format de l'heure pour les évènements programmés."
 
-#. Name of the plugin
-#: includes/core/classes/class-setup.php:228
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Full Address"
+msgstr "Adresse complète"
+
+#. Plugin Name of the plugin
+#: includes/core/classes/class-setup.php:263
 msgid "GatherPress"
 msgstr "GatherPress"
 
-#: includes/core/classes/settings/class-general.php:140
+#: includes/core/classes/settings/class-general.php:164
 msgid "GatherPress allows you to set event archives to pages you have created."
 msgstr ""
-"GatherPress vous permet de définir des archives d'événements pour les pages "
+"GatherPress vous permet de définir les archives d'évènements sur des pages "
 "que vous avez créées."
 
-#: includes/core/classes/settings/class-general.php:62
+#: includes/core/classes/settings/class-general.php:86
 msgid ""
 "GatherPress allows you to set event dates to reflect either the post date or "
 "event date. Default: event date."
 msgstr ""
-"GatherPress vous permet de définir les dates d'événements en fonction de la "
+"GatherPress vous permet de définir les dates d'évènements en fonction de la "
 "date de publication ou de la date de l'événement. Par défaut : la date de "
-"l'événement."
+"l'évènement."
 
-#. %1$s: minimum PHP version, %2$s current PHP version.
+#. translators: %1$s: minimum PHP version, %2$s: current PHP version.
 #: includes/core/requirements-check.php:24
-#, php-format
 msgid ""
 "GatherPress requires PHP %1$s or higher. Your current PHP version is %2$s. "
 "Please upgrade."
 msgstr ""
 "GatherPress nécessite PHP %1$s ou plus. Votre version actuelle de PHP est "
-"%2$s. Veuillez la mettre à jour."
+"%2$s. Veuillez la mettre à niveau."
 
 #: includes/templates/admin/settings/index.php:25
 msgid "GatherPress Settings"
-msgstr "Paramètres de GatherPress"
+msgstr "Réglages de GatherPress"
 
 #: includes/templates/admin/settings/credits/index.php:41
 msgid "GatherPress Team"
 msgstr "L'équipe de GatherPress"
 
-#: includes/core/classes/settings/class-general.php:41
+#: includes/core/classes/settings/class-general.php:55
 msgid "General"
 msgstr "Général"
 
-#: includes/core/classes/settings/class-general.php:61
+#: includes/core/classes/settings/class-general.php:85
 msgid "General Settings"
-msgstr "Paramètres généraux"
+msgstr "Réglages généraux"
 
 #: includes/templates/admin/settings/credits/index.php:25
 msgid "Get Involved"
 msgstr "Contribuer"
 
-#: includes/core/classes/class-event.php:672
+#. translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone.
+#: build/blocks/event-date/index.js:1 build/blocks/event-date/index.js:2
+#: build/blocks/venue/index.js:1 build/editor.js:1 build/panels.js:1
+msgid "GMT"
+msgstr "GMT"
+
+#: includes/core/classes/class-event.php:673
 msgid "Google Calendar"
 msgstr "Google Agenda"
 
-#. Author URI of the plugin
-msgid "https://gatherpess.org/"
-msgstr "https://gatherpess.org/"
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:2
+msgid "guest(s)"
+msgstr "invité·es"
 
-#. URI of the plugin
+#: build/blocks/events-list/index.js:2
+msgid "Hide All RSVP Responses"
+msgstr "Masquer tous les statuts RSVP"
+
+#: build/blocks/events-list/index.js:2
+msgid "Hide Description"
+msgstr "Masquer la description"
+
+#: build/blocks/events-list/index.js:2
+msgid "Hide Featured Image"
+msgstr "Masquer l'image mise en avant"
+
+#: build/blocks/venue/index.js:1
+msgid "Hide the map"
+msgstr "Masquer la carte"
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
 msgid "https://gatherpress.org/"
 msgstr "https://gatherpress.org/"
 
-#: includes/core/classes/class-event.php:676
+#: includes/core/classes/class-event.php:677
 msgid "iCal"
 msgstr "iCal"
 
-#: includes/core/classes/settings/class-leadership.php:39
-msgid "Leadership"
-msgstr "Leadership"
+#: build/blocks/events-list/index.js:2
+msgid "Image Size Options"
+msgstr "Options de taille d'image"
 
-#: includes/core/classes/settings/class-general.php:81
+#: includes/core/classes/settings/class-leadership.php:54
+msgid "Leadership"
+msgstr "Direction"
+
+#: build/blocks/online-event/index.js:1
+#: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
+#: build/blocks/venue/venue.js:1
+msgid "Link active for attendees during event."
+msgstr "Lien actif pour les participant·es pendant l'évènement."
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Login"
+msgstr "Connexion"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Login Required"
+msgstr "Connexion nécessaire"
+
+#: build/blocks/venue/index.js:1
+msgid "Map height"
+msgstr "Hauteur de la carte"
+
+#: build/blocks/venue/index.js:1
+msgid "Map settings"
+msgstr "Réglages de la carte"
+
+#: build/blocks/venue/index.js:1
+msgid "Map type"
+msgstr "Type de carte"
+
+#: includes/core/classes/settings/class-general.php:105
 msgid "Maximum Attending Limit"
-msgstr "Limite maximale du nombre de participants"
+msgstr "Nombre maximal de participant·es"
+
+#: build/blocks/events-list/index.js:2
+msgid "Maximum number of events to display"
+msgstr "Nombre maximal d'évènements à afficher"
 
 #: includes/templates/admin/settings/credits/index.php:24
 msgid "Meet the folks behind GatherPress. Want to see your name here?"
 msgstr ""
-"Rencontrez les personnes à l'origine de GatherPress. Vous voulez voir votre "
-"nom ici ?"
+"Faites connaissancce avec les personnes à l'origine de GatherPress. Vous "
+"voulez voir votre nom ici ?"
 
-#: includes/core/classes/class-rsvp.php:394
-#: includes/core/classes/settings/class-leadership.php:107
+#: includes/core/classes/class-rsvp.php:392
+#: includes/core/classes/settings/class-leadership.php:134
 msgid "Member"
 msgstr "Membre"
 
@@ -245,34 +488,71 @@ msgstr "Membre"
 msgid "New Topic Name"
 msgstr "Nom du nouveau sujet"
 
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "No one is attending this event yet."
+msgstr "Personne ne participe encore à cet évènement."
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "No one went to this event."
+msgstr "Personne n'a participé à cet évènement."
+
 #: includes/core/classes/class-event.php:214
 msgid "No Topics Found"
 msgstr "Aucun sujet trouvé"
 
-#: includes/core/classes/class-venue.php:103
-#: includes/core/classes/class-event.php:127
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "No venue selected."
+msgstr "Aucun lieu n'a été sélectionné."
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Not Attending"
+msgstr "Membres ne participant pas"
+
+#: includes/core/classes/class-event.php:126
+#: includes/core/classes/class-venue.php:105
 msgid "Not Found"
 msgstr "Non trouvé"
 
-#: includes/core/classes/class-venue.php:104
-#: includes/core/classes/class-event.php:128
+#: includes/core/classes/class-event.php:127
+#: includes/core/classes/class-venue.php:106
 msgid "Not found in Trash"
 msgstr "Non trouvé dans la corbeille"
 
-#: includes/core/classes/class-setup.php:332
-msgid "Online event"
-msgstr "Événement en ligne"
+#: build/modals.js:1
+msgid "Notify members via email"
+msgstr "Notifier les membres par e-mail"
 
-#: includes/core/classes/settings/class-leadership.php:56
+#: includes/core/classes/class-setup.php:367
+#: build/blocks/online-event/index.js:1
+#: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
+#: build/blocks/venue/venue.js:1
+msgid "Online event"
+msgstr "Évènement en ligne"
+
+#: build/blocks/online-event/index.js:1 build/blocks/venue/index.js:1
+#: build/panels.js:1
+msgid "Online event link"
+msgstr "Lien vers l'évènement en ligne"
+
+#: build/modals.js:1
+msgid "Optional message"
+msgstr "Message facultatif"
+
+#: includes/core/classes/settings/class-leadership.php:69
 msgid "Organizer"
 msgstr "Organisateur·rice"
 
-#: includes/core/classes/settings/class-leadership.php:55
-#: includes/core/classes/settings/class-leadership.php:57
+#: includes/core/classes/settings/class-leadership.php:68
+#: includes/core/classes/settings/class-leadership.php:70
 msgid "Organizers"
 msgstr "Organisateur·rices"
 
-#: includes/core/classes/class-event.php:680
+#: includes/core/classes/class-event.php:681
 msgid "Outlook"
 msgstr "Outlook"
 
@@ -284,26 +564,34 @@ msgstr "Sujet parent"
 msgid "Parent Topic:"
 msgstr "Sujet parent :"
 
-#: includes/core/classes/settings/class-general.php:157
-msgid "Past Events"
-msgstr "Événements passés"
+#: build/blocks/events-list/index.js:2
+msgid "Past"
+msgstr "Passé"
 
-#: includes/core/classes/class-event.php:117
+#: includes/core/classes/settings/class-general.php:181
+msgid "Past Events"
+msgstr "Évènements passés"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Phone Number"
+msgstr "Numéro de téléphone"
+
+#: includes/core/classes/class-event.php:116
 msgctxt "Post Type General Name"
 msgid "Events"
-msgstr "Evénements"
+msgstr "Évènements"
 
-#: includes/core/classes/class-venue.php:93
+#: includes/core/classes/class-venue.php:95
 msgctxt "Post Type General Name"
 msgid "Venues"
-msgstr "Lieux des événements"
+msgstr "Lieux des évènements"
 
-#: includes/core/classes/class-event.php:118
+#: includes/core/classes/class-event.php:117
 msgctxt "Post Type Singular Name"
 msgid "Event"
-msgstr "Événement"
+msgstr "Évènement"
 
-#: includes/core/classes/class-venue.php:94
+#: includes/core/classes/class-venue.php:96
 msgctxt "Post Type Singular Name"
 msgid "Venue"
 msgstr "Lieu"
@@ -316,86 +604,207 @@ msgstr "Les communautés se développent grâce à WordPress."
 msgid "Preview:"
 msgstr "Prévisualisation :"
 
+# Pour l'instant 2 hommes, à modifier en Chef·fes si une femme rejoint les Project Leads
 #: includes/templates/admin/settings/credits/index.php:27
 msgid "Project Leaders"
-msgstr "Chef·fes de projet"
+msgstr "Chefs de projet"
 
-#: includes/core/classes/settings/class-general.php:69
+#: includes/core/classes/settings/class-general.php:93
 msgid "Publish Date"
 msgstr "Date de publication"
 
-#: includes/core/classes/settings/class-leadership.php:71
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Register"
+msgstr "S’inscrire"
+
+# Par opposition à Satellite pour l'affichage de la carte
+#: build/blocks/venue/index.js:1
+msgid "Roadmap"
+msgstr "Plan"
+
+#: includes/core/classes/settings/class-leadership.php:98
 msgid "Roles"
 msgstr "Rôles"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "RSVP"
+msgstr "RSVP"
 
 #: includes/templates/admin/emails/event-email.php:63
 msgid "RSVP Now"
 msgstr "RSVP maintenant"
 
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "RSVP to this event"
+msgstr "RSVP pour cet évènement"
+
+#: build/blocks/venue/index.js:1
+msgid "Satellite"
+msgstr "Satellite"
+
 #: includes/templates/admin/settings/settings-form.php:22
 msgid "Save Settings"
-msgstr "Sauvegarder les paramètres"
+msgstr "Enregistrer les réglages"
 
-#: includes/core/classes/class-event.php:126
+#: includes/core/classes/class-event.php:125
 msgid "Search Events"
-msgstr "Recherche d'événements"
+msgstr "Rechercher des évènements"
 
 #: includes/core/classes/class-event.php:205
 msgid "Search Topics"
-msgstr "Thèmes de recherche"
+msgstr "Rechercher les sujets"
 
-#: includes/core/classes/class-venue.php:102
+#: includes/core/classes/class-venue.php:104
 msgid "Search Venues"
-msgstr "Recherche de lieux"
+msgstr "Rechercher les lieux"
 
-#: includes/core/classes/settings/class-leadership.php:63
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "See all"
+msgstr "Tout voir"
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "See fewer"
+msgstr "Voir moins"
+
+#: includes/core/classes/settings/class-leadership.php:76
 msgid "Select Organizers"
 msgstr "Sélectionner les organisateur·rices"
 
-#: includes/core/classes/settings/class-general.php:163
+#: includes/core/classes/settings/class-general.php:187
 msgid "Select Past Events Archive Page"
-msgstr "Sélectionner la page d'archives des événements passés"
+msgstr "Sélectionner la page d'archive des évènements passés"
+
+#: build/settings.js:1
+msgid "Select Posts"
+msgstr "Sélectionner les publications"
+
+#: build/modals.js:1
+msgid "Select the recipients for your message by checking the relevant boxes."
+msgstr ""
+"Sélectionnez les destinataires de votre message en cochant les cases "
+"correspondantes."
+
+#: includes/core/classes/settings/class-general.php:174
+msgid "Select Upcoming Events Archive Page"
+msgstr "Sélectionner la page d'archives des évènements à venir"
+
+#: build/panels.js:1
+msgid "Send an event update"
+msgstr "Envoyer une mise à jour de l'évènement"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Send an event update to members via email?"
+msgstr "Envoyer une mise à jour de l'évènement aux membres par e-mail ?"
+
+#: build/modals.js:1
+msgid "Send Email"
+msgstr "Envoyer l'e-mail"
+
+#: includes/core/classes/class-settings.php:161
+#: includes/core/classes/class-settings.php:162
+#: includes/core/classes/class-setup.php:175
+msgid "Settings"
+msgstr "Réglages"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show All RSVP Responses"
+msgstr "Afficher tous les statuts RSVP"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show Description"
+msgstr "Afficher la description"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show Featured Image"
+msgstr "Afficher l'image mise en avant"
+
+#: build/blocks/venue/index.js:1
+msgid "Show map on venue"
+msgstr "Afficher la carte du lieu"
+
+#: includes/core/classes/settings/class-general.php:96
+#| msgid "Show publish date as event date for events"
+msgid "Show publish date as event date for events."
+msgstr ""
+"Afficher la date de publication comme date d'évènement pour les évènements."
 
 #: includes/core/classes/settings/class-general.php:150
-msgid "Select Upcoming Events Archive Page"
-msgstr "Sélectionner la page d'archives des événements à venir"
-
-#: includes/core/classes/class-settings.php:159
-#: includes/core/classes/class-settings.php:160
-#: includes/core/classes/class-setup.php:138
-msgid "Settings"
-msgstr "Paramètres"
-
-#: includes/core/classes/settings/class-general.php:72
-msgid "Show publish date as event date for events"
-msgstr ""
-"Afficher la date de publication comme date d'événement pour les événements"
-
-#: includes/core/classes/settings/class-general.php:126
 msgid "Show Timezone"
 msgstr "Afficher le fuseau horaire"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide All RSVP Responses"
+msgstr "Afficher/Masquer tous les statuts RSVP"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide Description"
+msgstr "Afficher/Masquer la description"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide Featured Image"
+msgstr "Afficher/Masquer l'image mise en avant"
+
+# Début de l'évènement
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Start"
+msgstr "Début"
 
 #: includes/core/classes/class-event.php:203
 msgctxt "taxonomy general name"
 msgid "Topics"
-msgstr "Thèmes"
+msgstr "Sujets"
 
 #: includes/core/classes/class-event.php:204
 msgctxt "taxonomy singular name"
 msgid "Topic"
 msgstr "Sujet"
 
-#: includes/core/classes/settings/class-general.php:84
+#: includes/core/classes/settings/class-general.php:108
 msgid "The default maximum limit of attendees to an event."
-msgstr "Limite maximale par défaut du nombre de participants à un événement."
+msgstr "Limite maximale par défaut du nombre de participant·es à un évènement."
 
 #. Author of the plugin
 msgid "The GatherPress Community"
 msgstr "La communauté GatherPress"
 
-#: includes/core/classes/settings/class-general.php:113
+#. translators: %1$d: event ID, %2$s: attendance status, %3$d: user ID.
+#: includes/core/classes/commands/class-cli-event.php:73
+msgid ""
+"The RSVP status for Event ID \"%1$d\" has been successfully set to \"%2$s\" "
+"for User ID \"%3$d\"."
+msgstr ""
+"Le statut RSVP pour l'évènement ID \"%1$d\" a bien été défini à \"%2$s\" "
+"pour l’ID de compte \"%3$d\"."
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2
+msgid "There are no past events."
+msgstr "Il n’y a aucun évènement passé"
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2
+msgid "There are no upcoming events."
+msgstr "Il n’y a aucun évènement à venir"
+
+#: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
+msgid "This event has already past."
+msgstr "Cet évènement est déjà passé."
+
+#: includes/core/classes/settings/class-general.php:137
 msgid "Time Format"
-msgstr "Format de l'heure"
+msgstr "Format horaire"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Time Zone"
+msgstr "Fuseau horaire"
 
 #: includes/templates/admin/setup/membership-check.php:12
 msgid ""
@@ -405,59 +814,131 @@ msgstr ""
 "Pour que GatherPress fonctionne de manière optimale, nous vous recommandons "
 "d'activer l'enregistrement des utilisateur·rices. Vous pouvez le faire en"
 
+#. translators: %s: button label.
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:2
+msgid ""
+"To set or change your attending status, simply click the %s button below."
+msgstr ""
+"Pour définir ou modifier votre participation, cliquez sur le bouton %s ci-"
+"dessous."
+
 #: includes/core/classes/class-event.php:216
+#: build/blocks/events-list/index.js:2
 msgid "Topics"
-msgstr "Thèmes"
+msgstr "Sujets"
 
-#: includes/core/classes/settings/class-general.php:144
+#: build/blocks/events-list/index.js:2
+msgid "Upcoming"
+msgstr "A venir"
+
+#: includes/core/classes/settings/class-general.php:168
 msgid "Upcoming Events"
-msgstr "Événements à venir"
+msgstr "Évènements à venir"
 
-#: includes/core/classes/class-event.php:125
+#: includes/core/classes/class-event.php:124
 msgid "Update Event"
-msgstr "Mettre à jour l'événement"
+msgstr "Mettre à jour l'évènement"
 
 #: includes/core/classes/class-event.php:211
 msgid "Update Topic"
 msgstr "Mettre à jour le sujet"
 
-#: includes/core/classes/class-venue.php:101
+#: includes/core/classes/class-venue.php:103
 msgid "Update Venue"
 msgstr "Mettre à jour le lieu"
 
-#. %s: gatherpress_event gatherpress_venue name.
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Venue Selector"
+msgstr "Sélecteur de lieu"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Venue settings"
+msgstr "Réglages du lieu"
+
+#. translators: %s: gatherpress_event gatherpress_venue name.
 #: includes/templates/admin/emails/event-email.php:55
-#, php-format
 msgid "Venue: %s"
 msgstr "Lieu : %s"
 
-#: includes/core/classes/class-venue.php:95
-#: includes/core/classes/class-venue.php:96
+#: includes/core/classes/class-venue.php:97
+#: includes/core/classes/class-venue.php:98 build/blocks/events-list/index.js:2
 msgid "Venues"
-msgstr "Lieux des événements"
+msgstr "Lieux des évènements"
 
-#: includes/core/classes/class-event.php:121
+#: includes/core/classes/class-event.php:120
 msgid "View Event"
-msgstr "Voir l'événement"
+msgstr "Voir l'évènement"
 
 #: includes/core/classes/class-event.php:207
 msgid "View Topic"
 msgstr "Voir le sujet"
 
-#: includes/core/classes/class-venue.php:97
+#: includes/core/classes/class-venue.php:99
 msgid "View Venue"
 msgstr "Voir le lieu"
 
-#: includes/core/classes/class-event.php:684
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "Wait Listed"
+msgstr "Mise en liste d'attente"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Waiting List"
+msgstr "Liste d'attente"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Website"
+msgstr "Site"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Went"
+msgstr "Membre(s) ayant participé"
+
+#: includes/core/classes/class-event.php:685
 msgid "Yahoo Calendar"
 msgstr "Calendrier Yahoo"
 
-#: includes/core/classes/class-event.php:256
-msgid "—"
-msgstr "-"
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You must "
+msgstr "Vous devez"
 
-#. %s: event title.
-#: includes/core/classes/class-rest-api.php:436
-#, php-format
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're attending"
+msgstr "Vous participez"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're not attending"
+msgstr "Vous ne participez pas"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're wait listed"
+msgstr "Vous être placé·e sur liste d'attente"
+
+#: build/blocks/venue/index.js:1
+msgid "Zoom level"
+msgstr "Niveau de zoom"
+
+#: includes/core/classes/class-event.php:257
+msgid "—"
+msgstr "—"
+
+#. translators: %s: event title.
+#: includes/core/classes/class-rest-api.php:438
 msgid "📅 %s"
 msgstr "📅 %s"

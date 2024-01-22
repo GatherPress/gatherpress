@@ -13,7 +13,6 @@ namespace GatherPress\Core;
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
-use WP_CLI;
 use WP_Post;
 
 /**
@@ -24,7 +23,9 @@ use WP_Post;
  * @since 1.0.0
  */
 class Setup {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -55,14 +56,11 @@ class Setup {
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
 		Block::get_instance();
+		Cli::get_instance();
 		Event_Query::get_instance();
 		Rest_Api::get_instance();
 		Settings::get_instance();
 		Venue::get_instance();
-
-		if ( defined( 'WP_CLI' ) && WP_CLI ) { // @codeCoverageIgnore
-			WP_CLI::add_command( 'gatherpress', Cli::class ); // @codeCoverageIgnore
-		}
 	}
 
 	/**
@@ -78,6 +76,7 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
+		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( $this, 'register' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action(
@@ -119,6 +118,44 @@ class Setup {
 			),
 			array( $this, 'filter_plugin_action_links' )
 		);
+		add_filter( 'load_textdomain_mofile', array( $this, 'load_mofile' ), 10, 2 );
+	}
+
+	/**
+	 * Loads gatherpress for GatherPress.
+	 *
+	 * @todo needed until plugin is added to wordpress.org plugin directory.
+	 *
+	 * @return void
+	 */
+	public function load_textdomain(): void {
+		load_plugin_textdomain( 'gatherpress', false, GATHERPRESS_DIR_NAME . '/languages' );
+	}
+
+	/**
+	 * Find language files in gatherpress/languages when missing in wp-content/languages/plugins/
+	 *
+	 * The translation files will be in wp-content/languages/plugins/ once the plugin on the
+	 * repository and translated in translate.wordpress.org.
+	 *
+	 * @todo needed until plugin is added to wordpress.org plugin directory.
+	 *
+	 * Until that, we need to load from /languages folder and load the textdomain.
+	 * See https://developer.wordpress.org/plugins/internationalization/how-to-internationalize-your-plugin/#plugins-on-wordpress-org.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $mofile The path to the translation file.
+	 * @param string $domain The text domain of the translation file.
+	 * @return string The updated path to the translation file based on the locale
+	 */
+	public function load_mofile( string $mofile, string $domain ): string {
+		if ( 'gatherpress' === $domain && false !== strpos( $mofile, WP_LANG_DIR . '/plugins/' ) ) {
+			$locale = apply_filters( 'plugin_locale', determine_locale(), $domain );  // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+			$mofile = WP_PLUGIN_DIR . '/' . GATHERPRESS_DIR_NAME . '/languages/' . $domain . '-' . $locale . '.mo';
+		}
+
+		return $mofile;
 	}
 
 	/**
@@ -152,8 +189,6 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin(): void {
-		$this->maybe_rename_blocks();
-		$this->maybe_rename_table();
 		$this->maybe_create_custom_table();
 		$this->add_online_event_term();
 
@@ -403,85 +438,6 @@ class Setup {
 	}
 
 	/**
-	 * Rename the attendees table to rsvps.
-	 *
-	 * @coverCoverageIgnore
-	 *
-	 * @todo Remove this code with 1.0.0; it's temporary to address a breaking change.
-	 *
-	 * This method renames the attendees table to rsvps, but it's intended as a temporary solution
-	 * to handle a breaking change. Evaluate whether this code can be removed in the future.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function maybe_rename_table(): void {
-		global $wpdb;
-
-		$new_table = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
-		$old_table = sprintf( '%sgp_attendees', $wpdb->prefix );
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->query( "RENAME TABLE `$old_table` TO `$new_table`" );
-	}
-
-	/**
-	 * Rename attendance blocks to RSVP blocks.
-	 *
-	 * @codeCoverageIgnore
-	 *
-	 * @todo Remove this code with 1.0.0; it's temporary to address a breaking change.
-	 *
-	 * This method scans and updates content for all posts of specified types, replacing
-	 * occurrences of attendance-related blocks with RSVP-related blocks. It's recommended
-	 * to review and potentially remove this code once the transition is complete.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function maybe_rename_blocks(): void {
-		$posts = get_posts(
-			array(
-				'post_type'   => array( Event::POST_TYPE, Venue::POST_TYPE ),
-				'numberposts' => -1,
-				'post_status' => 'any',
-			)
-		);
-
-		if ( $posts ) {
-			foreach ( $posts as $post ) {
-				$post->post_content = str_replace(
-					'wp:gatherpress/attendance-selector',
-					'wp:gatherpress/rsvp',
-					$post->post_content
-				);
-
-				$post->post_content = str_replace(
-					'wp:gatherpress/attendance-list',
-					'wp:gatherpress/rsvp-response',
-					$post->post_content
-				);
-
-				$post->post_content = str_replace(
-					'wp:gatherpress/event-venue',
-					'wp:gatherpress/venue',
-					$post->post_content
-				);
-
-				$post->post_content = str_replace(
-					'wp:gatherpress/venue-information',
-					'wp:gatherpress/venue',
-					$post->post_content
-				);
-
-				wp_update_post( $post );
-			}
-		}
-	}
-
-	/**
 	 * Create a custom table if it doesn't exist for the main site or the current site in a network.
 	 *
 	 * This method checks whether the custom database tables required for the plugin exist
@@ -713,5 +669,4 @@ class Setup {
 			);
 		}
 	}
-
 }

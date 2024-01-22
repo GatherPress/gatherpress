@@ -1,5 +1,5 @@
 <?php return array (
-  'version' => '0.26.0',
+  'version' => '0.27.0',
   'project-leaders' => 
   array (
     0 => 
@@ -68,6 +68,19 @@
         24 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    3 => 
+    array (
+      'id' => 7586875,
+      'name' => 'Patricia BT',
+      'link' => 'https://profiles.wordpress.org/author/patricia70/',
+      'slug' => 'patricia70',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),

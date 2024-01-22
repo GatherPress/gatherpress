@@ -11,6 +11,16 @@ import { select } from '@wordpress/data';
 import { Broadcaster } from '../../../helpers/broadcasting';
 import { hasEventPast } from '../../../helpers/event';
 
+/**
+ * A panel component for notifying members about an event update.
+ *
+ * This component checks if the current post is published and the event has not yet occurred.
+ * If the conditions are met, it displays a section with a button to compose a message for members.
+ *
+ * @since 1.0.0
+ *
+ * @return {JSX.Element | null} The JSX element for the NotifyMembersPanel or null if conditions are not met.
+ */
 const NotifyMembersPanel = () => {
 	return (
 		'publish' === select('core/editor').getEditedPostAttribute('status') &&

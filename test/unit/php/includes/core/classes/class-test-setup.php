@@ -20,7 +20,6 @@ use PMC\Unit_Test\Base;
  * @coversDefaultClass \GatherPress\Core\Setup
  */
 class Test_Setup extends Base {
-
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -287,5 +286,4 @@ class Test_Setup extends Base {
 			'Failed to assert correct sortable columns.'
 		);
 	}
-
 }

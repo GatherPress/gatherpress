@@ -1,0 +1,56 @@
+name: SonarCloud
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sonarcloud:
+    name: 'PHPUnit and Jest Tests'
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: xdebug
+
+      - name: Composer Install
+        run: composer install --optimize-autoloader --prefer-dist
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v2
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: NPM install
+        run: npm ci --legacy-peer-deps
+
+      - name: Log debug information
+        run: |
+          npm --version
+          node --version
+          git --version
+          php --version
+          composer --version
+
+      - name: Running Tests
+        run: |
+          php --version
+          npm i -g @wordpress/env
+          npm run test:unit:php
+          npm run test:unit:js
+          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
+        if: ${{ success() || failure() }}
+
+      - name: Fix Code Coverage Paths
+        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
