@@ -7,13 +7,17 @@ test.describe('e2e test for login to front end guests', () => {
 		test.setTimeout(60000);
 		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
+
 	});
+
 
 	test('verify that the user is able to login after click on RSVP >> login', async ({
 		page,
 	}) => {
 		await page.goto(devUrl);
-		await page.screenshot({ path: 'homepage.png', fullPage: true });
+
+		await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
+
 
 		await page.getByRole('link', { name: 'RSVP' }).click();
 
@@ -21,7 +25,7 @@ test.describe('e2e test for login to front end guests', () => {
 
 		await login({ page, username: 'testuser1' });
 
-		await page.goto(devUrl);
+		await page.goto(devUrl, {timeout:120000});
 
 		await page.getByRole('link', { name: 'RSVP' }).click();
 
@@ -29,6 +33,6 @@ test.describe('e2e test for login to front end guests', () => {
 
 		await page.waitForLoadState('networkidle');
 
-		await page.screenshot({ path: 'post-attendies.png', fullPage: true });
+		await page.screenshot({ path: 'post-attendies.png' });
 	});
 });
