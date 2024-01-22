@@ -1,0 +1,458 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: GatherPress\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-12-15 08:38+0000\n"
+"PO-Revision-Date: 2024-01-22 07:15+0100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.1\n"
+"X-Loco-Version: 2.6.6; wp-6.4.2\n"
+"X-Domain: gatherpress\n"
+
+#: includes/core/classes/class-event.php:141
+msgid ""
+"Add a description of the event and let people know what to expect, including "
+"the agenda, what they need to bring, and how to find the group."
+msgstr ""
+"Añade una descripción del evento e informa a la gente de lo que pueden "
+"esperar, incluido el orden del día, lo que tienen que llevar y cómo "
+"encontrar al grupo."
+
+#: includes/core/classes/class-venue.php:99
+#: includes/core/classes/class-event.php:123
+msgid "Add New"
+msgstr "Añadir nuevo"
+
+#: includes/core/classes/class-event.php:122
+msgid "Add New Event"
+msgstr "Añadir nuevo evento"
+
+#: includes/core/classes/class-event.php:212
+msgid "Add New Topic"
+msgstr "Añadir nuevo tema"
+
+#: includes/core/classes/class-venue.php:98
+msgid "Add New Venue"
+msgstr "Añadir nuevo lugar"
+
+#: build/blocks/add-to-calendar/render.php:23
+msgid "Add to calendar"
+msgstr "Añadir al calendario"
+
+#: includes/core/classes/class-event.php:120
+msgid "All Events"
+msgstr "Todos los eventos"
+
+#: includes/core/classes/class-event.php:206
+msgid "All Topics"
+msgstr "Todas las temáticas"
+
+#: includes/core/classes/class-rsvp.php:329
+msgid "Anonymous"
+msgstr "Anónimo"
+
+#: includes/core/classes/class-event.php:215
+msgid "Back to Topics"
+msgstr "Volver a temáticas"
+
+#. %s: GatherPress version.
+#: includes/templates/admin/settings/credits/index.php:58
+#, php-format
+msgid "Contributors to GatherPress %s"
+msgstr "Colaboradores de GatherPress %s"
+
+#: includes/core/classes/settings/class-credits.php:36
+#: includes/templates/admin/settings/credits/index.php:22
+msgid "Credits"
+msgstr "Créditos"
+
+#: includes/core/classes/settings/class-leadership.php:72
+msgid "Customize role labels to be more appropriate for events."
+msgstr ""
+"Personaliza las etiquetas de los perfiles para que sean más apropiadas para "
+"los eventos."
+
+#: includes/core/classes/settings/class-general.php:95
+msgid "Date & Time Formatting"
+msgstr "Formato de fecha y hora"
+
+#: includes/core/classes/settings/class-general.php:100
+msgid "Date Format"
+msgstr "Formato de fecha"
+
+#. %s: gatherpress_event date and time.
+#: includes/templates/admin/emails/event-email.php:46
+#, php-format
+msgid "Date: %s"
+msgstr "Fecha: %s"
+
+#: includes/templates/admin/setup/membership-check.php:19
+msgid "Dismiss forever"
+msgstr "Descartar para siempre"
+
+#: includes/core/classes/settings/class-general.php:129
+msgid "Display the timezone for scheduled events."
+msgstr "Muestra la zona horaria de los eventos programados."
+
+#: includes/core/classes/class-event.php:124
+msgid "Edit Event"
+msgstr "Editar evento"
+
+#: includes/core/classes/class-event.php:210
+msgid "Edit Topic"
+msgstr "Editar temática"
+
+#: includes/core/classes/class-venue.php:100
+msgid "Edit Venue"
+msgstr "Editar lugar"
+
+#: includes/templates/admin/setup/membership-check.php:14
+msgid "enabling user registration here"
+msgstr "permitiendo el registro de usuarios aquí"
+
+#: includes/core/classes/settings/class-general.php:139
+msgid "Event Archive Pages"
+msgstr "Páginas de archivo de eventos"
+
+#: includes/core/classes/class-setup.php:589
+msgid "Event date &amp; time"
+msgstr "Fecha y hora del evento"
+
+#: includes/templates/admin/emails/event-email.php:37
+msgid "Event Image"
+msgstr "Imagen del evento"
+
+#: includes/core/classes/class-event.php:119
+msgid "Events"
+msgstr "Eventos"
+
+#. %s: event link.
+#: includes/core/classes/class-event.php:839
+#, php-format
+msgid "For details go to %s"
+msgstr "Para obtener más información, visita %s"
+
+#: includes/core/classes/settings/class-general.php:96
+msgid ""
+"For more information read the <a href=\"https://wordpress.org/documentation/"
+"article/customize-date-and-time-format/\">Documentation on date and time "
+"formatting</a>."
+msgstr ""
+"Para más información, lee la <a href=\"https://wordpress.org/documentation/"
+"article/customize-date-and-time-format/\">documentación sobre el formato de "
+"fecha y hora</a>."
+
+#: includes/core/classes/settings/class-general.php:103
+msgid "Format of date for scheduled events."
+msgstr "Formato de fecha para los eventos programados."
+
+#: includes/core/classes/settings/class-general.php:116
+msgid "Format of time for scheduled events."
+msgstr "Formato de tiempo para los eventos programados."
+
+#. Name of the plugin
+#: includes/core/classes/class-setup.php:228
+msgid "GatherPress"
+msgstr "GatherPress"
+
+#: includes/core/classes/settings/class-general.php:140
+msgid "GatherPress allows you to set event archives to pages you have created."
+msgstr ""
+"GatherPress te permite establecer archivos de eventos en las páginas que ha "
+"creado."
+
+#: includes/core/classes/settings/class-general.php:62
+msgid ""
+"GatherPress allows you to set event dates to reflect either the post date or "
+"event date. Default: event date."
+msgstr ""
+"GatherPress te permite establecer fechas de eventos para reflejar la fecha "
+"de publicación o la fecha del evento. Predeterminado: fecha del evento."
+
+#. %1$s: minimum PHP version, %2$s current PHP version.
+#: includes/core/requirements-check.php:24
+#, php-format
+msgid ""
+"GatherPress requires PHP %1$s or higher. Your current PHP version is %2$s. "
+"Please upgrade."
+msgstr ""
+"GatherPress necesita PHP %1$s o superior. Tu versión actual de PHP es %2$s. "
+"Por favor, actualízala."
+
+#: includes/templates/admin/settings/index.php:25
+msgid "GatherPress Settings"
+msgstr "Ajustes de GatherPress"
+
+#: includes/templates/admin/settings/credits/index.php:41
+msgid "GatherPress Team"
+msgstr "Equipo de GatherPress"
+
+#: includes/core/classes/settings/class-general.php:41
+msgid "General"
+msgstr "General"
+
+#: includes/core/classes/settings/class-general.php:61
+msgid "General Settings"
+msgstr "Configuración general"
+
+#: includes/templates/admin/settings/credits/index.php:25
+msgid "Get Involved"
+msgstr "Involúcrate"
+
+#: includes/core/classes/class-event.php:672
+msgid "Google Calendar"
+msgstr "Calendario de Google"
+
+#. Author URI of the plugin
+msgid "https://gatherpess.org/"
+msgstr "https://gatherprss.org/"
+
+#. URI of the plugin
+msgid "https://gatherpress.org/"
+msgstr "https://gatherpress.org/"
+
+#: includes/core/classes/class-event.php:676
+msgid "iCal"
+msgstr "iCal"
+
+#: includes/core/classes/settings/class-leadership.php:39
+msgid "Leadership"
+msgstr "Liderazgo"
+
+#: includes/core/classes/settings/class-general.php:81
+msgid "Maximum Attending Limit"
+msgstr "Límite máximo de asistencia"
+
+#: includes/templates/admin/settings/credits/index.php:24
+msgid "Meet the folks behind GatherPress. Want to see your name here?"
+msgstr "Conozca a la gente detrás de GatherPress. ¿Quieres ver tu nombre aquí?"
+
+#: includes/core/classes/class-rsvp.php:394
+#: includes/core/classes/settings/class-leadership.php:107
+msgid "Member"
+msgstr "Miembro"
+
+#: includes/core/classes/class-event.php:213
+msgid "New Topic Name"
+msgstr "Nuevo nombre de temática"
+
+#: includes/core/classes/class-event.php:214
+msgid "No Topics Found"
+msgstr "No se han encontrado temáticas"
+
+#: includes/core/classes/class-venue.php:103
+#: includes/core/classes/class-event.php:127
+msgid "Not Found"
+msgstr "No encontrado"
+
+#: includes/core/classes/class-venue.php:104
+#: includes/core/classes/class-event.php:128
+msgid "Not found in Trash"
+msgstr "No encontrado en la papelera"
+
+#: includes/core/classes/class-setup.php:332
+msgid "Online event"
+msgstr "Evento en línea"
+
+#: includes/core/classes/settings/class-leadership.php:56
+msgid "Organizer"
+msgstr "Organizador"
+
+#: includes/core/classes/settings/class-leadership.php:55
+#: includes/core/classes/settings/class-leadership.php:57
+msgid "Organizers"
+msgstr "Organizadores"
+
+#: includes/core/classes/class-event.php:680
+msgid "Outlook"
+msgstr "Outlook"
+
+#: includes/core/classes/class-event.php:208
+msgid "Parent Topic"
+msgstr "Temática principal"
+
+#: includes/core/classes/class-event.php:209
+msgid "Parent Topic:"
+msgstr "Pregunta principal:"
+
+#: includes/core/classes/settings/class-general.php:157
+msgid "Past Events"
+msgstr "Eventos pasados"
+
+#: includes/core/classes/class-event.php:117
+msgctxt "Post Type General Name"
+msgid "Events"
+msgstr "Eventos"
+
+#: includes/core/classes/class-venue.php:93
+msgctxt "Post Type General Name"
+msgid "Venues"
+msgstr "Lugares"
+
+#: includes/core/classes/class-event.php:118
+msgctxt "Post Type Singular Name"
+msgid "Event"
+msgstr "Evento"
+
+#: includes/core/classes/class-venue.php:94
+msgctxt "Post Type Singular Name"
+msgid "Venue"
+msgstr "Lugar"
+
+#. Description of the plugin
+msgid "Powering Communities with WordPress."
+msgstr "Impulsando comunidades con WordPress."
+
+#: includes/templates/admin/settings/partials/datetime-preview.php:22
+msgid "Preview:"
+msgstr "Vista previa:"
+
+#: includes/templates/admin/settings/credits/index.php:27
+msgid "Project Leaders"
+msgstr "Líderes del proyecto"
+
+#: includes/core/classes/settings/class-general.php:69
+msgid "Publish Date"
+msgstr "Fecha de publicación"
+
+#: includes/core/classes/settings/class-leadership.php:71
+msgid "Roles"
+msgstr "Perfiles"
+
+#: includes/templates/admin/emails/event-email.php:63
+msgid "RSVP Now"
+msgstr "Voy a asistir"
+
+#: includes/templates/admin/settings/settings-form.php:22
+msgid "Save Settings"
+msgstr "Guardar ajustes"
+
+#: includes/core/classes/class-event.php:126
+msgid "Search Events"
+msgstr "Buscar eventos"
+
+#: includes/core/classes/class-event.php:205
+msgid "Search Topics"
+msgstr "Buscar temática"
+
+#: includes/core/classes/class-venue.php:102
+msgid "Search Venues"
+msgstr "Buscar lugares"
+
+#: includes/core/classes/settings/class-leadership.php:63
+msgid "Select Organizers"
+msgstr "Seleccionar organizadores"
+
+#: includes/core/classes/settings/class-general.php:163
+msgid "Select Past Events Archive Page"
+msgstr "Seleccionar página de archivo de eventos pasados"
+
+#: includes/core/classes/settings/class-general.php:150
+msgid "Select Upcoming Events Archive Page"
+msgstr "Seleccionar página de archivo de próximos eventos"
+
+#: includes/core/classes/class-settings.php:159
+#: includes/core/classes/class-settings.php:160
+#: includes/core/classes/class-setup.php:138
+msgid "Settings"
+msgstr "Ajustes"
+
+#: includes/core/classes/settings/class-general.php:72
+msgid "Show publish date as event date for events"
+msgstr "Mostrar fecha de publicación como fecha de evento para eventos"
+
+#: includes/core/classes/settings/class-general.php:126
+msgid "Show Timezone"
+msgstr "Mostrar zona horaria"
+
+#: includes/core/classes/class-event.php:203
+msgctxt "taxonomy general name"
+msgid "Topics"
+msgstr "Temáticas"
+
+#: includes/core/classes/class-event.php:204
+msgctxt "taxonomy singular name"
+msgid "Topic"
+msgstr "Temática"
+
+#: includes/core/classes/settings/class-general.php:84
+msgid "The default maximum limit of attendees to an event."
+msgstr "El límite máximo predeterminado de asistentes a un evento."
+
+#. Author of the plugin
+msgid "The GatherPress Community"
+msgstr "La comunidad de GatherPress"
+
+#: includes/core/classes/settings/class-general.php:113
+msgid "Time Format"
+msgstr "Formato de hora"
+
+#: includes/templates/admin/setup/membership-check.php:12
+msgid ""
+"To ensure GatherPress functions optimally, we recommend enabling user "
+"registration. You can do so by"
+msgstr ""
+"Para que GatherPress funcione de forma óptima, te recomendamos que actives "
+"el registro de usuarios. Puedes hacerlo"
+
+#: includes/core/classes/class-event.php:216
+msgid "Topics"
+msgstr "Temáticas"
+
+#: includes/core/classes/settings/class-general.php:144
+msgid "Upcoming Events"
+msgstr "Próximos eventos"
+
+#: includes/core/classes/class-event.php:125
+msgid "Update Event"
+msgstr "Actualizar evento"
+
+#: includes/core/classes/class-event.php:211
+msgid "Update Topic"
+msgstr "Actualizar temática"
+
+#: includes/core/classes/class-venue.php:101
+msgid "Update Venue"
+msgstr "Actualizar lugar"
+
+#. %s: gatherpress_event gatherpress_venue name.
+#: includes/templates/admin/emails/event-email.php:55
+#, php-format
+msgid "Venue: %s"
+msgstr "Lugar: %s"
+
+#: includes/core/classes/class-venue.php:95
+#: includes/core/classes/class-venue.php:96
+msgid "Venues"
+msgstr "Lugares"
+
+#: includes/core/classes/class-event.php:121
+msgid "View Event"
+msgstr "Ver evento"
+
+#: includes/core/classes/class-event.php:207
+msgid "View Topic"
+msgstr "Ver tema"
+
+#: includes/core/classes/class-venue.php:97
+msgid "View Venue"
+msgstr "Ver lugar"
+
+#: includes/core/classes/class-event.php:684
+msgid "Yahoo Calendar"
+msgstr "Calendario de Yahoo"
+
+#: includes/core/classes/class-event.php:256
+msgid "—"
+msgstr "—"
+
+#. %s: event title.
+#: includes/core/classes/class-rest-api.php:436
+#, php-format
+msgid "📅 %s"
+msgstr "📅 %s"
