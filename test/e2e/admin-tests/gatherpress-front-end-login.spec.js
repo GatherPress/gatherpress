@@ -7,11 +7,10 @@ test.describe('e2e test for login to front end guests', () => {
 		test.setTimeout(60000);
 		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
-
 	});
 
 	//TODO- Replace the event creation test with the POST api request.
-	
+
 	test('The Event menu item should be preloaded after clicking Add New button', async ({
 		page,
 	}) => {
@@ -28,17 +27,36 @@ test.describe('e2e test for login to front end guests', () => {
 		await page.getByLabel('Document Overview').click();
 
 		await page.getByLabel('List View').locator('div').nth(1).isVisible();
-		await page.screenshot({ path: 'add-new-event.png' });
-	});
 
+		const eventTitle = await page
+			.getByLabel('Add title')
+			.fill('test event');
+		await page.getByLabel('Venue Selector').selectOption('33:online-event');
+
+		await page.screenshot({ path: 'add-new-event.png' });
+
+		await page
+			.getByRole('button', { name: 'Publish', exact: true })
+			.click();
+
+		await page
+			.getByLabel('Editor publish')
+			.getByRole('button', { name: 'Publish', exact: true })
+			.click();
+
+		await page
+			.getByText({ eventTitle }, 'is now live.')
+			.isVisible({ timeout: 60000 });
+	});
 
 	test('verify that the user is able to login after click on RSVP >> login', async ({
 		page,
 	}) => {
 		await page.goto(devUrl);
 
-		await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
-
+		await page
+			.getByRole('heading', { name: 'Upcoming Events' })
+			.isVisible();
 
 		await page.getByRole('link', { name: 'RSVP' }).click();
 
@@ -46,7 +64,7 @@ test.describe('e2e test for login to front end guests', () => {
 
 		await login({ page, username: 'testuser1' });
 
-		await page.goto(devUrl, {timeout:120000});
+		await page.goto(devUrl, { timeout: 120000 });
 
 		await page.getByRole('link', { name: 'RSVP' }).click();
 
