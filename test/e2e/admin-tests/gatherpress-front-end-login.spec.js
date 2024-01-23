@@ -10,6 +10,27 @@ test.describe('e2e test for login to front end guests', () => {
 
 	});
 
+	//TODO- Replace the event creation test with the POST api request.
+	
+	test('The Event menu item should be preloaded after clicking Add New button', async ({
+		page,
+	}) => {
+		await login({ page, username: 'testuser1' });
+
+		await page.getByRole('link', { name: 'Events', exact: true }).click();
+		await page.screenshot({ path: 'event-page.png' });
+
+		await page
+			.locator('#wpbody-content')
+			.getByRole('link', { name: 'Add New' })
+			.click();
+
+		await page.getByLabel('Document Overview').click();
+
+		await page.getByLabel('List View').locator('div').nth(1).isVisible();
+		await page.screenshot({ path: 'add-new-event.png' });
+	});
+
 
 	test('verify that the user is able to login after click on RSVP >> login', async ({
 		page,
