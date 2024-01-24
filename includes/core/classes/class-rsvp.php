@@ -118,12 +118,6 @@ class Rsvp {
 		// @todo Consider implementing caching for improved performance in the future.
 		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT id, timestamp, status, guests, anonymous FROM ' . esc_sql( $table ) . ' WHERE post_id = %d AND user_id = %d', $event_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
-		// @todo needing to force types here. Need to look into this.
-		$data['id']        = (int) $data['id'];
-		$data['guests']    = (int) $data['guests'];
-		$data['anonymous'] = (int) $data['anonymous'];
-
-
 		return array_merge( $default, (array) $data );
 	}
 

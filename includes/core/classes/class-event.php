@@ -184,7 +184,7 @@ class Event {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'anonymous_rsvp' => array(
+			'allow_anonymous_rsvp' => array(
 				'auth_callback'     => function() {
 					return current_user_can( 'edit_posts' );
 				},

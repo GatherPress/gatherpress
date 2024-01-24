@@ -18,6 +18,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { Broadcaster } from '../helpers/broadcasting';
 import RsvpStatusResponse from './RsvpStatusResponse';
 import { getFromGlobal } from '../helpers/globals';
+import { useSelect } from '@wordpress/data';
 
 /**
  * Rsvp component for GatherPress.
@@ -38,7 +39,7 @@ import { getFromGlobal } from '../helpers/globals';
  */
 const Rsvp = ({ eventId, currentUser = '', type }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
-	const [rsvpAnonymous, setRsvpAnonymous] = useState(currentUser.anonymous);
+	const [rsvpAnonymous, setRsvpAnonymous] = useState(Number(currentUser.anonymous));
 	const [rsvpGuests, setRsvpGuests] = useState(currentUser.guests);
 	const [selectorHidden, setSelectorHidden] = useState('hidden');
 	const [selectorExpanded, setSelectorExpanded] = useState('false');
@@ -244,26 +245,31 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 							)
 						)}
 					</div>
-					<div className="gp-modal__anonymous">
-						<input
-							id="gp-anonymous"
-							type="checkbox"
-							onChange={(e) => {
-								setRsvpAnonymous(Number(e.target.checked));
-								onAnchorClick(
-									e,
-									rsvpStatus,
-									rsvpAnonymous,
-									rsvpGuests,
-									false
-								);
-							}}
-							checked={rsvpAnonymous}
-						/>
-						<label htmlFor="gp-anonymous">
-							{__('List me as anonymous.', 'gatherpress')}
-						</label>
-					</div>
+					{1 === getFromGlobal('event_allow_anonymous_rsvp') ?
+						<div className="gp-modal__anonymous">
+							<input
+								id="gp-anonymous"
+								type="checkbox"
+								onChange={(e) => {
+									const value = Number(e.target.checked);
+									setRsvpAnonymous(value);
+									onAnchorClick(
+										e,
+										rsvpStatus,
+										value,
+										rsvpGuests,
+										false
+									);
+								}}
+								checked={rsvpAnonymous}
+							/>
+							<label htmlFor="gp-anonymous">
+								{__('List me as anonymous.', 'gatherpress')}
+							</label>
+						</div>
+						:
+						<></>
+					}
 					{/*@todo Guests feature coming in later version of GatherPress*/}
 					{/*	<label htmlFor="gp-guests">*/}
 					{/*		{__('Number of guests?', 'gatherpress')}*/}

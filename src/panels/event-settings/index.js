@@ -19,6 +19,7 @@ import DateTimeRangePanel from './datetime-range';
 import NotifyMembersPanel from './notify-members';
 import OnlineEventLinkPanel from './online-link';
 import VenueSelectorPanel from './venue-selector';
+import { getFromGlobal } from '../../helpers/globals';
 
 /**
  * A settings panel for event-specific settings in the block editor.

@@ -12,29 +12,27 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import { getFromGlobal } from '../helpers/globals';
 
 const AnonymousRsvp = () => {
-	const { editPost, unlockPostSaving } = useDispatch('core/editor');
-	let defaultAnonymousRsvp = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
-				.anonymous_rsvp
-	);
-	console.log(defaultAnonymousRsvp);
-
-	if ('undefined' === typeof defaultAnonymousRsvp) {
-		defaultAnonymousRsvp = getFromGlobal('settings.anonymous_rsvp');
+	if (!getFromGlobal('settings.allow_anonymous_rsvp')) {
+		return <></>;
 	}
+
+	const { editPost, unlockPostSaving } = useDispatch('core/editor');
+	const defaultAnonymousRsvp = useSelect((select) => {
+		return select('core/editor').getEditedPostAttribute('meta')
+			.allow_anonymous_rsvp;
+	}, []);
 
 	const [anonymousRsvp, setAnonymousRsvp] = useState(defaultAnonymousRsvp);
 
 	const updateAnonymousRsvp = (value) => {
-		const meta = { anonymous_rsvp: value };
+		const meta = { allow_anonymous_rsvp: Number(value) };
 
 		setAnonymousRsvp(value);
 		editPost({ meta });
 		unlockPostSaving();
 	};
 
-	return(
+	return (
 		<CheckboxControl
 			label={__('Allow anonymous RSVPs', 'gatherpress')}
 			checked={anonymousRsvp}
