@@ -399,6 +399,14 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
+
+		$cache_key = 'formatted_datetime_' . md5($format . $which . ($local ? 'local' : 'gmt'));
+
+		$cached_date = get_transient($cache_key);
+		if ($cached_date !== false) {
+			return $cached_date;
+		}
+
 		$dt             = $this->get_datetime();
 		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = static::maybe_convert_offset( $dt['timezone'] );
@@ -419,6 +427,7 @@ class Event {
 			$date = wp_date( $format, $ts, $tz );
 		}
 
+		set_transient($cache_key, $date, 43200);
 		return (string) $date;
 	}
 
