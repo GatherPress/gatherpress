@@ -1,7 +1,7 @@
 === GatherPress ===
 Contributors:      mauteri, hrmervin, jmarx, meaganhanes, pbrocks
 Tags:              events, event, meetup, community
-License:           GNU General Public License v2 or later
+License:           GNU General Public License v2.0 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 Tested up to:      6.4
 Stable tag:        0.27.0

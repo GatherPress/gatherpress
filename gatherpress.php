@@ -10,7 +10,8 @@
  * Requires at least: 6.4
  * Text Domain:       gatherpress
  * Domain Path:       /languages
- * License:           GPLv2 or later (license.txt)
+ * License:           GNU General Public License v2.0 or later
+ * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
  * Update URI:        https://gatherpress.org/
  *
  * This file serves as the main plugin file for GatherPress. It defines the plugin's basic information,
