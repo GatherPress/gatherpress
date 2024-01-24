@@ -19,6 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: WordPress version checker
-        uses: skaut/wordpress-version-checker@v2
+        uses: skaut/wordpress-version-checker@v2.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
