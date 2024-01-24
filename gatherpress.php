@@ -1,15 +1,17 @@
 <?php
 /**
- * Plugin Name:  GatherPress
- * Plugin URI:   https://gatherpress.org/
- * Description:  Powering Communities with WordPress.
- * Author:       The GatherPress Community
- * Author URI:   https://gatherpress.org/
- * Version:      0.27.0
- * Requires PHP: 7.4
- * Text Domain:  gatherpress
- * Domain Path: /languages
- * License:      GPLv2 or later (license.txt)
+ * Plugin Name:       GatherPress
+ * Plugin URI:        https://gatherpress.org/
+ * Description:       Powering Communities with WordPress.
+ * Author:            The GatherPress Community
+ * Author URI:        https://gatherpress.org/
+ * Version:           0.27.0
+ * Requires PHP:      7.4
+ * Requires at least: 6.4
+ * Text Domain:       gatherpress
+ * Domain Path:       /languages
+ * License:           GPLv2 or later (license.txt)
+ * Update URI:        https://gatherpress.org/
  *
  * This file serves as the main plugin file for GatherPress. It defines the plugin's basic information,
  * constants, and initializes the plugin.
