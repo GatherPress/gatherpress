@@ -42,9 +42,10 @@ class Rsvp {
 	 * An array of RSVP statuses.
 	 *
 	 * @since 1.0.0
-	 * @var string[] Contains RSVP statuses such as 'attending', 'not_attending', and 'waiting_list'.
+	 * @var string[] Contains RSVP statuses such as 'attend', 'attending', 'not_attending', and 'waiting_list'.
 	 */
 	public array $statuses = array(
+		'attend',
 		'attending',
 		'not_attending',
 		'waiting_list',
@@ -172,7 +173,14 @@ class Rsvp {
 			$where = array(
 				'id' => intval( $response['id'] ),
 			);
-			$save  = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+
+			// If not attending and anonymous, just remove record.
+			if ( 'not_attending' === $status && $anonymous ) {
+				$save = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$status = 'attend';
+			} else {
+				$save = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			}
 		} else {
 			$save = $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
