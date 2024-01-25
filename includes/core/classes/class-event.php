@@ -408,9 +408,9 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
-		$cache_key = 'formatted_datetime_' . md5( $format . $which . ( $local ? 'local' : 'gmt' ) );
-
+		$cache_key   = 'formatted_datetime_' . md5( $format . $which . ( $local ? 'local' : 'gmt' ) );
 		$cached_date = get_transient( $cache_key );
+
 		if ( false !== $cached_date ) {
 			return $cached_date;
 		}
