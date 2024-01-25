@@ -1,0 +1,938 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: GatherPress\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/gatherpress\n"
+"POT-Creation-Date: 2024-01-16T14:36:19+00:00\n"
+"PO-Revision-Date: 2024-01-22 08:02+0100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.1\n"
+"X-Loco-Version: 2.6.6; wp-6.4.2\n"
+"X-Domain: gatherpress\n"
+
+#. Plugin Name of the plugin
+#: includes/core/classes/class-setup.php:263
+msgid "GatherPress"
+msgstr "GatherPress"
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+msgid "https://gatherpress.org/"
+msgstr "https://gatherpress.org/"
+
+#. Description of the plugin
+msgid "Powering Communities with WordPress."
+msgstr "Impulsando comunidades con WordPress."
+
+#. Author of the plugin
+msgid "The GatherPress Community"
+msgstr "La comunidad de GatherPress"
+
+#: build/blocks/add-to-calendar/render.php:23
+#: build/blocks/add-to-calendar/index.js:1
+msgid "Add to calendar"
+msgstr "Añadir al calendario"
+
+#: includes/core/classes/class-event.php:116
+msgctxt "Post Type General Name"
+msgid "Events"
+msgstr "Eventos"
+
+#: includes/core/classes/class-event.php:117
+msgctxt "Post Type Singular Name"
+msgid "Event"
+msgstr "Evento"
+
+#: includes/core/classes/class-event.php:118
+msgid "Events"
+msgstr "Eventos"
+
+#: includes/core/classes/class-event.php:119
+msgid "All Events"
+msgstr "Todos los eventos"
+
+#: includes/core/classes/class-event.php:120
+msgid "View Event"
+msgstr "Ver evento"
+
+#: includes/core/classes/class-event.php:121
+msgid "Add New Event"
+msgstr "Añadir nuevo evento"
+
+#: includes/core/classes/class-event.php:122
+#: includes/core/classes/class-venue.php:101
+msgid "Add New"
+msgstr "Añadir nuevo"
+
+#: includes/core/classes/class-event.php:123
+msgid "Edit Event"
+msgstr "Editar evento"
+
+#: includes/core/classes/class-event.php:124
+msgid "Update Event"
+msgstr "Actualizar evento"
+
+#: includes/core/classes/class-event.php:125
+msgid "Search Events"
+msgstr "Buscar eventos"
+
+#: includes/core/classes/class-event.php:126
+#: includes/core/classes/class-venue.php:105
+msgid "Not Found"
+msgstr "No encontrado"
+
+#: includes/core/classes/class-event.php:127
+#: includes/core/classes/class-venue.php:106
+msgid "Not found in Trash"
+msgstr "No encontrado en la papelera"
+
+#: includes/core/classes/class-event.php:141
+msgid ""
+"Add a description of the event and let people know what to expect, including "
+"the agenda, what they need to bring, and how to find the group."
+msgstr ""
+"Añade una descripción del evento e informa a la gente de lo que pueden "
+"esperar, incluido el orden del día, lo que tienen que llevar y cómo "
+"encontrar al grupo."
+
+#: includes/core/classes/class-event.php:203
+msgctxt "taxonomy general name"
+msgid "Topics"
+msgstr "Temáticas"
+
+#: includes/core/classes/class-event.php:204
+msgctxt "taxonomy singular name"
+msgid "Topic"
+msgstr "Temática"
+
+#: includes/core/classes/class-event.php:205
+msgid "Search Topics"
+msgstr "Buscar temática"
+
+#: includes/core/classes/class-event.php:206
+msgid "All Topics"
+msgstr "Todas las temáticas"
+
+#: includes/core/classes/class-event.php:207
+msgid "View Topic"
+msgstr "Ver tema"
+
+#: includes/core/classes/class-event.php:208
+msgid "Parent Topic"
+msgstr "Temática principal"
+
+#: includes/core/classes/class-event.php:209
+msgid "Parent Topic:"
+msgstr "Pregunta principal:"
+
+#: includes/core/classes/class-event.php:210
+msgid "Edit Topic"
+msgstr "Editar temática"
+
+#: includes/core/classes/class-event.php:211
+msgid "Update Topic"
+msgstr "Actualizar temática"
+
+#: includes/core/classes/class-event.php:212
+msgid "Add New Topic"
+msgstr "Añadir nuevo tema"
+
+#: includes/core/classes/class-event.php:213
+msgid "New Topic Name"
+msgstr "Nuevo nombre de temática"
+
+#: includes/core/classes/class-event.php:214
+msgid "No Topics Found"
+msgstr "No se han encontrado temáticas"
+
+#: includes/core/classes/class-event.php:215
+msgid "Back to Topics"
+msgstr "Volver a temáticas"
+
+#: includes/core/classes/class-event.php:216
+#: build/blocks/events-list/index.js:2
+msgid "Topics"
+msgstr "Temáticas"
+
+#. translators: %1$s: start datetime, %2$s: end datetime.
+#: includes/core/classes/class-event.php:254
+msgid "%1$s to %2$s"
+msgstr "%1$s a %2$s"
+
+#: includes/core/classes/class-event.php:257
+msgid "—"
+msgstr "—"
+
+#: includes/core/classes/class-event.php:673
+msgid "Google Calendar"
+msgstr "Calendario de Google"
+
+#: includes/core/classes/class-event.php:677
+msgid "iCal"
+msgstr "iCal"
+
+#: includes/core/classes/class-event.php:681
+msgid "Outlook"
+msgstr "Outlook"
+
+#: includes/core/classes/class-event.php:685
+msgid "Yahoo Calendar"
+msgstr "Calendario de Yahoo"
+
+#. translators: %s: event link.
+#: includes/core/classes/class-event.php:840
+msgid "For details go to %s"
+msgstr "Para obtener más información, visita %s"
+
+#. translators: %s: event title.
+#: includes/core/classes/class-rest-api.php:438
+msgid "📅 %s"
+msgstr "📅 %s"
+
+#: includes/core/classes/class-rsvp.php:327
+msgid "Anonymous"
+msgstr "Anónimo"
+
+#: includes/core/classes/class-rsvp.php:392
+#: includes/core/classes/settings/class-leadership.php:134
+msgid "Member"
+msgstr "Miembro"
+
+#: includes/core/classes/class-settings.php:161
+#: includes/core/classes/class-settings.php:162
+#: includes/core/classes/class-setup.php:175
+msgid "Settings"
+msgstr "Ajustes"
+
+#: includes/core/classes/class-setup.php:367
+#: build/blocks/online-event/index.js:1
+#: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
+#: build/blocks/venue/venue.js:1
+msgid "Online event"
+msgstr "Evento en línea"
+
+#: includes/core/classes/class-setup.php:545
+msgid "Event date &amp; time"
+msgstr "Fecha y hora del evento"
+
+#: includes/core/classes/class-venue.php:95
+msgctxt "Post Type General Name"
+msgid "Venues"
+msgstr "Lugares"
+
+#: includes/core/classes/class-venue.php:96
+msgctxt "Post Type Singular Name"
+msgid "Venue"
+msgstr "Lugar"
+
+#: includes/core/classes/class-venue.php:97
+#: includes/core/classes/class-venue.php:98 build/blocks/events-list/index.js:2
+msgid "Venues"
+msgstr "Lugares"
+
+#: includes/core/classes/class-venue.php:99
+msgid "View Venue"
+msgstr "Ver lugar"
+
+#: includes/core/classes/class-venue.php:100
+msgid "Add New Venue"
+msgstr "Añadir nuevo lugar"
+
+#: includes/core/classes/class-venue.php:102
+msgid "Edit Venue"
+msgstr "Editar lugar"
+
+#: includes/core/classes/class-venue.php:103
+msgid "Update Venue"
+msgstr "Actualizar lugar"
+
+#: includes/core/classes/class-venue.php:104
+msgid "Search Venues"
+msgstr "Buscar lugares"
+
+#. translators: %1$d: event ID, %2$s: attendance status, %3$d: user ID.
+#: includes/core/classes/commands/class-cli-event.php:73
+msgid ""
+"The RSVP status for Event ID \"%1$d\" has been successfully set to \"%2$s\" "
+"for User ID \"%3$d\"."
+msgstr ""
+"La asistencia del ID de evento «%1$d» se ha establecido correctamente en "
+"«%2$s» para el ID de usuario «%3$d»."
+
+#: includes/core/classes/settings/class-credits.php:68
+#: includes/templates/admin/settings/credits/index.php:22
+msgid "Credits"
+msgstr "Créditos"
+
+#: includes/core/classes/settings/class-general.php:55
+msgid "General"
+msgstr "General"
+
+#: includes/core/classes/settings/class-general.php:85
+msgid "General Settings"
+msgstr "Configuración general"
+
+#: includes/core/classes/settings/class-general.php:86
+msgid ""
+"GatherPress allows you to set event dates to reflect either the post date or "
+"event date. Default: event date."
+msgstr ""
+"GatherPress te permite establecer fechas de eventos para reflejar la fecha "
+"de publicación o la fecha del evento. Predeterminado: fecha del evento."
+
+#: includes/core/classes/settings/class-general.php:93
+msgid "Publish Date"
+msgstr "Fecha de publicación"
+
+#: includes/core/classes/settings/class-general.php:96
+msgid "Show publish date as event date for events."
+msgstr "Mostrar fecha de publicación como fecha de evento para eventos."
+
+#: includes/core/classes/settings/class-general.php:105
+msgid "Maximum Attending Limit"
+msgstr "Límite máximo de asistencia"
+
+#: includes/core/classes/settings/class-general.php:108
+msgid "The default maximum limit of attendees to an event."
+msgstr "El límite máximo predeterminado de asistentes a un evento."
+
+#: includes/core/classes/settings/class-general.php:119
+msgid "Date & Time Formatting"
+msgstr "Formato de fecha y hora"
+
+#: includes/core/classes/settings/class-general.php:120
+msgid ""
+"For more information read the <a href=\"https://wordpress.org/documentation/"
+"article/customize-date-and-time-format/\">Documentation on date and time "
+"formatting</a>."
+msgstr ""
+"Para más información, lee la <a href=\"https://wordpress.org/documentation/"
+"article/customize-date-and-time-format/\">documentación sobre el formato de "
+"fecha y hora</a>."
+
+#: includes/core/classes/settings/class-general.php:124
+msgid "Date Format"
+msgstr "Formato de fecha"
+
+#: includes/core/classes/settings/class-general.php:127
+msgid "Format of date for scheduled events."
+msgstr "Formato de fecha para los eventos programados."
+
+#: includes/core/classes/settings/class-general.php:137
+msgid "Time Format"
+msgstr "Formato de hora"
+
+#: includes/core/classes/settings/class-general.php:140
+msgid "Format of time for scheduled events."
+msgstr "Formato de tiempo para los eventos programados."
+
+#: includes/core/classes/settings/class-general.php:150
+msgid "Show Timezone"
+msgstr "Mostrar zona horaria"
+
+#: includes/core/classes/settings/class-general.php:153
+msgid "Display the timezone for scheduled events."
+msgstr "Muestra la zona horaria de los eventos programados."
+
+#: includes/core/classes/settings/class-general.php:163
+msgid "Event Archive Pages"
+msgstr "Páginas de archivo de eventos"
+
+#: includes/core/classes/settings/class-general.php:164
+msgid "GatherPress allows you to set event archives to pages you have created."
+msgstr ""
+"GatherPress te permite establecer archivos de eventos en las páginas que ha "
+"creado."
+
+#: includes/core/classes/settings/class-general.php:168
+msgid "Upcoming Events"
+msgstr "Próximos eventos"
+
+#: includes/core/classes/settings/class-general.php:174
+msgid "Select Upcoming Events Archive Page"
+msgstr "Seleccionar página de archivo de próximos eventos"
+
+#: includes/core/classes/settings/class-general.php:181
+msgid "Past Events"
+msgstr "Eventos pasados"
+
+#: includes/core/classes/settings/class-general.php:187
+msgid "Select Past Events Archive Page"
+msgstr "Seleccionar página de archivo de eventos pasados"
+
+#: includes/core/classes/settings/class-leadership.php:54
+msgid "Leadership"
+msgstr "Liderazgo"
+
+#: includes/core/classes/settings/class-leadership.php:68
+#: includes/core/classes/settings/class-leadership.php:70
+msgid "Organizers"
+msgstr "Organizadores"
+
+#: includes/core/classes/settings/class-leadership.php:69
+msgid "Organizer"
+msgstr "Organizador"
+
+#: includes/core/classes/settings/class-leadership.php:76
+msgid "Select Organizers"
+msgstr "Seleccionar organizadores"
+
+#: includes/core/classes/settings/class-leadership.php:98
+msgid "Roles"
+msgstr "Perfiles"
+
+#: includes/core/classes/settings/class-leadership.php:99
+msgid "Customize role labels to be more appropriate for events."
+msgstr ""
+"Personaliza las etiquetas de los perfiles para que sean más apropiadas para "
+"los eventos."
+
+#. translators: %1$s: minimum PHP version, %2$s: current PHP version.
+#: includes/core/requirements-check.php:24
+msgid ""
+"GatherPress requires PHP %1$s or higher. Your current PHP version is %2$s. "
+"Please upgrade."
+msgstr ""
+"GatherPress necesita PHP %1$s o superior. Tu versión actual de PHP es %2$s. "
+"Por favor, actualízala."
+
+#: includes/templates/admin/emails/event-email.php:37
+msgid "Event Image"
+msgstr "Imagen del evento"
+
+#. translators: %s: gatherpress_event date and time.
+#: includes/templates/admin/emails/event-email.php:46
+msgid "Date: %s"
+msgstr "Fecha: %s"
+
+#. translators: %s: gatherpress_event gatherpress_venue name.
+#: includes/templates/admin/emails/event-email.php:55
+msgid "Venue: %s"
+msgstr "Lugar: %s"
+
+#: includes/templates/admin/emails/event-email.php:63
+msgid "RSVP Now"
+msgstr "Voy a asistir"
+
+#: includes/templates/admin/settings/credits/index.php:24
+msgid "Meet the folks behind GatherPress. Want to see your name here?"
+msgstr "Conozca a la gente detrás de GatherPress. ¿Quieres ver tu nombre aquí?"
+
+#: includes/templates/admin/settings/credits/index.php:25
+msgid "Get Involved"
+msgstr "Involúcrate"
+
+#: includes/templates/admin/settings/credits/index.php:27
+msgid "Project Leaders"
+msgstr "Líderes del proyecto"
+
+#: includes/templates/admin/settings/credits/index.php:41
+msgid "GatherPress Team"
+msgstr "Equipo de GatherPress"
+
+#. translators: %s: GatherPress version.
+#: includes/templates/admin/settings/credits/index.php:58
+msgid "Contributors to GatherPress %s"
+msgstr "Colaboradores de GatherPress %s"
+
+#: includes/templates/admin/settings/index.php:25
+msgid "GatherPress Settings"
+msgstr "Ajustes de GatherPress"
+
+#: includes/templates/admin/settings/partials/datetime-preview.php:22
+msgid "Preview:"
+msgstr "Vista previa:"
+
+#: includes/templates/admin/settings/settings-form.php:22
+msgid "Save Settings"
+msgstr "Guardar ajustes"
+
+#: includes/templates/admin/setup/membership-check.php:12
+msgid ""
+"To ensure GatherPress functions optimally, we recommend enabling user "
+"registration. You can do so by"
+msgstr ""
+"Para que GatherPress funcione de forma óptima, te recomendamos que actives "
+"el registro de usuarios. Puedes hacerlo"
+
+#: includes/templates/admin/setup/membership-check.php:14
+msgid "enabling user registration here"
+msgstr "permitiendo el registro de usuarios aquí"
+
+#: includes/templates/admin/setup/membership-check.php:19
+msgid "Dismiss forever"
+msgstr "Descartar para siempre"
+
+#: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
+msgid "This event has already past."
+msgstr "Este evento ya ha pasado."
+
+#. translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone.
+#: build/blocks/event-date/index.js:1 build/blocks/event-date/index.js:2
+#: build/blocks/venue/index.js:1 build/editor.js:1 build/panels.js:1
+msgid "GMT"
+msgstr "GMT"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Send an event update to members via email?"
+msgstr ""
+"¿Enviar una actualización del evento a los miembros por correo electrónico?"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Compose Message"
+msgstr "Redactar mensaje"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Start"
+msgstr "Inicio"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "End"
+msgstr "Final"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Time Zone"
+msgstr "Zona horaria"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Date & time"
+msgstr "Fecha y hora"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Attending"
+msgstr "Asistiendo"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Waiting List"
+msgstr "Lista de espera"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Not Attending"
+msgstr "No asistirán"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Went"
+msgstr "Fueron"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Didn't Go"
+msgstr "No fueron"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're attending"
+msgstr "Vas a asistir"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're wait listed"
+msgstr "Estás en lista de espera"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're not attending"
+msgstr "No vas a asistir"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "RSVP to this event"
+msgstr "Confirma tu asistencia a este evento"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Edit RSVP"
+msgstr "Editar confirmación de asistencia"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "RSVP"
+msgstr "Asistencia"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Login Required"
+msgstr "Necesario iniciar sesión"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You must "
+msgstr "Debes"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Login"
+msgstr "Iniciar sesión"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid " to RSVP to events."
+msgstr " para confirmar tu asistencia."
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Register"
+msgstr "Registrarse"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid " if you do not have an account."
+msgstr " si no tienes una cuenta."
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:1 build/blocks/events-list/index.js:2
+#: build/blocks/rsvp/index.js:1 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:1 build/blocks/rsvp/rsvp.js:2
+msgid "Close"
+msgstr "Cerrar"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Attend"
+msgstr "Asistir"
+
+#. translators: %s: button label.
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:2
+msgid ""
+"To set or change your attending status, simply click the %s button below."
+msgstr ""
+"Para establecer o cambiar tu estado de asistencia, simplemente haz clic en "
+"el botón %s a continuación."
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:2
+msgid "guest(s)"
+msgstr "invitado(s)"
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2
+msgid "There are no upcoming events."
+msgstr "No hay eventos próximos."
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2
+msgid "There are no past events."
+msgstr "No hay eventos pasados."
+
+#: build/blocks/events-list/index.js:2
+msgid "Event List type"
+msgstr "Tipo de lista de eventos"
+
+#: build/blocks/events-list/index.js:2
+msgid "Upcoming"
+msgstr "Próximos"
+
+#: build/blocks/events-list/index.js:2
+msgid "Past"
+msgstr "Pasado"
+
+#: build/blocks/events-list/index.js:2
+msgid "Maximum number of events to display"
+msgstr "Número máximo de eventos que se van a mostrar"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide All RSVP Responses"
+msgstr "Mostrar/Ocultar todas las respuestas de confirmación de asistencia"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show All RSVP Responses"
+msgstr "Mostrar todas las respuestas de confirmación de asistencia"
+
+#: build/blocks/events-list/index.js:2
+msgid "Hide All RSVP Responses"
+msgstr "Ocultar todas las respuestas de confirmación de asistencia"
+
+#: build/blocks/events-list/index.js:2
+msgid "Image Size Options"
+msgstr "Opciones de tamaño de imagen"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide Featured Image"
+msgstr "Mostrar/Ocultar imagen destacada"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show Featured Image"
+msgstr "Mostrar Imagen destacada"
+
+#: build/blocks/events-list/index.js:2
+msgid "Hide Featured Image"
+msgstr "Ocultar imagen destacada"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide Description"
+msgstr "Mostrar/Ocultar Descripción"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show Description"
+msgstr "Mostrar descripción"
+
+#: build/blocks/events-list/index.js:2
+msgid "Hide Description"
+msgstr "Ocultar descripción"
+
+#: build/blocks/online-event/index.js:1
+#: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
+#: build/blocks/venue/venue.js:1
+msgid "Link active for attendees during event."
+msgstr "Enlace activo para los asistentes durante el evento."
+
+#: build/blocks/online-event/index.js:1 build/blocks/venue/index.js:1
+#: build/panels.js:1
+msgid "Online event link"
+msgstr "Enlace al evento en línea"
+
+#: build/blocks/online-event/index.js:1 build/blocks/venue/index.js:1
+#: build/panels.js:1
+msgid "Add link to online event"
+msgstr "Añadir enlace al evento en línea"
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "See fewer"
+msgstr "Ver menos"
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "See all"
+msgstr "Ver todo"
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "No one is attending this event yet."
+msgstr "Nadie asistirá a este evento todavía."
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "No one went to this event."
+msgstr "Nadie fue a este evento."
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "Wait Listed"
+msgstr "Lista de espera"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "No venue selected."
+msgstr "No se ha seleccionado ningún lugar."
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Choose a venue"
+msgstr "Elige un lugar"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Venue Selector"
+msgstr "Selector de lugares"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Full Address"
+msgstr "Dirección completa"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Phone Number"
+msgstr "Número de teléfono"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Website"
+msgstr "Web"
+
+#: build/blocks/venue/index.js:1
+msgid "Add venue information."
+msgstr "Añadir información sobre el lugar."
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Venue settings"
+msgstr "Configuración del lugar"
+
+#: build/blocks/venue/index.js:1
+msgid "Map settings"
+msgstr "Configuración del Mapa"
+
+#: build/blocks/venue/index.js:1
+msgid "Show map on venue"
+msgstr "Mostrar mapa del lugar"
+
+#: build/blocks/venue/index.js:1
+msgid "Display the map"
+msgstr "Mostrar el mapa"
+
+#: build/blocks/venue/index.js:1
+msgid "Hide the map"
+msgstr "Ocultar el mapa"
+
+#: build/blocks/venue/index.js:1
+msgid "Zoom level"
+msgstr "Nivel de zoom"
+
+#: build/blocks/venue/index.js:1
+msgid "Map type"
+msgstr "Tipo de mapa"
+
+#: build/blocks/venue/index.js:1
+msgid "Roadmap"
+msgstr "Hoja de ruta"
+
+#: build/blocks/venue/index.js:1
+msgid "Satellite"
+msgstr "Satélite"
+
+#: build/blocks/venue/index.js:1
+msgid "Map height"
+msgstr "Altura del mapa"
+
+#: build/modals.js:1
+msgid "Notify members via email"
+msgstr "Notificar a los miembros por correo electrónico"
+
+#: build/modals.js:1
+msgid "Optional message"
+msgstr "Mensaje opcional"
+
+#: build/modals.js:1
+msgid "Select the recipients for your message by checking the relevant boxes."
+msgstr ""
+"Seleccione los destinatarios de su mensaje marcando las casillas "
+"correspondientes."
+
+#: build/modals.js:1
+msgid "All Members"
+msgstr "Todos los miembros"
+
+#: build/modals.js:1
+msgid "Confirm you are ready to send?"
+msgstr "¿Confirmas que estás listo para enviar?"
+
+#: build/modals.js:1
+msgid "Send Email"
+msgstr "Enviar correo electrónico"
+
+#: build/panels.js:1
+msgid "Send an event update"
+msgstr "Enviar una actualización de evento"
+
+#: build/panels.js:1
+msgid "Event settings"
+msgstr "Ajustes de eventos"
+
+#: build/settings.js:1
+msgid "Select Posts"
+msgstr "Seleccionar entradas"
+
+#: build/settings.js:1
+msgid "Choose only one item."
+msgstr "Elige solo un elemento."
+
+#: build/blocks/add-to-calendar/block.json
+msgctxt "block title"
+msgid "Add to Calendar"
+msgstr "Añadir al calendario"
+
+#: build/blocks/add-to-calendar/block.json
+msgctxt "block description"
+msgid "Allows a member to add an event to their preferred calendar."
+msgstr "Permite a un miembro agregar un evento a su calendario preferido."
+
+#: build/blocks/event-date/block.json
+msgctxt "block title"
+msgid "Event Date"
+msgstr "Fecha del evento"
+
+#: build/blocks/event-date/block.json
+msgctxt "block description"
+msgid "Displays the date and time for an event."
+msgstr "Muestra la fecha y la hora de un evento."
+
+#: build/blocks/events-list/block.json
+msgctxt "block title"
+msgid "Events List"
+msgstr "Lista de eventos"
+
+#: build/blocks/events-list/block.json
+msgctxt "block description"
+msgid "Displays events that are either upcoming or have occurred in the past."
+msgstr ""
+"Muestra los eventos que están por venir o que se han producido en el pasado."
+
+#: build/blocks/online-event/block.json
+msgctxt "block title"
+msgid "Online Event"
+msgstr "Evento en línea"
+
+#: build/blocks/online-event/block.json
+msgctxt "block description"
+msgid ""
+"Utilized for virtual events, offering the capability to share a direct link "
+"to an event."
+msgstr ""
+"Se utiliza para eventos virtuales, ofreciendo la capacidad de compartir un "
+"enlace directo a un evento."
+
+#: build/blocks/rsvp-response/block.json
+msgctxt "block title"
+msgid "RSVP Response"
+msgstr "Respuesta de confirmación de asistencia"
+
+#: build/blocks/rsvp-response/block.json
+msgctxt "block description"
+msgid ""
+"Displays a list of members who have confirmed their attendance for an event."
+msgstr ""
+"Muestra una lista de los miembros que han confirmado su asistencia a un "
+"evento."
+
+#: build/blocks/rsvp/block.json
+msgctxt "block title"
+msgid "RSVP"
+msgstr "Asistencia"
+
+#: build/blocks/rsvp/block.json
+msgctxt "block description"
+msgid "Enables members to easily confirm their attendance for an event."
+msgstr "Permite a los miembros confirmar fácilmente su asistencia a un evento."
+
+#: build/blocks/venue/block.json
+msgctxt "block title"
+msgid "Venue"
+msgstr "Lugar"
+
+#: build/blocks/venue/block.json
+msgctxt "block description"
+msgid "Provides information about an event venue."
+msgstr "Proporciona información sobre el lugar de un evento."
+
+#~ msgid "https://gatherpess.org/"
+#~ msgstr "https://gatherprss.org/"

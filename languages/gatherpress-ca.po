@@ -1,0 +1,939 @@
+# Copyright (C) 2024 The GatherPress Community
+# This file is distributed under the GPLv2 or later (license.txt).
+msgid ""
+msgstr ""
+"Project-Id-Version: GatherPress 0.27.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/gatherpress\n"
+"POT-Creation-Date: 2024-01-16T14:36:19+00:00\n"
+"PO-Revision-Date: 2024-01-22 07:32+0100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ca\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.1\n"
+"X-Domain: gatherpress\n"
+
+#. Plugin Name of the plugin
+#: includes/core/classes/class-setup.php:263
+msgid "GatherPress"
+msgstr "GatherPress"
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+msgid "https://gatherpress.org/"
+msgstr "https://gatherpress.org/"
+
+#. Description of the plugin
+msgid "Powering Communities with WordPress."
+msgstr "Impulsant comunitats amb WordPress."
+
+#. Author of the plugin
+msgid "The GatherPress Community"
+msgstr "La comunitat GatherPress"
+
+#: build/blocks/add-to-calendar/render.php:23
+#: build/blocks/add-to-calendar/index.js:1
+msgid "Add to calendar"
+msgstr "Afegir al calendari"
+
+#: includes/core/classes/class-event.php:116
+msgctxt "Post Type General Name"
+msgid "Events"
+msgstr "Esdeveniments"
+
+#: includes/core/classes/class-event.php:117
+msgctxt "Post Type Singular Name"
+msgid "Event"
+msgstr "Esdeveniment"
+
+#: includes/core/classes/class-event.php:118
+msgid "Events"
+msgstr "Esdeveniments"
+
+#: includes/core/classes/class-event.php:119
+msgid "All Events"
+msgstr "Tots els esdeveniments"
+
+#: includes/core/classes/class-event.php:120
+msgid "View Event"
+msgstr "Veure esdeveniment"
+
+#: includes/core/classes/class-event.php:121
+msgid "Add New Event"
+msgstr "Afegir nou esdeveniment"
+
+#: includes/core/classes/class-event.php:122
+#: includes/core/classes/class-venue.php:101
+msgid "Add New"
+msgstr "Afegir nou"
+
+#: includes/core/classes/class-event.php:123
+msgid "Edit Event"
+msgstr "Editar esdeveniment"
+
+#: includes/core/classes/class-event.php:124
+msgid "Update Event"
+msgstr "Actualització de l'esdeveniment"
+
+#: includes/core/classes/class-event.php:125
+msgid "Search Events"
+msgstr "Cercar esdeveniments"
+
+#: includes/core/classes/class-event.php:126
+#: includes/core/classes/class-venue.php:105
+msgid "Not Found"
+msgstr "No s'ha trobat"
+
+#: includes/core/classes/class-event.php:127
+#: includes/core/classes/class-venue.php:106
+msgid "Not found in Trash"
+msgstr "No s'ha trobat a la paperera"
+
+#: includes/core/classes/class-event.php:141
+msgid ""
+"Add a description of the event and let people know what to expect, including "
+"the agenda, what they need to bring, and how to find the group."
+msgstr ""
+"Afegiu una descripció de l'esdeveniment i feu saber als usuaris què poden "
+"esperar, inclosa l'agenda, què han de portar i com trobar el grup."
+
+#: includes/core/classes/class-event.php:203
+msgctxt "taxonomy general name"
+msgid "Topics"
+msgstr "Temes"
+
+#: includes/core/classes/class-event.php:204
+msgctxt "taxonomy singular name"
+msgid "Topic"
+msgstr "Tema"
+
+#: includes/core/classes/class-event.php:205
+msgid "Search Topics"
+msgstr "Temes de cerca"
+
+#: includes/core/classes/class-event.php:206
+msgid "All Topics"
+msgstr "Tots els temes"
+
+#: includes/core/classes/class-event.php:207
+msgid "View Topic"
+msgstr "Veure tema"
+
+#: includes/core/classes/class-event.php:208
+msgid "Parent Topic"
+msgstr "Tema principal"
+
+#: includes/core/classes/class-event.php:209
+msgid "Parent Topic:"
+msgstr "Tema principal:"
+
+#: includes/core/classes/class-event.php:210
+msgid "Edit Topic"
+msgstr "Editar tema"
+
+#: includes/core/classes/class-event.php:211
+msgid "Update Topic"
+msgstr "Actualitza el tema"
+
+#: includes/core/classes/class-event.php:212
+msgid "Add New Topic"
+msgstr "Afegir nou tema"
+
+#: includes/core/classes/class-event.php:213
+msgid "New Topic Name"
+msgstr "Nou nom del tema"
+
+#: includes/core/classes/class-event.php:214
+msgid "No Topics Found"
+msgstr "No s'ha trobat cap tema"
+
+#: includes/core/classes/class-event.php:215
+msgid "Back to Topics"
+msgstr "Tornar a temes"
+
+#: includes/core/classes/class-event.php:216
+#: build/blocks/events-list/index.js:2
+msgid "Topics"
+msgstr "Temes"
+
+#. translators: %1$s: start datetime, %2$s: end datetime.
+#: includes/core/classes/class-event.php:254
+msgid "%1$s to %2$s"
+msgstr "%1$s a %2$s"
+
+#: includes/core/classes/class-event.php:257
+msgid "—"
+msgstr "—"
+
+#: includes/core/classes/class-event.php:673
+msgid "Google Calendar"
+msgstr "Google Calendar"
+
+#: includes/core/classes/class-event.php:677
+msgid "iCal"
+msgstr "iCal"
+
+#: includes/core/classes/class-event.php:681
+msgid "Outlook"
+msgstr "Outlook"
+
+#: includes/core/classes/class-event.php:685
+msgid "Yahoo Calendar"
+msgstr "Calendari de Yahoo"
+
+#. translators: %s: event link.
+#: includes/core/classes/class-event.php:840
+msgid "For details go to %s"
+msgstr "Per obtenir més informació, aneu a %s"
+
+#. translators: %s: event title.
+#: includes/core/classes/class-rest-api.php:438
+msgid "📅 %s"
+msgstr "📅 %s"
+
+#: includes/core/classes/class-rsvp.php:327
+msgid "Anonymous"
+msgstr "Anónim"
+
+#: includes/core/classes/class-rsvp.php:392
+#: includes/core/classes/settings/class-leadership.php:134
+msgid "Member"
+msgstr "Membre"
+
+#: includes/core/classes/class-settings.php:161
+#: includes/core/classes/class-settings.php:162
+#: includes/core/classes/class-setup.php:175
+msgid "Settings"
+msgstr "Configuració"
+
+#: includes/core/classes/class-setup.php:367
+#: build/blocks/online-event/index.js:1
+#: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
+#: build/blocks/venue/venue.js:1
+msgid "Online event"
+msgstr "Esdeveniment en línia"
+
+#: includes/core/classes/class-setup.php:545
+msgid "Event date &amp; time"
+msgstr "Data i hora de l'esdeveniment"
+
+#: includes/core/classes/class-venue.php:95
+msgctxt "Post Type General Name"
+msgid "Venues"
+msgstr "Llocs"
+
+#: includes/core/classes/class-venue.php:96
+msgctxt "Post Type Singular Name"
+msgid "Venue"
+msgstr "Lloc"
+
+#: includes/core/classes/class-venue.php:97
+#: includes/core/classes/class-venue.php:98 build/blocks/events-list/index.js:2
+msgid "Venues"
+msgstr "Llocs"
+
+#: includes/core/classes/class-venue.php:99
+msgid "View Venue"
+msgstr "Veure lloc"
+
+#: includes/core/classes/class-venue.php:100
+msgid "Add New Venue"
+msgstr "Afegir nou lloc"
+
+#: includes/core/classes/class-venue.php:102
+msgid "Edit Venue"
+msgstr "Editar lloc"
+
+#: includes/core/classes/class-venue.php:103
+msgid "Update Venue"
+msgstr "Actualitza el lloc"
+
+#: includes/core/classes/class-venue.php:104
+msgid "Search Venues"
+msgstr "Cercar llocs"
+
+#. translators: %1$d: event ID, %2$s: attendance status, %3$d: user ID.
+#: includes/core/classes/commands/class-cli-event.php:73
+msgid ""
+"The RSVP status for Event ID \"%1$d\" has been successfully set to \"%2$s\" "
+"for User ID \"%3$d\"."
+msgstr ""
+"L'estat de confirmació d'assistència de l'identificador d'esdeveniment "
+"\"%1$d\" s'ha definit correctament com a \"%2$s\" per a User ID \"%3$d\"."
+
+#: includes/core/classes/settings/class-credits.php:68
+#: includes/templates/admin/settings/credits/index.php:22
+msgid "Credits"
+msgstr "Crèdits"
+
+#: includes/core/classes/settings/class-general.php:55
+msgid "General"
+msgstr "General"
+
+#: includes/core/classes/settings/class-general.php:85
+msgid "General Settings"
+msgstr "Configuració general"
+
+#: includes/core/classes/settings/class-general.php:86
+msgid ""
+"GatherPress allows you to set event dates to reflect either the post date or "
+"event date. Default: event date."
+msgstr ""
+"GatherPress us permet establir dates d'esdeveniments per reflectir la data "
+"de publicació o la data de l'esdeveniment. Per defecte: data de "
+"l'esdeveniment."
+
+#: includes/core/classes/settings/class-general.php:93
+msgid "Publish Date"
+msgstr "Data de publicació"
+
+#: includes/core/classes/settings/class-general.php:96
+msgid "Show publish date as event date for events."
+msgstr ""
+"Mostra la data de publicació com a data de l'esdeveniment per als "
+"esdeveniments."
+
+#: includes/core/classes/settings/class-general.php:105
+msgid "Maximum Attending Limit"
+msgstr "Límit màxim d'assistència"
+
+#: includes/core/classes/settings/class-general.php:108
+msgid "The default maximum limit of attendees to an event."
+msgstr "El límit màxim predeterminat d'assistents a un esdeveniment."
+
+#: includes/core/classes/settings/class-general.php:119
+msgid "Date & Time Formatting"
+msgstr "Format de data i hora"
+
+#: includes/core/classes/settings/class-general.php:120
+msgid ""
+"For more information read the <a href=\"https://wordpress.org/documentation/"
+"article/customize-date-and-time-format/\">Documentation on date and time "
+"formatting</a>."
+msgstr ""
+"Per obtenir més informació, llegiu <a href=\"https://wordpress.org/"
+"documentation/article/customize-date-and-time-format/\">l'article de "
+"documentació sobre el format de data i hora</a>."
+
+#: includes/core/classes/settings/class-general.php:124
+msgid "Date Format"
+msgstr "Format de data"
+
+#: includes/core/classes/settings/class-general.php:127
+msgid "Format of date for scheduled events."
+msgstr "Format de data dels actes programats."
+
+#: includes/core/classes/settings/class-general.php:137
+msgid "Time Format"
+msgstr "Format de l'hora"
+
+#: includes/core/classes/settings/class-general.php:140
+msgid "Format of time for scheduled events."
+msgstr "Format de l'horari dels actes programats."
+
+#: includes/core/classes/settings/class-general.php:150
+msgid "Show Timezone"
+msgstr "Mostra la zona horària"
+
+#: includes/core/classes/settings/class-general.php:153
+msgid "Display the timezone for scheduled events."
+msgstr "Mostra la zona horària dels esdeveniments programats."
+
+#: includes/core/classes/settings/class-general.php:163
+msgid "Event Archive Pages"
+msgstr "Pàgines d'arxiu d'esdeveniments"
+
+#: includes/core/classes/settings/class-general.php:164
+msgid "GatherPress allows you to set event archives to pages you have created."
+msgstr ""
+"GatherPress li permet establir arxius d'esdeveniments a les pàgines que ha "
+"creat."
+
+#: includes/core/classes/settings/class-general.php:168
+msgid "Upcoming Events"
+msgstr "Propers esdeveniments"
+
+#: includes/core/classes/settings/class-general.php:174
+msgid "Select Upcoming Events Archive Page"
+msgstr "Seleccioneu la pàgina d'arxiu de propers esdeveniments"
+
+#: includes/core/classes/settings/class-general.php:181
+msgid "Past Events"
+msgstr "Esdeveniments passats"
+
+#: includes/core/classes/settings/class-general.php:187
+msgid "Select Past Events Archive Page"
+msgstr "Seleccioneu la pàgina d'arxiu d'esdeveniments passats"
+
+#: includes/core/classes/settings/class-leadership.php:54
+msgid "Leadership"
+msgstr "Lideratge"
+
+#: includes/core/classes/settings/class-leadership.php:68
+#: includes/core/classes/settings/class-leadership.php:70
+msgid "Organizers"
+msgstr "Organitzadors"
+
+#: includes/core/classes/settings/class-leadership.php:69
+msgid "Organizer"
+msgstr "Organitzador"
+
+#: includes/core/classes/settings/class-leadership.php:76
+msgid "Select Organizers"
+msgstr "Seleccioneu organitzadors"
+
+#: includes/core/classes/settings/class-leadership.php:98
+msgid "Roles"
+msgstr "Rols"
+
+#: includes/core/classes/settings/class-leadership.php:99
+msgid "Customize role labels to be more appropriate for events."
+msgstr ""
+"Personalitzeu les etiquetes de funcions perquè siguin més adequades per als "
+"esdeveniments."
+
+#. translators: %1$s: minimum PHP version, %2$s: current PHP version.
+#: includes/core/requirements-check.php:24
+msgid ""
+"GatherPress requires PHP %1$s or higher. Your current PHP version is %2$s. "
+"Please upgrade."
+msgstr ""
+"GatherPress requereix PHP %1$s o superior. La vostra versió actual de PHP és "
+"%2$s. Si us plau, actualitzeu."
+
+#: includes/templates/admin/emails/event-email.php:37
+msgid "Event Image"
+msgstr "Imatge de l'esdeveniment"
+
+#. translators: %s: gatherpress_event date and time.
+#: includes/templates/admin/emails/event-email.php:46
+msgid "Date: %s"
+msgstr "Data: %s"
+
+#. translators: %s: gatherpress_event gatherpress_venue name.
+#: includes/templates/admin/emails/event-email.php:55
+msgid "Venue: %s"
+msgstr "Lloc: %s"
+
+#: includes/templates/admin/emails/event-email.php:63
+msgid "RSVP Now"
+msgstr "Apunta'm"
+
+#: includes/templates/admin/settings/credits/index.php:24
+msgid "Meet the folks behind GatherPress. Want to see your name here?"
+msgstr ""
+"Coneix la gent que hi ha darrere de GatherPress. Vols veure el teu nom aquí?"
+
+#: includes/templates/admin/settings/credits/index.php:25
+msgid "Get Involved"
+msgstr "Col·laboreu‑hi"
+
+#: includes/templates/admin/settings/credits/index.php:27
+msgid "Project Leaders"
+msgstr "Líders del projecte"
+
+#: includes/templates/admin/settings/credits/index.php:41
+msgid "GatherPress Team"
+msgstr "Equip de GatherPress"
+
+#. translators: %s: GatherPress version.
+#: includes/templates/admin/settings/credits/index.php:58
+msgid "Contributors to GatherPress %s"
+msgstr "Col·laboradors de GatherPress %s"
+
+#: includes/templates/admin/settings/index.php:25
+msgid "GatherPress Settings"
+msgstr "Configuració de GatherPress"
+
+#: includes/templates/admin/settings/partials/datetime-preview.php:22
+msgid "Preview:"
+msgstr "Vista prèvia:"
+
+#: includes/templates/admin/settings/settings-form.php:22
+msgid "Save Settings"
+msgstr "Desa la configuració"
+
+#: includes/templates/admin/setup/membership-check.php:12
+msgid ""
+"To ensure GatherPress functions optimally, we recommend enabling user "
+"registration. You can do so by"
+msgstr ""
+"Per garantir que GatherPress funcioni de manera òptima, us recomanem que "
+"habiliteu el registre d'usuaris. Podeu fer-ho mitjançant"
+
+#: includes/templates/admin/setup/membership-check.php:14
+msgid "enabling user registration here"
+msgstr "habilitació del registre d'usuari aquí"
+
+#: includes/templates/admin/setup/membership-check.php:19
+msgid "Dismiss forever"
+msgstr "Ignora-ho sempre"
+
+#: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
+msgid "This event has already past."
+msgstr "Aquest esdeveniment ja ha passat."
+
+#. translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone.
+#: build/blocks/event-date/index.js:1 build/blocks/event-date/index.js:2
+#: build/blocks/venue/index.js:1 build/editor.js:1 build/panels.js:1
+msgid "GMT"
+msgstr "GMT"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Send an event update to members via email?"
+msgstr ""
+"Envieu una actualització de l'esdeveniment als membres per correu electrònic?"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Compose Message"
+msgstr "Composa missatge"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Start"
+msgstr "Inici"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "End"
+msgstr "Final"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Time Zone"
+msgstr "Zona horària"
+
+#: build/blocks/event-date/index.js:1 build/panels.js:1
+msgid "Date & time"
+msgstr "Data i hora"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Attending"
+msgstr "Assistint"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Waiting List"
+msgstr "Llista d'espera"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+msgid "Not Attending"
+msgstr "No assistència"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Went"
+msgstr "Va vindre"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Didn't Go"
+msgstr "No hi va anar"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're attending"
+msgstr "Hi assisteixes"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're wait listed"
+msgstr "Estàs a la llista d'espera"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You're not attending"
+msgstr "No hi assisteixes"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "RSVP to this event"
+msgstr "Confirma l'assistència a aquest esdeveniment"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Edit RSVP"
+msgstr "Edita l'confirmació d'assistència"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "RSVP"
+msgstr "Confirmació d'assistència"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Login Required"
+msgstr "Cal iniciar sessió"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "You must "
+msgstr "Heu de "
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Login"
+msgstr "Iniciar sessió"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid " to RSVP to events."
+msgstr " per confirmar l'assistència als esdeveniments."
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Register"
+msgstr "Registre"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid " if you do not have an account."
+msgstr " si no tens compte."
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:1 build/blocks/events-list/index.js:2
+#: build/blocks/rsvp/index.js:1 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:1 build/blocks/rsvp/rsvp.js:2
+msgid "Close"
+msgstr "Tancar"
+
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgid "Attend"
+msgstr "Assistir"
+
+#. translators: %s: button label.
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:2
+msgid ""
+"To set or change your attending status, simply click the %s button below."
+msgstr ""
+"Per definir o canviar l'estat d'assistència, només cal que feu clic al botó "
+"%s següent."
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:2
+msgid "guest(s)"
+msgstr "convidat(s)"
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2
+msgid "There are no upcoming events."
+msgstr "No hi ha esdeveniments propers."
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2
+msgid "There are no past events."
+msgstr "No hi ha esdeveniments passats."
+
+#: build/blocks/events-list/index.js:2
+msgid "Event List type"
+msgstr "Tipus de llista d'esdeveniments"
+
+#: build/blocks/events-list/index.js:2
+msgid "Upcoming"
+msgstr "Properament"
+
+#: build/blocks/events-list/index.js:2
+msgid "Past"
+msgstr "Passat"
+
+#: build/blocks/events-list/index.js:2
+msgid "Maximum number of events to display"
+msgstr "Nombre màxim d'esdeveniments a mostrar"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide All RSVP Responses"
+msgstr "Mostrar/amagar totes les respostes de confirmació d'assistència"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show All RSVP Responses"
+msgstr "Mostra totes les respostes de confirmació d'assistència"
+
+#: build/blocks/events-list/index.js:2
+msgid "Hide All RSVP Responses"
+msgstr "Amagar totes les respostes de confirmació d'assistència"
+
+#: build/blocks/events-list/index.js:2
+msgid "Image Size Options"
+msgstr "Opcions de mida de la imatge"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide Featured Image"
+msgstr "Mostrar/amagar imatge destacada"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show Featured Image"
+msgstr "Mostrar la Imatge destacada"
+
+#: build/blocks/events-list/index.js:2
+msgid "Hide Featured Image"
+msgstr "Amaga la imatge destacada"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show/Hide Description"
+msgstr "Mostrar/amagar descripció"
+
+#: build/blocks/events-list/index.js:2
+msgid "Show Description"
+msgstr "Mostra la descripció"
+
+#: build/blocks/events-list/index.js:2
+msgid "Hide Description"
+msgstr "Amaga la descripció"
+
+#: build/blocks/online-event/index.js:1
+#: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
+#: build/blocks/venue/venue.js:1
+msgid "Link active for attendees during event."
+msgstr "Enllaç actiu per als assistents durant l'esdeveniment."
+
+#: build/blocks/online-event/index.js:1 build/blocks/venue/index.js:1
+#: build/panels.js:1
+msgid "Online event link"
+msgstr "Enllaç a l'esdeveniment en línia"
+
+#: build/blocks/online-event/index.js:1 build/blocks/venue/index.js:1
+#: build/panels.js:1
+msgid "Add link to online event"
+msgstr "Afegiu un enllaç a l'esdeveniment en línia"
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "See fewer"
+msgstr "Mostra'n menys"
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "See all"
+msgstr "Veure tot"
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "No one is attending this event yet."
+msgstr "Encara no hi ha ningú que assisteixi a aquest esdeveniment."
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "No one went to this event."
+msgstr "Ningú va anar a aquest esdeveniment."
+
+#: build/blocks/rsvp-response/index.js:1
+#: build/blocks/rsvp-response/rsvp-response.js:1
+msgid "Wait Listed"
+msgstr "Llista d'espera"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "No venue selected."
+msgstr "No hi ha cap lloc seleccionat."
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Choose a venue"
+msgstr "Tria un lloc"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Venue Selector"
+msgstr "Selector de lloc"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Full Address"
+msgstr "Adreça completa"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Phone Number"
+msgstr "Número de telèfon"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Website"
+msgstr "Web"
+
+#: build/blocks/venue/index.js:1
+msgid "Add venue information."
+msgstr "Afegeix informació del lloc."
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Venue settings"
+msgstr "Configuració del lloc"
+
+#: build/blocks/venue/index.js:1
+msgid "Map settings"
+msgstr "Configuració del mapa"
+
+#: build/blocks/venue/index.js:1
+msgid "Show map on venue"
+msgstr "Mostra el mapa del lloc"
+
+#: build/blocks/venue/index.js:1
+msgid "Display the map"
+msgstr "Veure el mapa"
+
+#: build/blocks/venue/index.js:1
+msgid "Hide the map"
+msgstr "Amaga el mapa"
+
+#: build/blocks/venue/index.js:1
+msgid "Zoom level"
+msgstr "Nivell d'ampliació"
+
+#: build/blocks/venue/index.js:1
+msgid "Map type"
+msgstr "Tipus de mapa"
+
+#: build/blocks/venue/index.js:1
+msgid "Roadmap"
+msgstr "Full de ruta"
+
+#: build/blocks/venue/index.js:1
+msgid "Satellite"
+msgstr "Satèl·lit"
+
+#: build/blocks/venue/index.js:1
+msgid "Map height"
+msgstr "Altura del Mapa"
+
+#: build/modals.js:1
+msgid "Notify members via email"
+msgstr "Notifiqueu-ho als membres per correu electrònic"
+
+#: build/modals.js:1
+msgid "Optional message"
+msgstr "Missatge opcional"
+
+#: build/modals.js:1
+msgid "Select the recipients for your message by checking the relevant boxes."
+msgstr ""
+"Per seleccionar els destinataris del missatge, marqueu les caselles "
+"corresponents."
+
+#: build/modals.js:1
+msgid "All Members"
+msgstr "Tots els membres"
+
+#: build/modals.js:1
+msgid "Confirm you are ready to send?"
+msgstr "Confirmeu que esteu preparat per enviar?"
+
+#: build/modals.js:1
+msgid "Send Email"
+msgstr "Enviar correu electrònic"
+
+#: build/panels.js:1
+msgid "Send an event update"
+msgstr "Enviar una actualització de l'esdeveniment"
+
+#: build/panels.js:1
+msgid "Event settings"
+msgstr "Configuració d'esdeveniments"
+
+#: build/settings.js:1
+msgid "Select Posts"
+msgstr "Selecciona Publicacions"
+
+#: build/settings.js:1
+msgid "Choose only one item."
+msgstr "Tria només un element."
+
+#: build/blocks/add-to-calendar/block.json
+msgctxt "block title"
+msgid "Add to Calendar"
+msgstr "Afegir al calendari"
+
+#: build/blocks/add-to-calendar/block.json
+msgctxt "block description"
+msgid "Allows a member to add an event to their preferred calendar."
+msgstr "Permet a un membre afegir un esdeveniment al seu calendari preferit."
+
+#: build/blocks/event-date/block.json
+msgctxt "block title"
+msgid "Event Date"
+msgstr "Data de l’esdeveniment"
+
+#: build/blocks/event-date/block.json
+msgctxt "block description"
+msgid "Displays the date and time for an event."
+msgstr "Mostra la data i l'hora d'un esdeveniment."
+
+#: build/blocks/events-list/block.json
+msgctxt "block title"
+msgid "Events List"
+msgstr "Llista d'esdeveniments"
+
+#: build/blocks/events-list/block.json
+msgctxt "block description"
+msgid "Displays events that are either upcoming or have occurred in the past."
+msgstr "Mostra esdeveniments que són propers o que s'han produït en el passat."
+
+#: build/blocks/online-event/block.json
+msgctxt "block title"
+msgid "Online Event"
+msgstr "Esdeveniment en línia"
+
+#: build/blocks/online-event/block.json
+msgctxt "block description"
+msgid ""
+"Utilized for virtual events, offering the capability to share a direct link "
+"to an event."
+msgstr ""
+"S'utilitza per a esdeveniments virtuals, oferint la possibilitat de "
+"compartir un enllaç directe a un esdeveniment."
+
+#: build/blocks/rsvp-response/block.json
+msgctxt "block title"
+msgid "RSVP Response"
+msgstr "Resposta de confirmació d'assistència"
+
+#: build/blocks/rsvp-response/block.json
+msgctxt "block description"
+msgid ""
+"Displays a list of members who have confirmed their attendance for an event."
+msgstr ""
+"Mostra una llista dels membres que han confirmat la seva assistència a un "
+"esdeveniment."
+
+#: build/blocks/rsvp/block.json
+msgctxt "block title"
+msgid "RSVP"
+msgstr "Confirmació d'assistència"
+
+#: build/blocks/rsvp/block.json
+msgctxt "block description"
+msgid "Enables members to easily confirm their attendance for an event."
+msgstr ""
+"Permet als membres confirmar fàcilment la seva assistència a un esdeveniment."
+
+#: build/blocks/venue/block.json
+msgctxt "block title"
+msgid "Venue"
+msgstr "Lloc"
+
+#: build/blocks/venue/block.json
+msgctxt "block description"
+msgid "Provides information about an event venue."
+msgstr "Proporciona informació sobre el lloc d'un esdeveniment."

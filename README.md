@@ -5,12 +5,14 @@
 GatherPress is the result of the WordPress community's desire for new event management tools that meet the diverse needs of event organizers and members.
 
 ## 📃 The Project
+
 This project is for the collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and the grit sweat and love of **the community, for the community**.
 
 We're creating the very network features we need to host events and gather well.
 
 ### 🤝 How to Get Involved
-If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via WordPress Slack, or message us directly on our site [https://gatherpress.org/get-involved](htps://gatherpress.org/get-involved)
+
+If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved).
 
 ### 🔑 Collaborator Access
 
@@ -91,7 +93,6 @@ In the Venue block, you can define:
 Go to WP Admin > GatherPress  > Topics
 
 Topics are like post categories, but for events.
-
 
 # Developer Documentation
 
