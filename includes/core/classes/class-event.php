@@ -176,7 +176,7 @@ class Event {
 	public static function get_post_meta_registration_args(): array {
 		return array(
 			'_online_event_link' => array(
-				'auth_callback'     => function() {
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'sanitize_url',
@@ -399,11 +399,10 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
+		$cache_key = 'formatted_datetime_' . md5( $format . $which . ( $local ? 'local' : 'gmt' ) );
 
-		$cache_key = 'formatted_datetime_' . md5($format . $which . ($local ? 'local' : 'gmt'));
-
-		$cached_date = get_transient($cache_key);
-		if ($cached_date !== false) {
+		$cached_date = get_transient( $cache_key );
+		if ( false !== $cached_date ) {
 			return $cached_date;
 		}
 
@@ -427,7 +426,8 @@ class Event {
 			$date = wp_date( $format, $ts, $tz );
 		}
 
-		set_transient($cache_key, $date, 43200);
+		set_transient( $cache_key, $date, HOUR_IN_SECONDS * 12 );
+
 		return (string) $date;
 	}
 
@@ -877,7 +877,7 @@ class Event {
 		$retval            = false;
 		$fields            = array_filter(
 			$params,
-			function( $key ) {
+			function ( $key ) {
 				return in_array(
 					$key,
 					array(
