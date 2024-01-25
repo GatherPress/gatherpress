@@ -25,6 +25,10 @@ const login = async ({
 	await page.getByLabel('Password', { exact: true }).fill(password);
 
 	await page.getByRole('button', { name: 'Log In' }).click();
+
+	await page
+		.getByRole('heading', { name: 'Dashboard', level: 1 })
+		.isVisible();
 };
 
 module.exports = { login };
