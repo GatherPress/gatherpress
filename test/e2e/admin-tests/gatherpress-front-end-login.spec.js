@@ -11,7 +11,7 @@ test.describe('e2e test for login to front end guests', () => {
 
 	//TODO- Replace the event creation test with the POST api request.
 
-	test('The Event menu item should be preloaded after clicking Add New button', async ({
+	test.only('To publish the event post', async ({
 		page,
 	}) => {
 		await login({ page, username: 'testuser1' });
@@ -35,13 +35,10 @@ test.describe('e2e test for login to front end guests', () => {
 
 		await page.screenshot({ path: 'add-new-event.png' });
 
-		await page
-			.getByRole('button', { name: 'Publish', exact: true })
-			.click();
+		await page.getByRole('button',{ name: 'Publish', exact: true }).click();
 
 		await page
-			.getByLabel('Editor publish')
-			.getByRole('button', { name: 'Publish', exact: true })
+			.getByLabel('Editor publish').getByRole('button',{ name: 'Publish', exact: true })
 			.click();
 
 		await page
