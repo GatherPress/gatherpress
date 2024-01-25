@@ -46,6 +46,8 @@ playwright-report/
 test-results/
 add-new-event.png
 event-page.png
+new-venue.png
+vanue-page.png
 
 # Jest / SonarCloud #
 ##########
