@@ -115,11 +115,11 @@ class General extends Base {
 					),
 					'enable_anonymous_rsvp' => array(
 						'labels'      => array(
-							'name' => __( 'Anonymous RSVPs', 'gatherpress' ),
+							'name' => __( 'Anonymous RSVP', 'gatherpress' ),
 						),
 						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
 						'field'       => array(
-							'label'   => __( 'Enable Anonymous RSVPs Across All Events.', 'gatherpress' ),
+							'label'   => __( 'Enable Anonymous RSVP for New Events.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
 								'default' => 1,
