@@ -48,7 +48,7 @@ const AnonymousRsvp = () => {
 
 	return (
 		<CheckboxControl
-			label={__('Enable anonymous RSVPs', 'gatherpress')}
+			label={__('Enable Anonymous RSVP', 'gatherpress')}
 			checked={anonymousRsvp}
 			onChange={(value) => {
 				updateAnonymousRsvp(value);
