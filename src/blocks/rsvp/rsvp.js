@@ -34,6 +34,7 @@ domReady(() => {
 				eventId={getFromGlobal('post_id')}
 				currentUser={getFromGlobal('current_user')}
 				type={type}
+				enableAnonymousRsvp={getFromGlobal('enable_anonymous_rsvp')}
 			/>
 		);
 	}

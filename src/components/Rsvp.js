@@ -37,7 +37,7 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Rsvp = ({ eventId, currentUser = '', type }) => {
+const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
 	const [rsvpAnonymous, setRsvpAnonymous] = useState(
 		Number(currentUser.anonymous)
@@ -247,7 +247,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 							)
 						)}
 					</div>
-					{getFromGlobal('enable_anonymous_rsvp') ? (
+					{enableAnonymousRsvp ? (
 						<div className="gp-modal__anonymous">
 							<input
 								id="gp-anonymous"
