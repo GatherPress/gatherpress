@@ -88,7 +88,7 @@ class General extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'post_or_event_date'  => array(
+					'post_or_event_date'    => array(
 						'labels' => array(
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),
@@ -100,7 +100,7 @@ class General extends Base {
 							),
 						),
 					),
-					'max_attending_limit' => array(
+					'max_attending_limit'   => array(
 						'labels' => array(
 							'name' => __( 'Maximum Attending Limit', 'gatherpress' ),
 						),
@@ -113,12 +113,13 @@ class General extends Base {
 							),
 						),
 					),
-					'allow_anonymous_rsvp' => array(
-						'labels' => array(
+					'enable_anonymous_rsvp' => array(
+						'labels'      => array(
 							'name' => __( 'Anonymous RSVPs', 'gatherpress' ),
 						),
-						'field'  => array(
-							'label'   => __( 'Allow events to permit anonymous RSVPs.', 'gatherpress' ),
+						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
+						'field'       => array(
+							'label'   => __( 'Enable Anonymous RSVPs Across All Events.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
 								'default' => 1,

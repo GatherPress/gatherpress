@@ -126,16 +126,17 @@ class Rsvp {
 	 * Save a user's RSVP status for the event.
 	 *
 	 * This method allows assigning a user's RSVP status for the event. The user can be assigned
-	 * one of the following RSVP statuses: 'attending', 'not_attending', or 'waiting_list', and
-	 * optionally specify the number of guests accompanying them. The method handles the storage
-	 * of this information in the database and updates the RSVP status accordingly.
+	 * one of the following RSVP statuses: 'attending', 'not_attending', or 'waiting_list'. The user
+	 * can optionally specify the number of guests accompanying them and whether their RSVP is anonymous.
+	 * The method handles the storage of this information in the database and updates the RSVP status accordingly.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $user_id A user ID.
-	 * @param string $status  RSVP status ('attending', 'not_attending', 'waiting_list').
-	 * @param int    $guests  Number of guests accompanying the user.
-	 * @return string The updated RSVP status ('attending', 'not_attending', 'waiting_list').
+	 * @param int    $user_id   A user ID.
+	 * @param string $status    RSVP status ('attending', 'not_attending', 'waiting_list').
+	 * @param int    $anonymous Indicates if the RSVP is anonymous (1 for anonymous, 0 for not anonymous).
+	 * @param int    $guests    Number of guests accompanying the user.
+	 * @return string The updated RSVP status ('attend', 'attending', 'not_attending', 'waiting_list').
 	 */
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): string {
 		global $wpdb;
@@ -176,8 +177,8 @@ class Rsvp {
 
 			// If not attending and anonymous, just remove record.
 			if ( 'not_attending' === $status && $anonymous ) {
-				$save = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-				$status = 'attend';
+				$save   = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$status = 'attend'; // Set default status for UI.
 			} else {
 				$save = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			}
@@ -339,8 +340,9 @@ class Rsvp {
 
 			if ( ! current_user_can( 'edit_posts' ) && ! empty( $anonymous ) ) {
 				$user_id = 0;
-				$user_info->display_name = __( 'Anonymous', 'gatherpress' );
 				$profile = '';
+
+				$user_info->display_name = __( 'Anonymous', 'gatherpress' );
 			}
 
 			$responses[] = array(
