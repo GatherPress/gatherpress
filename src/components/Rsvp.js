@@ -3,6 +3,7 @@
  */
 import Modal from 'react-modal';
 import HtmlReactParser from 'html-react-parser';
+import { Tooltip } from 'react-tooltip';
 
 /**
  * WordPress dependencies.
@@ -264,9 +265,19 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 								}}
 								checked={rsvpAnonymous}
 							/>
-							<label htmlFor="gp-anonymous">
+							<label
+								htmlFor="gp-anonymous"
+								tabIndex="0"
+								className="gp-tooltip"
+								data-tooltip-id="gp-anonymous-tooltip"
+								data-tooltip-content={__(
+									'Only site admins will your identity.',
+									'gatherpress'
+								)}
+							>
 								{__('List me as anonymous.', 'gatherpress')}
 							</label>
+							<Tooltip id="gp-anonymous-tooltip" />
 						</div>
 					) : (
 						<></>
