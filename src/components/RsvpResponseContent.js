@@ -37,9 +37,6 @@ const RsvpResponseContent = ({
 
 	Listener({ setRsvpResponse }, eventId);
 
-	console.log('edit mode prop passed down', editMode);
-	console.log('RSVP responses', rsvpResponse);
-
 	const renderedItems = items.map((item, index) => {
 		const { value } = item;
 		const active = value === activeValue;

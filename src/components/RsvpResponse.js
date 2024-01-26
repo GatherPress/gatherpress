@@ -3,7 +3,8 @@
  */
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { Button } from '@wordpress/components';
+import { Button, FormTokenField, PanelBody } from '@wordpress/components';
+import { InspectorControls } from '@wordpress/block-editor';
 
 /**
  * Internal dependencies.
@@ -57,6 +58,10 @@ const RsvpResponse = () => {
 	const [rsvpLimit, setRsvpLimit] = useState(defaultLimit);
 	const [editMode, setEditMode] = useState(false);
 
+	const [rsvpResponse, setRsvpResponse] = useState(
+		getFromGlobal('responses')
+	);
+
 	const onTitleClick = (e, value) => {
 		e.preventDefault();
 		setRsvpStatus(value);
@@ -69,26 +74,57 @@ const RsvpResponse = () => {
 
 	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
 
+	console.log(
+		'RSVP RESPOnse on the top levels. Just responses with the status of attending',
+		rsvpResponse.attending.responses
+	);
+
+	const attendees = rsvpResponse.attending.responses;
+
+	const changeAttendees = (tokens) => {
+		console.log('A token has changed', tokens);
+		return tokens;
+	};
+
 	return (
-		<div className="gp-rsvp-response">
-			<RsvpResponseHeader
-				items={items}
-				activeValue={rsvpStatus}
-				onTitleClick={onTitleClick}
-				rsvpLimit={rsvpLimit}
-				setRsvpLimit={setRsvpLimit}
-				defaultLimit={defaultLimit}
-			/>
-			<Button variant="secondary" onClick={onEditClick}>
-				Edit Attendees
-			</Button>
-			<RsvpResponseContent
-				items={items}
-				activeValue={rsvpStatus}
-				limit={rsvpLimit}
-				editMode={editMode}
-			/>
+		<>
+			<InspectorControls>
+				<PanelBody>
+					<p>{__('Event List type', 'gatherpress')}</p>
+					<Button variant="secondary" onClick={onEditClick}>
+						Edit Attendees
+					</Button>
+				</PanelBody>
+
+				<FormTokenField
+					key="query-controls-topics-select"
+					label={__('Attendees', 'gatherpress')}
+					value={
+						attendees &&
+						attendees.map((item) => ({
+							value: item.name,
+						}))
+					}
+					onChange={changeAttendees}
+				/>
+			</InspectorControls>
+			<div className="gp-rsvp-response">
+				<RsvpResponseHeader
+					items={items}
+					activeValue={rsvpStatus}
+					onTitleClick={onTitleClick}
+					rsvpLimit={rsvpLimit}
+					setRsvpLimit={setRsvpLimit}
+					defaultLimit={defaultLimit}
+				/>
+				<RsvpResponseContent
+					items={items}
+					activeValue={rsvpStatus}
+					limit={rsvpLimit}
+					editMode={editMode}
+				/>
 		</div>
+		</>
 	);
 };
 
