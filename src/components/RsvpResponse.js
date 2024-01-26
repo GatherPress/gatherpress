@@ -62,6 +62,11 @@ const RsvpResponse = () => {
 
 	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
 
+	// @todo code smell need to figure out, `attend` is set when user is not attending and anonymous. This is to correct the UI, but probably a better way to do this.
+	if ('attend' === rsvpStatus) {
+		setRsvpStatus('attending');
+	}
+
 	return (
 		<div className="gp-rsvp-response">
 			<RsvpResponseHeader

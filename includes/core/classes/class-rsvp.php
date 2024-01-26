@@ -307,8 +307,14 @@ class Rsvp {
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
 		$responses   = array();
 		$all_guests  = 0;
+		$statuses    = $this->statuses;
 
-		foreach ( $this->statuses as $status ) {
+		// `attend` status is not relevant here.
+		$status_key = array_search( 'attend', $statuses );
+		unset( $statuses[ $status_key ] );
+		$statuses = array_values( $statuses );
+
+		foreach ( $statuses as $status ) {
 			$retval[ $status ] = array(
 				'responses' => array(),
 				'count'     => 0,
@@ -333,12 +339,14 @@ class Rsvp {
 
 			if (
 				empty( $user_info ) ||
-				! in_array( $user_status, $this->statuses, true )
+				! in_array( $user_status, $statuses, true )
 			) {
 				continue;
 			}
 
-			if ( ! current_user_can( 'edit_posts' ) && ! empty( $anonymous ) ) {
+			if (
+				! current_user_can( 'edit_posts' ) && ! empty( $anonymous )
+			) {
 				$user_id = 0;
 				$profile = '';
 
@@ -364,7 +372,7 @@ class Rsvp {
 		$retval['all']['responses'] = $responses;
 		$retval['all']['count']     = count( $retval['all']['responses'] ) + $all_guests;
 
-		foreach ( $this->statuses as $status ) {
+		foreach ( $statuses as $status ) {
 			$retval[ $status ]['responses'] = array_filter(
 				$responses,
 				function( $response ) use ( $status ) {

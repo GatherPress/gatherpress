@@ -271,7 +271,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 								className="gp-tooltip"
 								data-tooltip-id="gp-anonymous-tooltip"
 								data-tooltip-content={__(
-									'Only site admins will your identity.',
+									'Only admins will see your identity.',
 									'gatherpress'
 								)}
 							>
