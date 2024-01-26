@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       GatherPress
- * Plugin URI:        https://wordpress.org/plugins/gatherpress
+ * Plugin URI:        https://github.com/GatherPress/gatherpress
  * Description:       Powering Communities with WordPress.
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
