@@ -310,7 +310,7 @@ class Rsvp {
 		$statuses    = $this->statuses;
 
 		// `attend` status is not relevant here.
-		$status_key = array_search( 'attend', $statuses );
+		$status_key = array_search( 'attend', $statuses, true );
 		unset( $statuses[ $status_key ] );
 		$statuses = array_values( $statuses );
 

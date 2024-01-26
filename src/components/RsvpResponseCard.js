@@ -57,7 +57,9 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 								<img alt={name} title={name} src={photo} />
 							</a>
 						)}
-						{'' === profile && <img alt={name} title={name} src={photo} />}
+						{'' === profile && (
+							<img alt={name} title={name} src={photo} />
+						)}
 					</figure>
 					<div className="gp-rsvp-response__member-info">
 						<div className="gp-rsvp-response__member-name">

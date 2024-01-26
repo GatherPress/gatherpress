@@ -25,15 +25,17 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * This component provides functionality for users to RSVP to events. It includes a button
  * to open a modal for RSVP actions, handles different RSVP statuses, and updates the RSVP
- * status and guest count accordingly. The component communicates with the server through
+ * status and guest count accordingly. If the enableAnonymousRsvp prop is true, it shows
+ * a checkbox to permit anonymous RSVPs. The component communicates with the server through
  * REST API calls and broadcasts changes to other components.
  *
  * @since 1.0.0
  *
- * @param {Object} props                  - Component props.
- * @param {number} props.eventId          - The ID of the event.
- * @param {Object} [props.currentUser=''] - Current user's RSVP information.
- * @param {string} props.type             - Type of event ('upcoming' or 'past').
+ * @param {Object}  props                     - Component props.
+ * @param {number}  props.eventId             - The ID of the event.
+ * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
+ * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
