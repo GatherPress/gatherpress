@@ -251,7 +251,7 @@ class Rest_Api {
 	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
 	 */
 	public function validate_rsvp_status( $param ): bool {
-		return ( 'attending' === $param || 'not_attending' === $param );
+		return ( 'attend' === $param || 'attending' === $param || 'not_attending' === $param );
 	}
 
 	/**
@@ -558,6 +558,7 @@ class Rest_Api {
 					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
+					'enable_anonymous_rsvp'    => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
 					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
 						? $event->rsvp->get( get_current_user_id() )
@@ -613,6 +614,7 @@ class Rest_Api {
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] );
+		$anonymous       = intval( $params['anonymous'] );
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
@@ -637,7 +639,7 @@ class Rest_Api {
 			is_user_member_of_blog( $user_id ) &&
 			! $event->has_event_past()
 		) {
-			$status = $event->rsvp->save( $user_id, $status, $guests );
+			$status = $event->rsvp->save( $user_id, $status, $anonymous );
 
 			if ( in_array( $status, $event->rsvp->statuses, true ) ) {
 				$success = true;
@@ -649,6 +651,7 @@ class Rest_Api {
 			'success'     => $success,
 			'status'      => $status,
 			'guests'      => $guests,
+			'anonymous'   => $anonymous,
 			'responses'   => $event->rsvp->responses(),
 			'online_link' => $event->maybe_get_online_event_link(),
 		);

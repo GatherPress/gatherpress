@@ -3,6 +3,7 @@
  */
 import Modal from 'react-modal';
 import HtmlReactParser from 'html-react-parser';
+import { Tooltip } from 'react-tooltip';
 
 /**
  * WordPress dependencies.
@@ -24,20 +25,25 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * This component provides functionality for users to RSVP to events. It includes a button
  * to open a modal for RSVP actions, handles different RSVP statuses, and updates the RSVP
- * status and guest count accordingly. The component communicates with the server through
+ * status and guest count accordingly. If the enableAnonymousRsvp prop is true, it shows
+ * a checkbox to permit anonymous RSVPs. The component communicates with the server through
  * REST API calls and broadcasts changes to other components.
  *
  * @since 1.0.0
  *
- * @param {Object} props                  - Component props.
- * @param {number} props.eventId          - The ID of the event.
- * @param {Object} [props.currentUser=''] - Current user's RSVP information.
- * @param {string} props.type             - Type of event ('upcoming' or 'past').
+ * @param {Object}  props                     - Component props.
+ * @param {number}  props.eventId             - The ID of the event.
+ * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
+ * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Rsvp = ({ eventId, currentUser = '', type }) => {
+const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
+	const [rsvpAnonymous, setRsvpAnonymous] = useState(
+		Number(currentUser.anonymous)
+	);
 	const [rsvpGuests, setRsvpGuests] = useState(currentUser.guests);
 	const [selectorHidden, setSelectorHidden] = useState('hidden');
 	const [selectorExpanded, setSelectorExpanded] = useState('false');
@@ -78,7 +84,13 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 		setIsOpen(false);
 	};
 
-	const onAnchorClick = async (e, status, guests = 0, close = true) => {
+	const onAnchorClick = async (
+		e,
+		status,
+		anonymous,
+		guests = 0,
+		close = true
+	) => {
 		e.preventDefault();
 
 		if ('attending' !== status) {
@@ -92,6 +104,7 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 				post_id: eventId,
 				status,
 				guests,
+				anonymous,
 				_wpnonce: getFromGlobal('nonce'),
 			},
 		}).then((res) => {
@@ -236,6 +249,41 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 							)
 						)}
 					</div>
+					{enableAnonymousRsvp ? (
+						<div className="gp-modal__anonymous">
+							<input
+								id="gp-anonymous"
+								type="checkbox"
+								onChange={(e) => {
+									const value = Number(e.target.checked);
+									setRsvpAnonymous(value);
+									onAnchorClick(
+										e,
+										rsvpStatus,
+										value,
+										rsvpGuests,
+										false
+									);
+								}}
+								checked={rsvpAnonymous}
+							/>
+							<label
+								htmlFor="gp-anonymous"
+								tabIndex="0"
+								className="gp-tooltip"
+								data-tooltip-id="gp-anonymous-tooltip"
+								data-tooltip-content={__(
+									'Only admins will see your identity.',
+									'gatherpress'
+								)}
+							>
+								{__('List me as anonymous.', 'gatherpress')}
+							</label>
+							<Tooltip id="gp-anonymous-tooltip" />
+						</div>
+					) : (
+						<></>
+					)}
 					{/*@todo Guests feature coming in later version of GatherPress*/}
 					{/*	<label htmlFor="gp-guests">*/}
 					{/*		{__('Number of guests?', 'gatherpress')}*/}
@@ -261,7 +309,9 @@ const Rsvp = ({ eventId, currentUser = '', type }) => {
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"
-							onClick={(e) => onAnchorClick(e, buttonStatus)}
+							onClick={(e) =>
+								onAnchorClick(e, buttonStatus, rsvpAnonymous)
+							}
 							className="gp-buttons__button wp-block-button__link"
 						>
 							{buttonLabel}

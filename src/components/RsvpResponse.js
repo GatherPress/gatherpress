@@ -62,6 +62,11 @@ const RsvpResponse = () => {
 
 	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
 
+	// Make sure rsvpStatus is a valid status, if not, set to default.
+	if (!items.some((item) => item.value === rsvpStatus)) {
+		setRsvpStatus(defaultStatus);
+	}
+
 	return (
 		<div className="gp-rsvp-response">
 			<RsvpResponseHeader

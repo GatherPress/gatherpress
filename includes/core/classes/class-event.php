@@ -175,7 +175,7 @@ class Event {
 	 */
 	public static function get_post_meta_registration_args(): array {
 		return array(
-			'_online_event_link' => array(
+			'_online_event_link'    => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -183,6 +183,15 @@ class Event {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
+			),
+			'enable_anonymous_rsvp' => array(
+				'auth_callback'     => function() {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'boolean',
 			),
 		);
 	}
@@ -399,9 +408,9 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
-		$cache_key = 'formatted_datetime_' . md5( $format . $which . ( $local ? 'local' : 'gmt' ) );
-
+		$cache_key   = 'formatted_datetime_' . md5( $format . $which . ( $local ? 'local' : 'gmt' ) );
 		$cached_date = get_transient( $cache_key );
+
 		if ( false !== $cached_date ) {
 			return $cached_date;
 		}
