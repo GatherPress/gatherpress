@@ -121,6 +121,19 @@ class Rsvp {
 	}
 
 	
+ 	/**
+ 	 * Remove a user's RSVP from the database.
+ 	 *
+ 	 * This method deletes the RSVP entry for a specific user from the database.
+ 	 * It loops through the provided array of RSVP responses, and when it finds 
+ 	 * the entry matching the given user ID, it uses the WordPress $wpdb API to 
+ 	 * delete that entry from the rsvp table.
+ 	 *
+ 	 * @since 1.0.0
+ 	 *
+ 	 * @param int $user_id The ID of the user to remove the RSVP for.
+ 	 * @param array $responses Array of RSVP responses containing the entry to remove.
+ 	 */
 	public function remove( int $user_id, array $responses ) {
 		foreach($responses['all']['responses'] as $key => $value ) {
 				if ($value['id'] == $user_id) {
@@ -129,6 +142,7 @@ class Rsvp {
 					$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) );
 				}
 		}
+		return $responses;
 	}
 	
 	/**
