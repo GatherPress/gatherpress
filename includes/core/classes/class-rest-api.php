@@ -523,7 +523,7 @@ class Rest_Api {
 		$params          = $request->get_params();
 		$event_list_type = $params['event_list_type'];
 		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
-		$datetime_format = $params['datetime_format'] ?: 'D, M j, Y, g:i a T';
+		$datetime_format = ! empty( $params['datetime_format'] ) ? $params['datetime_format'] : 'D, M j, Y, g:i a T';
 		$posts           = array();
 		$topics          = array();
 		$venues          = array();
