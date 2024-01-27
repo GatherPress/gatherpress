@@ -3,6 +3,7 @@
  */
 import { includes } from 'lodash';
 import classnames from 'classnames';
+import HtmlReactParser from 'html-react-parser';
 
 /**
  * WordPress dependencies.
@@ -188,6 +189,19 @@ const Edit = (props) => {
 					</ButtonGroup>
 				</PanelBody>
 				<PanelBody>
+					<TextControl
+						label={__('Date & time format', 'gatherpress')}
+						value={attributes.datetimeFormat}
+						help={HtmlReactParser(
+							__(
+								'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.',
+								'gatherpress'
+							)
+						)}
+						onChange={(newVal) =>
+							setAttributes({ datetimeFormat: newVal })
+						}
+					/>
 					<RangeControl
 						label={__(
 							'Maximum number of events to display',
@@ -362,6 +376,7 @@ const Edit = (props) => {
 					<EventsList
 						eventOptions={attributes.eventOptions}
 						maxNumberOfEvents={attributes.maxNumberOfEvents}
+						datetimeFormat={attributes.datetimeFormat}
 						type={attributes.type}
 						topics={attributes.topics}
 						venues={attributes.venues}

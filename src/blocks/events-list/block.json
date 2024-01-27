@@ -21,6 +21,10 @@
 				"showVenue": true
 			}
 		},
+		"datetimeFormat": {
+			"type": "string",
+			"default": "D, M j, Y, g:i a T"
+		},
 		"maxNumberOfEvents": {
 			"type": "integer",
 			"default": 5
