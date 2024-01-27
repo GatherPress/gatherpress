@@ -271,28 +271,30 @@ class Assets {
 		$settings = Settings::get_instance();
 
 		return array(
-			'responses'         => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-			'current_user'      => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
+			'responses'             => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
+			'current_user'          => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
 				? $event->rsvp->get( get_current_user_id() )
 				: '', // Cleanup needed.
-			'is_user_logged_in' => is_user_logged_in(),
-			'default_timezone'  => sanitize_text_field( wp_timezone_string() ),
-			'event_announced'   => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
-			'event_datetime'    => $event->get_datetime(),
-			'event_rest_api'    => home_url( 'wp-json/gatherpress/v1/event' ),
-			'has_event_past'    => $event->has_event_past(),
-			'is_admin'          => is_admin(),
-			'nonce'             => wp_create_nonce( 'wp_rest' ),
-			'post_id'           => $post_id,
-			'settings'          => array(
-				'date_format'   => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'time_format'   => $settings->get_value( 'general', 'formatting', 'time_format' ),
-				'show_timezone' => ( '1' === $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+			'is_user_logged_in'     => is_user_logged_in(),
+			'default_timezone'      => sanitize_text_field( wp_timezone_string() ),
+			'event_announced'       => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
+			'event_datetime'        => $event->get_datetime(),
+			'event_rest_api'        => home_url( 'wp-json/gatherpress/v1/event' ),
+			'enable_anonymous_rsvp' => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
+			'has_event_past'        => $event->has_event_past(),
+			'is_admin'              => is_admin(),
+			'nonce'                 => wp_create_nonce( 'wp_rest' ),
+			'post_id'               => $post_id,
+			'settings'              => array(
+				'date_format'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
+				'time_format'           => $settings->get_value( 'general', 'formatting', 'time_format' ),
+				'show_timezone'         => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'enable_anonymous_rsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
 			),
-			'login_url'         => $this->get_login_url( $post_id ),
-			'registration_url'  => $this->get_registration_url( $post_id ),
-			'timezone_choices'  => Utility::timezone_choices(),
-			'unregister_blocks' => $this->unregister_blocks(),
+			'login_url'             => $this->get_login_url( $post_id ),
+			'registration_url'      => $this->get_registration_url( $post_id ),
+			'timezone_choices'      => Utility::timezone_choices(),
+			'unregister_blocks'     => $this->unregister_blocks(),
 		);
 	}
 
