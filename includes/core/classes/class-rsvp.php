@@ -120,6 +120,17 @@ class Rsvp {
 		return array_merge( $default, (array) $data );
 	}
 
+	
+	public function remove( int $user_id, array $responses ) {
+		foreach($responses['all']['responses'] as $key => $value ) {
+				if ($value['id'] == $user_id) {
+					global $wpdb;
+					$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+					$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) );
+				}
+		}
+	}
+	
 	/**
 	 * Save a user's RSVP status for the event.
 	 *

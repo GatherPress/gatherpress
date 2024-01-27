@@ -251,7 +251,7 @@ class Rest_Api {
 	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
 	 */
 	public function validate_rsvp_status( $param ): bool {
-		return ( 'attending' === $param || 'not_attending' === $param );
+		return ( 'attending' === $param || 'not_attending' === $param || 'remove' === $param );
 	}
 
 	/**
@@ -614,6 +614,7 @@ class Rest_Api {
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] );
 		$event           = new Event( $post_id );
+		$responses        = $event->rsvp->responses();
 
 		// If managing user is adding someone to an event.
 		if (
@@ -635,7 +636,7 @@ class Rest_Api {
 		if (
 			$user_id &&
 			is_user_member_of_blog( $user_id ) &&
-			! $event->has_event_past()
+			! $event->has_event_past() && ( $status !=='remove')
 		) {
 			$status = $event->rsvp->save( $user_id, $status, $guests );
 
@@ -644,12 +645,16 @@ class Rest_Api {
 			}
 		}
 
+		if ( $status === 'remove') {
+			$event->rsvp->remove( $user_id, $responses );
+		}
+
 		$response = array(
 			'event_id'    => $post_id,
 			'success'     => $success,
 			'status'      => $status,
 			'guests'      => $guests,
-			'responses'   => $event->rsvp->responses(),
+			'responses'   => $responses,
 			'online_link' => $event->maybe_get_online_event_link(),
 		);
 

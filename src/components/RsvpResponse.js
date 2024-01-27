@@ -5,6 +5,7 @@ import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { Button, FormTokenField, PanelBody } from '@wordpress/components';
 import { InspectorControls } from '@wordpress/block-editor';
+import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Internal dependencies.
@@ -74,15 +75,27 @@ const RsvpResponse = () => {
 
 	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
 
-	console.log(
-		'RSVP RESPOnse on the top levels. Just responses with the status of attending',
-		rsvpResponse.attending.responses
-	);
+	const eventId = getFromGlobal('post_id');
 
 	const attendees = rsvpResponse.attending.responses;
 
-	const changeAttendees = (tokens) => {
-		console.log('A token has changed', tokens);
+	const changeAttendees = async (tokens) => {
+		// eslint-disable-next-line camelcase
+		const user_id = 3;
+		const status = 'remove';
+		apiFetch({
+			path: '/gatherpress/v1/event/rsvp',
+			method: 'POST',
+			data: {
+				post_id: eventId,
+				status,
+				// eslint-disable-next-line camelcase
+				user_id,
+				_wpnonce: getFromGlobal('nonce'),
+			},
+		}).then((res) => {
+			console.log(res);
+		});
 		return tokens;
 	};
 
