@@ -31,7 +31,14 @@ import apiFetch from '@wordpress/api-fetch';
  * @return {JSX.Element} The rendered React component.
  */
 const EventsList = (props) => {
-	const { eventOptions, maxNumberOfEvents, type, topics, venues } = props;
+	const {
+		eventOptions,
+		maxNumberOfEvents,
+		datetimeFormat,
+		type,
+		topics,
+		venues,
+	} = props;
 	const [events, setEvents] = useState([]);
 	const [loaded, setLoaded] = useState(false);
 	const renderEvents = events.map((event) => {
@@ -84,7 +91,7 @@ const EventsList = (props) => {
 		 */
 		if (getFromGlobal('is_user_logged_in')) {
 			apiFetch({
-				path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`,
+				path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`,
 			}).then((data) => {
 				setLoaded(true);
 				setEvents(data);
@@ -92,7 +99,7 @@ const EventsList = (props) => {
 		} else {
 			const endpoint =
 				getFromGlobal('event_rest_api') +
-				`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&topics=${topicsString}&venues=${venuesString}`;
+				`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`;
 
 			/**
 			 * Not using apiFetch helper here as it will use X-Wp-Nonce and cache it when page caching is on causing a 403.
@@ -108,7 +115,7 @@ const EventsList = (props) => {
 					setEvents(data);
 				});
 		}
-	}, [setEvents, maxNumberOfEvents, type, topics, venues]);
+	}, [setEvents, maxNumberOfEvents, datetimeFormat, type, topics, venues]);
 
 	return (
 		<div className={`gp-${type}-events-list`}>

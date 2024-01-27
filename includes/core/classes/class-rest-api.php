@@ -232,6 +232,9 @@ class Rest_Api {
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_number' ),
 					),
+					'datetime_format' => array(
+						'required' => false,
+					),
 					'topics'          => array(
 						'required' => false,
 					),
@@ -520,6 +523,7 @@ class Rest_Api {
 		$params          = $request->get_params();
 		$event_list_type = $params['event_list_type'];
 		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
+		$datetime_format = $params['datetime_format'] ?: 'D, M j, Y, g:i a T';
 		$posts           = array();
 		$topics          = array();
 		$venues          = array();
@@ -550,8 +554,8 @@ class Rest_Api {
 				$venue_information = $event->get_venue_information();
 				$posts[]           = array(
 					'ID'                       => $post_id,
-					'datetime_start'           => $event->get_datetime_start(),
-					'datetime_end'             => $event->get_datetime_end(),
+					'datetime_start'           => $event->get_datetime_start( $datetime_format ),
+					'datetime_end'             => $event->get_datetime_end( $datetime_format ),
 					'permalink'                => get_the_permalink( $post_id ),
 					'title'                    => get_the_title( $post_id ),
 					'excerpt'                  => get_the_excerpt( $post_id ),

@@ -47,6 +47,7 @@ domReady(() => {
 				}
 				type={attrs.type ?? 'upcoming'}
 				maxNumberOfEvents={attrs.maxNumberOfEvents ?? 5}
+				datetimeFormat={attrs.datetimeFormat ?? 'D, M j, Y, g:i a T'}
 				topics={attrs.topics ?? []}
 			/>
 		);
