@@ -137,6 +137,9 @@ class Rsvp {
  	 * @param array $responses Array of RSVP responses containing the entry to remove.
  	 */
 	public function remove( int $user_id, array $responses ) {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return $responses;
+		}
 		foreach($responses['all']['responses'] as $key => $value ) {
 				if ($value['id'] == $user_id) {
 					global $wpdb;

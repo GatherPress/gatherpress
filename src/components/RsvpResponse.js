@@ -80,12 +80,10 @@ const RsvpResponse = () => {
 	const attendees = rsvpResponse.attending.responses;
 
 	const changeAttendees = async (tokens) => {
-		// eslint-disable-next-line camelcase
-		let user_id = 0;
+		let userId = 0;
 		attendees.forEach((attendee) => {
 			if (false === tokens.some((item) => item.id === attendee.id)) {
-				// eslint-disable-next-line camelcase
-				user_id = attendee.id;
+				userId = attendee.id;
 			}
 		});
 		const status = 'remove';
@@ -96,7 +94,7 @@ const RsvpResponse = () => {
 				post_id: eventId,
 				status,
 				// eslint-disable-next-line camelcase
-				user_id,
+				user_id: userId,
 				_wpnonce: getFromGlobal('nonce'),
 			},
 		}).then((res) => {
