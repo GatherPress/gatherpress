@@ -63,7 +63,6 @@ class Event {
 	 */
 	const TAXONOMY = 'gp_topic';
 
-
 	/**
 	 * Event post object.
 	 *
@@ -71,14 +70,6 @@ class Event {
 	 * @var array|WP_Post|null
 	 */
 	protected $event = null;
-
-	/**
-	 * Storing and retrieving event datetimes.
-	 *
-	 * @since 1.0.0
-	 * @var array
-	 */
-	protected array $datetimes = array();
 
 	/**
 	 * RSVP instance.
@@ -575,16 +566,14 @@ class Event {
 		}
 
 		$cache_key = sprintf( self::DATETIME_CACHE_KEY, $this->event->ID );
-		$cache     = wp_cache_get( $cache_key );
-		$data      = ! empty( $cache ) ? $cache : $this->datetimes;
+		$data      = get_transient( $cache_key );
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
 			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
-			wp_cache_set( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
-			$this->datetimes = $data;
+			set_transient( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
 		}
 
 		return array_merge(
@@ -923,12 +912,12 @@ class Event {
 		);
 
 		if ( ! empty( $exists ) ) {
-			$retval = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$retval = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$table,
 				$fields,
 				array( 'post_id' => $fields['post_id'] )
 			);
-			wp_cache_delete( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
+			delete_transient( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
 		} else {
 			$retval = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
