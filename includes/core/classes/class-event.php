@@ -24,6 +24,14 @@ use WP_Post;
  */
 class Event {
 	/**
+	 * Cache key format for storing and retrieving event datetimes.
+	 *
+	 * @since 1.0.0
+	 * @var string $DATETIME_CACHE_KEY
+	 */
+	const DATETIME_CACHE_KEY = 'datetime_%d';
+
+	/**
 	 * Date and time format used within GatherPress.
 	 *
 	 * @since 1.0.0
@@ -70,7 +78,7 @@ class Event {
 	 * @since 1.0.0
 	 * @var array
 	 */
-	protected array $datetimes = [];
+	protected array $datetimes = array();
 
 	/**
 	 * Storing and retrieving various formats for event datetimes.
@@ -78,7 +86,7 @@ class Event {
 	 * @since 1.0.0
 	 * @var array
 	 */
-	protected array $formatted_datetimes = [];
+	protected array $formatted_datetimes = array();
 
 	/**
 	 * RSVP instance.
@@ -582,13 +590,15 @@ class Event {
 			return $default;
 		}
 
-		$data = $this->datetimes;
+		$cache_key = sprintf( self::DATETIME_CACHE_KEY, $this->event->ID );
+		$data      = wp_cache_get( $cache_key ) ?? $this->datetimes;
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
 			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
+			wp_cache_set( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
 			$this->datetimes = $data;
 		}
 
@@ -933,6 +943,7 @@ class Event {
 				$fields,
 				array( 'post_id' => $fields['post_id'] )
 			);
+			wp_cache_delete( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
 		} else {
 			$retval = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
