@@ -127,6 +127,9 @@ class Test_Rsvp extends Base {
 
 		$rsvp->save( $user_1_id, 'not_attending' );
 
+		// Give it a slight delay to move member from waiting_list to attending (w/o test sometimes fails).
+		sleep(.1);
+
 		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to asser user 3 is on attending.' );
 		$this->assertSame( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
 
