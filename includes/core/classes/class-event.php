@@ -81,14 +81,6 @@ class Event {
 	protected array $datetimes = array();
 
 	/**
-	 * Storing and retrieving various formats for event datetimes.
-	 *
-	 * @since 1.0.0
-	 * @var array
-	 */
-	protected array $formatted_datetimes = array();
-
-	/**
 	 * RSVP instance.
 	 *
 	 * @var Rsvp|null
@@ -424,12 +416,6 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
-		$key = $format . ' ' . $which . ' ' . $local;
-
-		if ( isset( $this->formatted_datetimes[ $key ] ) ) {
-			return $this->formatted_datetimes[ $key ];
-		}
-
 		$dt             = $this->get_datetime();
 		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = static::maybe_convert_offset( $dt['timezone'] );
@@ -449,8 +435,6 @@ class Event {
 			$ts   = strtotime( $date );
 			$date = wp_date( $format, $ts, $tz );
 		}
-
-		$this->formatted_datetimes[ $key ] = $date;
 
 		return (string) $date;
 	}
