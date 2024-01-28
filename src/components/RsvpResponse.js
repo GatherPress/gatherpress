@@ -94,9 +94,8 @@ const RsvpResponse = () => {
 				_wpnonce: getFromGlobal('nonce'),
 			},
 		}).then((res) => {
-			console.log(res);
+			setRsvpResponse(res.responses);
 		});
-		return tokens;
 	};
 
 	return (
