@@ -604,6 +604,7 @@ class Test_Event extends Base {
 			'Failed to assert that event has started.'
 		);
 
+		$event = new Event( $post->ID );
 		$start = new DateTime( 'now' );
 		$end   = new DateTime( 'now' );
 
@@ -631,6 +632,7 @@ class Test_Event extends Base {
 			'Failed to assert that event has started with offset.'
 		);
 
+		$event = new Event( $post->ID );
 		$start = new DateTime( 'now' );
 		$end   = new DateTime( 'now' );
 
@@ -686,6 +688,7 @@ class Test_Event extends Base {
 			'Failed to assert that event has past.'
 		);
 
+		$event = new Event( $post->ID );
 		$start = new DateTime( 'now' );
 		$end   = new DateTime( 'now' );
 
@@ -703,6 +706,7 @@ class Test_Event extends Base {
 
 		$this->assertFalse( $output );
 
+		$event = new Event( $post->ID );
 		$start = new DateTime( 'now' );
 		$end   = new DateTime( 'now' );
 
@@ -764,6 +768,7 @@ class Test_Event extends Base {
 			'Failed to assert that event is happening'
 		);
 
+		$event = new Event( $post->ID );
 		$start = new DateTime( 'now' );
 		$end   = new DateTime( 'now' );
 
