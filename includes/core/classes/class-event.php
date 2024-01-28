@@ -591,7 +591,8 @@ class Event {
 		}
 
 		$cache_key = sprintf( self::DATETIME_CACHE_KEY, $this->event->ID );
-		$data      = wp_cache_get( $cache_key ) ?? $this->datetimes;
+		$cache     = wp_cache_get( $cache_key );
+		$data      = ! empty( $cache ) ? $cache : $this->datetimes;
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
 			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
