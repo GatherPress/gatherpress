@@ -81,7 +81,13 @@ const RsvpResponse = () => {
 
 	const changeAttendees = async (tokens) => {
 		// eslint-disable-next-line camelcase
-		const user_id = 3;
+		let user_id = 0;
+		attendees.forEach((attendee) => {
+			if (false === tokens.some((item) => item.id === attendee.id)) {
+				// eslint-disable-next-line camelcase
+				user_id = attendee.id;
+			}
+		});
 		const status = 'remove';
 		apiFetch({
 			path: '/gatherpress/v1/event/rsvp',
@@ -114,6 +120,7 @@ const RsvpResponse = () => {
 					value={
 						attendees &&
 						attendees.map((item) => ({
+							id: item.id,
 							value: item.name,
 						}))
 					}
