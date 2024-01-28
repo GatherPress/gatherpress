@@ -80,25 +80,23 @@ const RsvpResponse = () => {
 	const attendees = rsvpResponse.attending.responses;
 
 	const changeAttendees = async (tokens) => {
-		let userId = 0;
 		attendees.forEach((attendee) => {
 			if (false === tokens.some((item) => item.id === attendee.id)) {
-				userId = attendee.id;
+				const status = 'remove';
+				apiFetch({
+					path: '/gatherpress/v1/event/rsvp',
+					method: 'POST',
+					data: {
+						post_id: eventId,
+						status,
+						// eslint-disable-next-line camelcase
+						user_id: attendee.id,
+						_wpnonce: getFromGlobal('nonce'),
+					},
+				}).then((res) => {
+					setRsvpResponse(res.responses);
+				});
 			}
-		});
-		const status = 'remove';
-		apiFetch({
-			path: '/gatherpress/v1/event/rsvp',
-			method: 'POST',
-			data: {
-				post_id: eventId,
-				status,
-				// eslint-disable-next-line camelcase
-				user_id: userId,
-				_wpnonce: getFromGlobal('nonce'),
-			},
-		}).then((res) => {
-			setRsvpResponse(res.responses);
 		});
 	};
 
