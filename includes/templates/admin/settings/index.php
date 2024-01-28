@@ -24,6 +24,9 @@ $gatherpress_settings = Settings::get_instance();
 	<h1 class="wp-heading-inline">
 		<?php esc_html_e( 'GatherPress Settings', 'gatherpress' ); ?>
 	</h1>
+
+	<?php settings_errors(); ?>
+
 	<h2 class="nav-tab-wrapper">
 		<?php
 		foreach ( $sub_pages as $gatherpress_sub_page => $gatherpress_value ) {
