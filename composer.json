@@ -2,7 +2,7 @@
 	"name": "gatherpress/gatherpress",
 	"description": "Powering Communities with WordPress",
 	"type": "project",
-	"license": "GNU General Public License v2.0",
+	"license": "GPL-2.0-or-later",
 	"repositories": [
 		{
 			"type": "vcs",

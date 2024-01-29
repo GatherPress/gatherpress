@@ -2,11 +2,14 @@
  * External dependencies.
  */
 import { expect, test } from '@jest/globals';
+import 'moment-timezone';
 
 /**
  * Internal dependencies.
  */
 import {
+	convertPHPToMomentFormat,
+	dateTimeLabelFormat,
 	defaultDateTimeEnd,
 	defaultDateTimeStart,
 	getDateTimeEnd,
@@ -19,6 +22,20 @@ import {
 	updateDateTimeEnd,
 	updateDateTimeStart,
 } from '../../../../../src/helpers/datetime';
+
+/**
+ * Coverage for dateTimeLabelFormat.
+ */
+test('dateTimeLabelFormat returns correct format', () => {
+	global.GatherPress = {
+		settings: {
+			date_format: 'F j, Y',
+			time_format: 'g:i a',
+		},
+	};
+
+	expect(dateTimeLabelFormat()).toBe('MMMM D, YYYY h:mm a');
+});
 
 /**
  * Coverage for getTimeZone.
@@ -235,4 +252,19 @@ test('updateDateTimeEnd without second argument', () => {
 	updateDateTimeEnd(date);
 
 	expect(global.GatherPress.event_datetime.datetime_end).toBe(date);
+});
+
+/**
+ * Coverage for convertPHPToMomentFormat.
+ */
+test('convertPHPToMomentFormat returns correct date format', () => {
+	const format = convertPHPToMomentFormat('F j, Y');
+
+	expect(format).toBe('MMMM D, YYYY');
+});
+
+test('convertPHPToMomentFormat returns correct time format', () => {
+	const format = convertPHPToMomentFormat('g:i a');
+
+	expect(format).toBe('h:mm a');
 });

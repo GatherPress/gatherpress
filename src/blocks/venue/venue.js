@@ -10,6 +10,17 @@ import { createRoot } from '@wordpress/element';
 import MapEmbed from '../../components/MapEmbed';
 import VenueOrOnlineEvent from '../../components/VenueOrOnlineEvent';
 
+/**
+ * Render GatherPress Venue and Map Embed blocks.
+ *
+ * This code initializes the rendering of GatherPress Venue and Map Embed blocks
+ * on the frontend. It identifies the blocks using the 'data-gp_block_name' attribute,
+ * extracts the block attributes from the dataset, and renders the corresponding components.
+ *
+ * @since 1.0.0
+ *
+ * @return {void}
+ */
 domReady(() => {
 	let containers = document.querySelectorAll(`[data-gp_block_name="venue"]`);
 

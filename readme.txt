@@ -1,24 +1,20 @@
 === GatherPress ===
-Contributors:      mauteri,hrmervin,jmarx,meaganhanes,pbrocks
+Contributors:      mauteri, hrmervin, jmarx, meaganhanes, pbrocks
 Tags:              events, event, meetup, community
-License:           GNU General Public License v2 or later
+License:           GNU General Public License v2.0 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
-Requires PHP:      7.4
-Requires at least: 6.4
 Tested up to:      6.4
-Stable tag:        0.26.0
+Stable tag:        0.27.0
 
-GatherPress, a plugin created by and for the WordPress community, is a response to the community's desire for novel event management tools. Its agenda and roadmap align with that of the WordPress community, ensuring that it evolves in tandem with our collective wants and needs.
+GatherPress, powering our community's event management needs.
 
 == Description ==
 
-Lipsum
+GatherPress, a plugin created by and for the WordPress community, is a response to the community's desire for novel event management tools. Its agenda and roadmap align with that of the WordPress community, ensuring that it evolves in tandem with our collective wants and needs.
 
 = Contribute to GatherPress =
 
-If you wish to share in the collaborative of work to build GatherPress, please drop us a line either via WordPress Slack, or message us directly on our site https://gatherpress.org/get-involved
-
-Lipsum
+If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](https://gatherpress.org/get-involved).
 
 == Installation ==
 
@@ -32,7 +28,15 @@ To run GatherPress, we recommend your host supports:
 
 = Automatic installation =
 
-Lipsum
+@TODO
+
+== Screenshots ==
+
+@TODO
+
+== Changelog ==
+
+See complete changelog at https://github.com/GatherPress/gatherpress/releases.
 
 == Upgrade Notice ==
 

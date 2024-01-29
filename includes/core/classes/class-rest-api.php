@@ -27,7 +27,9 @@ use WP_REST_Server;
  * @since 1.0.0
  */
 class Rest_Api {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -612,7 +614,6 @@ class Rest_Api {
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] );
 		$event           = new Event( $post_id );
-		$online_link     = (string) get_post_meta( $post_id, '_online_event_link', true );
 
 		// If managing user is adding someone to an event.
 		if (
@@ -649,7 +650,7 @@ class Rest_Api {
 			'status'      => $status,
 			'guests'      => $guests,
 			'responses'   => $event->rsvp->responses(),
-			'online_link' => ( 'attending' === $status ) ? $online_link : '',
+			'online_link' => $event->maybe_get_online_event_link(),
 		);
 
 		return new WP_REST_Response( $response );
@@ -677,5 +678,4 @@ class Rest_Api {
 
 		return $response;
 	}
-
 }

@@ -7,7 +7,7 @@
   "category": "gatherpress",
   "icon": "location",
   "example": {},
-  "description": "The venue block.",
+  "description": "Provides information about an event venue.",
   "attributes": {
     "mapShow": {
       "type": "boolean",

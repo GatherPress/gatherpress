@@ -19,7 +19,6 @@ use PMC\Unit_Test\Base;
  * @coversDefaultClass \GatherPress\Core\Venue
  */
 class Test_Venue extends Base {
-
 	/**
 	 * Coverage for __construct and setup_hooks.
 	 *
@@ -367,5 +366,4 @@ class Test_Venue extends Base {
 			'Failed to assert venue title matches the venue meta title.'
 		);
 	}
-
 }

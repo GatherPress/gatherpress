@@ -20,7 +20,9 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Block {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -44,7 +46,31 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'init', array( $this, 'register_blocks' ) );
+		// Priority 11 needed for block.json translations of title and description.
+		add_action( 'init', array( $this, 'register_blocks' ), 11 );
+		add_filter( 'load_script_translation_file', array( $this, 'fix_translation_location' ), 10, 3 );
+	}
+
+	/**
+	 * Fix translation file location for a specific Gutenberg block.
+	 *
+	 * @todo A fix will come eventually. See Issue #1: .json-file is not loaded.
+	 *       More info: https://awhitepixel.com/how-to-translate-custom-gutenberg-blocks-with-block-json/.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $file    The current translation file path.
+	 * @param string $handle  The script or style's registered handle.
+	 * @param string $domain  The translation text domain.
+	 *
+	 * @return string The modified translation file path.
+	 */
+	public function fix_translation_location( string $file, string $handle, string $domain ): string {
+		if ( false !== strpos( $handle, 'gatherpress' ) && 'gatherpress' === $domain ) {
+			$file = str_replace( WP_LANG_DIR . '/plugins', GATHERPRESS_CORE_PATH . '/languages', $file );
+		}
+
+		return $file;
 	}
 
 	/**
@@ -60,8 +86,9 @@ class Block {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
 		foreach ( $blocks as $block ) {
-			register_block_type( sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block ) );
+			register_block_type(
+				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
+			);
 		}
 	}
-
 }

@@ -20,6 +20,13 @@ namespace GatherPress\Core\Settings;
  * @since 1.0.0
  */
 class Base {
+	/**
+	 * The slug used to identify the settings page.
+	 *
+	 * @var string
+	 * @since 1.0.0
+	 */
+	protected string $slug;
 
 	/**
 	 * The name of the settings page.
@@ -27,7 +34,7 @@ class Base {
 	 * @var string
 	 * @since 1.0.0
 	 */
-	protected string $name = '';
+	protected string $name;
 
 	/**
 	 * The priority of the settings page within the sub-pages list.
@@ -35,7 +42,7 @@ class Base {
 	 * @var int
 	 * @since 1.0.0
 	 */
-	protected int $priority = 10;
+	protected int $priority;
 
 	/**
 	 * An array of sections to be displayed on the settings page.
@@ -43,15 +50,7 @@ class Base {
 	 * @var array
 	 * @since 1.0.0
 	 */
-	protected array $sections = array();
-
-	/**
-	 * The slug used to identify the settings page.
-	 *
-	 * @var string
-	 * @since 1.0.0
-	 */
-	protected string $slug = '';
+	protected array $sections;
 
 	/**
 	 * Constructor method for initializing the class and setting up hooks.
@@ -59,7 +58,54 @@ class Base {
 	 * @since 1.0.0
 	 */
 	public function __construct() {
+		$this->slug     = $this->get_slug();
+		$this->priority = $this->get_priority();
+
 		$this->setup_hooks();
+	}
+
+	/**
+	 * Get the default slug.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	protected function get_slug(): string {
+		return '';
+	}
+
+	/**
+	 * Get the default name.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	protected function get_name(): string {
+		return '';
+	}
+
+	/**
+	 * Get the default priority.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int
+	 */
+	protected function get_priority(): int {
+		return 10;
+	}
+
+	/**
+	 * Get the default sections.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	protected function get_sections(): array {
+		return array();
 	}
 
 	/**
@@ -73,6 +119,21 @@ class Base {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'gatherpress_sub_pages', array( $this, 'set_sub_page' ) );
+		add_action( 'admin_init', array( $this, 'init' ) );
+	}
+
+	/**
+	 * Initialize.
+	 *
+	 * This method is hooked into the 'admin_init' action to ensure that text can be translated.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function init(): void {
+		$this->name     = $this->get_name();
+		$this->sections = $this->get_sections();
 	}
 
 	/**
@@ -118,10 +179,9 @@ class Base {
 	 */
 	public function page(): array {
 		return array(
-			'name'     => $this->name,
-			'priority' => $this->priority,
-			'sections' => $this->sections,
+			'name'     => $this->get_name(),
+			'priority' => $this->get_priority(),
+			'sections' => $this->get_sections(),
 		);
 	}
-
 }

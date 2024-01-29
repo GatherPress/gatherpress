@@ -22,23 +22,10 @@ use GatherPress\Core\Utility;
  * @since 1.0.0
  */
 class Credits extends Base {
-
-	use Singleton;
-
 	/**
-	 * Constructor method for initializing the Credits class.
-	 *
-	 * @since 1.0.0
+	 * Enforces a single instance of this class.
 	 */
-	protected function __construct() {
-		parent::__construct();
-
-		$this->name     = __( 'Credits', 'gatherpress' );
-		$this->priority = PHP_INT_MAX;
-		$this->slug     = 'credits';
-
-		$this->setup_hooks();
-	}
+	use Singleton;
 
 	/**
 	 * Set up hooks for various purposes.
@@ -53,6 +40,45 @@ class Credits extends Base {
 		parent::setup_hooks();
 
 		add_action( 'gatherpress_settings_section', array( $this, 'settings_section' ), 9 );
+	}
+
+	/**
+	 * Get the slug for the credits section.
+	 *
+	 * This method returns the slug used to identify the credits section.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The slug for the credits section.
+	 */
+	protected function get_slug(): string {
+		return 'credits';
+	}
+
+	/**
+	 * Get the name for the credits section.
+	 *
+	 * This method returns the localized name for the credits section.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The localized name for the credits section.
+	 */
+	protected function get_name(): string {
+		return __( 'Credits', 'gatherpress' );
+	}
+
+	/**
+	 * Get the priority for displaying credits.
+	 *
+	 * This method returns the priority at which credits should be displayed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int The priority for displaying credits. Higher values mean later execution.
+	 */
+	protected function get_priority(): int {
+		return PHP_INT_MAX;
 	}
 
 	/**
@@ -96,5 +122,4 @@ class Credits extends Base {
 			true
 		);
 	}
-
 }

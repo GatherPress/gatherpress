@@ -9,6 +9,17 @@ import { createRoot } from '@wordpress/element';
  */
 import OnlineEvent from '../../components/OnlineEvent';
 
+/**
+ * Initialize the rendering of GatherPress Online Event blocks.
+ *
+ * This code initializes the rendering of GatherPress Online Event blocks
+ * by selecting all elements with the 'online-event' block name and
+ * rendering the OnlineEvent component inside them with provided attributes.
+ *
+ * @since 1.0.0
+ *
+ * @return {void}
+ */
 domReady(() => {
 	const containers = document.querySelectorAll(
 		`[data-gp_block_name="online-event"]`

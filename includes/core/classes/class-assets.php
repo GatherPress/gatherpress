@@ -21,7 +21,9 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class Assets {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
@@ -151,6 +153,8 @@ class Assets {
 				true
 			);
 
+			wp_set_script_translations( 'gatherpress-panels', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+
 			$asset = $this->get_asset_data( 'modals' );
 			wp_enqueue_script(
 				'gatherpress-modals',
@@ -159,6 +163,8 @@ class Assets {
 				$asset['version'],
 				true
 			);
+
+			wp_set_script_translations( 'gatherpress-modals', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 		}
 
 		$settings      = Settings::get_instance();
@@ -191,6 +197,8 @@ class Assets {
 				$asset['version'],
 				true
 			);
+
+			wp_set_script_translations( 'gatherpress-settings', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 		}
 
 		$asset = $this->get_asset_data( 'admin' );
@@ -202,6 +210,8 @@ class Assets {
 			$asset['version'],
 			true
 		);
+
+		wp_set_script_translations( 'gatherpress-admin', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 	}
 
 	/**
@@ -224,6 +234,8 @@ class Assets {
 			$asset['version'],
 			true
 		);
+
+		wp_set_script_translations( 'gatherpress-editor', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 	}
 
 	/**
@@ -272,9 +284,10 @@ class Assets {
 			'is_admin'          => is_admin(),
 			'nonce'             => wp_create_nonce( 'wp_rest' ),
 			'post_id'           => $post_id,
-			'post_type'         => Event::POST_TYPE,
 			'settings'          => array(
-				// @todo settings to come...
+				'date_format'   => $settings->get_value( 'general', 'formatting', 'date_format' ),
+				'time_format'   => $settings->get_value( 'general', 'formatting', 'time_format' ),
+				'show_timezone' => ( '1' === $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
 			),
 			'login_url'         => $this->get_login_url( $post_id ),
 			'registration_url'  => $this->get_registration_url( $post_id ),
@@ -386,5 +399,4 @@ class Assets {
 
 		return $this->asset_data[ $asset ];
 	}
-
 }

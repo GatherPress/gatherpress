@@ -24,24 +24,48 @@ use GatherPress\Core\Traits\Singleton;
  * @since 1.0.0
  */
 class General extends Base {
-
+	/**
+	 * Enforces a single instance of this class.
+	 */
 	use Singleton;
 
 	/**
-	 * Constructor for the General settings page.
+	 * Get the slug for the general section.
 	 *
-	 * Initializes the General settings page by setting its name, description,
-	 * priority, sections, and slug.
+	 * This method returns the slug used to identify the general section.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return string The slug for the general section.
 	 */
-	protected function __construct() {
-		parent::__construct();
+	protected function get_slug(): string {
+		return 'general';
+	}
 
-		$this->name     = __( 'General', 'gatherpress' );
-		$this->priority = PHP_INT_MIN;
-		$this->sections = $this->get_section();
-		$this->slug     = 'general';
+	/**
+	 * Get the name for the general section.
+	 *
+	 * This method returns the localized name for the general section.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The localized name for the general section.
+	 */
+	protected function get_name(): string {
+		return __( 'General', 'gatherpress' );
+	}
+
+	/**
+	 * Get the priority for displaying general.
+	 *
+	 * This method returns the priority at which general should be displayed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int The priority for displaying general. Higher values mean later execution.
+	 */
+	protected function get_priority(): int {
+		return PHP_INT_MIN;
 	}
 
 	/**
@@ -55,7 +79,7 @@ class General extends Base {
 	 *
 	 * @return array An array representing the sections and options for the "General" settings page.
 	 */
-	protected function get_section(): array {
+	protected function get_sections(): array {
 		return array(
 			'general'    => array(
 				'name'        => __( 'General Settings', 'gatherpress' ),
@@ -69,7 +93,7 @@ class General extends Base {
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),
 						'field'  => array(
-							'label'   => __( 'Show publish date as event date for events', 'gatherpress' ),
+							'label'   => __( 'Show publish date as event date for events.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
 								'default' => '1',
@@ -169,5 +193,4 @@ class General extends Base {
 			),
 		);
 	}
-
 }

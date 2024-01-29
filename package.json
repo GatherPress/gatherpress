@@ -1,6 +1,6 @@
 {
 	"name": "gatherpress",
-	"version": "0.26.0",
+	"version": "0.27.0",
 	"description": "Powering Communities with WordPress",
 	"main": "index.js",
 	"scripts": {
@@ -36,7 +36,7 @@
 		"events"
 	],
 	"author": "",
-	"license": "GPL-2.0",
+	"license": "GPL-2.0-or-later",
 	"bugs": {
 		"url": "https://github.com/GatherPress/gatherpress/issues"
 	},
@@ -44,6 +44,8 @@
 	"devDependencies": {
 		"@jest/globals": "^29.7.0",
 		"@playwright/test": "^1.40.1",
+		"@testing-library/jest-dom": "^6.2.0",
+		"@testing-library/react": "^14.1.2",
 		"@wordpress/api-fetch": "^6.45.0",
 		"@wordpress/block-editor": "^12.16.0",
 		"@wordpress/blocks": "^12.25.0",
@@ -57,18 +59,19 @@
 		"@wordpress/element": "^5.25.0",
 		"@wordpress/eslint-plugin": "^17.5.0",
 		"@wordpress/i18n": "^4.48.0",
+		"@wordpress/notices": "^4.16.0",
 		"@wordpress/plugins": "^6.16.0",
 		"@wordpress/scripts": "^26.19.0",
-		"classnames": "^2.3.2",
+		"classnames": "^2.5.1",
 		"dotenv": "^16.3.1",
 		"eslint": "^8.56.0",
-		"html-react-parser": "^5.0.9",
+		"html-react-parser": "^5.0.11",
 		"jest-sonar-reporter": "^2.0.0",
 		"lodash": "^4.17.21",
-		"moment": "^2.29.4",
-		"moment-timezone": "^0.5.43",
+		"moment": "^2.30.1",
+		"moment-timezone": "^0.5.44",
 		"playwright": "^1.40.1",
 		"react-modal": "^3.16.1",
-		"react-tooltip": "^5.25.0"
+		"react-tooltip": "^5.25.1"
 	}
 }

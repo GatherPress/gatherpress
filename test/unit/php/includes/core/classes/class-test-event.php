@@ -24,7 +24,6 @@ use WP_Post;
  * @coversDefaultClass \GatherPress\Core\Event
  */
 class Test_Event extends Base {
-
 	/**
 	 * Coverage for __construct method.
 	 *
@@ -837,5 +836,4 @@ class Test_Event extends Base {
 			'Failed to assert empty string due to RSVP being set to null.'
 		);
 	}
-
 }

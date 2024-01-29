@@ -19,6 +19,8 @@ import {
  * Formats the provided start date and time according to the specified label format
  * and returns the formatted result in the time zone configured for the plugin.
  *
+ * @since 1.0.0
+ *
  * @param {Object} props               - The properties object containing the start date and time.
  * @param {string} props.dateTimeStart - The start date and time to be formatted.
  *
@@ -27,12 +29,16 @@ import {
 export const DateTimeStartLabel = (props) => {
 	const { dateTimeStart } = props;
 
-	return moment.tz(dateTimeStart, getTimeZone()).format(dateTimeLabelFormat);
+	return moment
+		.tz(dateTimeStart, getTimeZone())
+		.format(dateTimeLabelFormat());
 };
 
 /**
  * Formats the provided end date and time according to the specified label format
  * and returns the formatted result in the time zone configured for the plugin.
+ *
+ * @since 1.0.0
  *
  * @param {Object} props               - The properties object containing the end date and time.
  * @param {string} props.dateTimeStart - The end date and time to be formatted.
@@ -42,9 +48,24 @@ export const DateTimeStartLabel = (props) => {
 export const DateTimeEndLabel = (props) => {
 	const { dateTimeEnd } = props;
 
-	return moment.tz(dateTimeEnd, getTimeZone()).format(dateTimeLabelFormat);
+	return moment.tz(dateTimeEnd, getTimeZone()).format(dateTimeLabelFormat());
 };
 
+/**
+ * DateTimeStartPicker component for GatherPress.
+ *
+ * This component renders a DateTimePicker for selecting the start date and time of an event.
+ * It takes the current date and time, as well as a callback function to update the state.
+ * The component is configured based on the site's time settings (12-hour or 24-hour format).
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props                  - Component props.
+ * @param {Date}     props.dateTimeStart    - The current date and time for the picker.
+ * @param {Function} props.setDateTimeStart - Callback function to update the start date and time.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 export const DateTimeStartPicker = (props) => {
 	const { dateTimeStart, setDateTimeStart } = props;
 	const settings = getSettings();
@@ -66,6 +87,21 @@ export const DateTimeStartPicker = (props) => {
 	);
 };
 
+/**
+ * DateTimeEndPicker component for GatherPress.
+ *
+ * This component renders a DateTimePicker for selecting the end date and time of an event.
+ * It takes the current date and time, as well as a callback function to update the state.
+ * The component is configured based on the site's time settings (12-hour or 24-hour format).
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props                - Component props.
+ * @param {Date}     props.dateTimeEnd    - The current date and time for the picker.
+ * @param {Function} props.setDateTimeEnd - Callback function to update the end date and time.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 export const DateTimeEndPicker = (props) => {
 	const { dateTimeEnd, setDateTimeEnd } = props;
 	const settings = getSettings();

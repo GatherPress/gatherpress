@@ -7,7 +7,7 @@
 	"category": "gatherpress",
 	"icon": "calendar",
 	"example": {},
-	"description": "An applet block to add the event to your preferred calendar.",
+	"description": "Allows a member to add an event to their preferred calendar.",
 	"attributes": {
 		"blockId": {
 			"type": "string"

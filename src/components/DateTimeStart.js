@@ -28,6 +28,23 @@ import {
 	getTimeZone,
 } from '../helpers/datetime';
 
+/**
+ * DateTimeStart component for GatherPress.
+ *
+ * This component manages the selection of the start date and time. It uses
+ * DateTimeStartPicker for the user to pick the date and time. The selected
+ * values are formatted and broadcasted using Broadcaster. The component
+ * subscribes to the saveDateTime function and triggers the hasEventPastNotice
+ * function to handle any event past notices.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props                  - Component properties.
+ * @param {string}   props.dateTimeStart    - The current start date and time.
+ * @param {Function} props.setDateTimeStart - Function to set the start date and time.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const DateTimeStart = (props) => {
 	const { dateTimeStart, setDateTimeStart } = props;
 
@@ -47,13 +64,18 @@ const DateTimeStart = (props) => {
 
 	return (
 		<PanelRow>
-			<Flex>
-				<FlexItem>{__('Start', 'gatherpress')}</FlexItem>
+			<Flex direction="column" gap="0">
+				<FlexItem>
+					<label htmlFor="gp-datetime-start">
+						{__('Start', 'gatherpress')}
+					</label>
+				</FlexItem>
 				<FlexItem>
 					<Dropdown
 						popoverProps={{ placement: 'bottom-end' }}
 						renderToggle={({ isOpen, onToggle }) => (
 							<Button
+								id="gp-datetime-start"
 								onClick={onToggle}
 								aria-expanded={isOpen}
 								isLink

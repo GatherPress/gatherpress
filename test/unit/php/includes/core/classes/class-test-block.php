@@ -20,7 +20,6 @@ use WP_Block_Type_Registry;
  * @coversDefaultClass \GatherPress\Core\Block
  */
 class Test_Block extends Base {
-
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -35,8 +34,14 @@ class Test_Block extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 10,
+				'priority' => 11,
 				'callback' => array( $instance, 'register_blocks' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'load_script_translation_file',
+				'priority' => 10,
+				'callback' => array( $instance, 'fix_translation_location' ),
 			),
 		);
 
@@ -73,5 +78,4 @@ class Test_Block extends Base {
 
 		$this->assertSame( $blocks, $expected );
 	}
-
 }

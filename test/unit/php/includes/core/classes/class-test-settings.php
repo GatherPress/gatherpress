@@ -18,7 +18,6 @@ use PMC\Unit_Test\Utility;
  * @coversDefaultClass \GatherPress\Core\Settings
  */
 class Test_Settings extends Base {
-
 	/**
 	 * Coverage for setup_hooks.
 	 *
@@ -290,5 +289,4 @@ class Test_Settings extends Base {
 			'Failed to assert that credits is last key.'
 		);
 	}
-
 }

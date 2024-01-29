@@ -20,7 +20,6 @@ namespace GatherPress\Core;
  * @since 1.0.0
  */
 class Utility {
-
 	/**
 	 * Renders a template file.
 	 *
@@ -117,5 +116,4 @@ class Utility {
 
 		return $timezones_clean;
 	}
-
 }

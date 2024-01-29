@@ -20,7 +20,6 @@ use PMC\Unit_Test\Base;
  * @coversDefaultClass \GatherPress\Core\Event_Query
  */
 class Test_Event_Query extends Base {
-
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -246,5 +245,4 @@ class Test_Event_Query extends Base {
 		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
 	}
-
 }

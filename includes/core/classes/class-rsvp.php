@@ -22,7 +22,6 @@ use WP_Post;
  * @since 1.0.0
  */
 class Rsvp {
-
 	/**
 	 * Table format for RSVPs.
 	 *
@@ -153,7 +152,7 @@ class Rsvp {
 
 		$table         = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 		$response      = $this->get( $user_id );
-		$limit_reached = $this->attending_limit_reached( $status );
+		$limit_reached = ( 'attending' === $status && $this->attending_limit_reached() );
 
 		if ( $limit_reached && ! $guests ) {
 			$status = 'waiting_list';
@@ -201,7 +200,7 @@ class Rsvp {
 	 */
 	public function check_waiting_list(): int {
 		$responses = $this->responses();
-		$total     = 0;
+		$i         = 0;
 
 		if (
 			intval( $responses['attending']['count'] ) < $this->max_attending_limit
@@ -209,11 +208,10 @@ class Rsvp {
 		) {
 			$waiting_list = $responses['waiting_list']['responses'];
 
-			// People longest on the waiting_list should be added first.
+			// People who are longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
 			$total = $this->max_attending_limit - intval( $responses['attending']['count'] );
-			$i     = 0;
 
 			while ( $i < $total ) {
 				// Check that we have enough on the waiting_list to run this.
@@ -227,7 +225,7 @@ class Rsvp {
 			}
 		}
 
-		return intval( $total );
+		return $i;
 	}
 
 	/**
@@ -239,16 +237,14 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $status Desired attendance status.
 	 * @return bool True if the 'attending' limit has been reached, false otherwise.
 	 */
-	public function attending_limit_reached( string $status ): bool {
+	public function attending_limit_reached(): bool {
 		$responses = $this->responses();
 
 		if (
 			! empty( $responses['attending'] )
 			&& intval( $responses['attending']['count'] ) >= $this->max_attending_limit
-			&& 'attending' === $status
 		) {
 			return true;
 		}
@@ -275,9 +271,12 @@ class Rsvp {
 		$cache_key = sprintf( self::RSVP_CACHE_KEY, $event_id );
 		$retval    = wp_cache_get( $cache_key );
 
+		// @todo add testing with cache.
+		// @codeCoverageIgnoreStart
 		if ( ! empty( $retval ) && is_array( $retval ) ) {
 			return $retval;
 		}
+		// @codeCoverageIgnoreEnd
 
 		$retval = array(
 			'all' => array(
@@ -314,16 +313,15 @@ class Rsvp {
 			$user_status = sanitize_key( $response['status'] );
 			$user_guests = intval( $response['guests'] );
 			$all_guests += $user_guests;
-
-			if ( 1 > $user_id ) {
-				continue;
-			}
-
-			if ( ! in_array( $user_status, $this->statuses, true ) ) {
-				continue;
-			}
-
 			$user_info   = get_userdata( $user_id );
+
+			if (
+				empty( $user_info ) ||
+				! in_array( $user_status, $this->statuses, true )
+			) {
+				continue;
+			}
+
 			$responses[] = array(
 				'id'        => $user_id,
 				'name'      => $user_info->display_name ?? __( 'Anonymous', 'gatherpress' ),
@@ -413,5 +411,4 @@ class Rsvp {
 	public function sort_by_timestamp( array $first, array $second ): bool {
 		return ( strtotime( $first['timestamp'] ) < strtotime( $second['timestamp'] ) );
 	}
-
 }

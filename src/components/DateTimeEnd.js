@@ -28,6 +28,23 @@ import {
 	getTimeZone,
 } from '../helpers/datetime';
 
+/**
+ * DateTimeEnd component for GatherPress.
+ *
+ * This component renders the end date and time selection in the editor.
+ * It includes a DateTimeEndPicker for selecting the end date and time.
+ * The component also updates the state using the setDateTimeEnd callback.
+ * Additionally, it broadcasts the end date and time using the Broadcaster utility.
+ * If the event has passed, it displays a notice using hasEventPastNotice function.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props                - Component props.
+ * @param {Date}     props.dateTimeEnd    - The current date and time for the picker.
+ * @param {Function} props.setDateTimeEnd - Callback function to update the end date and time.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
 const DateTimeEnd = (props) => {
 	const { dateTimeEnd, setDateTimeEnd } = props;
 
@@ -47,13 +64,18 @@ const DateTimeEnd = (props) => {
 
 	return (
 		<PanelRow>
-			<Flex>
-				<FlexItem>{__('End', 'gatherpress')}</FlexItem>
+			<Flex direction="column" gap="0">
+				<FlexItem>
+					<label htmlFor="gp-datetime-end">
+						{__('End', 'gatherpress')}
+					</label>
+				</FlexItem>
 				<FlexItem>
 					<Dropdown
 						popoverProps={{ placement: 'bottom-end' }}
 						renderToggle={({ isOpen, onToggle }) => (
 							<Button
+								id="gp-datetime-end"
 								onClick={onToggle}
 								aria-expanded={isOpen}
 								isLink

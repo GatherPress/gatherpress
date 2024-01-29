@@ -9,6 +9,25 @@ import { useEffect } from '@wordpress/element';
 import { Broadcaster } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
+/**
+ * RsvpResponseNavigationItem component for GatherPress.
+ *
+ * This component represents an individual navigation item for different RSVP statuses.
+ * It includes a link or span based on whether the item is active, and displays the count
+ * of responses for that status. Clicking on the item triggers the `onTitleClick` callback.
+ * The component is used within the `RsvpResponseNavigation` component.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props                    - Component props.
+ * @param {Object}   props.item               - An object representing an RSVP status with `title` and `value`.
+ * @param {boolean}  [props.activeItem=false] - Indicates whether the item is currently active.
+ * @param {number}   props.count              - The count of responses for the RSVP status.
+ * @param {Function} props.onTitleClick       - Callback function triggered when a title is clicked.
+ * @param {number}   props.defaultLimit       - The default limit of responses to display.
+ *
+ * @return {JSX.Element|null} The rendered React component or null if not active.
+ */
 const RsvpResponseNavigationItem = ({
 	item,
 	activeItem = false,
