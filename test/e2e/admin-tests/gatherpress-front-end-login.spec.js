@@ -16,6 +16,10 @@ test.describe('e2e test for login to front end guests', () => {
 	}) => {
 		await login({ page, username: 'testuser1' });
 
+		await page
+		.getByRole('heading', { name: 'Dashboard', level: 1 })
+		.isVisible();
+
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page.screenshot({ path: 'event-page.png' });
 
