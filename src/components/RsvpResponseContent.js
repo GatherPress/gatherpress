@@ -28,7 +28,6 @@ const RsvpResponseContent = ({
 	items,
 	activeValue,
 	limit = false,
-	editMode,
 }) => {
 	const eventId = getFromGlobal('post_id');
 	const [rsvpResponse, setRsvpResponse] = useState(

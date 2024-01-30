@@ -1,12 +1,15 @@
 /**
  * WordPress dependencies.
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, BlockControls } from '@wordpress/block-editor';
+import { ToolbarGroup, ToolbarButton } from '@wordpress/components';
+import { useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import RsvpResponse from '../../components/RsvpResponse';
+import RsvpResponseEdit from '../../components/RsvpResponseEdit';
 import EditCover from '../../components/EditCover';
 
 /**
@@ -22,11 +25,32 @@ import EditCover from '../../components/EditCover';
 const Edit = () => {
 	const blockProps = useBlockProps();
 
+	const [editMode, setEditMode] = useState(false);
+
+	const onEditClick = (e) => {
+		e.preventDefault();
+		setEditMode(!editMode);
+	};
+
 	return (
 		<div {...blockProps}>
-			<EditCover>
-				<RsvpResponse />
-			</EditCover>
+			{ editMode &&
+				<RsvpResponseEdit />
+			}
+			{ !editMode &&
+				<EditCover>
+					<RsvpResponse />
+				</EditCover>
+			}
+			<BlockControls>
+            	<ToolbarGroup>
+                	<ToolbarButton
+                    	label="Edit Attendees"
+						text={editMode ? 'Preview Attendees' : 'Edit Attendees'}
+                    	onClick={ onEditClick }
+                	/>
+            	</ToolbarGroup>
+        	</BlockControls>
 		</div>
 	);
 };
