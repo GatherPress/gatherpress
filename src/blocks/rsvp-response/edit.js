@@ -23,6 +23,7 @@ import EditCover from '../../components/EditCover';
  * @return {JSX.Element} The rendered React component.
  */
 const Edit = () => {
+	const isAdmin = wp.data.select('core').canUser('create', 'posts');
 	const blockProps = useBlockProps();
 
 	const [editMode, setEditMode] = useState(false);
@@ -34,23 +35,27 @@ const Edit = () => {
 
 	return (
 		<div {...blockProps}>
-			{ editMode &&
-				<RsvpResponseEdit />
-			}
-			{ !editMode &&
+			{editMode && <RsvpResponseEdit />}
+			{!editMode && (
 				<EditCover>
 					<RsvpResponse />
 				</EditCover>
-			}
-			<BlockControls>
-            	<ToolbarGroup>
-                	<ToolbarButton
-                    	label="Edit Attendees"
-						text={editMode ? 'Preview Attendees' : 'Edit Attendees'}
-                    	onClick={ onEditClick }
-                	/>
-            	</ToolbarGroup>
-        	</BlockControls>
+			)}
+			{isAdmin && (
+				<BlockControls>
+					<ToolbarGroup>
+						<ToolbarButton
+							label="Edit Attendees"
+							text={
+								editMode
+									? 'Preview Attendees'
+									: 'Edit Attendees'
+							}
+							onClick={onEditClick}
+						/>
+					</ToolbarGroup>
+				</BlockControls>
+			)}
 		</div>
 	);
 };
