@@ -19,16 +19,11 @@ import { Listener } from '../helpers/broadcasting';
  * @param {Object}         props               - Component props.
  * @param {Array}          props.items         - An array of objects representing different RSVP statuses.
  * @param {string}         props.activeValue   - The currently active RSVP status value.
- * @param {string}         props.editMode      - Edit mode of the component.
  * @param {number|boolean} [props.limit=false] - The maximum number of responses to display or false for no limit.
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpResponseContent = ({
-	items,
-	activeValue,
-	limit = false,
-}) => {
+const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
 	const eventId = getFromGlobal('post_id');
 	const [rsvpResponse, setRsvpResponse] = useState(
 		getFromGlobal('responses')

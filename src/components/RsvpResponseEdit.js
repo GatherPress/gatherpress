@@ -54,11 +54,12 @@ const RsvpResponseEdit = () => {
 	];
 
 	const [rsvpStatus, setRsvpStatus] = useState(defaultStatus);
-	const [rsvpResponse, setRsvpResponse] = useState( getFromGlobal('responses') );
+	const [rsvpResponse, setRsvpResponse] = useState(
+		getFromGlobal('responses')
+	);
 
 	const eventId = getFromGlobal('post_id');
 	const attendees = rsvpResponse.attending.responses;
-
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
@@ -67,7 +68,7 @@ const RsvpResponseEdit = () => {
 	const { userList } = useSelect((select) => {
 		const { getEntityRecords } = select(coreStore);
 
-		let users = getEntityRecords("root", "user", {
+		const users = getEntityRecords('root', 'user', {
 			per_page: -1,
 		});
 
@@ -86,7 +87,7 @@ const RsvpResponseEdit = () => {
 				...accumulator,
 				[user.username]: user,
 			}),
-			{},
+			{}
 		) ?? {};
 
 	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
@@ -99,23 +100,22 @@ const RsvpResponseEdit = () => {
 	/**
 	 * Updates the RSVP status for a user attending the given event.
 	 *
-	 * @param {number} userId - The ID of the user to update.
-	 * @param {number} eventId - The ID of the event to update attendance for.
+	 * @param {number} userId               - The ID of the user to update.
 	 * @param {string} [status='attending'] - The RSVP status to set (attending or remove).
 	 */
-	const updateUserStatus = (userId, eventId, status = "attending") => {
+	const updateUserStatus = (userId, status = 'attending') => {
 		apiFetch({
-			path: "/gatherpress/v1/event/rsvp",
-			method: "POST",
+			path: '/gatherpress/v1/event/rsvp',
+			method: 'POST',
 			data: {
 				post_id: eventId,
 				status,
 				user_id: userId,
-				_wpnonce: getFromGlobal("nonce"),
+				_wpnonce: getFromGlobal('nonce'),
 			},
 		}).then((res) => {
 			setRsvpResponse(res.responses);
-			setToGlobal("responses", res.responses);
+			setToGlobal('responses', res.responses);
 		});
 	};
 
@@ -135,17 +135,13 @@ const RsvpResponseEdit = () => {
 				}
 
 				// We have a new user to add to the attendees list.
-				updateUserStatus(
-					userSuggestions[token].id,
-					eventId,
-					"attending",
-				);
+				updateUserStatus(userSuggestions[token].id, 'attending');
 			});
 		} else {
 			// Removing attendees
 			attendees.forEach((attendee) => {
 				if (false === tokens.some((item) => item.id === attendee.id)) {
-					updateUserStatus(attendee.id, eventId, "remove");
+					updateUserStatus(attendee.id, 'remove');
 				}
 			});
 		}
@@ -163,7 +159,7 @@ const RsvpResponseEdit = () => {
 						value: item.name,
 					}))
 				}
-				tokenizeOnSpace={ true }
+				tokenizeOnSpace={true}
 				onChange={changeAttendees}
 				suggestions={Object.keys(userSuggestions)}
 				maxSuggestions={20}
