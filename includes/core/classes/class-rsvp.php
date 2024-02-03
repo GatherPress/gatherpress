@@ -42,13 +42,13 @@ class Rsvp {
 	 * An array of RSVP statuses.
 	 *
 	 * @since 1.0.0
-	 * @var string[] Contains RSVP statuses such as 'attending', 'not_attending', 'waiting_list', and 'unspecified'.
+	 * @var string[] Contains RSVP statuses such as 'attending', 'not_attending', 'waiting_list', and 'no_status'.
 	 */
 	public array $statuses = array(
 		'attending',
 		'not_attending',
 		'waiting_list',
-		'unspecified',
+		'no_status',
 	);
 
 	/**
@@ -109,7 +109,7 @@ class Rsvp {
 			'post_id'   => $event_id,
 			'user_id'   => $user_id,
 			'timestamp' => null,
-			'status'    => 'unspecified',
+			'status'    => 'no_status',
 			'guests'    => 0,
 			'anonymous' => 0,
 		);
@@ -136,7 +136,7 @@ class Rsvp {
 	 * @param string $status    RSVP status ('attending', 'not_attending', 'waiting_list').
 	 * @param int    $anonymous Indicates if the RSVP is anonymous (1 for anonymous, 0 for not anonymous).
 	 * @param int    $guests    Number of guests accompanying the user.
-	 * @return string The updated RSVP status ('attending', 'not_attending', 'waiting_list', 'unspecified').
+	 * @return string The updated RSVP status ('attending', 'not_attending', 'waiting_list', 'no_status').
 	 */
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): string {
 		global $wpdb;
@@ -178,7 +178,7 @@ class Rsvp {
 			// If not attending and anonymous, just remove record.
 			if ( 'not_attending' === $status && $anonymous ) {
 				$save   = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-				$status = 'unspecified'; // Set default status for UI.
+				$status = 'no_status'; // Set default status for UI.
 			} else {
 				$save = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			}
@@ -309,8 +309,8 @@ class Rsvp {
 		$all_guests  = 0;
 		$statuses    = $this->statuses;
 
-		// `unspecified` status is not relevant here.
-		$status_key = array_search( 'unspecified', $statuses, true );
+		// `no_status` status is not relevant here.
+		$status_key = array_search( 'no_status', $statuses, true );
 		unset( $statuses[ $status_key ] );
 		$statuses = array_values( $statuses );
 

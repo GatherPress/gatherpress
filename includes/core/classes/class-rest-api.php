@@ -254,7 +254,7 @@ class Rest_Api {
 	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
 	 */
 	public function validate_rsvp_status( $param ): bool {
-		return ( 'attending' === $param || 'not_attending' === $param || 'unspecified' === $param );
+		return ( 'attending' === $param || 'not_attending' === $param || 'no_status' === $param );
 	}
 
 	/**

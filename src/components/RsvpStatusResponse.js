@@ -14,11 +14,11 @@ import { __ } from '@wordpress/i18n';
  *
  * @param {Object} props                        - Component props.
  * @param {string} [props.type='upcoming']      - The type of the event, either 'upcoming' or 'past'.
- * @param {string} [props.status='unspecified'] - The RSVP status, such as 'attending', 'waiting_list', 'not_attending', 'unspecified'.
+ * @param {string} [props.status='no_status'] - The RSVP status, such as 'attending', 'waiting_list', 'not_attending', 'no_status'.
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpStatusResponse = ({ type = 'upcoming', status = 'unspecified' }) => {
+const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 	const responses = {
 		upcoming: {
 			attending: {
@@ -33,7 +33,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'unspecified' }) => {
 				icon: 'dashicons dashicons-dismiss',
 				text: __('Not Attending', 'gatherpress'),
 			},
-			unspecified: {
+			no_status: {
 				icon: '',
 				text: '',
 			},
@@ -51,7 +51,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'unspecified' }) => {
 				icon: 'dashicons dashicons-dismiss',
 				text: __("Didn't Go", 'gatherpress'),
 			},
-			unspecified: {
+			no_status: {
 				icon: 'dashicons dashicons-dismiss',
 				text: __("Didn't Go", 'gatherpress'),
 			},
