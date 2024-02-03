@@ -12,8 +12,8 @@ import { __ } from '@wordpress/i18n';
  *
  * @since 1.0.0
  *
- * @param {Object} props                        - Component props.
- * @param {string} [props.type='upcoming']      - The type of the event, either 'upcoming' or 'past'.
+ * @param {Object} props                      - Component props.
+ * @param {string} [props.type='upcoming']    - The type of the event, either 'upcoming' or 'past'.
  * @param {string} [props.status='no_status'] - The RSVP status, such as 'attending', 'waiting_list', 'not_attending', 'no_status'.
  *
  * @return {JSX.Element} The rendered React component.
