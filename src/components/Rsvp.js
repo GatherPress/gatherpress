@@ -219,7 +219,7 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 		let buttonStatus = '';
 		let buttonLabel = '';
 
-		if ('not_attending' === status || 'attend' === status) {
+		if ('not_attending' === status || 'no_status' === status) {
 			buttonStatus = 'attending';
 			buttonLabel = __('Attend', 'gatherpress');
 		} else {
@@ -360,7 +360,7 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 					)}
 				</Modal>
 			</ButtonGroup>
-			{'attend' !== rsvpStatus && (
+			{'no_status' !== rsvpStatus && (
 				<div className="gp-status">
 					<RsvpStatusResponse type={type} status={rsvpStatus} />
 
