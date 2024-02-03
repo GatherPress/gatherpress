@@ -161,7 +161,7 @@ class Test_Rest_Api extends Base {
 			'Failed to assert valid attendance status.'
 		);
 		$this->assertTrue(
-			$instance->validate_rsvp_status( 'attend' ),
+			$instance->validate_rsvp_status( 'unspecified' ),
 			'Failed to assert valid attendance status.'
 		);
 		$this->assertFalse(
