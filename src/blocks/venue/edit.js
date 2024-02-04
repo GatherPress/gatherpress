@@ -44,7 +44,7 @@ import { isSinglePostInEditor } from '../../helpers/globals';
  * @return {JSX.Element} The rendered React component.
  */
 const Edit = ({ attributes, setAttributes, isSelected }) => {
-	const { mapShow, mapZoomLevel, mapType, mapHeight } = attributes;
+	const { mapZoomLevel, mapType, mapHeight } = attributes;
 	const [name, setName] = useState('');
 	const [fullAddress, setFullAddress] = useState('');
 	const [phoneNumber, setPhoneNumber] = useState('');
@@ -57,6 +57,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 				?._online_event_link
 	);
 
+	let { mapShow } = attributes;
+
 	let venueInformationMetaData = useSelect(
 		(select) =>
 			select('core/editor')?.getEditedPostAttribute('meta')
@@ -67,6 +69,14 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		venueInformationMetaData = JSON.parse(venueInformationMetaData);
 	} else {
 		venueInformationMetaData = {};
+	}
+
+	if (mapShow && fullAddress) {
+		mapShow = true;
+	}
+
+	if (mapShow && !isSinglePostInEditor()) {
+		mapShow = true;
 	}
 
 	Listener({
@@ -198,7 +208,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							isOnlineEventTerm={isOnlineEventTerm}
 							onlineEventLink={onlineEventLink}
 						/>
-						{mapShow && fullAddress && (
+						{mapShow && (
 							<MapEmbed
 								location={fullAddress}
 								zoom={mapZoomLevel}

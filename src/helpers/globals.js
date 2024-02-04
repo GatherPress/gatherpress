@@ -30,7 +30,7 @@ export function enableSave() {
  * @return {boolean} True if the current editor session is for editing a post type entity, false otherwise.
  */
 export function isSinglePostInEditor() {
-	return 'string' === typeof select('core/editor').getCurrentPostType();
+	return 'string' === typeof select('core/editor')?.getCurrentPostType();
 }
 
 /**

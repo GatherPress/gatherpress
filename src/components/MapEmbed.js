@@ -1,3 +1,5 @@
+import { isSinglePostInEditor } from '../helpers/globals';
+
 /**
  * MapEmbed component for GatherPress.
  *
@@ -16,19 +18,24 @@
  * @return {JSX.Element} The rendered React component.
  */
 const MapEmbed = (props) => {
-	const { location, zoom, type, className } = props;
-	let { height } = props;
+	const { zoom, type, className } = props;
+	let { location, height } = props;
 
 	if (!height) {
 		height = 300;
 	}
 
-	const style = { border: 0, height, width: '100%' };
-	const baseUrl = 'https://maps.google.com/maps';
+	if (!isSinglePostInEditor()) {
+		location = '60 29th Street #343, San Francisco, CA 94110, USA';
+	}
 
 	if (!location) {
 		return <></>;
 	}
+
+	const style = { border: 0, height, width: '100%' };
+	const baseUrl = 'https://maps.google.com/maps';
+
 
 	const params = new URLSearchParams({
 		q: location,
