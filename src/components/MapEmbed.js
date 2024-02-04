@@ -25,7 +25,7 @@ const MapEmbed = (props) => {
 		height = 300;
 	}
 
-	if (!isSinglePostInEditor()) {
+	if (!isSinglePostInEditor() && !location) {
 		location = '60 29th Street #343, San Francisco, CA 94110, USA';
 	}
 
