@@ -351,7 +351,7 @@ class Assets {
 	protected function unregister_blocks(): array {
 		$blocks = array();
 
-		if ( ! is_admin() ) {
+		if ( ! is_admin() || ! get_post_type() ) {
 			return $blocks;
 		}
 

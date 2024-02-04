@@ -56,9 +56,14 @@ const RsvpResponseHeader = ({
 		loadListText = __('See all', 'gatherpress');
 	}
 
-	const [rsvpSeeAllLink, setRsvpSeeAllLink] = useState(
-		getFromGlobal('responses')[activeValue].count > defaultLimit
-	);
+	let defaultRsvpSeeAllLink = false;
+
+	if (getFromGlobal('responses')[activeValue]) {
+		defaultRsvpSeeAllLink =
+			getFromGlobal('responses')[activeValue].count > defaultLimit;
+	}
+
+	const [rsvpSeeAllLink, setRsvpSeeAllLink] = useState(defaultRsvpSeeAllLink);
 
 	Listener({ setRsvpSeeAllLink }, getFromGlobal('post_id'));
 

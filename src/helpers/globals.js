@@ -1,4 +1,4 @@
-import { dispatch } from '@wordpress/data';
+import { dispatch, select } from '@wordpress/data';
 
 /**
  * Enable the Save buttons after making an update.
@@ -15,6 +15,10 @@ import { dispatch } from '@wordpress/data';
  */
 export function enableSave() {
 	dispatch('core/editor')?.editPost({ meta: { _non_existing_meta: true } });
+}
+
+export function isSinglePost() {
+	return 'string' === typeof select('core/editor').getCurrentPostType();
 }
 
 /**

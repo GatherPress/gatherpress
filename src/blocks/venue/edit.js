@@ -25,6 +25,7 @@ import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
+import { isSinglePost } from '../../helpers/globals';
 
 /**
  * Edit component for the GatherPress Venue block.
@@ -52,14 +53,14 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const blockProps = useBlockProps();
 	const onlineEventLink = useSelect(
 		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
-				._online_event_link
+			select('core/editor')?.getEditedPostAttribute('meta')
+				?._online_event_link
 	);
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
-				._venue_information
+			select('core/editor')?.getEditedPostAttribute('meta')
+				?._venue_information
 	);
 
 	if (venueInformationMetaData) {
@@ -89,7 +90,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			}
 		}
 
-		if (isEventPostType()) {
+		if (isEventPostType() || !isSinglePost()) {
 			if (!fullAddress && !phoneNumber && !website) {
 				setName(__('No venue selected.', 'gatherpress'));
 			} else {
@@ -107,82 +108,88 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 
 	return (
 		<>
-			<InspectorControls>
-				<PanelBody
-					title={__('Venue settings', 'gatherpress')}
-					initialOpen={true}
-				>
-					<PanelRow>
-						{!isVenuePostType() && <VenueSelector />}
-						{isVenuePostType() && <VenueInformation />}
-					</PanelRow>
-					{isOnlineEventTerm && (
-						<PanelRow>
-							<OnlineEventLink />
-						</PanelRow>
-					)}
-				</PanelBody>
-				{!isOnlineEventTerm && (
+			{isSinglePost() && (
+				<InspectorControls>
 					<PanelBody
-						title={__('Map settings', 'gatherpress')}
+						title={__('Venue settings', 'gatherpress')}
 						initialOpen={true}
 					>
 						<PanelRow>
-							{__('Show map on venue', 'gatherpress')}
+							{!isVenuePostType() && <VenueSelector />}
+							{isVenuePostType() && <VenueInformation />}
 						</PanelRow>
-						<PanelRow>
-							<ToggleControl
-								label={
-									mapShow
-										? __('Display the map', 'gatherpress')
-										: __('Hide the map', 'gatherpress')
+						{isOnlineEventTerm && (
+							<PanelRow>
+								<OnlineEventLink />
+							</PanelRow>
+						)}
+					</PanelBody>
+					{!isOnlineEventTerm && (
+						<PanelBody
+							title={__('Map settings', 'gatherpress')}
+							initialOpen={true}
+						>
+							<PanelRow>
+								{__('Show map on venue', 'gatherpress')}
+							</PanelRow>
+							<PanelRow>
+								<ToggleControl
+									label={
+										mapShow
+											? __(
+													'Display the map',
+													'gatherpress'
+											  )
+											: __('Hide the map', 'gatherpress')
+									}
+									checked={mapShow}
+									onChange={(value) => {
+										setAttributes({ mapShow: value });
+									}}
+								/>
+							</PanelRow>
+							<RangeControl
+								label={__('Zoom level', 'gatherpress')}
+								beforeIcon="search"
+								value={mapZoomLevel}
+								onChange={(value) =>
+									setAttributes({ mapZoomLevel: value })
 								}
-								checked={mapShow}
+								min={1}
+								max={22}
+							/>
+							<RadioControl
+								label={__('Map type', 'gatherpress')}
+								selected={mapType}
+								options={[
+									{
+										label: __('Roadmap', 'gatherpress'),
+										value: 'm',
+									},
+									{
+										label: __('Satellite', 'gatherpress'),
+										value: 'k',
+									},
+								]}
 								onChange={(value) => {
-									setAttributes({ mapShow: value });
+									setAttributes({ mapType: value });
 								}}
 							/>
-						</PanelRow>
-						<RangeControl
-							label={__('Zoom level', 'gatherpress')}
-							beforeIcon="search"
-							value={mapZoomLevel}
-							onChange={(value) =>
-								setAttributes({ mapZoomLevel: value })
-							}
-							min={1}
-							max={22}
-						/>
-						<RadioControl
-							label={__('Map type', 'gatherpress')}
-							selected={mapType}
-							options={[
-								{
-									label: __('Roadmap', 'gatherpress'),
-									value: 'm',
-								},
-								{
-									label: __('Satellite', 'gatherpress'),
-									value: 'k',
-								},
-							]}
-							onChange={(value) => {
-								setAttributes({ mapType: value });
-							}}
-						/>
-						<RangeControl
-							label={__('Map height', 'gatherpress')}
-							beforeIcon="location"
-							value={mapHeight}
-							onChange={(height) =>
-								setAttributes({ mapHeight: height })
-							}
-							min={100}
-							max={1000}
-						/>
-					</PanelBody>
-				)}
-			</InspectorControls>
+							<RangeControl
+								label={__('Map height', 'gatherpress')}
+								beforeIcon="location"
+								value={mapHeight}
+								onChange={(height) =>
+									setAttributes({ mapHeight: height })
+								}
+								min={100}
+								max={1000}
+							/>
+						</PanelBody>
+					)}
+				</InspectorControls>
+			)}
+
 			<div {...blockProps}>
 				<EditCover isSelected={isSelected}>
 					<div className="gp-venue">
