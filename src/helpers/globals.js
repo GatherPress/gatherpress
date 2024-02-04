@@ -17,7 +17,19 @@ export function enableSave() {
 	dispatch('core/editor')?.editPost({ meta: { _non_existing_meta: true } });
 }
 
-export function isSinglePost() {
+/**
+ * Checks if the current editor session is editing a post type entity.
+ *
+ * This function determines if the current context within the WordPress editor
+ * is focused on editing an entity that is classified as a post type. This includes
+ * single posts, pages, and custom post types. It is particularly useful for distinguishing
+ * editor sessions that are editing post type entities from those editing other types of content,
+ * such as widget areas or templates in the full site editor, ensuring that specific actions or features
+ * are correctly applied only when editing post type entities.
+ *
+ * @return {boolean} True if the current editor session is for editing a post type entity, false otherwise.
+ */
+export function isSinglePostInEditor() {
 	return 'string' === typeof select('core/editor').getCurrentPostType();
 }
 

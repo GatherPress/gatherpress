@@ -25,7 +25,7 @@ import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
-import { isSinglePost } from '../../helpers/globals';
+import { isSinglePostInEditor } from '../../helpers/globals';
 
 /**
  * Edit component for the GatherPress Venue block.
@@ -90,7 +90,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			}
 		}
 
-		if (isEventPostType() || !isSinglePost()) {
+		if (isEventPostType() || !isSinglePostInEditor()) {
 			if (!fullAddress && !phoneNumber && !website) {
 				setName(__('No venue selected.', 'gatherpress'));
 			} else {
@@ -108,8 +108,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 
 	return (
 		<>
-			{isSinglePost() && (
-				<InspectorControls>
+			<InspectorControls>
+				{isSinglePostInEditor() && (
 					<PanelBody
 						title={__('Venue settings', 'gatherpress')}
 						initialOpen={true}
@@ -124,71 +124,68 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							</PanelRow>
 						)}
 					</PanelBody>
-					{!isOnlineEventTerm && (
-						<PanelBody
-							title={__('Map settings', 'gatherpress')}
-							initialOpen={true}
-						>
-							<PanelRow>
-								{__('Show map on venue', 'gatherpress')}
-							</PanelRow>
-							<PanelRow>
-								<ToggleControl
-									label={
-										mapShow
-											? __(
-													'Display the map',
-													'gatherpress'
-											  )
-											: __('Hide the map', 'gatherpress')
-									}
-									checked={mapShow}
-									onChange={(value) => {
-										setAttributes({ mapShow: value });
-									}}
-								/>
-							</PanelRow>
-							<RangeControl
-								label={__('Zoom level', 'gatherpress')}
-								beforeIcon="search"
-								value={mapZoomLevel}
-								onChange={(value) =>
-									setAttributes({ mapZoomLevel: value })
+				)}
+				{!isOnlineEventTerm && (
+					<PanelBody
+						title={__('Map settings', 'gatherpress')}
+						initialOpen={true}
+					>
+						<PanelRow>
+							{__('Show map on venue', 'gatherpress')}
+						</PanelRow>
+						<PanelRow>
+							<ToggleControl
+								label={
+									mapShow
+										? __('Display the map', 'gatherpress')
+										: __('Hide the map', 'gatherpress')
 								}
-								min={1}
-								max={22}
-							/>
-							<RadioControl
-								label={__('Map type', 'gatherpress')}
-								selected={mapType}
-								options={[
-									{
-										label: __('Roadmap', 'gatherpress'),
-										value: 'm',
-									},
-									{
-										label: __('Satellite', 'gatherpress'),
-										value: 'k',
-									},
-								]}
+								checked={mapShow}
 								onChange={(value) => {
-									setAttributes({ mapType: value });
+									setAttributes({ mapShow: value });
 								}}
 							/>
-							<RangeControl
-								label={__('Map height', 'gatherpress')}
-								beforeIcon="location"
-								value={mapHeight}
-								onChange={(height) =>
-									setAttributes({ mapHeight: height })
-								}
-								min={100}
-								max={1000}
-							/>
-						</PanelBody>
-					)}
-				</InspectorControls>
-			)}
+						</PanelRow>
+						<RangeControl
+							label={__('Zoom level', 'gatherpress')}
+							beforeIcon="search"
+							value={mapZoomLevel}
+							onChange={(value) =>
+								setAttributes({ mapZoomLevel: value })
+							}
+							min={1}
+							max={22}
+						/>
+						<RadioControl
+							label={__('Map type', 'gatherpress')}
+							selected={mapType}
+							options={[
+								{
+									label: __('Roadmap', 'gatherpress'),
+									value: 'm',
+								},
+								{
+									label: __('Satellite', 'gatherpress'),
+									value: 'k',
+								},
+							]}
+							onChange={(value) => {
+								setAttributes({ mapType: value });
+							}}
+						/>
+						<RangeControl
+							label={__('Map height', 'gatherpress')}
+							beforeIcon="location"
+							value={mapHeight}
+							onChange={(height) =>
+								setAttributes({ mapHeight: height })
+							}
+							min={100}
+							max={1000}
+						/>
+					</PanelBody>
+				)}
+			</InspectorControls>
 
 			<div {...blockProps}>
 				<EditCover isSelected={isSelected}>
