@@ -36,7 +36,6 @@ const MapEmbed = (props) => {
 	const style = { border: 0, height, width: '100%' };
 	const baseUrl = 'https://maps.google.com/maps';
 
-
 	const params = new URLSearchParams({
 		q: location,
 		z: zoom || 10,
