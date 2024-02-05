@@ -4,6 +4,7 @@
 import { useBlockProps, BlockControls } from '@wordpress/block-editor';
 import { ToolbarGroup, ToolbarButton } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
@@ -22,6 +23,7 @@ import EditCover from '../../components/EditCover';
  *
  * @return {JSX.Element} The rendered React component.
  */
+
 const Edit = () => {
 	const isAdmin = wp.data.select('core').canUser('create', 'posts');
 	const blockProps = useBlockProps();
@@ -45,11 +47,11 @@ const Edit = () => {
 				<BlockControls>
 					<ToolbarGroup>
 						<ToolbarButton
-							label="Edit Attendees"
+							label={__('Edit', 'gatherpress')}
 							text={
 								editMode
-									? 'Preview Attendees'
-									: 'Edit Attendees'
+									? __('Preview', 'gatherpress')
+									: __('Edit', 'gatherpress')
 							}
 							onClick={onEditClick}
 						/>

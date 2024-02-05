@@ -616,7 +616,7 @@ class Rest_Api {
 		$guests          = intval( $params['guests'] );
 		$anonymous       = intval( $params['anonymous'] );
 		$event           = new Event( $post_id );
-		$responses        = $event->rsvp->responses();
+		$responses       = $event->rsvp->responses();
 
 		// If managing user is adding someone to an event.
 		if (
@@ -638,7 +638,7 @@ class Rest_Api {
 		if (
 			$user_id &&
 			is_user_member_of_blog( $user_id ) &&
-			! $event->has_event_past() && ( $status !=='remove')
+			! $event->has_event_past() && ( 'remove' !== $status )
 		) {
 			$status = $event->rsvp->save( $user_id, $status, $anonymous );
 
@@ -647,7 +647,7 @@ class Rest_Api {
 			}
 		}
 
-		if ( $status === 'remove') {
+		if ( 'remove' !== $status ) {
 			$event->rsvp->remove( $user_id, $responses );
 		}
 

@@ -1,10 +1,29 @@
+/**
+ * WordPress dependencies.
+ */
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+
+/**
+ * Internal dependencies.
+ */
 import RsvpResponseHeader from './RsvpResponseHeader';
 import RsvpResponseContent from './RsvpResponseContent';
 import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal } from '../helpers/globals';
 
+/**
+ * Component for displaying and managing RSVP responses.
+ *
+ * This component renders a user interface for managing RSVP responses to an event.
+ * It includes options for attending, being on the waiting list, or not attending,
+ * and updates the status based on user interactions. The component also listens for
+ * changes in RSVP status and updates the state accordingly.
+ *
+ * @since 1.0.0
+ *
+ * @return {JSX.Element} The rendered RSVP response component.
+ */
 const RsvpResponse = () => {
 	const defaultLimit = 8;
 	const defaultStatus = 'attending';
@@ -42,6 +61,11 @@ const RsvpResponse = () => {
 	};
 
 	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
+
+	// Make sure rsvpStatus is a valid status, if not, set to default.
+	if (!items.some((item) => item.value === rsvpStatus)) {
+		setRsvpStatus(defaultStatus);
+	}
 
 	return (
 		<div className="gp-rsvp-response">
