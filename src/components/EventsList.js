@@ -89,7 +89,7 @@ const EventsList = (props) => {
 		 * Check if user is logged in, so we have current_user for the event present, which
 		 * allows them to interact with the block.
 		 */
-		if (getFromGlobal('is_user_logged_in')) {
+		if (getFromGlobal('eventDetails.currentUser')) {
 			apiFetch({
 				path: `/gatherpress/v1/event/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`,
 			}).then((data) => {
@@ -98,7 +98,7 @@ const EventsList = (props) => {
 			});
 		} else {
 			const endpoint =
-				getFromGlobal('event_rest_api') +
+				getFromGlobal('urls.eventRestApi') +
 				`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`;
 
 			/**

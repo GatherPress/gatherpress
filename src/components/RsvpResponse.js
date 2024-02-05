@@ -27,7 +27,7 @@ import { getFromGlobal } from '../helpers/globals';
 const RsvpResponse = () => {
 	const defaultLimit = 8;
 	const defaultStatus = 'attending';
-	const hasEventPast = getFromGlobal('has_event_past');
+	const hasEventPast = getFromGlobal('eventDetails.hasEventPast');
 	const items = [
 		{
 			title:
@@ -60,7 +60,7 @@ const RsvpResponse = () => {
 		setRsvpStatus(value);
 	};
 
-	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
+	Listener({ setRsvpStatus }, getFromGlobal('eventDetails.postId'));
 
 	// Make sure rsvpStatus is a valid status, if not, set to default.
 	if (!items.some((item) => item.value === rsvpStatus)) {

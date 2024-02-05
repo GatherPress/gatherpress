@@ -116,4 +116,18 @@ class Utility {
 
 		return $timezones_clean;
 	}
+
+	public static function map_array_keys( callable $f, array $xs ): array {
+		$out = array();
+
+		foreach ($xs as $key => $value) {
+			$out[$f($key)] = is_array($value) ? Utility::map_array_keys($f, $value) : $value;
+		}
+
+		return $out;
+	}
+
+	public static function snake_case_to_camel_case( string $str ): string {
+		return lcfirst( implode('', array_map( 'ucfirst', explode('_', $str ) ) ) );
+	}
 }

@@ -81,10 +81,10 @@ export const defaultDateTimeEnd = moment
  */
 export function dateTimeLabelFormat() {
 	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.date_format')
+		getFromGlobal('settings.dateFormat')
 	);
 	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.time_format')
+		getFromGlobal('settings.timeFormat')
 	);
 
 	return dateFormat + ' ' + timeFormat;
@@ -101,7 +101,7 @@ export function dateTimeLabelFormat() {
  * @return {string} The retrieved timezone, or 'GMT' if the provided timezone is invalid.
  */
 export function getTimeZone(
-	timezone = getFromGlobal('event_datetime.timezone')
+	timezone = getFromGlobal('eventDetails.dateTime.timezone')
 ) {
 	if (!!moment.tz.zone(timezone)) {
 		return timezone;
@@ -127,7 +127,7 @@ export function getUtcOffset(timezone) {
 		return '';
 	}
 
-	const offset = getFromGlobal('event_datetime.timezone');
+	const offset = getFromGlobal('eventDetails.dateTime.timezone');
 
 	return maybeConvertUtcOffsetForDisplay(offset);
 }
@@ -221,7 +221,7 @@ export function maybeConvertUtcOffsetForSelect(offset = '') {
  * @return {string} The formatted start date and time for the event.
  */
 export function getDateTimeStart() {
-	let dateTime = getFromGlobal('event_datetime.datetime_start');
+	let dateTime = getFromGlobal('eventDetails.dateTime.datetime_start');
 
 	dateTime =
 		'' !== dateTime
@@ -243,7 +243,7 @@ export function getDateTimeStart() {
  * @return {string} The formatted end date and time for the event.
  */
 export function getDateTimeEnd() {
-	let dateTime = getFromGlobal('event_datetime.datetime_end');
+	let dateTime = getFromGlobal('eventDetails.dateTime.datetime_end');
 
 	dateTime =
 		'' !== dateTime
@@ -317,7 +317,7 @@ export function updateDateTimeEnd(date, setDateTimeEnd = null) {
  */
 export function validateDateTimeStart(dateTimeStart) {
 	const dateTimeEndNumeric = moment
-		.tz(getFromGlobal('event_datetime.datetime_end'), getTimeZone())
+		.tz(getFromGlobal('eventDetails.dateTime.datetime_end'), getTimeZone())
 		.valueOf();
 	const dateTimeStartNumeric = moment
 		.tz(dateTimeStart, getTimeZone())
@@ -348,7 +348,7 @@ export function validateDateTimeStart(dateTimeStart) {
  */
 export function validateDateTimeEnd(dateTimeEnd) {
 	const dateTimeStartNumeric = moment
-		.tz(getFromGlobal('event_datetime.datetime_start'), getTimeZone())
+		.tz(getFromGlobal('eventDetails.dateTime.datetime_start'), getTimeZone())
 		.valueOf();
 	const dateTimeEndNumeric = moment.tz(dateTimeEnd, getTimeZone()).valueOf();
 
@@ -381,21 +381,21 @@ export function saveDateTime() {
 			path: '/gatherpress/v1/event/datetime/',
 			method: 'POST',
 			data: {
-				post_id: getFromGlobal('post_id'),
+				post_id: getFromGlobal('eventDetails.postId'),
 				datetime_start: moment
 					.tz(
-						getFromGlobal('event_datetime.datetime_start'),
+						getFromGlobal('eventDetails.dateTime.datetime_start'),
 						getTimeZone()
 					)
 					.format(dateTimeDatabaseFormat),
 				datetime_end: moment
 					.tz(
-						getFromGlobal('event_datetime.datetime_end'),
+						getFromGlobal('eventDetails.dateTime.datetime_end'),
 						getTimeZone()
 					)
 					.format(dateTimeDatabaseFormat),
-				timezone: getFromGlobal('event_datetime.timezone'),
-				_wpnonce: getFromGlobal('nonce'),
+				timezone: getFromGlobal('eventDetails.dateTime.timezone'),
+				_wpnonce: getFromGlobal('misc.nonce'),
 			},
 		}).then(() => {
 			triggerEventCommuncation();

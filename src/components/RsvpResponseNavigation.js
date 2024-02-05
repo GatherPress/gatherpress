@@ -41,7 +41,7 @@ const RsvpResponseNavigation = ({
 		waiting_list: 0, // eslint-disable-line camelcase
 	};
 
-	for (const [key, value] of Object.entries(getFromGlobal('responses'))) {
+	for (const [key, value] of Object.entries(getFromGlobal('eventDetails.responses'))) {
 		defaultCount[key] = value.count;
 	}
 
@@ -50,7 +50,7 @@ const RsvpResponseNavigation = ({
 	const [hideNavigationDropdown, setHideNavigationDropdown] = useState(true);
 	const Tag = hideNavigationDropdown ? `span` : `a`;
 
-	Listener({ setRsvpCount }, getFromGlobal('post_id'));
+	Listener({ setRsvpCount }, getFromGlobal('eventDetails.postId'));
 
 	let activeIndex = 0;
 

@@ -69,7 +69,7 @@ class Event {
 	 * @since 1.0.0
 	 * @var array|WP_Post|null
 	 */
-	protected $event = null;
+	public WP_Post|array|null $event = null;
 
 	/**
 	 * RSVP instance.
@@ -89,14 +89,10 @@ class Event {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
-			return null;
+		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
+			$this->event = get_post( $post_id );
+			$this->rsvp  = new Rsvp( $post_id );
 		}
-
-		$this->event = get_post( $post_id );
-		$this->rsvp  = new Rsvp( $post_id );
-
-		return $this->event;
 	}
 
 	/**

@@ -105,7 +105,7 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 				status,
 				guests,
 				anonymous,
-				_wpnonce: getFromGlobal('nonce'),
+				_wpnonce: getFromGlobal('misc.nonce'),
 			},
 		}).then((res) => {
 			if (res.success) {
@@ -182,14 +182,14 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 				<div className="gp-modal__content">
 					<div className="gp-modal__text">
 						{__('You must ', 'gatherpress')}
-						<a href={getFromGlobal('login_url')}>
+						<a href={getFromGlobal('urls.loginUrl')}>
 							{__('Login', 'gatherpress')}
 						</a>
 						{__(' to RSVP to events.', 'gatherpress')}
 					</div>
-					{'' !== getFromGlobal('registration_url') && (
+					{'' !== getFromGlobal('urls.registrationUrl') && (
 						<div className="gp-modal__text">
-							<a href={getFromGlobal('registration_url')}>
+							<a href={getFromGlobal('urls.registrationUrl')}>
 								{__('Register', 'gatherpress')}
 							</a>
 							{__(

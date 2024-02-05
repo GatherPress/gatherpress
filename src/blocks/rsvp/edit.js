@@ -24,8 +24,8 @@ import EditCover from '../../components/EditCover';
  */
 const Edit = () => {
 	const blockProps = useBlockProps();
-	const postId = getFromGlobal('post_id');
-	const currentUser = getFromGlobal('current_user');
+	const postId = getFromGlobal('eventDetails.postId');
+	const currentUser = getFromGlobal('eventDetails.currentUser');
 
 	return (
 		<div {...blockProps}>

@@ -32,16 +32,16 @@ import {
  */
 const TimeZone = (props) => {
 	const { timezone, setTimezone } = props;
-	const choices = getFromGlobal('timezone_choices');
+	const choices = getFromGlobal('misc.timezoneChoices');
 
 	// Run only once.
 	useEffect(() => {
-		setTimezone(getFromGlobal('event_datetime.timezone'));
+		setTimezone(getFromGlobal('eventDetails.dateTime.timezone'));
 	}, [setTimezone]);
 
 	useEffect(() => {
 		Broadcaster({
-			setTimezone: getFromGlobal('event_datetime.timezone'),
+			setTimezone: getFromGlobal('eventDetails.dateTime.timezone'),
 		});
 	});
 
@@ -53,7 +53,7 @@ const TimeZone = (props) => {
 				onChange={(value) => {
 					value = maybeConvertUtcOffsetForDatabase(value);
 					setTimezone(value);
-					setToGlobal('event_datetime.timezone', value);
+					setToGlobal('eventDetails.dateTime.timezone', value);
 					enableSave();
 				}}
 			>

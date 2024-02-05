@@ -24,9 +24,9 @@ import { Listener } from '../helpers/broadcasting';
  * @return {JSX.Element} The rendered React component.
  */
 const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
-	const eventId = getFromGlobal('post_id');
+	const eventId = getFromGlobal('eventDetails.postId');
 	const [rsvpResponse, setRsvpResponse] = useState(
-		getFromGlobal('responses')
+		getFromGlobal('eventDetails.responses')
 	);
 
 	Listener({ setRsvpResponse }, eventId);

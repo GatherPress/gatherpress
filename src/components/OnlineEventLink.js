@@ -38,11 +38,11 @@ const OnlineEventLink = () => {
 
 		editPost({ meta });
 		setOnlineEventLink(value);
-		Broadcaster({ setOnlineEventLink: value }, getFromGlobal('post_id'));
+		Broadcaster({ setOnlineEventLink: value }, getFromGlobal('eventDetails.postId'));
 		unlockPostSaving();
 	};
 
-	Listener({ setOnlineEventLink }, getFromGlobal('post_id'));
+	Listener({ setOnlineEventLink }, getFromGlobal('eventDetails.postId'));
 
 	return (
 		<TextControl
