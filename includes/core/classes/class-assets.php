@@ -268,9 +268,16 @@ class Assets {
 	 * @return array An associative array containing localized data for JavaScript.
 	 */
 	protected function localize( int $post_id ): array {
-		$event    = new Event( $post_id );
-		$settings = Settings::get_instance();
-		$event_details = array();
+		$event               = new Event( $post_id );
+		$settings            = Settings::get_instance();
+		$event_details       = array();
+		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
+
+		if ( is_user_logged_in() ) {
+			$event_rest_api = '/' . $event_rest_api_slug;
+		} else {
+			$event_rest_api = home_url( 'wp-json/' . $event_rest_api_slug );
+		}
 
 		if ( ! empty( $event->event ) ) {
 			$event_details = array(
@@ -287,6 +294,7 @@ class Assets {
 			'eventDetails' => $event_details,
 			'misc'         => array(
 				'isAdmin'          => is_admin(),
+				'isUserLoggedIn'   => is_user_logged_in(),
 				'nonce'            => wp_create_nonce( 'wp_rest' ),
 				'timezoneChoices'  => Utility::timezone_choices(),
 				'unregisterBlocks' => $this->unregister_blocks(),
@@ -298,7 +306,7 @@ class Assets {
 				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),
 			'urls'         => array(
-				'eventRestApi'    => home_url( 'wp-json/gatherpress/v1/event' ),
+				'eventRestApi'    => $event_rest_api,
 				'loginUrl'        => $this->get_login_url( $post_id ),
 				'registrationUrl' => $this->get_registration_url( $post_id ),
 			),

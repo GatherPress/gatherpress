@@ -98,7 +98,7 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 		}
 
 		apiFetch({
-			path: '/gatherpress/v1/event/rsvp',
+			path: getFromGlobal('urls.eventRestApi') + '/rsvp',
 			method: 'POST',
 			data: {
 				post_id: eventId,

@@ -228,7 +228,7 @@ export function getDateTimeStart() {
 			? moment.tz(dateTime, getTimeZone()).format(dateTimeMomentFormat)
 			: defaultDateTimeStart;
 
-	setToGlobal('event_datetime.datetime_start', dateTime);
+	setToGlobal('eventDetails.dateTime.datetime_start', dateTime);
 
 	return dateTime;
 }
@@ -250,7 +250,7 @@ export function getDateTimeEnd() {
 			? moment.tz(dateTime, getTimeZone()).format(dateTimeMomentFormat)
 			: defaultDateTimeEnd;
 
-	setToGlobal('event_datetime.datetime_end', dateTime);
+	setToGlobal('eventDetails.dateTime.datetime_end', dateTime);
 
 	return dateTime;
 }
@@ -268,7 +268,7 @@ export function getDateTimeEnd() {
 export function updateDateTimeStart(date, setDateTimeStart = null) {
 	validateDateTimeStart(date);
 
-	setToGlobal('event_datetime.datetime_start', date);
+	setToGlobal('eventDetails.dateTime.datetime_start', date);
 
 	if ('function' === typeof setDateTimeStart) {
 		setDateTimeStart(date);
@@ -293,7 +293,7 @@ export function updateDateTimeStart(date, setDateTimeStart = null) {
 export function updateDateTimeEnd(date, setDateTimeEnd = null) {
 	validateDateTimeEnd(date);
 
-	setToGlobal('event_datetime.datetime_end', date);
+	setToGlobal('eventDetails.dateTime.datetime_end', date);
 
 	if (null !== setDateTimeEnd) {
 		setDateTimeEnd(date);
@@ -348,7 +348,10 @@ export function validateDateTimeStart(dateTimeStart) {
  */
 export function validateDateTimeEnd(dateTimeEnd) {
 	const dateTimeStartNumeric = moment
-		.tz(getFromGlobal('eventDetails.dateTime.datetime_start'), getTimeZone())
+		.tz(
+			getFromGlobal('eventDetails.dateTime.datetime_start'),
+			getTimeZone()
+		)
 		.valueOf();
 	const dateTimeEndNumeric = moment.tz(dateTimeEnd, getTimeZone()).valueOf();
 
@@ -378,7 +381,7 @@ export function saveDateTime() {
 
 	if (isEventPostType() && isSavingPost && !isAutosavingPost) {
 		apiFetch({
-			path: '/gatherpress/v1/event/datetime/',
+			path: getFromGlobal('urls.eventRestApi') + '/datetime',
 			method: 'POST',
 			data: {
 				post_id: getFromGlobal('eventDetails.postId'),

@@ -1,6 +1,7 @@
 @import "../mixins";
 @import "../rsvp-response/style";
 @import "../rsvp/style";
+@import "../tooltip";
 
 .gp-events-list {
 	&__datetime {

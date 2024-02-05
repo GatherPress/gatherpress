@@ -26,7 +26,10 @@ import { getFromGlobal } from '../../helpers/globals';
 domReady(() => {
 	const containers = document.querySelectorAll(`[data-gp_block_name="rsvp"]`);
 
-	const type = true === getFromGlobal('eventDetails.hasEventPast') ? 'past' : 'upcoming';
+	const type =
+		true === getFromGlobal('eventDetails.hasEventPast')
+			? 'past'
+			: 'upcoming';
 
 	for (let i = 0; i < containers.length; i++) {
 		createRoot(containers[i]).render(
@@ -34,7 +37,9 @@ domReady(() => {
 				eventId={getFromGlobal('eventDetails.postId')}
 				currentUser={getFromGlobal('eventDetails.currentUser')}
 				type={type}
-				enableAnonymousRsvp={getFromGlobal('eventDetails.enableAnonymousRsvp')}
+				enableAnonymousRsvp={getFromGlobal(
+					'eventDetails.enableAnonymousRsvp'
+				)}
 			/>
 		);
 	}

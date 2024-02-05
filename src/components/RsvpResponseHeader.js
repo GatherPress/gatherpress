@@ -57,7 +57,8 @@ const RsvpResponseHeader = ({
 	}
 
 	const [rsvpSeeAllLink, setRsvpSeeAllLink] = useState(
-		getFromGlobal('eventDetails.responses')[activeValue].count > defaultLimit
+		getFromGlobal('eventDetails.responses')[activeValue].count >
+			defaultLimit
 	);
 
 	Listener({ setRsvpSeeAllLink }, getFromGlobal('eventDetails.postId'));
