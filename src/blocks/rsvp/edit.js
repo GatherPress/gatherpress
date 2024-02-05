@@ -31,7 +31,7 @@ const Edit = () => {
 		<div {...blockProps}>
 			<EditCover>
 				<Rsvp
-					eventId={postId}
+					postId={postId}
 					currentUser={currentUser}
 					type={'upcoming'}
 				/>

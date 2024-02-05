@@ -34,7 +34,7 @@ domReady(() => {
 	for (let i = 0; i < containers.length; i++) {
 		createRoot(containers[i]).render(
 			<Rsvp
-				eventId={getFromGlobal('eventDetails.postId')}
+				postId={getFromGlobal('eventDetails.postId')}
 				currentUser={getFromGlobal('eventDetails.currentUser')}
 				type={type}
 				enableAnonymousRsvp={getFromGlobal(

@@ -32,14 +32,14 @@ import { getFromGlobal } from '../helpers/globals';
  * @since 1.0.0
  *
  * @param {Object}  props                     - Component props.
- * @param {number}  props.eventId             - The ID of the event.
+ * @param {number}  props.postId              - The ID of the event.
  * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
  * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
  * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
+const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
 	const [rsvpAnonymous, setRsvpAnonymous] = useState(
 		Number(currentUser.anonymous)
@@ -101,7 +101,7 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 			path: getFromGlobal('urls.eventRestApi') + '/rsvp',
 			method: 'POST',
 			data: {
-				post_id: eventId,
+				post_id: postId,
 				status,
 				guests,
 				anonymous,

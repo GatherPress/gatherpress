@@ -38,12 +38,12 @@ const RsvpResponseNavigationItem = ({
 	const { title, value } = item;
 	const active = !(0 === count && 'attending' !== value);
 	const Tag = activeItem ? `span` : `a`;
-	const eventId = getFromGlobal('eventDetails.postId');
+	const postId = getFromGlobal('eventDetails.postId');
 	const rsvpSeeAllLink = count > defaultLimit;
 
 	useEffect(() => {
 		if (activeItem) {
-			Broadcaster({ setRsvpSeeAllLink: rsvpSeeAllLink }, eventId);
+			Broadcaster({ setRsvpSeeAllLink: rsvpSeeAllLink }, postId);
 		}
 	});
 
