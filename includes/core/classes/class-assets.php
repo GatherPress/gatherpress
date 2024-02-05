@@ -313,9 +313,6 @@ class Assets {
 		);
 	}
 
-	protected function event_details( int $post_id ): array {
-	}
-
 	/**
 	 * Retrieve the login URL for the event.
 	 *
