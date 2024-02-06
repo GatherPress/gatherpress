@@ -54,11 +54,10 @@ const RsvpResponseEdit = () => {
 	];
 
 	const [rsvpStatus, setRsvpStatus] = useState(defaultStatus);
-	const [rsvpResponse, setRsvpResponse] = useState(
-		getFromGlobal('responses')
-	);
-
-	const eventId = getFromGlobal('post_id');
+	const eventDetails = getFromGlobal('eventDetails');
+	const responses = eventDetails.responses;
+	const [rsvpResponse, setRsvpResponse] = useState(responses);
+	const eventId = eventDetails.postId;
 	const attendees = rsvpResponse.attending.responses;
 
 	/**
@@ -115,7 +114,7 @@ const RsvpResponseEdit = () => {
 			},
 		}).then((res) => {
 			setRsvpResponse(res.responses);
-			setToGlobal('responses', res.responses);
+			setToGlobal('eventDetails.responses', res.responses);
 		});
 	};
 
@@ -141,7 +140,7 @@ const RsvpResponseEdit = () => {
 			// Removing attendees
 			attendees.forEach((attendee) => {
 				if (false === tokens.some((item) => item.id === attendee.id)) {
-					updateUserStatus(attendee.id, 'remove');
+					updateUserStatus(attendee.id, 'no_status');
 				}
 			});
 		}
