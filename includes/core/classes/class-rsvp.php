@@ -133,20 +133,20 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id The ID of the user to remove the RSVP for.
+	 * @param int   $user_id The ID of the user to remove the RSVP for.
 	 * @param array $responses Array of RSVP responses containing the entry to remove.
-	* @return bool True if the RSVP was removed, false otherwise.
+	 * @return bool True if the RSVP was removed, false otherwise.
 	 */
 	public function remove( int $user_id, array $responses ): bool {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return false;
 		}
-		foreach($responses['all']['responses'] as $key => $value ) {
-				if ($value['id'] == $user_id) {
-					global $wpdb;
-					$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-					$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) );
-				}
+		foreach( $responses['all']['responses'] as $key => $value ) {
+			if ( $value['id'] === $user_id ) {
+				global $wpdb;
+				$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+				$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) );
+			}
 		}
 		return true;
 	}
