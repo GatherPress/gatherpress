@@ -248,7 +248,7 @@ class Test_Setup extends Base {
 
 		add_filter(
 			'gettext',
-			static function( $translation ): string {
+			static function ( $translation ): string {
 				if ( 'Online event' === $translation ) {
 					return 'Online';
 				}

@@ -67,17 +67,17 @@ class Event {
 	 * Event post object.
 	 *
 	 * @since 1.0.0
-	 * @var array|WP_Post|null
+	 * @var WP_Post|null
 	 */
-	public WP_Post|array|null $event = null;
+	public WP_Post|null $event = null;
 
 	/**
 	 * RSVP instance.
 	 *
-	 * @var Rsvp|null
 	 * @since 1.0.0
+	 * @var Rsvp|null
 	 */
-	public ?Rsvp $rsvp = null;
+	public Rsvp|null $rsvp = null;
 
 	/**
 	 * Event constructor.
@@ -180,7 +180,7 @@ class Event {
 				'type'              => 'string',
 			),
 			'enable_anonymous_rsvp' => array(
-				'auth_callback'     => function() {
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'rest_sanitize_boolean',

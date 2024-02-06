@@ -170,7 +170,7 @@ class Assets {
 
 		$settings      = Settings::get_instance();
 		$setting_hooks = array_map(
-			function( $key ) {
+			function ( $key ) {
 				return sprintf( 'gp_event_page_gp_%s', sanitize_key( $key ) );
 			},
 			array_keys( $settings->get_sub_pages() )

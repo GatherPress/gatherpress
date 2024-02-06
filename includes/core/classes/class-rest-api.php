@@ -114,7 +114,7 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_datetime' ),
-				'permission_callback' => static function(): bool {
+				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
 				'args'                => array(
@@ -154,7 +154,7 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'email' ),
-				'permission_callback' => static function(): bool {
+				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
 				'args'                => array(
@@ -190,7 +190,7 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => static function(): bool {
+				'permission_callback' => static function (): bool {
 					return is_user_logged_in();
 				},
 				'args'                => array(
@@ -488,7 +488,7 @@ class Rest_Api {
 				$member_ids = array_merge(
 					$member_ids,
 					array_map(
-						static function( $member ) {
+						static function ( $member ) {
 							return $member['id'];
 						},
 						$all_responses[ $status ]['responses']
@@ -530,7 +530,7 @@ class Rest_Api {
 
 		if ( ! empty( $params['topics'] ) ) {
 			$topics = array_map(
-				static function( $slug ): string {
+				static function ( $slug ): string {
 					return sanitize_key( $slug );
 				},
 				explode( ',', $params['topics'] )
@@ -539,7 +539,7 @@ class Rest_Api {
 
 		if ( ! empty( $params['venues'] ) ) {
 			$venues = array_map(
-				static function( $slug ): string {
+				static function ( $slug ): string {
 					return sanitize_key( $slug );
 				},
 				explode( ',', $params['venues'] )

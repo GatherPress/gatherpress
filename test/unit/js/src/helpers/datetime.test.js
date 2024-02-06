@@ -29,8 +29,8 @@ import {
 test('dateTimeLabelFormat returns correct format', () => {
 	global.GatherPress = {
 		settings: {
-			date_format: 'F j, Y',
-			time_format: 'g:i a',
+			dateFormat: 'F j, Y',
+			timeFormat: 'g:i a',
 		},
 	};
 
@@ -42,8 +42,10 @@ test('dateTimeLabelFormat returns correct format', () => {
  */
 test('getTimeZone returns set timezone', () => {
 	global.GatherPress = {
-		event_datetime: {
-			timezone: 'America/New_York',
+		eventDetails: {
+			dateTime: {
+				timezone: 'America/New_York',
+			},
 		},
 	};
 
@@ -52,8 +54,10 @@ test('getTimeZone returns set timezone', () => {
 
 test('getTimeZone returns GMT when timezone is not set', () => {
 	global.GatherPress = {
-		event_datetime: {
-			timezone: '',
+		eventDetails: {
+			dateTime: {
+				timezone: '',
+			},
 		},
 	};
 
@@ -65,8 +69,10 @@ test('getTimeZone returns GMT when timezone is not set', () => {
  */
 test('getUtcOffset returns empty when not GMT', () => {
 	global.GatherPress = {
-		event_datetime: {
-			timezone: 'America/New_York',
+		eventDetails: {
+			dateTime: {
+				timezone: 'America/New_York',
+			},
 		},
 	};
 
@@ -75,8 +81,10 @@ test('getUtcOffset returns empty when not GMT', () => {
 
 test('getUtcOffset returns offset in proper display format', () => {
 	global.GatherPress = {
-		event_datetime: {
-			timezone: '+02:00',
+		eventDetails: {
+			dateTime: {
+				timezone: '+02:00',
+			},
 		},
 	};
 
@@ -169,8 +177,10 @@ test('maybeConvertUtcOffsetForSelect does not convert non-pattern (default empty
  */
 test('getDateTimeStart converts format of date/time start from global', () => {
 	global.GatherPress = {
-		event_datetime: {
-			datetime_start: '2023-12-28 12:26:00',
+		eventDetails: {
+			dateTime: {
+				datetime_start: '2023-12-28 12:26:00',
+			},
 		},
 	};
 
@@ -179,8 +189,10 @@ test('getDateTimeStart converts format of date/time start from global', () => {
 
 test('getDateTimeStart converts format of date/time start from default', () => {
 	global.GatherPress = {
-		event_datetime: {
-			datetime_start: '',
+		eventDetails: {
+			dateTime: {
+				datetime_start: '',
+			},
 		},
 	};
 
@@ -192,8 +204,10 @@ test('getDateTimeStart converts format of date/time start from default', () => {
  */
 test('getDateTimeEnd converts format of date/time end from global', () => {
 	global.GatherPress = {
-		event_datetime: {
-			datetime_end: '2023-12-28 12:26:00',
+		eventDetails: {
+			dateTime: {
+				datetime_end: '2023-12-28 12:26:00',
+			},
 		},
 	};
 
@@ -202,8 +216,10 @@ test('getDateTimeEnd converts format of date/time end from global', () => {
 
 test('getDateTimeEnd converts format of date/time end from default', () => {
 	global.GatherPress = {
-		event_datetime: {
-			datetime_end: '',
+		eventDetails: {
+			dateTime: {
+				datetime_end: '',
+			},
 		},
 	};
 
@@ -221,7 +237,7 @@ test('updateDateTimeStart with second argument', () => {
 
 	updateDateTimeStart(date, setDateTimeStart);
 
-	expect(global.GatherPress.event_datetime.datetime_start).toBe(date);
+	expect(global.GatherPress.eventDetails.dateTime.datetime_start).toBe(date);
 });
 
 test('updateDateTimeStart without second argument', () => {
@@ -229,7 +245,7 @@ test('updateDateTimeStart without second argument', () => {
 
 	updateDateTimeStart(date);
 
-	expect(global.GatherPress.event_datetime.datetime_start).toBe(date);
+	expect(global.GatherPress.eventDetails.dateTime.datetime_start).toBe(date);
 });
 
 /**
@@ -243,7 +259,7 @@ test('updateDateTimeEnd with second argument', () => {
 
 	updateDateTimeEnd(date, setDateTimeEnd);
 
-	expect(global.GatherPress.event_datetime.datetime_end).toBe(date);
+	expect(global.GatherPress.eventDetails.dateTime.datetime_end).toBe(date);
 });
 
 test('updateDateTimeEnd without second argument', () => {
@@ -251,7 +267,7 @@ test('updateDateTimeEnd without second argument', () => {
 
 	updateDateTimeEnd(date);
 
-	expect(global.GatherPress.event_datetime.datetime_end).toBe(date);
+	expect(global.GatherPress.eventDetails.dateTime.datetime_end).toBe(date);
 });
 
 /**

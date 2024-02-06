@@ -57,8 +57,8 @@ class Cli_General extends WP_CLI {
 			WP_CLI::error( 'Version does not exist' );
 		}
 
-		unlink( $latest );
-		$file = fopen( $latest, 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fopen
+		unlink( $latest ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+		$file = fopen( $latest, 'w' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 
 		$data['version'] = $version;
 
@@ -80,8 +80,8 @@ class Cli_General extends WP_CLI {
 			}
 		}
 
-		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
-		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
+		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
+		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 
 		static::success( 'New latest.php file has been generated.' );
 	}
