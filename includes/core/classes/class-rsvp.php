@@ -141,7 +141,7 @@ class Rsvp {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return false;
 		}
-		foreach( $responses['all']['responses'] as $key => $value ) {
+		foreach ( $responses['all']['responses'] as $key => $value ) {
 			if ( $value['id'] === $user_id ) {
 				global $wpdb;
 				$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
