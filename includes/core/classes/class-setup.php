@@ -60,6 +60,7 @@ class Setup {
 		Event_Query::get_instance();
 		Rest_Api::get_instance();
 		Settings::get_instance();
+		User::get_instance();
 		Venue::get_instance();
 	}
 

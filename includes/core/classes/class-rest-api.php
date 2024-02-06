@@ -450,6 +450,10 @@ class Rest_Api {
 		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
 
 		foreach ( $members as $member ) {
+			if ( '0' === get_user_meta( $member->ID, 'gp-event-updates-opt-in', true ) ) {
+				continue;
+			}
+
 			if ( $member->user_email ) {
 				$to = $member->user_email;
 
