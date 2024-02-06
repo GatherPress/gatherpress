@@ -10,6 +10,7 @@
 namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 
 /**
  * Class Assets.
@@ -169,7 +170,7 @@ class Assets {
 
 		$settings      = Settings::get_instance();
 		$setting_hooks = array_map(
-			function( $key ) {
+			function ( $key ) {
 				return sprintf( 'gp_event_page_gp_%s', sanitize_key( $key ) );
 			},
 			array_keys( $settings->get_sub_pages() )
@@ -267,34 +268,48 @@ class Assets {
 	 * @return array An associative array containing localized data for JavaScript.
 	 */
 	protected function localize( int $post_id ): array {
-		$event    = new Event( $post_id );
-		$settings = Settings::get_instance();
+		$event               = new Event( $post_id );
+		$settings            = Settings::get_instance();
+		$event_details       = array();
+		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
+
+		if ( is_user_logged_in() ) {
+			$event_rest_api = '/' . $event_rest_api_slug;
+		} else {
+			$event_rest_api = home_url( 'wp-json/' . $event_rest_api_slug );
+		}
+
+		if ( ! empty( $event->event ) ) {
+			$event_details = array(
+				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
+				'dateTime'            => $event->get_datetime(),
+				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
+				'hasEventPast'        => $event->has_event_past(),
+				'postId'              => $post_id,
+				'responses'           => $event->rsvp->responses(),
+			);
+		}
 
 		return array(
-			'responses'             => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-			'current_user'          => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
-				? $event->rsvp->get( get_current_user_id() )
-				: '', // Cleanup needed.
-			'is_user_logged_in'     => is_user_logged_in(),
-			'default_timezone'      => sanitize_text_field( wp_timezone_string() ),
-			'event_announced'       => ( get_post_meta( $post_id, 'gp-event-announce', true ) ) ? 1 : 0,
-			'event_datetime'        => $event->get_datetime(),
-			'event_rest_api'        => home_url( 'wp-json/gatherpress/v1/event' ),
-			'enable_anonymous_rsvp' => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
-			'has_event_past'        => $event->has_event_past(),
-			'is_admin'              => is_admin(),
-			'nonce'                 => wp_create_nonce( 'wp_rest' ),
-			'post_id'               => $post_id,
-			'settings'              => array(
-				'date_format'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'time_format'           => $settings->get_value( 'general', 'formatting', 'time_format' ),
-				'show_timezone'         => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
-				'enable_anonymous_rsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+			'eventDetails' => $event_details,
+			'misc'         => array(
+				'isAdmin'          => is_admin(),
+				'isUserLoggedIn'   => is_user_logged_in(),
+				'nonce'            => wp_create_nonce( 'wp_rest' ),
+				'timezoneChoices'  => Utility::timezone_choices(),
+				'unregisterBlocks' => $this->unregister_blocks(),
 			),
-			'login_url'             => $this->get_login_url( $post_id ),
-			'registration_url'      => $this->get_registration_url( $post_id ),
-			'timezone_choices'      => Utility::timezone_choices(),
-			'unregister_blocks'     => $this->unregister_blocks(),
+			'settings'     => array(
+				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
+				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
+			),
+			'urls'         => array(
+				'eventRestApi'    => $event_rest_api,
+				'loginUrl'        => $this->get_login_url( $post_id ),
+				'registrationUrl' => $this->get_registration_url( $post_id ),
+			),
 		);
 	}
 
@@ -351,7 +366,7 @@ class Assets {
 	protected function unregister_blocks(): array {
 		$blocks = array();
 
-		if ( ! is_admin() ) {
+		if ( ! is_admin() || ! get_post_type() ) {
 			return $blocks;
 		}
 

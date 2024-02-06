@@ -12,19 +12,15 @@ import { __ } from '@wordpress/i18n';
  *
  * @since 1.0.0
  *
- * @param {Object} props                   - Component props.
- * @param {string} [props.type='upcoming'] - The type of the event, either 'upcoming' or 'past'.
- * @param {string} [props.status='attend'] - The RSVP status, such as 'attend', 'attending', 'waiting_list', or 'not_attending'.
+ * @param {Object} props                      - Component props.
+ * @param {string} [props.type='upcoming']    - The type of the event, either 'upcoming' or 'past'.
+ * @param {string} [props.status='no_status'] - The RSVP status, such as 'attending', 'waiting_list', 'not_attending', 'no_status'.
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpStatusResponse = ({ type = 'upcoming', status = 'attend' }) => {
+const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 	const responses = {
 		upcoming: {
-			attend: {
-				icon: '',
-				text: '',
-			},
 			attending: {
 				icon: 'dashicons dashicons-yes-alt',
 				text: __('Attending', 'gatherpress'),
@@ -37,21 +33,25 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'attend' }) => {
 				icon: 'dashicons dashicons-dismiss',
 				text: __('Not Attending', 'gatherpress'),
 			},
+			no_status: {
+				icon: '',
+				text: '',
+			},
 		},
 		past: {
 			attending: {
 				icon: 'dashicons dashicons-yes-alt',
 				text: __('Went', 'gatherpress'),
 			},
-			attend: {
-				icon: 'dashicons dashicons-dismiss',
-				text: __("Didn't Go", 'gatherpress'),
-			},
 			waiting_list: {
 				icon: 'dashicons dashicons-dismiss',
 				text: __("Didn't Go", 'gatherpress'),
 			},
 			not_attending: {
+				icon: 'dashicons dashicons-dismiss',
+				text: __("Didn't Go", 'gatherpress'),
+			},
+			no_status: {
 				icon: 'dashicons dashicons-dismiss',
 				text: __("Didn't Go", 'gatherpress'),
 			},

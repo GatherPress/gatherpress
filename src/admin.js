@@ -23,9 +23,9 @@ import { getFromGlobal } from './helpers/globals';
 // Execute the following code when the DOM is ready.
 domReady(() => {
 	// Iterate through keys of the 'unregister_blocks' array in the global scope.
-	Object.keys(getFromGlobal('unregister_blocks')).forEach((key) => {
+	Object.keys(getFromGlobal('misc.unregisterBlocks')).forEach((key) => {
 		// Retrieve the block name using the key.
-		const blockName = getFromGlobal('unregister_blocks')[key];
+		const blockName = getFromGlobal('misc.unregisterBlocks')[key];
 
 		// Check if the block name is defined and unregister the block.
 		if (blockName && 'undefined' !== typeof getBlockType(blockName)) {

@@ -24,7 +24,7 @@ import {
 } from '../../helpers/datetime';
 import EditCover from '../../components/EditCover';
 import DateTimeRange from '../../components/DateTimeRange';
-import { getFromGlobal } from '../../helpers/globals';
+import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -36,12 +36,12 @@ import { getFromGlobal } from '../../helpers/globals';
  */
 const displayDateTime = (start, end, tz) => {
 	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.date_format')
+		getFromGlobal('settings.dateFormat')
 	);
 	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.time_format')
+		getFromGlobal('settings.timeFormat')
 	);
-	const timeZoneFormat = getFromGlobal('settings.show_timezone') ? 'z' : '';
+	const timeZoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
 	const startFormat = dateFormat + ' ' + timeFormat;
 	const timeZone = getTimeZone(tz);
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
@@ -99,11 +99,13 @@ const Edit = () => {
 					<FlexItem>
 						{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
 					</FlexItem>
-					<InspectorControls>
-						<PanelBody>
-							<DateTimeRange />
-						</PanelBody>
-					</InspectorControls>
+					{isSinglePostInEditor() && (
+						<InspectorControls>
+							<PanelBody>
+								<DateTimeRange />
+							</PanelBody>
+						</InspectorControls>
+					)}
 				</Flex>
 			</EditCover>
 		</div>

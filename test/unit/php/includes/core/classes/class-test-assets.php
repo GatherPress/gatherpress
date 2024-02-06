@@ -162,11 +162,11 @@ class Test_Assets extends Base {
 
 		$this->assertSame(
 			$expected_datetime,
-			$output['event_datetime'],
+			$output['eventDetails']['dateTime'],
 			'Failed to assert that datetime array matches.'
 		);
-		$this->assertEquals( 1, $output['has_event_past'], 'Failed to asssert that has_event_past is true' );
-		$this->assertEquals( $event_id, $output['post_id'], 'Failed to asssert that post_id matches.' );
+		$this->assertEquals( 1, $output['eventDetails']['hasEventPast'], 'Failed to assert that has_event_past is true' );
+		$this->assertEquals( $event_id, $output['eventDetails']['postId'], 'Failed to assert that post_id matches.' );
 	}
 
 	/**

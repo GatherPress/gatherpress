@@ -114,7 +114,7 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_datetime' ),
-				'permission_callback' => static function(): bool {
+				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
 				'args'                => array(
@@ -154,7 +154,7 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'email' ),
-				'permission_callback' => static function(): bool {
+				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
 				'args'                => array(
@@ -190,7 +190,7 @@ class Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => static function(): bool {
+				'permission_callback' => static function (): bool {
 					return is_user_logged_in();
 				},
 				'args'                => array(
@@ -232,6 +232,9 @@ class Rest_Api {
 						'required'          => true,
 						'validate_callback' => array( $this, 'validate_number' ),
 					),
+					'datetime_format' => array(
+						'required' => false,
+					),
 					'topics'          => array(
 						'required' => false,
 					),
@@ -251,7 +254,7 @@ class Rest_Api {
 	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
 	 */
 	public function validate_rsvp_status( $param ): bool {
-		return ( 'attend' === $param || 'attending' === $param || 'not_attending' === $param || 'remove' === $param );
+		return ( 'attending' === $param || 'not_attending' === $param || 'no_status' === $param );
 	}
 
 	/**
@@ -485,7 +488,7 @@ class Rest_Api {
 				$member_ids = array_merge(
 					$member_ids,
 					array_map(
-						static function( $member ) {
+						static function ( $member ) {
 							return $member['id'];
 						},
 						$all_responses[ $status ]['responses']
@@ -520,13 +523,14 @@ class Rest_Api {
 		$params          = $request->get_params();
 		$event_list_type = $params['event_list_type'];
 		$max_number      = $this->max_number( (int) $params['max_number'], 5 );
+		$datetime_format = ! empty( $params['datetime_format'] ) ? $params['datetime_format'] : 'D, M j, Y, g:i a T';
 		$posts           = array();
 		$topics          = array();
 		$venues          = array();
 
 		if ( ! empty( $params['topics'] ) ) {
 			$topics = array_map(
-				static function( $slug ): string {
+				static function ( $slug ): string {
 					return sanitize_key( $slug );
 				},
 				explode( ',', $params['topics'] )
@@ -535,7 +539,7 @@ class Rest_Api {
 
 		if ( ! empty( $params['venues'] ) ) {
 			$venues = array_map(
-				static function( $slug ): string {
+				static function ( $slug ): string {
 					return sanitize_key( $slug );
 				},
 				explode( ',', $params['venues'] )
@@ -550,8 +554,8 @@ class Rest_Api {
 				$venue_information = $event->get_venue_information();
 				$posts[]           = array(
 					'ID'                       => $post_id,
-					'datetime_start'           => $event->get_datetime_start(),
-					'datetime_end'             => $event->get_datetime_end(),
+					'datetime_start'           => $event->get_datetime_start( $datetime_format ),
+					'datetime_end'             => $event->get_datetime_end( $datetime_format ),
 					'permalink'                => get_the_permalink( $post_id ),
 					'title'                    => get_the_title( $post_id ),
 					'excerpt'                  => get_the_excerpt( $post_id ),

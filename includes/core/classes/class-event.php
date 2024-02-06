@@ -63,20 +63,19 @@ class Event {
 	 */
 	const TAXONOMY = 'gp_topic';
 
-
 	/**
 	 * Event post object.
 	 *
 	 * @since 1.0.0
-	 * @var array|WP_Post|null
+	 * @var WP_Post|null
 	 */
-	protected $event = null;
+	public ?WP_Post $event = null;
 
 	/**
 	 * RSVP instance.
 	 *
-	 * @var Rsvp|null
 	 * @since 1.0.0
+	 * @var Rsvp|null
 	 */
 	public ?Rsvp $rsvp = null;
 
@@ -90,14 +89,10 @@ class Event {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
-			return null;
+		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
+			$this->event = get_post( $post_id );
+			$this->rsvp  = new Rsvp( $post_id );
 		}
-
-		$this->event = get_post( $post_id );
-		$this->rsvp  = new Rsvp( $post_id );
-
-		return $this->event;
 	}
 
 	/**
@@ -185,7 +180,7 @@ class Event {
 				'type'              => 'string',
 			),
 			'enable_anonymous_rsvp' => array(
-				'auth_callback'     => function() {
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'rest_sanitize_boolean',
@@ -408,13 +403,6 @@ class Event {
 		string $which = 'start',
 		bool $local = true
 	): string {
-		$cache_key   = 'formatted_datetime_' . md5( $format . $which . ( $local ? 'local' : 'gmt' ) );
-		$cached_date = get_transient( $cache_key );
-
-		if ( false !== $cached_date ) {
-			return $cached_date;
-		}
-
 		$dt             = $this->get_datetime();
 		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
 		$dt['timezone'] = static::maybe_convert_offset( $dt['timezone'] );
@@ -434,8 +422,6 @@ class Event {
 			$ts   = strtotime( $date );
 			$date = wp_date( $format, $ts, $tz );
 		}
-
-		set_transient( $cache_key, $date, HOUR_IN_SECONDS * 12 );
 
 		return (string) $date;
 	}
@@ -576,14 +562,14 @@ class Event {
 		}
 
 		$cache_key = sprintf( self::DATETIME_CACHE_KEY, $this->event->ID );
-		$data      = wp_cache_get( $cache_key );
+		$data      = get_transient( $cache_key );
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
 			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
-			wp_cache_set( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
+			set_transient( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
 		}
 
 		return array_merge(
@@ -922,12 +908,12 @@ class Event {
 		);
 
 		if ( ! empty( $exists ) ) {
-			$retval = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$retval = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$table,
 				$fields,
 				array( 'post_id' => $fields['post_id'] )
 			);
-			wp_cache_delete( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
+			delete_transient( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
 		} else {
 			$retval = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}

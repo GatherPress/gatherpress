@@ -141,7 +141,7 @@ class Venue {
 	public static function get_post_meta_registration_args(): array {
 		return array(
 			'_venue_information' => array(
-				'auth_callback'     => function() {
+				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'sanitize_text_field',

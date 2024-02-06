@@ -34,7 +34,7 @@ const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 		onlineEventLinkDefault
 	);
 
-	Listener({ setOnlineEventLink }, getFromGlobal('post_id'));
+	Listener({ setOnlineEventLink }, getFromGlobal('eventDetails.postId'));
 
 	return (
 		<Flex justify="normal" gap="3">

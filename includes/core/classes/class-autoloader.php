@@ -29,8 +29,8 @@ class Autoloader {
 	 */
 	public static function register(): void {
 		spl_autoload_register(
-			static function( $class ): bool {
-				$structure = strtolower( $class );
+			static function ( $class_string ): bool {
+				$structure = strtolower( $class_string );
 				$structure = str_replace( '_', '-', $structure );
 				$structure = explode( '\\', $structure );
 

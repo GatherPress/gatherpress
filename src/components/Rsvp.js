@@ -32,14 +32,14 @@ import { getFromGlobal } from '../helpers/globals';
  * @since 1.0.0
  *
  * @param {Object}  props                     - Component props.
- * @param {number}  props.eventId             - The ID of the event.
+ * @param {number}  props.postId              - The ID of the event.
  * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
  * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
  * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
+const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
 	const [rsvpAnonymous, setRsvpAnonymous] = useState(
 		Number(currentUser.anonymous)
@@ -98,14 +98,14 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 		}
 
 		apiFetch({
-			path: '/gatherpress/v1/event/rsvp',
+			path: getFromGlobal('urls.eventRestApi') + '/rsvp',
 			method: 'POST',
 			data: {
-				post_id: eventId,
+				post_id: postId,
 				status,
 				guests,
 				anonymous,
-				_wpnonce: getFromGlobal('nonce'),
+				_wpnonce: getFromGlobal('misc.nonce'),
 			},
 		}).then((res) => {
 			if (res.success) {
@@ -182,14 +182,14 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 				<div className="gp-modal__content">
 					<div className="gp-modal__text">
 						{__('You must ', 'gatherpress')}
-						<a href={getFromGlobal('login_url')}>
+						<a href={getFromGlobal('urls.loginUrl')}>
 							{__('Login', 'gatherpress')}
 						</a>
 						{__(' to RSVP to events.', 'gatherpress')}
 					</div>
-					{'' !== getFromGlobal('registration_url') && (
+					{'' !== getFromGlobal('urls.registrationUrl') && (
 						<div className="gp-modal__text">
-							<a href={getFromGlobal('registration_url')}>
+							<a href={getFromGlobal('urls.registrationUrl')}>
 								{__('Register', 'gatherpress')}
 							</a>
 							{__(
@@ -219,7 +219,7 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 		let buttonStatus = '';
 		let buttonLabel = '';
 
-		if ('not_attending' === status || 'attend' === status) {
+		if ('not_attending' === status || 'no_status' === status) {
 			buttonStatus = 'attending';
 			buttonLabel = __('Attend', 'gatherpress');
 		} else {
@@ -360,7 +360,7 @@ const Rsvp = ({ eventId, currentUser = '', type, enableAnonymousRsvp }) => {
 					)}
 				</Modal>
 			</ButtonGroup>
-			{'attend' !== rsvpStatus && (
+			{'no_status' !== rsvpStatus && (
 				<div className="gp-status">
 					<RsvpStatusResponse type={type} status={rsvpStatus} />
 

@@ -161,7 +161,7 @@ class Test_Rest_Api extends Base {
 			'Failed to assert valid attendance status.'
 		);
 		$this->assertTrue(
-			$instance->validate_rsvp_status( 'attend' ),
+			$instance->validate_rsvp_status( 'no_status' ),
 			'Failed to assert valid attendance status.'
 		);
 		$this->assertFalse(
@@ -525,7 +525,7 @@ class Test_Rest_Api extends Base {
 	 */
 	protected function get_member_ids( array $members ): array {
 		return array_map(
-			static function( $member ): int {
+			static function ( $member ): int {
 				return $member->ID;
 			},
 			$members
@@ -601,7 +601,7 @@ class Test_Rest_Api extends Base {
 	 */
 	protected function get_event_ids( array $events ): array {
 		return array_map(
-			static function( $event ): int {
+			static function ( $event ): int {
 				return $event['ID'];
 			},
 			$events
