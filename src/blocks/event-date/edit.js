@@ -24,7 +24,7 @@ import {
 } from '../../helpers/datetime';
 import EditCover from '../../components/EditCover';
 import DateTimeRange from '../../components/DateTimeRange';
-import { getFromGlobal } from '../../helpers/globals';
+import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -99,11 +99,13 @@ const Edit = () => {
 					<FlexItem>
 						{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
 					</FlexItem>
-					<InspectorControls>
-						<PanelBody>
-							<DateTimeRange />
-						</PanelBody>
-					</InspectorControls>
+					{isSinglePostInEditor() && (
+						<InspectorControls>
+							<PanelBody>
+								<DateTimeRange />
+							</PanelBody>
+						</InspectorControls>
+					)}
 				</Flex>
 			</EditCover>
 		</div>
