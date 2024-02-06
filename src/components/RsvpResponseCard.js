@@ -86,7 +86,7 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 		<>
 			{'attending' === value && 0 === renderedItems.length && (
 				<div className="gp-rsvp-response__no-responses">
-					{false === getFromGlobal('has_event_past')
+					{false === getFromGlobal('eventDetails.hasEventPast')
 						? __(
 								'No one is attending this event yet.',
 								'gatherpress'

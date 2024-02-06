@@ -19,17 +19,17 @@ import { Listener } from '../helpers/broadcasting';
  * @since 1.0.0
  *
  * @param {Object} props                - Component props.
- * @param {number} props.eventId        - The ID of the event.
+ * @param {number} props.postId         - The ID of the event.
  * @param {string} props.value          - The RSVP status value ('attending', 'not_attending', etc.).
  * @param {number} props.limit          - The maximum number of responses to display.
  * @param {Array}  [props.responses=[]] - An array of RSVP responses for the specified status.
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpResponseCard = ({ eventId, value, limit, responses = [] }) => {
+const RsvpResponseCard = ({ postId, value, limit, responses = [] }) => {
 	const [rsvpResponse, setRsvpResponse] = useState(responses);
 
-	Listener({ setRsvpResponse }, eventId);
+	Listener({ setRsvpResponse }, postId);
 
 	let renderedItems = '';
 

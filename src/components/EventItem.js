@@ -95,7 +95,7 @@ const EventItem = (props) => {
 				{eventOptions.showRsvpResponse && (
 					<div className="gp-rsvp-response__items">
 						<RsvpResponseAvatarOnly
-							eventId={event.ID}
+							postId={event.ID}
 							value="attending"
 							responses={event.responses}
 							limit="3"
@@ -104,7 +104,7 @@ const EventItem = (props) => {
 				)}
 				{'upcoming' === type && eventOptions.showRsvp && (
 					<Rsvp
-						eventId={event.ID}
+						postId={event.ID}
 						currentUser={event.current_user}
 						type={type}
 						enableAnonymousRsvp={event.enable_anonymous_rsvp}

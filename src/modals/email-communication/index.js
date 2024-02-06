@@ -46,10 +46,10 @@ const EventCommuncationModal = () => {
 			global.confirm(__('Confirm you are ready to send?', 'gatherpress'))
 		) {
 			apiFetch({
-				path: '/gatherpress/v1/event/email/',
+				path: getFromGlobal('urls.eventRestApi') + '/email',
 				method: 'POST',
 				data: {
-					post_id: getFromGlobal('post_id'),
+					post_id: getFromGlobal('eventDetails.postId'),
 					message,
 					send: {
 						all: isAllChecked,
@@ -57,7 +57,7 @@ const EventCommuncationModal = () => {
 						waiting_list: isWaitingListChecked,
 						not_attending: isNotAttendingChecked,
 					},
-					_wpnonce: getFromGlobal('nonce'),
+					_wpnonce: getFromGlobal('misc.nonce'),
 				},
 			}).then((res) => {
 				if (res.success) {

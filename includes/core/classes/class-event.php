@@ -67,15 +67,15 @@ class Event {
 	 * Event post object.
 	 *
 	 * @since 1.0.0
-	 * @var array|WP_Post|null
+	 * @var WP_Post|null
 	 */
-	protected $event = null;
+	public ?WP_Post $event = null;
 
 	/**
 	 * RSVP instance.
 	 *
-	 * @var Rsvp|null
 	 * @since 1.0.0
+	 * @var Rsvp|null
 	 */
 	public ?Rsvp $rsvp = null;
 
@@ -89,14 +89,10 @@ class Event {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		if ( self::POST_TYPE !== get_post_type( $post_id ) ) {
-			return null;
+		if ( self::POST_TYPE === get_post_type( $post_id ) ) {
+			$this->event = get_post( $post_id );
+			$this->rsvp  = new Rsvp( $post_id );
 		}
-
-		$this->event = get_post( $post_id );
-		$this->rsvp  = new Rsvp( $post_id );
-
-		return $this->event;
 	}
 
 	/**
@@ -184,7 +180,7 @@ class Event {
 				'type'              => 'string',
 			),
 			'enable_anonymous_rsvp' => array(
-				'auth_callback'     => function() {
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'rest_sanitize_boolean',

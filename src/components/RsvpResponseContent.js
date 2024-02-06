@@ -24,12 +24,12 @@ import { Listener } from '../helpers/broadcasting';
  * @return {JSX.Element} The rendered React component.
  */
 const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
-	const eventId = getFromGlobal('post_id');
+	const postId = getFromGlobal('eventDetails.postId');
 	const [rsvpResponse, setRsvpResponse] = useState(
-		getFromGlobal('responses')
+		getFromGlobal('eventDetails.responses')
 	);
 
-	Listener({ setRsvpResponse }, eventId);
+	Listener({ setRsvpResponse }, postId);
 
 	const renderedItems = items.map((item, index) => {
 		const { value } = item;

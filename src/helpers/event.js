@@ -41,7 +41,7 @@ export function isEventPostType() {
  */
 export function hasEventPast() {
 	const dateTimeEnd = moment.tz(
-		getFromGlobal('event_datetime.datetime_end'),
+		getFromGlobal('eventDetails.dateTime.datetime_end'),
 		getTimeZone()
 	);
 

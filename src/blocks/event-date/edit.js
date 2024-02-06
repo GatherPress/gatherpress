@@ -36,12 +36,12 @@ import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
  */
 const displayDateTime = (start, end, tz) => {
 	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.date_format')
+		getFromGlobal('settings.dateFormat')
 	);
 	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.time_format')
+		getFromGlobal('settings.timeFormat')
 	);
-	const timeZoneFormat = getFromGlobal('settings.show_timezone') ? 'z' : '';
+	const timeZoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
 	const startFormat = dateFormat + ' ' + timeFormat;
 	const timeZone = getTimeZone(tz);
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
