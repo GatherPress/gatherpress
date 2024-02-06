@@ -123,20 +123,20 @@ class Rsvp {
 	}
 
 
- 	/**
- 	 * Remove a user's RSVP from the database.
- 	 *
- 	 * This method deletes the RSVP entry for a specific user from the database.
- 	 * It loops through the provided array of RSVP responses, and when it finds
- 	 * the entry matching the given user ID, it uses the WordPress $wpdb API to
- 	 * delete that entry from the rsvp table.
- 	 *
- 	 * @since 1.0.0
- 	 *
- 	 * @param int $user_id The ID of the user to remove the RSVP for.
- 	 * @param array $responses Array of RSVP responses containing the entry to remove.
-	 * @return bool True if the RSVP was removed, false otherwise.
- 	 */
+	/**
+	 * Remove a user's RSVP from the database.
+	 *
+	 * This method deletes the RSVP entry for a specific user from the database.
+	 * It loops through the provided array of RSVP responses, and when it finds
+	 * the entry matching the given user ID, it uses the WordPress $wpdb API to
+	 * delete that entry from the rsvp table.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $user_id The ID of the user to remove the RSVP for.
+	 * @param array $responses Array of RSVP responses containing the entry to remove.
+	* @return bool True if the RSVP was removed, false otherwise.
+	 */
 	public function remove( int $user_id, array $responses ): bool {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return false;
