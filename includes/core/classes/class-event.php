@@ -69,7 +69,7 @@ class Event {
 	 * @since 1.0.0
 	 * @var WP_Post|null
 	 */
-	public WP_Post|null $event = null;
+	public ?WP_Post $event = null;
 
 	/**
 	 * RSVP instance.
@@ -77,7 +77,7 @@ class Event {
 	 * @since 1.0.0
 	 * @var Rsvp|null
 	 */
-	public Rsvp|null $rsvp = null;
+	public ?Rsvp $rsvp = null;
 
 	/**
 	 * Event constructor.
