@@ -22,8 +22,8 @@ describe('DateTimeStartLabel', () => {
 	it('displays correct format', () => {
 		global.GatherPress = {
 			settings: {
-				date_format: 'F j, Y',
-				time_format: 'g:i a',
+				dateFormat: 'F j, Y',
+				timeFormat: 'g:i a',
 			},
 		};
 
@@ -42,8 +42,8 @@ describe('DateTimeEndLabel', () => {
 	it('displays correct format', () => {
 		global.GatherPress = {
 			settings: {
-				date_format: 'F j, Y',
-				time_format: 'g:i a',
+				dateFormat: 'F j, Y',
+				timeFormat: 'g:i a',
 			},
 		};
 

@@ -239,7 +239,7 @@ class Settings {
 					add_settings_section(
 						$section,
 						$section_settings['name'],
-						function() use ( $section_settings ) {
+						static function () use ( $section_settings ) {
 							if ( ! empty( $section_settings['description'] ) ) {
 								echo '<p class="description">' . wp_kses_post( $section_settings['description'] ) . '</p>';
 							}
@@ -253,7 +253,7 @@ class Settings {
 								$option_settings['field']['type']
 								&& method_exists( $this, $option_settings['field']['type'] )
 							) {
-								$option_settings['callback'] = function() use ( $sub_page, $section, $option, $option_settings ) {
+								$option_settings['callback'] = function () use ( $sub_page, $section, $option, $option_settings ) {
 									$sub_page = Utility::prefix_key( $sub_page );
 									$this->{$option_settings['field']['type']}( $sub_page, $section, $option, $option_settings );
 								};

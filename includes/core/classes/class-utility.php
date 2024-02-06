@@ -29,10 +29,10 @@ class Utility {
 	 *
 	 * @param string $path      The path to the template file.
 	 * @param array  $variables An array of variables to pass to the template.
-	 * @param bool   $echo      Whether to echo the template (true) or return it (false).
+	 * @param bool   $output    Whether to echo the template (true) or return it (false).
 	 * @return string The rendered template as a string.
 	 */
-	public static function render_template( string $path, array $variables = array(), bool $echo = false ): string {
+	public static function render_template( string $path, array $variables = array(), bool $output = false ): string {
 		if ( ! file_exists( $path ) ) {
 			return '';
 		}
@@ -41,7 +41,7 @@ class Utility {
 			extract( $variables, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract
 		}
 
-		if ( true === $echo ) {
+		if ( true === $output ) {
 			require $path;
 			return '';
 		}

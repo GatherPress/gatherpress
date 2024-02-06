@@ -33,7 +33,7 @@ const AnonymousRsvp = () => {
 	}, []);
 
 	if (isNewEvent) {
-		defaultAnonymousRsvp = getFromGlobal('settings.enable_anonymous_rsvp');
+		defaultAnonymousRsvp = getFromGlobal('settings.enableAnonymousRsvp');
 	}
 
 	const [anonymousRsvp, setAnonymousRsvp] = useState(defaultAnonymousRsvp);

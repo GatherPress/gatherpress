@@ -216,7 +216,7 @@ class Event_Query {
 						// Pass original page title as archive title.
 						add_filter(
 							'get_the_archive_title',
-							function() use ( $page_id ) {
+							function () use ( $page_id ) {
 								return get_the_title( $page_id );
 							}
 						);

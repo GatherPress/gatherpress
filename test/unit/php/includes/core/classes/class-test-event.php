@@ -220,7 +220,9 @@ class Test_Event extends Base {
 			'Failed to update date times.'
 		);
 
-		Utility::set_and_get_hidden_property( $event, 'event', (object) array( 'ID' => 0 ) );
+		$post->ID = 0;
+
+		Utility::set_and_get_hidden_property( $event, 'event', $post );
 
 		$this->assertFalse(
 			$event->save_datetimes( $params ),

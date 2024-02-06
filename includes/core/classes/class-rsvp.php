@@ -232,7 +232,7 @@ class Rsvp {
 
 				$response = $waiting_list[ $i ];
 				$this->save( $response['id'], 'attending' );
-				$i++;
+				++$i;
 			}
 		}
 
@@ -375,7 +375,7 @@ class Rsvp {
 		foreach ( $statuses as $status ) {
 			$retval[ $status ]['responses'] = array_filter(
 				$responses,
-				function( $response ) use ( $status ) {
+				static function ( $response ) use ( $status ) {
 					return ( $status === $response['status'] );
 				}
 			);
@@ -413,7 +413,7 @@ class Rsvp {
 	public function sort_by_role( array $first, array $second ): int {
 		$roles       = array_values(
 			array_map(
-				function( $role ) {
+				static function ( $role ) {
 					return $role['labels']['singular_name'];
 				},
 				Leadership::get_instance()->get_user_roles()

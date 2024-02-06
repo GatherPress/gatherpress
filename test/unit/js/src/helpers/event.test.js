@@ -26,11 +26,13 @@ import { dateTimeMomentFormat } from '../../../../../src/helpers/datetime';
 describe('hasEventPast', () => {
 	it('returns true', () => {
 		global.GatherPress = {
-			event_datetime: {
-				datetime_end: moment()
-					.subtract(1, 'days')
-					.format(dateTimeMomentFormat),
-				timezone: 'America/New_York',
+			eventDetails: {
+				dateTime: {
+					datetime_end: moment()
+						.subtract(1, 'days')
+						.format(dateTimeMomentFormat),
+					timezone: 'America/New_York',
+				},
 			},
 		};
 
@@ -39,11 +41,13 @@ describe('hasEventPast', () => {
 
 	it('returns false', () => {
 		global.GatherPress = {
-			event_datetime: {
-				datetime_end: moment()
-					.add(1, 'days')
-					.format(dateTimeMomentFormat),
-				timezone: 'America/New_York',
+			eventDetails: {
+				dateTime: {
+					datetime_end: moment()
+						.add(1, 'days')
+						.format(dateTimeMomentFormat),
+					timezone: 'America/New_York',
+				},
 			},
 		};
 
@@ -65,11 +69,13 @@ describe('hasEventPastNotice', () => {
 
 	it('notice is set', () => {
 		global.GatherPress = {
-			event_datetime: {
-				datetime_end: moment()
-					.subtract(1, 'days')
-					.format(dateTimeMomentFormat),
-				timezone: 'America/New_York',
+			eventDetails: {
+				dateTime: {
+					datetime_end: moment()
+						.subtract(1, 'days')
+						.format(dateTimeMomentFormat),
+					timezone: 'America/New_York',
+				},
 			},
 		};
 
