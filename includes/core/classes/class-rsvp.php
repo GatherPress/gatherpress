@@ -145,7 +145,7 @@ class Rsvp {
 			if ( $value['id'] === $user_id ) {
 				global $wpdb;
 				$table  = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-				$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			}
 		}
 		return true;
