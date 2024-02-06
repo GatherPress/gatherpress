@@ -144,8 +144,8 @@ class Rsvp {
 		foreach ( $responses['all']['responses'] as $key => $value ) {
 			if ( $value['id'] === $user_id ) {
 				global $wpdb;
-				$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-				$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) );
+				$table  = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+				$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			}
 		}
 		return true;
