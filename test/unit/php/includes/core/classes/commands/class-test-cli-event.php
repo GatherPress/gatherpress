@@ -2,8 +2,7 @@
 /**
  * Class handles unit tests for GatherPress\Core\Commands\Cli_Event.
  *
- * @package GatherPress
- * @subpackage Core
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
