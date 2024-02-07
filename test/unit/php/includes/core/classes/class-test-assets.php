@@ -2,8 +2,7 @@
 /**
  * Class handles unit tests for GatherPress\Core\Assets.
  *
- * @package GatherPress
- * @subpackage Core
+ * @package GatherPress\Core
  * @since 1.0.0
  */
 
@@ -117,7 +116,7 @@ class Test_Assets extends Base {
 
 
 	/**
-	 * Coverage Enqueue scripts
+	 * Coverage for enqueue_scripts.
 	 *
 	 * @covers ::enqueue_scripts
 	 *
