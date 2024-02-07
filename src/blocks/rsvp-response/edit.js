@@ -1,12 +1,16 @@
 /**
  * WordPress dependencies.
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, BlockControls } from '@wordpress/block-editor';
+import { ToolbarGroup, ToolbarButton } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
 import RsvpResponse from '../../components/RsvpResponse';
+import RsvpResponseEdit from '../../components/RsvpResponseEdit';
 import EditCover from '../../components/EditCover';
 
 /**
@@ -19,14 +23,41 @@ import EditCover from '../../components/EditCover';
  *
  * @return {JSX.Element} The rendered React component.
  */
+
 const Edit = () => {
+	const isAdmin = wp.data.select('core').canUser('create', 'posts');
 	const blockProps = useBlockProps();
+
+	const [editMode, setEditMode] = useState(false);
+
+	const onEditClick = (e) => {
+		e.preventDefault();
+		setEditMode(!editMode);
+	};
 
 	return (
 		<div {...blockProps}>
-			<EditCover>
-				<RsvpResponse />
-			</EditCover>
+			{editMode && <RsvpResponseEdit />}
+			{!editMode && (
+				<EditCover>
+					<RsvpResponse />
+				</EditCover>
+			)}
+			{isAdmin && (
+				<BlockControls>
+					<ToolbarGroup>
+						<ToolbarButton
+							label={__('Edit', 'gatherpress')}
+							text={
+								editMode
+									? __('Preview', 'gatherpress')
+									: __('Edit', 'gatherpress')
+							}
+							onClick={onEditClick}
+						/>
+					</ToolbarGroup>
+				</BlockControls>
+			)}
 		</div>
 	);
 };

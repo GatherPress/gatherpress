@@ -176,7 +176,7 @@ class Rsvp {
 			);
 
 			// If not attending and anonymous, just remove record.
-			if ( 'not_attending' === $status && $anonymous ) {
+			if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
 				$save   = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$status = 'no_status'; // Set default status for UI.
 			} else {
