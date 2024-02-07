@@ -642,7 +642,7 @@ class Rest_Api {
 		if (
 			$user_id &&
 			is_user_member_of_blog( $user_id ) &&
-			! $event->has_event_past() 
+			! $event->has_event_past()
 		) {
 			$status = $event->rsvp->save( $user_id, $status, $anonymous );
 
