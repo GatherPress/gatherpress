@@ -57,4 +57,31 @@ class Test_User extends Base {
 
 		$this->assert_hooks( $hooks, $instance );
 	}
+
+	/**
+	 * Coverage for profile_fields.
+	 *
+	 * @covers ::profile_fields
+	 *
+	 * @return void
+	 */
+	public function test_profile_fields(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+		$markup   = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+
+		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked by default.' );
+
+		update_user_meta( $user->ID, 'gp-event-updates-opt-in', 0 );
+
+		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+
+		$this->assertStringNotContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is not checked.' );
+
+		update_user_meta( $user->ID, 'gp-event-updates-opt-in', 1 );
+
+		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+
+		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked.' );
+	}
 }

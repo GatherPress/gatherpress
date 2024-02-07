@@ -116,7 +116,7 @@ class Test_Assets extends Base {
 
 
 	/**
-	 * Coverage Enqueue scripts
+	 * Coverage for enqueue_scripts.
 	 *
 	 * @covers ::enqueue_scripts
 	 *
