@@ -642,17 +642,13 @@ class Rest_Api {
 		if (
 			$user_id &&
 			is_user_member_of_blog( $user_id ) &&
-			! $event->has_event_past() && ( 'remove' !== $status )
+			! $event->has_event_past() 
 		) {
 			$status = $event->rsvp->save( $user_id, $status, $anonymous );
 
 			if ( in_array( $status, $event->rsvp->statuses, true ) ) {
 				$success = true;
 			}
-		}
-
-		if ( 'remove' !== $status ) {
-			$event->rsvp->remove( $user_id, $responses );
 		}
 
 		$response = array(

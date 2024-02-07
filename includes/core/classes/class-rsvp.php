@@ -122,35 +122,6 @@ class Rsvp {
 		return array_merge( $default, (array) $data );
 	}
 
-
-	/**
-	 * Remove a user's RSVP from the database.
-	 *
-	 * This method deletes the RSVP entry for a specific user from the database.
-	 * It loops through the provided array of RSVP responses, and when it finds
-	 * the entry matching the given user ID, it uses the WordPress $wpdb API to
-	 * delete that entry from the rsvp table.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int   $user_id The ID of the user to remove the RSVP for.
-	 * @param array $responses Array of RSVP responses containing the entry to remove.
-	 * @return bool True if the RSVP was removed, false otherwise.
-	 */
-	public function remove( int $user_id, array $responses ): bool {
-		if ( ! current_user_can( 'edit_posts' ) ) {
-			return false;
-		}
-		foreach ( $responses['all']['responses'] as $key => $value ) {
-			if ( $value['id'] === $user_id ) {
-				global $wpdb;
-				$table  = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-				$result = $wpdb->delete( $table, array( 'user_id' => $value['id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			}
-		}
-		return true;
-	}
-
 	/**
 	 * Save a user's RSVP status for the event.
 	 *
@@ -205,7 +176,7 @@ class Rsvp {
 			);
 
 			// If not attending and anonymous, just remove record.
-			if ( 'not_attending' === $status && $anonymous ) {
+			if ( 'not_attending' === $status && $anonymous || 'no_status' === $status ) {
 				$save   = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$status = 'no_status'; // Set default status for UI.
 			} else {
