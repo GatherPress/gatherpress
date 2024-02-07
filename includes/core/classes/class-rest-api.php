@@ -620,7 +620,6 @@ class Rest_Api {
 		$guests          = intval( $params['guests'] );
 		$anonymous       = intval( $params['anonymous'] );
 		$event           = new Event( $post_id );
-		$responses       = $event->rsvp->responses();
 
 		// If managing user is adding someone to an event.
 		if (

@@ -11,7 +11,6 @@ import { store as coreStore } from '@wordpress/core-data';
 /**
  * Internal dependencies.
  */
-import { Listener } from '../helpers/broadcasting';
 import { getFromGlobal, setToGlobal } from '../helpers/globals';
 
 /**
@@ -27,37 +26,9 @@ import { getFromGlobal, setToGlobal } from '../helpers/globals';
  * @return {JSX.Element} The rendered RSVP response component.
  */
 const RsvpResponseEdit = () => {
-	const defaultStatus = 'attending';
-	const hasEventPast = getFromGlobal('has_event_past');
-	const items = [
-		{
-			title:
-				false === hasEventPast
-					? __('Attending', 'gatherpress')
-					: __('Went', 'gatherpress'),
-			value: 'attending',
-		},
-		{
-			title:
-				false === hasEventPast
-					? __('Waiting List', 'gatherpress')
-					: __('Wait Listed', 'gatherpress'),
-			value: 'waiting_list',
-		},
-		{
-			title:
-				false === hasEventPast
-					? __('Not Attending', 'gatherpress')
-					: __("Didn't Go", 'gatherpress'),
-			value: 'not_attending',
-		},
-	];
-
-	const [rsvpStatus, setRsvpStatus] = useState(defaultStatus);
-	const eventDetails = getFromGlobal('eventDetails');
-	const responses = eventDetails.responses;
+	const responses = getFromGlobal('eventDetails.responses');
+	const postId = getFromGlobal('eventDetails.postId');
 	const [rsvpResponse, setRsvpResponse] = useState(responses);
-	const eventId = eventDetails.postId;
 	const attendees = rsvpResponse.attending.responses;
 
 	/**
@@ -89,13 +60,6 @@ const RsvpResponseEdit = () => {
 			{}
 		) ?? {};
 
-	Listener({ setRsvpStatus }, getFromGlobal('post_id'));
-
-	// Make sure rsvpStatus is a valid status, if not, set to default.
-	if (!items.some((item) => item.value === rsvpStatus)) {
-		setRsvpStatus(defaultStatus);
-	}
-
 	/**
 	 * Updates the RSVP status for a user attending the given event.
 	 *
@@ -104,13 +68,13 @@ const RsvpResponseEdit = () => {
 	 */
 	const updateUserStatus = (userId, status = 'attending') => {
 		apiFetch({
-			path: '/gatherpress/v1/event/rsvp',
+			path: getFromGlobal('urls.eventRestApi') + '/rsvp',
 			method: 'POST',
 			data: {
-				post_id: eventId,
+				post_id: postId,
 				status,
 				user_id: userId,
-				_wpnonce: getFromGlobal('nonce'),
+				_wpnonce: getFromGlobal('misc.nonce'),
 			},
 		}).then((res) => {
 			setRsvpResponse(res.responses);

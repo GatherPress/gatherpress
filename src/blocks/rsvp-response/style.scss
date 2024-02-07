@@ -83,4 +83,12 @@
 		font-weight: 600;
 		margin-bottom: 1rem;
 	}
+
+	// UI fix in editor.
+	.edit-post-visual-editor & {
+		.components-button.has-icon {
+			padding: 0 2px;
+		}
+	}
 }
+
