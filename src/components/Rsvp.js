@@ -354,8 +354,8 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 					style={customStyles}
 					contentLabel={__('Edit RSVP', 'gatherpress')}
 				>
-					{'' === currentUser && <LoggedOutModal />}
-					{'' !== currentUser && (
+					{0 === currentUser.length && <LoggedOutModal />}
+					{0 !== currentUser.length && (
 						<LoggedInModal status={rsvpStatus} />
 					)}
 				</Modal>
