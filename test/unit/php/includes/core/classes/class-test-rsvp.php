@@ -87,6 +87,17 @@ class Test_Rsvp extends Base {
 
 		$this->assertSame( 'attending', $rsvp->save( $user_1->ID, $status ), 'Failed to assert that user 1 is attending.' );
 		$this->assertSame( 'waiting_list', $rsvp->save( $user_2->ID, $status ), 'Failed to assert that user 2 is on waiting list.' );
+
+		$user_1 = $this->mock->user()->get();
+		$status = 'not_attending';
+
+		// When not_attending and anonymous, user record should be removed and marked no_status.
+		$this->assertSame( 'no_status', $rsvp->save( $user_1->ID, $status, 1 ), 'Failed to assert that user 1 is no_status.' );
+
+		$user_2 = $this->mock->user()->get();
+		$status = 'no_status';
+
+		$this->assertSame( 'no_status', $rsvp->save( $user_2->ID, $status ), 'Failed to assert that user 2 is no_status.' );
 	}
 
 	/**
@@ -229,6 +240,49 @@ class Test_Rsvp extends Base {
 
 		$this->assertEmpty( $responses['all']['responses'], 'Failed to assert all responses empty with non-event post type.' );
 		$this->assertEquals( 0, $responses['count'], 'Failed to assert count is 0 with non-event post type.' );
+
+		$this->mock->user( 'subscriber' );
+
+		$post      = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get();
+		$rsvp      = new Rsvp( $post->ID );
+		$user_id_3 = wp_create_user( 'user_3', 'unittest3' );
+
+		$rsvp->save( $user_id_3, 'attending', 1 );
+
+		$responses = $rsvp->responses();
+
+		$this->assertEquals(
+			0,
+			$responses['all']['responses'][0]['id'],
+			'Failed to assert user ID matches 0.'
+		);
+		$this->assertEquals(
+			0,
+			$responses['attending']['responses'][0]['id'],
+			'Failed to assert user ID matches 0.'
+		);
+		$this->assertEmpty(
+			$responses['all']['responses'][0]['profile'],
+			'Failed to assert profile is empty.'
+		);
+		$this->assertEmpty(
+			$responses['attending']['responses'][0]['profile'],
+			'Failed to assert profile is empty.'
+		);
+		$this->assertSame(
+			'Anonymous',
+			$responses['all']['responses'][0]['name'],
+			'Failed to assert user display name is Anonymous.'
+		);
+		$this->assertSame(
+			'Anonymous',
+			$responses['attending']['responses'][0]['name'],
+			'Failed to assert user display name is Anonymous.'
+		);
 	}
 
 	/**

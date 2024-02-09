@@ -75,16 +75,28 @@ class Test_Event extends Base {
 			$args['_online_event_link'],
 			'Failed to assert that _online_event_link is an array.'
 		);
+		$this->assertIsArray(
+			$args['enable_anonymous_rsvp'],
+			'Failed to assert that _online_event_link is an array.'
+		);
 
 		$this->mock->user( 'subscriber' );
 		$this->assertFalse(
 			$args['_online_event_link']['auth_callback'](),
 			'Failed to assert that user cannot edit posts.'
 		);
+		$this->assertFalse(
+			$args['enable_anonymous_rsvp']['auth_callback'](),
+			'Failed to assert that user cannot edit posts.'
+		);
 
 		$this->mock->user( 'admin' );
 		$this->assertTrue(
 			$args['_online_event_link']['auth_callback'](),
+			'Failed to assert that user can edit posts.'
+		);
+		$this->assertTrue(
+			$args['enable_anonymous_rsvp']['auth_callback'](),
 			'Failed to assert that user can edit posts.'
 		);
 	}

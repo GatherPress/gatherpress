@@ -14,7 +14,7 @@ if ( ! isset( $event_updates_opt_in ) ) {
 <h2 id="gp-user-notifications">
 	<?php esc_html_e( 'Notifications', 'gatherpress' ); ?>
 </h2>
-<table class="form-table">
+<table class="form-table" aria-describedby="gp-user-notifications">
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Email', 'gatherpress' ); ?></th>
 		<td>
