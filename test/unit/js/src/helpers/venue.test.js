@@ -14,7 +14,7 @@ jest.mock('@wordpress/data', () => ({
 }));
 
 /**
- * Coverage for isVenuePostType
+ * Coverage for isVenuePostType.
  */
 describe('isVenuePostType', () => {
 	it('returns false when there is no current post type', () => {
@@ -23,14 +23,16 @@ describe('isVenuePostType', () => {
 
 	it('returns false when current post type is gp_event', () => {
 		require('@wordpress/data').select.mockImplementation((store) => ({
-			getCurrentPostType: () => store === 'core/editor' ? 'gp_event' : null,
+			getCurrentPostType: () =>
+				store === 'core/editor' ? 'gp_event' : null,
 		}));
 		expect(isVenuePostType()).toBe(false);
 	});
 
 	it('returns true when current post type is gp_venue', () => {
 		require('@wordpress/data').select.mockImplementation((store) => ({
-			getCurrentPostType: () => store === 'core/editor' ? 'gp_venue' : null,
+			getCurrentPostType: () =>
+				store === 'core/editor' ? 'gp_venue' : null,
 		}));
 		expect(isVenuePostType()).toBe(true);
 	});
