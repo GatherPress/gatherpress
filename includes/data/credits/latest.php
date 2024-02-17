@@ -28,10 +28,7 @@
         96 => '//www.gravatar.com/avatar/5d322f273233b2f1e619261c3c123aea?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-  ),
-  'gatherpress-team' => 
-  array (
-    0 => 
+    2 => 
     array (
       'id' => 7586875,
       'name' => 'Patricia BT',
@@ -44,7 +41,10 @@
         96 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    1 => 
+  ),
+  'gatherpress-team' => 
+  array (
+    0 => 
     array (
       'id' => 4555438,
       'name' => '',
@@ -57,7 +57,7 @@
         96 => '//www.gravatar.com/avatar/c45f6353d61871317b31fb9048d39b2b?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    2 => 
+    1 => 
     array (
       'id' => 11146216,
       'name' => 'meagan hanes',
@@ -70,7 +70,7 @@
         96 => '//www.gravatar.com/avatar/052d4e778920f20d9f6611bf5c027528?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    3 => 
+    2 => 
     array (
       'id' => 20932248,
       'name' => 'prashantabellad',
@@ -83,7 +83,7 @@
         96 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    4 => 
+    3 => 
     array (
       'id' => 21156948,
       'name' => 'Prayag Mankar',
@@ -96,7 +96,7 @@
         96 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    5 => 
+    4 => 
     array (
       'id' => 9330583,
       'name' => 'Javier Casares',
@@ -109,7 +109,7 @@
         96 => '//www.gravatar.com/avatar/958902e8d0fda24dd28189b0508c661a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    6 => 
+    5 => 
     array (
       'id' => 21213947,
       'name' => 'linusx007',
