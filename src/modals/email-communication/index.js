@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { __, _x } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
 import { createRoot, useState, useEffect } from '@wordpress/element';
 import {
@@ -146,7 +146,11 @@ const EventCommuncationModal = () => {
 						</FlexItem>
 						<FlexItem>
 							<CheckboxControl
-								label={__('Not Attending', 'gatherpress')}
+								label={_x(
+									'Not Attending',
+									'list of people not attending',
+									'gatherpress'
+								)}
 								checked={isNotAttendingChecked}
 								onChange={setNotAttendingChecked}
 								disabled={isCheckBoxDisabled}
