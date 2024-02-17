@@ -224,7 +224,11 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 			buttonLabel = __('Attend', 'gatherpress');
 		} else {
 			buttonStatus = 'not_attending';
-			buttonLabel = _x('Not Attending', 'action of not attending', 'gatherpress');
+			buttonLabel = _x(
+				'Not Attending',
+				'action of not attending',
+				'gatherpress'
+			);
 		}
 
 		return (

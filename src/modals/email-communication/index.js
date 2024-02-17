@@ -146,7 +146,11 @@ const EventCommuncationModal = () => {
 						</FlexItem>
 						<FlexItem>
 							<CheckboxControl
-								label={_x('Not Attending', 'list of people not attending', 'gatherpress')}
+								label={_x(
+									'Not Attending',
+									'list of people not attending',
+									'gatherpress'
+								)}
 								checked={isNotAttendingChecked}
 								onChange={setNotAttendingChecked}
 								disabled={isCheckBoxDisabled}

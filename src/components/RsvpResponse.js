@@ -46,7 +46,11 @@ const RsvpResponse = () => {
 		{
 			title:
 				false === hasEventPast
-					? _x('Not Attending', 'responded not attending', 'gatherpress')
+					? _x(
+							'Not Attending',
+							'responded not attending',
+							'gatherpress'
+					  )
 					: __("Didn't Go", 'gatherpress'),
 			value: 'not_attending',
 		},

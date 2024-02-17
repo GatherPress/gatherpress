@@ -31,7 +31,11 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 			},
 			not_attending: {
 				icon: 'dashicons dashicons-dismiss',
-				text: _x('Not Attending', 'responded not attending', 'gatherpress'),
+				text: _x(
+					'Not Attending',
+					'responded not attending',
+					'gatherpress'
+				),
 			},
 			no_status: {
 				icon: '',
