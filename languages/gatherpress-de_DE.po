@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: GatherPress 0.27.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/gatherpress\n"
 "POT-Creation-Date: 2024-01-16T14:36:19+00:00\n"
-"PO-Revision-Date: 2024-02-17 06:02+0100\n"
+"PO-Revision-Date: 2024-02-17 17:18+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: de_DE\n"
@@ -32,13 +32,12 @@ msgstr "Gemeinschaften betreiben mit WordPress."
 
 #. Author of the plugin
 msgid "The GatherPress Community"
-msgstr ""
+msgstr "Die GatherPress Gemeinschaft"
 
 #: build/blocks/add-to-calendar/render.php:23
 #: build/blocks/add-to-calendar/index.js:1
-#, fuzzy
 msgid "Add to calendar"
-msgstr "Geben Sie die Dauer in Minuten an."
+msgstr "Zu Kalender hinzufügen"
 
 #: includes/core/classes/class-event.php:116
 msgctxt "Post Type General Name"
@@ -48,7 +47,7 @@ msgstr "Veranstaltungen"
 #: includes/core/classes/class-event.php:117
 msgctxt "Post Type Singular Name"
 msgid "Event"
-msgstr "Veranstaltung."
+msgstr "Veranstaltung"
 
 #: includes/core/classes/class-event.php:118
 msgid "Events"
@@ -107,7 +106,7 @@ msgstr "Themen"
 #: includes/core/classes/class-event.php:204
 msgctxt "taxonomy singular name"
 msgid "Topic"
-msgstr ""
+msgstr "Thema"
 
 #: includes/core/classes/class-event.php:205
 msgid "Search Topics"
@@ -298,7 +297,7 @@ msgstr "Die standardmäßige, maximale Anzahl Teilnehmender einer Veranstaltung.
 
 #: includes/core/classes/settings/class-general.php:119
 msgid "Date & Time Formatting"
-msgstr ""
+msgstr "Datums- & Uhrzeitformatierung"
 
 #: includes/core/classes/settings/class-general.php:120
 msgid ""
@@ -308,25 +307,27 @@ msgid ""
 msgstr ""
 
 #: includes/core/classes/settings/class-general.php:124
-#, fuzzy
 msgid "Date Format"
-msgstr "Veröffentlichungsdatum"
+msgstr "Datumsformatierung"
 
 #: includes/core/classes/settings/class-general.php:127
+#, fuzzy
 msgid "Format of date for scheduled events."
-msgstr ""
+msgstr "Datumsformatierung"
 
 #: includes/core/classes/settings/class-general.php:137
+#, fuzzy
 msgid "Time Format"
-msgstr ""
+msgstr "Datumsformatierung"
 
 #: includes/core/classes/settings/class-general.php:140
 msgid "Format of time for scheduled events."
 msgstr ""
 
 #: includes/core/classes/settings/class-general.php:150
+#, fuzzy
 msgid "Show Timezone"
-msgstr ""
+msgstr "Beschreibung anzeigen"
 
 #: includes/core/classes/settings/class-general.php:153
 msgid "Display the timezone for scheduled events."
@@ -364,7 +365,7 @@ msgstr "Leitung"
 #: includes/core/classes/settings/class-leadership.php:70
 #, fuzzy
 msgid "Organizers"
-msgstr "Organisierende"
+msgstr "Organisierenden"
 
 #: includes/core/classes/settings/class-leadership.php:69
 msgid "Organizer"
@@ -381,6 +382,8 @@ msgstr "Rollen"
 #: includes/core/classes/settings/class-leadership.php:99
 msgid "Customize role labels to be more appropriate for events."
 msgstr ""
+"Passen Sie die Bezeichnungen von Rollen an, damit sie besser zu "
+"Veranstaltungen passen."
 
 #. translators: %1$s: minimum PHP version, %2$s: current PHP version.
 #: includes/core/requirements-check.php:24
@@ -466,7 +469,7 @@ msgstr ""
 #: build/blocks/event-date/index.js:1 build/blocks/event-date/index.js:2
 #: build/blocks/venue/index.js:1 build/editor.js:1 build/panels.js:1
 msgid "GMT"
-msgstr ""
+msgstr "GMT"
 
 #: build/blocks/event-date/index.js:1 build/panels.js:1
 msgid "Send an event update to members via email?"
@@ -474,7 +477,7 @@ msgstr ""
 
 #: build/blocks/event-date/index.js:1 build/panels.js:1
 msgid "Compose Message"
-msgstr ""
+msgstr "Nachricht verfassen"
 
 #: build/blocks/event-date/index.js:1 build/panels.js:1
 msgid "Start"
@@ -485,20 +488,21 @@ msgid "End"
 msgstr ""
 
 #: build/blocks/event-date/index.js:1 build/panels.js:1
+#, fuzzy
 msgid "Time Zone"
-msgstr ""
+msgstr "Datum & Uhrzeit"
 
 #: build/blocks/event-date/index.js:1 build/panels.js:1
-#, fuzzy
 msgid "Date & time"
-msgstr "Veröffentlichungsdatum"
+msgstr "Datum & Uhrzeit"
 
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+#, fuzzy
 msgid "Attending"
-msgstr ""
+msgstr "maximale Anzahl Teilnehmender"
 
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
@@ -511,8 +515,9 @@ msgstr ""
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+#, fuzzy
 msgid "Not Attending"
-msgstr ""
+msgstr "maximale Anzahl Teilnehmender"
 
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
@@ -526,13 +531,14 @@ msgstr ""
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "Didn't Go"
-msgstr ""
+msgstr "Einzelheiten findest du unter %s"
 
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#, fuzzy
 msgid "You're attending"
-msgstr ""
+msgstr "maximale Anzahl Teilnehmender"
 
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
@@ -543,8 +549,9 @@ msgstr ""
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#, fuzzy
 msgid "You're not attending"
-msgstr ""
+msgstr "maximale Anzahl Teilnehmender"
 
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
@@ -589,7 +596,7 @@ msgstr ""
 #: build/blocks/rsvp/rsvp.js:1
 #, fuzzy
 msgid " to RSVP to events."
-msgstr "Teilnahme"
+msgstr "Veranstaltungen"
 
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
@@ -609,13 +616,13 @@ msgstr ""
 #: build/blocks/rsvp/index.js:1 build/blocks/rsvp/index.js:2
 #: build/blocks/rsvp/rsvp.js:1 build/blocks/rsvp/rsvp.js:2
 msgid "Close"
-msgstr ""
+msgstr "Schließen"
 
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 msgid "Attend"
-msgstr ""
+msgstr "Teilnehmen"
 
 #. translators: %s: button label.
 #: build/blocks/events-list/events-list.js:2
@@ -628,33 +635,34 @@ msgstr ""
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
 #: build/blocks/rsvp/rsvp.js:2
+#, fuzzy
 msgid "guest(s)"
-msgstr ""
+msgstr "Datum: %s"
 
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2
 #, fuzzy
 msgid "There are no upcoming events."
-msgstr "Veranstaltungen suchen"
+msgstr "Bevorstehende Veranstaltungen"
 
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2
 #, fuzzy
 msgid "There are no past events."
-msgstr "Veranstaltungen suchen"
+msgstr "Vergangene Veranstaltungen"
 
 #: build/blocks/events-list/index.js:2
 #, fuzzy
 msgid "Event List type"
-msgstr "Bietet Informationen über einen Veranstaltungsort."
+msgstr "Veranstaltung bearbeiten"
 
 #: build/blocks/events-list/index.js:2
 msgid "Upcoming"
-msgstr ""
+msgstr "Bevorstehend"
 
 #: build/blocks/events-list/index.js:2
 msgid "Past"
-msgstr ""
+msgstr "Vergangen"
 
 #: build/blocks/events-list/index.js:2
 msgid "Maximum number of events to display"
@@ -673,32 +681,37 @@ msgid "Hide All RSVP Responses"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#, fuzzy
 msgid "Image Size Options"
-msgstr ""
+msgstr "Bild der Veranstaltung"
 
 #: build/blocks/events-list/index.js:2
 msgid "Show/Hide Featured Image"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#, fuzzy
 msgid "Show Featured Image"
-msgstr ""
+msgstr "Beschreibung anzeigen"
 
 #: build/blocks/events-list/index.js:2
+#, fuzzy
 msgid "Hide Featured Image"
-msgstr ""
+msgstr "Karte ausblenden"
 
 #: build/blocks/events-list/index.js:2
+#, fuzzy
 msgid "Show/Hide Description"
-msgstr ""
+msgstr "Beschreibung anzeigen"
 
 #: build/blocks/events-list/index.js:2
 msgid "Show Description"
-msgstr ""
+msgstr "Beschreibung anzeigen"
 
 #: build/blocks/events-list/index.js:2
+#, fuzzy
 msgid "Hide Description"
-msgstr ""
+msgstr "Beschreibung anzeigen"
 
 #: build/blocks/online-event/index.js:1
 #: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
@@ -708,14 +721,13 @@ msgstr ""
 
 #: build/blocks/online-event/index.js:1 build/blocks/venue/index.js:1
 #: build/panels.js:1
-#, fuzzy
 msgid "Online event link"
-msgstr "Bietet Informationen über einen Veranstaltungsort."
+msgstr "Link zur Online-Veranstaltung"
 
 #: build/blocks/online-event/index.js:1 build/blocks/venue/index.js:1
 #: build/panels.js:1
 msgid "Add link to online event"
-msgstr ""
+msgstr "Link zur Online-Veranstaltung hinzufügen"
 
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
@@ -736,7 +748,7 @@ msgstr ""
 #: build/blocks/rsvp-response/rsvp-response.js:1
 #, fuzzy
 msgid "No one went to this event."
-msgstr "Bietet Informationen über einen Veranstaltungsort."
+msgstr "Veranstaltung bearbeiten"
 
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
@@ -744,17 +756,18 @@ msgid "Wait Listed"
 msgstr ""
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
+#, fuzzy
 msgid "No venue selected."
-msgstr ""
+msgstr "Veranstaltungsort bearbeiten"
+
+#: build/blocks/venue/index.js:1 build/panels.js:1
+msgid "Choose a venue"
+msgstr "Wähle einen Veranstaltungsort"
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
 #, fuzzy
-msgid "Choose a venue"
-msgstr "Wählen Sie ein Datum"
-
-#: build/blocks/venue/index.js:1 build/panels.js:1
 msgid "Venue Selector"
-msgstr ""
+msgstr "Veranstaltungsort"
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
 msgid "Full Address"
@@ -762,47 +775,47 @@ msgstr ""
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
 msgid "Phone Number"
-msgstr ""
+msgstr "Telefonnummer"
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
 msgid "Website"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
-#, fuzzy
 msgid "Add venue information."
-msgstr "Bietet Informationen über einen Veranstaltungsort."
+msgstr "Informationen zum Veranstaltungsort hinzufügen."
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
 #, fuzzy
 msgid "Venue settings"
-msgstr "Einstelllungen speichern"
+msgstr "Einstelllungen"
 
 #: build/blocks/venue/index.js:1
 #, fuzzy
 msgid "Map settings"
-msgstr "Einstelllungen speichern"
+msgstr "Karte ausblenden"
 
 #: build/blocks/venue/index.js:1
 #, fuzzy
 msgid "Show map on venue"
-msgstr "Bietet Informationen über einen Veranstaltungsort."
+msgstr "Beschreibung anzeigen"
 
 #: build/blocks/venue/index.js:1
 msgid "Display the map"
-msgstr ""
+msgstr "Karte anzeigen"
 
 #: build/blocks/venue/index.js:1
 msgid "Hide the map"
-msgstr ""
+msgstr "Karte ausblenden"
 
 #: build/blocks/venue/index.js:1
 msgid "Zoom level"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#, fuzzy
 msgid "Map type"
-msgstr ""
+msgstr "Karte ausblenden"
 
 #: build/blocks/venue/index.js:1
 msgid "Roadmap"
@@ -823,7 +836,7 @@ msgstr ""
 
 #: build/modals.js:1
 msgid "Optional message"
-msgstr ""
+msgstr "Optionale Nachricht"
 
 #: build/modals.js:1
 msgid "Select the recipients for your message by checking the relevant boxes."
@@ -832,11 +845,11 @@ msgstr ""
 #: build/modals.js:1
 #, fuzzy
 msgid "All Members"
-msgstr "Alle anzeigen"
+msgstr "Alle Mitglieder"
 
 #: build/modals.js:1
 msgid "Confirm you are ready to send?"
-msgstr ""
+msgstr "Bestätigen Sie, dass Sie zum Senden bereit sind?"
 
 #: build/modals.js:1
 msgid "Send Email"
@@ -845,12 +858,12 @@ msgstr ""
 #: build/panels.js:1
 #, fuzzy
 msgid "Send an event update"
-msgstr "Bietet Informationen über einen Veranstaltungsort."
+msgstr "Veranstaltung aktualisieren"
 
 #: build/panels.js:1
 #, fuzzy
 msgid "Event settings"
-msgstr "Einstelllungen speichern"
+msgstr "Einstelllungen"
 
 #: build/settings.js:1
 msgid "Select Posts"
@@ -861,10 +874,9 @@ msgid "Choose only one item."
 msgstr ""
 
 #: build/blocks/add-to-calendar/block.json
-#, fuzzy
 msgctxt "block title"
 msgid "Add to Calendar"
-msgstr "Geben Sie die Dauer in Minuten an."
+msgstr "Zu Kalender hinzufügen"
 
 #: build/blocks/add-to-calendar/block.json
 msgctxt "block description"
@@ -872,21 +884,20 @@ msgid "Allows a member to add an event to their preferred calendar."
 msgstr ""
 
 #: build/blocks/event-date/block.json
-#, fuzzy
 msgctxt "block title"
 msgid "Event Date"
-msgstr "Veröffentlichungsdatum"
+msgstr "Veranstaltungsdatum"
 
 #: build/blocks/event-date/block.json
 msgctxt "block description"
 msgid "Displays the date and time for an event."
-msgstr ""
+msgstr "Zeigt Datum und Uhrzeit einer Veranstaltung"
 
 #: build/blocks/events-list/block.json
 #, fuzzy
 msgctxt "block title"
 msgid "Events List"
-msgstr "Veranstaltungen suchen"
+msgstr "Veranstaltungen"
 
 #: build/blocks/events-list/block.json
 msgctxt "block description"
@@ -896,7 +907,7 @@ msgstr ""
 #: build/blocks/online-event/block.json
 msgctxt "block title"
 msgid "Online Event"
-msgstr ""
+msgstr "Online-Veranstaltung"
 
 #: build/blocks/online-event/block.json
 msgctxt "block description"
