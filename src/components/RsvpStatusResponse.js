@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { __, _x } from '@wordpress/i18n';
 
 /**
  * RsvpStatusResponse component for GatherPress.
@@ -31,7 +31,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 			},
 			not_attending: {
 				icon: 'dashicons dashicons-dismiss',
-				text: __('Not Attending', 'gatherpress'),
+				text: _x('Not Attending', 'responded not attending', 'gatherpress'),
 			},
 			no_status: {
 				icon: '',
