@@ -9,7 +9,7 @@ import { Tooltip } from 'react-tooltip';
  * WordPress dependencies.
  */
 import { useState } from '@wordpress/element';
-import { __, _x, sprintf } from '@wordpress/i18n';
+import { __, _n, _x, sprintf } from '@wordpress/i18n';
 import { ButtonGroup, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
@@ -371,7 +371,8 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 					{0 < rsvpGuests && (
 						<div className="gp-status__guests">
 							<span>
-								+{rsvpGuests} {__('guest(s)', 'gatherpress')}
+								+ {sprintf( _n( '%d guest', '%d guests', {rsvpGuests}, 'gatherpress' ), {rsvpGuests} )}
+								
 							</span>
 						</div>
 					)}
