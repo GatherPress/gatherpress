@@ -9,34 +9,41 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-02-17T16:38:12+00:00\n"
+"POT-Creation-Date: 2024-02-18T01:08:15+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI 2.9.0\n"
+"X-Generator: WP-CLI 2.10.0\n"
 "X-Domain: gatherpress\n"
 
 #. Plugin Name of the plugin
+#: gatherpress.php
 #: includes/core/classes/class-setup.php:264
 msgid "GatherPress"
 msgstr ""
 
 #. Plugin URI of the plugin
+#: gatherpress.php
 msgid "https://github.com/GatherPress/gatherpress"
 msgstr ""
 
 #. Description of the plugin
+#: gatherpress.php
 msgid "Powering Communities with WordPress."
 msgstr ""
 
 #. Author of the plugin
+#: gatherpress.php
 msgid "The GatherPress Community"
 msgstr ""
 
 #. Author URI of the plugin
+#: gatherpress.php
 msgid "https://gatherpress.org/"
 msgstr ""
 
 #: build/blocks/add-to-calendar/render.php:23
+#: src/blocks/add-to-calendar/render.php:23
 #: build/blocks/add-to-calendar/index.js:1
+#: src/blocks/add-to-calendar/edit.js:36
 msgid "Add to calendar"
 msgstr ""
 
@@ -153,6 +160,7 @@ msgstr ""
 
 #: includes/core/classes/class-event.php:220
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:219
 msgid "Topics"
 msgstr ""
 
@@ -212,6 +220,7 @@ msgstr ""
 #: build/blocks/online-event/online-event.js:1
 #: build/blocks/venue/index.js:1
 #: build/blocks/venue/venue.js:1
+#: src/components/OnlineEvent.js:32
 msgid "Online event"
 msgstr ""
 
@@ -232,6 +241,7 @@ msgstr ""
 #: includes/core/classes/class-venue.php:97
 #: includes/core/classes/class-venue.php:98
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:234
 msgid "Venues"
 msgstr ""
 
@@ -311,6 +321,7 @@ msgstr ""
 
 #: includes/core/classes/settings/class-general.php:133
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:196
 msgid "For more information read the <a href=\"https://wordpress.org/documentation/article/customize-date-and-time-format/\">Documentation on date and time formatting</a>."
 msgstr ""
 
@@ -470,6 +481,7 @@ msgstr ""
 #: build/blocks/event-date/index.js:1
 #: build/editor.js:1
 #: build/panels.js:1
+#: src/helpers/event.js:71
 msgid "This event has already past."
 msgstr ""
 
@@ -479,36 +491,45 @@ msgstr ""
 #: build/blocks/venue/index.js:1
 #: build/editor.js:1
 #: build/panels.js:1
+#: src/helpers/datetime.js:110
+#: src/helpers/datetime.js:126
 msgid "GMT"
 msgstr ""
 
 #: build/blocks/event-date/index.js:1
 #: build/panels.js:1
+#: src/helpers/event.js:103
 msgid "Send an event update to members via email?"
 msgstr ""
 
 #: build/blocks/event-date/index.js:1
 #: build/panels.js:1
+#: src/helpers/event.js:114
+#: src/panels/event-settings/notify-members/index.js:36
 msgid "Compose Message"
 msgstr ""
 
 #: build/blocks/event-date/index.js:1
 #: build/panels.js:1
+#: src/components/DateTimeStart.js:70
 msgid "Start"
 msgstr ""
 
 #: build/blocks/event-date/index.js:1
 #: build/panels.js:1
+#: src/components/DateTimeEnd.js:70
 msgid "End"
 msgstr ""
 
 #: build/blocks/event-date/index.js:1
 #: build/panels.js:1
+#: src/components/TimeZone.js:51
 msgid "Time Zone"
 msgstr ""
 
 #: build/blocks/event-date/index.js:1
 #: build/panels.js:1
+#: src/components/DateTimeRange.js:38
 msgid "Date & time"
 msgstr ""
 
@@ -519,6 +540,9 @@ msgstr ""
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 #: build/modals.js:1
+#: src/components/RsvpResponse.js:35
+#: src/components/RsvpStatusResponse.js:26
+#: src/modals/email-communication/index.js:133
 msgid "Attending"
 msgstr ""
 
@@ -529,6 +553,9 @@ msgstr ""
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 #: build/modals.js:1
+#: src/components/RsvpResponse.js:42
+#: src/components/RsvpStatusResponse.js:30
+#: src/modals/email-communication/index.js:141
 msgid "Waiting List"
 msgstr ""
 
@@ -538,6 +565,8 @@ msgstr ""
 #: build/blocks/rsvp-response/rsvp-response.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/RsvpResponse.js:49
+#: src/components/RsvpStatusResponse.js:34
 msgctxt "responded not attending"
 msgid "Not Attending"
 msgstr ""
@@ -548,6 +577,8 @@ msgstr ""
 #: build/blocks/rsvp-response/rsvp-response.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/RsvpResponse.js:36
+#: src/components/RsvpStatusResponse.js:48
 msgid "Went"
 msgstr ""
 
@@ -557,6 +588,10 @@ msgstr ""
 #: build/blocks/rsvp-response/rsvp-response.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/RsvpResponse.js:54
+#: src/components/RsvpStatusResponse.js:52
+#: src/components/RsvpStatusResponse.js:56
+#: src/components/RsvpStatusResponse.js:60
 msgid "Didn't Go"
 msgstr ""
 
@@ -564,6 +599,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:157
 msgid "You're attending"
 msgstr ""
 
@@ -571,6 +607,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:159
 msgid "You're wait listed"
 msgstr ""
 
@@ -578,6 +615,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:161
 msgid "You're not attending"
 msgstr ""
 
@@ -585,6 +623,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:164
 msgid "RSVP to this event"
 msgstr ""
 
@@ -592,6 +631,8 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:148
+#: src/components/Rsvp.js:359
 msgid "Edit RSVP"
 msgstr ""
 
@@ -599,6 +640,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:151
 msgid "RSVP"
 msgstr ""
 
@@ -606,6 +648,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:180
 msgid "Login Required"
 msgstr ""
 
@@ -613,6 +656,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:184
 msgid "You must "
 msgstr ""
 
@@ -620,6 +664,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:186
 msgid "Login"
 msgstr ""
 
@@ -627,6 +672,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:188
 msgid " to RSVP to events."
 msgstr ""
 
@@ -634,6 +680,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:193
 msgid "Register"
 msgstr ""
 
@@ -641,6 +688,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:195
 msgid " if you do not have an account."
 msgstr ""
 
@@ -652,6 +700,8 @@ msgstr ""
 #: build/blocks/rsvp/index.js:2
 #: build/blocks/rsvp/rsvp.js:1
 #: build/blocks/rsvp/rsvp.js:2
+#: src/components/Rsvp.js:210
+#: src/components/Rsvp.js:331
 msgid "Close"
 msgstr ""
 
@@ -659,6 +709,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:224
 msgid "Attend"
 msgstr ""
 
@@ -666,6 +717,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:1
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
+#: src/components/Rsvp.js:227
 msgctxt "action of not attending"
 msgid "Not Attending"
 msgstr ""
@@ -675,6 +727,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:2
 #: build/blocks/rsvp/index.js:2
 #: build/blocks/rsvp/rsvp.js:2
+#: src/components/Rsvp.js:248
 msgid "To set or change your attending status, simply click the %s button below."
 msgstr ""
 
@@ -682,6 +735,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:2
 #: build/blocks/rsvp/index.js:2
 #: build/blocks/rsvp/rsvp.js:2
+#: src/components/Rsvp.js:279
 msgid "Only admins will see your identity."
 msgstr ""
 
@@ -689,6 +743,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:2
 #: build/blocks/rsvp/index.js:2
 #: build/blocks/rsvp/rsvp.js:2
+#: src/components/Rsvp.js:284
 msgid "List me as anonymous."
 msgstr ""
 
@@ -696,76 +751,98 @@ msgstr ""
 #: build/blocks/events-list/index.js:2
 #: build/blocks/rsvp/index.js:2
 #: build/blocks/rsvp/rsvp.js:2
-msgid "guest(s)"
-msgstr ""
+#: src/components/Rsvp.js:374
+msgid "%d guest"
+msgid_plural "%d guests"
+msgstr[0] ""
+msgstr[1] ""
 
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2
+#: src/components/EventsList.js:58
 msgid "There are no upcoming events."
 msgstr ""
 
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2
+#: src/components/EventsList.js:59
 msgid "There are no past events."
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:141
 msgid "Event List type"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:151
+#: src/blocks/events-list/edit.js:163
 msgid "Upcoming"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:174
+#: src/blocks/events-list/edit.js:186
 msgid "Past"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:193
 msgid "Date & time format"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:206
 msgid "Maximum number of events to display"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:250
 msgid "Show/Hide All RSVP Responses"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:256
 msgid "Show All RSVP Responses"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:257
 msgid "Hide All RSVP Responses"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:289
 msgid "Image Size Options"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:302
 msgid "Show/Hide Featured Image"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:305
 msgid "Show Featured Image"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:306
 msgid "Hide Featured Image"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:319
 msgid "Show/Hide Description"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:322
 msgid "Show Description"
 msgstr ""
 
 #: build/blocks/events-list/index.js:2
+#: src/blocks/events-list/edit.js:323
 msgid "Hide Description"
 msgstr ""
 
@@ -773,248 +850,305 @@ msgstr ""
 #: build/blocks/online-event/online-event.js:1
 #: build/blocks/venue/index.js:1
 #: build/blocks/venue/venue.js:1
+#: src/components/OnlineEvent.js:51
 msgid "Link active for attendees during event."
 msgstr ""
 
 #: build/blocks/online-event/index.js:1
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/components/OnlineEventLink.js:52
 msgid "Online event link"
 msgstr ""
 
 #: build/blocks/online-event/index.js:1
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/components/OnlineEventLink.js:54
 msgid "Add link to online event"
 msgstr ""
 
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
+#: src/components/RsvpResponseHeader.js:54
 msgid "See fewer"
 msgstr ""
 
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
+#: src/components/RsvpResponseHeader.js:56
 msgid "See all"
 msgstr ""
 
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
+#: src/components/RsvpResponseCard.js:90
 msgid "No one is attending this event yet."
 msgstr ""
 
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
+#: src/components/RsvpResponseCard.js:94
 msgid "No one went to this event."
 msgstr ""
 
 #: build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1
+#: src/components/RsvpResponse.js:43
 msgid "Wait Listed"
 msgstr ""
 
 #: build/blocks/rsvp-response/index.js:1
+#: src/components/RsvpResponseEdit.js:117
 msgid "Attendees"
 msgstr ""
 
 #: build/blocks/rsvp-response/index.js:1
+#: src/blocks/rsvp-response/edit.js:50
+#: src/blocks/rsvp-response/edit.js:54
 msgid "Edit"
 msgstr ""
 
 #: build/blocks/rsvp-response/index.js:1
+#: src/blocks/rsvp-response/edit.js:53
 msgid "Preview"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/blocks/venue/edit.js:105
+#: src/components/VenueSelector.js:71
 msgid "No venue selected."
 msgstr ""
 
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/components/VenueSelector.js:112
 msgid "Choose a venue"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/components/VenueSelector.js:132
 msgid "Venue Selector"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/components/VenueInformation.js:65
 msgid "Full Address"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/components/VenueInformation.js:73
 msgid "Phone Number"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/components/VenueInformation.js:81
 msgid "Website"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:97
 msgid "Add venue information."
 msgstr ""
 
 #: build/blocks/venue/index.js:1
 #: build/panels.js:1
+#: src/blocks/venue/edit.js:124
+#: src/panels/venue-settings/index.js:34
 msgid "Venue settings"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:140
 msgid "Map settings"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:144
 msgid "Show map on venue"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:150
 msgid "Display the map"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:151
 msgid "Hide the map"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:160
 msgid "Zoom level"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:170
 msgid "Map type"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:174
 msgid "Roadmap"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:178
 msgid "Satellite"
 msgstr ""
 
 #: build/blocks/venue/index.js:1
+#: src/blocks/venue/edit.js:187
 msgid "Map height"
 msgstr ""
 
 #: build/modals.js:1
+#: src/modals/email-communication/index.js:108
 msgid "Notify members via email"
 msgstr ""
 
 #: build/modals.js:1
+#: src/modals/email-communication/index.js:113
 msgid "Optional message"
 msgstr ""
 
 #: build/modals.js:1
+#: src/modals/email-communication/index.js:118
 msgid "Select the recipients for your message by checking the relevant boxes."
 msgstr ""
 
 #: build/modals.js:1
+#: src/modals/email-communication/index.js:126
 msgid "All Members"
 msgstr ""
 
 #: build/modals.js:1
+#: src/modals/email-communication/index.js:149
 msgctxt "list of people not attending"
 msgid "Not Attending"
 msgstr ""
 
 #: build/modals.js:1
+#: src/modals/email-communication/index.js:46
 msgid "Confirm you are ready to send?"
 msgstr ""
 
 #: build/modals.js:1
+#: src/modals/email-communication/index.js:166
 msgid "Send Email"
 msgstr ""
 
 #: build/panels.js:1
+#: src/components/AnonymousRsvp.js:51
 msgid "Enable Anonymous RSVP"
 msgstr ""
 
 #: build/panels.js:1
+#: src/panels/event-settings/notify-members/index.js:30
 msgid "Send an event update"
 msgstr ""
 
 #: build/panels.js:1
+#: src/panels/event-settings/index.js:40
 msgid "Event settings"
 msgstr ""
 
 #: build/settings.js:1
+#: src/components/Autocomplete.js:88
 msgid "Select Posts"
 msgstr ""
 
 #: build/settings.js:1
+#: src/components/Autocomplete.js:106
 msgid "Choose only one item."
 msgstr ""
 
 #: build/blocks/add-to-calendar/block.json
+#: src/blocks/add-to-calendar/block.json
 msgctxt "block title"
 msgid "Add to Calendar"
 msgstr ""
 
 #: build/blocks/add-to-calendar/block.json
+#: src/blocks/add-to-calendar/block.json
 msgctxt "block description"
 msgid "Allows a member to add an event to their preferred calendar."
 msgstr ""
 
 #: build/blocks/event-date/block.json
+#: src/blocks/event-date/block.json
 msgctxt "block title"
 msgid "Event Date"
 msgstr ""
 
 #: build/blocks/event-date/block.json
+#: src/blocks/event-date/block.json
 msgctxt "block description"
 msgid "Displays the date and time for an event."
 msgstr ""
 
 #: build/blocks/events-list/block.json
+#: src/blocks/events-list/block.json
 msgctxt "block title"
 msgid "Events List"
 msgstr ""
 
 #: build/blocks/events-list/block.json
+#: src/blocks/events-list/block.json
 msgctxt "block description"
 msgid "Displays events that are either upcoming or have occurred in the past."
 msgstr ""
 
 #: build/blocks/online-event/block.json
+#: src/blocks/online-event/block.json
 msgctxt "block title"
 msgid "Online Event"
 msgstr ""
 
 #: build/blocks/online-event/block.json
+#: src/blocks/online-event/block.json
 msgctxt "block description"
 msgid "Utilized for virtual events, offering the capability to share a direct link to an event."
 msgstr ""
 
 #: build/blocks/rsvp-response/block.json
+#: src/blocks/rsvp-response/block.json
 msgctxt "block title"
 msgid "RSVP Response"
 msgstr ""
 
 #: build/blocks/rsvp-response/block.json
+#: src/blocks/rsvp-response/block.json
 msgctxt "block description"
 msgid "Displays a list of members who have confirmed their attendance for an event."
 msgstr ""
 
 #: build/blocks/rsvp/block.json
+#: src/blocks/rsvp/block.json
 msgctxt "block title"
 msgid "RSVP"
 msgstr ""
 
 #: build/blocks/rsvp/block.json
+#: src/blocks/rsvp/block.json
 msgctxt "block description"
 msgid "Enables members to easily confirm their attendance for an event."
 msgstr ""
 
 #: build/blocks/venue/block.json
+#: src/blocks/venue/block.json
 msgctxt "block title"
 msgid "Venue"
 msgstr ""
 
 #: build/blocks/venue/block.json
+#: src/blocks/venue/block.json
 msgctxt "block description"
 msgid "Provides information about an event venue."
 msgstr ""
