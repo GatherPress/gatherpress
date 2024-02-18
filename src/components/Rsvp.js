@@ -371,8 +371,16 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 					{0 < rsvpGuests && (
 						<div className="gp-status__guests">
 							<span>
-								+ {sprintf( _n( '%d guest', '%d guests', {rsvpGuests}, 'gatherpress' ), {rsvpGuests} )}
-								
+								+ {sprintf(
+									/* translators: %d: Number of guests. */
+									_n(
+										'%d guest',
+										'%d guests',
+										{rsvpGuests},
+										'gatherpress'
+									),
+									{rsvpGuests}
+								)}								
 							</span>
 						</div>
 					)}
