@@ -23,7 +23,7 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 > Talk to Mervin for access to `gatherpress.org` via SSH and WP Admin login.
 
 # Credits
-[mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [pbrocks](https://profiles.wordpress.org/pbrocks/), [jmarx](https://profiles.wordpress.org/jmarx/), [hauvong](https://profiles.wordpress.org/hauvong/), [prashantabellad](https://profiles.wordpress.org/prashantabellad/), [prayagm](https://profiles.wordpress.org/prayagm/), [patricia70](https://profiles.wordpress.org/patricia70/), [meaganhanes](https://profiles.wordpress.org/meaganhanes/), [calebthedev](https://profiles.wordpress.org/calebthedev/), [cameronbarrett](https://profiles.wordpress.org/cameronbarrett/), [courane01](https://profiles.wordpress.org/courane01/), [newyorkerlaura](https://profiles.wordpress.org/newyorkerlaura/), [phoopee3](https://profiles.wordpress.org/phoopee3/)
+[mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [pbrocks](https://profiles.wordpress.org/pbrocks/), [jmarx](https://profiles.wordpress.org/jmarx/), [prashantabellad](https://profiles.wordpress.org/prashantabellad/), [prayagm](https://profiles.wordpress.org/prayagm/), [patricia70](https://profiles.wordpress.org/patricia70/), [meaganhanes](https://profiles.wordpress.org/meaganhanes/), [calebthedev](https://profiles.wordpress.org/calebthedev/), [javiercasares](https://profiles.wordpress.org/javiercasares/), [linusx007] (https://profiles.wordpress.org/linusx007/), [cameronbarrett](https://profiles.wordpress.org/cameronbarrett/), [courane01](https://profiles.wordpress.org/courane01/), [newyorkerlaura](https://profiles.wordpress.org/newyorkerlaura/), [phoopee3](https://profiles.wordpress.org/phoopee3/), [hauvong](https://profiles.wordpress.org/hauvong/), [deshabhishek007](https://profiles.wordpress.org/deshabhishek007/), [jeffpaul](https://profiles.wordpress.org/jeffpaul/), [michelleames](https://profiles.wordpress.org/michelleames/)
 
 ---
 
@@ -33,6 +33,7 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 
 - Event Scheduling: set dates, times, and provide event information details.
 - Attendee registration.
+- Ability for attendees to be listed anonymously (only administrators will see their names).
 - Emailing system: to send emails to all the group members, or a specific event attendees, non-attendees, and those on the waiting list.
 - In person events: add the venue, with an optional map (refer to point 4)
 - Online event management: add the video meeting URL.
@@ -44,7 +45,6 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 
 ## Upcoming features
 
-- Ability for attendees to be listed anonymously (only administrators will see their names).
 - Allow attendees to add guests.
 - Import events from meetup.com with an addon plugin (currently in development).
 - Recurring events.
@@ -64,6 +64,7 @@ Go to WP Admin > GatherPress  > Settings.
 You can change different settings such as:
 - Show publish date as event date for events.
 - The default maximum limit of attendees to an event.
+- Anonymous RSVP.
 - Date Format.
 - Time Format.
 - Display the timezone for scheduled events.
@@ -76,11 +77,12 @@ Go to the WP Admin > Events > Add new
 By default, a few blocks are populated, you can keep them or delete them, you can add more blocks.
 
 - The Event date block allows you to define the start and end dates and times of your event, as well as the timezone.
-- The Add to Calendar block enables your users to add the event to their preferred calendar directly from the published event on the frontend
+- The Add to Calendar block enables your users to add the event to their preferred calendar directly from the published event on the frontend.
 - The Venue block lets you choose whether your event is online or in a venue. You can select the venue (refer to point 4) and the map settings: display, zoom level, type of map and map height.
 - The RSVP block enables members to easily confirm they attend or do not attend an event.
 - The description of the event is a normal paragraph block. You can add anything with any block here.
 - The RSVP Response block displays a list of members who have confirmed they attend or do not attend an event. 
+- The event settings allow you to modify all the above mentioned settings, enable or disable anonymous RSVP, choose Topics, notify members or attendees, as well as standard WordPress settings such as the featured image, the excerpt, allow or disallow comments, etc.
 
 ### 4. Venues
 Go to WP Admin > GatherPress  > Venues
