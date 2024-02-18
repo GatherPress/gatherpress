@@ -153,6 +153,19 @@
     ),
     2 => 
     array (
+      'id' => 7673952,
+      'name' => 'Carsten Bach',
+      'link' => 'https://profiles.wordpress.org/author/carstenbach/',
+      'slug' => 'carstenbach',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    3 => 
+    array (
       'id' => 2451432,
       'name' => 'Courtney Robertson',
       'link' => 'https://profiles.wordpress.org/author/courane01/',
@@ -164,7 +177,7 @@
         96 => '//www.gravatar.com/avatar/03ff681abf60368b6ce5f5edcf9be310?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    3 => 
+    4 => 
     array (
       'id' => 5876920,
       'name' => 'Abhishek Deshpande',
@@ -177,7 +190,7 @@
         96 => '//www.gravatar.com/avatar/dd0f1b658cad711cdbcc1ffe4cfefd47?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    4 => 
+    5 => 
     array (
       'id' => 11704207,
       'name' => 'hauvong',
@@ -190,7 +203,7 @@
         96 => '//www.gravatar.com/avatar/b3bb6b6a8a28be5c130db072cd4b553e?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    5 => 
+    6 => 
     array (
       'id' => 5645739,
       'name' => 'Jeffrey Paul',
@@ -203,7 +216,7 @@
         96 => '//www.gravatar.com/avatar/8ac4ec4b1f9cb342e59ed5127f050d24?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    6 => 
+    7 => 
     array (
       'id' => 13234268,
       'name' => 'Michelle Frechette',
@@ -216,7 +229,7 @@
         96 => '//www.gravatar.com/avatar/c6711ad7886201b5e585c96535f2229d?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    7 => 
+    8 => 
     array (
       'id' => 14692152,
       'name' => 'Laura Byrne',
@@ -229,7 +242,7 @@
         96 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    8 => 
+    9 => 
     array (
       'id' => 16994801,
       'name' => 'Paul Barthmaier (pbrocks)',
@@ -242,7 +255,7 @@
         96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    9 => 
+    10 => 
     array (
       'id' => 15490728,
       'name' => 'Jason Lawton',
