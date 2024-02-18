@@ -685,7 +685,7 @@ class Rest_Api {
 		// - The user is attending the event.
 		// - The event is in the future.
 		// - The code is not in an admin context.
-		$response->data['meta']['_online_event_link'] = $event->maybe_get_online_event_link();
+		$response->data['meta']['online_event_link'] = $event->maybe_get_online_event_link();
 
 		return $response;
 	}

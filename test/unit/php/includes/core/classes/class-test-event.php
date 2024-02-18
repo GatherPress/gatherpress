@@ -72,17 +72,17 @@ class Test_Event extends Base {
 		$args = Event::get_post_meta_registration_args();
 
 		$this->assertIsArray(
-			$args['_online_event_link'],
-			'Failed to assert that _online_event_link is an array.'
+			$args['online_event_link'],
+			'Failed to assert that online_event_link is an array.'
 		);
 		$this->assertIsArray(
 			$args['enable_anonymous_rsvp'],
-			'Failed to assert that _online_event_link is an array.'
+			'Failed to assert that online_event_link is an array.'
 		);
 
 		$this->mock->user( 'subscriber' );
 		$this->assertFalse(
-			$args['_online_event_link']['auth_callback'](),
+			$args['online_event_link']['auth_callback'](),
 			'Failed to assert that user cannot edit posts.'
 		);
 		$this->assertFalse(
@@ -92,7 +92,7 @@ class Test_Event extends Base {
 
 		$this->mock->user( 'admin' );
 		$this->assertTrue(
-			$args['_online_event_link']['auth_callback'](),
+			$args['online_event_link']['auth_callback'](),
 			'Failed to assert that user can edit posts.'
 		);
 		$this->assertTrue(
@@ -448,7 +448,7 @@ class Test_Event extends Base {
 		$event      = new Event( $event_id );
 		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 
-		update_post_meta( $venue->ID, '_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'venue_information', $venue_info );
 		wp_set_post_terms( $event_id, '_unit-test-venue', Venue::TAXONOMY );
 
 		$response = $event->get_venue_information();
@@ -549,7 +549,7 @@ class Test_Event extends Base {
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
-		update_post_meta( $venue->ID, '_venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'venue_information', $venue_info );
 		wp_set_post_terms( $post->ID, '_unit-test-venue', Venue::TAXONOMY );
 
 		$event->save_datetimes( $params );
@@ -827,7 +827,7 @@ class Test_Event extends Base {
 
 		$event->save_datetimes( $params );
 
-		update_post_meta( $event_id, '_online_event_link', $link );
+		update_post_meta( $event_id, 'online_event_link', $link );
 
 		$this->assertEmpty(
 			$event->maybe_get_online_event_link(),

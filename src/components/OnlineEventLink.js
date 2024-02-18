@@ -28,13 +28,13 @@ const OnlineEventLink = () => {
 	const onlineEventLinkMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
-				._online_event_link
+				.online_event_link
 	);
 	const [onlineEventLink, setOnlineEventLink] = useState(
 		onlineEventLinkMetaData
 	);
 	const updateEventLink = (value) => {
-		const meta = { _online_event_link: value };
+		const meta = { online_event_link: value };
 
 		editPost({ meta });
 		setOnlineEventLink(value);
