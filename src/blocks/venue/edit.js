@@ -54,7 +54,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const onlineEventLink = useSelect(
 		(select) =>
 			select('core/editor')?.getEditedPostAttribute('meta')
-				?._online_event_link
+				?.online_event_link
 	);
 
 	let { mapShow } = attributes;
@@ -62,7 +62,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	let venueInformationMetaData = useSelect(
 		(select) =>
 			select('core/editor')?.getEditedPostAttribute('meta')
-				?._venue_information
+				?.venue_information
 	);
 
 	if (venueInformationMetaData) {

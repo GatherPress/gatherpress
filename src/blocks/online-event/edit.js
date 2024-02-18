@@ -32,7 +32,7 @@ const Edit = ({ isSelected }) => {
 	const onlineEventLink = useSelect(
 		(select) =>
 			select('core/editor')?.getEditedPostAttribute('meta')
-				?._online_event_link
+				?.online_event_link
 	);
 
 	return (

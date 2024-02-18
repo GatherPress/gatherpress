@@ -30,7 +30,7 @@ const VenueInformation = () => {
 			...venueInformationMetaData,
 			[key]: value,
 		});
-		const meta = { _venue_information: payload };
+		const meta = { venue_information: payload };
 
 		editPost({ meta });
 	};
@@ -38,7 +38,7 @@ const VenueInformation = () => {
 	let venueInformationMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
-				._venue_information
+				.venue_information
 	);
 
 	if (venueInformationMetaData) {
