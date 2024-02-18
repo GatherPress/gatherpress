@@ -9,7 +9,7 @@ import { Tooltip } from 'react-tooltip';
  * WordPress dependencies.
  */
 import { useState } from '@wordpress/element';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _x, sprintf } from '@wordpress/i18n';
 import { ButtonGroup, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
@@ -224,7 +224,11 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 			buttonLabel = __('Attend', 'gatherpress');
 		} else {
 			buttonStatus = 'not_attending';
-			buttonLabel = __('Not Attending', 'gatherpress');
+			buttonLabel = _x(
+				'Not Attending',
+				'action of not attending',
+				'gatherpress'
+			);
 		}
 
 		return (
