@@ -1,15 +1,14 @@
 /**
  * External dependencies.
  */
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, jest, it } from '@jest/globals';
 import moment from 'moment';
 import 'moment-timezone';
 
 /**
  * WordPress dependencies.
  */
-import { select } from '@wordpress/data';
-import { store as noticesStore } from '@wordpress/notices';
+import { dispatch } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -19,6 +18,15 @@ import {
 	hasEventPastNotice,
 } from '../../../../../src/helpers/event';
 import { dateTimeMomentFormat } from '../../../../../src/helpers/datetime';
+
+// Mock the @wordpress/data module
+jest.mock('@wordpress/data', () => ({
+	select: jest.fn(),
+	dispatch: jest.fn().mockReturnValue({
+		removeNotice: jest.fn(),
+		createNotice: jest.fn(),
+	}),
+}));
 
 /**
  * Coverage for hasEventPast.
@@ -36,6 +44,11 @@ describe('hasEventPast', () => {
 			},
 		};
 
+		require('@wordpress/data').select.mockImplementation((store) => ({
+			getCurrentPostType: () =>
+				store === 'core/editor' ? 'gp_event' : null,
+		}));
+
 		expect(hasEventPast()).toBe(true);
 	});
 
@@ -51,6 +64,11 @@ describe('hasEventPast', () => {
 			},
 		};
 
+		require('@wordpress/data').select.mockImplementation((store) => ({
+			getCurrentPostType: () =>
+				store === 'core/editor' ? 'gp_event' : null,
+		}));
+
 		expect(hasEventPast()).toBe(false);
 	});
 });
@@ -62,9 +80,7 @@ describe('hasEventPastNotice', () => {
 	it('no notice if not set', () => {
 		hasEventPastNotice();
 
-		const notices = select(noticesStore).getNotices();
-
-		expect(notices).toHaveLength(0);
+		expect(dispatch('core/notices').createNotice).not.toHaveBeenCalled();
 	});
 
 	it('notice is set', () => {
@@ -79,10 +95,20 @@ describe('hasEventPastNotice', () => {
 			},
 		};
 
+		require('@wordpress/data').select.mockImplementation((store) => ({
+			getCurrentPostType: () =>
+				store === 'core/editor' ? 'gp_event' : null,
+		}));
+
 		hasEventPastNotice();
 
-		const notices = select(noticesStore).getNotices();
-
-		expect(notices[0].content).toBe('This event has already past.');
+		expect(dispatch('core/notices').createNotice).toHaveBeenCalledWith(
+			'warning',
+			'This event has already past.',
+			{
+				id: 'gp_event_past',
+				isDismissible: false,
+			}
+		);
 	});
 });
