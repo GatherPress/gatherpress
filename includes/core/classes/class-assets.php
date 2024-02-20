@@ -176,7 +176,7 @@ class Assets {
 			array_keys( $settings->get_sub_pages() )
 		);
 
-		// Had to add the profile paged to the check since it uses some of the same assets.
+		// Had to add the profile page to the check since it uses some of the same assets.
 		if ( in_array( $hook, $setting_hooks, true ) || 'profile.php' === $hook ) {
 			// Need to load block styling for some dynamic fields.
 			wp_enqueue_style( 'wp-edit-blocks' );
