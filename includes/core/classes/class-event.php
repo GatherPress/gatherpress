@@ -240,10 +240,17 @@ class Event {
 	 * @return string The formatted display date and time or an em dash if not available.
 	 */
 	public function get_display_datetime(): string {
+		$user_id     = get_current_user_id();
 		$settings    = Settings::get_instance();
 		$date_format = $settings->get_value( 'general', 'formatting', 'date_format' );
 		$time_format = $settings->get_value( 'general', 'formatting', 'time_format' );
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
+
+		// If there is a user and they have custom date/time formats, use those.
+		if ($user_id) {
+			$date_format = get_user_meta( $user_id, 'gp_date_format', true ) ?? $date_format;
+			$time_format = get_user_meta( $user_id, 'gp_time_format', true ) ?? $time_format;
+		}
 
 		if ( $this->is_same_date() ) {
 			$start = $this->get_datetime_start( $date_format . ' ' . $time_format );
@@ -549,6 +556,10 @@ class Event {
 	public function get_datetime(): array {
 		global $wpdb;
 
+		// Get the users timezone from the profile.
+		$user_id        = get_current_user_id();
+		$gp_timezone    = esc_attr( get_user_meta( $user_id, 'gp_timezone', true ) );
+
 		$default = array(
 			'datetime_start'     => '',
 			'datetime_start_gmt' => '',
@@ -570,6 +581,11 @@ class Event {
 			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
 			set_transient( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
+		}
+
+		// If not in an admin page, use the user's timezone if set.
+		if ( ! is_admin() && $user_id && !empty( $gp_timezone ) ) {
+			$data['timezone'] = !empty( $gp_timezone ) ? $gp_timezone : $data['timezone'];
 		}
 
 		return array_merge(

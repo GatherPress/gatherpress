@@ -71,6 +71,9 @@ class User {
 	 */
 	public function profile_fields( WP_User $user ): void {
 		$event_updates_opt_in = get_user_meta( $user->ID, 'gp-event-updates-opt-in', true );
+		$gp_date_format       = get_user_meta( $user->ID, 'gp_date_format', true );
+		$gp_time_format       = get_user_meta( $user->ID, 'gp_time_format', true );
+		$gp_timezone          = get_user_meta( $user->ID, 'gp_timezone', true );
 
 		// Checkbox is selected by default. '1' is on, '0' is off.
 		if ( '0' !== $event_updates_opt_in ) {
@@ -81,6 +84,16 @@ class User {
 			sprintf( '%s/includes/templates/admin/user/notifications.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'event_updates_opt_in' => $event_updates_opt_in,
+			),
+			true
+		);
+
+		Utility::render_template(
+			sprintf( '%s/includes/templates/admin/user/date-time.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'date_format' => $gp_date_format,
+				'time_format' => $gp_time_format,
+				'timezone'    => $gp_timezone,
 			),
 			true
 		);
@@ -110,5 +123,8 @@ class User {
 		}
 
 		update_user_meta( $user_id, 'gp-event-updates-opt-in', intval( filter_input( INPUT_POST, 'gp-event-updates-opt-in' ) ) );
+		update_user_meta( $user_id, 'gp_date_format', sanitize_text_field( filter_input( INPUT_POST, 'gp_date_format' ) ) );
+		update_user_meta( $user_id, 'gp_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gp_time_format' ) ) );
+		update_user_meta( $user_id, 'gp_timezone', sanitize_text_field( filter_input( INPUT_POST, 'gp_timezone' ) ) );
 	}
 }
