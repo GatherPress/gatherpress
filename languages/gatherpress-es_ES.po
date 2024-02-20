@@ -2,27 +2,26 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GatherPress\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/gatherpress\n"
-"POT-Creation-Date: 2024-01-16T14:36:19+00:00\n"
-"PO-Revision-Date: 2024-01-22 08:02+0100\n"
+"POT-Creation-Date: 2024-02-17T16:38:12+00:00\n"
+"PO-Revision-Date: 2024-02-18 09:25+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es_ES\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.4.1\n"
+"X-Generator: Poedit 3.4.2\n"
 "X-Loco-Version: 2.6.6; wp-6.4.2\n"
 "X-Domain: gatherpress\n"
 
 #. Plugin Name of the plugin
-#: includes/core/classes/class-setup.php:263
+#: includes/core/classes/class-setup.php:264
 msgid "GatherPress"
 msgstr "GatherPress"
 
 #. Plugin URI of the plugin
-#. Author URI of the plugin
-msgid "https://gatherpress.org/"
-msgstr "https://gatherpress.org/"
+msgid "https://github.com/GatherPress/gatherpress"
+msgstr "https://github.com/GatherPress/gatherpress"
 
 #. Description of the plugin
 msgid "Powering Communities with WordPress."
@@ -32,65 +31,69 @@ msgstr "Impulsando comunidades con WordPress."
 msgid "The GatherPress Community"
 msgstr "La comunidad de GatherPress"
 
+#. Author URI of the plugin
+msgid "https://gatherpress.org/"
+msgstr "https://gatherpress.org/"
+
 #: build/blocks/add-to-calendar/render.php:23
 #: build/blocks/add-to-calendar/index.js:1
 msgid "Add to calendar"
 msgstr "Añadir al calendario"
 
-#: includes/core/classes/class-event.php:116
+#: includes/core/classes/class-event.php:111
 msgctxt "Post Type General Name"
 msgid "Events"
 msgstr "Eventos"
 
-#: includes/core/classes/class-event.php:117
+#: includes/core/classes/class-event.php:112
 msgctxt "Post Type Singular Name"
 msgid "Event"
 msgstr "Evento"
 
-#: includes/core/classes/class-event.php:118
+#: includes/core/classes/class-event.php:113
 msgid "Events"
 msgstr "Eventos"
 
-#: includes/core/classes/class-event.php:119
+#: includes/core/classes/class-event.php:114
 msgid "All Events"
 msgstr "Todos los eventos"
 
-#: includes/core/classes/class-event.php:120
+#: includes/core/classes/class-event.php:115
 msgid "View Event"
 msgstr "Ver evento"
 
-#: includes/core/classes/class-event.php:121
+#: includes/core/classes/class-event.php:116
 msgid "Add New Event"
 msgstr "Añadir nuevo evento"
 
-#: includes/core/classes/class-event.php:122
+#: includes/core/classes/class-event.php:117
 #: includes/core/classes/class-venue.php:101
 msgid "Add New"
 msgstr "Añadir nuevo"
 
-#: includes/core/classes/class-event.php:123
+#: includes/core/classes/class-event.php:118
 msgid "Edit Event"
 msgstr "Editar evento"
 
-#: includes/core/classes/class-event.php:124
+#: includes/core/classes/class-event.php:119
 msgid "Update Event"
 msgstr "Actualizar evento"
 
-#: includes/core/classes/class-event.php:125
+#: includes/core/classes/class-event.php:120
 msgid "Search Events"
 msgstr "Buscar eventos"
 
-#: includes/core/classes/class-event.php:126
+#: includes/core/classes/class-event.php:121
 #: includes/core/classes/class-venue.php:105
 msgid "Not Found"
 msgstr "No encontrado"
 
-#: includes/core/classes/class-event.php:127
+#: includes/core/classes/class-event.php:122
 #: includes/core/classes/class-venue.php:106
 msgid "Not found in Trash"
 msgstr "No encontrado en la papelera"
 
-#: includes/core/classes/class-event.php:141
+#: includes/core/classes/class-event.php:136
 msgid ""
 "Add a description of the event and let people know what to expect, including "
 "the agenda, what they need to bring, and how to find the group."
@@ -99,123 +102,124 @@ msgstr ""
 "esperar, incluido el orden del día, lo que tienen que llevar y cómo "
 "encontrar al grupo."
 
-#: includes/core/classes/class-event.php:203
+#: includes/core/classes/class-event.php:207
 msgctxt "taxonomy general name"
 msgid "Topics"
 msgstr "Temáticas"
 
-#: includes/core/classes/class-event.php:204
+#: includes/core/classes/class-event.php:208
 msgctxt "taxonomy singular name"
 msgid "Topic"
 msgstr "Temática"
 
-#: includes/core/classes/class-event.php:205
+#: includes/core/classes/class-event.php:209
 msgid "Search Topics"
 msgstr "Buscar temática"
 
-#: includes/core/classes/class-event.php:206
+#: includes/core/classes/class-event.php:210
 msgid "All Topics"
 msgstr "Todas las temáticas"
 
-#: includes/core/classes/class-event.php:207
+#: includes/core/classes/class-event.php:211
 msgid "View Topic"
 msgstr "Ver tema"
 
-#: includes/core/classes/class-event.php:208
+#: includes/core/classes/class-event.php:212
 msgid "Parent Topic"
 msgstr "Temática principal"
 
-#: includes/core/classes/class-event.php:209
+#: includes/core/classes/class-event.php:213
 msgid "Parent Topic:"
 msgstr "Pregunta principal:"
 
-#: includes/core/classes/class-event.php:210
+#: includes/core/classes/class-event.php:214
 msgid "Edit Topic"
 msgstr "Editar temática"
 
-#: includes/core/classes/class-event.php:211
+#: includes/core/classes/class-event.php:215
 msgid "Update Topic"
 msgstr "Actualizar temática"
 
-#: includes/core/classes/class-event.php:212
+#: includes/core/classes/class-event.php:216
 msgid "Add New Topic"
 msgstr "Añadir nuevo tema"
 
-#: includes/core/classes/class-event.php:213
+#: includes/core/classes/class-event.php:217
 msgid "New Topic Name"
 msgstr "Nuevo nombre de temática"
 
-#: includes/core/classes/class-event.php:214
+#: includes/core/classes/class-event.php:218
 msgid "No Topics Found"
 msgstr "No se han encontrado temáticas"
 
-#: includes/core/classes/class-event.php:215
+#: includes/core/classes/class-event.php:219
 msgid "Back to Topics"
 msgstr "Volver a temáticas"
 
-#: includes/core/classes/class-event.php:216
+#: includes/core/classes/class-event.php:220
 #: build/blocks/events-list/index.js:2
 msgid "Topics"
 msgstr "Temáticas"
 
 #. translators: %1$s: start datetime, %2$s: end datetime.
-#: includes/core/classes/class-event.php:254
+#: includes/core/classes/class-event.php:258
 msgid "%1$s to %2$s"
 msgstr "%1$s a %2$s"
 
-#: includes/core/classes/class-event.php:257
+#: includes/core/classes/class-event.php:261
 msgid "—"
 msgstr "—"
 
-#: includes/core/classes/class-event.php:673
+#: includes/core/classes/class-event.php:677
 msgid "Google Calendar"
 msgstr "Calendario de Google"
 
-#: includes/core/classes/class-event.php:677
+#: includes/core/classes/class-event.php:681
 msgid "iCal"
 msgstr "iCal"
 
-#: includes/core/classes/class-event.php:681
+#: includes/core/classes/class-event.php:685
 msgid "Outlook"
 msgstr "Outlook"
 
-#: includes/core/classes/class-event.php:685
+#: includes/core/classes/class-event.php:689
 msgid "Yahoo Calendar"
 msgstr "Calendario de Yahoo"
 
 #. translators: %s: event link.
-#: includes/core/classes/class-event.php:840
+#: includes/core/classes/class-event.php:844
 msgid "For details go to %s"
 msgstr "Para obtener más información, visita %s"
 
 #. translators: %s: event title.
-#: includes/core/classes/class-rest-api.php:438
+#: includes/core/classes/class-rest-api.php:441
 msgid "📅 %s"
 msgstr "📅 %s"
 
-#: includes/core/classes/class-rsvp.php:327
+#: includes/core/classes/class-rsvp.php:353
+#: includes/core/classes/class-rsvp.php:358
 msgid "Anonymous"
 msgstr "Anónimo"
 
-#: includes/core/classes/class-rsvp.php:392
+#: includes/core/classes/class-rsvp.php:422
 #: includes/core/classes/settings/class-leadership.php:134
 msgid "Member"
 msgstr "Miembro"
 
 #: includes/core/classes/class-settings.php:161
 #: includes/core/classes/class-settings.php:162
-#: includes/core/classes/class-setup.php:175
+#: includes/core/classes/class-setup.php:176
 msgid "Settings"
 msgstr "Ajustes"
 
-#: includes/core/classes/class-setup.php:367
+#: includes/core/classes/class-setup.php:368
 #: build/blocks/online-event/index.js:1
 #: build/blocks/online-event/online-event.js:1 build/blocks/venue/index.js:1
 #: build/blocks/venue/venue.js:1
 msgid "Online event"
 msgstr "Evento en línea"
 
-#: includes/core/classes/class-setup.php:545
+#: includes/core/classes/class-setup.php:547
 msgid "Event date &amp; time"
 msgstr "Fecha y hora del evento"
 
@@ -300,11 +304,28 @@ msgstr "Límite máximo de asistencia"
 msgid "The default maximum limit of attendees to an event."
 msgstr "El límite máximo predeterminado de asistentes a un evento."
 
-#: includes/core/classes/settings/class-general.php:119
+#: includes/core/classes/settings/class-general.php:118
+msgid "Anonymous RSVP"
+msgstr "Confirmación de asistencia anónima"
+
+#: includes/core/classes/settings/class-general.php:120
+msgid ""
+"Set this as your default, but you can still override it for each event as "
+"you like."
+msgstr ""
+"Establecer como predeterminado, pero aún puedes anularlo para cada evento "
+"como desees."
+
+#: includes/core/classes/settings/class-general.php:122
+msgid "Enable Anonymous RSVP for New Events."
+msgstr "Habilita la confirmación de asistencia anónima para nuevos eventos."
+
+#: includes/core/classes/settings/class-general.php:132
 msgid "Date & Time Formatting"
 msgstr "Formato de fecha y hora"
 
-#: includes/core/classes/settings/class-general.php:120
+#: includes/core/classes/settings/class-general.php:133
+#: build/blocks/events-list/index.js:2
 msgid ""
 "For more information read the <a href=\"https://wordpress.org/documentation/"
 "article/customize-date-and-time-format/\">Documentation on date and time "
@@ -314,53 +335,53 @@ msgstr ""
 "article/customize-date-and-time-format/\">documentación sobre el formato de "
 "fecha y hora</a>."
 
-#: includes/core/classes/settings/class-general.php:124
+#: includes/core/classes/settings/class-general.php:137
 msgid "Date Format"
 msgstr "Formato de fecha"
 
-#: includes/core/classes/settings/class-general.php:127
+#: includes/core/classes/settings/class-general.php:140
 msgid "Format of date for scheduled events."
 msgstr "Formato de fecha para los eventos programados."
 
-#: includes/core/classes/settings/class-general.php:137
+#: includes/core/classes/settings/class-general.php:150
 msgid "Time Format"
 msgstr "Formato de hora"
 
-#: includes/core/classes/settings/class-general.php:140
+#: includes/core/classes/settings/class-general.php:153
 msgid "Format of time for scheduled events."
 msgstr "Formato de tiempo para los eventos programados."
 
-#: includes/core/classes/settings/class-general.php:150
+#: includes/core/classes/settings/class-general.php:163
 msgid "Show Timezone"
 msgstr "Mostrar zona horaria"
 
-#: includes/core/classes/settings/class-general.php:153
+#: includes/core/classes/settings/class-general.php:166
 msgid "Display the timezone for scheduled events."
 msgstr "Muestra la zona horaria de los eventos programados."
 
-#: includes/core/classes/settings/class-general.php:163
+#: includes/core/classes/settings/class-general.php:176
 msgid "Event Archive Pages"
 msgstr "Páginas de archivo de eventos"
 
-#: includes/core/classes/settings/class-general.php:164
+#: includes/core/classes/settings/class-general.php:177
 msgid "GatherPress allows you to set event archives to pages you have created."
 msgstr ""
 "GatherPress te permite establecer archivos de eventos en las páginas que ha "
 "creado."
 
-#: includes/core/classes/settings/class-general.php:168
+#: includes/core/classes/settings/class-general.php:181
 msgid "Upcoming Events"
 msgstr "Próximos eventos"
 
-#: includes/core/classes/settings/class-general.php:174
+#: includes/core/classes/settings/class-general.php:187
 msgid "Select Upcoming Events Archive Page"
 msgstr "Seleccionar página de archivo de próximos eventos"
 
-#: includes/core/classes/settings/class-general.php:181
+#: includes/core/classes/settings/class-general.php:194
 msgid "Past Events"
 msgstr "Eventos pasados"
 
-#: includes/core/classes/settings/class-general.php:187
+#: includes/core/classes/settings/class-general.php:200
 msgid "Select Past Events Archive Page"
 msgstr "Seleccionar página de archivo de eventos pasados"
 
@@ -467,6 +488,22 @@ msgstr "permitiendo el registro de usuarios aquí"
 msgid "Dismiss forever"
 msgstr "Descartar para siempre"
 
+#: includes/templates/admin/user/notifications.php:15
+msgid "Notifications"
+msgstr "Notificaciones"
+
+#: includes/templates/admin/user/notifications.php:19
+msgid "Email"
+msgstr "Correo electrónico"
+
+#: includes/templates/admin/user/notifications.php:29
+msgid ""
+"Yes, I want to receive updates and information about events from the "
+"organizers."
+msgstr ""
+"Sí, quiero recibir actualizaciones e información sobre eventos de los "
+"organizadores."
+
 #: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
 msgid "This event has already past."
 msgstr "Este evento ya ha pasado."
@@ -519,7 +556,8 @@ msgstr "Lista de espera"
 #: build/blocks/events-list/events-list.js:1
 #: build/blocks/events-list/index.js:1 build/blocks/rsvp-response/index.js:1
 #: build/blocks/rsvp-response/rsvp-response.js:1 build/blocks/rsvp/index.js:1
-#: build/blocks/rsvp/rsvp.js:1 build/modals.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgctxt "responded not attending"
 msgid "Not Attending"
 msgstr "No asistirán"
 
@@ -623,6 +661,13 @@ msgstr "Cerrar"
 msgid "Attend"
 msgstr "Asistir"
 
+#: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/index.js:1 build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/rsvp.js:1
+msgctxt "action of not attending"
+msgid "Not Attending"
+msgstr "No asistirán"
+
 #. translators: %s: button label.
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
@@ -632,6 +677,18 @@ msgid ""
 msgstr ""
 "Para establecer o cambiar tu estado de asistencia, simplemente haz clic en "
 "el botón %s a continuación."
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:2
+msgid "Only admins will see your identity."
+msgstr "Solo los administradores verán tu identidad."
+
+#: build/blocks/events-list/events-list.js:2
+#: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
+#: build/blocks/rsvp/rsvp.js:2
+msgid "List me as anonymous."
+msgstr "Ponerme en la lista como anónimo."
 
 #: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/index.js:2 build/blocks/rsvp/index.js:2
@@ -660,6 +717,10 @@ msgstr "Próximos"
 #: build/blocks/events-list/index.js:2
 msgid "Past"
 msgstr "Pasado"
+
+#: build/blocks/events-list/index.js:2
+msgid "Date & time format"
+msgstr "Formato de fecha y hora"
 
 #: build/blocks/events-list/index.js:2
 msgid "Maximum number of events to display"
@@ -745,6 +806,18 @@ msgstr "Nadie fue a este evento."
 #: build/blocks/rsvp-response/rsvp-response.js:1
 msgid "Wait Listed"
 msgstr "Lista de espera"
+
+#: build/blocks/rsvp-response/index.js:1
+msgid "Attendees"
+msgstr "Asistentes"
+
+#: build/blocks/rsvp-response/index.js:1
+msgid "Edit"
+msgstr "Editar"
+
+#: build/blocks/rsvp-response/index.js:1
+msgid "Preview"
+msgstr "Vista previa"
 
 #: build/blocks/venue/index.js:1 build/panels.js:1
 msgid "No venue selected."
@@ -833,12 +906,21 @@ msgid "All Members"
 msgstr "Todos los miembros"
 
 #: build/modals.js:1
+msgctxt "list of people not attending"
+msgid "Not Attending"
+msgstr "No asistirán"
+
+#: build/modals.js:1
 msgid "Confirm you are ready to send?"
 msgstr "¿Confirmas que estás listo para enviar?"
 
 #: build/modals.js:1
 msgid "Send Email"
 msgstr "Enviar correo electrónico"
+
+#: build/panels.js:1
+msgid "Enable Anonymous RSVP"
+msgstr "Habilitar confirmación de asistencia anónima"
 
 #: build/panels.js:1
 msgid "Send an event update"

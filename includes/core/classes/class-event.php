@@ -170,7 +170,7 @@ class Event {
 	 */
 	public static function get_post_meta_registration_args(): array {
 		return array(
-			'_online_event_link'    => array(
+			'online_event_link'     => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -656,7 +656,7 @@ class Event {
 		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {
-			$venue_meta                        = json_decode( get_post_meta( $venue->ID, '_venue_information', true ) );
+			$venue_meta                        = json_decode( get_post_meta( $venue->ID, 'venue_information', true ) );
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['website']      = $venue_meta->website ?? '';
@@ -948,7 +948,7 @@ class Event {
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */
 	public function maybe_get_online_event_link(): string {
-		$event_link = (string) get_post_meta( $this->event->ID, '_online_event_link', true );
+		$event_link = (string) get_post_meta( $this->event->ID, 'online_event_link', true );
 
 		/**
 		 * Filters whether to force the display of the online event link.

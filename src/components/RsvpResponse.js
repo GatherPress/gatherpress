@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import { useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, _x } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
@@ -46,7 +46,11 @@ const RsvpResponse = () => {
 		{
 			title:
 				false === hasEventPast
-					? __('Not Attending', 'gatherpress')
+					? _x(
+							'Not Attending',
+							'responded not attending',
+							'gatherpress'
+					  )
 					: __("Didn't Go", 'gatherpress'),
 			value: 'not_attending',
 		},

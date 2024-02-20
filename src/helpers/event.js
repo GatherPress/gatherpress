@@ -45,7 +45,10 @@ export function hasEventPast() {
 		getTimeZone()
 	);
 
-	return moment.tz(getTimeZone()).valueOf() > dateTimeEnd.valueOf();
+	return (
+		'gp_event' === select('core/editor')?.getCurrentPostType() &&
+		moment.tz(getTimeZone()).valueOf() > dateTimeEnd.valueOf()
+	);
 }
 
 /**

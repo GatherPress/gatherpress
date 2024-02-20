@@ -4,7 +4,7 @@ Tags:              events, event, meetup, community
 License:           GNU General Public License v2.0 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 Tested up to:      6.4
-Stable tag:        0.27.0
+Stable tag:        0.28.0
 
 GatherPress, powering our community's event management needs.
 
