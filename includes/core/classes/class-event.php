@@ -247,7 +247,7 @@ class Event {
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
 
 		// If there is a user and they have custom date/time formats, use those.
-		if ($user_id) {
+		if ( $user_id ) {
 			$date_format = get_user_meta( $user_id, 'gp_date_format', true ) ?? $date_format;
 			$time_format = get_user_meta( $user_id, 'gp_time_format', true ) ?? $time_format;
 		}
@@ -557,8 +557,8 @@ class Event {
 		global $wpdb;
 
 		// Get the users timezone from the profile.
-		$user_id        = get_current_user_id();
-		$gp_timezone    = esc_attr( get_user_meta( $user_id, 'gp_timezone', true ) );
+		$user_id     = get_current_user_id();
+		$gp_timezone = esc_attr( get_user_meta( $user_id, 'gp_timezone', true ) );
 
 		$default = array(
 			'datetime_start'     => '',
@@ -584,8 +584,8 @@ class Event {
 		}
 
 		// If not in an admin page, use the user's timezone if set.
-		if ( ! is_admin() && $user_id && !empty( $gp_timezone ) ) {
-			$data['timezone'] = !empty( $gp_timezone ) ? $gp_timezone : $data['timezone'];
+		if ( ! is_admin() && $user_id && ! empty( $gp_timezone ) ) {
+			$data['timezone'] = ! empty( $gp_timezone ) ? $gp_timezone : $data['timezone'];
 		}
 
 		return array_merge(
