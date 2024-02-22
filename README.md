@@ -10,7 +10,7 @@
 
 ## Overview
 
-GatherPress is the result of the WordPress community's desire for new event management tools that meet the diverse needs of event organizers and members.
+GatherPress, a plugin created by and for the WordPress community, is a response to the community's desire for novel event management tools that meet the diverse needs of event organizers and members. Its agenda and roadmap align with that of the WordPress community, ensuring that it evolves in tandem with our collective wants and needs.
 
 This project is for the collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and the grit sweat and love of **the community, for the community**.
 
@@ -39,6 +39,14 @@ We're creating the very network features we need to host events and gather well.
 - Recurring events.
 - Calendar block.
 - Email notification when event starts.
+
+## Requirements
+
+To run GatherPress, we recommend your host supports:
+
+- PHP version 7.4 or greater.
+- MySQL version 5.6 or greater, or, MariaDB version 10.0 or greather.
+- HTTPS support.
 
 ## Installation
 
