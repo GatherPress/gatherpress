@@ -16,6 +16,8 @@ This project is for the collaborative effort to build a compelling event managem
 
 We're creating the very network features we need to host events and gather well.
 
+![Demo](docs/media/GatherPress-demo-20240218.mp4)
+
 ## Features
 
 - Event Scheduling: set dates, times, and provide event information details.
@@ -46,9 +48,9 @@ We're creating the very network features we need to host events and gather well.
 
 ## How to Use
 
-### Configure Settings
+### Configure GatherPress
 
-Go to WP Admin > GatherPress  > Settings.
+In WP Admin, go to `Events`  > `Settings`.
 
 You can change different settings such as:
 - Show publish date as event date for events.
@@ -62,9 +64,9 @@ You can change different settings such as:
 
 ### Create an Event
 
-Go to the WP Admin > Events > Add new
+In WP Admin, go to `Events` > `Add New`.
 
-By default, a few blocks are populated, you can keep them or delete them, you can add more blocks.
+By default, a few blocks are populated, you can keep them or delete them and you can add more blocks.
 
 - The Event date block allows you to define the start and end dates and times of your event, as well as the timezone.
 - The Add to Calendar block enables your users to add the event to their preferred calendar directly from the published event on the frontend.
@@ -76,7 +78,7 @@ By default, a few blocks are populated, you can keep them or delete them, you ca
 
 ### Create a Venue
 
-Go to WP Admin > GatherPress  > Venues
+In WP Admin, go to `Events` > `Venues`.
 
 In the Venue block, you can define:
 - The full address, telephone, and website of the venue.
@@ -84,7 +86,7 @@ In the Venue block, you can define:
 
 ### Create an Event Topic
 
-Go to WP Admin > GatherPress  > Topics
+In WP Admin, go to `Events`  > `Topics`.
 
 Topics are like post categories, but for events.
 
