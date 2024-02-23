@@ -341,14 +341,46 @@ class Setup {
 		register_taxonomy(
 			Event::TAXONOMY,
 			Event::POST_TYPE,
-			Event::get_taxonomy_registration_args()
+			array(
+				'labels'            => array(
+					'name'              => _x( 'Topics', 'taxonomy general name', 'gatherpress' ),
+					'singular_name'     => _x( 'Topic', 'taxonomy singular name', 'gatherpress' ),
+					'search_items'      => __( 'Search Topics', 'gatherpress' ),
+					'all_items'         => __( 'All Topics', 'gatherpress' ),
+					'view_item'         => __( 'View Topic', 'gatherpress' ),
+					'parent_item'       => __( 'Parent Topic', 'gatherpress' ),
+					'parent_item_colon' => __( 'Parent Topic:', 'gatherpress' ),
+					'edit_item'         => __( 'Edit Topic', 'gatherpress' ),
+					'update_item'       => __( 'Update Topic', 'gatherpress' ),
+					'add_new_item'      => __( 'Add New Topic', 'gatherpress' ),
+					'new_item_name'     => __( 'New Topic Name', 'gatherpress' ),
+					'not_found'         => __( 'No Topics Found', 'gatherpress' ),
+					'back_to_items'     => __( 'Back to Topics', 'gatherpress' ),
+					'menu_name'         => __( 'Topics', 'gatherpress' ),
+				),
+				'hierarchical'      => true,
+				'public'            => true,
+				'show_ui'           => true,
+				'show_admin_column' => true,
+				'query_var'         => true,
+				'rewrite'           => array( 'slug' => 'topic' ),
+				'show_in_rest'      => true,
+			)
 		);
 
 		// Register Venue taxonomy.
 		register_taxonomy(
 			Venue::TAXONOMY,
 			Event::POST_TYPE,
-			Venue::get_taxonomy_registration_args()
+			array(
+				'labels'            => array(),
+				'hierarchical'      => false,
+				'public'            => true,
+				'show_ui'           => false,
+				'show_admin_column' => false,
+				'query_var'         => true,
+				'show_in_rest'      => true,
+			)
 		);
 	}
 

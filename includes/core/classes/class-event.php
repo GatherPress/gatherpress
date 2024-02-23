@@ -192,44 +192,6 @@ class Event {
 	}
 
 	/**
-	 * Get the registration arguments for the custom 'Topic' taxonomy.
-	 *
-	 * This method retrieves an array containing the registration arguments for the custom 'Topic' taxonomy.
-	 * These arguments define how the 'Topic' taxonomy behaves and is used in WordPress.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array The registration arguments for the 'Topic' taxonomy.
-	 */
-	public static function get_taxonomy_registration_args(): array {
-		return array(
-			'labels'            => array(
-				'name'              => _x( 'Topics', 'taxonomy general name', 'gatherpress' ),
-				'singular_name'     => _x( 'Topic', 'taxonomy singular name', 'gatherpress' ),
-				'search_items'      => __( 'Search Topics', 'gatherpress' ),
-				'all_items'         => __( 'All Topics', 'gatherpress' ),
-				'view_item'         => __( 'View Topic', 'gatherpress' ),
-				'parent_item'       => __( 'Parent Topic', 'gatherpress' ),
-				'parent_item_colon' => __( 'Parent Topic:', 'gatherpress' ),
-				'edit_item'         => __( 'Edit Topic', 'gatherpress' ),
-				'update_item'       => __( 'Update Topic', 'gatherpress' ),
-				'add_new_item'      => __( 'Add New Topic', 'gatherpress' ),
-				'new_item_name'     => __( 'New Topic Name', 'gatherpress' ),
-				'not_found'         => __( 'No Topics Found', 'gatherpress' ),
-				'back_to_items'     => __( 'Back to Topics', 'gatherpress' ),
-				'menu_name'         => __( 'Topics', 'gatherpress' ),
-			),
-			'hierarchical'      => true,
-			'public'            => true,
-			'show_ui'           => true,
-			'show_admin_column' => true,
-			'query_var'         => true,
-			'rewrite'           => array( 'slug' => 'topic' ),
-			'show_in_rest'      => true,
-		);
-	}
-
-	/**
 	 * Retrieve the formatted display date and time for the event.
 	 *
 	 * Returns a human-readable representation of the event's start and end date/time,

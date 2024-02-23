@@ -97,23 +97,6 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * Coverage for get_taxonomy_registration_args method.
-	 *
-	 * @covers ::get_taxonomy_registration_args
-	 *
-	 * @return void
-	 */
-	public function test_get_taxonomy_registration_args(): void {
-		$args = Venue::get_taxonomy_registration_args();
-
-		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
-		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
-		$this->assertFalse( $args['show_ui'], 'Failed to assert that show_ui is false.' );
-		$this->assertFalse( $args['hierarchical'], 'Failed to assert that hierarchical is false.' );
-		$this->assertFalse( $args['show_admin_column'], 'Failed to assert that show_admin_column is false.' );
-	}
-
-	/**
 	 * Coverage for add_venue_term.
 	 *
 	 * @covers ::add_venue_term

@@ -153,29 +153,6 @@ class Venue {
 	}
 
 	/**
-	 * Get the registration arguments for the custom 'Venue' taxonomy.
-	 *
-	 * This method returns an array containing the registration arguments for the custom 'Venue' taxonomy.
-	 * These arguments define various aspects of the taxonomy, including labels, hierarchical structure,
-	 * visibility in the admin interface, and support for querying the taxonomy in the REST API.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array The registration arguments for the 'Venue' taxonomy.
-	 */
-	public static function get_taxonomy_registration_args(): array {
-		return array(
-			'labels'            => array(),
-			'hierarchical'      => false,
-			'public'            => true,
-			'show_ui'           => false,
-			'show_admin_column' => false,
-			'query_var'         => true,
-			'show_in_rest'      => true,
-		);
-	}
-
-	/**
 	 * Add a venue term when a venue post type is first saved.
 	 *
 	 * This method is responsible for automatically adding a term to the venue taxonomy
