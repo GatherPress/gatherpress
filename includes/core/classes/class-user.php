@@ -71,9 +71,6 @@ class User {
 	 */
 	public function profile_fields( WP_User $user ): void {
 		$event_updates_opt_in = get_user_meta( $user->ID, 'gp-event-updates-opt-in', true );
-		$gp_date_format       = get_user_meta( $user->ID, 'gp_date_format', true );
-		$gp_time_format       = get_user_meta( $user->ID, 'gp_time_format', true );
-		$gp_timezone          = get_user_meta( $user->ID, 'gp_timezone', true );
 
 		// Checkbox is selected by default. '1' is on, '0' is off.
 		if ( '0' !== $event_updates_opt_in ) {
@@ -88,12 +85,29 @@ class User {
 			true
 		);
 
+		// Render the user selected date/time format and timezone fields.
+		$gp_date_format = get_user_meta( $user->ID, 'gp_date_format', true );
+		$gp_time_format = get_user_meta( $user->ID, 'gp_time_format', true );
+		$gp_timezone    = get_user_meta( $user->ID, 'gp_timezone', true );
+		$tz_choices     = Utility::timezone_choices();
+		$date_attrs     = array(
+			'name'  => 'gp_date_format',
+			'value' => ! empty( $gp_date_format ) ? $gp_date_format : '',
+		);
+		$time_attrs     = array(
+			'name'  => 'gp_time_format',
+			'value' => ! empty( $gp_time_format ) ? $gp_time_format : '',
+		);
+
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/user/date-time.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'date_format' => $gp_date_format,
 				'time_format' => $gp_time_format,
 				'timezone'    => $gp_timezone,
+				'date_attrs'  => $date_attrs,
+				'time_attrs'  => $time_attrs,
+				'tz_choices'  => $tz_choices,
 			),
 			true
 		);

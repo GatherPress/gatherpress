@@ -9,12 +9,14 @@ import moment from 'moment';
 import { select } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
+import { createRoot } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import { enableSave, getFromGlobal, setToGlobal } from './globals';
 import { isEventPostType, triggerEventCommuncation } from './event';
+import DateTimePreview from '../components/DateTimePreview';
 
 /**
  * Date and time format string for use with Moment.js.
@@ -464,4 +466,34 @@ export function convertPHPToMomentFormat(format) {
 		.split('')
 		.map((chr) => (chr in replacements ? replacements[chr] : chr))
 		.join('');
+}
+
+/**
+ * DateTime Preview Initialization
+ *
+ * This script initializes the DateTime Preview functionality for all elements
+ * with the attribute 'data-gp_component_name' set to 'datetime-preview'.
+ * It iterates through all matching elements and initializes a DateTimePreview component
+ * with the attributes provided in the 'data-gp_component_attrs' attribute.
+ *
+ * @since 1.0.0
+ */
+export function dateTimePreview() {
+	// Select all elements with the attribute 'data-gp_component_name' set to 'datetime-preview'.
+	const dateTimePreviewContainers = document.querySelectorAll(
+		`[data-gp_component_name="datetime-preview"]`
+	);
+
+	// Iterate through each matched element and initialize DateTimePreview component.
+	for (let i = 0; i < dateTimePreviewContainers.length; i++) {
+		// Parse attributes from the 'data-gp_component_attrs' attribute.
+		const attrs = JSON.parse(
+			dateTimePreviewContainers[i].dataset.gp_component_attrs
+		);
+
+		// Create a root element and render the DateTimePreview component with the parsed attributes.
+		createRoot(dateTimePreviewContainers[i]).render(
+			<DateTimePreview attrs={attrs} />
+		);
+	}
 }

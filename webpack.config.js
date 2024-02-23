@@ -23,5 +23,11 @@ module.exports = {
 			'src/settings',
 			'style.scss'
 		),
+		profile: path.resolve(process.cwd(), 'src/profile', 'index.js'),
+		profile_style: path.resolve(
+			process.cwd(),
+			'src/profile',
+			'style.scss'
+		),
 	},
 };

@@ -11,18 +11,6 @@ use GatherPress\Core\Utility;
 if ( ! isset( $timezone ) && ! isset( $date_format ) && ! isset( $time_format ) ) {
 	return;
 }
-
-$gatherpress_tz_choices = Utility::timezone_choices();
-
-$gatherpress_date_attrs = array(
-	'name'  => 'gp_date_format',
-	'value' => ! empty( $date_format ) ? $date_format : '',
-);
-
-$gatherpress_time_attrs = array(
-	'name'  => 'gp_time_format',
-	'value' => ! empty( $time_format ) ? $time_format : '',
-);
 ?>
 <div style="margin-top: 40px; margin-bottom: 30px;">
 	<h2 id="gp-user-date-time">
@@ -40,7 +28,7 @@ $gatherpress_time_attrs = array(
 					<input type="text" name="gp_date_format" id="gp_date_format" value="<?php echo esc_attr( $date_format ); ?>" />
 					<p>
 						<strong><?php esc_html_e( 'Preview', 'gatherpress' ); ?>:</strong>
-						<span data-gp_component_name="datetime-preview" data-gp_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_date_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
+						<span data-gp_component_name="datetime-preview" data-gp_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $date_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
 					</p>
 				</div>
 			</td>
@@ -54,7 +42,7 @@ $gatherpress_time_attrs = array(
 					<input type="text" name="gp_time_format" id="gp_time_format" value="<?php echo esc_attr( $time_format ); ?>" />
 					<p>
 						<strong><?php esc_html_e( 'Preview', 'gatherpress' ); ?>:</strong>
-						<span data-gp_component_name="datetime-preview" data-gp_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_time_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
+						<span data-gp_component_name="datetime-preview" data-gp_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $time_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
 					</p>
 				</div>
 			</td>
@@ -65,16 +53,16 @@ $gatherpress_time_attrs = array(
 				<select name="gp_timezone">
 					<option value="">--</option>
 					<?php
-					foreach ( $gatherpress_tz_choices as $gatherpress_location => $gatherpress_timezones ) {
-						echo esc_html( '<optgroup label="' . $gatherpress_location . '">' );
+					foreach ( $tz_choices as $gatherpress_location => $gatherpress_timezones ) {
+						echo wp_kses( '<optgroup label="' . $gatherpress_location . '">', array( 'optgroup' => array( 'label' => array() ) ) );
+
 						foreach ( $gatherpress_timezones as $gatherpress_tz => $gatherpress_name ) {
-							echo esc_html( '<option value="' . $gatherpress_tz . '"' );
-							if ( $timezone === $gatherpress_tz ) {
-								echo ' selected';
-							}
-							echo esc_html( '>' . $gatherpress_name . '</option>' );
+							echo '<option value="' . esc_attr( $gatherpress_tz ) . '"'
+							. selected( $timezone, $gatherpress_tz, false ) . '>'
+							. esc_html( $gatherpress_name ) . '</option>';
 						}
-						echo esc_html( '</optgroup>' );
+
+						echo wp_kses( '</optgroup>', array( 'optgroup' => array() ) );
 					}
 					?>
 				</select>
