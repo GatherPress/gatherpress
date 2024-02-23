@@ -17,7 +17,7 @@ if ( ! isset( $timezone ) && ! isset( $date_format ) && ! isset( $time_format ) 
 		<?php esc_html_e( 'Date & Time Formatting', 'gatherpress' ); ?>
 	</h2>
 	<div>
-		<?php esc_html_e( 'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.', 'gatherpress' ); ?>
+		<?php echo __( wp_kses( 'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/" target="_blank">Documentation on date and time formatting</a>.', array( 'a' => array( 'href' => array(), 'target' => array() ) ) ), 'gatherpress' ); ?>
 	</div>
 	<table class="form-table">
 		<tr>
