@@ -24,10 +24,6 @@ module.exports = {
 			'style.scss'
 		),
 		profile: path.resolve(process.cwd(), 'src/profile', 'index.js'),
-		profile_style: path.resolve(
-			process.cwd(),
-			'src/profile',
-			'style.scss'
-		),
+		profile_style: path.resolve(process.cwd(), 'src/profile', 'style.scss'),
 	},
 };
