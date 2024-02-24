@@ -281,12 +281,13 @@ class Assets {
 
 		if ( ! empty( $event->event ) ) {
 			$event_details = array(
-				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
-				'dateTime'            => $event->get_datetime(),
-				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
-				'hasEventPast'        => $event->has_event_past(),
-				'postId'              => $post_id,
-				'responses'           => $event->rsvp->responses(),
+				'currentUser'          => $event->rsvp->get( get_current_user_id() ),
+				'dateTime'             => $event->get_datetime(),
+				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
+				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'enable_initial_decline', true ),
+				'hasEventPast'         => $event->has_event_past(),
+				'postId'               => $post_id,
+				'responses'            => $event->rsvp->responses(),
 			);
 		}
 
@@ -300,10 +301,11 @@ class Assets {
 				'unregisterBlocks' => $this->unregister_blocks(),
 			),
 			'settings'     => array(
-				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
-				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
-				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
+				'dateFormat'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
+				'enableAnonymousRsvp'  => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'enableInitialDecline' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_initial_decline' ) ),
+				'showTimezone'         => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'timeFormat'           => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),
 			'urls'         => array(
 				'eventRestApi'    => $event_rest_api,

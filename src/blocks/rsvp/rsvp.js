@@ -40,6 +40,9 @@ domReady(() => {
 				enableAnonymousRsvp={getFromGlobal(
 					'eventDetails.enableAnonymousRsvp'
 				)}
+				enableInitialDecline={getFromGlobal(
+					'eventDetails.enableInitialDecline'
+				)}
 			/>
 		);
 	}

@@ -31,15 +31,22 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @since 1.0.0
  *
- * @param {Object}  props                     - Component props.
- * @param {number}  props.postId              - The ID of the event.
- * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
- * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
- * @param {string}  props.type                - Type of event ('upcoming' or 'past').
+ * @param {Object}  props                      - Component props.
+ * @param {number}  props.postId               - The ID of the event.
+ * @param {Object}  [props.currentUser='']     - Current user's RSVP information.
+ * @param {boolean} props.enableAnonymousRsvp  - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {boolean} props.enableInitialDecline - If true, shows an option to decline attendance initially.
+ * @param {string}  props.type                 - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
+const Rsvp = ({
+	postId,
+	currentUser = '',
+	type,
+	enableAnonymousRsvp,
+	enableInitialDecline,
+}) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
 	const [rsvpAnonymous, setRsvpAnonymous] = useState(
 		Number(currentUser.anonymous)
@@ -331,6 +338,21 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							{__('Close', 'gatherpress')}
 						</a>
 					</div>
+					{enableInitialDecline && 'no_status' === rsvpStatus ? (
+						<div className="gp-buttons__container wp-block-button is-style-outline">
+							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+							<a
+								href="#"
+								onClick={(e) =>
+									onAnchorClick(e, 'not_attending', null)
+								}
+							>
+								{__("I can't attend", 'gatherpress')}
+							</a>
+						</div>
+					) : (
+						<></>
+					)}
 				</ButtonGroup>
 			</div>
 		);

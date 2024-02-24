@@ -188,6 +188,15 @@ class Event {
 				'single'            => true,
 				'type'              => 'boolean',
 			),
+			'enable_initial_decline' => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'boolean',
+			),
 		);
 	}
 
