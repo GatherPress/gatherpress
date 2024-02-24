@@ -8,11 +8,8 @@
 
 namespace GatherPress\Tests\Core;
 
-use DateTime;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Setup;
-use GatherPress\Core\Topic;
-use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
 
 /**
