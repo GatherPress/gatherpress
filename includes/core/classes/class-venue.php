@@ -74,72 +74,82 @@ class Venue {
 			10,
 			3
 		);
+		add_action( 'init', array( $this, 'register_post_type' ) );
+		add_action( 'init', array( $this, 'register_post_meta' ) );
+		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
 	}
 
 	/**
-	 * Get the arguments for registering the 'Venue' custom post type.
+	 * Registers the custom post type for Venues.
 	 *
-	 * This method returns an array containing the registration arguments for the custom post type 'Venue.'
-	 * These arguments define aspects of the post type, such as labels, REST API support, visibility in the admin menu,
-	 * supported features, icons, and rewrite rules.
+	 * Initializes the Venues post type with all its associated labels, settings,
+	 * and supports features, making it accessible within the WordPress REST API,
+	 * searchable, and manageable within the custom 'Venues' menu in the dashboard.
+	 * It is designed to handle venue information for events, including titles,
+	 * descriptions, images, and custom fields.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array An array containing the registration arguments for the 'Venue' custom post type.
+	 * @return void
 	 */
-	public static function get_post_type_registration_args(): array {
-		return array(
-			'labels'       => array(
-				'name'               => _x( 'Venues', 'Post Type General Name', 'gatherpress' ),
-				'singular_name'      => _x( 'Venue', 'Post Type Singular Name', 'gatherpress' ),
-				'menu_name'          => __( 'Venues', 'gatherpress' ),
-				'all_items'          => __( 'Venues', 'gatherpress' ),
-				'view_item'          => __( 'View Venue', 'gatherpress' ),
-				'add_new_item'       => __( 'Add New Venue', 'gatherpress' ),
-				'add_new'            => __( 'Add New', 'gatherpress' ),
-				'edit_item'          => __( 'Edit Venue', 'gatherpress' ),
-				'update_item'        => __( 'Update Venue', 'gatherpress' ),
-				'search_items'       => __( 'Search Venues', 'gatherpress' ),
-				'not_found'          => __( 'Not Found', 'gatherpress' ),
-				'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
-			),
-			'show_in_rest' => true,
-			'rest_base'    => 'gp_venues',
-			'public'       => true,
-			'hierarchical' => false,
-			'show_in_menu' => 'edit.php?post_type=gp_event',
-			'supports'     => array(
-				'title',
-				'editor',
-				'thumbnail',
-				'revisions',
-				'custom-fields',
-			),
-			'menu_icon'    => 'dashicons-location',
-			'template'     => array(
-				array( 'gatherpress/venue' ),
-			),
-			'rewrite'      => array(
-				'slug' => 'venue',
-			),
+	public function register_post_type(): void {
+		register_post_type(
+			self::POST_TYPE,
+			array(
+				'labels'       => array(
+					'name'               => _x( 'Venues', 'Post Type General Name', 'gatherpress' ),
+					'singular_name'      => _x( 'Venue', 'Post Type Singular Name', 'gatherpress' ),
+					'menu_name'          => __( 'Venues', 'gatherpress' ),
+					'all_items'          => __( 'Venues', 'gatherpress' ),
+					'view_item'          => __( 'View Venue', 'gatherpress' ),
+					'add_new_item'       => __( 'Add New Venue', 'gatherpress' ),
+					'add_new'            => __( 'Add New', 'gatherpress' ),
+					'edit_item'          => __( 'Edit Venue', 'gatherpress' ),
+					'update_item'        => __( 'Update Venue', 'gatherpress' ),
+					'search_items'       => __( 'Search Venues', 'gatherpress' ),
+					'not_found'          => __( 'Not Found', 'gatherpress' ),
+					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+				),
+				'show_in_rest' => true,
+				'rest_base'    => 'gp_venues',
+				'public'       => true,
+				'hierarchical' => false,
+				'show_in_menu' => 'edit.php?post_type=gp_event',
+				'supports'     => array(
+					'title',
+					'editor',
+					'thumbnail',
+					'revisions',
+					'custom-fields',
+				),
+				'menu_icon'    => 'dashicons-location',
+				'template'     => array(
+					array( 'gatherpress/venue' ),
+				),
+				'rewrite'      => array(
+					'slug' => 'venue',
+				),
+			)
 		);
 	}
 
 	/**
-	 * Get the registration arguments for custom post meta fields.
+	 * Registers custom meta fields for the Venue post type.
 	 *
-	 * This method returns an array containing the registration arguments for custom post meta fields
-	 * associated with the 'Venue' custom post type. These arguments include callbacks for authorization
-	 * and data sanitization, support for the REST API, data type, and more.
+	 * Sets up meta fields associated with the Venue post type, such as 'venue_information',
+	 * configuring capabilities, sanitization, and REST API visibility. This method ensures
+	 * that only users with the appropriate permissions can edit these fields, and that
+	 * the data stored is properly sanitized. Each meta field is registered to be
+	 * single and of a string type, optimized for use within the WordPress REST API.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array An array containing the registration arguments for custom post meta fields.
+	 * @return void
 	 */
-	public static function get_post_meta_registration_args(): array {
-		return array(
+	public function register_post_meta(): void {
+		$post_meta = array(
 			'venue_information' => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' );
@@ -149,6 +159,42 @@ class Venue {
 				'single'            => true,
 				'type'              => 'string',
 			),
+		);
+
+		foreach ( $post_meta as $meta_key => $args ) {
+			register_post_meta(
+				self::POST_TYPE,
+				$meta_key,
+				$args
+			);
+		}
+	}
+
+	/**
+	 * Registers a custom taxonomy for the Venue post type, not accessible to users.
+	 *
+	 * This taxonomy, programmatically managed and linked to the Venue post type, is hidden from users
+	 * and designed for internal purposes only. Slugs for taxonomy terms are prefixed with an underscore,
+	 * emphasizing their programmatic nature and ensuring they remain uneditable through the WordPress UI.
+	 * It supports query var and REST API interactions but is entirely excluded from the admin UI and user-facing interfaces.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_taxonomy(): void {
+		register_taxonomy(
+			self::TAXONOMY,
+			Event::POST_TYPE,
+			array(
+				'labels'            => array(),
+				'hierarchical'      => false,
+				'public'            => true,
+				'show_ui'           => false,
+				'show_admin_column' => false,
+				'query_var'         => true,
+				'show_in_rest'      => true,
+			)
 		);
 	}
 

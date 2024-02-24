@@ -11,6 +11,8 @@ namespace GatherPress\Tests\Core;
 use DateTime;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Query;
+use GatherPress\Core\Setup;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
 
@@ -142,7 +144,7 @@ class Test_Event_Query extends Base {
 		$event_1->save_datetimes( $params );
 		$event_2->save_datetimes( $params );
 
-		$venue = wp_insert_term(
+		wp_insert_term(
 			'Unit Test Venue',
 			Venue::TAXONOMY,
 			array(
@@ -151,13 +153,13 @@ class Test_Event_Query extends Base {
 		);
 		$topic = wp_insert_term(
 			'Unit Test Topic',
-			Event::TAXONOMY,
+			Topic::TAXONOMY,
 			array(
 				'slug' => 'unit-test-topic',
 			)
 		);
 
-		wp_set_post_terms( $post_1->ID, $topic['term_id'], Event::TAXONOMY );
+		wp_set_post_terms( $post_1->ID, $topic['term_id'], Topic::TAXONOMY );
 		wp_set_post_terms( $post_1->ID, '_unit-test-venue', Venue::TAXONOMY );
 
 		$results = $instance->get_events_list(

@@ -53,50 +53,6 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * Coverage for get_post_type_registration_args method.
-	 *
-	 * @covers ::get_post_type_registration_args
-	 *
-	 * @return void
-	 */
-	public function test_get_post_type_registration_args(): void {
-		$args = Venue::get_post_type_registration_args();
-
-		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
-		$this->assertTrue( $args['show_in_rest'], 'Failed to assert that show_in_rest is true.' );
-		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
-		$this->assertSame( 'dashicons-location', $args['menu_icon'], 'Failed to assert that menu_icon is location.' );
-		$this->assertSame( 'venue', $args['rewrite']['slug'], 'Failed to assert that slug is events.' );
-	}
-
-	/**
-	 * Coverage for get_post_meta_registration_args method.
-	 *
-	 * @covers ::get_post_meta_registration_args
-	 *
-	 * @return void
-	 */
-	public function test_get_post_meta_registration_args(): void {
-		$args = Venue::get_post_meta_registration_args();
-
-		$this->assertIsArray( $args['venue_information'], 'Failed to assert that _online_event_link is an array.' );
-
-		$this->mock->user( 'subscriber' );
-
-		$this->assertFalse(
-			$args['venue_information']['auth_callback'](),
-			'Failed to assert false on auth_callback for subscriber'
-		);
-
-		$this->mock->user( 'admin' );
-
-		$this->assertTrue(
-			$args['venue_information']['auth_callback'](),
-			'Failed to assert true on auth_callback for admin'
-		);
-	}
-
-	/**
 	 * Coverage for add_venue_term.
 	 *
 	 * @covers ::add_venue_term

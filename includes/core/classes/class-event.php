@@ -56,14 +56,6 @@ class Event {
 	const TABLE_FORMAT = '%sgp_events';
 
 	/**
-	 * The taxonomy name for GatherPress event topics.
-	 *
-	 * @since 1.0.0
-	 * @var string $TAXONOMY
-	 */
-	const TAXONOMY = 'gp_topic';
-
-	/**
 	 * Event post object.
 	 *
 	 * @since 1.0.0
@@ -96,110 +88,16 @@ class Event {
 	}
 
 	/**
-	 * Get the arguments for registering the 'Event' custom post type.
-	 *
-	 * This method retrieves an array containing the registration arguments for the custom post type 'Event'.
-	 * These arguments define how the Event post type behaves and appears in the WordPress admin.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array containing the registration arguments for the custom post type.
-	 */
-	public static function get_post_type_registration_args(): array {
-		return array(
-			'labels'        => array(
-				'name'               => _x( 'Events', 'Post Type General Name', 'gatherpress' ),
-				'singular_name'      => _x( 'Event', 'Post Type Singular Name', 'gatherpress' ),
-				'menu_name'          => __( 'Events', 'gatherpress' ),
-				'all_items'          => __( 'All Events', 'gatherpress' ),
-				'view_item'          => __( 'View Event', 'gatherpress' ),
-				'add_new_item'       => __( 'Add New Event', 'gatherpress' ),
-				'add_new'            => __( 'Add New', 'gatherpress' ),
-				'edit_item'          => __( 'Edit Event', 'gatherpress' ),
-				'update_item'        => __( 'Update Event', 'gatherpress' ),
-				'search_items'       => __( 'Search Events', 'gatherpress' ),
-				'not_found'          => __( 'Not Found', 'gatherpress' ),
-				'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
-			),
-			'show_in_rest'  => true,
-			'rest_base'     => 'gp_events',
-			'public'        => true,
-			'hierarchical'  => false,
-			'template'      => array(
-				array( 'gatherpress/event-date' ),
-				array( 'gatherpress/add-to-calendar' ),
-				array( 'gatherpress/venue' ),
-				array( 'gatherpress/rsvp' ),
-				array(
-					'core/paragraph',
-					array(
-						'placeholder' => __(
-							'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
-							'gatherpress'
-						),
-					),
-				),
-				array( 'gatherpress/rsvp-response' ),
-			),
-			'menu_position' => 4,
-			'supports'      => array(
-				'title',
-				'editor',
-				'excerpt',
-				'thumbnail',
-				'comments',
-				'revisions',
-				'custom-fields',
-			),
-			'menu_icon'     => 'dashicons-nametag',
-			'rewrite'       => array(
-				'slug' => 'event',
-			),
-		);
-	}
-
-	/**
-	 * Get the registration arguments for custom post meta fields.
-	 *
-	 * This method retrieves an array containing the registration arguments for custom post meta fields.
-	 * These arguments define how specific custom meta fields behave and are used in WordPress.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array containing the registration arguments for custom post meta fields.
-	 */
-	public static function get_post_meta_registration_args(): array {
-		return array(
-			'online_event_link'     => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'sanitize_url',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'enable_anonymous_rsvp' => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'boolean',
-			),
-		);
-	}
-
-	/**
 	 * Retrieve the formatted display date and time for the event.
 	 *
-	 * Returns a human-readable representation of the event's start and end date/time,
-	 * taking into account whether they fall on the same date or different dates.
+	 * Returns a formatted string representing the event's start and end date/time.
+	 * Adjusts format based on whether start and end are on the same day.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string The formatted display date and time or an em dash if not available.
+	 * @return string Formatted date/time or an em dash if data is unavailable.
+	 *
+	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
 	 */
 	public function get_display_datetime(): string {
 		$settings    = Settings::get_instance();
@@ -224,14 +122,15 @@ class Event {
 	}
 
 	/**
-	 * Check if the start DateTime and end DateTime fall on the same date.
+	 * Check if the start and end DateTime fall on the same date.
 	 *
-	 * This method compares the date portion of the start and end DateTime objects to determine
-	 * if they represent the same date.
+	 * Compares the start and end DateTime objects to determine if they are on the same date.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return bool True if the start and end DateTime are on the same date, false otherwise.
+	 * @return bool True if start and end are on the same date, false otherwise.
+	 *
+	 * @throws Exception If date comparison fails.
 	 */
 	public function is_same_date(): bool {
 		$datetime_start = $this->get_datetime_start( 'Y-m-d' );
@@ -367,13 +266,13 @@ class Event {
 	): string {
 		$dt             = $this->get_datetime();
 		$date           = $dt[ sprintf( 'datetime_%s_gmt', $which ) ];
-		$dt['timezone'] = static::maybe_convert_offset( $dt['timezone'] );
+		$dt['timezone'] = Utility::maybe_convert_utc_offset( $dt['timezone'] );
 		$tz             = null;
 
 		if (
 			true === $local
 			&& ! empty( $dt['timezone'] )
-			&& in_array( $dt['timezone'], static::list_identifiers(), true )
+			&& in_array( $dt['timezone'], Utility::list_timezone_and_utc_offsets(), true )
 		) {
 			$tz = new DateTimeZone( $dt['timezone'] );
 		} elseif ( false === $local ) {
@@ -386,110 +285,6 @@ class Event {
 		}
 
 		return (string) $date;
-	}
-
-	/**
-	 * Convert a UTC offset to a format compatible with DateTimeZone.
-	 *
-	 * This method takes a UTC offset in the form of "+HH:mm" or "-HH:mm" and converts it to a format
-	 * that can be used with the DateTimeZone constructor.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $timezone The UTC offset to convert, e.g., "+05:30" or "-08:00".
-	 * @return string The converted timezone format, e.g., "+0530" or "-0800".
-	 */
-	public static function maybe_convert_offset( string $timezone ): string {
-		// Regex: https://regex101.com/r/wxhjIu/1.
-		preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches );
-
-		if ( count( $matches ) ) {
-			if ( empty( $matches[3] ) ) {
-				$matches[3] = ':00';
-			}
-
-			$matches[3] = str_replace( array( '.25', '.5', '.75' ), array( ':15', ':30', ':45' ), $matches[3] );
-
-			return $matches[1] . str_pad( $matches[2], 2, '0', STR_PAD_LEFT ) . $matches[3];
-		}
-
-		return $timezone;
-	}
-
-	/**
-	 * Get a list of all timezones and UTC offsets.
-	 *
-	 * This method returns an array containing all available timezones along with standard UTC offsets.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array An array of timezone identifiers and UTC offsets.
-	 */
-	public static function list_identifiers(): array {
-		// Get a list of all available timezone identifiers.
-		$identifiers = timezone_identifiers_list();
-
-		// Define an array of standard UTC offsets.
-		$offset_range = array(
-			'-12:00',
-			'-11:30',
-			'-11:00',
-			'-10:30',
-			'-10:00',
-			'-09:30',
-			'-09:00',
-			'-08:30',
-			'-08:00',
-			'-07:30',
-			'-07:00',
-			'-06:30',
-			'-06:00',
-			'-05:30',
-			'-05:00',
-			'-04:30',
-			'-04:00',
-			'-03:30',
-			'-03:00',
-			'-02:30',
-			'-02:00',
-			'-01:30',
-			'-01:00',
-			'-00:30',
-			'+00:00',
-			'+00:30',
-			'+01:00',
-			'+01:30',
-			'+02:00',
-			'+02:30',
-			'+03:00',
-			'+03:30',
-			'+04:00',
-			'+04:30',
-			'+05:00',
-			'+05:30',
-			'+05:45',
-			'+06:00',
-			'+06:30',
-			'+07:00',
-			'+07:30',
-			'+08:00',
-			'+08:30',
-			'+08:45',
-			'+09:00',
-			'+09:30',
-			'+10:00',
-			'+10:30',
-			'+11:00',
-			'+11:30',
-			'+12:00',
-			'+12:45',
-			'+13:00',
-			'+13:45',
-			'+14:00',
-		);
-
-		// Merge the timezone identifiers and UTC offsets into a single array.
-		return array_merge( $identifiers, $offset_range );
 	}
 
 	/**
@@ -831,7 +626,6 @@ class Event {
 		global $wpdb;
 
 		$params['post_id'] = $this->event->ID;
-		$retval            = false;
 		$fields            = array_filter(
 			$params,
 			function ( $key ) {
@@ -850,7 +644,7 @@ class Event {
 		);
 
 		if ( 1 > intval( $fields['post_id'] ) ) {
-			return $retval;
+			return false;
 		}
 
 		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
@@ -870,17 +664,17 @@ class Event {
 		);
 
 		if ( ! empty( $exists ) ) {
-			$retval = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$value = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$table,
 				$fields,
 				array( 'post_id' => $fields['post_id'] )
 			);
 			delete_transient( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
 		} else {
-			$retval = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$value = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
 
-		return (bool) $retval;
+		return (bool) $value;
 	}
 
 	/**
@@ -888,8 +682,7 @@ class Event {
 	 *
 	 * This method retrieves the online event link for a user who is attending an event
 	 * and ensures that the event has not already occurred. It evaluates various conditions
-	 * to determine whether to provide the online event link. The method is marked with a @todo
-	 * to indicate that it should be refactored for improved readability and reduced conditionals.
+	 * to determine whether to provide the online event link.
 	 *
 	 * @return string The online event link if all conditions are met; otherwise, an empty string.
 	 */

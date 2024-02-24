@@ -35,18 +35,6 @@ class Test_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
-				'callback' => array( $instance, 'register' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'delete_post',
-				'priority' => 10,
-				'callback' => array( $instance, 'delete_event' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 10,
 				'callback' => array( $instance, 'maybe_flush_gatherpress_rewrite_rules' ),
 			),
 			array(
@@ -63,39 +51,9 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'set_custom_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
-				'priority' => 10,
-				'callback' => array( $instance, 'sortable_columns' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'get_the_date',
-				'priority' => 10,
-				'callback' => array( $instance, 'get_the_event_date' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'the_time',
-				'priority' => 10,
-				'callback' => array( $instance, 'get_the_event_date' ),
-			),
-			array(
-				'type'     => 'filter',
 				'name'     => 'body_class',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_gatherpress_body_classes' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'display_post_states',
-				'priority' => 10,
-				'callback' => array( $instance, 'set_event_archive_labels' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -262,27 +220,5 @@ class Test_Setup extends Base {
 
 		$this->assertSame( $slug, $term->slug, 'Failed to assert that term slugs match.' );
 		$this->assertSame( 'Online', $term->name, 'Failed to assert that term names match.' );
-	}
-
-	/**
-	 * Coverage for sortable_columns method.
-	 *
-	 * @covers ::sortable_columns
-	 *
-	 * @return void
-	 */
-	public function test_sortable_columns(): void {
-		$instance = Setup::get_instance();
-		$default  = array( 'unit' => 'test' );
-		$expects  = array(
-			'unit'     => 'test',
-			'datetime' => 'datetime',
-		);
-
-		$this->assertSame(
-			$expects,
-			$instance->sortable_columns( $default ),
-			'Failed to assert correct sortable columns.'
-		);
 	}
 }

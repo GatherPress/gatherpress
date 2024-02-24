@@ -576,7 +576,7 @@ class Test_Rest_Api extends Base {
 		$event_ids = $this->get_event_ids( $response->data );
 
 		$this->assertContains( $upcoming_event_id, $event_ids, 'Failed to assert event ID is in array.' );
-		$this->assertNotContains( $past_event_id, $event_ids, 'Failed to asssert event ID is not in array.' );
+		$this->assertNotContains( $past_event_id, $event_ids, 'Failed to assert event ID is not in array.' );
 
 		$request->set_query_params(
 			array(
