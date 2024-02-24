@@ -1,1 +1,14 @@
-.gp-admin__membership-check{align-items:center;display:flex;gap:1rem;padding:.5rem}.gp-admin__membership-check>div:last-child{margin-left:auto}
+/*!***************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/admin.scss ***!
+  \***************************************************************************************************************************************************************************************************************************************/
+.gp-admin__membership-check {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem;
+}
+.gp-admin__membership-check > div:last-child {
+  margin-left: auto;
+}
+
+/*# sourceMappingURL=admin_style.css.map*/

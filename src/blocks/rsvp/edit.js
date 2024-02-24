@@ -1,14 +1,17 @@
 /**
- * External dependencies.
+ * WordPress dependencies.
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+import { PanelBody } from '@wordpress/components';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
 import Rsvp from '../../components/Rsvp';
-import { getFromGlobal } from '../../helpers/globals';
+import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
 import EditCover from '../../components/EditCover';
+import InitialDecline from '../../components/InitialDecline';
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -35,6 +38,14 @@ const Edit = () => {
 					currentUser={currentUser}
 					type={'upcoming'}
 				/>
+				{isSinglePostInEditor() && (
+					<InspectorControls>
+						<PanelBody>
+							<h3>{__('RSVP Options', 'gatherpress')}</h3>
+							<InitialDecline/>
+						</PanelBody>
+					</InspectorControls>
+				)}
 			</EditCover>
 		</div>
 	);
