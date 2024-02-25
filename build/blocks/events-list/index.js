@@ -729,12 +729,12 @@ __webpack_require__.r(__webpack_exports__);
  *
  * @since 1.0.0
  *
- * @param {Object}  props                     - Component props.
- * @param {number}  props.postId              - The ID of the event.
- * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
- * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
- * @param {boolean} props.enableInitialDecline- If true, shows an option to decline attendance initially.
- * @param {string}  props.type                - Type of event ('upcoming' or 'past').
+ * @param {Object}  props                      - Component props.
+ * @param {number}  props.postId               - The ID of the event.
+ * @param {Object}  [props.currentUser='']     - Current user's RSVP information.
+ * @param {boolean} props.enableAnonymousRsvp  - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {boolean} props.enableInitialDecline - If true, shows an option to decline attendance initially.
+ * @param {string}  props.type                 - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -932,12 +932,15 @@ const Rsvp = ({
       href: "#",
       onClick: closeModal,
       className: "gp-buttons__button wp-block-button__link"
-    }, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_5__.__)('Close', 'gatherpress'))), enableInitialDecline && 'no_status' === rsvpStatus ? (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-      className: "gp-buttons__container wp-block-button is-style-outline"
+    }, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_5__.__)('Close', 'gatherpress')))), enableInitialDecline && 'no_status' === rsvpStatus ? (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_6__.ButtonGroup, {
+      className: "gp-buttons wp-block-buttons"
+    }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+      className: "gp-buttons__container wp-block-button"
     }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("a", {
       href: "#",
-      onClick: e => onAnchorClick(e, 'not_attending', null)
-    }, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_5__.__)('I can\'t attend', 'gatherpress'))) : (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(react__WEBPACK_IMPORTED_MODULE_0__.Fragment, null)));
+      onClick: e => onAnchorClick(e, 'not_attending', null),
+      className: "gp-buttons__text-link"
+    }, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_5__.__)("I can't attend", 'gatherpress')))) : (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(react__WEBPACK_IMPORTED_MODULE_0__.Fragment, null));
   };
   return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     className: "gp-rsvp"

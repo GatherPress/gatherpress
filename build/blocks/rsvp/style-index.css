@@ -40,6 +40,9 @@
 .gp-buttons__container {
   font-size: var(--wp--preset--font-size--small);
 }
+.gp-buttons + .gp-buttons {
+  margin-top: 1rem;
+}
 
 .gp-modal__rsvp .gp-modal__header {
   font-size: var(--wp--preset--font-size--medium);

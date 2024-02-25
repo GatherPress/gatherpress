@@ -338,22 +338,25 @@ const Rsvp = ({
 							{__('Close', 'gatherpress')}
 						</a>
 					</div>
-					{enableInitialDecline && 'no_status' === rsvpStatus ? (
-						<div className="gp-buttons__container wp-block-button is-style-outline">
+				</ButtonGroup>
+				{enableInitialDecline && 'no_status' === rsvpStatus ? (
+					<ButtonGroup className="gp-buttons wp-block-buttons">
+						<div className="gp-buttons__container wp-block-button">
 							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 							<a
 								href="#"
 								onClick={(e) =>
 									onAnchorClick(e, 'not_attending', null)
 								}
+								className="gp-buttons__text-link"
 							>
 								{__("I can't attend", 'gatherpress')}
 							</a>
 						</div>
-					) : (
-						<></>
-					)}
-				</ButtonGroup>
+					</ButtonGroup>
+				) : (
+					<></>
+				)}
 			</div>
 		);
 	};
