@@ -3,7 +3,7 @@
  */
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import { FormTokenField } from '@wordpress/components';
+import { FormTokenField, SelectControl } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
@@ -29,7 +29,8 @@ const RsvpResponseEdit = () => {
 	const responses = getFromGlobal('eventDetails.responses');
 	const postId = getFromGlobal('eventDetails.postId');
 	const [rsvpResponse, setRsvpResponse] = useState(responses);
-	const attendees = rsvpResponse.attending.responses;
+	const [rsvpStatus, setRsvpStatus] = useState('attending');
+	const attendees = rsvpResponse[rsvpStatus].responses;
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
@@ -98,7 +99,7 @@ const RsvpResponseEdit = () => {
 				}
 
 				// We have a new user to add to the attendees list.
-				updateUserStatus(userSuggestions[token].id, 'attending');
+				updateUserStatus(userSuggestions[token].id, rsvpStatus);
 			});
 		} else {
 			// Removing attendees
@@ -112,9 +113,28 @@ const RsvpResponseEdit = () => {
 
 	return (
 		<div className="gp-rsvp-response">
+			<SelectControl
+				label={__('Status', 'gatherpress')}
+				value={rsvpStatus}
+				options={[
+					{
+						label: __('Attending', 'gatherpress'),
+						value: 'attending',
+					},
+					{
+						label: __('Waiting List', 'gatherpress'),
+						value: 'waiting_list',
+					},
+					{
+						label: __('Not Attending', 'gatherpress'),
+						value: 'not_attending',
+					},
+				]}
+				onChange={(status) => setRsvpStatus(status)}
+			/>
 			<FormTokenField
 				key="query-controls-topics-select"
-				label={__('Attendees', 'gatherpress')}
+				label={__('Members', 'gatherpress')}
 				value={
 					attendees &&
 					attendees.map((item) => ({
