@@ -129,7 +129,7 @@ class Venue {
 					array( 'gatherpress/venue' ),
 				),
 				'rewrite'      => array(
-					'slug' => 'venue',
+					'slug' => _x( 'venue', 'Post Type Slug', 'gatherpress' ),
 				),
 			)
 		);

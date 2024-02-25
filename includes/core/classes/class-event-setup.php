@@ -134,7 +134,7 @@ class Event_Setup {
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				'rewrite'       => array(
-					'slug' => 'event',
+					'slug' => _x( 'event', 'Post Type Slug', 'gatherpress' ),
 				),
 			)
 		);

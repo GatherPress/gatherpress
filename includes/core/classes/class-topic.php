@@ -94,7 +94,9 @@ class Topic {
 				'show_ui'           => true,
 				'show_admin_column' => true,
 				'query_var'         => true,
-				'rewrite'           => array( 'slug' => 'topic' ),
+				'rewrite'           => array(
+					'slug' => _x( 'topic', 'Taxonomy Slug', 'gatherpress' ),
+				),
 				'show_in_rest'      => true,
 			)
 		);
