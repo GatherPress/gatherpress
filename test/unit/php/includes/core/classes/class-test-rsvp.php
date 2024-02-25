@@ -172,17 +172,30 @@ class Test_Rsvp extends Base {
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attending_limit', 1 );
 
+		$current_response = [
+			'status' => 'waiting_list',
+			'guests' => 0,
+		];
+
 		$this->assertFalse(
-			$rsvp->attending_limit_reached(),
+			$rsvp->attending_limit_reached( $current_response ),
 			'Failed to assert that limit has not been reached.'
 		);
 
 		$user_id = $this->factory->user->create();
 
 		$rsvp->save( $user_id, 'attending' );
+
+		$current_response = $rsvp->get( $user_id );
+
 		$this->assertTrue(
-			$rsvp->attending_limit_reached(),
+			$rsvp->attending_limit_reached( $current_response, 1 ),
 			'Failed to assert that limit has been reached.'
+		);
+
+		$this->assertFalse(
+			$rsvp->attending_limit_reached( $current_response ),
+			'Failed to assert that limit has not been reached.'
 		);
 	}
 

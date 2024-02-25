@@ -98,15 +98,15 @@ class Rsvp {
 	public function get( int $user_id ): array {
 		global $wpdb;
 
-		$event_id = $this->event->ID;
+		$post_id = $this->event->ID;
 
-		if ( 1 > $event_id || 1 > $user_id ) {
+		if ( 1 > $post_id || 1 > $user_id ) {
 			return array();
 		}
 
 		$default = array(
 			'id'        => 0,
-			'post_id'   => $event_id,
+			'post_id'   => $post_id,
 			'user_id'   => $user_id,
 			'timestamp' => null,
 			'status'    => 'no_status',
@@ -117,7 +117,7 @@ class Rsvp {
 		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo Consider implementing caching for improved performance in the future.
-		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT id, timestamp, status, guests, anonymous FROM ' . esc_sql( $table ) . ' WHERE post_id = %d AND user_id = %d', $event_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT id, timestamp, status, guests, anonymous FROM ' . esc_sql( $table ) . ' WHERE post_id = %d AND user_id = %d', $post_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		return array_merge( $default, (array) $data );
 	}
@@ -141,11 +141,10 @@ class Rsvp {
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): string {
 		global $wpdb;
 
-		$event_id = $this->event->ID;
-
+		$post_id       = $this->event->ID;
 		$updated_status = '';
 
-		if ( 1 > $event_id || 1 > $user_id ) {
+		if ( 1 > $post_id || 1 > $user_id ) {
 			return $updated_status;
 		}
 
@@ -162,7 +161,7 @@ class Rsvp {
 		}
 
 		$data = array(
-			'post_id'   => intval( $event_id ),
+			'post_id'   => intval( $post_id ),
 			'user_id'   => intval( $user_id ),
 			'timestamp' => gmdate( 'Y-m-d H:i:s' ),
 			'status'    => sanitize_key( $status ),
@@ -186,7 +185,7 @@ class Rsvp {
 			$save = $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
 
-		wp_cache_delete( sprintf( self::CACHE_KEY, $event_id ) );
+		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ) );
 
 		if ( $save ) {
 			$updated_status = sanitize_key( $status );
@@ -247,10 +246,18 @@ class Rsvp {
 	 *
 	 * This method determines whether the maximum response limit for the 'attending' status
 	 * has been reached for the event. It checks the current number of 'attending' responses
-	 * and compares it to the defined limit.
+	 * and compares it to the defined limit. It considers both the current response status
+	 * and the number of guests associated with that response.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param array $current_response The current response data including status and number of guests.
+	 *                                Expected to have keys 'status' and 'guests', where 'status' is a
+	 *                                string indicating the current response status (e.g., 'attending'),
+	 *                                and 'guests' is an integer representing the number of guests.
+	 * @param int   $guests           The number of additional guests to consider in the limit calculation.
+	 *                                Defaults to 0. This is used to adjust the total count based on any new
+	 *                                guests being added as part of the current operation.
 	 * @return bool True if the 'attending' limit has been reached, false otherwise.
 	 */
 	public function attending_limit_reached( array $current_response, int $guests = 0 ): bool {
@@ -287,9 +294,8 @@ class Rsvp {
 	public function responses(): array {
 		global $wpdb;
 
-		$event_id = $this->event->ID;
-
-		$cache_key = sprintf( self::CACHE_KEY, $event_id );
+		$post_id   = $this->event->ID;
+		$cache_key = sprintf( self::CACHE_KEY, $post_id );
 		$retval    = wp_cache_get( $cache_key );
 
 		// @todo add testing with cache.
@@ -306,14 +312,14 @@ class Rsvp {
 			),
 		);
 
-		if ( Event::POST_TYPE !== get_post_type( $event_id ) ) {
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return $retval;
 		}
 
 		$site_users  = count_users();
 		$total_users = $site_users['total_users'];
 		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests, anonymous FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $event_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests, anonymous FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT %d', $post_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$data        = ( ! empty( $data ) ) ? (array) $data : array();
 		$responses   = array();
 		$all_guests  = 0;
@@ -448,6 +454,22 @@ class Rsvp {
 		return ( strtotime( $first['timestamp'] ) < strtotime( $second['timestamp'] ) );
 	}
 
+	/**
+	 * Sorts array elements based on the number of guests.
+	 *
+	 * This method compares two array elements by the number of guests specified in each,
+	 * allowing for sorting of an array based on guest counts. It's designed to be used
+	 * with PHP's usort() function or similar array sorting functions that require a
+	 * comparison function. The method returns true if the first element should be
+	 * considered less than the second (i.e., has fewer guests), making it suitable for
+	 * use in ascending order sorts.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $first The first array element to compare, expected to have a 'guests' key with an integer value.
+	 * @param array $second The second array element to compare, also expected to have a 'guests' key with an integer value.
+	 * @return bool True if the first element has fewer guests than the second, false otherwise.
+	 */
 	public function sort_by_guests( array $first, array $second ): bool {
 		return ( intval( $first['guests'] ) < intval( $second['guests'] ) );
 	}

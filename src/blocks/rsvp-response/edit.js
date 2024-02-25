@@ -5,6 +5,7 @@ import { useBlockProps, BlockControls } from '@wordpress/block-editor';
 import { ToolbarGroup, ToolbarButton } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { select } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -25,10 +26,11 @@ import EditCover from '../../components/EditCover';
  */
 
 const Edit = () => {
-	const isAdmin = wp.data.select('core').canUser('create', 'posts');
+	const isAdmin = select('core').canUser('create', 'posts');
 	const blockProps = useBlockProps();
 
 	const [editMode, setEditMode] = useState(false);
+	const [defaultStatus, setDefaultStatus] = useState('attending');
 
 	const onEditClick = (e) => {
 		e.preventDefault();
@@ -37,10 +39,15 @@ const Edit = () => {
 
 	return (
 		<div {...blockProps}>
-			{editMode && <RsvpResponseEdit />}
+			{editMode && (
+				<RsvpResponseEdit
+					defaultStatus={defaultStatus}
+					setDefaultStatus={setDefaultStatus}
+				/>
+			)}
 			{!editMode && (
 				<EditCover>
-					<RsvpResponse />
+					<RsvpResponse defaultStatus={defaultStatus} />
 				</EditCover>
 			)}
 			{isAdmin && (
