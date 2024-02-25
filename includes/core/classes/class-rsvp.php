@@ -143,22 +143,22 @@ class Rsvp {
 
 		$event_id = $this->event->ID;
 
-		$retval = '';
+		$updated_status = '';
 
 		if ( 1 > $event_id || 1 > $user_id ) {
-			return $retval;
+			return $updated_status;
 		}
 
 		if ( ! in_array( $status, $this->statuses, true ) ) {
-			return $retval;
+			return $updated_status;
 		}
 
-		$table         = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$response      = $this->get( $user_id );
-		$limit_reached = ( 'attending' === $status && $this->attending_limit_reached() );
+		$table            = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+		$current_response = $this->get( $user_id );
+		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
-		if ( $limit_reached && ! $guests ) {
-			$status = 'waiting_list';
+		if ( in_array( $status, array( 'attending', 'waiting_list' ), true ) ) {
+			$status = ! $limit_reached ? 'attending' : 'waiting_list';
 		}
 
 		$data = array(
@@ -170,9 +170,9 @@ class Rsvp {
 			'anonymous' => intval( $anonymous ),
 		);
 
-		if ( intval( $response['id'] ) ) {
+		if ( intval( $current_response['id'] ) ) {
 			$where = array(
-				'id' => intval( $response['id'] ),
+				'id' => intval( $current_response['id'] ),
 			);
 
 			// If not attending and anonymous, just remove record.
@@ -189,14 +189,14 @@ class Rsvp {
 		wp_cache_delete( sprintf( self::CACHE_KEY, $event_id ) );
 
 		if ( $save ) {
-			$retval = sanitize_key( $status );
+			$updated_status = sanitize_key( $status );
 		}
 
-		if ( ! $limit_reached && 'not_attending' === $status ) {
+		if ( ! $limit_reached ) {
 			$this->check_waiting_list();
 		}
 
-		return $retval;
+		return $updated_status;
 	}
 
 	/**
@@ -222,6 +222,9 @@ class Rsvp {
 			// People who are longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
+			// People with most guests are put at bottom of waiting list.
+			usort( $waiting_list, array( $this, 'sort_by_guests' ) );
+
 			$total = $this->max_attending_limit - intval( $responses['attending']['count'] );
 
 			while ( $i < $total ) {
@@ -231,7 +234,7 @@ class Rsvp {
 				}
 
 				$response = $waiting_list[ $i ];
-				$this->save( $response['id'], 'attending' );
+				$this->save( $response['id'], 'attending', $response['anonymous'], $response['guests'] );
 				++$i;
 			}
 		}
@@ -250,12 +253,19 @@ class Rsvp {
 	 *
 	 * @return bool True if the 'attending' limit has been reached, false otherwise.
 	 */
-	public function attending_limit_reached(): bool {
-		$responses = $this->responses();
+	public function attending_limit_reached( array $current_response, int $guests = 0 ): bool {
+		$responses  = $this->responses();
+		$user_count = 1;
+
+		// If the user record was previously attending adjust numbers to figure out new limit.
+		if ( 'attending' === $current_response['status'] ) {
+			$guests     = $guests - intval( $current_response['guests'] );
+			$user_count = 0;
+		}
 
 		if (
-			! empty( $responses['attending'] )
-			&& intval( $responses['attending']['count'] ) >= $this->max_attending_limit
+			! empty( $responses['attending'] ) &&
+			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attending_limit
 		) {
 			return true;
 		}
@@ -436,5 +446,9 @@ class Rsvp {
 	 */
 	public function sort_by_timestamp( array $first, array $second ): bool {
 		return ( strtotime( $first['timestamp'] ) < strtotime( $second['timestamp'] ) );
+	}
+
+	public function sort_by_guests( array $first, array $second ): bool {
+		return ( intval( $first['guests'] ) < intval( $second['guests'] ) );
 	}
 }

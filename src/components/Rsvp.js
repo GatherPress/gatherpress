@@ -93,7 +93,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	) => {
 		e.preventDefault();
 
-		if ('attending' !== status) {
+		if ('not_attending' === status) {
 			guests = 0;
 		}
 
@@ -253,7 +253,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							)
 						)}
 					</div>
-					{!rsvpAnonymous && 'attending' === rsvpStatus && (
+					{!rsvpAnonymous && 'not_attending' !== rsvpStatus && (
 						<div className="gp-modal__guests">
 							<label htmlFor="gp-guests">
 								{__('Number of guests?', 'gatherpress')}
@@ -320,10 +320,10 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 									e,
 									buttonStatus,
 									rsvpAnonymous,
-									'attending' === buttonStatus
+									'not_attending' !== buttonStatus
 										? rsvpGuests
 										: 0,
-									'attending' !== buttonStatus
+									'not_attending' === buttonStatus
 								)
 							}
 							className="gp-buttons__button wp-block-button__link"
