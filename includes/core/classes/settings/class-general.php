@@ -88,7 +88,7 @@ class General extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'post_or_event_date'    => array(
+					'post_or_event_date'     => array(
 						'labels' => array(
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),
@@ -100,7 +100,7 @@ class General extends Base {
 							),
 						),
 					),
-					'max_attending_limit'   => array(
+					'max_attending_limit'    => array(
 						'labels' => array(
 							'name' => __( 'Maximum Attending Limit', 'gatherpress' ),
 						),
@@ -113,7 +113,7 @@ class General extends Base {
 							),
 						),
 					),
-					'enable_anonymous_rsvp' => array(
+					'enable_anonymous_rsvp'  => array(
 						'labels'      => array(
 							'name' => __( 'Anonymous RSVP', 'gatherpress' ),
 						),
