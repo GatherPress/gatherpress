@@ -253,7 +253,30 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							)
 						)}
 					</div>
-					{enableAnonymousRsvp ? (
+					{!rsvpAnonymous && 'attending' === rsvpStatus &&
+						<div className="gp-modal__guests">
+							<label htmlFor="gp-guests">
+								{__('Number of guests?', 'gatherpress')}
+							</label>
+							<input
+								id="gp-guests"
+								type="number"
+								min="0"
+								max="5"
+								onChange={(e) =>
+									onAnchorClick(
+										e,
+										rsvpStatus,
+										rsvpAnonymous,
+										Number(e.target.value),
+										false
+									)
+								}
+								defaultValue={rsvpGuests}
+							/>
+						</div>
+					}
+					{enableAnonymousRsvp &&
 						<div className="gp-modal__anonymous">
 							<input
 								id="gp-anonymous"
@@ -285,28 +308,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							</label>
 							<Tooltip id="gp-anonymous-tooltip" />
 						</div>
-					) : (
-						<></>
-					)}
-					<label htmlFor="gp-guests">
-						{__('Number of guests?', 'gatherpress')}
-					</label>
-					<input
-						id="gp-guests"
-						type="number"
-						min="0"
-						max="5"
-						onChange={(e) =>
-							onAnchorClick(
-								e,
-								'attending',
-								rsvpAnonymous,
-								Number(e.target.value),
-								false
-							)
-						}
-						defaultValue={rsvpGuests}
-					/>
+					}
 				</div>
 				<ButtonGroup className="gp-buttons wp-block-buttons">
 					<div className="gp-buttons__container wp-block-button is-style-outline">
@@ -314,7 +316,15 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 						<a
 							href="#"
 							onClick={(e) =>
-								onAnchorClick(e, buttonStatus, rsvpAnonymous)
+								onAnchorClick(
+									e,
+									buttonStatus,
+									rsvpAnonymous,
+									'attending' === buttonStatus
+										? rsvpGuests
+										: 0,
+									'attending' !== buttonStatus
+								)
 							}
 							className="gp-buttons__button wp-block-button__link"
 						>
