@@ -288,7 +288,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 										e,
 										rsvpStatus,
 										value,
-										rsvpGuests,
+										0,
 										false
 									);
 								}}
