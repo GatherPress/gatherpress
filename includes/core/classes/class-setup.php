@@ -58,9 +58,11 @@ class Setup {
 		Block::get_instance();
 		Cli::get_instance();
 		Event_Query::get_instance();
+		Event_Setup::get_instance();
 		Rest_Api::get_instance();
 		Settings::get_instance();
 		User::get_instance();
+		Topic::get_instance();
 		Venue::get_instance();
 	}
 
@@ -78,31 +80,12 @@ class Setup {
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
 		add_action( 'init', array( $this, 'load_textdomain' ) );
-		add_action( 'init', array( $this, 'register' ) );
-		add_action( 'delete_post', array( $this, 'delete_event' ) );
-		add_action(
-			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
-			array( $this, 'custom_columns' ),
-			10,
-			2
-		);
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
-		add_filter(
-			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
-			array( $this, 'set_custom_columns' )
-		);
-		add_filter(
-			sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
-			array( $this, 'sortable_columns' )
-		);
-		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
-		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'body_class', array( $this, 'add_gatherpress_body_classes' ) );
-		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
 		add_filter(
 			sprintf(
 				'plugin_action_links_%s/%s',
@@ -271,88 +254,6 @@ class Setup {
 	}
 
 	/**
-	 * Register GatherPress post types and taxonomies.
-	 *
-	 * This method is responsible for registering the GatherPress post types and taxonomies,
-	 * as well as adding the online event term. It initializes the necessary content structures
-	 * for the plugin.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function register(): void {
-		$this->register_post_types();
-		$this->register_taxonomies();
-	}
-
-	/**
-	 * Register GatherPress post types.
-	 *
-	 * This method is responsible for registering the GatherPress post types, including
-	 * 'Event' and 'Venue' post types. It sets up their labels, supports, and other parameters.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function register_post_types(): void {
-		// Register Event post type and meta.
-		register_post_type(
-			Event::POST_TYPE,
-			Event::get_post_type_registration_args()
-		);
-
-		foreach ( Event::get_post_meta_registration_args() as $meta_key => $args ) {
-			register_post_meta(
-				Event::POST_TYPE,
-				$meta_key,
-				$args
-			);
-		}
-
-		// Register Venue post type and meta.
-		register_post_type(
-			Venue::POST_TYPE,
-			Venue::get_post_type_registration_args()
-		);
-
-		foreach ( Venue::get_post_meta_registration_args() as $meta_key => $args ) {
-			register_post_meta(
-				Venue::POST_TYPE,
-				$meta_key,
-				$args
-			);
-		}
-	}
-
-	/**
-	 * Register GatherPress taxonomies.
-	 *
-	 * This method is responsible for registering the GatherPress taxonomies, including
-	 * the 'Topics' taxonomy. It sets up their labels, hierarchical structure, and other parameters.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function register_taxonomies(): void {
-		// Register Event taxonomy.
-		register_taxonomy(
-			Event::TAXONOMY,
-			Event::POST_TYPE,
-			Event::get_taxonomy_registration_args()
-		);
-
-		// Register Venue taxonomy.
-		register_taxonomy(
-			Venue::TAXONOMY,
-			Event::POST_TYPE,
-			Venue::get_taxonomy_registration_args()
-		);
-	}
-
-	/**
 	 * Add the 'Online event' term to the venue taxonomy.
 	 *
 	 * This method adds the 'Online event' term to the venue taxonomy if it does not exist,
@@ -363,7 +264,7 @@ class Setup {
 	 * @return void
 	 */
 	public function add_online_event_term(): void {
-		$this->register_taxonomies();
+		Venue::get_instance()->register_taxonomy();
 
 		$term_name = __( 'Online event', 'gatherpress' );
 		$term_slug = 'online-event';
@@ -411,34 +312,6 @@ class Setup {
 	}
 
 	/**
-	 * Delete event record from custom table when an event is deleted.
-	 *
-	 * This method is called when an event post is deleted, and it ensures that the corresponding
-	 * record in the custom table associated with the event is also deleted.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id An event post ID.
-	 * @return void
-	 */
-	public function delete_event( int $post_id ): void {
-		global $wpdb;
-
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			return;
-		}
-
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
-
-		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$table,
-			array(
-				'post_id' => $post_id,
-			)
-		);
-	}
-
-	/**
 	 * Create a custom table if it doesn't exist for the main site or the current site in a network.
 	 *
 	 * This method checks whether the custom database tables required for the plugin exist
@@ -476,8 +349,9 @@ class Setup {
 
 		$sql             = array();
 		$charset_collate = $wpdb->get_charset_collate();
+		$prefix          = $wpdb->prefix;
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table = sprintf( Event::TABLE_FORMAT, $prefix );
 		$sql[] = "CREATE TABLE {$table} (
 					post_id bigint(20) unsigned NOT NULL default '0',
 					datetime_start datetime NOT NULL default '0000-00-00 00:00:00',
@@ -490,7 +364,7 @@ class Setup {
 					KEY datetime_end_gmt (datetime_end_gmt)
 				) {$charset_collate};";
 
-		$table = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
+		$table = sprintf( Rsvp::TABLE_FORMAT, $prefix );
 		$sql[] = "CREATE TABLE {$table} (
 					id bigint(20) unsigned NOT NULL auto_increment,
 					post_id bigint(20) unsigned NOT NULL default '0',
@@ -508,133 +382,6 @@ class Setup {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		dbDelta( $sql );
-	}
-
-	/**
-	 * Populate custom columns for Event post type in the admin dashboard.
-	 *
-	 * This method is used to display custom columns for Event post types in the WordPress admin dashboard.
-	 * It provides additional information for each event, such as its datetime.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $column  The name of the column to display.
-	 * @param int    $post_id The current post ID.
-	 * @return void
-	 */
-	public function custom_columns( string $column, int $post_id ): void {
-		if ( 'datetime' === $column ) {
-			$event = new Event( $post_id );
-
-			echo esc_html( $event->get_display_datetime() );
-		}
-	}
-
-	/**
-	 * Set custom columns for Event post type in the admin dashboard.
-	 *
-	 * This method is used to define custom columns for Event post types in the WordPress admin dashboard.
-	 * It adds an additional column for displaying event date and time.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $columns An associative array of column headings.
-	 * @return array An updated array of column headings, including the custom columns.
-	 */
-	public function set_custom_columns( array $columns ): array {
-		$placement = 2;
-		$insert    = array(
-			'datetime' => __( 'Event date &amp; time', 'gatherpress' ),
-		);
-
-		return array_slice( $columns, 0, $placement, true ) + $insert + array_slice( $columns, $placement, null, true );
-	}
-
-	/**
-	 * Make custom columns sortable for Event post type in the admin dashboard.
-	 *
-	 * This method allows the custom columns, including the 'Event date & time' column,
-	 * to be sortable in the WordPress admin dashboard for Event post types.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $columns An array of sortable columns.
-	 * @return array An updated array of sortable columns.
-	 */
-	public function sortable_columns( array $columns ): array {
-		// Add 'datetime' as a sortable column.
-		$columns['datetime'] = 'datetime';
-
-		return $columns;
-	}
-
-	/**
-	 * Returns the event date instead of the publish date for events.
-	 *
-	 * This method retrieves the event date instead of the publish date for events
-	 * based on the plugin settings. It checks if the event date should be used instead
-	 * of the publish date and returns the formatted event date accordingly.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $the_date The formatted date.
-	 * @return string The updated date string, representing the event date.
-	 */
-	public function get_the_event_date( $the_date ): string {
-		$settings       = Settings::get_instance();
-		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
-
-		// Check if the post is of the 'Event' post type and if event date should be used.
-		if ( Event::POST_TYPE !== get_post_type() || 1 !== intval( $use_event_date ) ) {
-			return $the_date;
-		}
-
-		// Get the event date and return it as the formatted date.
-		$event = new Event( get_the_ID() );
-
-		return $event->get_display_datetime();
-	}
-
-	/**
-	 * Add Upcoming and Past Events display states to assigned pages.
-	 *
-	 * This method adds custom display states to assigned pages for "Upcoming Events" and "Past Events"
-	 * based on the plugin settings. It checks if the current post object corresponds to any of the assigned
-	 * pages and adds display states accordingly.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array   $post_states An array of post display states.
-	 * @param WP_Post $post        The current post object.
-	 * @return array An updated array of post display states with custom labels if applicable.
-	 */
-	public function set_event_archive_labels( array $post_states, WP_Post $post ): array {
-		// Retrieve plugin general settings.
-		$general = get_option( Utility::prefix_key( 'general' ) );
-		$pages   = $general['pages'] ?? '';
-
-		if ( empty( $pages ) || ! is_array( $pages ) ) {
-			return $post_states;
-		}
-
-		// Define archive pages for "Upcoming Events" and "Past Events".
-		$archive_pages = array(
-			'past_events'     => json_decode( $pages['past_events'] ),
-			'upcoming_events' => json_decode( $pages['upcoming_events'] ),
-		);
-
-		// Check if the current post corresponds to any assigned archive page and add display states.
-		foreach ( $archive_pages as $key => $value ) {
-			if ( ! empty( $value ) && is_array( $value ) ) {
-				$page = $value[0];
-
-				if ( $page->id === $post->ID ) {
-					$post_states[ sprintf( 'gp_%s', $key ) ] = sprintf( 'GP %s', $page->value );
-				}
-			}
-		}
-
-		return $post_states;
 	}
 
 	/**

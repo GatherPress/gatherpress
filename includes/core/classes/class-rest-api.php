@@ -359,7 +359,7 @@ class Rest_Api {
 	 * @return bool True if the parameter is a valid timezone identifier, false otherwise.
 	 */
 	public function validate_timezone( string $param ): bool {
-		return in_array( Event::maybe_convert_offset( $param ), Event::list_identifiers(), true );
+		return in_array( Utility::maybe_convert_utc_offset( $param ), Utility::list_timezone_and_utc_offsets(), true );
 	}
 
 	/**
@@ -378,7 +378,7 @@ class Rest_Api {
 	 */
 	public function update_datetime( WP_REST_Request $request ): WP_REST_Response {
 		$params             = wp_parse_args( $request->get_params(), $request->get_default_params() );
-		$params['timezone'] = Event::maybe_convert_offset( $params['timezone'] );
+		$params['timezone'] = Utility::maybe_convert_utc_offset( $params['timezone'] );
 		$event              = new Event( $params['post_id'] );
 
 		unset( $params['post_id'] );

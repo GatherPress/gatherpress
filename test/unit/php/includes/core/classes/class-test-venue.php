@@ -37,6 +37,24 @@ class Test_Venue extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_post_type' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_post_meta' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_taxonomy' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'post_updated',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_update_term_slug' ),
@@ -53,64 +71,64 @@ class Test_Venue extends Base {
 	}
 
 	/**
-	 * Coverage for get_post_type_registration_args method.
+	 * Coverage for register_post_type method.
 	 *
-	 * @covers ::get_post_type_registration_args
+	 * @covers ::register_post_type
 	 *
 	 * @return void
 	 */
-	public function test_get_post_type_registration_args(): void {
-		$args = Venue::get_post_type_registration_args();
+	public function test_register_post_type(): void {
+		$instance = Venue::get_instance();
 
-		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
-		$this->assertTrue( $args['show_in_rest'], 'Failed to assert that show_in_rest is true.' );
-		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
-		$this->assertSame( 'dashicons-location', $args['menu_icon'], 'Failed to assert that menu_icon is location.' );
-		$this->assertSame( 'venue', $args['rewrite']['slug'], 'Failed to assert that slug is events.' );
+		unregister_post_type( Venue::POST_TYPE );
+
+		$this->assertFalse( post_type_exists( Venue::POST_TYPE ), 'Failed to assert that post type does not exist.' );
+
+		$instance->register_post_type();
+
+		$this->assertTrue( post_type_exists( Venue::POST_TYPE ), 'Failed to assert that post type exists.' );
 	}
 
 	/**
-	 * Coverage for get_post_meta_registration_args method.
+	 * Coverage for register_post_meta method.
 	 *
-	 * @covers ::get_post_meta_registration_args
+	 * @covers ::register_post_meta
 	 *
 	 * @return void
 	 */
-	public function test_get_post_meta_registration_args(): void {
-		$args = Venue::get_post_meta_registration_args();
+	public function test_register_post_meta(): void {
+		$instance = Venue::get_instance();
 
-		$this->assertIsArray( $args['venue_information'], 'Failed to assert that _online_event_link is an array.' );
+		unregister_post_meta( Venue::POST_TYPE, 'venue_information' );
 
-		$this->mock->user( 'subscriber' );
+		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertFalse(
-			$args['venue_information']['auth_callback'](),
-			'Failed to assert false on auth_callback for subscriber'
-		);
+		$this->assertArrayNotHasKey( 'venue_information', $meta, 'Failed to assert that online_event_link does not exist.' );
 
-		$this->mock->user( 'admin' );
+		$instance->register_post_meta();
 
-		$this->assertTrue(
-			$args['venue_information']['auth_callback'](),
-			'Failed to assert true on auth_callback for admin'
-		);
+		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
+
+		$this->assertArrayHasKey( 'venue_information', $meta, 'Failed to assert that online_event_link does exist.' );
 	}
 
 	/**
-	 * Coverage for get_taxonomy_registration_args method.
+	 * Coverage for register_taxonomy method.
 	 *
-	 * @covers ::get_taxonomy_registration_args
+	 * @covers ::register_taxonomy
 	 *
 	 * @return void
 	 */
-	public function test_get_taxonomy_registration_args(): void {
-		$args = Venue::get_taxonomy_registration_args();
+	public function test_register_taxonomy(): void {
+		$instance = Venue::get_instance();
 
-		$this->assertIsArray( $args['labels'], 'Failed to assert that labels are an array.' );
-		$this->assertTrue( $args['public'], 'Failed to assert that public is true.' );
-		$this->assertFalse( $args['show_ui'], 'Failed to assert that show_ui is false.' );
-		$this->assertFalse( $args['hierarchical'], 'Failed to assert that hierarchical is false.' );
-		$this->assertFalse( $args['show_admin_column'], 'Failed to assert that show_admin_column is false.' );
+		unregister_taxonomy( Venue::TAXONOMY );
+
+		$this->assertFalse( taxonomy_exists( Venue::TAXONOMY ), 'Failed to assert that taxonomy does not exist.' );
+
+		$instance->register_taxonomy();
+
+		$this->assertTrue( taxonomy_exists( Venue::TAXONOMY ), 'Failed to assert that taxonomy exists.' );
 	}
 
 	/**

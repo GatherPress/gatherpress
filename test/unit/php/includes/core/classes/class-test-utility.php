@@ -105,4 +105,82 @@ class Test_Utility extends Base {
 			$this->assertIsArray( $timezones[ $key ] );
 		}
 	}
+
+	/**
+	 * Data provider for maybe_convert_utc_offset test.
+	 *
+	 * @return array
+	 */
+	public function data_maybe_convert_utc_offset(): array {
+		return array(
+			array(
+				'America/New_York',
+				'America/New_York',
+			),
+			array(
+				'UTC',
+				'UTC',
+			),
+			array(
+				'UTC+9.5',
+				'+09:30',
+			),
+			array(
+				'UTC-7.25',
+				'-07:15',
+			),
+			array(
+				'UTC-5.75',
+				'-05:45',
+			),
+			array(
+				'UTC+1',
+				'+01:00',
+			),
+		);
+	}
+
+	/**
+	 * Coverage for maybe_convert_utc_offset method.
+	 *
+	 * @dataProvider data_maybe_convert_utc_offset
+	 *
+	 * @covers ::maybe_convert_utc_offset
+	 *
+	 * @param string $input   Value to pass to method.
+	 * @param string $expects Expected response.
+	 *
+	 * @return void
+	 */
+	public function test_maybe_convert_utc_offset( $input, $expects ): void {
+		$this->assertSame(
+			$expects,
+			Utility::maybe_convert_utc_offset( $input ),
+			'Failed to assert that conversion matches.'
+		);
+	}
+
+	/**
+	 * Coverage for list_timezone_and_utc_offsets method.
+	 *
+	 * @covers ::list_timezone_and_utc_offsets
+	 *
+	 * @return void
+	 */
+	public function test_list_timezone_and_utc_offsets(): void {
+		$list      = Utility::list_timezone_and_utc_offsets();
+		$timezones = array(
+			'America/Belem',
+			'Asia/Chita',
+			'Europe/Vilnius',
+			'UTC',
+			'-12:00',
+			'-00:30',
+			'+09:30',
+			'+13:45',
+		);
+		foreach ( $timezones as $timezone ) {
+			$this->assertContains( $timezone, $list, 'Failed to assert timezone is in list.' );
+		}
+	}
 }
