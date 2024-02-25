@@ -116,7 +116,7 @@ class Event_Query {
 			$tax_query[] = array(
 				'relation' => 'AND',
 				array(
-					'taxonomy' => Event::TAXONOMY,
+					'taxonomy' => Topic::TAXONOMY,
 					'field'    => 'slug',
 					'terms'    => $topics,
 				),
@@ -128,7 +128,7 @@ class Event_Query {
 			);
 		} elseif ( ! empty( $topics ) ) {
 			$tax_query[] = array(
-				'taxonomy' => Event::TAXONOMY,
+				'taxonomy' => Topic::TAXONOMY,
 				'field'    => 'slug',
 				'terms'    => $topics,
 			);
@@ -216,7 +216,7 @@ class Event_Query {
 						// Pass original page title as archive title.
 						add_filter(
 							'get_the_archive_title',
-							function () use ( $page_id ) {
+							static function () use ( $page_id ) {
 								return get_the_title( $page_id );
 							}
 						);
@@ -330,14 +330,16 @@ class Event_Query {
 			$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
 		}
 
-		if ( 'all' !== $type ) {
-			$current = gmdate( Event::DATETIME_FORMAT, time() );
+		if ( 'all' === $type ) {
+			return $pieces;
+		}
 
-			if ( 'upcoming' === $type ) {
-				$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
-			} elseif ( 'past' === $type ) {
-				$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
-			}
+		$current = gmdate( Event::DATETIME_FORMAT, time() );
+
+		if ( 'upcoming' === $type ) {
+			$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
+		} elseif ( 'past' === $type ) {
+			$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
 		}
 
 		return $pieces;

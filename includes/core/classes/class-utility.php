@@ -116,4 +116,108 @@ class Utility {
 
 		return $timezones_clean;
 	}
+
+	/**
+	 * Get a list of all timezones and UTC offsets.
+	 *
+	 * This method returns an array containing all available timezones along with standard UTC offsets.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array of timezone identifiers and UTC offsets.
+	 */
+	public static function list_timezone_and_utc_offsets(): array {
+		// Get a list of all available timezone identifiers.
+		$identifiers = timezone_identifiers_list();
+
+		// Define an array of standard UTC offsets.
+		$offset_range = array(
+			'-12:00',
+			'-11:30',
+			'-11:00',
+			'-10:30',
+			'-10:00',
+			'-09:30',
+			'-09:00',
+			'-08:30',
+			'-08:00',
+			'-07:30',
+			'-07:00',
+			'-06:30',
+			'-06:00',
+			'-05:30',
+			'-05:00',
+			'-04:30',
+			'-04:00',
+			'-03:30',
+			'-03:00',
+			'-02:30',
+			'-02:00',
+			'-01:30',
+			'-01:00',
+			'-00:30',
+			'+00:00',
+			'+00:30',
+			'+01:00',
+			'+01:30',
+			'+02:00',
+			'+02:30',
+			'+03:00',
+			'+03:30',
+			'+04:00',
+			'+04:30',
+			'+05:00',
+			'+05:30',
+			'+05:45',
+			'+06:00',
+			'+06:30',
+			'+07:00',
+			'+07:30',
+			'+08:00',
+			'+08:30',
+			'+08:45',
+			'+09:00',
+			'+09:30',
+			'+10:00',
+			'+10:30',
+			'+11:00',
+			'+11:30',
+			'+12:00',
+			'+12:45',
+			'+13:00',
+			'+13:45',
+			'+14:00',
+		);
+
+		// Merge the timezone identifiers and UTC offsets into a single array.
+		return array_merge( $identifiers, $offset_range );
+	}
+
+	/**
+	 * Convert a UTC offset to a format compatible with DateTimeZone.
+	 *
+	 * This method takes a UTC offset in the form of "+HH:mm" or "-HH:mm" and converts it to a format
+	 * that can be used with the DateTimeZone constructor.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $timezone The UTC offset to convert, e.g., "+05:30" or "-08:00".
+	 * @return string The converted timezone format, e.g., "+0530" or "-0800".
+	 */
+	public static function maybe_convert_utc_offset( string $timezone ): string {
+		// Regex: https://regex101.com/r/wxhjIu/1.
+		preg_match( '/^UTC([+-])(\d+)(.\d+)?$/', $timezone, $matches );
+
+		if ( ! count( $matches ) ) {
+			return $timezone;
+		}
+
+		if ( empty( $matches[3] ) ) {
+			$matches[3] = ':00';
+		}
+
+		$matches[3] = str_replace( array( '.25', '.5', '.75' ), array( ':15', ':30', ':45' ), $matches[3] );
+
+		return $matches[1] . str_pad( $matches[2], 2, '0', STR_PAD_LEFT ) . $matches[3];
+	}
 }
