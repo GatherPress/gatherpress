@@ -37,6 +37,24 @@ class Test_Venue extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_post_type' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_post_meta' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_taxonomy' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'post_updated',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_update_term_slug' ),
@@ -50,6 +68,67 @@ class Test_Venue extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Coverage for register_post_type method.
+	 *
+	 * @covers ::register_post_type
+	 *
+	 * @return void
+	 */
+	public function test_register_post_type(): void {
+		$instance = Venue::get_instance();
+
+		unregister_post_type( Venue::POST_TYPE );
+
+		$this->assertFalse( post_type_exists( Venue::POST_TYPE ), 'Failed to assert that post type does not exist.' );
+
+		$instance->register_post_type();
+
+		$this->assertTrue( post_type_exists( Venue::POST_TYPE ), 'Failed to assert that post type exists.' );
+	}
+
+	/**
+	 * Coverage for register_post_meta method.
+	 *
+	 * @covers ::register_post_meta
+	 *
+	 * @return void
+	 */
+	public function test_register_post_meta(): void {
+		$instance = Venue::get_instance();
+
+		unregister_post_meta( Venue::POST_TYPE, 'venue_information' );
+
+		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
+
+		$this->assertArrayNotHasKey( 'venue_information', $meta, 'Failed to assert that online_event_link does not exist.' );
+
+		$instance->register_post_meta();
+
+		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
+
+		$this->assertArrayHasKey( 'venue_information', $meta, 'Failed to assert that online_event_link does exist.' );
+	}
+
+	/**
+	 * Coverage for register_taxonomy method.
+	 *
+	 * @covers ::register_taxonomy
+	 *
+	 * @return void
+	 */
+	public function test_register_taxonomy(): void {
+		$instance = Venue::get_instance();
+
+		unregister_taxonomy( Venue::TAXONOMY );
+
+		$this->assertFalse( taxonomy_exists( Venue::TAXONOMY ), 'Failed to assert that taxonomy does not exist.' );
+
+		$instance->register_taxonomy();
+
+		$this->assertTrue( taxonomy_exists( Venue::TAXONOMY ), 'Failed to assert that taxonomy exists.' );
 	}
 
 	/**
