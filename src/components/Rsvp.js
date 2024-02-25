@@ -253,7 +253,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							)
 						)}
 					</div>
-					{!rsvpAnonymous && 'attending' === rsvpStatus &&
+					{!rsvpAnonymous && 'attending' === rsvpStatus && (
 						<div className="gp-modal__guests">
 							<label htmlFor="gp-guests">
 								{__('Number of guests?', 'gatherpress')}
@@ -275,8 +275,8 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 								defaultValue={rsvpGuests}
 							/>
 						</div>
-					}
-					{enableAnonymousRsvp &&
+					)}
+					{enableAnonymousRsvp && (
 						<div className="gp-modal__anonymous">
 							<input
 								id="gp-anonymous"
@@ -308,7 +308,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							</label>
 							<Tooltip id="gp-anonymous-tooltip" />
 						</div>
-					}
+					)}
 				</div>
 				<ButtonGroup className="gp-buttons wp-block-buttons">
 					<div className="gp-buttons__container wp-block-button is-style-outline">
