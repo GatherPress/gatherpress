@@ -322,10 +322,6 @@ class Rsvp {
 		}
 
 		foreach ( $data as $response ) {
-			// @todo Currently, the number of guests for attending response is set to 0 as this feature is not yet available.
-			// We plan to implement this feature in a future version of GatherPress.
-			$response['guests'] = 0;
-
 			$user_id     = intval( $response['user_id'] );
 			$user_status = sanitize_key( $response['status'] );
 			$user_guests = intval( $response['guests'] );

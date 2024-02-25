@@ -288,25 +288,25 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 					) : (
 						<></>
 					)}
-					{/*@todo Guests feature coming in later version of GatherPress*/}
-					{/*	<label htmlFor="gp-guests">*/}
-					{/*		{__('Number of guests?', 'gatherpress')}*/}
-					{/*	</label>*/}
-					{/*	<input*/}
-					{/*		id="gp-guests"*/}
-					{/*		type="number"*/}
-					{/*		min="0"*/}
-					{/*		max="5"*/}
-					{/*		onChange={(e) =>*/}
-					{/*			onAnchorClick(*/}
-					{/*				e,*/}
-					{/*				'attending',*/}
-					{/*				e.target.value,*/}
-					{/*				false*/}
-					{/*			)*/}
-					{/*		}*/}
-					{/*		defaultValue={rsvpGuests}*/}
-					{/*	/>*/}
+					<label htmlFor="gp-guests">
+						{__('Number of guests?', 'gatherpress')}
+					</label>
+					<input
+						id="gp-guests"
+						type="number"
+						min="0"
+						max="5"
+						onChange={(e) =>
+							onAnchorClick(
+								e,
+								'attending',
+								rsvpAnonymous,
+								Number(e.target.value),
+								false
+							)
+						}
+						defaultValue={rsvpGuests}
+					/>
 				</div>
 				<ButtonGroup className="gp-buttons wp-block-buttons">
 					<div className="gp-buttons__container wp-block-button is-style-outline">
@@ -377,10 +377,10 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 									_n(
 										'%d guest',
 										'%d guests',
-										{ rsvpGuests },
+										rsvpGuests,
 										'gatherpress'
 									),
-									{ rsvpGuests }
+									rsvpGuests
 								)}
 							</span>
 						</div>
