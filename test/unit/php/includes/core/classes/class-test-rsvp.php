@@ -314,49 +314,13 @@ class Test_Rsvp extends Base {
 		$newer = array( 'timestamp' => '2023-05-11 08:30:00' );
 		$older = array( 'timestamp' => '2022-05-11 08:30:00' );
 
-		$this->assertFalse(
+		$this->assertTrue(
 			$rsvp->sort_by_timestamp( $newer, $older ),
 			'Failed to assert correct sorting of timestamp.'
 		);
-		$this->assertTrue(
+		$this->assertFalse(
 			$rsvp->sort_by_timestamp( $older, $newer ),
 			'Failed to assert correct sorting of timestamp.'
-		);
-	}
-
-	/**
-	 * Coverage for sort_by_guests method.
-	 *
-	 * @covers ::sort_by_guests
-	 *
-	 * @return void
-	 */
-	public function test_sort_by_guests(): void {
-		$post     = $this->mock->post(
-			array(
-				'post_type' => 'gp_event',
-			)
-		)->get();
-		$rsvp     = new Rsvp( $post->ID );
-		$guests_0 = array( 'guests' => 0 );
-		$guests_1 = array( 'guests' => 1 );
-		$guests_2 = array( 'guests' => 2 );
-
-		$this->assertTrue(
-			$rsvp->sort_by_guests( $guests_0, $guests_1 ),
-			'Failed to assert correct sorting of guests.'
-		);
-		$this->assertTrue(
-			$rsvp->sort_by_guests( $guests_1, $guests_2 ),
-			'Failed to assert correct sorting of guests.'
-		);
-		$this->assertTrue(
-			$rsvp->sort_by_guests( $guests_0, $guests_2 ),
-			'Failed to assert correct sorting of guests.'
-		);
-		$this->assertFalse(
-			$rsvp->sort_by_guests( $guests_2, $guests_0 ),
-			'Failed to assert correct sorting of guests.'
 		);
 	}
 }

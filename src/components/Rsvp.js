@@ -253,7 +253,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							)
 						)}
 					</div>
-					{!rsvpAnonymous && 'not_attending' !== rsvpStatus && (
+					{!rsvpAnonymous && 'attending' === rsvpStatus && (
 						<div className="gp-modal__guests">
 							<label htmlFor="gp-guests">
 								{__('Number of guests?', 'gatherpress')}
@@ -263,15 +263,17 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 								type="number"
 								min="0"
 								max="5"
-								onChange={(e) =>
+								onChange={(e) => {
+									const value = Number(e.target.value);
+									setRsvpGuests(value);
 									onAnchorClick(
 										e,
 										rsvpStatus,
 										rsvpAnonymous,
-										Number(e.target.value),
+										value,
 										false
-									)
-								}
+									);
+								}}
 								defaultValue={rsvpGuests}
 							/>
 						</div>

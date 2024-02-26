@@ -141,6 +141,15 @@ class Rsvp {
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): string {
 		global $wpdb;
 
+		$data = array(
+			'post_id'   => 0,
+			'user_id'   => 0,
+			'timestamp' => '0000-00-00 00:00:00',
+			'status'    => 'no_status',
+			'guests'    => 0,
+			'anonymous' => 0,
+		);
+
 		$post_id        = $this->event->ID;
 		$updated_status = '';
 
@@ -156,8 +165,16 @@ class Rsvp {
 		$current_response = $this->get( $user_id );
 		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
-		if ( in_array( $status, array( 'attending', 'waiting_list' ), true ) ) {
-			$status = ! $limit_reached ? 'attending' : 'waiting_list';
+		if ( 'attending' === $status && $limit_reached ) {
+			$guests = $current_response['guests'];
+		}
+
+		if ( 'attending' !== $current_response['status'] && $limit_reached ) {
+			$status = 'waiting_list';
+		}
+
+		if ( 'waiting_list' === $status ) {
+			$guests = 0;
 		}
 
 		$data = array(
@@ -221,9 +238,6 @@ class Rsvp {
 			// People who are longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
-			// People with most guests are put at bottom of waiting list.
-			usort( $waiting_list, array( $this, 'sort_by_guests' ) );
-
 			$total = $this->max_attending_limit - intval( $responses['attending']['count'] );
 
 			while ( $i < $total ) {
@@ -233,7 +247,7 @@ class Rsvp {
 				}
 
 				$response = $waiting_list[ $i ];
-				$this->save( $response['id'], 'attending', $response['anonymous'], $response['guests'] );
+				$this->save( $response['id'], 'attending', $response['anonymous'] );
 				++$i;
 			}
 		}
@@ -451,26 +465,6 @@ class Rsvp {
 	 * @return bool True if the first response's timestamp is earlier than the second response's timestamp; otherwise, false.
 	 */
 	public function sort_by_timestamp( array $first, array $second ): bool {
-		return ( strtotime( $first['timestamp'] ) < strtotime( $second['timestamp'] ) );
-	}
-
-	/**
-	 * Sorts array elements based on the number of guests.
-	 *
-	 * This method compares two array elements by the number of guests specified in each,
-	 * allowing for sorting of an array based on guest counts. It's designed to be used
-	 * with PHP's usort() function or similar array sorting functions that require a
-	 * comparison function. The method returns true if the first element should be
-	 * considered less than the second (i.e., has fewer guests), making it suitable for
-	 * use in ascending order sorts.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $first The first array element to compare, expected to have a 'guests' key with an integer value.
-	 * @param array $second The second array element to compare, also expected to have a 'guests' key with an integer value.
-	 * @return bool True if the first element has fewer guests than the second, false otherwise.
-	 */
-	public function sort_by_guests( array $first, array $second ): bool {
-		return ( intval( $first['guests'] ) < intval( $second['guests'] ) );
+		return ( strtotime( $first['timestamp'] ) > strtotime( $second['timestamp'] ) );
 	}
 }
