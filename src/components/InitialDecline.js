@@ -32,6 +32,10 @@ const InitialDecline = () => {
 			.enable_initial_decline;
 	}, []);
 
+	if (isNewEvent) {
+		defaultInitialDecline = getFromGlobal('settings.enableInitialDecline');
+	}
+	
 	const [initialDecline, setInitialDecline] = useState(defaultInitialDecline);
 
 	const updateInitialDecline = (value) => {
@@ -41,11 +45,6 @@ const InitialDecline = () => {
 		editPost({ meta });
 		unlockPostSaving();
 	};
-
-	if (isNewEvent) {
-		defaultInitialDecline = getFromGlobal('settings.enableInitialDecline');
-		updateInitialDecline(defaultInitialDecline);
-	}
 
 	return (
 		<CheckboxControl

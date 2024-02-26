@@ -9,10 +9,6 @@
   "example": {},
   "description": "Enables members to easily confirm their attendance for an event.",
   "attributes": {
-    "allowInitialDecline": {
-      "type": "boolean",
-      "default": false
-    },
     "content": {
       "type": "string"
     },

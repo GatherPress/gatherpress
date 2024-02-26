@@ -16,14 +16,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _components_Rsvp__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../components/Rsvp */ "./src/components/Rsvp.js");
-/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../helpers/globals */ "./src/helpers/globals.js");
-/* harmony import */ var _components_EditCover__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../components/EditCover */ "./src/components/EditCover.js");
-/* harmony import */ var _components_InitialDecline__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../components/InitialDecline */ "./src/components/InitialDecline.js");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _components_Rsvp__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../components/Rsvp */ "./src/components/Rsvp.js");
+/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../helpers/globals */ "./src/helpers/globals.js");
+/* harmony import */ var _components_EditCover__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../components/EditCover */ "./src/components/EditCover.js");
 
 /**
  * WordPress dependencies.
@@ -31,11 +28,9 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 /**
  * Internal dependencies.
  */
-
 
 
 
@@ -54,15 +49,15 @@ __webpack_require__.r(__webpack_exports__);
  */
 const Edit = () => {
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)();
-  const postId = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_5__.getFromGlobal)('eventDetails.postId');
-  const currentUser = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_5__.getFromGlobal)('eventDetails.currentUser');
+  const postId = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('eventDetails.postId');
+  const currentUser = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('eventDetails.currentUser');
   return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     ...blockProps
-  }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_EditCover__WEBPACK_IMPORTED_MODULE_6__["default"], null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_Rsvp__WEBPACK_IMPORTED_MODULE_4__["default"], {
+  }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_EditCover__WEBPACK_IMPORTED_MODULE_5__["default"], null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_Rsvp__WEBPACK_IMPORTED_MODULE_3__["default"], {
     postId: postId,
     currentUser: currentUser,
     type: 'upcoming'
-  }), (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_5__.isSinglePostInEditor)() && (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_3__.__)('RSVP Options', 'gatherpress')), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_InitialDecline__WEBPACK_IMPORTED_MODULE_7__["default"], null)))));
+  })));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Edit);
 
@@ -159,90 +154,6 @@ const EditCover = props => {
   }));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (EditCover);
-
-/***/ }),
-
-/***/ "./src/components/InitialDecline.js":
-/*!******************************************!*\
-  !*** ./src/components/InitialDecline.js ***!
-  \******************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
-/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
-/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
-/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../helpers/globals */ "./src/helpers/globals.js");
-
-/**
- * WordPress dependencies.
- */
-
-
-
-
-
-/**
- * Internal dependencies.
- */
-
-
-/**
- * InitialDecline component.
- *
- * This component renders a checkbox control that allows toggling the initial declining feature for an event.
- * It handles the state and updates the post's metadata accordingly. When creating a new event, the default
- * state of the checkbox is determined by a global setting. For existing events, it uses the event's current
- * setting. The component ensures that changes are reflected in the post's metadata and also unlocks post saving.
- *
- * @return {JSX.Element} A checkbox control for enabling or disabling initial declining.
- */
-const InitialDecline = () => {
-  const {
-    editPost,
-    unlockPostSaving
-  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useDispatch)('core/editor');
-  const isNewEvent = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
-    return select('core/editor').isCleanNewPost();
-  }, []);
-  let defaultInitialDecline = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
-    return select('core/editor').getEditedPostAttribute('meta').enable_initial_decline;
-  }, []);
-  const [initialDecline, setInitialDecline] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(defaultInitialDecline);
-  const updateInitialDecline = value => {
-    const meta = {
-      enable_initial_decline: Number(value)
-    };
-    setInitialDecline(value);
-    editPost({
-      meta
-    });
-    unlockPostSaving();
-  };
-  if (isNewEvent) {
-    defaultInitialDecline = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_5__.getFromGlobal)('settings.enableInitialDecline');
-    updateInitialDecline(defaultInitialDecline);
-  }
-  return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.CheckboxControl, {
-    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Allow attendees to select "not attending" immediately', 'gatherpress'),
-    checked: initialDecline,
-    onChange: value => {
-      updateInitialDecline(value);
-    }
-  });
-};
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (InitialDecline);
 
 /***/ }),
 
@@ -9103,7 +9014,7 @@ const h="react-tooltip-core-styles",w="react-tooltip-base-styles",b={core:!1,bas
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/rsvp","version":"1.0.0","title":"RSVP","category":"gatherpress","icon":"insert","example":{},"description":"Enables members to easily confirm their attendance for an event.","attributes":{"allowInitialDecline":{"type":"boolean","default":false},"content":{"type":"string"},"color":{"type":"string"}},"supports":{"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","style":"file:./style-index.css","viewScript":"file:./rsvp.js","render":"file:./render.php"}');
+module.exports = JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/rsvp","version":"1.0.0","title":"RSVP","category":"gatherpress","icon":"insert","example":{},"description":"Enables members to easily confirm their attendance for an event.","attributes":{"content":{"type":"string"},"color":{"type":"string"}},"supports":{"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","style":"file:./style-index.css","viewScript":"file:./rsvp.js","render":"file:./render.php"}');
 
 /***/ })
 

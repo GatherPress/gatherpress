@@ -494,6 +494,88 @@ const DateTimeStart = props => {
 
 /***/ }),
 
+/***/ "./src/components/InitialDecline.js":
+/*!******************************************!*\
+  !*** ./src/components/InitialDecline.js ***!
+  \******************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../helpers/globals */ "./src/helpers/globals.js");
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+/**
+ * InitialDecline component.
+ *
+ * This component renders a checkbox control that allows toggling the initial declining feature for an event.
+ * It handles the state and updates the post's metadata accordingly. When creating a new event, the default
+ * state of the checkbox is determined by a global setting. For existing events, it uses the event's current
+ * setting. The component ensures that changes are reflected in the post's metadata and also unlocks post saving.
+ *
+ * @return {JSX.Element} A checkbox control for enabling or disabling initial declining.
+ */
+const InitialDecline = () => {
+  const {
+    editPost,
+    unlockPostSaving
+  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useDispatch)('core/editor');
+  const isNewEvent = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
+    return select('core/editor').isCleanNewPost();
+  }, []);
+  let defaultInitialDecline = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
+    return select('core/editor').getEditedPostAttribute('meta').enable_initial_decline;
+  }, []);
+  if (isNewEvent) {
+    defaultInitialDecline = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_5__.getFromGlobal)('settings.enableInitialDecline');
+  }
+  const [initialDecline, setInitialDecline] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(defaultInitialDecline);
+  const updateInitialDecline = value => {
+    const meta = {
+      enable_initial_decline: Number(value)
+    };
+    setInitialDecline(value);
+    editPost({
+      meta
+    });
+    unlockPostSaving();
+  };
+  return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.CheckboxControl, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Allow attendees to select "not attending" immediately', 'gatherpress'),
+    checked: initialDecline,
+    onChange: value => {
+      updateInitialDecline(value);
+    }
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (InitialDecline);
+
+/***/ }),
+
 /***/ "./src/components/OnlineEventLink.js":
 /*!*******************************************!*\
   !*** ./src/components/OnlineEventLink.js ***!
@@ -1776,10 +1858,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_edit_post__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_wordpress_edit_post__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ var _helpers_event__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ../../helpers/event */ "./src/helpers/event.js");
 /* harmony import */ var _anonymous_rsvp__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./anonymous-rsvp */ "./src/panels/event-settings/anonymous-rsvp/index.js");
-/* harmony import */ var _datetime_range__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./datetime-range */ "./src/panels/event-settings/datetime-range/index.js");
-/* harmony import */ var _notify_members__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./notify-members */ "./src/panels/event-settings/notify-members/index.js");
-/* harmony import */ var _online_link__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./online-link */ "./src/panels/event-settings/online-link/index.js");
-/* harmony import */ var _venue_selector__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./venue-selector */ "./src/panels/event-settings/venue-selector/index.js");
+/* harmony import */ var _initial_decline__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./initial-decline */ "./src/panels/event-settings/initial-decline/index.js");
+/* harmony import */ var _datetime_range__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./datetime-range */ "./src/panels/event-settings/datetime-range/index.js");
+/* harmony import */ var _notify_members__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./notify-members */ "./src/panels/event-settings/notify-members/index.js");
+/* harmony import */ var _online_link__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./online-link */ "./src/panels/event-settings/online-link/index.js");
+/* harmony import */ var _venue_selector__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./venue-selector */ "./src/panels/event-settings/venue-selector/index.js");
 
 /**
  * WordPress dependencies.
@@ -1793,6 +1876,7 @@ __webpack_require__.r(__webpack_exports__);
 /**
  * Internal dependencies.
  */
+
 
 
 
@@ -1820,7 +1904,7 @@ const EventSettings = () => {
     className: "gp-event-settings"
   }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.__experimentalVStack, {
     spacing: 6
-  }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_datetime_range__WEBPACK_IMPORTED_MODULE_8__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_venue_selector__WEBPACK_IMPORTED_MODULE_11__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_online_link__WEBPACK_IMPORTED_MODULE_10__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_anonymous_rsvp__WEBPACK_IMPORTED_MODULE_7__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_notify_members__WEBPACK_IMPORTED_MODULE_9__["default"], null)));
+  }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_datetime_range__WEBPACK_IMPORTED_MODULE_9__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_venue_selector__WEBPACK_IMPORTED_MODULE_12__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_online_link__WEBPACK_IMPORTED_MODULE_11__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_anonymous_rsvp__WEBPACK_IMPORTED_MODULE_7__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_initial_decline__WEBPACK_IMPORTED_MODULE_8__["default"], null), (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_notify_members__WEBPACK_IMPORTED_MODULE_10__["default"], null)));
 };
 
 /**
@@ -1849,6 +1933,42 @@ const EventSettings = () => {
  * @return {void}
  */
 (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_2__.dispatch)('core/edit-post').toggleEditorPanelOpened('gp-event-settings/gp-event-settings');
+
+/***/ }),
+
+/***/ "./src/panels/event-settings/initial-decline/index.js":
+/*!************************************************************!*\
+  !*** ./src/panels/event-settings/initial-decline/index.js ***!
+  \************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _components_InitialDecline__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../../components/InitialDecline */ "./src/components/InitialDecline.js");
+
+/**
+ * Internal dependencies.
+ */
+
+
+/**
+ * A panel component for managing the initial decline option.
+ *
+ * This component renders a section containing the `InitialDecline` component,
+ * allowing users to set and manage the initial decline option for an event.
+ *
+ * @since 1.0.0
+ *
+ * @return {JSX.Element} The JSX element for the InitialDeclinePanel.
+ */
+const InitialDeclinePanel = () => {
+  return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("section", null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_InitialDecline__WEBPACK_IMPORTED_MODULE_1__["default"], null));
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (InitialDeclinePanel);
 
 /***/ }),
 

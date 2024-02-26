@@ -15,6 +15,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
  */
 import { isEventPostType } from '../../helpers/event';
 import AnonymousRsvpPanel from './anonymous-rsvp';
+import InitialDeclinePanel from './initial-decline';
 import DateTimeRangePanel from './datetime-range';
 import NotifyMembersPanel from './notify-members';
 import OnlineEventLinkPanel from './online-link';
@@ -46,6 +47,7 @@ const EventSettings = () => {
 					<VenueSelectorPanel />
 					<OnlineEventLinkPanel />
 					<AnonymousRsvpPanel />
+					<InitialDeclinePanel />
 					<NotifyMembersPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
