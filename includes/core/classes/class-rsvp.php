@@ -123,20 +123,28 @@ class Rsvp {
 	}
 
 	/**
-	 * Save a user's RSVP status for the event.
+	 * Saves a user's RSVP status for an event.
 	 *
-	 * This method allows assigning a user's RSVP status for the event. The user can be assigned
-	 * one of the following RSVP statuses: 'attending', 'not_attending', or 'waiting_list'. The user
-	 * can optionally specify the number of guests accompanying them and whether their RSVP is anonymous.
-	 * The method handles the storage of this information in the database and updates the RSVP status accordingly.
+	 * Allows assigning one of the specified RSVP statuses to a user for an event. The user can be marked as 'attending',
+	 * 'not_attending', or placed on a 'waiting_list'. Additionally, users can specify the number of guests they plan to bring
+	 * along and whether their RSVP should be considered anonymous. This method updates the database accordingly to reflect the
+	 * new RSVP status.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $user_id   A user ID.
-	 * @param string $status    RSVP status ('attending', 'not_attending', 'waiting_list').
-	 * @param int    $anonymous Indicates if the RSVP is anonymous (1 for anonymous, 0 for not anonymous).
-	 * @param int    $guests    Number of guests accompanying the user.
-	 * @return string The updated RSVP status ('attending', 'not_attending', 'waiting_list', 'no_status').
+	 * @param int    $user_id   The ID of the user whose RSVP status is being updated. Must be greater than 0.
+	 * @param string $status    The new RSVP status for the user. Acceptable values are 'attending', 'not_attending', or
+	 *                          'waiting_list'.
+	 * @param int    $anonymous Optional. Whether the RSVP is to be marked as anonymous. Accepts 1 for true (anonymous)
+	 *                          and 0 for false (not anonymous). Default 0.
+	 * @param int    $guests    Optional. The number of guests the user plans to bring along. Default 0.
+	 *
+	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'), RSVP timestamp ('timestamp'),
+	 *               RSVP status ('status'), number of guests ('guests'), and anonymity flag ('anonymous'). Returns a default
+	 *               array with 'post_id' and 'user_id' set to 0, 'timestamp' to '0000-00-00 00:00:00', 'status' to 'no_status',
+	 *               'guests' to 0, and 'anonymous' to 0 if the post ID or user ID is not valid, or if the status is not one of
+	 *               the acceptable values. If the attending limit is reached, 'status' may be automatically set to 'waiting_list',
+	 *               and 'guests' to 0, depending on the context.
 	 */
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		global $wpdb;
