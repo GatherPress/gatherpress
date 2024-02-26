@@ -65,17 +65,17 @@ class Test_Rsvp extends Base {
 		$user_id = $this->factory->user->create();
 		$status  = 'attending';
 
-		$this->assertSame( $status, $rsvp->save( $user_id, $status ), 'Failed to assert user is attending.' );
+		$this->assertSame( $status, $rsvp->save( $user_id, $status )['status'], 'Failed to assert user is attending.' );
 
 		$status = 'not_attending';
 
-		$this->assertSame( $status, $rsvp->save( $user_id, $status ), 'Failed to assert user is not attending.' );
+		$this->assertSame( $status, $rsvp->save( $user_id, $status )['status'], 'Failed to assert user is not attending.' );
 
-		$this->assertEmpty( $rsvp->save( 0, $status ), 'Failed to assert empty due to invalid user ID.' );
+		$this->assertSame( 'no_status', $rsvp->save( 0, $status )['status'], 'Failed to assert no_status due to invalid user ID.' );
 
 		$status = 'unittest';
 
-		$this->assertEmpty( $rsvp->save( $user_id, $status ), 'Failed to assert empty due to invalid status.' );
+		$this->assertSame( 'no_status', $rsvp->save( $user_id, $status )['status'], 'Failed to assert no_status due to invalid status.' );
 
 		$rsvp = new Rsvp( $post->ID );
 
@@ -85,18 +85,18 @@ class Test_Rsvp extends Base {
 		$user_2_id = $this->factory->user->create();
 		$status    = 'attending';
 
-		$this->assertSame( 'attending', $rsvp->save( $user_1_id, $status ), 'Failed to assert that user 1 is attending.' );
-		$this->assertSame( 'waiting_list', $rsvp->save( $user_2_id, $status ), 'Failed to assert that user 2 is on waiting list.' );
+		$this->assertSame( 'attending', $rsvp->save( $user_1_id, $status )['status'], 'Failed to assert that user 1 is attending.' );
+		$this->assertSame( 'waiting_list', $rsvp->save( $user_2_id, $status )['status'], 'Failed to assert that user 2 is on waiting list.' );
 
 		$user_1_id = $this->factory->user->create();
 
 		// When not_attending and anonymous, user record should be removed and marked no_status.
-		$this->assertSame( 'waiting_list', $rsvp->save( $user_1_id, 'attending', 1 ), 'Failed to assert that user 1 is attending' );
-		$this->assertSame( 'no_status', $rsvp->save( $user_1_id, 'not_attending', 1 ), 'Failed to assert that user 1 is no_status.' );
+		$this->assertSame( 'waiting_list', $rsvp->save( $user_1_id, 'attending', 1 )['status'], 'Failed to assert that user 1 is attending' );
+		$this->assertSame( 'no_status', $rsvp->save( $user_1_id, 'not_attending', 1 )['status'], 'Failed to assert that user 1 is no_status.' );
 
 		$user_2_id = $this->factory->user->create();
 
-		$this->assertSame( 'no_status', $rsvp->save( $user_2_id, 'no_status' ), 'Failed to assert that user 2 is no_status.' );
+		$this->assertSame( 'no_status', $rsvp->save( $user_2_id, 'no_status' )['status'], 'Failed to assert that user 2 is no_status.' );
 	}
 
 	/**

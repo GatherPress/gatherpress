@@ -73,7 +73,7 @@ class Cli_Event extends WP_CLI {
 				/* translators: %1$d: event ID, %2$s: attendance status, %3$d: user ID. */
 				__( 'The RSVP status for Event ID "%1$d" has been successfully set to "%2$s" for User ID "%3$d".', 'gatherpress' ),
 				$event_id,
-				$response,
+				$response['status'],
 				$user_id
 			),
 		);

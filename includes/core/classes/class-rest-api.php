@@ -656,21 +656,20 @@ class Rest_Api {
 			is_user_member_of_blog( $user_id ) &&
 			! $event->has_event_past()
 		) {
-			$status = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+			$user_record = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+			$status      = $user_record['status'];
+			$guests      = $user_record['guests'];
 
 			if ( in_array( $status, $event->rsvp->statuses, true ) ) {
 				$success = true;
 			}
 		}
 
-		// Guests could have changed, so we need to get guests from what was saved in the record and use it below.
-		// @todo good to look this over, maybe we get all the record data back from rsvp->save rather than just status.
-		$record   = $event->rsvp->get( $user_id ) ?? [];
 		$response = array(
 			'event_id'    => $post_id,
 			'success'     => $success,
 			'status'      => $status,
-			'guests'      => $record['guests'] ?? 0,
+			'guests'      => $guests,
 			'anonymous'   => $anonymous,
 			'responses'   => $event->rsvp->responses(),
 			'online_link' => $event->maybe_get_online_event_link(),

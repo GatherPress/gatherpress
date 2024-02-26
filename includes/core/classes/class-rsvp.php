@@ -138,7 +138,7 @@ class Rsvp {
 	 * @param int    $guests    Number of guests accompanying the user.
 	 * @return string The updated RSVP status ('attending', 'not_attending', 'waiting_list', 'no_status').
 	 */
-	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): string {
+	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		global $wpdb;
 
 		$data = array(
@@ -150,15 +150,14 @@ class Rsvp {
 			'anonymous' => 0,
 		);
 
-		$post_id        = $this->event->ID;
-		$updated_status = '';
+		$post_id = $this->event->ID;
 
 		if ( 1 > $post_id || 1 > $user_id ) {
-			return $updated_status;
+			return $data;
 		}
 
 		if ( ! in_array( $status, $this->statuses, true ) ) {
-			return $updated_status;
+			return $data;
 		}
 
 		$table            = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
@@ -169,7 +168,11 @@ class Rsvp {
 			$guests = $current_response['guests'];
 		}
 
-		if ( 'attending' !== $current_response['status'] && $limit_reached ) {
+		if (
+			in_array( $status, array( 'attending', 'waiting_list' ), true ) &&
+			'attending' !== $current_response['status'] &&
+			$limit_reached
+		) {
 			$status = 'waiting_list';
 		}
 
@@ -193,26 +196,23 @@ class Rsvp {
 
 			// If not attending and anonymous, just remove record.
 			if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
-				$save   = $wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-				$status = 'no_status'; // Set default status for UI.
+				$wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+
+				$data['status'] = 'no_status'; // Set default status for UI.
 			} else {
-				$save = $wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			}
 		} else {
-			$save = $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		}
 
 		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ) );
-
-		if ( $save ) {
-			$updated_status = sanitize_key( $status );
-		}
 
 		if ( ! $limit_reached ) {
 			$this->check_waiting_list();
 		}
 
-		return $updated_status;
+		return $data;
 	}
 
 	/**
