@@ -72,6 +72,10 @@ class User {
 	public function profile_fields( WP_User $user ): void {
 		$event_updates_opt_in = get_user_meta( $user->ID, 'gp-event-updates-opt-in', true );
 
+		$default_tz   = static::get_system_timezone();
+		$date_default = get_option( 'date_format', 'l, F j, Y' );
+		$time_default = get_option( 'time_format', 'g:i A' );
+
 		// Checkbox is selected by default. '1' is on, '0' is off.
 		if ( '0' !== $event_updates_opt_in ) {
 			$event_updates_opt_in = '1';
@@ -92,25 +96,54 @@ class User {
 		$tz_choices     = Utility::timezone_choices();
 		$date_attrs     = array(
 			'name'  => 'gp_date_format',
-			'value' => ! empty( $gp_date_format ) ? $gp_date_format : '',
+			'value' => ! empty( $gp_date_format ) ? $gp_date_format : $date_default,
 		);
 		$time_attrs     = array(
 			'name'  => 'gp_time_format',
-			'value' => ! empty( $gp_time_format ) ? $gp_time_format : '',
+			'value' => ! empty( $gp_time_format ) ? $gp_time_format : $time_default,
 		);
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/user/date-time.php', GATHERPRESS_CORE_PATH ),
 			array(
-				'date_format' => $gp_date_format,
-				'time_format' => $gp_time_format,
-				'timezone'    => $gp_timezone,
+				'date_format' => $gp_date_format ? $gp_date_format : $date_default,
+				'time_format' => $gp_time_format ? $gp_time_format : $time_default,
+				'timezone'    => $gp_timezone ? $gp_timezone : $default_tz,
 				'date_attrs'  => $date_attrs,
 				'time_attrs'  => $time_attrs,
 				'tz_choices'  => $tz_choices,
 			),
 			true
 		);
+	}
+
+	/**
+	 * Get the system default timezone settings
+	 *
+	 * @since 0.29.9
+	 *
+	 * @return string
+	 */
+	private static function get_system_timezone(): string {
+		$current_offset = get_option( 'gmt_offset' );
+		$tzstring       = get_option( 'timezone_string' );
+
+		// Remove old Etc mappings. Fallback to gmt_offset.
+		if ( str_contains( $tzstring, 'Etc/GMT' ) ) {
+			$tzstring = '';
+		}
+
+		if ( empty( $tzstring ) ) { // Create a UTC+- zone if no timezone string exists.
+			if ( 0 == $current_offset ) {
+				$tzstring = 'UTC+0';
+			} elseif ( $current_offset < 0 ) {
+				$tzstring = 'UTC' . $current_offset;
+			} else {
+				$tzstring = 'UTC+' . $current_offset;
+			}
+		}
+
+		return $tzstring;
 	}
 
 	/**
