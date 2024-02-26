@@ -149,6 +149,13 @@ class Rsvp {
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		global $wpdb;
 
+		$settings        = Settings::get_instance();
+		$max_guest_limit = $settings->get_value( 'general', 'general', 'max_guest_limit' );
+
+		if ( $max_guest_limit < $guests ) {
+			$guests = $max_guest_limit;
+		}
+
 		$data = array(
 			'post_id'   => 0,
 			'user_id'   => 0,

@@ -302,6 +302,7 @@ class Assets {
 			'settings'     => array(
 				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
 				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
 				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
 				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),

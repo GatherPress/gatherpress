@@ -37,7 +37,7 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
  * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
- * @return {JSX.Element} The rendered React component.
+ * @return {string} The rendered React component.
  */
 const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
@@ -48,7 +48,6 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	const [selectorHidden, setSelectorHidden] = useState('hidden');
 	const [selectorExpanded, setSelectorExpanded] = useState('false');
 	const [modalIsOpen, setIsOpen] = useState(false);
-
 	const customStyles = {
 		overlay: {
 			zIndex: 999999999,
@@ -216,6 +215,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	};
 
 	const LoggedInModal = ({ status }) => {
+		const maxGuestLimit = getFromGlobal('settings.maxGuestLimit');
 		let buttonStatus = '';
 		let buttonLabel = '';
 
@@ -253,31 +253,33 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							)
 						)}
 					</div>
-					{!rsvpAnonymous && 'attending' === rsvpStatus && (
-						<div className="gp-modal__guests">
-							<label htmlFor="gp-guests">
-								{__('Number of guests?', 'gatherpress')}
-							</label>
-							<input
-								id="gp-guests"
-								type="number"
-								min="0"
-								max="5"
-								onChange={(e) => {
-									const value = Number(e.target.value);
-									setRsvpGuests(value);
-									onAnchorClick(
-										e,
-										rsvpStatus,
-										rsvpAnonymous,
-										value,
-										false
-									);
-								}}
-								defaultValue={rsvpGuests}
-							/>
-						</div>
-					)}
+					{0 < maxGuestLimit &&
+						!rsvpAnonymous &&
+						'attending' === rsvpStatus && (
+							<div className="gp-modal__guests">
+								<label htmlFor="gp-guests">
+									{__('Number of guests?', 'gatherpress')}
+								</label>
+								<input
+									id="gp-guests"
+									type="number"
+									min="0"
+									max={maxGuestLimit}
+									onChange={(e) => {
+										const value = Number(e.target.value);
+										setRsvpGuests(value);
+										onAnchorClick(
+											e,
+											rsvpStatus,
+											rsvpAnonymous,
+											value,
+											false
+										);
+									}}
+									defaultValue={rsvpGuests}
+								/>
+							</div>
+						)}
 					{enableAnonymousRsvp && (
 						<div className="gp-modal__anonymous">
 							<input
@@ -389,10 +391,10 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 									_n(
 										'%d guest',
 										'%d guests',
-										rsvpGuests,
+										Number(rsvpGuests),
 										'gatherpress'
 									),
-									rsvpGuests
+									Number(rsvpGuests)
 								)}
 							</span>
 						</div>

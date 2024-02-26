@@ -113,6 +113,19 @@ class General extends Base {
 							),
 						),
 					),
+					'max_guest_limit'       => array(
+						'labels' => array(
+							'name' => __( 'Maximum Number of Guests', 'gatherpress' ),
+						),
+						'field'  => array(
+							'label'   => __( 'The default maximum limit of guests an attendees can bring to an event.', 'gatherpress' ),
+							'type'    => 'number',
+							'size'    => 'small',
+							'options' => array(
+								'default' => '0',
+							),
+						),
+					),
 					'enable_anonymous_rsvp' => array(
 						'labels'      => array(
 							'name' => __( 'Anonymous RSVP', 'gatherpress' ),
