@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Rsvp;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
+use WP_User;
 
 /**
  * Class Test_Rsvp.
@@ -26,24 +27,24 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_get(): void {
-		$post   = $this->mock->post(
+		$post    = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$rsvp   = new Rsvp( $post->ID );
-		$user   = $this->mock->user()->get();
-		$status = 'attending';
+		$rsvp    = new Rsvp( $post->ID );
+		$user_id = $this->factory->user->create();
+		$status  = 'attending';
 
 		$this->assertEmpty( $rsvp->get( 0 ) );
-		$this->assertEquals( 0, $rsvp->get( $user->ID )['id'] );
+		$this->assertEquals( 0, $rsvp->get( $user_id )['id'] );
 
-		$rsvp->save( $user->ID, $status );
+		$rsvp->save( $user_id, $status );
 
-		$data = $rsvp->get( $user->ID );
+		$data = $rsvp->get( $user_id );
 
 		$this->assertSame( $post->ID, intval( $data['post_id'] ) );
-		$this->assertSame( $user->ID, intval( $data['user_id'] ) );
+		$this->assertSame( $user_id, intval( $data['user_id'] ) );
 		$this->assertSame( $status, $data['status'] );
 		$this->assertIsInt( strtotime( $data['timestamp'] ) );
 		$this->assertNotEmpty( $data['id'] );
@@ -56,48 +57,47 @@ class Test_Rsvp extends Base {
 	 * @covers ::__construct
 	 */
 	public function test_save(): void {
-		$post   = $this->mock->post(
+		$post    = $this->mock->post(
 			array(
 				'post_type' => 'gp_event',
 			)
 		)->get();
-		$rsvp   = new Rsvp( $post->ID );
-		$user   = $this->mock->user()->get();
-		$status = 'attending';
+		$rsvp    = new Rsvp( $post->ID );
+		$user_id = $this->factory->user->create();
+		$status  = 'attending';
 
-		$this->assertSame( $status, $rsvp->save( $user->ID, $status ), 'Failed to assert user is attending.' );
+		$this->assertSame( $status, $rsvp->save( $user_id, $status ), 'Failed to assert user is attending.' );
 
 		$status = 'not_attending';
 
-		$this->assertSame( $status, $rsvp->save( $user->ID, $status ), 'Failed to assert user is not attending.' );
+		$this->assertSame( $status, $rsvp->save( $user_id, $status ), 'Failed to assert user is not attending.' );
 
 		$this->assertEmpty( $rsvp->save( 0, $status ), 'Failed to assert empty due to invalid user ID.' );
 
 		$status = 'unittest';
 
-		$this->assertEmpty( $rsvp->save( $user->ID, $status ), 'Failed to assert empty due to invalid status.' );
+		$this->assertEmpty( $rsvp->save( $user_id, $status ), 'Failed to assert empty due to invalid status.' );
 
 		$rsvp = new Rsvp( $post->ID );
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attending_limit', 1 );
 
-		$user_1 = $this->mock->user()->get();
-		$user_2 = $this->mock->user()->get();
-		$status = 'attending';
+		$user_1_id = $this->factory->user->create();
+		$user_2_id = $this->factory->user->create();
+		$status    = 'attending';
 
-		$this->assertSame( 'attending', $rsvp->save( $user_1->ID, $status ), 'Failed to assert that user 1 is attending.' );
-		$this->assertSame( 'waiting_list', $rsvp->save( $user_2->ID, $status ), 'Failed to assert that user 2 is on waiting list.' );
+		$this->assertSame( 'attending', $rsvp->save( $user_1_id, $status ), 'Failed to assert that user 1 is attending.' );
+		$this->assertSame( 'waiting_list', $rsvp->save( $user_2_id, $status ), 'Failed to assert that user 2 is on waiting list.' );
 
-		$user_1 = $this->mock->user()->get();
-		$status = 'not_attending';
+		$user_1_id = $this->factory->user->create();
 
 		// When not_attending and anonymous, user record should be removed and marked no_status.
-		$this->assertSame( 'no_status', $rsvp->save( $user_1->ID, $status, 1 ), 'Failed to assert that user 1 is no_status.' );
+		$this->assertSame( 'waiting_list', $rsvp->save( $user_1_id, 'attending', 1 ), 'Failed to assert that user 1 is attending' );
+		$this->assertSame( 'no_status', $rsvp->save( $user_1_id, 'not_attending', 1 ), 'Failed to assert that user 1 is no_status.' );
 
-		$user_2 = $this->mock->user()->get();
-		$status = 'no_status';
+		$user_2_id = $this->factory->user->create();
 
-		$this->assertSame( 'no_status', $rsvp->save( $user_2->ID, $status ), 'Failed to assert that user 2 is no_status.' );
+		$this->assertSame( 'no_status', $rsvp->save( $user_2_id, 'no_status' ), 'Failed to assert that user 2 is no_status.' );
 	}
 
 	/**
@@ -172,10 +172,10 @@ class Test_Rsvp extends Base {
 
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attending_limit', 1 );
 
-		$current_response = [
+		$current_response = array(
 			'status' => 'waiting_list',
 			'guests' => 0,
-		];
+		);
 
 		$this->assertFalse(
 			$rsvp->attending_limit_reached( $current_response ),
@@ -214,8 +214,8 @@ class Test_Rsvp extends Base {
 			)
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
-		$user_id_1 = wp_create_user( 'user_1', 'unittest' );
-		$user_id_2 = wp_create_user( 'user_2', 'unittest' );
+		$user_id_1 = $this->factory->user->create();
+		$user_id_2 = $this->factory->user->create();
 
 		$rsvp->save( $user_id_1, 'attending' );
 		$rsvp->save( $user_id_2, 'not_attending' );
@@ -262,7 +262,7 @@ class Test_Rsvp extends Base {
 			)
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
-		$user_id_3 = wp_create_user( 'user_3', 'unittest3' );
+		$user_id_3 = $this->factory->user->create();
 
 		$rsvp->save( $user_id_3, 'attending', 1 );
 
@@ -322,6 +322,42 @@ class Test_Rsvp extends Base {
 		$this->assertTrue(
 			$rsvp->sort_by_timestamp( $older, $newer ),
 			'Failed to assert correct sorting of timestamp.'
+		);
+	}
+
+	/**
+	 * Coverage for sort_by_guests method.
+	 *
+	 * @covers ::sort_by_guests
+	 *
+	 * @return void
+	 */
+	public function test_sort_by_guests(): void {
+		$post     = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+			)
+		)->get();
+		$rsvp     = new Rsvp( $post->ID );
+		$guests_0 = array( 'guests' => 0 );
+		$guests_1 = array( 'guests' => 1 );
+		$guests_2 = array( 'guests' => 2 );
+
+		$this->assertTrue(
+			$rsvp->sort_by_guests( $guests_0, $guests_1 ),
+			'Failed to assert correct sorting of guests.'
+		);
+		$this->assertTrue(
+			$rsvp->sort_by_guests( $guests_1, $guests_2 ),
+			'Failed to assert correct sorting of guests.'
+		);
+		$this->assertTrue(
+			$rsvp->sort_by_guests( $guests_0, $guests_2 ),
+			'Failed to assert correct sorting of guests.'
+		);
+		$this->assertFalse(
+			$rsvp->sort_by_guests( $guests_2, $guests_0 ),
+			'Failed to assert correct sorting of guests.'
 		);
 	}
 }

@@ -141,7 +141,7 @@ class Rsvp {
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): string {
 		global $wpdb;
 
-		$post_id       = $this->event->ID;
+		$post_id        = $this->event->ID;
 		$updated_status = '';
 
 		if ( 1 > $post_id || 1 > $user_id ) {
