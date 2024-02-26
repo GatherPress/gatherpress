@@ -93,7 +93,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	) => {
 		e.preventDefault();
 
-		if ('not_attending' === status) {
+		if ('attending' !== status) {
 			guests = 0;
 		}
 
