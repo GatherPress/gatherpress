@@ -153,7 +153,7 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			'online_event_link'     => array(
+			'online_event_link'      => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -162,7 +162,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'enable_anonymous_rsvp' => array(
+			'enable_anonymous_rsvp'  => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},

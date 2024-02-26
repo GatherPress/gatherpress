@@ -35,7 +35,7 @@ const InitialDecline = () => {
 	if (isNewEvent) {
 		defaultInitialDecline = getFromGlobal('settings.enableInitialDecline');
 	}
-	
+
 	const [initialDecline, setInitialDecline] = useState(defaultInitialDecline);
 
 	const updateInitialDecline = (value) => {

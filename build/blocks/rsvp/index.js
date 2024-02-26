@@ -16,16 +16,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
 /* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _components_Rsvp__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../components/Rsvp */ "./src/components/Rsvp.js");
-/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../helpers/globals */ "./src/helpers/globals.js");
-/* harmony import */ var _components_EditCover__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../../components/EditCover */ "./src/components/EditCover.js");
+/* harmony import */ var _components_Rsvp__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../components/Rsvp */ "./src/components/Rsvp.js");
+/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../helpers/globals */ "./src/helpers/globals.js");
+/* harmony import */ var _components_EditCover__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../../components/EditCover */ "./src/components/EditCover.js");
 
 /**
  * WordPress dependencies.
  */
-
 
 
 /**
@@ -49,11 +46,11 @@ __webpack_require__.r(__webpack_exports__);
  */
 const Edit = () => {
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)();
-  const postId = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('eventDetails.postId');
-  const currentUser = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_4__.getFromGlobal)('eventDetails.currentUser');
+  const postId = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_3__.getFromGlobal)('eventDetails.postId');
+  const currentUser = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_3__.getFromGlobal)('eventDetails.currentUser');
   return (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     ...blockProps
-  }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_EditCover__WEBPACK_IMPORTED_MODULE_5__["default"], null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_Rsvp__WEBPACK_IMPORTED_MODULE_3__["default"], {
+  }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_EditCover__WEBPACK_IMPORTED_MODULE_4__["default"], null, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_components_Rsvp__WEBPACK_IMPORTED_MODULE_2__["default"], {
     postId: postId,
     currentUser: currentUser,
     type: 'upcoming'
