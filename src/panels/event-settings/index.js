@@ -16,6 +16,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
 import { isEventPostType } from '../../helpers/event';
 import AnonymousRsvpPanel from './anonymous-rsvp';
 import DateTimeRangePanel from './datetime-range';
+import GuestLimitPanel from './guest-limit';
 import NotifyMembersPanel from './notify-members';
 import OnlineEventLinkPanel from './online-link';
 import VenueSelectorPanel from './venue-selector';
@@ -45,6 +46,7 @@ const EventSettings = () => {
 					<DateTimeRangePanel />
 					<VenueSelectorPanel />
 					<OnlineEventLinkPanel />
+					<GuestLimitPanel />
 					<AnonymousRsvpPanel />
 					<NotifyMembersPanel />
 				</VStack>

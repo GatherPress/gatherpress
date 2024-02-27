@@ -2,7 +2,10 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import { CheckboxControl } from '@wordpress/components';
+import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalNumberControl as NumberControl,
+} from '@wordpress/components';
 import { useState, useEffect, useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
@@ -21,28 +24,32 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} A checkbox control for enabling or disabling anonymous RSVPs.
  */
-const AnonymousRsvp = () => {
+const GuestLimit = () => {
 	const { editPost, unlockPostSaving } = useDispatch('core/editor');
 	const isNewEvent = useSelect((select) => {
 		return select('core/editor').isCleanNewPost();
 	}, []);
 
-	let defaultAnonymousRsvp = useSelect((select) => {
+	let defaultGuestLimit = useSelect((select) => {
 		return select('core/editor').getEditedPostAttribute('meta')
-			.enable_anonymous_rsvp;
+			.max_guest_limit;
 	}, []);
 
 	if (isNewEvent) {
-		defaultAnonymousRsvp = getFromGlobal('settings.enableAnonymousRsvp');
+		defaultGuestLimit = getFromGlobal('settings.maxGuestLimit');
 	}
 
-	const [anonymousRsvp, setAnonymousRsvp] = useState(defaultAnonymousRsvp);
+	if (false === defaultGuestLimit) {
+		defaultGuestLimit = 0;
+	}
 
-	const updateAnonymousRsvp = useCallback(
+	const [guestLimit, setGuestLimit] = useState(defaultGuestLimit);
+
+	const updateGuestLimit = useCallback(
 		(value) => {
-			const meta = { enable_anonymous_rsvp: Number(value) };
+			const meta = { max_guest_limit: Number(value) };
 
-			setAnonymousRsvp(value);
+			setGuestLimit(value);
 			editPost({ meta });
 			unlockPostSaving();
 		},
@@ -50,20 +57,22 @@ const AnonymousRsvp = () => {
 	);
 
 	useEffect(() => {
-		if (isNewEvent && defaultAnonymousRsvp !== 0) {
-			updateAnonymousRsvp(defaultAnonymousRsvp);
+		if (isNewEvent && defaultGuestLimit !== 0) {
+			updateGuestLimit(defaultGuestLimit);
 		}
-	}, [isNewEvent, defaultAnonymousRsvp, updateAnonymousRsvp]);
+	}, [isNewEvent, defaultGuestLimit, updateGuestLimit]);
 
 	return (
-		<CheckboxControl
-			label={__('Enable Anonymous RSVP', 'gatherpress')}
-			checked={anonymousRsvp}
+		<NumberControl
+			label={__('Maximum Number of Guests', 'gatherpress')}
+			value={guestLimit}
+			min={0}
+			max={5}
 			onChange={(value) => {
-				updateAnonymousRsvp(value);
+				updateGuestLimit(value);
 			}}
 		/>
 	);
 };
 
-export default AnonymousRsvp;
+export default GuestLimit;

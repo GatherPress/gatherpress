@@ -35,11 +35,18 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {number}  props.postId              - The ID of the event.
  * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
  * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {number}  props.maxGuestLimit       - The maximum number of guests allowed per RSVP.
  * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
  * @return {string} The rendered React component.
  */
-const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
+const Rsvp = ({
+	postId,
+	currentUser = '',
+	type,
+	enableAnonymousRsvp,
+	maxGuestLimit,
+}) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
 	const [rsvpAnonymous, setRsvpAnonymous] = useState(
 		Number(currentUser.anonymous)
@@ -215,7 +222,6 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	};
 
 	const LoggedInModal = ({ status }) => {
-		const maxGuestLimit = getFromGlobal('settings.maxGuestLimit');
 		let buttonStatus = '';
 		let buttonLabel = '';
 

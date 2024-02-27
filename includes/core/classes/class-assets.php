@@ -10,7 +10,6 @@
 namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Utility;
 
 /**
  * Class Assets.
@@ -284,6 +283,7 @@ class Assets {
 				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
 				'dateTime'            => $event->get_datetime(),
 				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
+				'maxGuestLimit'       => (int) get_post_meta( $post_id, 'max_guest_limit', true ),
 				'hasEventPast'        => $event->has_event_past(),
 				'postId'              => $post_id,
 				'responses'           => $event->rsvp->responses(),

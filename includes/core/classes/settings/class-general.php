@@ -123,6 +123,8 @@ class General extends Base {
 							'size'    => 'small',
 							'options' => array(
 								'default' => '0',
+								'min'     => '0',
+								'max'     => '5',
 							),
 						),
 					),

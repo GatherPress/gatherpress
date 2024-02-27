@@ -331,6 +331,8 @@ class Settings {
 				'value'       => $value,
 				'label'       => $option_settings['field']['label'] ?? '',
 				'size'        => $option_settings['field']['size'] ?? 'regular',
+				'min'         => $option_settings['field']['options']['min'] ?? '',
+				'max'         => $option_settings['field']['options']['max'] ?? '',
 				'description' => $option_settings['description'] ?? '',
 			),
 			true

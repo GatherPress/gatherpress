@@ -40,6 +40,7 @@ domReady(() => {
 				enableAnonymousRsvp={getFromGlobal(
 					'eventDetails.enableAnonymousRsvp'
 				)}
+				maxGuestLimit={getFromGlobal('eventDetails.maxGuestLimit')}
 			/>
 		);
 	}
