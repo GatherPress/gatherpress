@@ -73,8 +73,9 @@ class User {
 		$event_updates_opt_in = get_user_meta( $user->ID, 'gp-event-updates-opt-in', true );
 
 		$default_tz   = static::get_system_timezone();
-		$date_default = get_option( 'date_format', 'l, F j, Y' );
-		$time_default = get_option( 'time_format', 'g:i A' );
+		$settings     = Settings::get_instance();
+		$time_default = $settings->get_value( 'general', 'formatting', 'time_format' );
+		$date_default = $settings->get_value( 'general', 'formatting', 'date_format' );
 
 		// Checkbox is selected by default. '1' is on, '0' is off.
 		if ( '0' !== $event_updates_opt_in ) {
@@ -120,7 +121,7 @@ class User {
 	/**
 	 * Get the system default timezone settings
 	 *
-	 * @since 0.29.9
+	 * @since 1.0.0
 	 *
 	 * @return string
 	 */

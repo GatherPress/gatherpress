@@ -3,7 +3,7 @@
  * User Date Time Settings Template.
  *
  * @package GatherPress\Core
- * @since 0.29.0
+ * @since 1.0.0
  */
 
 use GatherPress\Core\Utility;
