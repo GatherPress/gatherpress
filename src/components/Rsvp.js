@@ -38,7 +38,7 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {number}  props.maxGuestLimit       - The maximum number of guests allowed per RSVP.
  * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
- * @return {string} The rendered React component.
+ * @return {JSX.Element} The rendered React component.
  */
 const Rsvp = ({
 	postId,
