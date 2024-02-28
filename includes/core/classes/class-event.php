@@ -88,14 +88,18 @@ class Event {
 	}
 
 	/**
-	 * Retrieve the formatted display date and time for the event.
+	 * Retrieves and formats the event's date and time for display, adjusting for user settings.
 	 *
-	 * Returns a formatted string representing the event's start and end date/time.
-	 * Adjusts format based on whether start and end are on the same day.
+	 * This method generates a formatted string that represents the event's start and end dates and times,
+	 * tailored to the user's date and time format preferences if available. It also considers whether the
+	 * event's start and end occur on the same day to adjust the format accordingly. If user-specific
+	 * formatting settings are set, they override the default site settings for date and time formatting.
+	 * Additionally, it can append the timezone to the formatted string based on settings.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string Formatted date/time or an em dash if data is unavailable.
+	 * @return string A string representing the formatted start and end dates/times of the event, or an
+	 * em dash if data is unavailable.
 	 *
 	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
 	 */
