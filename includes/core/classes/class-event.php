@@ -105,8 +105,8 @@ class Event {
 	 */
 	public function get_display_datetime(): string {
 		$settings    = Settings::get_instance();
-		$date_format = apply_filters( 'gp_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
-		$time_format = apply_filters( 'gp_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
+		$date_format = apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
+		$time_format = apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
 
 		if ( $this->is_same_date() ) {
@@ -341,7 +341,7 @@ class Event {
 			(array) $data
 		);
 
-		$data['timezone'] = apply_filters( 'gp_timezone', $data['timezone'] );
+		$data['timezone'] = apply_filters( 'gatherpress_timezone', $data['timezone'] );
 
 		return $data;
 	}

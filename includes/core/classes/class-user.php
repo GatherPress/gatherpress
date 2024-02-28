@@ -56,9 +56,9 @@ class User {
 		add_action( 'edit_user_profile', array( $this, 'profile_fields' ) );
 		add_action( 'personal_options_update', array( $this, 'save_profile_fields' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'save_profile_fields' ) );
-		add_filter( 'gp_date_format', array( $this, 'gp_date_format' ) );
-		add_filter( 'gp_time_format', array( $this, 'gp_time_format' ) );
-		add_filter( 'gp_timezone', array( $this, 'gp_timezone' ) );
+		add_filter( 'gatherpress_date_format', array( $this, 'gp_date_format' ) );
+		add_filter( 'gatherpress_time_format', array( $this, 'gp_time_format' ) );
+		add_filter( 'gatherpress_timezone', array( $this, 'gp_timezone' ) );
 	}
 
 	/**
@@ -68,7 +68,7 @@ class User {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param $date_format string The default date format
+	 * @param string $date_format The default date format.
 	 *
 	 * @return string The user's date format preference or the default if not set
 	 */
@@ -90,14 +90,14 @@ class User {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param $time_format string The default time format
+	 * @param string $time_format The default time format.
 	 *
 	 * @return string The user's time format preference or the default if not set
 	 */
 	public function gp_time_format( $time_format ): string {
 		$user_id = get_current_user_id();
 
-		if ( $user_id )	{
+		if ( $user_id ) {
 			$user_time_format = get_user_meta( $user_id, 'gp_time_format', true );
 			$time_format      = ! empty( $user_time_format ) ? $user_time_format : $time_format;
 		}
@@ -112,7 +112,7 @@ class User {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param $timezone string The default timezone
+	 * @param string $timezone The default timezone.
 	 *
 	 * @return string The user's timezone preference or the default if not set.
 	 */
