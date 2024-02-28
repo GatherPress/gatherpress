@@ -58,10 +58,11 @@ const RsvpResponseHeader = ({
 
 	let defaultRsvpSeeAllLink = false;
 
-	if (getFromGlobal('eventDetails.responses')[activeValue]) {
+	const responses = getFromGlobal('eventDetails.responses');
+	if (responses && responses[activeValue]) {
 		defaultRsvpSeeAllLink =
-			getFromGlobal('eventDetails.responses')[activeValue].count >
-			defaultLimit;
+			getFromGlobal('eventDetails.responses')[activeValue].count ??
+			0 > defaultLimit;
 	}
 
 	const [rsvpSeeAllLink, setRsvpSeeAllLink] = useState(defaultRsvpSeeAllLink);
