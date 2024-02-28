@@ -88,12 +88,10 @@ class Event {
 	}
 
 	/**
-	 * Retrieves and formats the event's date and time for display, adjusting for user settings.
+	 * Retrieves and formats the event's date and time for display.
 	 *
-	 * This method generates a formatted string that represents the event's start and end dates and times,
-	 * tailored to the user's date and time format preferences if available. It also considers whether the
-	 * event's start and end occur on the same day to adjust the format accordingly. If user-specific
-	 * formatting settings are set, they override the default site settings for date and time formatting.
+	 * This method generates a formatted string that represents the event's start and end dates and times.
+	 * It also considers whether the event's start and end occur on the same day to adjust the format accordingly.
 	 * Additionally, it can append the timezone to the formatted string based on settings.
 	 *
 	 * @since 1.0.0
@@ -105,8 +103,8 @@ class Event {
 	 */
 	public function get_display_datetime(): string {
 		$settings    = Settings::get_instance();
-		$date_format = apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
-		$time_format = apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
+		$date_format = apply_filters( 'gatherpress_user_set_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
+		$time_format = apply_filters( 'gatherpress_user_set_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
 
 		if ( $this->is_same_date() ) {
@@ -297,8 +295,7 @@ class Event {
 	 * This method fetches the event's start and end dates and times, along with timezone information,
 	 * either from a custom database table associated with the event or user metadata. It uses caching
 	 * to optimize database interactions, ensuring that data is fetched and stored efficiently for
-	 * future requests. If a user is logged in and not in an admin context, their preferred timezone
-	 * is used; otherwise, the site's timezone settings are applied.
+	 * future requests.
 	 *
 	 * @since 1.0.0
 	 *
@@ -341,7 +338,7 @@ class Event {
 			(array) $data
 		);
 
-		$data['timezone'] = apply_filters( 'gatherpress_timezone', $data['timezone'] );
+		$data['timezone'] = apply_filters( 'gatherpress_user_set_timezone', $data['timezone'] );
 
 		return $data;
 	}

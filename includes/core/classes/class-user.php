@@ -56,9 +56,9 @@ class User {
 		add_action( 'edit_user_profile', array( $this, 'profile_fields' ) );
 		add_action( 'personal_options_update', array( $this, 'save_profile_fields' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'save_profile_fields' ) );
-		add_filter( 'gatherpress_date_format', array( $this, 'gp_date_format' ) );
-		add_filter( 'gatherpress_time_format', array( $this, 'gp_time_format' ) );
-		add_filter( 'gatherpress_timezone', array( $this, 'gp_timezone' ) );
+		add_filter( 'gatherpress_user_set_date_format', array( $this, 'gp_date_format' ) );
+		add_filter( 'gatherpress_user_set_time_format', array( $this, 'gp_time_format' ) );
+		add_filter( 'gatherpress_user_set_timezone', array( $this, 'gp_timezone' ) );
 	}
 
 	/**
