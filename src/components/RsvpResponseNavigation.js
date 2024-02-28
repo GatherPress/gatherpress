@@ -41,9 +41,9 @@ const RsvpResponseNavigation = ({
 		waiting_list: 0, // eslint-disable-line camelcase
 	};
 
-	for (const [key, value] of Object.entries(
-		getFromGlobal('eventDetails.responses')
-	)) {
+	const responses = getFromGlobal('eventDetails.responses') ?? {};
+
+	for (const [key, value] of Object.entries(responses)) {
 		defaultCount[key] = value.count;
 	}
 
