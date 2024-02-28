@@ -216,6 +216,46 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Coverage for number method.
+	 *
+	 * @covers ::number
+	 *
+	 * @return void
+	 */
+	public function test_number(): void {
+		$instance = Settings::get_instance();
+		$text     = Utility::buffer_and_return(
+			array( $instance, 'number' ),
+			array(
+				'sub_page',
+				'section',
+				'option',
+				array(
+					'field' => array(
+						'label'   => 'Unit test',
+						'options' => array(
+							'default' => '2',
+							'min'     => '1',
+							'max'     => '5',
+						),
+					),
+				),
+			)
+		);
+
+		$this->assertStringContainsString(
+			'<label for="gp_option">Unit test</label>',
+			$text,
+			'Failed to assert that label matches.'
+		);
+		$this->assertStringContainsString(
+			'<input id="gp_option" type="number" name="sub_page[section][option]" class="regular-text" value="" min="1" max="5" />',
+			$text,
+			'Failed to assert that input matches.'
+		);
+	}
+
+	/**
 	 * Coverage for autocomplete method.
 	 *
 	 * @covers ::autocomplete

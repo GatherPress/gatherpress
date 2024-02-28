@@ -35,11 +35,18 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {number}  props.postId              - The ID of the event.
  * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
  * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {number}  props.maxGuestLimit       - The maximum number of guests allowed per RSVP.
  * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
+const Rsvp = ({
+	postId,
+	currentUser = '',
+	type,
+	enableAnonymousRsvp,
+	maxGuestLimit,
+}) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
 	const [rsvpAnonymous, setRsvpAnonymous] = useState(
 		Number(currentUser.anonymous)
@@ -48,7 +55,6 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 	const [selectorHidden, setSelectorHidden] = useState('hidden');
 	const [selectorExpanded, setSelectorExpanded] = useState('false');
 	const [modalIsOpen, setIsOpen] = useState(false);
-
 	const customStyles = {
 		overlay: {
 			zIndex: 999999999,
@@ -253,7 +259,34 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							)
 						)}
 					</div>
-					{enableAnonymousRsvp ? (
+					{0 < maxGuestLimit &&
+						!rsvpAnonymous &&
+						'attending' === rsvpStatus && (
+							<div className="gp-modal__guests">
+								<label htmlFor="gp-guests">
+									{__('Number of guests?', 'gatherpress')}
+								</label>
+								<input
+									id="gp-guests"
+									type="number"
+									min="0"
+									max={maxGuestLimit}
+									onChange={(e) => {
+										const value = Number(e.target.value);
+										setRsvpGuests(value);
+										onAnchorClick(
+											e,
+											rsvpStatus,
+											rsvpAnonymous,
+											value,
+											false
+										);
+									}}
+									defaultValue={rsvpGuests}
+								/>
+							</div>
+						)}
+					{enableAnonymousRsvp && (
 						<div className="gp-modal__anonymous">
 							<input
 								id="gp-anonymous"
@@ -265,7 +298,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 										e,
 										rsvpStatus,
 										value,
-										rsvpGuests,
+										0,
 										false
 									);
 								}}
@@ -285,28 +318,7 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 							</label>
 							<Tooltip id="gp-anonymous-tooltip" />
 						</div>
-					) : (
-						<></>
 					)}
-					{/*@todo Guests feature coming in later version of GatherPress*/}
-					{/*	<label htmlFor="gp-guests">*/}
-					{/*		{__('Number of guests?', 'gatherpress')}*/}
-					{/*	</label>*/}
-					{/*	<input*/}
-					{/*		id="gp-guests"*/}
-					{/*		type="number"*/}
-					{/*		min="0"*/}
-					{/*		max="5"*/}
-					{/*		onChange={(e) =>*/}
-					{/*			onAnchorClick(*/}
-					{/*				e,*/}
-					{/*				'attending',*/}
-					{/*				e.target.value,*/}
-					{/*				false*/}
-					{/*			)*/}
-					{/*		}*/}
-					{/*		defaultValue={rsvpGuests}*/}
-					{/*	/>*/}
 				</div>
 				<ButtonGroup className="gp-buttons wp-block-buttons">
 					<div className="gp-buttons__container wp-block-button is-style-outline">
@@ -314,7 +326,15 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 						<a
 							href="#"
 							onClick={(e) =>
-								onAnchorClick(e, buttonStatus, rsvpAnonymous)
+								onAnchorClick(
+									e,
+									buttonStatus,
+									rsvpAnonymous,
+									'not_attending' !== buttonStatus
+										? rsvpGuests
+										: 0,
+									'not_attending' === buttonStatus
+								)
 							}
 							className="gp-buttons__button wp-block-button__link"
 						>
@@ -377,10 +397,10 @@ const Rsvp = ({ postId, currentUser = '', type, enableAnonymousRsvp }) => {
 									_n(
 										'%d guest',
 										'%d guests',
-										{ rsvpGuests },
+										Number(rsvpGuests),
 										'gatherpress'
 									),
-									{ rsvpGuests }
+									Number(rsvpGuests)
 								)}
 							</span>
 						</div>

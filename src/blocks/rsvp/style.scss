@@ -10,9 +10,16 @@
 			font-weight: 600;
 		}
 
+		&__guests {
+			display: flex;
+			gap: 0.5rem;
+			margin-bottom: 0.5rem;
+		}
+
 		&__anonymous {
 			display: flex;
 			gap: 0.5rem;
+			margin-bottom: 0.5rem;
 		}
 	}
 }

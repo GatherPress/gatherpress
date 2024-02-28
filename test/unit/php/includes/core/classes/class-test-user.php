@@ -72,13 +72,13 @@ class Test_User extends Base {
 
 		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked by default.' );
 
-		update_user_meta( $user->ID, 'gp-event-updates-opt-in', 0 );
+		update_user_meta( $user->ID, 'gp_event_updates_opt_in', 0 );
 
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
 
 		$this->assertStringNotContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is not checked.' );
 
-		update_user_meta( $user->ID, 'gp-event-updates-opt-in', 1 );
+		update_user_meta( $user->ID, 'gp_event_updates_opt_in', 1 );
 
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
 

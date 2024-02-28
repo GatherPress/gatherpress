@@ -254,7 +254,16 @@ class Rest_Api {
 	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
 	 */
 	public function validate_rsvp_status( $param ): bool {
-		return ( 'attending' === $param || 'not_attending' === $param || 'no_status' === $param );
+		return in_array(
+			$param,
+			array(
+				'attending',
+				'waiting_list',
+				'not_attending',
+				'no_status',
+			),
+			true
+		);
 	}
 
 	/**
@@ -450,7 +459,7 @@ class Rest_Api {
 		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
 
 		foreach ( $members as $member ) {
-			if ( '0' === get_user_meta( $member->ID, 'gp-event-updates-opt-in', true ) ) {
+			if ( '0' === get_user_meta( $member->ID, 'gp_event_updates_opt_in', true ) ) {
 				continue;
 			}
 
@@ -647,7 +656,9 @@ class Rest_Api {
 			is_user_member_of_blog( $user_id ) &&
 			! $event->has_event_past()
 		) {
-			$status = $event->rsvp->save( $user_id, $status, $anonymous );
+			$user_record = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+			$status      = $user_record['status'];
+			$guests      = $user_record['guests'];
 
 			if ( in_array( $status, $event->rsvp->statuses, true ) ) {
 				$success = true;

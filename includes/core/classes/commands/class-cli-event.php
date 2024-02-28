@@ -60,19 +60,20 @@ class Cli_Event extends WP_CLI {
 	 * @return void
 	 */
 	public function rsvp( array $args = array(), array $assoc_args = array() ): void {
-		$event_id = (int) $assoc_args['event_id'];
-		$user_id  = (int) $assoc_args['user_id'];
-		$status   = (string) $assoc_args['status'] ?? 'attending';
-		$event    = new Event( $event_id );
-
-		$response = $event->rsvp->save( $user_id, $status );
+		$event_id  = (int) $assoc_args['event_id'];
+		$user_id   = (int) $assoc_args['user_id'];
+		$guests    = (int) $assoc_args['guests'] ?? 0;
+		$anonymous = (int) $assoc_args['anonymous'] ?? 0;
+		$status    = (string) $assoc_args['status'] ?? 'attending';
+		$event     = new Event( $event_id );
+		$response  = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
 
 		static::success(
 			sprintf(
 				/* translators: %1$d: event ID, %2$s: attendance status, %3$d: user ID. */
 				__( 'The RSVP status for Event ID "%1$d" has been successfully set to "%2$s" for User ID "%3$d".', 'gatherpress' ),
 				$event_id,
-				$response,
+				$response['status'],
 				$user_id
 			),
 		);

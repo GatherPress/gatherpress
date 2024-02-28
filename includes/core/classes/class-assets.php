@@ -10,7 +10,6 @@
 namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Utility;
 
 /**
  * Class Assets.
@@ -176,7 +175,6 @@ class Assets {
 			array_keys( $settings->get_sub_pages() )
 		);
 
-		// Had to add the profile page to the check since it uses some of the same assets.
 		if ( in_array( $hook, $setting_hooks, true ) ) {
 			// Need to load block styling for some dynamic fields.
 			wp_enqueue_style( 'wp-edit-blocks' );
@@ -299,6 +297,7 @@ class Assets {
 				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
 				'dateTime'            => $event->get_datetime(),
 				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
+				'maxGuestLimit'       => (int) get_post_meta( $post_id, 'max_guest_limit', true ),
 				'hasEventPast'        => $event->has_event_past(),
 				'postId'              => $post_id,
 				'responses'           => $event->rsvp->responses(),
@@ -317,6 +316,7 @@ class Assets {
 			'settings'     => array(
 				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
 				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
 				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
 				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),

@@ -123,14 +123,22 @@ const EventCommuncationModal = () => {
 					<Flex gap="8">
 						<FlexItem>
 							<CheckboxControl
-								label={__('All Members', 'gatherpress')}
+								label={_x(
+									'All Members',
+									'List Status',
+									'gatherpress'
+								)}
 								checked={isAllChecked}
 								onChange={setAllChecked}
 							/>
 						</FlexItem>
 						<FlexItem>
 							<CheckboxControl
-								label={__('Attending', 'gatherpress')}
+								label={_x(
+									'Attending',
+									'List Status',
+									'gatherpress'
+								)}
 								checked={isAttendingChecked}
 								onChange={setAttendingChecked}
 								disabled={isCheckBoxDisabled}
@@ -138,7 +146,11 @@ const EventCommuncationModal = () => {
 						</FlexItem>
 						<FlexItem>
 							<CheckboxControl
-								label={__('Waiting List', 'gatherpress')}
+								label={_x(
+									'Waiting List',
+									'List Status',
+									'gatherpress'
+								)}
 								checked={isWaitingListChecked}
 								onChange={setWaitingListChecked}
 								disabled={isCheckBoxDisabled}
@@ -148,7 +160,7 @@ const EventCommuncationModal = () => {
 							<CheckboxControl
 								label={_x(
 									'Not Attending',
-									'list of people not attending',
+									'List Status',
 									'gatherpress'
 								)}
 								checked={isNotAttendingChecked}

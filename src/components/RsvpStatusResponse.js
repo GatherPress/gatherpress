@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __, _x } from '@wordpress/i18n';
+import { _x } from '@wordpress/i18n';
 
 /**
  * RsvpStatusResponse component for GatherPress.
@@ -23,19 +23,15 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 		upcoming: {
 			attending: {
 				icon: 'dashicons dashicons-yes-alt',
-				text: __('Attending', 'gatherpress'),
+				text: _x('Attending', 'Responded Status', 'gatherpress'),
 			},
 			waiting_list: {
 				icon: 'dashicons dashicons-editor-help',
-				text: __('Waiting List', 'gatherpress'),
+				text: _x('Waiting List', 'Responded Status', 'gatherpress'),
 			},
 			not_attending: {
 				icon: 'dashicons dashicons-dismiss',
-				text: _x(
-					'Not Attending',
-					'responded not attending',
-					'gatherpress'
-				),
+				text: _x('Not Attending', 'Responded Status', 'gatherpress'),
 			},
 			no_status: {
 				icon: '',
@@ -45,19 +41,19 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 		past: {
 			attending: {
 				icon: 'dashicons dashicons-yes-alt',
-				text: __('Went', 'gatherpress'),
+				text: _x('Went', 'Responded Status', 'gatherpress'),
 			},
 			waiting_list: {
 				icon: 'dashicons dashicons-dismiss',
-				text: __("Didn't Go", 'gatherpress'),
+				text: _x("Didn't Go", 'Responded Status', 'gatherpress'),
 			},
 			not_attending: {
 				icon: 'dashicons dashicons-dismiss',
-				text: __("Didn't Go", 'gatherpress'),
+				text: _x("Didn't Go", 'Responded Status', 'gatherpress'),
 			},
 			no_status: {
 				icon: 'dashicons dashicons-dismiss',
-				text: __("Didn't Go", 'gatherpress'),
+				text: _x("Didn't Go", 'Responded Status', 'gatherpress'),
 			},
 		},
 	};

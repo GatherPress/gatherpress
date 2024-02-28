@@ -8,7 +8,7 @@
 
 use GatherPress\Core\Utility;
 
-if ( ! isset( $timezone ) && ! isset( $date_format ) && ! isset( $time_format ) ) {
+if ( ! isset( $date_format, $time_format, $timezone, $date_attrs, $time_attrs, $tz_choices ) ) {
 	return;
 }
 ?>
@@ -29,7 +29,7 @@ if ( ! isset( $timezone ) && ! isset( $date_format ) && ! isset( $time_format ) 
 		);
 		?>
 	</div>
-	<table class="form-table">
+	<table class="form-table" aria-describedby="gp-user-date-time">
 		<tr>
 			<th scope="row"><label for="gp_date_format"><?php esc_html_e( 'Date Format', 'gatherpress' ); ?></label></th>
 			<td>

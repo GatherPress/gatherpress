@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import { useState } from '@wordpress/element';
-import { __, _x } from '@wordpress/i18n';
+import { _x } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
@@ -20,38 +20,35 @@ import { getFromGlobal } from '../helpers/globals';
  * and updates the status based on user interactions. The component also listens for
  * changes in RSVP status and updates the state accordingly.
  *
+ * @param {Object} root0               The destructured props object.
+ * @param {string} root0.defaultStatus The current default status for the RSVP response, defaults to 'attending'.
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered RSVP response component.
  */
-const RsvpResponse = () => {
+const RsvpResponse = ({ defaultStatus = 'attending' }) => {
 	const defaultLimit = 8;
-	const defaultStatus = 'attending';
 	const hasEventPast = getFromGlobal('eventDetails.hasEventPast');
 	const items = [
 		{
 			title:
 				false === hasEventPast
-					? __('Attending', 'gatherpress')
-					: __('Went', 'gatherpress'),
+					? _x('Attending', 'Responded Status', 'gatherpress')
+					: _x('Went', 'Responded Status', 'gatherpress'),
 			value: 'attending',
 		},
 		{
 			title:
 				false === hasEventPast
-					? __('Waiting List', 'gatherpress')
-					: __('Wait Listed', 'gatherpress'),
+					? _x('Waiting List', 'Responded Status', 'gatherpress')
+					: _x('Wait Listed', 'Responded Status', 'gatherpress'),
 			value: 'waiting_list',
 		},
 		{
 			title:
 				false === hasEventPast
-					? _x(
-							'Not Attending',
-							'responded not attending',
-							'gatherpress'
-						)
-					: __("Didn't Go", 'gatherpress'),
+					? _x('Not Attending', 'Responded Status', 'gatherpress')
+					: _x("Didn't Go", 'Responded Status', 'gatherpress'),
 			value: 'not_attending',
 		},
 	];

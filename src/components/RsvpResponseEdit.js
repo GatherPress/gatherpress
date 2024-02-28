@@ -2,8 +2,8 @@
  * WordPress dependencies.
  */
 import { useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
-import { FormTokenField } from '@wordpress/components';
+import { __, _x } from '@wordpress/i18n';
+import { FormTokenField, SelectControl } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
@@ -21,15 +21,18 @@ import { getFromGlobal, setToGlobal } from '../helpers/globals';
  * and updates the status based on user interactions. The component also listens for
  * changes in RSVP status and updates the state accordingly.
  *
+ * @param {Object}   root0                  The destructured props object.
+ * @param {string}   root0.defaultStatus    The current default status for the RSVP response.
+ * @param {Function} root0.setDefaultStatus The function to update the defaultStatus state.
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered RSVP response component.
  */
-const RsvpResponseEdit = () => {
+const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 	const responses = getFromGlobal('eventDetails.responses');
 	const postId = getFromGlobal('eventDetails.postId');
 	const [rsvpResponse, setRsvpResponse] = useState(responses);
-	const attendees = rsvpResponse.attending.responses;
+	const attendees = rsvpResponse[defaultStatus].responses;
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
@@ -98,7 +101,7 @@ const RsvpResponseEdit = () => {
 				}
 
 				// We have a new user to add to the attendees list.
-				updateUserStatus(userSuggestions[token].id, 'attending');
+				updateUserStatus(userSuggestions[token].id, defaultStatus);
 			});
 		} else {
 			// Removing attendees
@@ -112,9 +115,32 @@ const RsvpResponseEdit = () => {
 
 	return (
 		<div className="gp-rsvp-response">
+			<SelectControl
+				label={__('Status', 'gatherpress')}
+				value={defaultStatus}
+				options={[
+					{
+						label: _x('Attending', 'List Status', 'gatherpress'),
+						value: 'attending',
+					},
+					{
+						label: _x('Waiting List', 'List Status', 'gatherpress'),
+						value: 'waiting_list',
+					},
+					{
+						label: _x(
+							'Not Attending',
+							'List Status',
+							'gatherpress'
+						),
+						value: 'not_attending',
+					},
+				]}
+				onChange={(status) => setDefaultStatus(status)}
+			/>
 			<FormTokenField
 				key="query-controls-topics-select"
-				label={__('Attendees', 'gatherpress')}
+				label={__('Members', 'gatherpress')}
 				value={
 					attendees &&
 					attendees.map((item) => ({
