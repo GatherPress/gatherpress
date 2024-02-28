@@ -220,4 +220,38 @@ class Utility {
 
 		return $matches[1] . str_pad( $matches[2], 2, '0', STR_PAD_LEFT ) . $matches[3];
 	}
+
+	/**
+	 * Retrieves the system default timezone settings.
+	 *
+	 * Attempts to get the timezone set in WordPress settings. If a timezone string is not set,
+	 * it falls back to using the GMT offset to construct a UTC timezone string. Note that
+	 * 'Etc/GMT' timezone strings are considered outdated and are stripped in favor of a UTC
+	 * representation.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The timezone string representing the system's default timezone. Falls back to a UTC offset representation if a named timezone string is not set.
+	 */
+	public static function get_system_timezone(): string {
+		$current_offset = get_option( 'gmt_offset' );
+		$tzstring       = get_option( 'timezone_string' );
+
+		// Remove old Etc mappings. Fallback to gmt_offset.
+		if ( str_contains( $tzstring, 'Etc/GMT' ) ) {
+			$tzstring = '';
+		}
+
+		if ( empty( $tzstring ) ) { // Create a UTC+- zone if no timezone string exists.
+			if ( 0 === $current_offset ) {
+				$tzstring = 'UTC+0';
+			} elseif ( $current_offset < 0 ) {
+				$tzstring = 'UTC' . $current_offset;
+			} else {
+				$tzstring = 'UTC+' . $current_offset;
+			}
+		}
+
+		return $tzstring;
+	}
 }

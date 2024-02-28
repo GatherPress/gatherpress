@@ -212,6 +212,20 @@ class Assets {
 		);
 
 		wp_set_script_translations( 'gatherpress-admin', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+
+		if ( 'profile.php' === $hook ) {
+			$asset = $this->get_asset_data( 'profile' );
+
+			wp_enqueue_script(
+				'gatherpress-profile',
+				$this->build . 'profile.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+
+			wp_set_script_translations( 'gatherpress-profile', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+		}
 	}
 
 	/**
