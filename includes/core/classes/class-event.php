@@ -104,19 +104,10 @@ class Event {
 	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
 	 */
 	public function get_display_datetime(): string {
-		$user_id     = get_current_user_id();
 		$settings    = Settings::get_instance();
-		$date_format = $settings->get_value( 'general', 'formatting', 'date_format' );
-		$time_format = $settings->get_value( 'general', 'formatting', 'time_format' );
+		$date_format = apply_filters( 'gp_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
+		$time_format = apply_filters( 'gp_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
-
-		// If there is a user, and they have custom date/time formats, use those.
-		if ( $user_id ) {
-			$user_date_format = get_user_meta( $user_id, 'gp_date_format', true );
-			$user_time_format = get_user_meta( $user_id, 'gp_time_format', true );
-			$date_format      = ! empty( $user_date_format ) ? $user_date_format : $date_format;
-			$time_format      = ! empty( $user_time_format ) ? $user_time_format : $time_format;
-		}
 
 		if ( $this->is_same_date() ) {
 			$start = $this->get_datetime_start( $date_format . ' ' . $time_format );
@@ -350,13 +341,7 @@ class Event {
 			(array) $data
 		);
 
-		$user_id = get_current_user_id();
-
-		// If not in an admin page, use the user's timezone if set.
-		if ( ! is_admin() && $user_id ) {
-			$gp_timezone      = get_user_meta( $user_id, 'gp_timezone', true );
-			$data['timezone'] = ! empty( $gp_timezone ) ? $gp_timezone : $data['timezone'];
-		}
+		$data['timezone'] = apply_filters( 'gp_timezone', $data['timezone'] );
 
 		return $data;
 	}
