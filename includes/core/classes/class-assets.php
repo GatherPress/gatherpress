@@ -176,6 +176,7 @@ class Assets {
 			array_keys( $settings->get_sub_pages() )
 		);
 
+		// Had to add the profile page to the check since it uses some of the same assets.
 		if ( in_array( $hook, $setting_hooks, true ) ) {
 			// Need to load block styling for some dynamic fields.
 			wp_enqueue_style( 'wp-edit-blocks' );
@@ -213,6 +214,20 @@ class Assets {
 		);
 
 		wp_set_script_translations( 'gatherpress-admin', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+
+		if ( 'profile.php' === $hook ) {
+			$asset = $this->get_asset_data( 'profile' );
+
+			wp_enqueue_script(
+				'gatherpress-profile',
+				$this->build . 'profile.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+
+			wp_set_script_translations( 'gatherpress-profile', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+		}
 	}
 
 	/**

@@ -50,7 +50,7 @@ const RsvpResponse = () => {
 							'Not Attending',
 							'responded not attending',
 							'gatherpress'
-					  )
+						)
 					: __("Didn't Go", 'gatherpress'),
 			value: 'not_attending',
 		},
