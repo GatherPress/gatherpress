@@ -109,7 +109,7 @@ class Event {
 		// If there is a user, and they have custom date/time formats, use those.
 		if ( $user_id ) {
 			$user_date_format = get_user_meta( $user_id, 'gp_date_format', true );
-			$user_time_format = get_user_meta( $user_id, 'gp_date_format', true );
+			$user_time_format = get_user_meta( $user_id, 'gp_time_format', true );
 			$date_format      = ! empty( $user_date_format ) ? $user_date_format : $date_format;
 			$time_format      = ! empty( $user_time_format ) ? $user_time_format : $time_format;
 		}
