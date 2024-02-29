@@ -354,7 +354,7 @@ const Rsvp = ({
 						</a>
 					</div>
 				</ButtonGroup>
-				{enableInitialDecline && 'no_status' === rsvpStatus ? (
+				{enableInitialDecline && 'no_status' === rsvpStatus && true != rsvpAnonymous ? (
 					<ButtonGroup className="gp-buttons wp-block-buttons">
 						<div className="gp-buttons__container wp-block-button">
 							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
