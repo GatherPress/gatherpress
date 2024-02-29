@@ -113,7 +113,7 @@ class General extends Base {
 							),
 						),
 					),
-					'max_guest_limit'       => array(
+					'max_guest_limit'        => array(
 						'labels' => array(
 							'name' => __( 'Maximum Number of Guests', 'gatherpress' ),
 						),

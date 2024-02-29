@@ -31,13 +31,13 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @since 1.0.0
  *
- * @param {Object}  props                     - Component props.
- * @param {number}  props.postId              - The ID of the event.
- * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
- * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {Object}  props                      - Component props.
+ * @param {number}  props.postId               - The ID of the event.
+ * @param {Object}  [props.currentUser='']     - Current user's RSVP information.
+ * @param {boolean} props.enableAnonymousRsvp  - If true, shows a checkbox to allow anonymous RSVPs.
  * @param {boolean} props.enableInitialDecline - If true, shows an option to decline attendance initially.
- * @param {number}  props.maxGuestLimit       - The maximum number of guests allowed per RSVP.
- * @param {string}  props.type                - Type of event ('upcoming' or 'past').
+ * @param {number}  props.maxGuestLimit        - The maximum number of guests allowed per RSVP.
+ * @param {string}  props.type                 - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */

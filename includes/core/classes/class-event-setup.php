@@ -153,7 +153,7 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			'max_guest_limit'       => array(
+			'max_guest_limit'        => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
