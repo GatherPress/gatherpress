@@ -94,7 +94,7 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 						? __(
 								'No one is attending this event yet.',
 								'gatherpress'
-							)
+						  )
 						: __('No one went to this event.', 'gatherpress')}
 				</div>
 			)}

@@ -526,7 +526,7 @@ const Rsvp = ({
       href: "#",
       onClick: closeModal,
       className: "gp-buttons__button wp-block-button__link"
-    }, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_5__.__)('Close', 'gatherpress')))), enableInitialDecline && 'no_status' === rsvpStatus && true != rsvpAnonymous ? (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_6__.ButtonGroup, {
+    }, (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_5__.__)('Close', 'gatherpress')))), enableInitialDecline && 'no_status' === rsvpStatus && 1 !== rsvpAnonymous ? (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_6__.ButtonGroup, {
       className: "gp-buttons wp-block-buttons"
     }, (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
       className: "gp-buttons__container wp-block-button"
