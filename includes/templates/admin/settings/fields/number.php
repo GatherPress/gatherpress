@@ -16,14 +16,14 @@
  * @param string $size        The size class for styling (e.g., 'regular', 'large', or 'small').
  */
 
-if ( ! isset( $name, $label, $option, $value, $description, $size ) ) {
+if ( ! isset( $name, $label, $option, $value, $description, $size, $min, $max ) ) {
 	return;
 }
 
 ?>
 <div class="form-wrap">
 	<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
-	<input id="<?php echo esc_attr( $option ); ?>" type="number" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>" />
+	<input id="<?php echo esc_attr( $option ); ?>" type="number" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>" min="<?php echo esc_attr( $min ); ?>" max="<?php echo esc_attr( $max ); ?>" />
 	<?php
 	if ( ! empty( $description ) ) {
 		?>

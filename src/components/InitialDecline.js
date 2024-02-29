@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { CheckboxControl } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
@@ -38,13 +38,22 @@ const InitialDecline = () => {
 
 	const [initialDecline, setInitialDecline] = useState(defaultInitialDecline);
 
-	const updateInitialDecline = (value) => {
-		const meta = { enable_initial_decline: Number(value) };
+	const updateInitialDecline = useCallback(
+		(value) => {
+			const meta = { enable_initial_decline: Number(value) };
 
-		setInitialDecline(value);
-		editPost({ meta });
-		unlockPostSaving();
-	};
+			setInitialDecline(value);
+			editPost({ meta });
+			unlockPostSaving();
+		},
+		[editPost, unlockPostSaving]
+	);
+
+	useEffect(() => {
+		if (isNewEvent && defaultInitialDecline !== 0) {
+			updateInitialDecline(defaultInitialDecline);
+		}
+	}, [isNewEvent, defaultInitialDecline, updateInitialDecline]);
 
 	return (
 		<CheckboxControl

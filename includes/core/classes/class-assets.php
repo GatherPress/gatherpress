@@ -10,7 +10,6 @@
 namespace GatherPress\Core;
 
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Utility;
 
 /**
  * Class Assets.
@@ -213,6 +212,20 @@ class Assets {
 		);
 
 		wp_set_script_translations( 'gatherpress-admin', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+
+		if ( 'profile.php' === $hook ) {
+			$asset = $this->get_asset_data( 'profile' );
+
+			wp_enqueue_script(
+				'gatherpress-profile',
+				$this->build . 'profile.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+
+			wp_set_script_translations( 'gatherpress-profile', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+		}
 	}
 
 	/**
@@ -285,6 +298,7 @@ class Assets {
 				'dateTime'             => $event->get_datetime(),
 				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
 				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'enable_initial_decline', true ),
+				'maxGuestLimit'        => (int) get_post_meta( $post_id, 'max_guest_limit', true ),
 				'hasEventPast'         => $event->has_event_past(),
 				'postId'               => $post_id,
 				'responses'            => $event->rsvp->responses(),
@@ -304,6 +318,7 @@ class Assets {
 				'dateFormat'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
 				'enableAnonymousRsvp'  => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
 				'enableInitialDecline' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_initial_decline' ) ),
+				'maxGuestLimit'        => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
 				'showTimezone'         => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
 				'timeFormat'           => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),

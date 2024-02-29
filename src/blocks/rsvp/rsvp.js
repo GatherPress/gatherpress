@@ -43,6 +43,7 @@ domReady(() => {
 				enableInitialDecline={getFromGlobal(
 					'eventDetails.enableInitialDecline'
 				)}
+				maxGuestLimit={getFromGlobal('eventDetails.maxGuestLimit')}
 			/>
 		);
 	}

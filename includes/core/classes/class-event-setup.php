@@ -153,14 +153,14 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			'online_event_link'      => array(
+			'max_guest_limit'       => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
-				'sanitize_callback' => 'sanitize_url',
+				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
-				'type'              => 'string',
+				'type'              => 'number',
 			),
 			'enable_anonymous_rsvp'  => array(
 				'auth_callback'     => function () {
@@ -179,6 +179,15 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'boolean',
+			),
+			'online_event_link'      => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_url',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
 			),
 		);
 

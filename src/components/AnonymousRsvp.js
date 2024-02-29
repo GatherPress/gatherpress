@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { CheckboxControl } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useState, useEffect, useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
@@ -38,13 +38,22 @@ const AnonymousRsvp = () => {
 
 	const [anonymousRsvp, setAnonymousRsvp] = useState(defaultAnonymousRsvp);
 
-	const updateAnonymousRsvp = (value) => {
-		const meta = { enable_anonymous_rsvp: Number(value) };
+	const updateAnonymousRsvp = useCallback(
+		(value) => {
+			const meta = { enable_anonymous_rsvp: Number(value) };
 
-		setAnonymousRsvp(value);
-		editPost({ meta });
-		unlockPostSaving();
-	};
+			setAnonymousRsvp(value);
+			editPost({ meta });
+			unlockPostSaving();
+		},
+		[editPost, unlockPostSaving]
+	);
+
+	useEffect(() => {
+		if (isNewEvent && defaultAnonymousRsvp !== 0) {
+			updateAnonymousRsvp(defaultAnonymousRsvp);
+		}
+	}, [isNewEvent, defaultAnonymousRsvp, updateAnonymousRsvp]);
 
 	return (
 		<CheckboxControl
