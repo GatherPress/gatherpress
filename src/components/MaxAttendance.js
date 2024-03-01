@@ -39,7 +39,7 @@ const MaxAttendance = () => {
 		defaultMaxAttendance = getFromGlobal('settings.maxAttendance');
 	}
 
-	const [maxAttendance, setMaxAttendance] = useState(defaultMaxAttendance);
+	const [maxAttendance, setMaxAttendance] = useState(null);
 
 	const updateMaxAttendance = useCallback(
 		(value) => {
@@ -53,15 +53,13 @@ const MaxAttendance = () => {
 	);
 
 	useEffect(() => {
-		if (isNewEvent && defaultMaxAttendance !== 0) {
-			updateMaxAttendance(defaultMaxAttendance);
-		}
-	}, [isNewEvent, defaultMaxAttendance, updateMaxAttendance]);
+		setMaxAttendance(defaultMaxAttendance);
+	}, [defaultMaxAttendance]);
 
 	return (
 		<NumberControl
 			label={__('Maximum Attending Limit', 'gatherpress')}
-			value={maxAttendance}
+			value={maxAttendance ?? 50}
 			min={0}
 			onChange={(value) => {
 				updateMaxAttendance(value);
