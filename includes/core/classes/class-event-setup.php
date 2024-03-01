@@ -180,14 +180,14 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'max_attendance' => array (
-				'auth_callback' => function () {
+			'max_attendance'        => array (
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
-				"santize_callback" => 'absint',
-				'show_in_rest'     =>  true,
-				'single'           =>  true,
-				'type'             =>  'integer',
+				'santize_callback' => 'absint',
+				'show_in_rest'     => true,
+				'single'           => true,
+				'type'             => 'integer',
 			),
 		);
 
