@@ -56,9 +56,9 @@ class User {
 		add_action( 'edit_user_profile', array( $this, 'profile_fields' ) );
 		add_action( 'personal_options_update', array( $this, 'save_profile_fields' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'save_profile_fields' ) );
-		add_filter( 'gatherpress_user_set_date_format', array( $this, 'gp_date_format' ) );
-		add_filter( 'gatherpress_user_set_time_format', array( $this, 'gp_time_format' ) );
-		add_filter( 'gatherpress_user_set_timezone', array( $this, 'gp_timezone' ) );
+		add_filter( 'gatherpress_date_format', array( $this, 'user_set_date_format' ) );
+		add_filter( 'gatherpress_time_format', array( $this, 'user_set_time_format' ) );
+		add_filter( 'gatherpress_timezone', array( $this, 'user_set_timezone' ) );
 	}
 
 	/**
@@ -72,7 +72,7 @@ class User {
 	 *
 	 * @return string The user's date format preference or the default if not set
 	 */
-	public function gp_date_format( $date_format ): string {
+	public function user_set_date_format( $date_format ): string {
 		$user_id = get_current_user_id();
 
 		if ( $user_id ) {
@@ -94,7 +94,7 @@ class User {
 	 *
 	 * @return string The user's time format preference or the default if not set
 	 */
-	public function gp_time_format( $time_format ): string {
+	public function user_set_time_format( $time_format ): string {
 		$user_id = get_current_user_id();
 
 		if ( $user_id ) {
@@ -116,7 +116,7 @@ class User {
 	 *
 	 * @return string The user's timezone preference or the default if not set.
 	 */
-	public function gp_timezone( $timezone ): string {
+	public function user_set_timezone( $timezone ): string {
 		$user_id = get_current_user_id();
 
 		if ( ! is_admin() && $user_id ) {
