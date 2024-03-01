@@ -1,7 +1,7 @@
 /**
  * Internal dependencies.
  */
-import MaxAttendance from "../../../components/MaxAttendance"; 
+import MaxAttendance from '../../../components/MaxAttendance';
 
 const MaxAttendancePanel = () => {
 	return (
