@@ -297,6 +297,7 @@ class Assets {
 				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
 				'dateTime'            => $event->get_datetime(),
 				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
+				'maxAttendance'    => (int) get_post_meta( $post_id, 'max_attendance', true ),
 				'maxGuestLimit'       => (int) get_post_meta( $post_id, 'max_guest_limit', true ),
 				'hasEventPast'        => $event->has_event_past(),
 				'postId'              => $post_id,
@@ -316,6 +317,7 @@ class Assets {
 			'settings'     => array(
 				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
 				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'maxAttendance'       => $settings->get_value( 'general', 'general', 'max_attendance' ),
 				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
 				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
 				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
