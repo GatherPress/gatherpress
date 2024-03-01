@@ -23,14 +23,13 @@ import { getFromGlobal } from '../helpers/globals';
  * @return {JSX.Element} A number control for setting the maximum attendance limit.
  */
 const MaxAttendance = () => {
-	const { editPost, unlockPostSaving } = useDispatch('core/editor'); // Make sure to correct typo from `unLockPostSaving` to `unlockPostSaving`
+	const { editPost, unlockPostSaving } = useDispatch('core/editor');
 	const isNewEvent = useSelect((select) => {
 		return select('core/editor').isCleanNewPost();
 	}, []);
 
 	// eslint-disable-next-line no-shadow
 	let defaultMaxAttendance = useSelect((select) => {
-		// Correct typo from `defaultMaxAttendane` to `defaultMaxAttendance`
 		return select('core/editor').getEditedPostAttribute('meta')
 			.max_attendance;
 	}, []);
