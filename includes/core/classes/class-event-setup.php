@@ -193,7 +193,7 @@ class Event_Setup {
 				'type'              => 'string',
 			),
 			'max_attendance'        => array(
-				'auth_callback'     => function () {
+				'auth_callback'    => function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'santize_callback' => 'absint',
