@@ -88,12 +88,10 @@ class Event {
 	}
 
 	/**
-	 * Retrieves and formats the event's date and time for display, adjusting for user settings.
+	 * Retrieves and formats the event's date and time for display.
 	 *
-	 * This method generates a formatted string that represents the event's start and end dates and times,
-	 * tailored to the user's date and time format preferences if available. It also considers whether the
-	 * event's start and end occur on the same day to adjust the format accordingly. If user-specific
-	 * formatting settings are set, they override the default site settings for date and time formatting.
+	 * This method generates a formatted string that represents the event's start and end dates and times.
+	 * It also considers whether the event's start and end occur on the same day to adjust the format accordingly.
 	 * Additionally, it can append the timezone to the formatted string based on settings.
 	 *
 	 * @since 1.0.0
@@ -104,19 +102,10 @@ class Event {
 	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
 	 */
 	public function get_display_datetime(): string {
-		$user_id     = get_current_user_id();
 		$settings    = Settings::get_instance();
-		$date_format = $settings->get_value( 'general', 'formatting', 'date_format' );
-		$time_format = $settings->get_value( 'general', 'formatting', 'time_format' );
+		$date_format = apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
+		$time_format = apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
-
-		// If there is a user, and they have custom date/time formats, use those.
-		if ( $user_id ) {
-			$user_date_format = get_user_meta( $user_id, 'gp_date_format', true );
-			$user_time_format = get_user_meta( $user_id, 'gp_time_format', true );
-			$date_format      = ! empty( $user_date_format ) ? $user_date_format : $date_format;
-			$time_format      = ! empty( $user_time_format ) ? $user_time_format : $time_format;
-		}
 
 		if ( $this->is_same_date() ) {
 			$start = $this->get_datetime_start( $date_format . ' ' . $time_format );
@@ -306,8 +295,7 @@ class Event {
 	 * This method fetches the event's start and end dates and times, along with timezone information,
 	 * either from a custom database table associated with the event or user metadata. It uses caching
 	 * to optimize database interactions, ensuring that data is fetched and stored efficiently for
-	 * future requests. If a user is logged in and not in an admin context, their preferred timezone
-	 * is used; otherwise, the site's timezone settings are applied.
+	 * future requests.
 	 *
 	 * @since 1.0.0
 	 *
@@ -350,13 +338,7 @@ class Event {
 			(array) $data
 		);
 
-		$user_id = get_current_user_id();
-
-		// If not in an admin page, use the user's timezone if set.
-		if ( ! is_admin() && $user_id ) {
-			$gp_timezone      = get_user_meta( $user_id, 'gp_timezone', true );
-			$data['timezone'] = ! empty( $gp_timezone ) ? $gp_timezone : $data['timezone'];
-		}
+		$data['timezone'] = apply_filters( 'gatherpress_timezone', $data['timezone'] );
 
 		return $data;
 	}
