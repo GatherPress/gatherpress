@@ -10,7 +10,7 @@ import { Tooltip } from 'react-tooltip';
  */
 import { useState } from '@wordpress/element';
 import { __, _n, _x, sprintf } from '@wordpress/i18n';
-import { ButtonGroup, Spinner } from '@wordpress/components';
+import { Button, ButtonGroup, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -207,17 +207,13 @@ const Rsvp = ({
 						</div>
 					)}
 				</div>
-				<ButtonGroup className="gp-buttons wp-block-buttons">
-					<div className="gp-buttons__container wp-block-button">
-						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-						<a
-							href="#"
-							onClick={closeModal}
-							className="gp-buttons__button wp-block-button__link"
-						>
-							{__('Close', 'gatherpress')}
-						</a>
-					</div>
+				<ButtonGroup className="gp-buttons">
+					<Button
+						className="gp-buttons__button gp-buttons__button-primary"
+						onClick={closeModal}
+					>
+						{__('Close', 'gatherpress')}
+					</Button>
 				</ButtonGroup>
 			</div>
 		);
@@ -322,27 +318,23 @@ const Rsvp = ({
 						</div>
 					)}
 				</div>
-				<ButtonGroup className="gp-buttons wp-block-buttons">
-					<div className="gp-buttons__container wp-block-button is-style-outline">
-						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-						<a
-							href="#"
-							onClick={(e) =>
-								onAnchorClick(
-									e,
-									buttonStatus,
-									rsvpAnonymous,
-									'not_attending' !== buttonStatus
-										? rsvpGuests
-										: 0,
-									'not_attending' === buttonStatus
-								)
-							}
-							className="gp-buttons__button wp-block-button__link"
-						>
-							{buttonLabel}
-						</a>
-					</div>
+				<ButtonGroup className="gp-buttons">
+					<Button
+						className="gp-buttons__button gp-buttons__button-secondary"
+						onClick={(e) =>
+							onAnchorClick(
+								e,
+								buttonStatus,
+								rsvpAnonymous,
+								'not_attending' !== buttonStatus
+									? rsvpGuests
+									: 0,
+								'not_attending' === buttonStatus
+							)
+						}
+					>
+						{buttonLabel}
+					</Button>
 					<div className="gp-buttons__container wp-block-button">
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
@@ -357,19 +349,15 @@ const Rsvp = ({
 				{enableInitialDecline &&
 				'no_status' === rsvpStatus &&
 				1 !== rsvpAnonymous ? (
-					<ButtonGroup className="gp-buttons wp-block-buttons">
-						<div className="gp-buttons__container wp-block-button">
-							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-							<a
-								href="#"
-								onClick={(e) =>
-									onAnchorClick(e, 'not_attending', null)
-								}
-								className="gp-buttons__text-link"
-							>
-								{__("I can't attend", 'gatherpress')}
-							</a>
-						</div>
+					<ButtonGroup className="gp-buttons">
+						<Button
+							className="gp-buttons__button-link"
+							onClick={(e) =>
+								onAnchorClick(e, 'not_attending', null)
+							}
+						>
+							{__("I can't attend", 'gatherpress')}
+						</Button>
 					</ButtonGroup>
 				) : (
 					<></>
@@ -380,20 +368,16 @@ const Rsvp = ({
 
 	return (
 		<div className="gp-rsvp">
-			<ButtonGroup className="gp-buttons wp-block-buttons">
-				<div className="gp-buttons__container  wp-block-button">
-					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-					<a
-						href="#"
-						className="gp-buttons__button wp-block-button__link"
-						aria-expanded={selectorExpanded}
-						tabIndex="0"
-						onKeyDown={onSpanKeyDown}
-						onClick={(e) => openModal(e)}
-					>
-						{getButtonText(rsvpStatus)}
-					</a>
-				</div>
+			<ButtonGroup className="gp-buttons">
+				<Button
+					className="gp-buttons__button gp-buttons__button-primary"
+					aria-expanded={selectorExpanded}
+					tabIndex="0"
+					onKeyDown={onSpanKeyDown}
+					onClick={(e) => openModal(e)}
+				>
+					{getButtonText(rsvpStatus)}
+				</Button>
 				<Modal
 					isOpen={modalIsOpen}
 					onRequestClose={closeModal}
