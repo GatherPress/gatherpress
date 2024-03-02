@@ -1,5 +1,5 @@
 /**
- * External dependencies.
+ * WordPress dependencies.
  */
 import { useBlockProps } from '@wordpress/block-editor';
 

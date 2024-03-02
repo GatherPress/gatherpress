@@ -31,12 +31,13 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @since 1.0.0
  *
- * @param {Object}  props                     - Component props.
- * @param {number}  props.postId              - The ID of the event.
- * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
- * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
- * @param {number}  props.maxGuestLimit       - The maximum number of guests allowed per RSVP.
- * @param {string}  props.type                - Type of event ('upcoming' or 'past').
+ * @param {Object}  props                      - Component props.
+ * @param {number}  props.postId               - The ID of the event.
+ * @param {Object}  [props.currentUser='']     - Current user's RSVP information.
+ * @param {boolean} props.enableAnonymousRsvp  - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {boolean} props.enableInitialDecline - If true, shows an option to decline attendance initially.
+ * @param {number}  props.maxGuestLimit        - The maximum number of guests allowed per RSVP.
+ * @param {string}  props.type                 - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -45,6 +46,7 @@ const Rsvp = ({
 	currentUser = '',
 	type,
 	enableAnonymousRsvp,
+	enableInitialDecline,
 	maxGuestLimit,
 }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
@@ -352,6 +354,26 @@ const Rsvp = ({
 						</a>
 					</div>
 				</ButtonGroup>
+				{enableInitialDecline &&
+				'no_status' === rsvpStatus &&
+				1 !== rsvpAnonymous ? (
+					<ButtonGroup className="gp-buttons wp-block-buttons">
+						<div className="gp-buttons__container wp-block-button">
+							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+							<a
+								href="#"
+								onClick={(e) =>
+									onAnchorClick(e, 'not_attending', null)
+								}
+								className="gp-buttons__text-link"
+							>
+								{__("I can't attend", 'gatherpress')}
+							</a>
+						</div>
+					</ButtonGroup>
+				) : (
+					<></>
+				)}
 			</div>
 		);
 	};
