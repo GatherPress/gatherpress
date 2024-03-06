@@ -3,58 +3,65 @@
 	grid-column-gap: 1rem;
 	align-items: center;
 
-	&__button {
-		border-radius: 0.33rem;
-		border-color: var(--wp--preset--color--contrast);
-		font-family: inherit;
-		font-size: var(--wp--preset--font-size--small);
-		font-style: normal;
-		font-weight: 500;
-		line-height: inherit;
-		text-decoration: none;
-		box-sizing: border-box;
-		cursor: pointer;
-		display: inline-block;
-		text-align: center;
-		word-break: break-word;
-	}
-
-	&__button-primary {
-		background-color: var(--wp--preset--color--contrast);
-		border-width: 0;
-		color: var(--wp--preset--color--base);
-		padding: 0.6rem 1rem;
-
-		&:hover {
-			background-color: var(--wp--preset--color--contrast-2);
-			border-color: var(--wp--preset--color--contrast-2);
-			color: var(--wp--preset--color--base);
+	.gp-buttons {
+		&__button {
+			border-radius: 0.33rem;
+			border-color: var(--wp--preset--color--contrast);
+			font-family: inherit;
+			font-size: var(--wp--preset--font-size--small);
+			font-style: normal;
+			font-weight: 500;
+			line-height: inherit;
+			text-decoration: none;
+			box-sizing: border-box;
+			cursor: pointer;
+			display: inline-block;
+			text-align: center;
+			word-break: break-word;
 		}
-	}
 
-	&__button-secondary {
-		background-color: var(--wp--preset--color--base);
-		background-image: none;
-		border: 2px solid;
-		color: var(--wp--preset--color--contrast);
-		padding: calc(0.6rem - 1px) calc(1rem - 1px);
-	}
+		&__button-primary {
+			background-color: #1d2327;
+			color: #ffffff;
+			padding: 0.6rem 1rem;
+			border-color: transparent;
+			border-width: 0;
 
-	&__button-link {
-		margin: 0;
-		background-color: transparent;
-		background-image: none;
-		padding: 0;
-		color: var(--wp--preset--color--contrast);
-		border-color: var(--wp--preset--color--contrast);
-		cursor: pointer;
-		border: 0;
-		border-bottom: 1px dotted;
-		font-size: var(--wp--preset--font-size--small);
-		font-style: normal;
-	}
+			&:hover {
+				background-color: #1d2327;
+				color: #ffffff;
+			}
+		}
 
-	& + & {
-		margin-top: 1rem;
+		&__button-secondary {
+			background-color: #ffffff;
+			border: 2px solid #1d2327;
+			color: #1d2327;
+			padding: calc(0.6rem - 2px) calc(1rem - 2px);
+
+			&:hover {
+				background-color: #ffffff;
+				border-color: #1d2327;
+				color: #1d2327;
+			}
+		}
+
+		&__button-link {
+			margin: 0;
+			background-color: transparent;
+			background-image: none;
+			padding: 0;
+			color: var(--wp--preset--color--contrast);
+			border-color: var(--wp--preset--color--contrast);
+			cursor: pointer;
+			border: 0;
+			border-bottom: 1px dotted;
+			font-size: var(--wp--preset--font-size--small);
+			font-style: normal;
+		}
+
+		& + & {
+			margin-top: 1rem;
+		}
 	}
 }

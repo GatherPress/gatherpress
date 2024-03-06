@@ -10,7 +10,7 @@ import { Tooltip } from 'react-tooltip';
  */
 import { useState } from '@wordpress/element';
 import { __, _n, _x, sprintf } from '@wordpress/i18n';
-import { Button, ButtonGroup, Spinner } from '@wordpress/components';
+import { Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -207,14 +207,14 @@ const Rsvp = ({
 						</div>
 					)}
 				</div>
-				<ButtonGroup className="gp-buttons">
-					<Button
+				<div className="gp-buttons">
+					<button
 						className="gp-buttons__button gp-buttons__button-primary"
 						onClick={closeModal}
 					>
 						{__('Close', 'gatherpress')}
-					</Button>
-				</ButtonGroup>
+					</button>
+				</div>
 			</div>
 		);
 	};
@@ -318,8 +318,8 @@ const Rsvp = ({
 						</div>
 					)}
 				</div>
-				<ButtonGroup className="gp-buttons">
-					<Button
+				<div className="gp-buttons">
+					<button
 						className="gp-buttons__button gp-buttons__button-secondary"
 						onClick={(e) =>
 							onAnchorClick(
@@ -334,31 +334,27 @@ const Rsvp = ({
 						}
 					>
 						{buttonLabel}
-					</Button>
-					<div className="gp-buttons__container wp-block-button">
-						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-						<a
-							href="#"
-							onClick={closeModal}
-							className="gp-buttons__button wp-block-button__link"
-						>
-							{__('Close', 'gatherpress')}
-						</a>
-					</div>
-				</ButtonGroup>
+					</button>
+					<button
+						className="gp-buttons__button gp-buttons__button-primary"
+						onClick={closeModal}
+					>
+						{__('Close', 'gatherpress')}
+					</button>
+				</div>
 				{enableInitialDecline &&
 				'no_status' === rsvpStatus &&
 				1 !== rsvpAnonymous ? (
-					<ButtonGroup className="gp-buttons">
-						<Button
+					<div className="gp-buttons">
+						<button
 							className="gp-buttons__button-link"
 							onClick={(e) =>
 								onAnchorClick(e, 'not_attending', null)
 							}
 						>
 							{__("I can't attend", 'gatherpress')}
-						</Button>
-					</ButtonGroup>
+						</button>
+					</div>
 				) : (
 					<></>
 				)}
@@ -368,8 +364,8 @@ const Rsvp = ({
 
 	return (
 		<div className="gp-rsvp">
-			<ButtonGroup className="gp-buttons">
-				<Button
+			<div className="gp-buttons">
+				<button
 					className="gp-buttons__button gp-buttons__button-primary"
 					aria-expanded={selectorExpanded}
 					tabIndex="0"
@@ -377,7 +373,7 @@ const Rsvp = ({
 					onClick={(e) => openModal(e)}
 				>
 					{getButtonText(rsvpStatus)}
-				</Button>
+				</button>
 				<Modal
 					isOpen={modalIsOpen}
 					onRequestClose={closeModal}
@@ -389,7 +385,7 @@ const Rsvp = ({
 						<LoggedInModal status={rsvpStatus} />
 					)}
 				</Modal>
-			</ButtonGroup>
+			</div>
 			{'no_status' !== rsvpStatus && (
 				<div className="gp-status">
 					<RsvpStatusResponse type={type} status={rsvpStatus} />
