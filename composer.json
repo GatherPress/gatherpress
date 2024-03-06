@@ -20,6 +20,9 @@
 		"phpunit/phpunit": "*",
 		"yoast/phpunit-polyfills": "*"
 	},
+	"suggest": {
+		"wp-cli/wp-cli-bundle": "Combines the most common WP-CLI commands, including the wp-cli/i18n-command which should be used to create translation-files."
+	},
 	"scripts": {
 		"compat": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs --standard=phpcompat.xml.dist --report=summary,source",
 		"format": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcbf --report=summary,source",
