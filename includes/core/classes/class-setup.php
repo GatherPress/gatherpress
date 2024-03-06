@@ -79,7 +79,7 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
-		add_action( 'init', array( $this, 'load_textdomain' ) );
+		add_action( 'init', array( $this, 'load_textdomain' ), 9 );
 		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
 
