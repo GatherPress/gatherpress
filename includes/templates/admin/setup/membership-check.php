@@ -9,10 +9,15 @@
 ?>
 	<div class="gp-admin__membership-check notice notice-warning">
 		<div>
-			<?php esc_html_e( 'To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by', 'gatherpress' ); ?>
-			<a href="<?php echo esc_url( admin_url( 'options-general.php#users_can_register' ) ); ?>">
-				<?php esc_html_e( 'enabling user registration here', 'gatherpress' ); ?>
-			</a>.
+			<?php
+			printf(
+				/* translators: %s: "enabling user registration here" (hyperlinked) */
+				esc_html__( 'To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by %s', 'gatherpress' ),
+				'<a href=' . esc_url( admin_url( 'options-general.php#users_can_register' ) ) . '>'
+				. esc_html_x( 'enabling user registration here', 'Context: To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by %s.', 'gatherpress' )
+				. '</a>'
+			);
+			?>
 		</div>
 		<div>
 			<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'action', 'suppress_gp_membership_notification' ), 'clear-notification' ) ); ?>" class="button button-secondary">
