@@ -58,7 +58,7 @@ const InitialDecline = () => {
 	return (
 		<CheckboxControl
 			label={__(
-				'Allow attendees to select "not attending" immediately',
+				'Enable Immediate "Not Attending" Option for Attendees',
 				'gatherpress'
 			)}
 			checked={initialDecline}

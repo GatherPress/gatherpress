@@ -391,7 +391,11 @@ const Rsvp = ({
 								}
 								className="gp-buttons__text-link"
 							>
-								{__("I can't attend", 'gatherpress')}
+								{_x(
+									'Not Attending',
+									'Responded Status',
+									'gatherpress'
+								)}
 							</a>
 						</div>
 					</ButtonGroup>
