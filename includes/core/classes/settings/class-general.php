@@ -101,11 +101,11 @@ class General extends Base {
 						),
 					),
 					'max_attending_limit'    => array(
-						'labels' => array(
+						'labels'      => array(
 							'name' => __( 'Maximum Attending Limit', 'gatherpress' ),
 						),
 						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
-						'field'  => array(
+						'field'       => array(
 							'label'   => __( 'The default maximum limit of attendees to an event.', 'gatherpress' ),
 							'type'    => 'number',
 							'size'    => 'small',
@@ -115,11 +115,11 @@ class General extends Base {
 						),
 					),
 					'max_guest_limit'        => array(
-						'labels' => array(
+						'labels'      => array(
 							'name' => __( 'Maximum Number of Guests', 'gatherpress' ),
 						),
 						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
-						'field'  => array(
+						'field'       => array(
 							'label'   => __( 'The default maximum limit of guests an attendees can bring to an event.', 'gatherpress' ),
 							'type'    => 'number',
 							'size'    => 'small',
