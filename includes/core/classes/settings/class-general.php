@@ -104,6 +104,7 @@ class General extends Base {
 						'labels' => array(
 							'name' => __( 'Maximum Attending Limit', 'gatherpress' ),
 						),
+						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
 						'field'  => array(
 							'label'   => __( 'The default maximum limit of attendees to an event.', 'gatherpress' ),
 							'type'    => 'number',
@@ -117,6 +118,7 @@ class General extends Base {
 						'labels' => array(
 							'name' => __( 'Maximum Number of Guests', 'gatherpress' ),
 						),
+						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
 						'field'  => array(
 							'label'   => __( 'The default maximum limit of guests an attendees can bring to an event.', 'gatherpress' ),
 							'type'    => 'number',
@@ -147,7 +149,7 @@ class General extends Base {
 						),
 						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
 						'field'       => array(
-							'label'   => __( 'Allow attendees to select "not attending" immediately.', 'gatherpress' ),
+							'label'   => __( 'Enable Immediate "Not Attending" Option for Attendees.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
 								'default' => 0,
