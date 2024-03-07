@@ -189,11 +189,18 @@ const Rsvp = ({
 				</div>
 				<div className="gp-modal__content">
 					<div className="gp-modal__text">
-						{__('You must ', 'gatherpress')}
-						<a href={getFromGlobal('urls.loginUrl')}>
-							{__('Login', 'gatherpress')}
-						</a>
-						{__(' to RSVP to events.', 'gatherpress')}
+					{HtmlReactParser(
+						sprintf(
+							/* translators: %s: 'Login' (hyperlinked) */
+							__(
+								'You must %s to RSVP to events.',
+								'gatherpress'
+							),
+							<a href={getFromGlobal('urls.loginUrl')}>
+								{_x('Login', 'Context: You must %s to RSVP to events.', 'gatherpress')}
+							</a>
+						)
+					)}
 					</div>
 					{'' !== getFromGlobal('urls.registrationUrl') && (
 						<div className="gp-modal__text">
