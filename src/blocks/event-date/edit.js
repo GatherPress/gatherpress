@@ -55,7 +55,7 @@ const displayDateTime = (start, end, tz) => {
 
 	return sprintf(
 		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
-		__('%1$s to %2$s %3$s','gatherpress'),
+		__('%1$s to %2$s %3$s', 'gatherpress'),
 		moment.tz(start, timeZone).format(startFormat),
 		moment.tz(end, timeZone).format(endFormat),
 		getUtcOffset(timeZone)
