@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-03-07T10:39:08+01:00\n"
+"POT-Creation-Date: 2024-03-07T11:20:49+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
 "X-Domain: gatherpress\n"
@@ -695,7 +695,7 @@ msgstr ""
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 #: src/components/Rsvp.js:156
-#: src/components/Rsvp.js:413
+#: src/components/Rsvp.js:425
 msgid "Edit RSVP"
 msgstr ""
 
@@ -729,7 +729,7 @@ msgstr ""
 #: build/blocks/rsvp/index.js:2
 #: build/blocks/rsvp/rsvp.js:2
 #: src/components/Rsvp.js:200
-msgctxt "Context: You must %s to RSVP to events."
+msgctxt "Context: You must ~ to RSVP to events."
 msgid "Login"
 msgstr ""
 
@@ -738,7 +738,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:3
 #: build/blocks/rsvp/index.js:3
 #: build/blocks/rsvp/rsvp.js:3
-#: src/components/Rsvp.js:210
+#: src/components/Rsvp.js:214
 msgid "%s if you do not have an account."
 msgstr ""
 
@@ -746,8 +746,8 @@ msgstr ""
 #: build/blocks/events-list/index.js:3
 #: build/blocks/rsvp/index.js:3
 #: build/blocks/rsvp/rsvp.js:3
-#: src/components/Rsvp.js:215
-msgctxt "Context: %s if you do not have an account."
+#: src/components/Rsvp.js:223
+msgctxt "Context: ~ if you do not have an account."
 msgid "Register"
 msgstr ""
 
@@ -759,8 +759,8 @@ msgstr ""
 #: build/blocks/rsvp/index.js:4
 #: build/blocks/rsvp/rsvp.js:3
 #: build/blocks/rsvp/rsvp.js:4
-#: src/components/Rsvp.js:230
-#: src/components/Rsvp.js:365
+#: src/components/Rsvp.js:242
+#: src/components/Rsvp.js:377
 msgid "Close"
 msgstr ""
 
@@ -768,7 +768,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:3
 #: build/blocks/rsvp/index.js:3
 #: build/blocks/rsvp/rsvp.js:3
-#: src/components/Rsvp.js:244
+#: src/components/Rsvp.js:256
 msgid "Attend"
 msgstr ""
 
@@ -776,7 +776,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:3
 #: build/blocks/rsvp/index.js:3
 #: build/blocks/rsvp/rsvp.js:3
-#: src/components/Rsvp.js:247
+#: src/components/Rsvp.js:259
 msgctxt "action of not attending"
 msgid "Not Attending"
 msgstr ""
@@ -786,7 +786,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:4
 #: build/blocks/rsvp/index.js:4
 #: build/blocks/rsvp/rsvp.js:4
-#: src/components/Rsvp.js:268
+#: src/components/Rsvp.js:280
 msgid "To set or change your attending status, simply click the %s button below."
 msgstr ""
 
@@ -794,7 +794,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:4
 #: build/blocks/rsvp/index.js:4
 #: build/blocks/rsvp/rsvp.js:4
-#: src/components/Rsvp.js:281
+#: src/components/Rsvp.js:293
 msgid "Number of guests?"
 msgstr ""
 
@@ -802,7 +802,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:4
 #: build/blocks/rsvp/index.js:4
 #: build/blocks/rsvp/rsvp.js:4
-#: src/components/Rsvp.js:326
+#: src/components/Rsvp.js:338
 msgid "Only admins will see your identity."
 msgstr ""
 
@@ -810,7 +810,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:4
 #: build/blocks/rsvp/index.js:4
 #: build/blocks/rsvp/rsvp.js:4
-#: src/components/Rsvp.js:331
+#: src/components/Rsvp.js:343
 msgid "List me as anonymous."
 msgstr ""
 
@@ -818,7 +818,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:4
 #: build/blocks/rsvp/index.js:4
 #: build/blocks/rsvp/rsvp.js:4
-#: src/components/Rsvp.js:382
+#: src/components/Rsvp.js:394
 msgid "I can't attend"
 msgstr ""
 
@@ -827,7 +827,7 @@ msgstr ""
 #: build/blocks/events-list/index.js:5
 #: build/blocks/rsvp/index.js:5
 #: build/blocks/rsvp/rsvp.js:5
-#: src/components/Rsvp.js:431
+#: src/components/Rsvp.js:443
 msgid "%d guest"
 msgid_plural "%d guests"
 msgstr[0] ""
