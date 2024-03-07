@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-03-07T10:29:04+01:00\n"
+"POT-Creation-Date: 2024-03-07T10:39:08+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
 "X-Domain: gatherpress\n"
@@ -228,7 +228,7 @@ msgid "Back to Topics"
 msgstr ""
 
 #: includes/core/classes/class-topic.php:90
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:219
 msgid "Topics"
 msgstr ""
@@ -250,7 +250,7 @@ msgstr ""
 
 #: includes/core/classes/class-venue.php:104
 #: includes/core/classes/class-venue.php:105
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:234
 msgid "Venues"
 msgstr ""
@@ -355,7 +355,7 @@ msgid "Date & Time Formatting"
 msgstr ""
 
 #: includes/core/classes/settings/class-general.php:161
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:196
 msgid "For more information read the <a href=\"https://wordpress.org/documentation/article/customize-date-and-time-format/\">Documentation on date and time formatting</a>."
 msgstr ""
@@ -733,187 +733,191 @@ msgctxt "Context: You must %s to RSVP to events."
 msgid "Login"
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:2
-#: build/blocks/events-list/index.js:2
-#: build/blocks/rsvp/index.js:2
-#: build/blocks/rsvp/rsvp.js:2
+#. translators: %s: 'Register' (hyperlinked)
+#: build/blocks/events-list/events-list.js:3
+#: build/blocks/events-list/index.js:3
+#: build/blocks/rsvp/index.js:3
+#: build/blocks/rsvp/rsvp.js:3
+#: src/components/Rsvp.js:210
+msgid "%s if you do not have an account."
+msgstr ""
+
+#: build/blocks/events-list/events-list.js:3
+#: build/blocks/events-list/index.js:3
+#: build/blocks/rsvp/index.js:3
+#: build/blocks/rsvp/rsvp.js:3
+#: src/components/Rsvp.js:215
+msgctxt "Context: %s if you do not have an account."
 msgid "Register"
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:2
-#: build/blocks/events-list/index.js:2
-#: build/blocks/rsvp/index.js:2
-#: build/blocks/rsvp/rsvp.js:2
-msgid " if you do not have an account."
-msgstr ""
-
-#: build/blocks/events-list/events-list.js:2
 #: build/blocks/events-list/events-list.js:3
-#: build/blocks/events-list/index.js:2
+#: build/blocks/events-list/events-list.js:4
 #: build/blocks/events-list/index.js:3
-#: build/blocks/rsvp/index.js:2
+#: build/blocks/events-list/index.js:4
 #: build/blocks/rsvp/index.js:3
-#: build/blocks/rsvp/rsvp.js:2
+#: build/blocks/rsvp/index.js:4
 #: build/blocks/rsvp/rsvp.js:3
+#: build/blocks/rsvp/rsvp.js:4
 #: src/components/Rsvp.js:230
 #: src/components/Rsvp.js:365
 msgid "Close"
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:2
-#: build/blocks/events-list/index.js:2
-#: build/blocks/rsvp/index.js:2
-#: build/blocks/rsvp/rsvp.js:2
+#: build/blocks/events-list/events-list.js:3
+#: build/blocks/events-list/index.js:3
+#: build/blocks/rsvp/index.js:3
+#: build/blocks/rsvp/rsvp.js:3
 #: src/components/Rsvp.js:244
 msgid "Attend"
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:2
-#: build/blocks/events-list/index.js:2
-#: build/blocks/rsvp/index.js:2
-#: build/blocks/rsvp/rsvp.js:2
+#: build/blocks/events-list/events-list.js:3
+#: build/blocks/events-list/index.js:3
+#: build/blocks/rsvp/index.js:3
+#: build/blocks/rsvp/rsvp.js:3
 #: src/components/Rsvp.js:247
 msgctxt "action of not attending"
 msgid "Not Attending"
 msgstr ""
 
 #. translators: %s: button label.
-#: build/blocks/events-list/events-list.js:3
-#: build/blocks/events-list/index.js:3
-#: build/blocks/rsvp/index.js:3
-#: build/blocks/rsvp/rsvp.js:3
+#: build/blocks/events-list/events-list.js:4
+#: build/blocks/events-list/index.js:4
+#: build/blocks/rsvp/index.js:4
+#: build/blocks/rsvp/rsvp.js:4
 #: src/components/Rsvp.js:268
 msgid "To set or change your attending status, simply click the %s button below."
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:3
-#: build/blocks/events-list/index.js:3
-#: build/blocks/rsvp/index.js:3
-#: build/blocks/rsvp/rsvp.js:3
+#: build/blocks/events-list/events-list.js:4
+#: build/blocks/events-list/index.js:4
+#: build/blocks/rsvp/index.js:4
+#: build/blocks/rsvp/rsvp.js:4
 #: src/components/Rsvp.js:281
 msgid "Number of guests?"
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:3
-#: build/blocks/events-list/index.js:3
-#: build/blocks/rsvp/index.js:3
-#: build/blocks/rsvp/rsvp.js:3
+#: build/blocks/events-list/events-list.js:4
+#: build/blocks/events-list/index.js:4
+#: build/blocks/rsvp/index.js:4
+#: build/blocks/rsvp/rsvp.js:4
 #: src/components/Rsvp.js:326
 msgid "Only admins will see your identity."
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:3
-#: build/blocks/events-list/index.js:3
-#: build/blocks/rsvp/index.js:3
-#: build/blocks/rsvp/rsvp.js:3
+#: build/blocks/events-list/events-list.js:4
+#: build/blocks/events-list/index.js:4
+#: build/blocks/rsvp/index.js:4
+#: build/blocks/rsvp/rsvp.js:4
 #: src/components/Rsvp.js:331
 msgid "List me as anonymous."
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:3
-#: build/blocks/events-list/index.js:3
-#: build/blocks/rsvp/index.js:3
-#: build/blocks/rsvp/rsvp.js:3
+#: build/blocks/events-list/events-list.js:4
+#: build/blocks/events-list/index.js:4
+#: build/blocks/rsvp/index.js:4
+#: build/blocks/rsvp/rsvp.js:4
 #: src/components/Rsvp.js:382
 msgid "I can't attend"
 msgstr ""
 
 #. translators: %d: Number of guests.
-#: build/blocks/events-list/events-list.js:4
-#: build/blocks/events-list/index.js:4
-#: build/blocks/rsvp/index.js:4
-#: build/blocks/rsvp/rsvp.js:4
+#: build/blocks/events-list/events-list.js:5
+#: build/blocks/events-list/index.js:5
+#: build/blocks/rsvp/index.js:5
+#: build/blocks/rsvp/rsvp.js:5
 #: src/components/Rsvp.js:431
 msgid "%d guest"
 msgid_plural "%d guests"
 msgstr[0] ""
 msgstr[1] ""
 
-#: build/blocks/events-list/events-list.js:4
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/events-list.js:5
+#: build/blocks/events-list/index.js:5
 #: src/components/EventsList.js:58
 msgid "There are no upcoming events."
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:4
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/events-list.js:5
+#: build/blocks/events-list/index.js:5
 #: src/components/EventsList.js:59
 msgid "There are no past events."
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:141
 msgid "Event List type"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:151
 #: src/blocks/events-list/edit.js:163
 msgid "Upcoming"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:174
 #: src/blocks/events-list/edit.js:186
 msgid "Past"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:193
 msgid "Date & time format"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:206
 msgid "Maximum number of events to display"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:250
 msgid "Show/Hide All RSVP Responses"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:256
 msgid "Show All RSVP Responses"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:257
 msgid "Hide All RSVP Responses"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:289
 msgid "Image Size Options"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:302
 msgid "Show/Hide Featured Image"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:305
 msgid "Show Featured Image"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:306
 msgid "Hide Featured Image"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:319
 msgid "Show/Hide Description"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:322
 msgid "Show Description"
 msgstr ""
 
-#: build/blocks/events-list/index.js:4
+#: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:323
 msgid "Hide Description"
 msgstr ""
@@ -1173,16 +1177,6 @@ msgstr ""
 #: build/settings.js:1
 #: src/components/Autocomplete.js:106
 msgid "Choose only one item."
-msgstr ""
-
-#. translators: %s: 'Register' (hyperlinked)
-#: src/components/Rsvp.js:210
-msgid "%s if you do not have an account."
-msgstr ""
-
-#: src/components/Rsvp.js:215
-msgctxt "Context: %s if you do not have an account."
-msgid "Register"
 msgstr ""
 
 #: build/blocks/add-to-calendar/block.json
