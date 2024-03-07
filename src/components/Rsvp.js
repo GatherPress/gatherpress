@@ -204,13 +204,18 @@ const Rsvp = ({
 					</div>
 					{'' !== getFromGlobal('urls.registrationUrl') && (
 						<div className="gp-modal__text">
-							<a href={getFromGlobal('urls.registrationUrl')}>
-								{__('Register', 'gatherpress')}
+						{HtmlReactParser(
+							sprintf(
+								/* translators: %s: 'Register' (hyperlinked) */
+								__(
+									'%s if you do not have an account.',
+									'gatherpress'
+								),
+								<a href={getFromGlobal('urls.registrationUrl')}>
+								{_x('Register', 'Context: %s if you do not have an account.', 'gatherpress')}
 							</a>
-							{__(
-								' if you do not have an account.',
-								'gatherpress'
-							)}
+							)
+						)}
 						</div>
 					)}
 				</div>
