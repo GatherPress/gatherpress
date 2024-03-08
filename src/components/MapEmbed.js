@@ -1,4 +1,7 @@
-import { isSinglePostInEditor } from '../helpers/globals';
+/**
+ * WordPress dependencies.
+ */
+import { select } from '@wordpress/data';
 
 /**
  * MapEmbed component for GatherPress.
@@ -18,6 +21,7 @@ import { isSinglePostInEditor } from '../helpers/globals';
  * @return {JSX.Element} The rendered React component.
  */
 const MapEmbed = (props) => {
+	const isAdmin = select('core').canUser('create', 'posts');
 	const { zoom, type, className } = props;
 	let { location, height } = props;
 
@@ -25,8 +29,8 @@ const MapEmbed = (props) => {
 		height = 300;
 	}
 
-	if (!isSinglePostInEditor() && !location) {
-		location = '60 29th Street #343, San Francisco, CA 94110, USA';
+	if (isAdmin && !location) {
+		location = '660 4th Street #119 San Francisco CA 94107';
 	}
 
 	if (!location) {
