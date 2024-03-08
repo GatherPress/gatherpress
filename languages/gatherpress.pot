@@ -9,34 +9,29 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-03-07T11:20:49+01:00\n"
+"POT-Creation-Date: 2024-03-08T09:46:33+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"X-Generator: WP-CLI 2.10.0\n"
+"X-Generator: WP-CLI 2.9.0\n"
 "X-Domain: gatherpress\n"
 
 #. Plugin Name of the plugin
-#: gatherpress.php
 #: includes/core/classes/class-setup.php:247
 msgid "GatherPress"
 msgstr ""
 
 #. Plugin URI of the plugin
-#: gatherpress.php
 msgid "https://github.com/GatherPress/gatherpress"
 msgstr ""
 
 #. Description of the plugin
-#: gatherpress.php
 msgid "Powering Communities with WordPress."
 msgstr ""
 
 #. Author of the plugin
-#: gatherpress.php
 msgid "The GatherPress Community"
 msgstr ""
 
 #. Author URI of the plugin
-#: gatherpress.php
 msgid "https://gatherpress.org/"
 msgstr ""
 
@@ -314,101 +309,103 @@ msgstr ""
 msgid "Maximum Attending Limit"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:108
+#: includes/core/classes/settings/class-general.php:107
+#: includes/core/classes/settings/class-general.php:121
+#: includes/core/classes/settings/class-general.php:137
+#: includes/core/classes/settings/class-general.php:150
+msgid "Set this as your default, but you can still override it for each event as you like."
+msgstr ""
+
+#: includes/core/classes/settings/class-general.php:109
 msgid "The default maximum limit of attendees to an event."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:118
+#: includes/core/classes/settings/class-general.php:119
 #: build/panels.js:1
 #: src/components/GuestLimit.js:67
 msgid "Maximum Number of Guests"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:121
+#: includes/core/classes/settings/class-general.php:123
 msgid "The default maximum limit of guests an attendees can bring to an event."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:133
+#: includes/core/classes/settings/class-general.php:135
 msgid "Anonymous RSVP"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:135
-#: includes/core/classes/settings/class-general.php:148
-msgid "Set this as your default, but you can still override it for each event as you like."
-msgstr ""
-
-#: includes/core/classes/settings/class-general.php:137
+#: includes/core/classes/settings/class-general.php:139
 msgid "Enable Anonymous RSVP for New Events."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:146
+#: includes/core/classes/settings/class-general.php:148
 msgid "Not Attending Users"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:150
-msgid "Allow attendees to select \"not attending\" immediately."
+#: includes/core/classes/settings/class-general.php:152
+msgid "Enable Immediate \"Not Attending\" Option for Attendees."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:160
+#: includes/core/classes/settings/class-general.php:162
 #: includes/templates/admin/user/date-time.php:17
 msgid "Date & Time Formatting"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:161
+#: includes/core/classes/settings/class-general.php:163
 #: build/blocks/events-list/index.js:5
 #: src/blocks/events-list/edit.js:196
 msgid "For more information read the <a href=\"https://wordpress.org/documentation/article/customize-date-and-time-format/\">Documentation on date and time formatting</a>."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:165
+#: includes/core/classes/settings/class-general.php:167
 #: includes/templates/admin/user/date-time.php:34
 msgid "Date Format"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:168
+#: includes/core/classes/settings/class-general.php:170
 #: includes/templates/admin/user/date-time.php:37
 msgid "Format of date for scheduled events."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:178
+#: includes/core/classes/settings/class-general.php:180
 #: includes/templates/admin/user/date-time.php:48
 msgid "Time Format"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:181
+#: includes/core/classes/settings/class-general.php:183
 #: includes/templates/admin/user/date-time.php:51
 msgid "Format of time for scheduled events."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:191
+#: includes/core/classes/settings/class-general.php:193
 msgid "Show Timezone"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:194
+#: includes/core/classes/settings/class-general.php:196
 msgid "Display the timezone for scheduled events."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:204
+#: includes/core/classes/settings/class-general.php:206
 msgid "Event Archive Pages"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:205
+#: includes/core/classes/settings/class-general.php:207
 msgid "GatherPress allows you to set event archives to pages you have created."
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:209
+#: includes/core/classes/settings/class-general.php:211
 msgid "Upcoming Events"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:215
+#: includes/core/classes/settings/class-general.php:217
 msgid "Select Upcoming Events Archive Page"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:222
+#: includes/core/classes/settings/class-general.php:224
 msgid "Past Events"
 msgstr ""
 
-#: includes/core/classes/settings/class-general.php:228
+#: includes/core/classes/settings/class-general.php:230
 msgid "Select Past Events Archive Page"
 msgstr ""
 
@@ -621,11 +618,16 @@ msgid "Waiting List"
 msgstr ""
 
 #: build/blocks/events-list/events-list.js:1
+#: build/blocks/events-list/events-list.js:4
 #: build/blocks/events-list/index.js:1
+#: build/blocks/events-list/index.js:4
 #: build/blocks/rsvp-response/index.js:2
 #: build/blocks/rsvp-response/rsvp-response.js:2
 #: build/blocks/rsvp/index.js:1
+#: build/blocks/rsvp/index.js:4
 #: build/blocks/rsvp/rsvp.js:1
+#: build/blocks/rsvp/rsvp.js:4
+#: src/components/Rsvp.js:394
 #: src/components/RsvpResponse.js:50
 #: src/components/RsvpStatusResponse.js:34
 msgctxt "Responded Status"
@@ -695,7 +697,7 @@ msgstr ""
 #: build/blocks/rsvp/index.js:1
 #: build/blocks/rsvp/rsvp.js:1
 #: src/components/Rsvp.js:156
-#: src/components/Rsvp.js:425
+#: src/components/Rsvp.js:429
 msgid "Edit RSVP"
 msgstr ""
 
@@ -814,20 +816,12 @@ msgstr ""
 msgid "List me as anonymous."
 msgstr ""
 
-#: build/blocks/events-list/events-list.js:4
-#: build/blocks/events-list/index.js:4
-#: build/blocks/rsvp/index.js:4
-#: build/blocks/rsvp/rsvp.js:4
-#: src/components/Rsvp.js:394
-msgid "I can't attend"
-msgstr ""
-
 #. translators: %d: Number of guests.
 #: build/blocks/events-list/events-list.js:5
 #: build/blocks/events-list/index.js:5
 #: build/blocks/rsvp/index.js:5
 #: build/blocks/rsvp/rsvp.js:5
-#: src/components/Rsvp.js:443
+#: src/components/Rsvp.js:447
 msgid "%d guest"
 msgid_plural "%d guests"
 msgstr[0] ""
@@ -1156,7 +1150,7 @@ msgstr ""
 
 #: build/panels.js:1
 #: src/components/InitialDecline.js:60
-msgid "Allow attendees to select \"not attending\" immediately"
+msgid "Enable Immediate \"Not Attending\" Option for Attendees"
 msgstr ""
 
 #: build/panels.js:1
