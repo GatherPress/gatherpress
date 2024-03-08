@@ -21,7 +21,7 @@ import { select } from '@wordpress/data';
  * @return {JSX.Element} The rendered React component.
  */
 const MapEmbed = (props) => {
-	const isAdmin = select('core').canUser('create', 'posts');
+	const isAdmin = select('core')?.canUser('create', 'posts');
 	const { zoom, type, className } = props;
 	let { location, height } = props;
 

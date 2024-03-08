@@ -40,7 +40,7 @@ __webpack_require__.r(__webpack_exports__);
  * @return {JSX.Element} The rendered React component.
  */
 const MapEmbed = props => {
-  const isAdmin = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_1__.select)('core').canUser('create', 'posts');
+  const isAdmin = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_1__.select)('core')?.canUser('create', 'posts');
   const {
     zoom,
     type,
