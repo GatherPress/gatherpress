@@ -16,6 +16,10 @@ permissions:
 
 jobs:
   wordpress-version-checker:
+    # Prevent this workflow to run on forks outside of the GatherPress organization,
+    # because the required permission to create an issue would not be given and the workflow would fail.
+    # Using a condition check will skip the test.
+    if: github.repository_owner == 'GatherPress'
     runs-on: ubuntu-latest
     steps:
       - name: WordPress version checker
