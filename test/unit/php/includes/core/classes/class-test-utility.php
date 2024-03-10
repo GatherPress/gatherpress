@@ -183,4 +183,72 @@ class Test_Utility extends Base {
 			$this->assertContains( $timezone, $list, 'Failed to assert timezone is in list.' );
 		}
 	}
+
+	/**
+	 * Data provider for get_system_timezone test.
+	 *
+	 * @return array
+	 */
+	public function data_get_system_timezone(): array {
+		return array(
+			array(
+				false,
+				false,
+				'UTC+0',
+			),
+			array(
+				5,
+				false,
+				'UTC+5',
+			),
+			array(
+				-4,
+				false,
+				'UTC-4',
+			),
+			array(
+				false,
+				'Europe/London',
+				'Europe/London',
+			),
+			array(
+				false,
+				'Etc/GMT+3',
+				'UTC-3',
+			),
+		);
+	}
+
+	/**
+	 * Coverage for get_system_timezone method.
+	 *
+	 * @dataProvider data_get_system_timezone
+	 *
+	 * @covers ::get_system_timezone
+	 *
+	 * @param int|boolean    $gmt_offset      The GMT offset to simulate getting from WordPress settings for testing.
+	 * @param string|boolean $timezone_string The timezone string to simulate getting from WordPress settings for testing.
+	 * @param string         $expects         The expected timezone string result from get_system_timezone.
+	 *
+	 * @return void
+	 */
+	public function test_get_system_timezone( $gmt_offset, $timezone_string, $expects ): void {
+		$gmt_offset_filter      = add_filter(
+			'option_gmt_offset',
+			static function () use ( $gmt_offset ) {
+				return $gmt_offset;
+			}
+		);
+		$timezone_string_filter = add_filter(
+			'option_timezone_string',
+			static function () use ( $timezone_string ) {
+				return $timezone_string;
+			}
+		);
+
+		$this->assertSame( $expects, Utility::get_system_timezone() );
+
+		remove_filter( 'option_gmt_offset', $gmt_offset_filter );
+		remove_filter( 'option_timezone_string', $timezone_string_filter );
+	}
 }

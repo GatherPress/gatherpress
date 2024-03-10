@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Commands\Cli_Event.
+ * Class handles unit tests for GatherPress\Core\Commands\Event_Cli.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -8,7 +8,7 @@
 
 namespace GatherPress\Tests\Core\Commands;
 
-use GatherPress\Core\Commands\Cli_Event;
+use GatherPress\Core\Commands\Event_Cli;
 use GatherPress\Core\Event;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
@@ -16,9 +16,9 @@ use PMC\Unit_Test\Utility;
 /**
  * Class Test_Block.
  *
- * @coversDefaultClass \GatherPress\Core\Commands\Cli_Event
+ * @coversDefaultClass \GatherPress\Core\Commands\Event_Cli
  */
-class Test_Cli_Event extends Base {
+class Test_Event_Cli extends Base {
 	/**
 	 * Coverage for rsvp.
 	 *
@@ -27,7 +27,7 @@ class Test_Cli_Event extends Base {
 	 * @return void
 	 */
 	public function test_rsvp(): void {
-		$cli_event  = new Cli_Event();
+		$cli_event  = new Event_Cli();
 		$event      = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$user       = $this->mock->user()->get();
 		$status     = 'not_attending';

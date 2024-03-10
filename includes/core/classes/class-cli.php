@@ -11,8 +11,8 @@
 
 namespace GatherPress\Core;
 
-use GatherPress\Core\Commands\Cli_Event;
-use GatherPress\Core\Commands\Cli_General;
+use GatherPress\Core\Commands\Event_Cli;
+use GatherPress\Core\Commands\Develop_Cli;
 use GatherPress\Core\Traits\Singleton;
 use WP_CLI;
 
@@ -41,8 +41,8 @@ class Cli {
 	 */
 	protected function __construct() {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			WP_CLI::add_command( 'gatherpress', Cli_General::class );
-			WP_CLI::add_command( 'gatherpress event', Cli_Event::class );
+			WP_CLI::add_command( 'gatherpress develop', Develop_Cli::class );
+			WP_CLI::add_command( 'gatherpress event', Event_Cli::class );
 		}
 	}
 }
