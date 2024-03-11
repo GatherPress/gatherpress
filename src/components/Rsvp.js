@@ -189,20 +189,44 @@ const Rsvp = ({
 				</div>
 				<div className="gp-modal__content">
 					<div className="gp-modal__text">
-						{__('You must ', 'gatherpress')}
-						<a href={getFromGlobal('urls.loginUrl')}>
-							{__('Login', 'gatherpress')}
-						</a>
-						{__(' to RSVP to events.', 'gatherpress')}
+						{HtmlReactParser(
+							sprintf(
+								/* translators: %s: 'Login' (hyperlinked) */
+								__(
+									'You must %s to RSVP to events.',
+									'gatherpress'
+								),
+								<a href={getFromGlobal('urls.loginUrl')}>
+									{_x(
+										'Login',
+										'Context: You must ~ to RSVP to events.',
+										'gatherpress'
+									)}
+								</a>
+							)
+						)}
 					</div>
 					{'' !== getFromGlobal('urls.registrationUrl') && (
 						<div className="gp-modal__text">
-							<a href={getFromGlobal('urls.registrationUrl')}>
-								{__('Register', 'gatherpress')}
-							</a>
-							{__(
-								' if you do not have an account.',
-								'gatherpress'
+							{HtmlReactParser(
+								sprintf(
+									/* translators: %s: 'Register' (hyperlinked) */
+									__(
+										'%s if you do not have an account.',
+										'gatherpress'
+									),
+									<a
+										href={getFromGlobal(
+											'urls.registrationUrl'
+										)}
+									>
+										{_x(
+											'Register',
+											'Context: ~ if you do not have an account.',
+											'gatherpress'
+										)}
+									</a>
+								)
 							)}
 						</div>
 					)}
@@ -367,7 +391,11 @@ const Rsvp = ({
 								}
 								className="gp-buttons__text-link"
 							>
-								{__("I can't attend", 'gatherpress')}
+								{_x(
+									'Not Attending',
+									'Responded Status',
+									'gatherpress'
+								)}
 							</a>
 						</div>
 					</ButtonGroup>
