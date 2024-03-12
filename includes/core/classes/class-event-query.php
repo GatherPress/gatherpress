@@ -255,7 +255,8 @@ class Event_Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces ): array {
-		return $this->adjust_event_sql( $query_pieces, 'upcoming', 'ASC' );
+		global $wp_query;
+		return $this->adjust_event_sql( $query_pieces, 'upcoming', $wp_query->get( 'order' ) );
 	}
 
 	/**
@@ -269,7 +270,10 @@ class Event_Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
 	public function adjust_sorting_for_past_events( array $query_pieces ): array {
-		return $this->adjust_event_sql( $query_pieces, 'past' );
+
+		global $wp_query;
+		// return $this->adjust_event_sql( $query_pieces, 'past' );
+		return $this->adjust_event_sql( $query_pieces, 'past', $wp_query->get( 'order' ) );
 	}
 
 	/**
