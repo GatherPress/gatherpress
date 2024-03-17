@@ -9,6 +9,7 @@ import { createRoot } from '@wordpress/element';
  */
 import Rsvp from '../../components/Rsvp';
 import { getFromGlobal } from '../../helpers/globals';
+import {addFilter} from '@wordpress/hooks';
 
 /**
  * Initialize the GatherPress RSVP blocks.

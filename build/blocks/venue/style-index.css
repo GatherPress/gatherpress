@@ -1,1 +1,33 @@
-.gp-tooltip{border-bottom:1px dotted}.gp-venue{display:flex;flex-direction:column;gap:.5rem}.gp-venue__gap{gap:2rem}.gp-venue__icon{align-items:flex-start;display:flex;padding-top:.4rem}.gp-venue__item{display:flex;gap:1rem}.gp-venue__name{font-size:var(--wp--preset--font-size--medium)}.gp-venue__row{display:flex;justify-content:flex-start}
+/*!****************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/blocks/venue/style.scss ***!
+  \****************************************************************************************************************************************************************************************************************************************************/
+.gp-tooltip {
+  border-bottom: 1px dotted;
+}
+
+.gp-venue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.gp-venue__gap {
+  gap: 2rem;
+}
+.gp-venue__icon {
+  align-items: flex-start;
+  display: flex;
+  padding-top: 0.4rem;
+}
+.gp-venue__item {
+  display: flex;
+  gap: 1rem;
+}
+.gp-venue__name {
+  font-size: var(--wp--preset--font-size--medium);
+}
+.gp-venue__row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/*# sourceMappingURL=style-index.css.map*/

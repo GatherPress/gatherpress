@@ -21,6 +21,8 @@
  */
 
 // Constants.
+use GatherPress\Core\Utility;
+
 define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );
@@ -40,3 +42,14 @@ GatherPress\Core\Autoloader::register();
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+add_action( 'init', 'gatherpress_register_patterns' );
+
+function gatherpress_register_patterns() {
+	register_block_pattern( 'gatherpress/hero', array(
+		'title'      => __( 'Hero', 'gatherpress' ),
+		'categories' => array( 'featured' ),
+		'source'     => 'theme',
+		'content'    => Utility::render_template( sprintf( '%s/includes/patterns/hero.php', GATHERPRESS_CORE_PATH ) ),
+	) );
+}
