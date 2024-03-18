@@ -13,6 +13,7 @@ namespace GatherPress\Core;
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Activitypub\Event_Transformer;
 use WP_Post;
 
 /**
@@ -103,6 +104,7 @@ class Setup {
 			array( $this, 'filter_plugin_action_links' )
 		);
 		add_filter( 'load_textdomain_mofile', array( $this, 'load_mofile' ), 10, 2 );
+		add_filter( 'activitypub_transformer', array( $this, 'register_activitypub_transformer' ), 10, 3 );
 	}
 
 	/**
@@ -417,5 +419,25 @@ class Setup {
 				true
 			);
 		}
+	}
+
+	/**
+	 * Registers a custom event transformer for the ActivityPub plugin.
+	 * 
+	 * The ActivityPub plugin allows to register custom transformers. We want to make sure that 
+	 * GatherPress Events are also properly represented in the ActivityPub world.
+	 * 
+	 * @since 1.0.0
+	 * @see https://github.com/Automattic/wordpress-activitypub/blob/master/includes/transformer/class-factory.php#L37
+	 * 
+	 * @return void
+	 */
+	public function register_activitypub_transformer( $transformer, $wp_object, $object_class ) {
+		if ( 'WP_Post' == $object_class && $wp_object->post_type === 'gp_event' ) {
+			return new Event_Transformer( $wp_object );
+		}
+
+		// Return the default transformer.
+		return $transformer;
 	}
 }
