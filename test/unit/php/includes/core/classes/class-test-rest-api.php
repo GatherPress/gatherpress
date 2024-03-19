@@ -343,7 +343,7 @@ class Test_Rest_Api extends Base {
 
 		update_option( 'date_format', 'l, F j, Y' );
 		update_option( 'time_format', 'g:i A' );
-		
+
 		$instance = Rest_Api::get_instance();
 
 		$request  = new WP_REST_Request( 'POST' );
