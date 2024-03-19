@@ -98,8 +98,8 @@ class Test_Event extends Base {
 	 */
 	public function test_get_display_datetime( array $params, string $expects ): void {
 
-		update_option('date_format','l, F j, Y');
-		update_option('time_format','g:i A');
+		update_option( 'date_format', 'l, F j, Y' );
+		update_option( 'time_format', 'g:i A' );
 
 		$post  = $this->mock->post(
 			array(
