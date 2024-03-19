@@ -1,4 +1,4 @@
-name: 'Test against standards for the WordPress.org plugin directory'
+name: 'WordPress.org plugin directory guidelines'
 on: # rebuild any PRs and main branch changes
   workflow_call:
   pull_request:
@@ -7,7 +7,7 @@ on: # rebuild any PRs and main branch changes
     - main
 
 jobs:
-  test:
+  wp-org-plugin-guidelines:
     runs-on: ubuntu-latest
 
     steps:
