@@ -22,7 +22,7 @@ jobs:
     if: github.repository_owner == 'GatherPress'
     runs-on: ubuntu-latest
     steps:
-      - name: WordPress version checker
+      - name: WordPress Version Checker
         uses: skaut/wordpress-version-checker@v2.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
