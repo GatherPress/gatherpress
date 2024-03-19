@@ -171,7 +171,7 @@ class General extends Base {
 							'type'    => 'text',
 							'size'    => 'regular',
 							'options' => array(
-								'default' => get_option( 'date_format', 'l, F j, Y' )
+								'default' => get_option( 'date_format', 'l, F j, Y' ),
 							),
 						),
 					),
