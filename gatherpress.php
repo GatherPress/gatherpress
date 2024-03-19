@@ -5,14 +5,13 @@
  * Description:       Powering Communities with WordPress.
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
- * Version:           0.28.0
+ * Version:           0.29.0-alpha
  * Requires PHP:      7.4
  * Requires at least: 6.4
  * Text Domain:       gatherpress
  * Domain Path:       /languages
  * License:           GNU General Public License v2.0 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Update URI:        https://gatherpress.org/
  *
  * This file serves as the main plugin file for GatherPress. It defines the plugin's basic information,
  * constants, and initializes the plugin.
