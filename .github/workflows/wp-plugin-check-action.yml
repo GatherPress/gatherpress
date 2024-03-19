@@ -1,0 +1,47 @@
+name: 'Test against standards for the WordPress.org plugin directory'
+on: # rebuild any PRs and main branch changes
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+    - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Setup PHP
+          uses: shivammathur/setup-php@v2
+          with:
+              php-version: latest
+              coverage: none
+              tools: wp-cli
+
+        - name: Install latest version of dist-archive-command
+          run: wp package install wp-cli/dist-archive-command:dev-main
+
+        - name: Setup Node
+          uses: actions/setup-node@v4
+          with:
+              node-version-file: '.nvmrc'
+              cache: npm
+
+        - name: Install dependencies
+          run: npm ci
+
+        - name: Build plugin
+          run: |
+              npm run build
+              wp dist-archive . ./gatherpress.zip
+              mkdir tmp-build
+              unzip gatherpress.zip -d tmp-build
+
+        - name: Run plugin check
+          uses: swissspidy/wp-plugin-check-action@main
+          with:
+              build-dir: './tmp-build/gatherpress'
+              wp-version: 'trunk'
