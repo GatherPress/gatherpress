@@ -12,7 +12,7 @@
  */
 
 return array(
-	'0.29.0' => array(
+	'0.29.0-alpha' => array(
 		'project-leaders'  => array( 'mauteri', 'hrmervin', 'patricia70' ),
 		'gatherpress-team' => array( 'jmarx', 'pbrocks', 'prashantabellad', 'prayagm', 'javiercasares', 'linusx007', 'meaganhanes', 'stephenerdelyi', 'nilovelez', 'carstenbach' ),
 		'contributors'     => array( 'hauvong', 'phoopee3', 'cameronbarrett', 'courane01', 'newyorkerlaura', 'calebthedev', 'jeffpaul', 'deshabhishek007', 'michelleames' ),
