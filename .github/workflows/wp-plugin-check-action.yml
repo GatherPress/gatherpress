@@ -1,6 +1,6 @@
 name: 'Test against standards for the WordPress.org plugin directory'
 on: # rebuild any PRs and main branch changes
-  workflow_dispatch:
+  workflow_call:
   pull_request:
   push:
     branches:
