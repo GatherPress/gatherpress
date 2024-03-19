@@ -17,9 +17,9 @@ jobs:
         - name: Setup PHP
           uses: shivammathur/setup-php@v2
           with:
-              php-version: latest
-              coverage: none
-              tools: wp-cli
+			php-version: latest
+			coverage: none
+			tools: wp-cli
 
         - name: Install latest version of dist-archive-command
           run: wp package install wp-cli/dist-archive-command:dev-main
@@ -27,8 +27,9 @@ jobs:
         - name: Setup Node
           uses: actions/setup-node@v4
           with:
-              node-version-file: '.nvmrc'
-              cache: npm
+			# use the same version like WordPress/gutenberg
+			node-version-file: '20'
+			cache: npm
 
         - name: Install dependencies
           run: npm ci
@@ -43,5 +44,5 @@ jobs:
         - name: Run plugin check
           uses: swissspidy/wp-plugin-check-action@main
           with:
-              build-dir: './tmp-build/gatherpress'
-              wp-version: 'trunk'
+			build-dir: './tmp-build/gatherpress'
+			wp-version: 'trunk'
