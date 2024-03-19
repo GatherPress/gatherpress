@@ -97,6 +97,10 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_display_datetime( array $params, string $expects ): void {
+
+		update_option('date_format','l, F j, Y');
+		update_option('time_format','g:i A');
+
 		$post  = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
