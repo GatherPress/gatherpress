@@ -108,7 +108,7 @@ class Test_Assets extends Base {
 		$output = Utility::buffer_and_return( array( $instance, 'event_communication_modal' ) );
 
 		$this->assertSame(
-			'<div id="gp-event-communication-modal" />',
+			'<div id="gp-event-communication-modal"></div>',
 			$output,
 			'Failed to assert event_communication_modal output div.'
 		);
