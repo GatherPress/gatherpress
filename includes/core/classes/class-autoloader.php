@@ -45,6 +45,7 @@ class Autoloader {
 				array_unshift( $structure, 'includes' );
 
 				switch ( $class_type ) {
+					case 'activitypub':
 					case 'commands':
 					case 'settings':
 					case 'traits':
