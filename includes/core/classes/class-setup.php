@@ -13,7 +13,6 @@ namespace GatherPress\Core;
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
-use WP_Post;
 
 /**
  * Class Setup.
