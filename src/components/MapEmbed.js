@@ -22,6 +22,7 @@ import { select } from '@wordpress/data';
  */
 const MapEmbed = (props) => {
 	const isAdmin = select('core')?.canUser('create', 'posts');
+	const isPostEditor = select('core/edit-post') ? true : false;
 	const { zoom, type, className } = props;
 	let { location, height } = props;
 
@@ -29,7 +30,7 @@ const MapEmbed = (props) => {
 		height = 300;
 	}
 
-	if (isAdmin && !location) {
+	if (isAdmin && !isPostEditor && !location) {
 		location = '660 4th Street #119 San Francisco CA 94107';
 	}
 
