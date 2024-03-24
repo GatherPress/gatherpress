@@ -10,7 +10,7 @@
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Activitypub;
+namespace GatherPress\Core\ActivityPub;
 
 use function Activitypub\get_rest_url_by_path;
 
@@ -22,13 +22,6 @@ use function Activitypub\get_rest_url_by_path;
  * @since 1.0.0
  */
 class Event_Transformer extends \Activitypub\Transformer\Post {
-	/**
-	 * The target transformet ActivityPub Event object.
-	 *
-	 * @var Event
-	 */
-	protected $ap_object;
-
 	/**
 	 * The current GatherPress Event object.
 	 *
@@ -137,6 +130,7 @@ class Event_Transformer extends \Activitypub\Transformer\Post {
 		$attachments = parent::get_attachment();
 		if ( count( $attachments ) ) {
 			$attachments[0]['name'] = 'Banner';
+			$attachments[0]['type'] = 'Document';
 		}
 		$event_link = $this->get_event_link();
 		if ( $event_link ) {
@@ -179,45 +173,63 @@ class Event_Transformer extends \Activitypub\Transformer\Post {
 		return $summary;
 	}
 
+	public function get_to() {
+		$path = sprintf( 'users/%d/followers', intval( $this->wp_object->post_author ) );
+
+		return array(
+				'https://www.w3.org/ns/activitystreams#Public',
+				get_rest_url_by_path( $path ),
+		);
+	}
+	
 	/**
 	 * Transform the WordPress Object into an ActivityPub Object.
 	 *
 	 * @return Activitypub\Activity\Event
 	 */
 	public function to_object() {
-		$this->ap_object = new \Activitypub\Activity\Extended_Object\Event();
+		// Get the corresponding GatherPress Event object.
 		$this->gp_event  = new \GatherPress\Core\Event( $this->wp_object->ID );
-		
-		$this->ap_object = parent::to_object();
 
-		$this->ap_object->set_comments_enabled( 'open' === $this->wp_object->comment_status ? true : false );
+		// Initialize the target ActivityPub Event object.
+		$activitypub_object = new \Activitypub\Activity\Extended_Object\Event();
+		$activitypub_object = $this->transform_object_properties( $activitypub_object );
 
-		$this->ap_object->set_external_participation_url( $this->get_url() );
+		// Set published and updated.
+		$published = \strtotime( $this->wp_object->post_date_gmt );
+		$activitypub_object->set_published( \gmdate( 'Y-m-d\TH:i:s\Z', $published ) );
+		$updated = \strtotime( $this->wp_object->post_modified_gmt );
+		if ( $updated > $published ) {
+			$activitypub_object->set_updated( \gmdate( 'Y-m-d\TH:i:s\Z', $updated ) );
+		}
+
+		// Also set contentMap via already available content.
+		$activitypub_object->set_content_map(
+			array(
+				$this->get_locale() => $activitypub_object->get_content(),
+			)
+		);
+
+		// Set properties relevant for the event.
+		$activitypub_object->set_comments_enabled( 'open' === $this->wp_object->comment_status ? true : false );
+
+		$activitypub_object->set_external_participation_url( $this->get_url() );
 
 		$online_event_link = $this->gp_event->maybe_get_online_event_link();
 
 		if ( $online_event_link ) {
-			$this->ap_object->set_is_online( true );
+			$activitypub_object->set_is_online( true );
 		} else {
-			$this->ap_object->set_is_online( false );
+			$activitypub_object->set_is_online( false );
 		}
 
-		$this->ap_object->set_status( 'CONFIRMED' );
+		$activitypub_object->set_status( 'CONFIRMED' );
 
-		$this->ap_object->set_name( get_the_title( $this->wp_object->ID ) );
+		$activitypub_object->set_name( get_the_title( $this->wp_object->ID ) );
 
-		$this->ap_object->set_actor( $this->get_attributed_to() );
+		$activitypub_object->set_actor( $this->get_attributed_to() );
 
-        $path = sprintf( 'users/%d/followers', intval( $this->wp_object->post_author ) );
-
-        $this->ap_object->set_to(
-			array(
-				'https://www.w3.org/ns/activitystreams#Public',
-				get_rest_url_by_path( $path ),
-			)
-		);
-
-		$this->ap_object->set_location();
-		return $this->ap_object;
+		$activitypub_object->set_location();
+		return $activitypub_object;
 	}
 }

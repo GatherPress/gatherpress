@@ -13,7 +13,7 @@ namespace GatherPress\Core;
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Activitypub\Event_Transformer;
+use GatherPress\Core\ActivityPub\Event_Transformer;
 use WP_Post;
 
 /**
