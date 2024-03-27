@@ -239,11 +239,11 @@ class Test_Event_Query extends Base {
 		$retval = $instance->adjust_event_sql( array(), 'past', 'desc' );
 
 		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
-		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt <", $retval['where'] );
+		$this->assertStringContainsString( "AND `{$table}`.datetime_end_gmt <", $retval['where'] );
 
 		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'ASC' );
 
 		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
-		$this->assertStringContainsString( "AND {$table}.datetime_end_gmt >=", $retval['where'] );
+		$this->assertStringContainsString( "AND `{$table}`.datetime_end_gmt >=", $retval['where'] );
 	}
 }

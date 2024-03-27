@@ -337,9 +337,9 @@ class Event_Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
 		if ( 'upcoming' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %s.datetime_end_gmt >= %s', $table, $current );
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt >= %s', $table, $current );
 		} elseif ( 'past' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %s.datetime_end_gmt < %s', $table, $current );
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt < %s', $table, $current );
 		}
 
 		return $pieces;
