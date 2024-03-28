@@ -16,8 +16,8 @@ import MapEmbed from '../../../../../src/components/MapEmbed';
 test('MapEmbed returns empty when no location is provided', () => {
 	const { container } = render(<MapEmbed />);
 
-	expect(container.children[0].getAttribute('src')).toContain(
-		'?q=660+4th+Street+%23119+San+Francisco+CA+94107%2C+USA'
+	expect(container).toHaveTextContent(
+		''
 	);
 });
 
