@@ -16,9 +16,7 @@ import MapEmbed from '../../../../../src/components/MapEmbed';
 test('MapEmbed returns empty when no location is provided', () => {
 	const { container } = render(<MapEmbed />);
 
-	expect(container).toHaveTextContent(
-		''
-	);
+	expect(container).toHaveTextContent('');
 });
 
 test('MapEmbed returns address in source when location is set', () => {
