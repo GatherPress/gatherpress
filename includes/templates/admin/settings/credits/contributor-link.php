@@ -12,7 +12,7 @@
  */
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 if ( ! isset( $gatherpress_contributor, $gatherpress_contributor_end ) ) {
 	return;

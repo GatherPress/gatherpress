@@ -12,7 +12,7 @@
 namespace GatherPress\Core\Traits;
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
  * Singleton Trait.

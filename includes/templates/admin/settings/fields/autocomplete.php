@@ -15,7 +15,7 @@
  */
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 if ( ! isset( $name, $option, $value, $description, $field_options ) ) {
 	return;

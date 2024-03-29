@@ -12,7 +12,7 @@
 namespace GatherPress\Core;
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Commands\Event_Cli;
 use GatherPress\Core\Commands\Develop_Cli;

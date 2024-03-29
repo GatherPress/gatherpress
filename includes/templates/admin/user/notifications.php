@@ -7,7 +7,7 @@
  */
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 if ( ! isset( $event_updates_opt_in ) ) {
 	return;
