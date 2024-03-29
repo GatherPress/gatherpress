@@ -7,7 +7,7 @@
  */
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 if ( ! isset( $date_format, $time_format, $timezone, $date_attrs, $time_attrs, $tz_choices ) ) {
 	return;

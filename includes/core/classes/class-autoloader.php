@@ -13,7 +13,7 @@
 namespace GatherPress\Core;
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
  * Class Autoloader.

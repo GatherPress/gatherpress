@@ -20,7 +20,7 @@
  */
 
 // Exit if accessed directly.
-defined( 'ABSPATH' ) || exit;
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 // Constants.
 define( 'GATHERPRESS_CORE_FILE', __FILE__ );
