@@ -11,6 +11,9 @@
  * @since 1.0.0
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 use GatherPress\Core\Utility;
 
 if ( ! isset( $credits ) ) {

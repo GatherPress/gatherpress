@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core\Settings;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;

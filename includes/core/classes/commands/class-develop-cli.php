@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core\Commands;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 use WP_CLI;
 
 /**

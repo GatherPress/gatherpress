@@ -16,6 +16,9 @@
  * @param string $size        The size class for styling (e.g., 'regular', 'large', or 'small').
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 if ( ! isset( $name, $label, $option, $value, $description, $size, $min, $max ) ) {
 	return;
 }

@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 use DateTimeZone;
 use Exception;
 use WP_Post;

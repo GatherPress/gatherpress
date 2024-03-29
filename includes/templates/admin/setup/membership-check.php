@@ -6,6 +6,9 @@
  * @since 1.0.0
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 ?>
 	<div class="gp-admin__membership-check notice notice-warning">
 		<div>

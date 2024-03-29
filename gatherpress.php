@@ -19,6 +19,9 @@
  * @package GatherPress
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 // Constants.
 define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );

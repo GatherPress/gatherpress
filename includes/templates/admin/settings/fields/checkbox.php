@@ -14,6 +14,9 @@
  * @param string $description Optional. The description or tooltip text for the field.
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 if ( ! isset( $name, $label, $option, $value, $description ) ) {
 	return;
 }

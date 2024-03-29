@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 use GatherPress\Core\Settings\Leadership;
 use WP_Post;
 
