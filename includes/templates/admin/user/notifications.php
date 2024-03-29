@@ -6,6 +6,9 @@
  * @since 1.0.0
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 if ( ! isset( $event_updates_opt_in ) ) {
 	return;
 }

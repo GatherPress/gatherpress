@@ -12,6 +12,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 use GatherPress\Core\Traits\Singleton;
 use WP_Query;
 

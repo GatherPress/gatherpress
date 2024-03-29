@@ -9,6 +9,9 @@
  * @param string $value The value parameter representing a datetime.
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 if ( ! isset( $name, $value ) ) {
 	return;
 }

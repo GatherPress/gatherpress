@@ -8,6 +8,9 @@
  * @since 1.0.0
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 $gatherpress_activation = true;
 
 // Check the PHP version to ensure compatibility with the plugin.

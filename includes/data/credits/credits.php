@@ -11,6 +11,9 @@
  * @return array An associative array with version numbers as keys and credit arrays as values.
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit;
+
 return array(
 	'0.29.0-alpha' => array(
 		'project-leaders'  => array( 'mauteri', 'hrmervin', 'patricia70' ),
