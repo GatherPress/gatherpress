@@ -129,7 +129,7 @@ class Venue {
 				),
 				'menu_icon'    => 'dashicons-location',
 				'template'     => array(
-					array( 'gatherpress/venue' ),
+					array( 'core/pattern', array( 'slug' => 'gatherpress/venue-details' ) ),
 				),
 				'rewrite'      => array(
 					'slug' => _x( 'venue', 'Post Type Slug', 'gatherpress' ),

@@ -49,6 +49,7 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_action( 'init', array( $this, 'register_block_patterns' ), 10 );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
 		add_filter( 'load_script_translation_file', array( $this, 'fix_translation_location' ), 10, 3 );
@@ -93,5 +94,29 @@ class Block {
 				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
 			);
 		}
+	}
+
+	/**
+	 * Register custom block patterns.
+	 *
+	 * This method ...
+	 *
+	 * @since 0.30.0
+	 *
+	 * @return void
+	 */
+	public function register_block_patterns(): void {
+		\register_block_pattern(
+			'gatherpress/venue-details',
+            array(
+                'title'         => 'Invisible Venue Details Block Pattern',
+				// Even this paragraph seems useless, it's not.
+				// It is the entry point for all our hooked blocks
+				// and as such absolutely important!
+                'content'       => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // this will a be hooked ;)
+				'inserter'      => false,
+				'source'        => 'plugin',
+			)
+		);
 	}
 }
