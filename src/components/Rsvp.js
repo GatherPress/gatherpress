@@ -201,7 +201,7 @@ const Rsvp = ({
 								{__('Register', 'gatherpress')}
 								{__(
 									' if you do not have an account.',
-									'gatherpress',
+									'gatherpress'
 								)}
 							</a>
 						</div>
