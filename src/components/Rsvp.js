@@ -196,13 +196,13 @@ const Rsvp = ({
 									'You must %s to RSVP to events.',
 									'gatherpress'
 								),
-								<a href={getFromGlobal('urls.loginUrl')}>
-									{_x(
+								`<a href=${getFromGlobal('urls.loginUrl')}>
+									${_x(
 										'Login',
 										'Context: You must ~ to RSVP to events.',
 										'gatherpress'
 									)}
-								</a>
+								</a>`
 							)
 						)}
 					</div>
@@ -215,17 +215,13 @@ const Rsvp = ({
 										'%s if you do not have an account.',
 										'gatherpress'
 									),
-									<a
-										href={getFromGlobal(
-											'urls.registrationUrl'
-										)}
-									>
-										{_x(
+									`<a href=${getFromGlobal('urls.registrationUrl')}>
+										${_x(
 											'Register',
 											'Context: ~ if you do not have an account.',
 											'gatherpress'
 										)}
-									</a>
+									</a>`
 								)
 							)}
 						</div>
