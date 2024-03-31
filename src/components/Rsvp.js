@@ -198,10 +198,10 @@ const Rsvp = ({
 					{'' !== getFromGlobal('urls.registrationUrl') && (
 						<div className="gp-modal__text">
 							<a href={getFromGlobal('urls.registrationUrl')}>
-								{__("Register", "gatherpress")}
+								{__('Register', 'gatherpress')}
 								{__(
-									" if you do not have an account.",
-									"gatherpress",
+									' if you do not have an account.',
+									'gatherpress',
 								)}
 							</a>
 						</div>
