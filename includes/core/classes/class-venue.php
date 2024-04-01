@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 
@@ -152,7 +155,7 @@ class Venue {
 		$post_meta = array(
 			'venue_information' => array(
 				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' );
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
 				},
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,

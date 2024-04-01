@@ -31,12 +31,13 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @since 1.0.0
  *
- * @param {Object}  props                     - Component props.
- * @param {number}  props.postId              - The ID of the event.
- * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
- * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
- * @param {number}  props.maxGuestLimit       - The maximum number of guests allowed per RSVP.
- * @param {string}  props.type                - Type of event ('upcoming' or 'past').
+ * @param {Object}  props                      - Component props.
+ * @param {number}  props.postId               - The ID of the event.
+ * @param {Object}  [props.currentUser='']     - Current user's RSVP information.
+ * @param {boolean} props.enableAnonymousRsvp  - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {boolean} props.enableInitialDecline - If true, shows an option to decline attendance initially.
+ * @param {number}  props.maxGuestLimit        - The maximum number of guests allowed per RSVP.
+ * @param {string}  props.type                 - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -45,6 +46,7 @@ const Rsvp = ({
 	currentUser = '',
 	type,
 	enableAnonymousRsvp,
+	enableInitialDecline,
 	maxGuestLimit,
 }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
@@ -187,20 +189,44 @@ const Rsvp = ({
 				</div>
 				<div className="gp-modal__content">
 					<div className="gp-modal__text">
-						{__('You must ', 'gatherpress')}
-						<a href={getFromGlobal('urls.loginUrl')}>
-							{__('Login', 'gatherpress')}
-						</a>
-						{__(' to RSVP to events.', 'gatherpress')}
+						{HtmlReactParser(
+							sprintf(
+								/* translators: %s: 'Login' (hyperlinked) */
+								__(
+									'You must %s to RSVP to events.',
+									'gatherpress'
+								),
+								<a href={getFromGlobal('urls.loginUrl')}>
+									{_x(
+										'Login',
+										'Context: You must ~ to RSVP to events.',
+										'gatherpress'
+									)}
+								</a>
+							)
+						)}
 					</div>
 					{'' !== getFromGlobal('urls.registrationUrl') && (
 						<div className="gp-modal__text">
-							<a href={getFromGlobal('urls.registrationUrl')}>
-								{__('Register', 'gatherpress')}
-							</a>
-							{__(
-								' if you do not have an account.',
-								'gatherpress'
+							{HtmlReactParser(
+								sprintf(
+									/* translators: %s: 'Register' (hyperlinked) */
+									__(
+										'%s if you do not have an account.',
+										'gatherpress'
+									),
+									<a
+										href={getFromGlobal(
+											'urls.registrationUrl'
+										)}
+									>
+										{_x(
+											'Register',
+											'Context: ~ if you do not have an account.',
+											'gatherpress'
+										)}
+									</a>
+								)
 							)}
 						</div>
 					)}
@@ -352,6 +378,30 @@ const Rsvp = ({
 						</a>
 					</div>
 				</ButtonGroup>
+				{enableInitialDecline &&
+				'no_status' === rsvpStatus &&
+				1 !== rsvpAnonymous ? (
+					<ButtonGroup className="gp-buttons wp-block-buttons">
+						<div className="gp-buttons__container wp-block-button">
+							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+							<a
+								href="#"
+								onClick={(e) =>
+									onAnchorClick(e, 'not_attending', null)
+								}
+								className="gp-buttons__text-link"
+							>
+								{_x(
+									'Not Attending',
+									'Responded Status',
+									'gatherpress'
+								)}
+							</a>
+						</div>
+					</ButtonGroup>
+				) : (
+					<></>
+				)}
 			</div>
 		);
 	};

@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Settings\General;
 use GatherPress\Core\Settings\Leadership;

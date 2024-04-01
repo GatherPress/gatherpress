@@ -11,6 +11,9 @@
  * @param string $message  Optional message content for the email.
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Event;
 
 if ( ! isset( $event_id, $message ) ) {

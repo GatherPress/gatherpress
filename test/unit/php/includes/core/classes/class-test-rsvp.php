@@ -97,6 +97,18 @@ class Test_Rsvp extends Base {
 		$user_2_id = $this->factory->user->create();
 
 		$this->assertSame( 'no_status', $rsvp->save( $user_2_id, 'no_status' )['status'], 'Failed to assert that user 2 is no_status.' );
+
+		$post      = $this->mock->post(
+			array(
+				'post_type' => 'gp_event',
+				'post_meta' => array(
+					'max_guest_limit' => 2,
+				),
+			)
+		)->get();
+		$rsvp      = new Rsvp( $post->ID );
+		$user_1_id = $this->factory->user->create();
+		$this->assertSame( 2, $rsvp->save( $user_1_id, 'attending', 0, 3 )['guests'], 'Failed to assert that user 1 can only bring 2 guests at most.' );
 	}
 
 	/**

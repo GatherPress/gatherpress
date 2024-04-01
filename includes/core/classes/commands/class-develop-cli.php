@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core\Commands;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use WP_CLI;
 
 /**
@@ -21,7 +24,7 @@ use WP_CLI;
  *
  * @since 1.0.0
  */
-class Cli_General extends WP_CLI {
+class Develop_Cli extends WP_CLI {
 	/**
 	 * Generate credits data for the credits page.
 	 *
@@ -36,7 +39,7 @@ class Cli_General extends WP_CLI {
 	 * ## EXAMPLES
 	 *
 	 *    # Generate credits.
-	 *    $ wp gatherpress generate_credits --version=1.0.0
+	 *    $ wp gatherpress develop generate_credits --version=1.0.0
 	 *    Success: New latest.php file has been generated.
 	 *
 	 * @codeCoverageIgnore Command is for internal purposes only.

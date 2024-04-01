@@ -15,6 +15,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
  */
 import { isEventPostType } from '../../helpers/event';
 import AnonymousRsvpPanel from './anonymous-rsvp';
+import InitialDeclinePanel from './initial-decline';
 import DateTimeRangePanel from './datetime-range';
 import GuestLimitPanel from './guest-limit';
 import MaxAttendanceLimitPanel from './max-attendance-limit';
@@ -50,6 +51,7 @@ const EventSettings = () => {
 					<GuestLimitPanel />
 					<MaxAttendanceLimitPanel />
 					<AnonymousRsvpPanel />
+					<InitialDeclinePanel />
 					<NotifyMembersPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>

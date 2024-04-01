@@ -12,6 +12,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Traits\Singleton;
 use WP_Query;
 
@@ -337,9 +340,9 @@ class Event_Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
 		if ( 'upcoming' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt >= %s', esc_sql( $current ) );
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt >= %s', $table, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 		} elseif ( 'past' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND ' . esc_sql( $table ) . '.datetime_end_gmt < %s', esc_sql( $current ) );
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt < %s', $table, $current ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 		}
 
 		return $pieces;

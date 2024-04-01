@@ -14,6 +14,9 @@
  * @param array  $field_options  Additional options for customizing the field behavior.
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 if ( ! isset( $name, $option, $value, $description, $field_options ) ) {
 	return;
 }

@@ -1,8 +1,13 @@
 .gp-buttons {
 	display: flex;
 	grid-column-gap: 1rem;
+	align-items: center;
 
 	&__container {
 		font-size: var(--wp--preset--font-size--small);
+	}
+
+	& + & {
+		margin-top: 1rem;
 	}
 }

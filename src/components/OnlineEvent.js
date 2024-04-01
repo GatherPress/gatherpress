@@ -49,7 +49,7 @@ const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 							className="gp-tooltip"
 							data-tooltip-id="gp-online-event-tooltip"
 							data-tooltip-content={__(
-								'Link active for attendees during event.',
+								'Link available for attendees only.',
 								'gatherpress'
 							)}
 						>

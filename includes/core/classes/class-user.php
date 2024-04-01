@@ -13,6 +13,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Traits\Singleton;
 use WP_User;
 
@@ -56,6 +59,75 @@ class User {
 		add_action( 'edit_user_profile', array( $this, 'profile_fields' ) );
 		add_action( 'personal_options_update', array( $this, 'save_profile_fields' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'save_profile_fields' ) );
+		add_filter( 'gatherpress_date_format', array( $this, 'user_set_date_format' ) );
+		add_filter( 'gatherpress_time_format', array( $this, 'user_set_time_format' ) );
+		add_filter( 'gatherpress_timezone', array( $this, 'user_set_timezone' ) );
+	}
+
+	/**
+	 * Get date format for a user if logged in.
+	 *
+	 * This is a filter to get a user defined date format. 'gp_date_format'
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $date_format The default date format.
+	 *
+	 * @return string The user's date format preference or the default if not set
+	 */
+	public function user_set_date_format( $date_format ): string {
+		$user_id = get_current_user_id();
+
+		if ( $user_id ) {
+			$user_date_format = get_user_meta( $user_id, 'gp_date_format', true );
+			$date_format      = ! empty( $user_date_format ) ? $user_date_format : $date_format;
+		}
+
+		return $date_format;
+	}
+
+	/**
+	 * Get time format for a user if logged in.
+	 *
+	 * This is a filter to get a user defined time format. 'gp_time_format'
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $time_format The default time format.
+	 *
+	 * @return string The user's time format preference or the default if not set
+	 */
+	public function user_set_time_format( $time_format ): string {
+		$user_id = get_current_user_id();
+
+		if ( $user_id ) {
+			$user_time_format = get_user_meta( $user_id, 'gp_time_format', true );
+			$time_format      = ! empty( $user_time_format ) ? $user_time_format : $time_format;
+		}
+
+		return $time_format;
+	}
+
+	/**
+	 * Get timezone for a user if logged in.
+	 *
+	 * This is a filter to get a user defined timezone. 'gp_timezone'
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $timezone The default timezone.
+	 *
+	 * @return string The user's timezone preference or the default if not set.
+	 */
+	public function user_set_timezone( $timezone ): string {
+		$user_id = get_current_user_id();
+
+		if ( ! is_admin() && $user_id ) {
+			$gp_timezone = get_user_meta( $user_id, 'gp_timezone', true );
+			$timezone    = ! empty( $gp_timezone ) ? $gp_timezone : $timezone;
+		}
+
+		return $timezone;
 	}
 
 	/**

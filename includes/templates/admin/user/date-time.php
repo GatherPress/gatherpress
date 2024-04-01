@@ -6,7 +6,8 @@
  * @since 1.0.0
  */
 
-use GatherPress\Core\Utility;
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 if ( ! isset( $date_format, $time_format, $timezone, $date_attrs, $time_attrs, $tz_choices ) ) {
 	return;

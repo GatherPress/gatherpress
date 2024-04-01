@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core\Commands;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Event;
 use WP_CLI;
 
@@ -23,7 +26,7 @@ use WP_CLI;
  * @package GatherPress\Core
  * @since 1.0.0
  */
-class Cli_Event extends WP_CLI {
+class Event_Cli extends WP_CLI {
 	/**
 	 * Update RSVP status for an event.
 	 *
@@ -62,9 +65,9 @@ class Cli_Event extends WP_CLI {
 	public function rsvp( array $args = array(), array $assoc_args = array() ): void {
 		$event_id  = (int) $assoc_args['event_id'];
 		$user_id   = (int) $assoc_args['user_id'];
-		$guests    = (int) $assoc_args['guests'] ?? 0;
-		$anonymous = (int) $assoc_args['anonymous'] ?? 0;
-		$status    = (string) $assoc_args['status'] ?? 'attending';
+		$guests    = ! empty( $assoc_args['guests'] ) ? (int) $assoc_args['guests'] : 0;
+		$anonymous = ! empty( $assoc_args['anonymous'] ) ? (int) $assoc_args['anonymous'] : 0;
+		$status    = ! empty( $assoc_args['status'] ) ? (string) $assoc_args['status'] : 'attending';
 		$event     = new Event( $event_id );
 		$response  = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
 

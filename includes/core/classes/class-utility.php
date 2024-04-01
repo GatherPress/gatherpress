@@ -12,6 +12,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 /**
  * Class Utility.
  *
@@ -234,24 +237,24 @@ class Utility {
 	 * @return string The timezone string representing the system's default timezone. Falls back to a UTC offset representation if a named timezone string is not set.
 	 */
 	public static function get_system_timezone(): string {
-		$current_offset = get_option( 'gmt_offset' );
-		$tzstring       = get_option( 'timezone_string' );
+		$gmt_offset      = intval( get_option( 'gmt_offset' ) );
+		$timezone_string = get_option( 'timezone_string' );
 
 		// Remove old Etc mappings. Fallback to gmt_offset.
-		if ( str_contains( $tzstring, 'Etc/GMT' ) ) {
-			$tzstring = '';
+		if ( str_contains( $timezone_string, 'Etc/GMT' ) ) {
+			$timezone_string = '';
 		}
 
-		if ( empty( $tzstring ) ) { // Create a UTC+- zone if no timezone string exists.
-			if ( 0 === $current_offset ) {
-				$tzstring = 'UTC+0';
-			} elseif ( $current_offset < 0 ) {
-				$tzstring = 'UTC' . $current_offset;
+		if ( empty( $timezone_string ) ) { // Create a UTC+- zone if no timezone string exists.
+			if ( 0 === $gmt_offset ) {
+				$timezone_string = 'UTC+0';
+			} elseif ( $gmt_offset < 0 ) {
+				$timezone_string = 'UTC' . $gmt_offset;
 			} else {
-				$tzstring = 'UTC+' . $current_offset;
+				$timezone_string = 'UTC+' . $gmt_offset;
 			}
 		}
 
-		return $tzstring;
+		return $timezone_string;
 	}
 }

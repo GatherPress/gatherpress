@@ -11,6 +11,9 @@
  * @since 1.0.0
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 if ( ! isset( $gatherpress_contributor ) ) {
 	return;
 }
