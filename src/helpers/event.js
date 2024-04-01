@@ -28,7 +28,7 @@ import { Broadcaster } from './broadcasting';
  * @return {boolean} True if the current post type is 'gp_event', false otherwise.
  */
 export function isEventPostType() {
-	return 'gp_event' === select('core/editor').getCurrentPostType();
+	return 'gp_event' === select('core/editor')?.getCurrentPostType();
 }
 
 /**

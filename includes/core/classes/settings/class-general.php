@@ -12,6 +12,9 @@
 
 namespace GatherPress\Core\Settings;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -171,7 +174,7 @@ class General extends Base {
 							'type'    => 'text',
 							'size'    => 'regular',
 							'options' => array(
-								'default' => 'l, F j, Y',
+								'default' => get_option( 'date_format', 'l, F j, Y' ),
 							),
 						),
 					),
@@ -184,7 +187,7 @@ class General extends Base {
 							'type'    => 'text',
 							'size'    => 'regular',
 							'options' => array(
-								'default' => 'g:i A',
+								'default' => get_option( 'time_format', 'g:i A' ),
 							),
 						),
 					),

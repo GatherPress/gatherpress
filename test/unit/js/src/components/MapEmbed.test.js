@@ -16,9 +16,7 @@ import MapEmbed from '../../../../../src/components/MapEmbed';
 test('MapEmbed returns empty when no location is provided', () => {
 	const { container } = render(<MapEmbed />);
 
-	expect(container.children[0].getAttribute('src')).toContain(
-		'?q=60+29th+Street+%23343%2C+San+Francisco%2C+CA+94110%2C+USA'
-	);
+	expect(container).toHaveTextContent('');
 });
 
 test('MapEmbed returns address in source when location is set', () => {

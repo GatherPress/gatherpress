@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use Exception;
 use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;

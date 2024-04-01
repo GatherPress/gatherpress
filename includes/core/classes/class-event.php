@@ -11,6 +11,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use DateTimeZone;
 use Exception;
 use WP_Post;
@@ -327,7 +330,7 @@ class Event {
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
 			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM ' . esc_sql( $table ) . ' WHERE post_id = %d LIMIT 1', $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM %i WHERE post_id = %d LIMIT 1', $table, $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
 			set_transient( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
@@ -666,7 +669,8 @@ class Event {
 		// @todo Add caching to this and create new method to check existence.
 		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prepare(
-				'SELECT post_id FROM ' . esc_sql( $table ) . ' WHERE post_id = %d',
+				'SELECT post_id FROM %i WHERE post_id = %d', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+				$table,
 				$fields['post_id']
 			)
 		);

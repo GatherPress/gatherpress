@@ -9,6 +9,9 @@
 
 namespace GatherPress\Core;
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Traits\Singleton;
 
 /**
@@ -264,7 +267,7 @@ class Assets {
 	 */
 	public function event_communication_modal(): void {
 		if ( get_post_type() === Event::POST_TYPE ) {
-			echo '<div id="gp-event-communication-modal" />';
+			echo '<div id="gp-event-communication-modal"></div>';
 		}
 	}
 

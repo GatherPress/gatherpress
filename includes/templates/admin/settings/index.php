@@ -11,6 +11,9 @@
  * @param string $page      The current settings page.
  */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
 use GatherPress\Core\Settings;
 use GatherPress\Core\Utility;
 
