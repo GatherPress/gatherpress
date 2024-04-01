@@ -461,10 +461,17 @@ export function convertPHPToMomentFormat(format) {
 		r: '', // no equivalent
 		U: 'X',
 	};
-
 	return String(format)
 		.split('')
-		.map((chr) => (chr in replacements ? replacements[chr] : chr))
+		.map((chr, index, elements) => {
+			// Allow the format string to contain escaped chars, like ES or DE needs
+			var last = elements[index-1];
+			if (chr in replacements && last !== '\\') {
+				return replacements[chr];
+			} else {
+				return chr;
+			}
+		})
 		.join('');
 }
 
