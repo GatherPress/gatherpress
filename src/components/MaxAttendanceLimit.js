@@ -22,29 +22,31 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} A number control for setting the maximum attendance limit.
  */
-const MaxAttendance = () => {
+const MaxAttendanceLimit = () => {
 	const { editPost, unlockPostSaving } = useDispatch('core/editor');
 	const isNewEvent = useSelect((select) => {
 		return select('core/editor').isCleanNewPost();
 	}, []);
 
 	// eslint-disable-next-line no-shadow
-	let defaultMaxAttendance = useSelect((select) => {
+	let defaultMaxAttendanceLimit = useSelect((select) => {
 		return select('core/editor').getEditedPostAttribute('meta')
 			.max_attendance;
 	}, []);
 
 	if (isNewEvent) {
-		defaultMaxAttendance = getFromGlobal('settings.maxAttendance');
+		defaultMaxAttendanceLimit = getFromGlobal('settings.maxAttendance');
 	}
 
-	const [maxAttendance, setMaxAttendance] = useState(null);
+	const [maxAttendanceLimit, setMaxAttendanceLimit] = useState(
+		defaultMaxAttendanceLimit
+	);
 
-	const updateMaxAttendance = useCallback(
+	const updateMaxAttendanceLimit = useCallback(
 		(value) => {
 			const meta = { max_attendance: Number(value) };
 
-			setMaxAttendance(value);
+			setMaxAttendanceLimit(value);
 			editPost({ meta });
 			unlockPostSaving(); // Call `unlockPostSaving` here to unlock the save button after updating the meta
 		},
@@ -52,19 +54,19 @@ const MaxAttendance = () => {
 	);
 
 	useEffect(() => {
-		setMaxAttendance(defaultMaxAttendance);
-	}, [defaultMaxAttendance]);
+		setMaxAttendanceLimit(defaultMaxAttendanceLimit);
+	}, [defaultMaxAttendanceLimit]);
 
 	return (
 		<NumberControl
 			label={__('Maximum Attending Limit', 'gatherpress')}
-			value={maxAttendance ?? 50}
+			value={maxAttendanceLimit ?? 50}
 			min={0}
 			onChange={(value) => {
-				updateMaxAttendance(value);
+				updateMaxAttendanceLimit(value);
 			}}
 		/>
 	);
 };
 
-export default MaxAttendance;
+export default MaxAttendanceLimit;
