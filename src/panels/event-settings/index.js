@@ -18,7 +18,7 @@ import AnonymousRsvpPanel from './anonymous-rsvp';
 import InitialDeclinePanel from './initial-decline';
 import DateTimeRangePanel from './datetime-range';
 import GuestLimitPanel from './guest-limit';
-import MaxAttendancePanel from './max-attendance';
+import MaxAttendanceLimitPanel from './max-attendance-limit';
 import NotifyMembersPanel from './notify-members';
 import OnlineEventLinkPanel from './online-link';
 import VenueSelectorPanel from './venue-selector';
@@ -49,7 +49,7 @@ const EventSettings = () => {
 					<VenueSelectorPanel />
 					<OnlineEventLinkPanel />
 					<GuestLimitPanel />
-					<MaxAttendancePanel />
+					<MaxAttendanceLimitPanel />
 					<AnonymousRsvpPanel />
 					<InitialDeclinePanel />
 					<NotifyMembersPanel />

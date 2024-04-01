@@ -124,7 +124,7 @@ class Test_Event_Setup extends Base {
 
 		$this->assertArrayNotHasKey( 'online_event_link', $meta, 'Failed to assert that online_event_link does not exist.' );
 		$this->assertArrayNotHasKey( 'enable_anonymous_rsvp', $meta, 'Failed to assert that enable_anonymous_rsvp does not exist.' );
-		$this->assertArrayNotHasKey( 'max_attendance', $meta, 'Failed to assert that max_guest_limit does not exist.' );
+		$this->assertArrayNotHasKey( 'max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does not exist.' );
 		$this->assertArrayNotHasKey( 'max_guest_limit', $meta, 'Failed to assert that max_guest_limit does not exist.' );
 
 		$instance->register_post_meta();
@@ -133,7 +133,7 @@ class Test_Event_Setup extends Base {
 
 		$this->assertArrayHasKey( 'online_event_link', $meta, 'Failed to assert that online_event_link does exist.' );
 		$this->assertArrayHasKey( 'enable_anonymous_rsvp', $meta, 'Failed to assert that enable_anonymous_rsvp does exist.' );
-		$this->assertArrayHasKey( 'max_attendance', $meta, 'Failed to assert that max_guest_limit does exist.' );
+		$this->assertArrayHasKey( 'max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
 		$this->assertArrayHasKey( 'max_guest_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
 	}
 
