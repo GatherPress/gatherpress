@@ -31,11 +31,13 @@ const MaxAttendanceLimit = () => {
 	// eslint-disable-next-line no-shadow
 	let defaultMaxAttendanceLimit = useSelect((select) => {
 		return select('core/editor').getEditedPostAttribute('meta')
-			.max_attendance;
+			.max_attendance_limit;
 	}, []);
 
 	if (isNewEvent) {
-		defaultMaxAttendanceLimit = getFromGlobal('settings.maxAttendance');
+		defaultMaxAttendanceLimit = getFromGlobal(
+			'settings.maxAttendanceLimit'
+		);
 	}
 
 	const [maxAttendanceLimit, setMaxAttendanceLimit] = useState(
@@ -59,7 +61,7 @@ const MaxAttendanceLimit = () => {
 
 	return (
 		<NumberControl
-			label={__('Maximum Attending Limit', 'gatherpress')}
+			label={__('Maximum Attendance Limit', 'gatherpress')}
 			value={maxAttendanceLimit ?? 50}
 			min={0}
 			onChange={(value) => {
