@@ -299,8 +299,8 @@ class Assets {
 			$event_details = array(
 				'currentUser'          => $event->rsvp->get( get_current_user_id() ),
 				'dateTime'             => $event->get_datetime(),
-				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'enable_initial_decline', true ),
 				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
+				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'enable_initial_decline', true ),
 				'maxAttendanceLimit'   => (int) get_post_meta( $post_id, 'max_attendance_limit', true ),
 				'maxGuestLimit'        => (int) get_post_meta( $post_id, 'max_guest_limit', true ),
 				'hasEventPast'         => $event->has_event_past(),
