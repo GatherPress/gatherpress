@@ -104,7 +104,7 @@ describe('hasEventPastNotice', () => {
 
 		expect(dispatch('core/notices').createNotice).toHaveBeenCalledWith(
 			'warning',
-			'This event has already past.',
+			'This event has already passed.',
 			{
 				id: 'gp_event_past',
 				isDismissible: false,

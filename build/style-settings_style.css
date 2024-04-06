@@ -1,1 +1,34 @@
-.gp-settings__credits a{text-decoration:none}.gp-settings__credits a:hover{text-decoration:underline}.gp-settings__credits-featured{display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:2rem}.gp-settings__credits-featured a{display:block;font-size:1.2rem;font-weight:600;padding:1rem}.gp-settings__credits-featured img{border-radius:999rem;margin-bottom:.5rem}.gp-settings__credits-featured li{text-align:center;width:10rem}.gp-settings .components-form-token-field__input-container{background:#fff}
+/*!************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/settings/style.scss ***!
+  \************************************************************************************************************************************************************************************************************************************************/
+.gp-settings__credits a {
+  text-decoration: none;
+}
+.gp-settings__credits a:hover {
+  text-decoration: underline;
+}
+.gp-settings__credits-featured {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.gp-settings__credits-featured a {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 1rem;
+}
+.gp-settings__credits-featured img {
+  border-radius: 999rem;
+  margin-bottom: 0.5rem;
+}
+.gp-settings__credits-featured li {
+  text-align: center;
+  width: 10rem;
+}
+.gp-settings .components-form-token-field__input-container {
+  background: #fff;
+}
+
+/*# sourceMappingURL=style-settings_style.css.map*/

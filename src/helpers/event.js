@@ -71,7 +71,7 @@ export function hasEventPastNotice() {
 	if (hasEventPast()) {
 		notices.createNotice(
 			'warning',
-			__('This event has already past.', 'gatherpress'),
+			__('This event has already passed.', 'gatherpress'),
 			{
 				id,
 				isDismissible: false,
