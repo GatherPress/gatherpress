@@ -4,6 +4,12 @@
 import { select } from '@wordpress/data';
 
 /**
+ * Internal dependencies.
+ */
+import GoogleMap from './GoogleMap';
+import LeafletMap from './LeafletMap';
+
+/**
  * MapEmbed component for GatherPress.
  *
  * This component is used to embed a Google Map with specified location,
@@ -26,6 +32,8 @@ const MapEmbed = (props) => {
 	const { zoom, type, className } = props;
 	let { location, height } = props;
 
+	const mapType = 'leaflet'; // test value
+
 	if (!height) {
 		height = 300;
 	}
@@ -36,27 +44,28 @@ const MapEmbed = (props) => {
 
 	if (!location) {
 		return <></>;
+	} else if (mapType === 'google') {
+		return (
+			<GoogleMap
+				location={location}
+				className={className}
+				zoom={zoom}
+				type={type}
+				height={height}
+			/>
+		);
+	} else if (mapType === 'leaflet') {
+		return (
+			<LeafletMap
+				location={location}
+				className={className}
+				zoom={zoom}
+				height={height}
+			/>
+		);
 	}
 
-	const style = { border: 0, height, width: '100%' };
-	const baseUrl = 'https://maps.google.com/maps';
-
-	const params = new URLSearchParams({
-		q: location,
-		z: zoom || 10,
-		t: type || 'm',
-		output: 'embed',
-	});
-
-	const srcURL = baseUrl + '?' + params.toString();
-	return (
-		<iframe
-			src={srcURL}
-			style={style}
-			className={className}
-			title={location}
-		></iframe>
-	);
+	return <></>;
 };
 
 export default MapEmbed;
