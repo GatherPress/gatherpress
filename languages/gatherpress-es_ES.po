@@ -471,7 +471,7 @@ msgstr "Sí, quiero recibir actualizaciones e información sobre eventos de los 
 
 #: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
 #: src/helpers/event.js:74
-msgid "This event has already past."
+msgid "This event has already passed."
 msgstr "Este evento ya ha pasado."
 
 #: build/blocks/event-date/index.js:1 build/blocks/event-date/index.js:2
