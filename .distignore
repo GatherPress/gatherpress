@@ -3,11 +3,14 @@
 .deployignore
 .distignore
 .editorconfig
+.env.sample
 .eslintignore
 .eslintrc
+.eslintrc.js
 .git
 .gitignore
 .gitlab-ci.yml
+.nvmrc
 .travis.yml
 .DS_Store
 Thumbs.db
