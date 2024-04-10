@@ -38,7 +38,7 @@ class Venue {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const POST_TYPE = 'gp_venue';
+	const POST_TYPE = 'gatherpress_venue';
 
 	/**
 	 * Constant representing the Venue Taxonomy.
@@ -48,7 +48,7 @@ class Venue {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const TAXONOMY = '_gp_venue';
+	const TAXONOMY = '_gatherpress_venue';
 
 	/**
 	 * Class constructor.
@@ -116,10 +116,10 @@ class Venue {
 					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
 				),
 				'show_in_rest' => true,
-				'rest_base'    => 'gp_venues',
+				'rest_base'    => 'gatherpress_venues',
 				'public'       => true,
 				'hierarchical' => false,
-				'show_in_menu' => 'edit.php?post_type=gp_event',
+				'show_in_menu' => 'edit.php?post_type=gatherpress_event',
 				'supports'     => array(
 					'title',
 					'editor',

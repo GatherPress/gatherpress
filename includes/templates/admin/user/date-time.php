@@ -32,36 +32,36 @@ if ( ! isset( $date_format, $time_format, $timezone, $date_attrs, $time_attrs, $
 	</div>
 	<table class="form-table" aria-describedby="gp-user-date-time">
 		<tr>
-			<th scope="row"><label for="gp_date_format"><?php esc_html_e( 'Date Format', 'gatherpress' ); ?></label></th>
+			<th scope="row"><label for="gatherpress_date_format"><?php esc_html_e( 'Date Format', 'gatherpress' ); ?></label></th>
 			<td>
 				<div class="form-wrap">
-					<label for="gp_date_format"><?php esc_html_e( 'Format of date for scheduled events.', 'gatherpress' ); ?></label>
-					<input type="text" name="gp_date_format" id="gp_date_format" value="<?php echo esc_attr( $date_format ); ?>" />
+					<label for="gatherpress_date_format"><?php esc_html_e( 'Format of date for scheduled events.', 'gatherpress' ); ?></label>
+					<input type="text" name="gatherpress_date_format" id="gatherpress_date_format" value="<?php echo esc_attr( $date_format ); ?>" />
 					<p>
 						<strong><?php esc_html_e( 'Preview', 'gatherpress' ); ?>:</strong>
-						<span data-gp_component_name="datetime-preview" data-gp_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $date_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
+						<span data-gatherpress_component_name="datetime-preview" data-gatherpress_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $date_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
 					</p>
 				</div>
 			</td>
 		</tr>
 		<tr>
 			<th>
-				<label for="gp_time_format"><?php esc_html_e( 'Time Format', 'gatherpress' ); ?></label></th>
+				<label for="gatherpress_time_format"><?php esc_html_e( 'Time Format', 'gatherpress' ); ?></label></th>
 			<td>
 				<div class="form-wrap">
-					<label for="gp_date_format"><?php esc_html_e( 'Format of time for scheduled events.', 'gatherpress' ); ?></label>
-					<input type="text" name="gp_time_format" id="gp_time_format" value="<?php echo esc_attr( $time_format ); ?>" />
+					<label for="gatherpress_date_format"><?php esc_html_e( 'Format of time for scheduled events.', 'gatherpress' ); ?></label>
+					<input type="text" name="gatherpress_time_format" id="gatherpress_time_format" value="<?php echo esc_attr( $time_format ); ?>" />
 					<p>
 						<strong><?php esc_html_e( 'Preview', 'gatherpress' ); ?>:</strong>
-						<span data-gp_component_name="datetime-preview" data-gp_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $time_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
+						<span data-gatherpress_component_name="datetime-preview" data-gatherpress_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $time_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
 					</p>
 				</div>
 			</td>
 		</tr>
 		<tr>
-			<th><label for="gp_timezone"><?php esc_html_e( 'Timezone', 'gatherpress' ); ?></label></th>
+			<th><label for="gatherpress_timezone"><?php esc_html_e( 'Timezone', 'gatherpress' ); ?></label></th>
 			<td>
-				<select name="gp_timezone">
+				<select name="gatherpress_timezone">
 					<option value="">--</option>
 					<?php
 					foreach ( $tz_choices as $gatherpress_location => $gatherpress_timezones ) {

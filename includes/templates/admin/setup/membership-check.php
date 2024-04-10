@@ -9,6 +9,8 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Utility;
+
 ?>
 	<div class="gp-admin__membership-check notice notice-warning">
 		<div>
@@ -23,7 +25,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 			?>
 		</div>
 		<div>
-			<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'action', 'suppress_gp_membership_notification' ), 'clear-notification' ) ); ?>" class="button button-secondary">
+			<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'action', Utility::prefix_key( 'suppress_membership_notification' ) ), 'clear-notification' ) ); ?>" class="button button-secondary">
 				<?php esc_html_e( 'Dismiss forever', 'gatherpress' ); ?>
 			</a>
 		</div>

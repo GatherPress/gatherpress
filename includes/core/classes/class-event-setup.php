@@ -106,7 +106,7 @@ class Event_Setup {
 					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
 				),
 				'show_in_rest'  => true,
-				'rest_base'     => 'gp_events',
+				'rest_base'     => Utility::prefix_key( 'events' ),
 				'public'        => true,
 				'hierarchical'  => false,
 				'template'      => array(
@@ -354,7 +354,7 @@ class Event_Setup {
 				$page = $value[0];
 
 				if ( $page->id === $post->ID ) {
-					$post_states[ sprintf( 'gp_%s', $key ) ] = sprintf( 'GP %s', $page->value );
+					$post_states[ Utility::prefix_key( $key ) ] = sprintf( 'GatherPress %s', $page->value );
 				}
 			}
 		}

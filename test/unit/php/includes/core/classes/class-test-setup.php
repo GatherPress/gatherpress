@@ -114,7 +114,7 @@ class Test_Setup extends Base {
 			'Failed to assert unit-test link matches.'
 		);
 		$this->assertSame(
-			'<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">Settings</a>',
+			'<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gatherpress_general' ) ) . '">Settings</a>',
 			$response['settings'],
 			'Failed to assert settings link matches.'
 		);

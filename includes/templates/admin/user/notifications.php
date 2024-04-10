@@ -23,7 +23,7 @@ if ( ! isset( $event_updates_opt_in ) ) {
 		<td>
 			<label for="gp-event-updates-opt-in">
 				<input
-					name="gp_event_updates_opt_in"
+					name="gatherpress_event_updates_opt_in"
 					type="checkbox"
 					id="gp-event-updates-opt-in"
 					value="1"

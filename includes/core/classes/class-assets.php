@@ -139,7 +139,7 @@ class Assets {
 		$asset = $this->get_asset_data( 'admin_style' );
 
 		wp_enqueue_style(
-			'gatherpress-admin-style',
+			Utility::prefix_key( 'admin-style' ),
 			$this->build . 'admin_style.css',
 			$asset['dependencies'],
 			$asset['version']
@@ -149,31 +149,31 @@ class Assets {
 			$asset = $this->get_asset_data( 'panels' );
 
 			wp_enqueue_script(
-				'gatherpress-panels',
+				Utility::prefix_key( 'panels' ),
 				$this->build . 'panels.js',
 				$asset['dependencies'],
 				$asset['version'],
 				true
 			);
 
-			wp_set_script_translations( 'gatherpress-panels', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+			wp_set_script_translations( Utility::prefix_key( 'panels' ), 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 
 			$asset = $this->get_asset_data( 'modals' );
 			wp_enqueue_script(
-				'gatherpress-modals',
+				Utility::prefix_key( 'modals' ),
 				$this->build . 'modals.js',
 				$asset['dependencies'],
 				$asset['version'],
 				true
 			);
 
-			wp_set_script_translations( 'gatherpress-modals', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+			wp_set_script_translations( Utility::prefix_key( 'modals' ), 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 		}
 
 		$settings      = Settings::get_instance();
 		$setting_hooks = array_map(
 			function ( $key ) {
-				return sprintf( 'gp_event_page_gp_%s', sanitize_key( $key ) );
+				return sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( sanitize_key( $key ) ) );
 			},
 			array_keys( $settings->get_sub_pages() )
 		);
@@ -185,7 +185,7 @@ class Assets {
 			$asset = $this->get_asset_data( 'settings_style' );
 
 			wp_enqueue_style(
-				'gatherpress-settings-style',
+				Utility::prefix_key( 'settings-style' ),
 				$this->build . 'style-settings_style.css',
 				$asset['dependencies'],
 				$asset['version']
@@ -194,40 +194,40 @@ class Assets {
 			$asset = $this->get_asset_data( 'settings' );
 
 			wp_enqueue_script(
-				'gatherpress-settings',
+				Utility::prefix_key( 'settings' ),
 				$this->build . 'settings.js',
 				$asset['dependencies'],
 				$asset['version'],
 				true
 			);
 
-			wp_set_script_translations( 'gatherpress-settings', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+			wp_set_script_translations( 'settings', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 		}
 
 		$asset = $this->get_asset_data( 'admin' );
 
 		wp_enqueue_script(
-			'gatherpress-admin',
+			Utility::prefix_key( 'admin' ),
 			$this->build . 'admin.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
 		);
 
-		wp_set_script_translations( 'gatherpress-admin', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+		wp_set_script_translations( Utility::prefix_key( 'admin' ), 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 
 		if ( 'profile.php' === $hook ) {
 			$asset = $this->get_asset_data( 'profile' );
 
 			wp_enqueue_script(
-				'gatherpress-profile',
+				Utility::prefix_key( 'profile' ),
 				$this->build . 'profile.js',
 				$asset['dependencies'],
 				$asset['version'],
 				true
 			);
 
-			wp_set_script_translations( 'gatherpress-profile', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+			wp_set_script_translations( Utility::prefix_key( 'profile' ), 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 		}
 	}
 
@@ -245,14 +245,14 @@ class Assets {
 		$asset = $this->get_asset_data( 'editor' );
 
 		wp_enqueue_script(
-			'gatherpress-editor',
+			Utility::prefix_key( 'editor' ),
 			$this->build . 'editor.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
 		);
 
-		wp_set_script_translations( 'gatherpress-editor', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+		wp_set_script_translations( Utility::prefix_key( 'editor' ), 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 	}
 
 	/**

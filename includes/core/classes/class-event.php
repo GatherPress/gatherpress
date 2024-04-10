@@ -48,7 +48,7 @@ class Event {
 	 * @since 1.0.0
 	 * @var string $POST_TYPE
 	 */
-	const POST_TYPE = 'gp_event';
+	const POST_TYPE = 'gatherpress_event';
 
 	/**
 	 * Format for the database table name used by GatherPress events.
@@ -56,7 +56,7 @@ class Event {
 	 * @since 1.0.0
 	 * @var string $TABLE_FORMAT
 	 */
-	const TABLE_FORMAT = '%sgp_events';
+	const TABLE_FORMAT = '%sgatherpress_events';
 
 	/**
 	 * Event post object.

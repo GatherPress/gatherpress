@@ -462,7 +462,7 @@ class Rest_Api {
 		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
 
 		foreach ( $members as $member ) {
-			if ( '0' === get_user_meta( $member->ID, 'gp_event_updates_opt_in', true ) ) {
+			if ( '0' === get_user_meta( $member->ID, 'gatherpress_event_updates_opt_in', true ) ) {
 				continue;
 			}
 

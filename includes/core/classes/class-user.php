@@ -67,7 +67,7 @@ class User {
 	/**
 	 * Get date format for a user if logged in.
 	 *
-	 * This is a filter to get a user defined date format. 'gp_date_format'
+	 * This is a filter to get a user defined date format. 'gatherpress_date_format'
 	 *
 	 * @since 1.0.0
 	 *
@@ -79,7 +79,7 @@ class User {
 		$user_id = get_current_user_id();
 
 		if ( $user_id ) {
-			$user_date_format = get_user_meta( $user_id, 'gp_date_format', true );
+			$user_date_format = get_user_meta( $user_id, 'gatherpress_date_format', true );
 			$date_format      = ! empty( $user_date_format ) ? $user_date_format : $date_format;
 		}
 
@@ -89,7 +89,7 @@ class User {
 	/**
 	 * Get time format for a user if logged in.
 	 *
-	 * This is a filter to get a user defined time format. 'gp_time_format'
+	 * This is a filter to get a user defined time format. 'gatherpress_time_format'
 	 *
 	 * @since 1.0.0
 	 *
@@ -101,7 +101,7 @@ class User {
 		$user_id = get_current_user_id();
 
 		if ( $user_id ) {
-			$user_time_format = get_user_meta( $user_id, 'gp_time_format', true );
+			$user_time_format = get_user_meta( $user_id, 'gatherpress_time_format', true );
 			$time_format      = ! empty( $user_time_format ) ? $user_time_format : $time_format;
 		}
 
@@ -111,7 +111,7 @@ class User {
 	/**
 	 * Get timezone for a user if logged in.
 	 *
-	 * This is a filter to get a user defined timezone. 'gp_timezone'
+	 * This is a filter to get a user defined timezone. 'gatherpress_timezone'
 	 *
 	 * @since 1.0.0
 	 *
@@ -123,8 +123,8 @@ class User {
 		$user_id = get_current_user_id();
 
 		if ( ! is_admin() && $user_id ) {
-			$gp_timezone = get_user_meta( $user_id, 'gp_timezone', true );
-			$timezone    = ! empty( $gp_timezone ) ? $gp_timezone : $timezone;
+			$gatherpress_timezone = get_user_meta( $user_id, 'gatherpress_timezone', true );
+			$timezone    = ! empty( $gatherpress_timezone ) ? $gatherpress_timezone : $timezone;
 		}
 
 		return $timezone;
@@ -142,7 +142,7 @@ class User {
 	 * @return void
 	 */
 	public function profile_fields( WP_User $user ): void {
-		$event_updates_opt_in = get_user_meta( $user->ID, 'gp_event_updates_opt_in', true );
+		$event_updates_opt_in = get_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', true );
 
 		$settings         = Settings::get_instance();
 		$time_default     = $settings->get_value( 'general', 'formatting', 'time_format' );
@@ -163,25 +163,25 @@ class User {
 		);
 
 		// Render the user selected date/time format and timezone fields.
-		$gp_date_format = get_user_meta( $user->ID, 'gp_date_format', true );
-		$gp_time_format = get_user_meta( $user->ID, 'gp_time_format', true );
-		$gp_timezone    = get_user_meta( $user->ID, 'gp_timezone', true );
+		$gatherpress_date_format = get_user_meta( $user->ID, 'gatherpress_date_format', true );
+		$gatherpress_time_format = get_user_meta( $user->ID, 'gatherpress_time_format', true );
+		$gatherpress_timezone    = get_user_meta( $user->ID, 'gatherpress_timezone', true );
 		$tz_choices     = Utility::timezone_choices();
 		$date_attrs     = array(
-			'name'  => 'gp_date_format',
-			'value' => ! empty( $gp_date_format ) ? $gp_date_format : $date_default,
+			'name'  => 'gatherpress_date_format',
+			'value' => ! empty( $gatherpress_date_format ) ? $gatherpress_date_format : $date_default,
 		);
 		$time_attrs     = array(
-			'name'  => 'gp_time_format',
-			'value' => ! empty( $gp_time_format ) ? $gp_time_format : $time_default,
+			'name'  => 'gatherpress_time_format',
+			'value' => ! empty( $gatherpress_time_format ) ? $gatherpress_time_format : $time_default,
 		);
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/user/date-time.php', GATHERPRESS_CORE_PATH ),
 			array(
-				'date_format' => $gp_date_format ? $gp_date_format : $date_default,
-				'time_format' => $gp_time_format ? $gp_time_format : $time_default,
-				'timezone'    => $gp_timezone ? $gp_timezone : $timezone_default,
+				'date_format' => $gatherpress_date_format ? $gatherpress_date_format : $date_default,
+				'time_format' => $gatherpress_time_format ? $gatherpress_time_format : $time_default,
+				'timezone'    => $gatherpress_timezone ? $gatherpress_timezone : $timezone_default,
 				'date_attrs'  => $date_attrs,
 				'time_attrs'  => $time_attrs,
 				'tz_choices'  => $tz_choices,
@@ -213,9 +213,9 @@ class User {
 			return;
 		}
 
-		update_user_meta( $user_id, 'gp_event_updates_opt_in', intval( filter_input( INPUT_POST, 'gp_event_updates_opt_in' ) ) );
-		update_user_meta( $user_id, 'gp_date_format', sanitize_text_field( filter_input( INPUT_POST, 'gp_date_format' ) ) );
-		update_user_meta( $user_id, 'gp_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gp_time_format' ) ) );
-		update_user_meta( $user_id, 'gp_timezone', sanitize_text_field( filter_input( INPUT_POST, 'gp_timezone' ) ) );
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( filter_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
+		update_user_meta( $user_id, 'gatherpress_date_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_date_format' ) ) );
+		update_user_meta( $user_id, 'gatherpress_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_time_format' ) ) );
+		update_user_meta( $user_id, 'gatherpress_timezone', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_timezone' ) ) );
 	}
 }

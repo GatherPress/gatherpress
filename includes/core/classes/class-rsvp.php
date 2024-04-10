@@ -31,7 +31,7 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var string $TABLE_FORMAT
 	 */
-	const TABLE_FORMAT = '%sgp_rsvps';
+	const TABLE_FORMAT = '%sgatherpress_rsvps';
 
 	/**
 	 * Cache key format for RSVPs.
@@ -39,7 +39,7 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var string $CACHE_KEY
 	 */
-	const CACHE_KEY = 'gp_rsvp_%d';
+	const CACHE_KEY = 'gatherpress_rsvp_%d';
 
 	/**
 	 * An array of RSVP statuses.

@@ -157,7 +157,7 @@ class Setup {
 	public function filter_plugin_action_links( array $actions ): array {
 		return array_merge(
 			array(
-				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">'
+				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=' . Utility::prefix_key( 'general' ) ) ) . '">'
 					. esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions
@@ -178,8 +178,8 @@ class Setup {
 		$this->maybe_create_custom_table();
 		$this->add_online_event_term();
 
-		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
-			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+		if ( ! get_option( Utility::prefix_key( 'flush_rewrite_rules_flag' ) ) ) {
+			add_option( Utility::prefix_key( 'flush_rewrite_rules_flag' ), true );
 		}
 	}
 
@@ -208,9 +208,9 @@ class Setup {
 	 * @return void
 	 */
 	public function maybe_flush_gatherpress_rewrite_rules(): void {
-		if ( get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
+		if ( get_option( Utility::prefix_key( 'flush_rewrite_rules_flag' ) ) ) {
 			flush_rewrite_rules();
-			delete_option( 'gatherpress_flush_rewrite_rules_flag' );
+			delete_option( Utility( 'flush_rewrite_rules_flag' ) );
 		}
 	}
 
@@ -400,18 +400,17 @@ class Setup {
 	public function check_users_can_register(): void {
 		if (
 			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN )
+			filter_var( get_option( Utility::prefix_key( 'suppress_membership_notification' ) ), FILTER_VALIDATE_BOOLEAN )
 		) {
 			return;
 		}
 
 		if (
-			null !== filter_input( INPUT_GET, 'action' ) &&
-			'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
+			Utility::prefix_key( 'suppress_membership_notification' ) === filter_input( INPUT_GET, 'action' ) &&
 			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&
 			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' )
 		) {
-			update_option( 'gp_suppress_membership_notification', true );
+			update_option( Utility::prefix_key( 'suppress_membership_notification' ), true );
 		} else {
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/setup/membership-check.php', GATHERPRESS_CORE_PATH ),
