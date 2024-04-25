@@ -199,7 +199,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 
 			<div {...blockProps}>
 				<EditCover isSelected={isSelected}>
-					<div className="gp-venue">
+					<div className="gatherpress-venue">
 						<VenueOrOnlineEvent
 							name={name}
 							fullAddress={fullAddress}

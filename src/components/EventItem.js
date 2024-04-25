@@ -42,7 +42,7 @@ const EventItem = (props) => {
 			? 'featured_image'
 			: 'featured_image_' + eventOptions.imageSize;
 	const featuredImage = HtmlReactParser(event[size]);
-	const eventClass = `gp-events-list`;
+	const eventClass = `gatherpress-events-list`;
 	let icon = 'location';
 	const isOnlineEvent = event.venue?.is_online_event;
 
@@ -93,7 +93,7 @@ const EventItem = (props) => {
 			</div>
 			<div className={`${eventClass}__footer`}>
 				{eventOptions.showRsvpResponse && (
-					<div className="gp-rsvp-response__items">
+					<div className="gatherpress-rsvp-response__items">
 						<RsvpResponseAvatarOnly
 							postId={event.ID}
 							value="attending"

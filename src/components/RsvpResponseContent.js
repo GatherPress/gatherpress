@@ -39,10 +39,10 @@ const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
 			return (
 				<div
 					key={index}
-					className="gp-rsvp-response__items"
-					id={`gp-rsvp-${value}`}
+					className="gatherpress-rsvp-response__items"
+					id={`gatherpress-rsvp-${value}`}
 					role="tabpanel"
-					aria-labelledby={`gp-rsvp-${value}-tab`}
+					aria-labelledby={`gatherpress-rsvp-${value}-tab`}
 				>
 					<RsvpResponseCard
 						value={value}
@@ -56,7 +56,7 @@ const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
 		return '';
 	});
 
-	return <div className="gp-rsvp-response__content">{renderedItems}</div>;
+	return <div className="gatherpress-rsvp-response__content">{renderedItems}</div>;
 };
 
 export default RsvpResponseContent;

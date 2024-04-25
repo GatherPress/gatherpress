@@ -46,7 +46,7 @@ describe('hasEventPast', () => {
 
 		require('@wordpress/data').select.mockImplementation((store) => ({
 			getCurrentPostType: () =>
-				store === 'core/editor' ? 'gp_event' : null,
+				store === 'core/editor' ? 'gatherpress_event' : null,
 		}));
 
 		expect(hasEventPast()).toBe(true);
@@ -66,7 +66,7 @@ describe('hasEventPast', () => {
 
 		require('@wordpress/data').select.mockImplementation((store) => ({
 			getCurrentPostType: () =>
-				store === 'core/editor' ? 'gp_event' : null,
+				store === 'core/editor' ? 'gatherpress_event' : null,
 		}));
 
 		expect(hasEventPast()).toBe(false);
@@ -97,7 +97,7 @@ describe('hasEventPastNotice', () => {
 
 		require('@wordpress/data').select.mockImplementation((store) => ({
 			getCurrentPostType: () =>
-				store === 'core/editor' ? 'gp_event' : null,
+				store === 'core/editor' ? 'gatherpress_event' : null,
 		}));
 
 		hasEventPastNotice();
@@ -106,7 +106,7 @@ describe('hasEventPastNotice', () => {
 			'warning',
 			'This event has already passed.',
 			{
-				id: 'gp_event_past',
+				id: 'gatherpress_event_past',
 				isDismissible: false,
 			}
 		);

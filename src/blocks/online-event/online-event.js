@@ -22,11 +22,11 @@ import OnlineEvent from '../../components/OnlineEvent';
  */
 domReady(() => {
 	const containers = document.querySelectorAll(
-		`[data-gp_block_name="online-event"]`
+		`[data-gatherpress_block_name="online-event"]`
 	);
 
 	for (let i = 0; i < containers.length; i++) {
-		const attrs = JSON.parse(containers[i].dataset.gp_block_attrs);
+		const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
 
 		createRoot(containers[i]).render(
 			<OnlineEvent onlineEventLinkDefault={attrs.onlineEventLink ?? ''} />

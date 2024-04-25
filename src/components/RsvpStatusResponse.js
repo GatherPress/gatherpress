@@ -59,7 +59,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 	};
 
 	return (
-		<div className="gp-status__response">
+		<div className="gatherpress-status__response">
 			<span className={responses[type][status].icon}></span>
 			<strong>{responses[type][status].text}</strong>
 		</div>

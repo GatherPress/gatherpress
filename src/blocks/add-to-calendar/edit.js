@@ -28,7 +28,7 @@ const Edit = () => {
 		<div {...blockProps}>
 			<EditCover>
 				<Flex justify="normal" align="center" gap="4">
-					<FlexItem display="flex" className="gp-event-date__icon">
+					<FlexItem display="flex" className="gatherpress-event-date__icon">
 						<Icon icon="calendar" />
 					</FlexItem>
 					<FlexItem>

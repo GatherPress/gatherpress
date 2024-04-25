@@ -376,7 +376,7 @@ class Rsvp {
 			$user_info   = get_userdata( $user_id );
 			$anonymous   = intval( $response['anonymous'] );
 
-			// @todo make a filter so we can use this function if gp-buddypress plugin is activated.
+			// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
 			// eg for BuddyPress bp_core_get_user_domain( $user_id )
 			$profile = get_author_posts_url( $user_id );
 

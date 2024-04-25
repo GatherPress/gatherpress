@@ -70,7 +70,7 @@ const RsvpResponseHeader = ({
 	Listener({ setRsvpSeeAllLink }, getFromGlobal('eventDetails.postId'));
 
 	return (
-		<div className="gp-rsvp-response__header">
+		<div className="gatherpress-rsvp-response__header">
 			<div className="dashicons dashicons-groups"></div>
 			<RsvpResponseNavigation
 				items={items}
@@ -79,7 +79,7 @@ const RsvpResponseHeader = ({
 				defaultLimit={defaultLimit}
 			/>
 			{rsvpSeeAllLink && (
-				<div className="gp-rsvp-response__see-all">
+				<div className="gatherpress-rsvp-response__see-all">
 					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a href="#" onClick={(e) => updateLimit(e)}>
 						{loadListText}

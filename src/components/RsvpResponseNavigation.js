@@ -77,7 +77,7 @@ const RsvpResponseNavigation = ({
 
 	useEffect(() => {
 		global.document.addEventListener('click', ({ target }) => {
-			if (!target.closest('.gp-rsvp-response__navigation-active')) {
+			if (!target.closest('.gatherpress-rsvp-response__navigation-active')) {
 				setShowNavigationDropdown(false);
 			}
 		});
@@ -104,12 +104,12 @@ const RsvpResponseNavigation = ({
 	};
 
 	return (
-		<div className="gp-rsvp-response__navigation-wrapper">
+		<div className="gatherpress-rsvp-response__navigation-wrapper">
 			<div>
 				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 				<Tag
 					href="#"
-					className="gp-rsvp-response__navigation-active"
+					className="gatherpress-rsvp-response__navigation-active"
 					onClick={(e) => toggleNavigation(e)}
 				>
 					{items[activeIndex].title}
@@ -118,7 +118,7 @@ const RsvpResponseNavigation = ({
 				<span>({rsvpCount[activeValue]})</span>
 			</div>
 			{!hideNavigationDropdown && showNavigationDropdown && (
-				<nav className="gp-rsvp-response__navigation">
+				<nav className="gatherpress-rsvp-response__navigation">
 					{renderedItems}
 				</nav>
 			)}

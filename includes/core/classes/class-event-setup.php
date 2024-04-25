@@ -106,7 +106,7 @@ class Event_Setup {
 					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
 				),
 				'show_in_rest'  => true,
-				'rest_base'     => Utility::prefix_key( 'events' ),
+				'rest_base'     => 'gatherpress_events',
 				'public'        => true,
 				'hierarchical'  => false,
 				'template'      => array(

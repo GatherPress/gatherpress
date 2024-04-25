@@ -14,18 +14,18 @@ if ( ! isset( $event_updates_opt_in ) ) {
 }
 ?>
 
-<h2 id="gp-user-notifications">
+<h2 id="gatherpress-user-notifications">
 	<?php esc_html_e( 'Notifications', 'gatherpress' ); ?>
 </h2>
-<table class="form-table" aria-describedby="gp-user-notifications">
+<table class="form-table" aria-describedby="gatherpress-user-notifications">
 	<tr>
 		<th scope="row"><?php esc_html_e( 'Email', 'gatherpress' ); ?></th>
 		<td>
-			<label for="gp-event-updates-opt-in">
+			<label for="gatherpress-event-updates-opt-in">
 				<input
 					name="gatherpress_event_updates_opt_in"
 					type="checkbox"
-					id="gp-event-updates-opt-in"
+					id="gatherpress-event-updates-opt-in"
 					value="1"
 					<?php checked( '1', $event_updates_opt_in ); ?>
 				/>

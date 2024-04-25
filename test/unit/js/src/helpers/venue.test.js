@@ -21,18 +21,18 @@ describe('isVenuePostType', () => {
 		expect(isVenuePostType()).toBe(false);
 	});
 
-	it('returns false when current post type is gp_event', () => {
+	it('returns false when current post type is gatherpress_event', () => {
 		require('@wordpress/data').select.mockImplementation((store) => ({
 			getCurrentPostType: () =>
-				store === 'core/editor' ? 'gp_event' : null,
+				store === 'core/editor' ? 'gatherpress_event' : null,
 		}));
 		expect(isVenuePostType()).toBe(false);
 	});
 
-	it('returns true when current post type is gp_venue', () => {
+	it('returns true when current post type is gatherpress_venue', () => {
 		require('@wordpress/data').select.mockImplementation((store) => ({
 			getCurrentPostType: () =>
-				store === 'core/editor' ? 'gp_venue' : null,
+				store === 'core/editor' ? 'gatherpress_venue' : null,
 		}));
 		expect(isVenuePostType()).toBe(true);
 	});

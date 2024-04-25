@@ -14,7 +14,7 @@ if ( ! isset( $date_format, $time_format, $timezone, $date_attrs, $time_attrs, $
 }
 ?>
 <div style="margin-top: 40px; margin-bottom: 30px;">
-	<h2 id="gp-user-date-time">
+	<h2 id="gatherpress-user-date-time">
 		<?php esc_html_e( 'Date & Time Formatting', 'gatherpress' ); ?>
 	</h2>
 	<div>
@@ -30,7 +30,7 @@ if ( ! isset( $date_format, $time_format, $timezone, $date_attrs, $time_attrs, $
 		);
 		?>
 	</div>
-	<table class="form-table" aria-describedby="gp-user-date-time">
+	<table class="form-table" aria-describedby="gatherpress-user-date-time">
 		<tr>
 			<th scope="row"><label for="gatherpress_date_format"><?php esc_html_e( 'Date Format', 'gatherpress' ); ?></label></th>
 			<td>

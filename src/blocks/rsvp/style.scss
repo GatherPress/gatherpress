@@ -3,8 +3,8 @@
 @import "../status";
 @import "../buttons";
 
-.gp-modal__rsvp {
-	.gp-modal {
+.gatherpress-modal__rsvp {
+	.gatherpress-modal {
 		&__header {
 			font-size: var(--wp--preset--font-size--medium);
 			font-weight: 600;
@@ -24,7 +24,7 @@
 	}
 }
 
-.gp-rsvp {
+.gatherpress-rsvp {
 	align-items: center;
 	display: flex;
 	grid-column-gap: 1rem;
