@@ -43,7 +43,11 @@ const VenueSelector = () => {
 		select('core/editor').getEditedPostAttribute('_gatherpress_venue')
 	);
 	const venueTerm = useSelect((select) =>
-		select('core').getEntityRecord('taxonomy', '_gatherpress_venue', venueTermId)
+		select('core').getEntityRecord(
+			'taxonomy',
+			'_gatherpress_venue',
+			venueTermId
+		)
 	);
 	const slug = venueTerm?.slug.replace(/^_/, '');
 	const [venueSlug, setVenueSlug] = useState('');
@@ -95,10 +99,14 @@ const VenueSelector = () => {
 	}, [venueSlug, venuePost, slug, venueValue]);
 
 	let venues = useSelect((select) => {
-		return select('core').getEntityRecords('taxonomy', '_gatherpress_venue', {
-			per_page: -1,
-			context: 'view',
-		});
+		return select('core').getEntityRecords(
+			'taxonomy',
+			'_gatherpress_venue',
+			{
+				per_page: -1,
+				context: 'view',
+			}
+		);
 	}, []);
 
 	if (venues) {

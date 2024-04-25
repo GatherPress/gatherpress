@@ -47,7 +47,10 @@ const RsvpResponseCard = ({ postId, value, limit, responses = [] }) => {
 			const { name, photo } = response;
 
 			return (
-				<figure key={index} className="gatherpress-rsvp-response__member-avatar">
+				<figure
+					key={index}
+					className="gatherpress-rsvp-response__member-avatar"
+				>
 					<img alt={name} title={name} src={photo} />
 				</figure>
 			);

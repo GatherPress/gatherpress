@@ -30,7 +30,10 @@ const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 		<>
 			{(name || fullAddress) && (
 				<Flex justify="normal" align="flex-start" gap="4">
-					<FlexItem display="flex" className="gatherpress-venue__icon">
+					<FlexItem
+						display="flex"
+						className="gatherpress-venue__icon"
+					>
 						<Icon icon="location" />
 					</FlexItem>
 					<FlexItem>

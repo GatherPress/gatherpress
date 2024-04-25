@@ -77,7 +77,9 @@ const RsvpResponseNavigation = ({
 
 	useEffect(() => {
 		global.document.addEventListener('click', ({ target }) => {
-			if (!target.closest('.gatherpress-rsvp-response__navigation-active')) {
+			if (
+				!target.closest('.gatherpress-rsvp-response__navigation-active')
+			) {
 				setShowNavigationDropdown(false);
 			}
 		});

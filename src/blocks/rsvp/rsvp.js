@@ -24,7 +24,9 @@ import { getFromGlobal } from '../../helpers/globals';
  * @return {void}
  */
 domReady(() => {
-	const containers = document.querySelectorAll(`[data-gatherpress_block_name="rsvp"]`);
+	const containers = document.querySelectorAll(
+		`[data-gatherpress_block_name="rsvp"]`
+	);
 
 	const type =
 		true === getFromGlobal('eventDetails.hasEventPast')

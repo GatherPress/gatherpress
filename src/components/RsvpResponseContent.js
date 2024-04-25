@@ -56,7 +56,11 @@ const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
 		return '';
 	});
 
-	return <div className="gatherpress-rsvp-response__content">{renderedItems}</div>;
+	return (
+		<div className="gatherpress-rsvp-response__content">
+			{renderedItems}
+		</div>
+	);
 };
 
 export default RsvpResponseContent;

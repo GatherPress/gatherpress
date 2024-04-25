@@ -62,7 +62,9 @@ const RsvpResponseNavigationItem = ({
 				>
 					{title}
 				</Tag>
-				<span className="gatherpress-rsvp-response__count">({count})</span>
+				<span className="gatherpress-rsvp-response__count">
+					({count})
+				</span>
 			</div>
 		);
 	}

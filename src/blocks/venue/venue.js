@@ -22,7 +22,9 @@ import VenueOrOnlineEvent from '../../components/VenueOrOnlineEvent';
  * @return {void}
  */
 domReady(() => {
-	let containers = document.querySelectorAll(`[data-gatherpress_block_name="venue"]`);
+	let containers = document.querySelectorAll(
+		`[data-gatherpress_block_name="venue"]`
+	);
 
 	for (let i = 0; i < containers.length; i++) {
 		const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
@@ -39,7 +41,9 @@ domReady(() => {
 		);
 	}
 
-	containers = document.querySelectorAll(`[data-gatherpress_block_name="map-embed"]`);
+	containers = document.querySelectorAll(
+		`[data-gatherpress_block_name="map-embed"]`
+	);
 
 	for (let i = 0; i < containers.length; i++) {
 		const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
