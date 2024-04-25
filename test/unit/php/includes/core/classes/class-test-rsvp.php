@@ -102,7 +102,7 @@ class Test_Rsvp extends Base {
 			array(
 				'post_type' => 'gatherpress_event',
 				'post_meta' => array(
-					'max_guest_limit' => 2,
+					'gatherpress_max_guest_limit' => 2,
 				),
 			)
 		)->get();

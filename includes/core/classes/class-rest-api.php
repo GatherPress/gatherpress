@@ -578,8 +578,8 @@ class Rest_Api {
 					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
-					'enable_anonymous_rsvp'    => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
-					'enable_initial_decline'   => (bool) get_post_meta( $post_id, 'enable_initial_decline', true ),
+					'enable_anonymous_rsvp'    => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
+					'enable_initial_decline'   => (bool) get_post_meta( $post_id, 'gatherpress_enable_initial_decline', true ),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
 					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
 						? $event->rsvp->get( get_current_user_id() )

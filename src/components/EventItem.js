@@ -107,8 +107,8 @@ const EventItem = (props) => {
 						postId={event.ID}
 						currentUser={event.current_user}
 						type={type}
-						enableAnonymousRsvp={event.enable_anonymous_rsvp}
-						enableInitialDecline={event.enable_initial_decline}
+						enableAnonymousRsvp={event.gatherpress_enable_anonymous_rsvp}
+						enableInitialDecline={event.gatherpress_enable_initial_decline}
 					/>
 				)}
 

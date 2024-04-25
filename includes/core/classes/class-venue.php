@@ -153,7 +153,7 @@ class Venue {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			'venue_information' => array(
+			'gatherpress_venue_information' => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
 				},
@@ -414,7 +414,7 @@ class Venue {
 			$venue_meta['name'] = get_the_title( $venue_post );
 			$venue_meta         = array_merge(
 				$venue_meta,
-				(array) json_decode( get_post_meta( $venue_post->ID, 'venue_information', true ) )
+				(array) json_decode( get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true ) )
 			);
 		}
 

@@ -29,7 +29,7 @@ const InitialDecline = () => {
 
 	let defaultInitialDecline = useSelect((select) => {
 		return select('core/editor').getEditedPostAttribute('meta')
-			.enable_initial_decline;
+			.gatherpress_enable_initial_decline;
 	}, []);
 
 	if (isNewEvent) {
@@ -40,7 +40,7 @@ const InitialDecline = () => {
 
 	const updateInitialDecline = useCallback(
 		(value) => {
-			const meta = { enable_initial_decline: Number(value) };
+			const meta = { gatherpress_enable_initial_decline: Number(value) };
 
 			setInitialDecline(value);
 			editPost({ meta });

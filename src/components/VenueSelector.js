@@ -63,7 +63,7 @@ const VenueSelector = () => {
 		let venueInformation = {};
 
 		if (venueSlug && Array.isArray(venuePost)) {
-			const jsonString = venuePost[0]?.meta?.venue_information ?? '{}';
+			const jsonString = venuePost[0]?.meta?.gatherpress_venue_information ?? '{}';
 
 			if (jsonString) {
 				venueInformation = JSON.parse(jsonString);

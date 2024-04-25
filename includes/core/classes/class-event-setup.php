@@ -156,7 +156,7 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			'max_guest_limit'        => array(
+			'gatherpress_max_guest_limit'        => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -165,7 +165,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'number',
 			),
-			'enable_anonymous_rsvp'  => array(
+			'gatherpress_enable_anonymous_rsvp'  => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -174,7 +174,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'boolean',
 			),
-			'enable_initial_decline' => array(
+			'gatherpress_enable_initial_decline' => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -183,7 +183,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'boolean',
 			),
-			'online_event_link'      => array(
+			'gatherpress_online_event_link'      => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
