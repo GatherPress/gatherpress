@@ -220,7 +220,7 @@ class Assets {
 			$asset = $this->get_asset_data( 'profile' );
 
 			wp_enqueue_script(
-				Utility::prefix_key( 'profile' ),
+				'gatherpress-profile',
 				$this->build . 'profile.js',
 				$asset['dependencies'],
 				$asset['version'],
