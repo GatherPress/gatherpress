@@ -106,10 +106,10 @@ class Event_Query {
 		array $venues = array()
 	): WP_Query {
 		$args = array(
-			'post_type'       => Event::POST_TYPE,
-			'fields'          => 'ids',
-			'no_found_rows'   => true,
-			'posts_per_page'  => $number,
+			'post_type'                => Event::POST_TYPE,
+			'fields'                   => 'ids',
+			'no_found_rows'            => true,
+			'posts_per_page'           => $number,
 			'gatherpress_events_query' => $event_list_type,
 		);
 

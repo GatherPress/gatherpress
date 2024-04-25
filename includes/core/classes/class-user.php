@@ -124,7 +124,7 @@ class User {
 
 		if ( ! is_admin() && $user_id ) {
 			$gatherpress_timezone = get_user_meta( $user_id, 'gatherpress_timezone', true );
-			$timezone    = ! empty( $gatherpress_timezone ) ? $gatherpress_timezone : $timezone;
+			$timezone             = ! empty( $gatherpress_timezone ) ? $gatherpress_timezone : $timezone;
 		}
 
 		return $timezone;
@@ -166,12 +166,12 @@ class User {
 		$gatherpress_date_format = get_user_meta( $user->ID, 'gatherpress_date_format', true );
 		$gatherpress_time_format = get_user_meta( $user->ID, 'gatherpress_time_format', true );
 		$gatherpress_timezone    = get_user_meta( $user->ID, 'gatherpress_timezone', true );
-		$tz_choices     = Utility::timezone_choices();
-		$date_attrs     = array(
+		$tz_choices              = Utility::timezone_choices();
+		$date_attrs              = array(
 			'name'  => 'gatherpress_date_format',
 			'value' => ! empty( $gatherpress_date_format ) ? $gatherpress_date_format : $date_default,
 		);
-		$time_attrs     = array(
+		$time_attrs              = array(
 			'name'  => 'gatherpress_time_format',
 			'value' => ! empty( $gatherpress_time_format ) ? $gatherpress_time_format : $time_default,
 		);
