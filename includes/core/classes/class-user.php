@@ -204,7 +204,7 @@ class User {
 	public function save_profile_fields( int $user_id ): void {
 		if (
 			empty( filter_input( INPUT_POST, '_wpnonce' ) ) ||
-			! wp_verify_nonce( filter_input( INPUT_POST, '_wpnonce' ), 'update-user_' . $user_id )
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_POST, '_wpnonce' ) ) ), 'update-user_' . $user_id )
 		) {
 			return;
 		}

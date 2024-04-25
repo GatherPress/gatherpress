@@ -510,7 +510,7 @@ msgstr ""
 "den Veranstaltenden erhalten."
 
 #: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
-msgid "This event has already past."
+msgid "This event has already passed."
 msgstr "Diese Veranstaltung ist bereits vorüber."
 
 #. translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone.
