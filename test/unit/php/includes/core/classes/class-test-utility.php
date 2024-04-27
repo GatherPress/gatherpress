@@ -65,14 +65,14 @@ class Test_Utility extends Base {
 	 */
 	public function test_prefix_key(): void {
 		$this->assertSame(
-			'gp_unittest',
+			'gatherpress_unittest',
 			Utility::prefix_key( 'unittest' ),
-			'Assert failed that gp_ prefix is applied.'
+			'Assert failed that gatherpress_ prefix is applied.'
 		);
 		$this->assertSame(
-			'gp_unittest',
-			Utility::prefix_key( 'gp_unittest' ),
-			'Assert failed that gp_ prefix is not reapplied if it exists already.'
+			'gatherpress_unittest',
+			Utility::prefix_key( 'gatherpress_unittest' ),
+			'Assert failed that gatherpress_ prefix is not reapplied if it exists already.'
 		);
 	}
 
@@ -84,7 +84,7 @@ class Test_Utility extends Base {
 	 * @return void
 	 */
 	public function test_unprefix_key() {
-		$this->assertSame( 'unittest', Utility::unprefix_key( 'gp_unittest' ) );
+		$this->assertSame( 'unittest', Utility::unprefix_key( 'gatherpress_unittest' ) );
 	}
 
 	/**

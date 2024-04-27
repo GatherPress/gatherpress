@@ -20,15 +20,15 @@ import { Broadcaster } from './broadcasting';
  * Checks if the current post type is an event in the GatherPress application.
  *
  * This function queries the current post type using the `select` function from the `core/editor` package.
- * It returns `true` if the current post type is 'gp_event', indicating that the post is an event,
+ * It returns `true` if the current post type is 'gatherpress_event', indicating that the post is an event,
  * and `false` otherwise.
  *
  * @since 1.0.0
  *
- * @return {boolean} True if the current post type is 'gp_event', false otherwise.
+ * @return {boolean} True if the current post type is 'gatherpress_event', false otherwise.
  */
 export function isEventPostType() {
-	return 'gp_event' === select('core/editor')?.getCurrentPostType();
+	return 'gatherpress_event' === select('core/editor')?.getCurrentPostType();
 }
 
 /**
@@ -46,7 +46,7 @@ export function hasEventPast() {
 	);
 
 	return (
-		'gp_event' === select('core/editor')?.getCurrentPostType() &&
+		'gatherpress_event' === select('core/editor')?.getCurrentPostType() &&
 		moment.tz(getTimeZone()).valueOf() > dateTimeEnd.valueOf()
 	);
 }
@@ -63,7 +63,7 @@ export function hasEventPast() {
  * @return {void}
  */
 export function hasEventPastNotice() {
-	const id = 'gp_event_past';
+	const id = 'gatherpress_event_past';
 	const notices = dispatch('core/notices');
 
 	notices.removeNotice(id);
@@ -92,7 +92,7 @@ export function hasEventPastNotice() {
  * @return {void}
  */
 export function triggerEventCommuncation() {
-	const id = 'gp_event_communcation';
+	const id = 'gatherpress_event_communcation';
 	const notices = dispatch('core/notices');
 
 	notices.removeNotice(id);

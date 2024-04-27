@@ -13,7 +13,7 @@ import EventsList from '../../components/EventsList';
  * Initialize GatherPress Event List blocks.
  *
  * This code initializes the GatherPress Event List blocks on the page.
- * It targets blocks with the data attribute `data-gp_block_name="events-list"`
+ * It targets blocks with the data attribute `data-gatherpress_block_name="events-list"`
  * and initializes the React component `EventsList` with the specified attributes.
  * If the attributes are not provided, default values are used for customization options.
  *
@@ -26,11 +26,11 @@ import EventsList from '../../components/EventsList';
  */
 domReady(() => {
 	const containers = document.querySelectorAll(
-		`[data-gp_block_name="events-list"]`
+		`[data-gatherpress_block_name="events-list"]`
 	);
 
 	for (let i = 0; i < containers.length; i++) {
-		const attrs = JSON.parse(containers[i].dataset.gp_block_attrs);
+		const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
 
 		createRoot(containers[i]).render(
 			<EventsList

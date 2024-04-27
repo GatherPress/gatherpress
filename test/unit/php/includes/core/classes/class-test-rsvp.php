@@ -28,7 +28,7 @@ class Test_Rsvp extends Base {
 	public function test_get(): void {
 		$post    = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$rsvp    = new Rsvp( $post->ID );
@@ -58,7 +58,7 @@ class Test_Rsvp extends Base {
 	public function test_save(): void {
 		$post    = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$rsvp    = new Rsvp( $post->ID );
@@ -100,9 +100,9 @@ class Test_Rsvp extends Base {
 
 		$post      = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 				'post_meta' => array(
-					'max_guest_limit' => 2,
+					'gatherpress_max_guest_limit' => 2,
 				),
 			)
 		)->get();
@@ -121,7 +121,7 @@ class Test_Rsvp extends Base {
 	public function test_check_waiting_list(): void {
 		$event_id = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get()->ID;
 		$rsvp     = new Rsvp( $event_id );
@@ -176,7 +176,7 @@ class Test_Rsvp extends Base {
 	public function test_attending_limit_reached(): void {
 		$post = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$rsvp = new Rsvp( $post->ID );
@@ -221,7 +221,7 @@ class Test_Rsvp extends Base {
 	public function test_responses(): void {
 		$post      = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
@@ -269,7 +269,7 @@ class Test_Rsvp extends Base {
 
 		$post      = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
@@ -319,7 +319,7 @@ class Test_Rsvp extends Base {
 	public function test_sort_by_timestamp(): void {
 		$post  = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$rsvp  = new Rsvp( $post->ID );

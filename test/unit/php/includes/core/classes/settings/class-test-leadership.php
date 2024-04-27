@@ -120,10 +120,10 @@ class Test_Leadership extends Base {
 			),
 		);
 
-		update_option( 'gp_leadership', $option );
+		update_option( 'gatherpress_leadership', $option );
 
 		$this->assertSame( 'Organizer', $instance->get_user_role( $user->ID ), 'Failed to assert user is Organizer.' );
 
-		delete_option( 'gp_leadership' );
+		delete_option( 'gatherpress_leadership' );
 	}
 }

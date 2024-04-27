@@ -99,17 +99,17 @@ class Test_Venue extends Base {
 	public function test_register_post_meta(): void {
 		$instance = Venue::get_instance();
 
-		unregister_post_meta( Venue::POST_TYPE, 'venue_information' );
+		unregister_post_meta( Venue::POST_TYPE, 'gatherpress_venue_information' );
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertArrayNotHasKey( 'venue_information', $meta, 'Failed to assert that online_event_link does not exist.' );
+		$this->assertArrayNotHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does not exist.' );
 
 		$instance->register_post_meta();
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertArrayHasKey( 'venue_information', $meta, 'Failed to assert that online_event_link does exist.' );
+		$this->assertArrayHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does exist.' );
 	}
 
 	/**

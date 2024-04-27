@@ -59,7 +59,7 @@ const EventsList = (props) => {
 				: __('There are no past events.', 'gatherpress');
 
 		return (
-			<div className={`gp-${type}-events__no_events_message`}>
+			<div className={`gatherpress-${type}-events__no_events_message`}>
 				{message}
 			</div>
 		);
@@ -118,7 +118,7 @@ const EventsList = (props) => {
 	}, [setEvents, maxNumberOfEvents, datetimeFormat, type, topics, venues]);
 
 	return (
-		<div className={`gp-${type}-events-list`}>
+		<div className={`gatherpress-${type}-events-list`}>
 			{!loaded && <Spinner />}
 			{loaded && 0 === events.length && renderNoEventsMessage()}
 			{loaded && renderEvents}

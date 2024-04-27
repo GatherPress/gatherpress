@@ -62,7 +62,7 @@ describe('RsvpResponse', () => {
 
 		const { container } = render(<RsvpResponse />);
 
-		expect(container.children[0]).toHaveClass('gp-rsvp-response');
+		expect(container.children[0]).toHaveClass('gatherpress-rsvp-response');
 		expect(container.children[0]).toHaveTextContent('John Doe');
 	});
 });

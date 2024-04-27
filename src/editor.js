@@ -36,13 +36,13 @@ domReady(() => {
 	if (!isEditorSidebarOpened) {
 		dispatchPost.openGeneralSidebar();
 		dispatchPost.toggleEditorPanelOpened(
-			'gp-event-settings/gp-event-settings'
+			'gatherpress-event-settings/gatherpress-event-settings'
 		);
 	} else {
 		// If the editor sidebar is open, open the general sidebar for the 'edit-post/document' panel.
 		dispatchPost.openGeneralSidebar('edit-post/document');
 		dispatchPost.toggleEditorPanelOpened(
-			'gp-event-settings/gp-event-settings'
+			'gatherpress-event-settings/gatherpress-event-settings'
 		);
 	}
 

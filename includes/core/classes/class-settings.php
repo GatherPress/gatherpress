@@ -33,7 +33,7 @@ class Settings {
 	 */
 	use Singleton;
 
-	const PARENT_SLUG = 'edit.php?post_type=gp_event';
+	const PARENT_SLUG = 'edit.php?post_type=gatherpress_event';
 
 	/**
 	 * The current page being accessed within the settings.
@@ -645,8 +645,8 @@ class Settings {
 	 */
 	public function datetime_preview( string $name, string $value ): void {
 		if (
-			'gp_general[formatting][date_format]' === $name ||
-			'gp_general[formatting][time_format]' === $name
+			'gatherpress_general[formatting][date_format]' === $name ||
+			'gatherpress_general[formatting][time_format]' === $name
 		) {
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/datetime-preview.php', GATHERPRESS_CORE_PATH ),

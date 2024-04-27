@@ -8,7 +8,6 @@
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\Event;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
@@ -114,7 +113,7 @@ class Test_Setup extends Base {
 			'Failed to assert unit-test link matches.'
 		);
 		$this->assertSame(
-			'<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">Settings</a>',
+			'<a href="' . esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) . '">Settings</a>',
 			$response['settings'],
 			'Failed to assert settings link matches.'
 		);
@@ -132,8 +131,8 @@ class Test_Setup extends Base {
 		$classes  = array( 'unit-test' );
 		$expects  = array(
 			'unit-test',
-			'gp-enabled',
-			sprintf( 'gp-theme-%s', esc_attr( get_stylesheet() ) ),
+			'gatherpress-enabled',
+			sprintf( 'gatherpress-theme-%s', esc_attr( get_stylesheet() ) ),
 		);
 
 		$this->assertSame(
