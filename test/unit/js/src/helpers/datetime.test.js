@@ -284,3 +284,9 @@ test('convertPHPToMomentFormat returns correct time format', () => {
 
 	expect(format).toBe('h:mm a');
 });
+
+test('convertPHPToMomentFormat returns correct format that contains escaped chars, like ES or DE needs', () => {
+	const format = convertPHPToMomentFormat('G:i \\U\\h\\r'); // "20 Uhr" is german for "8 o'clock" (in the evening).
+
+	expect(format).toBe('H:mm \\U\\h\\r');
+});
