@@ -472,7 +472,7 @@ msgid "Dismiss forever"
 msgstr "Ignora-ho sempre"
 
 #: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
-msgid "This event has already past."
+msgid "This event has already passed."
 msgstr "Aquest esdeveniment ja ha passat."
 
 #. translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone.

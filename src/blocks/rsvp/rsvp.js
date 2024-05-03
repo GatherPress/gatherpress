@@ -14,7 +14,7 @@ import { getFromGlobal } from '../../helpers/globals';
  * Initialize the GatherPress RSVP blocks.
  *
  * This code initializes the RSVP blocks for rendering on the frontend.
- * It targets all elements with the data attribute 'data-gp_block_name="rsvp"'
+ * It targets all elements with the data attribute 'data-gatherpress_block_name="rsvp"'
  * and renders the RSVP component inside them.
  * The type of RSVP block ('past' or 'upcoming') is determined based on the global
  * variable 'has_event_past'.
@@ -24,7 +24,9 @@ import { getFromGlobal } from '../../helpers/globals';
  * @return {void}
  */
 domReady(() => {
-	const containers = document.querySelectorAll(`[data-gp_block_name="rsvp"]`);
+	const containers = document.querySelectorAll(
+		`[data-gatherpress_block_name="rsvp"]`
+	);
 
 	const type =
 		true === getFromGlobal('eventDetails.hasEventPast')

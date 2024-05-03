@@ -25,11 +25,11 @@ if ( Venue::POST_TYPE === get_post_type() ) {
 
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
-	<div class="gp-venue">
-		<div data-gp_block_name="venue" data-gp_block_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_attributes ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
+	<div class="gatherpress-venue">
+		<div data-gatherpress_block_name="venue" data-gatherpress_block_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_attributes ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
 
 		<?php if ( $attributes['mapShow'] ) : ?>
-			<div data-gp_block_name="map-embed" data-gp_block_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_attributes ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
+			<div data-gatherpress_block_name="map-embed" data-gatherpress_block_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $gatherpress_attributes ), ENT_QUOTES, 'UTF-8' ) ); ?>"></div>
 		<?php endif; ?>
 	</div>
 </div>

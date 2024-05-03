@@ -29,7 +29,7 @@ const AnonymousRsvp = () => {
 
 	let defaultAnonymousRsvp = useSelect((select) => {
 		return select('core/editor').getEditedPostAttribute('meta')
-			.enable_anonymous_rsvp;
+			.gatherpress_enable_anonymous_rsvp;
 	}, []);
 
 	if (isNewEvent) {
@@ -40,7 +40,7 @@ const AnonymousRsvp = () => {
 
 	const updateAnonymousRsvp = useCallback(
 		(value) => {
-			const meta = { enable_anonymous_rsvp: Number(value) };
+			const meta = { gatherpress_enable_anonymous_rsvp: Number(value) };
 
 			setAnonymousRsvp(value);
 			editPost({ meta });

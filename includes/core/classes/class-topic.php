@@ -34,7 +34,7 @@ class Topic {
 	 * @since 1.0.0
 	 * @var string $TAXONOMY
 	 */
-	const TAXONOMY = 'gp_topic';
+	const TAXONOMY = 'gatherpress_topic';
 
 	/**
 	 * Class constructor.

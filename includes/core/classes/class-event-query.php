@@ -106,11 +106,11 @@ class Event_Query {
 		array $venues = array()
 	): WP_Query {
 		$args = array(
-			'post_type'       => Event::POST_TYPE,
-			'fields'          => 'ids',
-			'no_found_rows'   => true,
-			'posts_per_page'  => $number,
-			'gp_events_query' => $event_list_type,
+			'post_type'                => Event::POST_TYPE,
+			'fields'                   => 'ids',
+			'no_found_rows'            => true,
+			'posts_per_page'           => $number,
+			'gatherpress_events_query' => $event_list_type,
 		);
 
 		$tax_query = array();
@@ -161,7 +161,7 @@ class Event_Query {
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
-		$events_query = $query->get( 'gp_events_query' );
+		$events_query = $query->get( 'gatherpress_events_query' );
 
 		if ( ! is_admin() && $query->is_main_query() ) {
 			$general = get_option( Utility::prefix_key( 'general' ) );
@@ -186,7 +186,7 @@ class Event_Query {
 					$page = $value[0];
 
 					if ( $page->id === $query->queried_object_id ) {
-						$query->set( 'post_type', 'gp_event' );
+						$query->set( 'post_type', 'gatherpress_event' );
 
 						$page_id                     = $query->queried_object_id;
 						$events_query                = $key;
@@ -298,10 +298,10 @@ class Event_Query {
 	}
 
 	/**
-	 * Adjust SQL clauses for Event queries to join on the gp_events table.
+	 * Adjust SQL clauses for Event queries to join on the gatherpress_events table.
 	 *
 	 * This method adjusts various SQL clauses (e.g., join, where, orderby) for Event queries to include
-	 * the `gp_events` table in the database join. It allows querying events based on different
+	 * the `gatherpress_events` table in the database join. It allows querying events based on different
 	 * criteria such as upcoming or past events and specifying the event order (DESC or ASC).
 	 *
 	 * @since 1.0.0

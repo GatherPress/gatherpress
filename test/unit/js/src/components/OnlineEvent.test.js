@@ -21,7 +21,7 @@ test('OnlineEvent renders component without link', () => {
 		'dashicon dashicons dashicons-video-alt2'
 	);
 	expect(container.children[0].children[1].children[0]).toHaveClass(
-		'gp-tooltip'
+		'gatherpress-tooltip'
 	);
 });
 

@@ -104,7 +104,7 @@ class Test_Event extends Base {
 		$post  = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
-				'post_type'    => 'gp_event',
+				'post_type'    => 'gatherpress_event',
 				'post_content' => 'Unit Test description.',
 			)
 		)->get();
@@ -134,7 +134,7 @@ class Test_Event extends Base {
 		$post   = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
-				'post_type'    => 'gp_event',
+				'post_type'    => 'gatherpress_event',
 				'post_content' => 'Unit Test description.',
 			)
 		)->get();
@@ -198,7 +198,7 @@ class Test_Event extends Base {
 		$post  = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
-				'post_type'    => 'gp_event',
+				'post_type'    => 'gatherpress_event',
 				'post_content' => 'Unit Test description.',
 			)
 		)->get();
@@ -264,7 +264,7 @@ class Test_Event extends Base {
 		$post     = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
-				'post_type'    => 'gp_event',
+				'post_type'    => 'gatherpress_event',
 				'post_content' => 'Unit Test description.',
 			)
 		)->get();
@@ -300,7 +300,7 @@ class Test_Event extends Base {
 		$event      = new Event( $event_id );
 		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 
-		update_post_meta( $venue->ID, 'venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
 		wp_set_post_terms( $event_id, '_unit-test-venue', Venue::TAXONOMY );
 
 		$response = $event->get_venue_information();
@@ -381,7 +381,7 @@ class Test_Event extends Base {
 		$post        = $this->mock->post(
 			array(
 				'post_title'   => 'Unit Test Event',
-				'post_type'    => 'gp_event',
+				'post_type'    => 'gatherpress_event',
 				'post_content' => 'Unit Test description.',
 				'post_date'    => '2020-05-11 00:00:00',
 			)
@@ -401,7 +401,7 @@ class Test_Event extends Base {
 			'datetime_end'   => '2020-05-11 17:00:00',
 		);
 
-		update_post_meta( $venue->ID, 'venue_information', $venue_info );
+		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
 		wp_set_post_terms( $post->ID, '_unit-test-venue', Venue::TAXONOMY );
 
 		$event->save_datetimes( $params );
@@ -414,11 +414,11 @@ class Test_Event extends Base {
 			),
 			'ical'    => array(
 				'name'     => 'iCal',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gatherpress_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
 			),
 			'outlook' => array(
 				'name'     => 'Outlook',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gp_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gatherpress_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',
@@ -446,7 +446,7 @@ class Test_Event extends Base {
 	public function test_has_event_started(): void {
 		$post  = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$event = new Event( $post->ID );
@@ -527,7 +527,7 @@ class Test_Event extends Base {
 	public function test_has_event_past(): void {
 		$post  = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$event = new Event( $post->ID );
@@ -606,7 +606,7 @@ class Test_Event extends Base {
 	public function test_is_event_happening(): void {
 		$post  = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get();
 		$event = new Event( $post->ID );
@@ -660,7 +660,7 @@ class Test_Event extends Base {
 	public function test_maybe_get_online_event_link(): void {
 		$event_id = $this->mock->post(
 			array(
-				'post_type' => 'gp_event',
+				'post_type' => 'gatherpress_event',
 			)
 		)->get()->ID;
 		$event    = new Event( $event_id );
@@ -679,7 +679,7 @@ class Test_Event extends Base {
 
 		$event->save_datetimes( $params );
 
-		update_post_meta( $event_id, 'online_event_link', $link );
+		update_post_meta( $event_id, 'gatherpress_online_event_link', $link );
 
 		$this->assertEmpty(
 			$event->maybe_get_online_event_link(),

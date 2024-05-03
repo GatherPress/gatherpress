@@ -30,17 +30,20 @@ const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 		<>
 			{(name || fullAddress) && (
 				<Flex justify="normal" align="flex-start" gap="4">
-					<FlexItem display="flex" className="gp-venue__icon">
+					<FlexItem
+						display="flex"
+						className="gatherpress-venue__icon"
+					>
 						<Icon icon="location" />
 					</FlexItem>
 					<FlexItem>
 						{name && (
-							<div className="gp-venue__name">
+							<div className="gatherpress-venue__name">
 								<strong>{HtmlReactParser(name)}</strong>
 							</div>
 						)}
 						{fullAddress && (
-							<div className="gp-venue__full-address">
+							<div className="gatherpress-venue__full-address">
 								{HtmlReactParser(fullAddress)}
 							</div>
 						)}
@@ -54,12 +57,12 @@ const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 							<Flex justify="normal" gap="4">
 								<FlexItem
 									display="flex"
-									className="gp-venue__icon"
+									className="gatherpress-venue__icon"
 								>
 									<Icon icon="phone" />
 								</FlexItem>
 								<FlexItem>
-									<div className="gp-venue__phone-number">
+									<div className="gatherpress-venue__phone-number">
 										{phoneNumber}
 									</div>
 								</FlexItem>
@@ -71,12 +74,12 @@ const Venue = ({ name, fullAddress, phoneNumber, website }) => {
 							<Flex justify="normal" gap="4">
 								<FlexItem
 									display="flex"
-									className="gp-venue__icon"
+									className="gatherpress-venue__icon"
 								>
 									<Icon icon="admin-site-alt3" />
 								</FlexItem>
 								<FlexItem>
-									<div className="gp-venue__website">
+									<div className="gatherpress-venue__website">
 										<a
 											href={website}
 											target="_blank"

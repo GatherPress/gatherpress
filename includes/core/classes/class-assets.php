@@ -173,7 +173,7 @@ class Assets {
 		$settings      = Settings::get_instance();
 		$setting_hooks = array_map(
 			function ( $key ) {
-				return sprintf( 'gp_event_page_gp_%s', sanitize_key( $key ) );
+				return sprintf( 'gatherpress_event_page_%s', Utility::prefix_key( sanitize_key( $key ) ) );
 			},
 			array_keys( $settings->get_sub_pages() )
 		);
@@ -267,7 +267,7 @@ class Assets {
 	 */
 	public function event_communication_modal(): void {
 		if ( get_post_type() === Event::POST_TYPE ) {
-			echo '<div id="gp-event-communication-modal"></div>';
+			echo '<div id="gatherpress-event-communication-modal"></div>';
 		}
 	}
 
@@ -299,9 +299,9 @@ class Assets {
 			$event_details = array(
 				'currentUser'          => $event->rsvp->get( get_current_user_id() ),
 				'dateTime'             => $event->get_datetime(),
-				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'enable_anonymous_rsvp', true ),
-				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'enable_initial_decline', true ),
-				'maxGuestLimit'        => (int) get_post_meta( $post_id, 'max_guest_limit', true ),
+				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
+				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'gatherpress_enable_initial_decline', true ),
+				'maxGuestLimit'        => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
 				'hasEventPast'         => $event->has_event_past(),
 				'postId'               => $post_id,
 				'responses'            => $event->rsvp->responses(),

@@ -535,7 +535,7 @@ msgstr ""
 #: build/editor.js:1
 #: build/panels.js:1
 #: src/helpers/event.js:74
-msgid "This event has already past."
+msgid "This event has already passed."
 msgstr ""
 
 #: build/blocks/event-date/index.js:1

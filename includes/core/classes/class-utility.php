@@ -55,35 +55,35 @@ class Utility {
 	}
 
 	/**
-	 * Prefixes a key with 'gp_'.
+	 * Prefixes a key with 'gatherpress_'.
 	 *
-	 * This method adds the 'gp_' prefix to the provided key and returns the modified key.
+	 * This method adds the 'gatherpress_' prefix to the provided key and returns the modified key.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $key The key to which the prefix will be added.
-	 * @return string The key with the 'gp_' prefix.
+	 * @return string The key with the 'gatherpress_' prefix.
 	 */
 	public static function prefix_key( string $key ): string {
-		if ( 0 !== strpos( $key, 'gp_' ) ) {
-			$key = sprintf( 'gp_%s', $key );
+		if ( 0 !== strpos( $key, 'gatherpress_' ) ) {
+			$key = sprintf( 'gatherpress_%s', $key );
 		}
 
 		return $key;
 	}
 
 	/**
-	 * Remove the 'gp_' prefix from a key.
+	 * Remove the 'gatherpress_' prefix from a key.
 	 *
-	 * This method removes the 'gp_' prefix from the provided key and returns the modified key.
+	 * This method removes the 'gatherpress_' prefix from the provided key and returns the modified key.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $key The key from which the prefix will be removed.
-	 * @return string The key with the 'gp_' prefix removed.
+	 * @return string The key with the 'gatherpress_' prefix removed.
 	 */
 	public static function unprefix_key( string $key ): string {
-		return preg_replace( '/^gp_/', '', $key );
+		return preg_replace( '/^gatherpress_/', '', $key );
 	}
 
 	/**

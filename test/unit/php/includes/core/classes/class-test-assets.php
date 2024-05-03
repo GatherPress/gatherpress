@@ -108,7 +108,7 @@ class Test_Assets extends Base {
 		$output = Utility::buffer_and_return( array( $instance, 'event_communication_modal' ) );
 
 		$this->assertSame(
-			'<div id="gp-event-communication-modal"></div>',
+			'<div id="gatherpress-event-communication-modal"></div>',
 			$output,
 			'Failed to assert event_communication_modal output div.'
 		);
@@ -213,11 +213,11 @@ class Test_Assets extends Base {
 				),
 			),
 			array(
-				'gp_event',
+				'gatherpress_event',
 				array(),
 			),
 			array(
-				'gp_venue',
+				'gatherpress_venue',
 				array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',

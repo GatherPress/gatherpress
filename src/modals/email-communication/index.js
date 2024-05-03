@@ -185,7 +185,7 @@ const EventCommuncationModal = () => {
 
 domReady(() => {
 	const modalWrapper = document.getElementById(
-		'gp-event-communication-modal'
+		'gatherpress-event-communication-modal'
 	);
 	if (modalWrapper) {
 		createRoot(modalWrapper).render(<EventCommuncationModal />);
