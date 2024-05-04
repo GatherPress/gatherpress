@@ -253,7 +253,6 @@ class Assets {
 		);
 
 		wp_set_script_translations( 'gatherpress-admin', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
-
 	}
 
 	/**
