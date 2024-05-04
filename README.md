@@ -28,7 +28,7 @@ We're creating the very network features we need to host events and gather well.
 
 ![Demo](docs/media/GatherPress-demo-20240218.mp4)
 
-## Features
+### Features
 
 - Event Scheduling: set dates, times, and provide event information details.
 - Attendee registration.
@@ -50,13 +50,22 @@ We're creating the very network features we need to host events and gather well.
 - Calendar block.
 - Email notification when event starts.
 
-## Requirements
+### Requirements
 
 To run GatherPress, we recommend your host supports:
 
 - PHP version 7.4 or greater.
 - MySQL version 5.6 or greater, or, MariaDB version 10.0 or greather.
 - HTTPS support.
+
+### Contribute
+
+If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
+
+### Credits
+
+Thanks to the following folks for contributing to GatherPress:
+[mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [pbrocks](https://profiles.wordpress.org/pbrocks/), [jmarx](https://profiles.wordpress.org/jmarx/), [prashantabellad](https://profiles.wordpress.org/prashantabellad/), [prayagm](https://profiles.wordpress.org/prayagm/), [patricia70](https://profiles.wordpress.org/patricia70/), [meaganhanes](https://profiles.wordpress.org/meaganhanes/), [calebthedev](https://profiles.wordpress.org/calebthedev/), [javiercasares](https://profiles.wordpress.org/javiercasares/), [linusx007](https://profiles.wordpress.org/linusx007/), [cameronbarrett](https://profiles.wordpress.org/cameronbarrett/), [courane01](https://profiles.wordpress.org/courane01/), [newyorkerlaura](https://profiles.wordpress.org/newyorkerlaura/), [phoopee3](https://profiles.wordpress.org/phoopee3/), [hauvong](https://profiles.wordpress.org/hauvong/), [deshabhishek007](https://profiles.wordpress.org/deshabhishek007/), [jeffpaul](https://profiles.wordpress.org/jeffpaul/), [michelleames](https://profiles.wordpress.org/michelleames/)
 
 ## Installation
 
@@ -108,11 +117,7 @@ In WP Admin, go to `Events`  > `Topics`.
 
 Topics are like post categories, but for events.
 
-## Contribute
-
-If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
-
-### Collaborator Access
+### Get Collaborator Access
 
 To get write access to the GitHub repo, please reach out to our **GitHub Administrators**: [Mervin Hernandez](https://github.com/MervinHernandez) and [Mike Auteri](https://github.com/mauteri).
 
@@ -121,4 +126,18 @@ To get access to [GatherPress.org](htps://gatherpress.org/get-involved) via SSH 
 ### Read Developer Documentation
 
 Find the developer documentation inside the plugins' `docs` folder.
+
+
+## Changelog
+
+See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+
+## Upgrade Notice
+
+### 1.0.0
+
+See: https://gatherpress.org/releases/version-1-0-0
+
+## Screenshots
+
 
