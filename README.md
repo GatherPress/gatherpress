@@ -50,14 +50,6 @@ We're creating the very network features we need to host events and gather well.
 - Calendar block.
 - Email notification when event starts.
 
-### Requirements
-
-To run GatherPress, we recommend your host supports:
-
-- PHP version 7.4 or greater.
-- MySQL version 5.6 or greater, or, MariaDB version 10.0 or greather.
-- HTTPS support.
-
 ### Contribute
 
 If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
@@ -72,6 +64,14 @@ Thanks to the following folks for contributing to GatherPress:
 1. Download the plugin: you'll find the latest release on the GatherPress GitHub repository, under [Releases](https://github.com/GatherPress/gatherpress/releases) > Assets and download `gatherpress.zip`.
 2. Install it in your WordPress instance: go to WP Admin Plugins > Add new plugin. Choose the `gatherpress.zip` file you just downloaded.
 3. Activate the plugin.
+
+### Requirements
+
+To run GatherPress, we recommend your host supports:
+
+- PHP version 7.4 or greater.
+- MySQL version 5.6 or greater, or, MariaDB version 10.0 or greather.
+- HTTPS support.
 
 ## Frequently Asked Questions
 
