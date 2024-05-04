@@ -45,11 +45,12 @@ We're creating the very network features we need to host events and gather well.
 
 ### Upcoming features
 
-- Allow attendees to add guests.
-- Import events from meetup.com with an add-on plugin (currently in development).
-- Recurring events.
-- Calendar block.
-- Email notification when event starts.
+- Allow attendees to add guests. ([#](https://github.com/GatherPress/gatherpress/issues/86))
+- Import events from meetup.com with an add-on plugin. ([#](https://github.com/GatherPress/gatherpress/issues/394))
+- Recurring events. ([#](https://github.com/GatherPress/gatherpress/issues/80))
+- Calendar block. ([#](https://github.com/GatherPress/gatherpress/issues/369))
+- Email notification when event starts. ([#](https://github.com/GatherPress/gatherpress/issues/429))
+- Event federation using ActivityPub ([#](https://github.com/GatherPress/gatherpress/issues/569))
 
 ### Contribute
 
