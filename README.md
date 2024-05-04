@@ -1,6 +1,14 @@
 # GatherPress
 
-> GatherPress, powering our community's event management needs.
+Stable tag: 0.29.0-alpha  
+Tested up to: 6.5.2  
+License: GPL v2 or later  
+Tags: events, event, meetup, community  
+Contributors: mauteri, hrmervin, jmarx, meaganhanes, pbrocks  
+
+![](.wordpress-org/banner-1544x500.jpg)
+
+GatherPress, powering our community's event management needs.
 
 ![GPLv2 License](https://img.shields.io/github/license/GatherPress/gatherpress) [![Coding Standards](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml) [![PHPUnit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml) [![JavaScript Unit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml) [![E2E Tests](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml) [![SonarCloud](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml) [![Dependency Review](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml)
 
