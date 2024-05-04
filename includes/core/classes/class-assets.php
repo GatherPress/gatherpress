@@ -138,7 +138,7 @@ class Assets {
 	public function admin_enqueue_scripts( string $hook ): void {
 		$asset = $this->get_asset_data( 'admin_style' );
 
-		wp_enqueue_style(
+		wp_register_style(
 			'gatherpress-admin-style',
 			$this->build . 'admin_style.css',
 			$asset['dependencies'],
