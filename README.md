@@ -75,6 +75,10 @@ To run GatherPress, we recommend your host supports:
 
 ## Frequently Asked Questions
 
+### What external services are used in GatherPress?
+
+We utilize Open Street Maps to render meeting locations in a map form. In order to do so we send the address to OSM in order to render their map.
+
 ### Configure GatherPress
 
 In WP Admin, go to `Events`  > `Settings`.
