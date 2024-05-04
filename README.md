@@ -18,7 +18,7 @@ GatherPress, powering our community's event management needs.
 
 ![WordPress Plugin Active Installs](https://img.shields.io/wordpress/plugin/installs/gatherpress) ![WordPress Plugin Downloads](https://img.shields.io/wordpress/plugin/dt/gatherpress) ![WordPress Plugin Rating](https://img.shields.io/wordpress/plugin/rating/gatherpress)
 
-## Overview
+## Description
 
 GatherPress, a plugin created by and for the WordPress community, is a response to the community's desire for novel event management tools that meet the diverse needs of event organizers and members. Its agenda and roadmap align with that of the WordPress community, ensuring that it evolves in tandem with our collective wants and needs.
 
@@ -64,7 +64,7 @@ To run GatherPress, we recommend your host supports:
 2. Install it in your WordPress instance: go to WP Admin Plugins > Add new plugin. Choose the `gatherpress.zip` file you just downloaded.
 3. Activate the plugin.
 
-## How to Use
+## Frequently Asked Questions
 
 ### Configure GatherPress
 
