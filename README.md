@@ -54,7 +54,7 @@ We're creating the very network features we need to host events and gather well.
 
 ### Contribute
 
-If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](https://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
+If you wish to share in the collaborative of work to build GatherPress, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](https://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
 
 ### Credits
 
