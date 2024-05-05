@@ -94,7 +94,7 @@ class Import {
 	 * @return bool
 	 */
 	protected static function validate_object( array $postdata ): bool {
-		if ( ! isset( $postdata['post_type'] ) || 'gp_event' !== $postdata['post_type'] ) {
+		if ( ! isset( $postdata['post_type'] ) || 'gatherpress_event' !== $postdata['post_type'] ) {
 			return false;
 		}
 		return true;
@@ -143,7 +143,7 @@ class Import {
 
 
 	/**
-	 * 
+	 * Save $data into some place, which is not post_meta.
 	 *
 	 * @param  int   $post_id
 	 * @param  array $data
@@ -151,7 +151,6 @@ class Import {
 	 * @return void
 	 */
 	public static function datetimes_callback( int $post_id, array $data ): void {
-		// Save $data into some place, which is not post_meta.
 		$event = new \GatherPress\Core\Event( $post_id );
 		$event->save_datetimes( maybe_unserialize( $data ) );
 	}
