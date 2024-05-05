@@ -16,11 +16,16 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 /**
  * Migrate Trait.
  *
- * 
- *
  * @since 1.0.0
  */
 trait Migrate {
+
+	protected $pseudopostmetas = array(
+		'gatherpress_datetimes' => [
+			'export_callback' => array( '\GatherPress\Core\Export', 'datetimes_callback' ),
+			'import_callback' => array( '\GatherPress\Core\Import', 'datetimes_callback' ),
+		],
+	);
 
 	/**
 	 * 
@@ -30,14 +35,14 @@ trait Migrate {
 	 * @return self The instance of the class.
 	 */
 	final public static function pseudopostmetas(): array {
-		return apply_filters(
-			'gatherpress_pseudopostmetas',
-			[
-				'gatherpress_datetimes' => [
-					'export_callback' => array( '\GatherPress\Core\Export', 'datetimes_callback' ),
-					'import_callback' => __NAMESPACE__ . '\\import_datetimes_callback',
-				],
-			]
-		);
+		/**
+		 * Filters the ...
+		 *
+		 * @since 1.0.0
+		 * @hook gatherpress_pseudopostmetas
+		 * @param {array} $pseudopostmetas ...
+		 * @returns {array} ...
+		 */
+		return apply_filters( 'gatherpress_pseudopostmetas', self::$pseudopostmetas );
 	}
 }
