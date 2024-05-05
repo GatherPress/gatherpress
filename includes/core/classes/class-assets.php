@@ -241,18 +241,6 @@ class Assets {
 		);
 
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
-
-		$asset = $this->get_asset_data( 'admin' );
-
-		wp_enqueue_script(
-			'gatherpress-admin',
-			$this->build . 'admin.js',
-			$asset['dependencies'],
-			$asset['version'],
-			true
-		);
-
-		wp_set_script_translations( 'gatherpress-admin', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 	}
 
 	/**
