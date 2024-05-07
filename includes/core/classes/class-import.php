@@ -66,13 +66,14 @@ class Import extends Migrate {
 			// https://github.com/WordPress/wordpress-importer/issues/42
 			add_filter( 'wp_import_post_data_raw', array( '\GatherPress\Core\Import', 'import_events' ) );
 		}
-		add_action( self::ACTION, array( $this, 'import' ) );
+		add_action( self::ACTION, array( '\GatherPress\Core\Import', 'import' ) );
 	}
 
 	/**
 	 * 
+	 * @see https://github.com/WordPress/wordpress-importer/blob/71bdd41a2aa2c6a0967995ee48021037b39a1097/src/class-wp-import.php#L631
 	 *
-	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'. @see https://github.com/WordPress/wordpress-importer/blob/71bdd41a2aa2c6a0967995ee48021037b39a1097/src/class-wp-import.php#L631
+	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
 	 *
 	 * @return array
 	 */
@@ -86,12 +87,12 @@ class Import extends Migrate {
 	/**
 	 * 
 	 *
-	 * @param  array $postdata
+	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
 	 *
 	 * @return bool
 	 */
-	protected static function validate( array $postdata ): bool {
-		if ( ! isset( $postdata['post_type'] ) || Event::POST_TYPE !== $postdata['post_type'] ) {
+	protected static function validate( array $post_data_raw ): bool {
+		if ( ! isset( $post_data_raw['post_type'] ) || Event::POST_TYPE !== $post_data_raw['post_type'] ) {
 			return false;
 		}
 		return true;
@@ -108,21 +109,21 @@ class Import extends Migrate {
 	 * @see https://developer.wordpress.org/reference/hooks/add_meta_type_metadata/
 	 * @see https://www.ibenic.com/hook-wordpress-metadata/
 	 *
-	 * @param  [type] $save
-	 * @param  int    $object_id
-	 * @param  string $meta_key
-	 * @param  mixed  $meta_value
-	 * @param  bool   $unique
+	 * @param null|bool $check      Whether to allow adding metadata for the given type.
+	 * @param int       $object_id  ID of the object metadata is for.
+	 * @param string    $meta_key   Metadata key.
+	 * @param mixed     $meta_value Metadata value. Must be serializable if non-scalar.
+	 * @param bool      $unique     Whether the specified meta key should be unique for the object.
 	 *
-	 * @return void
+	 * @return null|bool
 	 */
-	public static function add_post_metadata( null|bool $save, int $object_id, string $meta_key, mixed $meta_value, bool $unique ): ?bool {
+	public static function add_post_metadata( null|bool $check, int $object_id, string $meta_key, mixed $meta_value, bool $unique ): ?bool {
 		$pseudopostmetas = self::get_pseudopostmetas();
 		if ( ! isset( $pseudopostmetas[ $meta_key ] ) ) {
-			return $save;
+			return $check;
 		}
 		if ( ! isset( $pseudopostmetas[ $meta_key ], $pseudopostmetas[ $meta_key ]['import_callback'] ) || ! is_callable( $pseudopostmetas[ $meta_key ]['import_callback'] ) ) {
-			return $save;
+			return $check;
 		}
 		/**
 		 * Save data, e.g. into a custom DB table.
@@ -142,8 +143,8 @@ class Import extends Migrate {
 	/**
 	 * Save $data into some place, which is not post_meta.
 	 *
-	 * @param  int   $post_id
-	 * @param  array $data
+	 * @param  int   $post_id   ID of the object metadata is for.
+	 * @param  array $data      Metadata value. Must be serializable if non-scalar.
 	 *
 	 * @return void
 	 */
