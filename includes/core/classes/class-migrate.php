@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
  * Class Migrate.
- * 
+ *
  * Provides common migration methods.
  *
  * @since 1.0.0
@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 class Migrate {
 
 	/**
-	 * 
+	 *
 	 */
 	const META_FILTER = 'gatherpress_pseudopostmetas';
 
@@ -34,18 +34,18 @@ class Migrate {
 	 * @var array $pseudopostmetas
 	 */
 	protected static $pseudopostmetas = array(
-		'gatherpress_datetimes' => [
+		'gatherpress_datetimes' => array(
 			'export_callback' => array( '\GatherPress\Core\Export', 'datetimes_callback' ),
 			'import_callback' => array( '\GatherPress\Core\Import', 'datetimes_callback' ),
-		],
+		),
 	);
 
 	/**
-	 * 
+	 *
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return self The instance of the class.
+	 * @return array 
 	 */
 	public static function get_pseudopostmetas(): array {
 		/**
@@ -56,7 +56,7 @@ class Migrate {
 		 * @param {array} $pseudopostmetas ...
 		 * @returns {array} ...
 		 */
-		return apply_filters(
+		return (array) apply_filters( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 			self::META_FILTER,
 			self::$pseudopostmetas
 		);

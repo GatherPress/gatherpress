@@ -26,7 +26,7 @@ use WP_Post;
  * @since 1.0.0
  */
 class Export extends Migrate {
-	/** 
+	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
@@ -77,7 +77,7 @@ class Export extends Migrate {
 	 * Returning a truthy value from the filter will skip the current meta object from being exported.
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/wxr_export_skip_postmeta/
-	 * 
+	 *
 	 * But there is no need to use this filter in real,
 	 * GatherPress just uses it as entry-point into
 	 * WordPress' native export process.
@@ -88,31 +88,30 @@ class Export extends Migrate {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param bool   $skip     Whether to skip the current post meta. Default false.
-	 * @param string $meta_key Current meta key.
-	 * @param object $meta     Current meta object.
+	 * @param bool   $skip      Whether to skip the current post meta. Default false.
+	 * @param string $meta_key  Current meta key.
+	 * @param object $meta      Current meta object.
 	 *
 	 * @return bool
 	 */
-	public static function wxr_export_skip_postmeta( bool $skip, string $meta_key, mixed $meta_data ): bool {
+	public static function wxr_export_skip_postmeta( bool $skip, string $meta_key, object $meta ): bool {
 		if ( self::validate( $meta_key ) ) {
 			/**
-			 *  Action hook, introduced to allow acting with GatherPress data to be exported.
-			 * 
-			 * @hook  gatherpress_export
+			 * Action hook, introduced to allow acting with GatherPress data to be exported.
 			 *
-			 * @param WP_Post $post      The post to be exported.
-			 * @param string  $meta_key  The post_meta key curently exported.
-			 * @param mixed   $meta_data The data belonging to that $meta_key and $post.
+			 * @hook  gatherpress_export
+			 * @param {WP_Post} $post      Current 'gatherpress_event' post being exported.
+			 * @param {string}  $meta_key  Current meta key.
+			 * @param {object}  $meta      Current meta object.
 			 */
-			do_action( self::ACTION, get_post(), $meta_key, $meta_data );
+			do_action( self::ACTION, get_post(), $meta_key, $meta ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 		}
 		return $skip;
 	}
 
 	/**
-	 * Checks if the current post is of type 'gatherpress_event' 
-	 * and if the given, processed post_meta key is '_edit_last'.
+	 * Checks if the current post is of type 'gatherpress_event'
+	 * and if the given, processed meta_key is '_edit_last'.
 	 *
 	 * @since 1.0.0
 	 *
@@ -121,7 +120,7 @@ class Export extends Migrate {
 	 * @return bool
 	 */
 	protected static function validate( string $meta_key = '' ): bool {
-		
+
 		if ( Event::POST_TYPE !== get_post_type() ) {
 			return false;
 		}
@@ -132,11 +131,17 @@ class Export extends Migrate {
 	}
 
 	/**
-	 * 
+	 * Exports all custom data.
+	 *
+	 * Gets all 'pseudopostmetas' and generates WXR-compatible output for each,
+	 * the generated xml markup is rendered into the WordPress export file directly.
+	 *
+	 * An export file like this can be imported into GatherPress using
+	 * the native 'WordPress importer' and its potential replacement the 'WordPress importer (v2)'.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param  WP_Post $post
+	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
 	 *
 	 * @return void
 	 */
@@ -151,8 +156,8 @@ class Export extends Migrate {
 				$value = call_user_func( $callbacks['export_callback'], $post );
 				?>
 				<wp:postmeta>
-					<wp:meta_key><?php echo wxr_cdata( $key ); ?></wp:meta_key>
-					<wp:meta_value><?php echo wxr_cdata( $value ); ?></wp:meta_value>
+					<wp:meta_key><?php echo wxr_cdata( $key ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_key>
+					<wp:meta_value><?php echo wxr_cdata( $value ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_value>
 				</wp:postmeta>
 				<?php
 			}
@@ -160,13 +165,14 @@ class Export extends Migrate {
 	}
 
 	/**
-	 * Returns exportable data from the 'wp_gatherpress_events' DB table as serialized string.
+	 * Returns an dates, times and timezone from the 'wp_gatherpress_events' DB table
+	 * as serialized string for the current post.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param  WP_Post $post The post to be exported.
+	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
 	 *
-	 * @return string        Serialized JSON string with all date & time data of the given $post.
+	 * @return string        Serialized JSON string with all date, time & timezone data of the current $post.
 	 */
 	public static function datetimes_callback( WP_Post $post ): string {
 		// Make sure to not get any user-related data.
