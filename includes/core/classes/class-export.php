@@ -18,7 +18,9 @@ use WP_Post;
 /**
  * Class Export.
  *
- * Manages Export ...
+ * The Export class handles the exporting of content using WordPress' native export tool.
+ * This class will enhance overall export management, provide effective filtering
+ * and support validation of the export-objects based on their post type and meta data.
  *
  * @since 1.0.0
  */
