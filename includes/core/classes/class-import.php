@@ -81,7 +81,7 @@ class Import {
 	 */
 	public static function import_events( array $post_data_raw ): array {
 		if ( self::validate_object( $post_data_raw ) ) {
-			do_action( ACTION );
+			do_action( ACTION, $post_data_raw );
 		}
 		return $post_data_raw;
 	}
