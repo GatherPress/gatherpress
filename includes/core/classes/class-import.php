@@ -19,7 +19,11 @@ use WP_Post;
 /**
  * Class Import.
  *
+ * The Import class handles the importing of content using WordPress' native export tool.
+ * This class will provide effective filtering and support validation of the export-objects
+ * based on their post type and meta data.
  *
+ * Succesfully identified GatherPress data will be saved into custom DB tables.
  *
  * @since 1.0.0
  */
@@ -28,11 +32,6 @@ class Import extends Migrate {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-
-	/**
-	 * Action hook, introduced to allow acting with GatherPress data to be imported.
-	 */
-	const ACTION = 'gatherpress_import';
 
 	/**
 	 * Class constructor.
@@ -58,23 +57,24 @@ class Import extends Migrate {
 
 		if ( class_exists( 'WXR_Importer' ) ) {
 			/**
-			 * WordPress Importer (v2)
+			 * Setup for WordPress Importer (v2).
 			 *
 			 * @see https://github.com/humanmade/Wordpress-Importer
 			 */
-			add_filter( 'wxr_importer.pre_process.post', array( '\GatherPress\Core\Import', 'import_events' ) );
+			add_filter( 'wxr_importer.pre_process.post', array( '\GatherPress\Core\Import', 'set_entry_point' ) );
 		} else {
 			/**
-			 * Default WordPress Importer
+			 * Setup for default WordPress Importer.
 			 *
 			 * @see https://github.com/WordPress/wordpress-importer/issues/42
 			 */
-			add_filter( 'wp_import_post_data_raw', array( '\GatherPress\Core\Import', 'import_events' ) );
+			add_filter( 'wp_import_post_data_raw', array( '\GatherPress\Core\Import', 'set_entry_point' ) );
 		}
-		add_action( self::ACTION, array( '\GatherPress\Core\Import', 'import' ) );
+		add_action( 'gatherpress_import', array( '\GatherPress\Core\Import', 'import' ) );
 	}
 
 	/**
+	 * Extend WordPress' native Import.
 	 *
 	 * @see https://github.com/WordPress/wordpress-importer/blob/71bdd41a2aa2c6a0967995ee48021037b39a1097/src/class-wp-import.php#L631
 	 *
@@ -82,15 +82,22 @@ class Import extends Migrate {
 	 *
 	 * @return array
 	 */
-	public static function import_events( array $post_data_raw ): array {
+	public static function set_entry_point( array $post_data_raw ): array {
 		if ( self::validate( $post_data_raw ) ) {
-			do_action( self::ACTION, $post_data_raw ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+			/**
+			 * Fires for every GatherPress data to be imported.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param {array} $post_data_raw Unprocessesd 'gatherpress_event' post being imported.
+			 */
+			do_action( 'gatherpress_import', $post_data_raw );
 		}
 		return $post_data_raw;
 	}
 
 	/**
-	 *
+	 * Checks if the currently imported post is of type 'gatherpress_event'.
 	 *
 	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
 	 *
@@ -104,7 +111,7 @@ class Import extends Migrate {
 	}
 
 	/**
-	 *
+	 * Import all custom data.
 	 *
 	 * @return void
 	 */
@@ -113,7 +120,16 @@ class Import extends Migrate {
 	}
 
 	/**
+	 * Import data with custom scheme.
 	 *
+	 * This method is called on every imported post_meta
+	 * and allows to work with the data to be imported.
+	 *
+	 * It checks if the current meta_key is one of GatherPress' pseudopostmetas
+	 * and if an import-callback for that key exists.
+	 * If both is true, the import callback is provided with all available information and called once per meta_key.
+	 *
+	 * The normal saving into the 'wp_postmeta' DB table is disabled in such a case.
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/add_meta_type_metadata/
 	 * @see https://www.ibenic.com/hook-wordpress-metadata/
@@ -134,15 +150,18 @@ class Import extends Migrate {
 		if ( ! isset( $pseudopostmetas[ $meta_key ], $pseudopostmetas[ $meta_key ]['import_callback'] ) || ! is_callable( $pseudopostmetas[ $meta_key ]['import_callback'] ) ) {
 			return $check;
 		}
-		/**
-		 * Save data, e.g. into a custom DB table.
+
+		/*
+		 * Run import callback,
+		 * e.g. Save data into a custom DB table.
 		 */
 		call_user_func(
 			$pseudopostmetas[ $meta_key ]['import_callback'],
 			$object_id,
 			$meta_value
 		);
-		/**
+
+		/*
 		 * Returning a non-null value will effectively short-circuit the saving of 'normal' meta data.
 		 */
 		return false;
@@ -150,7 +169,7 @@ class Import extends Migrate {
 
 
 	/**
-	 * Save $data into some place, which is not post_meta.
+	 * Save dates, times & timezone for the currently imported 'gatherpress_event' post.
 	 *
 	 * @param  int   $post_id   ID of the object metadata is for.
 	 * @param  array $data      Metadata value. Must be serializable if non-scalar.

@@ -32,14 +32,6 @@ class Export extends Migrate {
 	use Singleton;
 
 	/**
-	 * Action hook, introduced to allow acting with GatherPress data to be exported.
-	 *
-	 * @since 1.0.0
-	 * @var string $ACTION
-	 */
-	const ACTION = 'gatherpress_export';
-
-	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -60,8 +52,8 @@ class Export extends Migrate {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'wxr_export_skip_postmeta', array( $this, 'wxr_export_skip_postmeta' ), 10, 3 );
-		add_action( self::ACTION, array( $this, 'export' ) );
+		add_filter( 'wxr_export_skip_postmeta', array( $this, 'set_entry_point' ), 10, 3 );
+		add_action( 'gatherpress_export', array( $this, 'export' ) );
 	}
 
 	/**
@@ -94,23 +86,24 @@ class Export extends Migrate {
 	 *
 	 * @return bool
 	 */
-	public static function wxr_export_skip_postmeta( bool $skip, string $meta_key, object $meta ): bool {
+	public static function set_entry_point( bool $skip, string $meta_key, object $meta ): bool {
 		if ( self::validate( $meta_key ) ) {
 			/**
-			 * Action hook, introduced to allow acting with GatherPress data to be exported.
+			 * Fires for every GatherPress data to be exported.
 			 *
-			 * @hook  gatherpress_export
-			 * @param {WP_Post} $post      Current 'gatherpress_event' post being exported.
-			 * @param {string}  $meta_key  Current meta key.
-			 * @param {object}  $meta      Current meta object.
+			 * @since 1.0.0
+			 *
+			 * @param WP_Post $post      Current 'gatherpress_event' post being exported.
+			 * @param string  $meta_key  Current meta key.
+			 * @param object  $meta      Current meta object.
 			 */
-			do_action( self::ACTION, get_post(), $meta_key, $meta ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+			do_action( 'gatherpress_export', get_post(), $meta_key, $meta );
 		}
 		return $skip;
 	}
 
 	/**
-	 * Checks if the current post is of type 'gatherpress_event'
+	 * Checks if the currently exported post is of type 'gatherpress_event'
 	 * and if the given, processed meta_key is '_edit_last'.
 	 *
 	 * @since 1.0.0

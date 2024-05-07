@@ -2,7 +2,7 @@
 /**
  * The Migrate class defines methods relevant to Exporting & Importing.
  *
- * This class is responsible for ...
+ * 
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -23,11 +23,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 class Migrate {
 
 	/**
-	 *
-	 */
-	const META_FILTER = 'gatherpress_pseudopostmetas';
-
-	/**
 	 * List of non-existent post_meta keys with array values containing getter and setter callback definitions.
 	 *
 	 * @since 1.0.0
@@ -45,20 +40,17 @@ class Migrate {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array 
+	 * @return array
 	 */
 	public static function get_pseudopostmetas(): array {
 		/**
 		 * Filters the ...
 		 *
 		 * @since 1.0.0
-		 * @hook gatherpress_pseudopostmetas
-		 * @param {array} $pseudopostmetas ...
-		 * @returns {array} ...
+		 *
+		 * @param array $pseudopostmetas ...
+		 * @return array ...
 		 */
-		return (array) apply_filters( // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
-			self::META_FILTER,
-			self::$pseudopostmetas
-		);
+		return (array) apply_filters( 'gatherpress_pseudopostmetas', self::$pseudopostmetas );
 	}
 }
