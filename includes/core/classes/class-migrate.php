@@ -1,26 +1,39 @@
 <?php
 /**
- * The Migrate trait defines a methods relevant to Exporting & Importing.
+ * The Migrate class defines methods relevant to Exporting & Importing.
  *
- * This trait is responsible for ...
+ * This class is responsible for ...
  *
  * @package GatherPress\Core
  * @since 1.0.0
  */
 
-namespace GatherPress\Core\Traits;
+namespace GatherPress\Core;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 /**
- * Migrate Trait.
+ * Class Migrate.
+ * 
+ * Provides common migration methods.
  *
  * @since 1.0.0
  */
-trait Migrate {
+class Migrate {
 
-	protected $pseudopostmetas = array(
+	/**
+	 * 
+	 */
+	const META_FILTER = 'gatherpress_pseudopostmetas';
+
+	/**
+	 * List of non-existent post_meta keys with array values containing getter and setter callback definitions.
+	 *
+	 * @since 1.0.0
+	 * @var array $pseudopostmetas
+	 */
+	protected static $pseudopostmetas = array(
 		'gatherpress_datetimes' => [
 			'export_callback' => array( '\GatherPress\Core\Export', 'datetimes_callback' ),
 			'import_callback' => array( '\GatherPress\Core\Import', 'datetimes_callback' ),
@@ -34,7 +47,7 @@ trait Migrate {
 	 *
 	 * @return self The instance of the class.
 	 */
-	final public static function pseudopostmetas(): array {
+	public static function get_pseudopostmetas(): array {
 		/**
 		 * Filters the ...
 		 *
@@ -43,6 +56,9 @@ trait Migrate {
 		 * @param {array} $pseudopostmetas ...
 		 * @returns {array} ...
 		 */
-		return apply_filters( 'gatherpress_pseudopostmetas', self::$pseudopostmetas );
+		return apply_filters(
+			self::META_FILTER,
+			self::$pseudopostmetas
+		);
 	}
 }

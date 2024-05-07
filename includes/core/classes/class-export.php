@@ -12,8 +12,8 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Migrate;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Traits\Migrate;
 use WP_Post;
 
 /**
@@ -25,16 +25,11 @@ use WP_Post;
  *
  * @since 1.0.0
  */
-class Export {
+class Export extends Migrate {
 	/** 
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-
-	/**
-	 * Provides common migration methods.
-	 */
-	use Migrate;
 
 	/**
 	 * Action hook, introduced to allow acting with GatherPress data to be exported.

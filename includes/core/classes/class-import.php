@@ -11,8 +11,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Migrate;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Traits\Migrate;
 use WP_Post;
 
 /**
@@ -22,15 +22,11 @@ use WP_Post;
  *
  * @since 1.0.0
  */
-class Import {
+class Import extends Migrate {
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
-	/**
-	 * Enforces a single instance of this class.
-	 */
-	use Migrate;
 
 	/**
 	 * 
