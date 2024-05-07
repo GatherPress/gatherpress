@@ -61,7 +61,7 @@ class Export extends Migrate {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'wxr_export_skip_postmeta', array( $this, 'wxr_export_skip_postmeta' ), 10, 3 );
-		add_action( ACTION, array( $this, 'export' ) );
+		add_action( self::ACTION, array( $this, 'export' ) );
 	}
 
 	/**
@@ -95,7 +95,7 @@ class Export extends Migrate {
 	 * @return bool
 	 */
 	public static function wxr_export_skip_postmeta( bool $skip, string $meta_key, mixed $meta_data ): bool {
-		if ( self::validate_object( $meta_key ) ) {
+		if ( self::validate( $meta_key ) ) {
 			/**
 			 *  Action hook, introduced to allow acting with GatherPress data to be exported.
 			 * 
@@ -105,7 +105,7 @@ class Export extends Migrate {
 			 * @param string  $meta_key  The post_meta key curently exported.
 			 * @param mixed   $meta_data The data belonging to that $meta_key and $post.
 			 */
-			do_action( ACTION, get_post(), $meta_key, $meta_data );
+			do_action( self::ACTION, get_post(), $meta_key, $meta_data );
 		}
 		return $skip;
 	}
@@ -120,7 +120,7 @@ class Export extends Migrate {
 	 *
 	 * @return bool
 	 */
-	protected static function validate_object( string $meta_key = '' ): bool {
+	protected static function validate( string $meta_key = '' ): bool {
 		
 		if ( Event::POST_TYPE !== get_post_type() ) {
 			return false;
@@ -141,7 +141,7 @@ class Export extends Migrate {
 	 * @return void
 	 */
 	public static function export( WP_Post $post ): void {
-		$pseudopostmetas = self::pseudopostmetas();
+		$pseudopostmetas = self::get_pseudopostmetas();
 		array_walk(
 			$pseudopostmetas,
 			function ( array $callbacks, string $key ) use ( $post ) {

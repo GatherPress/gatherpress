@@ -11,6 +11,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Migrate;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
@@ -65,7 +66,7 @@ class Import extends Migrate {
 			// https://github.com/WordPress/wordpress-importer/issues/42
 			add_filter( 'wp_import_post_data_raw', array( '\GatherPress\Core\Import', 'import_events' ) );
 		}
-		add_action( ACTION, array( $this, 'import' ) );
+		add_action( self::ACTION, array( $this, 'import' ) );
 	}
 
 	/**
@@ -76,8 +77,8 @@ class Import extends Migrate {
 	 * @return array
 	 */
 	public static function import_events( array $post_data_raw ): array {
-		if ( self::validate_object( $post_data_raw ) ) {
-			do_action( ACTION, $post_data_raw );
+		if ( self::validate( $post_data_raw ) ) {
+			do_action( self::ACTION, $post_data_raw );
 		}
 		return $post_data_raw;
 	}
@@ -89,8 +90,8 @@ class Import extends Migrate {
 	 *
 	 * @return bool
 	 */
-	protected static function validate_object( array $postdata ): bool {
-		if ( ! isset( $postdata['post_type'] ) || 'gatherpress_event' !== $postdata['post_type'] ) {
+	protected static function validate( array $postdata ): bool {
+		if ( ! isset( $postdata['post_type'] ) || Event::POST_TYPE !== $postdata['post_type'] ) {
 			return false;
 		}
 		return true;
@@ -116,7 +117,7 @@ class Import extends Migrate {
 	 * @return void
 	 */
 	public static function add_post_metadata( null|bool $save, int $object_id, string $meta_key, mixed $meta_value, bool $unique ): ?bool {
-		$pseudopostmetas = self::pseudopostmetas();
+		$pseudopostmetas = self::get_pseudopostmetas();
 		if ( ! isset( $pseudopostmetas[ $meta_key ] ) ) {
 			return $save;
 		}
