@@ -142,7 +142,7 @@ class Import extends Migrate {
 	 *
 	 * @return null|bool
 	 */
-	public static function add_post_metadata( null|bool $check, int $object_id, string $meta_key, mixed $meta_value, bool $unique ): ?bool {
+	public static function add_post_metadata( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, bool $unique ): ?bool {
 		$pseudopostmetas = self::get_pseudopostmetas();
 		if ( ! isset( $pseudopostmetas[ $meta_key ] ) ) {
 			return $check;
