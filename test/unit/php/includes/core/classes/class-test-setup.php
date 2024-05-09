@@ -81,14 +81,31 @@ class Test_Setup extends Base {
 	public function test_check_users_can_register(): void {
 		$instance                   = Setup::get_instance();
 		$users_can_register_name    = 'users_can_register';
-		$users_can_register_default = get_option( $users_can_register_name );
-		update_option( $users_can_register_name, 1 );
-		$instance->check_users_can_register();
 		$this->assertEquals(
 			get_option( $users_can_register_name ),
-			1,
-			'Failed to assert user registration option was set.'
+			false,
+			'Failed to assert user registration is disabled (default).'
 		);
+		$this->assertEquals(
+			get_option( 'gatherpress_suppress_membership_notification' ),
+			0,
+			'Failed to assert membership notification is suppressed (default).'
+		);
+		$this->assertFalse( wp_style_is( 'gatherpress-admin-style', 'enqueued' ) );
+		
+		update_option( $users_can_register_name, 1 );
+		$instance->check_users_can_register();
+
+		// @TODO // WEIRD results
+		$this->assertTrue( wp_style_is( 'gatherpress-admin-style', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'gatherpress-admin-style', 'queue' ) );
+		$this->assertTrue( wp_style_is( 'gatherpress-admin-style', 'done' ) );
+
+		// $this->assertEquals(
+		// 	get_option( 'gatherpress_suppress_membership_notification' ),
+		// 	true,
+		// 	'Failed to assert user registration option was enabled.'
+		// );
 	}
 
 	/**
