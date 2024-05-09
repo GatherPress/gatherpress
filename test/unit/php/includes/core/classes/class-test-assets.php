@@ -130,6 +130,33 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for admin_enqueue_scripts.
+	 *
+	 * @covers ::admin_enqueue_scripts
+	 *
+	 * @return void
+	 */
+	public function test_admin_enqueue_scripts(): void {
+		$instance = Assets::get_instance();
+
+		$this->assertFalse( wp_style_is( 'gatherpress-admin-style', 'registered' ) );
+		$instance->admin_enqueue_scripts('dummy-admin-page');
+		$this->assertTrue( wp_style_is( 'gatherpress-admin-style', 'registered' ) );
+
+		$this->assertFalse( wp_script_is( 'gatherpress-panels', 'enqueued' ) );
+		$this->assertFalse( wp_script_is( 'gatherpress-modals', 'enqueued' ) );
+		$instance->admin_enqueue_scripts('post-new.php');
+		$this->assertTrue( wp_script_is( 'gatherpress-panels', 'enqueued' ) );
+		$this->assertTrue( wp_script_is( 'gatherpress-modals', 'enqueued' ) );
+
+		// TODO get_sub_pages() hooks
+
+		$this->assertFalse( wp_script_is( 'gatherpress-profile', 'enqueued' ) );
+		$instance->admin_enqueue_scripts('profile.php');
+		$this->assertTrue( wp_script_is( 'gatherpress-profile', 'enqueued' ) );
+	}
+
+	/**
 	 * Coverage for localize method.
 	 *
 	 * @covers ::localize
