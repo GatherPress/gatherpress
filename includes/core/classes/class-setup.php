@@ -405,7 +405,6 @@ class Setup {
 			filter_var( get_option( 'gatherpress_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) ||
 			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN ) ||
 			false === strpos( get_current_screen()->id, 'gatherpress' )
-
 		) {
 			return;
 		}
