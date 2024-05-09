@@ -22,6 +22,10 @@ GatherPress, powering our community's event management needs.
 
 GatherPress, a plugin created by and for the WordPress community, is a response to the community's desire for novel event management tools that meet the diverse needs of event organizers and members. Its agenda and roadmap align with that of the WordPress community, ensuring that it evolves in tandem with our collective wants and needs.
 
+**We propose a pilot program to test GatherPress, a community-developed plugin, within interested and active WordPress meetup groups. This initiative stems from our community’s need for an innovative event management tool tailored to the unique demands of WordPress event organizers and participants.**
+[@Patricia BT](https://profiles.wordpress.org/patricia70/) in January 2024 on
+[make.wordpress.org](https://make.wordpress.org/community/2024/01/22/proposal-pilot-program-to-test-gatherpress-on-the-wordpress-org-network-as-a-meetup-alternative/#comment-31591)
+
 This project is for the collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and the grit sweat and love of **the community, for the community**.
 
 We're creating the very network features we need to host events and gather well.
