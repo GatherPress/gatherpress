@@ -157,7 +157,7 @@ class Setup {
 	public function filter_plugin_action_links( array $actions ): array {
 		return array_merge(
 			array(
-				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gp_event&page=gp_general' ) ) . '">'
+				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) . '">'
 					. esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions
@@ -217,7 +217,7 @@ class Setup {
 	/**
 	 * Add GatherPress-specific body classes to the existing body classes.
 	 *
-	 * This method appends custom body classes, such as 'gp-enabled' and 'gp-theme-{theme-name}',
+	 * This method appends custom body classes, such as 'gatherpress-enabled' and 'gatherpress-theme-{theme-name}',
 	 * to the array of existing body classes.
 	 *
 	 * @since 1.0.0
@@ -226,8 +226,8 @@ class Setup {
 	 * @return array An updated array of body classes.
 	 */
 	public function add_gatherpress_body_classes( array $classes ): array {
-		$classes[] = 'gp-enabled';
-		$classes[] = sprintf( 'gp-theme-%s', esc_attr( get_stylesheet() ) );
+		$classes[] = 'gatherpress-enabled';
+		$classes[] = sprintf( 'gatherpress-theme-%s', esc_attr( get_stylesheet() ) );
 
 		return $classes;
 	}
@@ -400,18 +400,17 @@ class Setup {
 	public function check_users_can_register(): void {
 		if (
 			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( get_option( 'gp_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN )
+			filter_var( get_option( 'gatherpress_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN )
 		) {
 			return;
 		}
 
 		if (
-			null !== filter_input( INPUT_GET, 'action' ) &&
-			'suppress_gp_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
+			'gatherpress_suppress_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
 			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&
 			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' )
 		) {
-			update_option( 'gp_suppress_membership_notification', true );
+			update_option( 'gatherpress_suppress_membership_notification', true );
 		} else {
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/setup/membership-check.php', GATHERPRESS_CORE_PATH ),

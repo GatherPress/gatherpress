@@ -114,7 +114,7 @@ const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 	};
 
 	return (
-		<div className="gp-rsvp-response">
+		<div className="gatherpress-rsvp-response">
 			<SelectControl
 				label={__('Status', 'gatherpress')}
 				value={defaultStatus}

@@ -21,14 +21,14 @@ if ( ! isset( $credits ) ) {
 }
 ?>
 
-<div class="gp-settings__credits">
+<div class="gatherpress-settings__credits">
 	<h2><?php esc_html_e( 'Credits', 'gatherpress' ); ?></h2>
 	<p class="description">
 		<?php esc_html_e( 'Meet the folks behind GatherPress. Want to see your name here?', 'gatherpress' ); ?>
 		<a href="https://github.com/GatherPress/gatherpress" rel="noopener" target="_blank"><?php esc_html_e( 'Get Involved', 'gatherpress' ); ?></a>.
 	</p>
 	<h3><?php esc_html_e( 'Project Leaders', 'gatherpress' ); ?></h3>
-	<ul class="gp-settings__credits-featured">
+	<ul class="gatherpress-settings__credits-featured">
 		<?php
 		foreach ( $credits['project-leaders'] as $gatherpress_contributor ) :
 			Utility::render_template(
@@ -42,7 +42,7 @@ if ( ! isset( $credits ) ) {
 		?>
 	</ul>
 	<h3><?php esc_html_e( 'GatherPress Team', 'gatherpress' ); ?></h3>
-	<ul class="gp-settings__credits-featured">
+	<ul class="gatherpress-settings__credits-featured">
 		<?php
 		foreach ( $credits['gatherpress-team'] as $gatherpress_contributor ) :
 			Utility::render_template(
@@ -61,7 +61,7 @@ if ( ! isset( $credits ) ) {
 		printf( esc_html__( 'Contributors to GatherPress %s', 'gatherpress' ), esc_html( $credits['version'] ) );
 		?>
 	</h3>
-	<div class="gp-settings__credits-list">
+	<div class="gatherpress-settings__credits-list">
 		<?php
 		$gatherpress_contributor_count = count( $credits['contributors'] ?? array() );
 

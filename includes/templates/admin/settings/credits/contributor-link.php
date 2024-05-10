@@ -20,4 +20,4 @@ if ( ! isset( $gatherpress_contributor, $gatherpress_contributor_end ) ) {
 
 $gatherpress_contributor['name'] = ! empty( $gatherpress_contributor['name'] ) ? $gatherpress_contributor['name'] : $gatherpress_contributor['slug'];
 ?>
-<a id="<?php echo esc_attr( sprintf( 'gp-gatherpress_credit-%s', $gatherpress_contributor['slug'] ) ); ?>" href="<?php echo esc_url( sprintf( 'https://profiles.wordpress.org/%s/', $gatherpress_contributor['slug'] ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $gatherpress_contributor['name'] ); ?></a><?php echo esc_html( $gatherpress_contributor_end ); ?>
+<a id="<?php echo esc_attr( sprintf( 'gatherpress-credit-%s', $gatherpress_contributor['slug'] ) ); ?>" href="<?php echo esc_url( sprintf( 'https://profiles.wordpress.org/%s/', $gatherpress_contributor['slug'] ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $gatherpress_contributor['name'] ); ?></a><?php echo esc_html( $gatherpress_contributor_end ); ?>

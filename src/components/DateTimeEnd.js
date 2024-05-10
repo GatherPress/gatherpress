@@ -66,7 +66,7 @@ const DateTimeEnd = (props) => {
 		<PanelRow>
 			<Flex direction="column" gap="0">
 				<FlexItem>
-					<label htmlFor="gp-datetime-end">
+					<label htmlFor="gatherpress-datetime-end">
 						{__('End', 'gatherpress')}
 					</label>
 				</FlexItem>
@@ -75,7 +75,7 @@ const DateTimeEnd = (props) => {
 						popoverProps={{ placement: 'bottom-end' }}
 						renderToggle={({ isOpen, onToggle }) => (
 							<Button
-								id="gp-datetime-end"
+								id="gatherpress-datetime-end"
 								onClick={onToggle}
 								aria-expanded={isOpen}
 								isLink

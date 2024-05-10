@@ -49,20 +49,22 @@ const RsvpResponseNavigationItem = ({
 
 	if (active) {
 		return (
-			<div className="gp-rsvp-response__navigation-item">
+			<div className="gatherpress-rsvp-response__navigation-item">
 				{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 				<Tag
-					className="gp-rsvp-response__anchor"
+					className="gatherpress-rsvp-response__anchor"
 					data-item={value}
 					data-toggle="tab"
 					href="#"
 					role="tab"
-					aria-controls={`#gp-rsvp-${value}`}
+					aria-controls={`#gatherpress-rsvp-${value}`}
 					onClick={(e) => onTitleClick(e, value)}
 				>
 					{title}
 				</Tag>
-				<span className="gp-rsvp-response__count">({count})</span>
+				<span className="gatherpress-rsvp-response__count">
+					({count})
+				</span>
 			</div>
 		);
 	}

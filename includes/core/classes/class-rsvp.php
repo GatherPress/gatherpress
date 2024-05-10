@@ -31,7 +31,7 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var string $TABLE_FORMAT
 	 */
-	const TABLE_FORMAT = '%sgp_rsvps';
+	const TABLE_FORMAT = '%sgatherpress_rsvps';
 
 	/**
 	 * Cache key format for RSVPs.
@@ -39,7 +39,7 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var string $CACHE_KEY
 	 */
-	const CACHE_KEY = 'gp_rsvp_%d';
+	const CACHE_KEY = 'gatherpress_rsvp_%d';
 
 	/**
 	 * An array of RSVP statuses.
@@ -152,7 +152,7 @@ class Rsvp {
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		global $wpdb;
 
-		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'max_guest_limit', true ) );
+		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
 
 		if ( $max_guest_limit < $guests ) {
 			$guests = $max_guest_limit;
@@ -376,7 +376,7 @@ class Rsvp {
 			$user_info   = get_userdata( $user_id );
 			$anonymous   = intval( $response['anonymous'] );
 
-			// @todo make a filter so we can use this function if gp-buddypress plugin is activated.
+			// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
 			// eg for BuddyPress bp_core_get_user_domain( $user_id )
 			$profile = get_author_posts_url( $user_id );
 

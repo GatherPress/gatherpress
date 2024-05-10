@@ -44,8 +44,8 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 			const { guests } = response;
 
 			return (
-				<div key={index} className="gp-rsvp-response__item">
-					<figure className="gp-rsvp-response__member-avatar">
+				<div key={index} className="gatherpress-rsvp-response__item">
+					<figure className="gatherpress-rsvp-response__member-avatar">
 						{'' !== profile ? (
 							<a href={profile}>
 								<img alt={name} title={name} src={photo} />
@@ -54,8 +54,8 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 							<img alt={name} title={name} src={photo} />
 						)}
 					</figure>
-					<div className="gp-rsvp-response__member-info">
-						<div className="gp-rsvp-response__member-name">
+					<div className="gatherpress-rsvp-response__member-info">
+						<div className="gatherpress-rsvp-response__member-name">
 							{'' !== profile ? (
 								<a href={profile} title={name}>
 									{name}
@@ -64,11 +64,11 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 								<span>{name}</span>
 							)}
 						</div>
-						<div className="gp-rsvp-response__member-role">
+						<div className="gatherpress-rsvp-response__member-role">
 							{role}
 						</div>
 						{0 !== guests && (
-							<small className="gp-rsvp-response__guests">
+							<small className="gatherpress-rsvp-response__guests">
 								{sprintf(
 									/* translators: %d: Number of guests. */
 									_n(
@@ -89,7 +89,7 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 	return (
 		<>
 			{'attending' === value && 0 === renderedItems.length && (
-				<div className="gp-rsvp-response__no-responses">
+				<div className="gatherpress-rsvp-response__no-responses">
 					{false === getFromGlobal('eventDetails.hasEventPast')
 						? __(
 								'No one is attending this event yet.',

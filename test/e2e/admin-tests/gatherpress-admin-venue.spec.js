@@ -27,7 +27,7 @@ test.describe('e2e test for venue through admin side', () => {
 		await page.getByLabel('Add title').fill('Test venue');
 		await page.getByLabel('Add title').press('Tab');
 
-		const venue = await page.$('.gp-venue__name');
+		const venue = await page.$('.gatherpress-venue__name');
 		await venue.press('Backspace');
 
 		await page

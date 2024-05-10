@@ -20,7 +20,7 @@ if ( ! isset( $gatherpress_contributor ) ) {
 
 $gatherpress_contributor['name'] = ! empty( $gatherpress_contributor['name'] ) ? $gatherpress_contributor['name'] : $gatherpress_contributor['slug'];
 ?>
-<li id="<?php echo esc_attr( sprintf( 'gp-gatherpress_credit-%s', $gatherpress_contributor['slug'] ) ); ?>">
+<li id="<?php echo esc_attr( sprintf( 'gatherpress-credit-%s', $gatherpress_contributor['slug'] ) ); ?>">
 	<a href="<?php echo esc_url( sprintf( 'https://profiles.wordpress.org/%s/', $gatherpress_contributor['slug'] ) ); ?>" target="_blank" rel="noopener">
 		<img alt="<?php echo esc_attr( $gatherpress_contributor['name'] ); ?>" src="<?php echo esc_url( $gatherpress_contributor['avatar_urls']['96'] ); ?>" />
 		<div>
