@@ -214,3 +214,13 @@ For more info on wp-env package, consult the [Block Handbook's page](https://dev
 
 Thanks to the following folks for contributing to GatherPress:
 [mauteri](https://profiles.wordpress.org/mauteri/), [hrmervin](https://profiles.wordpress.org/hrmervin/), [pbrocks](https://profiles.wordpress.org/pbrocks/), [jmarx](https://profiles.wordpress.org/jmarx/), [prashantabellad](https://profiles.wordpress.org/prashantabellad/), [prayagm](https://profiles.wordpress.org/prayagm/), [patricia70](https://profiles.wordpress.org/patricia70/), [meaganhanes](https://profiles.wordpress.org/meaganhanes/), [calebthedev](https://profiles.wordpress.org/calebthedev/), [javiercasares](https://profiles.wordpress.org/javiercasares/), [linusx007](https://profiles.wordpress.org/linusx007/), [cameronbarrett](https://profiles.wordpress.org/cameronbarrett/), [courane01](https://profiles.wordpress.org/courane01/), [newyorkerlaura](https://profiles.wordpress.org/newyorkerlaura/), [phoopee3](https://profiles.wordpress.org/phoopee3/), [hauvong](https://profiles.wordpress.org/hauvong/), [deshabhishek007](https://profiles.wordpress.org/deshabhishek007/), [jeffpaul](https://profiles.wordpress.org/jeffpaul/), [michelleames](https://profiles.wordpress.org/michelleames/)
+
+## Third-Party Libraries
+
+This plugin leverages the following third-party libraries for various functionalities:
+
+- [Moment.js](https://momentjs.com/): Used for date and time manipulation.
+- [Moment-Timezone](https://momentjs.com/timezone/): Adds timezone support to Moment.js.
+- [Playwright](https://playwright.dev/): Enables browser automation for testing and interaction.
+- [React-Modal](https://github.com/reactjs/react-modal): Facilitates the creation of modal dialogs in React components.
+- [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips for React applications.
