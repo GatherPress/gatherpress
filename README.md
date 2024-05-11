@@ -160,6 +160,16 @@ GatherPress‘ best-practices
 
 See complete changelog at https://github.com/GatherPress/gatherpress/releases.
 
+## Third-Party Libraries
+
+This plugin leverages the following third-party libraries for various functionalities:
+
+- [Moment.js](https://momentjs.com/): Used for date and time manipulation.
+- [Moment-Timezone](https://momentjs.com/timezone/): Adds timezone support to Moment.js.
+- [Playwright](https://playwright.dev/): Enables browser automation for testing and interaction.
+- [React-Modal](https://github.com/reactjs/react-modal): Facilitates the creation of modal dialogs in React components.
+- [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips for React applications.
+
 ## Upgrade Notice
 
 ### 1.0.0
