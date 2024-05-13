@@ -79,8 +79,8 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_check_users_can_register(): void {
-		$instance                   = Setup::get_instance();
-		$users_can_register_name    = 'users_can_register';
+		$instance                = Setup::get_instance();
+		$users_can_register_name = 'users_can_register';
 		$this->assertEquals(
 			get_option( $users_can_register_name ),
 			false,
@@ -92,7 +92,7 @@ class Test_Setup extends Base {
 			'Failed to assert membership notification is suppressed (default).'
 		);
 		$this->assertFalse( wp_style_is( 'gatherpress-admin-style', 'enqueued' ) );
-		
+
 		update_option( $users_can_register_name, 1 );
 		$instance->check_users_can_register();
 
