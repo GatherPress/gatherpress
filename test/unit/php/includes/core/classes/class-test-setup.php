@@ -79,33 +79,45 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_check_users_can_register(): void {
-		$instance                = Setup::get_instance();
-		$users_can_register_name = 'users_can_register';
-		$this->assertEquals(
+		$instance                                          = Setup::get_instance();
+		$users_can_register_name                           = 'users_can_register';
+		$gatherpress_suppress_membership_notification_name = 'gatherpress_suppress_membership_notification';
+		$this->assertSame(
 			get_option( $users_can_register_name ),
-			false,
+			'0',
 			'Failed to assert user registration is disabled (default).'
 		);
-		$this->assertEquals(
-			get_option( 'gatherpress_suppress_membership_notification' ),
-			0,
-			'Failed to assert membership notification is suppressed (default).'
+		$this->assertFalse(
+			get_option( $gatherpress_suppress_membership_notification_name ),
+			'Failed to assert suppression of membership notification is disabled (default).'
 		);
-		$this->assertFalse( wp_style_is( 'gatherpress-admin-style', 'enqueued' ) );
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-admin-style', 'enqueued' ),
+			'Failed to assert, that the styles for the membership notification aren\'t loaded yet.'
+		);
 
-		update_option( $users_can_register_name, 1 );
+		// Allow user-registration
+		update_option( $users_can_register_name, '1' );
+		// Click the button to "Dismiss [the notification] forever"
+		$this->mock->input(
+			array(
+				'GET' => array( 
+					'action' => $gatherpress_suppress_membership_notification_name,
+					'_wpnonce' => wp_create_nonce( 'clear-notification' ),
+				),
+			)
+		);
+
 		$instance->check_users_can_register();
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-admin-style', 'queue' ),
+			'Failed to assert, that the styles for the membership notification are loaded.'
+		);
 
-		// @TODO // WEIRD results
-		$this->assertTrue( wp_style_is( 'gatherpress-admin-style', 'enqueued' ) );
-		$this->assertTrue( wp_style_is( 'gatherpress-admin-style', 'queue' ) );
-		$this->assertTrue( wp_style_is( 'gatherpress-admin-style', 'done' ) );
-
-		// $this->assertEquals(
-		// 	get_option( 'gatherpress_suppress_membership_notification' ),
-		// 	true,
-		// 	'Failed to assert user registration option was enabled.'
-		// );
+		$this->assertTrue(
+			get_option( $gatherpress_suppress_membership_notification_name ),
+			'Failed to assert suppression of membership notification is enabled.'
+		);
 	}
 
 	/**
