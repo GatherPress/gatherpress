@@ -159,7 +159,8 @@ Find the developer documentation inside the plugins' `docs` folder.
 As a Community powered plugin, GatherPress is already the PRO-version.
 
 Because we strive for close-to-core development, love decisions - not options and follow a lot of well known best-practices within the WordPress space, we can and do focus on what matters most - powering our community's event management needs.
-GatherPress‘ best-practices
+
+GatherPress‘ best-practices:
 
 - Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
 - Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
