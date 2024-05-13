@@ -56,8 +56,6 @@ domReady(() => {
 	hasEventPastNotice();
 });
 
-
-
 /**
  * Remove Unwanted Blocks
  *
