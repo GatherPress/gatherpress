@@ -142,7 +142,7 @@ class Import extends Migrate {
 	 *
 	 * @return null|bool
 	 */
-	public static function add_post_metadata( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, bool $unique ): ?bool {
+	public static function add_post_metadata( ?bool $check, int $object_id, string $meta_key, $meta_value, bool $unique ): ?bool {
 		$pseudopostmetas = self::get_pseudopostmetas();
 		if ( ! isset( $pseudopostmetas[ $meta_key ] ) ) {
 			return $check;
@@ -172,11 +172,11 @@ class Import extends Migrate {
 	 * Save dates, times & timezone for the currently imported 'gatherpress_event' post.
 	 *
 	 * @param  int   $post_id   ID of the object metadata is for.
-	 * @param  array $data      Metadata value. Must be serializable if non-scalar.
+	 * @param  mixed $data      Metadata value. Must be serializable if non-scalar.
 	 *
 	 * @return void
 	 */
-	public static function datetimes_callback( int $post_id, array $data ): void {
+	public static function datetimes_callback( int $post_id, $data ): void {
 		$event = new \GatherPress\Core\Event( $post_id );
 		$event->save_datetimes( maybe_unserialize( $data ) );
 	}
