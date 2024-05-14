@@ -46,12 +46,12 @@ class Migrate {
 	 */
 	public static function get_pseudopostmetas(): array {
 		/**
-		 * Filters the ...
+		 * Filters the list of data-names and their respective export- and import-callbacks.
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param array $pseudopostmetas ...
-		 * @return array ...
+		 * @param  array $pseudopostmetas List of data-names and their respective export- and import-callbacks.
+		 * @return array
 		 */
 		return (array) apply_filters( 'gatherpress_pseudopostmetas', self::$pseudopostmetas );
 	}
