@@ -2,7 +2,8 @@
 /**
  * The Migrate class defines methods relevant to Exporting & Importing.
  *
- * 
+ * This file contains the Migrate class, which is responsible for migration of data,
+ * that is not saved in WordPress' default db tables, within the GatherPress plugin.
  *
  * @package GatherPress\Core
  * @since 1.0.0
