@@ -422,6 +422,6 @@ class Assets {
 			$this->asset_data[ $asset ] = require_once $this->path . sprintf( '%s.asset.php', $asset );
 		}
 
-		return $this->asset_data[ $asset ];
+		return (array) $this->asset_data[ $asset ];
 	}
 }
