@@ -37,7 +37,8 @@ class Migrate {
 	);
 
 	/**
-	 *
+	 * Returns a filterable list of data-names and their respective callbacks
+	 * to either get that data during export or set that data during import.
 	 *
 	 * @since 1.0.0
 	 *
