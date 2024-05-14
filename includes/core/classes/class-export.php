@@ -158,8 +158,8 @@ class Export extends Migrate {
 	}
 
 	/**
-	 * Returns an dates, times and timezone from the 'wp_gatherpress_events' DB table
-	 * as serialized string for the current post.
+	 * Returns dates, times and timezone from the 'wp_gatherpress_events' DB table
+	 * as serialized string for the current post being exported.
 	 *
 	 * @since 1.0.0
 	 *

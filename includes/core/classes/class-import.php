@@ -19,8 +19,8 @@ use WP_Post;
 /**
  * Class Import.
  *
- * The Import class handles the importing of content using WordPress' native export tool.
- * This class will provide effective filtering and support validation of the export-objects
+ * The Import class handles the importing of content using WordPress' native import tool.
+ * This class will provide effective filtering and support validation of the import-objects
  * based on their post type and meta data.
  *
  * Succesfully identified GatherPress data will be saved into custom DB tables.
