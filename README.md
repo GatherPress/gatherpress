@@ -97,7 +97,8 @@ To run GatherPress, we recommend your host supports:
 
 ### What external services are used in GatherPress?
 
-We utilize Open Street Maps to render meeting locations in a map form. In order to do so we send the address to OSM in order to render their map.
+- Mapping Services: We use OpenStreetMap (coming soon) and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
+- Calendar Integration: GatherPress also supports "Add to Calendar" functionality using Google Calendar and Yahoo! Calendar.
 
 ### Configure GatherPress
 
