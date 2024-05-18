@@ -138,7 +138,7 @@ class Assets {
 	public function admin_enqueue_scripts( string $hook ): void {
 		$asset = $this->get_asset_data( 'admin_style' );
 
-		wp_enqueue_style(
+		wp_register_style(
 			'gatherpress-admin-style',
 			$this->build . 'admin_style.css',
 			$asset['dependencies'],
@@ -203,18 +203,6 @@ class Assets {
 
 			wp_set_script_translations( 'gatherpress-settings', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 		}
-
-		$asset = $this->get_asset_data( 'admin' );
-
-		wp_enqueue_script(
-			'gatherpress-admin',
-			$this->build . 'admin.js',
-			$asset['dependencies'],
-			$asset['version'],
-			true
-		);
-
-		wp_set_script_translations( 'gatherpress-admin', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
 
 		if ( 'profile.php' === $hook ) {
 			$asset = $this->get_asset_data( 'profile' );
@@ -434,6 +422,6 @@ class Assets {
 			$this->asset_data[ $asset ] = require_once $this->path . sprintf( '%s.asset.php', $asset );
 		}
 
-		return $this->asset_data[ $asset ];
+		return (array) $this->asset_data[ $asset ];
 	}
 }
