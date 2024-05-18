@@ -400,10 +400,14 @@ class Setup {
 	public function check_users_can_register(): void {
 		if (
 			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( get_option( 'gatherpress_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN )
+			filter_var( get_option( 'gatherpress_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) ||
+			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN ) ||
+			false === strpos( get_current_screen()->id, 'gatherpress' )
 		) {
 			return;
 		}
+
+		wp_enqueue_style( 'gatherpress-admin-style' );
 
 		if (
 			'gatherpress_suppress_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
