@@ -69,7 +69,7 @@ const RsvpResponse = ({ defaultStatus = 'attending' }) => {
 	}
 
 	return (
-		<div className="gp-rsvp-response">
+		<div className="gatherpress-rsvp-response">
 			<RsvpResponseHeader
 				items={items}
 				activeValue={rsvpStatus}

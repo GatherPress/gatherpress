@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 2,
 	"name": "gatherpress/events-list",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"title": "Events List",
 	"category": "gatherpress",
 	"icon": "list-view",

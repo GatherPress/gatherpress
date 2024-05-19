@@ -30,10 +30,10 @@ const VenueSettings = () => {
 	return (
 		isVenuePostType() && (
 			<PluginDocumentSettingPanel
-				name="gp-venue-settings"
+				name="gatherpress-venue-settings"
 				title={__('Venue settings', 'gatherpress')}
 				initialOpen={true}
-				className="gp-venue-settings"
+				className="gatherpress-venue-settings"
 			>
 				<VStack spacing={6}>
 					<VenueInformationPanel />
@@ -52,7 +52,7 @@ const VenueSettings = () => {
  *
  * @return {void}
  */
-registerPlugin('gp-venue-settings', {
+registerPlugin('gatherpress-venue-settings', {
 	render: VenueSettings,
 });
 
@@ -66,5 +66,5 @@ registerPlugin('gp-venue-settings', {
  * @return {void}
  */
 dispatch('core/edit-post').toggleEditorPanelOpened(
-	'gp-venue-settings/gp-venue-settings'
+	'gatherpress-venue-settings/gatherpress-venue-settings'
 );

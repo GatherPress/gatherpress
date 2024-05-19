@@ -65,7 +65,7 @@ class Test_Event_Query extends Base {
 		$this->assertEmpty( $response->posts, 'Failed to assert that posts array is empty.' );
 		$this->assertSame( 5, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
 
-		$post  = $this->mock->post( array( 'post_type' => 'gp_event' ) )->get();
+		$post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
 		$event = new Event( $post->ID );
 		$date  = new \DateTime( 'tomorrow' );
 
@@ -81,8 +81,8 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'upcoming', $response->query['gp_events_query'], 'Failed to assert query is upcoming.' );
-		$this->assertSame( 'gp_event', $response->query['post_type'], 'Failed to assert post type is gp_event.' );
+		$this->assertSame( 'upcoming', $response->query['gatherpress_events_query'], 'Failed to assert query is upcoming.' );
+		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
 	}
 
 	/**
@@ -101,7 +101,7 @@ class Test_Event_Query extends Base {
 		$this->assertEmpty( $response->posts, 'Failed to assert that posts array is empty.' );
 		$this->assertSame( 5, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
 
-		$post  = $this->mock->post( array( 'post_type' => 'gp_event' ) )->get();
+		$post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
 		$event = new Event( $post->ID );
 		$date  = new DateTime( 'yesterday' );
 
@@ -117,8 +117,8 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'past', $response->query['gp_events_query'], 'Failed to assert query is past.' );
-		$this->assertSame( 'gp_event', $response->query['post_type'], 'Failed to assert post type is gp_event.' );
+		$this->assertSame( 'past', $response->query['gatherpress_events_query'], 'Failed to assert query is past.' );
+		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
 	}
 
 	/**
@@ -130,8 +130,8 @@ class Test_Event_Query extends Base {
 	 */
 	public function test_get_events_list(): void {
 		$instance = Event_Query::get_instance();
-		$post_1   = $this->mock->post( array( 'post_type' => 'gp_event' ) )->get();
-		$post_2   = $this->mock->post( array( 'post_type' => 'gp_event' ) )->get();
+		$post_1   = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$post_2   = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
 		$event_1  = new Event( $post_1->ID );
 		$event_2  = new Event( $post_2->ID );
 		$date     = new DateTime( 'yesterday' );

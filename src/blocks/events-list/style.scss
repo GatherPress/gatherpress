@@ -3,7 +3,7 @@
 @import "../rsvp/style";
 @import "../tooltip";
 
-.gp-events-list {
+.gatherpress-events-list {
 	&__datetime {
 		font-size: var(--wp--preset--font-size--small);
 		margin-bottom: 0.5rem;
@@ -30,7 +30,7 @@
 			line-height: 2.75rem;
 		}
 
-		.gp-rsvp {
+		.gatherpress-rsvp {
 			margin-bottom: 0;
 
 			@include for-core-mobile {
@@ -38,7 +38,7 @@
 			}
 		}
 
-		.gp-rsvp-response {
+		.gatherpress-rsvp-response {
 			&__items {
 				display: flex;
 				flex-grow: 2;

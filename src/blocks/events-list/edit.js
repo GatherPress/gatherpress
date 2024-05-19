@@ -55,7 +55,7 @@ const Edit = (props) => {
 	const { topicsList } = useSelect((select) => {
 		const { getEntityRecords } = select(coreStore);
 		return {
-			topicsList: getEntityRecords('taxonomy', 'gp_topic', {
+			topicsList: getEntityRecords('taxonomy', 'gatherpress_topic', {
 				per_page: -1,
 				context: 'view',
 			}),
@@ -64,7 +64,7 @@ const Edit = (props) => {
 	const { venueList } = useSelect((select) => {
 		const { getEntityRecords } = select(coreStore);
 		return {
-			venueList: getEntityRecords('taxonomy', '_gp_venue', {
+			venueList: getEntityRecords('taxonomy', '_gatherpress_venue', {
 				per_page: -1,
 				context: 'view',
 			}),

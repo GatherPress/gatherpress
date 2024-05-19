@@ -10,7 +10,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 ?>
-	<div class="gp-admin__membership-check notice notice-warning">
+	<div class="gatherpress-admin__membership-check notice notice-warning">
 		<div>
 			<?php
 			printf(
@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 			?>
 		</div>
 		<div>
-			<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'action', 'suppress_gp_membership_notification' ), 'clear-notification' ) ); ?>" class="button button-secondary">
+			<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'action', 'gatherpress_suppress_membership_notification' ), 'clear-notification' ) ); ?>" class="button button-secondary">
 				<?php esc_html_e( 'Dismiss forever', 'gatherpress' ); ?>
 			</a>
 		</div>

@@ -40,16 +40,20 @@ const VenueSelector = () => {
 	const editPost = useDispatch('core/editor').editPost;
 	const { unlockPostSaving } = useDispatch('core/editor');
 	const venueTermId = useSelect((select) =>
-		select('core/editor').getEditedPostAttribute('_gp_venue')
+		select('core/editor').getEditedPostAttribute('_gatherpress_venue')
 	);
 	const venueTerm = useSelect((select) =>
-		select('core').getEntityRecord('taxonomy', '_gp_venue', venueTermId)
+		select('core').getEntityRecord(
+			'taxonomy',
+			'_gatherpress_venue',
+			venueTermId
+		)
 	);
 	const slug = venueTerm?.slug.replace(/^_/, '');
 	const [venueSlug, setVenueSlug] = useState('');
 	const venueValue = venueTermId + ':' + venueSlug;
 	const venuePost = useSelect((select) =>
-		select('core').getEntityRecords('postType', 'gp_venue', {
+		select('core').getEntityRecords('postType', 'gatherpress_venue', {
 			per_page: 1,
 			slug: venueSlug,
 		})
@@ -59,7 +63,8 @@ const VenueSelector = () => {
 		let venueInformation = {};
 
 		if (venueSlug && Array.isArray(venuePost)) {
-			const jsonString = venuePost[0]?.meta?.venue_information ?? '{}';
+			const jsonString =
+				venuePost[0]?.meta?.gatherpress_venue_information ?? '{}';
 
 			if (jsonString) {
 				venueInformation = JSON.parse(jsonString);
@@ -95,10 +100,14 @@ const VenueSelector = () => {
 	}, [venueSlug, venuePost, slug, venueValue]);
 
 	let venues = useSelect((select) => {
-		return select('core').getEntityRecords('taxonomy', '_gp_venue', {
-			per_page: -1,
-			context: 'view',
-		});
+		return select('core').getEntityRecords(
+			'taxonomy',
+			'_gatherpress_venue',
+			{
+				per_page: -1,
+				context: 'view',
+			}
+		);
 	}, []);
 
 	if (venues) {
@@ -121,7 +130,7 @@ const VenueSelector = () => {
 
 		const term = '' !== value[0] ? [value[0]] : [];
 
-		editPost({ _gp_venue: term });
+		editPost({ _gatherpress_venue: term });
 		setVenueSlug(value[1]);
 		unlockPostSaving();
 	};

@@ -83,7 +83,7 @@ const Rsvp = ({
 
 	// Might be better way to do this, but should only run on frontend, not admin.
 	if ('undefined' === typeof adminpage) {
-		Modal.setAppElement('.gp-enabled');
+		Modal.setAppElement('.gatherpress-enabled');
 	}
 
 	const closeModal = (e) => {
@@ -183,12 +183,12 @@ const Rsvp = ({
 
 	const LoggedOutModal = () => {
 		return (
-			<div className="gp-modal gp-modal__rsvp">
-				<div className="gp-modal__header">
+			<div className="gatherpress-modal gatherpress-modal__rsvp">
+				<div className="gatherpress-modal__header">
 					{__('Login Required', 'gatherpress')}
 				</div>
-				<div className="gp-modal__content">
-					<div className="gp-modal__text">
+				<div className="gatherpress-modal__content">
+					<div className="gatherpress-modal__text">
 						{HtmlReactParser(
 							sprintf(
 								/* translators: %s: 'Login' (hyperlinked) */
@@ -196,18 +196,14 @@ const Rsvp = ({
 									'You must %s to RSVP to events.',
 									'gatherpress'
 								),
-								<a href={getFromGlobal('urls.loginUrl')}>
-									{_x(
-										'Login',
-										'Context: You must ~ to RSVP to events.',
-										'gatherpress'
-									)}
-								</a>
+								`<a href=${getFromGlobal('urls.loginUrl')}>
+									${_x('Login', 'Context: You must ~ to RSVP to events.', 'gatherpress')}
+								</a>`
 							)
 						)}
 					</div>
 					{'' !== getFromGlobal('urls.registrationUrl') && (
-						<div className="gp-modal__text">
+						<div className="gatherpress-modal__text">
 							{HtmlReactParser(
 								sprintf(
 									/* translators: %s: 'Register' (hyperlinked) */
@@ -215,29 +211,21 @@ const Rsvp = ({
 										'%s if you do not have an account.',
 										'gatherpress'
 									),
-									<a
-										href={getFromGlobal(
-											'urls.registrationUrl'
-										)}
-									>
-										{_x(
-											'Register',
-											'Context: ~ if you do not have an account.',
-											'gatherpress'
-										)}
-									</a>
+									`<a href=${getFromGlobal('urls.registrationUrl')}>
+										${_x('Register', 'Context: ~ if you do not have an account.', 'gatherpress')}
+									</a>`
 								)
 							)}
 						</div>
 					)}
 				</div>
-				<ButtonGroup className="gp-buttons wp-block-buttons">
-					<div className="gp-buttons__container wp-block-button">
+				<ButtonGroup className="gatherpress-buttons wp-block-buttons">
+					<div className="gatherpress-buttons__container wp-block-button">
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"
 							onClick={closeModal}
-							className="gp-buttons__button wp-block-button__link"
+							className="gatherpress-buttons__button wp-block-button__link"
 						>
 							{__('Close', 'gatherpress')}
 						</a>
@@ -264,16 +252,16 @@ const Rsvp = ({
 		}
 
 		return (
-			<div className="gp-modal gp-modal__rsvp">
-				<div className="gp-modal__header">
+			<div className="gatherpress-modal gatherpress-modal__rsvp">
+				<div className="gatherpress-modal__header">
 					{getModalLabel(rsvpStatus) ? (
 						getModalLabel(rsvpStatus)
 					) : (
 						<Spinner />
 					)}
 				</div>
-				<div className="gp-modal__content">
-					<div className="gp-modal__text">
+				<div className="gatherpress-modal__content">
+					<div className="gatherpress-modal__text">
 						{HtmlReactParser(
 							sprintf(
 								/* translators: %s: button label. */
@@ -288,12 +276,12 @@ const Rsvp = ({
 					{0 < maxGuestLimit &&
 						!rsvpAnonymous &&
 						'attending' === rsvpStatus && (
-							<div className="gp-modal__guests">
-								<label htmlFor="gp-guests">
+							<div className="gatherpress-modal__guests">
+								<label htmlFor="gatherpress-guests">
 									{__('Number of guests?', 'gatherpress')}
 								</label>
 								<input
-									id="gp-guests"
+									id="gatherpress-guests"
 									type="number"
 									min="0"
 									max={maxGuestLimit}
@@ -313,9 +301,9 @@ const Rsvp = ({
 							</div>
 						)}
 					{enableAnonymousRsvp && (
-						<div className="gp-modal__anonymous">
+						<div className="gatherpress-modal__anonymous">
 							<input
-								id="gp-anonymous"
+								id="gatherpress-anonymous"
 								type="checkbox"
 								onChange={(e) => {
 									const value = Number(e.target.checked);
@@ -331,10 +319,10 @@ const Rsvp = ({
 								checked={rsvpAnonymous}
 							/>
 							<label
-								htmlFor="gp-anonymous"
+								htmlFor="gatherpress-anonymous"
 								tabIndex="0"
-								className="gp-tooltip"
-								data-tooltip-id="gp-anonymous-tooltip"
+								className="gatherpress-tooltip"
+								data-tooltip-id="gatherpress-anonymous-tooltip"
 								data-tooltip-content={__(
 									'Only admins will see your identity.',
 									'gatherpress'
@@ -342,12 +330,12 @@ const Rsvp = ({
 							>
 								{__('List me as anonymous.', 'gatherpress')}
 							</label>
-							<Tooltip id="gp-anonymous-tooltip" />
+							<Tooltip id="gatherpress-anonymous-tooltip" />
 						</div>
 					)}
 				</div>
-				<ButtonGroup className="gp-buttons wp-block-buttons">
-					<div className="gp-buttons__container wp-block-button is-style-outline">
+				<ButtonGroup className="gatherpress-buttons wp-block-buttons">
+					<div className="gatherpress-buttons__container wp-block-button is-style-outline">
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"
@@ -362,17 +350,17 @@ const Rsvp = ({
 									'not_attending' === buttonStatus
 								)
 							}
-							className="gp-buttons__button wp-block-button__link"
+							className="gatherpress-buttons__button wp-block-button__link"
 						>
 							{buttonLabel}
 						</a>
 					</div>
-					<div className="gp-buttons__container wp-block-button">
+					<div className="gatherpress-buttons__container wp-block-button">
 						{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 						<a
 							href="#"
 							onClick={closeModal}
-							className="gp-buttons__button wp-block-button__link"
+							className="gatherpress-buttons__button wp-block-button__link"
 						>
 							{__('Close', 'gatherpress')}
 						</a>
@@ -381,15 +369,15 @@ const Rsvp = ({
 				{enableInitialDecline &&
 				'no_status' === rsvpStatus &&
 				1 !== rsvpAnonymous ? (
-					<ButtonGroup className="gp-buttons wp-block-buttons">
-						<div className="gp-buttons__container wp-block-button">
+					<ButtonGroup className="gatherpress-buttons wp-block-buttons">
+						<div className="gatherpress-buttons__container wp-block-button">
 							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 							<a
 								href="#"
 								onClick={(e) =>
 									onAnchorClick(e, 'not_attending', null)
 								}
-								className="gp-buttons__text-link"
+								className="gatherpress-buttons__text-link"
 							>
 								{_x(
 									'Not Attending',
@@ -407,13 +395,13 @@ const Rsvp = ({
 	};
 
 	return (
-		<div className="gp-rsvp">
-			<ButtonGroup className="gp-buttons wp-block-buttons">
-				<div className="gp-buttons__container  wp-block-button">
+		<div className="gatherpress-rsvp">
+			<ButtonGroup className="gatherpress-buttons wp-block-buttons">
+				<div className="gatherpress-buttons__container  wp-block-button">
 					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a
 						href="#"
-						className="gp-buttons__button wp-block-button__link"
+						className="gatherpress-buttons__button wp-block-button__link"
 						aria-expanded={selectorExpanded}
 						tabIndex="0"
 						onKeyDown={onSpanKeyDown}
@@ -435,11 +423,11 @@ const Rsvp = ({
 				</Modal>
 			</ButtonGroup>
 			{'no_status' !== rsvpStatus && (
-				<div className="gp-status">
+				<div className="gatherpress-status">
 					<RsvpStatusResponse type={type} status={rsvpStatus} />
 
 					{0 < rsvpGuests && (
-						<div className="gp-status__guests">
+						<div className="gatherpress-status__guests">
 							<span>
 								+{' '}
 								{sprintf(

@@ -868,7 +868,7 @@ msgid "There are no upcoming events."
 msgstr "Il n’y a aucun évènement à venir"
 
 #: build/blocks/event-date/index.js:1 build/editor.js:1 build/panels.js:1
-msgid "This event has already past."
+msgid "This event has already passed."
 msgstr "Cet évènement est déjà passé."
 
 #: includes/core/classes/settings/class-general.php:150

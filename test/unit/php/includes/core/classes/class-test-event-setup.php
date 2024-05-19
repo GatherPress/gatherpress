@@ -117,24 +117,22 @@ class Test_Event_Setup extends Base {
 	public function test_register_post_meta(): void {
 		$instance = Event_Setup::get_instance();
 
-		unregister_post_meta( Event::POST_TYPE, 'online_event_link' );
-		unregister_post_meta( Event::POST_TYPE, 'enable_anonymous_rsvp' );
+		unregister_post_meta( Event::POST_TYPE, 'gatherpress_online_event_link' );
+		unregister_post_meta( Event::POST_TYPE, 'gatherpress_enable_anonymous_rsvp' );
 
 		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
-		$this->assertArrayNotHasKey( 'online_event_link', $meta, 'Failed to assert that online_event_link does not exist.' );
-		$this->assertArrayNotHasKey( 'enable_anonymous_rsvp', $meta, 'Failed to assert that enable_anonymous_rsvp does not exist.' );
-		$this->assertArrayNotHasKey( 'max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does not exist.' );
-		$this->assertArrayNotHasKey( 'max_guest_limit', $meta, 'Failed to assert that max_guest_limit does not exist.' );
+		$this->assertArrayNotHasKey( 'gatherpress_online_event_link', $meta, 'Failed to assert that gatherpress_online_event_link does not exist.' );
+		$this->assertArrayNotHasKey( 'gatherpress_enable_anonymous_rsvp', $meta, 'Failed to assert that gatherpress_enable_anonymous_rsvp does not exist.' );
+		$this->assertArrayNotHasKey( 'gatherpress_max_guest_limit', $meta, 'Failed to assert that gatherpress_max_guest_limit does not exist.' );
 
 		$instance->register_post_meta();
 
 		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
-		$this->assertArrayHasKey( 'online_event_link', $meta, 'Failed to assert that online_event_link does exist.' );
-		$this->assertArrayHasKey( 'enable_anonymous_rsvp', $meta, 'Failed to assert that enable_anonymous_rsvp does exist.' );
-		$this->assertArrayHasKey( 'max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
-		$this->assertArrayHasKey( 'max_guest_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
+		$this->assertArrayHasKey( 'gatherpress_online_event_link', $meta, 'Failed to assert that gatherpress_online_event_link does exist.' );
+		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $meta, 'Failed to assert that gatherpress_enable_anonymous_rsvp does exist.' );
+		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $meta, 'Failed to assert that gatherpress_max_guest_limit does exist.' );
 	}
 
 	/**

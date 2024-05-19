@@ -39,10 +39,10 @@ const EventSettings = () => {
 	return (
 		isEventPostType() && (
 			<PluginDocumentSettingPanel
-				name="gp-event-settings"
+				name="gatherpress-event-settings"
 				title={__('Event settings', 'gatherpress')}
 				initialOpen={true}
-				className="gp-event-settings"
+				className="gatherpress-event-settings"
 			>
 				<VStack spacing={6}>
 					<DateTimeRangePanel />
@@ -60,30 +60,30 @@ const EventSettings = () => {
 };
 
 /**
- * Registers the 'gp-event-settings' plugin.
+ * Registers the 'gatherpress-event-settings' plugin.
  *
- * This function registers a custom plugin named 'gp-event-settings' and
+ * This function registers a custom plugin named 'gatherpress-event-settings' and
  * associates it with the `EventSettings` component for rendering.
  *
  * @since 1.0.0
  *
  * @return {void}
  */
-registerPlugin('gp-event-settings', {
+registerPlugin('gatherpress-event-settings', {
 	render: EventSettings,
 });
 
 /**
- * Toggles the visibility of the 'gp-event-settings' panel in the Block Editor.
+ * Toggles the visibility of the 'gatherpress-event-settings' panel in the Block Editor.
  *
  * This function uses the `dispatch` function from the `@wordpress/data` package
- * to toggle the visibility of the 'gp-event-settings' panel in the Block Editor.
- * The panel is identified by the string 'gp-event-settings/gp-event-settings'.
+ * to toggle the visibility of the 'gatherpress-event-settings' panel in the Block Editor.
+ * The panel is identified by the string 'gatherpress-event-settings/gatherpress-event-settings'.
  *
  * @since 1.0.0
  *
  * @return {void}
  */
 dispatch('core/edit-post').toggleEditorPanelOpened(
-	'gp-event-settings/gp-event-settings'
+	'gatherpress-event-settings/gatherpress-event-settings'
 );

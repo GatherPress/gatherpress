@@ -32,7 +32,7 @@ const GuestLimit = () => {
 
 	let defaultGuestLimit = useSelect((select) => {
 		return select('core/editor').getEditedPostAttribute('meta')
-			.max_guest_limit;
+			.gatherpress_max_guest_limit;
 	}, []);
 
 	if (isNewEvent) {
@@ -47,7 +47,7 @@ const GuestLimit = () => {
 
 	const updateGuestLimit = useCallback(
 		(value) => {
-			const meta = { max_guest_limit: Number(value) };
+			const meta = { gatherpress_max_guest_limit: Number(value) };
 
 			setGuestLimit(value);
 			editPost({ meta });

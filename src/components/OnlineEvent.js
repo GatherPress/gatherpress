@@ -46,8 +46,8 @@ const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 					<>
 						<span
 							tabIndex="0"
-							className="gp-tooltip"
-							data-tooltip-id="gp-online-event-tooltip"
+							className="gatherpress-tooltip"
+							data-tooltip-id="gatherpress-online-event-tooltip"
 							data-tooltip-content={__(
 								'Link available for attendees only.',
 								'gatherpress'
@@ -55,7 +55,7 @@ const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 						>
 							{text}
 						</span>
-						<Tooltip id="gp-online-event-tooltip" />
+						<Tooltip id="gatherpress-online-event-tooltip" />
 					</>
 				)}
 				{onlineEventLink && (
