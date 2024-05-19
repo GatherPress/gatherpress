@@ -31,7 +31,7 @@ const MaxAttendanceLimit = () => {
 	// eslint-disable-next-line no-shadow
 	let defaultMaxAttendanceLimit = useSelect((select) => {
 		return select('core/editor').getEditedPostAttribute('meta')
-			.max_attendance_limit;
+			.gatherpress_max_attendance_limit;
 	}, []);
 
 	if (isNewEvent) {
