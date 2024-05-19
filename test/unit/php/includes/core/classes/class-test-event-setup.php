@@ -131,10 +131,10 @@ class Test_Event_Setup extends Base {
 
 		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
-		$this->assertArrayHasKey( 'online_event_link', $meta, 'Failed to assert that online_event_link does exist.' );
-		$this->assertArrayHasKey( 'enable_anonymous_rsvp', $meta, 'Failed to assert that enable_anonymous_rsvp does exist.' );
-		$this->assertArrayHasKey( 'max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
-		$this->assertArrayHasKey( 'max_guest_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
+		$this->assertArrayHasKey( 'gatherpress_online_event_link', $meta, 'Failed to assert that gatherpress_online_event_link does exist.' );
+		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $meta, 'Failed to assert that gatherpress_enable_anonymous_rsvp does exist.' );
+		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
+		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $meta, 'Failed to assert that gatherpress_max_guest_limit does exist.' );
 	}
 
 	/**
