@@ -9,6 +9,8 @@
  * @since 1.0.0
  */
 
+declare(strict_types = 1);
+
 namespace GatherPress\Core;
 
 // Exit if accessed directly.
@@ -25,7 +27,7 @@ use WP_Post;
  *
  * @since 1.0.0
  */
-class Event_Setup {
+final class Event_Setup {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -38,7 +40,7 @@ class Event_Setup {
 	 *
 	 * @since 1.0.0
 	 */
-	public function __construct() {
+	private function __construct() {
 		$this->setup_hooks();
 	}
 
@@ -192,7 +194,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'max_attendance_limit'   => array(
+			'gatherpress_max_attendance_limit'   => array(
 				'auth_callback'    => function () {
 					return current_user_can( 'edit_posts' );
 				},
