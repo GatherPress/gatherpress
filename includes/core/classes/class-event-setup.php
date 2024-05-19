@@ -9,8 +9,6 @@
  * @since 1.0.0
  */
 
-declare(strict_types = 1);
-
 namespace GatherPress\Core;
 
 // Exit if accessed directly.
@@ -27,7 +25,7 @@ use WP_Post;
  *
  * @since 1.0.0
  */
-final class Event_Setup {
+class Event_Setup {
 	/**
 	 * Enforces a single instance of this class.
 	 */
@@ -40,7 +38,7 @@ final class Event_Setup {
 	 *
 	 * @since 1.0.0
 	 */
-	private function __construct() {
+	public function __construct() {
 		$this->setup_hooks();
 	}
 
