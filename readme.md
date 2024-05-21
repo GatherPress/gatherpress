@@ -69,6 +69,7 @@ This plugin leverages the following third-party libraries for various functional
 
 ## Screenshots
 
+
 ## Installation
 
 1. Download the plugin: you'll find the latest release on the GatherPress GitHub repository, under [Releases](https://github.com/GatherPress/gatherpress/releases) > Assets and download `gatherpress.zip`.
