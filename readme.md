@@ -1,10 +1,10 @@
 # GatherPress
 
-Stable tag: 0.29.0-alpha
+Stable tag: 0.29.0
 Tested up to: 6.5.2
 License: GPL v2 or later
 Tags: events, event, meetup, community
-Contributors: mauteri, hrmervin, patricia70, jmarx, pbrocks, prashantabellad, prayagm, javiercasares, linusx007, meaganhanes, stephenerdelyi, nilovelez, carstenbach
+Contributors: mauteri, hrmervin, patricia70, jmarx, pbrocks, prayagm, linusx007, stephenerdelyi, carstenbach, calebthedev
 
 ![](.wordpress-org/banner-1544x500.jpg)
 
@@ -67,16 +67,7 @@ This plugin leverages the following third-party libraries for various functional
 - [React-Modal](https://github.com/reactjs/react-modal): Facilitates the creation of modal dialogs in React components.
 - [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips for React applications.
 
-
-### Credits
-
-Thanks to the following folks for contributing to GatherPress:
-[Mike Auteri](https://profiles.wordpress.org/mauteri/), [Mervin Hernandez](https://profiles.wordpress.org/hrmervin/), [Patricia BT](https://profiles.wordpress.org/patricia70/), [jmarx](https://profiles.wordpress.org/jmarx/), [Paul Barthmaier (pbrocks)](https://profiles.wordpress.org/pbrocks/), [prashantabellad](https://profiles.wordpress.org/prashantabellad/), [Prayag Mankar](https://profiles.wordpress.org/prayagm/), [Javier Casares](https://profiles.wordpress.org/javiercasares/), [linusx007](https://profiles.wordpress.org/linusx007/), [meagan hanes](https://profiles.wordpress.org/meaganhanes/), [Steve Erdelyi](https://profiles.wordpress.org/stephenerdelyi/), [Nilo Velez](https://profiles.wordpress.org/nilovelez/) & [Carsten Bach](https://profiles.wordpress.org/carstenbach/)
-
-
 ## Screenshots
-
-
 
 
 ## Installation
