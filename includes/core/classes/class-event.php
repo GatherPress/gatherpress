@@ -725,7 +725,8 @@ class Event {
 
 			if (
 				! isset( $user['status'] ) ||
-				'attending' !== $user['status']
+				'attending' !== $user['status'] ||
+				$this->has_event_past()
 			) {
 				return '';
 			}
