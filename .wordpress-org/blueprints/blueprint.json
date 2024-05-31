@@ -1,0 +1,67 @@
+{
+    "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+    "landingPage": "https://playground.wordpress.net/events",
+    "preferredVersions": {
+      "php": "8.2",
+      "wp": "beta"
+    },
+    "phpExtensionBundles": [
+      "kitchen-sink"
+    ],
+    "features": {
+      "networking": true
+    },
+    "steps": [
+      {
+        "step": "setSiteOptions",
+        "options": {
+          "blogname": "GatherPress",
+          "blogdescription": "Powering Communities with WordPress.",
+          "users_can_register": 1,
+          "permalink_structure": "/%year%/%monthnum%/%postname%/"
+        }
+      },
+      {
+        "step": "runPHP",
+        "code": "<?php require '/wordpress/wp-load.php'; $user_id = wp_create_user('editor', 'editorpass', 'editor@localhost.test'); (new WP_User($user_id))->set_role('editor');"
+      },
+      {
+        "step": "login",
+        "username": "admin",
+        "password": "password"
+      },
+      {
+          "step": "writeFile",
+          "path": "/wordpress/assets.zip",
+          "data": {
+              "resource": "url",
+              "url": "https://raw.githubusercontent.com/GatherPress/gatherpress/main/.wordpress-org/blueprints/playground-assets.zip",
+              "caption": "Downloading CI/CD prepared assets."
+          },
+          "progress": {
+              "weight": 2,
+              "caption": "Applying CI/CD prepared assets."
+          }
+      },
+      {
+          "step": "unzip",
+          "zipFile": {
+            "resource": "vfs",
+            "path": "/wordpress/assets.zip"
+          },
+          "extractToPath": "/wordpress"
+      },
+      {
+        "step": "wp-cli",
+        "command": "wp plugin activate gatherpress"
+      },
+      {
+        "step": "importWxr",
+        "file": {
+          "resource": "vfs",
+          "path": "/wordpress/wp-content/uploads/gatherpress-demo-data/GatherPress-demo-data-2024.xml"
+        }
+      }
+    ]
+  }
+  
