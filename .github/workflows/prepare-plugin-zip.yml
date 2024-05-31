@@ -3,6 +3,12 @@ name: Prepare a .zip file with the current state of the plugin
 
 on:
   pull_request:
+    paths:
+    - 'build/**'
+    - 'includes/**'
+    - 'languages/**'
+    - 'src/**'
+    - '${{ github.event.repository.name }}.php'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
