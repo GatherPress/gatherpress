@@ -53,7 +53,7 @@ class Event_Query {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'pre_get_posts', array( $this, 'prepare_event_query_before_execution' ) );
-		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ) );
+		add_filter( 'posts_clauses', array( $this, 'adjust_admin_event_sorting' ), 10, 2 );
 	}
 
 	/**
@@ -231,10 +231,10 @@ class Event_Query {
 		switch ( $events_query ) {
 			case 'upcoming':
 				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
+				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ), 10, 2 );
 				break;
 			case 'past':
-				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ) );
+				add_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_past_events' ), 10, 2 );
 				remove_filter( 'posts_clauses', array( $this, 'adjust_sorting_for_upcoming_events' ) );
 				break;
 			default:
@@ -251,12 +251,23 @@ class Event_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $query_pieces An array containing pieces of the SQL query.
+	 * @see https://developer.wordpress.org/reference/hooks/posts_clauses/
+	 *
+	 * @param array    $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query $query        The WP_Query instance (passed by reference).
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
-	public function adjust_sorting_for_upcoming_events( array $query_pieces ): array {
-		global $wp_query;
-		return $this->adjust_event_sql( $query_pieces, 'upcoming', $wp_query->get( 'order' ) );
+	public function adjust_sorting_for_upcoming_events( array $query_pieces, \WP_Query $query ): array {
+
+
+		// \error_log( 'adjust_sorting_for_upcoming_events: ' . \var_export( $query, true ) );
+
+		return $this->adjust_event_sql(
+			$query_pieces,
+			'upcoming',
+			$query->get( 'order' ),
+			$query->get( 'orderby' )
+		);
 	}
 
 	/**
@@ -265,15 +276,17 @@ class Event_Query {
 	 * This method modifies the SQL query pieces, including join, where, orderby, etc., to adjust the sorting criteria
 	 * for past events in the query. It ensures that events are ordered by their start datetime in the desired order.
 	 *
-	 * @param array $query_pieces An array containing pieces of the SQL query.
-	 *
+	 * @param array    $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query $query        The WP_Query instance (passed by reference).
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
-	public function adjust_sorting_for_past_events( array $query_pieces ): array {
-
-		global $wp_query;
-		// return $this->adjust_event_sql( $query_pieces, 'past' );
-		return $this->adjust_event_sql( $query_pieces, 'past', $wp_query->get( 'order' ) );
+	public function adjust_sorting_for_past_events( array $query_pieces, \WP_Query $query ): array {
+		return $this->adjust_event_sql(
+			$query_pieces,
+			'past',
+			$query->get( 'order' ),
+			$query->get( 'orderby' )
+		);
 	}
 
 	/**
@@ -284,18 +297,17 @@ class Event_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $query_pieces An array containing pieces of the SQL query.
+	 * @param array    $query_pieces An array containing pieces of the SQL query.
+	 * @param WP_Query $query        The WP_Query instance (passed by reference).
 	 * @return array The modified SQL query pieces with adjusted sorting criteria.
 	 */
-	public function adjust_admin_event_sorting( array $query_pieces ): array {
+	public function adjust_admin_event_sorting( array $query_pieces, \WP_Query $query ): array {
 		if ( ! is_admin() ) {
 			return $query_pieces;
 		}
 
-		global $wp_query;
-
-		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
-			$query_pieces = $this->adjust_event_sql( $query_pieces, 'all', $wp_query->get( 'order' ) );
+		if ( 'datetime' === $query->get( 'orderby' ) ) {
+			$query_pieces = $this->adjust_event_sql( $query_pieces, 'all', $query->get( 'order' ) );
 		}
 
 		return $query_pieces;
@@ -308,6 +320,10 @@ class Event_Query {
 	 * the `gatherpress_events` table in the database join. It allows querying events based on different
 	 * criteria such as upcoming or past events and specifying the event order (DESC or ASC).
 	 *
+	 * @see https://developer.wordpress.org/reference/hooks/posts_join/
+	 * @see https://developer.wordpress.org/reference/hooks/posts_orderby/
+	 * @see https://developer.wordpress.org/reference/hooks/posts_where/
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param array  $pieces An array of query pieces, including join, where, orderby, and more.
@@ -315,7 +331,7 @@ class Event_Query {
 	 * @param string $order  The event order ('DESC' for descending or 'ASC' for ascending).
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
-	public function adjust_event_sql( array $pieces, string $type = 'all', string $order = 'DESC' ): array {
+	public function adjust_event_sql( array $pieces, string $type = 'all', string $order = 'DESC', array|string $order_by = ['datetime'] ): array {
 		global $wpdb;
 
 		$defaults        = array(
@@ -328,13 +344,33 @@ class Event_Query {
 			'limits'   => '',
 		);
 		$pieces          = array_merge( $defaults, $pieces );
-		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix ); // could also (just) be $wpdb->{gatherpress_events}
 		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID='
 						. esc_sql( $table ) . '.post_id';
 		$order           = strtoupper( $order );
-
 		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
-			$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
+			
+			// ORDERBY is an array, which allows to orderby multiple values.
+			// Currently it is only allowed to order events by ONE value.
+			$order_by = ( is_array( $order_by ) ) ? $order_by[0] : $order_by;
+			switch ( $order_by ) {
+				case 'id':
+					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.ID %s', esc_sql( $order ) );
+					break;
+
+				case 'title':
+					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_name %s', esc_sql( $order ) );
+					break;
+
+				case 'rand':
+					$pieces['orderby'] = esc_sql( 'RAND()' );
+					break;
+					
+				case 'datetime':
+				default:
+					$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
+					break;
+			}
 		}
 
 		if ( 'all' === $type ) {
@@ -344,9 +380,9 @@ class Event_Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
 		if ( 'upcoming' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt >= %s', $table, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt >= %s', $event_table, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 		} elseif ( 'past' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt < %s', $table, $current ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt < %s', $event_table, $current ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 		}
 
 		return $pieces;
