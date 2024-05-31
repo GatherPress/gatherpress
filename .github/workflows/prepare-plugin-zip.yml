@@ -9,7 +9,7 @@ on:
     - 'includes/**'
     - 'languages/**'
     - 'src/**'
-    - '${{ github.event.repository.name }}.php'
+    - '*.php'
   # What and Why pull_request_target?
   # https://github.com/GatherPress/gatherpress/pull/666#issuecomment-2143088443
   # pull_request_target:
