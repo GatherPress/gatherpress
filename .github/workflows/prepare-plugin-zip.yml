@@ -53,5 +53,19 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}.zip
-          path: ./${{ github.event.repository.name }}.zip
+          path: ./${{ github.event.repository.name }}
 
+  comment-playground-link:
+    name: Comment with playground link
+    needs: prepare-plugin-zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '👋 (Not, yet) A link to a *WordPress playground* instance with your least recent changes to GatherPress.'
+            })
