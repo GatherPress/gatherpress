@@ -4,6 +4,7 @@ name: Prepare a .zip file with the current state of the plugin
 on:
   pull_request:
     paths:
+    - '.github' # ONLY DURING DEVELOPMENT # REMOVE !!!!
     - 'build/**'
     - 'includes/**'
     - 'languages/**'
