@@ -44,13 +44,14 @@ jobs:
         run: npm ci
 
       - name: Build plugin
+        # - [Incorrect version number used when creating zip archive · Issue #92 · wp-cli/dist-archive-command](https://github.com/wp-cli/dist-archive-command/issues/92)
         run: |
           npm run build
-          wp dist-archive . ./${{ github.event.repository.name }}.zip
+          wp dist-archive . ./${{ github.event.repository.name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-plugin
+          name: ${{ github.event.repository.name }}.zip
           path: ./${{ github.event.repository.name }}.zip
 
