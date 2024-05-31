@@ -37,6 +37,7 @@ We're creating the very network features we need to host events and gather well.
 
 - Event Scheduling: set dates, times, and provide event information details.
 - Attendee registration.
+- Allow attendees to add guests.
 - Ability for attendees to be listed anonymously (only administrators will see their names).
 - Emailing system: to send emails to all the group members, or a specific event attendees, non-attendees, and those on the waiting list.
 - In person events: add the venue, with an optional map (refer to point 4)
@@ -49,7 +50,6 @@ We're creating the very network features we need to host events and gather well.
 
 ### Upcoming features
 
-- Allow attendees to add guests. ([#](https://github.com/GatherPress/gatherpress/issues/86))
 - Import events from meetup.com with an add-on plugin. ([#](https://github.com/GatherPress/gatherpress/issues/394))
 - Recurring events. ([#](https://github.com/GatherPress/gatherpress/issues/80))
 - Calendar block. ([#](https://github.com/GatherPress/gatherpress/issues/369))
@@ -155,6 +155,9 @@ GatherPress‘ best-practices:
 - Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
 - [JavaScript & PHP Unit tests](https://sonarcloud.io/summary/new_code?id=GatherPress_gatherpress&branch=main) are covering almost 80% of the whole codebase.
 
+### Reminder that GatherPress is still in Alpha
+
+As we continue to refine and develop the plugin, please use the [GatherPress Alpha](https://github.com/GatherPress/gatherpress-alpha) plugin alongside the core GatherPress plugin. The Alpha plugin manages breaking changes easily: just make sure it is up-to-date, activate it, go to the Alpha section under GatherPress Settings, and click "Fix GatherPress!" after updating GatherPress. This process helps us avoid technical debt as we work towards launching version 1.0.0 of the plugin.
 
 ## Changelog
 
