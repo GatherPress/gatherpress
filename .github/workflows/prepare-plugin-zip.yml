@@ -1,0 +1,56 @@
+name: Prepare a .zip file with the current state of the plugin
+# Inspired by, but not based on https://github.com/WordPress/gutenberg/blob/b89fb7b6eaf619bde0269e2a7fbf6245822f6cbf/.github/workflows/build-plugin-zip.yml#L153
+
+on:
+  pull_request:
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+    # The concurrency group contains the workflow name and the branch name for pull requests
+    # or the commit hash for any other events.
+    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+    cancel-in-progress: true
+
+jobs:
+
+  prepare-plugin-zip:
+    name: Checkout current state into zip file
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: latest
+          coverage: none
+          tools: wp-cli
+
+      - name: Install latest version of dist-archive-command
+        run: wp package install wp-cli/dist-archive-command:dev-main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: |
+          npm run build
+          wp dist-archive . ./${{ github.event.repository.name }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-plugin
+          path: ./${{ github.event.repository.name }}.zip
+
