@@ -72,6 +72,7 @@ jobs:
 
   blueprint:
     name: Create blueprint.json
+    needs: zip
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v7
@@ -156,7 +157,7 @@ jobs:
     # https://github.com/actions/github-script?tab=readme-ov-file#comment-on-an-issue
     # vs.
     # https://docs.github.com/de/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment--parameters
-    needs: zip
+    needs: ['zip', 'blueprint']
     runs-on: ubuntu-latest
 
     steps:
