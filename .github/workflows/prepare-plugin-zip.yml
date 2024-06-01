@@ -78,6 +78,10 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
+            const prNumber = 7;
+            // Verify that the PR exists and that GitHub CI finished building it
+            // const zipArtifactUrl = `/plugin-proxy.php?org=WordPress&repo=gutenberg&workflow=Build%20Gutenberg%20Plugin%20Zip&artifact=gutenberg-plugin&pr=${prNumber}`;
+            const zipArtifactUrl = `https://github.com/GatherPress/gatherpress/actions/runs/9325733868/artifacts/1557944333`;
             // Get link to the Playground site with the Blueprint to download and apply the PR
             const blueprint = {
               landingPage: '/wp-admin/',
