@@ -28,7 +28,7 @@ permissions:
 jobs:
 
   zip:
-    name: Checkout current state into zip file
+    name: Build GatherPress Plugin Zip
     runs-on: ubuntu-latest
     steps:
 
