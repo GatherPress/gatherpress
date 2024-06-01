@@ -61,11 +61,96 @@ jobs:
         # - [Incorrect version number used when creating zip archive · Issue #92 · wp-cli/dist-archive-command](https://github.com/wp-cli/dist-archive-command/issues/92)
         run: |
           npm run build
-          wp dist-archive . ./${{ github.event.repository.name }}-pr.zip
+          wp dist-archive . ./${{ github.event.repository.name }}.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
+          # name: ${{ github.event.repository.name }}-PR
+          name: pr
+          path: ./${{ github.event.repository.name }}.zip
+
+  blueprint:
+    name: Create blueprint.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            // Get link to the Playground site with the Blueprint to download and apply the PR
+            const blueprint = {
+              landingPage: '/wp-admin/',
+              steps: [
+                {
+                  step: 'login',
+                  username: 'admin',
+                  password: 'password',
+                },
+                {
+                  step: 'mkdir',
+                  path: '/wordpress/pr',
+                },
+                /*
+                * This is the most important step.
+                * It download the built plugin zip file exposed by GitHub CI.
+                *
+                * Because the zip file is not publicly accessible, we use the
+                * plugin-proxy API endpoint to download it. The source code of
+                * that endpoint is available at:
+                * https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/plugin-proxy.php
+                */
+                {
+                  step: 'writeFile',
+                  path: '/wordpress/pr/pr.zip',
+                  data: {
+                    resource: 'url',
+                    url: zipArtifactUrl,
+                    caption: `Downloading GatherPress PR ${prNumber}`,
+                  },
+                  progress: {
+                    weight: 2,
+                    caption: `Applying GatherPress PR ${prNumber}`,
+                  },
+                },
+                /**
+                * GitHub CI artifacts are doubly zipped:
+                *
+                * pr.zip
+                *    gatherpress.zip
+                *       gatherpress.php
+                *       ... other files ...
+                *
+                * This step extracts the inner zip file so that we get
+                * access directly to gatherpress.zip and can use it to
+                * install the plugin.
+                */
+                {
+                  step: 'unzip',
+                  zipPath: '/wordpress/pr/pr.zip',
+                  extractToPath: '/wordpress/pr',
+                },
+                {
+                  step: 'installPlugin',
+                  pluginZipFile: {
+                    resource: 'vfs',
+                    path: '/wordpress/pr/gatherpress.zip',
+                  },
+                },
+              ],
+            };
+            console.log( blueprint );
+            const encoded = JSON.stringify(blueprint);
+            console.log( encodeURI(encoded) );
+
+          # Run a separate file
+          # If you don't want to inline your entire script that you want to run, you can use a separate JavaScript module in your repository like so:
+          # - uses: actions/checkout@v3
+          # - uses: actions/github-script@v7
+          #   with:
+          #     script: |
+          #       const script = require('./path/to/script.js')
+          #       console.log(script({github, context}))
+
   comment:
     name: Comment with playground link
     # https://github.com/actions/github-script?tab=readme-ov-file#comment-on-an-issue
