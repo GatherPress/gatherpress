@@ -27,7 +27,7 @@ permissions:
 
 jobs:
 
-  prepare-plugin-zip:
+  zip:
     name: Checkout current state into zip file
     runs-on: ubuntu-latest
     steps:
@@ -66,15 +66,12 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ github.event.repository.name }}-PR
-          path: ./${{ github.event.repository.name }}-pr.zip
-
-  comment-playground-link:
+  comment:
     name: Comment with playground link
     # https://github.com/actions/github-script?tab=readme-ov-file#comment-on-an-issue
     # vs.
     # https://docs.github.com/de/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment--parameters
-    needs: prepare-plugin-zip
+    needs: zip
     runs-on: ubuntu-latest
 
     steps:
