@@ -62,8 +62,7 @@ jobs:
         # - [Incorrect version number used when creating zip archive · Issue #92 · wp-cli/dist-archive-command](https://github.com/wp-cli/dist-archive-command/issues/92)
         run: |
           npm run build
-          ls -l
-          wp dist-archive ./gatherpress/ ./${{ github.event.repository.name }}.zip
+          wp dist-archive . ./${{ github.event.repository.name }}.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
