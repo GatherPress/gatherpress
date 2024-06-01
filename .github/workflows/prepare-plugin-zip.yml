@@ -16,10 +16,14 @@ on:
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
-    # The concurrency group contains the workflow name and the branch name for pull requests
-    # or the commit hash for any other events.
-    group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
-    cancel-in-progress: true
+  # The concurrency group contains the workflow name and the branch name for pull requests
+  # or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+# Permission can be added at job level or workflow level
+permissions:
+  contents: write   # This is required to create/push the new git tag
 
 jobs:
 
@@ -72,10 +76,6 @@ jobs:
     # https://docs.github.com/de/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment--parameters
     needs: prepare-plugin-zip
     runs-on: ubuntu-latest
-
-    # Permission can be added at job level or workflow level
-    permissions:
-      contents: write   # This is required to create/push the new git tag
 
     steps:
       - name: Add comment (& log context attributes)
