@@ -37,7 +37,7 @@ phpcs.xml.dist
 phpcs.ruleset.xml
 playwright.config.js
 sonar-project.properties
-README.md
+; README.md
 webpack.config.js
 wp-cli.local.yml
 .wordpress-version-checker.json
