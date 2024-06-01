@@ -81,6 +81,7 @@ jobs:
       - name: Add comment (& log context attributes)
         uses: actions/github-script@v7
         with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
             # console.log(context);
           script: |
             github.rest.issues.createComment({
