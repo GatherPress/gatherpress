@@ -66,7 +66,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          # name: ${{ github.event.repository.name }}-PR
           name: ${{ github.event.repository.name }}-pr
           path: ./${{ github.event.repository.name }}.zip
 
@@ -79,7 +78,8 @@ jobs:
         with:
           # Based on: https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/gutenberg.html
           script: |
-            const prNumber = 666;
+            // const prNumber = 666;
+            const prNumber = context.issue.number;
             // Verify that the PR exists and that GitHub CI finished building it
             // const zipArtifactUrl = `/plugin-proxy.php?org=WordPress&repo=gutenberg&workflow=Build%20Gutenberg%20Plugin%20Zip&artifact=gutenberg-plugin&pr=${prNumber}`;
             const zipArtifactUrl = `https://carsten-bach.de/R/plugin-proxy.php?org=GatherPress&repo=gatherpress&workflow=Build%GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=${prNumber}`;
