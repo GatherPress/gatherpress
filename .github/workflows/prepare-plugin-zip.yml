@@ -99,6 +99,13 @@ jobs:
                   password: 'password',
                 },
                 {
+                  step: 'setSiteOptions',
+                  options: {
+                    blogname: 'GatherPress PR #${prNumber}',
+                    blogdescription: 'Testing pull_request #${prNumber} with playground',
+                  }
+                },
+                {
                   step: 'mkdir',
                   path: '/wordpress/pr',
                 },
@@ -117,11 +124,11 @@ jobs:
                   data: {
                     resource: 'url',
                     url: zipArtifactUrl,
-                    caption: `Downloading GatherPress PR ${prNumber}`,
+                    caption: `Downloading GatherPress PR #${prNumber}`,
                   },
                   progress: {
                     weight: 2,
-                    caption: `Applying GatherPress PR ${prNumber}`,
+                    caption: `Applying GatherPress PR #${prNumber}`,
                   },
                 },
                 /**
