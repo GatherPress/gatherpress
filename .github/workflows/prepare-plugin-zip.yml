@@ -85,7 +85,7 @@ jobs:
         with:
           # Based on: https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/gutenberg.html
           script: |
-          console.log(context.issue);
+            console.log(context.issue);
             const prNumber = context.issue.number;
             // Verify that the PR exists and that GitHub CI finished building it
             // const zipArtifactUrl = `/plugin-proxy.php?org=WordPress&repo=gutenberg&workflow=Build%20Gutenberg%20Plugin%20Zip&artifact=gutenberg-plugin&pr=${prNumber}`;
@@ -102,8 +102,8 @@ jobs:
                 {
                   step: 'setSiteOptions',
                   options: {
-                    blogname: 'GatherPress PR #${prNumber}',
-                    blogdescription: 'Testing pull_request #${prNumber} with playground',
+                    blogname: `GatherPress PR #${prNumber}`,
+                    blogdescription: `Testing pull_request #${prNumber} with playground`,
                   }
                 },
                 {
@@ -161,7 +161,7 @@ jobs:
             // console.log( blueprint );
             const encoded = JSON.stringify(blueprint);
             console.log( 'WordPress playground Builder: ','https://playground.wordpress.net/builder/builder.html?url=/wp-admin/plugins.php#' + encodeURI(encoded) );
-            console.log( 'Normal WordPress playground: ', 'https://playground.wordpress.net/&url=/wp-admin/edit.php?post_type=gatherpress_event#' + encodeURI(encoded) );
+            console.log( 'Normal WordPress playground: ', 'https://playground.wordpress.net/?url=/wp-admin/edit.php?post_type=gatherpress_event#' + encodeURI(encoded) );
             console.log( 'Seamless WordPress playground: ', 'https://playground.wordpress.net/?mode=seamless&url=/wp-admin/edit.php?post_type=gatherpress_event#' + encodeURI(encoded) );
 
           # Run a separate file
