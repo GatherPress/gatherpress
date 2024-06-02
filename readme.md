@@ -29,9 +29,8 @@ This project is for the collaborative effort to build a compelling event managem
 
 We're creating the very network features we need to host events and gather well.
 
-[video src="https://raw.githubusercontent.com/GatherPress/gatherpress/main/docs/media/GatherPress-demo-20240218.mp4"]
+<a href="https://gatherpress.org/demovideo" rel="GatherPress demo video">![GatherPress demo video](https://gatherpress.org/wp-content/uploads/2024/06/GatherPress-Youtube-placeholder.webp)</a>
 
-![Demo](docs/media/GatherPress-demo-20240218.mp4)
 
 ### Features
 
