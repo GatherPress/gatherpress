@@ -85,17 +85,17 @@ jobs:
         with:
           # Based on: https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/gutenberg.html
           script: |
-            // console.log(context.issue);
-            // const prNumber = context.issue.number;
-            // const repo = context.issue.repo;
-            // const owner = context.issue.owner;
-            const { issue: { prNumber, repo, owner } = {} } = context;
+            const { issue: { number, repo, owner } = {} } = context;
             const workflow = 'Build%20GatherPress%20Plugin%20Zip';
             const artifact = 'gatherpress-pr';
             const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
+
+            // TODO
             // Verify that the PR exists and that GitHub CI finished building it
-            // const zipArtifactUrl = `?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=${prNumber}`;
-            const zipArtifactUrl = `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${prNumber}`;
+            // ...
+
+            // const zipArtifactUrl = `?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=${number}`;
+            const zipArtifactUrl = `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
             // Get link to the Playground site with the Blueprint to download and apply the PR
               // landingPage: '/wp-admin/',  // Should be better set via query API param 'url'.
             const blueprint = {
@@ -108,8 +108,8 @@ jobs:
                 {
                   step: 'setSiteOptions',
                   options: {
-                    blogname: `${owner}/${repo} PR #${prNumber}`,
-                    blogdescription: `Testing pull_request #${prNumber} with playground`,
+                    blogname: `${owner}/${repo} PR #${number}`,
+                    blogdescription: `Testing pull_request #${number} with playground`,
                   }
                 },
                 {
@@ -131,11 +131,11 @@ jobs:
                   data: {
                     resource: 'url',
                     url: zipArtifactUrl,
-                    caption: `Downloading ${owner}/${repo} PR #${prNumber}`,
+                    caption: `Downloading ${owner}/${repo} PR #${number}`,
                   },
                   progress: {
                     weight: 2,
-                    caption: `Applying ${owner}/${repo} PR #${prNumber}`,
+                    caption: `Applying ${owner}/${repo} PR #${number}`,
                   },
                 },
                 /**
@@ -143,8 +143,9 @@ jobs:
                 *
                 * pr.zip
                 *    gatherpress.zip
-                *       gatherpress.php
-                *       ... other files ...
+                *       gatherpress/
+                *          gatherpress.php
+                *          ... other files ...
                 *
                 * This step extracts the inner zip file so that we get
                 * access directly to gatherpress.zip and can use it to
