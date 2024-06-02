@@ -166,6 +166,7 @@ jobs:
 
   comment:
     name: Comment with playground link
+    if: 1==2 # TEMP DISABLED
     # https://github.com/actions/github-script?tab=readme-ov-file#comment-on-an-issue
     # vs.
     # https://docs.github.com/de/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment--parameters
