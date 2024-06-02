@@ -36,6 +36,7 @@ jobs:
                       // First, find a blueprint.json file in the pull request
                       const blueprintFile = ( await github.rest.pulls.listFiles( prInfo ) ).data.filter( file => file.filename.endsWith( '/blueprint.json' ) )[0];
                       if ( !blueprintFile ) {
+                        console.log('Will this have the latest changes ????????????????');
                         return;
                       }
 
