@@ -85,11 +85,17 @@ jobs:
         with:
           # Based on: https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/gutenberg.html
           script: |
-            console.log(context.issue);
-            const prNumber = context.issue.number;
+            // console.log(context.issue);
+            // const prNumber = context.issue.number;
+            // const repo = context.issue.repo;
+            // const owner = context.issue.owner;
+            const { issue: { prNumber, repo, owner } = {} } = context;
+            const workflow = 'Build%20GatherPress%20Plugin%20Zip';
+            const artifact = 'gatherpress-pr';
+            const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
             // Verify that the PR exists and that GitHub CI finished building it
-            // const zipArtifactUrl = `/plugin-proxy.php?org=WordPress&repo=gutenberg&workflow=Build%20Gutenberg%20Plugin%20Zip&artifact=gutenberg-plugin&pr=${prNumber}`;
-            const zipArtifactUrl = `https://hub.carsten-bach.de/gatherpress/plugin-proxy.php?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=${prNumber}`;
+            // const zipArtifactUrl = `?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=${prNumber}`;
+            const zipArtifactUrl = `${proxy}/plugin-proxy.php?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${prNumber}`;
             // Get link to the Playground site with the Blueprint to download and apply the PR
               // landingPage: '/wp-admin/',  // Should be better set via query API param 'url'.
             const blueprint = {
@@ -102,7 +108,7 @@ jobs:
                 {
                   step: 'setSiteOptions',
                   options: {
-                    blogname: `GatherPress PR #${prNumber}`,
+                    blogname: `${owner}/${repo} PR #${prNumber}`,
                     blogdescription: `Testing pull_request #${prNumber} with playground`,
                   }
                 },
