@@ -162,6 +162,11 @@ jobs:
                     path: '/wordpress/pr/gatherpress.zip',
                   },
                 },
+                {
+                  "step": "writeFile",
+                  "path": "/wordpress/wp-content/mu-plugins/gatherpress-nightly-notice.php",
+                  "data": `<?php add_action('admin_notices', function() {  echo '<div class=\"notice notice-info is-dismissible\"><p>Thanks for testing <a href=\"https://github.com/${owner}/${repo}/pulls/${prNumber}/\">GatherPress PR #${prNumber}</a></p></div>'; });`
+                },
               ],
             };
             // console.log( blueprint );
