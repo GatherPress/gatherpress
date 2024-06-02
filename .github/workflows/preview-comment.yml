@@ -1,0 +1,81 @@
+# Responsible for making comments on pull requests, such as commenting for first time contributors.
+#
+# 100% Copy of
+# https://github.com/WordPress/blueprints/blob/7b4b1ac9eff1d79cc551dc0e6321fbf0bc029b8d/.github/workflows/preview-comment.yml
+name: Pull Request Comments
+
+on:
+    pull_request_target:
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+jobs:
+    # Leaves a comment on a pull request with a link to test the changes in a WordPress Playground instance.
+    playground-details:
+        name: Comment on a pull request with Playground details
+        runs-on: ubuntu-latest
+        permissions:
+            issues: write
+            pull-requests: write
+        steps:
+            - name: Leave a comment about testing with Playground
+              uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+              with:
+                  script: |
+                      const fs = require( 'fs' );
+                      const issue_number = context.payload.pull_request.number;
+
+                      const prInfo = {
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        pull_number: issue_number,
+                      };
+
+                      // First, find a blueprint.json file in the pull request
+                      const blueprintFile = ( await github.rest.pulls.listFiles( prInfo ) ).data.filter( file => file.filename.endsWith( '/blueprint.json' ) )[0];
+                      if ( !blueprintFile ) {
+                        return;
+                      }
+
+                      // Comments are only added after the first successful build. Check for the presence of a comment and bail early.
+                      const commentInfo = {
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number,
+                      };
+                      const comments = ( await github.rest.issues.listComments( commentInfo ) ).data;
+
+                      for ( const currentComment of comments ) {
+                        if ( currentComment.user.type === 'Bot' && currentComment.body.includes( 'Test using WordPress Playground' ) ) {
+                          commentInfo.comment_id = currentComment.id;
+                          break;
+                        }
+                      };
+
+                      // No comment was found. Create one.
+                      const branch_name = context.payload.pull_request.merged ? context.payload.repository.default_branch : context.payload.pull_request.head.ref;
+                      commentInfo.body = `## Test using WordPress Playground
+                      The changes in this pull request can previewed and tested using a [WordPress Playground](https://developer.wordpress.org/playground/) instance.
+
+                      [WordPress Playground](https://developer.wordpress.org/playground/) is an experimental project that creates a full WordPress instance entirely within the browser.
+
+                      ### Some things to be aware of
+                      - The Plugin and Theme Directories cannot be accessed within Playground.
+                      - All changes will be lost when closing a tab with a Playground instance.
+                      - All changes will be lost when refreshing the page.
+                      - A fresh instance is created each time the link below is clicked.
+                      - Every time this pull request is updated, a new ZIP file containing all changes is created. If changes are not reflected in the Playground instance,
+                      it's possible that the most recent build failed, or has not completed. Check the [list of workflow runs to be sure](https://github.com/WordPress/wordpress-develop/actions/workflows/wordpress-playground.yml).
+
+                      For more details about these limitations and more, check out the [Limitations page](https://wordpress.github.io/wordpress-playground/limitations/) in the WordPress Playground documentation.
+
+                      [Test this pull request with WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/${ context.payload.pull_request.head.repo.owner.login }/${ context.payload.pull_request.head.repo.name }/${ branch_name }/${ blueprintFile.filename }).
+                      `;
+
+                      if ( commentInfo.comment_id ) {
+                        await github.rest.issues.updateComment( commentInfo );
+                      } else {
+                        await github.rest.issues.createComment( commentInfo );
+                      }
