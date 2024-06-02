@@ -165,7 +165,7 @@ jobs:
                 {
                   "step": "writeFile",
                   "path": "/wordpress/wp-content/mu-plugins/gatherpress-nightly-notice.php",
-                  "data": `<?php add_action(\"admin_notices\", function() {  echo '<div class=\"notice notice-info is-dismissible\"><p>Thanks for testing <a href=\"https://github.com/${owner}/${repo}/pulls/${prNumber}/\">${owner}/${repo} PR #${prNumber}</a></p></div>'; });`
+                  "data": `<?php add_action(\"admin_notices\", function() {  echo "<div class=\"notice notice-info is-dismissible\"><p>Thanks for testing <a href=\"https://github.com/${owner}/${repo}/pulls/${number}/\">${owner}/${repo} PR #${number}</a></p></div>"; });`
                 },
               ],
             };
