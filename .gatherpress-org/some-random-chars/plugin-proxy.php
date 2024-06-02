@@ -1,6 +1,6 @@
 <?php
 /**
- * https://hub.carsten-bach.de/gatherpress/plugin-proxy.php?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=666
+ * https://gatherpress.org/some-random-chars/plugin-proxy.php?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=666
  * 
  * 
  * Based on: https://github.com/WordPress/wordpress-playground/blob/ca759ee3281837596bfdd9736bbea205104741b2/packages/playground/website/public/plugin-proxy.php
