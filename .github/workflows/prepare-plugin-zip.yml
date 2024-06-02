@@ -95,7 +95,7 @@ jobs:
             const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
             // Verify that the PR exists and that GitHub CI finished building it
             // const zipArtifactUrl = `?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=${prNumber}`;
-            const zipArtifactUrl = `${proxy}/plugin-proxy.php?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${prNumber}`;
+            const zipArtifactUrl = `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${prNumber}`;
             // Get link to the Playground site with the Blueprint to download and apply the PR
               // landingPage: '/wp-admin/',  // Should be better set via query API param 'url'.
             const blueprint = {
