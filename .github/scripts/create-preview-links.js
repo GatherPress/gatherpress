@@ -78,11 +78,16 @@ ${previewLinks}
 	};
 
 	if (existingComment) {
-		await github.rest.issues.updateComment({
+		// await github.rest.issues.updateComment({
+		// 	comment_id: existingComment.id,
+		// 	...commentObject,
+		// });
+		// return;
+		// Do not update, but delete and recreate Comment to have a new one after last commit.
+		await github.rest.issues.deleteComment({
 			comment_id: existingComment.id,
 			...commentObject,
 		});
-		return;
 	}
 
 	// Create a new comment if one doesn't exist
