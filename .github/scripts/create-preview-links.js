@@ -44,18 +44,18 @@ async function createPreviewLinksComment(github, context) {
 	const previewLinks = `
 - [Preview changes for **${context.repo.repo}**](https://playground.wordpress.net/#${createBlueprint(
 				context.repo,
-				context.payload.pull_request.head.ref
+				context.payload.pull_request.number
 			)})
 `;
 
 	const comment = `
-You can preview these changes by following the links below:
+You can preview these changes by following the link below:
 
 ${previewLinks}
 
-I will update this comment with the latest preview links as you push more changes to this PR.
-**⚠️ Note:** The preview sites are created using [WordPress Playground](https://wordpress.org/playground/). You can add content, edit settings, and test the themes as you would on a real site, but please note that changes are not saved between sessions.
+**⚠️ Note:** The preview is created using github-proxy.com, which loads the full (40MB) repo and does NO BUILD.
 `;
+// **⚠️ Note:** The preview sites are created using [WordPress Playground](https://wordpress.org/playground/). You can add content, edit settings, and test the themes as you would on a real site, but please note that changes are not saved between sessions.
 
 	const repoData = {
 		owner: context.repo.owner,
