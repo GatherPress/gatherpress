@@ -1,4 +1,36 @@
 {
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "https://playground.wordpress.net/events",
+  "preferredVersions": {
+    "php": "8.2",
+    "wp": "latest"
+  },
+  "phpExtensionBundles": [
+    "kitchen-sink"
+  ],
+  "features": {
+    "networking": true
+  },
+  "steps": [
+    {
+      "step": "setSiteOptions",
+      "options": {
+        "blogname": "GatherPress",
+        "blogdescription": "Powering Communities with WordPress.",
+        "users_can_register": 1,
+        "permalink_structure": "/%year%/%monthnum%/%postname%/"
+      }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require '/wordpress/wp-load.php'; $user_id = wp_create_user('editor', 'editorpass', 'editor@localhost.test'); (new WP_User($user_id))->set_role('editor');"
+    },
+    {
+      "step": "login",
+      "username": "admin",
+      "password": "password"
+    },
+    {
       "step": "installPlugin",
       "pluginZipFile": {
         "resource": "url",
