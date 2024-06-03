@@ -42,17 +42,12 @@ function createBlueprint(context, pr) {
  */
 async function createPreviewLinksComment(github, context) {
 	const previewLinks = `
-- [Preview changes for **${repo}**](https://playground.wordpress.net/#${createBlueprint(
+- [Preview changes for **${context.repo.repo}**](https://playground.wordpress.net/#${createBlueprint(
 				context.repo,
 				context.payload.pull_request.head.ref
 			)})
 `;
 
-// I've detected changes to the following themes in this PR: ${changedThemes
-// 		.map(
-// 			(changedThemes) => changedThemes.split(':')[0].split('_childof_')[0]
-// 		)
-// 		.join(', ')}.
 	const comment = `
 You can preview these changes by following the links below:
 
