@@ -419,7 +419,7 @@ class Setup {
 			update_option( 'gatherpress_suppress_membership_notification', true );
 		} else {
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/setup/membership-check.php', GATHERPRESS_CORE_PATH ),
+				sprintf( '%s/includes/templates/admin/setup/site-check.php', GATHERPRESS_CORE_PATH ),
 				array(),
 				true
 			);

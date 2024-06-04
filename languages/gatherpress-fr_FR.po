@@ -268,7 +268,7 @@ msgstr "Date : %s"
 msgid "Didn't Go"
 msgstr "Membre(s) n'ayant pas participé"
 
-#: includes/templates/admin/setup/membership-check.php:19
+#: includes/templates/admin/setup/site-check.php:19
 msgid "Dismiss forever"
 msgstr "Rejeter définitivement"
 
@@ -314,7 +314,7 @@ msgstr "Activer les RSVP anonymes"
 msgid "Enable Anonymous RSVP for New Events."
 msgstr "Activer les RSVP anonymes pour les nouveaux évènements"
 
-#: includes/templates/admin/setup/membership-check.php:14
+#: includes/templates/admin/setup/site-check.php:14
 msgid "enabling user registration here"
 msgstr "permettant l'enregistrement des utilisateur·rices ici"
 
@@ -879,7 +879,7 @@ msgstr "Format horaire"
 msgid "Time Zone"
 msgstr "Fuseau horaire"
 
-#: includes/templates/admin/setup/membership-check.php:12
+#: includes/templates/admin/setup/site-check.php:12
 msgid ""
 "To ensure GatherPress functions optimally, we recommend enabling user "
 "registration. You can do so by"
