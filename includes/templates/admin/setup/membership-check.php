@@ -15,9 +15,12 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 			<?php
 			printf(
 				/* translators: %s: "enabling user registration here" (hyperlinked) */
-				esc_html__( 'To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by %s', 'gatherpress' ),
+				esc_html__( 'To ensure GatherPress functions optimally, we recommend enabling user registration and setting your site\'s timezone. You can do so by %s and %s', 'gatherpress' ),
 				'<a href=' . esc_url( admin_url( 'options-general.php#users_can_register' ) ) . '>'
-				. esc_html_x( 'enabling user registration here', 'Context: To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by %s.', 'gatherpress' )
+				. esc_html_x( 'enabling user registration here', 'Context: To ensure GatherPress functions optimally, user registration and setting your site\'s timezone. You can do so by %s and %s.', 'gatherpress' )
+				. '</a>',
+				'<a href=' . esc_url( admin_url( 'options-general.php#timezone_string' ) ) . '>'
+				. esc_html_x( 'setting time zone here', 'Context: To ensure GatherPress functions optimally, user registration and setting your site\'s timezone. You can do so by %s and %s.', 'gatherpress' )
 				. '</a>'
 			);
 			?>
