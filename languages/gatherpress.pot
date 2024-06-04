@@ -491,16 +491,16 @@ msgid "Save Settings"
 msgstr ""
 
 #. translators: %s: "enabling user registration here" (hyperlinked)
-#: includes/templates/admin/setup/membership-check.php:15
+#: includes/templates/admin/setup/site-check.php:15
 msgid "To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by %s"
 msgstr ""
 
-#: includes/templates/admin/setup/membership-check.php:17
+#: includes/templates/admin/setup/site-check.php:17
 msgctxt "Context: To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by %s."
 msgid "enabling user registration here"
 msgstr ""
 
-#: includes/templates/admin/setup/membership-check.php:24
+#: includes/templates/admin/setup/site-check.php:24
 msgid "Dismiss forever"
 msgstr ""
 

@@ -10,7 +10,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 ?>
-	<div class="gatherpress-admin__membership-check notice notice-warning">
+	<div class="gatherpress-admin__site-check notice notice-warning">
 		<div>
 			<?php
 			printf(
