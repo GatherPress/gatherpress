@@ -34,7 +34,7 @@
       "step": "installPlugin",
       "pluginZipFile": {
         "resource": "url",
-        "url": "https://github-proxy.com/proxy/?repo=GatherPress/gatherpress&release=0.28.0&asset=gatherpress.zip"
+        "url": "https://github-proxy.com/proxy/?repo=GatherPress/gatherpress&release=0.29.0&asset=gatherpress.zip"
       }
     },
     {
