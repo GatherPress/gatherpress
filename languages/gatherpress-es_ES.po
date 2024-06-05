@@ -453,7 +453,7 @@ msgstr "Vista previa:"
 msgid "Save Settings"
 msgstr "Guardar ajustes"
 
-#: includes/templates/admin/setup/membership-check.php:24
+#: includes/templates/admin/setup/site-check.php:24
 msgid "Dismiss forever"
 msgstr "Descartar para siempre"
 
@@ -939,11 +939,11 @@ msgid "Enable Immediate \"Not Attending\" Option for Attendees."
 msgstr "Activar la opción inmediata «No asistir» para los asistentes."
 
 #. translators: %s: "enabling user registration here" (hyperlinked)
-#: includes/templates/admin/setup/membership-check.php:15
+#: includes/templates/admin/setup/site-check.php:15
 msgid "To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by %s"
 msgstr "Para que GatherPress funcione de forma óptima, te recomendamos que actives el registro de usuarios. Puedes hacerlo %s"
 
-#: includes/templates/admin/setup/membership-check.php:17
+#: includes/templates/admin/setup/site-check.php:17
 msgctxt "Context: To ensure GatherPress functions optimally, we recommend enabling user registration. You can do so by %s."
 msgid "enabling user registration here"
 msgstr "permitiendo el registro de usuarios aquí"

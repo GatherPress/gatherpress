@@ -83,7 +83,7 @@ class Test_Setup extends Base {
 	public function test_check_users_can_register(): void {
 		$instance                              = Setup::get_instance();
 		$users_can_register_name               = 'users_can_register';
-		$suppress_membership_notification_name = 'gatherpress_suppress_membership_notification';
+		$suppress_membership_notification_name = 'gatherpress_suppress_site_notification';
 
 		$this->mock->user( 'admin', 'gatherpress_general' );
 		$this->mock->wp(
