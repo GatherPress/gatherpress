@@ -106,28 +106,37 @@ class Block {
 	 * @return void
 	 */
 	public function register_block_patterns(): void {
+
+		/**
+		 * Mainly for use with the 'venue-details' block,
+		 * which is a group block under the hood
+		 * and uses this pattern as innerBlocks template.
+		 */
 		\register_block_pattern(
 			'gatherpress/venue-details',
             array(
                 'title'         => 'Invisible Venue Details Block Pattern',
-				// Even this paragraph seems useless, it's not.
+				// Even this post-title seems useless, it's not.
 				// It is the entry point for all our hooked blocks
 				// and as such absolutely important!
-                'content'       => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // this will a be hooked ;)
-                // 'content'       => '<!-- wp:post-title /-->', // this will a be hooked ;)
+                'content'       => '<!-- wp:post-title /-->', // this will a be hooked ;)
 				'inserter'      => false,
 				'source'        => 'plugin',
 			)
 		);
+
+		/**
+		 * Made to be used with the 'template' parameter
+		 * when registering of the 'gatherpress_event' post type.
+		 */
 		\register_block_pattern(
-			'gatherpress/venue-facts',
+			'gatherpress/venue-template',
             array(
-                'title'         => 'Invisible Venue Details Block Pattern',
+                'title'         => 'Invisible Venue Template Block Pattern',
 				// Even this paragraph seems useless, it's not.
 				// It is the entry point for all our hooked blocks
 				// and as such absolutely important!
-#                'content'       => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // this will a be hooked ;)
-                'content'       => '<!-- wp:post-title /-->', // this will a be hooked ;)
+                'content'       => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // this will a be hooked ;)
 				'inserter'      => false,
 				'source'        => 'plugin',
 			)
