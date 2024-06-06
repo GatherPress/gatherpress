@@ -113,6 +113,19 @@ class Block {
 				// Even this paragraph seems useless, it's not.
 				// It is the entry point for all our hooked blocks
 				// and as such absolutely important!
+                'content'       => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // this will a be hooked ;)
+                // 'content'       => '<!-- wp:post-title /-->', // this will a be hooked ;)
+				'inserter'      => false,
+				'source'        => 'plugin',
+			)
+		);
+		\register_block_pattern(
+			'gatherpress/venue-facts',
+            array(
+                'title'         => 'Invisible Venue Details Block Pattern',
+				// Even this paragraph seems useless, it's not.
+				// It is the entry point for all our hooked blocks
+				// and as such absolutely important!
 #                'content'       => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // this will a be hooked ;)
                 'content'       => '<!-- wp:post-title /-->', // this will a be hooked ;)
 				'inserter'      => false,
