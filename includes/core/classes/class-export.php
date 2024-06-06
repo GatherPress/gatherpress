@@ -15,6 +15,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Migrate;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
+use WP_Query;
 
 /**
  * Class Export.
@@ -52,9 +53,55 @@ class Export extends Migrate {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'wxr_export_skip_postmeta', array( $this, 'set_entry_point' ), 10, 3 );
-		add_action( 'gatherpress_export', array( $this, 'export' ) );
+		// add_filter( 'wxr_export_skip_postmeta', array( $this, 'set_entry_point' ), 10, 3 );
+		// add_action( 'gatherpress_export', array( $this, 'export' ) );
+
+		/**
+		 * Fires at the beginning of an export, before any headers are sent.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param array $args An array of export arguments.
+		 */
+		add_action( 'export_wp', function( $args ){
+
+			/**
+			 * Called via setup_postdata() at the beginning of each singular post export.
+			 *
+			 * Fires once the post data has been set up.
+			 *
+			 * @param WP_Post  $post  The Post object (passed by reference).
+			 * @param WP_Query $query The current Query object (passed by reference).
+			 */
+			add_action( 'the_post', function( WP_Post $post, WP_Query $query ) : void {
+				if ( self::validate_post( $post ) ) {
+					// Save a temporary marker, which allows to hook into the export process per post later on.
+					add_post_meta( $post->ID, 'do_export_event_meta', true );
+				}
+			}, 10, 2 );
+
+			/**
+			 * Filters whether to selectively skip post meta used for WXR exports.
+			 *
+			 * @param bool   $skip     Whether to skip the current post meta. Default false.
+			 * @param string $meta_key Current meta key.
+			 * @param object $meta     Current meta object.
+			 * @return bool            Whether to skip the current post meta. Default false.
+			 */
+			add_filter( 'wxr_export_skip_postmeta', function( bool $skip, string $meta_key, object $meta ) : bool {
+				if ( 'do_export_event_meta' === $meta_key ) {
+					// Echos out xml with pseudo-postmeta.
+					self::export( get_post( $meta->post_id ) );
+					// Deletes temporary marker.
+					delete_post_meta( $meta->post_id, 'do_export_event_meta' );
+					// Prevent 'normal' export processing for that particular postmeta field.
+					return true;
+				}
+				return $skip;
+			}, 10, 3 );
+		} );
 	}
+
 
 	/**
 	 * Extend WordPress' native Export
@@ -85,7 +132,7 @@ class Export extends Migrate {
 	 * @param object $meta      Current meta object.
 	 *
 	 * @return bool
-	 */
+
 	public static function set_entry_point( bool $skip, string $meta_key, object $meta ): bool {
 		if ( self::validate( $meta_key ) ) {
 			/**
@@ -96,13 +143,14 @@ class Export extends Migrate {
 			 * @param WP_Post $post      Current 'gatherpress_event' post being exported.
 			 * @param string  $meta_key  Current meta key.
 			 * @param object  $meta      Current meta object.
-			 */
+			 * /
 			do_action( 'gatherpress_export', get_post(), $meta_key, $meta );
 		}
 		return $skip;
 	}
+	 */
 
-	/**
+	 /**
 	 * Checks if the currently exported post is of type 'gatherpress_event'
 	 * and if the given, processed meta_key is '_edit_last'.
 	 *
@@ -111,13 +159,35 @@ class Export extends Migrate {
 	 * @param  string $meta_key Current meta key.
 	 *
 	 * @return bool
-	 */
+
 	protected static function validate( string $meta_key = '' ): bool {
 
 		if ( Event::POST_TYPE !== get_post_type() ) {
 			return false;
 		}
-		if ( '_edit_last' !== $meta_key ) {
+		// if ( '_edit_last' !== $meta_key ) {
+		// 	return false;
+		// }
+		// Makes sure this runs only once.
+		if ( did_action( 'gatherpress_export' ) ) {
+			return false;
+		}
+		return true;
+	}
+	 */
+
+	/**
+	 * Checks if the currently exported post is of type 'gatherpress_event'.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  WP_Post $post Current meta key.
+	 *
+	 * @return bool
+	 */
+	protected static function validate_post( WP_Post $post ): bool {
+
+		if ( Event::POST_TYPE !== $post->post_type ) {
 			return false;
 		}
 		return true;
