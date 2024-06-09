@@ -171,10 +171,12 @@ class Setup {
 	 * This method handles the activation of the GatherPress plugin. If the plugin
 	 * is being activated network-wide in a multisite installation, it iterates
 	 * through each blog in the network and performs necessary setup actions
-	 * (creating tables and adding an online event term). If not network-wide,
-	 * it only performs the setup actions for the current site.
+	 * (creating tables). If not network-wide, it only performs the setup actions
+	 * for the current site.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
 	 * @param bool $network_wide Whether the plugin is being activated network-wide.
 	 * @return void
@@ -364,13 +366,17 @@ class Setup {
 	}
 
 	/**
-	 * Create custom database tables for GatherPress events and RSVPs.
+	 * Creates necessary database tables for the GatherPress plugin.
 	 *
-	 * This method creates custom database tables for storing GatherPress event data and RSVP information.
-	 * It ensures that the required tables are set up with the appropriate schema.
+	 * This method creates the required database tables for storing event and RSVP data.
+	 * It constructs SQL queries for creating the tables with appropriate charset and
+	 * collation, and then executes these queries using the `dbDelta` function to ensure
+	 * the tables are created or updated as necessary. Additionally, it calls methods to
+	 * add the online event term and to set a flag for flushing rewrite rules.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
 	 * @return void
 	 */
 	protected function create_tables(): void {
