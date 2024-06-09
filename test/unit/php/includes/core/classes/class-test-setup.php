@@ -35,8 +35,26 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
+				'priority' => 9,
+				'callback' => array( $instance, 'load_textdomain' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_notices',
+				'priority' => 10,
+				'callback' => array( $instance, 'check_users_can_register' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_initialize_site',
+				'priority' => 10,
+				'callback' => array( $instance, 'on_site_create' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -67,6 +85,12 @@ class Test_Setup extends Base {
 				'name'     => sprintf( 'network_admin_plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ),
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'load_textdomain_mofile',
+				'priority' => 10,
+				'callback' => array( $instance, 'load_mofile' ),
 			),
 		);
 
@@ -268,5 +292,30 @@ class Test_Setup extends Base {
 
 		$this->assertSame( $slug, $term->slug, 'Failed to assert that term slugs match.' );
 		$this->assertSame( 'Online', $term->name, 'Failed to assert that term names match.' );
+	}
+
+	/**
+	 * Coverage for maybe_create_flush_rewrite_rules_flag method.
+	 *
+	 * @covers ::maybe_flush_rewrite_rules
+	 *
+	 * @return void
+	 */
+	public function test_maybe_create_flush_rewrite_rules_flag(): void {
+		$instance = Setup::get_instance();
+		$this->assertFalse(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that flush rewrite rules option does not exist.'
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_create_flush_rewrite_rules_flag' );
+
+		$this->assertTrue(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that flush rewrite rules option exists.'
+		);
+
+		// Cleanup.
+		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
 	}
 }

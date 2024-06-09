@@ -240,7 +240,7 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	public function maybe_create_flush_rewrite_rules_flag(): void {
+	private function maybe_create_flush_rewrite_rules_flag(): void {
 		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
