@@ -84,9 +84,9 @@ class Setup {
 		add_action( 'init', array( $this, 'load_textdomain' ), 9 );
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
+		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
-		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
 		add_filter( 'body_class', array( $this, 'add_gatherpress_body_classes' ) );
 		add_filter(
