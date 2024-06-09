@@ -36,7 +36,7 @@ class Test_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
-				'callback' => array( $instance, 'maybe_flush_gatherpress_rewrite_rules' ),
+				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
 			),
 			array(
 				'type'     => 'filter',

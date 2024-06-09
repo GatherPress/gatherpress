@@ -186,7 +186,7 @@ class Setup {
 
 		if ( is_multisite() && $network_wide ) {
 			// Get all blogs in the network and activate plugin on each one.
-			$blog_ids = $wpdb->get_col( $wpdb->prepare( 'SELECT blog_id FROM %i', $wpdb->blogs ) );
+			$blog_ids = $wpdb->get_col( $wpdb->prepare( 'SELECT blog_id FROM %i', $wpdb->blogs ) ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 			foreach ( $blog_ids as $blog_id ) {
 				switch_to_blog( $blog_id );
