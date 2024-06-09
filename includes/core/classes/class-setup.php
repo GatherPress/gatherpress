@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use WP_Site;
 
 /**
  * Class Setup.
@@ -333,12 +334,13 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $site_id ID of the newly created site.
+	 * @param WP_Site $new_site the newly created site.
+	 *
 	 * @return void
 	 */
-	public function on_site_create( int $site_id ): void {
+	public function on_site_create( WP_Site $new_site ): void {
 		if ( is_plugin_active_for_network( 'gatherpress/gatherpress.php' ) ) {
-			switch_to_blog( $site_id );
+			switch_to_blog( $new_site->blog_id );
 			$this->create_tables();
 			restore_current_blog();
 		}
