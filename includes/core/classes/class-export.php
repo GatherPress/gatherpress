@@ -58,10 +58,8 @@ class Export extends Migrate {
 		 * Fires at the beginning of an export, before any headers are sent.
 		 *
 		 * @since 2.3.0
-		 *
-		 * @param array $args An array of export arguments.
 		 */
-		add_action( 'export_wp', function( $args ){
+		add_action( 'export_wp', function(){
 
 			/**
 			 * Called via setup_postdata() at the beginning of each singular post export.
@@ -69,9 +67,8 @@ class Export extends Migrate {
 			 * Fires once the post data has been set up.
 			 *
 			 * @param WP_Post  $post  The Post object (passed by reference).
-			 * @param WP_Query $query The current Query object (passed by reference).
 			 */
-			add_action( 'the_post', function( WP_Post $post, WP_Query $query ) : void {
+			add_action( 'the_post', function( WP_Post $post ) : void {
 				if ( self::validate_post( $post ) ) {
 					// Save a temporary marker, which allows to hook into the export process per post later on.
 					add_post_meta( $post->ID, 'do_export_event_meta', true );
