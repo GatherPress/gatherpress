@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use WP_Site;
 
 /**
  * Class Setup.
@@ -182,14 +183,17 @@ class Setup {
 	 * @return void
 	 */
 	public function activate_gatherpress_plugin( bool $network_wide ): void {
-		global $wpdb;
-
 		if ( is_multisite() && $network_wide ) {
-			// Get all blogs in the network and activate plugin on each one.
-			$blog_ids = $wpdb->get_col( $wpdb->prepare( 'SELECT blog_id FROM %i', $wpdb->blogs ) ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// Get all sites in the network and activate plugin on each one.
+			$site_ids = get_sites(
+				array(
+					'fields'     => 'ids',
+					'network_id' => get_current_site()->id,
+				)
+			);
 
-			foreach ( $blog_ids as $blog_id ) {
-				switch_to_blog( $blog_id );
+			foreach ( $site_ids as $site_id ) {
+				switch_to_blog( $site_id );
 				$this->create_tables();
 				restore_current_blog();
 			}
@@ -333,12 +337,13 @@ class Setup {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $site_id ID of the newly created site.
+	 * @param WP_Site $new_site the newly created site.
+	 *
 	 * @return void
 	 */
-	public function on_site_create( int $site_id ): void {
+	public function on_site_create( WP_Site $new_site ): void {
 		if ( is_plugin_active_for_network( 'gatherpress/gatherpress.php' ) ) {
-			switch_to_blog( $site_id );
+			switch_to_blog( $new_site->blog_id );
 			$this->create_tables();
 			restore_current_blog();
 		}
