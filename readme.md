@@ -153,6 +153,7 @@ GatherPress‘ best-practices:
 - Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
 - Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
 - [JavaScript & PHP Unit tests](https://sonarcloud.io/summary/new_code?id=GatherPress_gatherpress&branch=main) are covering almost 80% of the whole codebase.
+- Import & Export event- and venue-data using WordPress' native tools.
 
 ### Reminder that GatherPress is still in Alpha
 
