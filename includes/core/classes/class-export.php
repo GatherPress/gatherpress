@@ -53,8 +53,6 @@ class Export extends Migrate {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// add_filter( 'wxr_export_skip_postmeta', array( $this, 'set_entry_point' ), 10, 3 );
-		// add_action( 'gatherpress_export', array( $this, 'export' ) );
 
 		/**
 		 * Fires at the beginning of an export, before any headers are sent.
@@ -81,7 +79,22 @@ class Export extends Migrate {
 			}, 10, 2 );
 
 			/**
-			 * Filters whether to selectively skip post meta used for WXR exports.
+			 * Extend WordPress' native Export
+			 *
+			 * WordPress' native Export can be extended in hacky way using `wxr_export_skip_postmeta`
+			 * where GatherPress echos out some pseudo-post-meta fields,
+			 * before returning `false` like the default.
+			 *
+			 * @source https://github.com/WordPress/wordpress-develop/blob/6.5/src/wp-admin/includes/export.php#L655-L677
+			 *
+			 * Normally this filters whether to selectively skip post meta used for WXR exports.
+			 * Returning a truthy value from the filter will skip the current meta object from being exported.
+			 *
+			 * @see https://developer.wordpress.org/reference/hooks/wxr_export_skip_postmeta/
+			 *
+			 * But because there is no 'do_action('per-exported-post)',
+			 * GatherPress creates a post_meta field as a temporary marker, to be used as an entry-point into
+			 * WordPress' native export process later on.
 			 *
 			 * @param bool   $skip     Whether to skip the current post meta. Default false.
 			 * @param string $meta_key Current meta key.
@@ -101,80 +114,6 @@ class Export extends Migrate {
 			}, 10, 3 );
 		} );
 	}
-
-
-	/**
-	 * Extend WordPress' native Export
-	 *
-	 * WordPress' native Export can be extended in hacky way using `wxr_export_skip_postmeta`
-	 * where GatherPress echos out some pseudo-post-meta fields,
-	 * before returning `false` like the default.
-	 *
-	 * @source https://github.com/WordPress/wordpress-develop/blob/6.5/src/wp-admin/includes/export.php#L655-L677
-	 *
-	 * Normally this filters whether to selectively skip post meta used for WXR exports.
-	 * Returning a truthy value from the filter will skip the current meta object from being exported.
-	 *
-	 * @see https://developer.wordpress.org/reference/hooks/wxr_export_skip_postmeta/
-	 *
-	 * But there is no need to use this filter in real,
-	 * GatherPress just uses it as entry-point into
-	 * WordPress' native export process.
-	 *
-	 * A problem or caveat could be, that this filter only runs,
-	 * if a post has real-existing data in the post_meta table.
-	 * Right now, this whole operation relies on the existence of the '_edit_last' post meta key.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param bool   $skip      Whether to skip the current post meta. Default false.
-	 * @param string $meta_key  Current meta key.
-	 * @param object $meta      Current meta object.
-	 *
-	 * @return bool
-
-	public static function set_entry_point( bool $skip, string $meta_key, object $meta ): bool {
-		if ( self::validate( $meta_key ) ) {
-			/**
-			 * Fires for every GatherPress data to be exported.
-			 *
-			 * @since 1.0.0
-			 *
-			 * @param WP_Post $post      Current 'gatherpress_event' post being exported.
-			 * @param string  $meta_key  Current meta key.
-			 * @param object  $meta      Current meta object.
-			 * /
-			do_action( 'gatherpress_export', get_post(), $meta_key, $meta );
-		}
-		return $skip;
-	}
-	 */
-
-	 /**
-	 * Checks if the currently exported post is of type 'gatherpress_event'
-	 * and if the given, processed meta_key is '_edit_last'.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param  string $meta_key Current meta key.
-	 *
-	 * @return bool
-
-	protected static function validate( string $meta_key = '' ): bool {
-
-		if ( Event::POST_TYPE !== get_post_type() ) {
-			return false;
-		}
-		// if ( '_edit_last' !== $meta_key ) {
-		// 	return false;
-		// }
-		// Makes sure this runs only once.
-		if ( did_action( 'gatherpress_export' ) ) {
-			return false;
-		}
-		return true;
-	}
-	 */
 
 	/**
 	 * Checks if the currently exported post is of type 'gatherpress_event'.
