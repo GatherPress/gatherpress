@@ -104,10 +104,10 @@ class Import extends Migrate {
 	 * @return bool
 	 */
 	protected static function validate( array $post_data_raw ): bool {
-		if ( ! isset( $post_data_raw['post_type'] ) || Event::POST_TYPE !== $post_data_raw['post_type'] ) {
-			return false;
+		if ( isset( $post_data_raw['post_type'] ) && Event::POST_TYPE === $post_data_raw['post_type'] ) {
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	/**

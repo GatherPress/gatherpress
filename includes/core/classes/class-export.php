@@ -69,7 +69,7 @@ class Export extends Migrate {
 			 * @param WP_Post  $post  The Post object (passed by reference).
 			 */
 			add_action( 'the_post', function( WP_Post $post ) : void {
-				if ( self::validate_post( $post ) ) {
+				if ( self::validate( $post ) ) {
 					// Save a temporary marker, which allows to hook into the export process per post later on.
 					add_post_meta( $post->ID, 'do_export_event_meta', true );
 				}
@@ -121,12 +121,12 @@ class Export extends Migrate {
 	 *
 	 * @return bool
 	 */
-	protected static function validate_post( WP_Post $post ): bool {
+	protected static function validate( WP_Post $post ): bool {
 
-		if ( Event::POST_TYPE !== $post->post_type ) {
-			return false;
+		if ( Event::POST_TYPE === $post->post_type ) {
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	/**
