@@ -142,6 +142,11 @@ To get access to [GatherPress.org](htps://gatherpress.org/get-involved) via SSH 
 
 Find the developer documentation inside the plugins' `docs` folder.
 
+### Is GatherPress WordPress Multisite compatible?
+Yes, GatherPress can be run on a network of sites. The additional database tables it needs, will be created automatically for each new site if the plugin is network-activated.
+
+GatherPress can also be activated per site.
+
 ### What’s about the PRO version?
 
 As a Community powered plugin, GatherPress is already the PRO-version.
