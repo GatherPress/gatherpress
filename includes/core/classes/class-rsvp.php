@@ -107,19 +107,31 @@ class Rsvp {
 			return array();
 		}
 
+		// Temporary code until we update argument to pass email.
+		$user_email = get_userdata( $user_id )->user_email;
+
 		$default = array(
-			'id'        => 0,
-			'post_id'   => $post_id,
-			'user_id'   => $user_id,
-			'timestamp' => null,
-			'status'    => 'no_status',
-			'guests'    => 0,
-			'anonymous' => 0,
+			'id'         => 0,
+			'post_id'    => $post_id,
+//			'user_email' => $user_email,
+			'timestamp'  => null,
+			'status'     => 'no_status',
+			'guests'     => 0,
+			'anonymous'  => 0,
 		);
 
-		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+		$data = get_comments(
+			array(
+				'post_id'      => $post_id,
+				'author_email' => $user_email,
+				'type'         => 'gatherpress-rsvp',
+			)
+		);
 
-		// @todo Consider implementing caching for improved performance in the future.
+
+		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+//
+//		// @todo Consider implementing caching for improved performance in the future.
 		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT id, timestamp, status, guests, anonymous FROM %i WHERE post_id = %d AND user_id = %d', $table, $post_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 
 		return array_merge( $default, (array) $data );
@@ -171,6 +183,30 @@ class Rsvp {
 
 		if ( 1 > $post_id || 1 > $user_id ) {
 			return $data;
+		}
+
+		// Temporary code until we update argument to pass email.
+		$user_email = get_userdata( $user_id )->user_email;
+		$data = get_comments(
+			array(
+				'post_id'      => $post_id,
+				'author_email' => $user_email,
+				'type'         => 'gatherpress-rsvp',
+			)
+		);
+
+		$args       = array(
+			'comment_post_ID'      => $post_id,
+			'comment_author_email' => $user_email,
+			'comment_type'         => 'gatherpress-rsvp',
+			'user_id'              => $user_id,
+		);
+
+		if ( empty( $data ) ) {
+			wp_insert_comment( $args );
+		} else {
+			$args['comment_ID'] = $data[0]->comment_ID;
+			wp_update_comment( $args );
 		}
 
 		if ( ! in_array( $status, $this->statuses, true ) ) {
