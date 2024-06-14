@@ -53,11 +53,8 @@ class Export extends Migrate {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-
 		/**
 		 * Fires at the beginning of an export, before any headers are sent.
-		 *
-		 * @since 2.3.0
 		 */
 		add_action(
 			'export_wp',
@@ -135,10 +132,10 @@ class Export extends Migrate {
 	 * @return bool
 	 */
 	protected static function validate( WP_Post $post ): bool {
-
 		if ( Event::POST_TYPE === $post->post_type ) {
 			return true;
 		}
+
 		return false;
 	}
 
@@ -165,7 +162,9 @@ class Export extends Migrate {
 				if ( ! isset( $callbacks['export_callback'] ) || ! is_callable( $callbacks['export_callback'] ) ) {
 					return;
 				}
+
 				$value = call_user_func( $callbacks['export_callback'], $post );
+
 				?>
 				<wp:postmeta>
 					<wp:meta_key><?php echo wxr_cdata( $key ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_key>
@@ -189,7 +188,8 @@ class Export extends Migrate {
 	public static function datetimes_callback( WP_Post $post ): string {
 		// Make sure to not get any user-related data.
 		remove_all_filters( 'gatherpress_timezone' );
-		$event = new \GatherPress\Core\Event( $post->ID );
+
+		$event = new Event( $post->ID );
 		return maybe_serialize( $event->get_datetime() );
 	}
 }
