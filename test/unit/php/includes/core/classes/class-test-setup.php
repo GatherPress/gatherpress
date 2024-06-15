@@ -8,9 +8,11 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Assets;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Setup.
@@ -33,8 +35,26 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
+				'priority' => 9,
+				'callback' => array( $instance, 'load_textdomain' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
 				'priority' => 10,
-				'callback' => array( $instance, 'maybe_flush_gatherpress_rewrite_rules' ),
+				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_notices',
+				'priority' => 10,
+				'callback' => array( $instance, 'check_users_can_register' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_initialize_site',
+				'priority' => 10,
+				'callback' => array( $instance, 'on_site_create' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -66,6 +86,12 @@ class Test_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'load_textdomain_mofile',
+				'priority' => 10,
+				'callback' => array( $instance, 'load_mofile' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -79,16 +105,63 @@ class Test_Setup extends Base {
 	 * @return void
 	 */
 	public function test_check_users_can_register(): void {
-		$instance                   = Setup::get_instance();
-		$users_can_register_name    = 'users_can_register';
-		$users_can_register_default = get_option( $users_can_register_name );
-		update_option( $users_can_register_name, 1 );
-		$instance->check_users_can_register();
-		$this->assertEquals(
-			get_option( $users_can_register_name ),
-			1,
-			'Failed to assert user registration option was set.'
+		$instance                              = Setup::get_instance();
+		$users_can_register_name               = 'users_can_register';
+		$suppress_membership_notification_name = 'gatherpress_suppress_site_notification';
+
+		$this->mock->user( 'admin', 'gatherpress_general' );
+		$this->mock->wp(
+			array(
+				'is_admin' => true,
+			)
 		);
+
+		// Register/enqueue admin scripts and styles.
+		Assets::get_instance()->admin_enqueue_scripts( 'gatherpress_event_page_gatherpress_general' );
+
+		$this->assertSame(
+			get_option( $users_can_register_name ),
+			'0',
+			'Failed to assert user registration is disabled (default).'
+		);
+		$this->assertFalse(
+			get_option( $suppress_membership_notification_name ),
+			'Failed to assert suppression of membership notification is disabled (default).'
+		);
+
+		Utility::buffer_and_return( array( $instance, 'check_users_can_register' ) );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-admin-style' ),
+			'Failed to assert, that the styles for the membership notification aren\'t loaded yet.'
+		);
+
+		// Allow user-registration.
+		update_option( $users_can_register_name, '1' );
+
+		wp_dequeue_style( 'gatherpress-admin-style' );
+
+		Utility::buffer_and_return( array( $instance, 'check_users_can_register' ) );
+
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-admin-style' ),
+			'Failed to assert, that the styles for the membership notification aren\'t loaded yet.'
+		);
+
+		// Allow user-registration.
+		update_option( $users_can_register_name, '0' );
+
+		// Option to "Dismiss [the notification] forever".
+		update_option( $suppress_membership_notification_name, '1' );
+
+		Utility::buffer_and_return( array( $instance, 'check_users_can_register' ) );
+
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-admin-style' ),
+			'Failed to assert, that the styles for the membership notification are loaded.'
+		);
+
+		$this->mock->wp()->reset();
 	}
 
 	/**
@@ -219,5 +292,30 @@ class Test_Setup extends Base {
 
 		$this->assertSame( $slug, $term->slug, 'Failed to assert that term slugs match.' );
 		$this->assertSame( 'Online', $term->name, 'Failed to assert that term names match.' );
+	}
+
+	/**
+	 * Coverage for maybe_create_flush_rewrite_rules_flag method.
+	 *
+	 * @covers ::maybe_flush_rewrite_rules
+	 *
+	 * @return void
+	 */
+	public function test_maybe_create_flush_rewrite_rules_flag(): void {
+		$instance = Setup::get_instance();
+		$this->assertFalse(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that flush rewrite rules option does not exist.'
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_create_flush_rewrite_rules_flag' );
+
+		$this->assertTrue(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that flush rewrite rules option exists.'
+		);
+
+		// Cleanup.
+		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
 	}
 }

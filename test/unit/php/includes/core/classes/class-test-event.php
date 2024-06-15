@@ -694,6 +694,24 @@ class Test_Event extends Base {
 			'Failed to assert online event link is present.'
 		);
 
+		$start = new DateTime( 'now' );
+		$end   = new DateTime( 'now' );
+
+		$start->modify( '-4 hours' );
+		$end->modify( '-2 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
+
+		$this->assertEmpty(
+			$event->maybe_get_online_event_link(),
+			'Failed to assert online event link is empty.'
+		);
+
 		Utility::set_and_get_hidden_property( $event, 'rsvp', null );
 
 		$this->assertEmpty(
