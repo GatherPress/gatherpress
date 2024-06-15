@@ -319,6 +319,7 @@ class Assets {
 				'dateFormat'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
 				'enableAnonymousRsvp'  => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
 				'enableInitialDecline' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_initial_decline' ) ),
+				'mapPlatform'          => $settings->get_value( 'general', 'general', 'map_platform' ),
 				'maxAttendanceLimit'   => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
 				'maxGuestLimit'        => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
 				'showTimezone'         => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),

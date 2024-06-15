@@ -8,6 +8,7 @@ import { select } from '@wordpress/data';
  */
 import GoogleMap from './GoogleMap';
 import LeafletMap from './LeafletMap';
+import { getFromGlobal } from '../helpers/globals';
 
 /**
  * MapEmbed component for GatherPress.
@@ -31,10 +32,9 @@ import LeafletMap from './LeafletMap';
 const MapEmbed = (props) => {
 	const isAdmin = select('core')?.canUser('create', 'posts');
 	const isPostEditor = Boolean(select('core/edit-post'));
+	const mapPlatform = getFromGlobal('settings.mapPlatform');
 	const { zoom, type, className, latitude, longitude } = props;
 	let { location, height } = props;
-
-	const mapType = 'leaflet'; // test value
 
 	if (!height) {
 		height = 300;
@@ -46,17 +46,7 @@ const MapEmbed = (props) => {
 
 	if (!location) {
 		return <></>;
-	} else if (mapType === 'google') {
-		return (
-			<GoogleMap
-				location={location}
-				className={className}
-				zoom={zoom}
-				type={type}
-				height={height}
-			/>
-		);
-	} else if (mapType === 'leaflet') {
+	} else if (mapPlatform === 'osm') {
 		return (
 			<LeafletMap
 				location={location}
@@ -64,6 +54,16 @@ const MapEmbed = (props) => {
 				longitude={longitude}
 				className={className}
 				zoom={zoom}
+				height={height}
+			/>
+		);
+	} else {
+		return (
+			<GoogleMap
+				location={location}
+				className={className}
+				zoom={zoom}
+				type={type}
 				height={height}
 			/>
 		);
