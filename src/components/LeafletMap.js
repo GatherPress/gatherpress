@@ -1,7 +1,8 @@
 /**
  * External dependencies.
  */
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useState } from '@wordpress/element';
 
 /**
  * LeafletMap component for GatherPress.
@@ -13,6 +14,8 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
  *
  * @param {Object} props              - Component properties.
  * @param {string} props.location     - The location to be displayed on the map.
+ * @param {string} props.latitude     - The latitdue of the location to be displayed on the map.
+ * @param {string} props.longitude    - The longitude of the location to be displayed on the map.
  * @param {number} [props.zoom=10]    - The zoom level of the map.
  * @param {number} [props.height=300] - The height of the map container.
  * @param {string} [props.className]  - Additional CSS class names for styling.
@@ -20,18 +23,26 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
  * @return {JSX.Element} The rendered React component.
  */
 const LeafletMap = (props) => {
-	const { zoom, className, location, height } = props;
+	const { zoom, className, location, height, latitude, longitude } = props;
 	const style = { height };
+	const position = [latitude, longitude];
 
-	//convert location to position here
+	function FlyMapTo() {
 
-	const testPostition = [51.505, -0.09]; // test value
+		const map = useMap()
+	
+		useEffect(() => {
+			map.setView(position, zoom)
+		}, [position])
+	
+		return null
+	}
 
 	return (
 		<MapContainer
 			style={style}
 			className={className}
-			center={testPostition}
+			center={position}
 			zoom={zoom}
 			scrollWheelZoom={false}
 			height={height}
@@ -40,9 +51,10 @@ const LeafletMap = (props) => {
 				attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 				url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 			/>
-			<Marker position={testPostition}>
+			<Marker position={position}>
 				<Popup>{location}</Popup>
 			</Marker>
+			<FlyMapTo />
 		</MapContainer>
 	);
 };

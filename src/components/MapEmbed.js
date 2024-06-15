@@ -19,6 +19,8 @@ import LeafletMap from './LeafletMap';
  *
  * @param {Object} props              - Component properties.
  * @param {string} props.location     - The location to be displayed on the map.
+ * @param {string} props.latitude     - The latitdue of the location to be displayed on the map.
+ * @param {string} props.longitude    - The longitude of the location to be displayed on the map.
  * @param {number} [props.zoom=10]    - The zoom level of the map.
  * @param {string} [props.type='m']   - The type of the map (e.g., 'm' for roadmap).
  * @param {number} [props.height=300] - The height of the map container.
@@ -29,7 +31,7 @@ import LeafletMap from './LeafletMap';
 const MapEmbed = (props) => {
 	const isAdmin = select('core')?.canUser('create', 'posts');
 	const isPostEditor = Boolean(select('core/edit-post'));
-	const { zoom, type, className } = props;
+	const { zoom, type, className, latitude, longitude } = props;
 	let { location, height } = props;
 
 	const mapType = 'leaflet'; // test value
@@ -58,6 +60,8 @@ const MapEmbed = (props) => {
 		return (
 			<LeafletMap
 				location={location}
+				latitude={latitude}
+				longitude={longitude}
 				className={className}
 				zoom={zoom}
 				height={height}
