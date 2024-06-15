@@ -61,16 +61,16 @@ class Import extends Migrate {
 			 *
 			 * @see https://github.com/humanmade/Wordpress-Importer
 			 */
-			add_filter( 'wxr_importer.pre_process.post', array( '\GatherPress\Core\Import', 'set_entry_point' ) );
-		} else {
+			add_filter( 'wxr_importer.pre_process.post', array( self::class, 'prepare' ) );
+		} else {1
 			/**
 			 * Setup for default WordPress Importer.
 			 *
 			 * @see https://github.com/WordPress/wordpress-importer/issues/42
 			 */
-			add_filter( 'wp_import_post_data_raw', array( '\GatherPress\Core\Import', 'set_entry_point' ) );
+			add_filter( 'wp_import_post_data_raw', array( self::class, 'prepare' ) );
 		}
-		add_action( 'gatherpress_import', array( '\GatherPress\Core\Import', 'import' ) );
+		add_action( 'gatherpress_import', array( self::class, 'extend' ) );
 	}
 
 	/**
@@ -82,7 +82,7 @@ class Import extends Migrate {
 	 *
 	 * @return array
 	 */
-	public static function set_entry_point( array $post_data_raw ): array {
+	public static function prepare( array $post_data_raw ): array {
 		if ( self::validate( $post_data_raw ) ) {
 			/**
 			 * Fires for every GatherPress data to be imported.
@@ -104,10 +104,7 @@ class Import extends Migrate {
 	 * @return bool
 	 */
 	protected static function validate( array $post_data_raw ): bool {
-		if ( isset( $post_data_raw['post_type'] ) && Event::POST_TYPE === $post_data_raw['post_type'] ) {
-			return true;
-		}
-		return false;
+		return ( isset( $post_data_raw['post_type'] ) && Event::POST_TYPE === $post_data_raw['post_type'] );
 	}
 
 	/**
@@ -115,8 +112,8 @@ class Import extends Migrate {
 	 *
 	 * @return void
 	 */
-	public static function import(): void {
-		add_filter( 'add_post_metadata', array( '\GatherPress\Core\Import', 'add_post_metadata' ), 10, 5 );
+	public static function extend(): void {
+		add_filter( 'add_post_metadata', array( self::class, 'run' ), 10, 5 );
 	}
 
 	/**
@@ -140,15 +137,15 @@ class Import extends Migrate {
 	 * @param mixed     $meta_value Metadata value. Must be serializable if non-scalar.
 	 * @param bool      $unique     Whether the specified meta key should be unique for the object.
 	 *
-	 * @return null|bool
+	 * @return null|bool            Returning a non-null value will effectively short-circuit the saving of 'normal' meta data.
 	 */
-	public static function add_post_metadata( ?bool $check, int $object_id, string $meta_key, $meta_value, bool $unique ): ?bool {
+	public static function run( ?bool $check, int $object_id, string $meta_key, $meta_value, bool $unique ): ?bool {
 		$pseudopostmetas = self::get_pseudopostmetas();
 		if ( ! isset( $pseudopostmetas[ $meta_key ] ) ) {
-			return $check;
+			return null;
 		}
-		if ( ! isset( $pseudopostmetas[ $meta_key ], $pseudopostmetas[ $meta_key ]['import_callback'] ) || ! is_callable( $pseudopostmetas[ $meta_key ]['import_callback'] ) ) {
-			return $check;
+		if ( ! isset( $pseudopostmetas[ $meta_key ]['import_callback'] ) || ! is_callable( $pseudopostmetas[ $meta_key ]['import_callback'] ) ) {
+			return null;
 		}
 
 		/*
@@ -162,7 +159,7 @@ class Import extends Migrate {
 		);
 
 		/*
-		 * Returning a non-null value will effectively short-circuit the saving of 'normal' meta data.
+		 * Disable saving of 'normal' meta data.
 		 */
 		return false;
 	}
@@ -177,7 +174,7 @@ class Import extends Migrate {
 	 * @return void
 	 */
 	public static function datetimes_callback( int $post_id, $data ): void {
-		$event = new \GatherPress\Core\Event( $post_id );
+		$event = new Event( $post_id );
 		$event->save_datetimes( maybe_unserialize( $data ) );
 	}
 }

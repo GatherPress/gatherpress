@@ -33,6 +33,15 @@ class Export extends Migrate {
 	use Singleton;
 
 	/**
+	 * The post_meta name for GatherPress temporary entry,
+	 * to hook into WordPress export.
+	 *
+	 * @since 1.0.0
+	 * @var string $POST_META
+	 */
+	const POST_META = 'gatherpress_extend_export';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -59,67 +68,65 @@ class Export extends Migrate {
 		add_action(
 			'export_wp',
 			function () {
-
-				/**
-				 * Called via setup_postdata() at the beginning of each singular post export.
-				 *
-				 * Fires once the post data has been set up.
-				 *
-				 * @param WP_Post  $post  The Post object (passed by reference).
-				 */
-				add_action(
-					'the_post',
-					function ( WP_Post $post ): void {
-						if ( self::validate( $post ) ) {
-							// Save a temporary marker, which allows to hook into the export process per post later on.
-							add_post_meta( $post->ID, 'do_export_event_meta', true );
-						}
-					},
-					10,
-					2
-				);
-
-				/**
-				 * Extend WordPress' native Export
-				 *
-				 * WordPress' native Export can be extended in hacky way using `wxr_export_skip_postmeta`
-				 * where GatherPress echos out some pseudo-post-meta fields,
-				 * before returning `false` like the default.
-				 *
-				 * @source https://github.com/WordPress/wordpress-develop/blob/6.5/src/wp-admin/includes/export.php#L655-L677
-				 *
-				 * Normally this filters whether to selectively skip post meta used for WXR exports.
-				 * Returning a truthy value from the filter will skip the current meta object from being exported.
-				 *
-				 * @see https://developer.wordpress.org/reference/hooks/wxr_export_skip_postmeta/
-				 *
-				 * But because there is no 'do_action('per-exported-post)',
-				 * GatherPress creates a post_meta field as a temporary marker, to be used as an entry-point into
-				 * WordPress' native export process later on.
-				 *
-				 * @param bool   $skip     Whether to skip the current post meta. Default false.
-				 * @param string $meta_key Current meta key.
-				 * @param object $meta     Current meta object.
-				 * @return bool            Whether to skip the current post meta. Default false.
-				 */
-				add_filter(
-					'wxr_export_skip_postmeta',
-					function ( bool $skip, string $meta_key, object $meta ): bool {
-						if ( 'do_export_event_meta' === $meta_key ) {
-							// Echos out xml with pseudo-postmeta.
-							self::export( get_post( $meta->post_id ) );
-							// Deletes temporary marker.
-							delete_post_meta( $meta->post_id, 'do_export_event_meta' );
-							// Prevent 'normal' export processing for that particular postmeta field.
-							return true;
-						}
-						return $skip;
-					},
-					10,
-					3
-				);
+				add_action( 'the_post', array( self::class, 'prepare'), 10, 2 );
+				add_filter( 'wxr_export_skip_postmeta', array( self::class, 'extend'), 10, 3 );
 			}
 		);
+	}
+
+	/**
+	 * Saves a temporary marker as postmeta,
+	 * which allows to hook into the export process per post later on.
+	 *
+	 * Called via setup_postdata() at the beginning of each singular post export.
+	 *
+	 * Fires once the post data has been set up.
+	 *
+	 * @param WP_Post  $post  The Post object (passed by reference).
+	 */
+	public static function prepare( WP_Post $post ): void {
+		if ( self::validate( $post ) ) {
+			add_post_meta( $post->ID, self::POST_META, true );
+		}
+	}
+
+	/**
+	 * Extend WordPress' native Export
+	 *
+	 * WordPress' native Export can be extended in hacky way using `wxr_export_skip_postmeta`
+	 * where GatherPress echos out some pseudo-post-meta fields,
+	 * before returning `false` like the default.
+	 *
+	 * @source https://github.com/WordPress/wordpress-develop/blob/6.5/src/wp-admin/includes/export.php#L655-L677
+	 *
+	 * Normally this filters whether to selectively skip post meta used for WXR exports.
+	 * Returning a truthy value from the filter will skip the current meta object from being exported.
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/wxr_export_skip_postmeta/
+	 *
+	 * But because there is no 'do_action('per-exported-post)',
+	 * GatherPress created a post_meta entry as a temporary marker, to be used as an entry-point into
+	 * WordPress' native export process, which is used now.
+	 *
+	 * @param bool   $skip     Whether to skip the current post meta. Default false.
+	 * @param string $meta_key Current meta key.
+	 * @param object $meta     Current meta object.
+	 * @return bool            Whether to skip the current post meta. Default false.
+	 */
+	public static function extend( bool $skip, string $meta_key, object $meta ): bool {
+		if ( self::POST_META === $meta_key ) {
+			// Echos out xml with pseudo-postmeta.
+			self::run( get_post( $meta->post_id ) );
+
+			// Deletes temporary marker.
+			delete_post_meta( $meta->post_id, self::POST_META );
+
+			// Prevent 'normal' export processing for that particular postmeta field,
+			// because it doesn't exist in real and will trigger an error.
+			return true;
+		}
+
+		return $skip;
 	}
 
 	/**
@@ -132,11 +139,7 @@ class Export extends Migrate {
 	 * @return bool
 	 */
 	protected static function validate( WP_Post $post ): bool {
-		if ( Event::POST_TYPE === $post->post_type ) {
-			return true;
-		}
-
-		return false;
+		return ( Event::POST_TYPE === $post->post_type );
 	}
 
 	/**
@@ -154,25 +157,28 @@ class Export extends Migrate {
 	 *
 	 * @return void
 	 */
-	public static function export( WP_Post $post ): void {
+	public static function run( WP_Post $post ): void {
 		$pseudopostmetas = self::get_pseudopostmetas();
 		array_walk(
 			$pseudopostmetas,
-			function ( array $callbacks, string $key ) use ( $post ) {
-				if ( ! isset( $callbacks['export_callback'] ) || ! is_callable( $callbacks['export_callback'] ) ) {
-					return;
-				}
-
-				$value = call_user_func( $callbacks['export_callback'], $post );
-
-				?>
-				<wp:postmeta>
-					<wp:meta_key><?php echo wxr_cdata( $key ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_key>
-					<wp:meta_value><?php echo wxr_cdata( $value ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_value>
-				</wp:postmeta>
-				<?php
-			}
+			array( self::class, 'render' ),
+			$post
 		);
+	}
+
+	public static function render( array $callbacks, string $key, WP_Post $post ) {
+		if ( ! isset( $callbacks['export_callback'] ) || ! is_callable( $callbacks['export_callback'] ) ) {
+			return;
+		}
+
+		$value = call_user_func( $callbacks['export_callback'], $post );
+
+		?>
+		<wp:postmeta>
+			<wp:meta_key><?php echo wxr_cdata( $key ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_key>
+			<wp:meta_value><?php echo wxr_cdata( $value ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></wp:meta_value>
+		</wp:postmeta>
+		<?php
 	}
 
 	/**
