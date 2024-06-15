@@ -79,8 +79,7 @@ class Import extends Migrate {
 	 * @see https://github.com/WordPress/wordpress-importer/blob/71bdd41a2aa2c6a0967995ee48021037b39a1097/src/class-wp-import.php#L631
 	 *
 	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
-	 *
-	 * @return array
+	 * @return array                Returns the unchanged result of 'wp_import_post_data_raw'.
 	 */
 	public static function prepare( array $post_data_raw ): array {
 		if ( self::validate( $post_data_raw ) ) {
@@ -100,8 +99,7 @@ class Import extends Migrate {
 	 * Checks if the currently imported post is of type 'gatherpress_event'.
 	 *
 	 * @param  array $post_data_raw The result of 'wp_import_post_data_raw'.
-	 *
-	 * @return bool
+	 * @return bool                 True, when the currently imported post is of type 'gatherpress_event', false otherwise.
 	 */
 	protected static function validate( array $post_data_raw ): bool {
 		return ( isset( $post_data_raw['post_type'] ) && Event::POST_TYPE === $post_data_raw['post_type'] );
@@ -131,13 +129,12 @@ class Import extends Migrate {
 	 * @see https://developer.wordpress.org/reference/hooks/add_meta_type_metadata/
 	 * @see https://www.ibenic.com/hook-wordpress-metadata/
 	 *
-	 * @param null|bool $check      Whether to allow adding metadata for the given type.
-	 * @param int       $object_id  ID of the object metadata is for.
-	 * @param string    $meta_key   Metadata key.
-	 * @param mixed     $meta_value Metadata value. Must be serializable if non-scalar.
-	 * @param bool      $unique     Whether the specified meta key should be unique for the object.
-	 *
-	 * @return null|bool            Returning a non-null value will effectively short-circuit the saving of 'normal' meta data.
+	 * @param  null|bool $check      Whether to allow adding metadata for the given type.
+	 * @param  int       $object_id  ID of the object metadata is for.
+	 * @param  string    $meta_key   Metadata key.
+	 * @param  mixed     $meta_value Metadata value. Must be serializable if non-scalar.
+	 * @param  bool      $unique     Whether the specified meta key should be unique for the object.
+	 * @return null|bool             Returning a non-null value will effectively short-circuit the saving of 'normal' meta data.
 	 */
 	public static function run( ?bool $check, int $object_id, string $meta_key, $meta_value, bool $unique ): ?bool {
 		$pseudopostmetas = self::get_pseudopostmetas();
@@ -170,7 +167,6 @@ class Import extends Migrate {
 	 *
 	 * @param  int   $post_id   ID of the object metadata is for.
 	 * @param  mixed $data      Metadata value. Must be serializable if non-scalar.
-	 *
 	 * @return void
 	 */
 	public static function datetimes_callback( int $post_id, $data ): void {

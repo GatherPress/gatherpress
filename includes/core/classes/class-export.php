@@ -68,8 +68,8 @@ class Export extends Migrate {
 		add_action(
 			'export_wp',
 			function () {
-				add_action( 'the_post', array( self::class, 'prepare'), 10, 2 );
-				add_filter( 'wxr_export_skip_postmeta', array( self::class, 'extend'), 10, 3 );
+				add_action( 'the_post', array( self::class, 'prepare' ), 10, 2 );
+				add_filter( 'wxr_export_skip_postmeta', array( self::class, 'extend' ), 10, 3 );
 			}
 		);
 	}
@@ -82,7 +82,8 @@ class Export extends Migrate {
 	 *
 	 * Fires once the post data has been set up.
 	 *
-	 * @param WP_Post  $post  The Post object (passed by reference).
+	 * @param  WP_Post $post  The Post object (passed by reference).
+	 * @return void
 	 */
 	public static function prepare( WP_Post $post ): void {
 		if ( self::validate( $post ) ) {
@@ -108,10 +109,10 @@ class Export extends Migrate {
 	 * GatherPress created a post_meta entry as a temporary marker, to be used as an entry-point into
 	 * WordPress' native export process, which is used now.
 	 *
-	 * @param bool   $skip     Whether to skip the current post meta. Default false.
-	 * @param string $meta_key Current meta key.
-	 * @param object $meta     Current meta object.
-	 * @return bool            Whether to skip the current post meta. Default false.
+	 * @param  bool   $skip     Whether to skip the current post meta. Default false.
+	 * @param  string $meta_key Current meta key.
+	 * @param  object $meta     Current meta object.
+	 * @return bool             Whether to skip the current post meta. Default false.
 	 */
 	public static function extend( bool $skip, string $meta_key, object $meta ): bool {
 		if ( self::POST_META === $meta_key ) {
@@ -135,8 +136,7 @@ class Export extends Migrate {
 	 * @since 1.0.0
 	 *
 	 * @param  WP_Post $post Current meta key.
-	 *
-	 * @return bool
+	 * @return bool          True, when the currently exported post is of type 'gatherpress_event', false otherwise.
 	 */
 	protected static function validate( WP_Post $post ): bool {
 		return ( Event::POST_TYPE === $post->post_type );
@@ -154,7 +154,6 @@ class Export extends Migrate {
 	 * @since 1.0.0
 	 *
 	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
-	 *
 	 * @return void
 	 */
 	public static function run( WP_Post $post ): void {
@@ -166,6 +165,14 @@ class Export extends Migrate {
 		);
 	}
 
+	/**
+	 * Render custom post_meta data into xml markup to be used while WordÜress' native export.
+	 *
+	 * @param  array   $callbacks Associative array with (import & export) callback functions for a the non-existent post_meta entry, named by $key.
+	 * @param  string  $key       Name of the custom post_meta, that should be exported.
+	 * @param  WP_Post $post      The currently exported 'gatherpress_event' post.
+	 * @return void
+	 */
 	public static function render( array $callbacks, string $key, WP_Post $post ) {
 		if ( ! isset( $callbacks['export_callback'] ) || ! is_callable( $callbacks['export_callback'] ) ) {
 			return;
@@ -188,7 +195,6 @@ class Export extends Migrate {
 	 * @since 1.0.0
 	 *
 	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
-	 *
 	 * @return string        Serialized JSON string with all date, time & timezone data of the current $post.
 	 */
 	public static function datetimes_callback( WP_Post $post ): string {
