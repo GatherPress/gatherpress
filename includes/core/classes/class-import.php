@@ -61,15 +61,16 @@ class Import extends Migrate {
 			 *
 			 * @see https://github.com/humanmade/Wordpress-Importer
 			 */
-			add_filter( 'wxr_importer.pre_process.post', array( self::class, 'prepare' ) );
+			$hook_name = 'wxr_importer.pre_process.post';
 		} else {
 			/**
 			 * Setup for default WordPress Importer.
 			 *
 			 * @see https://github.com/WordPress/wordpress-importer/issues/42
 			 */
-			add_filter( 'wp_import_post_data_raw', array( self::class, 'prepare' ) );
+			$hook_name = 'wp_import_post_data_raw';
 		}
+		add_filter( $hook_name, array( self::class, 'prepare' ) );
 		add_action( 'gatherpress_import', array( self::class, 'extend' ) );
 	}
 
