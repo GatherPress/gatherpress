@@ -62,7 +62,7 @@ class Import extends Migrate {
 			 * @see https://github.com/humanmade/Wordpress-Importer
 			 */
 			add_filter( 'wxr_importer.pre_process.post', array( self::class, 'prepare' ) );
-		} else {1
+		} else {
 			/**
 			 * Setup for default WordPress Importer.
 			 *
