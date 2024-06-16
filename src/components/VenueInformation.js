@@ -62,14 +62,20 @@ const VenueInformation = () => {
 
 	useEffect(() => {
 		const getData = setTimeout(() => {
+			let lat = 0;
+			let lng = 0;
 			axios
 				.get(
 					`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`
 				)
 				.then((res) => {
+					if ( typeof res.data.features.length !== 0 && typeof res.data.features[0]?.geometry !== 'undefined') {
+						lat = res.data.features[0].geometry.coordinates[1];
+						lng = res.data.features[0].geometry.coordinates[0];
+					}
 					updateVenueMeta({
-						latitude: res.data.features[0].geometry.coordinates[1],
-						longitude: res.data.features[0].geometry.coordinates[0],
+						latitude: lat,
+						longitude: lng,
 					});
 				})
 				.catch((err) => {
@@ -78,7 +84,7 @@ const VenueInformation = () => {
 		}, 2000)
 
 		return () => clearTimeout(getData)
-	}, [fullAddress])
+	}, [fullAddress, updateVenueMeta]);
 
 	return (
 		<>
