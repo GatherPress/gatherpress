@@ -353,13 +353,17 @@ class Event_Query {
 			// ORDERBY is an array, which allows to orderby multiple values.
 			// Currently it is only allowed to order events by ONE value.
 			$order_by = ( is_array( $order_by ) ) ? $order_by[0] : $order_by;
-			switch ( $order_by ) {
+			switch ( strtolower( $order_by ) ) {
 				case 'id':
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.ID %s', esc_sql( $order ) );
 					break;
 
 				case 'title':
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_name %s', esc_sql( $order ) );
+					break;
+
+				case 'modified':
+					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_modified_gmt %s', esc_sql( $order ) );
 					break;
 
 				case 'rand':
