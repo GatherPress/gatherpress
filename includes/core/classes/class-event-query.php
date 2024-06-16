@@ -394,7 +394,7 @@ class Event_Query {
 
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
-		$column = ( $inclusive ) ? 'datetime_end_gmt' : 'datetime_start_gmt';
+		$column = ( ($inclusive && 'upcoming' === $type) || (! $inclusive && 'past' === $type) ) ? 'datetime_end_gmt' : 'datetime_start_gmt';
 
 		if ( 'upcoming' === $type ) {
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
