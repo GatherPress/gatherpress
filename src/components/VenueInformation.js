@@ -69,7 +69,10 @@ const VenueInformation = () => {
 					`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`
 				)
 				.then((res) => {
-					if ( typeof res.data.features.length !== 0 && typeof res.data.features[0]?.geometry !== 'undefined') {
+					if (
+						typeof res.data.features.length !== 0 &&
+						typeof res.data.features[0]?.geometry !== 'undefined'
+					) {
 						lat = res.data.features[0].geometry.coordinates[1];
 						lng = res.data.features[0].geometry.coordinates[0];
 					}
@@ -83,8 +86,8 @@ const VenueInformation = () => {
 				});
 		}, 2000)
 
-		return () => clearTimeout(getData)
-	}, [fullAddress, updateVenueMeta]);
+		return () => clearTimeout(getData);
+	}, [fullAddress]);
 
 	return (
 		<>
