@@ -260,13 +260,17 @@ class Event_Query {
 	public function adjust_sorting_for_upcoming_events( array $query_pieces, \WP_Query $query ): array {
 
 
-		// \error_log( 'adjust_sorting_for_upcoming_events: ' . \var_export( $query, true ) );
+		// \error_log( 'adjust_sorting_for_upcoming_events: ' . \var_export( [
+		// 	(bool) $query->get( 'include_unfinished' ),
+		// 	$query
+		// ], true ) );
 
 		return $this->adjust_event_sql(
 			$query_pieces,
 			'upcoming',
 			$query->get( 'order' ),
-			$query->get( 'orderby' )
+			$query->get( 'orderby' ),
+			(bool) $query->get( 'include_unfinished' )
 		);
 	}
 
@@ -285,7 +289,8 @@ class Event_Query {
 			$query_pieces,
 			'past',
 			$query->get( 'order' ),
-			$query->get( 'orderby' )
+			$query->get( 'orderby' ),
+			(bool) $query->get( 'include_unfinished' )
 		);
 	}
 
@@ -331,7 +336,13 @@ class Event_Query {
 	 * @param string $order  The event order ('DESC' for descending or 'ASC' for ascending).
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
-	public function adjust_event_sql( array $pieces, string $type = 'all', string $order = 'DESC', array|string $order_by = ['datetime'] ): array {
+	public function adjust_event_sql(
+		array $pieces,
+		string $type = 'all',
+		string $order = 'DESC',
+		array|string $order_by = ['datetime'],
+		bool $inclusive = true
+	): array {
 		global $wpdb;
 
 		$defaults        = array(
@@ -383,10 +394,12 @@ class Event_Query {
 
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
+		$column = ( $inclusive ) ? 'datetime_end_gmt' : 'datetime_start_gmt';
+
 		if ( 'upcoming' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt >= %s', $table, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 		} elseif ( 'past' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt < %s', $table, $current ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i < %s', $table, $column, $current ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 		}
 
 		return $pieces;
