@@ -136,6 +136,7 @@ class Event_Setup {
 					'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-nametag',
+				'has_archive'   => true,
 				'rewrite'       => array(
 					'slug' => _x( 'event', 'Post Type Slug', 'gatherpress' ),
 				),
