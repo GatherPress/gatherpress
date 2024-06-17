@@ -36,26 +36,6 @@ class Rsvp_Setup{
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
-//		add_action( 'wp', function() {
-//			remove_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query') );
-//			$foo = get_comments(
-//				array(
-//					'post_id' => 829,
-//					'comment_type' => RSVP::COMMENT_TYPE,
-//					'tax_query' => array(
-//						array(
-//							'taxonomy' => RSVP::TAXONOMY,
-//							'terms' => 'attending',
-//							'field' => 'slug',
-//						)
-//					),
-//				)
-//			);
-//
-//			echo '<pre>';
-//			print_r($foo); die;
-//			add_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query') );
-//		});
 	}
 
 	public function register_taxonomy(): void {
