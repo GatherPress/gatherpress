@@ -34,12 +34,30 @@ class Rsvp {
 	const TABLE_FORMAT = '%sgatherpress_rsvps';
 
 	/**
+	 * Constant representing the RSVP Taxonomy.
+	 *
+	 * This constant defines the status taxonomy for RSVP comment type.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const TAXONOMY = '_gatherpress_rsvp_status';
+
+	/**
 	 * Cache key format for RSVPs.
 	 *
 	 * @since 1.0.0
 	 * @var string $CACHE_KEY
 	 */
 	const CACHE_KEY = 'gatherpress_rsvp_%d';
+
+	/**
+	 * Comment type for RSVPs.
+	 *
+	 * @since 1.0.0
+	 * @var string $COMMENT_TYPE
+	 */
+	const COMMENT_TYPE = 'gatherpress_rsvp';
 
 	/**
 	 * An array of RSVP statuses.
@@ -110,31 +128,51 @@ class Rsvp {
 		// Temporary code until we update argument to pass email.
 		$user_email = get_userdata( $user_id )->user_email;
 
-		$default = array(
+//		$default = array(
+//			'id'         => 0,
+//			'post_id'    => $post_id,
+////			'user_email' => $user_email,
+//			'timestamp'  => null,
+//			'status'     => 'no_status',
+//			'guests'     => 0,
+//			'anonymous'  => 0,
+//		);
+		$data = array(
 			'id'         => 0,
 			'post_id'    => $post_id,
-//			'user_email' => $user_email,
+			//			'user_email' => $user_email,
 			'timestamp'  => null,
 			'status'     => 'no_status',
 			'guests'     => 0,
 			'anonymous'  => 0,
 		);
 
-		$data = get_comments(
+		$comments = get_comments(
 			array(
 				'post_id'      => $post_id,
 				'author_email' => $user_email,
-				'type'         => 'gatherpress-rsvp',
+				'type'         => self::COMMENT_TYPE,
 			)
 		);
 
+		if ( ! empty( $comments ) ) {
+			$comment = $comments[0];
 
-		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+			$data['id'] = $comment->user_id;
+			$data['timestamp'] = $comment->comment_date;
+			$terms = wp_get_object_terms( $comment->comment_post_ID, self::TAXONOMY );
+			if ( ! empty( $terms ) && is_array( $terms ) ) {
+				$data['status'] = $terms[0]->slug;
+			}
+		}
+
+		return $data;
+//		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 //
 //		// @todo Consider implementing caching for improved performance in the future.
-		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT id, timestamp, status, guests, anonymous FROM %i WHERE post_id = %d AND user_id = %d', $table, $post_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+//		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT id, timestamp, status, guests, anonymous FROM %i WHERE post_id = %d AND user_id = %d', $table, $post_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 
-		return array_merge( $default, (array) $data );
+//		return array_merge( $default, (array) $data );
 	}
 
 	/**
@@ -191,27 +229,35 @@ class Rsvp {
 			array(
 				'post_id'      => $post_id,
 				'author_email' => $user_email,
-				'type'         => 'gatherpress-rsvp',
+				'type'         => self::COMMENT_TYPE,
 			)
 		);
 
 		$args       = array(
 			'comment_post_ID'      => $post_id,
 			'comment_author_email' => $user_email,
-			'comment_type'         => 'gatherpress-rsvp',
+			'comment_type'         => self::COMMENT_TYPE,
 			'user_id'              => $user_id,
 		);
 
 		if ( empty( $data ) ) {
-			wp_insert_comment( $args );
+			$comment_id = wp_insert_comment( $args );
 		} else {
-			$args['comment_ID'] = $data[0]->comment_ID;
+			$comment_id         = $data[0]->comment_ID;
+			$args['comment_ID'] = $comment_id;
+
 			wp_update_comment( $args );
+		}
+
+		if ( is_wp_error( $comment_id ) || empty( $comment_id ) ) {
+			return $data;
 		}
 
 		if ( ! in_array( $status, $this->statuses, true ) ) {
 			return $data;
 		}
+
+		wp_set_object_terms( $comment_id, $status, RSVP::TAXONOMY );
 
 		$table            = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 		$current_response = $this->get( $user_id );
@@ -367,9 +413,9 @@ class Rsvp {
 
 		// @todo add testing with cache.
 		// @codeCoverageIgnoreStart
-		if ( ! empty( $retval ) && is_array( $retval ) ) {
-			return $retval;
-		}
+//		if ( ! empty( $retval ) && is_array( $retval ) ) {
+//			return $retval;
+//		}
 		// @codeCoverageIgnoreEnd
 
 		$retval = array(
@@ -379,18 +425,7 @@ class Rsvp {
 			),
 		);
 
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			return $retval;
-		}
-
-		$site_users  = count_users();
-		$total_users = $site_users['total_users'];
-		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests, anonymous FROM %i WHERE post_id = %d LIMIT %d', $table, $post_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-		$data        = ( ! empty( $data ) ) ? (array) $data : array();
-		$responses   = array();
-		$all_guests  = 0;
-		$statuses    = $this->statuses;
+		$statuses = $this->statuses;
 
 		// `no_status` status is not relevant here.
 		$status_key = array_search( 'no_status', $statuses, true );
@@ -404,72 +439,140 @@ class Rsvp {
 			);
 		}
 
-		foreach ( $data as $response ) {
-			$user_id     = intval( $response['user_id'] );
-			$user_status = sanitize_key( $response['status'] );
-			$user_guests = intval( $response['guests'] );
-			$all_guests += $user_guests;
-			$user_info   = get_userdata( $user_id );
-			$anonymous   = intval( $response['anonymous'] );
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			return $retval;
+		}
 
-			// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
-			// eg for BuddyPress bp_core_get_user_domain( $user_id )
-			$profile = get_author_posts_url( $user_id );
+		$data     = get_comments(
+			array(
+				'post_id'      => $post_id,
+				'type'         => self::COMMENT_TYPE,
+			)
+		);
 
-			if (
-				empty( $user_info ) ||
-				! in_array( $user_status, $statuses, true )
-			) {
+		foreach ( $data as $comment ) {
+			$user_info = get_user_by( 'ID', $comment->user_id );
+			$user_id   = $user_info->ID ?? 0;
+			$status = null;
+
+			$terms = wp_get_object_terms( $comment->comment_ID, self::TAXONOMY );
+			if ( ! empty( $terms ) && is_array( $terms ) ) {
+				$status = $terms[0]->slug;
+			}
+
+			if ( empty( $status ) ) {
 				continue;
 			}
 
-			if (
-				! current_user_can( 'edit_posts' ) && ! empty( $anonymous )
-			) {
-				$user_id = 0;
-				$profile = '';
-
-				$user_info->display_name = __( 'Anonymous', 'gatherpress' );
-			}
-
-			$responses[] = array(
-				'id'        => $user_id,
+			// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
+			// eg for BuddyPress bp_core_get_user_domain( $user_id )
+			$profile  = get_author_posts_url( $user_id );
+			$response = array(
+				'anonymous' => 0,
+				'guests'    => 0,
+				'id'        => $comment->user_id,
 				'name'      => $user_info->display_name ?? __( 'Anonymous', 'gatherpress' ),
 				'photo'     => get_avatar_url( $user_id ),
 				'profile'   => $profile,
 				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
-				'timestamp' => sanitize_text_field( $response['timestamp'] ),
-				'status'    => $user_status,
-				'guests'    => $user_guests,
-				'anonymous' => $anonymous,
-			);
-		}
-
-		// Sort before breaking down statuses in return array.
-		usort( $responses, array( $this, 'sort_by_role' ) );
-
-		$retval['all']['responses'] = $responses;
-		$retval['all']['count']     = count( $retval['all']['responses'] ) + $all_guests;
-
-		foreach ( $statuses as $status ) {
-			$retval[ $status ]['responses'] = array_filter(
-				$responses,
-				static function ( $response ) use ( $status ) {
-					return ( $status === $response['status'] );
-				}
+				'timestamp' => sanitize_text_field( $comment->comment_date ),
+				'status'    => sanitize_key( $status ),
 			);
 
-			$guests = 0;
-
-			foreach ( $retval[ $status ]['responses'] as $response ) {
-				$guests += intval( $response['guests'] );
-			}
-
-			$retval[ $status ]['responses'] = array_values( $retval[ $status ]['responses'] );
-			$retval[ $status ]['count']     = count( $retval[ $status ]['responses'] ) + $guests;
+			$retval['all']['responses'][] = $response;
+			$retval[ sanitize_key( $status ) ]['responses'][] = $response;
 		}
 
-		wp_cache_set( $cache_key, $retval, 15 * MINUTE_IN_SECONDS );
+		foreach( $retval as $key => $value ) {
+			$retval[ $key ]['count'] = count( $value['responses'] );
+		}
+//		$site_users  = count_users();
+//		$total_users = $site_users['total_users'];
+//		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+//		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests, anonymous FROM %i WHERE post_id = %d LIMIT %d', $table, $post_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+//		$data        = ( ! empty( $data ) ) ? (array) $data : array();
+//		$responses   = array();
+//		$all_guests  = 0;
+//		$statuses    = $this->statuses;
+//
+//		// `no_status` status is not relevant here.
+//		$status_key = array_search( 'no_status', $statuses, true );
+//		unset( $statuses[ $status_key ] );
+//		$statuses = array_values( $statuses );
+//
+//		foreach ( $statuses as $status ) {
+//			$retval[ $status ] = array(
+//				'responses' => array(),
+//				'count'     => 0,
+//			);
+//		}
+//
+//		foreach ( $data as $response ) {
+//			$user_id     = intval( $response['user_id'] );
+//			$user_status = sanitize_key( $response['status'] );
+//			$user_guests = intval( $response['guests'] );
+//			$all_guests += $user_guests;
+//			$user_info   = get_userdata( $user_id );
+//			$anonymous   = intval( $response['anonymous'] );
+//
+//			// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
+//			// eg for BuddyPress bp_core_get_user_domain( $user_id )
+//			$profile = get_author_posts_url( $user_id );
+//
+//			if (
+//				empty( $user_info ) ||
+//				! in_array( $user_status, $statuses, true )
+//			) {
+//				continue;
+//			}
+//
+//			if (
+//				! current_user_can( 'edit_posts' ) && ! empty( $anonymous )
+//			) {
+//				$user_id = 0;
+//				$profile = '';
+//
+//				$user_info->display_name = __( 'Anonymous', 'gatherpress' );
+//			}
+//
+//			$responses[] = array(
+//				'id'        => $user_id,
+//				'name'      => $user_info->display_name ?? __( 'Anonymous', 'gatherpress' ),
+//				'photo'     => get_avatar_url( $user_id ),
+//				'profile'   => $profile,
+//				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
+//				'timestamp' => sanitize_text_field( $response['timestamp'] ),
+//				'status'    => $user_status,
+//				'guests'    => $user_guests,
+//				'anonymous' => $anonymous,
+//			);
+//		}
+//
+//		// Sort before breaking down statuses in return array.
+//		usort( $responses, array( $this, 'sort_by_role' ) );
+//
+//		$retval['all']['responses'] = $responses;
+//		$retval['all']['count']     = count( $retval['all']['responses'] ) + $all_guests;
+//
+//		foreach ( $statuses as $status ) {
+//			$retval[ $status ]['responses'] = array_filter(
+//				$responses,
+//				static function ( $response ) use ( $status ) {
+//					return ( $status === $response['status'] );
+//				}
+//			);
+//
+//			$guests = 0;
+//
+//			foreach ( $retval[ $status ]['responses'] as $response ) {
+//				$guests += intval( $response['guests'] );
+//			}
+//
+//			$retval[ $status ]['responses'] = array_values( $retval[ $status ]['responses'] );
+//			$retval[ $status ]['count']     = count( $retval[ $status ]['responses'] ) + $guests;
+//		}
+//
+//		wp_cache_set( $cache_key, $retval, 15 * MINUTE_IN_SECONDS );
 
 		return $retval;
 	}
