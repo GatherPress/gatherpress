@@ -118,13 +118,13 @@ class Rsvp {
 		}
 
 		$data = array(
-			'id'         => 0,
-			'post_id'    => $post_id,
-			'user_id'    => $user_id,
-			'timestamp'  => null,
-			'status'     => 'no_status',
-			'guests'     => 0,
-			'anonymous'  => 0,
+			'id'        => 0,
+			'post_id'   => $post_id,
+			'user_id'   => $user_id,
+			'timestamp' => null,
+			'status'    => 'no_status',
+			'guests'    => 0,
+			'anonymous' => 0,
 		);
 
 		$rsvp = $rsvp_query->get_rsvp(
@@ -135,11 +135,11 @@ class Rsvp {
 		);
 
 		if ( ! empty( $rsvp ) ) {
-			$data['id'] = $rsvp->user_id;
+			$data['id']        = $rsvp->user_id;
 			$data['timestamp'] = $rsvp->comment_date;
 			$data['anonymous'] = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
-			$data['guests'] = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_guests', true ) );
-			$terms = wp_get_object_terms( $rsvp->comment_ID, self::TAXONOMY );
+			$data['guests']    = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_guests', true ) );
+			$terms             = wp_get_object_terms( $rsvp->comment_ID, self::TAXONOMY );
 
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
 				$data['status'] = $terms[0]->slug;
@@ -194,7 +194,7 @@ class Rsvp {
 
 		$post_id = $this->event->ID;
 
-		if ( 1 > $post_id  || 1 > $user_id ) {
+		if ( 1 > $post_id || 1 > $user_id ) {
 			return $data;
 		}
 
@@ -224,10 +224,10 @@ class Rsvp {
 			$guests = 0;
 		}
 
-		$args       = array(
-			'comment_post_ID'      => $post_id,
-			'comment_type'         => self::COMMENT_TYPE,
-			'user_id'              => $user_id,
+		$args = array(
+			'comment_post_ID' => $post_id,
+			'comment_type'    => self::COMMENT_TYPE,
+			'user_id'         => $user_id,
 		);
 
 		if ( empty( $rsvp ) ) {
@@ -381,11 +381,9 @@ class Rsvp {
 	 * @return array An array containing response information grouped by RSVP status.
 	 */
 	public function responses(): array {
-		global $wpdb;
-
-		$post_id   = $this->event->ID;
-		$cache_key = sprintf( self::CACHE_KEY, $post_id );
-		$retval    = wp_cache_get( $cache_key );
+		$post_id    = $this->event->ID;
+		$cache_key  = sprintf( self::CACHE_KEY, $post_id );
+		$retval     = wp_cache_get( $cache_key );
 		$rsvp_query = Rsvp_Query::get_instance();
 
 		// @todo add testing with cache.
@@ -412,9 +410,9 @@ class Rsvp {
 			)
 		);
 
-		$responses   = array();
-		$all_guests  = 0;
-		$statuses    = $this->statuses;
+		$responses  = array();
+		$all_guests = 0;
+		$statuses   = $this->statuses;
 
 		// `no_status` status is not relevant here.
 		$status_key = array_search( 'no_status', $statuses, true );
