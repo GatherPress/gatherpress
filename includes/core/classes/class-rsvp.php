@@ -243,6 +243,13 @@ class Rsvp {
 			return $data;
 		}
 
+		// If not attending and anonymous or status is 'no_status', remove the record.
+		if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
+			wp_delete_comment( $comment_id, true );
+
+			return $data;
+		}
+
 		if ( ! in_array( $status, $this->statuses, true ) ) {
 			return $data;
 		}
@@ -269,23 +276,6 @@ class Rsvp {
 			'guests'    => intval( $guests ),
 			'anonymous' => intval( $anonymous ),
 		);
-
-		if ( intval( $current_response['id'] ) ) {
-			$where = array(
-				'id' => intval( $current_response['id'] ),
-			);
-
-			// If not attending and anonymous, just remove record.
-			if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
-				$wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-
-				$data['status'] = 'no_status'; // Set default status for UI.
-			} else {
-				$wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			}
-		} else {
-			$wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		}
 
 		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ) );
 

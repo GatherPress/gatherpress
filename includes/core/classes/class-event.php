@@ -721,11 +721,11 @@ class Event {
 				return '';
 			}
 
-			$rsvp = $this->rsvp->get( get_current_user_id() );
+			$response = $this->rsvp->get( get_current_user_id() );
 
 			if (
-				! isset( $rsvp['status'] ) ||
-				'attending' !== $rsvp['status'] ||
+				! isset( $response['status'] ) ||
+				'attending' !== $response['status'] ||
 				$this->has_event_past()
 			) {
 				return '';
