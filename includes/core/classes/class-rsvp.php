@@ -145,6 +145,8 @@ class Rsvp {
 		if ( ! empty( $rsvp ) ) {
 			$data['id'] = $rsvp->user_id;
 			$data['timestamp'] = $rsvp->comment_date;
+			$data['anonymous'] = intval( get_comment_meta( $rsvp->comment_ID, '_gatherpress_rsvp_anonymous', true ) );
+			$data['guests'] = intval( get_comment_meta( $rsvp->comment_ID, '_gatherpress_rsvp_guests', true ) );
 			$terms = wp_get_object_terms( $rsvp->comment_ID, self::TAXONOMY );
 
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
@@ -234,6 +236,18 @@ class Rsvp {
 		}
 
 		wp_set_object_terms( $comment_id, $status, RSVP::TAXONOMY );
+
+		if ( ! empty( $guests ) ) {
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', $guests );
+		} else {
+			delete_comment_meta( $comment_id, 'gatherpress_rsvp_guests' );
+		}
+
+		if ( ! empty( $anonymous ) ) {
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', $anonymous );
+		} else {
+			delete_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous' );
+		}
 
 		$table            = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 		$current_response = $this->get( $user_id );
@@ -432,14 +446,10 @@ class Rsvp {
 		foreach ( $data as $response ) {
 			$user_id     = intval( $response->user_id );
 			$user_status = '';
-//			$user_guests = intval( $response['guests'] );
-			// @todo do guest meta.
-			$user_guests = 0;
+			$user_guests = intval( get_comment_meta( $response->comment_ID, 'gatherpress_rsvp_guests', true ) );
 			$all_guests += $user_guests;
 			$user_info   = get_userdata( $user_id );
-//			$anonymous   = intval( $response['anonymous'] );
-			// @todo do anonymous meta.
-			$anonymous   = 0;
+			$anonymous   = intval( get_comment_meta( $response->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
 
 			$terms = wp_get_object_terms( $response->comment_ID, self::TAXONOMY );
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
