@@ -62,9 +62,9 @@ const MaxAttendanceLimit = () => {
 
 	useEffect(() => {
 		if (isNewEvent && 0 !== defaultMaxAttendanceLimit) {
-			setMaxAttendanceLimit(defaultMaxAttendanceLimit);
+			updateMaxAttendanceLimit(defaultMaxAttendanceLimit);
 		}
-	}, [defaultMaxAttendanceLimit]);
+	}, [isNewEvent, defaultMaxAttendanceLimit, updateMaxAttendanceLimit]);
 
 	return (
 		<NumberControl
