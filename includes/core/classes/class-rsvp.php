@@ -212,6 +212,26 @@ class Rsvp {
 				'user_id' => $user_id,
 			)
 		);
+
+		$current_response = $this->get( $user_id );
+		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
+
+		if ( 'attending' === $status && $limit_reached ) {
+			$guests = $current_response['guests'];
+		}
+
+		if (
+			in_array( $status, array( 'attending', 'waiting_list' ), true ) &&
+			'attending' !== $current_response['status'] &&
+			$limit_reached
+		) {
+			$status = 'waiting_list';
+		}
+
+		if ( 'waiting_list' === $status ) {
+			$guests = 0;
+		}
+
 		$args       = array(
 			'comment_post_ID'      => $post_id,
 			'comment_type'         => self::COMMENT_TYPE,
@@ -247,26 +267,6 @@ class Rsvp {
 			update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', $anonymous );
 		} else {
 			delete_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous' );
-		}
-
-		$table            = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$current_response = $this->get( $user_id );
-		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
-
-		if ( 'attending' === $status && $limit_reached ) {
-			$guests = $current_response['guests'];
-		}
-
-		if (
-			in_array( $status, array( 'attending', 'waiting_list' ), true ) &&
-			'attending' !== $current_response['status'] &&
-			$limit_reached
-		) {
-			$status = 'waiting_list';
-		}
-
-		if ( 'waiting_list' === $status ) {
-			$guests = 0;
 		}
 
 		$data = array(
