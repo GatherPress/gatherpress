@@ -82,7 +82,7 @@ class Rsvp {
 	 */
 	public function __construct( int $post_id ) {
 		$this->event                = get_post( $post_id );
-		$this->max_attendance_limit = Settings::get_instance()->get_value( 'general', 'general', 'max_attendance_limit' );
+		$this->max_attendance_limit = intval( get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ) );
 	}
 
 	/**
@@ -294,6 +294,10 @@ class Rsvp {
 	public function attending_limit_reached( array $current_response, int $guests = 0 ): bool {
 		$responses  = $this->responses();
 		$user_count = 1;
+
+		if ( empty( $this->max_attendance_limit ) ) {
+			return false;
+		}
 
 		// If the user record was previously attending adjust numbers to figure out new limit.
 		if ( 'attending' === $current_response['status'] ) {
