@@ -145,8 +145,8 @@ class Rsvp {
 		if ( ! empty( $rsvp ) ) {
 			$data['id'] = $rsvp->user_id;
 			$data['timestamp'] = $rsvp->comment_date;
-			$data['anonymous'] = intval( get_comment_meta( $rsvp->comment_ID, '_gatherpress_rsvp_anonymous', true ) );
-			$data['guests'] = intval( get_comment_meta( $rsvp->comment_ID, '_gatherpress_rsvp_guests', true ) );
+			$data['anonymous'] = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
+			$data['guests'] = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_guests', true ) );
 			$terms = wp_get_object_terms( $rsvp->comment_ID, self::TAXONOMY );
 
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
@@ -202,7 +202,7 @@ class Rsvp {
 
 		$post_id = $this->event->ID;
 
-		if ( 1 > $post_id ) {
+		if ( 1 > $post_id  || 1 > $user_id ) {
 			return $data;
 		}
 
