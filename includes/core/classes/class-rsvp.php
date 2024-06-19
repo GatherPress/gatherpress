@@ -81,7 +81,7 @@ class Rsvp {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		$this->event               = get_post( $post_id );
+		$this->event                = get_post( $post_id );
 		$this->max_attendance_limit = Settings::get_instance()->get_value( 'general', 'general', 'max_attendance_limit' );
 	}
 
