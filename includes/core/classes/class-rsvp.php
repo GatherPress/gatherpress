@@ -26,14 +26,6 @@ use WP_Post;
  */
 class Rsvp {
 	/**
-	 * Table format for RSVPs.
-	 *
-	 * @since 1.0.0
-	 * @var string $TABLE_FORMAT
-	 */
-	const TABLE_FORMAT = '%sgatherpress_rsvps';
-
-	/**
 	 * Constant representing the RSVP Taxonomy.
 	 *
 	 * This constant defines the status taxonomy for RSVP comment type.
@@ -336,8 +328,7 @@ class Rsvp {
 				}
 
 				$response = $waiting_list[ $i ];
-				$user     = get_userdata( $response['id'] );
-				$this->save( $user->user_email, 'attending', $response['anonymous'] );
+				$this->save( $response['id'], 'attending', $response['anonymous'] );
 				++$i;
 			}
 		}

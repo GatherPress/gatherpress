@@ -367,7 +367,6 @@ class Setup {
 		global $wpdb;
 
 		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
-		$tables[] = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
 
 		return $tables;
 	}
@@ -404,21 +403,6 @@ class Setup {
 					PRIMARY KEY  (post_id),
 					KEY datetime_start_gmt (datetime_start_gmt),
 					KEY datetime_end_gmt (datetime_end_gmt)
-				) {$charset_collate};";
-
-		$table = sprintf( Rsvp::TABLE_FORMAT, $prefix );
-		$sql[] = "CREATE TABLE {$table} (
-					id bigint(20) unsigned NOT NULL auto_increment,
-					post_id bigint(20) unsigned NOT NULL default '0',
-					user_id bigint(20) unsigned NOT NULL default '0',
-					timestamp datetime NOT NULL default '0000-00-00 00:00:00',
-					status varchar(255) default NULL,
-					anonymous tinyint(1) default 0,
-					guests tinyint(1) default 0,
-					PRIMARY KEY  (id),
-					KEY post_id (post_id),
-					KEY user_id (user_id),
-					KEY status (status)
 				) {$charset_collate};";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
