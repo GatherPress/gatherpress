@@ -568,6 +568,7 @@ class Rest_Api {
 			foreach ( $query->posts as $post_id ) {
 				$event             = new Event( $post_id );
 				$venue_information = $event->get_venue_information();
+				$user              = get_userdata( get_current_user_id() );
 				$posts[]           = array(
 					'ID'                       => $post_id,
 					'datetime_start'           => $event->get_datetime_start( $datetime_format ),
@@ -581,8 +582,8 @@ class Rest_Api {
 					'enable_anonymous_rsvp'    => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
 					'enable_initial_decline'   => (bool) get_post_meta( $post_id, 'gatherpress_enable_initial_decline', true ),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
-						? $event->rsvp->get( get_current_user_id() )
+					'current_user'             => ( $event->rsvp && $event->rsvp->get( $user->user_email ) )
+						? $event->rsvp->get( $user->user_email )
 						: '',
 					'venue'                    => ( $venue_information['name'] ? $event->get_venue_information() : null ),
 				);
@@ -660,7 +661,14 @@ class Rest_Api {
 			is_user_member_of_blog( $user_id ) &&
 			! $event->has_event_past()
 		) {
-			$user_record = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+			$user_email  = '';
+			$user        = get_user_by( 'email', $user_email );
+
+			if ( is_a( $user, 'WP_User' ) ) {
+				$user_email = $user->user_email;
+			}
+
+			$user_record = $event->rsvp->save( $user_email, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
 

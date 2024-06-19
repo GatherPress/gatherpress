@@ -116,20 +116,16 @@ class Rsvp {
 	 * @param int $user_id A user ID.
 	 * @return array An array containing RSVP information, including ID, post ID, user ID, timestamp, status, and guests.
 	 */
-	public function get( int $user_id ): array {
+	public function get( string $user_email ): array {
 		$post_id = $this->event->ID;
 
-		if ( 1 > $post_id || 1 > $user_id ) {
+		if ( 1 > $post_id  ) {
 			return array();
 		}
-
-		// Temporary code until we update argument to pass email.
-		$user_email = get_userdata( $user_id )->user_email;
 
 		$data = array(
 			'id'         => 0,
 			'post_id'    => $post_id,
-			// 'user_email' => $user_email,
 			'timestamp'  => null,
 			'status'     => 'no_status',
 			'guests'     => 0,
@@ -184,7 +180,7 @@ class Rsvp {
 	 *               the acceptable values. If the attending limit is reached, 'status' may be automatically set to 'waiting_list',
 	 *               and 'guests' to 0, depending on the context.
 	 */
-	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
+	public function save( string $user_email, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		global $wpdb;
 
 		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
@@ -203,13 +199,18 @@ class Rsvp {
 		);
 
 		$post_id = $this->event->ID;
+		$user_id = 0;
 
-		if ( 1 > $post_id || 1 > $user_id ) {
+		if ( 1 > $post_id ) {
 			return $data;
 		}
 
-		// Temporary code until we update argument to pass email.
-		$user_email = get_userdata( $user_id )->user_email;
+		$user = get_user_by( 'email', $user_email );
+
+		if ( is_a( $user, 'WP_User' ) ) {
+			$user_id = $user->ID;
+		}
+
 		remove_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
 		$data = get_comments(
 			array(
@@ -247,7 +248,7 @@ class Rsvp {
 		wp_set_object_terms( $comment_id, $status, RSVP::TAXONOMY );
 
 		$table            = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$current_response = $this->get( $user_id );
+		$current_response = $this->get( $user_email );
 		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
 		if ( 'attending' === $status && $limit_reached ) {
@@ -333,7 +334,8 @@ class Rsvp {
 				}
 
 				$response = $waiting_list[ $i ];
-				$this->save( $response['id'], 'attending', $response['anonymous'] );
+				$user     = get_userdata( $response['id'] );
+				$this->save( $user->user_email, 'attending', $response['anonymous'] );
 				++$i;
 			}
 		}

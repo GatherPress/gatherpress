@@ -721,11 +721,17 @@ class Event {
 				return '';
 			}
 
-			$user = $this->rsvp->get( get_current_user_id() );
+			$user = get_userdata( get_current_user_id() );
+
+			if ( ! is_a( $user, 'WP_User' ) ) {
+				return '';
+			}
+
+			$rsvp = $this->rsvp->get( $user->user_email );
 
 			if (
-				! isset( $user['status'] ) ||
-				'attending' !== $user['status'] ||
+				! isset( $rsvp['status'] ) ||
+				'attending' !== $rsvp['status'] ||
 				$this->has_event_past()
 			) {
 				return '';

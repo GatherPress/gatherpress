@@ -276,6 +276,12 @@ class Assets {
 		$settings            = Settings::get_instance();
 		$event_details       = array();
 		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
+		$user                = get_userdata( get_current_user_id() );
+		$user_email          = '';
+
+		if ( is_a( $user, 'WP_User' ) ) {
+			$user_email = $user->user_email;
+		}
 
 		if ( is_user_logged_in() ) {
 			$event_rest_api = '/' . $event_rest_api_slug;
@@ -285,7 +291,7 @@ class Assets {
 
 		if ( ! empty( $event->event ) ) {
 			$event_details = array(
-				'currentUser'          => $event->rsvp->get( get_current_user_id() ),
+				'currentUser'          => $event->rsvp->get( $user_email ),
 				'dateTime'             => $event->get_datetime(),
 				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
 				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'gatherpress_enable_initial_decline', true ),

@@ -37,8 +37,8 @@ class Event_Cli extends WP_CLI {
 	 * [--event_id=<event_id>]
 	 * : ID of an event.
 	 *
-	 * [--user_id=<user_id>]
-	 * : ID of a user.
+	 * [--user_email=<user_email>]
+	 * : Email of a user.
 	 *
 	 * [--status=<status>]
 	 * : Attendance status.
@@ -52,8 +52,8 @@ class Event_Cli extends WP_CLI {
 	 * ## EXAMPLES
 	 *
 	 *    # Update RSVP for an event.
-	 *    $ wp gatherpress event rsvp --event_id=525 --user_id=1 --status="not_attending"
-	 *    Success: The RSVP status for Event ID "525" has been successfully set to "not_attending" for User ID "1".
+	 *    $ wp gatherpress event rsvp --event_id=525 --user_email=test@test.com --status="not_attending"
+	 *    Success: The RSVP status for Event ID "525" has been successfully set to "not_attending" for email "test@test.com".
 	 *
 	 * @since 1.0.0
 	 *
@@ -63,13 +63,13 @@ class Event_Cli extends WP_CLI {
 	 * @return void
 	 */
 	public function rsvp( array $args = array(), array $assoc_args = array() ): void {
-		$event_id  = (int) $assoc_args['event_id'];
-		$user_id   = (int) $assoc_args['user_id'];
-		$guests    = ! empty( $assoc_args['guests'] ) ? (int) $assoc_args['guests'] : 0;
-		$anonymous = ! empty( $assoc_args['anonymous'] ) ? (int) $assoc_args['anonymous'] : 0;
-		$status    = ! empty( $assoc_args['status'] ) ? (string) $assoc_args['status'] : 'attending';
-		$event     = new Event( $event_id );
-		$response  = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+		$event_id   = (int) $assoc_args['event_id'];
+		$user_email = $assoc_args['user_email'];
+		$guests     = ! empty( $assoc_args['guests'] ) ? (int) $assoc_args['guests'] : 0;
+		$anonymous  = ! empty( $assoc_args['anonymous'] ) ? (int) $assoc_args['anonymous'] : 0;
+		$status     = ! empty( $assoc_args['status'] ) ? (string) $assoc_args['status'] : 'attending';
+		$event      = new Event( $event_id );
+		$response   = $event->rsvp->save( $user_email, $status, $anonymous, $guests );
 
 		static::success(
 			sprintf(
@@ -77,7 +77,7 @@ class Event_Cli extends WP_CLI {
 				__( 'The RSVP status for Event ID "%1$d" has been successfully set to "%2$s" for User ID "%3$d".', 'gatherpress' ),
 				$event_id,
 				$response['status'],
-				$user_id
+				$user_email
 			),
 		);
 	}
