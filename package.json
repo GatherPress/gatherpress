@@ -79,6 +79,7 @@
 		"react-tooltip": "^5.26.3"
 	},
 	"dependencies": {
+		"axios": "^1.7.2",
 		"leaflet": "^1.9.4",
 		"react-leaflet": "^4.2.1"
 	}

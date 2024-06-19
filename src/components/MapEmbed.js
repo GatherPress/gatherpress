@@ -44,9 +44,7 @@ const MapEmbed = (props) => {
 		location = '660 4th Street #119 San Francisco CA 94107, USA';
 	}
 
-	if (!location) {
-		return <></>;
-	} else if (mapPlatform === 'osm') {
+	if (mapPlatform === 'osm') {
 		return (
 			<LeafletMap
 				location={location}
@@ -57,19 +55,19 @@ const MapEmbed = (props) => {
 				height={height}
 			/>
 		);
-	} else {
-		return (
-			<GoogleMap
-				location={location}
-				className={className}
-				zoom={zoom}
-				type={type}
-				height={height}
-			/>
-		);
+	} else if (!location) {
+		return <></>;
 	}
 
-	return <></>;
+	return (
+		<GoogleMap
+			location={location}
+			className={className}
+			zoom={zoom}
+			type={type}
+			height={height}
+		/>
+	);
 };
 
 export default MapEmbed;

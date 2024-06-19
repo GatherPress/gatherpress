@@ -70,7 +70,7 @@ const VenueInformation = () => {
 				)
 				.then((res) => {
 					if (
-						typeof res.data.features.length !== 0 &&
+						res.data.features.length !== 0 &&
 						typeof res.data.features[0]?.geometry !== 'undefined'
 					) {
 						lat = res.data.features[0].geometry.coordinates[1];
@@ -81,13 +81,13 @@ const VenueInformation = () => {
 						longitude: lng,
 					});
 				})
-				.catch((err) => {
-					console.log(err)
+				.catch(() => {
+					// error silently
 				});
-		}, 2000)
+		}, 2000);
 
 		return () => clearTimeout(getData);
-	}, [fullAddress]);
+	}, [fullAddress, updateVenueMeta]);
 
 	return (
 		<>
@@ -96,7 +96,7 @@ const VenueInformation = () => {
 				value={fullAddress}
 				onChange={(value) => {
 					Broadcaster({ setFullAddress: value });
-					updateVenueMeta({'fullAddress': value});
+					updateVenueMeta({ fullAddress: value });
 				}}
 			/>
 			<TextControl

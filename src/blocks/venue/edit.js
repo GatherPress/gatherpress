@@ -121,7 +121,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		phoneNumber,
 		website,
 		latitude,
-		longitude
+		longitude,
 	]);
 
 	return (

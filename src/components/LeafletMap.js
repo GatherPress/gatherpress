@@ -2,7 +2,7 @@
  * External dependencies.
  */
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect } from '@wordpress/element';
 
 /**
  * LeafletMap component for GatherPress.
@@ -28,14 +28,13 @@ const LeafletMap = (props) => {
 	const position = [latitude, longitude];
 
 	function FlyMapTo() {
+		const map = useMap();
 
-		const map = useMap()
-	
 		useEffect(() => {
-			map.setView(position, zoom)
-		}, [position])
-	
-		return null
+			map.setView(position, zoom);
+		}, [map]);
+
+		return null;
 	}
 
 	return (
