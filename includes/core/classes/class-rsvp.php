@@ -387,6 +387,7 @@ class Rsvp {
 		$post_id   = $this->event->ID;
 		$cache_key = sprintf( self::CACHE_KEY, $post_id );
 		$retval    = wp_cache_get( $cache_key );
+		$rsvp_query = Rsvp_Query::get_instance();
 
 		// @todo add testing with cache.
 		// @codeCoverageIgnoreStart
@@ -406,15 +407,12 @@ class Rsvp {
 			return $retval;
 		}
 
-		remove_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
-		$data     = get_comments(
+		$data = $rsvp_query->get_rsvps(
 			array(
-				'post_id'      => $post_id,
-				'type'         => self::COMMENT_TYPE,
+				'post_id' => $post_id,
 			)
 		);
-		add_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
-		$data        = ( ! empty( $data ) ) ? (array) $data : array();
+
 		$responses   = array();
 		$all_guests  = 0;
 		$statuses    = $this->statuses;
