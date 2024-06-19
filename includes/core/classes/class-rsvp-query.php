@@ -6,6 +6,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use WP_comment;
 use WP_Comment_Query;
 use WP_Tax_Query;
 
@@ -37,21 +38,56 @@ class Rsvp_Query {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_query' ) );
-		add_filter( 'comments_clauses', array( $this, 'comments_taxonomy_query' ), 10, 2 );
+		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
 	}
 
-	public function comments_taxonomy_query( $clauses, $object ) {
+	public function taxonomy_query( $clauses, $object ) {
 		global $wpdb;
 
 		if ( ! empty( $object->query_vars['tax_query'] ) ) {
 			$object->tax_query = new WP_Tax_Query( $object->query_vars['tax_query'] );
-			$pieces = $object->tax_query->get_sql( $wpdb->comments, 'comment_ID' );
-
-			$clauses['join'] .= $pieces['join'];
+			$pieces            = $object->tax_query->get_sql( $wpdb->comments, 'comment_ID' );
+			$clauses['join']  .= $pieces['join'];
 			$clauses['where'] .= $pieces['where'];
 		}
 
 		return $clauses;
+	}
+
+	public function get_rsvps( array $args ): array {
+		$args = array_merge(
+			array(
+				'type'   => RSVP::COMMENT_TYPE,
+			),
+			$args
+		);
+
+		// Never allow count-only return, we always want array.
+		$args['count'] = false;
+
+		remove_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_query' ) );
+
+		$rsvps = get_comments( $args );
+
+		add_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_query' ) );
+
+		return (array) $rsvps;
+	}
+
+	public function get_rsvp( $identifier, array $args ): ?WP_Comment {
+		$args = array_merge(
+			array(
+				'number' => 1,
+			),
+			$args
+		);
+		$rsvp = $this->get_rsvps( $args );
+
+		if ( empty( $rsvp ) ) {
+			return null;
+		}
+
+		return $rsvp[0];
 	}
 
 	public function exclude_rsvp_from_query( $query ) {

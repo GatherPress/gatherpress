@@ -113,10 +113,10 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int $user_id A user ID.
+	 * @param int|string $identifier A user ID or email address.
 	 * @return array An array containing RSVP information, including ID, post ID, user ID, timestamp, status, and guests.
 	 */
-	public function get( string $user_email ): array {
+	public function get( $identifier ): array {
 		$post_id = $this->event->ID;
 
 		if ( 1 > $post_id  ) {
@@ -132,14 +132,23 @@ class Rsvp {
 			'anonymous'  => 0,
 		);
 
-		remove_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
-		$comments = get_comments(
-			array(
-				'post_id'      => $post_id,
-				'author_email' => $user_email,
-				'type'         => self::COMMENT_TYPE,
-			)
+		$args = array(
+			'post_id' => $post_id,
+			'number' => 1,
+			'status' => 'approve',
+			'type' => self::COMMENT_TYPE,
 		);
+
+		if ( intval( $identifier ) ) {
+			$args['user_id'] = (int) $identifier;
+		} elseif ( is_email( $identifier ) ) {
+			$args['author_email'] = $identifier;
+		} else {
+			return array();
+		}
+
+		remove_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
+		$comments = get_comments( $args );
 		add_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
 
 		if ( ! empty( $comments ) ) {
@@ -154,6 +163,14 @@ class Rsvp {
 		}
 
 		return $data;
+	}
+
+	private function identify_user_data( $identifier ): array {
+		$data = array();
+
+		if ( intval( $identifier ) ) {
+			$data['user_id'] = (int) $identifier;
+		}
 	}
 
 	/**
@@ -180,9 +197,10 @@ class Rsvp {
 	 *               the acceptable values. If the attending limit is reached, 'status' may be automatically set to 'waiting_list',
 	 *               and 'guests' to 0, depending on the context.
 	 */
-	public function save( string $user_email, string $status, int $anonymous = 0, int $guests = 0 ): array {
+	public function save( $identifier, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		global $wpdb;
 
+		$rsvp_query      = Rsvp_Query::get_instance();
 		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
 
 		if ( $max_guest_limit < $guests ) {
@@ -205,25 +223,21 @@ class Rsvp {
 			return $data;
 		}
 
-		$user = get_user_by( 'email', $user_email );
+		$user = get_user_by( 'email', $identifier );
 
 		if ( is_a( $user, 'WP_User' ) ) {
 			$user_id = $user->ID;
 		}
 
-		remove_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
-		$data = get_comments(
+		$data = $rsvp_query->get_rsvp(
 			array(
 				'post_id'      => $post_id,
-				'author_email' => $user_email,
-				'type'         => self::COMMENT_TYPE,
+				'author_email' => $identifier,
 			)
 		);
-		add_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
-
 		$args       = array(
 			'comment_post_ID'      => $post_id,
-			'comment_author_email' => $user_email,
+			'comment_author_email' => $identifier,
 			'comment_type'         => self::COMMENT_TYPE,
 			'user_id'              => $user_id,
 		);

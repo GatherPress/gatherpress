@@ -662,7 +662,7 @@ class Rest_Api {
 			! $event->has_event_past()
 		) {
 			$user_email  = '';
-			$user        = get_user_by( 'email', $user_email );
+			$user        = get_userdata( $user_id );
 
 			if ( is_a( $user, 'WP_User' ) ) {
 				$user_email = $user->user_email;
