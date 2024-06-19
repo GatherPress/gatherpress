@@ -113,64 +113,46 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int|string $identifier A user ID or email address.
+	 * @param int $user_id A user ID.
+	 *
 	 * @return array An array containing RSVP information, including ID, post ID, user ID, timestamp, status, and guests.
 	 */
-	public function get( $identifier ): array {
-		$post_id = $this->event->ID;
+	public function get( int $user_id ): array {
+		$post_id    = $this->event->ID;
+		$rsvp_query = Rsvp_Query::get_instance();
 
-		if ( 1 > $post_id  ) {
+		if ( 1 > $post_id || 1 > $user_id ) {
 			return array();
 		}
 
 		$data = array(
 			'id'         => 0,
 			'post_id'    => $post_id,
+			'user_id'    => $user_id,
 			'timestamp'  => null,
 			'status'     => 'no_status',
 			'guests'     => 0,
 			'anonymous'  => 0,
 		);
 
-		$args = array(
-			'post_id' => $post_id,
-			'number' => 1,
-			'status' => 'approve',
-			'type' => self::COMMENT_TYPE,
+		$rsvp = $rsvp_query->get_rsvp(
+			array(
+				'post_id' => $post_id,
+				'user_id' => $user_id,
+			)
 		);
 
-		if ( intval( $identifier ) ) {
-			$args['user_id'] = (int) $identifier;
-		} elseif ( is_email( $identifier ) ) {
-			$args['author_email'] = $identifier;
-		} else {
-			return array();
-		}
+		if ( ! empty( $rsvp ) ) {
+			$data['id'] = $rsvp->user_id;
+			$data['timestamp'] = $rsvp->comment_date;
+			$terms = wp_get_object_terms( $rsvp->comment_ID, self::TAXONOMY );
 
-		remove_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
-		$comments = get_comments( $args );
-		add_filter( 'pre_get_comments', array( Rsvp_Query::get_instance(), 'exclude_rsvp_from_query' ) );
-
-		if ( ! empty( $comments ) ) {
-			$comment = $comments[0];
-
-			$data['id'] = $comment->user_id;
-			$data['timestamp'] = $comment->comment_date;
-			$terms = wp_get_object_terms( $comment->comment_ID, self::TAXONOMY );
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
 				$data['status'] = $terms[0]->slug;
 			}
 		}
 
 		return $data;
-	}
-
-	private function identify_user_data( $identifier ): array {
-		$data = array();
-
-		if ( intval( $identifier ) ) {
-			$data['user_id'] = (int) $identifier;
-		}
 	}
 
 	/**
@@ -197,7 +179,7 @@ class Rsvp {
 	 *               the acceptable values. If the attending limit is reached, 'status' may be automatically set to 'waiting_list',
 	 *               and 'guests' to 0, depending on the context.
 	 */
-	public function save( $identifier, string $status, int $anonymous = 0, int $guests = 0 ): array {
+	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		global $wpdb;
 
 		$rsvp_query      = Rsvp_Query::get_instance();
@@ -217,35 +199,27 @@ class Rsvp {
 		);
 
 		$post_id = $this->event->ID;
-		$user_id = 0;
 
 		if ( 1 > $post_id ) {
 			return $data;
 		}
 
-		$user = get_user_by( 'email', $identifier );
-
-		if ( is_a( $user, 'WP_User' ) ) {
-			$user_id = $user->ID;
-		}
-
-		$data = $rsvp_query->get_rsvp(
+		$rsvp = $rsvp_query->get_rsvp(
 			array(
-				'post_id'      => $post_id,
-				'author_email' => $identifier,
+				'post_id' => $post_id,
+				'user_id' => $user_id,
 			)
 		);
 		$args       = array(
 			'comment_post_ID'      => $post_id,
-			'comment_author_email' => $identifier,
 			'comment_type'         => self::COMMENT_TYPE,
 			'user_id'              => $user_id,
 		);
 
-		if ( empty( $data ) ) {
+		if ( empty( $rsvp ) ) {
 			$comment_id = wp_insert_comment( $args );
 		} else {
-			$comment_id         = $data[0]->comment_ID;
+			$comment_id         = $rsvp->comment_ID;
 			$args['comment_ID'] = $comment_id;
 
 			wp_update_comment( $args );
@@ -262,7 +236,7 @@ class Rsvp {
 		wp_set_object_terms( $comment_id, $status, RSVP::TAXONOMY );
 
 		$table            = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$current_response = $this->get( $user_email );
+		$current_response = $this->get( $user_id );
 		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
 		if ( 'attending' === $status && $limit_reached ) {

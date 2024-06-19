@@ -58,6 +58,7 @@ class Rsvp_Query {
 		$args = array_merge(
 			array(
 				'type'   => RSVP::COMMENT_TYPE,
+				'status' => 'approve',
 			),
 			$args
 		);
@@ -74,7 +75,7 @@ class Rsvp_Query {
 		return (array) $rsvps;
 	}
 
-	public function get_rsvp( $identifier, array $args ): ?WP_Comment {
+	public function get_rsvp( array $args ): ?WP_Comment {
 		$args = array_merge(
 			array(
 				'number' => 1,
