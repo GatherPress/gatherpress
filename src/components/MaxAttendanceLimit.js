@@ -2,8 +2,10 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-import { __experimentalNumberControl as NumberControl } from '@wordpress/components';
+import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalNumberControl as NumberControl,
+} from '@wordpress/components';
 import { useState, useEffect, useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
 
@@ -28,7 +30,6 @@ const MaxAttendanceLimit = () => {
 		return select('core/editor').isCleanNewPost();
 	}, []);
 
-	// eslint-disable-next-line no-shadow
 	let defaultMaxAttendanceLimit = useSelect((select) => {
 		return select('core/editor').getEditedPostAttribute('meta')
 			.gatherpress_max_attendance_limit;
@@ -40,29 +41,35 @@ const MaxAttendanceLimit = () => {
 		);
 	}
 
+	if (false === defaultMaxAttendanceLimit) {
+		defaultMaxAttendanceLimit = 0;
+	}
+
 	const [maxAttendanceLimit, setMaxAttendanceLimit] = useState(
 		defaultMaxAttendanceLimit
 	);
 
 	const updateMaxAttendanceLimit = useCallback(
 		(value) => {
-			const meta = { max_attendance: Number(value) };
+			const meta = { gatherpress_max_attendance_limit: Number(value) };
 
 			setMaxAttendanceLimit(value);
 			editPost({ meta });
-			unlockPostSaving(); // Call `unlockPostSaving` here to unlock the save button after updating the meta
+			unlockPostSaving();
 		},
 		[editPost, unlockPostSaving]
 	);
 
 	useEffect(() => {
-		setMaxAttendanceLimit(defaultMaxAttendanceLimit);
+		if (isNewEvent && 0 !== defaultMaxAttendanceLimit) {
+			setMaxAttendanceLimit(defaultMaxAttendanceLimit);
+		}
 	}, [defaultMaxAttendanceLimit]);
 
 	return (
 		<NumberControl
 			label={__('Maximum Attendance Limit', 'gatherpress')}
-			value={maxAttendanceLimit ?? 50}
+			value={maxAttendanceLimit}
 			min={0}
 			onChange={(value) => {
 				updateMaxAttendanceLimit(value);

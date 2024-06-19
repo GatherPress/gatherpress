@@ -103,9 +103,9 @@ class General extends Base {
 							),
 						),
 					),
-					'max_attending_limit'    => array(
+					'max_attendance_limit'    => array(
 						'labels'      => array(
-							'name' => __( 'Maximum Attending Limit', 'gatherpress' ),
+							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
 						),
 						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
 						'field'       => array(

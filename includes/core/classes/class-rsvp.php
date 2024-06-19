@@ -60,7 +60,7 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var int Represents the maximum number of attendees allowed for an event.
 	 */
-	protected int $max_attending_limit;
+	protected int $max_attendance_limit;
 
 	/**
 	 * The event post object associated with this RSVP instance.
@@ -82,7 +82,7 @@ class Rsvp {
 	 */
 	public function __construct( int $post_id ) {
 		$this->event               = get_post( $post_id );
-		$this->max_attending_limit = Settings::get_instance()->get_value( 'general', 'general', 'max_attending_limit' );
+		$this->max_attendance_limit = Settings::get_instance()->get_value( 'general', 'general', 'max_attendance_limit' );
 	}
 
 	/**
@@ -247,7 +247,7 @@ class Rsvp {
 		$i         = 0;
 
 		if (
-			intval( $responses['attending']['count'] ) < $this->max_attending_limit
+			intval( $responses['attending']['count'] ) < $this->max_attendance_limit
 			&& intval( $responses['waiting_list']['count'] )
 		) {
 			$waiting_list = $responses['waiting_list']['responses'];
@@ -255,7 +255,7 @@ class Rsvp {
 			// People who are longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
-			$total = $this->max_attending_limit - intval( $responses['attending']['count'] );
+			$total = $this->max_attendance_limit - intval( $responses['attending']['count'] );
 
 			while ( $i < $total ) {
 				// Check that we have enough on the waiting_list to run this.
@@ -303,7 +303,7 @@ class Rsvp {
 
 		if (
 			! empty( $responses['attending'] ) &&
-			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attending_limit
+			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attendance_limit
 		) {
 			return true;
 		}

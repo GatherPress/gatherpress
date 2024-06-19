@@ -160,10 +160,10 @@ class Event_Setup {
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
-				'type'              => 'number',
+				'type'              => 'integer',
 			),
 			'gatherpress_enable_anonymous_rsvp'  => array(
 				'auth_callback'     => function () {
