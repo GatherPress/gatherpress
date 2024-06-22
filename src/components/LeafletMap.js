@@ -37,6 +37,10 @@ const LeafletMap = (props) => {
 		return null;
 	}
 
+	if(!latitude || !longitude) {
+		return <></>
+	}
+
 	return (
 		<MapContainer
 			style={style}
