@@ -37,8 +37,8 @@ const LeafletMap = (props) => {
 		return null;
 	}
 
-	if(!latitude || !longitude) {
-		return <></>
+	if( !latitude || !longitude ) {
+		return <></>;
 	}
 
 	return (

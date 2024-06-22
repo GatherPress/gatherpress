@@ -88,7 +88,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		setWebsite,
 		setIsOnlineEventTerm,
 		setLatitude,
-		setLongitude
+		setLongitude,
 	});
 
 	useEffect(() => {
