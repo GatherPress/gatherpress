@@ -60,7 +60,7 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var int Represents the maximum number of attendees allowed for an event.
 	 */
-	protected int $max_attending_limit;
+	protected int $max_attendance_limit;
 
 	/**
 	 * The event post object associated with this RSVP instance.
@@ -81,8 +81,8 @@ class Rsvp {
 	 * @param int $post_id The event post ID.
 	 */
 	public function __construct( int $post_id ) {
-		$this->event               = get_post( $post_id );
-		$this->max_attending_limit = Settings::get_instance()->get_value( 'general', 'general', 'max_attending_limit' );
+		$this->event                = get_post( $post_id );
+		$this->max_attendance_limit = intval( get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ) );
 	}
 
 	/**
@@ -247,7 +247,7 @@ class Rsvp {
 		$i         = 0;
 
 		if (
-			intval( $responses['attending']['count'] ) < $this->max_attending_limit
+			intval( $responses['attending']['count'] ) < $this->max_attendance_limit
 			&& intval( $responses['waiting_list']['count'] )
 		) {
 			$waiting_list = $responses['waiting_list']['responses'];
@@ -255,7 +255,7 @@ class Rsvp {
 			// People who are longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
-			$total = $this->max_attending_limit - intval( $responses['attending']['count'] );
+			$total = $this->max_attendance_limit - intval( $responses['attending']['count'] );
 
 			while ( $i < $total ) {
 				// Check that we have enough on the waiting_list to run this.
@@ -295,6 +295,10 @@ class Rsvp {
 		$responses  = $this->responses();
 		$user_count = 1;
 
+		if ( empty( $this->max_attendance_limit ) ) {
+			return false;
+		}
+
 		// If the user record was previously attending adjust numbers to figure out new limit.
 		if ( 'attending' === $current_response['status'] ) {
 			$guests     = $guests - intval( $current_response['guests'] );
@@ -303,7 +307,7 @@ class Rsvp {
 
 		if (
 			! empty( $responses['attending'] ) &&
-			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attending_limit
+			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attendance_limit
 		) {
 			return true;
 		}

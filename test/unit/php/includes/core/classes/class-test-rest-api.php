@@ -467,7 +467,7 @@ class Test_Rest_Api extends Base {
 		$event    = new Event( $event_id );
 		$members  = $instance->get_members( $send, $event_id );
 
-		Utility::set_and_get_hidden_property( $event->rsvp, 'max_attending_limit', 2 );
+		Utility::set_and_get_hidden_property( $event->rsvp, 'max_attendance_limit', 2 );
 
 		$this->assertEmpty( $members );
 
