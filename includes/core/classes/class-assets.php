@@ -127,7 +127,7 @@ class Assets {
 				'gatherpress-leaflet',
 				'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
 				array(),
-				null
+				'1.0.0'
 			);
 		}
 	}
