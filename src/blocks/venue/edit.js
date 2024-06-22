@@ -218,7 +218,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							isOnlineEventTerm={isOnlineEventTerm}
 							onlineEventLink={onlineEventLink}
 						/>
-						{mapShow && (
+						{mapShow && !isOnlineEventTerm && (
 							<MapEmbed
 								location={fullAddress}
 								latitude={latitude}
