@@ -22,12 +22,12 @@ if ( ! isset( $name, $label, $options, $value, $description ) ) {
 }
 ?>
 <input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
-<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $gp_label ); ?></label><br/>
+<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $gatherpress_label ); ?></label><br/>
 <select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>">
 	<?php
 	foreach ( $options as $gp_key => $gp_label ) :
 	?>
-	<option value="<?php echo esc_attr( $gp_key ); ?>" <?php echo ( $gp_key === $value ? 'selected' : '' ) ?>><?php echo esc_html( $label ); ?></option>
+	<option value="<?php echo esc_attr( $gatherpress_key ); ?>" <?php echo ( $gatherpress_key === $value ? 'selected' : '' ) ?>><?php echo esc_html( $gatherpress_label ); ?></option>
 	<?php
 	endforeach;
 	?>
