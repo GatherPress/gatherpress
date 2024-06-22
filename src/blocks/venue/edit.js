@@ -87,6 +87,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		setPhoneNumber,
 		setWebsite,
 		setIsOnlineEventTerm,
+		setLatitude,
+		setLongitude
 	});
 
 	useEffect(() => {
