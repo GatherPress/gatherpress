@@ -65,7 +65,7 @@ class Rsvp_Setup {
 	 */
 	public function register_taxonomy(): void {
 		register_taxonomy(
-			RSVP::TAXONOMY,
+			Rsvp::TAXONOMY,
 			'comment',
 			array(
 				'labels'             => array(),

@@ -254,7 +254,7 @@ class Rsvp {
 			return $data;
 		}
 
-		wp_set_object_terms( $comment_id, $status, RSVP::TAXONOMY );
+		wp_set_object_terms( $comment_id, $status, self::TAXONOMY );
 
 		if ( ! empty( $guests ) ) {
 			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', $guests );
