@@ -441,7 +441,7 @@ class Setup {
 	public function check_users_can_register(): void {
 		if (
 			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( get_option( 'gatherpress_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) ||
+			filter_var( get_option( 'gatherpress_suppress_site_notification' ), FILTER_VALIDATE_BOOLEAN ) ||
 			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN ) ||
 			false === strpos( get_current_screen()->id, 'gatherpress' )
 		) {
@@ -451,14 +451,14 @@ class Setup {
 		wp_enqueue_style( 'gatherpress-admin-style' );
 
 		if (
-			'gatherpress_suppress_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
+			'gatherpress_suppress_site_notification' === filter_input( INPUT_GET, 'action' ) &&
 			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&
 			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' )
 		) {
-			update_option( 'gatherpress_suppress_membership_notification', true );
+			update_option( 'gatherpress_suppress_site_notification', true );
 		} else {
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/setup/membership-check.php', GATHERPRESS_CORE_PATH ),
+				sprintf( '%s/includes/templates/admin/setup/site-check.php', GATHERPRESS_CORE_PATH ),
 				array(),
 				true
 			);

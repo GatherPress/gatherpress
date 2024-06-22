@@ -1,6 +1,6 @@
 # GatherPress
 
-Stable tag: 0.29.1
+Stable tag: 0.30.0-alpha
 Tested up to: 6.5.2
 License: GPL v2 or later
 Tags: events, event, meetup, community
@@ -29,7 +29,7 @@ This project is for the collaborative effort to build a compelling event managem
 
 We're creating the very network features we need to host events and gather well.
 
-<a href="https://gatherpress.org/demovideo" rel="GatherPress demo video">![GatherPress demo video](https://gatherpress.org/wp-content/uploads/2024/06/GatherPress-Youtube-placeholder.webp)</a>
+https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
 
 
 ### Features
