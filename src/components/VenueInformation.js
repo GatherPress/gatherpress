@@ -26,6 +26,7 @@ import { Broadcaster, Listener } from '../helpers/broadcasting';
  */
 const VenueInformation = () => {
 	const editPost = useDispatch('core/editor').editPost;
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	const updateVenueMeta = (metaData) => {
 		const payload = JSON.stringify({
 			...venueInformationMetaData,
