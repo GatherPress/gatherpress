@@ -113,7 +113,7 @@ class General extends Base {
 							'type'    => 'select',
 							'options' => array(
 								'google' => 'Google Maps',
-								'osm' => 'Open Street Maps'
+								'osm' => 'Open Street Maps',
 							),
 						),
 					),
