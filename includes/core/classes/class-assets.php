@@ -125,7 +125,7 @@ class Assets {
 		if ( has_block( 'gatherpress/venue' ) ) {
 			wp_enqueue_style(
 				'gatherpress-leaflet',
-				'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+				'/wp-content/plugins/gatherpress/includes/core/classes/styles/leaflet.css',
 				array(),
 				'1.0.0'
 			);
