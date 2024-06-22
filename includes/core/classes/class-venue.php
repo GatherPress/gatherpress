@@ -194,7 +194,7 @@ class Venue {
 				'hierarchical'       => false,
 				'public'             => true,
 				'show_ui'            => false,
-				'show_admin_column'  => false,
+				'show_admin_column'  => true,
 				'query_var'          => true,
 				'publicly_queryable' => false,
 				'show_in_rest'       => true,
