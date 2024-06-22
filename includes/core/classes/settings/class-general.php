@@ -103,7 +103,7 @@ class General extends Base {
 							),
 						),
 					),
-					'map_platform'  => array(
+					'map_platform'           => array(
 						'labels'      => array(
 							'name' => __( 'Mapping Platform', 'gatherpress' ),
 						),
@@ -113,7 +113,7 @@ class General extends Base {
 							'type'    => 'select',
 							'options' => array(
 								'google' => 'Google Maps',
-								'osm' => 'Open Street Maps',
+								'osm'    => 'Open Street Maps',
 							),
 						),
 					),
