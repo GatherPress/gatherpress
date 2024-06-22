@@ -117,7 +117,7 @@ class General extends Base {
 							),
 						),
 					),
-					'max_attendance_limit'    => array(
+					'max_attendance_limit'   => array(
 						'labels'      => array(
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
 						),
