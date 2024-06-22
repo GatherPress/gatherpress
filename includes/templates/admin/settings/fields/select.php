@@ -22,7 +22,7 @@ if ( ! isset( $name, $label, $options, $value, $description ) ) {
 }
 ?>
 <input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0" />
-<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $gatherpress_label ); ?></label><br/>
+<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label><br/>
 <select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>">
 	<?php
 	foreach ( $options as $gatherpress_key => $gatherpress_label ) :
