@@ -329,7 +329,7 @@ class Event {
 		$data      = get_transient( $cache_key );
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
-			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+			$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM %i WHERE post_id = %d LIMIT 1', $table, $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
@@ -721,11 +721,11 @@ class Event {
 				return '';
 			}
 
-			$user = $this->rsvp->get( get_current_user_id() );
+			$response = $this->rsvp->get( get_current_user_id() );
 
 			if (
-				! isset( $user['status'] ) ||
-				'attending' !== $user['status'] ||
+				! isset( $response['status'] ) ||
+				'attending' !== $response['status'] ||
 				$this->has_event_past()
 			) {
 				return '';

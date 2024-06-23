@@ -26,12 +26,14 @@ use WP_Post;
  */
 class Rsvp {
 	/**
-	 * Table format for RSVPs.
+	 * Constant representing the RSVP Taxonomy.
+	 *
+	 * This constant defines the status taxonomy for RSVP comment type.
 	 *
 	 * @since 1.0.0
-	 * @var string $TABLE_FORMAT
+	 * @var string
 	 */
-	const TABLE_FORMAT = '%sgatherpress_rsvps';
+	const TAXONOMY = '_gatherpress_rsvp_status';
 
 	/**
 	 * Cache key format for RSVPs.
@@ -40,6 +42,14 @@ class Rsvp {
 	 * @var string $CACHE_KEY
 	 */
 	const CACHE_KEY = 'gatherpress_rsvp_%d';
+
+	/**
+	 * Comment type for RSVPs.
+	 *
+	 * @since 1.0.0
+	 * @var string $COMMENT_TYPE
+	 */
+	const COMMENT_TYPE = 'gatherpress_rsvp';
 
 	/**
 	 * An array of RSVP statuses.
@@ -96,18 +106,18 @@ class Rsvp {
 	 * @since 1.0.0
 	 *
 	 * @param int $user_id A user ID.
+	 *
 	 * @return array An array containing RSVP information, including ID, post ID, user ID, timestamp, status, and guests.
 	 */
 	public function get( int $user_id ): array {
-		global $wpdb;
-
-		$post_id = $this->event->ID;
+		$post_id    = $this->event->ID;
+		$rsvp_query = Rsvp_Query::get_instance();
 
 		if ( 1 > $post_id || 1 > $user_id ) {
 			return array();
 		}
 
-		$default = array(
+		$data = array(
 			'id'        => 0,
 			'post_id'   => $post_id,
 			'user_id'   => $user_id,
@@ -117,12 +127,26 @@ class Rsvp {
 			'anonymous' => 0,
 		);
 
-		$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+		$rsvp = $rsvp_query->get_rsvp(
+			array(
+				'post_id' => $post_id,
+				'user_id' => $user_id,
+			)
+		);
 
-		// @todo Consider implementing caching for improved performance in the future.
-		$data = $wpdb->get_row( $wpdb->prepare( 'SELECT id, timestamp, status, guests, anonymous FROM %i WHERE post_id = %d AND user_id = %d', $table, $post_id, $user_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+		if ( ! empty( $rsvp ) ) {
+			$data['id']        = $rsvp->user_id;
+			$data['timestamp'] = $rsvp->comment_date;
+			$data['anonymous'] = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
+			$data['guests']    = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_guests', true ) );
+			$terms             = wp_get_object_terms( $rsvp->comment_ID, self::TAXONOMY );
 
-		return array_merge( $default, (array) $data );
+			if ( ! empty( $terms ) && is_array( $terms ) ) {
+				$data['status'] = $terms[0]->slug;
+			}
+		}
+
+		return $data;
 	}
 
 	/**
@@ -152,6 +176,7 @@ class Rsvp {
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		global $wpdb;
 
+		$rsvp_query      = Rsvp_Query::get_instance();
 		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
 
 		if ( $max_guest_limit < $guests ) {
@@ -173,11 +198,13 @@ class Rsvp {
 			return $data;
 		}
 
-		if ( ! in_array( $status, $this->statuses, true ) ) {
-			return $data;
-		}
+		$rsvp = $rsvp_query->get_rsvp(
+			array(
+				'post_id' => $post_id,
+				'user_id' => $user_id,
+			)
+		);
 
-		$table            = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
 		$current_response = $this->get( $user_id );
 		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
@@ -197,6 +224,50 @@ class Rsvp {
 			$guests = 0;
 		}
 
+		$args = array(
+			'comment_post_ID' => $post_id,
+			'comment_type'    => self::COMMENT_TYPE,
+			'user_id'         => $user_id,
+		);
+
+		if ( empty( $rsvp ) ) {
+			$comment_id = wp_insert_comment( $args );
+		} else {
+			$comment_id         = $rsvp->comment_ID;
+			$args['comment_ID'] = $comment_id;
+
+			wp_update_comment( $args );
+		}
+
+		if ( is_wp_error( $comment_id ) || empty( $comment_id ) ) {
+			return $data;
+		}
+
+		// If not attending and anonymous or status is 'no_status', remove the record.
+		if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
+			wp_delete_comment( $comment_id, true );
+
+			return $data;
+		}
+
+		if ( ! in_array( $status, $this->statuses, true ) ) {
+			return $data;
+		}
+
+		wp_set_object_terms( $comment_id, $status, self::TAXONOMY );
+
+		if ( ! empty( $guests ) ) {
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', $guests );
+		} else {
+			delete_comment_meta( $comment_id, 'gatherpress_rsvp_guests' );
+		}
+
+		if ( ! empty( $anonymous ) ) {
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', $anonymous );
+		} else {
+			delete_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous' );
+		}
+
 		$data = array(
 			'post_id'   => intval( $post_id ),
 			'user_id'   => intval( $user_id ),
@@ -205,23 +276,6 @@ class Rsvp {
 			'guests'    => intval( $guests ),
 			'anonymous' => intval( $anonymous ),
 		);
-
-		if ( intval( $current_response['id'] ) ) {
-			$where = array(
-				'id' => intval( $current_response['id'] ),
-			);
-
-			// If not attending and anonymous, just remove record.
-			if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
-				$wpdb->delete( $table, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-
-				$data['status'] = 'no_status'; // Set default status for UI.
-			} else {
-				$wpdb->update( $table, $data, $where ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-			}
-		} else {
-			$wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
-		}
 
 		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ) );
 
@@ -327,11 +381,10 @@ class Rsvp {
 	 * @return array An array containing response information grouped by RSVP status.
 	 */
 	public function responses(): array {
-		global $wpdb;
-
-		$post_id   = $this->event->ID;
-		$cache_key = sprintf( self::CACHE_KEY, $post_id );
-		$retval    = wp_cache_get( $cache_key );
+		$post_id    = $this->event->ID;
+		$cache_key  = sprintf( self::CACHE_KEY, $post_id );
+		$retval     = wp_cache_get( $cache_key );
+		$rsvp_query = Rsvp_Query::get_instance();
 
 		// @todo add testing with cache.
 		// @codeCoverageIgnoreStart
@@ -351,14 +404,15 @@ class Rsvp {
 			return $retval;
 		}
 
-		$site_users  = count_users();
-		$total_users = $site_users['total_users'];
-		$table       = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
-		$data        = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, timestamp, status, guests, anonymous FROM %i WHERE post_id = %d LIMIT %d', $table, $post_id, $total_users ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-		$data        = ( ! empty( $data ) ) ? (array) $data : array();
-		$responses   = array();
-		$all_guests  = 0;
-		$statuses    = $this->statuses;
+		$data = $rsvp_query->get_rsvps(
+			array(
+				'post_id' => $post_id,
+			)
+		);
+
+		$responses  = array();
+		$all_guests = 0;
+		$statuses   = $this->statuses;
 
 		// `no_status` status is not relevant here.
 		$status_key = array_search( 'no_status', $statuses, true );
@@ -373,12 +427,17 @@ class Rsvp {
 		}
 
 		foreach ( $data as $response ) {
-			$user_id     = intval( $response['user_id'] );
-			$user_status = sanitize_key( $response['status'] );
-			$user_guests = intval( $response['guests'] );
+			$user_id     = intval( $response->user_id );
+			$user_status = '';
+			$user_guests = intval( get_comment_meta( $response->comment_ID, 'gatherpress_rsvp_guests', true ) );
 			$all_guests += $user_guests;
 			$user_info   = get_userdata( $user_id );
-			$anonymous   = intval( $response['anonymous'] );
+			$anonymous   = intval( get_comment_meta( $response->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
+
+			$terms = wp_get_object_terms( $response->comment_ID, self::TAXONOMY );
+			if ( ! empty( $terms ) && is_array( $terms ) ) {
+				$user_status = $terms[0]->slug;
+			}
 
 			// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
 			// eg for BuddyPress bp_core_get_user_domain( $user_id )
@@ -406,7 +465,7 @@ class Rsvp {
 				'photo'     => get_avatar_url( $user_id ),
 				'profile'   => $profile,
 				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
-				'timestamp' => sanitize_text_field( $response['timestamp'] ),
+				'timestamp' => sanitize_text_field( $response->comment_date ),
 				'status'    => $user_status,
 				'guests'    => $user_guests,
 				'anonymous' => $anonymous,
