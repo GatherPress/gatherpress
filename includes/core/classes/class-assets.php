@@ -125,7 +125,7 @@ class Assets {
 		if ( has_block( 'gatherpress/venue' ) ) {
 			wp_enqueue_style(
 				'gatherpress-leaflet',
-				'/wp-content/plugins/gatherpress/includes/core/classes/styles/leaflet.css',
+				$this->build . 'leaflet.css',
 				array(),
 				'1.0.0'
 			);
