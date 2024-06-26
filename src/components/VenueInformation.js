@@ -65,25 +65,33 @@ const VenueInformation = () => {
 		const getData = setTimeout(() => {
 			let lat = 0;
 			let lng = 0;
-			axios
-				.get(
-					`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`
-				)
-				.then((res) => {
-					if (
-						res.data.features.length !== 0 &&
-						typeof res.data.features[0]?.geometry !== 'undefined'
-					) {
-						lat = res.data.features[0].geometry.coordinates[1];
-						lng = res.data.features[0].geometry.coordinates[0];
+			fetch(`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`).then(response => {
+					// Check if the response is successful
+					if (!response.ok) {
+						throw new Error(
+							'Network response was not ok ' + response.statusText
+						);
+					}
+					// Parse the JSON from the response
+					return response.json();
+				})
+				.then((data) => {
+					// Process the data
+					if (data.features.length > 0) {
+						lat = data.features[0].geometry.coordinates[1];
+						lng = data.features[0].geometry.coordinates[0];
 					}
 					updateVenueMeta({
 						latitude: lat,
 						longitude: lng,
 					});
 				})
-				.catch(() => {
-					// error silently
+				.catch((error) => {
+					// Handle any errors
+					console.error(
+						'There was a problem with the fetch operation:',
+						error
+					);
 				});
 		}, 2000);
 
