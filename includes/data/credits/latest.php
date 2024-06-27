@@ -1,4 +1,9 @@
-<?php return array (
+<?php
+
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+return array (
   'version' => '0.29.3',
   'project-leaders' => 
   array (
