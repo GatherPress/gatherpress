@@ -7,9 +7,6 @@
  * @since 1.0.0
  */
 
-// Exit if accessed directly.
-defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
-
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {
 	return;
 }

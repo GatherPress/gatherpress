@@ -6,9 +6,6 @@
  * @since 1.0.0
  */
 
-// Exit if accessed directly.
-defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
-
 use GatherPress\Core\Venue;
 
 if ( ! isset( $attributes ) || ! is_array( $attributes ) ) {

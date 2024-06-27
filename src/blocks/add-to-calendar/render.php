@@ -7,9 +7,6 @@
  * @since 1.0.0
  */
 
-// Exit if accessed directly.
-defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
-
 use GatherPress\Core\Event;
 
 $gatherpress_event = new Event( get_the_ID() );
