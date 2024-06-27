@@ -1,5 +1,5 @@
 <?php return array (
-  'version' => '0.29.2',
+  'version' => '0.29.3',
   'project-leaders' => 
   array (
     0 => 
@@ -258,7 +258,7 @@
     9 => 
     array (
       'id' => 13994457,
-      'name' => 'Nilo Velez',
+      'name' => 'Nilo Vélez',
       'link' => 'https://profiles.wordpress.org/author/nilovelez/',
       'slug' => 'nilovelez',
       'avatar_urls' => 
