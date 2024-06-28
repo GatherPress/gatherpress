@@ -83,8 +83,10 @@ class Develop_Cli extends WP_CLI {
 			}
 		}
 
-		fwrite( $file, '<?php return ' . var_export( $data, true ) . ';' ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
-		fclose( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+		fwrite( $file, "<?php\n\n" ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
+		fwrite( $file, "// Exit if accessed directly.\n" ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
+		fwrite( $file, "defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore\n\n" ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
+		fwrite( $file, 'return ' . var_export( $data, true ) . ";\n" ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite,WordPress.PHP.DevelopmentFunctions.error_log_var_export
 
 		static::success( 'New latest.php file has been generated.' );
 	}
