@@ -124,7 +124,7 @@ class Assets {
 		if ( has_block( 'gatherpress/venue' ) || 'gatherpress_venue' === get_post_type() ) {
 			wp_enqueue_style(
 				'gatherpress-leaflet',
-				$this->build . 'leaflet.css',
+				$this->build . 'leaflet_style.css',
 				array(),
 				'1.0.0'
 			);

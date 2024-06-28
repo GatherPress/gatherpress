@@ -26,6 +26,7 @@ const LeafletMap = (props) => {
 	const { zoom, className, location, height, latitude, longitude } = props;
 	const style = { height };
 	const position = [latitude, longitude];
+	console.log('is L defined', L);
 
 	function FlyMapTo() {
 		const map = useMap();
