@@ -254,7 +254,7 @@ class Setup {
 		delete_option( $option_name );
 		delete_site_option( $option_name );
 
-		// Drop custom tables for each site in a multisite network.
+		// Create variable for custom table.
 		$event_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 
 		// Drop custom tables for each site in a multisite network.
