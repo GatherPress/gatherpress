@@ -83,6 +83,7 @@ class Setup {
 	protected function setup_hooks(): void {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
+		register_uninstall_hook( GATHERPRESS_CORE_FILE, array( 'GatherPress\Core\Setup', 'uninstall_gatherpress_plugin' ) );
 
 		add_action( 'init', array( $this, 'load_textdomain' ), 9 );
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
@@ -217,6 +218,58 @@ class Setup {
 	public function deactivate_gatherpress_plugin(): void {
 		flush_rewrite_rules();
 	}
+
+	/**
+	 * Uninstalls the GatherPress plugin.
+	 *
+	 * This method handles the uninstallation of the GatherPress plugin, ensuring that all
+	 * options and custom database tables created by the plugin are removed. It is designed
+	 * to handle both single-site and multisite WordPress installations.
+	 *
+	 * When the plugin is uninstalled, this method performs the following actions:
+	 * - Deletes the plugin-specific option from the database.
+	 * - Deletes the site-specific option in a multisite installation.
+	 * - Drops the custom database table created by the plugin.
+	 * - In a multisite network, loops through all sites to drop the custom table for each site.
+	 *
+	 * Note: This method is registered as the uninstall hook using `register_uninstall_hook`.
+	 * It ensures that the script is called from within WordPress by checking the `WP_UNINSTALL_PLUGIN` constant.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @return void
+	 */
+	public function uninstall_gatherpress_plugin(): void {
+		// Ensure the uninstallation script is called from within WordPress.
+		if( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+			die;
+		}
+
+		global $wpdb;
+
+		// Delete Options.
+		$option_name = 'wporg_option';
+		delete_option( $option_name );
+		delete_site_option( $option_name );
+
+		// Drop custom tables for each site in a multisite network.
+		$event_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+
+		// Drop custom tables for each site in a multisite network.
+		if ( is_multisite() ) {
+			$site_ids = get_sites( array( 'fields' => 'ids' ) );
+			foreach( $site_ids as $site_id ) {
+				switch_to_blog( $site_id );
+				$wpdb->query( "DROP TABLE IF EXISTS {$event_table}" );
+				restore_current_blog();
+			}
+		} else {
+			$wpdb->query( "DROP TABLE IF EXISTS {$event_table}" );
+		}
+	}
+
 
 	/**
 	 * Flush GatherPress rewrite rules if the previously added flag exists and then remove the flag.
