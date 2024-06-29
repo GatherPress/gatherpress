@@ -25,11 +25,6 @@ const LeafletMap = (props) => {
 	const { zoom, className, location, height, latitude, longitude } = props;
 	const style = { height };
 	const position = [latitude, longitude];
-	console.log('is L defined', L);
-
-	if (!latitude || !longitude) {
-		return <></>;
-	}
 
 	useEffect(() => {
 		if (typeof L === 'undefined') return;
@@ -37,7 +32,8 @@ const LeafletMap = (props) => {
 		const map = L.map('map').setView([latitude, longitude], zoom);
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+			attribution:
+				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 		}).addTo(map);
 
 		return () => {
@@ -45,9 +41,11 @@ const LeafletMap = (props) => {
 		};
 	}, [latitude, longitude, zoom]);
 
-	return (
-		<div id="map" style={{ height: '400px' }}></div>
-	);
+	if (!latitude || !longitude) {
+		return <></>;
+	}
+
+	return <div id="map" style={{ height: '400px' }}></div>;
 };
 
 export default LeafletMap;
