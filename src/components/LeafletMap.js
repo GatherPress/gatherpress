@@ -15,7 +15,7 @@ import { useEffect } from '@wordpress/element';
  * @param {string} props.location     - The location to be displayed on the map.
  * @param {string} props.latitude     - The latitdue of the location to be displayed on the map.
  * @param {string} props.longitude    - The longitude of the location to be displayed on the map.
- * @param {number} [props.zoom=10]    - The zoom level of the map.
+ * @param {number} [props.zoom=10]    - The zoom level of the map.i
  * @param {number} [props.height=300] - The height of the map container.
  * @param {string} [props.className]  - Additional CSS class names for styling.
  *
@@ -24,10 +24,9 @@ import { useEffect } from '@wordpress/element';
 const LeafletMap = (props) => {
 	const { zoom, className, location, height, latitude, longitude } = props;
 	const style = { height };
-	const position = [latitude, longitude];
 
 	useEffect(() => {
-		if (typeof L === 'undefined') return;
+		if (typeof L === 'undefined' || ( latitude == 0 && longitude == 0 ) ) return;
 
 		const map = L.map('map').setView([latitude, longitude], zoom);
 
@@ -35,6 +34,8 @@ const LeafletMap = (props) => {
 			attribution:
 				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 		}).addTo(map);
+
+		L.marker([latitude, longitude]).addTo(map).bindPopup(location);
 
 		return () => {
 			map.remove();
@@ -45,7 +46,7 @@ const LeafletMap = (props) => {
 		return <></>;
 	}
 
-	return <div id="map" style={{ height: '400px' }}></div>;
+	return <div id="map" style={style}></div>;
 };
 
 export default LeafletMap;
