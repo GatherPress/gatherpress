@@ -1,7 +1,6 @@
 /**
  * External dependencies.
  */
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { useEffect } from '@wordpress/element';
 
 /**
@@ -28,38 +27,26 @@ const LeafletMap = (props) => {
 	const position = [latitude, longitude];
 	console.log('is L defined', L);
 
-	function FlyMapTo() {
-		const map = useMap();
-
-		useEffect(() => {
-			map.setView(position, zoom);
-		}, [map]);
-
-		return null;
-	}
-
 	if (!latitude || !longitude) {
 		return <></>;
 	}
 
+	useEffect(() => {
+		if (typeof L === 'undefined') return;
+
+		const map = L.map('map').setView([latitude, longitude], zoom);
+
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		}).addTo(map);
+
+		return () => {
+			map.remove();
+		};
+	}, []);
+
 	return (
-		<MapContainer
-			style={style}
-			className={className}
-			center={position}
-			zoom={zoom}
-			scrollWheelZoom={false}
-			height={height}
-		>
-			<TileLayer
-				attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-				url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-			/>
-			<Marker position={position}>
-				<Popup>{location}</Popup>
-			</Marker>
-			<FlyMapTo />
-		</MapContainer>
+		<div id="map" style={{ height: '400px' }}></div>
 	);
 };
 

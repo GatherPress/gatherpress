@@ -122,11 +122,21 @@ class Assets {
 	public function enqueue_scripts(): void {
 		wp_enqueue_style( 'dashicons' );
 		if ( has_block( 'gatherpress/venue' ) || 'gatherpress_venue' === get_post_type() ) {
+			$asset = $this->get_asset_data( 'leaflet' );
+
+			wp_enqueue_script(
+				'gatherpress-leaflet',
+				$this->build . 'leaflet.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+
 			wp_enqueue_style(
 				'gatherpress-leaflet',
 				$this->build . 'leaflet_style.css',
-				array(),
-				'1.0.0'
+				$asset['dependencies'],
+				$asset['version']
 			);
 		}
 	}
