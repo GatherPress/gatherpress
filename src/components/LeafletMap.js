@@ -46,7 +46,7 @@ const LeafletMap = (props) => {
 		return <></>;
 	}
 
-	return <div id="map" style={style}></div>;
+	return <div className={className} id="map" style={style}></div>;
 };
 
 export default LeafletMap;
