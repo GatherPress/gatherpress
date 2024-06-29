@@ -1,4 +1,9 @@
-<?php return array (
+<?php
+
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
+
+return array (
   'version' => '0.30.0-alpha',
   'project-leaders' => 
   array (
@@ -258,7 +263,7 @@
     9 => 
     array (
       'id' => 13994457,
-      'name' => 'Nilo Velez',
+      'name' => 'Nilo Vélez',
       'link' => 'https://profiles.wordpress.org/author/nilovelez/',
       'slug' => 'nilovelez',
       'avatar_urls' => 
