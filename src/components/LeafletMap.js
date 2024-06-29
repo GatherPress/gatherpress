@@ -43,7 +43,7 @@ const LeafletMap = (props) => {
 		return () => {
 			map.remove();
 		};
-	}, []);
+	}, [latitude, longitude, zoom]);
 
 	return (
 		<div id="map" style={{ height: '400px' }}></div>
