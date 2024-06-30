@@ -24,7 +24,7 @@ test('01-e2e test for publish the online event', async({page})=>{
 
     const event_title = await page.getByLabel('Add title').fill(`online T-Event: ${currentDate}`);
 
-    await page.getByLabel('Block: Event Date').locator('div').nth(4).isVisible();
+    await page.getByLabel('Block: Event Date').locator('div').isVisible();
     await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
     
@@ -35,8 +35,8 @@ test('01-e2e test for publish the online event', async({page})=>{
     await page.getByRole('button', { name: 'Publish', exact: true }).click();
     await page.getByLabel('Editor publish').getByRole('button', { name: 'Publish', exact: true }).click();
 
-    await page.getByText(`${event_title} is now live.`).isVisible({timeout:60000})
-    await page.locator('.post-publish-panel__postpublish-buttons').filter({hasText:'View Event'}).isVisible({timeout:30000});
+    await page.getByText(`${event_title} is now live.`).isVisible({timeout:60000})  // verified the event is live.
+    await page.locator('.post-publish-panel__postpublish-buttons').filter({hasText:'View Event'}).isVisible({timeout:30000}); // verified the view event button.
 })
 
 
@@ -51,11 +51,11 @@ test('02-verify the logged in user view RSVP button on home page and do RSVP', a
 
     await page.locator('a').filter({ hasText: 'Attend' }).click();
     await page.getByText('Close').click();
-    await page.locator('.gatherpress-rsvp-response__items').first().isVisible();
+    await page.locator('.gatherpress-rsvp-response__items').first().isVisible(); // verified the RSVP button is visible.
 
-    await page.getByText('Attending').nth(1).isVisible({timeout:30000});
+    await page.getByText('Attending').nth(1).isVisible({timeout:30000}); // verified the logged in user perform RSVP action 
 
-    await page.locator('.gatherpress-rsvp-response__items').first().isVisible();
+    await page.locator('.gatherpress-rsvp-response__items').first().isVisible(); // verified the attending users list. 
     await page.locator('.gatherpress-rsvp-response__items').first().screenshot({path:'attending.png'});
 
 })

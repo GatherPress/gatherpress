@@ -19,9 +19,9 @@ test('01-e2e test for publish the online event', async({page})=>{
 
     const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 
-    await page.getByLabel('Add title').fill(`online T-Event: ${currentDate}`);
+    const event_title = await page.getByLabel('Add title').fill(`online T-Event: ${currentDate}`);
 
-    await page.getByLabel('Block: Event Date').locator('div').nth(4).isVisible();
+    await page.getByLabel('Block: Event Date').locator('div').isVisible();
     await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
     
@@ -32,7 +32,8 @@ test('01-e2e test for publish the online event', async({page})=>{
     await page.getByRole('button', { name: 'Publish', exact: true }).click();
     await page.getByLabel('Editor publish').getByRole('button', { name: 'Publish', exact: true }).click();
 
-    await page.locator('.post-publish-panel__postpublish-buttons').filter({hasText:'View Event'}).isVisible({timeout:30000});
+    await page.getByText(`${event_title} is now live.`).isVisible({timeout:60000})  // verified the event is live.
+    await page.locator('.post-publish-panel__postpublish-buttons').filter({hasText:'View Event'}).isVisible({timeout:30000}); // verified the view event button.
 })
 
 test('e2e test for publish the offline event', async({page})=>{
@@ -45,7 +46,7 @@ test('e2e test for publish the offline event', async({page})=>{
     
     const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 
-    await page.getByLabel('Add title').fill(`offline T-Event:${currentDate}`);
+    const event_title = await page.getByLabel('Add title').fill(`offline T-Event:${currentDate}`);
 
     await page.getByLabel('Block: Event Date').locator('div').nth(4).isVisible();
     await page.getByRole('heading', { name: 'Date & time' }).isVisible();
@@ -56,5 +57,6 @@ test('e2e test for publish the offline event', async({page})=>{
     await page.getByRole('button', { name: 'Publish', exact: true }).click();
     await page.getByLabel('Editor publish').getByRole('button', { name: 'Publish', exact: true }).click();
 
-   await page.locator('.post-publish-panel__postpublish-buttons').filter({hasText:'View Event'}).isVisible({setTimeout:30000});
+    await page.getByText(`${event_title} is now live.`).isVisible({timeout:60000})  // verified the event is live.
+    await page.locator('.post-publish-panel__postpublish-buttons').filter({hasText:'View Event'}).isVisible({timeout:30000}); // verified the view event button.
 })
