@@ -14,7 +14,6 @@ const loginUser = async ({
 	username,
 	password = process.env.WP_ADMIN_PASSWORD,
 }) => {
-
 	await page.getByLabel('Username or Email Address').isVisible();
 	await page.getByLabel('Username or Email Address').fill(username);
 
@@ -22,7 +21,6 @@ const loginUser = async ({
 	await page.getByLabel('Password', { exact: true }).fill(password);
 
 	await page.getByRole('button', { name: 'Log In' }).click();
-
 };
 
 module.exports = { loginUser };
