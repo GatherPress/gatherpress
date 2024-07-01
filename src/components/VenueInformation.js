@@ -5,7 +5,6 @@ import { TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useState, useEffect } from '@wordpress/element';
-import axios from 'axios';
 
 /**
  * Internal dependencies.
