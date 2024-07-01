@@ -21,7 +21,7 @@ test('01-e2e test for publish the online event', async({page})=>{
 
     const event_title = await page.getByLabel('Add title').fill(`online T-Event: ${currentDate}`);
 
-    await page.getByLabel('Block: Event Date').locator('div').isVisible();
+    await page.getByLabel('Block: Event Date').locator('div').first().isVisible();
     await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
     
@@ -48,7 +48,7 @@ test('e2e test for publish the offline event', async({page})=>{
 
     const event_title = await page.getByLabel('Add title').fill(`offline T-Event:${currentDate}`);
 
-    await page.getByLabel('Block: Event Date').locator('div').nth(4).isVisible();
+    await page.getByLabel('Block: Event Date').locator('div').first().isVisible();
     await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
     await page.getByRole('button', { name: 'Event settings' }).click();

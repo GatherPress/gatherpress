@@ -22,7 +22,7 @@ test('01-e2e test for publish the offline event', async({page})=>{
     const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
     const event_title = await page.getByLabel('Add title').fill(`offline T-Event:${currentDate}`);
 
-    await page.getByLabel('Block: Event Date').locator('div').nth(4).isVisible();
+    await page.getByLabel('Block: Event Date').locator('div').first().isVisible();
     await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
     await page.getByRole('button', { name: 'Event settings' }).click();
