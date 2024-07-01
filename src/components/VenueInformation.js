@@ -4,7 +4,7 @@
 import { TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -25,10 +25,11 @@ import { Broadcaster, Listener } from '../helpers/broadcasting';
  */
 const VenueInformation = () => {
 	const editPost = useDispatch('core/editor').editPost;
-	const updateVenueMeta = (key, value) => {
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	const updateVenueMeta = (metaData) => {
 		const payload = JSON.stringify({
 			...venueInformationMetaData,
-			[key]: value,
+			...metaData,
 		});
 		const meta = { gatherpress_venue_information: payload };
 
@@ -59,6 +60,43 @@ const VenueInformation = () => {
 
 	Listener({ setFullAddress, setPhoneNumber, setWebsite });
 
+	useEffect(() => {
+		const getData = setTimeout(() => {
+			let lat = 0;
+			let lng = 0;
+			fetch(`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`).then(response => {
+					// Check if the response is successful
+					if (!response.ok) {
+						throw new Error(
+							'Network response was not ok ' + response.statusText
+						);
+					}
+					// Parse the JSON from the response
+					return response.json();
+				})
+				.then((data) => {
+					// Process the data
+					if (data.features.length > 0) {
+						lat = data.features[0].geometry.coordinates[1];
+						lng = data.features[0].geometry.coordinates[0];
+					}
+					updateVenueMeta({
+						latitude: lat,
+						longitude: lng,
+					});
+				})
+				.catch((error) => {
+					// Handle any errors
+					console.error(
+						'There was a problem with the fetch operation:',
+						error
+					);
+				});
+		}, 2000);
+
+		return () => clearTimeout(getData);
+	}, [fullAddress, updateVenueMeta]);
+
 	return (
 		<>
 			<TextControl
@@ -66,7 +104,7 @@ const VenueInformation = () => {
 				value={fullAddress}
 				onChange={(value) => {
 					Broadcaster({ setFullAddress: value });
-					updateVenueMeta('fullAddress', value);
+					updateVenueMeta({ fullAddress: value });
 				}}
 			/>
 			<TextControl
@@ -74,7 +112,7 @@ const VenueInformation = () => {
 				value={phoneNumber}
 				onChange={(value) => {
 					Broadcaster({ setPhoneNumber: value });
-					updateVenueMeta('phoneNumber', value);
+					updateVenueMeta({ setPhoneNumber: value });
 				}}
 			/>
 			<TextControl
@@ -83,7 +121,7 @@ const VenueInformation = () => {
 				type="url"
 				onChange={(value) => {
 					Broadcaster({ setWebsite: value });
-					updateVenueMeta('website', value);
+					updateVenueMeta({ setWebsite: value });
 				}}
 			/>
 		</>

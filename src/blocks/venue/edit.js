@@ -47,6 +47,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapZoomLevel, mapType, mapHeight } = attributes;
 	const [name, setName] = useState('');
 	const [fullAddress, setFullAddress] = useState('');
+	const [latitude, setLatitude] = useState('');
+	const [longitude, setLongitude] = useState('');
 	const [phoneNumber, setPhoneNumber] = useState('');
 	const [website, setWebsite] = useState('');
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
@@ -85,6 +87,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		setPhoneNumber,
 		setWebsite,
 		setIsOnlineEventTerm,
+		setLatitude,
+		setLongitude,
 	});
 
 	useEffect(() => {
@@ -92,6 +96,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			setFullAddress(venueInformationMetaData.fullAddress);
 			setPhoneNumber(venueInformationMetaData.phoneNumber);
 			setWebsite(venueInformationMetaData.website);
+			setLatitude(venueInformationMetaData.latitude);
+			setLongitude(venueInformationMetaData.longitude);
 
 			if (!fullAddress && !phoneNumber && !website) {
 				setName(__('Add venue information.', 'gatherpress'));
@@ -111,9 +117,13 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		venueInformationMetaData.fullAddress,
 		venueInformationMetaData.phoneNumber,
 		venueInformationMetaData.website,
+		venueInformationMetaData.latitude,
+		venueInformationMetaData.longitude,
 		fullAddress,
 		phoneNumber,
 		website,
+		latitude,
+		longitude,
 	]);
 
 	return (
@@ -208,9 +218,11 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							isOnlineEventTerm={isOnlineEventTerm}
 							onlineEventLink={onlineEventLink}
 						/>
-						{mapShow && (
+						{mapShow && !isOnlineEventTerm && (
 							<MapEmbed
 								location={fullAddress}
+								latitude={latitude}
+								longitude={longitude}
 								zoom={mapZoomLevel}
 								type={mapType}
 								height={mapHeight}

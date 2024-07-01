@@ -35,6 +35,10 @@ const VenueSelector = () => {
 	const [website, setWebsite] = useState('');
 	// eslint-disable-next-line no-unused-vars
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
+	// eslint-disable-next-line no-unused-vars
+	const [latitude, setLatitude] = useState('');
+	// eslint-disable-next-line no-unused-vars
+	const [longitude, setLongitude] = useState('');
 
 	const [venue, setVenue] = useState('');
 	const editPost = useDispatch('core/editor').editPost;
@@ -77,6 +81,8 @@ const VenueSelector = () => {
 		const fullAddressUpdated = venueInformation?.fullAddress ?? '';
 		const phoneNumberUpdated = venueInformation?.phoneNumber ?? '';
 		const websiteUpdated = venueInformation?.website ?? '';
+		const latitudeUpdated = venueInformation?.latitude ?? '0';
+		const longitudeUpdated = venueInformation?.longitude ?? '0';
 
 		// Will unset the venue if slug is `undefined` here.
 		if (slug) {
@@ -89,12 +95,16 @@ const VenueSelector = () => {
 		setFullAddress(fullAddressUpdated);
 		setPhoneNumber(phoneNumberUpdated);
 		setWebsite(websiteUpdated);
+		setLatitude(latitudeUpdated);
+		setLongitude(longitudeUpdated);
 
 		Broadcaster({
 			setName: nameUpdated,
 			setFullAddress: fullAddressUpdated,
 			setPhoneNumber: phoneNumberUpdated,
 			setWebsite: websiteUpdated,
+			setLatitude: latitudeUpdated,
+			setLongitude: longitudeUpdated,
 			setIsOnlineEventTerm: venueSlug === 'online-event',
 		});
 	}, [venueSlug, venuePost, slug, venueValue]);

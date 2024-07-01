@@ -121,6 +121,24 @@ class Assets {
 	 */
 	public function enqueue_scripts(): void {
 		wp_enqueue_style( 'dashicons' );
+		if ( has_block( 'gatherpress/venue' ) || 'gatherpress_venue' === get_post_type() ) {
+			$asset = $this->get_asset_data( 'leaflet' );
+
+			wp_enqueue_script(
+				'gatherpress-leaflet',
+				$this->build . 'leaflet.js',
+				$asset['dependencies'],
+				$asset['version'],
+				true
+			);
+
+			wp_enqueue_style(
+				'gatherpress-leaflet',
+				$this->build . 'leaflet_style.css',
+				$asset['dependencies'],
+				$asset['version']
+			);
+		}
 	}
 
 	/**
@@ -310,6 +328,7 @@ class Assets {
 				'dateFormat'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
 				'enableAnonymousRsvp'  => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
 				'enableInitialDecline' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_initial_decline' ) ),
+				'mapPlatform'          => $settings->get_value( 'general', 'general', 'map_platform' ),
 				'maxAttendanceLimit'   => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
 				'maxGuestLimit'        => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
 				'showTimezone'         => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
