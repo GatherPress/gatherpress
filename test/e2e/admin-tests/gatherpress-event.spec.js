@@ -9,7 +9,7 @@ test.describe('e2e test for publish event through admin side', () => {
 	});
 });
 
-test('01-e2e test for publish the online event', async ({ page }) => {
+test('01-the user should for publish the online event', async ({ page }) => {
 	await login({ page, username: 'testuser1' });
 
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
@@ -53,7 +53,7 @@ test('01-e2e test for publish the online event', async ({ page }) => {
 		.isVisible({ timeout: 30000 }); // verified the view event button.
 });
 
-test('e2e test for publish the offline event', async ({ page }) => {
+test('the user should for publish the offline event', async ({ page }) => {
 	await login({ page, username: 'testuser1' });
 
 	await page.getByRole('link', { name: 'Events', exact: true }).click();

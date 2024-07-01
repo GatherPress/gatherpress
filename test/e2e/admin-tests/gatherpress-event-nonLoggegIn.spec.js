@@ -10,7 +10,7 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 	});
 });
 
-test('01-e2e test for publish the offline event', async ({ page }) => {
+test('01-the user should publish the offline event', async ({ page }) => {
 	await login({ page, username: 'testuser1' });
 
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
@@ -52,7 +52,7 @@ test('01-e2e test for publish the offline event', async ({ page }) => {
 	).toBeVisible(); //verify the view event button.
 });
 
-test('02-verify the non-logged in user view RSVP button on home page and do RSVP', async ({
+test('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
 	page,
 }) => {
 	await page.goto('https://develop.gatherpress.org');
