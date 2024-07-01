@@ -35,12 +35,6 @@ class Test_Setup extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 9,
-				'callback' => array( $instance, 'load_textdomain' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
 			),
@@ -85,12 +79,6 @@ class Test_Setup extends Base {
 				'name'     => sprintf( 'network_admin_plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ),
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'load_textdomain_mofile',
-				'priority' => 10,
-				'callback' => array( $instance, 'load_mofile' ),
 			),
 		);
 
