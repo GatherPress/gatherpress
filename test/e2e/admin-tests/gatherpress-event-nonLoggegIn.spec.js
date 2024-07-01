@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { login_user } = require('../reusable-user-steps/user-login');
+const { loginUser } = require('../reusable-user-steps/user-login');
 const { login } = require('../reusable-user-steps/common');
 
 test.describe('e2e test for home page event on develop.gatherpress.org', () => {
@@ -48,7 +48,7 @@ test('01-e2e test for publish the offline event', async ({ page }) => {
 	await expect(
 		page
 			.locator('.post-publish-panel__postpublish-buttons')
-			.filter({ hasText: 'View Event' }),
+			.filter({ hasText: 'View Event' })
 	).toBeVisible(); //verify the view event button.
 });
 
@@ -68,7 +68,7 @@ test('02-verify the non-logged in user view RSVP button on home page and do RSVP
 	await page.getByRole('link', { name: 'RSVP' }).first().click();
 	await page.getByText('Login', { exact: true }).click();
 
-	await login_user({ page, username: 'testuser1' });
+	await loginUser({ page, username: 'testuser1' });
 	await page.evaluate(() => window.scrollTo(0, 1000));
 
 	await page

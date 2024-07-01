@@ -9,7 +9,7 @@
  * @param {*} root0.username
  * @param {*} root0.password
  */
-const login_user = async ({
+const loginUser = async ({
 	page,
 	username,
 	password = process.env.WP_ADMIN_PASSWORD,
@@ -25,4 +25,4 @@ const login_user = async ({
 
 };
 
-module.exports = { login_user };
+module.exports = { loginUser };
