@@ -70,7 +70,7 @@ test('02-verify the logged in user view RSVP button on home page and do RSVP', a
 	await page.getByText('Close').click();
 	await page.locator('.gatherpress-rsvp-response__items').first().isVisible(); // verified the RSVP button is visible.
 
-	await page.getByText('Attending').nth(1).isVisible({ timeout: 30000 }); // verified the logged in user perform RSVP action
+	await page.getByText('Attending').first().isVisible({ timeout: 30000 }); // verified the logged in user perform RSVP action
 
 	await page.locator('.gatherpress-rsvp-response__items').first().isVisible(); // verified the attending users list.
 	await page
