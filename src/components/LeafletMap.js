@@ -26,7 +26,8 @@ const LeafletMap = (props) => {
 	const style = { height };
 
 	useEffect(() => {
-		if (typeof L === 'undefined' || ( latitude == 0 && longitude == 0 ) ) return;
+		if (typeof L === 'undefined' || (latitude === 0 && longitude === 0))
+			return;
 
 		const map = L.map('map').setView([latitude, longitude], zoom);
 
@@ -40,7 +41,7 @@ const LeafletMap = (props) => {
 		return () => {
 			map.remove();
 		};
-	}, [latitude, longitude, zoom]);
+	}, [latitude, location, longitude, zoom]);
 
 	if (!latitude || !longitude) {
 		return <></>;
