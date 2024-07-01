@@ -44,7 +44,6 @@ class Cli {
 	 */
 	protected function __construct() {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			WP_CLI::add_command( 'gatherpress develop', Develop_Cli::class );
 			WP_CLI::add_command( 'gatherpress event', Event_Cli::class );
 		}
 	}
