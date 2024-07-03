@@ -31,9 +31,9 @@ test('01-the user should publish the offline event', async ({ page }) => {
 		.isVisible();
 	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
+	
 	await page.getByRole('button', { name: 'Event settings' }).click();
-	await page
-		.locator('#inspector-select-control-1')
+	await page.getByLabel('Venue Selector')
 		.selectOption('offline event');
 
 	await page.getByRole('button', { name: 'Publish', exact: true }).click();
