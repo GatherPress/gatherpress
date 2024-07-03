@@ -4,63 +4,34 @@ const { login } = require('../reusable-user-steps/common');
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
-		//await page.setViewportSize({ width: 1920, height: 720 });
+		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
 		await login({ page, username: 'testuser1' });
 	});
 
-
 test('01-the user should publish the online event', async ({ page }) => {
 	
-
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
 
-	await page
-		.locator('#wpbody-content')
-		.getByRole('link', { name: 'Add New' })
-		.click();
+	await page.locator('#wpbody-content').getByRole('link', { name: 'Add New' }).click();
 
 	const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 
-	const eventTitle = await page
-		.getByLabel('Add title')
-		.fill(`online T-Event: ${currentDate}`);
+	const eventTitle = await page.getByLabel('Add title').fill(`online T-Event: ${currentDate}`);
 
-	await page
-		.getByLabel('Block: Event Date')
-		.locator('div')
-		.first()
-		.isVisible();
+	await page.getByLabel('Block: Event Date').locator('div').first().isVisible();
 	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-	//await page.getByRole('button', { name: 'Event settings' }).click();
 	await page.getByRole('button', { name: 'Event settings' }).click();
 
 	await page.getByLabel('Venue Selector').selectOption('58:online-event');
 	await page.getByPlaceholder('Add link to online event').fill('www.google.com');
 	
-
-	//await page.getByRole('button', { name: 'Event settings' }).click();
-	
-	// await page
-	// 	.getByLabel('Venue Selector')
-	// 	.selectOption('online', { timeout: 90000 });
-	// await page.locator('.gatherpress-venue').isVisible();
-
-
 	await page.getByRole('button', { name: 'Publish', exact: true }).click();
-	await page
-		.getByLabel('Editor publish')
-		.getByRole('button', { name: 'Publish', exact: true })
-		.click();
+	await page.getByLabel('Editor publish').getByRole('button', { name: 'Publish', exact: true }).click();
 
-	await page
-		.getByText(`${eventTitle} is now live.`)
-		.isVisible({ timeout: 60000 }); // verified the event is live.
-	await page
-		.locator('.post-publish-panel__postpublish-buttons')
-		.filter({ hasText: 'View Event' })
-		.isVisible({ timeout: 30000 }); // verified the view event button.
+	await page.getByText(`${eventTitle} is now live.`).isVisible({ timeout: 60000 }); // verified the event is live.
+	await page.locator('.post-publish-panel__postpublish-buttons').filter({ hasText: 'View Event' }).isVisible({ timeout: 30000 }); // verified the view event button.
 });
 
 test('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
