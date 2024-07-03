@@ -65,6 +65,7 @@ This plugin leverages the following third-party libraries for various functional
 
 - [React-Modal](https://github.com/reactjs/react-modal): Facilitates the creation of modal dialogs in React components.
 - [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips for React applications.
+- [Leaflet](https://leafletjs.com/): Provides global, open-source mapping functionality
 
 ## Screenshots
 
@@ -87,7 +88,7 @@ To run GatherPress, we recommend your host supports:
 
 ### What external services are used in GatherPress?
 
-- Mapping Services: We use OpenStreetMap (coming soon) and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
+- Mapping Services: We use OpenStreetMap and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
 - Calendar Integration: GatherPress also supports "Add to Calendar" functionality using Google Calendar and Yahoo! Calendar.
 
 ### Configure GatherPress
