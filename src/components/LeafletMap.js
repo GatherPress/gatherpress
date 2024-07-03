@@ -4,6 +4,11 @@
 import { useEffect } from '@wordpress/element';
 
 /**
+ * Internal Dependencies.
+ */
+import { getFromGlobal } from '../helpers/globals';
+
+/**
  * LeafletMap component for GatherPress.
  *
  * This component is used to embed a Leaflet Map with specified location,
@@ -30,6 +35,8 @@ const LeafletMap = (props) => {
 			return;
 
 		const map = L.map('map').setView([latitude, longitude], zoom);
+
+		L.Icon.Default.imagePath = getFromGlobal('urls.pluginUri') + 'src/leaflet/images/';
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution:
