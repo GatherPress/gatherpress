@@ -112,8 +112,8 @@ class General extends Base {
 							'label'   => __( 'Selected Mapping Platform:', 'gatherpress' ),
 							'type'    => 'select',
 							'options' => array(
-								'google' => 'Google Maps',
-								'osm'    => 'Open Street Maps',
+								'google' => __( 'Google Maps' ),
+								'osm'    => __( 'Open Street Maps' ),
 							),
 						),
 					),
