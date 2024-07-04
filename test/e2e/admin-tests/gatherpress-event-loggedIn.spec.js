@@ -9,7 +9,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		await login({ page, username: 'testuser1' });
 	});
 
-	test('01-the user should publish the online event', async ({ page }) => {
+	test('01-the user should be able to publish an online event', async ({ page }) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 

@@ -10,7 +10,7 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 	});
 });
 
-test('01-the user should publish the offline event', async ({ page }) => {
+test('01-the user should be able to publish an offline event', async ({ page }) => {
 	await login({ page, username: 'testuser1' });
 
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
@@ -43,7 +43,6 @@ test('01-the user should publish the offline event', async ({ page }) => {
 	await page
 		.getByText(`${eventTitle} is now live.`)
 		.isVisible({ timeout: 60000 }); //verified the event is live.
-		
 	await page
 		.locator('.post-publish-panel__postpublish-buttons')
 		.filter({ hasText: 'View Event' })
