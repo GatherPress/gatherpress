@@ -31,10 +31,8 @@ test('01-the user should publish the offline event', async ({ page }) => {
 		.isVisible();
 	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-	
 	await page.getByRole('button', { name: 'Event settings' }).click();
-	await page.getByLabel('Venue Selector')
-		.selectOption('offline event');
+	await page.getByLabel('Venue Selector').selectOption('offline event');
 
 	await page.getByRole('button', { name: 'Publish', exact: true }).click();
 	await page
@@ -48,7 +46,7 @@ test('01-the user should publish the offline event', async ({ page }) => {
 	await expect(
 		page
 			.locator('.post-publish-panel__postpublish-buttons')
-			.filter({ hasText: 'View Event' })
+			.filter({ hasText: 'View Event' }),
 	).toBeVisible(); //verify the view event button.
 });
 
