@@ -11,6 +11,7 @@ test.describe('e2e test for publish event through admin side', () => {
 
 	test('01-the user should publish the online event', async ({ page }) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
+		await page.getByRole('link', { name: 'Events', exact: true }).click();
 
 		await page
 			.locator('#wpbody-content')
