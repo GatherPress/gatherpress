@@ -43,9 +43,7 @@ test('01-the user should publish the offline event', async ({ page }) => {
 	await page
 		.getByText(`${eventTitle} is now live.`)
 		.isVisible({ timeout: 60000 }); //verified the event is live.
-	await expect(
-		page
-			.locator('.post-publish-panel__postpublish-buttons')
+	await expect(page.locator('.post-publish-panel__postpublish-buttons')
 			.filter({ hasText: 'View Event' })).toBeVisible(); //verify the view event button.
 });
 
