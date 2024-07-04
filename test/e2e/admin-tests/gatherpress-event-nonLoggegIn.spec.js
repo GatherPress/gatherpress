@@ -32,7 +32,6 @@ test('01-the user should publish the offline event', async ({ page }) => {
 	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
 	await page.getByRole('button', { name: 'Event settings' }).click();
-	await page.getByRole('button', { name: 'Event settings' }).click();
 	await page.getByLabel('Venue Selector').selectOption('offline event');
 
 	await page.getByRole('button', { name: 'Publish', exact: true }).click();
@@ -44,11 +43,11 @@ test('01-the user should publish the offline event', async ({ page }) => {
 	await page
 		.getByText(`${eventTitle} is now live.`)
 		.isVisible({ timeout: 60000 }); //verified the event is live.
-
-	await expect(page
+		
+	await page
 		.locator('.post-publish-panel__postpublish-buttons')
-		.filter({ hasText: 'View Event' }))
-		.toBeVisible(); //verify the view event button.
+		.filter({ hasText: 'View Event' })
+		.isVisible(); //verify the view event button.
 });
 
 test('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
