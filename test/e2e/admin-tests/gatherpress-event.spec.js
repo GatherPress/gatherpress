@@ -9,9 +9,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		await login({ page, username: 'testuser1' });
 	});
 
-	test('the user should be able to publish an online event', async ({
-		page,
-		}) => {
+	test('the user should be able to publish an online event', async ({page}) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
@@ -48,9 +46,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible({ timeout: 30000 }); // verified the view event button.
 	});
 
-	test('the user should be able publish an offline event', async ({ 
-		page,
-	 }) => {
+	test('the user should be able publish an offline event', async ({page}) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
