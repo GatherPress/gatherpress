@@ -11,32 +11,26 @@ test.describe('e2e test for publish event through admin side', () => {
 
 	test('the user should be able to publish an online event', async ({
 		page,
-	}) => {
+		}) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
-
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New' })
 			.click();
-
 		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
-
 		const eventTitle = await page
 			.getByLabel('Add title')
 			.fill(`online T-Event: ${currentDate}`);
-
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
 			.first()
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
-
 		await page.getByRole('button', { name: 'Event settings' }).click();
 		await page
 			.getByLabel('Venue Selector')
 			.selectOption('ol', { timeout: 60000 });
-
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
@@ -54,32 +48,28 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible({ timeout: 30000 }); // verified the view event button.
 	});
 
-	test('the user should be able publish an offline event', async ({ page }) => {
+	test('the user should be able publish an offline event', async ({ 
+		page,
+	 }) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
-
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New' })
 			.click();
-
 		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
-
 		const eventTitle = await page
 			.getByLabel('Add title')
 			.fill(`offline T-Event:${currentDate}`);
-
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
 			.first()
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
-
 		await page.getByRole('button', { name: 'Event settings' }).click();
 		await page
 			.getByLabel('Venue Selector')
 			.selectOption('offline event', { timeout: 60000 });
-
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
