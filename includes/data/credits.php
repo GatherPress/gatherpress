@@ -91,7 +91,7 @@ return array (
     3 => 
     array (
       'id' => 21213947,
-      'name' => 'linusx007',
+      'name' => 'Bill Van Pelt',
       'link' => 'https://profiles.wordpress.org/author/linusx007/',
       'slug' => 'linusx007',
       'avatar_urls' => 
@@ -297,6 +297,19 @@ return array (
         24 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    12 => 
+    array (
+      'id' => 368236,
+      'name' => 'Pascal Birchler',
+      'link' => 'https://profiles.wordpress.org/author/swissspidy/',
+      'slug' => 'swissspidy',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/609d6ee54dc13a51270cb99769535b82?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/609d6ee54dc13a51270cb99769535b82?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/609d6ee54dc13a51270cb99769535b82?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),
