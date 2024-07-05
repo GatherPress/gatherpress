@@ -35,6 +35,8 @@ test('01-the user should be able to publish an offline event', async ({
 	await page.getByRole('button', { name: 'Event settings' }).click();
 	await page.getByLabel('Venue Selector').selectOption('offline event');
 
+	await page.getByRole('button', { name: 'Event settings' }).click();
+
 	await page.getByRole('button', { name: 'Publish', exact: true }).click();
 	await page
 		.getByLabel('Editor publish')
@@ -54,7 +56,7 @@ test('02-verify the non-logged in user view RSVP button on home page and perform
 	page,
 }) => {
 	await page.goto('https://develop.gatherpress.org');
-
+	
 	await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
 	await page
 		.locator('div')

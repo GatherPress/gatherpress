@@ -13,8 +13,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		page,
 	}) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
-		await page.getByRole('link', { name: 'Events', exact: true }).click();
-
+		
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New' })
@@ -38,6 +37,8 @@ test.describe('e2e test for publish event through admin side', () => {
 		await page
 			.getByPlaceholder('Add link to online event')
 			.fill('www.google.com');
+
+		await page.getByRole('button', { name: 'Event settings' }).click();
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
