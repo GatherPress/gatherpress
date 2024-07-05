@@ -56,7 +56,6 @@ test('02-verify the non-logged in user view RSVP button on home page and perform
 	page,
 }) => {
 	await page.goto('https://develop.gatherpress.org');
-	
 	await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
 	await page
 		.locator('div')

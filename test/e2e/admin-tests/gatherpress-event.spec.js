@@ -28,7 +28,6 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 		await page.getByRole('button', { name: 'Event settings' }).click();
-		
 		await page
 			.getByLabel('Venue Selector')
 			.selectOption('ol', { timeout: 60000 });

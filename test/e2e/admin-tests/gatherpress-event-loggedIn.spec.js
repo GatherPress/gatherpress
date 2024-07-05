@@ -13,7 +13,6 @@ test.describe('e2e test for publish event through admin side', () => {
 		page,
 	}) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
-		
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New' })
