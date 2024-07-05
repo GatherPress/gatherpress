@@ -10,9 +10,10 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 	});
 });
 
-test('01-the user should publish the offline event', async ({ page }) => {
+test('01-the user should be able to publish an offline event', async ({
+	page,
+}) => {
 	await login({ page, username: 'testuser1' });
-
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
 	await page
 		.locator('#wpbody-content')
@@ -32,9 +33,9 @@ test('01-the user should publish the offline event', async ({ page }) => {
 	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
 	await page.getByRole('button', { name: 'Event settings' }).click();
-	await page
-		.locator('#inspector-select-control-1')
-		.selectOption('offline event');
+	await page.getByLabel('Venue Selector').selectOption('offline event');
+
+	await page.getByRole('button', { name: 'Event settings' }).click();
 
 	await page.getByRole('button', { name: 'Publish', exact: true }).click();
 	await page
@@ -45,18 +46,16 @@ test('01-the user should publish the offline event', async ({ page }) => {
 	await page
 		.getByText(`${eventTitle} is now live.`)
 		.isVisible({ timeout: 60000 }); //verified the event is live.
-	await expect(
-		page
-			.locator('.post-publish-panel__postpublish-buttons')
-			.filter({ hasText: 'View Event' })
-	).toBeVisible(); //verify the view event button.
+	await page
+		.locator('.post-publish-panel__postpublish-buttons')
+		.filter({ hasText: 'View Event' })
+		.isVisible(); //verify the view event button.
 });
 
 test('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
 	page,
 }) => {
 	await page.goto('https://develop.gatherpress.org');
-
 	await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
 	await page
 		.locator('div')
