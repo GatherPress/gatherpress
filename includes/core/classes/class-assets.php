@@ -134,7 +134,7 @@ class Assets {
 
 			wp_enqueue_style(
 				'gatherpress-leaflet',
-				$this->build . 'leaflet_style.css',
+				$this->build . 'leaflet.css',
 				$asset['dependencies'],
 				$asset['version']
 			);
