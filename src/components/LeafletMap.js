@@ -36,7 +36,7 @@ const LeafletMap = (props) => {
 
 		const map = L.map('map').setView([latitude, longitude], zoom);
 
-		L.Icon.Default.imagePath = getFromGlobal('urls.pluginUri') + 'src/leaflet/images/';
+		L.Icon.Default.imagePath = getFromGlobal('urls.pluginUri') + 'node_modules/leaflet/dist/images/';
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution:
