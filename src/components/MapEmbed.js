@@ -7,7 +7,7 @@ import { select } from '@wordpress/data';
  * Internal dependencies.
  */
 import GoogleMap from './GoogleMap';
-import LeafletMap from './LeafletMap';
+import OpenStreetMap from './OpenStreetMap';
 import { getFromGlobal } from '../helpers/globals';
 
 /**
@@ -40,11 +40,17 @@ const MapEmbed = (props) => {
 		height = 300;
 	}
 
+	if (!mapPlatform) {
+		mapPlatform = 'osm';
+	}
+
 	if (isAdmin && !isPostEditor && !location) {
 		location = '660 4th Street #119 San Francisco CA 94107, USA';
 	}
 
-	if (mapPlatform === 'google') {
+	if (!location) {
+		return <></>;
+	} else if (mapPlatform === 'google') {
 		return (
 			<GoogleMap
 				location={location}
@@ -54,20 +60,18 @@ const MapEmbed = (props) => {
 				height={height}
 			/>
 		);
-	} else if (!location) {
-		return <></>;
+	} else if (mapPlatform === 'osm') {
+		return (
+			<OpenStreetMap
+				location={location}
+				latitude={latitude}
+				longitude={longitude}
+				className={className}
+				zoom={zoom}
+				height={height}
+			/>
+		);
 	}
-
-	return (
-		<LeafletMap
-			location={location}
-			latitude={latitude}
-			longitude={longitude}
-			className={className}
-			zoom={zoom}
-			height={height}
-		/>
-	);
 };
 
 export default MapEmbed;

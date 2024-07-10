@@ -1,18 +1,20 @@
 /**
  * External dependencies.
  */
+import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 
 /**
  * Internal Dependencies.
  */
 import { getFromGlobal } from '../helpers/globals';
+import { sprintf } from '@wordpress/i18n';
 
 /**
- * LeafletMap component for GatherPress.
+ * OpenStreetMap component for GatherPress.
  *
- * This component is used to embed a Leaflet Map with specified location,
- * zoom level, and height.
+ * This component is used to embed an Open Street Map with specified location,
+ * zoom level, and height using the Leaflet platform.
  *
  * @since 1.0.0
  *
@@ -26,7 +28,7 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const LeafletMap = (props) => {
+const OpenStreetMap = (props) => {
 	const { zoom, className, location, height, latitude, longitude } = props;
 	const style = { height };
 
@@ -40,7 +42,7 @@ const LeafletMap = (props) => {
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution:
-				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+				sprintf(__('&copy; %s contributors'), '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
 		}).addTo(map);
 
 		L.marker([latitude, longitude]).addTo(map).bindPopup(location);
@@ -57,4 +59,4 @@ const LeafletMap = (props) => {
 	return <div className={className} id="map" style={style}></div>;
 };
 
-export default LeafletMap;
+export default OpenStreetMap;

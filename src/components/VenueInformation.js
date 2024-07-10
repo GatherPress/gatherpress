@@ -68,7 +68,7 @@ const VenueInformation = () => {
 					// Check if the response is successful
 					if (!response.ok) {
 						throw new Error(
-							'Network response was not ok ' + response.statusText
+							sprintf(__('Network response was not ok %s', 'gatherpress'), response.statusText)
 						);
 					}
 					// Parse the JSON from the response
