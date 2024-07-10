@@ -40,10 +40,6 @@ const MapEmbed = (props) => {
 		height = 300;
 	}
 
-	if (!mapPlatform) {
-		mapPlatform = 'osm';
-	}
-
 	if (isAdmin && !isPostEditor && !location) {
 		location = '660 4th Street #119 San Francisco CA 94107, USA';
 	}
