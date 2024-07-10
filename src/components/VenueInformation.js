@@ -88,8 +88,7 @@ const VenueInformation = () => {
 				.catch((error) => {
 					// Handle any errors
 					console.error(
-						'There was a problem with the fetch operation:',
-						error
+						sprintf(__('There was a problem with the fetch operation: %s', 'gatherpress'), error)
 					);
 				});
 		}, 2000);
