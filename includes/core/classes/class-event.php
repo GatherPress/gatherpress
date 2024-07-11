@@ -497,7 +497,7 @@ class Event {
 		);
 
 		return add_query_arg(
-			urlencode_deep( $params ),
+			rawurlencode_deep( $params ),
 			'https://www.google.com/calendar/event'
 		);
 	}
@@ -547,7 +547,7 @@ class Event {
 		);
 
 		return add_query_arg(
-			urlencode_deep( $params ),
+			rawurlencode_deep( $params ),
 			'https://calendar.yahoo.com/'
 		);
 	}
