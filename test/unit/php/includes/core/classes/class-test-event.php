@@ -407,10 +407,14 @@ class Test_Event extends Base {
 		$event->save_datetimes( $params );
 
 		$output  = $event->get_calendar_links();
+
+		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit+Test+Event&dates=20200511T150000Z%2F20200511T170000Z&details=' . urlencode($description) . '&location=Unit+Test+Venue%2C+123+Main+Street%2C+Montclair%2C+NJ+07042&sprop=name%3A';
+		$expected_yahoo_link = 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit+Test+Event&st=20200511T150000Z&dur=0200&desc=' . urlencode($description) . '&in_loc=Unit+Test+Venue%2C+123+Main+Street%2C+Montclair%2C+NJ+07042';
+
 		$expects = array(
 			'google'  => array(
 				'name' => 'Google Calendar',
-				'link' => 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit Test Event&dates=20200511T150000Z/20200511T170000Z&details=' . $description . '&location=Unit Test Venue, 123 Main Street, Montclair, NJ 07042&sprop=name:',
+				'link' => $expected_google_link,
 			),
 			'ical'    => array(
 				'name'     => 'iCal',
@@ -422,7 +426,7 @@ class Test_Event extends Base {
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',
-				'link' => 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit Test Event&st=20200511T150000Z&dur=0200&desc=' . $description . '&in_loc=Unit Test Venue, 123 Main Street, Montclair, NJ 07042',
+				'link' => $expected_yahoo_link,
 			),
 		);
 
