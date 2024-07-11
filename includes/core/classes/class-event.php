@@ -487,7 +487,7 @@ class Event {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
 
-		$params  = array(
+		$params = array(
 			'action'   => 'TEMPLATE',
 			'text'     => sanitize_text_field( $this->event->post_title ),
 			'dates'    => sanitize_text_field( $datetime ),
