@@ -17,7 +17,6 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-var_dump($options);
 if ( ! isset( $name, $label, $options, $options['items'], $value, $description ) ) {
 	return;
 }
