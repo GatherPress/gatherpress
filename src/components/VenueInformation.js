@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import { TextControl } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -64,11 +64,20 @@ const VenueInformation = () => {
 		const getData = setTimeout(() => {
 			let lat = 0;
 			let lng = 0;
-			fetch(`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`).then(response => {
+			fetch(
+				`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`
+			)
+			.then(response => {
 					// Check if the response is successful
 					if (!response.ok) {
 						throw new Error(
-							sprintf(__('Network response was not ok %s', 'gatherpress'), response.statusText)
+							sprintf(
+								__(
+									'Network response was not ok %s',
+									'gatherpress'
+								),
+								response.statusText
+							)
 						);
 					}
 					// Parse the JSON from the response
@@ -88,7 +97,13 @@ const VenueInformation = () => {
 				.catch((error) => {
 					// Handle any errors
 					console.error(
-						sprintf(__('There was a problem with the fetch operation: %s', 'gatherpress'), error)
+						sprintf(
+							__(
+								'There was a problem with the fetch operation: %s',
+								'gatherpress'
+							),
+							error
+						)
 					);
 				});
 		}, 2000);

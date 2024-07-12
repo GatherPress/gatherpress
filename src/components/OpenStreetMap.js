@@ -1,14 +1,13 @@
 /**
  * External dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 
 /**
  * Internal Dependencies.
  */
 import { getFromGlobal } from '../helpers/globals';
-import { sprintf } from '@wordpress/i18n';
 
 /**
  * OpenStreetMap component for GatherPress.
@@ -38,11 +37,14 @@ const OpenStreetMap = (props) => {
 
 		const map = L.map('map').setView([latitude, longitude], zoom);
 
-		L.Icon.Default.imagePath = getFromGlobal('urls.pluginUri') + 'node_modules/leaflet/dist/images/';
+		L.Icon.Default.imagePath =
+			getFromGlobal('urls.pluginUri') +
+			'node_modules/leaflet/dist/images/';
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution:
-				sprintf(__('&copy; %s contributors'), '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
+			attribution: sprintf(
+				__('&copy; %s contributors'),
+				'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
 		}).addTo(map);
 
 		L.marker([latitude, longitude]).addTo(map).bindPopup(location);
