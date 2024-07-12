@@ -32,7 +32,6 @@ import { getFromGlobal } from '../helpers/globals';
 const MapEmbed = (props) => {
 	const isAdmin = select('core')?.canUser('create', 'posts');
 	const isPostEditor = Boolean(select('core/edit-post'));
-	const mapPlatform = getFromGlobal('settings.mapPlatform');
 	const { zoom, type, className, latitude, longitude } = props;
 	let { location, height } = props;
 
@@ -43,6 +42,8 @@ const MapEmbed = (props) => {
 	if (isAdmin && !isPostEditor && !location) {
 		location = '660 4th Street #119 San Francisco CA 94107, USA';
 	}
+
+	const mapPlatform = getFromGlobal('settings.mapPlatform');
 
 	if (!location) {
 		return <></>;
@@ -68,6 +69,8 @@ const MapEmbed = (props) => {
 			/>
 		);
 	}
+
+	return <></>;
 };
 
 export default MapEmbed;

@@ -32,10 +32,7 @@ const OpenStreetMap = (props) => {
 	const style = { height };
 
 	useEffect(() => {
-		if (
-			typeof window.L === 'undefined' ||
-			(!latitude || !longitude)
-		)
+		if (typeof window.L === 'undefined' || !latitude || !longitude) 
 			return;
 
 		const map = window.L.map('map').setView([latitude, longitude], zoom);
@@ -48,7 +45,10 @@ const OpenStreetMap = (props) => {
 			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 			{
 				attribution: sprintf(
-					__('© %s contributors'),
+					__(
+						'© %s contributors',
+						'gatherpress'
+					),
 					'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 				),
 			}

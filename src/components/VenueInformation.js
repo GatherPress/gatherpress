@@ -67,7 +67,7 @@ const VenueInformation = () => {
 			fetch(
 				`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`
 			)
-			.then(response => {
+				.then(response => {
 					// Check if the response is successful
 					if (!response.ok) {
 						throw new Error(
