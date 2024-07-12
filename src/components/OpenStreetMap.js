@@ -34,7 +34,7 @@ const OpenStreetMap = (props) => {
 	useEffect(() => {
 		if (
 			typeof window.L === 'undefined' ||
-			(latitude === 0 && longitude === 0)
+			(!latitude || !longitude)
 		)
 			return;
 
