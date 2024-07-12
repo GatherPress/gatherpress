@@ -17,7 +17,8 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $name, $label, $options, $value, $description ) ) {
+var_dump($options);
+if ( ! isset( $name, $label, $options, $options['items'], $value, $description ) ) {
 	return;
 }
 ?>
@@ -25,7 +26,7 @@ if ( ! isset( $name, $label, $options, $value, $description ) ) {
 <label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label><br/>
 <select id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $name ); ?>">
 	<?php
-	foreach ( $options as $gatherpress_key => $gatherpress_label ) :
+	foreach ( $options['items'] as $gatherpress_key => $gatherpress_label ) :
 		?>
 	<option value="<?php echo esc_attr( $gatherpress_key ); ?>" <?php echo selected( $gatherpress_key, $value ); ?>>
 		<?php echo esc_html( $gatherpress_label ); ?>
