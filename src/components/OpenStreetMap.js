@@ -1,7 +1,7 @@
 /**
  * External dependencies.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { sprintf, __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 
 /**
@@ -32,22 +32,29 @@ const OpenStreetMap = (props) => {
 	const style = { height };
 
 	useEffect(() => {
-		if (typeof L === 'undefined' || (latitude === 0 && longitude === 0))
+		if (
+			typeof window.L === 'undefined' ||
+			(latitude === 0 && longitude === 0)
+		)
 			return;
 
-		const map = L.map('map').setView([latitude, longitude], zoom);
+		const map = window.L.map('map').setView([latitude, longitude], zoom);
 
-		L.Icon.Default.imagePath =
+		window.L.Icon.Default.imagePath =
 			getFromGlobal('urls.pluginUri') +
 			'node_modules/leaflet/dist/images/';
 
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution: sprintf(
-				__('&copy; %s contributors'),
-				'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
-		}).addTo(map);
+		window.L.tileLayer(
+			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			{
+				attribution: sprintf(
+					__('© %s contributors'),
+					'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+				),
+			}
+		).addTo(map);
 
-		L.marker([latitude, longitude]).addTo(map).bindPopup(location);
+		window.L.marker([latitude, longitude]).addTo(map).bindPopup(location);
 
 		return () => {
 			map.remove();
