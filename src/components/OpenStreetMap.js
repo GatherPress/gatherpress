@@ -10,6 +10,11 @@ import { useEffect } from '@wordpress/element';
 import { getFromGlobal } from '../helpers/globals';
 
 /**
+ * Leaflet.
+ */
+import L from 'leaflet';
+
+/**
  * OpenStreetMap component for GatherPress.
  *
  * This component is used to embed an Open Street Map with specified location,
@@ -32,29 +37,23 @@ const OpenStreetMap = (props) => {
 	const style = { height };
 
 	useEffect(() => {
-		if (typeof window.L === 'undefined' || !latitude || !longitude) 
-			return;
+		if (typeof L === 'undefined' || !latitude || !longitude) return;
 
-		const map = window.L.map('map').setView([latitude, longitude], zoom);
+		const map = L.map('map').setView([latitude, longitude], zoom);
 
-		window.L.Icon.Default.imagePath =
+		L.Icon.Default.imagePath =
 			getFromGlobal('urls.pluginUri') +
 			'node_modules/leaflet/dist/images/';
 
-		window.L.tileLayer(
-			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-			{
-				attribution: sprintf(
-					__(
-						'© %s contributors',
-						'gatherpress'
-					),
-					'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-				),
-			}
-		).addTo(map);
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: sprintf(
+				/* translators: %s: Link to OpenStreetMap contributors. */
+				__('© %s contributors', 'gatherpress'),
+				'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+			),
+		}).addTo(map);
 
-		window.L.marker([latitude, longitude]).addTo(map).bindPopup(location);
+		L.marker([latitude, longitude]).addTo(map).bindPopup(location);
 
 		return () => {
 			map.remove();
