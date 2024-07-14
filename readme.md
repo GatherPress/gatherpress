@@ -142,6 +142,32 @@ To get access to [GatherPress.org](htps://gatherpress.org/get-involved) via SSH 
 
 Find the developer documentation inside the plugins' `docs` folder.
 
+### What’s about the PRO version?
+
+As a Community powered plugin, GatherPress is already the PRO-version.
+
+Because we strive for close-to-core development, love decisions - not options and follow a lot of well known best-practices within the WordPress space, we can and do focus on what matters most - powering our community's event management needs.
+
+GatherPress‘ best-practices:
+
+- Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
+- Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
+- [JavaScript & PHP Unit tests](https://sonarcloud.io/summary/new_code?id=GatherPress_gatherpress&branch=main) are covering almost 80% of the whole codebase.
+- Import & Export event- and venue-data using WordPress' native tools.
+
+### Reminder that GatherPress is still in Alpha
+
+As we continue to refine and develop the plugin, please use the [GatherPress Alpha](https://github.com/GatherPress/gatherpress-alpha) plugin alongside the core GatherPress plugin. The Alpha plugin manages breaking changes easily: just make sure it is up-to-date, activate it, go to the Alpha section under GatherPress Settings, and click "Fix GatherPress!" after updating GatherPress. This process helps us avoid technical debt as we work towards launching version 1.0.0 of the plugin.
+
+## Changelog
+
+See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+
+## Upgrade Notice
+
+### 1.0.0
+
+=======
 ### Is GatherPress WordPress Multisite compatible?
 Yes, GatherPress can be run on a network of sites. The additional database tables it needs, will be created automatically for each new site if the plugin is network-activated.
 
