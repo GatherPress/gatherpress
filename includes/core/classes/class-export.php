@@ -65,7 +65,14 @@ class Export extends Migrate {
 		add_action( 'export_wp', array( $this, 'export' ) );
 	}
 
-	public function export() {
+	/**
+	 * Sets up the necessary hooks for the export process.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function export(): void {
 		add_action( 'the_post', array( $this, 'prepare' ), 10, 2 );
 		add_filter( 'wxr_export_skip_postmeta', array( $this, 'extend' ), 10, 3 );
 	}
