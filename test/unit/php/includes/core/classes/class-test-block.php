@@ -36,12 +36,6 @@ class Test_Block extends Base {
 				'priority' => 11,
 				'callback' => array( $instance, 'register_blocks' ),
 			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'load_script_translation_file',
-				'priority' => 10,
-				'callback' => array( $instance, 'fix_translation_location' ),
-			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );

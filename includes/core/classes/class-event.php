@@ -329,7 +329,7 @@ class Event {
 		$data      = get_transient( $cache_key );
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
-			$table = sprintf( static::TABLE_FORMAT, $wpdb->prefix );
+			$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM %i WHERE post_id = %d LIMIT 1', $table, $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
@@ -487,15 +487,17 @@ class Event {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
 
+		$params = array(
+			'action'   => 'TEMPLATE',
+			'text'     => sanitize_text_field( $this->event->post_title ),
+			'dates'    => sanitize_text_field( $datetime ),
+			'details'  => sanitize_text_field( $description ),
+			'location' => sanitize_text_field( $location ),
+			'sprop'    => 'name:',
+		);
+
 		return add_query_arg(
-			array(
-				'action'   => 'TEMPLATE',
-				'text'     => sanitize_text_field( $this->event->post_title ),
-				'dates'    => sanitize_text_field( $datetime ),
-				'details'  => sanitize_text_field( $description ),
-				'location' => sanitize_text_field( $location ),
-				'sprop'    => 'name:',
-			),
+			rawurlencode_deep( $params ),
 			'https://www.google.com/calendar/event'
 		);
 	}
@@ -533,17 +535,19 @@ class Event {
 			$location .= sprintf( ', %s', $venue['full_address'] );
 		}
 
+		$params = array(
+			'v'      => '60',
+			'view'   => 'd',
+			'type'   => '20',
+			'title'  => sanitize_text_field( $this->event->post_title ),
+			'st'     => sanitize_text_field( $datetime_start ),
+			'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
+			'desc'   => sanitize_text_field( $description ),
+			'in_loc' => sanitize_text_field( $location ),
+		);
+
 		return add_query_arg(
-			array(
-				'v'      => '60',
-				'view'   => 'd',
-				'type'   => '20',
-				'title'  => sanitize_text_field( $this->event->post_title ),
-				'st'     => sanitize_text_field( $datetime_start ),
-				'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
-				'desc'   => sanitize_text_field( $description ),
-				'in_loc' => sanitize_text_field( $location ),
-			),
+			rawurlencode_deep( $params ),
 			'https://calendar.yahoo.com/'
 		);
 	}
@@ -721,11 +725,11 @@ class Event {
 				return '';
 			}
 
-			$user = $this->rsvp->get( get_current_user_id() );
+			$response = $this->rsvp->get( get_current_user_id() );
 
 			if (
-				! isset( $user['status'] ) ||
-				'attending' !== $user['status'] ||
+				! isset( $response['status'] ) ||
+				'attending' !== $response['status'] ||
 				$this->has_event_past()
 			) {
 				return '';

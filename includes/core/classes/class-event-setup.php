@@ -55,6 +55,7 @@ class Event_Setup {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
+		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
 		add_action(
 			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
 			array( $this, 'custom_columns' ),
@@ -160,10 +161,10 @@ class Event_Setup {
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
-				'sanitize_callback' => 'sanitize_text_field',
+				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
-				'type'              => 'number',
+				'type'              => 'integer',
 			),
 			'gatherpress_enable_anonymous_rsvp'  => array(
 				'auth_callback'     => function () {
@@ -210,6 +211,23 @@ class Event_Setup {
 				$args
 			);
 		}
+	}
+
+	/**
+	 * Checks and updates the waiting list for the given event.
+	 *
+	 * This function initializes an RSVP object for the given post ID
+	 * and checks the waiting list associated with that post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id The ID of the post for which the waiting list should be checked.
+	 * @return void
+	 */
+	public function check_waiting_list( int $post_id ): void {
+		$rsvp = new Rsvp( $post_id );
+
+		$rsvp->check_waiting_list();
 	}
 
 	/**

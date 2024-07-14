@@ -79,7 +79,7 @@ class Test_Rsvp extends Base {
 
 		$rsvp = new Rsvp( $post->ID );
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attending_limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
 
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
@@ -128,7 +128,7 @@ class Test_Rsvp extends Base {
 
 		$this->assertEquals( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attending_limit', 2 );
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 2 );
 
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
@@ -156,7 +156,7 @@ class Test_Rsvp extends Base {
 
 		$rsvp->save( $user_1_id, 'attending' );
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attending_limit', 5 );
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 5 );
 
 		$this->assertEquals( 2, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
 
@@ -181,7 +181,7 @@ class Test_Rsvp extends Base {
 		)->get();
 		$rsvp = new Rsvp( $post->ID );
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attending_limit', 1 );
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
 
 		$current_response = array(
 			'status' => 'waiting_list',

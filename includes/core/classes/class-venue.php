@@ -194,7 +194,7 @@ class Venue {
 				'hierarchical'       => false,
 				'public'             => true,
 				'show_ui'            => false,
-				'show_admin_column'  => false,
+				'show_admin_column'  => true,
 				'query_var'          => true,
 				'publicly_queryable' => false,
 				'show_in_rest'       => true,
@@ -261,8 +261,15 @@ class Venue {
 			return;
 		}
 
-		// Only proceed if the venue post is being published.
-		if ( 'publish' !== $post_after->post_status ) {
+		// Only proceed if the venue post is being published or trashed.
+		if ( ! in_array(
+			$post_after->post_status,
+			array(
+				'publish',
+				'trash',
+			),
+			true
+		) ) {
 			return;
 		}
 

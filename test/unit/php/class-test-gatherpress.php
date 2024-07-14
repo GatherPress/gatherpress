@@ -21,7 +21,7 @@ class Test_GatherPress extends Base {
 	 * @return void
 	 */
 	public function test_plugin_version(): void {
-		$credits      = include sprintf( '%s/includes/data/credits/latest.php', GATHERPRESS_CORE_PATH );
+		$credits      = include sprintf( '%s/includes/data/credits.php', GATHERPRESS_CORE_PATH );
 		$package_json = json_decode(
 			file_get_contents( // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 				sprintf( '%s/package.json', GATHERPRESS_CORE_PATH )
@@ -32,7 +32,7 @@ class Test_GatherPress extends Base {
 		$this->assertSame(
 			$credits['version'],
 			GATHERPRESS_VERSION,
-			'Failed to assert version in gatherpress.php matches version in latest.php.'
+			'Failed to assert version in gatherpress.php matches version in credits.php.'
 		);
 
 		$this->assertSame(
