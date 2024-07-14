@@ -11,11 +11,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
-use GatherPress\Core\Migrate;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
-use WP_Query;
 
 /**
  * Class Export.
@@ -65,13 +62,12 @@ class Export extends Migrate {
 		/**
 		 * Fires at the beginning of an export, before any headers are sent.
 		 */
-		add_action(
-			'export_wp',
-			function () {
-				add_action( 'the_post', array( self::class, 'prepare' ), 10, 2 );
-				add_filter( 'wxr_export_skip_postmeta', array( self::class, 'extend' ), 10, 3 );
-			}
-		);
+		add_action( 'export_wp', array( $this, 'export' ) );
+	}
+
+	public function export() {
+		add_action( 'the_post', array( $this, 'prepare' ), 10, 2 );
+		add_filter( 'wxr_export_skip_postmeta', array( $this, 'extend' ), 10, 3 );
 	}
 
 	/**
@@ -85,8 +81,8 @@ class Export extends Migrate {
 	 * @param  WP_Post $post  The Post object (passed by reference).
 	 * @return void
 	 */
-	public static function prepare( WP_Post $post ): void {
-		if ( self::validate( $post ) ) {
+	public function prepare( WP_Post $post ): void {
+		if ( $this->validate( $post ) ) {
 			add_post_meta( $post->ID, self::POST_META, true );
 		}
 	}
@@ -114,10 +110,10 @@ class Export extends Migrate {
 	 * @param  object $meta     Current meta object.
 	 * @return bool             Whether to skip the current post meta. Default false.
 	 */
-	public static function extend( bool $skip, string $meta_key, object $meta ): bool {
+	public function extend( bool $skip, string $meta_key, object $meta ): bool {
 		if ( self::POST_META === $meta_key ) {
 			// Echos out xml with pseudo-postmeta.
-			self::run( get_post( $meta->post_id ) );
+			$this->run( get_post( $meta->post_id ) );
 
 			// Deletes temporary marker.
 			delete_post_meta( $meta->post_id, self::POST_META );
@@ -138,7 +134,7 @@ class Export extends Migrate {
 	 * @param  WP_Post $post Current meta key.
 	 * @return bool          True, when the currently exported post is of type 'gatherpress_event', false otherwise.
 	 */
-	protected static function validate( WP_Post $post ): bool {
+	protected function validate( WP_Post $post ): bool {
 		return ( Event::POST_TYPE === $post->post_type );
 	}
 
@@ -156,11 +152,12 @@ class Export extends Migrate {
 	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
 	 * @return void
 	 */
-	public static function run( WP_Post $post ): void {
-		$pseudopostmetas = self::get_pseudopostmetas();
+	public function run( WP_Post $post ): void {
+		$pseudopostmetas = $this->get_pseudopostmetas();
+
 		array_walk(
 			$pseudopostmetas,
-			array( self::class, 'render' ),
+			array( $this, 'render' ),
 			$post
 		);
 	}
@@ -173,7 +170,7 @@ class Export extends Migrate {
 	 * @param  WP_Post $post      The currently exported 'gatherpress_event' post.
 	 * @return void
 	 */
-	public static function render( array $callbacks, string $key, WP_Post $post ) {
+	public function render( array $callbacks, string $key, WP_Post $post ) {
 		if ( ! isset( $callbacks['export_callback'] ) || ! is_callable( $callbacks['export_callback'] ) ) {
 			return;
 		}
@@ -197,11 +194,12 @@ class Export extends Migrate {
 	 * @param  WP_Post $post Current 'gatherpress_event' post being exported.
 	 * @return string        Serialized JSON string with all date, time & timezone data of the current $post.
 	 */
-	public static function datetimes_callback( WP_Post $post ): string {
+	public function datetimes_callback( WP_Post $post ): string {
 		// Make sure to not get any user-related data.
 		remove_all_filters( 'gatherpress_timezone' );
 
 		$event = new Event( $post->ID );
+
 		return maybe_serialize( $event->get_datetime() );
 	}
 }

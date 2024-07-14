@@ -22,14 +22,13 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Migrate {
-
 	/**
 	 * List of non-existent post_meta keys with array values containing getter and setter callback definitions.
 	 *
 	 * @since 1.0.0
 	 * @var array $pseudopostmetas
 	 */
-	protected static $pseudopostmetas = array(
+	protected array $pseudopostmetas = array(
 		'gatherpress_datetimes' => array(
 			'export_callback' => array( '\GatherPress\Core\Export', 'datetimes_callback' ),
 			'import_callback' => array( '\GatherPress\Core\Import', 'datetimes_callback' ),
@@ -44,7 +43,7 @@ class Migrate {
 	 *
 	 * @return array
 	 */
-	public static function get_pseudopostmetas(): array {
+	public function get_pseudopostmetas(): array {
 		/**
 		 * Filters the list of data-names and their respective export- and import-callbacks.
 		 *
@@ -83,6 +82,6 @@ class Migrate {
 		 * @param  array $pseudopostmetas List of data-names and their respective export- and import-callbacks.
 		 * @return array
 		 */
-		return (array) apply_filters( 'gatherpress_pseudopostmetas', self::$pseudopostmetas );
+		return (array) apply_filters( 'gatherpress_pseudopostmetas', $this->pseudopostmetas );
 	}
 }
