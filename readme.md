@@ -142,7 +142,6 @@ To get access to [GatherPress.org](htps://gatherpress.org/get-involved) via SSH 
 
 Find the developer documentation inside the plugins' `docs` folder.
 
-<<<<<<< HEAD
 ### What’s about the PRO version?
 
 As a Community powered plugin, GatherPress is already the PRO-version.
@@ -198,5 +197,4 @@ See complete changelog at https://github.com/GatherPress/gatherpress/releases.
 
 ### 1.0.0
 
->>>>>>> 2f71e7890071c960a4ffc25d5fdf22b43b213b9a
 See: https://gatherpress.org/releases/version-1-0-0
