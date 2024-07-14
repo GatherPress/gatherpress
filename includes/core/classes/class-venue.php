@@ -261,8 +261,8 @@ class Venue {
 			return;
 		}
 
-		// Only proceed if the venue post is being published.
-		if ( 'publish' !== $post_after->post_status ) {
+		// Only proceed if the venue post is being published or trashed.
+		if ( 'publish' !== $post_after->post_status && 'trash' !== $post_after->post_status ) {
 			return;
 		}
 
