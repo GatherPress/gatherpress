@@ -12,7 +12,7 @@ import { getFromGlobal } from '../helpers/globals';
 /**
  * Leaflet.
  */
-import L from 'leaflet';
+import Leaflet from 'leaflet';
 
 /**
  * OpenStreetMap component for GatherPress.
@@ -37,23 +37,26 @@ const OpenStreetMap = (props) => {
 	const style = { height };
 
 	useEffect(() => {
-		if (typeof L === 'undefined' || !latitude || !longitude) return;
+		if (typeof Leaflet === 'undefined' || !latitude || !longitude) return;
 
-		const map = L.map('map').setView([latitude, longitude], zoom);
+		const map = Leaflet.map('map').setView([latitude, longitude], zoom);
 
-		L.Icon.Default.imagePath =
+		Leaflet.Icon.Default.imagePath =
 			getFromGlobal('urls.pluginUri') +
 			'node_modules/leaflet/dist/images/';
 
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution: sprintf(
-				/* translators: %s: Link to OpenStreetMap contributors. */
-				__('© %s contributors', 'gatherpress'),
-				'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-			),
-		}).addTo(map);
+		Leaflet.tileLayer(
+			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			{
+				attribution: sprintf(
+					/* translators: %s: Link to OpenStreetMap contributors. */
+					__('© %s contributors', 'gatherpress'),
+					'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+				),
+			}
+		).addTo(map);
 
-		L.marker([latitude, longitude]).addTo(map).bindPopup(location);
+		Leaflet.marker([latitude, longitude]).addTo(map).bindPopup(location);
 
 		return () => {
 			map.remove();
