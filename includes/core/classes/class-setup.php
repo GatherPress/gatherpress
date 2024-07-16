@@ -62,6 +62,8 @@ class Setup {
 		Cli::get_instance();
 		Event_Query::get_instance();
 		Event_Setup::get_instance();
+		Export::get_instance();
+		Import::get_instance();
 		Rest_Api::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
@@ -84,7 +86,6 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
-		add_action( 'init', array( $this, 'load_textdomain' ), 9 );
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
@@ -108,44 +109,6 @@ class Setup {
 			),
 			array( $this, 'filter_plugin_action_links' )
 		);
-		add_filter( 'load_textdomain_mofile', array( $this, 'load_mofile' ), 10, 2 );
-	}
-
-	/**
-	 * Loads gatherpress for GatherPress.
-	 *
-	 * @todo needed until plugin is added to wordpress.org plugin directory.
-	 *
-	 * @return void
-	 */
-	public function load_textdomain(): void {
-		load_plugin_textdomain( 'gatherpress', false, GATHERPRESS_DIR_NAME . '/languages' );
-	}
-
-	/**
-	 * Find language files in gatherpress/languages when missing in wp-content/languages/plugins/
-	 *
-	 * The translation files will be in wp-content/languages/plugins/ once the plugin on the
-	 * repository and translated in translate.wordpress.org.
-	 *
-	 * @todo needed until plugin is added to wordpress.org plugin directory.
-	 *
-	 * Until that, we need to load from /languages folder and load the textdomain.
-	 * See https://developer.wordpress.org/plugins/internationalization/how-to-internationalize-your-plugin/#plugins-on-wordpress-org.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $mofile The path to the translation file.
-	 * @param string $domain The text domain of the translation file.
-	 * @return string The updated path to the translation file based on the locale
-	 */
-	public function load_mofile( string $mofile, string $domain ): string {
-		if ( 'gatherpress' === $domain && false !== strpos( $mofile, WP_LANG_DIR . '/plugins/' ) ) {
-			$locale = apply_filters( 'plugin_locale', determine_locale(), $domain );  // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-			$mofile = WP_PLUGIN_DIR . '/' . GATHERPRESS_DIR_NAME . '/languages/' . $domain . '-' . $locale . '.mo';
-		}
-
-		return $mofile;
 	}
 
 	/**

@@ -174,7 +174,7 @@ class Assets {
 				true
 			);
 
-			wp_set_script_translations( 'gatherpress-panels', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+			wp_set_script_translations( 'gatherpress-panels', 'gatherpress' );
 
 			$asset = $this->get_asset_data( 'modals' );
 			wp_enqueue_script(
@@ -185,7 +185,7 @@ class Assets {
 				true
 			);
 
-			wp_set_script_translations( 'gatherpress-modals', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+			wp_set_script_translations( 'gatherpress-modals', 'gatherpress' );
 		}
 
 		$settings      = Settings::get_instance();
@@ -219,7 +219,7 @@ class Assets {
 				true
 			);
 
-			wp_set_script_translations( 'gatherpress-settings', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+			wp_set_script_translations( 'gatherpress-settings', 'gatherpress' );
 		}
 
 		if ( 'profile.php' === $hook ) {
@@ -233,7 +233,7 @@ class Assets {
 				true
 			);
 
-			wp_set_script_translations( 'gatherpress-profile', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+			wp_set_script_translations( 'gatherpress-profile', 'gatherpress' );
 		}
 	}
 
@@ -258,7 +258,7 @@ class Assets {
 			true
 		);
 
-		wp_set_script_translations( 'gatherpress-editor', 'gatherpress', GATHERPRESS_CORE_PATH . '/languages' );
+		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}
 
 	/**
