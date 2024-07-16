@@ -67,11 +67,13 @@ const VenueInformation = () => {
 			fetch(
 				`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`
 			)
-				.then(response => {
+				.then((response) => {
 					// Check if the response is successful
 					if (!response.ok) {
+						/* translators: %s: Error message */
 						throw new Error(
 							sprintf(
+								/* translators: %s: Error message */
 								__(
 									'Network response was not ok %s',
 									'gatherpress'
@@ -93,18 +95,6 @@ const VenueInformation = () => {
 						latitude: lat,
 						longitude: lng,
 					});
-				})
-				.catch((error) => {
-					// Handle any errors
-					console.error(
-						sprintf(
-							__(
-								'There was a problem with the fetch operation: %s',
-								'gatherpress'
-							),
-							error
-						)
-					);
 				});
 		}, 2000);
 
