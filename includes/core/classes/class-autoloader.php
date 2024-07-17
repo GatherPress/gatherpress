@@ -33,10 +33,12 @@ class Autoloader {
 	public static function register(): void {
 		spl_autoload_register(
 			static function ( string $class_string = '' ): void {
+				$registered_autoloaders = apply_filters( 'gatherpress_autoloader', array() );
 				$default                = array(
 					'GatherPress' => GATHERPRESS_CORE_PATH,
 				);
-				$registered_autoloaders = apply_filters( 'gatherpress_autoloader', $default );
+				$registered_autoloaders = array_merge( $registered_autoloaders, $default );
+
 
 				foreach ( $registered_autoloaders as $namespace => $path ) {
 					$namespace_root = sprintf( '%s\\', $namespace );
