@@ -39,7 +39,6 @@ class Autoloader {
 				);
 				$registered_autoloaders = array_merge( $registered_autoloaders, $default );
 
-
 				foreach ( $registered_autoloaders as $namespace => $path ) {
 					$namespace_root = sprintf( '%s\\', $namespace );
 					$class_string   = trim( $class_string, '\\' );
