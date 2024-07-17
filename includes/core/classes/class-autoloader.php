@@ -32,43 +32,58 @@ class Autoloader {
 	 */
 	public static function register(): void {
 		spl_autoload_register(
-			static function ( $class_string ): bool {
-				$structure = strtolower( $class_string );
-				$structure = str_replace( '_', '-', $structure );
-				$structure = explode( '\\', $structure );
+			static function ( string $class_string = '' ): void {
+				$default                = array(
+					'GatherPress' => GATHERPRESS_CORE_PATH,
+				);
+				$registered_autoloaders = apply_filters( 'gatherpress_autoloader', $default );
 
-				if ( 'gatherpress' !== array_shift( $structure ) ) {
-					return false;
+				foreach ( $registered_autoloaders as $namespace => $path ) {
+					$namespace_root = sprintf( '%s\\', $namespace );
+					$class_string   = trim( $class_string, '\\' );
+
+					if (
+						empty( $class_string ) ||
+						false === strpos( $class_string, '\\' ) ||
+						0 !== strpos( $class_string, $namespace_root )
+					) {
+						continue;
+					}
+
+					$structure = explode(
+						'\\',
+						str_replace( '_', '-', strtolower( $class_string ) )
+					);
+
+					$file       = $structure[ count( $structure ) - 1 ];
+					$class_type = $structure[ count( $structure ) - 2 ];
+
+					array_shift( $structure );
+					array_pop( $structure );
+					array_unshift( $structure, 'includes' );
+
+					switch ( $class_type ) {
+						case 'commands':
+						case 'settings':
+						case 'traits':
+							array_pop( $structure );
+							array_push( $structure, 'classes', $class_type );
+							break;
+						default:
+							$structure[] = 'classes';
+					}
+
+					$structure[]         = sprintf( 'class-%s.php', $file );
+					$resource_path       = $path . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $structure );
+					$resource_path_valid = validate_file( $resource_path );
+
+					if (
+						file_exists( $resource_path ) &&
+						( 0 === $resource_path_valid || 2 === $resource_path_valid )
+					) {
+						require_once $resource_path;
+					}
 				}
-
-				$file       = $structure[ count( $structure ) - 1 ];
-				$class_type = $structure[ count( $structure ) - 2 ];
-
-				array_pop( $structure );
-				array_unshift( $structure, 'includes' );
-
-				switch ( $class_type ) {
-					case 'commands':
-					case 'settings':
-					case 'traits':
-						array_pop( $structure );
-						array_push( $structure, 'classes', $class_type );
-						break;
-					default:
-						$structure[] = 'classes';
-				}
-
-				$structure[]         = sprintf( 'class-%s.php', $file );
-				$resource_path       = GATHERPRESS_CORE_PATH . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $structure );
-				$resource_path_valid = validate_file( $resource_path );
-
-				if ( file_exists( $resource_path ) && ( 0 === $resource_path_valid || 2 === $resource_path_valid ) ) {
-					require_once $resource_path;
-
-					return true;
-				}
-
-				return false;
 			}
 		);
 	}
