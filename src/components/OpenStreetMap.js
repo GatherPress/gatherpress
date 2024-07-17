@@ -1,18 +1,19 @@
 /**
  * External dependencies.
  */
+import Leaflet from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+/**
+ * WordPress dependencies.
+ */
 import { sprintf, __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
 
 /**
- * Internal Dependencies.
+ * Internal dependencies.
  */
 import { getFromGlobal } from '../helpers/globals';
-
-/**
- * Leaflet.
- */
-import Leaflet from 'leaflet';
 
 /**
  * OpenStreetMap component for GatherPress.

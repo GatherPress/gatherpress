@@ -39,5 +39,6 @@
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
 	"viewScript": "file:./venue.js",
+	"viewStyle": "file:./venue.css",
 	"render": "file:./render.php"
 }
