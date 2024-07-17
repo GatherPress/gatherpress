@@ -33,11 +33,34 @@ class Autoloader {
 	public static function register(): void {
 		spl_autoload_register(
 			static function ( string $class_string = '' ): void {
+				/**
+				 * Filters the registered autoloaders for GatherPress.
+				 *
+				 * This filter allows developers to add or modify autoloaders for GatherPress. By using this filter,
+				 * namespaces and their corresponding paths can be registered.
+				 *
+				 * @param array $registered_autoloaders An associative array of namespaces and their paths.
+				 * @return array Modified array of namespaces and their paths.
+				 * @since 1.0.0
+				 *
+				 * @example
+				 * function gatherpress_awesome_autoloader( array $namespace ): array {
+				 *     $namespace['GatherPress_Awesome'] = __DIR__;
+				 *
+				 *     return $namespace;
+				 * }
+				 * add_filter( 'gatherpress_autoloader', 'gatherpress_awesome_autoloader' );
+				 *
+				 * Example: The namespace 'GatherPress_Awesome\Setup' would map to 'gatherpress-awesome/includes/classes/class-setup.php'.
+				 */
 				$registered_autoloaders = apply_filters( 'gatherpress_autoloader', array() );
-				$default                = array(
-					'GatherPress' => GATHERPRESS_CORE_PATH,
+
+				$registered_autoloaders = array_merge(
+					$registered_autoloaders,
+					array(
+						'GatherPress' => GATHERPRESS_CORE_PATH,
+					)
 				);
-				$registered_autoloaders = array_merge( $registered_autoloaders, $default );
 
 				foreach ( $registered_autoloaders as $namespace => $path ) {
 					$namespace_root = sprintf( '%s\\', $namespace );
