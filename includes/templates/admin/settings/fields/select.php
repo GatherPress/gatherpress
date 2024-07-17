@@ -27,9 +27,9 @@ if ( ! isset( $name, $label, $options, $options['items'], $value, $description )
 	<?php
 	foreach ( $options['items'] as $gatherpress_key => $gatherpress_label ) :
 		?>
-	<option value="<?php echo esc_attr( $gatherpress_key ); ?>" <?php echo selected( $gatherpress_key, $value ); ?>>
-		<?php echo esc_html( $gatherpress_label ); ?>
-	</option>
+		<option value="<?php echo esc_attr( $gatherpress_key ); ?>" <?php echo selected( $gatherpress_key, $value ); ?>>
+			<?php echo esc_html( $gatherpress_label ); ?>
+		</option>
 		<?php
 	endforeach;
 	?>
