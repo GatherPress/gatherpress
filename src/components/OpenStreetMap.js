@@ -43,7 +43,7 @@ const OpenStreetMap = (props) => {
 		const map = Leaflet.map('map').setView([latitude, longitude], zoom);
 
 		Leaflet.Icon.Default.imagePath =
-			getFromGlobal('urls.pluginUri') +
+			getFromGlobal('urls.pluginUrl') +
 			'node_modules/leaflet/dist/images/';
 
 		Leaflet.tileLayer(

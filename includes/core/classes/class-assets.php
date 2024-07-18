@@ -317,7 +317,7 @@ class Assets {
 				'timeFormat'           => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),
 			'urls'         => array(
-				'pluginUri'       => GATHERPRESS_CORE_URL,
+				'pluginUrl'       => GATHERPRESS_CORE_URL,
 				'eventRestApi'    => $event_rest_api,
 				'loginUrl'        => $this->get_login_url( $post_id ),
 				'registrationUrl' => $this->get_registration_url( $post_id ),
