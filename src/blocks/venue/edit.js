@@ -127,6 +127,12 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		longitude,
 	]);
 
+	useEffect(() => {
+		// Trigger a window resize event
+		const resizeEvent = new Event('resize');
+		window.dispatchEvent(resizeEvent);
+	}, [mapHeight]);
+
 	return (
 		<>
 			<InspectorControls>
