@@ -61,6 +61,7 @@ const VenueInformation = () => {
 
 	Listener({ setFullAddress, setPhoneNumber, setWebsite });
 
+	const updateVenueMetaRef = useRef(updateVenueMeta);
 	const getData = useCallback(() => {
 		let lat = 0;
 		let lng = 0;
@@ -93,7 +94,6 @@ const VenueInformation = () => {
 	}, [fullAddress]);
 
 	const debouncedGetData = useDebounce(getData, 300);
-	const updateVenueMetaRef = useRef(updateVenueMeta);
 
 	useEffect(() => {
 		updateVenueMetaRef.current = updateVenueMeta;
