@@ -18,9 +18,9 @@ module.exports = {
 		modals: path.resolve(process.cwd(), 'src/modals', 'index.js'),
 		settings: path.resolve(process.cwd(), 'src/settings', 'index.js'),
 		settings_style: path.resolve(
-		process.cwd(),
-		'src/settings',
-		'style.scss'
+			process.cwd(),
+			'src/settings',
+			'style.scss'
 		),
 		profile: path.resolve(process.cwd(), 'src/profile', 'index.js'),
 		profile_style: path.resolve(process.cwd(), 'src/profile', 'style.scss'),
