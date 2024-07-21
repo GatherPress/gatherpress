@@ -90,7 +90,7 @@ const VenueInformation = () => {
 					longitude: lng,
 				});
 			});
-	}, [fullAddress, updateVenueMeta]);
+	}, [fullAddress]);
 
 	const debouncedGetData = useDebounce(getData, 300);
 
@@ -113,7 +113,7 @@ const VenueInformation = () => {
 				value={phoneNumber}
 				onChange={(value) => {
 					Broadcaster({ setPhoneNumber: value });
-					updateVenueMeta({ setPhoneNumber: value });
+					updateVenueMeta({ phoneNumber: value });
 				}}
 			/>
 			<TextControl
@@ -122,7 +122,7 @@ const VenueInformation = () => {
 				type="url"
 				onChange={(value) => {
 					Broadcaster({ setWebsite: value });
-					updateVenueMeta({ setWebsite: value });
+					updateVenueMeta({ website: value });
 				}}
 			/>
 		</>

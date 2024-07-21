@@ -82,6 +82,7 @@ class Venue {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_action( 'post_updated', array( $this, 'maybe_update_term_slug' ), 10, 3 );
 		add_action( 'delete_post', array( $this, 'delete_venue_term' ) );
+		add_filter( 'get_post_metadata', array( $this, 'set_geodata_meta' ), 10, 3 );
 	}
 
 	/**
@@ -138,6 +139,22 @@ class Venue {
 		);
 	}
 
+	public function sanitize_float( $value ) {
+		if ( is_null( $value ) || $value === '' ) {
+			return 0.0; // default value for float
+		}
+
+		return floatval( $value );
+	}
+
+	public function sanitize_integer( $value ) {
+		if ( is_null( $value ) || $value === '' ) {
+			return 0; // default value for integer
+		}
+
+		return intval( $value );
+	}
+
 	/**
 	 * Registers custom meta fields for the Venue post type.
 	 *
@@ -156,6 +173,42 @@ class Venue {
 			'gatherpress_venue_information' => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'geo_latitude'                  => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => array( $this, 'sanitize_float' ),
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'number',
+			),
+			'geo_longitude'                 => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => array( $this, 'sanitize_float' ),
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'number',
+			),
+			'geo_public'                    => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => array( $this, 'sanitize_integer' ),
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
+			),
+			'geo_address'                   => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
@@ -427,5 +480,47 @@ class Venue {
 		}
 
 		return $venue_meta;
+	}
+
+	public function set_geodata_meta( $metadata, int $object_id, string $meta_key ) {
+		return $metadata;
+		if (
+			! in_array(
+				$meta_key,
+				array( 'geo_address' )
+			)
+		) {
+			return $metadata;
+		}
+//		if (
+//			! in_array(
+//				$meta_key,
+//				array( 'geo_latitude', 'geo_longitude', 'geo_public', 'geo_address' )
+//			)
+//		) {
+//			return $metadata;
+//		}
+
+		$venue_information = (array) json_decode( get_post_meta( $object_id, 'gatherpress_venue_information', true ) );
+		$output            = array();
+
+		switch ( $meta_key ) {
+			case 'geo_latitude':
+				$output[] = $venue_information['latitude'] ?? 0.0;
+				break;
+			case 'geo_longitude':
+				$output[] = $venue_information['longitude'] ?? 0.0;
+				break;
+			case 'geo_public':
+				$output[] = 1;
+				break;
+			case 'geo_address':
+				$output[] = $venue_information['fullAddress'] ?? '';
+				break;
+			default:
+				break;
+		}
+
+		return $output;
 	}
 }
