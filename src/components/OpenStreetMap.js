@@ -3,6 +3,7 @@
  */
 import Leaflet from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet/dist/images/marker-icon-2x.png';
 
 /**
  * WordPress dependencies.
@@ -44,7 +45,7 @@ const OpenStreetMap = (props) => {
 
 		Leaflet.Icon.Default.imagePath =
 			getFromGlobal('urls.pluginUrl') +
-			'node_modules/leaflet/dist/images/';
+			'build/images/';
 
 		Leaflet.tileLayer(
 			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',

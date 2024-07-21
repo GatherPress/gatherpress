@@ -114,8 +114,8 @@ class General extends Base {
 							'options' => array(
 								'default' => 'osm',
 								'items'   => array(
-									'google' => __( 'Google Maps', 'gatherpress' ),
 									'osm'    => __( 'Open Street Maps', 'gatherpress' ),
+									'google' => __( 'Google Maps', 'gatherpress' ),
 								),
 							),
 						),
