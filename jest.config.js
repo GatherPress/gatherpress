@@ -3,7 +3,8 @@ const defaultConfig = require('@wordpress/scripts/config/jest-unit.config');
 module.exports = {
 	...defaultConfig,
 	moduleNameMapper: {
-		'\\.(png|jpg|jpeg|gif|webp)$': '<rootDir>/test/unit/js/__mocks__/fileMock.js',
+		'\\.(png|jpg|jpeg|gif|webp)$':
+			'<rootDir>/test/unit/js/__mocks__/fileMock.js',
 		...defaultConfig.moduleNameMapper,
 	},
 };
