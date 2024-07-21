@@ -4,7 +4,7 @@
 import { TextControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { useState, useEffect, useCallback } from '@wordpress/element';
+import { useState, useEffect, useCallback, useRef } from '@wordpress/element';
 import { useDebounce } from '@wordpress/compose';
 
 /**
@@ -85,7 +85,7 @@ const VenueInformation = () => {
 					lat = data.features[0].geometry.coordinates[1];
 					lng = data.features[0].geometry.coordinates[0];
 				}
-				updateVenueMeta({
+				updateVenueMetaRef.current({
 					latitude: lat,
 					longitude: lng,
 				});
@@ -93,6 +93,11 @@ const VenueInformation = () => {
 	}, [fullAddress]);
 
 	const debouncedGetData = useDebounce(getData, 300);
+	const updateVenueMetaRef = useRef(updateVenueMeta);
+
+	useEffect(() => {
+		updateVenueMetaRef.current = updateVenueMeta;
+	}, [updateVenueMeta]);
 
 	useEffect(() => {
 		debouncedGetData();
