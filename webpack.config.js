@@ -29,8 +29,8 @@ module.exports = {
 		...defaultConfig.module,
 		rules: [
 			...defaultConfig.module.rules.filter(
-			(rule) =>
-			!/\.(bmp|png|jpe?g|gif|webp)$/i.test(rule.test.toString())
+				(rule) =>
+					!/\.(bmp|png|jpe?g|gif|webp)$/i.test(rule.test.toString())
 			),
 			...[
 				{
