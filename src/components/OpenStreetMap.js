@@ -4,6 +4,7 @@
 import Leaflet from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet/dist/images/marker-icon-2x.png';
+import 'leaflet/dist/images/marker-shadow.png';
 
 /**
  * WordPress dependencies.
