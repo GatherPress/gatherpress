@@ -25,7 +25,7 @@ import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
-import { isSinglePostInEditor } from '../../helpers/globals';
+import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
 
 /**
  * Edit component for the GatherPress Venue block.
@@ -53,6 +53,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const [website, setWebsite] = useState('');
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
+	const mapPlatform = getFromGlobal('settings.mapPlatform');
 	const onlineEventLink = useSelect(
 		(select) =>
 			select('core/editor')?.getEditedPostAttribute('meta')
@@ -176,23 +177,25 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							min={1}
 							max={22}
 						/>
-						<RadioControl
-							label={__('Map type', 'gatherpress')}
-							selected={mapType}
-							options={[
-								{
-									label: __('Roadmap', 'gatherpress'),
-									value: 'm',
-								},
-								{
-									label: __('Satellite', 'gatherpress'),
-									value: 'k',
-								},
-							]}
-							onChange={(value) => {
-								setAttributes({ mapType: value });
-							}}
-						/>
+						{'google' === mapPlatform && (
+							<RadioControl
+								label={__('Map type', 'gatherpress')}
+								selected={mapType}
+								options={[
+									{
+										label: __('Roadmap', 'gatherpress'),
+										value: 'm',
+									},
+									{
+										label: __('Satellite', 'gatherpress'),
+										value: 'k',
+									},
+								]}
+								onChange={(value) => {
+									setAttributes({ mapType: value });
+								}}
+							/>
+						)}
 						<RangeControl
 							label={__('Map height', 'gatherpress')}
 							beforeIcon="location"
