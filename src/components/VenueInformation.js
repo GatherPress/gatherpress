@@ -63,8 +63,8 @@ const VenueInformation = () => {
 
 	const updateVenueMetaRef = useRef(updateVenueMeta);
 	const getData = useCallback(() => {
-		let lat = 0;
-		let lng = 0;
+		let lat = null;
+		let lng = null;
 
 		fetch(
 			`https://nominatim.openstreetmap.org/search?q=${fullAddress}&format=geojson`
