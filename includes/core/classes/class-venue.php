@@ -138,22 +138,6 @@ class Venue {
 		);
 	}
 
-	public function sanitize_float( $value ) {
-		if ( is_null( $value ) || $value === '' ) {
-			return 0.0; // default value for float
-		}
-
-		return floatval( $value );
-	}
-
-	public function sanitize_integer( $value ) {
-		if ( is_null( $value ) || $value === '' ) {
-			return 0; // default value for integer
-		}
-
-		return intval( $value );
-	}
-
 	/**
 	 * Registers custom meta fields for the Venue post type.
 	 *
