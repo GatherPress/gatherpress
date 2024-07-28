@@ -250,7 +250,7 @@ class Event_Setup {
 
 		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 
-		$table_exists = $wpdb->get_var(
+		$table_exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prepare(
 				'SHOW TABLES LIKE %s',
 				$table
