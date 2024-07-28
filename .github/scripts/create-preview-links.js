@@ -3,21 +3,30 @@
  * https://github.com/Automattic/themes/blob/a0c9b91f827f46ed60c502d41ef881b2f0552f03/.github/scripts/create-preview-links.js
  */
 
+/*
+ * This function creates the URL where to download the built & zipped plugin.
+ *
+ * @param {object} context - The context of the event that triggered the action.
+ * @param {number} number - The PR number where the plugin changes are located.
+ * @returns {string} - The URL where to download the built & zipped plugin, as an artifact of the workflow.
+ */
 function createBlueprintUrl(context, number) {
 	const { repo, owner } = context;
 	const workflow = encodeURI('Playground Preview');
 	const artifact = 'gatherpress-pr';
 	const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
 	// const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
+
 	return `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
 }
 
 /*
- * This function creates a WordPress Playground blueprint JSON string for a theme.
+ * This function creates a WordPress Playground blueprint JSON string for a given PR of the GatherPress plugin.
  *
- * @param {string} themeSlug - The slug of the theme to create a blueprint for.
- * @param {string} branch - The branch where the theme changes are located.
- * @returns {string} - A JSON string representing the blueprint.
+ * @param {object} context - The context of the event that triggered the action.
+ * @param {number} number - The PR number where the plugin changes are located.
+ * @param {string} zipArtifactUrl - The URL where to download the built & zipped plugin, as an artifact of the workflow.
+ * @returns {string} - A JSON string representing the steps of a blueprint.
  */
 function createBlueprint(context, number, zipArtifactUrl) {
 	const { repo, owner } = context;
@@ -105,8 +114,9 @@ function createBlueprint(context, number, zipArtifactUrl) {
 }
 
 /*
- * This function creates a comment on a PR with preview links for ...
- * It is used by `preview-playground` workflow.
+ * This function creates a comment on a PR with preview links.
+ *
+ * It is used by `playground-preview` workflow.
  *
  * @param {object} github - An authenticated instance of the GitHub API.
  * @param {object} context - The context of the event that triggered the action.

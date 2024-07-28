@@ -1,4 +1,3 @@
-# name: Prepare a .zip file with the current state of the plugin
 # For now (!) the name here is important and should not be changed!
 #
 # The plugin-proxy.php does a check against exact this workflow name.
@@ -76,26 +75,6 @@ jobs:
         with:
           name: ${{ github.event.repository.name }}-pr
           path: ./${{ github.event.repository.name }}.zip
-
-  # blueprint:
-  #   name: Create blueprint.json
-  #   needs: zip
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/github-script@v7
-  #       with:
-  #         # Based on: https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/gutenberg.html
-  #         script: |
-  #           // Get link to the Playground site with the Blueprint to download and apply the PR
-  #             // "landingPage" should better be set via query API param 'url'.
-  #           const blueprint = {
-  #             landingPage: '/wp-admin/edit.php?post_type=gatherpress_event',
-
-  #           // console.log( blueprint );
-  #           const encoded = JSON.stringify(blueprint);
-  #           console.log( 'WordPress playground Builder: ','https://playground.wordpress.net/builder/builder.html#' + encodeURI(encoded) );
-  #           console.log( 'Normal WordPress playground: ', 'https://playground.wordpress.net/#' + encodeURI(encoded) );
-  #           console.log( 'Seamless WordPress playground: ', 'https://playground.wordpress.net/?mode=seamless#' + encodeURI(encoded) );
 
   comment:
     name: Comment with playground link
