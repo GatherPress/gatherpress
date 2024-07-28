@@ -115,7 +115,6 @@ function createBlueprint(context, number, zipArtifactUrl) {
  * @param {object} context - The context of the event that triggered the action.
  */
 async function createPreviewLinksComment(github, context) {
-	// console.log('createPreviewLinksComment', context);
 	const zipArtifactUrl = createBlueprintUrl(
 		context.repo,
 		context.payload.pull_request.number
@@ -144,7 +143,7 @@ async function createPreviewLinksComment(github, context) {
 		url: playground.url + blueprint
 	}));
 	const previewLinks = links.map(link => (
-		`- [${link.title}](${link.url})`
+		`- [${link.title}](${link.url})\n`
 	));
 	const title   = '### Preview changes with Playground';
 	const comment = `
