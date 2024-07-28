@@ -8,10 +8,16 @@
 .eslintrc
 .eslintrc.js
 .git
+.github
 .gitignore
 .gitlab-ci.yml
 .nvmrc
 .travis.yml
+.wordpress-org
+.wordpress-version-checker.json
+.wp-env.json
+.stylelintignore
+.stylelintrc.js
 .DS_Store
 Thumbs.db
 behat.yml
