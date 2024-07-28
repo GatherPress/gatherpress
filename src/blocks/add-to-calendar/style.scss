@@ -21,7 +21,7 @@
 		overflow: hidden;
 		position: absolute;
 		width: 15rem;
-		z-index: 50;
+		z-index: 9999; // Leaflet/OSM map has high z-index.
 	}
 
 	&__list-item {

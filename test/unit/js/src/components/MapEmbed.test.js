@@ -19,7 +19,24 @@ test('MapEmbed returns empty when no location is provided', () => {
 	expect(container).toHaveTextContent('');
 });
 
-test('MapEmbed returns address in source when location is set', () => {
+test('OSM MapEmbed returns a div when location is set', () => {
+	global.GatherPress = {
+		settings: {
+			mapPlatform: 'osm',
+		},
+	};
+	const { container } = render(
+		<MapEmbed location="50 South Fullerton Avenue, Montclair, NJ 07042" />
+	);
+	expect(container).toContainHTML('<div></div>');
+});
+
+test('Google MapEmbed returns address in source when location is set', () => {
+	global.GatherPress = {
+		settings: {
+			mapPlatform: 'google',
+		},
+	};
 	const { container } = render(
 		<MapEmbed location="50 South Fullerton Avenue, Montclair, NJ 07042" />
 	);

@@ -65,6 +65,7 @@ This plugin leverages the following third-party libraries for various functional
 
 - [React-Modal](https://github.com/reactjs/react-modal): Facilitates the creation of modal dialogs in React components.
 - [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips for React applications.
+- [Leaflet](https://leafletjs.com/): Provides global, open-source mapping functionality
 
 ## Screenshots
 
@@ -87,7 +88,7 @@ To run GatherPress, we recommend your host supports:
 
 ### What external services are used in GatherPress?
 
-- Mapping Services: We use OpenStreetMap (coming soon) and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
+- Mapping Services: We use OpenStreetMap and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
 - Calendar Integration: GatherPress also supports "Add to Calendar" functionality using Google Calendar and Yahoo! Calendar.
 
 ### Configure GatherPress
@@ -132,7 +133,11 @@ In WP Admin, go to `Events`  > `Topics`.
 
 Topics are like post categories, but for events.
 
-### Get Collaborator Access
+## Contribute
+
+If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
+
+### Collaborator Access
 
 To get write access to the GitHub repo, please reach out to our **GitHub Administrators**: [Mervin Hernandez](https://github.com/MervinHernandez) and [Mike Auteri](https://github.com/mauteri).
 

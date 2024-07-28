@@ -55,6 +55,8 @@ domReady(() => {
 		createRoot(containers[i]).render(
 			<MapEmbed
 				location={attrs.fullAddress}
+				latitude={attrs.latitude}
+				longitude={attrs.longitude}
 				zoom={attrs.mapZoomLevel}
 				type={attrs.mapType}
 				height={attrs.mapHeight}

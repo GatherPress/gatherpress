@@ -103,6 +103,23 @@ class General extends Base {
 							),
 						),
 					),
+					'map_platform'           => array(
+						'labels'      => array(
+							'name' => __( 'Mapping Platform', 'gatherpress' ),
+						),
+						'description' => __( 'Select the platform you would like to render maps with.', 'gatherpress' ),
+						'field'       => array(
+							'label'   => __( 'Selected Mapping Platform:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => 'osm',
+								'items'   => array(
+									'osm'    => __( 'Open Street Maps', 'gatherpress' ),
+									'google' => __( 'Google Maps', 'gatherpress' ),
+								),
+							),
+						),
+					),
 					'max_attendance_limit'   => array(
 						'labels'      => array(
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
