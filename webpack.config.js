@@ -34,18 +34,10 @@ module.exports = {
 			),
 			...[
 				{
-					test: /marker-icon-2x\.png|marker-shadow\.png$/,
+					test: /\.(bmp|png|jpe?g|gif|webp)$/i,
 					type: 'asset/resource',
 					generator: {
 						filename: 'images/[name][ext]',
-					},
-				},
-				{
-					test: /\.(bmp|png|jpe?g|gif|webp)$/i,
-					exclude: /marker-icon-2x\.png|marker-shadow\.png$/,
-					type: 'asset/resource',
-					generator: {
-						filename: 'images/[name].[hash:8][ext]',
 					},
 				},
 			],
