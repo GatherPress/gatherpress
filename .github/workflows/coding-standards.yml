@@ -74,3 +74,30 @@ jobs:
       - name: Run JSHint
         run: npm run lint:js
         if: ${{ success() || failure() }}
+
+  stylelint:
+    name: CSS Coding Standards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Log debug information
+        run: |
+          npm --version
+          node --version
+          git --version
+          php --version
+          composer --version
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v2
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: NPM install
+        run: npm ci --legacy-peer-deps
+
+      - name: Run JSHint
+        run: npm run lint:css
+        if: ${{ success() || failure() }}

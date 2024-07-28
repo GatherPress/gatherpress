@@ -1,0 +1,7 @@
+node_modules
+build
+coverage
+playwright-report
+test-results
+vendor
+wp-core

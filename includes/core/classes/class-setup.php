@@ -44,11 +44,10 @@ class Setup {
 	}
 
 	/**
-	 * Instantiate singleton classes and set up WP-CLI command.
+	 * Instantiate singleton classes.
 	 *
-	 * This method initializes various singleton classes used by the plugin
-	 * and adds a WP-CLI command if WP_CLI is defined. It may throw an Exception
-	 * if there are issues instantiating the classes.
+	 * This method initializes various singleton classes used by the plugin.
+	 * It may throw an Exception if there are issues instantiating the classes.
 	 *
 	 * @since 1.0.0
 	 *

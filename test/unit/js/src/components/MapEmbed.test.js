@@ -1,7 +1,7 @@
 /**
  * External dependencies.
  */
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { expect, test } from '@jest/globals';
 import '@testing-library/jest-dom';
 
@@ -19,15 +19,22 @@ test('MapEmbed returns empty when no location is provided', () => {
 	expect(container).toHaveTextContent('');
 });
 
-test('OSM MapEmbed returns a div when location is set', () => {
+test('OSM MapEmbed returns a div when location is set', async () => {
 	global.GatherPress = {
 		settings: {
 			mapPlatform: 'osm',
 		},
 	};
-	const { container } = render(
-		<MapEmbed location="50 South Fullerton Avenue, Montclair, NJ 07042" />
-	);
+
+	let container;
+
+	await act(async () => {
+		const result = render(
+			<MapEmbed location="50 South Fullerton Avenue, Montclair, NJ 07042" />
+		);
+		container = result.container;
+	});
+
 	expect(container).toContainHTML('<div></div>');
 });
 

@@ -1,18 +1,17 @@
-// Mixins
 @mixin for-core-mobile {
-	@media screen and (max-width: 600px) {
+	@media screen and (width <= 600px) {
 		@content;
 	}
 }
 
 @mixin for-core-narrow {
-	@media screen and (max-width: 400px) {
+	@media screen and (width <= 400px) {
 		@content;
 	}
 }
 
 @mixin for-core-tablet {
-	@media screen and (max-width: 782px) {
+	@media screen and (width <= 782px) {
 		@content;
 	}
 }

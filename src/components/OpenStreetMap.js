@@ -1,16 +1,8 @@
 /**
- * External dependencies.
- */
-import Leaflet from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet/dist/images/marker-icon-2x.png';
-import 'leaflet/dist/images/marker-shadow.png';
-
-/**
  * WordPress dependencies.
  */
 import { sprintf, __ } from '@wordpress/i18n';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -27,20 +19,43 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @param {Object} props              - Component properties.
  * @param {string} props.location     - The location to be displayed on the map.
- * @param {string} props.latitude     - The latitdue of the location to be displayed on the map.
+ * @param {string} props.latitude     - The latitude of the location to be displayed on the map.
  * @param {string} props.longitude    - The longitude of the location to be displayed on the map.
- * @param {number} [props.zoom=10]    - The zoom level of the map.i
+ * @param {number} [props.zoom=10]    - The zoom level of the map.
  * @param {number} [props.height=300] - The height of the map container.
  * @param {string} [props.className]  - Additional CSS class names for styling.
  *
  * @return {JSX.Element} The rendered React component.
  */
 const OpenStreetMap = (props) => {
-	const { zoom, className, location, height, latitude, longitude } = props;
+	const {
+		zoom = 10,
+		className,
+		location,
+		height = 300,
+		latitude,
+		longitude,
+	} = props;
+	const [Leaflet, setLeaflet] = useState(null);
 	const style = { height };
 
 	useEffect(() => {
-		if (typeof Leaflet === 'undefined' || !latitude || !longitude) return;
+		// Load Leaflet and its assets dynamically
+		const loadLeaflet = async () => {
+			const { default: L } = await import('leaflet');
+			await import('leaflet/dist/leaflet.css');
+			await import('leaflet/dist/images/marker-icon-2x.png');
+			await import('leaflet/dist/images/marker-shadow.png');
+			setLeaflet(L);
+		};
+
+		loadLeaflet();
+	}, []);
+
+	useEffect(() => {
+		if (!Leaflet || !latitude || !longitude) {
+			return;
+		}
 
 		const map = Leaflet.map('map').setView([latitude, longitude], zoom);
 
@@ -63,10 +78,10 @@ const OpenStreetMap = (props) => {
 		return () => {
 			map.remove();
 		};
-	}, [latitude, location, longitude, zoom]);
+	}, [Leaflet, latitude, location, longitude, zoom]);
 
-	if (!latitude || !longitude) {
-		return <></>;
+	if (!Leaflet || !latitude || !longitude) {
+		return null;
 	}
 
 	return <div className={className} id="map" style={style}></div>;
