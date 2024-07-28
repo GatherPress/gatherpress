@@ -121,19 +121,20 @@ async function createPreviewLinksComment(github, context) {
 		context.payload.pull_request.number,
 		zipArtifactUrl
 	));
+	const prText = `for PR#${context.payload.pull_request.number}`
 	const playgrounds = [
 		{
-			name: 'WordPress playground Builder',
-			url: 'https://playground.wordpress.net/builder/builder.html#',
-		},
-		{
-			name: 'Normal WordPress playground',
+			name: '**Normal** WordPress playground ' + prText,
 			url: 'https://playground.wordpress.net/#',
 		},
 		{
-			name: 'Seamless WordPress playground',
+			name: '**Seamless** WordPress playground ' + prText,
 			url: 'https://playground.wordpress.net/?mode=seamless#',
-		}
+		},
+		{
+			name: 'WordPress playground **Builder** ' + prText,
+			url: 'https://playground.wordpress.net/builder/builder.html#',
+		},
 	]
 	const links = playgrounds.map( ( playground ) => ({
 		title: playground.name,
@@ -142,7 +143,7 @@ async function createPreviewLinksComment(github, context) {
 	const previewLinks = links.map(link => (`- [${link.title}](${link.url})`));
 	const title   = '### Preview changes with Playground';
 	const comment = `
-You can preview the least recent changes for PR#${context.payload.pull_request.number} by following one of the links below:
+You can preview the least recent changes ${prText} by following one of the links below:
 
 ${previewLinks.join()}
 
