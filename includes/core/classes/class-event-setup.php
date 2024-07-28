@@ -250,12 +250,21 @@ class Event_Setup {
 
 		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 
-		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$table,
-			array(
-				'post_id' => $post_id,
+		$table_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				'SHOW TABLES LIKE %s',
+				$table
 			)
 		);
+
+		if ( $table_exists ) {
+			$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				$table,
+				array(
+					'post_id' => $post_id,
+				)
+			);
+		}
 	}
 
 	/**
