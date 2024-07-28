@@ -40,7 +40,9 @@ const OpenStreetMap = (props) => {
 	const style = { height };
 
 	useEffect(() => {
-		if (typeof Leaflet === 'undefined' || !latitude || !longitude) return;
+		if (typeof Leaflet === 'undefined' || !latitude || !longitude) {
+			return;
+		}
 
 		const map = Leaflet.map('map').setView([latitude, longitude], zoom);
 
