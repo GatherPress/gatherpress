@@ -240,7 +240,7 @@ try {
 			[
 				'org'      => 'GatherPress',
 				'repo'     => 'gatherpress',
-				'workflow' => 'Build GatherPress Plugin Zip',
+				'workflow' => 'Playground Preview',
 				'artifact' => '#gatherpress-pr#',
 			],
 		];

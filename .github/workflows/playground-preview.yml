@@ -2,7 +2,7 @@
 # For now (!) the name here is important and should not be changed!
 #
 # The plugin-proxy.php does a check against exact this workflow name.
-name: Build GatherPress Plugin Zip
+name: Playground Preview
 
 # Inspired by, but not based on https://github.com/WordPress/gutenberg/blob/b89fb7b6eaf619bde0269e2a7fbf6245822f6cbf/.github/workflows/build-plugin-zip.yml#L153
 
@@ -36,7 +36,7 @@ permissions:
 jobs:
 
   zip:
-    name: Build GatherPress Plugin Zip
+    name: Build GatherPress plugin & upload as zipped artifact
     runs-on: ubuntu-latest
     steps:
 
