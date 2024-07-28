@@ -107,10 +107,10 @@ console.log('createBlueprint',context);
  */
 async function createPreviewLinksComment(github, context) {
 	console.log('createPreviewLinksComment', context);
-	const blueprint = createBlueprint(
+	const blueprint = encodeURI(createBlueprint(
 		context.repo,
 		context.payload.pull_request.number
-	)
+	));
 
 	const previewLinks = `
 - [Preview changes for **${context.repo.repo}**](https://playground.wordpress.net/#${blueprint})
