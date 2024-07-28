@@ -142,8 +142,8 @@ async function createPreviewLinksComment(github, context) {
 		title: playground.name,
 		url: playground.url + blueprint
 	}));
-	const previewLinks = links.map(link => (
-		`- [${link.title}](${link.url})\n`
+	const previewLinks = links.map(link => (`
+- [${link.title}](${link.url})\n`
 	));
 	const title   = '### Preview changes with Playground';
 	const comment = `
