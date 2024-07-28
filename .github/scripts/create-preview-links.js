@@ -140,12 +140,12 @@ async function createPreviewLinksComment(github, context) {
 		title: playground.name,
 		url: playground.url + blueprint
 	}));
-	const previewLinks = links.map(link => (`- [${link.title}](${link.url})`));
+	const previewLinks = links.map(link => (`- [${link.title}](${link.url})\n`));
 	const title   = '### Preview changes with Playground';
 	const comment = `
 You can preview the least recent changes ${prText} by following one of the links below:
 
-${previewLinks.join()}
+${previewLinks.join(' ')}
 
 - [Download <code>.zip</code> with build changes](${zipArtifactUrl})
 
