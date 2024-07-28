@@ -144,12 +144,11 @@ async function createPreviewLinksComment(github, context) {
 		url: playground.url + blueprint
 	}));
 	const previewLinks = links.map(link => (
-		`- [<kbd> <br>${link.title}<br> </kbd>](${link.url})
-`
+		`- [${link.title}](${link.url})`
 	));
 	const title   = '### Preview changes with Playground';
 	const comment = `
-You can preview the **least recent changes for PR#${context.payload.pull_request.number}** by following the links below:
+You can preview the least recent changes for PR#${context.payload.pull_request.number} by following one of the links below:
 
 ${previewLinks}
 
