@@ -28,55 +28,63 @@ import { getFromGlobal } from '../helpers/globals';
  * @return {JSX.Element} The rendered React component.
  */
 const OpenStreetMap = (props) => {
-    const { zoom = 10, className, location, height = 300, latitude, longitude } = props;
-    const [Leaflet, setLeaflet] = useState(null);
-    const style = { height };
+	const {
+		zoom = 10,
+		className,
+		location,
+		height = 300,
+		latitude,
+		longitude,
+	} = props;
+	const [Leaflet, setLeaflet] = useState(null);
+	const style = { height };
 
-    useEffect(() => {
-        // Load Leaflet and its assets dynamically
-        const loadLeaflet = async () => {
-            const { default: L } = await import('leaflet');
-            await import('leaflet/dist/leaflet.css');
-            await import('leaflet/dist/images/marker-icon-2x.png');
-            await import('leaflet/dist/images/marker-shadow.png');
-            setLeaflet(L);
-        };
+	useEffect(() => {
+		// Load Leaflet and its assets dynamically
+		const loadLeaflet = async () => {
+			const { default: L } = await import('leaflet');
+			await import('leaflet/dist/leaflet.css');
+			await import('leaflet/dist/images/marker-icon-2x.png');
+			await import('leaflet/dist/images/marker-shadow.png');
+			setLeaflet(L);
+		};
 
-        loadLeaflet();
-    }, []);
+		loadLeaflet();
+	}, []);
 
-    useEffect(() => {
-        if (!Leaflet || !latitude || !longitude) {
-            return;
-        }
+	useEffect(() => {
+		if (!Leaflet || !latitude || !longitude) {
+			return;
+		}
 
-        const map = Leaflet.map('map').setView([latitude, longitude], zoom);
+		const map = Leaflet.map('map').setView([latitude, longitude], zoom);
 
-        Leaflet.Icon.Default.imagePath = getFromGlobal('urls.pluginUrl') + 'build/images/';
+		Leaflet.Icon.Default.imagePath =
+			getFromGlobal('urls.pluginUrl') + 'build/images/';
 
-        Leaflet.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-            attribution: sprintf(
-            /* translators: %s: Link to OpenStreetMap contributors. */
-            __('© %s contributors', 'gatherpress'),
-            '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            ),
-        }
-        ).addTo(map);
+		Leaflet.tileLayer(
+			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			{
+				attribution: sprintf(
+					/* translators: %s: Link to OpenStreetMap contributors. */
+					__('© %s contributors', 'gatherpress'),
+					'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+				),
+			}
+		).addTo(map);
 
-        Leaflet.marker([latitude, longitude]).addTo(map).bindPopup(location);
+		Leaflet.marker([latitude, longitude]).addTo(map).bindPopup(location);
 
-        return () => {
-            map.remove();
-        };
-    }, [Leaflet, latitude, location, longitude, zoom]);
+		return () => {
+			map.remove();
+		};
+	}, [Leaflet, latitude, location, longitude, zoom]);
 
-    if (!Leaflet || !latitude || !longitude) {
-        return null;
-    }
+	if (!Leaflet || !latitude || !longitude) {
+		return null;
+	}
 
-    return <div className={className} id="map" style={style}></div>;
+	return <div className={className} id="map" style={style}></div>;
 };
 
 export default OpenStreetMap;
