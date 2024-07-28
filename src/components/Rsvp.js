@@ -397,11 +397,11 @@ const Rsvp = ({
 	return (
 		<div className="gatherpress-rsvp">
 			<ButtonGroup className="gatherpress-buttons wp-block-buttons">
-				<div className="gatherpress-buttons__container  wp-block-button">
+				<div className="gatherpress-buttons__container wp-block-button">
 					{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
 					<a
 						href="#"
-						className="gatherpress-buttons__button wp-block-button__link"
+						className="gatherpress-buttons__button wp-block-button__link wp-element-button"
 						aria-expanded={selectorExpanded}
 						tabIndex="0"
 						onKeyDown={onSpanKeyDown}
