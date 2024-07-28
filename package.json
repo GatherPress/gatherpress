@@ -13,8 +13,6 @@
 		"i18n:php": "wp i18n make-php languages",
 		"lint:css": "wp-scripts lint-style",
 		"lint:css:fix": "wp-scripts lint-style --fix",
-		"lint:css:src": "wp-scripts lint-style 'src/**/*.scss'",
-		"lint:css:src:fix": "wp-scripts lint-style 'src/**/*.scss' --fix",
 		"lint:js": "wp-scripts lint-js",
 		"lint:js:fix": "wp-scripts lint-js --fix",
 		"lint:md:docs": "wp-scripts lint-md-docs",
@@ -83,6 +81,8 @@
 		"react-tooltip": "^5.27.1",
 		"stylelint": "^16.7.0",
 		"stylelint-config-recommended": "^14.0.1",
-		"stylelint-config-standard": "^36.0.1"
+		"stylelint-config-standard": "^36.0.1",
+		"stylelint-config-standard-scss": "^13.1.0",
+		"stylelint-scss": "^6.4.1"
 	}
 }

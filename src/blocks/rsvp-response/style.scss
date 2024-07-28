@@ -1,7 +1,6 @@
 @import "../mixins";
 
 .gatherpress-rsvp-response {
-
 	&__anchor {
 		color: #000;
 		display: block;
@@ -43,10 +42,10 @@
 	}
 
 	&__member-avatar {
-
 		img {
 			border-radius: 9999px;
 		}
+
 		margin: 0;
 	}
 
@@ -88,7 +87,6 @@
 
 	// UI fix in editor.
 	.edit-post-visual-editor & {
-
 		.components-button.has-icon {
 			padding: 0 2px;
 		}
