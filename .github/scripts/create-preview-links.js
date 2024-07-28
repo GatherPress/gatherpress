@@ -127,15 +127,15 @@ async function createPreviewLinksComment(github, context) {
 	));
 	const playgrounds = [
 		{
-			name: 'WordPress playground Builder: ',
+			name: 'WordPress playground Builder',
 			url: 'https://playground.wordpress.net/builder/builder.html#',
 		},
 		{
-			name: 'Normal WordPress playground: ',
+			name: 'Normal WordPress playground',
 			url: 'https://playground.wordpress.net/#',
 		},
 		{
-			name: 'Seamless WordPress playground: ',
+			name: 'Seamless WordPress playground',
 			url: 'https://playground.wordpress.net/?mode=seamless#',
 		}
 	]
@@ -144,18 +144,15 @@ async function createPreviewLinksComment(github, context) {
 		url: playground.url + blueprint
 	}));
 	const previewLinks = links.map(link => (
-		`- [${link.title}](${link.url})
-		`
-	))
-// 	const previewLinks = `
-// - [Preview ](https://playground.wordpress.net/#${blueprint})
-
-// `;
+		`- [<kbd> <br>${link.title}<br> </kbd>](${link.url})
+`
+	));
 	const title   = '### Preview changes with Playground';
 	const comment = `
-You can preview the least recent changes for PR#${context.payload.pull_request.number} of **${context.repo.repo}** by following the links below:
+You can preview the **least recent changes for PR#${context.payload.pull_request.number}** by following the links below:
 
 ${previewLinks}
+
 - [Download <code>.zip</code> with build changes](${zipArtifactUrl})
 
 **⚠️ Note:** The preview sites are created using [WordPress Playground](https://wordpress.org/playground/). You can add content, edit settings, and test the themes as you would on a real site, but please note that changes are not saved between sessions.
