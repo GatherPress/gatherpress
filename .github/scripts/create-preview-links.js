@@ -3,6 +3,14 @@
  * https://github.com/Automattic/themes/blob/a0c9b91f827f46ed60c502d41ef881b2f0552f03/.github/scripts/create-preview-links.js
  */
 
+function createBlueprintUrl(context, number) {
+	const { repo, owner } = context;
+	const workflow = 'Build%20GatherPress%20Plugin%20Zip';
+	const artifact = 'gatherpress-pr';
+	const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
+	return `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
+}
+
 /*
  * This function creates a WordPress Playground blueprint JSON string for a theme.
  *
@@ -10,15 +18,8 @@
  * @param {string} branch - The branch where the theme changes are located.
  * @returns {string} - A JSON string representing the blueprint.
  */
-function createBlueprint(context, number) {
-console.log('createBlueprint',context);
-	// const { issue: { number, repo, owner } = {} } = context;
+function createBlueprint(context, number, zipArtifactUrl) {
 	const { repo, owner } = context;
-	const workflow = 'Build%20GatherPress%20Plugin%20Zip';
-	const artifact = 'gatherpress-pr';
-	const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
-	// const zipArtifactUrl = `?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=${number}`;
-	const zipArtifactUrl = `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
 
 	// TODO
 	// Verify that the PR exists and that GitHub CI finished building it
@@ -106,14 +107,20 @@ console.log('createBlueprint',context);
  * @param {object} context - The context of the event that triggered the action.
  */
 async function createPreviewLinksComment(github, context) {
-	console.log('createPreviewLinksComment', context);
-	const blueprint = encodeURI(createBlueprint(
+	// console.log('createPreviewLinksComment', context);
+	const zipArtifactUrl = createBlueprintUrl(
 		context.repo,
 		context.payload.pull_request.number
+	);
+	const blueprint = encodeURI(createBlueprint(
+		context.repo,
+		context.payload.pull_request.number,
+		zipArtifactUrl
 	));
 
 	const previewLinks = `
-- [Preview changes for **${context.repo.repo}**](https://playground.wordpress.net/#${blueprint})
+- [Preview the least recent changes for PR#${context.payload.pull_request.number} of **${context.repo.repo}**](https://playground.wordpress.net/#${blueprint})
+- [Download <code>.zip</code> with build changes](${zipArtifactUrl})
 `;
 
 	const comment = `
@@ -121,8 +128,8 @@ You can preview these changes by following the link below:
 
 ${previewLinks}
 
-**⚠️ Note:** The preview is created using github-proxy.com, which loads the full (40MB) repo and does NO BUILD.
 `;
+// **⚠️ Note:** The preview is created using github-proxy.com, which loads the full (40MB) repo and does NO BUILD.
 // **⚠️ Note:** The preview sites are created using [WordPress Playground](https://wordpress.org/playground/). You can add content, edit settings, and test the themes as you would on a real site, but please note that changes are not saved between sessions.
 
 	const repoData = {
