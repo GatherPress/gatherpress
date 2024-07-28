@@ -17,39 +17,9 @@ class PluginDownloader {
 
 	private $githubToken;
 
-	public const PLUGINS = 'plugins';
-	public const THEMES  = 'theme';
-
 	public function __construct( $githubToken ) {
 		$this->githubToken = $githubToken;
 	}
-
-	/*
-	public function streamFromDirectory($name, $directory)
-	{
-		$name = preg_replace('#[^a-zA-Z0-9\.\-_]#', '', $name);
-		$zipUrl = "https://downloads.wordpress.org/$directory/$name";
-		try {
-			$info = streamHttpResponse($zipUrl, 'GET', [], NULL, [
-				'content-length',
-				'x-frame-options',
-				'last-modified',
-				'etag',
-				'date',
-				'age',
-				'vary',
-				'cache-Control'
-			], [
-				'Content-Type: application/zip',
-				'Content-Disposition: attachment; filename="plugin.zip"',
-			]);
-			if ($info['http_code'] > 299 || $info['http_code'] < 200) {
-				throw new ApiException('Request failed');
-			}
-		} catch (ApiException $e) {
-			throw new ApiException("Plugin or theme '$name' not found");
-		}
-	} */
 
 	public function streamFromGithubPR( $organization, $repo, $pr, $workflow_name, $artifact_name ) {
 		$prDetails = $this->gitHubRequest( "https://api.github.com/repos/$organization/$repo/pulls/$pr" )['body'];
@@ -70,17 +40,6 @@ class PluginDownloader {
 		}
 		if ( ! $artifactsUrls ) {
 			throw new ApiException( 'artifact_not_found' );
-			/*
-			$debug = 'artifact_not_found:::: ' . var_export([
-				$ciRuns,
-				$organization,
-				$repo,
-				$pr,
-				$workflow_name,
-				$artifact_name,
-				$branchName,
-			],true);
-			throw new ApiException( $debug ); */
 		}
 
 		foreach ( $artifactsUrls as $artifactsUrl ) {
@@ -138,9 +97,6 @@ class PluginDownloader {
 				$header_name  = strtolower( substr( $header_line, 0, strpos( $header_line, ':' ) ) );
 				$header_value = trim( substr( $header_line, 1 + strpos( $header_line, ':' ) ) );
 				if ( $header_name === 'location' ) {
-					// die('app zip :(');
-					// die(var_export($header_value,true)); // Working ;) !!
-
 					streamHttpResponse(
 						$header_value,
 						'GET',
@@ -158,7 +114,6 @@ class PluginDownloader {
 					die();
 				}
 			}
-
 			throw new ApiException( 'artifact_redirect_not_present' );
 		}
 		if ( ! $artifacts ) {
@@ -171,32 +126,6 @@ class PluginDownloader {
 			throw new ApiException( 'artifact_not_available' );
 		}
 	}
-
-	/*
-	public function streamFromGithubReleases($repo, $name)
-	{
-		$zipUrl = "https://github.com/$repo/releases/latest/download/$name";
-		try {
-			$info = streamHttpResponse($zipUrl, 'GET', [], NULL, [
-				'content-length',
-				'x-frame-options',
-				'last-modified',
-				'etag',
-				'date',
-				'age',
-				'vary',
-				'cache-Control'
-			], [
-				'Content-Type: application/zip',
-				'Content-Disposition: attachment; filename="plugin.zip"',
-			]);
-			if ($info['http_code'] > 299 || $info['http_code'] < 200) {
-				throw new ApiException('Request failed');
-			}
-		} catch (ApiException $e) {
-			throw new ApiException("Plugin or theme '$name' not found");
-		}
-	} */
 
 	protected function gitHubRequest( $url, $decode = true, $follow_location = true ) {
 		$headers[] = 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36';
@@ -227,22 +156,9 @@ class PluginDownloader {
 		];
 	}
 }
+
 function streamHttpResponse( $url, $request_method = 'GET', $request_headers = [], $request_body = null, $allowed_response_headers = [], $default_response_headers = [] ) {
-	error_log(
-		var_export(
-			[
-				__FILE__ . __LINE__,
-				$url,
-				$request_method,
-				$request_headers,
-				$request_body,
-				$allowed_response_headers,
-				$default_response_headers,
-			], 
-			true
-		)
-	);
-    $ch = curl_init( $url );
+	$ch = curl_init( $url );
 	curl_setopt_array(
 		$ch,
 		[
@@ -252,16 +168,6 @@ function streamHttpResponse( $url, $request_method = 'GET', $request_headers = [
 			CURLOPT_FOLLOWLOCATION => true,
 		]
 	);
-	// error_log(
-	// 	var_export(
-	// 		[
-	// 			__FILE__ . __LINE__,
-	// 			$url,
-	// 			$ch,
-	// 		], 
-	// 		true
-	// 	)
-	// );
 
 	if ( $request_method === 'POST' ) {
 		curl_setopt( $ch, CURLOPT_POST, true );
@@ -288,16 +194,6 @@ function streamHttpResponse( $url, $request_method = 'GET', $request_headers = [
 			$header_allowed               = (
 				null === $allowed_response_headers || in_array( $header_name, $allowed_response_headers )
 			) && ! in_array( $header_name, $illegal_headers );
-// error_log(
-// 	var_export(
-// 		[
-// 			__FILE__ . __LINE__,
-// 			$header_line,
-// 			$header_allowed,
-// 		], 
-// 		true
-// 	)
-// );
 			if ( $header_allowed ) {
 				header( $header_line );
 			}
@@ -325,16 +221,6 @@ function streamHttpResponse( $url, $request_method = 'GET', $request_headers = [
 	);
 	curl_exec( $ch );
 	$info = curl_getinfo( $ch );
-// error_log(
-// 	var_export(
-// 		[
-// 			__FILE__ . __LINE__,
-// 			$info,
-// 			$ch,
-// 		], 
-// 		true
-// 	)
-// );
 	curl_close( $ch );
 	return $info;
 }
@@ -349,22 +235,8 @@ if ( ! array_key_exists( 'url', $_GET ) ) {
 }
 $pluginResponse;
 try {
-	/** @deprecated Plugins and themes downloads are no longer needed now that WordPress.org serves
-	 *              the proper CORS headers. This code will be removed in one of the next releases.
-	 */
-	// if (isset($_GET['plugin'])) {
-	// $downloader->streamFromDirectory($_GET['plugin'], PluginDownloader::PLUGINS);
-	// } else if (isset($_GET['theme'])) {
-	// $downloader->streamFromDirectory($_GET['theme'], PluginDownloader::THEMES);
-	// } else if (isset($_GET['org']) && isset($_GET['repo']) && isset($_GET['workflow']) && isset($_GET['pr']) && isset($_GET['artifact'])) {
 	if ( isset( $_GET['org'] ) && isset( $_GET['repo'] ) && isset( $_GET['workflow'] ) && isset( $_GET['pr'] ) && isset( $_GET['artifact'] ) ) {
 		$allowedInputs = [
-			// [
-			// 'org' => 'WordPress',
-			// 'repo' => 'gutenberg',
-			// 'workflow' => 'Build Gutenberg Plugin Zip',
-			// 'artifact' => '#gutenberg-plugin#'
-			// ],
 			[
 				'org'      => 'GatherPress',
 				'repo'     => 'gatherpress',
@@ -386,7 +258,7 @@ try {
 		}
 		if ( ! $allowed ) {
 			header( 'HTTP/1.1 400 Invalid request' );
-			die( 'Invalid cat request' );
+			die( 'Invalid request: The specified URL is not allowed.' );
 		}
 		$downloader->streamFromGithubPR(
 			$_GET['org'],
@@ -395,24 +267,6 @@ try {
 			$_GET['workflow'],
 			$_GET['artifact']
 		);
-		// } else if (isset($_GET['repo']) && isset($_GET['name'])) {
-		// Only allow downloads from the block-interactivity-experiments repo for now.
-		// if ($_GET['repo'] !== 'WordPress/block-interactivity-experiments') {
-		// throw new ApiException('Invalid repo. Only "WordPress/block-interactivity-experiments" is allowed.');
-		// }
-
-		// $downloader->streamFromGithubReleases($_GET['repo'], $_GET['name']);
-		// } else if (isset($_GET['url'])) {
-		// Proxy the current request to $_GET['url'] and return the response,
-		// but only if the URL is allowlisted.
-		// $url = $_GET['url'];
-		// $allowed_domains = ['api.wordpress.org', 'w.org', 'wordpress.org', 's.w.org'];
-		// $parsed_url = parse_url($url);
-		// if (!in_array($parsed_url['host'], $allowed_domains)) {
-		// http_response_code(403);
-		// echo "Error: The specified URL is not allowed.";
-		// exit;
-		// }
 
 		// **
 		// * Pass through the request headers we got from WordPress via fetch(),

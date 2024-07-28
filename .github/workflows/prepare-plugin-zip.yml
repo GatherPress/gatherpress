@@ -86,132 +86,22 @@ jobs:
   #       with:
   #         # Based on: https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/gutenberg.html
   #         script: |
-  #           const { issue: { number, repo, owner } = {} } = context;
-  #           const workflow = 'Build%20GatherPress%20Plugin%20Zip';
-  #           const artifact = 'gatherpress-pr';
-  #           const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
-
-  #           // TODO
-  #           // Verify that the PR exists and that GitHub CI finished building it
-  #           // ...
-
-  #           // const zipArtifactUrl = `?org=GatherPress&repo=gatherpress&workflow=Build%20GatherPress%20Plugin%20Zip&artifact=gatherpress-pr&pr=${number}`;
-  #           const zipArtifactUrl = `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
   #           // Get link to the Playground site with the Blueprint to download and apply the PR
   #             // "landingPage" should better be set via query API param 'url'.
   #           const blueprint = {
   #             landingPage: '/wp-admin/edit.php?post_type=gatherpress_event',
-  #             steps: [
-  #               {
-  #                 step: 'login',
-  #                 username: 'admin',
-  #                 password: 'password',
-  #               },
-  #               {
-  #                 step: 'setSiteOptions',
-  #                 options: {
-  #                   blogname: `${owner}/${repo} PR #${number}`,
-  #                   blogdescription: `Testing pull_request #${number} with playground`,
-  #                 }
-  #               },
-  #               {
-  #                 step: 'mkdir',
-  #                 path: '/wordpress/pr',
-  #               },
-  #               /*
-  #               * This is the most important step.
-  #               * It download the built plugin zip file exposed by GitHub CI.
-  #               *
-  #               * Because the zip file is not publicly accessible, we use the
-  #               * plugin-proxy API endpoint to download it. The source code of
-  #               * that endpoint is available at:
-  #               * https://github.com/WordPress/wordpress-playground/blob/trunk/packages/playground/website/public/plugin-proxy.php
-  #               */
-  #               {
-  #                 step: 'writeFile',
-  #                 path: '/wordpress/pr/pr.zip',
-  #                 data: {
-  #                   resource: 'url',
-  #                   url: zipArtifactUrl,
-  #                   caption: `Downloading ${owner}/${repo} PR #${number}`,
-  #                 },
-  #                 progress: {
-  #                   weight: 2,
-  #                   caption: `Applying ${owner}/${repo} PR #${number}`,
-  #                 },
-  #               },
-  #               /**
-  #               * GitHub CI artifacts are doubly zipped:
-  #               *
-  #               * pr.zip
-  #               *    gatherpress.zip
-  #               *       gatherpress/
-  #               *          gatherpress.php
-  #               *          ... other files ...
-  #               *
-  #               * This step extracts the inner zip file so that we get
-  #               * access directly to gatherpress.zip and can use it to
-  #               * install the plugin.
-  #               */
-  #               {
-  #                 step: 'unzip',
-  #                 zipPath: '/wordpress/pr/pr.zip',
-  #                 extractToPath: '/wordpress/pr',
-  #               },
-  #               {
-  #                 step: 'installPlugin',
-  #                 pluginZipFile: {
-  #                   resource: 'vfs',
-  #                   path: '/wordpress/pr/gatherpress.zip',
-  #                 },
-  #               },
-  #             ],
-  #           };
+
   #           // console.log( blueprint );
   #           const encoded = JSON.stringify(blueprint);
   #           console.log( 'WordPress playground Builder: ','https://playground.wordpress.net/builder/builder.html#' + encodeURI(encoded) );
   #           console.log( 'Normal WordPress playground: ', 'https://playground.wordpress.net/#' + encodeURI(encoded) );
   #           console.log( 'Seamless WordPress playground: ', 'https://playground.wordpress.net/?mode=seamless#' + encodeURI(encoded) );
 
-  #         # Run a separate file
-  #         # If you don't want to inline your entire script that you want to run, you can use a separate JavaScript module in your repository like so:
-  #         # - uses: actions/checkout@v3
-  #         # - uses: actions/github-script@v7
-  #         #   with:
-  #         #     script: |
-  #         #       const script = require('./path/to/script.js')
-  #         #       console.log(script({github, context}))
-
-  # comment:
-  #   name: Comment with playground link
-  #   if: 1==2 # TEMP DISABLED
-  #   # https://github.com/actions/github-script?tab=readme-ov-file#comment-on-an-issue
-  #   # vs.
-  #   # https://docs.github.com/de/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment--parameters
-  #   needs: ['zip', 'blueprint']
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: Add comment (& log context attributes)
-  #       uses: actions/github-script@v7
-  #       with:
-  #         github-token: ${{secrets.GITHUB_TOKEN}}
-  #           # console.log(context);
-  #         script: |
-  #           github.rest.issues.createComment({
-  #             issue_number: context.issue.number,
-  #             owner: context.repo.owner,
-  #             repo: context.repo.repo,
-  #             body: '👋 (Not, yet) A link to a *WordPress playground* instance with your least recent changes to GatherPress.'
-  #           })
-
   comment:
     name: Comment with playground link
-    # if: 1==2 # TEMP DISABLED
     # https://github.com/actions/github-script?tab=readme-ov-file#comment-on-an-issue
     # vs.
     # https://docs.github.com/de/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment--parameters
-    # needs: ['zip', 'blueprint']
     needs: zip
     runs-on: ubuntu-latest
 
@@ -221,10 +111,7 @@ jobs:
 
       - name: Add Preview Links comment
         id: comment-on-pr
-        # if: ${{ needs.check-for-changes-to-themes.outputs.HAS_THEME_CHANGES == 'true' }}
         uses: actions/github-script@v7
-        # env:
-          # CHANGED_THEMES: ${{ needs.check-for-changes-to-themes.outputs.CHANGED_THEMES }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
