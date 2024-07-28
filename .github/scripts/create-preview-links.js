@@ -11,7 +11,7 @@
  * @returns {string} - A JSON string representing the blueprint.
  */
 function createBlueprint(context, pr) {
-
+console.log('createBlueprint',context);
 	const { issue: { number, repo, owner } = {} } = context;
 	const workflow = 'Build%20GatherPress%20Plugin%20Zip';
 	const artifact = 'gatherpress-pr';
@@ -117,11 +117,14 @@ function createBlueprint(context, pr) {
  * @param {object} context - The context of the event that triggered the action.
  */
 async function createPreviewLinksComment(github, context) {
+	console.log('createPreviewLinksComment', context);
+	const blueprint = createBlueprint(
+		context.repo,
+		context.payload.pull_request.number
+	)
+
 	const previewLinks = `
-- [Preview changes for **${context.repo.repo}**](https://playground.wordpress.net/#${createBlueprint(
-				context.repo,
-				context.payload.pull_request.number
-			)})
+- [Preview changes for **${context.repo.repo}**](https://playground.wordpress.net/#${blueprint})
 `;
 
 	const comment = `
