@@ -10,9 +10,10 @@
  * @param {string} branch - The branch where the theme changes are located.
  * @returns {string} - A JSON string representing the blueprint.
  */
-function createBlueprint(context, pr) {
+function createBlueprint(context, number) {
 console.log('createBlueprint',context);
-	const { issue: { number, repo, owner } = {} } = context;
+	// const { issue: { number, repo, owner } = {} } = context;
+	const { repo, owner } = context;
 	const workflow = 'Build%20GatherPress%20Plugin%20Zip';
 	const artifact = 'gatherpress-pr';
 	const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
@@ -28,18 +29,6 @@ console.log('createBlueprint',context);
 	// const url = `https://github-proxy.com/proxy/?repo=${owner}/${repo}&pr=${pr}`; // distributed (1.3MB) and BUILD
 	const template = {
 		steps: [
-/* 			{
-				step: 'login',
-				username: 'admin',
-				password: 'password',
-			},
-			{
-				step: 'installPlugin',
-				pluginZipFile: {
-					resource: 'url',
-					url,
-				},
-			}, */
 			{
 				step: 'login',
 				username: 'admin',
