@@ -130,7 +130,7 @@ async function createPreviewLinksComment(github, context) {
 - [Preview the least recent changes for PR#${context.payload.pull_request.number} of **${context.repo.repo}**](https://playground.wordpress.net/#${blueprint})
 - [Download <code>.zip</code> with build changes](${zipArtifactUrl})
 `;
-
+	const title   = '### Preview changes with Playground';
 	const comment = `
 You can preview these changes by following the link below:
 
@@ -153,19 +153,14 @@ ${previewLinks}
 	const existingComment = comments.find(
 		(comment) =>
 			comment.user.login === 'github-actions[bot]' &&
-			comment.body.startsWith('### Preview changes')
+			comment.body.startsWith( title )
 	);
 	const commentObject = {
-		body: `### Preview changes\n${comment}`,
+		body: `${title}\n${comment}`,
 		...repoData,
 	};
 
 	if (existingComment) {
-		// await github.rest.issues.updateComment({
-		// 	comment_id: existingComment.id,
-		// 	...commentObject,
-		// });
-		// return;
 		// Do not update, but delete and recreate Comment to have a new one after last commit.
 		await github.rest.issues.deleteComment({
 			comment_id: existingComment.id,
