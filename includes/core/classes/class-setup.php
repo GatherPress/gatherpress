@@ -87,6 +87,7 @@ class Setup {
 
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
+		add_action( 'admin_init', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
@@ -407,6 +408,27 @@ class Setup {
 		} else {
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/setup/site-check.php', GATHERPRESS_CORE_PATH ),
+				array(),
+				true
+			);
+		}
+	}
+
+	/**
+	 * Checks if the GatherPress Alpha plugin is active and renders an admin notice if not.
+	 *
+	 * This method verifies whether the GatherPress Alpha plugin is currently active.
+	 * If the plugin is not active, it renders an admin notice template to inform the user
+	 * that the GatherPress Alpha plugin is required for compatibility and development purposes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function check_gatherpress_alpha(): void {
+		if ( ! is_plugin_active( 'gatherpress-alpha/gatherpress-alpha.php' ) ) {
+			Utility::render_template(
+				sprintf( '%s/includes/templates/admin/setup/gatherpress-alpha-check.php', GATHERPRESS_CORE_PATH ),
 				array(),
 				true
 			);
