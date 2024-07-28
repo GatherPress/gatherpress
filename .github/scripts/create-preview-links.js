@@ -125,20 +125,41 @@ async function createPreviewLinksComment(github, context) {
 		context.payload.pull_request.number,
 		zipArtifactUrl
 	));
+	const playgrounds = [
+		{
+			name: 'WordPress playground Builder: ',
+			url: 'https://playground.wordpress.net/builder/builder.html#',
+		},
+		{
+			name: 'Normal WordPress playground: ',
+			url: 'https://playground.wordpress.net/#',
+		},
+		{
+			name: 'Seamless WordPress playground: ',
+			url: 'https://playground.wordpress.net/?mode=seamless#',
+		}
+	]
+	const links = playgrounds.map( ( playground ) => ({
+		title: playground.name,
+		url: playground.url + blueprint
+	}));
+	const previewLinks = links.map(link => (
+		`- [${link.title}](${link.url})
+		`
+	))
+// 	const previewLinks = `
+// - [Preview ](https://playground.wordpress.net/#${blueprint})
 
-	const previewLinks = `
-- [Preview the least recent changes for PR#${context.payload.pull_request.number} of **${context.repo.repo}**](https://playground.wordpress.net/#${blueprint})
-- [Download <code>.zip</code> with build changes](${zipArtifactUrl})
-`;
+// `;
 	const title   = '### Preview changes with Playground';
 	const comment = `
-You can preview these changes by following the link below:
+You can preview the least recent changes for PR#${context.payload.pull_request.number} of **${context.repo.repo}** by following the links below:
 
 ${previewLinks}
+- [Download <code>.zip</code> with build changes](${zipArtifactUrl})
 
+**⚠️ Note:** The preview sites are created using [WordPress Playground](https://wordpress.org/playground/). You can add content, edit settings, and test the themes as you would on a real site, but please note that changes are not saved between sessions.
 `;
-// **⚠️ Note:** The preview is created using github-proxy.com, which loads the full (40MB) repo and does NO BUILD.
-// **⚠️ Note:** The preview sites are created using [WordPress Playground](https://wordpress.org/playground/). You can add content, edit settings, and test the themes as you would on a real site, but please note that changes are not saved between sessions.
 
 	const repoData = {
 		owner: context.repo.owner,
