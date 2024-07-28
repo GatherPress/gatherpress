@@ -144,7 +144,7 @@ async function createPreviewLinksComment(github, context) {
 	const comment = `
 You can preview the least recent changes for PR#${context.payload.pull_request.number} by following one of the links below:
 
-${previewLinks.join('\n')}
+${previewLinks.join()}
 
 - [Download <code>.zip</code> with build changes](${zipArtifactUrl})
 
