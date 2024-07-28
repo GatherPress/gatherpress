@@ -33,7 +33,7 @@
 		padding: 1rem;
 		text-align: center;
 
-		a {
+		& a {
 			display: block;
 			overflow: hidden;
 			text-overflow: ellipsis;
@@ -42,11 +42,11 @@
 	}
 
 	&__member-avatar {
-		img {
+		margin: 0;
+
+		& img {
 			border-radius: 9999px;
 		}
-
-		margin: 0;
 	}
 
 	&__member-role {
@@ -92,4 +92,3 @@
 		}
 	}
 }
-
