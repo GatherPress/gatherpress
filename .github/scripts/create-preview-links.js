@@ -26,9 +26,6 @@ function createBlueprint(context, number, zipArtifactUrl) {
 	// Verify that the PR exists and that GitHub CI finished building it
 	// ...
 
-	// const { owner, repo } = context;
-	// const url = `https://github-proxy.com/proxy/?repo=${owner}/${repo}&pr=${pr}`; // full repo (40MB) and NO BUILD
-	// const url = `https://github-proxy.com/proxy/?repo=${owner}/${repo}&pr=${pr}`; // distributed (1.3MB) and BUILD
 	const template = {
 		steps: [
 			{
@@ -142,9 +139,7 @@ async function createPreviewLinksComment(github, context) {
 		title: playground.name,
 		url: playground.url + blueprint
 	}));
-	const previewLinks = links.map(link => (`
-- [${link.title}](${link.url})\n`
-	));
+	const previewLinks = links.map(link => (`- [${link.title}](${link.url})\n`));
 	const title   = '### Preview changes with Playground';
 	const comment = `
 You can preview the least recent changes for PR#${context.payload.pull_request.number} by following one of the links below:
