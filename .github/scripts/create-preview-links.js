@@ -14,8 +14,7 @@ function createBlueprintUrl(context, number) {
 	const { repo, owner } = context;
 	const workflow = encodeURI('Playground Preview');
 	const artifact = 'gatherpress-pr';
-	const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php';
-	// const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
+	const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
 
 	return `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
 }
