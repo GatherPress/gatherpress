@@ -4,7 +4,12 @@ on:
     branches:
       - main
   pull_request:
-
+    paths:
+    - '.github/workflows/jest-tests.yml'
+    - 'src/**'
+    - 'test/unit/js**'
+    - '*.js'
+    - 'package.*'
 jobs:
   test-js:
     name: Jest Tests
