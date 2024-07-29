@@ -4,7 +4,13 @@ on:
     branches:
       - main
   pull_request:
-
+    paths:
+    - '.github/workflows/phpunit-tests.yml'
+    - 'includes/**'
+    - 'test/unit/php**'
+    - '*.php'
+    - 'phpunit.xml.dist'
+    - 'composer.*'
 jobs:
   test-php:
     name: ${{ matrix.php_versions }} on ${{ matrix.os }}
