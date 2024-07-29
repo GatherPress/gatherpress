@@ -6,7 +6,7 @@ on:
   pull_request:
     paths:
     - 'includes/**'
-    - 'test/**'
+    - 'test/unit/php**'
     - '*.php'
     - 'phpunit.xml.dist'
     - 'composer.*'
