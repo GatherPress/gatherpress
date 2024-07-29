@@ -27,7 +27,6 @@ phpcs.xml.dist
 phpcs.ruleset.xml
 phpunit.xml
 phpunit.xml.dist
-README.md
 playwright.config.js
 sonar-project.properties
 webpack.config.js
