@@ -1,4 +1,6 @@
 # A set of files you probably don't want in your WordPress.org distribution
+
+# Configuration and Build Files
 .babelrc
 .deployignore
 .distignore
@@ -7,19 +9,12 @@
 .eslintignore
 .eslintrc
 .eslintrc.js
-.gatherpress-org
-.git
-.github
 .gitignore
 .gitlab-ci.yml
 .nvmrc
+.stylelintignore
+.stylelintrc.js
 .travis.yml
-.DS_Store
-Thumbs.db
-behat.yml
-bitbucket-pipelines.yml
-bin
-.circleci/config.yml
 CODE_OF_CONDUCT.md
 composer.json
 composer.lock
@@ -27,28 +22,39 @@ dependencies.yml
 Gruntfile.js
 package.json
 package-lock.json
-phpunit.xml
-phpunit.xml.dist
-multisite.xml
-multisite.xml.dist
-.phpcs.xml
 phpcs.xml
-.phpcs.xml.dist
 phpcs.xml.dist
 phpcs.ruleset.xml
+phpunit.xml
+phpunit.xml.dist
+README.md
 playwright.config.js
 sonar-project.properties
-; README.md
 webpack.config.js
 wp-cli.local.yml
+yarn.lock
+
+# Dot Files and Directories
+.gatherpress-org
+.git
+.github
+.wordpress-org
 .wordpress-version-checker.json
 .wp-env.json
-yarn.lock
-src
-test
-tests
-vendor
+.DS_Store
+Thumbs.db
+.circleci/config.yml
 node_modules
+vendor
+src
+
+# Miscellaneous and SQL Archives
+behat.yml
+bitbucket-pipelines.yml
+bin
+multisite.xml
+multisite.xml.dist
+tests
 *.mp4
 *.sql
 *.tar.gz
