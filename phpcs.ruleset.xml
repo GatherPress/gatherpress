@@ -4,6 +4,7 @@
 
 	<!-- What to scan -->
 	<file>.</file>
+	<exclude-pattern>.gatherpress.org/playground-preview</exclude-pattern>
 	<exclude-pattern>*.asset.php</exclude-pattern>
 	<exclude-pattern>/data/credits.php</exclude-pattern>
 	<exclude-pattern>/vendor/</exclude-pattern>

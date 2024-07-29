@@ -1,0 +1,19 @@
+
+# ----------------------------------------------------------------------
+# Proper MIME type for plugin-proxy.php
+# ----------------------------------------------------------------------
+
+# # zip
+# AddType application/zip zip
+# AddType application/zip .zip
+
+
+<IfModule mod_headers.c>
+    # THIS IS IMPORTANT
+    # The missing piece I was hunting for 2 days.
+    #
+    # TODO # WEIRD
+    # Having this here DOES WORK,
+    # the exact same line DOES NOT WORK when placed in plugin-proxy.php.
+    Header set Content-Disposition "attachment; filename=\"gatherpress-pr.zip\""
+</IfModule>

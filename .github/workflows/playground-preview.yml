@@ -1,0 +1,98 @@
+# For now (!) the name here is important and should not be changed!
+#
+# The plugin-proxy.php does a check against exact this workflow name.
+name: Playground Preview
+
+# Inspired by, but not based on https://github.com/WordPress/gutenberg/blob/b89fb7b6eaf619bde0269e2a7fbf6245822f6cbf/.github/workflows/build-plugin-zip.yml#L153
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+    - '.github/**' # ONLY DURING DEVELOPMENT # REMOVE !!!!
+    - 'build/**'
+    - 'includes/**'
+    - 'languages/**'
+    - 'src/**'
+    - '*.php'
+  # What and Why pull_request_target?
+  # https://github.com/GatherPress/gatherpress/pull/666#issuecomment-2143088443
+  # pull_request_target:
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for pull requests
+  # or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+# Permission can be added at job level or workflow level
+#
+# IS THIS STILL NEEDED ???
+permissions:
+  pull-requests: write
+
+jobs:
+
+  zip:
+    name: Build GatherPress plugin & upload as zipped artifact
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: latest
+          coverage: none
+          tools: wp-cli
+
+      - name: Install latest version of dist-archive-command
+        run: wp package install wp-cli/dist-archive-command:dev-main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        # - [Incorrect version number used when creating zip archive · Issue #92 · wp-cli/dist-archive-command](https://github.com/wp-cli/dist-archive-command/issues/92)
+        run: |
+          npm run build
+          wp dist-archive . ./${{ github.event.repository.name }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-pr
+          path: ./${{ github.event.repository.name }}.zip
+
+  comment:
+    name: Comment with playground link
+    # https://github.com/actions/github-script?tab=readme-ov-file#comment-on-an-issue
+    # vs.
+    # https://docs.github.com/de/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment--parameters
+    needs: zip
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add Preview Links comment
+        id: comment-on-pr
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const createPreviewLinks = require('.github/scripts/create-preview-links');
+            createPreviewLinks(github, context);
