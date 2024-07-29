@@ -4,7 +4,12 @@ on:
     branches:
       - main
   pull_request:
-
+    paths:
+    - 'includes/**'
+    - 'test/**'
+    - '*.php'
+    - 'phpunit.xml.dist'
+    - 'composer.*'
 jobs:
   test-php:
     name: ${{ matrix.php_versions }} on ${{ matrix.os }}
