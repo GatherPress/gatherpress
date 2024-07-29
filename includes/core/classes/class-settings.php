@@ -375,6 +375,39 @@ class Settings {
 	}
 
 	/**
+	 * Outputs a select input field for a settings option.
+	 *
+	 * This method is responsible for rendering a select input field as a part of the plugin's settings page.
+	 * It takes the sub-page, section, option, and option settings as parameters and displays the select input field
+	 * with the specified name, value, label, and description.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $sub_page        The sub page for the select field.
+	 * @param string $section         The section for the select field.
+	 * @param string $option          The option for the select field.
+	 * @param array  $option_settings The option settings.
+	 * @return void
+	 */
+	public function select( string $sub_page, string $section, string $option, array $option_settings ): void {
+		$name  = $this->get_name_field( $sub_page, $section, $option );
+		$value = $this->get_value( $sub_page, $section, $option );
+
+		Utility::render_template(
+			sprintf( '%s/includes/templates/admin/settings/fields/select.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'name'        => $name,
+				'option'      => Utility::prefix_key( $option ),
+				'options'     => $option_settings['field']['options'] ?? '',
+				'value'       => $value,
+				'label'       => $option_settings['field']['label'] ?? '',
+				'description' => $option_settings['description'] ?? '',
+			),
+			true
+		);
+	}
+
+	/**
 	 * Outputs a dynamic select field for a type of content in the settings page.
 	 *
 	 * This method is responsible for rendering a dynamic select input field on the plugin's settings page.

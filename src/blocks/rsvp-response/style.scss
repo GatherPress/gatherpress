@@ -2,7 +2,7 @@
 
 .gatherpress-rsvp-response {
 	&__anchor {
-		color: #000000;
+		color: #000;
 		display: block;
 		padding: 0.5rem;
 		white-space: nowrap;
@@ -26,14 +26,14 @@
 	}
 
 	&__item {
-		background-color: #FFFFFF;
+		background-color: #fff;
 		border-radius: 0.25rem;
-		box-shadow: 0 0 0.25rem 0 #CCCCCC;
+		box-shadow: 0 0 0.25rem 0 #ccc;
 		gap: 1rem;
 		padding: 1rem;
 		text-align: center;
 
-		a {
+		& a {
 			display: block;
 			overflow: hidden;
 			text-overflow: ellipsis;
@@ -42,10 +42,11 @@
 	}
 
 	&__member-avatar {
-		img {
+		margin: 0;
+
+		& img {
 			border-radius: 9999px;
 		}
-		margin: 0;
 	}
 
 	&__member-role {
@@ -54,7 +55,7 @@
 	}
 
 	&__navigation {
-		border: 1px solid #CCCCCC;
+		border: 1px solid #ccc;
 		border-radius: 0.4rem;
 		flex-direction: column;
 		overflow: hidden;
@@ -64,8 +65,8 @@
 
 	&__navigation-item {
 		align-items: center;
-		background-color: #FFFFFF;
-		border-top: 1px solid #CCCCCC;
+		background-color: #fff;
+		border-top: 1px solid #ccc;
 		display: flex;
 		margin-top: -1px;
 	}
@@ -91,4 +92,3 @@
 		}
 	}
 }
-

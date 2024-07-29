@@ -36,7 +36,19 @@ class Test_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
-				'callback' => array( $instance, 'maybe_flush_gatherpress_rewrite_rules' ),
+				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_notices',
+				'priority' => 10,
+				'callback' => array( $instance, 'check_users_can_register' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_initialize_site',
+				'priority' => 10,
+				'callback' => array( $instance, 'on_site_create' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -83,7 +95,7 @@ class Test_Setup extends Base {
 	public function test_check_users_can_register(): void {
 		$instance                              = Setup::get_instance();
 		$users_can_register_name               = 'users_can_register';
-		$suppress_membership_notification_name = 'gatherpress_suppress_membership_notification';
+		$suppress_membership_notification_name = 'gatherpress_suppress_site_notification';
 
 		$this->mock->user( 'admin', 'gatherpress_general' );
 		$this->mock->wp(
@@ -268,5 +280,30 @@ class Test_Setup extends Base {
 
 		$this->assertSame( $slug, $term->slug, 'Failed to assert that term slugs match.' );
 		$this->assertSame( 'Online', $term->name, 'Failed to assert that term names match.' );
+	}
+
+	/**
+	 * Coverage for maybe_create_flush_rewrite_rules_flag method.
+	 *
+	 * @covers ::maybe_flush_rewrite_rules
+	 *
+	 * @return void
+	 */
+	public function test_maybe_create_flush_rewrite_rules_flag(): void {
+		$instance = Setup::get_instance();
+		$this->assertFalse(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that flush rewrite rules option does not exist.'
+		);
+
+		Utility::invoke_hidden_method( $instance, 'maybe_create_flush_rewrite_rules_flag' );
+
+		$this->assertTrue(
+			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
+			'Failed to assert that flush rewrite rules option exists.'
+		);
+
+		// Cleanup.
+		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
 	}
 }

@@ -25,7 +25,7 @@ import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
-import { isSinglePostInEditor } from '../../helpers/globals';
+import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
 
 /**
  * Edit component for the GatherPress Venue block.
@@ -47,10 +47,13 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapZoomLevel, mapType, mapHeight } = attributes;
 	const [name, setName] = useState('');
 	const [fullAddress, setFullAddress] = useState('');
+	const [latitude, setLatitude] = useState('');
+	const [longitude, setLongitude] = useState('');
 	const [phoneNumber, setPhoneNumber] = useState('');
 	const [website, setWebsite] = useState('');
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
+	const mapPlatform = getFromGlobal('settings.mapPlatform');
 	const onlineEventLink = useSelect(
 		(select) =>
 			select('core/editor')?.getEditedPostAttribute('meta')
@@ -85,6 +88,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		setPhoneNumber,
 		setWebsite,
 		setIsOnlineEventTerm,
+		setLatitude,
+		setLongitude,
 	});
 
 	useEffect(() => {
@@ -92,6 +97,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			setFullAddress(venueInformationMetaData.fullAddress);
 			setPhoneNumber(venueInformationMetaData.phoneNumber);
 			setWebsite(venueInformationMetaData.website);
+			setLatitude(venueInformationMetaData.latitude);
+			setLongitude(venueInformationMetaData.longitude);
 
 			if (!fullAddress && !phoneNumber && !website) {
 				setName(__('Add venue information.', 'gatherpress'));
@@ -111,10 +118,20 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		venueInformationMetaData.fullAddress,
 		venueInformationMetaData.phoneNumber,
 		venueInformationMetaData.website,
+		venueInformationMetaData.latitude,
+		venueInformationMetaData.longitude,
 		fullAddress,
 		phoneNumber,
 		website,
+		latitude,
+		longitude,
 	]);
+
+	useEffect(() => {
+		// Trigger a window resize event
+		const resizeEvent = new Event('resize');
+		window.dispatchEvent(resizeEvent);
+	}, [mapHeight]);
 
 	return (
 		<>
@@ -166,23 +183,25 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							min={1}
 							max={22}
 						/>
-						<RadioControl
-							label={__('Map type', 'gatherpress')}
-							selected={mapType}
-							options={[
-								{
-									label: __('Roadmap', 'gatherpress'),
-									value: 'm',
-								},
-								{
-									label: __('Satellite', 'gatherpress'),
-									value: 'k',
-								},
-							]}
-							onChange={(value) => {
-								setAttributes({ mapType: value });
-							}}
-						/>
+						{'google' === mapPlatform && (
+							<RadioControl
+								label={__('Map type', 'gatherpress')}
+								selected={mapType}
+								options={[
+									{
+										label: __('Roadmap', 'gatherpress'),
+										value: 'm',
+									},
+									{
+										label: __('Satellite', 'gatherpress'),
+										value: 'k',
+									},
+								]}
+								onChange={(value) => {
+									setAttributes({ mapType: value });
+								}}
+							/>
+						)}
 						<RangeControl
 							label={__('Map height', 'gatherpress')}
 							beforeIcon="location"
@@ -208,9 +227,11 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							isOnlineEventTerm={isOnlineEventTerm}
 							onlineEventLink={onlineEventLink}
 						/>
-						{mapShow && (
+						{mapShow && !isOnlineEventTerm && (
 							<MapEmbed
 								location={fullAddress}
+								latitude={latitude}
+								longitude={longitude}
 								zoom={mapZoomLevel}
 								type={mapType}
 								height={mapHeight}

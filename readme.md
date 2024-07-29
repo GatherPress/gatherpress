@@ -1,7 +1,7 @@
 # GatherPress
 
-Stable tag: 0.29.0
-Tested up to: 6.5.2
+Stable tag: 0.30.0-alpha
+Tested up to: 6.6.1
 License: GPL v2 or later
 Tags: events, event, meetup, community
 Contributors: mauteri, hrmervin, patricia70, jmarx, pbrocks, prayagm, linusx007, stephenerdelyi, carstenbach, calebthedev
@@ -12,7 +12,7 @@ GatherPress, powering our community's event management needs.
 
 ![GPLv2 License](https://img.shields.io/github/license/GatherPress/gatherpress) [![Coding Standards](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml) [![PHPUnit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml) [![JavaScript Unit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml) [![E2E Tests](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml) [![SonarCloud](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml) [![Dependency Review](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml)
 
-[![WordPress.org plugin directory guidelines](https://github.com/GatherPress/gatherpress/actions/workflows/wp-plugin-check-action.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/wp-plugin-check-action.yml)
+[![WordPress.org plugin directory guidelines](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-org-plugin-guidelines.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-org-plugin-guidelines.yml)
 
 ![WordPress Plugin Required PHP Version](https://img.shields.io/wordpress/plugin/required-php/gatherpress) ![WordPress Plugin: Required WP Version](https://img.shields.io/wordpress/plugin/wp-version/gatherpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/gatherpress) ![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/gatherpress) [![WordPress version checker](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-version-checker.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-version-checker.yml)
 
@@ -29,9 +29,8 @@ This project is for the collaborative effort to build a compelling event managem
 
 We're creating the very network features we need to host events and gather well.
 
-[video src="https://raw.githubusercontent.com/GatherPress/gatherpress/main/docs/media/GatherPress-demo-20240218.mp4"]
+https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
 
-![Demo](docs/media/GatherPress-demo-20240218.mp4)
 
 ### Features
 
@@ -66,6 +65,7 @@ This plugin leverages the following third-party libraries for various functional
 
 - [React-Modal](https://github.com/reactjs/react-modal): Facilitates the creation of modal dialogs in React components.
 - [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips for React applications.
+- [Leaflet](https://leafletjs.com/): Provides global, open-source mapping functionality
 
 ## Screenshots
 
@@ -88,7 +88,7 @@ To run GatherPress, we recommend your host supports:
 
 ### What external services are used in GatherPress?
 
-- Mapping Services: We use OpenStreetMap (coming soon) and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
+- Mapping Services: We use OpenStreetMap and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
 - Calendar Integration: GatherPress also supports "Add to Calendar" functionality using Google Calendar and Yahoo! Calendar.
 
 ### Configure GatherPress
@@ -133,7 +133,11 @@ In WP Admin, go to `Events`  > `Topics`.
 
 Topics are like post categories, but for events.
 
-### Get Collaborator Access
+## Contribute
+
+If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
+
+### Collaborator Access
 
 To get write access to the GitHub repo, please reach out to our **GitHub Administrators**: [Mervin Hernandez](https://github.com/MervinHernandez) and [Mike Auteri](https://github.com/mauteri).
 
@@ -142,6 +146,37 @@ To get access to [GatherPress.org](htps://gatherpress.org/get-involved) via SSH 
 ### Read Developer Documentation
 
 Find the developer documentation inside the plugins' `docs` folder.
+
+### What’s about the PRO version?
+
+As a Community powered plugin, GatherPress is already the PRO-version.
+
+Because we strive for close-to-core development, love decisions - not options and follow a lot of well known best-practices within the WordPress space, we can and do focus on what matters most - powering our community's event management needs.
+
+GatherPress‘ best-practices:
+
+- Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
+- Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
+- [JavaScript & PHP Unit tests](https://sonarcloud.io/summary/new_code?id=GatherPress_gatherpress&branch=main) are covering almost 80% of the whole codebase.
+- Import & Export event- and venue-data using WordPress' native tools.
+
+### Reminder that GatherPress is still in Alpha
+
+As we continue to refine and develop the plugin, please use the [GatherPress Alpha](https://github.com/GatherPress/gatherpress-alpha) plugin alongside the core GatherPress plugin. The Alpha plugin manages breaking changes easily: just make sure it is up-to-date, activate it, go to the Alpha section under GatherPress Settings, and click "Fix GatherPress!" after updating GatherPress. This process helps us avoid technical debt as we work towards launching version 1.0.0 of the plugin.
+
+## Changelog
+
+See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+
+## Upgrade Notice
+
+### 1.0.0
+
+=======
+### Is GatherPress WordPress Multisite compatible?
+Yes, GatherPress can be run on a network of sites. The additional database tables it needs, will be created automatically for each new site if the plugin is network-activated.
+
+GatherPress can also be activated per site.
 
 ### What’s about the PRO version?
 

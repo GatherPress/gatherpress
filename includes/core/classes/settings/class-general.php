@@ -103,11 +103,28 @@ class General extends Base {
 							),
 						),
 					),
-					'max_attending_limit'    => array(
+					'map_platform'           => array(
 						'labels'      => array(
-							'name' => __( 'Maximum Attending Limit', 'gatherpress' ),
+							'name' => __( 'Mapping Platform', 'gatherpress' ),
 						),
-						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
+						'description' => __( 'Select the platform you would like to render maps with.', 'gatherpress' ),
+						'field'       => array(
+							'label'   => __( 'Selected Mapping Platform:', 'gatherpress' ),
+							'type'    => 'select',
+							'options' => array(
+								'default' => 'osm',
+								'items'   => array(
+									'osm'    => __( 'Open Street Maps', 'gatherpress' ),
+									'google' => __( 'Google Maps', 'gatherpress' ),
+								),
+							),
+						),
+					),
+					'max_attendance_limit'   => array(
+						'labels'      => array(
+							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
+						),
+						'description' => __( 'Set this as your default, but you can still override it for each event as you like. If you set it to 0, there will not be any limit.', 'gatherpress' ),
 						'field'       => array(
 							'label'   => __( 'The default maximum limit of attendees to an event.', 'gatherpress' ),
 							'type'    => 'number',

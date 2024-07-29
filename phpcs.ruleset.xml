@@ -6,7 +6,7 @@
 	<file>.</file>
 	<exclude-pattern>.gatherpress.org/playground-preview</exclude-pattern>
 	<exclude-pattern>*.asset.php</exclude-pattern>
-	<exclude-pattern>/data/credits/latest.php</exclude-pattern>
+	<exclude-pattern>/data/credits.php</exclude-pattern>
 	<exclude-pattern>/vendor/</exclude-pattern>
 	<exclude-pattern>/node_modules/</exclude-pattern>
 	<exclude-pattern>/wp-core/</exclude-pattern>

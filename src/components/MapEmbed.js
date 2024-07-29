@@ -4,6 +4,13 @@
 import { select } from '@wordpress/data';
 
 /**
+ * Internal dependencies.
+ */
+import GoogleMap from './GoogleMap';
+import OpenStreetMap from './OpenStreetMap';
+import { getFromGlobal } from '../helpers/globals';
+
+/**
  * MapEmbed component for GatherPress.
  *
  * This component is used to embed a Google Map with specified location,
@@ -13,6 +20,8 @@ import { select } from '@wordpress/data';
  *
  * @param {Object} props              - Component properties.
  * @param {string} props.location     - The location to be displayed on the map.
+ * @param {string} props.latitude     - The latitdue of the location to be displayed on the map.
+ * @param {string} props.longitude    - The longitude of the location to be displayed on the map.
  * @param {number} [props.zoom=10]    - The zoom level of the map.
  * @param {string} [props.type='m']   - The type of the map (e.g., 'm' for roadmap).
  * @param {number} [props.height=300] - The height of the map container.
@@ -23,7 +32,7 @@ import { select } from '@wordpress/data';
 const MapEmbed = (props) => {
 	const isAdmin = select('core')?.canUser('create', 'posts');
 	const isPostEditor = Boolean(select('core/edit-post'));
-	const { zoom, type, className } = props;
+	const { zoom, type, className, latitude, longitude } = props;
 	let { location, height } = props;
 
 	if (!height) {
@@ -34,29 +43,33 @@ const MapEmbed = (props) => {
 		location = '660 4th Street #119 San Francisco CA 94107, USA';
 	}
 
-	if (!location) {
+	const mapPlatform = getFromGlobal('settings.mapPlatform');
+	if (!location || !mapPlatform) {
 		return <></>;
+	} else if (mapPlatform === 'google') {
+		return (
+			<GoogleMap
+				location={location}
+				className={className}
+				zoom={zoom}
+				type={type}
+				height={height}
+			/>
+		);
+	} else if (mapPlatform === 'osm') {
+		return (
+			<OpenStreetMap
+				location={location}
+				latitude={latitude}
+				longitude={longitude}
+				className={className}
+				zoom={zoom}
+				height={height}
+			/>
+		);
 	}
 
-	const style = { border: 0, height, width: '100%' };
-	const baseUrl = 'https://maps.google.com/maps';
-
-	const params = new URLSearchParams({
-		q: location,
-		z: zoom || 10,
-		t: type || 'm',
-		output: 'embed',
-	});
-
-	const srcURL = baseUrl + '?' + params.toString();
-	return (
-		<iframe
-			src={srcURL}
-			style={style}
-			className={className}
-			title={location}
-		></iframe>
-	);
+	return <></>;
 };
 
 export default MapEmbed;

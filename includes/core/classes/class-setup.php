@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use WP_Site;
 
 /**
  * Class Setup.
@@ -43,11 +44,10 @@ class Setup {
 	}
 
 	/**
-	 * Instantiate singleton classes and set up WP-CLI command.
+	 * Instantiate singleton classes.
 	 *
-	 * This method initializes various singleton classes used by the plugin
-	 * and adds a WP-CLI command if WP_CLI is defined. It may throw an Exception
-	 * if there are issues instantiating the classes.
+	 * This method initializes various singleton classes used by the plugin.
+	 * It may throw an Exception if there are issues instantiating the classes.
 	 *
 	 * @since 1.0.0
 	 *
@@ -61,7 +61,11 @@ class Setup {
 		Cli::get_instance();
 		Event_Query::get_instance();
 		Event_Setup::get_instance();
+		Export::get_instance();
+		Import::get_instance();
 		Rest_Api::get_instance();
+		Rsvp_Query::get_instance();
+		Rsvp_Setup::get_instance();
 		Settings::get_instance();
 		User::get_instance();
 		Topic::get_instance();
@@ -81,9 +85,10 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
-		add_action( 'init', array( $this, 'load_textdomain' ), 9 );
-		add_action( 'init', array( $this, 'maybe_flush_gatherpress_rewrite_rules' ) );
+		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
+		add_action( 'admin_init', array( $this, 'check_gatherpress_alpha' ) );
+		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
@@ -104,44 +109,6 @@ class Setup {
 			),
 			array( $this, 'filter_plugin_action_links' )
 		);
-		add_filter( 'load_textdomain_mofile', array( $this, 'load_mofile' ), 10, 2 );
-	}
-
-	/**
-	 * Loads gatherpress for GatherPress.
-	 *
-	 * @todo needed until plugin is added to wordpress.org plugin directory.
-	 *
-	 * @return void
-	 */
-	public function load_textdomain(): void {
-		load_plugin_textdomain( 'gatherpress', false, GATHERPRESS_DIR_NAME . '/languages' );
-	}
-
-	/**
-	 * Find language files in gatherpress/languages when missing in wp-content/languages/plugins/
-	 *
-	 * The translation files will be in wp-content/languages/plugins/ once the plugin on the
-	 * repository and translated in translate.wordpress.org.
-	 *
-	 * @todo needed until plugin is added to wordpress.org plugin directory.
-	 *
-	 * Until that, we need to load from /languages folder and load the textdomain.
-	 * See https://developer.wordpress.org/plugins/internationalization/how-to-internationalize-your-plugin/#plugins-on-wordpress-org.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $mofile The path to the translation file.
-	 * @param string $domain The text domain of the translation file.
-	 * @return string The updated path to the translation file based on the locale
-	 */
-	public function load_mofile( string $mofile, string $domain ): string {
-		if ( 'gatherpress' === $domain && false !== strpos( $mofile, WP_LANG_DIR . '/plugins/' ) ) {
-			$locale = apply_filters( 'plugin_locale', determine_locale(), $domain );  // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-			$mofile = WP_PLUGIN_DIR . '/' . GATHERPRESS_DIR_NAME . '/languages/' . $domain . '-' . $locale . '.mo';
-		}
-
-		return $mofile;
 	}
 
 	/**
@@ -165,21 +132,38 @@ class Setup {
 	}
 
 	/**
-	 * Activate the GatherPress plugin.
+	 * Activates the GatherPress plugin.
 	 *
-	 * This method performs activation tasks for the GatherPress plugin, such as renaming blocks and tables,
-	 * creating custom tables, and setting a flag to flush rewrite rules if necessary.
+	 * This method handles the activation of the GatherPress plugin. If the plugin
+	 * is being activated network-wide in a multisite installation, it iterates
+	 * through each blog in the network and performs necessary setup actions
+	 * (creating tables). If not network-wide, it only performs the setup actions
+	 * for the current site.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @param bool $network_wide Whether the plugin is being activated network-wide.
 	 * @return void
 	 */
-	public function activate_gatherpress_plugin(): void {
-		$this->maybe_create_custom_table();
-		$this->add_online_event_term();
+	public function activate_gatherpress_plugin( bool $network_wide ): void {
+		if ( is_multisite() && $network_wide ) {
+			// Get all sites in the network and activate plugin on each one.
+			$site_ids = get_sites(
+				array(
+					'fields'     => 'ids',
+					'network_id' => get_current_site()->id,
+				)
+			);
 
-		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
-			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+			foreach ( $site_ids as $site_id ) {
+				switch_to_blog( $site_id );
+				$this->create_tables();
+				restore_current_blog();
+			}
+		} else {
+			$this->create_tables();
 		}
 	}
 
@@ -207,10 +191,27 @@ class Setup {
 	 *
 	 * @return void
 	 */
-	public function maybe_flush_gatherpress_rewrite_rules(): void {
+	public function maybe_flush_rewrite_rules(): void {
 		if ( get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
 			flush_rewrite_rules();
 			delete_option( 'gatherpress_flush_rewrite_rules_flag' );
+		}
+	}
+
+	/**
+	 * Creates a flag option to indicate that rewrite rules need to be flushed.
+	 *
+	 * This method checks if the 'gatherpress_flush_rewrite_rules_flag' option
+	 * exists. If it does not, it adds the option and sets it to true. This flag
+	 * can be used to determine when rewrite rules should be flushed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	private function maybe_create_flush_rewrite_rules_flag(): void {
+		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
+			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
 	}
 
@@ -293,6 +294,27 @@ class Setup {
 	}
 
 	/**
+	 * Handles actions to be taken when a new site is created in a multisite network.
+	 *
+	 * This function checks if the 'gatherpress' plugin is active across the network.
+	 * If it is, it switches to the new site, calls the `create_table()` function,
+	 * and then restores the current blog.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Site $new_site the newly created site.
+	 *
+	 * @return void
+	 */
+	public function on_site_create( WP_Site $new_site ): void {
+		if ( is_plugin_active_for_network( 'gatherpress/gatherpress.php' ) ) {
+			switch_to_blog( $new_site->blog_id );
+			$this->create_tables();
+			restore_current_blog();
+		}
+	}
+
+	/**
 	 * Delete custom tables on site deletion.
 	 *
 	 * This method is called when a site is deleted, and it allows the plugin to specify
@@ -308,42 +330,22 @@ class Setup {
 		global $wpdb;
 
 		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
-		$tables[] = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
 
 		return $tables;
 	}
 
 	/**
-	 * Create a custom table if it doesn't exist for the main site or the current site in a network.
+	 * Creates necessary database tables for the GatherPress plugin.
 	 *
-	 * This method checks whether the custom database tables required for the plugin exist
-	 * and creates them if they don't. It handles both the main site and, in a multisite network,
-	 * the current site.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function maybe_create_custom_table(): void {
-		$this->create_tables();
-
-		if ( is_multisite() ) {
-			$blog_id = get_current_blog_id();
-
-			switch_to_blog( $blog_id );
-			$this->create_tables();
-			restore_current_blog();
-		}
-	}
-
-	/**
-	 * Create custom database tables for GatherPress events and RSVPs.
-	 *
-	 * This method creates custom database tables for storing GatherPress event data and RSVP information.
-	 * It ensures that the required tables are set up with the appropriate schema.
+	 * This method creates the required database tables for storing event and RSVP data.
+	 * It constructs SQL queries for creating the tables with appropriate charset and
+	 * collation, and then executes these queries using the `dbDelta` function to ensure
+	 * the tables are created or updated as necessary. Additionally, it calls methods to
+	 * add the online event term and to set a flag for flushing rewrite rules.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
 	 * @return void
 	 */
 	protected function create_tables(): void {
@@ -366,24 +368,12 @@ class Setup {
 					KEY datetime_end_gmt (datetime_end_gmt)
 				) {$charset_collate};";
 
-		$table = sprintf( Rsvp::TABLE_FORMAT, $prefix );
-		$sql[] = "CREATE TABLE {$table} (
-					id bigint(20) unsigned NOT NULL auto_increment,
-					post_id bigint(20) unsigned NOT NULL default '0',
-					user_id bigint(20) unsigned NOT NULL default '0',
-					timestamp datetime NOT NULL default '0000-00-00 00:00:00',
-					status varchar(255) default NULL,
-					anonymous tinyint(1) default 0,
-					guests tinyint(1) default 0,
-					PRIMARY KEY  (id),
-					KEY post_id (post_id),
-					KEY user_id (user_id),
-					KEY status (status)
-				) {$charset_collate};";
-
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		dbDelta( $sql );
+
+		$this->add_online_event_term();
+		$this->maybe_create_flush_rewrite_rules_flag();
 	}
 
 	/**
@@ -400,7 +390,7 @@ class Setup {
 	public function check_users_can_register(): void {
 		if (
 			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( get_option( 'gatherpress_suppress_membership_notification' ), FILTER_VALIDATE_BOOLEAN ) ||
+			filter_var( get_option( 'gatherpress_suppress_site_notification' ), FILTER_VALIDATE_BOOLEAN ) ||
 			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN ) ||
 			false === strpos( get_current_screen()->id, 'gatherpress' )
 		) {
@@ -410,14 +400,35 @@ class Setup {
 		wp_enqueue_style( 'gatherpress-admin-style' );
 
 		if (
-			'gatherpress_suppress_membership_notification' === filter_input( INPUT_GET, 'action' ) &&
+			'gatherpress_suppress_site_notification' === filter_input( INPUT_GET, 'action' ) &&
 			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&
 			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' )
 		) {
-			update_option( 'gatherpress_suppress_membership_notification', true );
+			update_option( 'gatherpress_suppress_site_notification', true );
 		} else {
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/setup/membership-check.php', GATHERPRESS_CORE_PATH ),
+				sprintf( '%s/includes/templates/admin/setup/site-check.php', GATHERPRESS_CORE_PATH ),
+				array(),
+				true
+			);
+		}
+	}
+
+	/**
+	 * Checks if the GatherPress Alpha plugin is active and renders an admin notice if not.
+	 *
+	 * This method verifies whether the GatherPress Alpha plugin is currently active.
+	 * If the plugin is not active, it renders an admin notice template to inform the user
+	 * that the GatherPress Alpha plugin is required for compatibility and development purposes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function check_gatherpress_alpha(): void {
+		if ( ! is_plugin_active( 'gatherpress-alpha/gatherpress-alpha.php' ) ) {
+			Utility::render_template(
+				sprintf( '%s/includes/templates/admin/setup/gatherpress-alpha-check.php', GATHERPRESS_CORE_PATH ),
 				array(),
 				true
 			);
