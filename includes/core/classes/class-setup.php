@@ -87,7 +87,7 @@ class Setup {
 
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
-		add_action( 'admin_init', array( $this, 'check_gatherpress_alpha' ) );
+		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
