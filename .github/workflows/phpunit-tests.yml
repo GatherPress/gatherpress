@@ -5,6 +5,7 @@ on:
       - main
   pull_request:
     paths:
+    - '.github/workflows/phpunit-tests.yml'
     - 'includes/**'
     - 'test/unit/php**'
     - '*.php'
