@@ -9,7 +9,6 @@ on:
   pull_request:
     types: [opened, synchronize]
     paths:
-    - '.github/**' # ONLY DURING DEVELOPMENT # REMOVE !!!!
     - 'build/**'
     - 'includes/**'
     - 'languages/**'
