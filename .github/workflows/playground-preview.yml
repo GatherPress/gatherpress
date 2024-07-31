@@ -6,6 +6,8 @@ name: Playground Preview
 # Inspired by, but not based on https://github.com/WordPress/gutenberg/blob/b89fb7b6eaf619bde0269e2a7fbf6245822f6cbf/.github/workflows/build-plugin-zip.yml#L153
 
 on:
+  # What and Why pull_request_target?
+  # https://github.com/GatherPress/gatherpress/pull/666#issuecomment-2143088443
   pull_request_target:
     types: [opened, synchronize]
     paths:
@@ -15,9 +17,6 @@ on:
     - 'languages/**'
     - 'src/**'
     - '*.php'
-  # What and Why pull_request_target?
-  # https://github.com/GatherPress/gatherpress/pull/666#issuecomment-2143088443
-  # pull_request_target:
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
