@@ -6,9 +6,10 @@ name: Playground Preview
 # Inspired by, but not based on https://github.com/WordPress/gutenberg/blob/b89fb7b6eaf619bde0269e2a7fbf6245822f6cbf/.github/workflows/build-plugin-zip.yml#L153
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize]
     paths:
+    - '.github/workflows/playground-preview.yml'
     - 'build/**'
     - 'includes/**'
     - 'languages/**'
@@ -28,8 +29,8 @@ concurrency:
 # Permission can be added at job level or workflow level
 #
 # IS THIS STILL NEEDED ???
-permissions:
-  pull-requests: write
+# permissions:
+#   pull-requests: write
 
 jobs:
 
