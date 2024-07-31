@@ -98,6 +98,7 @@ class Utility {
 	 */
 	public static function timezone_choices(): array {
 		$timezones_raw   = explode( PHP_EOL, wp_timezone_choice( 'UTC', get_user_locale() ) );
+		$timezones_clean = array();
 		$group           = null;
 
 		foreach ( $timezones_raw as $timezone ) {
