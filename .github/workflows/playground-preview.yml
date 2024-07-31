@@ -26,12 +26,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
   cancel-in-progress: true
 
-# Permission can be added at job level or workflow level
-#
-# IS THIS STILL NEEDED ???
-# permissions:
-#   pull-requests: write
-
 jobs:
 
   zip:
