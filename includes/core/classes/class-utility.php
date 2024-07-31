@@ -97,8 +97,7 @@ class Utility {
 	 * @return array An array of time zones with labels as keys and time zone choices as values.
 	 */
 	public static function timezone_choices(): array {
-		$timezones_raw   = explode( PHP_EOL, wp_timezone_choice( 'UTC' ) );
-		$timezones_clean = array();
+		$timezones_raw   = explode( PHP_EOL, wp_timezone_choice( 'UTC', get_user_locale() ) );
 		$group           = null;
 
 		foreach ( $timezones_raw as $timezone ) {
