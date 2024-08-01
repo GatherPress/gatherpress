@@ -250,15 +250,22 @@ class Event_Rest_Api {
 			return false;
 		}
 
+		// Keep the currently logged-in user.
+		$current_user = wp_get_current_user();
+
 		$members = $this->get_members( $send, $post_id );
 		foreach ( $members as $member ) {
 			if ( '0' === get_user_meta( $member->ID, 'gatherpress_event_updates_opt_in', true ) ) {
 				continue;
 			}
-
 			if ( $member->user_email ) {
 				$to = $member->user_email;
 				$switched_locale = switch_to_user_locale( $member->ID );
+
+				// Set the current user to the actual member to mail to,
+				// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
+				// are recognized by the functions inside render_template().
+				wp_set_current_user( $member->ID );
 
 				/* translators: %s: event title. */
 				$subject = sprintf( __( '📅 %s', 'gatherpress' ), get_the_title( $post_id ) );
@@ -271,6 +278,9 @@ class Event_Rest_Api {
 				);
 				$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 				$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
+
+				// Reset the current user to the editor sending the email.
+				wp_set_current_user( $current_user->ID );
 
 				wp_mail( $to, $subject, $body, $headers );
 
