@@ -49,6 +49,9 @@ function createBlueprint(context, number, zipArtifactUrl) {
 		},
 		steps: [
 			{
+				step: 'enableMultisite',
+			},
+			{
 				step: 'login',
 				username: 'admin',
 				password: 'password',
