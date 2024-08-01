@@ -119,6 +119,8 @@ class Setup {
 	 * Make sure to load all translation fileseven for users
 	 * who chosed another than the sites default language.
 	 *
+	 * @see https://developer.wordpress.org/reference/functions/load_plugin_textdomain
+	 *
 	 * Calling load_plugin_textdomain() should be delayed until init action.
 	 * @see https://developer.wordpress.org/reference/functions/load_plugin_textdomain/#comment-1568
 	 *
