@@ -136,12 +136,6 @@ class Setup {
 	 * for users how chosed another than the sites default language in their /profile.php.
 	 */
 	public function load_gatherpress_textdomain() {
-		// Keep as a fallback if translation files were not loaded from translate.wordpress.org ??
-		// load_plugin_textdomain( 'gatherpress', false, GATHERPRESS_DIR_NAME . '/languages' );
-	
-		// Or use it like that
-		// and DELETE the /languages folder,
-		// and "* Domain Path:       /languages" as well?
 		load_plugin_textdomain( 'gatherpress', false, false ); 
 	}
 
