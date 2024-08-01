@@ -83,7 +83,7 @@ class Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'load_gatherpress_textdomain' ), 0 );
- 
+
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
@@ -115,7 +115,7 @@ class Setup {
 
 	/**
 	 * Load plugin textdomain.
-	 * 
+	 *
 	 * Calling load_plugin_textdomain() should be delayed until init action.
 	 * @see https://developer.wordpress.org/reference/functions/load_plugin_textdomain/#comment-1568
 	 *
@@ -136,7 +136,7 @@ class Setup {
 	 * for users how chosed another than the sites default language in their /profile.php.
 	 */
 	public function load_gatherpress_textdomain() {
-		load_plugin_textdomain( 'gatherpress', false, false ); 
+		load_plugin_textdomain( 'gatherpress', false, false );
 	}
 
 	/**
