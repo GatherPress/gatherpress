@@ -116,6 +116,9 @@ class Setup {
 	/**
 	 * Load plugin textdomain.
 	 *
+	 * Make sure to load all translation fileseven for users
+	 * who chosed another than the sites default language.
+	 *
 	 * Calling load_plugin_textdomain() should be delayed until init action.
 	 * @see https://developer.wordpress.org/reference/functions/load_plugin_textdomain/#comment-1568
 	 *
@@ -133,7 +136,7 @@ class Setup {
 	 * BUT, ...!!!
 	 *
 	 * A call to load_plugin_textdomain() is ABSOLUTELY NEEDED to properly load all translation files
-	 * for users how chosed another than the sites default language in their /profile.php.
+	 * for users who chosed another than the sites default language in their /profile.php.
 	 */
 	public function load_gatherpress_textdomain() {
 		load_plugin_textdomain( 'gatherpress', false, false );
