@@ -251,18 +251,6 @@ class Event_Rest_Api {
 		}
 
 		$members = $this->get_members( $send, $post_id );
-		/* translators: %s: event title. */
-		$subject = sprintf( __( '📅 %s', 'gatherpress' ), get_the_title( $post_id ) );
-		$body    = Utility::render_template(
-			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'event_id' => $post_id,
-				'message'  => $message,
-			),
-		);
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
-
 		foreach ( $members as $member ) {
 			if ( '0' === get_user_meta( $member->ID, 'gatherpress_event_updates_opt_in', true ) ) {
 				continue;
@@ -270,8 +258,25 @@ class Event_Rest_Api {
 
 			if ( $member->user_email ) {
 				$to = $member->user_email;
+				$switched_locale = switch_to_user_locale( $member->ID );
+
+				/* translators: %s: event title. */
+				$subject = sprintf( __( '📅 %s', 'gatherpress' ), get_the_title( $post_id ) );
+				$body    = Utility::render_template(
+					sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
+					array(
+						'event_id' => $post_id,
+						'message'  => $message,
+					),
+				);
+				$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+				$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
 
 				wp_mail( $to, $subject, $body, $headers );
+
+				if ( $switched_locale ) {
+					restore_previous_locale();
+				}
 			}
 		}
 
