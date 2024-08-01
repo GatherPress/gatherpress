@@ -36,6 +36,17 @@ function createBlueprint(context, number, zipArtifactUrl) {
 	// ...
 
 	const template = {
+		landingPage: '/wp-admin/post-new.php?post_type=gatherpress_event',
+		preferredVersions: {
+			php: '8.2',
+			wp: 'latest'
+		},
+		phpExtensionBundles: [
+			'kitchen-sink'
+		],
+		features: {
+			networking: true
+		},
 		steps: [
 			{
 				step: 'login',
