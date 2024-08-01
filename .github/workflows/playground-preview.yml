@@ -11,10 +11,8 @@ on:
   pull_request_target:
     types: [opened, synchronize]
     paths:
-    - '.github/workflows/playground-preview.yml'
     - 'build/**'
     - 'includes/**'
-    - 'languages/**'
     - 'src/**'
     - '*.php'
 
