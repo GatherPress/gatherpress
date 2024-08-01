@@ -26,7 +26,7 @@ $gatherpress_venue = $gatherpress_event->get_venue_information()['name'];
 ?>
 
 <!DOCTYPE html>
-<html lang="en-US">
+<html <?php language_attributes(); ?>>
 	<head>
 		<title><?php echo wp_kses_post( get_the_title( $event_id ) ); ?></title>
 	</head>
