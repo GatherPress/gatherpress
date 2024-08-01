@@ -27,9 +27,32 @@ concurrency:
 
 jobs:
 
+  check-changes:
+    name: Check for changes in /src/ directory
+    runs-on: ubuntu-latest
+    outputs:
+      src_changed: ${{ steps.src_changed.outputs.src_changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check if /src/ directory has changed
+        id: src_changed
+        run: |
+          # Check if there are changes in the /src/ directory between the base and head refs
+          if git diff --name-only ${{ github.base_ref }} ${{ github.head_ref }} | grep -q '^src/'; then
+            echo "src_changed=true" >> $GITHUB_ENV
+            echo "::set-output name=src_changed::true"
+          else
+            echo "src_changed=false" >> $GITHUB_ENV
+            echo "::set-output name=src_changed::false"
+          fi
+
   zip:
     name: Build GatherPress plugin & upload as zipped artifact
     runs-on: ubuntu-latest
+    needs: check-changes
+    if: needs.check-changes.outputs.src_changed == 'true'  # Only run this job if there are changes in /src/
     steps:
 
       - name: Checkout
@@ -71,10 +94,7 @@ jobs:
 
   comment:
     name: Comment with playground link
-    # https://github.com/actions/github-script?tab=readme-ov-file#comment-on-an-issue
-    # vs.
-    # https://docs.github.com/de/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment--parameters
-    needs: zip
+    needs: [zip, check-changes]  # Ensure this runs after the zip and check-changes jobs
     runs-on: ubuntu-latest
 
     steps:
