@@ -40,14 +40,11 @@ jobs:
           # Check if the pull request was just opened
           if [ "${{ github.event.action }}" == "opened" ]; then
             echo "run_build=true" >> $GITHUB_ENV
-            echo "::set-output name=run_build::true"
           # Check if there are changes in the /src/ directory
           elif git diff --name-only ${{ github.base_ref }} ${{ github.head_ref }} | grep -q '^src/'; then
             echo "run_build=true" >> $GITHUB_ENV
-            echo "::set-output name=run_build::true"
           else
             echo "run_build=false" >> $GITHUB_ENV
-            echo "::set-output name=run_build::false"
           fi
 
 
