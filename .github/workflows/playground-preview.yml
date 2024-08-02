@@ -110,7 +110,7 @@ jobs:
   comment:
     name: Comment with playground link
     needs: [zip, needs-build]  # Ensure this runs after the needs-build & zip jobs.
-    if: ${ always() } # Make sure this job runs even if dependent jobs were skipped.
+    if: always() # Make sure this job runs even if dependent jobs were skipped.
     runs-on: ubuntu-latest
 
     steps:
