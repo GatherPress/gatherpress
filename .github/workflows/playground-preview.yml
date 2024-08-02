@@ -34,11 +34,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set run_build for initial PR or /src/ changes
+      - name: Check if zip artifact exists
+        id: check-artifact
+        run: |
+          # Define the expected artifact name based on the repository name and PR
+          ARTIFACT_NAME="${{ github.event.repository.name }}-pr"
+          # Use GitHub CLI to check if the artifact exists
+          ARTIFACT_EXISTS=$(gh api repos/${{ github.repository }}/actions/artifacts --jq ".artifacts[] | select(.name == \"$ARTIFACT_NAME\") | .id" || echo "")
+          if [ -n "$ARTIFACT_EXISTS" ]; then
+            # If the artifact exists, set artifact_exists to true
+            echo "artifact_exists=true" >> $GITHUB_ENV
+          else
+            # If the artifact does not exist, set artifact_exists to false
+            echo "artifact_exists=false" >> $GITHUB_ENV
+          fi
+
+      - name: Set run_build based on artifact existence or /src/ changes
         id: set-run-build
         run: |
-          # Check if the pull request was just opened
-          if [ "${{ github.event.action }}" == "opened" ]; then
+          # Check if the artifact does not exist
+          if [ "${{ steps.check-artifact.outputs.artifact_exists }}" == "false" ]; then
             echo "run_build=true" >> $GITHUB_ENV
           # Check if there are changes in the /src/ directory using commit SHAs
           elif git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -q '^src/'; then
@@ -52,7 +67,7 @@ jobs:
     name: Build GatherPress plugin & upload as zipped artifact
     runs-on: ubuntu-latest
     needs: needs-build
-    if: needs.needs-build.outputs.run_build == 'true'  # Only run this job if if the pull request was just opened or there are changes in /src/
+    if: needs.needs-build.outputs.run_build == 'true'  # Only run this job if no built zip-artifact exists or there are changes in /src/
     steps:
 
       - name: Checkout
