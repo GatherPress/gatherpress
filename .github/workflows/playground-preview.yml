@@ -3,7 +3,8 @@
 # The plugin-proxy.php does a check against exact this workflow name.
 name: Playground Preview
 
-# Inspired by, but not based on https://github.com/WordPress/gutenberg/blob/b89fb7b6eaf619bde0269e2a7fbf6245822f6cbf/.github/workflows/build-plugin-zip.yml#L153
+# Inspired by, but not based on 
+# https://github.com/WordPress/gutenberg/blob/b89fb7b6eaf619bde0269e2a7fbf6245822f6cbf/.github/workflows/build-plugin-zip.yml#L153
 
 on:
   # What and Why pull_request_target?
