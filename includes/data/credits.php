@@ -51,15 +51,15 @@ return array (
   array (
     0 => 
     array (
-      'id' => 4555438,
-      'name' => '',
-      'link' => 'https://profiles.wordpress.org/author/jmarx/',
-      'slug' => 'jmarx',
+      'id' => 130224,
+      'name' => 'jmarx75',
+      'link' => 'https://profiles.wordpress.org/author/jmarx75/',
+      'slug' => 'jmarx75',
       'avatar_urls' => 
       array (
-        24 => '//www.gravatar.com/avatar/c45f6353d61871317b31fb9048d39b2b?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/c45f6353d61871317b31fb9048d39b2b?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/c45f6353d61871317b31fb9048d39b2b?s=96&#038;r=g&#038;d=mm',
+        24 => '//www.gravatar.com/avatar/e4dbd0c1b4a8f180c0d7f92a6909ba56?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/e4dbd0c1b4a8f180c0d7f92a6909ba56?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/e4dbd0c1b4a8f180c0d7f92a6909ba56?s=96&#038;r=g&#038;d=mm',
       ),
     ),
     1 => 
@@ -263,7 +263,7 @@ return array (
     9 => 
     array (
       'id' => 13994457,
-      'name' => 'Nilo Vélez',
+      'name' => 'Nilo Velez',
       'link' => 'https://profiles.wordpress.org/author/nilovelez/',
       'slug' => 'nilovelez',
       'avatar_urls' => 
