@@ -98,6 +98,6 @@ jobs:
       - name: NPM install
         run: npm ci --legacy-peer-deps
 
-      - name: Run JSHint
+      - name: Run StyleLint
         run: npm run lint:css
         if: ${{ success() || failure() }}
