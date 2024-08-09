@@ -46,6 +46,19 @@ return array (
         96 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    3 => 
+    array (
+      'id' => 7673952,
+      'name' => 'Carsten Bach',
+      'link' => 'https://profiles.wordpress.org/author/carstenbach/',
+      'slug' => 'carstenbach',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'gatherpress-team' => 
   array (
@@ -115,19 +128,6 @@ return array (
       ),
     ),
     5 => 
-    array (
-      'id' => 7673952,
-      'name' => 'Carsten Bach',
-      'link' => 'https://profiles.wordpress.org/author/carstenbach/',
-      'slug' => 'carstenbach',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    6 => 
     array (
       'id' => 20244435,
       'name' => 'Caleb Matteis',
