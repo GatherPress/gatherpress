@@ -85,6 +85,8 @@ class Export extends Migrate {
 	 *
 	 * Fires once the post data has been set up.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param  WP_Post $post  The Post object (passed by reference).
 	 * @return void
 	 */
@@ -111,6 +113,8 @@ class Export extends Migrate {
 	 * But because there is no 'do_action('per-exported-post)',
 	 * GatherPress created a post_meta entry as a temporary marker, to be used as an entry-point into
 	 * WordPress' native export process, which is used now.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param  bool   $skip     Whether to skip the current post meta. Default false.
 	 * @param  string $meta_key Current meta key.
@@ -172,10 +176,13 @@ class Export extends Migrate {
 	/**
 	 * Render custom post_meta data into xml markup to be used while WordÜress' native export.
 	 *
-	 * @param  array   $callbacks Associative array with (import & export) callback functions for a the non-existent post_meta entry, named by $key.
-	 * @param  string  $key       Name of the custom post_meta, that should be exported.
+	 * @param  array   $callbacks Associative array with (import & export) callback functions for
+	 *                            the non-existent post_meta entry, named by $key.
+	 * @param string  $key       Name of the custom post_meta, that should be exported.
 	 * @param  WP_Post $post      The currently exported 'gatherpress_event' post.
+	 *
 	 * @return void
+	 * @since 1.0.0
 	 */
 	public function render( array $callbacks, string $key, WP_Post $post ) {
 		if ( ! isset( $callbacks['export_callback'] ) || ! is_callable( $callbacks['export_callback'] ) ) {

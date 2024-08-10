@@ -30,8 +30,8 @@ class Migrate {
 	 */
 	protected array $pseudopostmetas = array(
 		'gatherpress_datetimes' => array(
-			'export_callback' => array( '\GatherPress\Core\Export', 'datetimes_callback' ),
-			'import_callback' => array( '\GatherPress\Core\Import', 'datetimes_callback' ),
+			'export_callback' => array( Export::class, 'datetimes_callback' ),
+			'import_callback' => array( Import::class, 'datetimes_callback' ),
 		),
 	);
 
