@@ -33,7 +33,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
 
       - name: Setup PHP
