@@ -5,7 +5,7 @@
  * Description:       Powering Communities with WordPress.
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
- * Version:           TEST " carstingaxion:test/playground-preview-test-10" 0.30.0-alpha
+ * Version:           TEST " carstingaxion:test/playground-preview-test-9" 0.30.0-alpha
  * Requires PHP:      7.4
  * Requires at least: 6.4
  * Text Domain:       gatherpress
