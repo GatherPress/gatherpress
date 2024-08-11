@@ -43,7 +43,7 @@ jobs:
 
         - name: Starting the WordPress Environment
           run: |
-                npm run env:start
+                npm run wp-env start
 
         - name: Running the tests
           env:
