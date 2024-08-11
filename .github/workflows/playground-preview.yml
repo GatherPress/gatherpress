@@ -33,7 +33,7 @@ on:
 concurrency:
   # The concurrency group contains the workflow name and the branch name for pull requests
   # or the commit hash for any other events.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request_target' && context.payload.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -48,10 +48,12 @@ jobs:
       # and set the merge commit hash to actions/checkout input ref.
       #
       # @source https://dev.to/suzukishunsuke/secure-github-actions-by-pullrequesttarget-641#checkout-merge-commits
+      - uses: suzuki-shunsuke/get-pr-action@v0.1.0
+        id: pr
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{steps.pr.outputs.merge_commit_sha}}
           show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
 
       - name: Setup PHP
