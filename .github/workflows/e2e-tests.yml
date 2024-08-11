@@ -1,39 +1,62 @@
 name: E2E Tests
+
 on:
-  push:
-    branches:
-      - main
+    workflow_dispatch:
+    pull_request:
+
+# Cancels all previous workflow runs for pull requests that have not completed.
+concurrency:
+  # The concurrency group contains the workflow name and the branch name for pull requests
+  # or the commit hash for any other events.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
+  cancel-in-progress: true
+
 
 jobs:
-  playwright:
-    name: Playwright Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    e2e-tests:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            # matrix:
+            #     node: ['14']
 
-      - name: Log debug information
-        run: |
-          npm --version
-          node --version
-          git --version
-          php --version
-          composer --version
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
 
-      - name: Install NodeJS
-        uses: actions/setup-node@v2
-        with:
+        - name: Setup Node
+          uses: actions/setup-node@v4
+          with:
             node-version-file: '.nvmrc'
+            cache: npm
 
-      - name: NPM install
-        run: npm ci --legacy-peer-deps
+        - name: Install dependencies
+          run: npm ci
 
-      - name: Playwright install
-        run: npx playwright install --with-deps
+        - name: Build plugin
+          run: |
+            npm run build
 
-      - name: Run Playwright
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WP_ADMIN_PASSWORD: ${{ secrets.WP_ADMIN_PASSWORD }}
-        run: npm run test:e2e
-        if: ${{ success() || failure() }}
+        - name: Install Playwright dependencies
+          run: |
+                npx playwright install chromium firefox webkit --with-deps
+
+        - name: Starting the WordPress Environment
+          run: |
+                npm run env:start
+
+        - name: Running the tests
+          env:
+              WP_AUTH_STORAGE: artifacts/storage-states/admin.json
+              WP_BASE_URL: http://localhost:8889
+              WP_USERNAME: admin
+              WP_PASSWORD: password
+          run: |
+                npm run test:e2e
+
+        - name: Retain failed test results
+          uses: actions/upload-artifact@v3
+          if: failure()
+          with:
+            name: test-results-matrix-less-debugging
+            path: test-results/
