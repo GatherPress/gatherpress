@@ -11,10 +11,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
-use GatherPress\Core\Migrate;
 use GatherPress\Core\Traits\Singleton;
-use WP_Post;
 
 /**
  * Class Import.

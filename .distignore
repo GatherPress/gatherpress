@@ -20,6 +20,7 @@ composer.json
 composer.lock
 dependencies.yml
 Gruntfile.js
+jest.config.js
 package.json
 package-lock.json
 phpcs.xml
@@ -53,7 +54,7 @@ bitbucket-pipelines.yml
 bin
 multisite.xml
 multisite.xml.dist
-tests
+test
 *.mp4
 *.sql
 *.tar.gz
