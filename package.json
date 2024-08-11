@@ -23,10 +23,13 @@
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
 		"start": "wp-scripts start",
-		"test:e2e": "playwright test --config=playwright.config.js",
+		"pretest:e2e": "wp-env start",
+		"test:e2e": "wp-scripts test-playwright --config test/e2e/playwright.config.ts",
+		"test:e2e:debug": "wp-scripts test-playwright --config test/e2e/playwright.config.ts --ui",
 		"test:unit:js": "wp-scripts test-unit-js --coverage --testResultsProcessor=jest-sonar-reporter",
 		"pretest:unit:php": "wp-env start --xdebug",
-		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report"
+		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report",
+		"wp-env": "wp-env"
 	},
 	"repository": {
 		"type": "git",
@@ -57,8 +60,10 @@
 		"@wordpress/data": "^10.4.0",
 		"@wordpress/date": "^5.4.0",
 		"@wordpress/dom-ready": "^4.4.0",
+		"@wordpress/e2e-test-utils-playwright": "^1.5.0",
 		"@wordpress/edit-post": "^8.4.0",
 		"@wordpress/element": "^6.4.0",
+		"@wordpress/env": "^10.5.0",
 		"@wordpress/eslint-plugin": "^20.1.0",
 		"@wordpress/i18n": "^5.4.0",
 		"@wordpress/notices": "^5.4.0",
