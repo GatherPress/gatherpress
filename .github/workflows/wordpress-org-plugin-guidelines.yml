@@ -2,6 +2,13 @@ name: 'WordPress.org plugin directory guidelines'
 on: # rebuild any PRs and main branch changes
   workflow_dispatch:
   pull_request:
+    paths:
+    - '.github/workflows/wordpress-org-plugin-guidelines.yml'
+    - 'includes/**'
+    - 'src/**'
+    - 'package.*'
+    - '*.js'
+    - '*.php'
   push:
     branches:
     - main
