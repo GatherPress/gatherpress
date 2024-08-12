@@ -81,4 +81,4 @@ jobs:
           if: failure()
           with:
             name: test-results-matrix-less-debugging
-            path: test-results/
+            path: artifacts/test-results/
