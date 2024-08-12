@@ -38,7 +38,7 @@ export default defineConfig({
     testDir: 'tests',
 
     // This is run before any tests. Check the file for more information.
-    globalSetup: 'global-setup.ts',
+    // globalSetup: 'global-setup.ts',
     // use: {
         // https://playwright.dev/docs/api/class-testoptions#test-options-storage-state
         // storageState: WP_AUTH_STORAGE

@@ -46,11 +46,11 @@ jobs:
                 npm run wp-env start
 
         - name: Running the tests
-          env:
-              WP_AUTH_STORAGE: artifacts/storage-states/admin.json
-              WP_BASE_URL: http://localhost:8889
-              WP_USERNAME: admin
-              WP_PASSWORD: password
+          # env:
+          #     WP_AUTH_STORAGE: artifacts/storage-states/admin.json
+          #     WP_BASE_URL: http://localhost:8889
+          #     WP_USERNAME: admin
+          #     WP_PASSWORD: password
           run: |
                 npm run test:e2e
 
