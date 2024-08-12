@@ -1,4 +1,6 @@
 
+# 1. Install GatherPress
+
 Plugins > Add > type: GatherPress
 
 Install and activate

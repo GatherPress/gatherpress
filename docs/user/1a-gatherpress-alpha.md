@@ -1,3 +1,4 @@
+# 1a. GatherPress Alpha
 
 Go to our https://github.com/GatherPress/gatherpress-alpha on GitHub
 On the right side, find Releases, then Assets and download the .zip archive corresponding to your version of GatherPress. If the corresponding version is listed on the right sidebar, you can also click on "Latest" to download it.

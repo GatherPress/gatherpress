@@ -1,3 +1,4 @@
+# 3. Create or edit a venue
 
 Go to Events > Venues > Add New
 ![[user-3.-create-or-edit-a-venue.png]]

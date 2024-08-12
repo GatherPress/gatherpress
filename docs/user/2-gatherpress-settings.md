@@ -1,4 +1,5 @@
 
+# 2. GatherPress settings
 ## Allow site registration
 
 The first setting is a General setting! To allow user to register to your site, you must go to:
