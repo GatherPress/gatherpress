@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Log debug information
         run: |
@@ -107,12 +107,12 @@ jobs:
 
   stylelint:
     name: CSS Coding Standards
-    needs: jshint
-    if: always()
+    needs: jshint # Wait for jshint job, to mak use of node_modules caching.
+    if: always()  # Run always, even when the jshint job didn't ran.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Log debug information
         run: |
