@@ -4,4 +4,4 @@ Topics are to GatherPress working identically than Categories to Posts. It's a t
 
 You can create topics under Events > Topics
 
-![[user-4.-gatherpress-topics.png]]
+(../media/user-4-gatherpress-topics.png)

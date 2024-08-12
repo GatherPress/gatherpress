@@ -14,9 +14,10 @@ As we continue to refine and develop GatherPress, please use the GatherPress Alp
 - Navigate to the `Alpha` tab under `Events -> Settings` in the WordPress admin.
 - Click `Fix GatherPress!` to resolve any compatibility issues.
 
-![[user-1a.-gatherpress-alpha.png]]
+(../media/user-1a-gatherpress-alpha.png)
 
-![[user-1a.-gatherpress-alpha 1.png]]
+(../media/user-1a-gatherpress-alpha-1.png)
+
 
 ## How to Determine Which Version to Install
 
