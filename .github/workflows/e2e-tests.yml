@@ -63,6 +63,9 @@ jobs:
               ./node_modules
             key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
+        # - name: Build plugin
+        #   run: |
+        #     npm run build
 
         - name: Install Playwright dependencies
           run: npx playwright install --with-deps
@@ -70,9 +73,9 @@ jobs:
         - run: npx playwright install-deps
           if: steps.playwright-cache.outputs.cache-hit == 'true'
 
-        - name: Starting the WordPress Environment
-          run: |
-                npm run wp-env start
+        # - name: Starting the WordPress Environment
+        #   run: |
+        #         npm run wp-env start
 
         - name: Running the tests
           # env:
