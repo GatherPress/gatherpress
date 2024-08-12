@@ -1,12 +1,7 @@
-import { test, expect, WP_AUTH_STORAGE } from '@test-utils';
-
-// We have multiple tests in this file, all requiring us to be authenticated.
-// Compare this to the front-end.spec.ts.
-// test.use({ storageState: WP_AUTH_STORAGE });
-
-// test.beforeAll(async ({ requestUtils }) => {
-//     await requestUtils.activatePlugin('gatherpress');
-// });
+/**
+ * WordPress dependencies
+ */
+const { test, expect } = require( '@wordpress/e2e-test-utils-playwright' );
 
 test.describe( 'GatherPress Settings', () => {
     test('A link to the plugin settings page is present under the Events menu', async ({
