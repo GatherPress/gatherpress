@@ -50,10 +50,11 @@ jobs:
       # @source https://dev.to/suzukishunsuke/secure-github-actions-by-pullrequesttarget-641#checkout-merge-commits
       - uses: suzuki-shunsuke/get-pr-action@v0.1.0
         id: pr
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{steps.pr.outputs.merge_commit_sha}}
+          ref: ${{ steps.pr.outputs.merge_commit_sha }}
           show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
 
       - name: Setup PHP
@@ -75,7 +76,20 @@ jobs:
           # https://github.com/actions/setup-node#caching-global-packages-data
           cache: 'npm'
 
-      - name: Install dependencies
+      # Creating a short lived node_modules cache
+      # to be used accross one workflow attempt.
+      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+      - uses: actions/cache@v4
+        id: node_modules-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node_modules-${{ steps.pr.outputs.merge_commit_sha }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+                  ${{ runner.os }}-node_modules-${{ steps.pr.outputs.merge_commit_sha }}-
+
+      - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Build plugin
