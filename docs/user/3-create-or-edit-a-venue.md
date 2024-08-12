@@ -12,7 +12,7 @@ The map will show automatically show in the body of the page. You can choose to 
 ![Add venue details](../media/user-3-create-or-edit-a-venue-1.png)
 
 
-You can also add standard blocks to the page to customise the venue page as you'd like.
+You can also add standard blocks to the page to customize the venue page as you'd like.
 
 ![Add blocks](../media/user-3-create-or-edit-a-venue-2.png)
 
