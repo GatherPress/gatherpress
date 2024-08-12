@@ -88,11 +88,9 @@ jobs:
           path: |
             ./node_modules
           key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
-          # restore-keys: |
-          #         ${{ runner.os }}-node_modules-${{ github.sha }}-
-          #         ${{ runner.os }}-node_modules-
 
       - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
         run: npm ci --legacy-peer-deps
 
       # Creating a short lived node_modules cache
@@ -142,11 +140,9 @@ jobs:
           path: |
             ./node_modules
           key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
-          # restore-keys: |
-          #         ${{ runner.os }}-node_modules-${{ github.sha }}-
-          #         ${{ runner.os }}-node_modules-
 
       - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
         run: npm ci --legacy-peer-deps
 
       # Creating a short lived node_modules cache
