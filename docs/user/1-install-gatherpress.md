@@ -5,5 +5,5 @@ Plugins > Add > type: GatherPress
 
 Install and activate
 
-(../media/user-1-install-gatherpress.png)
+![Install GatherPress](../media/user-1-install-gatherpress.png)
 
