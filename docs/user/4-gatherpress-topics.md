@@ -1,7 +1,7 @@
 # 4. GatherPress topics
 
-Topics are to GatherPress working identically than Categories to Posts. It's a taxonomy.
+Topics are used by GatherPress to categorise your events as a standard taxonomy feature. 
 
-You can create topics under Events > Topics
+You can create topics under `Events > Topics` and these can then be selected for your events.
 
 ![Add GatherPress topics for events](../media/user-4-gatherpress-topics.png)

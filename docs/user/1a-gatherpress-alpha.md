@@ -1,23 +1,8 @@
 # 1a. GatherPress Alpha
 
-Go to our https://github.com/GatherPress/gatherpress-alpha on GitHub
-On the right side, find Releases, then Assets and download the .zip archive corresponding to your version of GatherPress. If the corresponding version is listed on the right sidebar, you can also click on "Latest" to download it.
-
 ## Why is GatherPress Alpha needed?
 
-As we continue to refine and develop GatherPress, please use the GatherPress Alpha plugin alongside the core GatherPress plugin. The Alpha plugin helps manage breaking changes effectively:
-
-## Steps
-
-- Ensure that the version of GatherPress Alpha matches the version of the core GatherPress plugin.
-- Activate both plugins.
-- Navigate to the `Alpha` tab under `Events -> Settings` in the WordPress admin.
-- Click `Fix GatherPress!` to resolve any compatibility issues.
-
-![Install GatherPress Alpha](../media/user-1a-gatherpress-alpha.png)
-
-![IFix GatherPress](../media/user-1a-gatherpress-alpha-1.png)
-
+As we continue to refine and develop GatherPress, please use the GatherPress Alpha plugin alongside the core GatherPress plugin. The Alpha plugin helps manage breaking changes effectively.
 
 ## How to Determine Which Version to Install
 
@@ -26,8 +11,14 @@ As we continue to refine and develop GatherPress, please use the GatherPress Alp
 3. **Download the Plugin**: Under the `Assets` section of the matching release, find and click on `gatherpress-alpha.zip` to download it.
 4. **Install the Plugin**: In your website’s admin, go to `Plugins` > `Add New Plugin` and upload the `gatherpress-alpha.zip` file you just downloaded.
 5. **Repeat for Updates**: Follow these steps for each GatherPress update to ensure compatibility.
+6. Activate the GatherPress Alpha plugin. Ensure the standard GatherPress plugin is also active. 
+7. Navigate to the `Alpha` tab under `Events -> Settings` in the WordPress admin.
+8. Click `Fix GatherPress!` to resolve any compatibility issues.
 
-This process helps us manage technical debt effectively as we work towards the launch of version 1.0.0 of the plugin.
+![Install GatherPress Alpha](../media/user-1a-gatherpress-alpha.png)
+
+![IFix GatherPress](../media/user-1a-gatherpress-alpha-1.png)
+
 
 ## Advanced Method
 
