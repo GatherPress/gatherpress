@@ -38,7 +38,6 @@ yarn.lock
 .gatherpress-org
 .git
 .github
-.wordpress-org
 .wordpress-version-checker.json
 .wp-env.json
 .DS_Store
