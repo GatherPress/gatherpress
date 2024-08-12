@@ -61,7 +61,33 @@ test.describe( 'GatherPress general block tests', () => {
 		page,
 		editor,
 	} ) => {
-/* 
+// THIS IS COPIED FROM //
+// https://github.com/WordPress/gutenberg/blob/c48075b6665ec3910d00677088672c1ba9e24916/test/e2e/specs/editor/blocks/paragraph.spec.js#L26C1-L40C43
+// FOR DEBUGGING ONLY //
+// REMOVE AFTER WORKFLOW RUNS //
+
+		await editor.insertBlock( {
+			name: 'core/paragraph',
+		} );
+		await page.keyboard.type( '1' );
+
+		const firstBlockTagName = await editor.canvas
+			.locator( ':root' )
+			.evaluate( () => {
+				return document.querySelector( '[data-block]' ).tagName;
+			} );
+
+		// The outer element should be a paragraph. Blocks should never have any
+		// additional div wrappers so the markup remains simple and easy to
+		// style.
+		expect( firstBlockTagName ).toBe( 'P' );
+// END // THIS IS COPIED FROM //
+// https://github.com/WordPress/gutenberg/blob/c48075b6665ec3910d00677088672c1ba9e24916/test/e2e/specs/editor/blocks/paragraph.spec.js#L26C1-L40C43
+// FOR DEBUGGING ONLY //
+// REMOVE AFTER WORKFLOW RUNS //
+
+
+		/* 
 		await editor.insertBlock( { name: 'pseudo-' + GPOOV_CLASS_NAME + '-button' } );
 
         expect( await page.$('.' + GPOOV_CLASS_NAME ) ).not.toBeNull();
