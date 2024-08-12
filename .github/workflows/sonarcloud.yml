@@ -30,10 +30,10 @@ jobs:
           # https://github.com/actions/setup-node#caching-global-packages-data
           cache: 'npm'
 
-      # Creating a short lived node_modules cache
-      # to be used accross one workflow attempt.
+      # Restoring the short lived node_modules cache
+      # to be used accross all workflows running on the last commit.
       # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         id: node_modules-cache
         with:
           path: |
@@ -44,8 +44,15 @@ jobs:
           #         ${{ runner.os }}-node_modules-
 
       - name: NPM install
-        if: steps.node_modules-cache.outputs.cache-hit != 'true'
         run: npm ci --legacy-peer-deps
+
+      # Creating a short lived node_modules cache
+      - uses: actions/cache/save@v4
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ./node_modules
+          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
       - name: Log debug information
         run: |
