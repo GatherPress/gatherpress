@@ -24,6 +24,13 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v4
 
+        - uses: actions/cache@v2
+          id: playwright-cache
+          with:
+            path: |
+              ~/.cache/ms-playwright
+            key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
         - name: Setup Node
           uses: actions/setup-node@v4
           with:
@@ -38,8 +45,10 @@ jobs:
             npm run build
 
         - name: Install Playwright dependencies
-          run: |
-                npx playwright install chromium firefox webkit --with-deps
+          run: npx playwright install --with-deps
+          if: steps.playwright-cache.outputs.cache-hit != 'true'
+        - run: npx playwright install-deps
+          if: steps.playwright-cache.outputs.cache-hit == 'true'
 
         - name: Starting the WordPress Environment
           run: |
