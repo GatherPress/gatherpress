@@ -21,7 +21,16 @@ jobs:
             fail-fast: false
             max-parallel: 1 # Prevent parallel runs to make use of the caching for node_modules and playwright browsers
             matrix:
-                locale: ['en_US', 'fr_FR', 'de_DE']
+                # Use all locales with more than 90% complete translations on https://translate.wordpress.org/projects/wp-plugins/gatherpress/
+                locale: [
+                  'en_US',
+                  'fr_FR',
+                  'de_DE',
+                  'es_ES',
+                  'mr',
+                  'nl_BE',
+                  'it_IT'
+                ]
 
         steps:
         - name: Checkout
