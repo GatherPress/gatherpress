@@ -90,6 +90,7 @@ jobs:
                 npm run wp-env run tests-cli wp language plugin install gatherpress ${{ matrix.locale }}
 
         - name: Starting Playwright & Running the screenshot tests
+          id: screenshot-tests
           # Having set "continue-on-error:true" should help the workflow to pass (and get a green checkmark)
           # even if this step fails, what could happen because of intended changes or the addition of new locales.
           continue-on-error: true
@@ -97,12 +98,16 @@ jobs:
                 npm run screenshots:wporg
 
         - name: Starting Playwright again & Updating the Screenshots
-          if: failure()
+          # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+          # And, as you already guessed, if: failure() looks at 'conclusion'.
+          if: ${{ steps.screenshot-tests.outcome == 'failure' }}
           run: |
                 npm run screenshots:wporg -- --update-snapshots
 
         - name: Commit updated screenshots
-          if: failure()
+          # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+          # And, as you already guessed, if: failure() looks at 'conclusion'.
+          if: ${{ steps.screenshot-tests.outcome == 'failure' }}
           run: |
             git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}
             git config --local user.email "action@github.com"
@@ -115,7 +120,9 @@ jobs:
         # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
         # https://cli.github.com/manual/gh_pr_create
         - name: Create a Pull Request
-          if: failure()
+          # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+          # And, as you already guessed, if: failure() looks at 'conclusion'.
+          if: ${{ steps.screenshot-tests.outcome == 'failure' }}
           run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created by Github action'
           env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
