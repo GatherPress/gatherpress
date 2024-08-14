@@ -11,6 +11,8 @@ on:
 #   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.sha }}
 #   cancel-in-progress: true
 
+permissions:
+  pull-requests: write
 
 jobs:
     screesnhot-generator:
@@ -70,7 +72,7 @@ jobs:
             key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
         - name: Install Playwright dependencies
-          run: npx playwright install --with-deps
+          run: npx playwright install chromium --with-deps
           if: steps.playwright-cache.outputs.cache-hit != 'true'
         - run: npx playwright install-deps
           if: steps.playwright-cache.outputs.cache-hit == 'true'
