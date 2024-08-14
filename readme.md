@@ -69,6 +69,14 @@ This plugin leverages the following third-party libraries for various functional
 
 ## Screenshots
 
+1. Create a new event  
+   ![Create a new event](.wordpress-org/screenshot-1.png)
+2. Create a new venue  
+   ![Create a new venue](.wordpress-org/screenshot-2.png)
+3. General Settings  
+   ![General Settings](.wordpress-org/screenshot-3.png)
+4. Leadership Settings  
+   ![Leadership Settings](.wordpress-org/screenshot-4.png)
 
 ## Installation
 

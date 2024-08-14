@@ -4,15 +4,5 @@
 	],
 	"config": {
 		"WP_DEBUG_LOG": true
-	},
-	"mappings": {
-		"wp-content/plugins": "./wp-core/plugins",
-		"wp-content/themes": "./wp-core/themes"
-	},
-	"port": 2003,
-	"env": {
-		"tests": {
-			"port": 2023
-		}
 	}
 }

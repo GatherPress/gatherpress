@@ -39,9 +39,11 @@ wp-core
 .phpunit.result.cache
 coverage.xml
 .env
+.wp-env.override.json
 
 # Playwright #
 ##########
+artifacts/
 playwright-report/
 test-results/
 add-new-event.png
