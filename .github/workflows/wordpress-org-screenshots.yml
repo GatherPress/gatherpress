@@ -81,11 +81,10 @@ jobs:
           run: |
                 npm run wp-env start --update
         
-                # Set language on the different environments
+                # Set language on the environment
                 # https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/#wp-env-run-container-command
-                # will run against localhost:8888
-                npm run wp-env run cli wp option update WPLANG ${{ matrix.locale }}
-                # will run against localhost:8889
+                # "wp-env run tests-cli "will run against localhost:8889
+                npm run wp-env run tests-cli wp language core install ${{ matrix.locale }}
                 npm run wp-env run tests-cli wp option update WPLANG ${{ matrix.locale }}
 
                 npm run wp-env run tests-cli wp language plugin install gatherpress ${{ matrix.locale }}
@@ -110,12 +109,12 @@ jobs:
           # And, as you already guessed, if: failure() looks at 'conclusion'.
           if: ${{ steps.screenshot-tests.outcome == 'failure' }}
           run: |
-            git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}
+            git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
             git add -A
             git commit -m "Screenshots for ${{ matrix.locale }} updated!"
-            git push origin fix/wp-org-screenshots-${{ matrix.locale }}
+            git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -126,6 +125,6 @@ jobs:
           # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
           # And, as you already guessed, if: failure() looks at 'conclusion'.
           if: ${{ steps.screenshot-tests.outcome == 'failure' }}
-          run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created by Github action'
+          run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created by Github action'
           env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
