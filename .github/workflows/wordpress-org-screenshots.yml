@@ -107,6 +107,7 @@ jobs:
             git config --local user.name "GitHub Action"
             git add -A
             git commit -m "Screenshots for ${{ matrix.locale }} updated!"
+            git push origin fix/wp-org-screenshots-${{ matrix.locale }}
 
         # Using Github CLI in Workflows
         # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
