@@ -40,11 +40,11 @@ jobs:
         - name: Setup Node
           uses: actions/setup-node@v4
           with:
-          node-version-file: '.nvmrc'
-          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
-          # The actions/setup-node uses actions/cache under the hood.
-          # https://github.com/actions/setup-node#caching-global-packages-data
-          cache: 'npm'
+            node-version-file: '.nvmrc'
+            # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+            # The actions/setup-node uses actions/cache under the hood.
+            # https://github.com/actions/setup-node#caching-global-packages-data
+            cache: 'npm'
 
         # Restoring the short lived node_modules cache
         # to be used accross all workflows running on the last commit.
