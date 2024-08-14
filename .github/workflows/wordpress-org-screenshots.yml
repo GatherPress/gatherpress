@@ -100,6 +100,7 @@ jobs:
         - name: Commit updated screenshots
           if: failure()
           run: |
+            git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
             git add -A
@@ -110,6 +111,6 @@ jobs:
         # https://cli.github.com/manual/gh_pr_create
         - name: Create a Pull Request
           if: failure()
-          run: gh pr create -B main --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created by Github action'
+          run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created by Github action'
           env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
