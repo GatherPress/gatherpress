@@ -397,7 +397,6 @@ class Setup {
 				false === strpos( get_current_screen()->id, 'gatherpress' ) &&
 				false === strpos( get_current_screen()->id, 'options-general' ) &&
 				false === strpos( get_current_screen()->id, 'settings-network' )
-				
 			)
 		) {
 			return;
