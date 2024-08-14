@@ -71,7 +71,7 @@ jobs:
             key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
         - name: Install Playwright dependencies
-          run: npx playwright install chromium --with-deps
+          run: npx playwright install --with-deps
           if: steps.playwright-cache.outputs.cache-hit != 'true'
         - run: npx playwright install-deps
           if: steps.playwright-cache.outputs.cache-hit == 'true'
