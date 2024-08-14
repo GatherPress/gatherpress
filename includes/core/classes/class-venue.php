@@ -190,7 +190,10 @@ class Venue {
 			self::TAXONOMY,
 			Event::POST_TYPE,
 			array(
-				'labels'             => array(),
+				'labels'             => array(
+					'name'          => _x( 'Venues', 'taxonomy general name', 'gatherpress' ),
+					'singular_name' => _x( 'Venue', 'taxonomy singular name', 'gatherpress' ),
+				),
 				'hierarchical'       => false,
 				'public'             => true,
 				'show_ui'            => false,

@@ -87,7 +87,9 @@ class Setup {
 
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
+		add_action( 'network_admin_notices', array( $this, 'check_users_can_register' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
+		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
@@ -391,8 +393,11 @@ class Setup {
 		if (
 			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
 			filter_var( get_option( 'gatherpress_suppress_site_notification' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN ) ||
-			false === strpos( get_current_screen()->id, 'gatherpress' )
+			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN ) || (
+				false === strpos( get_current_screen()->id, 'gatherpress' ) &&
+				false === strpos( get_current_screen()->id, 'options-general' ) &&
+				false === strpos( get_current_screen()->id, 'settings-network' )
+			)
 		) {
 			return;
 		}
@@ -426,12 +431,21 @@ class Setup {
 	 * @return void
 	 */
 	public function check_gatherpress_alpha(): void {
-		if ( ! is_plugin_active( 'gatherpress-alpha/gatherpress-alpha.php' ) ) {
-			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/setup/gatherpress-alpha-check.php', GATHERPRESS_CORE_PATH ),
-				array(),
-				true
-			);
+		if (
+			is_plugin_active( 'gatherpress-alpha/gatherpress-alpha.php' ) ||
+			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
+				false === strpos( get_current_screen()->id, 'plugins' ) &&
+				false === strpos( get_current_screen()->id, 'plugin-install' ) &&
+				false === strpos( get_current_screen()->id, 'gatherpress' )
+			)
+		) {
+			return;
 		}
+
+		Utility::render_template(
+			sprintf( '%s/includes/templates/admin/setup/gatherpress-alpha-check.php', GATHERPRESS_CORE_PATH ),
+			array(),
+			true
+		);
 	}
 }
