@@ -24,26 +24,8 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
         local_code = ( 'en_US' === language ) ? '' : '-' + language.substring(0, 2);
 	} );
 
-    test('Settings > General', async ({
-        page,
-        admin,
-    }) => {
-        await admin.visitAdminPage(
-            'edit.php',
-            'post_type=gatherpress_event&page=gatherpress_general'
-        );
-
-        // Wait for 2 seconds
-        await page.waitForTimeout(2000);
-
-        // https://playwright.dev/docs/api/class-pageassertions#page-assertions-to-have-screenshot-1
-        await expect(page).toHaveScreenshot( getFileName( 'screenshot-1' ), {
-            fullPage: true
-        });
-
-    });
-
-    test('Create new event', async ({
+    // The test-description should match the caption for screenshot-# in the readme.md
+    test('Create a new event', async ({
         admin,
         editor,
         page,
@@ -61,13 +43,13 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
         await page.waitForTimeout(2000);
 
         // https://playwright.dev/docs/api/class-pageassertions#page-assertions-to-have-screenshot-1
-        await expect(page).toHaveScreenshot( getFileName( 'screenshot-2' ), {
+        await expect(page).toHaveScreenshot( getFileName( 'screenshot-1' ), {
             fullPage: true
         });
-
     });
 
-    test('Create new venue', async ({
+    // The test-description should match the caption for screenshot-# in the readme.md
+    test('Create a new venue', async ({
         admin,
         editor,
         page,
@@ -85,9 +67,47 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
         await page.waitForTimeout(2000);
 
         // https://playwright.dev/docs/api/class-pageassertions#page-assertions-to-have-screenshot-1
+        await expect(page).toHaveScreenshot( getFileName( 'screenshot-2' ), {
+            fullPage: true
+        });
+    });
+
+    // The test-description should match the caption for screenshot-# in the readme.md
+    test('General Settings', async ({
+        page,
+        admin,
+    }) => {
+        await admin.visitAdminPage(
+            'edit.php',
+            'post_type=gatherpress_event&page=gatherpress_general'
+        );
+
+        // Wait for 2 seconds
+        await page.waitForTimeout(2000);
+
+        // https://playwright.dev/docs/api/class-pageassertions#page-assertions-to-have-screenshot-1
         await expect(page).toHaveScreenshot( getFileName( 'screenshot-3' ), {
             fullPage: true
         });
-
     });
+
+    // The test-description should match the caption for screenshot-# in the readme.md
+    test('Leadership Settings', async ({
+        page,
+        admin,
+    }) => {
+        await admin.visitAdminPage(
+            'edit.php',
+            'post_type=gatherpress_event&page=gatherpress_leadership'
+        );
+
+        // Wait for 2 seconds
+        await page.waitForTimeout(2000);
+
+        // https://playwright.dev/docs/api/class-pageassertions#page-assertions-to-have-screenshot-1
+        await expect(page).toHaveScreenshot( getFileName( 'screenshot-4' ), {
+            fullPage: true
+        });
+    });
+
 });
