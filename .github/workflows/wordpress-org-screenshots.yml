@@ -77,16 +77,16 @@ jobs:
 
         - name: Starting localised wp-env
           run: |
-                wp-env start --update
+                npm run wp-env start --update
         
                 # Set language on the different environments
                 # https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/#wp-env-run-container-command
                 # will run against localhost:8888
-                wp-env run cli wp option update WPLANG ${{ matrix.locale }}
+                npm run wp-env run cli wp option update WPLANG ${{ matrix.locale }}
                 # will run against localhost:8889
-                wp-env run tests-cli wp option update WPLANG ${{ matrix.locale }}
+                npm run wp-env run tests-cli wp option update WPLANG ${{ matrix.locale }}
 
-                wp-env run tests-cli wp language plugin install gatherpress ${{ matrix.locale }}
+                npm run wp-env run tests-cli wp language plugin install gatherpress ${{ matrix.locale }}
 
         - name: Starting Playwright & Running the screenshot tests
           run: |
