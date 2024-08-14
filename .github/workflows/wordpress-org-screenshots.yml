@@ -12,6 +12,7 @@ concurrency:
 
 permissions:
   pull-requests: write
+  contents: write  # Grant write permissions for the contents scope to allow pushing changes
 
 jobs:
     screenshot:
@@ -115,6 +116,8 @@ jobs:
             git add -A
             git commit -m "Screenshots for ${{ matrix.locale }} updated!"
             git push origin fix/wp-org-screenshots-${{ matrix.locale }}
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
         # Using Github CLI in Workflows
         # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
