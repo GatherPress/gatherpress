@@ -44,13 +44,18 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
     });
 
     test('Create new event', async ({
-        page,
         admin,
+        editor,
+        page,
     }) => {
         await admin.visitAdminPage(
             'post-new.php',
             'post_type=gatherpress_event'
         );
+
+        await editor.setPreferences( 'core/edit-post', {
+            welcomeGuide: false,
+        });
 
         // Wait for 2 seconds
         await page.waitForTimeout(2000);
@@ -63,13 +68,18 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
     });
 
     test('Create new venue', async ({
-        page,
         admin,
+        editor,
+        page,
     }) => {
         await admin.visitAdminPage(
             'post-new.php',
             'post_type=gatherpress_venue'
         );
+
+        await editor.setPreferences( 'core/edit-post', {
+            welcomeGuide: false,
+        });
 
         // Wait for 2 seconds
         await page.waitForTimeout(2000);
