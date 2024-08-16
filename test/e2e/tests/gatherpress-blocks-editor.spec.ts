@@ -3,19 +3,9 @@
  */
 const { test, expect } = require( '@wordpress/e2e-test-utils-playwright' );
 
-const GPOOV_CLASS_NAME   = 'gp-onlineevent-or-venue';
-
 test.describe( 'GatherPress general block tests', () => {
-/* 
-	test.beforeAll(async ({ requestUtils }) => {
-        // await requestUtils.activatePlugin('gatherpress');
-
-		// TEST // DO NOT MERGE // should make: 1. test fail, 2. test pass
-        // await requestUtils.deactivatePlugin('gatherpress');
-    }); */
 
     test.beforeEach( async ( { admin } ) => {
-		// await admin.createNewPost( { postType: 'gatherpress_event' } );
 		await admin.createNewPost();
 	} );
 
@@ -24,7 +14,7 @@ test.describe( 'GatherPress general block tests', () => {
 	} );
 
 	/**
-	 * Are 3 blocks available?
+	 * Are all blocks available?
 	 *
 	 * Tests if all blocks are avail through the block inserter panel.
 	 *
@@ -52,43 +42,20 @@ test.describe( 'GatherPress general block tests', () => {
 		).toHaveText( [ 'Events List' ] );
 	} );
 
-	test( 'Does the block insert?', async ( {
+	test( 'Does the "Events List" block insert?', async ( {
 		page,
 		editor,
 	} ) => {
-// THIS IS COPIED FROM //
-// https://github.com/WordPress/gutenberg/blob/c48075b6665ec3910d00677088672c1ba9e24916/test/e2e/specs/editor/blocks/paragraph.spec.js#L26C1-L40C43
-// FOR DEBUGGING ONLY //
-// REMOVE AFTER WORKFLOW RUNS //
 
-		await editor.insertBlock( {
-			name: 'core/paragraph',
-		} );
-		await page.keyboard.type( '1' );
-
-		const firstBlockTagName = await editor.canvas
-			.locator( ':root' )
-			.evaluate( () => {
-				return document.querySelector( '[data-block]' ).tagName;
-			} );
-
-		// The outer element should be a paragraph. Blocks should never have any
-		// additional div wrappers so the markup remains simple and easy to
-		// style.
-		expect( firstBlockTagName ).toBe( 'P' );
-// END // THIS IS COPIED FROM //
-// https://github.com/WordPress/gutenberg/blob/c48075b6665ec3910d00677088672c1ba9e24916/test/e2e/specs/editor/blocks/paragraph.spec.js#L26C1-L40C43
-// FOR DEBUGGING ONLY //
-// REMOVE AFTER WORKFLOW RUNS //
-
+		await editor.insertBlock( { name: 'Events List' } );
 
 		/* 
-		await editor.insertBlock( { name: 'pseudo-' + GPOOV_CLASS_NAME + '-button' } );
-
-        expect( await page.$('.' + GPOOV_CLASS_NAME ) ).not.toBeNull();
+		 * Not working yet, because the GatherPress blocks are still all on apiVersion 2,
+		 * but need to have 3
+		 * /
 
 		const block = editor.canvas.getByRole( 'document', {
-			name: 'Online-Event Link',
+			name: 'Events List',
 		} );
 
         await expect( block ).not.toBeNull(); */
@@ -98,12 +65,12 @@ test.describe( 'GatherPress general block tests', () => {
             .getByLabel('Add default block')
 			.click();
 
-		await page.keyboard.type( '/Online-Event Link' );
+		await page.keyboard.type( '/Events List' );
 		await page.keyboard.press( 'Enter' );
 
 		await expect(
-			editor.canvas.getByRole( 'document', { name: 'Online-Event Link' } )
-		).toHaveText( 'Online-Event' ); */
+			editor.canvas.getByRole( 'document', { name: 'Events List' } )
+		).toHaveText( '...' ); */
     } );
 
 } );
