@@ -12,15 +12,19 @@ Check the results of the _e2e-tests action workflow_ at  `https://github.com/Gat
 1. Have `docker` running
 2. Open the plugin folder in a terminal
 3. _Choose one of the following options_
-   - Run Playwright in the background using
+   - Run Playwright normally
       ```
       npm run test:e2e
       ```
        
-   - Run Playwright visually (and change what's happening) using
+   - Run Playwright visually (and change what's happening)
+      ```
+      npm run test:e2e:ui
+      ```
+      ![grafik](https://github.com/user-attachments/assets/1627dff7-363e-447e-9981-adac610ac888)
+       
+   - Run Playwright in debugging mode (and record what's happening)
       ```
       npm run test:e2e:debug
       ```
-      ![grafik](https://github.com/user-attachments/assets/1627dff7-363e-447e-9981-adac610ac888)
-
    - Run Tests independently _AND_ visually using the [Playwright VSCode extension](https://playwright.dev/docs/getting-started-vscode)
