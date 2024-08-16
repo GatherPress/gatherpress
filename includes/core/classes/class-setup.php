@@ -434,9 +434,9 @@ class Setup {
 		if (
 			// While a plugin from w.org would have a unigue slug to check against,
 			// it different for .zips downloaded from github.com.
-			// A download via "<> Code ⏷" > "Download ZIP" will include the branch in the file name,
+			// A download via "<> Code ⏷" > "Download ZIP" will include the branch in the file name.
 			is_plugin_active( 'gatherpress-alpha-main/gatherpress-alpha.php' ) ||
-			// while a download via "Releases" will provide a zip without a branch name attached.
+			// A download via "Releases" will provide a zip without a branch name attached.
 			is_plugin_active( 'gatherpress-alpha/gatherpress-alpha.php' ) ||
 			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
 				false === strpos( get_current_screen()->id, 'plugins' ) &&
