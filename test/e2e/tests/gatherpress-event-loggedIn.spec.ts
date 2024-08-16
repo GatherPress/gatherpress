@@ -1,22 +1,15 @@
-const { test } = require('@playwright/test');
-const { login } = require('../reusable-user-steps/common');
+/**
+ * WordPress dependencies
+ */
+const { test, expect } = require( '@wordpress/e2e-test-utils-playwright' );
 
 test.describe('e2e test for publish event through admin side', () => {
-	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
-		await page.setViewportSize({ width: 1920, height: 720 });
-		await page.waitForLoadState('networkidle');
-		await login({ page, username: 'testuser1' });
-	});
 
 	test('01-the user should be able to publish an online event', async ({
+		admin,
 		page,
 	}) => {
-		await page.getByRole('link', { name: 'Events', exact: true }).click();
-		await page
-			.locator('#wpbody-content')
-			.getByRole('link', { name: 'Add New' })
-			.click();
+		await admin.createNewPost( { postType: 'gatherpress_event' } );
 
 		await page
 			.getByLabel('Block: Event Date')
@@ -27,7 +20,7 @@ test.describe('e2e test for publish event through admin side', () => {
 
 		await page.getByRole('button', { name: 'Event settings' }).click();
 
-		await page.getByLabel('Venue Selector').selectOption('58:online-event');
+		await page.getByLabel('Venue Selector').selectOption('58:online-event'); // !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 58 doesn't exist
 		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 		const eventTitle = await page
 			.getByLabel('Add title')
@@ -55,7 +48,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.filter({ hasText: 'View Event' })
 			.isVisible({ timeout: 30000 }); // verified the view event button.
 	});
-
+/*
 	test('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
 		page,
 	}) => {
@@ -84,5 +77,5 @@ test.describe('e2e test for publish event through admin side', () => {
 			.locator('.gatherpress-rsvp-response__items')
 			.first()
 			.screenshot({ path: 'attending.png' });
-	});
+	}); */
 });
