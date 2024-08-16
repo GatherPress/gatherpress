@@ -42,6 +42,10 @@ test.describe( 'GatherPress general block tests', () => {
 		).toHaveText( [ 'Events List' ] );
 	} );
 
+	/* 
+	 * Not working yet, because the GatherPress blocks are still all on apiVersion 2,
+	 * but need to have 3
+	 * /
 	test( 'Does the "Events List" block insert?', async ( {
 		page,
 		editor,
@@ -49,10 +53,6 @@ test.describe( 'GatherPress general block tests', () => {
 
 		await editor.insertBlock( { name: 'Events List' } );
 
-		/* 
-		 * Not working yet, because the GatherPress blocks are still all on apiVersion 2,
-		 * but need to have 3
-		 * /
 
 		const block = editor.canvas.getByRole( 'document', {
 			name: 'Events List',
@@ -70,7 +70,7 @@ test.describe( 'GatherPress general block tests', () => {
 
 		await expect(
 			editor.canvas.getByRole( 'document', { name: 'Events List' } )
-		).toHaveText( '...' ); */
-    } );
+		).toHaveText( '...' ); * /
+    } ); */
 
 } );
