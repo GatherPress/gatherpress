@@ -1,10 +1,10 @@
 # GatherPress
 
-Stable tag: 0.30.0-alpha
+Stable tag: 0.30.0
 Tested up to: 6.6.1
 License: GPL v2 or later
 Tags: events, event, meetup, community
-Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, pbrocks, prayagm, linusx007, stephenerdelyi, calebthedev
+Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, prayagm, pbrocks, linusx007
 
 ![](.wordpress-org/banner-1544x500.jpg)
 
@@ -12,7 +12,7 @@ GatherPress, powering our community's event management needs.
 
 ![GPLv2 License](https://img.shields.io/github/license/GatherPress/gatherpress) [![Coding Standards](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml) [![PHPUnit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml) [![JavaScript Unit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml) [![E2E Tests](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml) [![SonarCloud](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml) [![Dependency Review](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml)
 
-[![WordPress.org plugin directory guidelines](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-org-plugin-guidelines.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-org-plugin-guidelines.yml)
+[![WordPress.org plugin directory guidelines](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-org-plugin-guidelines.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-org-plugin-guidelines.yml) [![Playground Demo Link](https://img.shields.io/badge/WordPress_Playground-blue?logo=wordpress&logoColor=%23fff&labelColor=%233858e9&color=%233858e9)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/main/.wordpress-org/blueprints/blueprint.json)
 
 ![WordPress Plugin Required PHP Version](https://img.shields.io/wordpress/plugin/required-php/gatherpress) ![WordPress Plugin: Required WP Version](https://img.shields.io/wordpress/plugin/wp-version/gatherpress) ![WordPress Plugin: Tested WP Version](https://img.shields.io/wordpress/plugin/tested/gatherpress) ![WordPress Plugin Version](https://img.shields.io/wordpress/plugin/v/gatherpress) [![WordPress version checker](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-version-checker.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/wordpress-version-checker.yml)
 
@@ -69,6 +69,14 @@ This plugin leverages the following third-party libraries for various functional
 
 ## Screenshots
 
+1. Create a new event  
+   ![Create a new event](.wordpress-org/screenshot-1.png)
+2. Create a new venue  
+   ![Create a new venue](.wordpress-org/screenshot-2.png)
+3. General Settings  
+   ![General Settings](.wordpress-org/screenshot-3.png)
+4. Leadership Settings  
+   ![Leadership Settings](.wordpress-org/screenshot-4.png)
 
 ## Installation
 

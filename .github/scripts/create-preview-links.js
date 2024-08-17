@@ -118,7 +118,7 @@ function createBlueprint(context, number, zipArtifactUrl) {
 				step: 'importWxr',
 				file: {
 					resource: 'url',
-					url: 'https://raw.githubusercontent.com/carstingaxion/gatherpress-demo-data/main/GatherPress-demo-data-2024.xml'
+					url: 'https://raw.githubusercontent.com/GatherPress/demo-data/main/GatherPress-demo-data-2024.xml'
 				}
 			},
 		],
