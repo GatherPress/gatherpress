@@ -9,9 +9,6 @@ import { defineConfig, devices } from '@playwright/test';
  * Playwright default configuration, that is used & provided by Gutenberg.
  * https://github.com/WordPress/gutenberg/blob/trunk/packages/scripts/config/playwright.config.js
  */
-// using Object Rest Spread operator magic
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
-// const { use, ...baseConfig} = require( '@wordpress/scripts/config/playwright.config' );
 const {
 	...baseConfig
 } = require('@wordpress/scripts/config/playwright.config');
@@ -35,15 +32,15 @@ export default defineConfig({
 			use: { ...devices['Desktop Chrome'] },
 		},
 
-		// {
-		// 	name: 'firefox',
-		// 	use: { ...devices['Desktop Firefox'] },
-		// },
+		{
+			name: 'firefox',
+			use: { ...devices['Desktop Firefox'] },
+		},
 
-		// {
-		// 	name: 'webkit',
-		// 	use: { ...devices['Desktop Safari'] },
-		// },
+		{
+			name: 'webkit',
+			use: { ...devices['Desktop Safari'] },
+		},
 
 		/* Test against mobile viewports. */
 		// {
