@@ -1,15 +1,14 @@
 /**
  * WordPress dependencies
  */
-const { test, expect } = require( '@wordpress/e2e-test-utils-playwright' );
+const { test } = require('@wordpress/e2e-test-utils-playwright');
 
 test.describe('e2e test for publish event through admin side', () => {
-
 	test('01-the user should be able to publish an online event', async ({
 		admin,
 		page,
 	}) => {
-		await admin.createNewPost( { postType: 'gatherpress_event' } );
+		await admin.createNewPost({ postType: 'gatherpress_event' });
 
 		await page
 			.getByLabel('Block: Event Date')
@@ -48,7 +47,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.filter({ hasText: 'View Event' })
 			.isVisible({ timeout: 30000 }); // verified the view event button.
 	});
-/*
+	/*
 	test('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
 		page,
 	}) => {

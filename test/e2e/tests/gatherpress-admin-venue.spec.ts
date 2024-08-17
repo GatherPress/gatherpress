@@ -1,18 +1,14 @@
 /**
  * WordPress dependencies
  */
-const { test, expect } = require( '@wordpress/e2e-test-utils-playwright' );
-
-
-// const { login } = require('../reusable-user-steps/common.js');
+const { test } = require('@wordpress/e2e-test-utils-playwright');
 
 test.describe('e2e test for venue through admin side', () => {
-
 	test('The admin should be able to create a new post for Venue', async ({
 		admin,
 		page,
 	}) => {
-		await admin.createNewPost( { postType: 'gatherpress_venue' } );
+		await admin.createNewPost({ postType: 'gatherpress_venue' });
 
 		await page.getByLabel('Add title').isVisible();
 		await page.getByLabel('Add title').fill('Test venue');
