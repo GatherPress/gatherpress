@@ -1,8 +1,8 @@
 name: E2E Tests
 
 on:
-    workflow_dispatch:
-    pull_request:
+  workflow_dispatch:
+  pull_request:
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
@@ -13,77 +13,69 @@ concurrency:
 
 
 jobs:
-    e2e-tests:
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            # matrix:
-            #     node: ['14']
+  e2e-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # matrix:
+      #     node: ['14']
 
-        steps:
-        - name: Checkout
-          uses: actions/checkout@v4
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
 
-        - uses: actions/cache@v4
-          id: playwright-cache
-          with:
-            path: |
-              ~/.cache/ms-playwright
-            key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+    - uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: |
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
 
-        - name: Setup Node
-          uses: actions/setup-node@v4
-          with:
-            node-version-file: '.nvmrc'
-          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
-          # The actions/setup-node uses actions/cache under the hood.
-          # https://github.com/actions/setup-node#caching-global-packages-data
-          cache: 'npm'
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+        # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+        # The actions/setup-node uses actions/cache under the hood.
+        # https://github.com/actions/setup-node#caching-global-packages-data
+        cache: 'npm'
 
 
-        # Restoring the short lived node_modules cache
-        # to be used accross all workflows running on the last commit.
-        # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
-        - uses: actions/cache/restore@v4
-          id: node_modules-cache
-          with:
-            path: |
-              ./node_modules
-            key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+    # Restoring the short lived node_modules cache
+    # to be used accross all workflows running on the last commit.
+    # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+    - uses: actions/cache/restore@v4
+      id: node_modules-cache
+      with:
+        path: |
+          ./node_modules
+        key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
 
-        - name: NPM install
-          if: steps.node_modules-cache.outputs.cache-hit != 'true'
-          run: npm ci --legacy-peer-deps
+    - name: NPM install
+      if: steps.node_modules-cache.outputs.cache-hit != 'true'
+      run: npm ci --legacy-peer-deps
 
-        # Creating a short lived node_modules cache
-        - uses: actions/cache/save@v4
-          if: steps.node_modules-cache.outputs.cache-hit != 'true'
-          with:
-            path: |
-              ./node_modules
-            key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
+    # Creating a short lived node_modules cache
+    - uses: actions/cache/save@v4
+      if: steps.node_modules-cache.outputs.cache-hit != 'true'
+      with:
+        path: |
+          ./node_modules
+        key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-        # - name: Build plugin
-        #   run: |
-        #     npm run build
+    - name: Install Playwright dependencies
+      run: npx playwright install --with-deps
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+    - run: npx playwright install-deps
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
 
-        - name: Install Playwright dependencies
-          run: npx playwright install --with-deps
-          if: steps.playwright-cache.outputs.cache-hit != 'true'
-        - run: npx playwright install-deps
-          if: steps.playwright-cache.outputs.cache-hit == 'true'
+    - name: Starting Playwright & Running the tests
+      run: |
+            npm run test:e2e
 
-        # - name: Starting the WordPress Environment
-        #   run: |
-        #         npm run wp-env start
-
-        - name: Starting Playwright & Running the tests
-          run: |
-                npm run test:e2e
-
-        - name: Retain failed test results
-          uses: actions/upload-artifact@v3
-          if: failure()
-          with:
-            name: test-results-matrix-less-debugging
-            path: artifacts/test-results/
+    - name: Retain failed test results
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: test-results-matrix-less-debugging
+        path: artifacts/test-results/
