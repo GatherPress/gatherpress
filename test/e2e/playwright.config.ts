@@ -62,4 +62,10 @@ export default defineConfig({
 		// 	use: { ...devices['Desktop Chrome'], channel: 'chrome' },
 		// },
 	],
+	webServer: {
+		command: 'npm run wp-now',
+		port: 8889,
+		timeout: 120_000, // 120 seconds.
+		reuseExistingServer: true,
+	},
 });
