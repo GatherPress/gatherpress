@@ -3,7 +3,8 @@
  */
 const { test, expect } = require('@wordpress/e2e-test-utils-playwright');
 
-test.describe('GatherPress general block tests', () => {
+test.describe('Blocks & Patterns in the Editor', () => {
+
 	test.beforeEach(async ({ admin }) => {
 		await admin.createNewPost();
 	});

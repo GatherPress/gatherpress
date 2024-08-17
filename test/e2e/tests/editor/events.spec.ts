@@ -3,8 +3,9 @@
  */
 const { test } = require('@wordpress/e2e-test-utils-playwright');
 
-test.describe('e2e test for publish event through admin side', () => {
-	test('01-the user should be able to publish an online event', async ({
+test.describe('Events in the Editor', () => {
+
+	test('The admin should be able to publish an online event', async ({
 		admin,
 		page,
 	}) => {
@@ -17,9 +18,12 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		await page.getByRole('button', { name: 'Event settings' }).click();
+		// await page.getByRole('button', { name: 'Event settings' }).click();
 
-		await page.getByLabel('Venue Selector').selectOption('58:online-event'); // !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 58 doesn't exist
+		// // Wait for 1 second to make sure the venue-selector is populated
+		// await page.waitForTimeout(1000);
+
+		await page.getByLabel('Venue Selector').selectOption('2:online-event'); // Number 2 may not exist!
 		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 		const eventTitle = await page
 			.getByLabel('Add title')
