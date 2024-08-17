@@ -24,7 +24,7 @@ test.describe('GatherPress Settings', () => {
 
 		await expect(wpGatherPressSettingsItem).toBeVisible();
 		await expect(wpGatherPressSettingsItemUrl).toContain(
-			'edit.php?post_type=gatherpress_event&page=gatherpress_general'
+			'admin.php?page=gatherpress_general'
 		);
 	});
 });
