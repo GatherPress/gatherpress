@@ -1,10 +1,15 @@
 {
 	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
 	"preferredVersions": {
-		"php": "latest",
+		"php": "8.2",
 		"wp": "latest"
 	},
-	"phpExtensionBundles": ["kitchen-sink"],
+	"phpExtensionBundles": [
+		"kitchen-sink"
+	],
+	"features": {
+		"networking": true
+	},
 	"steps": [
 		{
 			"step": "defineWpConfigConsts",
