@@ -13,8 +13,7 @@
 				"WP_DEBUG_DISPLAY": false,
 				"WP_DEBUG_LOG": "/var/www/html/wp-content/plugins/gatherpress/artifacts/debug.log",
 				"GATHERPRESS_ALPHA_VERSION": 1
-			},
-			"virtualize": true
+			}
 		}
 	]
 }
