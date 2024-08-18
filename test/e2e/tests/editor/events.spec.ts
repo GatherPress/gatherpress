@@ -27,26 +27,11 @@ test.describe('Events in the Editor', () => {
 		}
 	});
 
-	test.afterEach(async ({ page, requestUtils }) => {
+	test.afterEach(async ({ editor, page, requestUtils }) => {
 		// Click again to close the element, to let upcoming tests not get flaky.
 		await page.getByRole('button', { name: 'Event settings' }).click();
 
-		await page
-			.getByRole('button', { name: 'Publish', exact: true })
-			.click();
-		await page
-			.getByLabel('Editor publish')
-			.getByRole('button', { name: 'Publish', exact: true })
-			.click();
-
-		await page
-			.getByText(`${eventTitle} is now live.`)
-			.isVisible({ timeout: 60000 }); // verified the event is live.
-
-		await page
-			.locator('.post-publish-panel__postpublish-buttons')
-			.filter({ hasText: 'View Event' })
-			.isVisible({ timeout: 30000 }); // verified the view event button.
+		await editor.publishPost();
 
 		await requestUtils.deleteAllPosts();
 	});
@@ -69,7 +54,7 @@ test.describe('Events in the Editor', () => {
 	}) => {
 		await page
 			.getByLabel('Venue Selector')
-			.selectOption('Turin'); // Location of WCEU 2024 & part of https://github.com/GatherPress/demo-data
+			.selectOption('Turin'); // Location of WCEU 2024 & imported from https://github.com/GatherPress/demo-data
 		eventTitle = await page
 			.getByLabel('Add title')
 			.fill(`offline T-Event:${currentDate}`);
@@ -88,7 +73,7 @@ test.describe('Events in the Editor', () => {
 	test('A user should be able publish an offline event', async ({
 		page,
 	}) => {
-		await page.getByLabel('Venue Selector').selectOption('Turin'); // Location of WCEU 2024 & part of https://github.com/GatherPress/demo-data
+		await page.getByLabel('Venue Selector').selectOption('Turin'); // Location of WCEU 2024 & imported from https://github.com/GatherPress/demo-data
 		eventTitle = await page
 			.getByLabel('Add title')
 			.fill(`offline T-Event:${currentDate}`);

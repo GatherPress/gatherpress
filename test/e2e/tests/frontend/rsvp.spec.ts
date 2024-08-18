@@ -39,11 +39,12 @@ test.describe('RSVP to an event', () => {
 			.first()
 			.screenshot({ path: 'attending.png' });
 	}); */
-	/*
-	test('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
+
+	test('A logged in user can perform RSVP action', async ({
 		page,
 	}) => {
-		await page.getByRole('menuitem', { name: 'GatherPress' }).click();
+		await page.goto('/');
+		await page.getByRole('link', { name: 'Events' }).click();  // Imported from of https://github.com/GatherPress/demo-data
 
 		await page.evaluate(() => window.scrollTo(0, 5000));
 		await page
@@ -64,9 +65,10 @@ test.describe('RSVP to an event', () => {
 			.locator('.gatherpress-rsvp-response__items')
 			.first()
 			.isVisible(); // verified the attending users list.
-		await page
-			.locator('.gatherpress-rsvp-response__items')
-			.first()
-			.screenshot({ path: 'attending.png' });
-	}); */
+
+		// await page
+		// 	.locator('.gatherpress-rsvp-response__items')
+		// 	.first()
+		// 	.screenshot({ path: 'attending.png' });
+	});
 });
