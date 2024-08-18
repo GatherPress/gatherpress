@@ -2,7 +2,18 @@ name: E2E Tests
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
   pull_request:
+    paths:
+    - '.github/workflows/e2e-tests.yml'
+    - 'build/**'
+    - 'includes/**'
+    - 'src/**'
+    - 'test/e2e/**'
+    - '*.php'
+    - 'package.*'
 
 # Cancels all previous workflow runs for pull requests that have not completed.
 concurrency:
@@ -39,7 +50,6 @@ jobs:
         # The actions/setup-node uses actions/cache under the hood.
         # https://github.com/actions/setup-node#caching-global-packages-data
         cache: 'npm'
-
 
     # Restoring the short lived node_modules cache
     # to be used accross all workflows running on the last commit.
