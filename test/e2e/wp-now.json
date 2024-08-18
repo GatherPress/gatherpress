@@ -50,6 +50,9 @@
 			"pluginZipFile": {
 				"resource": "url",
 				"url": "https://github-proxy.com/proxy/?repo=humanmade/WordPress-Importer"
+			},
+			"options": {
+			  "activate": true
 			}
 		},
 		{
