@@ -4,7 +4,6 @@
 const { test } = require('@wordpress/e2e-test-utils-playwright');
 
 test.describe('Venues in the Editor', () => {
-
 	test.beforeEach(async ({ admin }) => {
 		await admin.createNewPost({ postType: 'gatherpress_venue' });
 	});
@@ -14,7 +13,6 @@ test.describe('Venues in the Editor', () => {
 	});
 
 	test('The admin should be able to create a new Venue.', async ({
-		admin,
 		page,
 	}) => {
 		await page.getByLabel('Add title').isVisible();

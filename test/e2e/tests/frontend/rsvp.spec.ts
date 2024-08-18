@@ -4,8 +4,7 @@
 const { test } = require('@wordpress/e2e-test-utils-playwright');
 
 test.describe('RSVP to an event', () => {
-
-/* 
+	/* 
 	test('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
 		page,
 	}) => {
@@ -40,8 +39,6 @@ test.describe('RSVP to an event', () => {
 			.first()
 			.screenshot({ path: 'attending.png' });
 	}); */
-
-
 	/*
 	test('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
 		page,
@@ -72,7 +69,4 @@ test.describe('RSVP to an event', () => {
 			.first()
 			.screenshot({ path: 'attending.png' });
 	}); */
-
 });
-
-
