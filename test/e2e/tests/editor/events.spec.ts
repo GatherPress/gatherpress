@@ -28,7 +28,6 @@ test.describe('Events in the Editor', () => {
 		// Click again to close the element, to let upcoming tests not get flaky.
 		await page.getByRole('button', { name: 'Event settings' }).click();
 		await editor.publishPost();
-		// await requestUtils.deleteAllPosts();
 	});
 
 	test('An admin should be able to publish an online event', async ({

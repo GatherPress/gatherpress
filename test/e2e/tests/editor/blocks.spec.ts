@@ -8,10 +8,6 @@ test.describe('Blocks & Patterns in the Editor', () => {
 		await admin.createNewPost();
 	});
 
-	// test.afterEach(async ({ requestUtils }) => {
-	// 	await requestUtils.deleteAllPosts();
-	// });
-
 	/**
 	 * Are all blocks available?
 	 *
