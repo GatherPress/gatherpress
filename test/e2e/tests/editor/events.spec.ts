@@ -27,7 +27,7 @@ test.describe('Events in the Editor', () => {
 		}
 	});
 
-	test.afterEach(async ({ editor, page, requestUtils }) => {
+	test.afterEach(async ({ editor, page }) => {
 		// Click again to close the element, to let upcoming tests not get flaky.
 		await page.getByRole('button', { name: 'Event settings' }).click();
 
