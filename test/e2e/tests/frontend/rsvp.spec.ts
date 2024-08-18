@@ -40,11 +40,9 @@ test.describe('RSVP to an event', () => {
 			.screenshot({ path: 'attending.png' });
 	}); */
 
-	test('A logged in user can perform RSVP action', async ({
-		page,
-	}) => {
+	test('A logged in user can perform RSVP action', async ({ page }) => {
 		await page.goto('/');
-		await page.getByRole('link', { name: 'Events' }).click();  // Imported from of https://github.com/GatherPress/demo-data
+		await page.getByRole('link', { name: 'Events' }).click(); // Imported from of https://github.com/GatherPress/demo-data
 
 		await page.evaluate(() => window.scrollTo(0, 5000));
 		await page
