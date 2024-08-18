@@ -8,10 +8,6 @@ test.describe('Events in the Editor', () => {
 	const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 
 	test.beforeEach(async ({ admin, page }) => {
-		await admin.createNewPost({
-			postType: 'gatherpress_venue',
-			title: 'Offline Event Location',
-		});
 		await admin.createNewPost({ postType: 'gatherpress_event' });
 
 		await page
@@ -73,7 +69,7 @@ test.describe('Events in the Editor', () => {
 	}) => {
 		await page
 			.getByLabel('Venue Selector')
-			.selectOption('Offline Event Location');
+			.selectOption('Turin'); // Location of WCEU 2024 & part of https://github.com/GatherPress/demo-data
 		eventTitle = await page
 			.getByLabel('Add title')
 			.fill(`offline T-Event:${currentDate}`);
@@ -92,7 +88,7 @@ test.describe('Events in the Editor', () => {
 	test('A user should be able publish an offline event', async ({
 		page,
 	}) => {
-		await page.getByLabel('Venue Selector').selectOption('Offline Event Location');
+		await page.getByLabel('Venue Selector').selectOption('Turin'); // Location of WCEU 2024 & part of https://github.com/GatherPress/demo-data
 		eventTitle = await page
 			.getByLabel('Add title')
 			.fill(`offline T-Event:${currentDate}`);
