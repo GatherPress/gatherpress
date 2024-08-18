@@ -21,6 +21,11 @@
 			}
 		},
 		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		},
+		{
 			"step": "mkdir",
 			"path": "/wordpress/wp-content"
 		},
@@ -52,7 +57,7 @@
 				"url": "https://github-proxy.com/proxy/?repo=humanmade/WordPress-Importer"
 			},
 			"options": {
-			  "activate": true
+				"activate": true
 			}
 		},
 		{
