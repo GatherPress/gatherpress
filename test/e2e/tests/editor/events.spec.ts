@@ -52,9 +52,7 @@ test.describe('Events in the Editor', () => {
 	test('An admin should be able to publish an offline event', async ({
 		page,
 	}) => {
-		await page
-			.getByLabel('Venue Selector')
-			.selectOption('Turin'); // Location of WCEU 2024 & imported from https://github.com/GatherPress/demo-data
+		await page.getByLabel('Venue Selector').selectOption('Turin'); // Location of WCEU 2024 & imported from https://github.com/GatherPress/demo-data
 		eventTitle = await page
 			.getByLabel('Add title')
 			.fill(`offline T-Event:${currentDate}`);
