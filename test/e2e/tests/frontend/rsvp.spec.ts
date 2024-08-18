@@ -1,4 +1,7 @@
-
+/**
+ * WordPress dependencies
+ */
+const { test } = require('@wordpress/e2e-test-utils-playwright');
 
 test.describe('RSVP to an event', () => {
 
