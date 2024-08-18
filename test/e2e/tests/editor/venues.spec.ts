@@ -8,9 +8,9 @@ test.describe('Venues in the Editor', () => {
 		await admin.createNewPost({ postType: 'gatherpress_venue' });
 	});
 
-	test.afterEach(async ({ requestUtils }) => {
-		await requestUtils.deleteAllPosts();
-	});
+	// test.afterEach(async ({ requestUtils }) => {
+	// 	await requestUtils.deleteAllPosts();
+	// });
 
 	test('The admin should be able to create a new Venue.', async ({
 		page,

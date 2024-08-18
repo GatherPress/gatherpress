@@ -33,7 +33,7 @@ test.describe('Events in the Editor', () => {
 
 		await editor.publishPost();
 
-		await requestUtils.deleteAllPosts();
+		// await requestUtils.deleteAllPosts();
 	});
 
 	test('An admin should be able to publish an online event', async ({
