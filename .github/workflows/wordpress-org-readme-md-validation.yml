@@ -1,0 +1,23 @@
+name: 'WordPress.org README.md validation'
+on: # rebuild any PRs and main branch changes
+  workflow_dispatch:
+  pull_request:
+    paths:
+    - '.github/workflows/wordpress-org-readme-md-validation.yml'
+    - 'readme.md'
+  push:
+    branches:
+    - main
+
+jobs:
+  wp-org-readme-md-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate readme.md
+        uses: pantheon-systems/validate-readme-spacing@v1
+        with:
+          filepath: 'readme.md'
