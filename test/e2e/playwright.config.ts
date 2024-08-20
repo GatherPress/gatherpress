@@ -12,6 +12,8 @@ import { defineConfig, devices } from '@playwright/test';
 const {
 	...baseConfig
 } = require('@wordpress/scripts/config/playwright.config');
+// import baseConfig from '@wordpress/scripts/config/playwright.config.js';
+
 
 export default defineConfig({
 	...baseConfig,
@@ -32,15 +34,15 @@ export default defineConfig({
 			use: { ...devices['Desktop Chrome'] },
 		},
 
-		// {
-		// 	name: 'firefox',
-		// 	use: { ...devices['Desktop Firefox'] },
-		// },
+		{
+			name: 'firefox',
+			use: { ...devices['Desktop Firefox'] },
+		},
 
-		// {
-		// 	name: 'webkit',
-		// 	use: { ...devices['Desktop Safari'] },
-		// },
+		{
+			name: 'webkit',
+			use: { ...devices['Desktop Safari'] },
+		},
 
 		/* Test against mobile viewports. */
 		// {
@@ -62,10 +64,17 @@ export default defineConfig({
 		// 	use: { ...devices['Desktop Chrome'], channel: 'chrome' },
 		// },
 	],
+	// Don't report slow test "files", as we will be running our tests in serial.
+	reportSlowTests: null,
 	webServer: {
-		command: 'npm run wp-now',
-		port: 8889,
+		...baseConfig.webServer,
+		command: 'set WP_BASE_URL=http://127.0.0.1:9400/ && npm run playground',
 		timeout: 120_000, // 120 seconds.
-		reuseExistingServer: true,
+		port: 9400,
+		reuseExistingServer: !process.env.CI,
+	},
+	use: {
+		...baseConfig.use,
+		baseURL: 'http://127.0.0.1:9400',
 	},
 });
