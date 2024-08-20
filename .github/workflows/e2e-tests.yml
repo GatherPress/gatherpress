@@ -80,6 +80,8 @@ jobs:
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
     - name: Starting Playwright & Running the tests
+      env:
+        WP_BASE_URL: 'http://127.0.0.1:9400'
       run: |
             npm run test:e2e
 
