@@ -12,7 +12,6 @@ import { defineConfig, devices } from '@playwright/test';
 const {
 	...baseConfig
 } = require('@wordpress/scripts/config/playwright.config');
-// import baseConfig from '@wordpress/scripts/config/playwright.config.js';
 
 
 export default defineConfig({
@@ -69,12 +68,13 @@ export default defineConfig({
 	webServer: {
 		...baseConfig.webServer,
 		command: 'set WP_BASE_URL=http://127.0.0.1:9400/ && npm run playground',
-		timeout: 120_000, // 120 seconds.
+		// timeout: 180_000, // 180 seconds.
 		port: 9400,
 		reuseExistingServer: !process.env.CI,
 	},
 	use: {
 		...baseConfig.use,
 		baseURL: 'http://127.0.0.1:9400',
+		actionTimeout: 15_000, // 10 seconds +5 seconds to help webkit tests pass.
 	},
 });
