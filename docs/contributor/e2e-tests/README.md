@@ -1,10 +1,10 @@
 ## E2E Testing using Playwright and `wp-now`
 
-GatherPress allows to run **automated & manual end-to-end tests**, while sharing the same, `wp-now` based, setup.
+GatherPress allows to run **automated & manual end-to-end tests**, while sharing the same, [`wp-playground/cli`](https://github.com/WordPress/wordpress-playground/pull/1289) powered, setup. The started playground imports the [`GatherPress/demo-data`](https://github.com/GatherPress/demo-data), that can be used instead of mocks or fixtures.
 
 ## Automated tests
 
-Check the results of the _e2e-tests action workflow_ at  `https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml`.
+Check the results of the [_e2e-tests action workflow_](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml) at  `https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml`.
 
 ## Manual testing
 
@@ -19,15 +19,17 @@ npx playwright install --with-deps
 > [!NOTE]
 > You also need to use Node.js 20 or later
 
-Create the testing instance using the following command:
+Install the dependencies to create the testing instance, using the following command:
 
 ```bash
 npm ci --legacy-peer-deps
 ```
 
-This will create a `wp-now` WordPress instance. The port is `8889` and the user is `admin` and the password is `password` (the same values used by `wp-env` testing instance).
+### Run the E2E tests
 
-### How to run the E2E tests
+A call to `npm run test:e2e...` will automatically setup a `wp-playground/cli` powered WordPress instance.
+
+The testing is website is reachable at `http://127.0.0.1:9400`, the user is `admin` and the password is `password`. 
 
 _Choose one of the following options_
 
@@ -55,10 +57,10 @@ _Choose one of the following options_
    ```bash
    npm run test:e2e:debug -- project=webkit
    ```
-*
-   Run files that have *blocks.spec* in the file name.
+
+   Run files that have *events.spec* in the file name.
    ```bash
-   npm run test:e2e:debug -- blocks.spec
+   npm run test:e2e:debug -- events.spec
    ```
 
    > [!NOTE]
@@ -67,16 +69,25 @@ _Choose one of the following options_
 4. Run Tests independently _AND_ visually using the [Playwright VSCode extension](https://playwright.dev/docs/getting-started-vscode)
 
 
-### Learn more about E2E testing
+### More about E2E testing
 
-Resources:
+#### Start here:
 
 - [Playwright Documentation](https://playwright.dev/docs/intro)
-- https://github.com/WordPress/gutenberg/blob/trunk/packages/e2e-test-utils-playwright/README.md
-- https://developer.wordpress.org/block-editor/contributors/code/testing-overview/e2e/
-- https://developer.wordpress.org/block-editor/contributors/code/testing-overview/e2e/overusing-snapshots/
-- https://wordpress.com/blog/2023/05/23/wp-now-launch-a-local-environment-in-seconds/
-- https://www.npmjs.com/package/@wp-now/wp-now
+- [End-To-End Playwright test utils for WordPress](https://github.com/WordPress/gutenberg/blob/trunk/packages/e2e-test-utils-playwright/README.md)
+
+#### from the WordPress handbooks
+
+- [End-to-End Testing – Block Editor Handbook | Developer.WordPress.org](https://developer.wordpress.org/block-editor/contributors/code/testing-overview/e2e/)
+- [Overusing snapshots – Block Editor Handbook | Developer.WordPress.org](https://developer.wordpress.org/block-editor/contributors/code/testing-overview/e2e/overusing-snapshots/)
+
+### More about `wp-playground/cli`, as the testing environment
+
+Examples with great documentation:
+
+- [Playground CLI · WordPress/wordpress-playground#1289](https://github.com/WordPress/wordpress-playground/pull/1289)
+- [PoC: Run E2E tests with WP Playground · WordPress/gutenberg#62692](https://github.com/WordPress/gutenberg/pull/62692)
+- [Use WordPress Playground · swissspidy/wp-performance-action#173](https://github.com/swissspidy/wp-performance-action/pull/173)
 
 To see more examples of E2E tests, check the Gutenberg repository: https://github.com/WordPress/gutenberg/tree/trunk/test/e2e
 
