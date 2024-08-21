@@ -51,6 +51,16 @@ _Choose one of the following options_
    npm run test:e2e:debug
    ```
 
+   Run all the tests against a specific project.
+   ```bash
+   npm run test:e2e:debug -- project=webkit
+   ```
+*
+   Run files that have *blocks.spec* in the file name.
+   ```bash
+   npm run test:e2e:debug -- blocks.spec
+   ```
+
    > [!NOTE]
    > When writing a test, using the debug mode is recommended since it will allow you to see the browser and the test in action.
 
