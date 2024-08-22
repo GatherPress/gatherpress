@@ -1,6 +1,7 @@
 /**
  * External dependencies
  */
+import os from 'os';
 import { defineConfig, devices } from '@playwright/test';
 
 /**
@@ -39,7 +40,18 @@ export default defineConfig({
 
 		{
 			name: 'webkit',
-			use: { ...devices['Desktop Safari'] },
+			use: {
+				...devices[ 'Desktop Safari' ],
+				/**
+				 * Headless webkit won't receive dataTransfer with custom types in the
+				 * drop event on Linux. The solution is to use `xvfb-run` to run the tests.
+				 * ```sh
+				 * xvfb-run npm run test:e2e
+				 * ```
+				 * See `.github/workflows/e2e-tests.yml` for advanced usages.
+				 */
+				headless: os.type() !== 'Linux',
+			},
 		},
 
 		/* Test against mobile viewports. */
@@ -64,16 +76,20 @@ export default defineConfig({
 	],
 	// Don't report slow test "files", as we will be running our tests in serial.
 	reportSlowTests: null,
-	webServer: {
-		...baseConfig.webServer,
-		command: 'set WP_BASE_URL=http://127.0.0.1:9400/ && npm run playground',
-		// timeout: 180_000, // 180 seconds.
-		port: 9400,
-		reuseExistingServer: !process.env.CI,
-	},
-	use: {
-		...baseConfig.use,
-		baseURL: 'http://127.0.0.1:9400',
-		actionTimeout: 15_000, // 10 seconds +5 seconds to help webkit tests pass.
-	},
+	// webServer: {
+	// 	...baseConfig.webServer,
+	// 	command: 'set WP_BASE_URL=http://127.0.0.1:9400/ && npm run playground',
+	// 	// timeout: 180_000, // 180 seconds.
+	// 	port: 9400,
+	// 	reuseExistingServer: !process.env.CI,
+	// 	// reuseExistingServer: true,
+	// 	// reuseExistingServer: false,
+	// },
+	// use: {
+	// 	...baseConfig.use,
+	// 	baseURL: 'http://127.0.0.1:9400',
+	// 	actionTimeout: 15_000, // 10 seconds +5 seconds to help webkit tests pass.
+	// },
+	retries: 0,
+	webServer: undefined,
 });
