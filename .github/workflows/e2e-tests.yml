@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Log debug information
         run: |
@@ -21,9 +21,13 @@ jobs:
           composer --version
 
       - name: Install NodeJS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-            node-version-file: '.nvmrc'
+          node-version-file: '.nvmrc'
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
 
       - name: NPM install
         run: npm ci --legacy-peer-deps
