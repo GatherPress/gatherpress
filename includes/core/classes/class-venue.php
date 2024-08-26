@@ -133,8 +133,10 @@ class Venue {
 				'template'     => array(
 					array( 'gatherpress/venue' ),
 				),
+				'has_archive'   => true,
 				'rewrite'      => array(
-					'slug' => $rewrite_slug,
+					'slug'       => $rewrite_slug,
+					'with_front' => false,
 				),
 			)
 		);
