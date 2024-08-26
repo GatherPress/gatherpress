@@ -152,13 +152,14 @@ class Event_Setup {
 	 * Do not use this directly, use get_value( 'general', 'urls', 'events' ) instead.
 	 *
 	 * This method switches to the sites default language and gets the translation of 'events' for the loaded locale.
-	 * After that the method does sanitize the string to be safely used within an URL.
+	 * After that, the method sanitizes the string to be safely used within an URL,
+	 * by removing accents, replacing special characters and replacing whitespace with dashes.
 	 *
 	 * @since 0.31.0
 	 *
 	 * @return string
 	 */
-	public static function get_localised_post_type_slug() : string {
+	public static function get_localised_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
 		// $slug = _x( 'event', 'Post Type Slug', 'gatherpress' );
 		$slug = _x( 'event With \empty space, charß & àccênts', 'Post Type Slug', 'gatherpress' );
