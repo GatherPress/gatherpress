@@ -94,6 +94,7 @@ class Settings {
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
 		add_action( 'gatherpress_text_after', array( $this, 'datetime_preview' ), 10, 2 );
+		add_action( 'gatherpress_text_after', array( $this, 'urlrewrite_preview' ), 10, 2 );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 	}
@@ -683,6 +684,35 @@ class Settings {
 		) {
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/datetime-preview.php', GATHERPRESS_CORE_PATH ),
+				array(
+					'name'  => $name,
+					'value' => $value,
+				),
+				true
+			);
+		}
+	}
+
+	/**
+	 * Display a preview of the rewritten URL based on the specified string.
+	 *
+	 * This method is used to display a preview of the rewritten URL based on the specified
+	 * string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $name  The name of the urlrewrite format option.
+	 * @param string $value The value of the urlrewrite format option.
+	 * @return void
+	 */
+	public function urlrewrite_preview( string $name, string $value ): void {
+		if (
+			'gatherpress_general[urls][events]' === $name ||
+			'gatherpress_general[urls][venues]' === $name ||
+			'gatherpress_general[urls][topics]' === $name
+		) {
+			Utility::render_template(
+				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
 				array(
 					'name'  => $name,
 					'value' => $value,
