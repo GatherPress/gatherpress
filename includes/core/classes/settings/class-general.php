@@ -16,7 +16,7 @@ namespace GatherPress\Core\Settings;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-
+use GatherPress\Core\Event_Setup;
 /**
  * Class General.
  *
@@ -266,6 +266,7 @@ class General extends Base {
 							'type'    => 'text',
 							'options' => array(
 								'label' => __( 'Permalink base of Events.', 'gatherpress' ),
+								'default' => Event_Setup::get_localised_post_type_slug()
 							),
 						),
 					),
