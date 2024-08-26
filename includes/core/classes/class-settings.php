@@ -712,19 +712,19 @@ class Settings {
 			'gatherpress_general[urls][venues]' === $name ||
 			'gatherpress_general[urls][topics]' === $name
 		) {
-			switch ($name) {
+			switch ( $name ) {
 				case 'gatherpress_general[urls][events]':
-					$suffix = _x('sample-event','sample event post slug','gatherpress');
+					$suffix = _x( 'sample-event', 'sample event post slug', 'gatherpress' );
 					break;
-				
+
 				case 'gatherpress_general[urls][venues]':
-					$suffix = _x('sample-venue','sample venue post slug','gatherpress');
+					$suffix = _x( 'sample-venue', 'sample venue post slug', 'gatherpress' );
 					break;
-				
+
 				case 'gatherpress_general[urls][topics]':
-					$suffix = _x('sample-topic-term','sample topic term slug','gatherpress');
+					$suffix = _x( 'sample-topic-term', 'sample topic term slug', 'gatherpress' );
 					break;
-				
+
 				default:
 					break;
 			}
@@ -733,7 +733,7 @@ class Settings {
 				array(
 					'name'   => $name,
 					'value'  => $value,
-					'suffix' => $suffix
+					'suffix' => $suffix,
 				),
 				true
 			);
@@ -748,16 +748,15 @@ class Settings {
 	 *
 	 * @since 0.31.0
 	 *
-	 * @param mixed  $old_value The old option value.
-	 * @param mixed  $new_value     The new option value.
+	 * @param mixed $old_value The old option value.
+	 * @param mixed $new_value     The new option value.
 	 * @return void
 	 */
-	function maybe_flush_rewrite_rules( $old_value, $new_value ) : void {
-		if ( 
-			! isset( $old_value['urls'] ) && isset( $new_value['urls'] ) ||
+	public function maybe_flush_rewrite_rules( $old_value, $new_value ): void {
+		if ( ! isset( $old_value['urls'] ) && isset( $new_value['urls'] ) ||
 			isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ||
-			$old_value['urls'] != $new_value['urls']
-		){
+			$old_value['urls'] !== $new_value['urls']
+		) {
 			// Event_Setup->maybe_create_flush_rewrite_rules_flag // TODO maybe make this a public method ?!
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}

@@ -123,8 +123,8 @@ class Topic {
 	 */
 	public static function get_localised_taxonomy_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug = _x( 'topic', 'Taxonomy Slug', 'gatherpress' );
-		$slug = sanitize_title( $slug, '', 'save' );
+		$slug            = _x( 'topic', 'Taxonomy Slug', 'gatherpress' );
+		$slug            = sanitize_title( $slug, '', 'save' );
 		if ( $switched_locale ) {
 			restore_previous_locale();
 		}

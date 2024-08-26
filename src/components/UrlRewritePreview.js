@@ -1,7 +1,6 @@
 /**
  * WordPress dependencies.
  */
-import { _x } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
 
 /**
@@ -34,13 +33,13 @@ const UrlRewritePreview = (props) => {
 		{ once: true }
 	);
 
-	return <>
-		{ window.GatherPress.urls.siteUrl + '/'}
-		<strong>
-			{rewrittenUrlPart}
-		</strong>
-		{'/' + suffix }
-	</>;
+	return (
+		<>
+			{window.GatherPress.urls.siteUrl + '/'}
+			<strong>{rewrittenUrlPart}</strong>
+			{'/' + suffix}
+		</>
+	);
 };
 
 export default UrlRewritePreview;
