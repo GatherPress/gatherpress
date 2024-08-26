@@ -21,7 +21,7 @@ import { useState } from '@wordpress/element';
  * @return {JSX.Element} The rendered React component.
  */
 const UrlRewritePreview = (props) => {
-	const { name, value } = props.attrs;
+	const { name, value, suffix } = props.attrs;
 	const [rewrittenUrlPart, setRewrittenUrlPart] = useState(value);
 
 	const input = document.querySelector(`[name="${name}"]`);
@@ -39,7 +39,7 @@ const UrlRewritePreview = (props) => {
 		<strong>
 			{rewrittenUrlPart}
 		</strong>
-		{'/' + _x('hello-world-event','sample event post slug','gatherpress') }
+		{'/' + suffix }
 	</>;
 };
 

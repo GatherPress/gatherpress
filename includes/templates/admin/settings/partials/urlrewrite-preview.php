@@ -12,13 +12,14 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $name, $value ) ) {
+if ( ! isset( $name, $value, $suffix ) ) {
 	return;
 }
 
 $gatherpress_component_attrs = array(
 	'name'  => $name,
 	'value' => ! empty( $value ) ? $value : '',
+	'suffix' => $suffix,
 );
 ?>
 <p>
