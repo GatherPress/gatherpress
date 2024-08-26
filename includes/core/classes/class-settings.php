@@ -95,6 +95,7 @@ class Settings {
 		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
 		add_action( 'gatherpress_text_after', array( $this, 'datetime_preview' ), 10, 2 );
 		add_action( 'gatherpress_text_after', array( $this, 'urlrewrite_preview' ), 10, 2 );
+		add_action( 'update_option_gatherpress_general', array( $this, 'maybe_flush_rewrite_rules' ), 10, 2 );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
 	}
@@ -711,14 +712,54 @@ class Settings {
 			'gatherpress_general[urls][venues]' === $name ||
 			'gatherpress_general[urls][topics]' === $name
 		) {
+			switch ($name) {
+				case 'gatherpress_general[urls][events]':
+					$suffix = _x('sample-event','sample event post slug','gatherpress');
+					break;
+				
+				case 'gatherpress_general[urls][venues]':
+					$suffix = _x('sample-venue','sample venue post slug','gatherpress');
+					break;
+				
+				case 'gatherpress_general[urls][topics]':
+					$suffix = _x('sample-topic-term','sample topic term slug','gatherpress');
+					break;
+				
+				default:
+					break;
+			}
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
 				array(
-					'name'  => $name,
-					'value' => $value,
+					'name'   => $name,
+					'value'  => $value,
+					'suffix' => $suffix
 				),
 				true
 			);
+		}
+	}
+
+	/**
+	 * Update Rewrite rules, when post type rewrite slugs change.
+	 *
+	 * Fires after the value of the 'gatherpress_general["urls"]' option-part has been successfully updated
+	 * and only if it has changed since before.
+	 *
+	 * @since 0.31.0
+	 *
+	 * @param mixed  $old_value The old option value.
+	 * @param mixed  $new_value     The new option value.
+	 * @return void
+	 */
+	function maybe_flush_rewrite_rules( $old_value, $new_value ) : void {
+		if ( 
+			! isset( $old_value['urls'] ) && isset( $new_value['urls'] ) ||
+			isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ||
+			$old_value['urls'] != $new_value['urls']
+		){
+			// Event_Setup->maybe_create_flush_rewrite_rules_flag // TODO maybe make this a public method ?!
+			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
 	}
 }
