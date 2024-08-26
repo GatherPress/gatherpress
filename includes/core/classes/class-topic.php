@@ -100,7 +100,8 @@ class Topic {
 				'show_admin_column' => true,
 				'query_var'         => true,
 				'rewrite'           => array(
-					'slug' => $rewrite_slug,
+					'slug'       => $rewrite_slug,
+					'with_front' => false,
 				),
 				'show_in_rest'      => true,
 			)
