@@ -45,8 +45,7 @@ jobs:
           # Prevent this workflow to create a comment on the PR on forks outside of the GatherPress organization,
           # because the required permission would not be given and the workflow would fail.
           # Using a condition check will skip commenting.
-          comment-summary-in-pr: ${{ github.event_name == 'push' && 'never' || (github.repository_owner == 'GatherPress' && 'on-failure' || 'never') }}
-
+          comment-summary-in-pr: ${{ github.event_name == 'pull_request' && github.repository_owner == 'GatherPress' && 'on-failure' || 'never' }}
 
           # You can only include one of these two options: `allow-licenses` and `deny-licences`
           # ([String]). Only allow these licenses (optional)
