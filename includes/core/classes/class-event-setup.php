@@ -89,8 +89,8 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function register_post_type(): void {
-		$settings  = Settings::get_instance();
-		$permabase = $settings->get_value( 'general', 'urls', 'events' );
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
 		register_post_type(
 			Event::POST_TYPE,
 			array(
@@ -140,7 +140,7 @@ class Event_Setup {
 				),
 				'menu_icon'     => 'dashicons-nametag',
 				'rewrite'       => array(
-					'slug' => $permabase,
+					'slug' => $rewrite_slug,
 				),
 			)
 		);
@@ -161,8 +161,7 @@ class Event_Setup {
 	 */
 	public static function get_localised_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		// $slug = _x( 'event', 'Post Type Slug', 'gatherpress' );
-		$slug = _x( 'event With \empty space, charß & àccênts', 'Post Type Slug', 'gatherpress' );
+		$slug = _x( 'event', 'Post Type Slug', 'gatherpress' );
 		$slug = sanitize_title( $slug, '', 'save' );
 		if ( $switched_locale ) {
 			restore_previous_locale();

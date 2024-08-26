@@ -98,6 +98,8 @@ class Venue {
 	 * @return void
 	 */
 	public function register_post_type(): void {
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'venues' );
 		register_post_type(
 			self::POST_TYPE,
 			array(
@@ -132,10 +134,33 @@ class Venue {
 					array( 'gatherpress/venue' ),
 				),
 				'rewrite'      => array(
-					'slug' => _x( 'venue', 'Post Type Slug', 'gatherpress' ),
+					'slug' => $rewrite_slug,
 				),
 			)
 		);
+	}
+
+	/**
+	 * Returns the post type slug localised for the site langugage and sanitized as URL part.
+	 *
+	 * Do not use this directly, use get_value( 'general', 'urls', 'venues' ) instead.
+	 *
+	 * This method switches to the sites default language and gets the translation of 'venues' for the loaded locale.
+	 * After that, the method sanitizes the string to be safely used within an URL,
+	 * by removing accents, replacing special characters and replacing whitespace with dashes.
+	 *
+	 * @since 0.31.0
+	 *
+	 * @return string
+	 */
+	public static function get_localised_post_type_slug(): string {
+		$switched_locale = switch_to_locale( get_locale() );
+		$slug = _x( 'venue', 'Post Type Slug', 'gatherpress' );
+		$slug = sanitize_title( $slug, '', 'save' );
+		if ( $switched_locale ) {
+			restore_previous_locale();
+		}
+		return $slug;
 	}
 
 	/**
