@@ -1,5 +1,3 @@
-Test typos in other directoriies // REMOVE BEFORE MERGE
-
 ## Developer Documentation
 
 ### .wp-env
