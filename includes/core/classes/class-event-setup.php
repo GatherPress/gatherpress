@@ -194,7 +194,7 @@ class Event_Setup {
 				'type'              => 'string',
 			),
 			'gatherpress_max_attendance_limit'   => array(
-				'auth_callback'    => function () {
+				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
 				'sanitize_callback' => 'absint',
