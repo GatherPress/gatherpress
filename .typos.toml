@@ -23,10 +23,11 @@ locale = "en-us"
 "Wordpress" = "WordPress"
 "Gatherpress" = "GatherPress"
 
-# [default]
-# extend-ignore-re = [
-#     "\\bPolygon::PN\\b",
-# ]
+[default]
+extend-ignore-re = [
+    "\\biMatix\\b",
+    "\\bEvent Organiser\\b",
+]
 
 # Case sensitive, matches entire word.
 # [default.extend-identifiers]

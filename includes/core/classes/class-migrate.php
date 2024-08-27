@@ -52,7 +52,7 @@ class Migrate {
 		 * That can be helpful, if you want to import event- or venue-data from another plugin.
 		 *
 		 * @example
-		 *   The filter in use, to import data from the "Event Organiser" plugin. # spellchecker:disable-line
+		 *   The filter in use, to import data from the "Event Organiser" plugin.
 		 *   https://github.com/carstingaxion/gatherpress-export-import/blob/main/import-events-from--event-organiser.php
 		 *
 		 * @example

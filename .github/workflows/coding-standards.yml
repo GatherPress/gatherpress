@@ -107,7 +107,7 @@ jobs:
 
   stylelint:
     name: CSS Coding Standards
-    needs: jshint # Wait for jshint job, to mak use of node_modules caching.
+    needs: jshint # Wait for jshint job, to make use of node_modules caching.
     if: always()  # Run always, even when the jshint job didn't ran.
     runs-on: ubuntu-latest
     steps:
