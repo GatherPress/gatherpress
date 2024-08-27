@@ -31,6 +31,13 @@
       "password": "password"
     },
     {
+      "step": "updateUserMeta",
+      "meta": {
+          "admin_color": "modern"
+      },
+      "userId": 1
+    },
+    {
       "step": "installPlugin",
       "pluginZipFile": {
           "resource": "wordpress.org\/plugins",
