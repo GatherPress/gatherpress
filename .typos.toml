@@ -9,6 +9,7 @@ extend-exclude = [
     "**/vendor/**",
     "**/node_modules/**",
     "build/**",
+    "docs/media/**",
 ]
 ignore-hidden = false
 
