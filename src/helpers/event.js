@@ -91,8 +91,8 @@ export function hasEventPastNotice() {
  *
  * @return {void}
  */
-export function triggerEventCommuncation() {
-	const id = 'gatherpress_event_communcation';
+export function triggerEventCommunication() {
+	const id = 'gatherpress_event_communication';
 	const notices = dispatch('core/notices');
 
 	notices.removeNotice(id);

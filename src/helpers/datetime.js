@@ -15,7 +15,7 @@ import { createRoot } from '@wordpress/element';
  * Internal dependencies.
  */
 import { enableSave, getFromGlobal, setToGlobal } from './globals';
-import { isEventPostType, triggerEventCommuncation } from './event';
+import { isEventPostType, triggerEventCommunication } from './event';
 import DateTimePreview from '../components/DateTimePreview';
 
 /**
@@ -403,7 +403,7 @@ export function saveDateTime() {
 				_wpnonce: getFromGlobal('misc.nonce'),
 			},
 		}).then(() => {
-			triggerEventCommuncation();
+			triggerEventCommunication();
 		});
 	}
 }

@@ -21,7 +21,7 @@ class PluginDownloader {
 		$this->githubToken = $githubToken;
 	}
 
-	public function streamFromGithubPR( $organization, $repo, $pr, $workflow_name, $artifact_name ) {
+	public function streamFromGitHubPR( $organization, $repo, $pr, $workflow_name, $artifact_name ) {
 		$prDetails = $this->gitHubRequest( "https://api.github.com/repos/$organization/$repo/pulls/$pr" )['body'];
 		if ( ! $prDetails ) {
 			throw new ApiException( 'invalid_pr_number' );
@@ -260,7 +260,7 @@ try {
 			header( 'HTTP/1.1 400 Invalid request' );
 			die( 'Invalid request: The specified URL is not allowed.' );
 		}
-		$downloader->streamFromGithubPR(
+		$downloader->streamFromGitHubPR(
 			$_GET['org'],
 			$_GET['repo'],
 			$_GET['pr'],
