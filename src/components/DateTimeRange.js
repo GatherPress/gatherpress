@@ -31,7 +31,7 @@ const DateTimeRange = () => {
 	const [dateTimeEnd, setDateTimeEnd] = useState();
 	const [timezone, setTimezone] = useState();
 
-	subscribe(saveDateTime);
+	saveDateTime();
 
 	return (
 		<>

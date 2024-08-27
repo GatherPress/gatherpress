@@ -685,9 +685,32 @@ class Event {
 				$fields,
 				array( 'post_id' => $fields['post_id'] )
 			);
+
 			delete_transient( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
 		} else {
 			$value = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		}
+
+		foreach ( $fields as $key => $field ) {
+			if ( 'post_id' === $key ) {
+				continue;
+			}
+
+			$meta_key = sprintf( 'gatherpress_%s', sanitize_key( $key ) );
+
+			if ( ! empty( $exists ) ) {
+				update_post_meta(
+					$fields['post_id'],
+					$meta_key,
+					sanitize_text_field( $field )
+				);
+			} else {
+				add_post_meta(
+					$fields['post_id'],
+					$meta_key,
+					sanitize_text_field( $field )
+				);
+			}
 		}
 
 		return (bool) $value;

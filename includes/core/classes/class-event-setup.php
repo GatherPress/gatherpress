@@ -157,6 +157,51 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
+			'gatherpress_datetime_start'         => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_datetime_start_gmt'     => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_datetime_end'           => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_datetime_end_gmt'       => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_timezone'               => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
 			'gatherpress_max_guest_limit'        => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
