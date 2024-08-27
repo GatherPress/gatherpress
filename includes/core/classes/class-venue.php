@@ -143,7 +143,7 @@ class Venue {
 	}
 
 	/**
-	 * Returns the post type slug localised for the site langugage and sanitized as URL part.
+	 * Returns the post type slug localized for the site langugage and sanitized as URL part.
 	 *
 	 * Do not use this directly, use get_value( 'general', 'urls', 'venues' ) instead.
 	 *
@@ -155,7 +155,7 @@ class Venue {
 	 *
 	 * @return string
 	 */
-	public static function get_localised_post_type_slug(): string {
+	public static function get_localized_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
 		$slug            = _x( 'venue', 'Post Type Slug', 'gatherpress' );
 		$slug            = sanitize_title( $slug, '', 'save' );

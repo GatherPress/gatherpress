@@ -268,7 +268,7 @@ class General extends Base {
 							'type'    => 'text',
 							'options' => array(
 								'label'   => __( 'Permalink base of Events.', 'gatherpress' ),
-								'default' => Event_Setup::get_localised_post_type_slug(),
+								'default' => Event_Setup::get_localized_post_type_slug(),
 							),
 						),
 					),
@@ -280,7 +280,7 @@ class General extends Base {
 							'type'    => 'text',
 							'options' => array(
 								'label'   => __( 'Permalink base of Venues.', 'gatherpress' ),
-								'default' => Venue::get_localised_post_type_slug(),
+								'default' => Venue::get_localized_post_type_slug(),
 							),
 						),
 					),
@@ -292,7 +292,7 @@ class General extends Base {
 							'type'    => 'text',
 							'options' => array(
 								'label'   => __( 'Permalink base of Topics.', 'gatherpress' ),
-								'default' => Topic::get_localised_taxonomy_slug(),
+								'default' => Topic::get_localized_taxonomy_slug(),
 							),
 						),
 					),
