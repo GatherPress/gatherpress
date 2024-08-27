@@ -18,5 +18,4 @@ jobs:
 
     - name: Check spelling
       uses: crate-ci/typos@master
-        files: ./src/
         config: ./.typos.toml
