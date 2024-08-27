@@ -49,3 +49,6 @@ for (let i = 0; i < autocompleteContainers.length; i++) {
  * @since 1.0.0
  */
 dateTimePreview();
+
+
+// Test typos in other directoriies // REMOVE BEFORE MERGE
