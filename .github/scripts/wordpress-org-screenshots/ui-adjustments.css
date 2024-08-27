@@ -1,0 +1,12 @@
+/**
+    The content of this file is injected into the page within script tags,
+    rather than being included as a file.
+**/
+#adminmenuwrap {
+    /**
+        Stretch the dark grey background
+        behind the left main menu
+        over the full height of the page
+    **/
+    height: 10000px;
+}
