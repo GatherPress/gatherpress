@@ -746,7 +746,7 @@ class Settings {
 	 * Fires after the value of the 'gatherpress_general["urls"]' option-part has been successfully updated
 	 * and only if it has changed since before.
 	 *
-	 * @since 0.31.0
+	 * @since 1.0.0
 	 *
 	 * @param mixed $old_value The old option value.
 	 * @param mixed $new_value     The new option value.
