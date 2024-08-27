@@ -35,11 +35,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup localised wp-env for ${{ matrix.locale }}
-      run: |
-        touch .wp-env.override.json
-        > .wp-env.override.json
-        echo "{ \"config\": { \"WPLANG\": \"${{ matrix.locale }}\" } }" >> .wp-env.override.json
+    # - name: Setup localised wp-env for ${{ matrix.locale }}
+    #   run: |
+    #     touch .wp-env.override.json
+    #     > .wp-env.override.json
+    #     echo "{ \"config\": { \"WPLANG\": \"${{ matrix.locale }}\" } }" >> .wp-env.override.json
 
     - uses: actions/cache@v4
       id: playwright-cache
@@ -85,31 +85,39 @@ jobs:
     - run: npx playwright install-deps
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
-    - name: Starting localised wp-env
+    #     # Set language on the environment
+    #     # https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/#wp-env-run-container-command
+    #     # "wp-env run tests-cli "will run against localhost:8889
+    #     npm run wp-env run tests-cli wp language core install ${{ matrix.locale }}
+    #     npm run wp-env run tests-cli wp option update WPLANG ${{ matrix.locale }}
+
+    #     npm run wp-env run tests-cli wp language plugin install gatherpress ${{ matrix.locale }}
+
+    - name: Start the server
       run: |
-        npm run wp-env start --update
-
-        # Set language on the environment
-        # https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/#wp-env-run-container-command
-        # "wp-env run tests-cli "will run against localhost:8889
-        npm run wp-env run tests-cli wp language core install ${{ matrix.locale }}
-        npm run wp-env run tests-cli wp option update WPLANG ${{ matrix.locale }}
-
-        npm run wp-env run tests-cli wp language plugin install gatherpress ${{ matrix.locale }}
+        npm run playground -- --blueprint=./.github/scripts/wordpress-org-screenshots/blueprint.json &
 
     - name: Starting Playwright & Running the screenshot tests
       id: screenshot-tests
       # Having set "continue-on-error:true" should help the workflow to pass (and get a green checkmark)
       # even if this step fails, what could happen because of intended changes or the addition of new locales.
       continue-on-error: true
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
       run: |
-            npm run screenshots:wporg
+        WP_BASE_URL=http://127.0.0.1:9400/ \
+        xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- \
+        npm run screenshots:wporg
 
     - name: Starting Playwright again & Updating the Screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
       if: ${{ steps.screenshot-tests.outcome == 'failure' }}
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
       run: |
+        WP_BASE_URL=http://127.0.0.1:9400/ \
+        xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- \
         npm run screenshots:wporg -- --update-snapshots
 
     - name: Commit updated screenshots
