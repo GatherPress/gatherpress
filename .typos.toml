@@ -15,7 +15,10 @@ ignore-hidden = false
 
 [default]
 locale = "en-us"
-
+extend-ignore-re = [
+    "\\biMatix\\b",
+    "\\bEvent Organiser\\b",
+]
 
 [default.extend-identifiers]
 # Typos
@@ -23,11 +26,6 @@ locale = "en-us"
 "Wordpress" = "WordPress"
 "Gatherpress" = "GatherPress"
 
-[default]
-extend-ignore-re = [
-    "\\biMatix\\b",
-    "\\bEvent Organiser\\b",
-]
 
 # Case sensitive, matches entire word.
 # [default.extend-identifiers]
