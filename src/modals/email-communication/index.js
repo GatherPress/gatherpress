@@ -31,7 +31,7 @@ import { getFromGlobal } from '../../helpers/globals';
  *
  * @return {JSX.Element} The JSX element for the Event Communication Modal.
  */
-const EventCommuncationModal = () => {
+const EventCommunicationModal = () => {
 	const [isOpen, setOpen] = useState(false);
 	const [isAllChecked, setAllChecked] = useState(false);
 	const [isAttendingChecked, setAttendingChecked] = useState(false);
@@ -188,6 +188,6 @@ domReady(() => {
 		'gatherpress-event-communication-modal'
 	);
 	if (modalWrapper) {
-		createRoot(modalWrapper).render(<EventCommuncationModal />);
+		createRoot(modalWrapper).render(<EventCommunicationModal />);
 	}
 });

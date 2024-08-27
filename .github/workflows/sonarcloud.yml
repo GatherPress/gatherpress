@@ -31,7 +31,7 @@ jobs:
           cache: 'npm'
 
       # Restoring the short lived node_modules cache
-      # to be used accross all workflows running on the last commit.
+      # to be used across all workflows running on the last commit.
       # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
       - uses: actions/cache/restore@v4
         id: node_modules-cache

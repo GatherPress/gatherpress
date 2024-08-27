@@ -197,10 +197,10 @@ class Event_Setup {
 				'auth_callback'    => function () {
 					return current_user_can( 'edit_posts' );
 				},
-				'santize_callback' => 'absint',
-				'show_in_rest'     => true,
-				'single'           => true,
-				'type'             => 'integer',
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'integer',
 			),
 		);
 

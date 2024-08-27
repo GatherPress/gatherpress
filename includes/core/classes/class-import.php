@@ -20,7 +20,7 @@ use GatherPress\Core\Traits\Singleton;
  * This class will provide effective filtering and support validation of the import-objects
  * based on their post type and meta data.
  *
- * Succesfully identified GatherPress data will be saved into custom DB tables.
+ * Successfully identified GatherPress data will be saved into custom DB tables.
  *
  * @since 1.0.0
  */
