@@ -321,7 +321,7 @@ class Assets {
 				'eventRestApi'    => $event_rest_api,
 				'loginUrl'        => $this->get_login_url( $post_id ),
 				'registrationUrl' => $this->get_registration_url( $post_id ),
-				'siteUrl'         => get_home_url(),
+				'homeUrl'         => get_home_url(),
 			),
 		);
 	}
