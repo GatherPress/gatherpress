@@ -143,7 +143,7 @@ class Venue {
 	}
 
 	/**
-	 * Returns the post type slug localized for the site langugage and sanitized as URL part.
+	 * Returns the post type slug localized for the site language and sanitized as URL part.
 	 *
 	 * Do not use this directly, use get_value( 'general', 'urls', 'venues' ) instead.
 	 *
