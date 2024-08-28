@@ -157,7 +157,7 @@ class Event_Setup {
 	 * After that, the method sanitizes the string to be safely used within an URL,
 	 * by removing accents, replacing special characters and replacing whitespace with dashes.
 	 *
-	 * @since 0.31.0
+	 * @since 1.0.0
 	 *
 	 * @return string
 	 */
