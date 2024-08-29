@@ -604,7 +604,8 @@ class Event {
 		);
 
 		// return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
-		return implode( '%0A', $args );
+		// return implode( '%0A', $args );
+		return implode( "\r\n", $args );
 	}
 
 	/**

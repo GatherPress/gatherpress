@@ -8,13 +8,25 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+//Collect output
+ob_start();
+
+
 $event    = new Event( get_queried_object_id() );
 $filename = $event->event->post_name . '_' . intval( $event->event->ID ) . '.ics';
 
-// 4. Set headers
-header('Content-Type: text/calendar; charset=utf-8');
-header('Content-Disposition: attachment; filename="'.$filename.'"');
+// File header
+header( 'Content-Description: File GP Transfer' );
+header( 'Content-Disposition: attachment; filename=' . $filename );
+header( 'Content-type: text/calendar; charset=' . get_option('blog_charset').';');
+header( 'Pragma: 0');
+header( 'Expires: 0');
 
 // 5. Output
 echo $event->get_ics_calendar_download();
-die();
+
+//Collect output and echo
+$ical = ob_get_contents();
+ob_end_clean();
+echo $ical;
+exit();
