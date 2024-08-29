@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 
@@ -74,6 +75,126 @@ class Event_Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+
+		/**
+		 * @todo WHERE SHOULD ALL THAT GO?
+		 * 
+		 * In a class-add-to-calendar.php
+		 * or another DRY place ?
+		 */
+		add_action( 'init', function () {
+			$event_rewrite_base = 'event';
+			$calendar_endpoints = join( '|', array(
+				'googlecalendar',
+				'yahoocalendar',
+				'ical',
+				'iCal',
+				'outlook',
+			));
+
+			/**
+			 * Generate rewrite rules for endpoints like:
+			 * event/my-sample-event/(ical|iCal|googlecalendar)(/)
+			 */
+			add_rewrite_rule(
+				sprintf(
+					'%s/([^/]+)/(%s)/?$',
+					$event_rewrite_base,
+					$calendar_endpoints
+				),
+				'index.php?gatherpress_event=$matches[1]&gatherpress_ext_calendar=$matches[2]',
+				'top'
+			);
+
+			/**
+			 * Filters the query variables allowed before processing.
+			 *
+			 * @param string[] $public_query_vars The array of allowed query variable names.
+			 * @return string[] The array of allowed query variable names.
+			 */
+			add_filter('query_vars', function( array $public_query_vars ) : array {
+				$public_query_vars[] = 'gatherpress_ext_calendar';
+				return $public_query_vars;
+			});
+
+			/**
+			 * Fires before determining which template to load.
+			 *
+			 * @see https://developer.wordpress.org/reference/hooks/template_redirect/
+			 *
+			 */
+			add_action('template_redirect', function() : void {
+				if ( ! is_singular('gatherpress_event') || empty( get_query_var('gatherpress_ext_calendar') ) ) {
+					return;
+				}
+
+				if ( in_array( get_query_var('gatherpress_ext_calendar'), ['googlecalendar','yahoocalendar'], true ) ) {
+					/**
+					 * Filters the list of allowed hosts to redirect to.
+					 *
+					 * @see https://developer.wordpress.org/reference/hooks/allowed_redirect_hosts/
+					 *
+					 * @param string[] $hosts An array of allowed host names.
+					 * @return string[] An array of allowed host names.
+					 */
+					add_filter( 'allowed_redirect_hosts', function( array $hosts ): array {
+						return array_merge(
+							$hosts,
+							array(
+								'www.google.com',
+								'calendar.yahoo.com',
+							)
+						);
+					});
+
+					$event = new Event( get_queried_object_id() );
+					switch ( get_query_var('gatherpress_ext_calendar') ) {
+						case 'googlecalendar':
+							$to = $event->get_google_calendar_link();
+							break;
+						case 'yahoocalendar':
+							$to = $event->get_yahoo_calendar_link();
+							break;
+					}
+
+					// https://developer.wordpress.org/reference/functions/wp_safe_redirect/
+					wp_safe_redirect( $to ); // Uses 302 per default.
+					exit;
+				}
+
+				// Because 'ical' & 'iCal' are both valid, lower the cases before comparing.
+				if ( in_array( strtolower( get_query_var( 'gatherpress_ext_calendar' ) ), ['ical','outlook'], true ) ) {
+					/**
+					 * Filters the path of the current template before including it.
+					 *
+					 * @param string $template The path of the template to include.
+					 * @return string The path of the template to include.
+					 */
+					add_filter('template_include', function( string $template ) : string {
+						$file_name = 'ical-download.php';
+	
+						/**
+						 * Check if the theme has the same template included
+						 * If that's the case, we don't want to load the template from the plugin,
+						 * because templates should be overwritable by a theme or child theme.
+						 *
+						 * @see https://developer.wordpress.org/reference/functions/locate_template/
+						 */
+						if( $theme_tmpl = locate_template( $file_name ) ) {
+							return $theme_tmpl;
+						}
+
+						// Include the template from plugin.
+						return sprintf(
+							'%s/includes/templates/frontend/%s',
+							GATHERPRESS_CORE_PATH,
+							$file_name
+						);
+					});
+				}
+			});
+		} );
+
 	}
 
 	/**
@@ -137,6 +258,7 @@ class Event_Setup {
 					'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-nametag',
+				'has_archive'   => true,
 				'rewrite'       => array(
 					'slug' => _x( 'event', 'Post Type Slug', 'gatherpress' ),
 				),

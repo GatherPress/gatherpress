@@ -443,19 +443,24 @@ class Event {
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => $this->get_google_calendar_link(),
+				// 'link' => $this->get_google_calendar_link(),
+				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'googlecalendar',
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
-				'download' => $this->get_ics_calendar_download(),
+				// 'download' => $this->get_ics_calendar_download(),
+				'download' => trailingslashit( get_the_permalink( $this->event ) ) . 'ical',
 			),
 			'outlook' => array(
 				'name'     => __( 'Outlook', 'gatherpress' ),
-				'download' => $this->get_ics_calendar_download(),
+				// 'download' => $this->get_ics_calendar_download(),
+				'download' => trailingslashit( get_the_permalink( $this->event ) ) . 'outlook',
+				
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => $this->get_yahoo_calendar_link(),
+				// 'link' => $this->get_yahoo_calendar_link(),
+				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'yahoocalendar',
 			),
 		);
 	}
@@ -473,7 +478,7 @@ class Event {
 	 *
 	 * @throws Exception If there is an issue while generating the Google Calendar link.
 	 */
-	protected function get_google_calendar_link(): string {
+	public function get_google_calendar_link(): string {
 		$date_start  = $this->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start  = $this->get_formatted_datetime( 'His', 'start', false );
 		$date_end    = $this->get_formatted_datetime( 'Ymd', 'end', false );
@@ -514,7 +519,7 @@ class Event {
 	 *
 	 * @throws Exception If an error occurs while generating the Yahoo! Calendar link.
 	 */
-	protected function get_yahoo_calendar_link(): string {
+	public function get_yahoo_calendar_link(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
@@ -564,7 +569,7 @@ class Event {
 	 *
 	 * @throws Exception If an error occurs while generating the ICS download link.
 	 */
-	protected function get_ics_calendar_download(): string {
+	public function get_ics_calendar_download(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
 		$date_end       = $this->get_formatted_datetime( 'Ymd', 'end', false );
@@ -598,7 +603,8 @@ class Event {
 			'END:VCALENDAR',
 		);
 
-		return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
+		// return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
+		return implode( '%0A', $args );
 	}
 
 	/**
