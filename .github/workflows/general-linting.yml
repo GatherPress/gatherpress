@@ -58,7 +58,7 @@ jobs:
             ./node_modules
           key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-      - name: Run JSHint
+      - name: The lint-md-docs package uses markdownlint to lint the markup of markdown files to enforce standards.
         run: npm run lint:md:docs
         if: ${{ success() || failure() }}
 
@@ -108,7 +108,7 @@ jobs:
             ./node_modules
           key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
-      - name: Run JSHint
+      - name: The lint-pkg-json package helps to enforce standards for the package.json files.
         run: npm run lint:pkg-json
         if: ${{ success() || failure() }}
 
