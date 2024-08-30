@@ -16,7 +16,6 @@
 		"lint:js": "wp-scripts lint-js",
 		"lint:js:fix": "wp-scripts lint-js --fix",
 		"lint:md:docs": "wp-scripts lint-md-docs",
-		"lint:md:js": "wp-scripts lint-md-js",
 		"lint:php": "vendor/bin/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .",
 		"lint:php:fix": "vendor/bin/phpcbf --standard=phpcs.ruleset.xml -p -v .",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
