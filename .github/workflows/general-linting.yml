@@ -64,6 +64,8 @@ jobs:
 
   pckg-json-linting:
     name: package.json
+    needs: mdlinting # Wait for mdlinting job, to make use of node_modules caching.
+    if: always()     # Run always, even when the mdlinting job didn't ran.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
