@@ -443,23 +443,19 @@ class Event {
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				// 'link' => $this->get_google_calendar_link(),
 				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'googlecalendar',
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
-				// 'download' => $this->get_ics_calendar_download(),
 				'download' => trailingslashit( get_the_permalink( $this->event ) ) . 'ical',
 			),
 			'outlook' => array(
 				'name'     => __( 'Outlook', 'gatherpress' ),
-				// 'download' => $this->get_ics_calendar_download(),
 				'download' => trailingslashit( get_the_permalink( $this->event ) ) . 'outlook',
-				
+
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				// 'link' => $this->get_yahoo_calendar_link(),
 				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'yahoocalendar',
 			),
 		);
@@ -603,8 +599,6 @@ class Event {
 			'END:VCALENDAR',
 		);
 
-		// return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
-		// return implode( '%0A', $args );
 		return implode( "\r\n", $args );
 	}
 

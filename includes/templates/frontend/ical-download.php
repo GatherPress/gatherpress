@@ -1,32 +1,38 @@
 <?php
+/**
+ * Template for GatherPress ical file downloads
+ *
+ * This template is used to render an ical file to the browser.
+ *
+ * @package GatherPress\Core
+ * @since 1.0.0
+ */
 
+// Exit if accessed directly.
+defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 
-// Prevent direct access to the file
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
-
-//Collect output
+// Start collecting all output.
 ob_start();
 
+// Prepare event data.
+$gatherpress_event    = new Event( get_queried_object_id() );
+$gatherpress_filename = $gatherpress_event->get_datetime_start( 'Y-m-d' ) . '_' . $gatherpress_event->event->post_name . '.ics';
 
-$event    = new Event( get_queried_object_id() );
-$filename = $event->event->post_name . '_' . intval( $event->event->ID ) . '.ics';
+// Send file headers.
+header( 'Content-Description: .ics for ' . $gatherpress_event->event->post_title );
+header( 'Content-Disposition: attachment; filename=' . $gatherpress_filename );
+header( 'Content-type: text/calendar; charset=' . get_option( 'blog_charset' ) . ';' );
+header( 'Pragma: 0' );
+header( 'Expires: 0' );
 
-// File header
-header( 'Content-Description: File GP Transfer' );
-header( 'Content-Disposition: attachment; filename=' . $filename );
-header( 'Content-type: text/calendar; charset=' . get_option('blog_charset').';');
-header( 'Pragma: 0');
-header( 'Expires: 0');
+// Generate ical.
+echo wp_kses_post( $gatherpress_event->get_ics_calendar_download() );
 
-// 5. Output
-echo $event->get_ics_calendar_download();
-
-//Collect output and echo
-$ical = ob_get_contents();
+// Get collected output and render it.
+$gatherpress_ics_file = ob_get_contents();
 ob_end_clean();
-echo $ical;
+echo wp_kses_post( $gatherpress_ics_file );
+
 exit();
