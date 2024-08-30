@@ -2,7 +2,6 @@
 	"name": "gatherpress",
 	"version": "0.31.0-alpha",
 	"description": "Powering Communities with WordPress",
-	"main": "index.js",
 	"scripts": {
 		"build": "wp-scripts build",
 		"check-engines": "wp-scripts check-engines",
@@ -47,6 +46,7 @@
 	"bugs": {
 		"url": "https://github.com/GatherPress/gatherpress/issues"
 	},
+	"main": "index.js",
 	"homepage": "https://github.com/GatherPress/gatherpress#readme",
 	"devDependencies": {
 		"@jest/globals": "^29.7.0",
