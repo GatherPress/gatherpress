@@ -86,7 +86,9 @@ class Event_Setup {
 		add_action(
 			'init',
 			function () {
-				$event_rewrite_base = 'event';
+				// $settings            = Settings::get_instance();
+				// $event_rewrite_base = $settings->get_value( 'general', 'urls', 'events' );
+				$event_rewrite_base = 'event'; // Replace when #812 is merged.
 				$calendar_endpoints = join(
 					'|',
 					array(
