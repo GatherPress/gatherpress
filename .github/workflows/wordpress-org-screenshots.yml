@@ -1,6 +1,7 @@
 name: WordPress.org screenshot generation
 
 on:
+  pull_request: # JUST FOR TESTING !!
   workflow_dispatch:
 
 # Cancels all previous workflow runs.
@@ -34,12 +35,6 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-
-    # - name: Setup localised wp-env for ${{ matrix.locale }}
-    #   run: |
-    #     touch .wp-env.override.json
-    #     > .wp-env.override.json
-    #     echo "{ \"config\": { \"WPLANG\": \"${{ matrix.locale }}\" } }" >> .wp-env.override.json
 
     - uses: actions/cache@v4
       id: playwright-cache
@@ -85,17 +80,22 @@ jobs:
     - run: npx playwright install-deps
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
-    #     # Set language on the environment
-    #     # https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/#wp-env-run-container-command
-    #     # "wp-env run tests-cli "will run against localhost:8889
-    #     npm run wp-env run tests-cli wp language core install ${{ matrix.locale }}
-    #     npm run wp-env run tests-cli wp option update WPLANG ${{ matrix.locale }}
+    - name: Prepare localized blueprint
+      run: |
+        # Define the new data as a variable.
+        language_step='[
+          {
+            "step": "setSiteLanguage",
+            "language": "${{ matrix.locale }}"
+          }
+        ]'
 
-    #     npm run wp-env run tests-cli wp language plugin install gatherpress ${{ matrix.locale }}
+        # Use jq to append the site language step to the existing blueprint JSON file.
+        jq --argjson languageStep "$language_step" '.steps += $languageStep' ./.github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
 
     - name: Start the server
       run: |
-        npm run playground -- --blueprint=./.github/scripts/wordpress-org-screenshots/blueprint.json &
+        npm run playground -- --blueprint=./localized_blueprint.json &
 
     - name: Starting Playwright & Running the screenshot tests
       id: screenshot-tests
@@ -128,6 +128,7 @@ jobs:
         git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        rm -f ./localized_blueprint.json
         git add -A
         git commit -m "Screenshots for ${{ matrix.locale }} updated!"
         git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}

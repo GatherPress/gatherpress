@@ -30,10 +30,6 @@
 				"GATHERPRESS_ALPHA_VERSION": 1
 			}
 		},
-        {
-            "step": "setSiteLanguage",
-            "language": "de_DE"
-        },
 		{
 			"step": "login"
 		},
