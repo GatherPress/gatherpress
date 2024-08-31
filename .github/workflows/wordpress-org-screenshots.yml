@@ -63,7 +63,7 @@ jobs:
         key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
 
     - name: NPM install
-      if: steps.node_modules-cache.outputs.cache-hit != 'true'
+      # if: steps.node_modules-cache.outputs.cache-hit != 'true'
       run: npm ci --legacy-peer-deps
 
     # Creating a short lived node_modules cache
