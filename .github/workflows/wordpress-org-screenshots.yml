@@ -63,7 +63,7 @@ jobs:
         key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
 
     - name: NPM install
-      # if: steps.node_modules-cache.outputs.cache-hit != 'true'
+      if: steps.node_modules-cache.outputs.cache-hit != 'true'
       run: npm ci --legacy-peer-deps
 
     # Creating a short lived node_modules cache
@@ -94,11 +94,6 @@ jobs:
           echo "Use jq to append the site language step to the existing blueprint JSON file."
           jq --argjson languageStep "$language_step" '.steps += $languageStep' .github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
         fi
-
-
-    # - name: Start the server
-    #   run: |
-    #     npm run playground -- --blueprint=./localized_blueprint.json &
 
     - name: Starting Playwright & Running the screenshot tests
       id: screenshot-tests
