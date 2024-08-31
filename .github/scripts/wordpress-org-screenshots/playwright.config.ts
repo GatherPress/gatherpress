@@ -40,11 +40,11 @@ export default defineConfig({
 	],
 	// Don't report slow test "files", as we will be running our tests in serial.
 	reportSlowTests: null,
-	use: {
-		...baseConfig.use,
-		baseURL: 'http://127.0.0.1:9400',
-		// actionTimeout: 15_000, // 10 seconds +5 seconds to help webkit tests pass.
-	},
+	// use: {
+	// 	...baseConfig.use,
+	// 	baseURL: 'http://127.0.0.1:9400',
+	// 	// actionTimeout: 15_000, // 10 seconds +5 seconds to help webkit tests pass.
+	// },
 	retries: 0,
 	webServer: undefined,
 });
