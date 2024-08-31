@@ -89,7 +89,6 @@ jobs:
             "language": "${{ matrix.locale }}"
           }
         ]'
-
         # Use jq to append the site language step to the existing blueprint JSON file.
         jq --argjson languageStep "$language_step" '.steps += $languageStep' ./.github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
 
