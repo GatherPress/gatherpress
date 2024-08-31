@@ -81,6 +81,12 @@ jobs:
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
     - name: Prepare localized blueprint
+      # en_US should not get any additional steps added, as this will result in errors!
+      # All other locales need those two steps!
+      # The first downloads all lang-packs, while the second is important for
+      # "( await requestUtils.getSiteSettings() ).language;"
+      # which would otherwise return only "en_US". Learned that the hard way!
+      # Might be bug in Playgrounds setSiteLanguage step or intended behaviour.
       run: |
         if [ ${{ matrix.locale }} == 'en_US' ]; then
           cp .github/scripts/wordpress-org-screenshots/blueprint.json localized_blueprint.json
@@ -89,6 +95,10 @@ jobs:
             {
               "step": "setSiteLanguage",
               "language": "${{ matrix.locale }}"
+            },
+            {
+              "step": "wp-cli",
+              "command": "wp option update WPLANG ${{ matrix.locale }}"
             }
           ]'
           echo "Use jq to append the site language step to the existing blueprint JSON file."
