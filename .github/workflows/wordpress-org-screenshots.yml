@@ -82,15 +82,15 @@ jobs:
 
     - name: Prepare localized blueprint
       run: |
-        # Define the new data as a variable.
+        echo "Define the new data as a variable."
         language_step='[
           {
             "step": "setSiteLanguage",
             "language": "${{ matrix.locale }}"
           }
         ]'
-        # Use jq to append the site language step to the existing blueprint JSON file.
-        jq --argjson languageStep "$language_step" '.steps += $languageStep' ./.github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
+        echo "Use jq to append the site language step to the existing blueprint JSON file."
+        jq --argjson languageStep "$language_step" '.steps += $languageStep' .github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
 
     - name: Start the server
       run: |
