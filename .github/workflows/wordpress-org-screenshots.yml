@@ -82,14 +82,19 @@ jobs:
 
     - name: Prepare localized blueprint
       run: |
-        language_step='[
-          {
-            "step": "setSiteLanguage",
-            "language": "${{ matrix.locale }}"
-          }
-        ]'
-        echo "Use jq to append the site language step to the existing blueprint JSON file."
-        jq --argjson languageStep "$language_step" '.steps += $languageStep' .github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
+        if [ ${{ matrix.locale }} == 'en_US' ]; then
+          cp .github/scripts/wordpress-org-screenshots/blueprint.json localized_blueprint.json
+        else
+          language_step='[
+            {
+              "step": "setSiteLanguage",
+              "language": "${{ matrix.locale }}"
+            }
+          ]'
+          echo "Use jq to append the site language step to the existing blueprint JSON file."
+          jq --argjson languageStep "$language_step" '.steps += $languageStep' .github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
+        fi
+
 
     # - name: Start the server
     #   run: |
