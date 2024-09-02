@@ -18,10 +18,15 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
         ].join('').toLowerCase();
     }
 
-    test.beforeAll( async ( { requestUtils } ) => {
+    test.beforeAll( async ( { page, requestUtils } ) => {
+
+        // Wait for 2 seconds
+        // await page.waitForTimeout(8000);
+        // await page.waitForLoadState('domcontentloaded'); // Wait for the 'DOMContentLoaded' event.
+
         // https://github.com/WordPress/gutenberg/blob/trunk/packages/e2e-test-utils-playwright/src/request-utils/site-settings.ts#L34-L35
-        const siteSettings = await requestUtils.getSiteSettings();
-		language = siteSettings.language;
+		language = ( await requestUtils.getSiteSettings() ).language;
+        console.log('language', language);
         local_code = ( 'en_US' === language ) ? '' : '-' + language.substring(0, 2);
 	} );
 

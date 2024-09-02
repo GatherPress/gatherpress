@@ -86,7 +86,7 @@ jobs:
       # The first downloads all lang-packs, while the second is important for
       # "( await requestUtils.getSiteSettings() ).language;"
       # which would otherwise return only "en_US". Learned that the hard way!
-      # Might be bug in Playgrounds setSiteLanguage step or intended behaviour.
+      # Might be a bug in Playgrounds setSiteLanguage step or intended behaviour.
       run: |
         if [ ${{ matrix.locale }} == 'en_US' ]; then
           cp .github/scripts/wordpress-org-screenshots/blueprint.json localized_blueprint.json
@@ -105,7 +105,15 @@ jobs:
           jq --argjson languageStep "$language_step" '.steps += $languageStep' .github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
         fi
 
-    - name: Starting Playwright & Running the screenshot tests
+    - name: Starting Playground
+      # Having this as a separate workflow step, should help making sure Playwright runs only, when this is DONE & READY.
+      #
+      # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
+      # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
+      run: |
+        npm run playground -- --blueprint=./localized_blueprint.json
+
+    - name: Running the screenshot tests
       id: screenshot-tests
       # Having set "continue-on-error:true" should help the workflow to pass (and get a green checkmark)
       # even if this step fails, what could happen because of intended changes or the addition of new locales.
@@ -117,7 +125,7 @@ jobs:
         WP_BASE_URL=http://127.0.0.1:9400/ \
         npm run screenshots:wporg
 
-    - name: Starting Playwright again & Updating the Screenshots
+    - name: Updating the Screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
       if: ${{ steps.screenshot-tests.outcome == 'failure' }}
