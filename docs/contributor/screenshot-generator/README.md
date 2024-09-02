@@ -16,7 +16,7 @@ While such a workflow could run on every major- and minor-, but not on bug-fix-r
 
 1. Start the workflow
    1. Just triggering this workflow will start the **default routine**, which checks for differences to prior versions of images and only updates the screenshots with noticaeable changes. Screenshots that did not exist before, will be created automatically.
-   2. Or running the workflow with the "**Update all Screenshots?**" enabled, will skip the comparsion and recreate all Screenshots.
+   2. Or running the workflow with the "**Update all Screenshots?**" enabled, will skip the comparison and recreate all Screenshots.
 2. After the workflow has successfully ran ...
    ![The screenshot generator workflows running on github.com](./screenshot-generator__workflow-runs.png)
 3. ... **pull_requests are created**, one for each language, that could be reviewed by native speakers.
@@ -93,7 +93,7 @@ _Choose one of the following options_
    },
    ```
 
-### Ressources
+### Resources
 
 #### Playwright & WordPress
 

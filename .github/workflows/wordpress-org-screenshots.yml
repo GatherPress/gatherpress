@@ -90,7 +90,7 @@ jobs:
       # The first downloads all lang-packs, while the second is important for
       # "( await requestUtils.getSiteSettings() ).language;"
       # which would otherwise return only "en_US". Learned that the hard way!
-      # Might be a bug in Playgrounds setSiteLanguage step or intended behaviour.
+      # Might be a bug in Playgrounds setSiteLanguage step or intended behavior.
       run: |
         if [ ${{ matrix.locale }} == 'en_US' ]; then
           cp .github/scripts/wordpress-org-screenshots/blueprint.json localized_blueprint.json
@@ -169,6 +169,6 @@ jobs:
       # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
-      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & Github action'
+      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
