@@ -125,6 +125,7 @@ jobs:
       # Having set "continue-on-error:true" should help the workflow to pass (and get a green checkmark)
       # even if this step fails, what could happen because of intended changes or the addition of new locales.
       continue-on-error: true
+      if: ${{ ! github.event.inputs.updateAllSnapshots }}
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
         WP_BASE_URL: 'http://127.0.0.1:9400/'
@@ -135,7 +136,10 @@ jobs:
     - name: Updating the Screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ steps.screenshot-tests.outcome == 'failure' }}
+      #
+      # Or the step is triggered directly, while the former step is skipped,
+      # when the updateAllSnapshots is trueish.
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
         WP_BASE_URL: 'http://127.0.0.1:9400/'
