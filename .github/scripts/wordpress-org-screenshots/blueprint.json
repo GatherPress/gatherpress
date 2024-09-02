@@ -1,0 +1,55 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"preferredVersions": {
+		"php": "8.2",
+		"wp": "latest"
+	},
+	"phpExtensionBundles": [
+		"kitchen-sink"
+	],
+	"features": {
+		"networking": true
+	},
+	"constants": {
+		"WP_HTTP_BLOCK_EXTERNAL": "true"
+	},
+	"siteOptions": {
+		"blogname": "GatherPress",
+		"blogdescription": "Powering Communities with WordPress.",
+		"users_can_register": "1",
+		"permalink_structure": "/%postname%/"
+	},
+	"steps": [
+		{
+			"step": "defineWpConfigConsts",
+			"consts": {
+				"WP_DEBUG": false,
+				"WP_DEBUG_DISPLAY": false,
+				"DISABLE_WP_CRON": true,
+				"GATHERPRESS_ALPHA_VERSION": 1
+			}
+		},
+		{
+			"step": "login"
+		},
+		{
+			"step": "updateUserMeta",
+			"meta": {
+				"admin_color": "modern"
+			},
+			"userId": 1
+		},
+		{
+			"step": "activatePlugin",
+			"pluginName": "gatherpress",
+			"pluginPath": "/wordpress/wp-content/plugins/gatherpress"
+		},
+		{
+			"step": "importWxr",
+			"file": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/GatherPress/demo-data/main/GatherPress-demo-data-2024.xml"
+			}
+		}
+	]
+}

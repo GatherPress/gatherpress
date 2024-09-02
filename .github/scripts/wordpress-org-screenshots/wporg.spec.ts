@@ -19,8 +19,10 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
     }
 
     test.beforeAll( async ( { requestUtils } ) => {
+
         // https://github.com/WordPress/gutenberg/blob/trunk/packages/e2e-test-utils-playwright/src/request-utils/site-settings.ts#L34-L35
 		language = ( await requestUtils.getSiteSettings() ).language;
+        console.log('language', language);
         local_code = ( 'en_US' === language ) ? '' : '-' + language.substring(0, 2);
 	} );
 
