@@ -1,7 +1,6 @@
 name: WordPress.org screenshot generation
 
 on:
-  pull_request: # JUST FOR TESTING !!
   workflow_dispatch:
     inputs:
       updateAllSnapshots:
