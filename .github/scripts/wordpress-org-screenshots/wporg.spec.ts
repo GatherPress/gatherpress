@@ -18,7 +18,7 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
         ].join('').toLowerCase();
     }
 
-    test.beforeAll( async ( { page, requestUtils } ) => {
+    test.beforeAll( async ( { requestUtils } ) => {
 
         // Wait for 2 seconds
         // await page.waitForTimeout(8000);
