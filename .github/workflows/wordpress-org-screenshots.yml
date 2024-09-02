@@ -3,6 +3,10 @@ name: WordPress.org screenshot generation
 on:
   pull_request: # JUST FOR TESTING !!
   workflow_dispatch:
+    inputs:
+      updateAllSnapshots:
+        description: 'Replace all existing images? (By default only changes will be updated.)'
+        default: false
 
 # Cancels all previous workflow runs.
 concurrency:
@@ -133,6 +137,7 @@ jobs:
       if: ${{ steps.screenshot-tests.outcome == 'failure' }}
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        UPDATE_ALL_SNAPSHOTS: ${{ github.event.inputs.updateAllSnapshots }} 
       run: |
         DEBUG=pw:webserver \
         WP_BASE_URL=http://127.0.0.1:9400/ \

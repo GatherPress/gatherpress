@@ -23,7 +23,7 @@ export default defineConfig({
 	expect: {
 		toHaveScreenshot: {
 			// https://playwright.dev/docs/test-snapshots#maxdiffpixels
-			maxDiffPixelRatio: 0.05,
+			maxDiffPixelRatio: process.env.UPDATE_ALL_SNAPSHOTS ? 0.00000001 : 0.05,
 			// https://playwright.dev/docs/test-snapshots#stylepath
 			stylePath: './ui-adjustments.css'
 		},
