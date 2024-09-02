@@ -56,7 +56,7 @@ jobs:
         cache: 'npm'
 
     # Restoring the short lived node_modules cache
-    # to be used accross all workflows running on the last commit.
+    # to be used across all workflows running on the last commit.
     # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
     - uses: actions/cache/restore@v4
       id: node_modules-cache
@@ -166,7 +166,7 @@ jobs:
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
       if: ${{ steps.screenshot-tests.outcome == 'failure' }}
-      # Using Github CLI in Workflows
+      # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
       run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & Github action'

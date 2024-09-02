@@ -141,9 +141,9 @@ class Test_Rsvp extends Base {
 		$rsvp->save( $user_4_id, 'attending' );
 
 		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to asser user 2 is attending.' );
-		$this->assertSame( 'waiting_list', $rsvp->get( $user_3_id )['status'], 'Failed to asser user 3 is on waiting list.' );
-		$this->assertSame( 'waiting_list', $rsvp->get( $user_3_id )['status'], 'Failed to asser user 4 is on waiting list.' );
+		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to assert user 2 is attending.' );
+		$this->assertSame( 'waiting_list', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is on waiting list.' );
+		$this->assertSame( 'waiting_list', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 4 is on waiting list.' );
 		$this->assertEquals( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
 
 		$rsvp->save( $user_1_id, 'not_attending' );
@@ -151,7 +151,7 @@ class Test_Rsvp extends Base {
 		// Give it a slight delay to move member from waiting_list to attending (w/o test sometimes fails).
 		sleep( 1 );
 
-		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to asser user 3 is on attending.' );
+		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is on attending.' );
 		$this->assertSame( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
 
 		$rsvp->save( $user_1_id, 'attending' );
@@ -161,9 +161,9 @@ class Test_Rsvp extends Base {
 		$this->assertEquals( 2, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
 
 		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to asser user 2 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to asser user 3 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to asser user 4 is attending.' );
+		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to assert user 2 is attending.' );
+		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is attending.' );
+		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 4 is attending.' );
 	}
 
 	/**

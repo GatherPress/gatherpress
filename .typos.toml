@@ -1,0 +1,38 @@
+# Corrections take the form of a key/value pair. The key is the incorrect word
+# and the value is the correct word. If the key and value are the same, the
+# word is treated as always correct. If the value is an empty string, the word
+# is treated as always incorrect.
+
+[files]
+extend-exclude = [
+    ".git/",
+    "**/vendor/**",
+    "**/node_modules/**",
+    "build/**",
+    "docs/media/**",
+]
+ignore-hidden = false
+
+[default]
+locale = "en-us"
+extend-ignore-re = [
+    "\\biMatix\\b",
+    "\\bEvent Organiser\\b",
+]
+
+[default.extend-identifiers]
+# Typos
+"Github" = "GitHub"
+"Wordpress" = "WordPress"
+"Gatherpress" = "GatherPress"
+
+
+# Case sensitive, matches entire word.
+# [default.extend-identifiers]
+# anc_color = "anc_color"
+# rady = "rady"
+
+# Case insensitive, matches inside word.
+# [default.extend-words]
+# bellow = "below"
+# toi = "toi"

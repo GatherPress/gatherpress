@@ -6,9 +6,6 @@
 # Public documentation: https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-dependency-review#dependency-review-enforcement
 name: 'Dependency Review'
 on:
-  push:
-    branches:
-      - main
   pull_request:
     paths:
     - '.github/workflows/dependency-review.yml'
@@ -47,7 +44,7 @@ jobs:
           # Using a condition check will skip commenting.
           comment-summary-in-pr: ${{ github.repository_owner == 'GatherPress' && 'on-failure' || 'never' }}
 
-          # You can only include one of these two options: `allow-licenses` and `deny-licences`
+          # You can only include one of these two options: `allow-licenses` and `deny-licenses`
           # ([String]). Only allow these licenses (optional)
           # Possible values: Any `spdx_id` value(s) from https://docs.github.com/en/rest/licenses 
           # The following list is an attempt to match exactly what's listed on https://www.gnu.org/licenses/license-list.html#GPLCompatibleLicenses as GPL Compatible (currently ignoring the FSF Free/Libre and OSI Approved column data from the SPDX License List at https://spdx.org/licenses/):

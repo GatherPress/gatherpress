@@ -80,7 +80,7 @@ jobs:
           cache: 'npm'
 
       # Restoring the short lived node_modules cache
-      # to be used accross all workflows running on the last commit.
+      # to be used across all workflows running on the last commit.
       # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
       - uses: actions/cache/restore@v4
         id: node_modules-cache
@@ -107,7 +107,7 @@ jobs:
 
   stylelint:
     name: CSS Coding Standards
-    needs: jshint # Wait for jshint job, to mak use of node_modules caching.
+    needs: jshint # Wait for jshint job, to make use of node_modules caching.
     if: always()  # Run always, even when the jshint job didn't ran.
     runs-on: ubuntu-latest
     steps:
@@ -132,7 +132,7 @@ jobs:
           cache: 'npm'
 
       # Restoring the short lived node_modules cache
-      # to be used accross all workflows running on the last commit.
+      # to be used across all workflows running on the last commit.
       # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
       - uses: actions/cache/restore@v4
         id: node_modules-cache
