@@ -110,8 +110,10 @@ jobs:
       #
       # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
       # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
+      # 
+      # The "&" is important!
       run: |
-        npm run playground -- --blueprint=./localized_blueprint.json
+        npm run playground -- --blueprint=./localized_blueprint.json &
 
     - name: Running the screenshot tests
       id: screenshot-tests
