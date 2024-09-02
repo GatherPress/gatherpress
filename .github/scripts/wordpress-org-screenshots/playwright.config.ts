@@ -23,7 +23,7 @@ export default defineConfig({
 	expect: {
 		toHaveScreenshot: {
 			// https://playwright.dev/docs/test-snapshots#maxdiffpixels
-			maxDiffPixelRatio: process.env.UPDATE_ALL_SNAPSHOTS ? 0.00000001 : 0.05,
+			maxDiffPixelRatio: process.env.UPDATE_ALL_SNAPSHOTS ? 0 : 0.05,
 			// https://playwright.dev/docs/test-snapshots#stylepath
 			stylePath: './ui-adjustments.css'
 		},
@@ -42,12 +42,12 @@ export default defineConfig({
 	reportSlowTests: null,
 	use: {
 		...baseConfig.use,
-		baseURL: 'http://127.0.0.1:9400',
+		baseURL: process.env.WP_BASE_URL || 'http://127.0.0.1:9400',
 	},
 	retries: 0,
 	webServer: {
 		...baseConfig.webServer,
-		command: 'set WP_BASE_URL=http://127.0.0.1:9400/ && npm run playground -- --blueprint=./localized_blueprint.json',
+		command: 'npm run playground -- --blueprint=./localized_blueprint.json',
 		port: 9400,
 		// reuseExistingServer: !process.env.CI,
 		reuseExistingServer: true,
