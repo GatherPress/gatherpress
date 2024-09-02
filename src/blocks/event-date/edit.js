@@ -2,12 +2,13 @@
  * External dependencies.
  */
 import moment from 'moment';
+import clsx from 'clsx';
 
 /**
  * WordPress dependencies.
  */
 import { __, sprintf } from '@wordpress/i18n';
-import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+import {AlignmentToolbar, BlockControls, InspectorControls, useBlockProps} from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
@@ -81,36 +82,37 @@ const displayDateTime = (start, end, tz) => {
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  * @see {@link Listener} - Function for adding event listeners.
  */
-const Edit = () => {
-	const blockProps = useBlockProps();
+const Edit = ( {
+	attributes: { textAlign, format, isLink, displayType },
+	setAttributes,
+} ) => {
 	const [dateTimeStart, setDateTimeStart] = useState(defaultDateTimeStart);
 	const [dateTimeEnd, setDateTimeEnd] = useState(defaultDateTimeEnd);
 	const [timezone, setTimezone] = useState(getTimeZone());
+	const blockProps = useBlockProps( {
+		className: clsx( {
+			[ `has-text-align-${ textAlign }` ]: textAlign
+		} ),
+	} );
 
 	Listener({ setDateTimeEnd, setDateTimeStart, setTimezone });
 
 	return (
-		<div {...blockProps}>
-			<EditCover>
-				<Flex justify="normal" align="center" gap="4">
-					<FlexItem
-						display="flex"
-						className="gatherpress-event-date__icon"
-					>
-						<Icon icon="clock" />
-					</FlexItem>
-					<FlexItem>
-						{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
-					</FlexItem>
-					{isSinglePostInEditor() && (
-						<InspectorControls>
-							<PanelBody>
-								<DateTimeRange />
-							</PanelBody>
-						</InspectorControls>
-					)}
-				</Flex>
-			</EditCover>
+		<div { ...blockProps }>
+			<BlockControls>
+				<AlignmentToolbar
+					value={textAlign}
+					onChange={(newAlign) => setAttributes({textAlign: newAlign})}
+				/>
+			</BlockControls>
+			{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
+			{isSinglePostInEditor() && (
+				<InspectorControls>
+					<PanelBody>
+						<DateTimeRange />
+					</PanelBody>
+				</InspectorControls>
+			)}
 		</div>
 	);
 };
