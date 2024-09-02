@@ -86,6 +86,7 @@ jobs:
 
     - name: Prepare localized blueprint
       # en_US should not get any additional steps added, as this will result in errors!
+      #
       # All other locales need those two steps!
       # The first downloads all lang-packs, while the second is important for
       # "( await requestUtils.getSiteSettings() ).language;"
@@ -126,9 +127,9 @@ jobs:
       continue-on-error: true
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        WP_BASE_URL: 'http://127.0.0.1:9400/'
       run: |
         DEBUG=pw:webserver \
-        WP_BASE_URL=http://127.0.0.1:9400/ \
         npm run screenshots:wporg
 
     - name: Updating the Screenshots
@@ -137,10 +138,10 @@ jobs:
       if: ${{ steps.screenshot-tests.outcome == 'failure' }}
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        WP_BASE_URL: 'http://127.0.0.1:9400/'
         UPDATE_ALL_SNAPSHOTS: ${{ github.event.inputs.updateAllSnapshots }} 
       run: |
         DEBUG=pw:webserver \
-        WP_BASE_URL=http://127.0.0.1:9400/ \
         npm run screenshots:wporg -- --update-snapshots
 
     - name: Commit updated screenshots
@@ -165,6 +166,6 @@ jobs:
       # Using Github CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
-      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created by Github action'
+      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & Github action'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
