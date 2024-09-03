@@ -35,7 +35,7 @@ const UrlRewritePreview = (props) => {
 
 	return (
 		<>
-			{window.GatherPress.urls.siteUrl + '/'}
+			{window.GatherPress.urls.homeUrl + '/'}
 			<strong>{rewrittenUrlPart}</strong>
 			{'/' + suffix}
 		</>
