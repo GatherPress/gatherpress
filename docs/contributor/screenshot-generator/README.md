@@ -15,12 +15,14 @@ With the help of WordPress Playground, identical instances are created one for e
 While such a workflow could run on every major- and minor-, but not on bug-fix-releases, this is *currently **started manually** via `workflow_dispatch`*.
 
 1. Start the workflow
+   ![The workflow trigger button, to start the screenshot generator workflows.](./screenshot-generator__workflow-dispatch.png)
    1. Just triggering this workflow will start the **default routine**, which checks for differences to prior versions of images and only updates the screenshots with noticaeable changes. Screenshots that did not exist before, will be created automatically.
    2. Or running the workflow with the "**Update all Screenshots?**" enabled, will skip the comparison and recreate all Screenshots.
 2. After the workflow has successfully ran ...
    ![The screenshot generator workflows running on github.com](./screenshot-generator__workflow-runs.png)
 3. ... **pull_requests are created**, one for each language, that could be reviewed by native speakers.
-   ![The screenshot generator workflows running on github.com](./screenshot-generator__PRs-per-language.png)
+   ![The created PRs per language on github.com](./screenshot-generator__PRs-per-language.png)
+
 ## Manually generating Screenshots
 
 The workflow scripts can also be used to **manually create screenshots**. In general, only a Playground instance is needed. This could have different languages enabled or additional plugins added, that may extend GatherPress or demonstrate a new feature.
