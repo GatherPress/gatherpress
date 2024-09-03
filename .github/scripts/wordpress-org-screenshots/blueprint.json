@@ -40,9 +40,14 @@
 			"userId": 1
 		},
 		{
-			"step": "activatePlugin",
-			"pluginName": "gatherpress",
-			"pluginPath": "/wordpress/wp-content/plugins/gatherpress"
+			"step": "installPlugin",
+			"pluginZipFile": {
+				"resource": "wordpress.org/plugins",
+				"slug": "gatherpress"
+			},
+			"options": {
+				"activate": true
+			}
 		},
 		{
 			"step": "importWxr",
