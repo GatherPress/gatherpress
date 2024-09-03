@@ -89,6 +89,8 @@ class Event_Setup {
 	 * @return void
 	 */
 	public function register_post_type(): void {
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
 		register_post_type(
 			Event::POST_TYPE,
 			array(
@@ -137,11 +139,36 @@ class Event_Setup {
 					'custom-fields',
 				),
 				'menu_icon'     => 'dashicons-nametag',
+				'has_archive'   => true,
 				'rewrite'       => array(
-					'slug' => _x( 'event', 'Post Type Slug', 'gatherpress' ),
+					'slug'       => $rewrite_slug,
+					'with_front' => false,
 				),
 			)
 		);
+	}
+
+	/**
+	 * Returns the post type slug localized for the site language and sanitized as URL part.
+	 *
+	 * Do not use this directly, use get_value( 'general', 'urls', 'events' ) instead.
+	 *
+	 * This method switches to the sites default language and gets the translation of 'events' for the loaded locale.
+	 * After that, the method sanitizes the string to be safely used within an URL,
+	 * by removing accents, replacing special characters and replacing whitespace with dashes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public static function get_localized_post_type_slug(): string {
+		$switched_locale = switch_to_locale( get_locale() );
+		$slug            = _x( 'event', 'Post Type Slug', 'gatherpress' );
+		$slug            = sanitize_title( $slug, '', 'save' );
+		if ( $switched_locale ) {
+			restore_previous_locale();
+		}
+		return $slug;
 	}
 
 	/**
