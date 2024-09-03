@@ -80,9 +80,9 @@ jobs:
         key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
     - name: Install Playwright dependencies
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps chromium
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-    - run: npx playwright install-deps
+    - run: npx playwright install-deps chromium
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
     - name: Prepare localized blueprint
@@ -152,7 +152,7 @@ jobs:
     - name: Commit updated screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ steps.screenshot-tests.outcome == 'failure' }}
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       run: |
         git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
         git config --local user.email "action@github.com"
@@ -167,7 +167,7 @@ jobs:
     - name: Create a Pull Request
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ steps.screenshot-tests.outcome == 'failure' }}
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
