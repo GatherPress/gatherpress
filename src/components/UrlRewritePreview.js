@@ -4,6 +4,11 @@
 import { useState } from '@wordpress/element';
 
 /**
+ * Internal dependencies.
+ */
+import { getFromGlobal } from './helpers/globals';
+
+/**
  * UrlRewritePreview component for GatherPress.
  *
  * This component renders a preview of the rewritten url based on the specified string.
@@ -25,6 +30,8 @@ const UrlRewritePreview = (props) => {
 
 	const input = document.querySelector(`[name="${name}"]`);
 
+	const homeUrl = getFromGlobal('urls.homeUrl');
+
 	input.addEventListener(
 		'input',
 		(e) => {
@@ -35,7 +42,7 @@ const UrlRewritePreview = (props) => {
 
 	return (
 		<>
-			{window.GatherPress.urls.homeUrl + '/'}
+			{homeUrl + '/'}
 			<strong>{rewrittenUrlPart}</strong>
 			{'/' + suffix}
 		</>
