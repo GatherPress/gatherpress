@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Compress Images
-        uses: calibreapp/image-actions@1.1.0
+        uses: calibreapp/image-actions@master #master is regularly updated (until 09/2024 so far), while the latest tagged version is from 2020
         with:
           # Configuration could be added
           # https://github.com/marketplace/actions/image-actions#%EF%B8%8F-configuration
