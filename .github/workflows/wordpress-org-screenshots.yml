@@ -101,6 +101,10 @@ jobs:
             {
               "step": "setSiteLanguage",
               "language": "${{ matrix.locale }}"
+            },
+            {
+              "step": "wp-cli",
+              "command": "wp option update WPLANG ${{ matrix.locale }}"
             }
           ]'
           echo "Use jq to append the site language step to the existing blueprint JSON file."
