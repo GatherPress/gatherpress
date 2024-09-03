@@ -6,7 +6,7 @@ import { useState } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from './helpers/globals';
+import { getFromGlobal } from '../helpers/globals';
 
 /**
  * UrlRewritePreview component for GatherPress.
