@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       updateAllSnapshots:
-        description: 'Replace all existing images? (By default only changes will be updated.)'
-        default: false
+        description: 'Replace all existing images? (By default only images with noticeable changes will be updated.)'
+        required: false
+        type: 'boolean'
+        default: 'false' # Needs to be a string, see https://graphite.dev/guides/github-actions-inputs#handling-boolean-inputs
 
 # Cancels all previous workflow runs.
 concurrency:
