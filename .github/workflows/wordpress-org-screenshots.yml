@@ -157,7 +157,10 @@ jobs:
         git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        # Remove untracked, temporary file
         rm -f ./localized_blueprint.json
+        # Do not push built changes, focus on the images.
+        git restore ./build
         git add -A
         git commit -m "Screenshots for ${{ matrix.locale }} updated!"
         git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
