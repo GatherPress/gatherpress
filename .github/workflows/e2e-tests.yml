@@ -28,8 +28,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # matrix:
-      #     node: ['14']
+      max-parallel: 1 # Prevent parallel runs to make use of the caching for node_modules and playwright browsers
+      matrix:
+          php: [
+            '7.4',
+            '8.3'
+          ]
 
     steps:
     - name: Checkout
@@ -110,5 +114,5 @@ jobs:
       uses: actions/upload-artifact@v4
       if: failure()
       with:
-        name: test-results-matrix-less-debugging
+        name: test-results-${{ matrix.php }}
         path: artifacts/test-results/

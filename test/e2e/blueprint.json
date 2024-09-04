@@ -1,9 +1,5 @@
 {
 	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
-	"preferredVersions": {
-		"php": "8.2",
-		"wp": "latest"
-	},
 	"phpExtensionBundles": [
 		"kitchen-sink"
 	],
