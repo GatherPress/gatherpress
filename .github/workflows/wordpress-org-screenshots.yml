@@ -163,7 +163,7 @@ jobs:
         git restore ./build
         git add -A
         git commit -m "Screenshots for ${{ matrix.locale }} updated!"
-        # git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
+        git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -175,20 +175,5 @@ jobs:
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
       run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # The compress images workflow says: "This action only runs for pushes to PRs"
-      # So lets TRY to put the push event after the pr creation,
-      # to hopefully get this triggered now.
-    - name: Push updated screenshots
-      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
-      # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
-      # git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
-      # git config --local user.email "action@github.com"
-      # git config --local user.name "GitHub Action"
-      run: |
-        git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
