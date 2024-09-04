@@ -19,18 +19,17 @@
 				"WP_DEBUG": false,
 				"WP_DEBUG_DISPLAY": false,
 				"WP_DEBUG_LOG": "/wordpress/wp-content/plugins/gatherpress/artifacts/debug.log",
-				"DISABLE_WP_CRON": true,
-				"GATHERPRESS_ALPHA_VERSION": 1
+				"DISABLE_WP_CRON": true
 			}
 		},
 		{
 			"step": "login"
 		},
-        {
-            "step": "activatePlugin",
-            "pluginName": "gatherpress",
-            "pluginPath": "/wordpress/wp-content/plugins/gatherpress"
-        },
+		{
+			"step": "activatePlugin",
+			"pluginName": "gatherpress",
+			"pluginPath": "/wordpress/wp-content/plugins/gatherpress"
+		},
 		{
 			"step": "importWxr",
 			"file": {

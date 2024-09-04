@@ -41,7 +41,7 @@ export default defineConfig({
 		{
 			name: 'webkit',
 			use: {
-				...devices[ 'Desktop Safari' ],
+				...devices['Desktop Safari'],
 				/**
 				 * Headless webkit won't receive dataTransfer with custom types in the
 				 * drop event on Linux. The solution is to use `xvfb-run` to run the tests.
@@ -83,7 +83,8 @@ export default defineConfig({
 	retries: 0,
 	webServer: {
 		...baseConfig.webServer,
-		command: 'npm run playground:mount -- --blueprint=./test/e2e/blueprint.json',
+		command:
+			'npm run playground:mount -- --blueprint=./test/e2e/blueprint.json',
 		port: 9400,
 		// reuseExistingServer: !process.env.CI,
 		reuseExistingServer: true,
