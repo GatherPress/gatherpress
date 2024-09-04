@@ -11,7 +11,8 @@
 		"networking": true
 	},
 	"constants": {
-		"WP_HTTP_BLOCK_EXTERNAL": "true"
+		"WP_HTTP_BLOCK_EXTERNAL": "true",
+		"GATHERPRESS_ALPHA_VERSION": "true"
 	},
 	"siteOptions": {
 		"blogname": "GatherPress",
@@ -25,8 +26,7 @@
 			"consts": {
 				"WP_DEBUG": false,
 				"WP_DEBUG_DISPLAY": false,
-				"DISABLE_WP_CRON": true,
-				"GATHERPRESS_ALPHA_VERSION": 1
+				"DISABLE_WP_CRON": true
 			}
 		},
 		{
