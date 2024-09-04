@@ -39,7 +39,8 @@
 		"pretest:unit:php": "wp-env start --xdebug",
 		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report",
 		"wp-env": "wp-env",
-		"playground": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress --blueprint=./test/e2e/blueprint.json"
+		"playground": "./node_modules/@wp-playground/cli/wp-playground.js server",
+		"playground:mount": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress"
 	},
 	"repository": {
 		"type": "git",

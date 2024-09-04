@@ -83,29 +83,22 @@ jobs:
     - run: npx playwright install-deps
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
-    # - name: Starting Playwright & Running the tests
-    #   env:
-    #     WP_BASE_URL: 'http://127.0.0.1:9400'
-    #   run: |
-    #     npm run test:e2e
-
-    # - name: Run the tests
-    #   env:
-    #     WP_BASE_URL: 'http://127.0.0.1:9400'
-    #     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-    #   run: |
-    #     xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run test:e2e
-
-
-    - name: Start the server
+    - name: Starting Playground
+      # Having this as a separate workflow step, should help making sure Playwright runs only, when this is DONE & READY.
+      #
+      # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
+      # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
+      # 
+      # The "&" is important to allow the next step to start!
       run: |
-        npm run playground -- &
+        npm run playground:mount -- --php=${{ matrix.php }} --blueprint=./test/e2e/blueprint.json &
 
-    - name: Run the tests
+    - name: Starting Playwright & Running the tests
       env:
-        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1,
+        WP_BASE_URL: 'http://127.0.0.1:9400/'
       run: |
-        WP_BASE_URL=http://127.0.0.1:9400/ \
+        DEBUG=pw:webserver \
         xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- \
         npm run test:e2e
 
