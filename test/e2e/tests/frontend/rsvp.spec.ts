@@ -55,14 +55,14 @@ test.describe('RSVP to an event', () => {
 		await page
 			.locator('.gatherpress-rsvp-response__items')
 			.first()
-			.isVisible(); // verified the RSVP button is visible.
+			.toBeVisible(); // verified the RSVP button is visible.
 
-		await page.getByText('Attending').first().isVisible({ timeout: 30000 }); // verified the logged in user perform RSVP action
+		await page.getByText('Attending').first().toBeVisible({ timeout: 30000 }); // verified the logged in user perform RSVP action
 
 		await page
 			.locator('.gatherpress-rsvp-response__items')
 			.first()
-			.isVisible(); // verified the attending users list.
+			.toBeVisible(); // verified the attending users list.
 
 		// await page
 		// 	.locator('.gatherpress-rsvp-response__items')
