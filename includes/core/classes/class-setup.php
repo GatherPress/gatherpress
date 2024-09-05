@@ -82,8 +82,6 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'init', array( $this, 'load_gatherpress_textdomain' ), 0 );
-
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
@@ -111,37 +109,6 @@ class Setup {
 			),
 			array( $this, 'filter_plugin_action_links' )
 		);
-	}
-
-	/**
-	 * Load plugin textdomain.
-	 *
-	 * Make sure to load all translation fileseven for users
-	 * who chosed another than the sites default language.
-	 *
-	 * @see https://developer.wordpress.org/reference/functions/load_plugin_textdomain
-	 *
-	 * Calling load_plugin_textdomain() should be delayed until init action.
-	 * @see https://developer.wordpress.org/reference/functions/load_plugin_textdomain/#comment-1568
-	 *
-	 * load_plugin_textdomain() will try to load the mo file firstly from:
-	 * WP_LANG_DIR . ‘/plugins/’ . $mofile
-	 * Only if it is not able to it will load it from GATHERPRESS_DIR_NAME folder
-	 * @see https://developer.wordpress.org/reference/functions/load_plugin_textdomain/#comment-3521
-	 *
-	 * Since WordPress 4.6 translations now take translate.wordpress.org as priority and so
-	 * plugins that are translated via translate.wordpress.org DO NOT necessary require load_plugin_textdomain() anymore.
-	 * If you don’t want to add a load_plugin_textdomain() call to your plugin
-	 * you have to set the Requires at least: field in your readme.txt to 4.6 or more.
-	 * @see https://developer.wordpress.org/plugins/internationalization/how-to-internationalize-your-plugin/#plugins-on-wordpress-org
-	 *
-	 * BUT, ...!!!
-	 *
-	 * A call to load_plugin_textdomain() is ABSOLUTELY NEEDED to properly load all translation files
-	 * for users who chosed another than the sites default language in their /profile.php.
-	 */
-	public function load_gatherpress_textdomain() {
-		load_plugin_textdomain( 'gatherpress', false, false );
 	}
 
 	/**
