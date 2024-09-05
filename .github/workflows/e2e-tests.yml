@@ -83,6 +83,19 @@ jobs:
     - run: npx playwright install-deps
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
+    - name: Prepare preferredVersions for blueprint
+      # playground/cli ignores --php & --wp flags when --blueprint is set
+      #
+      # I created an issue at:
+      # https://github.com/WordPress/playground-tools/issues/352
+      run: |
+        preferredVersions='{
+          "php": "${{ matrix.php }}",
+          "wp": "latest"
+        }'
+        echo "Use jq to prepend the preferred versions to the existing blueprint JSON file."
+        jq --argjson preferredVersions "$preferredVersions" '{preferredVersions: $preferredVersions} + .' ./test/e2e/blueprint.json > temp.blueprint.json
+
     - name: Starting Playground
       # Having this as a separate workflow step, should help making sure Playwright runs only, when this is DONE & READY.
       #
@@ -91,7 +104,7 @@ jobs:
       # 
       # The "&" is important to allow the next step to start!
       run: |
-        npm run playground:mount -- --php=${{ matrix.php }} --blueprint=./test/e2e/blueprint.json &
+        npm run playground:mount -- --blueprint=./temp.blueprint.json &
 
     - name: Starting Playwright & Running the tests
       env:
