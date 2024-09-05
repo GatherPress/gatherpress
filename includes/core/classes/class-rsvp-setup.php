@@ -53,6 +53,53 @@ class Rsvp_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
+	
+			
+		/**
+		 * Fires when comment-specific meta boxes are added.
+		 *
+		 * @param \WP_Comment $comment Comment object.
+		 */
+		\add_action('add_meta_boxes_comment',function( \WP_Comment $comment ) : void {
+			
+			// Taken from https://developer.wordpress.org/reference/functions/register_and_do_post_meta_boxes/
+			// https://github.com/WordPress/wordpress-develop/blob/8e89a9856e3d8369225df0c63cb6911ec884ab4f/src/wp-admin/includes/meta-boxes.php#L1606-L1630
+			$taxonomy = \get_taxonomy( Rsvp::TAXONOMY );
+			
+			if ( ! $taxonomy->show_ui || false === $taxonomy->meta_box_cb ) {
+				return;
+			}
+			
+			$label = $taxonomy->labels->name;
+			
+			if ( ! \is_taxonomy_hierarchical( Rsvp::TAXONOMY ) ) {
+				$tax_meta_box_id = 'tagsdiv-' . Rsvp::TAXONOMY;
+			} else {
+				$tax_meta_box_id = Rsvp::TAXONOMY . 'div';
+			}
+
+			require_once \ABSPATH . 'wp-admin/includes/meta-boxes.php';
+	
+			$amb = \add_meta_box(
+				$tax_meta_box_id,
+				// $label,
+				'RSVP stati',
+				$taxonomy->meta_box_cb,
+				'comment',
+				'normal', // 'side' doesnt work
+				'core',
+				array(
+					'taxonomy'               => Rsvp::TAXONOMY,
+					'__back_compat_meta_box' => true,
+				)
+			);
+			global $wp_meta_boxes;
+			\do_action('qm/info', $amb );
+			\do_action('qm/info', $wp_meta_boxes );
+			\do_action('qm/info', $taxonomy );
+
+		} );
+	
 	}
 
 	/**
@@ -69,16 +116,22 @@ class Rsvp_Setup {
 			'comment',
 			array(
 				'labels'             => array(),
-				'hierarchical'       => false,
+				'hierarchical'       => true,
 				'public'             => true,
-				'show_ui'            => false,
+				'show_ui'            => true,
 				'show_admin_column'  => false,
 				'query_var'          => true,
-				'publicly_queryable' => false,
+				'publicly_queryable' => true,
 				'show_in_rest'       => true,
 			)
 		);
+
+
 	}
+
+public function meta_box_cb() {
+	return '!!! #####';
+}
 
 	/**
 	 * Adjusts the number of comments displayed for event posts.
