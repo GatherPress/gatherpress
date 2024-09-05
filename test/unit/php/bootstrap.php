@@ -18,7 +18,8 @@ tests_add_filter(
 	static function () {
 		// Manually load our plugin without having to setup the development folder in the correct plugin folder.
 		require_once __DIR__ . '/../../../gatherpress.php';
-	}
+	},
+	9 // Require file on 9, because the plugin itself is loaded on 10.
 );
 
 $gatherpress_bootstrap_instance->start();
