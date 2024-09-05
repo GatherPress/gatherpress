@@ -40,4 +40,7 @@ require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.ph
 GatherPress\Core\Autoloader::register();
 
 // Initialize setups.
-GatherPress\Core\Setup::get_instance();
+add_action(
+	'plugins_loaded',
+	array( '\GatherPress\Core\Setup', 'get_instance' )
+);
