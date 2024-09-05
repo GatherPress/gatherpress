@@ -82,12 +82,12 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
-		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
+		// register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
+		// register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
-		add_action( 'admin_init', array( $this, 'check_gatherpress_alpha' ) );
+		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );

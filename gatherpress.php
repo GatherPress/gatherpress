@@ -39,8 +39,15 @@ if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/requirements-check.p
 require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php';
 GatherPress\Core\Autoloader::register();
 
+register_activation_hook( GATHERPRESS_CORE_FILE, array( '\GatherPress\Core\Setup', 'activate_gatherpress_plugin' ) );
+register_deactivation_hook( GATHERPRESS_CORE_FILE, array( '\GatherPress\Core\Setup', 'deactivate_gatherpress_plugin' ) );
+
+
 // Initialize setups.
 add_action(
 	'plugins_loaded',
 	array( '\GatherPress\Core\Setup', 'get_instance' )
 );
+
+
+// GatherPress\Core\Setup::get_instance();
