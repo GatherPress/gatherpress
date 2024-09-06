@@ -8,6 +8,8 @@ Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdely
 
 ![](.wordpress-org/banner-1544x500.jpg)
 
+PBrocks is the shizzle...
+
 GatherPress, powering our community's event management needs.
 
 ![GPLv2 License](https://img.shields.io/github/license/GatherPress/gatherpress) [![Coding Standards](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml) [![PHPUnit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml) [![JavaScript Unit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml) [![E2E Tests](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml) [![SonarCloud](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml) [![Dependency Review](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml/badge.svg?event=pull_request)](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml)
@@ -29,8 +31,7 @@ This project is for the collaborative effort to build a compelling event managem
 
 We're creating the very network features we need to host events and gather well.
 
-https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
-
+<https://www.youtube.com/watch?v=BnYS36C5d38&t=2s>
 
 ### Features
 
@@ -104,6 +105,7 @@ To run GatherPress, we recommend your host supports:
 In WP Admin, go to `Events`  > `Settings`.
 
 You can change different settings such as:
+
 - Show publish date as event date for events.
 - The default maximum limit of attendees to an event.
 - Anonymous RSVP.
@@ -132,6 +134,7 @@ By default, a few blocks are populated, you can keep them or delete them and you
 In WP Admin, go to `Events` > `Venues`.
 
 In the Venue block, you can define:
+
 - The full address, telephone, and website of the venue.
 - The map settings.
 
@@ -174,14 +177,16 @@ As we continue to refine and develop the plugin, please use the [GatherPress Alp
 
 ## Changelog
 
-See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+See complete changelog at <https://github.com/GatherPress/gatherpress/releases>.
 
 ## Upgrade Notice
 
 ### 1.0.0
 
 =======
+
 ### Is GatherPress WordPress Multisite compatible?
+
 Yes, GatherPress can be run on a network of sites. The additional database tables it needs, will be created automatically for each new site if the plugin is network-activated.
 
 GatherPress can also be activated per site.
@@ -204,10 +209,10 @@ As we continue to refine and develop the plugin, please use the [GatherPress Alp
 
 ## Changelog
 
-See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+See complete changelog at <https://github.com/GatherPress/gatherpress/releases>.
 
 ## Upgrade Notice
 
 ### 1.0.0
 
-See: https://gatherpress.org/releases/version-1-0-0
+See: <https://gatherpress.org/releases/version-1-0-0>
