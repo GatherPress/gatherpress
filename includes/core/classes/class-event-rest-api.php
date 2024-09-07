@@ -1,9 +1,9 @@
 <?php
 /**
- * Handles the registration of REST API endpoints.
+ * Handles the registration of Event REST API endpoints.
  *
  * This file contains the Rest_Api class, which is responsible for registering and managing
- * various REST API endpoints within the GatherPress plugin.
+ * various Event REST API endpoints within the GatherPress plugin.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -21,7 +21,7 @@ use WP_REST_Response;
 use WP_REST_Server;
 
 /**
- * Class Rest_Api.
+ * Class Event_Rest_Api.
  *
  * The Rest_Api class is responsible for registering and managing various REST API endpoints
  * used by the GatherPress plugin. It provides methods for defining routes, handling requests,
@@ -29,7 +29,7 @@ use WP_REST_Server;
  *
  * @since 1.0.0
  */
-class Rest_Api {
+class Event_Rest_Api {
 	/**
 	 * Enforces a single instance of this class.
 	 */
