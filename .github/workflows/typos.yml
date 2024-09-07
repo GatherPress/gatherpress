@@ -1,0 +1,23 @@
+# Check if there are typos in the source code
+# https://github.com/crate-ci/typos
+# https://github.com/crate-ci/typos/blob/HEAD/docs/reference.md
+
+name: Spell Check with Typos
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  typos:
+    name: Spell Check with Typos
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout Actions Repository
+      uses: actions/checkout@v4
+
+    - name: Check spelling
+      uses: crate-ci/typos@master
+      with:
+        files: ./.github ./docs ./includes ./src ./test ./*.php ./*.md
+        config: ./.typos.toml

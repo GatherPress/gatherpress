@@ -8,6 +8,7 @@ import { createRoot } from '@wordpress/element';
  */
 import Autocomplete from '../components/Autocomplete';
 import { dateTimePreview } from '../helpers/datetime';
+import { urlRewritePreview } from '../helpers/urlrewrite';
 
 /**
  * Autocomplete Initialization
@@ -49,3 +50,15 @@ for (let i = 0; i < autocompleteContainers.length; i++) {
  * @since 1.0.0
  */
 dateTimePreview();
+
+/**
+ * UrlRewrite Preview Initialization
+ *
+ * This script initializes the UrlRewrite Preview functionality for all elements
+ * with the attribute 'data-gatherpress_component_name' set to 'urlrewrite-preview'.
+ * It iterates through all matching elements and initializes a UrlRewritePreview component
+ * with the attributes provided in the 'data-gatherpress_component_attrs' attribute.
+ *
+ * @since 1.0.0
+ */
+urlRewritePreview();

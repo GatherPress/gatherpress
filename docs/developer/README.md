@@ -14,33 +14,33 @@ Although you can download a zip file of the plugin at:
 https://github.com/GatherPress/gatherpress
 ```
 
-If you want to help out with development, we suggest forking the code to your own Github repository and creating a branch from there.
+If you want to help out with development, we suggest forking the code to your own GitHub repository and creating a branch from there.
 
 #### Clone this repository
 
 Once you've forked the repo, you should now have a mirrored copy of GatherPress, but on your profile's URL, or something like this:
 
 ```
-https://github.com/YourGithubUsername/gatherpress
+https://github.com/YourGitHubUsername/gatherpress
 ```
 
-where `YourGithubUsername` corresponds to your login name for Github.
+where `YourGitHubUsername` corresponds to your login name for GitHub.
 
 To clone a local copy, open a terminal window and run the following command:
 
 ```sh
-git clone git@github.com:YourGithubUsername/gatherpress.git
+git clone git@github.com:YourGitHubUsername/gatherpress.git
 ```
 
 if you have your SSH keys set up. If not, run:
 
 ```sh
-git clone https://github.com/YourGithubUsername/gatherpress.git
+git clone https://github.com/YourGitHubUsername/gatherpress.git
 ```
 
 ##### Note about customizing the URL
 
-Once you have forked the GatherPress repo, you can also change the folder name of your version of the repository by going into your settings of your repo on Github's website.
+Once you have forked the GatherPress repo, you can also change the folder name of your version of the repository by going into your settings of your repo on GitHub's website.
 
 ```
 https://github.com/pbrocks/gatherpress

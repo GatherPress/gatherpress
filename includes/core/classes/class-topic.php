@@ -72,6 +72,8 @@ class Topic {
 	 * @return void
 	 */
 	public function register_taxonomy(): void {
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'topics' );
 		register_taxonomy(
 			self::TAXONOMY,
 			Event::POST_TYPE,
@@ -98,10 +100,34 @@ class Topic {
 				'show_admin_column' => true,
 				'query_var'         => true,
 				'rewrite'           => array(
-					'slug' => _x( 'topic', 'Taxonomy Slug', 'gatherpress' ),
+					'slug'       => $rewrite_slug,
+					'with_front' => false,
 				),
 				'show_in_rest'      => true,
 			)
 		);
+	}
+
+	/**
+	 * Returns the taxonomy slug localized for the site language and sanitized as URL part.
+	 *
+	 * Do not use this directly, use get_value( 'general', 'urls', 'topics' ) instead.
+	 *
+	 * This method switches to the sites default language and gets the translation of 'topics' for the loaded locale.
+	 * After that, the method sanitizes the string to be safely used within an URL,
+	 * by removing accents, replacing special characters and replacing whitespace with dashes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string
+	 */
+	public static function get_localized_taxonomy_slug(): string {
+		$switched_locale = switch_to_locale( get_locale() );
+		$slug            = _x( 'topic', 'Taxonomy Slug', 'gatherpress' );
+		$slug            = sanitize_title( $slug, '', 'save' );
+		if ( $switched_locale ) {
+			restore_previous_locale();
+		}
+		return $slug;
 	}
 }

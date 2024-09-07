@@ -2,6 +2,12 @@ name: WordPress.org screenshot generation
 
 on:
   workflow_dispatch:
+    inputs:
+      updateAllSnapshots:
+        description: 'Replace all existing images? (By default only images with noticeable changes will be updated.)'
+        required: false
+        type: 'boolean'
+        default: 'false' # Needs to be a string, see https://graphite.dev/guides/github-actions-inputs#handling-boolean-inputs
 
 # Cancels all previous workflow runs.
 concurrency:
@@ -35,12 +41,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup localised wp-env for ${{ matrix.locale }}
-      run: |
-        touch .wp-env.override.json
-        > .wp-env.override.json
-        echo "{ \"config\": { \"WPLANG\": \"${{ matrix.locale }}\" } }" >> .wp-env.override.json
-
     - uses: actions/cache@v4
       id: playwright-cache
       with:
@@ -58,7 +58,7 @@ jobs:
         cache: 'npm'
 
     # Restoring the short lived node_modules cache
-    # to be used accross all workflows running on the last commit.
+    # to be used across all workflows running on the last commit.
     # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
     - uses: actions/cache/restore@v4
       id: node_modules-cache
@@ -80,46 +80,85 @@ jobs:
         key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
     - name: Install Playwright dependencies
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps chromium
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-    - run: npx playwright install-deps
+    - run: npx playwright install-deps chromium
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
-    - name: Starting localised wp-env
+    - name: Prepare localized blueprint
+      # en_US should not get any additional steps added, as this will result in errors!
+      #
+      # All other locales need those two steps!
+      # The first downloads all lang-packs, while the second is important for
+      # "( await requestUtils.getSiteSettings() ).language;"
+      # which would otherwise return only "en_US". Learned that the hard way!
+      # Might be a bug in Playgrounds setSiteLanguage step or intended behavior.
       run: |
-        npm run wp-env start --update
+        if [ ${{ matrix.locale }} == 'en_US' ]; then
+          cp .github/scripts/wordpress-org-screenshots/blueprint.json localized_blueprint.json
+        else
+          language_step='[
+            {
+              "step": "setSiteLanguage",
+              "language": "${{ matrix.locale }}"
+            },
+            {
+              "step": "wp-cli",
+              "command": "wp option update WPLANG ${{ matrix.locale }}"
+            }
+          ]'
+          echo "Use jq to append the site language step to the existing blueprint JSON file."
+          jq --argjson languageStep "$language_step" '.steps += $languageStep' .github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
+        fi
 
-        # Set language on the environment
-        # https://developer.wordpress.org/block-editor/reference-guides/packages/packages-env/#wp-env-run-container-command
-        # "wp-env run tests-cli "will run against localhost:8889
-        npm run wp-env run tests-cli wp language core install ${{ matrix.locale }}
-        npm run wp-env run tests-cli wp option update WPLANG ${{ matrix.locale }}
+    - name: Starting Playground
+      # Having this as a separate workflow step, should help making sure Playwright runs only, when this is DONE & READY.
+      #
+      # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
+      # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
+      # 
+      # The "&" is important to allow the next step to start!
+      run: |
+        npm run playground -- --blueprint=./localized_blueprint.json &
 
-        npm run wp-env run tests-cli wp language plugin install gatherpress ${{ matrix.locale }}
-
-    - name: Starting Playwright & Running the screenshot tests
+    - name: Running the screenshot tests
       id: screenshot-tests
       # Having set "continue-on-error:true" should help the workflow to pass (and get a green checkmark)
       # even if this step fails, what could happen because of intended changes or the addition of new locales.
       continue-on-error: true
+      if: ${{ ! github.event.inputs.updateAllSnapshots }}
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        WP_BASE_URL: 'http://127.0.0.1:9400/'
       run: |
-            npm run screenshots:wporg
+        DEBUG=pw:webserver \
+        npm run screenshots:wporg
 
-    - name: Starting Playwright again & Updating the Screenshots
+    - name: Updating the Screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ steps.screenshot-tests.outcome == 'failure' }}
+      #
+      # Or the step is triggered directly, while the former step is skipped,
+      # when the updateAllSnapshots is trueish.
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      env:
+        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+        WP_BASE_URL: 'http://127.0.0.1:9400/'
+        UPDATE_ALL_SNAPSHOTS: ${{ github.event.inputs.updateAllSnapshots }} 
       run: |
+        DEBUG=pw:webserver \
         npm run screenshots:wporg -- --update-snapshots
 
     - name: Commit updated screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ steps.screenshot-tests.outcome == 'failure' }}
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       run: |
         git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        # Remove untracked, temporary file
+        rm -f ./localized_blueprint.json
         git add -A
         git commit -m "Screenshots for ${{ matrix.locale }} updated!"
         git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
@@ -129,10 +168,10 @@ jobs:
     - name: Create a Pull Request
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
-      if: ${{ steps.screenshot-tests.outcome == 'failure' }}
-      # Using Github CLI in Workflows
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
-      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created by Github action'
+      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
