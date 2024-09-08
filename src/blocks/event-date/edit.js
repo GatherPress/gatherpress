@@ -8,7 +8,12 @@ import clsx from 'clsx';
  * WordPress dependencies.
  */
 import { __, sprintf } from '@wordpress/i18n';
-import {AlignmentToolbar, BlockControls, InspectorControls, useBlockProps} from '@wordpress/block-editor';
+import {
+	AlignmentToolbar,
+	BlockControls,
+	InspectorControls,
+	useBlockProps,
+} from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
@@ -73,6 +78,13 @@ const displayDateTime = (start, end, tz) => {
  * an icon, displays the formatted date and time, and provides controls to edit the
  * date and time range via the DateTimeRange component in the InspectorControls.
  *
+ * @param  root0
+ * @param  root0.attributes
+ * @param  root0.attributes.textAlign
+ * @param  root0.attributes.format
+ * @param  root0.attributes.isLink
+ * @param  root0.attributes.displayType
+ * @param  root0.setAttributes
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered Edit component for the GatherPress Event Date block.
@@ -82,28 +94,33 @@ const displayDateTime = (start, end, tz) => {
  * @see {@link useBlockProps} - Custom hook for block props.
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
-const Edit = ( {
+const Edit = ({
 	attributes: { textAlign, format, isLink, displayType },
 	setAttributes,
-} ) => {
-	const blockProps = useBlockProps( {
-		className: clsx( {
-			[ `has-text-align-${ textAlign }` ]: textAlign
-		} ),
-	} );
+}) => {
+	const blockProps = useBlockProps({
+		className: clsx({
+			[`has-text-align-${textAlign}`]: textAlign,
+		}),
+	});
 
-	const { dateTimeStart, dateTimeEnd, timezone } = useSelect((select) => ({
-		dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
-		dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
-		timezone: select('gatherpress/datetime').getTimezone(),
-	}), []);
+	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
+		(select) => ({
+			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
+			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
+			timezone: select('gatherpress/datetime').getTimezone(),
+		}),
+		[]
+	);
 
 	return (
-		<div { ...blockProps }>
+		<div {...blockProps}>
 			<BlockControls>
 				<AlignmentToolbar
 					value={textAlign}
-					onChange={(newAlign) => setAttributes({textAlign: newAlign})}
+					onChange={(newAlign) =>
+						setAttributes({ textAlign: newAlign })
+					}
 				/>
 			</BlockControls>
 			{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}

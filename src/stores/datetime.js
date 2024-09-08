@@ -53,18 +53,12 @@ const actions = {
 					data: {
 						post_id: getFromGlobal('eventDetails.postId'),
 						datetime_start: moment
-							.tz(
-								dateTimeStart,
-								getTimeZone()
-							)
+							.tz(dateTimeStart, getTimeZone())
 							.format(dateTimeDatabaseFormat),
 						datetime_end: moment
-							.tz(
-								dateTimeEnd,
-								getTimeZone()
-							)
+							.tz(dateTimeEnd, getTimeZone())
 							.format(dateTimeDatabaseFormat),
-						timezone: timezone,
+						timezone,
 						_wpnonce: getFromGlobal('misc.nonce'),
 					},
 				});
