@@ -11,11 +11,11 @@ import { __, sprintf } from '@wordpress/i18n';
 import {AlignmentToolbar, BlockControls, InspectorControls, useBlockProps} from '@wordpress/block-editor';
 import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
 import { useState } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { Listener } from '../../helpers/broadcasting';
 import {
 	convertPHPToMomentFormat,
 	defaultDateTimeEnd,
@@ -26,6 +26,7 @@ import {
 import EditCover from '../../components/EditCover';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
+import '../../stores/datetime';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -80,22 +81,22 @@ const displayDateTime = (start, end, tz) => {
  * @see {@link EditCover} - Component for displaying a cover over the block.
  * @see {@link useBlockProps} - Custom hook for block props.
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
- * @see {@link Listener} - Function for adding event listeners.
  */
 const Edit = ( {
 	attributes: { textAlign, format, isLink, displayType },
 	setAttributes,
 } ) => {
-	const [dateTimeStart, setDateTimeStart] = useState(defaultDateTimeStart);
-	const [dateTimeEnd, setDateTimeEnd] = useState(defaultDateTimeEnd);
-	const [timezone, setTimezone] = useState(getTimeZone());
 	const blockProps = useBlockProps( {
 		className: clsx( {
 			[ `has-text-align-${ textAlign }` ]: textAlign
 		} ),
 	} );
 
-	Listener({ setDateTimeEnd, setDateTimeStart, setTimezone });
+	const { dateTimeStart, dateTimeEnd, timezone } = useSelect((select) => ({
+		dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
+		dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
+		timezone: select('gatherpress/datetime').getTimezone(),
+	}), []);
 
 	return (
 		<div { ...blockProps }>

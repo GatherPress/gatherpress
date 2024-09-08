@@ -1,8 +1,8 @@
 /**
  * WordPress dependencies.
  */
-import {subscribe, useDispatch, useSelect} from '@wordpress/data';
-import {useEffect, useState} from '@wordpress/element';
+import { subscribe } from '@wordpress/data';
+import { useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -10,7 +10,7 @@ import { __ } from '@wordpress/i18n';
  */
 import { saveDateTime } from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
-// import DateTimeEnd from '../components/DateTimeEnd';
+import DateTimeEnd from '../components/DateTimeEnd';
 import TimeZone from '../components/TimeZone';
 
 /**
@@ -31,9 +31,8 @@ const DateTimeRange = () => {
 	const [dateTimeEnd, setDateTimeEnd] = useState();
 	const [timezone, setTimezone] = useState();
 
+	subscribe(saveDateTime);
 
-	// saveDateTime();
-	// subscribe(saveDateTime);
 	return (
 		<>
 			<h3>{__('Date & time', 'gatherpress')}</h3>
@@ -41,10 +40,10 @@ const DateTimeRange = () => {
 				dateTimeStart={dateTimeStart}
 				setDateTimeStart={setDateTimeStart}
 			/>
-			{/*<DateTimeEnd*/}
-			{/*	dateTimeEnd={dateTimeEnd}*/}
-			{/*	setDateTimeEnd={setDateTimeEnd}*/}
-			{/*/>*/}
+			<DateTimeEnd
+				dateTimeEnd={dateTimeEnd}
+				setDateTimeEnd={setDateTimeEnd}
+			/>
 			<TimeZone timezone={timezone} setTimezone={setTimezone} />
 		</>
 	);

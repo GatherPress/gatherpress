@@ -1,7 +1,7 @@
 /**
  * Internal dependencies.
  */
-// import DateTimeRange from '../../../components/DateTimeRange';
+import DateTimeRange from '../../../components/DateTimeRange';
 
 /**
  * A panel component for managing date and time ranges.
@@ -16,7 +16,7 @@
 const DateTimeRangePanel = () => {
 	return (
 		<section>
-			{/*<DateTimeRange />*/}
+			<DateTimeRange />
 		</section>
 	);
 };

@@ -15,18 +15,19 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
+import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
 import { DateTimeStartLabel, DateTimeStartPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
-import { Broadcaster } from '../helpers/broadcasting';
 import {
 	dateTimeMomentFormat,
 	getDateTimeStart,
 	getTimeZone,
 } from '../helpers/datetime';
+import '../stores/datetime';
 
 /**
  * DateTimeStart component for GatherPress.
@@ -46,7 +47,10 @@ import {
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeStart = (props) => {
-	const { dateTimeStart, setDateTimeStart } = props;
+	const { dateTimeStart } = useSelect((select) => ({
+		dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
+	}), []);
+	const { setDateTimeStart } = useDispatch('gatherpress/datetime');
 
 	useEffect(() => {
 		setDateTimeStart(
@@ -54,10 +58,6 @@ const DateTimeStart = (props) => {
 				.tz(getDateTimeStart(), getTimeZone())
 				.format(dateTimeMomentFormat)
 		);
-
-		Broadcaster({
-			setDateTimeStart: dateTimeStart,
-		});
 
 		hasEventPastNotice();
 	});

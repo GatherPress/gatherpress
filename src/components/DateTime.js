@@ -2,10 +2,8 @@
  * WordPress dependencies.
  */
 import { getSettings } from '@wordpress/date';
-import {DateTimePicker, Spinner} from '@wordpress/components';
+import { DateTimePicker } from '@wordpress/components';
 import moment from 'moment';
-// import { setDatetimeStart, setDatetimeEnd, setTimezone, saveEventDetails } from '../stores/datetime';
-import '../stores/datetime';
 
 /**
  * Internal dependencies.
@@ -16,8 +14,6 @@ import {
 	dateTimeLabelFormat,
 	getTimeZone,
 } from '../helpers/datetime';
-import {useDispatch, useSelect} from '@wordpress/data';
-import {useEffect} from '@wordpress/element';
 
 /**
  * Formats the provided start date and time according to the specified label format
@@ -82,32 +78,13 @@ export const DateTimeStartPicker = (props) => {
 			.join('')
 	);
 
-	const { datetimeStart, datetimeEnd, timezone, isFetching } = useSelect((select) => ({
-		datetimeStart: select('gatherpress/datetime').getDatetimeStart(),
-		datetimeEnd: select('gatherpress/datetime').getDatetimeEnd(),
-		timezone: select('gatherpress/datetime').getTimezone(),
-		isFetching: select('gatherpress/datetime').isFetching(),
-	}));
-
-    // Get dispatch function from the store
-    // const dispatch = useDispatch('gatherpress/datetime');
-    const { saveEventDetails } = useDispatch('gatherpress/datetime');
-
-return (
-    <>
-        {isFetching ? (
-            <Spinner />
-        ) : (
-            <DateTimePicker
-                currentDate={dateTimeStart}
-                onChange={(value) => {
-                    saveEventDetails(value);  // Dispatch the action to update datetimeStart
-                }}
-                is12Hour={is12HourTime}
-            />
-        )}
-    </>
-);
+	return (
+		<DateTimePicker
+			currentDate={dateTimeStart}
+			onChange={(date) => updateDateTimeStart(date, setDateTimeStart)}
+			is12Hour={is12HourTime}
+		/>
+	);
 };
 
 /**

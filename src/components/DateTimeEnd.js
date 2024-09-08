@@ -15,13 +15,13 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
+import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
 import { DateTimeEndLabel, DateTimeEndPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
-import { Broadcaster } from '../helpers/broadcasting';
 import {
 	dateTimeMomentFormat,
 	getDateTimeEnd,
@@ -46,7 +46,10 @@ import {
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeEnd = (props) => {
-	const { dateTimeEnd, setDateTimeEnd } = props;
+	const { dateTimeEnd } = useSelect((select) => ({
+		dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
+	}), []);
+	const { setDateTimeEnd } = useDispatch('gatherpress/datetime');
 
 	useEffect(() => {
 		setDateTimeEnd(
@@ -54,10 +57,6 @@ const DateTimeEnd = (props) => {
 				.tz(getDateTimeEnd(), getTimeZone())
 				.format(dateTimeMomentFormat)
 		);
-
-		Broadcaster({
-			setDateTimeEnd: dateTimeEnd,
-		});
 
 		hasEventPastNotice();
 	});
