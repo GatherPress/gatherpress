@@ -4,6 +4,7 @@
 import { PanelRow, SelectControl } from '@wordpress/components';
 import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
+import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -14,6 +15,7 @@ import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForSelect,
 } from '../helpers/datetime';
+import '../stores/datetime';
 
 /**
  * TimeZone component for GatherPress.
@@ -31,19 +33,19 @@ import {
  * @return {JSX.Element} The rendered React component.
  */
 const TimeZone = (props) => {
-	const { timezone, setTimezone } = props;
+	const { timezone } = useSelect(
+		(select) => ({
+			timezone: select('gatherpress/datetime').getTimezone(),
+		}),
+		[]
+	);
+	const { setTimezone } = useDispatch('gatherpress/datetime');
 	const choices = getFromGlobal('misc.timezoneChoices');
 
 	// Run only once.
 	useEffect(() => {
 		setTimezone(getFromGlobal('eventDetails.dateTime.timezone'));
 	}, [setTimezone]);
-
-	useEffect(() => {
-		Broadcaster({
-			setTimezone: getFromGlobal('eventDetails.dateTime.timezone'),
-		});
-	});
 
 	return (
 		<PanelRow>
@@ -53,7 +55,6 @@ const TimeZone = (props) => {
 				onChange={(value) => {
 					value = maybeConvertUtcOffsetForDatabase(value);
 					setTimezone(value);
-					setToGlobal('eventDetails.dateTime.timezone', value);
 					enableSave();
 				}}
 			>

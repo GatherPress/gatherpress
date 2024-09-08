@@ -27,24 +27,14 @@ import TimeZone from '../components/TimeZone';
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeRange = () => {
-	const [dateTimeStart, setDateTimeStart] = useState();
-	const [dateTimeEnd, setDateTimeEnd] = useState();
-	const [timezone, setTimezone] = useState();
-
 	subscribe(saveDateTime);
 
 	return (
 		<>
 			<h3>{__('Date & time', 'gatherpress')}</h3>
-			<DateTimeStart
-				dateTimeStart={dateTimeStart}
-				setDateTimeStart={setDateTimeStart}
-			/>
-			<DateTimeEnd
-				dateTimeEnd={dateTimeEnd}
-				setDateTimeEnd={setDateTimeEnd}
-			/>
-			<TimeZone timezone={timezone} setTimezone={setTimezone} />
+			<DateTimeStart />
+			<DateTimeEnd />
+			<TimeZone />
 		</>
 	);
 };

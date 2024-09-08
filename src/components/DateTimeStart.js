@@ -46,7 +46,7 @@ import '../stores/datetime';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const DateTimeStart = (props) => {
+const DateTimeStart = () => {
 	const { dateTimeStart } = useSelect(
 		(select) => ({
 			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),

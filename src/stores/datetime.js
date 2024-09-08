@@ -12,7 +12,7 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../helpers/globals';
+import {getFromGlobal, setToGlobal} from '../helpers/globals';
 import { dateTimeDatabaseFormat, getTimeZone } from '../helpers/datetime';
 
 const DEFAULT_STATE = {
@@ -24,18 +24,24 @@ const DEFAULT_STATE = {
 
 const actions = {
 	setDateTimeStart(dateTimeStart) {
+		setToGlobal('eventDetails.dateTime.datetime_start', dateTimeStart);
+
 		return {
 			type: 'SET_DATETIME_START',
 			dateTimeStart,
 		};
 	},
 	setDateTimeEnd(dateTimeEnd) {
+		setToGlobal('eventDetails.dateTime.datetime_end', dateTimeEnd);
+
 		return {
 			type: 'SET_DATETIME_END',
 			dateTimeEnd,
 		};
 	},
 	setTimezone(timezone) {
+		setToGlobal('eventDetails.dateTime.timezone', timezone);
+
 		return {
 			type: 'SET_TIMEZONE',
 			timezone,

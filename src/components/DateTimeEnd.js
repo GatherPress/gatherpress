@@ -45,7 +45,7 @@ import {
  *
  * @return {JSX.Element} The rendered React component.
  */
-const DateTimeEnd = (props) => {
+const DateTimeEnd = () => {
 	const { dateTimeEnd } = useSelect(
 		(select) => ({
 			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
