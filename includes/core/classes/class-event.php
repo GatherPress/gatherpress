@@ -443,7 +443,7 @@ class Event {
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'googlecalendar',
+				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'google-calendar',
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
@@ -456,7 +456,7 @@ class Event {
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'yahoocalendar',
+				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'yahoo-calendar',
 			),
 		);
 	}
