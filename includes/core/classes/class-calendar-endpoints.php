@@ -69,9 +69,8 @@ class Calendar_Endpoints {
 	 */
 	protected function setup_hooks(): void {
 		// add_action('do_feed_ical',function () {
-		// 	echo wp_kses_post( 'hello subscribeable ical feed.' );
+		// echo wp_kses_post( 'hello subscribeable ical feed.' );
 		// });
-
 
 		add_action(
 			sprintf(
@@ -90,7 +89,7 @@ class Calendar_Endpoints {
 				if ( is_singular( 'gatherpress_event' ) ) {
 					echo '<link rel="alternate" type="text/calendar" href="' . trailingslashit( get_the_permalink() ) . 'ical/" title="Download Calendar" />';
 				}
-				if ( is_archive( 'gatherpress_event' ) || is_taxonomy('gatherpress_topic') ) {
+				if ( is_archive( 'gatherpress_event' ) || is_taxonomy( 'gatherpress_topic' ) ) {
 					echo '<link rel="alternate" type="text/calendar" href="' . trailingslashit( get_the_permalink() ) . 'ical/" title="Download Calendar" />';
 				}
 			}
@@ -111,7 +110,7 @@ class Calendar_Endpoints {
 	 */
 	public function init(): void {
 		// Important: Register the feed endpoint before the single endpoint,
-		//            to make sure rewrite rules get safed in the correct order.
+		// to make sure rewrite rules get safed in the correct order.
 		new Posttype_Feed_Endpoint(
 			'gatherpress_ical_feed',
 			array(
@@ -127,7 +126,6 @@ class Calendar_Endpoints {
 				new Endpoint_Template( 'outlook', array( $this, 'get_ical_download_template' ) ),
 			)
 		);
-
 	}
 
 	/**

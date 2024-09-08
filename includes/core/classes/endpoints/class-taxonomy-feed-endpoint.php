@@ -11,10 +11,10 @@ use GatherPress\Core\Endpoints\Endpoint;
 class Taxonomy_Feed_Endpoint extends Endpoint {
 
 
-	 public function __construct(
+	public function __construct(
 		string $query_var,
 		array $types,
-		string $taxonomy = 'gatherpress_topic',
+		string $taxonomy = 'gatherpress_topic'
 	) {
 		// Expression for the post type archive feeds,
 		// for example 'event/feed/(custom-endpoint)(/)'.
@@ -33,9 +33,9 @@ class Taxonomy_Feed_Endpoint extends Endpoint {
 		add_action(
 			sprintf(
 				'do_feed_%s',
-				$this->get_slugs( __NAMESPACE__ . '\Endpoint_Template')[0]
+				$this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' )[0]
 			),
-			array( $this, 'load_template')
+			array( $this, 'load_template' )
 		);
 	}
 
@@ -44,7 +44,7 @@ class Taxonomy_Feed_Endpoint extends Endpoint {
 	 *
 	 * This method ensures that a feed template is loaded when a request is made to
 	 * the custom feed endpoint. If the theme provides an override for the feed template,
-	 * it will be used; otherwise, the default template from the plugin is loaded. The 
+	 * it will be used; otherwise, the default template from the plugin is loaded. The
 	 * method ensures that WordPress does not return a 404 for custom feed URLs.
 	 *
 	 * A call to any post types /feed/anything endpoint is handled by WordPress
@@ -65,7 +65,7 @@ class Taxonomy_Feed_Endpoint extends Endpoint {
 	 *
 	 * @return void
 	 */
-	 public function load_template() {
+	public function load_template() {
 		load_template( $this->types[0]->template_include( false ) );
 	}
 
@@ -79,7 +79,7 @@ class Taxonomy_Feed_Endpoint extends Endpoint {
 	 *
 	 * @return bool True if the current request is a valid feed request for the post type archive.
 	 */
-	 public function is_valid(): bool {
+	public function is_valid(): bool {
 		return is_archive( $this->type_object->name ) && is_feed();
 	}
 
@@ -93,7 +93,7 @@ class Taxonomy_Feed_Endpoint extends Endpoint {
 	 *
 	 * @return string The rewrite URL for the custom feed.
 	 */
-	public function get_rewrite_url() : string {
+	public function get_rewrite_url(): string {
 		return add_query_arg(
 			array(
 				'taxonomy' => $this->type_object->name,

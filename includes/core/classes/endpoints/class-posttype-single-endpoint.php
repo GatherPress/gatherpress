@@ -51,7 +51,7 @@ class Posttype_Single_Endpoint extends Endpoint {
 	public function __construct(
 		string $query_var,
 		array $types,
-		string $post_type = 'gatherpress_event',
+		string $post_type = 'gatherpress_event'
 	) {
 		// Regular expression to match singular event endpoints.
 		// Example: 'event/my-sample-event/(custom-endpoint)(/)'.

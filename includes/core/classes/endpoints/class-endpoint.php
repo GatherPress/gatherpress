@@ -118,7 +118,6 @@ class Endpoint {
 	) {
 		// ...
 		if ( $this->is_valid_registration( $type_name, $types, $object_type ) ) {
-
 			$this->query_var           = $query_var;
 			$this->validation_callback = $validation_callback;
 			$this->types               = $types;
@@ -181,7 +180,7 @@ class Endpoint {
 		add_action( 'template_redirect', array( $this, 'template_redirect' ) );
 	}
 
-	public function get_rewrite_url() : string {
+	public function get_rewrite_url(): string {
 		return add_query_arg(
 			array(
 				$this->type_object->name => '$matches[1]',
