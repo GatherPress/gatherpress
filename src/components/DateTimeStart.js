@@ -64,7 +64,7 @@ const DateTimeStart = (props) => {
 
 	return (
 		<PanelRow>
-			<Flex direction="column" gap="0">
+			<Flex direction="row" gap="0">
 				<FlexItem>
 					<label htmlFor="gatherpress-datetime-start">
 						{__('Start', 'gatherpress')}
