@@ -45,7 +45,7 @@ The GatherPress Playground allows you to test the current state of GatherPress w
 
 For an introduction as to what we are creating and the specific features needed to host events and gather well, please view the [introductory video](https://www.youtube.com/watch?v=BnYS36C5d38&t=2s).
 
-[![Watch the video](https://img.youtube.com/vi/BnYS36C5d38/default.jpg)](https://youtu.be/BnYS36C5d38)
+https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
 
 ### Features
 
