@@ -191,7 +191,7 @@ As we continue to refine and develop the plugin, please use the [GatherPress Alp
 
 ## Changelog
 
-See complete changelog at <https://github.com/GatherPress/gatherpress/releases>.
+See complete changelog at https://github.com/GatherPress/gatherpress/releases.
 
 ## Upgrade Notice
 
@@ -223,10 +223,10 @@ As we continue to refine and develop the plugin, please use the [GatherPress Alp
 
 ## Changelog
 
-See complete changelog at <https://github.com/GatherPress/gatherpress/releases>.
+See complete changelog at https://github.com/GatherPress/gatherpress/releases.
 
 ## Upgrade Notice
 
 ### 1.0.0
 
-See: <https://gatherpress.org/releases/version-1-0-0>
+See: https://gatherpress.org/releases/version-1-0-0
