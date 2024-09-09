@@ -4,7 +4,7 @@ Stable tag: 0.31.0-alpha
 Tested up to: 6.6.1
 License: GPL v2 or later
 Tags: events, event, meetup, community
-Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, prayagm, pbrocks, linusx007
+Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, pbrocks, prayagm, linusx007
 
 ![](.wordpress-org/banner-1544x500.jpg)
 
@@ -72,10 +72,6 @@ https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
 - Email notification when event starts. ([#](https://github.com/GatherPress/gatherpress/issues/429))
 - Event federation using ActivityPub ([#](https://github.com/GatherPress/gatherpress/issues/569))
 
-### Contribute
-
-If you wish to share in the collaborative of work to build GatherPress, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](https://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, [translation](https://translate.wordpress.org/projects/wp-plugins/gatherpress/) and more.
-
 ### Third-Party Libraries
 
 This plugin leverages the following third-party libraries for various functionalities:
@@ -83,17 +79,6 @@ This plugin leverages the following third-party libraries for various functional
 - [React-Modal](https://github.com/reactjs/react-modal): Facilitates the creation of modal dialogs in React components.
 - [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips for React applications.
 - [Leaflet](https://leafletjs.com/): Provides global, open-source mapping functionality
-
-## Screenshots
-
-1. Create a new event
-   ![Create a new event](.wordpress-org/screenshot-1.png)
-2. Create a new venue
-   ![Create a new venue](.wordpress-org/screenshot-2.png)
-3. General Settings
-   ![General Settings](.wordpress-org/screenshot-3.png)
-4. Leadership Settings
-   ![Leadership Settings](.wordpress-org/screenshot-4.png)
 
 ## Installation
 
@@ -108,13 +93,6 @@ To run GatherPress, we recommend your host supports:
 - PHP version 7.4 or greater.
 - MySQL version 5.6 or greater, or, MariaDB version 10.0 or greater.
 - HTTPS support.
-
-## Frequently Asked Questions
-
-### What external services are used in GatherPress?
-
-- Mapping Services: We use OpenStreetMap and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
-- Calendar Integration: GatherPress also supports "Add to Calendar" functionality using Google Calendar and Yahoo! Calendar.
 
 ### Configure GatherPress
 
@@ -160,6 +138,27 @@ In WP Admin, go to `Events`  > `Topics`.
 
 Topics are like post categories, but for events.
 
+## Contribute
+
+If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
+
+### Read Developer Documentation
+
+Find the developer documentation inside the plugins' `docs` folder.
+
+### Collaborator Access
+
+To get write access to the GitHub repo, please reach out to our **GitHub Administrators**: [Mervin Hernandez](https://github.com/MervinHernandez) and [Mike Auteri](https://github.com/mauteri).
+
+To get access to [GatherPress.org](htps://gatherpress.org/get-involved) via SSH or WP Admin login, please reach out to our **GatherPress.org Administrator**: [Mervin Hernandez](https://github.com/MervinHernandez).
+
+## Frequently Asked Questions
+
+### What external services are used in GatherPress?
+
+- Mapping Services: We use OpenStreetMap and Google Maps to display meeting locations on a map. To achieve this, we send the address to OpenStreetMap or Google Maps for rendering.
+- Calendar Integration: GatherPress also supports "Add to Calendar" functionality using Google Calendar and Yahoo! Calendar.
+
 ### What about a PRO version?
 
 As a Community powered plugin, GatherPress is already the PRO-version.
@@ -178,15 +177,26 @@ As a Community powered plugin, GatherPress is already the PRO-version.
 
 Because we strive for close-to-core development, love decisions - not options and follow a lot of well known best-practices within the WordPress space, we can and do focus on what matters most - powering our community's event management needs.
 
-## GatherPress‘ best-practices:
+## GatherPress‘ Best Practices:
 
 - Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
 - Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
 - [JavaScript & PHP Unit tests](https://sonarcloud.io/summary/new_code?id=GatherPress_gatherpress&branch=main) are covering almost 80% of the whole codebase.
 
-### Reminder that GatherPress is still in Alpha
+## Reminder -- GatherPress is still in Alpha
 
-As we continue to refine and develop the plugin, please use the [GatherPress Alpha](https://github.com/GatherPress/gatherpress-alpha) plugin alongside the core GatherPress plugin. The Alpha plugin manages breaking changes easily: just make sure it is up-to-date, activate it, go to the Alpha section under GatherPress Settings, and click "Fix GatherPress!" after updating GatherPress. This process helps us avoid technical debt as we work towards launching version 1.0.0 of the plugin.
+As we continue to refine and develop the core plugin, we've created the [GatherPress Alpha](https://github.com/GatherPress/gatherpress-alpha) plugin to run alongside the GatherPress plugin. The role of the Alpha plugin is to manage breaking changes easily: just make sure it is up-to-date, activate it, go to the Alpha section under GatherPress Settings, and click "Fix GatherPress!" after updating GatherPress. This process helps us avoid technical debt as we work towards launching version 1.0.0 of the plugin. When we arrive there, the Alpha plugin will no longer be necessary.
+
+## Screenshots
+
+1. Create a new event
+   ![Create a new event](.wordpress-org/screenshot-1.png)
+2. Create a new venue
+   ![Create a new venue](.wordpress-org/screenshot-2.png)
+3. General Settings
+   ![General Settings](.wordpress-org/screenshot-3.png)
+4. Leadership Settings
+   ![Leadership Settings](.wordpress-org/screenshot-4.png)
 
 ## Changelog
 
