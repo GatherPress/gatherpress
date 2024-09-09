@@ -1,10 +1,10 @@
 # GatherPress
 
-Stable tag: 0.31.0-alpha 
-Tested up to: 6.6.1 
-License: GPL v2 or later 
-Tags: events, event, meetup, community 
-Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, pbrocks, prayagm, linusx007 
+Stable tag: 0.31.0-alpha  
+Tested up to: 6.6.1  
+License: GPL v2 or later  
+Tags: events, event, meetup, community  
+Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, pbrocks, prayagm, linusx007  
 
 ![](.wordpress-org/banner-1544x500.jpg)
 
