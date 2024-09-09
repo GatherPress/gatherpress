@@ -13,12 +13,16 @@ import apiFetch from '@wordpress/api-fetch';
  * Internal dependencies.
  */
 import {getFromGlobal, setToGlobal} from '../helpers/globals';
-import { dateTimeDatabaseFormat, getTimeZone } from '../helpers/datetime';
+import {dateTimeDatabaseFormat, defaultDateTimeEnd, defaultDateTimeStart, getTimeZone} from '../helpers/datetime';
 import {isEventPostType} from '../helpers/event';
 
 const DEFAULT_STATE = {
-	dateTimeStart: getFromGlobal('eventDetails.dateTime.datetime_start'),
-	dateTimeEnd: getFromGlobal('eventDetails.dateTime.datetime_end'),
+	dateTimeStart: getFromGlobal('eventDetails.dateTime.datetime_start')
+		? getFromGlobal('eventDetails.dateTime.datetime_start')
+		: defaultDateTimeStart,
+	dateTimeEnd: getFromGlobal('eventDetails.dateTime.datetime_end')
+		? getFromGlobal('eventDetails.dateTime.datetime_end')
+		: defaultDateTimeEnd,
 	timezone: getFromGlobal('eventDetails.dateTime.timezone'),
 	isFetching: false,
 };
@@ -53,7 +57,6 @@ const actions = {
 		const isAutosavingPost = select('core/editor').isAutosavingPost();
 
 		return async () => {
-			console.log('wtf');
 			if (isEventPostType() && isSavingPost && !isAutosavingPost) {
 				await apiFetch({
 					path: getFromGlobal('urls.eventRestApi') + '/datetime',

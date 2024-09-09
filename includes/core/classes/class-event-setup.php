@@ -200,7 +200,6 @@ class Event_Setup {
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
-				'type'              => 'string',
 			),
 			'gatherpress_datetime_start_gmt'     => array(
 				'auth_callback'     => function () {

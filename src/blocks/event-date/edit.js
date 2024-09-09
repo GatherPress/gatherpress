@@ -14,8 +14,7 @@ import {
 	InspectorControls,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import {Flex, FlexItem, Icon, PanelBody, Spinner} from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { PanelBody } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
 /**
@@ -23,12 +22,9 @@ import { useSelect } from '@wordpress/data';
  */
 import {
 	convertPHPToMomentFormat,
-	defaultDateTimeEnd,
-	defaultDateTimeStart,
 	getTimeZone,
 	getUtcOffset,
 } from '../../helpers/datetime';
-import EditCover from '../../components/EditCover';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
 
@@ -68,17 +64,13 @@ const displayDateTime = (start, end, tz) => {
 		endFormat = timeFormat + ' ' + timeZoneFormat;
 	}
 
-	if (!dateTimeStart || !dateTimeEnd) {
-		return <Spinner />
-	} else {
-		return sprintf(
-			/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
-			__('%1$s to %2$s %3$s', 'gatherpress'),
-			moment.tz(dateTimeStart, timeZone).format(startFormat),
-			moment.tz(dateTimeEnd, timeZone).format(endFormat),
-			getUtcOffset(timeZone)
-		);
-	}
+	return sprintf(
+		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
+		__('%1$s to %2$s %3$s', 'gatherpress'),
+		moment.tz(dateTimeStart, timeZone).format(startFormat),
+		moment.tz(dateTimeEnd, timeZone).format(endFormat),
+		getUtcOffset(timeZone)
+	);
 };
 
 /**

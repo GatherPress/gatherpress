@@ -43,8 +43,40 @@ GatherPress\Core\Autoloader::register();
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
 
-add_action( 'updated_post_meta', function($meta_id, $object_id, $meta_key, $meta_value) {
-	if ( $meta_key === 'gatherpress_max_attendance_limit' ) {
-		update_post_meta( $object_id, 'gatherpress_test', $meta_value );
+
+function gatherpress_test_meta( $meta_id, $object_id, $meta_key, $meta_value) {
+	if ( $meta_key === 'gatherpress_datetime' ) {
+		$data = json_decode( $meta_value, true ) ?? array();
+		$event = new GatherPress\Core\Event( $object_id );
+		$params = array(
+			'post_id' => $object_id,
+			'datetime_start' => $data['dateTimeStart'],
+			'datetime_end' => $data['dateTimeEnd'],
+			'timezone' => $data['timezone'],
+		);
+		$event->save_datetimes( $params );
 	}
-}, 10, 4);
+}
+
+function gatherpress_meta_save($post_id, $post, $update) {
+	if ('gatherpress_event' !== $post->post_type) {
+		return;
+	}
+	$event = new \GatherPress\Core\Event($post_id);
+	$fields = $event->get_datetime();
+
+	foreach ( $fields as $key => $field ) {
+		$meta_key = sprintf( 'gatherpress_%s', sanitize_key( $key ) );
+
+		update_post_meta(
+			$post_id,
+			$meta_key,
+			sanitize_text_field( $field )
+		);
+	}
+
+}
+
+add_action( 'added_post_meta', 'gatherpress_test_meta', 10, 4);
+add_action( 'updated_post_meta', 'gatherpress_test_meta', 10, 4);
+add_action( 'wp_after_insert_post', 'gatherpress_meta_save', 10, 3 );

@@ -5,7 +5,7 @@ import domReady from '@wordpress/dom-ready';
 import { dispatch, select } from '@wordpress/data';
 import { hasEventPastNotice } from './helpers/event';
 import { getBlockType, unregisterBlockType } from '@wordpress/blocks';
-import './stores/datetime';
+import './stores';
 
 /**
  * Internal dependencies.
