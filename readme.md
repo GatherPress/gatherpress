@@ -22,15 +22,30 @@ GatherPress, powering our community's event management needs.
 
 GatherPress, a plugin created by and for the WordPress community, is a response to the community's desire for novel event management tools that meet the diverse needs of event organizers and members. Its agenda and roadmap align with that of the WordPress community, ensuring that it evolves in tandem with our collective wants and needs.
 
+## Pilot Program
+
 **We propose a pilot program to test GatherPress, a community-developed plugin, within interested and active WordPress meetup groups. This initiative stems from our community’s need for an innovative event management tool tailored to the unique demands of WordPress event organizers and participants.**
 [@Patricia BT](https://profiles.wordpress.org/patricia70/) in January 2024 on [make.wordpress.org](https://make.wordpress.org/community/2024/01/22/proposal-pilot-program-to-test-gatherpress-on-the-wordpress-org-network-as-a-meetup-alternative/)
 
-This project is for the collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and the grit sweat and love of **the community, for the community**.
+## Community-built
 
-We're creating the very network features we need to host events and gather well.
+This project is the result of a collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and with the grit, sweat, and love of **the community, for the community**. We encourage all interested, whether a user, community member, or developer, to follow our emerging presence on our [GatherPress Blog](https://gatherpress.org/blog/), our [Github repositories](https://github.com/GatherPress/), our [GatherPress Documentation](https://gatherpress.org/documentation/), or new features on our [GatherPress Playground](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress-awesome/main/.wordpress-org/blueprints/blueprint.json).
 
-https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
+## Playground Environment
 
+![GatherPress Playground screenshot](../assets/images/gatherpress-awesome-playground.png)
+
+The GatherPress Playground allows you to test the current state of GatherPress with existing data in a fully-functional environment. The playground is build on the WordPress Playground with customizable json data that you can customize as you like. To get started, click the [link above](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress-awesome/main/.wordpress-org/blueprints/blueprint.json), or delve deeper by:
+
+- Enabling the “Live Preview” on WordPress.org plugins page
+- Instantly previewing changes from a commented Playground-link on each PR
+- Automatically generating multilingual screenshots for WordPress.org plugins
+- Run end-to-end tests (still a PR)
+- Curating and maintaining your own set of demo-data, which is reusable in all WP Playgrounds.
+
+For an introduction as to what we are creating and the specific features needed to host events and gather well, please view the [introductory video](https://www.youtube.com/watch?v=BnYS36C5d38&t=2s).
+
+[![Watch the video](https://img.youtube.com/vi/BnYS36C5d38/default.jpg)](https://youtu.be/BnYS36C5d38)
 
 ### Features
 
@@ -104,6 +119,7 @@ To run GatherPress, we recommend your host supports:
 In WP Admin, go to `Events`  > `Settings`.
 
 You can change different settings such as:
+
 - Show publish date as event date for events.
 - The default maximum limit of attendees to an event.
 - Anonymous RSVP.
@@ -132,6 +148,7 @@ By default, a few blocks are populated, you can keep them or delete them and you
 In WP Admin, go to `Events` > `Venues`.
 
 In the Venue block, you can define:
+
 - The full address, telephone, and website of the venue.
 - The map settings.
 
@@ -174,14 +191,16 @@ As we continue to refine and develop the plugin, please use the [GatherPress Alp
 
 ## Changelog
 
-See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+See complete changelog at <https://github.com/GatherPress/gatherpress/releases>.
 
 ## Upgrade Notice
 
 ### 1.0.0
 
 =======
+
 ### Is GatherPress WordPress Multisite compatible?
+
 Yes, GatherPress can be run on a network of sites. The additional database tables it needs, will be created automatically for each new site if the plugin is network-activated.
 
 GatherPress can also be activated per site.
@@ -204,10 +223,10 @@ As we continue to refine and develop the plugin, please use the [GatherPress Alp
 
 ## Changelog
 
-See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+See complete changelog at <https://github.com/GatherPress/gatherpress/releases>.
 
 ## Upgrade Notice
 
 ### 1.0.0
 
-See: https://gatherpress.org/releases/version-1-0-0
+See: <https://gatherpress.org/releases/version-1-0-0>
