@@ -33,9 +33,11 @@ This project is the result of a collaborative effort to build a compelling event
 
 ## Playground Environment
 
+The GatherPress Playground allows you to test the current state of GatherPress with existing data in a fully-functional environment. 
+
 ![GatherPress Playground screenshot](./docs/media/gatherpress-awesome-playground.png)
 
-The GatherPress Playground allows you to test the current state of GatherPress with existing data in a fully-functional environment. The playground is build on the WordPress Playground with customizable json data that you can customize as you like. To get started, click the [link above](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress-awesome/main/.wordpress-org/blueprints/blueprint.json), or delve deeper by:
+The playground is built on the WordPress Playground with customizable json data that you can customize as you like. To get started, click the [link above](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress-awesome/main/.wordpress-org/blueprints/blueprint.json), or delve deeper by:
 
 - Enabling the “Live Preview” on WordPress.org plugins page
 - Instantly previewing changes from a commented Playground-link on each PR
