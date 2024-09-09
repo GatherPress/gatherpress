@@ -42,3 +42,9 @@ GatherPress\Core\Autoloader::register();
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+add_action( 'updated_post_meta', function($meta_id, $object_id, $meta_key, $meta_value) {
+	if ( $meta_key === 'gatherpress_max_attendance_limit' ) {
+		update_post_meta( $object_id, 'gatherpress_test', $meta_value );
+	}
+}, 10, 4);

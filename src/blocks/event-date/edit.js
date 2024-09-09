@@ -14,7 +14,7 @@ import {
 	InspectorControls,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import { Flex, FlexItem, Icon, PanelBody } from '@wordpress/components';
+import {Flex, FlexItem, Icon, PanelBody, Spinner} from '@wordpress/components';
 import { useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 
@@ -31,7 +31,6 @@ import {
 import EditCover from '../../components/EditCover';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
-import '../../stores/datetime';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -50,23 +49,36 @@ const displayDateTime = (start, end, tz) => {
 	);
 	const timeZoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
 	const startFormat = dateFormat + ' ' + timeFormat;
-	const timeZone = getTimeZone(tz);
+	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
+		(select) => ({
+			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
+			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
+			timezone: select('gatherpress/datetime').getTimezone(),
+		}),
+		[]
+	);
+	const timeZone = getTimeZone(timezone);
+
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 
 	if (
-		moment.tz(start, timeZone).format(dateFormat) ===
-		moment.tz(end, timeZone).format(dateFormat)
+		moment.tz(dateTimeStart, timeZone).format(dateFormat) ===
+		moment.tz(dateTimeEnd, timeZone).format(dateFormat)
 	) {
 		endFormat = timeFormat + ' ' + timeZoneFormat;
 	}
 
-	return sprintf(
-		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
-		__('%1$s to %2$s %3$s', 'gatherpress'),
-		moment.tz(start, timeZone).format(startFormat),
-		moment.tz(end, timeZone).format(endFormat),
-		getUtcOffset(timeZone)
-	);
+	if (!dateTimeStart || !dateTimeEnd) {
+		return <Spinner />
+	} else {
+		return sprintf(
+			/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
+			__('%1$s to %2$s %3$s', 'gatherpress'),
+			moment.tz(dateTimeStart, timeZone).format(startFormat),
+			moment.tz(dateTimeEnd, timeZone).format(endFormat),
+			getUtcOffset(timeZone)
+		);
+	}
 };
 
 /**

@@ -6,7 +6,7 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { createReduxStore, register } from '@wordpress/data';
+import {createReduxStore, register, select} from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 
 /**
@@ -14,6 +14,7 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import {getFromGlobal, setToGlobal} from '../helpers/globals';
 import { dateTimeDatabaseFormat, getTimeZone } from '../helpers/datetime';
+import {isEventPostType} from '../helpers/event';
 
 const DEFAULT_STATE = {
 	dateTimeStart: getFromGlobal('eventDetails.dateTime.datetime_start'),
@@ -47,29 +48,28 @@ const actions = {
 			timezone,
 		};
 	},
-	saveEventDetails({ dateTimeStart, dateTimeEnd, timezone }) {
-		return async (dispatch) => {
-			console.log('Starting saveEventDetails'); // Ensure this is logged
+	saveEventDetails() {
+		const isSavingPost = select('core/editor').isSavingPost();
+		const isAutosavingPost = select('core/editor').isAutosavingPost();
 
-			try {
-				console.log('Making API call...');
+		return async () => {
+			console.log('wtf');
+			if (isEventPostType() && isSavingPost && !isAutosavingPost) {
 				await apiFetch({
 					path: getFromGlobal('urls.eventRestApi') + '/datetime',
 					method: 'POST',
 					data: {
 						post_id: getFromGlobal('eventDetails.postId'),
 						datetime_start: moment
-							.tz(dateTimeStart, getTimeZone())
+							.tz(getFromGlobal('eventDetails.dateTime.datetime_start'), getTimeZone())
 							.format(dateTimeDatabaseFormat),
 						datetime_end: moment
-							.tz(dateTimeEnd, getTimeZone())
+							.tz(getFromGlobal('eventDetails.dateTime.datetime_end'), getTimeZone())
 							.format(dateTimeDatabaseFormat),
-						timezone,
+						timezone: getFromGlobal('eventDetails.dateTime.timezone'),
 						_wpnonce: getFromGlobal('misc.nonce'),
 					},
 				});
-			} catch (error) {
-				console.log(error);
 			}
 		};
 	},

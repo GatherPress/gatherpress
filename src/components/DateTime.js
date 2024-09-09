@@ -14,6 +14,7 @@ import {
 	dateTimeLabelFormat,
 	getTimeZone,
 } from '../helpers/datetime';
+import {useDispatch, useSelect} from '@wordpress/data';
 
 /**
  * Formats the provided start date and time according to the specified label format
@@ -77,11 +78,35 @@ export const DateTimeStartPicker = (props) => {
 			.reverse()
 			.join('')
 	);
+	// const editPost = useDispatch('core/editor').editPost;
+	// const updateDateTimeMeta = (metaData) => {
+	// 	const payload = JSON.stringify({
+	// 		...dateTimeMetaData,
+	// 		...metaData,
+	// 	});
+	//
+	// 	const meta = { gatherpress_datetime: payload };
+	// 	editPost({ meta });
+	// };
+	// let dateTimeMetaData = useSelect(
+	// 	(select) =>
+	// 		select('core/editor').getEditedPostAttribute('meta')
+	// 			.gatherpress_datetime
+	// );
+	//
+	// if (dateTimeMetaData) {
+	// 	dateTimeMetaData = JSON.parse(dateTimeMetaData);
+	// } else {
+	// 	dateTimeMetaData = {};
+	// }
 
 	return (
 		<DateTimePicker
 			currentDate={dateTimeStart}
-			onChange={(date) => updateDateTimeStart(date, setDateTimeStart)}
+			onChange={(date) => {
+				// updateDateTimeMeta({ dateTimeStart: date });
+				updateDateTimeStart(date, setDateTimeStart)
+			}}
 			is12Hour={is12HourTime}
 		/>
 	);

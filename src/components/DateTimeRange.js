@@ -1,8 +1,8 @@
 /**
  * WordPress dependencies.
  */
-import { subscribe } from '@wordpress/data';
-import { useState } from '@wordpress/element';
+import {subscribe, select, useDispatch, useSelect} from '@wordpress/data';
+import {useEffect, useState} from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 /**
@@ -12,6 +12,7 @@ import { saveDateTime } from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import TimeZone from '../components/TimeZone';
+
 
 /**
  * DateTimeRange component for GatherPress.
@@ -27,7 +28,35 @@ import TimeZone from '../components/TimeZone';
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeRange = () => {
-	subscribe(saveDateTime);
+	const editPost = useDispatch('core/editor').editPost;
+	let dateTimeMetaData = useSelect(
+		(select) =>
+			select('core/editor').getEditedPostAttribute('meta')
+				.gatherpress_datetime
+	);
+	if (dateTimeMetaData) {
+		dateTimeMetaData = JSON.parse(dateTimeMetaData);
+	} else {
+		dateTimeMetaData = {};
+	}
+	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
+		(select) => ({
+			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
+			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
+			timezone: select('gatherpress/datetime').getTimezone(),
+		}),
+		[]
+	);
+
+	useEffect(() => {
+		const payload = JSON.stringify({
+			...dateTimeMetaData,
+			...{dateTimeStart, dateTimeEnd, timezone},
+		});
+
+		const meta = { gatherpress_datetime: payload };
+		editPost({ meta });
+	},[dateTimeStart, dateTimeEnd, timezone]);
 
 	return (
 		<>

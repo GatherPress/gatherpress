@@ -6,7 +6,7 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { select } from '@wordpress/data';
+import {select, subscribe, useSelect} from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import { createRoot } from '@wordpress/element';
@@ -378,34 +378,38 @@ export function validateDateTimeEnd(dateTimeEnd) {
  * @return {void}
  */
 export function saveDateTime() {
-	const isSavingPost = select('core/editor').isSavingPost(),
-		isAutosavingPost = select('core/editor').isAutosavingPost();
+	const unsubscribe = subscribe(() => {
+		const isSavingPost = select('core/editor').isSavingPost();
+		const isAutosavingPost = select('core/editor').isAutosavingPost();
 
-	if (isEventPostType() && isSavingPost && !isAutosavingPost) {
-		apiFetch({
-			path: getFromGlobal('urls.eventRestApi') + '/datetime',
-			method: 'POST',
-			data: {
-				post_id: getFromGlobal('eventDetails.postId'),
-				datetime_start: moment
+		if (isEventPostType() && isSavingPost && !isAutosavingPost) {
+			apiFetch({
+				path: getFromGlobal('urls.eventRestApi') + '/datetime',
+				method: 'POST',
+				data: {
+					post_id: getFromGlobal('eventDetails.postId'),
+					datetime_start: moment
 					.tz(
-						getFromGlobal('eventDetails.dateTime.datetime_start'),
-						getTimeZone()
+					getFromGlobal('eventDetails.dateTime.datetime_start'),
+					getTimeZone()
 					)
 					.format(dateTimeDatabaseFormat),
-				datetime_end: moment
+					datetime_end: moment
 					.tz(
-						getFromGlobal('eventDetails.dateTime.datetime_end'),
-						getTimeZone()
+					getFromGlobal('eventDetails.dateTime.datetime_end'),
+					getTimeZone()
 					)
 					.format(dateTimeDatabaseFormat),
-				timezone: getFromGlobal('eventDetails.dateTime.timezone'),
-				_wpnonce: getFromGlobal('misc.nonce'),
-			},
-		}).then(() => {
-			triggerEventCommunication();
-		});
-	}
+					timezone: getFromGlobal('eventDetails.dateTime.timezone'),
+					_wpnonce: getFromGlobal('misc.nonce'),
+				},
+			}).then(() => {
+				triggerEventCommunication();
+			});
+		}
+
+		unsubscribe();
+	});
 }
 
 /**

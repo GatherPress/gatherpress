@@ -15,7 +15,6 @@ import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForSelect,
 } from '../helpers/datetime';
-import '../stores/datetime';
 
 /**
  * TimeZone component for GatherPress.

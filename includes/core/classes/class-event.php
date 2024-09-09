@@ -698,19 +698,19 @@ class Event {
 
 			$meta_key = sprintf( 'gatherpress_%s', sanitize_key( $key ) );
 
-			if ( ! empty( $exists ) ) {
-				update_post_meta(
-					$fields['post_id'],
-					$meta_key,
-					sanitize_text_field( $field )
-				);
-			} else {
-				add_post_meta(
-					$fields['post_id'],
-					$meta_key,
-					sanitize_text_field( $field )
-				);
-			}
+//			if ( ! empty( $exists ) ) {
+//				update_post_meta(
+//					$fields['post_id'],
+//					$meta_key,
+//					sanitize_text_field( $field )
+//				);
+//			} else {
+//				add_post_meta(
+//					$fields['post_id'],
+//					$meta_key,
+//					sanitize_text_field( $field )
+//				);
+//			}
 		}
 
 		return (bool) $value;

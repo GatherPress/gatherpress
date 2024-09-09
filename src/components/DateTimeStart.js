@@ -27,7 +27,6 @@ import {
 	getDateTimeStart,
 	getTimeZone,
 } from '../helpers/datetime';
-import '../stores/datetime';
 
 /**
  * DateTimeStart component for GatherPress.
