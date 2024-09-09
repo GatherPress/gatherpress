@@ -144,7 +144,7 @@ If you wish to share in the collaborative of work to build _GatherPress_, please
 
 ### Read Developer Documentation
 
-Find the developer documentation inside the plugins' `docs` folder.
+Find the developer documentation inside the plugins' `docs` folder or on our [website](https://gatherpress.org/documentation/). our intent is to sync the `docs` folder to the website documentation.
 
 ### Collaborator Access
 
