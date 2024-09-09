@@ -1,9 +1,9 @@
 # GatherPress
 
-Stable tag: 0.31.0-alpha  
-Tested up to: 6.6.1  
-License: GPL v2 or later  
-Tags: events, event, meetup, community  
+Stable tag: 0.31.0-alpha
+Tested up to: 6.6.1
+License: GPL v2 or later
+Tags: events, event, meetup, community
 Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, prayagm, pbrocks, linusx007
 
 ![](.wordpress-org/banner-1544x500.jpg)
@@ -33,13 +33,13 @@ This project is the result of a collaborative effort to build a compelling event
 
 ## Playground Environment
 
-The GatherPress Playground allows you to test the current state of GatherPress with existing data in a fully-functional environment. 
+The GatherPress Playground allows you to test the current state of GatherPress with existing data in a fully-functional environment.
 
-![GatherPress Playground screenshot](./docs/media/gatherpress-awesome-playground.png)
+![GatherPress Playground screenshot](./docs/media/playground-plugins-link.png)
 
-The playground is built on the WordPress Playground with customizable json data that you can customize as you like. To get started, click the [link above](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress-awesome/main/.wordpress-org/blueprints/blueprint.json), or delve deeper by:
+The playground is built on the WordPress Playground with customizable json data that you can customize as you like. To get started, click the [button above](https://wordpress.org/plugins/gatherpress/?preview=1), or delve deeper by:
 
-- Enabling the “Live Preview” on WordPress.org plugins page
+- Clicking the “Live Preview” button on WordPress.org GatherPress plugin page
 - Instantly previewing changes from a commented Playground-link on each PR
 - Automatically generating multilingual screenshots for WordPress.org plugins
 - Run end-to-end tests (still a PR)
@@ -86,13 +86,13 @@ This plugin leverages the following third-party libraries for various functional
 
 ## Screenshots
 
-1. Create a new event  
+1. Create a new event
    ![Create a new event](.wordpress-org/screenshot-1.png)
-2. Create a new venue  
+2. Create a new venue
    ![Create a new venue](.wordpress-org/screenshot-2.png)
-3. General Settings  
+3. General Settings
    ![General Settings](.wordpress-org/screenshot-3.png)
-4. Leadership Settings  
+4. Leadership Settings
    ![Leadership Settings](.wordpress-org/screenshot-4.png)
 
 ## Installation
