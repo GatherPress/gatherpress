@@ -172,7 +172,7 @@ To get access to [GatherPress.org](htps://gatherpress.org/get-involved) via SSH 
 
 ### Read Developer Documentation
 
-Find the developer documentation inside the plugins' `docs` folder.
+Find the developer documentation inside the plugins' `docs` folder or on our [website](https://gatherpress.org/documentation/). Our intention is to sync the docs folder to the documentation site.
 
 ### What’s about the PRO version?
 
