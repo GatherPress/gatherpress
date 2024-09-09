@@ -160,46 +160,11 @@ In WP Admin, go to `Events`  > `Topics`.
 
 Topics are like post categories, but for events.
 
-## Contribute
-
-If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
-
-### Collaborator Access
-
-To get write access to the GitHub repo, please reach out to our **GitHub Administrators**: [Mervin Hernandez](https://github.com/MervinHernandez) and [Mike Auteri](https://github.com/mauteri).
-
-To get access to [GatherPress.org](htps://gatherpress.org/get-involved) via SSH or WP Admin login, please reach out to our **GatherPress.org Administrator**: [Mervin Hernandez](https://github.com/MervinHernandez).
-
-### Read Developer Documentation
-
-Find the developer documentation inside the plugins' `docs` folder or on our [website](https://gatherpress.org/documentation/). Our intention is to sync the docs folder to the documentation site.
-
-### What’s about the PRO version?
+### What about a PRO version?
 
 As a Community powered plugin, GatherPress is already the PRO-version.
 
 Because we strive for close-to-core development, love decisions - not options and follow a lot of well known best-practices within the WordPress space, we can and do focus on what matters most - powering our community's event management needs.
-
-GatherPress‘ best-practices:
-
-- Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
-- Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
-- [JavaScript & PHP Unit tests](https://sonarcloud.io/summary/new_code?id=GatherPress_gatherpress&branch=main) are covering almost 80% of the whole codebase.
-- Import & Export event- and venue-data using WordPress' native tools.
-
-### Reminder that GatherPress is still in Alpha
-
-As we continue to refine and develop the plugin, please use the [GatherPress Alpha](https://github.com/GatherPress/gatherpress-alpha) plugin alongside the core GatherPress plugin. The Alpha plugin manages breaking changes easily: just make sure it is up-to-date, activate it, go to the Alpha section under GatherPress Settings, and click "Fix GatherPress!" after updating GatherPress. This process helps us avoid technical debt as we work towards launching version 1.0.0 of the plugin.
-
-## Changelog
-
-See complete changelog at https://github.com/GatherPress/gatherpress/releases.
-
-## Upgrade Notice
-
-### 1.0.0
-
-=======
 
 ### Is GatherPress WordPress Multisite compatible?
 
@@ -213,7 +178,7 @@ As a Community powered plugin, GatherPress is already the PRO-version.
 
 Because we strive for close-to-core development, love decisions - not options and follow a lot of well known best-practices within the WordPress space, we can and do focus on what matters most - powering our community's event management needs.
 
-GatherPress‘ best-practices:
+## GatherPress‘ best-practices:
 
 - Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
 - Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
