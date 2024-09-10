@@ -186,6 +186,7 @@ class Calendar_Endpoints {
 		// @todo add_filter('feed_content_type') here
 
 		$args = array(
+			'blogtitle'     => get_bloginfo( 'name' ),
 			/* translators: Separator between site name and feed type in feed links. */
 			'separator'     => _x( '&raquo;', 'feed link', 'default' ),
 			/* translators: 1: Site name, 2: Separator (raquo), 3: Post title. */
@@ -206,7 +207,7 @@ class Calendar_Endpoints {
 			'url'  => get_post_type_archive_feed_link( 'gatherpress_event', 'ical' ),
 			'attr' => sprintf(
 				$args['feedtitle'],
-				get_bloginfo( 'name' ),
+				$args['blogtitle'],
 				$args['separator']
 			),
 		];
@@ -217,7 +218,7 @@ class Calendar_Endpoints {
 				'url'  => trailingslashit( get_permalink() ) . 'ical/',
 				'attr' => sprintf(
 					$args['singletitle'],
-					get_bloginfo( 'name' ),
+					$args['blogtitle'],
 					$args['separator'],
 					the_title_attribute( array( 'echo' => false ) )
 				),
@@ -246,16 +247,8 @@ class Calendar_Endpoints {
 							$href = get_term_feed_link( $term->term_id, $term->taxonomy, 'ical' );
 							break;
 					}
-					$alternate_links[] = [
-						'url'  => $href,
-						'attr' => sprintf(
-							$args['taxtitle'],
-							get_bloginfo( 'name' ),
-							$args['separator'],
-							$term->name,
-							$tax->labels->singular_name
-						),
-					];
+								$args['blogtitle'],
+								$args['separator'],
 				}
 			);
 
@@ -267,7 +260,7 @@ class Calendar_Endpoints {
 				'url'  => get_post_comments_feed_link( 0, 'ical' ),
 				'attr' => sprintf(
 					$args['singletitle'],
-					get_bloginfo( 'name' ),
+					$args['blogtitle'],
 					$args['separator'],
 					the_title_attribute( array( 'echo' => false ) )
 				),
@@ -284,7 +277,7 @@ class Calendar_Endpoints {
 					'url'  => get_term_feed_link( $term->term_id, $term->taxonomy, 'ical' ),
 					'attr' => sprintf(
 						$args['taxtitle'],
-						get_bloginfo( 'name' ),
+						$args['blogtitle'],
 						$args['separator'],
 						$term->name,
 						$tax->labels->singular_name
