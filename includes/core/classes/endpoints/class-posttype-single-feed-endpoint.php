@@ -3,7 +3,7 @@
  * Handles feed-based endpoints for custom post types in GatherPress.
  *
  * This file defines the `Posttype_Feed_Endpoint` class, which extends the base `Endpoint`
- * class to handle custom feeds for post type archives. It allows users to define custom
+ * class to handle custom feeds for post type singles. It allows users to define custom
  * feed URLs (e.g., RSS feeds) for post types such as `gatherpress_event`, while also allowing
  * theme overrides for feed templates.
  *
@@ -21,11 +21,9 @@ use GatherPress\Core\Endpoints\Endpoint;
 /**
  * Manages custom feed endpoints for post types in GatherPress.
  *
- * The `Posttype_Feed_Endpoint` class extends the base `Endpoint` class to create
+ * The `Posttype_Single_Feed_Endpoint` class extends the base `Endpoint` class to create
  * custom feed URLs for post types. It handles URL rewriting for feeds and
- * ensures that WordPress hooks into the appropriate feed template. The class also
- * supports theme overrides, allowing developers to customize feed templates for
- * specific post types.
+ * ensures that WordPress hooks into the appropriate feed template.
  *
  * @since 1.0.0
  */
@@ -34,9 +32,9 @@ class Posttype_Single_Feed_Endpoint extends Endpoint {
 	/**
 	 * Class constructor.
 	 *
-	 * Initializes the `Posttype_Feed_Endpoint` for handling custom feeds for the
+	 * Initializes the `Posttype_Single_Feed_Endpoint` for handling custom feeds for the
 	 * specified post type. It sets up a regular expression to match custom feed
-	 * URLs (e.g., `event/feed/custom-endpoint`) and hooks into WordPress to load
+	 * URLs (e.g., `venue/bangkok/feed/custom-endpoint`) and hooks into WordPress to load
 	 * the appropriate feed template.
 	 *
 	 * @since 1.0.0
@@ -51,7 +49,7 @@ class Posttype_Single_Feed_Endpoint extends Endpoint {
 		string $post_type = 'gatherpress_venue'
 	) {
 		// Expression for the post type archive feeds,
-		// for example 'event/feed/(custom-endpoint)(/)'.
+		// for example 'venue/bangkok/feed/(custom-endpoint)(/)'.
 		$reg_ex = '%s/([^/]+)/feed/(%s)/?$';
 
 		parent::__construct(

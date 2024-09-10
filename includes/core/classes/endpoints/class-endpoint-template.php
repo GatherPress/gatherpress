@@ -31,7 +31,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 class Endpoint_Template extends Endpoint_Type {
 
 	/**
-	 * 
+	 * Activate Endpoint_Type by hooking into relevant parts.
 	 *
 	 * @since 1.0.0
 	 *

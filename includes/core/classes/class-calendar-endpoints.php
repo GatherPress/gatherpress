@@ -50,7 +50,7 @@ class Calendar_Endpoints {
 	use Singleton;
 
 	const QUERY_VAR = 'gatherpress_calendar';
-	const ICAL_SLUG = 'ical';
+	const ICAL_SLUG = 'ical'; // Make sure nobody tries to change or translate this string ;)
 
 	/**
 	 * Class constructor.
@@ -159,11 +159,15 @@ class Calendar_Endpoints {
 	}
 
 	/**
-	 * 
+	 * Initializes the custom calendar endpoints for taxonomies that belong to events.
 	 *
-	 * @param  string       $taxonomy
-	 * @param  string|array $object_type will be string when called via 'registered_taxonomy_for_object_type',
-	 *                                   could be an array when called from 'registered_taxonomy'
+	 * This method sets up one `Taxonomy_Feed_Endpoint` for each taxonomy,
+	 * that is registered for the `gatherpress_event` post type
+	 * and publicly available.
+	 *
+	 * @param  string       $taxonomy    Name of the taxonomy that got registered last.
+	 * @param  string|array $object_type This will be a string when called via 'registered_taxonomy_for_object_type',
+	 *                                   and could(!) be an array when called from 'registered_taxonomy'.
 	 *
 	 * @return void
 	 */
@@ -194,7 +198,7 @@ class Calendar_Endpoints {
 			return;
 		}
 
-		// @todo add_filter('feed_content_type') here
+		// @todo "add_filter('feed_content_type')" here, if the subscribe-able feed need something different than text/cal.
 
 		$args = array(
 			'blogtitle'     => get_bloginfo( 'name' ),
@@ -351,23 +355,42 @@ class Calendar_Endpoints {
 	 * Returns the template for the current calendar download.
 	 *
 	 * This method provides the template file to be used for iCal and Outlook downloads.
-	 * The template file used for iCal downloads.
+	 *
+	 * By adding a file with the same name to your themes root folder
+	 * or your themes `/templates` folder, this template will be used
+	 * with priority over the default template provided by GatherPress.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array An array containing the file name of the template to be loaded.
+	 * @return array An array containing:
+	 *               - 'file_name': the file name of the template to be loaded from the theme. Will load defaults from the plugin if theme files do not exist.
+	 *               - 'dir_path':  (Optional) Absolute path to some template directory outside of the theme folder.
 	 */
 	public function get_ical_download_template(): array {
 		return array(
 			'file_name' => 'ical-download.php',
-			// 'dir_path'  => ''
 		);
 	}
 
+	/**
+	 * Returns the template for the subscribeable calendar feed.
+	 *
+	 * This method provides the template file to be used for ical-feeds.
+	 *
+	 * By adding a file with the same name to your themes root folder
+	 * or your themes `/templates` folder, this template will be used
+	 * with priority over the default template provided by GatherPress.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array An array containing:
+	 *               - 'file_name': the file name of the template to be loaded from the theme.
+	 *                              Will load defaults from the plugin if theme files do not exist.
+	 *               - 'dir_path':  (Optional) Absolute path to some template directory outside of the theme folder.
+	 */
 	public function get_ical_feed_template(): array {
 		return array(
 			'file_name' => 'ical-feed.php',
-			// 'dir_path'  => ''
 		);
 	}
 }

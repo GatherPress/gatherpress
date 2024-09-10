@@ -26,11 +26,6 @@ use GatherPress\Core\Endpoints\Endpoint;
  * behavior to specific post types like events, venues, or any custom post type that
  * needs custom URLs for singular items.
  *
- * Key features of this class include:
- * - Defining a custom regular expression for matching single post type URLs.
- * - Using the `is_singular()` function to validate if the request is for a singular post.
- * - Supporting the addition of custom endpoint types (like redirects or templates) for post types.
- *
  * @since 1.0.0
  */
 class Posttype_Single_Endpoint extends Endpoint {
@@ -38,8 +33,10 @@ class Posttype_Single_Endpoint extends Endpoint {
 	/**
 	 * Class constructor.
 	 *
-	 * Initializes the `Posttype_Single_Endpoint` object and sets up the custom regular expression
-	 * for handling singular post type endpoints.
+	 * Initializes the `Posttype_Single_Endpoint` object for handling custom feeds for the
+	 * specified post type. It sets up a regular expression to match custom feed
+	 * URLs (e.g., `event/my-sample-event/custom-endpoint`) and hooks into WordPress to load
+	 * the appropriate feed template.
 	 *
 	 * @since 1.0.0
 	 *

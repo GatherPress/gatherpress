@@ -43,6 +43,8 @@ class Endpoint_Redirect extends Endpoint_Type {
 	protected $url;
 
 	/**
+	 * Activate Endpoint_Type by hooking into relevant parts.
+	 *
 	 * Safely redirects the user to the specified URL.
 	 *
 	 * This method gets the target URL by calling the callback function and then

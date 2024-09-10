@@ -79,5 +79,5 @@ abstract class Endpoint_Type {
 		$this->callback = $callback;
 	}
 
-	public function activate() : void {}
+	public function activate(): void {}
 }

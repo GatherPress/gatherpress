@@ -1,4 +1,15 @@
 <?php
+/**
+ * Handles feed-based endpoints for custom taxonomies in GatherPress.
+ *
+ * This file defines the `Posttype_Feed_Endpoint` class, which extends the base `Endpoint`
+ * class to handle custom feeds for taxonomy archives. It allows users to define custom
+ * feed URLs (e.g., RSS feeds) for taxonomies such as `gatherpress_topic`, while also allowing
+ * theme overrides for feed templates.
+ *
+ * @package GatherPress\Core\Endpoints
+ * @since 1.0.0
+ */
 
 namespace GatherPress\Core\Endpoints;
 
@@ -7,7 +18,15 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Endpoints\Endpoint;
 
-
+/**
+ * Manages custom feed endpoints for taxonomies in GatherPress.
+ *
+ * The `Taxonomy_Feed_Endpoint` class extends the base `Endpoint` class to create
+ * custom feed URLs for taxonomies. It handles URL rewriting for feeds and
+ * ensures that WordPress hooks into the appropriate feed template.
+ *
+ * @since 1.0.0
+ */
 class Taxonomy_Feed_Endpoint extends Endpoint {
 
 	/**
@@ -27,7 +46,7 @@ class Taxonomy_Feed_Endpoint extends Endpoint {
 	public function __construct(
 		array $types,
 		string $query_var,
-		string $taxonomy  = 'gatherpress_topic'
+		string $taxonomy = 'gatherpress_topic'
 	) {
 		// Expression for the taxonomy archive feeds,
 		// for example 'topic/wordcamp/feed/(custom-endpoint)(/)'.
