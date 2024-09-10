@@ -224,13 +224,14 @@ class Calendar_Endpoints {
 				),
 			];
 
+			// Get all terms, associated with the current event-post.
 			$terms = get_terms(
 				array(
 					'taxonomy'   => get_object_taxonomies( get_queried_object_id() ),
 					'object_ids' => get_queried_object_id(),
-					'hide_empty' => true,
 				)
 			);
+			// Loop over terms and generate the ical feed links for the <head>.
 			array_walk(
 				$terms,
 				function ( WP_Term $term ) use ( $args, &$alternate_links ) {
@@ -238,17 +239,30 @@ class Calendar_Endpoints {
 					switch ( $term->taxonomy ) {
 						case '_gatherpress_venue':
 							$gatherpress_venue = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
+							
+							// An Online-Event will have no Venue; prevent error on non-existent object.
 							// Feels weird to use a *_comments_* function here, but it delivers clean results
 							// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-							$href = get_post_comments_feed_link( $gatherpress_venue->ID, 'ical' );
+							$href = $gatherpress_venue && get_post_comments_feed_link( $gatherpress_venue->ID, 'ical' );
 							break;
 						
 						default:
 							$href = get_term_feed_link( $term->term_id, $term->taxonomy, 'ical' );
 							break;
 					}
+					// Can be empty for Online-Events.
+					if ( ! empty( $href ) ) {
+						$alternate_links[] = [
+							'url'  => $href,
+							'attr' => sprintf(
+								$args['taxtitle'],
 								$args['blogtitle'],
 								$args['separator'],
+								$term->name,
+								$tax->labels->singular_name
+							),
+						];
+					}
 				}
 			);
 
