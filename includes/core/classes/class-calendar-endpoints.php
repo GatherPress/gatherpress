@@ -25,6 +25,8 @@ use GatherPress\Core\Endpoints\Taxonomy_Feed_Endpoint;
 use GatherPress\Core\Endpoints\Endpoint_Redirect;
 use GatherPress\Core\Endpoints\Endpoint_Template;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Venue;
+use WP_Term;
 
 /**
  * Manages Custom Calendar Endpoints for GatherPress.
@@ -175,6 +177,133 @@ class Calendar_Endpoints {
 		);
 	}
 
+	public function alternate_links(): void {
+
+		if ( ! current_theme_supports( 'automatic-feed-links' ) ) {
+			return;
+		}
+
+		// @todo add_filter('feed_content_type') here
+
+		$args = array(
+			/* translators: Separator between site name and feed type in feed links. */
+			'separator'     => _x( '&raquo;', 'feed link', 'default' ),
+			/* translators: 1: Site name, 2: Separator (raquo), 3: Post title. */
+			'singletitle'   => __( '📅 %1$s %2$s %3$s iCal Download', 'gatherpress' ),
+			/* translators: 1: Site title, 2: Separator (raquo). */
+			'feedtitle'     => __( '📅 %1$s %2$s iCal Feed', 'gatherpress' ),
+			/* translators: 1: Site name, 2: Separator (raquo), 3: Post type name. */
+			'posttypetitle' => __( '📅 %1$s %2$s %3$s iCal Feed', 'gatherpress' ),
+			/* translators: 1: Site name, 2: Separator (raquo), 3: Term name, 4: Taxonomy singular name. */
+			'taxtitle'      => __( '📅 %1$s %2$s %3$s %4$s iCal Feed', 'gatherpress' ),
+		);
+
+		$alternate_links = [];
+
+		// @todo "/feed/ical" could be enabled as alias of "/event/feed/ical",
+		// and called with "get_feed_link( 'ical' )".
+		$alternate_links[] = [
+			'url'  => get_post_type_archive_feed_link( 'gatherpress_event', 'ical' ),
+			'attr' => sprintf(
+				$args['feedtitle'],
+				get_bloginfo( 'name' ),
+				$args['separator']
+			),
+		];
+
+		if ( is_singular( 'gatherpress_event' ) ) {
+
+			$alternate_links[] = [
+				'url'  => trailingslashit( get_permalink() ) . 'ical/',
+				'attr' => sprintf(
+					$args['singletitle'],
+					get_bloginfo( 'name' ),
+					$args['separator'],
+					the_title_attribute( array( 'echo' => false ) )
+				),
+			];
+
+			$terms = get_terms(
+				array(
+					'taxonomy'   => get_object_taxonomies( get_queried_object_id() ),
+					'object_ids' => get_queried_object_id(),
+					'hide_empty' => true,
+				)
+			);
+			array_walk(
+				$terms,
+				function ( WP_Term $term ) use ( $args, &$alternate_links ) {
+					$tax = get_taxonomy( $term->taxonomy );
+					switch ( $term->taxonomy ) {
+						case '_gatherpress_venue':
+							$gatherpress_venue = Venue::get_instance()->get_venue_post_from_term_slug( $term->slug );
+							// Feels weird to use a *_comments_* function here, but it delivers clean results
+							// in the form of "domain.tld/event/my-sample-event/feed/ical/".
+							$href = get_post_comments_feed_link( $gatherpress_venue->ID, 'ical' );
+							break;
+						
+						default:
+							$href = get_term_feed_link( $term->term_id, $term->taxonomy, 'ical' );
+							break;
+					}
+					$alternate_links[] = [
+						'url'  => $href,
+						'attr' => sprintf(
+							$args['taxtitle'],
+							get_bloginfo( 'name' ),
+							$args['separator'],
+							$term->name,
+							$tax->labels->singular_name
+						),
+					];
+				}
+			);
+
+		} elseif ( is_singular( 'gatherpress_venue' ) ) {
+
+			// Feels weird to use a *_comments_* function here, but it delivers clean results
+			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
+			$alternate_links[] = [
+				'url'  => get_post_comments_feed_link( 0, 'ical' ),
+				'attr' => sprintf(
+					$args['singletitle'],
+					get_bloginfo( 'name' ),
+					$args['separator'],
+					the_title_attribute( array( 'echo' => false ) )
+				),
+			];
+
+		} elseif ( is_tax() ) {
+
+			$term = get_queried_object();
+
+			if ( $term && is_object_in_taxonomy( 'gatherpress_event', $term->taxonomy ) ) {
+				$tax = get_taxonomy( $term->taxonomy );
+				
+				$alternate_links[] = [
+					'url'  => get_term_feed_link( $term->term_id, $term->taxonomy, 'ical' ),
+					'attr' => sprintf(
+						$args['taxtitle'],
+						get_bloginfo( 'name' ),
+						$args['separator'],
+						$term->name,
+						$tax->labels->singular_name
+					),
+				];
+			}
+		}
+
+		// Render tags into <head/>
+		array_walk(
+			$alternate_links,
+			function ( $link ) {
+				printf(
+					'<link rel="alternate" type="%s" title="%s" href="%s" />' . "\n",
+					isset( $link['type'] ) ? $link['type'] : 'text/calendar', // feed_content_type(),
+					esc_attr( $link['attr'] ),
+					esc_url( $link['url'] )
+				);
+			}
 		);
 	}
 
