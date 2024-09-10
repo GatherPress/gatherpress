@@ -153,6 +153,7 @@ class Endpoint {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+
 		add_action( 'init', array( $this, 'init' ), $this->hook_prio );
 
 		if ( false !== strpos( $this->reg_ex, '/feed/' ) ) {

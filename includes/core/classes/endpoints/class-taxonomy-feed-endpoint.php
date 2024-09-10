@@ -10,14 +10,27 @@ use GatherPress\Core\Endpoints\Endpoint;
 
 class Taxonomy_Feed_Endpoint extends Endpoint {
 
-
+	/**
+	 * Class constructor.
+	 *
+	 * Initializes the `Taxonomy_Feed_Endpoint` for handling custom feeds for the
+	 * specified taxonomy. It sets up a regular expression to match custom feed
+	 * URLs (e.g., `topic/wordcamp/feed/custom-endpoint`) and hooks into WordPress to load
+	 * the appropriate feed template.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param Endpoint_Type[] $types      List of endpoint types (templates/redirects) for the feed.
+	 * @param string          $query_var  (Optional) The query variable used to identify the feed endpoint in the URL. Default is `gatherpress_calendar`.
+	 * @param string          $taxonomy   (Optional) The taxonomy for which the feed endpoint is being created. Default is `gatherpress_topic`.
+	 */
 	public function __construct(
-		string $query_var,
 		array $types,
-		string $taxonomy = 'gatherpress_topic'
+		string $query_var = 'gatherpress_calendar',
+		string $taxonomy  = 'gatherpress_topic'
 	) {
 		// Expression for the taxonomy archive feeds,
-		// for example 'venue/bangkok/feed/(custom-endpoint)(/)'.
+		// for example 'topic/wordcamp/feed/(custom-endpoint)(/)'.
 		$reg_ex = '%s/([^/]+)/feed/(%s)/?$';
 
 		parent::__construct(

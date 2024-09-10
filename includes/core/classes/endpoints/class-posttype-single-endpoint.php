@@ -39,18 +39,17 @@ class Posttype_Single_Endpoint extends Endpoint {
 	 * Class constructor.
 	 *
 	 * Initializes the `Posttype_Single_Endpoint` object and sets up the custom regular expression
-	 * for handling singular post type endpoints. It also ensures that the parent class is properly
-	 * initialized with the necessary parameters and hooks.
+	 * for handling singular post type endpoints.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string          $query_var The query variable used to identify the endpoint in the URL.
-	 * @param Endpoint_Type[] $types     List of endpoint types (redirects/templates) to be registered for this post type.
-	 * @param string          $post_type The post type for which this endpoint is being registered.
+	 * @param Endpoint_Type[] $types      List of endpoint types (templates/redirects) for the feed.
+	 * @param string          $query_var  (Optional) The query variable used to identify the feed endpoint in the URL. Default is `gatherpress_calendar`.
+	 * @param string          $post_type  (Optional) The post type for which the feed endpoint is being created. Default is `gatherpress_event`.
 	 */
 	public function __construct(
-		string $query_var,
 		array $types,
+		string $query_var = 'gatherpress_calendar',
 		string $post_type = 'gatherpress_event'
 	) {
 		// Regular expression to match singular event endpoints.

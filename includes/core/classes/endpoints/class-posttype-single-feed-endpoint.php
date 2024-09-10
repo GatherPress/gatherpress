@@ -41,13 +41,13 @@ class Posttype_Single_Feed_Endpoint extends Endpoint {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string          $query_var  The query variable used to identify the feed endpoint in the URL.
 	 * @param Endpoint_Type[] $types      List of endpoint types (templates/redirects) for the feed.
-	 * @param string          $post_type  The post type for which the feed endpoint is being created. Default is `gatherpress_event`.
+	 * @param string          $query_var  (Optional) The query variable used to identify the feed endpoint in the URL. Default is `gatherpress_calendar`.
+	 * @param string          $post_type  (Optional) The post type for which the feed endpoint is being created. Default is `gatherpress_venue`.
 	 */
 	public function __construct(
-		string $query_var,
 		array $types,
+		string $query_var = 'gatherpress_calendar',
 		string $post_type = 'gatherpress_venue'
 	) {
 		// Expression for the post type archive feeds,

@@ -121,13 +121,11 @@ class Calendar_Endpoints {
 		// Important: Register the feed endpoint before the single endpoint,
 		// to make sure rewrite rules get saved in the correct order.
 		new Posttype_Feed_Endpoint(
-			'gatherpress_ical_pt_feed',
 			array(
 				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
 			)
 		);
 		new Posttype_Single_Endpoint(
-			'gatherpress_ext_calendar',
 			array(
 				new Endpoint_Template( 'ical', array( $this, 'get_ical_download_template' ) ),
 				new Endpoint_Template( 'outlook', array( $this, 'get_ical_download_template' ) ),
@@ -148,7 +146,6 @@ class Calendar_Endpoints {
 	 */
 	public function init_venues(): void {
 		new Posttype_Single_Feed_Endpoint(
-			'gatherpress_ext_venue_calendar',
 			array(
 				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
 			)
@@ -169,7 +166,6 @@ class Calendar_Endpoints {
 			return;
 		}
 		new Taxonomy_Feed_Endpoint(
-			'gatherpress_ical_tax_feed',
 			array(
 				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
 			),
@@ -328,7 +324,7 @@ class Calendar_Endpoints {
 	public function get_redirect_to(): string {
 		$event = new Event( get_queried_object_id() );
 		// Determine which calendar service to redirect to based on the query var.
-		switch ( get_query_var( 'gatherpress_ext_calendar' ) ) {
+		switch ( get_query_var( 'gatherpress_calendar' ) ) {
 			case 'google-calendar':
 				return $event->get_google_calendar_link();
 			case 'yahoo-calendar':
