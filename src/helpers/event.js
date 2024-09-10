@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies.
  */
-import { getTimeZone } from './datetime';
+import { getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
 import { Broadcaster } from './broadcasting';
 
@@ -42,12 +42,12 @@ export function isEventPostType() {
 export function hasEventPast() {
 	const dateTimeEnd = moment.tz(
 		getFromGlobal('eventDetails.dateTime.datetime_end'),
-		getTimeZone()
+		getTimezone()
 	);
 
 	return (
 		'gatherpress_event' === select('core/editor')?.getCurrentPostType() &&
-		moment.tz(getTimeZone()).valueOf() > dateTimeEnd.valueOf()
+		moment.tz(getTimezone()).valueOf() > dateTimeEnd.valueOf()
 	);
 }
 

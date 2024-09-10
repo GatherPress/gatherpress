@@ -25,7 +25,7 @@ import { hasEventPastNotice } from '../helpers/event';
 import {
 	dateTimeMomentFormat,
 	getDateTimeStart,
-	getTimeZone,
+	getTimezone,
 } from '../helpers/datetime';
 
 /**
@@ -57,7 +57,7 @@ const DateTimeStart = () => {
 	useEffect(() => {
 		setDateTimeStart(
 			moment
-				.tz(getDateTimeStart(), getTimeZone())
+				.tz(getDateTimeStart(), getTimezone())
 				.format(dateTimeMomentFormat)
 		);
 

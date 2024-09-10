@@ -12,7 +12,7 @@ import {
 	updateDateTimeStart,
 	updateDateTimeEnd,
 	dateTimeLabelFormat,
-	getTimeZone,
+	getTimezone,
 } from '../helpers/datetime';
 import {useDispatch, useSelect} from '@wordpress/data';
 
@@ -31,7 +31,7 @@ export const DateTimeStartLabel = (props) => {
 	const { dateTimeStart } = props;
 
 	return moment
-		.tz(dateTimeStart, getTimeZone())
+		.tz(dateTimeStart, getTimezone())
 		.format(dateTimeLabelFormat());
 };
 
@@ -49,7 +49,7 @@ export const DateTimeStartLabel = (props) => {
 export const DateTimeEndLabel = (props) => {
 	const { dateTimeEnd } = props;
 
-	return moment.tz(dateTimeEnd, getTimeZone()).format(dateTimeLabelFormat());
+	return moment.tz(dateTimeEnd, getTimezone()).format(dateTimeLabelFormat());
 };
 
 /**

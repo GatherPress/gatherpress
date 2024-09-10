@@ -1,14 +1,19 @@
 /**
+ * External dependencies.
+ */
+import moment from 'moment';
+
+/**
  * WordPress dependencies.
  */
-import {subscribe, select, useDispatch, useSelect} from '@wordpress/data';
-import {useEffect, useState} from '@wordpress/element';
+import { useDispatch, useSelect } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
-import { saveDateTime } from '../helpers/datetime';
+import { dateTimeDatabaseFormat } from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import TimeZone from '../components/TimeZone';
@@ -34,11 +39,13 @@ const DateTimeRange = () => {
 			select('core/editor').getEditedPostAttribute('meta')
 				.gatherpress_datetime
 	);
-	if (dateTimeMetaData) {
-		dateTimeMetaData = JSON.parse(dateTimeMetaData);
-	} else {
+
+	try {
+		dateTimeMetaData = dateTimeMetaData ? JSON.parse(dateTimeMetaData) : {};
+	} catch (e) {
 		dateTimeMetaData = {};
 	}
+
 	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
 		(select) => ({
 			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
@@ -51,12 +58,16 @@ const DateTimeRange = () => {
 	useEffect(() => {
 		const payload = JSON.stringify({
 			...dateTimeMetaData,
-			...{dateTimeStart, dateTimeEnd, timezone},
+			...{
+				dateTimeStart: moment.tz(dateTimeStart, timezone).format(dateTimeDatabaseFormat),
+				dateTimeEnd: moment.tz(dateTimeEnd, timezone).format(dateTimeDatabaseFormat),
+				timezone,
+			},
 		});
-
 		const meta = { gatherpress_datetime: payload };
+
 		editPost({ meta });
-	},[dateTimeStart, dateTimeEnd, timezone]);
+	}, [dateTimeStart, dateTimeEnd, timezone]);
 
 	return (
 		<>

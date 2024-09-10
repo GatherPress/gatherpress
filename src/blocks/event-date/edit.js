@@ -22,7 +22,7 @@ import { useSelect } from '@wordpress/data';
  */
 import {
 	convertPHPToMomentFormat,
-	getTimeZone,
+	getTimezone,
 	getUtcOffset,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
@@ -53,7 +53,7 @@ const displayDateTime = (start, end, tz) => {
 		}),
 		[]
 	);
-	const timeZone = getTimeZone(timezone);
+	const timeZone = getTimezone(timezone);
 
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
 

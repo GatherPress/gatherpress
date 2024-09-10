@@ -51,7 +51,7 @@ export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
  * @type {string} Formatted default start date and time in the application's timezone.
  */
 export const defaultDateTimeStart = moment
-	.tz(getTimeZone())
+	.tz(getTimezone())
 	.add(1, 'day')
 	.set('hour', 18)
 	.set('minute', 0)
@@ -67,7 +67,7 @@ export const defaultDateTimeStart = moment
  * @type {string} Formatted default end date and time in the application's timezone.
  */
 export const defaultDateTimeEnd = moment
-	.tz(defaultDateTimeStart, getTimeZone())
+	.tz(defaultDateTimeStart, getTimezone())
 	.add(2, 'hours')
 	.format(dateTimeMomentFormat);
 
@@ -102,7 +102,7 @@ export function dateTimeLabelFormat() {
  *
  * @return {string} The retrieved timezone, or 'GMT' if the provided timezone is invalid.
  */
-export function getTimeZone(
+export function getTimezone(
 	timezone = getFromGlobal('eventDetails.dateTime.timezone')
 ) {
 	if (!!moment.tz.zone(timezone)) {
@@ -123,7 +123,7 @@ export function getTimeZone(
  * @return {string} UTC offset without the colon if the timezone is set to 'GMT', otherwise an empty string.
  */
 export function getUtcOffset(timezone) {
-	timezone = getTimeZone(timezone);
+	timezone = getTimezone(timezone);
 
 	if (__('GMT', 'gatherpress') !== timezone) {
 		return '';
@@ -227,7 +227,7 @@ export function getDateTimeStart() {
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, getTimeZone()).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, getTimezone()).format(dateTimeMomentFormat)
 			: defaultDateTimeStart;
 
 	setToGlobal('eventDetails.dateTime.datetime_start', dateTime);
@@ -249,7 +249,7 @@ export function getDateTimeEnd() {
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, getTimeZone()).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, getTimezone()).format(dateTimeMomentFormat)
 			: defaultDateTimeEnd;
 
 	setToGlobal('eventDetails.dateTime.datetime_end', dateTime);
@@ -319,15 +319,15 @@ export function updateDateTimeEnd(date, setDateTimeEnd = null) {
  */
 export function validateDateTimeStart(dateTimeStart) {
 	const dateTimeEndNumeric = moment
-		.tz(getFromGlobal('eventDetails.dateTime.datetime_end'), getTimeZone())
+		.tz(getFromGlobal('eventDetails.dateTime.datetime_end'), getTimezone())
 		.valueOf();
 	const dateTimeStartNumeric = moment
-		.tz(dateTimeStart, getTimeZone())
+		.tz(dateTimeStart, getTimezone())
 		.valueOf();
 
 	if (dateTimeStartNumeric >= dateTimeEndNumeric) {
 		const dateTimeEnd = moment
-			.tz(dateTimeStartNumeric, getTimeZone())
+			.tz(dateTimeStartNumeric, getTimezone())
 			.add(2, 'hours')
 			.format(dateTimeMomentFormat);
 
@@ -352,64 +352,18 @@ export function validateDateTimeEnd(dateTimeEnd) {
 	const dateTimeStartNumeric = moment
 		.tz(
 			getFromGlobal('eventDetails.dateTime.datetime_start'),
-			getTimeZone()
+			getTimezone()
 		)
 		.valueOf();
-	const dateTimeEndNumeric = moment.tz(dateTimeEnd, getTimeZone()).valueOf();
+	const dateTimeEndNumeric = moment.tz(dateTimeEnd, getTimezone()).valueOf();
 
 	if (dateTimeEndNumeric <= dateTimeStartNumeric) {
 		const dateTimeStart = moment
-			.tz(dateTimeEndNumeric, getTimeZone())
+			.tz(dateTimeEndNumeric, getTimezone())
 			.subtract(2, 'hours')
 			.format(dateTimeMomentFormat);
 		updateDateTimeStart(dateTimeStart);
 	}
-}
-
-/**
- * Save the event date, time, and timezone to the server.
- *
- * This function sends a POST request to the server with the updated event date,
- * time, and timezone information for storage. It is triggered during the process
- * of saving an event post in the WordPress editor.
- *
- * @since 1.0.0
- *
- * @return {void}
- */
-export function saveDateTime() {
-	const unsubscribe = subscribe(() => {
-		const isSavingPost = select('core/editor').isSavingPost();
-		const isAutosavingPost = select('core/editor').isAutosavingPost();
-
-		if (isEventPostType() && isSavingPost && !isAutosavingPost) {
-			apiFetch({
-				path: getFromGlobal('urls.eventRestApi') + '/datetime',
-				method: 'POST',
-				data: {
-					post_id: getFromGlobal('eventDetails.postId'),
-					datetime_start: moment
-					.tz(
-					getFromGlobal('eventDetails.dateTime.datetime_start'),
-					getTimeZone()
-					)
-					.format(dateTimeDatabaseFormat),
-					datetime_end: moment
-					.tz(
-					getFromGlobal('eventDetails.dateTime.datetime_end'),
-					getTimeZone()
-					)
-					.format(dateTimeDatabaseFormat),
-					timezone: getFromGlobal('eventDetails.dateTime.timezone'),
-					_wpnonce: getFromGlobal('misc.nonce'),
-				},
-			}).then(() => {
-				triggerEventCommunication();
-			});
-		}
-
-		unsubscribe();
-	});
 }
 
 /**

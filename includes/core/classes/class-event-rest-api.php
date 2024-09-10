@@ -95,50 +95,9 @@ class Event_Rest_Api {
 	 */
 	protected function get_event_routes(): array {
 		return array(
-			$this->datetime_route(),
 			$this->email_route(),
 			$this->rsvp_route(),
 			$this->events_list_route(),
-		);
-	}
-
-	/**
-	 * Define the REST route for updating event date and time.
-	 *
-	 * This method sets up the REST route for updating the date and time of an event.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array The REST route configuration.
-	 */
-	protected function datetime_route(): array {
-		return array(
-			'route' => 'datetime',
-			'args'  => array(
-				'methods'             => WP_REST_Server::EDITABLE,
-				'callback'            => array( $this, 'update_datetime' ),
-				'permission_callback' => static function (): bool {
-					return current_user_can( 'edit_posts' );
-				},
-				'args'                => array(
-					'post_id'        => array(
-						'required'          => true,
-						'validate_callback' => array( $this, 'validate_event_post_id' ),
-					),
-					'datetime_start' => array(
-						'required'          => true,
-						'validate_callback' => array( $this, 'validate_datetime' ),
-					),
-					'datetime_end'   => array(
-						'required'          => true,
-						'validate_callback' => array( $this, 'validate_datetime' ),
-					),
-					'timezone'       => array(
-						'required'          => false,
-						'validate_callback' => array( $this, 'validate_timezone' ),
-					),
-				),
-			),
 		);
 	}
 

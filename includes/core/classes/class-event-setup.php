@@ -74,6 +74,7 @@ class Event_Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 	}
 
 	/**
@@ -467,5 +468,28 @@ class Event_Setup {
 		}
 
 		return $post_states;
+	}
+
+	public function set_datetimes( $post_id ): void {
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			return;
+		}
+
+		$data = get_post_meta( $post_id, 'gatherpress_datetime', true );
+
+		if ( empty( $data ) ) {
+			return;
+		}
+
+		$data   = json_decode( (string) $data, true ) ?? array();
+		$event  = new Event( $post_id );
+		$params = array(
+			'post_id'        => $post_id,
+			'datetime_start' => $data['dateTimeStart'] ?? '',
+			'datetime_end'   => $data['dateTimeEnd'] ?? '',
+			'timezone'       => $data['timezone'] ?? '',
+		);
+
+		$event->save_datetimes( $params );
 	}
 }

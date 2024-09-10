@@ -14,7 +14,7 @@ import {
 	defaultDateTimeStart,
 	getDateTimeEnd,
 	getDateTimeStart,
-	getTimeZone,
+	getTimezone,
 	getUtcOffset,
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForDisplay,
@@ -49,7 +49,7 @@ test('getTimeZone returns set timezone', () => {
 		},
 	};
 
-	expect(getTimeZone()).toBe('America/New_York');
+	expect(getTimezone()).toBe('America/New_York');
 });
 
 test('getTimeZone returns GMT when timezone is not set', () => {
@@ -61,7 +61,7 @@ test('getTimeZone returns GMT when timezone is not set', () => {
 		},
 	};
 
-	expect(getTimeZone()).toBe('GMT');
+	expect(getTimezone()).toBe('GMT');
 });
 
 /**
