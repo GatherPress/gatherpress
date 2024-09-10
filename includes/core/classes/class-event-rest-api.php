@@ -334,35 +334,6 @@ class Event_Rest_Api {
 	}
 
 	/**
-	 * Update the custom event table with start and end Datetime.
-	 *
-	 * This method is used to update the custom event table with new start and end Datetimes for a specific event.
-	 * It checks the user's capability to edit posts before making any changes. If the user doesn't have the required
-	 * capability, the method returns a response with 'success' set to false.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param WP_REST_Request $request Contains data from the request.
-	 * @return WP_REST_Response The response indicating the success of the operation.
-	 *
-	 * @throws Exception When an exception occurs during the process.
-	 */
-	public function update_datetime( WP_REST_Request $request ): WP_REST_Response {
-		$params             = wp_parse_args( $request->get_params(), $request->get_default_params() );
-		$params['timezone'] = Utility::maybe_convert_utc_offset( $params['timezone'] );
-		$event              = new Event( $params['post_id'] );
-
-		unset( $params['post_id'] );
-
-		$success  = $event->save_datetimes( $params );
-		$response = array(
-			'success' => $success,
-		);
-
-		return new WP_REST_Response( $response );
-	}
-
-	/**
 	 * Send an event email notification to members.
 	 *
 	 * This method allows sending an email notification about a specific event to members. It checks the user's capability
