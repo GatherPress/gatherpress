@@ -241,7 +241,7 @@ class Endpoint {
 		);
 	}
 
-	private function maybe_flush_rewrite_rules( string $reg_ex_pattern ) : void {
+	private function maybe_flush_rewrite_rules( string $reg_ex_pattern ): void {
 		$rules = get_option( 'rewrite_rules' );
 		if ( ! isset( $rules[ $reg_ex_pattern ] ) ) {
 			// Event_Setup->maybe_create_flush_rewrite_rules_flag // @todo maybe make this a public method ?! // @see https://github.com/GatherPress/gatherpress/blob/3d91f2bcb30b5d02ebf459cd5a42d4f43bc05ea5/includes/core/classes/class-settings.php#L760C1-L761C63
@@ -286,7 +286,7 @@ class Endpoint {
 			return false;
 		}
 
-		if ( ! in_array( $object_type, array('post_type', 'taxonomy'), true ) ) {
+		if ( ! in_array( $object_type, array( 'post_type', 'taxonomy' ), true ) ) {
 			wp_trigger_error(
 				__CLASS__,
 				"called on '$type_name' doesn't work, because '$object_type' is no supported object type. Use either 'post_type' or 'taxonomy'.",
@@ -294,7 +294,7 @@ class Endpoint {
 			);
 			return false;
 		}
-		/* 
+		/*
 		if ( 0 === did_action( sprintf( 'registered_%s_%s', $object_type, $type_name ) ) ) {
 			wp_trigger_error(
 				__CLASS__,
@@ -309,7 +309,7 @@ class Endpoint {
 			case 'taxonomy':
 				$this->type_object = get_taxonomy( $type_name );
 				break;
-				
+
 			case 'post_type':
 				$this->type_object = get_post_type_object( $type_name );
 				break;
@@ -372,11 +372,11 @@ class Endpoint {
 			)
 		);
 		// if ( $this->has_redirects() ) {
-		// 	$endpoint_type->activate();
+		// $endpoint_type->activate();
 		// }
 
 		// if ( $this->has_templates() ) {
-		// 	$endpoint_type->activate();
+		// $endpoint_type->activate();
 		// }
 		$endpoint_type->activate();
 	}
@@ -442,7 +442,7 @@ class Endpoint {
 			$this->get_slugs( __NAMESPACE__ . '\Endpoint_Redirect' ),
 			true
 		);
-	}	 */
+	}    */
 
 	/**
 	 * Checks if the currently requested endpoint has templates to load.
@@ -460,7 +460,7 @@ class Endpoint {
 			$this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ),
 			true
 		);
-	}	 */
+	}    */
 
 	/**
 	 * Retrieves the slugs of the specified endpoint types.
