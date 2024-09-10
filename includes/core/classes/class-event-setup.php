@@ -55,6 +55,7 @@ class Event_Setup {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
+		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
 		add_action(
 			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
@@ -74,7 +75,6 @@ class Event_Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
-		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 	}
 
 	/**
@@ -494,7 +494,8 @@ class Event_Setup {
 			return;
 		}
 
-		$data   = json_decode( (string) $data, true ) ?? array();
+		$data = json_decode( (string) $data, true ) ?? array();
+
 		$event  = new Event( $post_id );
 		$params = array(
 			'post_id'        => $post_id,
