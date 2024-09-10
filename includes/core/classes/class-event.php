@@ -696,7 +696,6 @@ class Event {
 				continue;
 			}
 
-
 			$meta_key = sprintf( 'gatherpress_%s', sanitize_key( $key ) );
 
 			update_post_meta(
