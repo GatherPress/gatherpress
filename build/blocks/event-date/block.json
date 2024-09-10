@@ -19,17 +19,6 @@
     },
     "textAlign": {
       "type": "string"
-    },
-    "format": {
-      "type": "string"
-    },
-    "isLink": {
-      "type": "boolean",
-      "default": false
-    },
-    "displayType": {
-      "type": "string",
-      "default": "date"
     }
   },
   "supports": {
