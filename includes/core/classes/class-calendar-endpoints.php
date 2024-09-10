@@ -19,7 +19,9 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Endpoints\Posttype_Single_Endpoint;
+use GatherPress\Core\Endpoints\Posttype_Single_Feed_Endpoint;
 use GatherPress\Core\Endpoints\Posttype_Feed_Endpoint;
+use GatherPress\Core\Endpoints\Taxonomy_Feed_Endpoint;
 use GatherPress\Core\Endpoints\Endpoint_Redirect;
 use GatherPress\Core\Endpoints\Endpoint_Template;
 use GatherPress\Core\Traits\Singleton;
@@ -68,32 +70,37 @@ class Calendar_Endpoints {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// add_action('do_feed_ical',function () {
-		// echo wp_kses_post( 'hello subscribeable ical feed.' );
-		// });
-
 		add_action(
 			sprintf(
 				'registered_post_type_%s',
 				'gatherpress_event'
 			),
-			array( $this, 'init' ),
+			array( $this, 'init_events' ),
 		);
 
-		/**
-		 * Prints scripts or data in the head tag on the front end.
-		 */
 		add_action(
-			'wp_head',
-			function (): void {
-				if ( is_singular( 'gatherpress_event' ) ) {
-					echo '<link rel="alternate" type="text/calendar" href="' . trailingslashit( get_the_permalink() ) . 'ical/" title="Download Calendar" />';
-				}
-				if ( is_archive( 'gatherpress_event' ) || is_taxonomy( 'gatherpress_topic' ) ) {
-					echo '<link rel="alternate" type="text/calendar" href="' . trailingslashit( get_the_permalink() ) . 'ical/" title="Download Calendar" />';
-				}
-			}
+			sprintf(
+				'registered_post_type_%s',
+				'gatherpress_venue'
+			),
+			array( $this, 'init_venues' ),
 		);
+
+		add_action(
+			'registered_taxonomy_for_object_type',
+			array( $this, 'init_taxonomies' ),
+			10,
+			2
+		);
+		add_action(
+			'registered_taxonomy',
+			array( $this, 'init_taxonomies' ),
+			10,
+			2
+		);
+
+		// 
+		add_action( 'wp_head', array( $this, 'alternate_links') );
 	}
 
 	/**
@@ -108,11 +115,11 @@ class Calendar_Endpoints {
 	 *
 	 * @return void
 	 */
-	public function init(): void {
+	public function init_events(): void {
 		// Important: Register the feed endpoint before the single endpoint,
-		// to make sure rewrite rules get safed in the correct order.
+		// to make sure rewrite rules get saved in the correct order.
 		new Posttype_Feed_Endpoint(
-			'gatherpress_ical_feed',
+			'gatherpress_ical_pt_feed',
 			array(
 				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
 			)
@@ -120,11 +127,54 @@ class Calendar_Endpoints {
 		new Posttype_Single_Endpoint(
 			'gatherpress_ext_calendar',
 			array(
-				new Endpoint_Redirect( 'google-calendar', array( $this, 'get_redirect_to' ) ),
-				new Endpoint_Redirect( 'yahoo-calendar', array( $this, 'get_redirect_to' ) ),
 				new Endpoint_Template( 'ical', array( $this, 'get_ical_download_template' ) ),
 				new Endpoint_Template( 'outlook', array( $this, 'get_ical_download_template' ) ),
+				new Endpoint_Redirect( 'google-calendar', array( $this, 'get_redirect_to' ) ),
+				new Endpoint_Redirect( 'yahoo-calendar', array( $this, 'get_redirect_to' ) ),
 			)
+		);
+	}
+
+	/**
+	 * Initializes the custom calendar endpoints for single venues.
+	 *
+	 * This method sets up a `Posttype_Single_Endpoint` for the `gatherpress_venue` post type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function init_venues(): void {
+		new Posttype_Single_Feed_Endpoint(
+			'gatherpress_ext_venue_calendar',
+			array(
+				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
+			)
+		);
+	}
+
+	/**
+	 * 
+	 *
+	 * @param  string       $taxonomy
+	 * @param  string|array $object_type will be string when called via 'registered_taxonomy_for_object_type',
+	 *                                   could be an array when called from 'registered_taxonomy'
+	 *
+	 * @return void
+	 */
+	public function init_taxonomies( string $taxonomy, string|array $object_type ): void {
+		if ( ! in_array( 'gatherpress_event', (array) $object_type, true ) || '_gatherpress_venue' === $taxonomy ) {
+			return;
+		}
+		new Taxonomy_Feed_Endpoint(
+			'gatherpress_ical_tax_feed',
+			array(
+				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
+			),
+			$taxonomy
+		);
+	}
+
 		);
 	}
 

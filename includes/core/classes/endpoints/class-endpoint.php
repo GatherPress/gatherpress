@@ -114,7 +114,7 @@ class Endpoint {
 		callable $validation_callback,
 		array $types,
 		string $reg_ex,
-		string $object_type = 'post',
+		string $object_type = 'post_type',
 	) {
 		// ...
 		if ( $this->is_valid_registration( $type_name, $types, $object_type ) ) {
@@ -125,7 +125,6 @@ class Endpoint {
 
 			$this->hook_prio = 11; // @todo make dynamic: current-prio + 1
 
-			// ..
 			$this->setup_hooks();
 		}
 	}
@@ -208,6 +207,7 @@ class Endpoint {
 	 * @return bool               Returns true if registration is valid, false otherwise.
 	 */
 	private function is_valid_registration( string $type_name, array $types, string $object_type ): bool {
+
 		if ( 0 === did_action( 'init' ) ) {
 			wp_trigger_error(
 				__CLASS__,
@@ -216,6 +216,7 @@ class Endpoint {
 			);
 			return false;
 		}
+
 		if ( empty( $types ) ) {
 			wp_trigger_error(
 				__CLASS__,
@@ -224,47 +225,43 @@ class Endpoint {
 			);
 			return false;
 		}
+
+		if ( ! in_array( $object_type, array('post_type', 'taxonomy'), true ) ) {
+			wp_trigger_error(
+				__CLASS__,
+				"called on '$type_name' doesn't work, because '$object_type' is no supported object type. Use either 'post_type' or 'taxonomy'.",
+				E_USER_WARNING
+			);
+			return false;
+		}
+/* 
+		if ( 0 === did_action( sprintf( 'registered_%s_%s', $object_type, $type_name ) ) ) {
+			wp_trigger_error(
+				__CLASS__,
+				"was called too early! Make sure the '$type_name' $object_type is already registered.",
+				E_USER_WARNING
+			);
+			return false;
+		} */
+
+		// Store the validated post type or taxonomy object for later use.
 		switch ( $object_type ) {
 			case 'taxonomy':
-				if ( 0 === did_action( sprintf( 'registered_taxonomy_%s', $type_name ) ) ) {
-					wp_trigger_error(
-						__CLASS__,
-						"was called too early! Make sure '$type_name' is already registered.",
-						E_USER_WARNING
-					);
-					return false;
-				}
-				if ( false === get_taxonomy( $type_name )->rewrite ) {
-					wp_trigger_error(
-						__CLASS__,
-						"called on '$type_name' doesn't work, because this taxonomy has rewrites disabled.",
-						E_USER_WARNING
-					);
-					return false;
-				}
-				// Store the validated taxonomy object for later use.
 				$this->type_object = get_taxonomy( $type_name );
-
-			case 'post':
-			default:
-				if ( 0 === did_action( sprintf( 'registered_post_type_%s', $type_name ) ) ) {
-					wp_trigger_error(
-						__CLASS__,
-						"was called too early! Make sure '$type_name' is already registered.",
-						E_USER_WARNING
-					);
-					return false;
-				}
-				if ( false === get_post_type_object( $type_name )->rewrite ) {
-					wp_trigger_error(
-						__CLASS__,
-						"called on '$type_name' doesn't work, because this post type has rewrites disabled.",
-						E_USER_WARNING
-					);
-					return false;
-				}
-				// Store the validated post type object for later use.
+				break;
+				
+			case 'post_type':
 				$this->type_object = get_post_type_object( $type_name );
+				break;
+		}
+
+		if ( false === $this->type_object->rewrite ) {
+			wp_trigger_error(
+				__CLASS__,
+				"called on '$type_name' doesn't work, because this $object_type has rewrites disabled.",
+				E_USER_WARNING
+			);
+			return false;
 		}
 		return true;
 	}
