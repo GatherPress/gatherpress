@@ -49,6 +49,9 @@ class Calendar_Endpoints {
 	 */
 	use Singleton;
 
+	const QUERY_VAR = 'gatherpress_calendar';
+	const ICAL_SLUG = 'ical';
+
 	/**
 	 * Class constructor.
 	 *
@@ -122,16 +125,18 @@ class Calendar_Endpoints {
 		// to make sure rewrite rules get saved in the correct order.
 		new Posttype_Feed_Endpoint(
 			array(
-				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
-			)
+				new Endpoint_Template( ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
+			),
+			QUERY_VAR
 		);
 		new Posttype_Single_Endpoint(
 			array(
-				new Endpoint_Template( 'ical', array( $this, 'get_ical_download_template' ) ),
+				new Endpoint_Template( ICAL_SLUG, array( $this, 'get_ical_download_template' ) ),
 				new Endpoint_Template( 'outlook', array( $this, 'get_ical_download_template' ) ),
 				new Endpoint_Redirect( 'google-calendar', array( $this, 'get_redirect_to' ) ),
 				new Endpoint_Redirect( 'yahoo-calendar', array( $this, 'get_redirect_to' ) ),
-			)
+			),
+			QUERY_VAR
 		);
 	}
 
@@ -147,8 +152,9 @@ class Calendar_Endpoints {
 	public function init_venues(): void {
 		new Posttype_Single_Feed_Endpoint(
 			array(
-				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
-			)
+				new Endpoint_Template( ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
+			),
+			QUERY_VAR
 		);
 	}
 
@@ -175,8 +181,9 @@ class Calendar_Endpoints {
 		}
 		new Taxonomy_Feed_Endpoint(
 			array(
-				new Endpoint_Template( 'ical', array( $this, 'get_ical_feed_template' ) ),
+				new Endpoint_Template( ICAL_SLUG, array( $this, 'get_ical_feed_template' ) ),
 			),
+			QUERY_VAR,
 			$taxonomy
 		);
 	}
@@ -206,9 +213,9 @@ class Calendar_Endpoints {
 		$alternate_links = [];
 
 		// @todo "/feed/ical" could be enabled as alias of "/event/feed/ical",
-		// and called with "get_feed_link( 'ical' )".
+		// and called with "get_feed_link( ICAL_SLUG )".
 		$alternate_links[] = [
-			'url'  => get_post_type_archive_feed_link( 'gatherpress_event', 'ical' ),
+			'url'  => get_post_type_archive_feed_link( 'gatherpress_event', ICAL_SLUG ),
 			'attr' => sprintf(
 				$args['feedtitle'],
 				$args['blogtitle'],
@@ -219,7 +226,7 @@ class Calendar_Endpoints {
 		if ( is_singular( 'gatherpress_event' ) ) {
 
 			$alternate_links[] = [
-				'url'  => trailingslashit( get_permalink() ) . 'ical/',
+				'url'  => trailingslashit( get_permalink() ) . ICAL_SLUG,
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
@@ -247,11 +254,11 @@ class Calendar_Endpoints {
 							// An Online-Event will have no Venue; prevent error on non-existent object.
 							// Feels weird to use a *_comments_* function here, but it delivers clean results
 							// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-							$href = $gatherpress_venue && get_post_comments_feed_link( $gatherpress_venue->ID, 'ical' );
+							$href = $gatherpress_venue && get_post_comments_feed_link( $gatherpress_venue->ID, ICAL_SLUG );
 							break;
 						
 						default:
-							$href = get_term_feed_link( $term->term_id, $term->taxonomy, 'ical' );
+							$href = get_term_feed_link( $term->term_id, $term->taxonomy, ICAL_SLUG );
 							break;
 					}
 					// Can be empty for Online-Events.
@@ -275,7 +282,7 @@ class Calendar_Endpoints {
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = [
-				'url'  => get_post_comments_feed_link( 0, 'ical' ),
+				'url'  => get_post_comments_feed_link( 0, ICAL_SLUG ),
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
@@ -292,7 +299,7 @@ class Calendar_Endpoints {
 				$tax = get_taxonomy( $term->taxonomy );
 				
 				$alternate_links[] = [
-					'url'  => get_term_feed_link( $term->term_id, $term->taxonomy, 'ical' ),
+					'url'  => get_term_feed_link( $term->term_id, $term->taxonomy, ICAL_SLUG ),
 					'attr' => sprintf(
 						$args['taxtitle'],
 						$args['blogtitle'],
@@ -332,7 +339,7 @@ class Calendar_Endpoints {
 	public function get_redirect_to(): string {
 		$event = new Event( get_queried_object_id() );
 		// Determine which calendar service to redirect to based on the query var.
-		switch ( get_query_var( 'gatherpress_calendar' ) ) {
+		switch ( get_query_var( QUERY_VAR ) ) {
 			case 'google-calendar':
 				return $event->get_google_calendar_link();
 			case 'yahoo-calendar':
