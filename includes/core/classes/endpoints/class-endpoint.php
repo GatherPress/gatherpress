@@ -197,7 +197,7 @@ class Endpoint {
 		$rewrite_base = $this->type_object->rewrite['slug'];
 		$slugs        = join( '|', $this->get_slugs() );
 		// Build the regular expression pattern for matching the custom endpoint URL structure.
-		$reg_ex = sprintf(
+		$reg_ex_pattern = sprintf(
 			$this->reg_ex,
 			$rewrite_base,
 			$slugs
@@ -210,7 +210,11 @@ class Endpoint {
 		);
 
 		// Add the rewrite rule to WordPress.
-		add_rewrite_rule( $reg_ex, $rewrite_url, 'top' );
+		add_rewrite_rule( $reg_ex_pattern, $rewrite_url, 'top' );
+
+		// add_action( 'wp_loaded', array( $this, 'maybe_flush_rewrite_rules' ) );
+		//
+		$this->maybe_flush_rewrite_rules( $reg_ex_pattern );
 
 		// Allow the custom query variable by filtering the public query vars.
 		add_filter( 'query_vars', array( $this, 'allow_query_vars' ) );
@@ -234,6 +238,14 @@ class Endpoint {
 			$this->type_object->name => '$matches[1]',
 			$this->query_var         => '$matches[2]',
 		);
+	}
+
+	private function maybe_flush_rewrite_rules( string $reg_ex_pattern ) : void {
+		$rules = get_option( 'rewrite_rules' );
+		if ( ! isset( $rules[ $reg_ex_pattern ] ) ) {
+			// Event_Setup->maybe_create_flush_rewrite_rules_flag // @todo maybe make this a public method ?! // @see https://github.com/GatherPress/gatherpress/blob/3d91f2bcb30b5d02ebf459cd5a42d4f43bc05ea5/includes/core/classes/class-settings.php#L760C1-L761C63
+			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+		}
 	}
 
 	/**
