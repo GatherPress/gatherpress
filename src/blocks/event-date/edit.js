@@ -77,13 +77,10 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  *
  * @since 1.0.0
  *
- * @param {Object}   root0                        The props passed to the Edit component.
- * @param {Object}   root0.attributes             The block attributes.
- * @param {string}   root0.attributes.textAlign   The text alignment for the block.
- * @param {string}   root0.attributes.format      The format of the displayed date/time.
- * @param {boolean}  root0.attributes.isLink      Determines if the block is a link.
- * @param {string}   root0.attributes.displayType The display type (e.g., inline or block).
- * @param {Function} root0.setAttributes          Function to set block attributes.
+ * @param {Object}   root0                      The props passed to the Edit component.
+ * @param {Object}   root0.attributes           The block attributes.
+ * @param {string}   root0.attributes.textAlign The text alignment for the block.
+ * @param {Function} root0.setAttributes        Function to set block attributes.
  *
  * @return {JSX.Element} The rendered Edit component for the GatherPress Event Date block.
  *
@@ -92,10 +89,7 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  * @see {@link useBlockProps} - Custom hook for block props.
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
-const Edit = ({
-	attributes: { textAlign, format, isLink, displayType },
-	setAttributes,
-}) => {
+const Edit = ({ attributes: { textAlign }, setAttributes }) => {
 	const blockProps = useBlockProps({
 		className: clsx({
 			[`has-text-align-${textAlign}`]: textAlign,
