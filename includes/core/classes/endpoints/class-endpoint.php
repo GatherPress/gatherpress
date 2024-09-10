@@ -94,6 +94,19 @@ class Endpoint {
 	public $reg_ex;
 
 	/**
+	 * Holds the object type.
+	 *
+	 * Depending on the `object_type` parameter, this property will either store
+	 * a `post_type` a post type or a `taxonomy` for a taxonomy.
+	 * This is used to generate the correct rewrite rules and handle URL matching.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var string
+	 */
+	public $object_type;
+
+	/**
 	 * Class constructor.
 	 *
 	 * Initializes the endpoint by setting up necessary properties and ensuring
@@ -122,6 +135,7 @@ class Endpoint {
 			$this->validation_callback = $validation_callback;
 			$this->types               = $types;
 			$this->reg_ex              = $reg_ex;
+			$this->object_type         = $object_type;
 
 			$this->hook_prio = 11; // @todo make dynamic: current-prio + 1
 
@@ -190,7 +204,10 @@ class Endpoint {
 		);
 		// Define the URL structure for handling matched requests via query vars.
 		// Example result: 'index.php?gatherpress_event=$matches[1]&gatherpress_ext_calendar=$matches[2]'.
-		$rewrite_url = $this->get_rewrite_url();
+		$rewrite_url = add_query_arg(
+			$this->get_rewrite_atts(),
+			'index.php'
+		);
 
 		// Add the rewrite rule to WordPress.
 		add_rewrite_rule( $reg_ex, $rewrite_url, 'top' );
@@ -202,13 +219,20 @@ class Endpoint {
 		add_action( 'template_redirect', array( $this, 'template_redirect' ) );
 	}
 
-	public function get_rewrite_url(): string {
-		return add_query_arg(
-			array(
-				$this->type_object->name => '$matches[1]',
-				$this->query_var         => '$matches[2]',
-			),
-			'index.php'
+	/**
+	 * Defines the rewrite replacement attributes for the custom feed endpoint.
+	 *
+	 * This method defines the rewrite replacement attributes
+	 * for the custom feed endpoint to be further processed by add_rewrite_rule().
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The rewrite replacement attributes for add_rewrite_rule().
+	 */
+	public function get_rewrite_atts(): array {
+		return array(
+			$this->type_object->name => '$matches[1]',
+			$this->query_var         => '$matches[2]',
 		);
 	}
 
@@ -257,7 +281,7 @@ class Endpoint {
 			);
 			return false;
 		}
-/* 
+		/* 
 		if ( 0 === did_action( sprintf( 'registered_%s_%s', $object_type, $type_name ) ) ) {
 			wp_trigger_error(
 				__CLASS__,

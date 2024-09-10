@@ -78,22 +78,19 @@ class Posttype_Feed_Endpoint extends Endpoint {
 	}
 
 	/**
-	 * Constructs the rewrite URL for the custom feed endpoint.
+	 * Defines the rewrite replacement attributes for the custom feed endpoint.
 	 *
-	 * This method generates the rewrite URL for the custom feed endpoint based on the
-	 * post type and the custom feed slug.
+	 * This method defines the rewrite replacement attributes
+	 * for the custom feed endpoint to be further processed by add_rewrite_rule().
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string The rewrite URL for the custom feed.
+	 * @return array The rewrite replacement attributes for add_rewrite_rule().
 	 */
-	public function get_rewrite_url(): string {
-		return add_query_arg(
-			array(
-				'post_type' => $this->type_object->name,
-				'feed'      => '$matches[1]',
-			),
-			'index.php'
+	public function get_rewrite_atts(): array {
+		return array(
+			$this->object_type => $this->type_object->name,
+			'feed'             => '$matches[1]',
 		);
 	}
 }
