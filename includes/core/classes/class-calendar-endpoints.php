@@ -162,7 +162,15 @@ class Calendar_Endpoints {
 	 * @return void
 	 */
 	public function init_taxonomies( string $taxonomy, string|array $object_type ): void {
-		if ( ! in_array( 'gatherpress_event', (array) $object_type, true ) || '_gatherpress_venue' === $taxonomy ) {
+		// Stop, if the currently registered taxonomy is ...
+		if ( 
+			// ... not registered for the events post type.
+			! in_array( 'gatherpress_event', (array) $object_type, true ) ||
+			// ... GatherPress' shadow-taxonomy for venues.
+			'_gatherpress_venue' === $taxonomy ||
+			// ... should not be public.
+			! is_taxonomy_viewable( $taxonomy )
+		) {
 			return;
 		}
 		new Taxonomy_Feed_Endpoint(
