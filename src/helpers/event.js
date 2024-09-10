@@ -81,6 +81,13 @@ export function hasEventPastNotice() {
 }
 
 /**
+ * Flag to prevent multiple event communication notices.
+ *
+ * @type {boolean}
+ */
+let isEventCommunicationNoticeCreated = false;
+
+/**
  * Trigger communication notice for event updates.
  *
  * This function checks if the event is published and not yet passed,
@@ -94,13 +101,25 @@ export function hasEventPastNotice() {
 export function triggerEventCommunication() {
 	const id = 'gatherpress_event_communication';
 	const notices = dispatch('core/notices');
+	const isSavingPost = select('core/editor').isSavingPost();
+	const isAutosavingPost = select('core/editor').isAutosavingPost();
 
-	notices.removeNotice(id);
-
+	// Only proceed if a save is in progress and it's not an autosave.
 	if (
 		'publish' === select('core/editor').getEditedPostAttribute('status') &&
-		!hasEventPast()
+		isEventPostType() &&
+		isSavingPost &&
+		!isAutosavingPost &&
+		!hasEventPast() &&
+		!isEventCommunicationNoticeCreated
 	) {
+		// Mark notice as created.
+		isEventCommunicationNoticeCreated = true;
+
+		// Remove any previous notices with the same ID.
+		notices.removeNotice(id);
+
+		// Create a new notice with an action.
 		notices.createNotice(
 			'success',
 			__('Send an event update to members via email?', 'gatherpress'),
@@ -119,5 +138,10 @@ export function triggerEventCommunication() {
 				],
 			}
 		);
+	}
+
+	// Reset the flag after the save operation completes.
+	if (!isSavingPost) {
+		isEventCommunicationNoticeCreated = false;
 	}
 }

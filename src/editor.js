@@ -2,8 +2,8 @@
  * WordPress dependencies.
  */
 import domReady from '@wordpress/dom-ready';
-import { dispatch, select } from '@wordpress/data';
-import { hasEventPastNotice } from './helpers/event';
+import { dispatch, select, subscribe } from '@wordpress/data';
+import { hasEventPastNotice, triggerEventCommunication } from './helpers/event';
 import { getBlockType, unregisterBlockType } from '@wordpress/blocks';
 import './stores';
 
@@ -53,7 +53,8 @@ domReady(() => {
 		);
 	}
 
-	// Display a notice for past events using the 'hasEventPastNotice' function.
+	subscribe(triggerEventCommunication);
+
 	hasEventPastNotice();
 });
 
