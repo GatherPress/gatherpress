@@ -25,6 +25,7 @@ use GatherPress\Core\Endpoints\Taxonomy_Feed_Endpoint;
 use GatherPress\Core\Endpoints\Endpoint_Redirect;
 use GatherPress\Core\Endpoints\Endpoint_Template;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
 use WP_Term;
 
