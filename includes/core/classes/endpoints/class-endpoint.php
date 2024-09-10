@@ -137,8 +137,6 @@ class Endpoint {
 			$this->reg_ex              = $reg_ex;
 			$this->object_type         = $object_type;
 
-			$this->hook_prio = 11; // @todo make dynamic: current-prio + 1
-
 			$this->setup_hooks();
 		}
 	}
@@ -154,10 +152,13 @@ class Endpoint {
 	 */
 	protected function setup_hooks(): void {
 
-		add_action( 'init', array( $this, 'init' ), $this->hook_prio );
+		global $wp_filter;
+		$current_filter   = current_filter();
+		$current_priority = $wp_filter[ $current_filter ]->current_priority();
+
+		add_action( $current_filter, array( $this, 'init' ), $current_priority + 1 );
 
 		if ( false !== strpos( $this->reg_ex, '/feed/' ) ) {
-
 			$feed_slug = $this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' )[0];
 			$action    = sprintf(
 				'gatherpress_load_feed_template_for_%s',
