@@ -22,8 +22,8 @@ $gatherpress_filename = $gatherpress_event->get_datetime_start( 'Y-m-d' ) . '_' 
 
 // Send file headers.
 header( 'Content-Description: .ics for ' . $gatherpress_event->event->post_title );
-header( 'Content-Disposition: attachment; filename=' . $gatherpress_filename );
-header( 'Content-type: text/calendar; charset=' . get_option( 'blog_charset' ) . ';' );
+header( 'Content-Disposition: inline; filename=' . $gatherpress_filename );
+header( 'Content-type: text/calendar; charset=' . strtolower( get_option( 'blog_charset' ) ) . ';' );
 header( 'Pragma: 0' );
 header( 'Expires: 0' );
 
