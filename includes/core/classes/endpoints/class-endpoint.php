@@ -12,6 +12,9 @@
 
 namespace GatherPress\Core\Endpoints;
 
+use WP_Post_Type;
+use WP_Taxonomy;
+
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
@@ -214,8 +217,7 @@ class Endpoint {
 		// Add the rewrite rule to WordPress.
 		add_rewrite_rule( $reg_ex_pattern, $rewrite_url, 'top' );
 
-		// add_action( 'wp_loaded', array( $this, 'maybe_flush_rewrite_rules' ) );
-		//
+		// Trigger a flush of rewrite rules.
 		$this->maybe_flush_rewrite_rules( $reg_ex_pattern );
 
 		// Allow the custom query variable by filtering the public query vars.
@@ -245,7 +247,8 @@ class Endpoint {
 	private function maybe_flush_rewrite_rules( string $reg_ex_pattern ): void {
 		$rules = get_option( 'rewrite_rules' );
 		if ( ! isset( $rules[ $reg_ex_pattern ] ) ) {
-			// Event_Setup->maybe_create_flush_rewrite_rules_flag // @todo maybe make this a public method ?! // @see https://github.com/GatherPress/gatherpress/blob/3d91f2bcb30b5d02ebf459cd5a42d4f43bc05ea5/includes/core/classes/class-settings.php#L760C1-L761C63
+			// Event_Setup->maybe_create_flush_rewrite_rules_flag // @todo maybe make this a public method ?!
+			// @see https://github.com/GatherPress/gatherpress/blob/3d91f2bcb30b5d02ebf459cd5a42d4f43bc05ea5/includes/core/classes/class-settings.php#L760C1-L761C63 .
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
 	}
@@ -295,15 +298,6 @@ class Endpoint {
 			);
 			return false;
 		}
-		/*
-		if ( 0 === did_action( sprintf( 'registered_%s_%s', $object_type, $type_name ) ) ) {
-			wp_trigger_error(
-				__CLASS__,
-				"was called too early! Make sure the '$type_name' $object_type is already registered.",
-				E_USER_WARNING
-			);
-			return false;
-		} */
 
 		// Store the validated post type or taxonomy object for later use.
 		switch ( $object_type ) {
@@ -314,6 +308,15 @@ class Endpoint {
 			case 'post_type':
 				$this->type_object = get_post_type_object( $type_name );
 				break;
+		}
+
+		if ( ! $this->type_object instanceof WP_Post_Type && ! $this->type_object instanceof WP_Taxonomy ) {
+			wp_trigger_error(
+				__CLASS__,
+				"was called too early! Make sure the '$type_name' $object_type is already registered.",
+				E_USER_WARNING
+			);
+			return false;
 		}
 
 		if ( false === $this->type_object->rewrite ) {

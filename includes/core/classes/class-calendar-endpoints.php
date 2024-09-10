@@ -50,7 +50,7 @@ class Calendar_Endpoints {
 	use Singleton;
 
 	const QUERY_VAR = 'gatherpress_calendar';
-	const ICAL_SLUG = 'ical'; // Make sure nobody tries to change or translate this string ;)
+	const ICAL_SLUG = 'ical'; // Make sure nobody tries to change or translate this string ;) !
 
 	/**
 	 * Class constructor.
@@ -89,6 +89,7 @@ class Calendar_Endpoints {
 			),
 			array( $this, 'init_venues' ),
 		);
+		// @todo Maybe hook this two actions dynamically based on a registered post type?!
 		add_action(
 			'registered_taxonomy_for_object_type',
 			array( $this, 'init_taxonomies' ),

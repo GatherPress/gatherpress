@@ -33,7 +33,7 @@ echo wp_kses_post( $gatherpress_event->get_ics_calendar_download() );
 // Get collected output and render it.
 $gatherpress_ics_file = ob_get_contents();
 
-// Calculate the file size
+// Calculate and send the file size.
 $gatherpress_filesize = strlen( $gatherpress_ics_file );
 header( 'Content-Length: ' . $gatherpress_filesize );
 
