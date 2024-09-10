@@ -305,6 +305,7 @@ class Endpoint {
 			return;
 		}
 
+		// Get the currently requested endpoint from the list of registered endpoint types.
 		$endpoint_type = current(
 			wp_list_filter(
 				$this->types,
@@ -313,14 +314,14 @@ class Endpoint {
 				)
 			)
 		);
-		if ( $this->has_redirects() ) {
-			$endpoint_type->redirect_to();
-		}
+		// if ( $this->has_redirects() ) {
+		// 	$endpoint_type->activate();
+		// }
 
-		if ( $this->has_templates() ) {
-			// Filters the path of the current template before including it.
-			add_filter( 'template_include', array( $endpoint_type, 'template_include' ) );
-		}
+		// if ( $this->has_templates() ) {
+		// 	$endpoint_type->activate();
+		// }
+		$endpoint_type->activate();
 	}
 
 	/**
@@ -347,14 +348,14 @@ class Endpoint {
 	 * @since 1.0.0
 	 *
 	 * @return bool True if the endpoint has a redirect, false otherwise.
-	 */
+
 	public function has_redirects(): bool {
 		return in_array(
 			get_query_var( $this->query_var ),
 			$this->get_slugs( __NAMESPACE__ . '\Endpoint_Redirect' ),
 			true
 		);
-	}
+	}	 */
 
 	/**
 	 * Checks if the currently requested endpoint has templates to load.
@@ -365,14 +366,14 @@ class Endpoint {
 	 * @since 1.0.0
 	 *
 	 * @return bool True if the endpoint has a template, false otherwise.
-	 */
+
 	public function has_templates(): bool {
 		return in_array(
 			get_query_var( $this->query_var ),
 			$this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ),
 			true
 		);
-	}
+	}	 */
 
 	/**
 	 * Retrieves the slugs of the specified endpoint types.

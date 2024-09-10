@@ -78,4 +78,6 @@ abstract class Endpoint_Type {
 		$this->slug     = $slug;
 		$this->callback = $callback;
 	}
+
+	public function activate() : void {}
 }

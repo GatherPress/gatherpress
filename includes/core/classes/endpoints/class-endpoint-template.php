@@ -31,6 +31,18 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 class Endpoint_Template extends Endpoint_Type {
 
 	/**
+	 * 
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function activate(): void {
+		// Filters the path of the current template before including it.
+		add_filter( 'template_include', array( $this, 'template_include' ) );
+	}
+
+	/**
 	 * Filters the path of the current template before including it.
 	 *
 	 * This method checks if the theme or child theme provides a custom template for the
