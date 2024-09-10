@@ -6,8 +6,6 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import {select, subscribe, useSelect} from '@wordpress/data';
-import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import { createRoot } from '@wordpress/element';
 
@@ -15,7 +13,6 @@ import { createRoot } from '@wordpress/element';
  * Internal dependencies.
  */
 import { enableSave, getFromGlobal, setToGlobal } from './globals';
-import { isEventPostType, triggerEventCommunication } from './event';
 import DateTimePreview from '../components/DateTimePreview';
 
 /**

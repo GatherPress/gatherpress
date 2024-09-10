@@ -470,7 +470,20 @@ class Event_Setup {
 		return $post_states;
 	}
 
-	public function set_datetimes( $post_id ): void {
+	/**
+	 * Set the date and time metadata for an event post.
+	 *
+	 * This method checks if the given post ID is for an event post, retrieves the
+	 * associated 'gatherpress_datetime' metadata, and processes the date/time and
+	 * timezone information. It then saves the event's date and time details.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id The ID of the post being saved.
+	 *
+	 * @return void
+	 */
+	public function set_datetimes( int $post_id ): void {
 		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return;
 		}

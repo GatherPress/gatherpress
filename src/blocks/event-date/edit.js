@@ -31,12 +31,12 @@ import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
 /**
  * Similar to get_display_datetime method in class-event.php.
  *
- * @param {string} start
- * @param {string} end
- * @param {string} tz
+ * @param {string} dateTimeStart
+ * @param {string} dateTimeEnd
+ * @param {string} timezone
  * @return {string} Displayed date.
  */
-const displayDateTime = (start, end, tz) => {
+const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
 	const dateFormat = convertPHPToMomentFormat(
 		getFromGlobal('settings.dateFormat')
 	);
@@ -45,14 +45,6 @@ const displayDateTime = (start, end, tz) => {
 	);
 	const timeZoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
 	const startFormat = dateFormat + ' ' + timeFormat;
-	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
-		(select) => ({
-			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
-			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
-			timezone: select('gatherpress/datetime').getTimezone(),
-		}),
-		[]
-	);
 	const timeZone = getTimezone(timezone);
 
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
@@ -77,24 +69,26 @@ const displayDateTime = (start, end, tz) => {
  * Edit component for the GatherPress Event Date block.
  *
  * This component represents the editable view of the GatherPress Event Date block
- * in the WordPress block editor. It manages the state of date, time, and timezone
- * for the block and renders the user interface accordingly. The component includes
- * an icon, displays the formatted date and time, and provides controls to edit the
- * date and time range via the DateTimeRange component in the InspectorControls.
+ * in the WordPress block editor. It manages the state of the start and end date,
+ * time, and timezone for the block, and renders the user interface accordingly.
+ * The component includes a BlockControls toolbar, displays the formatted date and
+ * time, and provides controls for editing the date and time range via the
+ * DateTimeRange component within InspectorControls.
  *
- * @param  root0
- * @param  root0.attributes
- * @param  root0.attributes.textAlign
- * @param  root0.attributes.format
- * @param  root0.attributes.isLink
- * @param  root0.attributes.displayType
- * @param  root0.setAttributes
  * @since 1.0.0
+ *
+ * @param {Object}   root0                        The props passed to the Edit component.
+ * @param {Object}   root0.attributes             The block attributes.
+ * @param {string}   root0.attributes.textAlign   The text alignment for the block.
+ * @param {string}   root0.attributes.format      The format of the displayed date/time.
+ * @param {boolean}  root0.attributes.isLink      Determines if the block is a link.
+ * @param {string}   root0.attributes.displayType The display type (e.g., inline or block).
+ * @param {Function} root0.setAttributes          Function to set block attributes.
  *
  * @return {JSX.Element} The rendered Edit component for the GatherPress Event Date block.
  *
  * @see {@link DateTimeRange} - Component for editing date and time range.
- * @see {@link EditCover} - Component for displaying a cover over the block.
+ * @see {@link AlignmentToolbar} - Toolbar for text alignment control.
  * @see {@link useBlockProps} - Custom hook for block props.
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */

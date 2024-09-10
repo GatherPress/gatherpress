@@ -33,15 +33,10 @@ import {
  *
  * This component manages the selection of the start date and time. It uses
  * DateTimeStartPicker for the user to pick the date and time. The selected
- * values are formatted and broadcasted using Broadcaster. The component
- * subscribes to the saveDateTime function and triggers the hasEventPastNotice
- * function to handle any event past notices.
+ * values are formatted and saved. The component subscribes to the saveDateTime
+ * function and triggers the hasEventPastNotice function to handle any event past notices.
  *
  * @since 1.0.0
- *
- * @param {Object}   props                  - Component properties.
- * @param {string}   props.dateTimeStart    - The current start date and time.
- * @param {Function} props.setDateTimeStart - Function to set the start date and time.
  *
  * @return {JSX.Element} The rendered React component.
  */

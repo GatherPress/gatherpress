@@ -18,13 +18,12 @@ import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import TimeZone from '../components/TimeZone';
 
-
 /**
  * DateTimeRange component for GatherPress.
  *
  * This component manages the date and time range selection. It includes
  * DateTimeStart, DateTimeEnd, and TimeZone components. The selected values
- * for start date and time, end date and time, and timezone are managed in the
+ * for the start date and time, end date and time, and timezone are managed in the
  * component's state. The component subscribes to the saveDateTime function,
  * which is triggered to save the selected date and time values.
  *
@@ -59,15 +58,19 @@ const DateTimeRange = () => {
 		const payload = JSON.stringify({
 			...dateTimeMetaData,
 			...{
-				dateTimeStart: moment.tz(dateTimeStart, timezone).format(dateTimeDatabaseFormat),
-				dateTimeEnd: moment.tz(dateTimeEnd, timezone).format(dateTimeDatabaseFormat),
+				dateTimeStart: moment
+					.tz(dateTimeStart, timezone)
+					.format(dateTimeDatabaseFormat),
+				dateTimeEnd: moment
+					.tz(dateTimeEnd, timezone)
+					.format(dateTimeDatabaseFormat),
 				timezone,
 			},
 		});
 		const meta = { gatherpress_datetime: payload };
 
 		editPost({ meta });
-	}, [dateTimeStart, dateTimeEnd, timezone]);
+	}, [dateTimeStart, dateTimeEnd, timezone, dateTimeMetaData, editPost]);
 
 	return (
 		<>

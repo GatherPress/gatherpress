@@ -9,8 +9,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { Broadcaster } from '../helpers/broadcasting';
-import { enableSave, getFromGlobal, setToGlobal } from '../helpers/globals';
+import { enableSave, getFromGlobal } from '../helpers/globals';
 import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForSelect,
@@ -21,17 +20,13 @@ import {
  *
  * This component allows users to select their preferred time zone from a list of choices.
  * It includes a SelectControl with options grouped by regions. The selected time zone is
- * stored in the state and broadcasted using the Broadcaster utility.
+ * stored in the state and updated via the setTimezone function.
  *
  * @since 1.0.0
  *
- * @param {Object}   props             - Component props.
- * @param {string}   props.timezone    - The current selected time zone.
- * @param {Function} props.setTimezone - Callback function to set the selected time zone.
- *
  * @return {JSX.Element} The rendered React component.
  */
-const TimeZone = (props) => {
+const TimeZone = () => {
 	const { timezone } = useSelect(
 		(select) => ({
 			timezone: select('gatherpress/datetime').getTimezone(),
