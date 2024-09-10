@@ -56,7 +56,7 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @return string          The path of the template to include, either from the theme or plugin.
 	 */
 	public function template_include( string $template ): string {
-		$presets   = call_user_func( $this->callback );
+		$presets   = ( $this->callback )();
 		$file_name = $presets['file_name'];
 
 		/**

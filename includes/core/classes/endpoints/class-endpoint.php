@@ -424,7 +424,7 @@ class Endpoint {
 	 * @return bool True if the query is valid, false otherwise.
 	 */
 	public function is_valid_query(): bool {
-		return call_user_func( $this->validation_callback ) && ! empty( get_query_var( $this->query_var ) );
+		return ($this->validation_callback)() && ! empty( get_query_var( $this->query_var ) );
 	}
 
 	/**

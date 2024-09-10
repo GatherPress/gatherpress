@@ -55,7 +55,7 @@ class Endpoint_Redirect extends Endpoint_Type {
 	 * @return void
 	 */
 	public function activate(): void {
-		$this->url = call_user_func( $this->callback );
+		$this->url = ( $this->callback )();
 		if ( $this->url ) {
 			// Add the target host to the list of allowed redirect hosts.
 			add_filter( 'allowed_redirect_hosts', array( $this, 'allowed_redirect_hosts' ) );
