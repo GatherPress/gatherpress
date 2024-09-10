@@ -11,8 +11,6 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
-
 // Start collecting all output.
 ob_start();
 
@@ -27,10 +25,15 @@ header( 'Pragma: 0' );
 header( 'Expires: 0' );
 
 // Generate ical.
-echo wp_kses_post( 'hello subscribeable ical feed.' );
+echo wp_kses_post( 'hello subscribeable ical feed world.' );
 
 // Get collected output and render it.
 $gatherpress_ics_file = ob_get_contents();
+
+// Calculate the file size
+$gatherpress_filesize = strlen( $gatherpress_ics_file );
+header( 'Content-Length: ' . $gatherpress_filesize );
+
 ob_end_clean();
 echo wp_kses_post( $gatherpress_ics_file );
 
