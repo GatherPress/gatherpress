@@ -4,7 +4,7 @@ Stable tag: 0.31.0-alpha
 Tested up to: 6.6.1  
 License: GPL v2 or later  
 Tags: events, event, meetup, community  
-Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, pbrocks, prayagm, linusx007  
+Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, prayagm, pbrocks, linusx007  
 
 ![](.wordpress-org/banner-1544x500.jpg)
 
@@ -24,8 +24,7 @@ GatherPress, a plugin created by and for the WordPress community, is a response 
 
 ## Pilot Program
 
-**We propose a pilot program to test GatherPress, a community-developed plugin, within interested and active WordPress meetup groups. This initiative stems from our community’s need for an innovative event management tool tailored to the unique demands of WordPress event organizers and participants.**
-[@Patricia BT](https://profiles.wordpress.org/patricia70/) in January 2024 on [make.wordpress.org](https://make.wordpress.org/community/2024/01/22/proposal-pilot-program-to-test-gatherpress-on-the-wordpress-org-network-as-a-meetup-alternative/)
+**We propose a pilot program to test GatherPress**, a community-developed plugin, within interested and active WordPress meetup groups. This initiative stems from our community’s need for an innovative event management tool tailored to the unique demands of WordPress event organizers and participants. Our proposal in January 2024 on [make.wordpress.org](https://make.wordpress.org/community/2024/01/22/proposal-pilot-program-to-test-gatherpress-on-the-wordpress-org-network-as-a-meetup-alternative/)
 
 ## Community-built
 
@@ -47,7 +46,7 @@ The playground is built on the WordPress Playground with customizable json data 
 
 For an introduction as to what we are creating and the specific features needed to host events and gather well, please view the [introductory video](https://www.youtube.com/watch?v=BnYS36C5d38&t=2s).
 
-https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
+https://gatherpress.org/demovideo
 
 ### Features
 
@@ -82,9 +81,27 @@ This plugin leverages the following third-party libraries for various functional
 
 ## Installation
 
-1. Download the plugin: you'll find the latest release on the GatherPress GitHub repository, under [Releases](https://github.com/GatherPress/gatherpress/releases) > Assets and download `gatherpress.zip`.
-2. Install it in your WordPress instance: go to WP Admin Plugins > Add new plugin. Choose the `gatherpress.zip` file you just downloaded.
+### Installation from the WordPress repository
+
+GatherPress is now available on the WordPress plugins repository and able to be installed like any other plugin.
+
+1. Navigate to your site's wp-admin area, and in the left-side menu click on Plugins > Add new plugin.
+2. Search for `gatherpress` in the search box and click the Install button.
 3. Activate the plugin.
+
+<img width="854" alt="plugins-page-search" src="https://github.com/user-attachments/assets/579f5cd4-741e-4870-86e9-838714cb91bb">
+
+### Installation from GitHub
+
+Since this plugin is in active development by the community, features and functionality are still evolving. For the latest updates to GatherPress, consult our [GitHub page](https://github.com/GatherPress/).
+
+1. To find the latest release for installation, use the link under [Releases](https://github.com/GatherPress/gatherpress/releases) > Assets to download `gatherpress.zip`.
+2. Then go to your wp-admin plugins page and click on the `Upload Plugin` button.
+3. Click on the `Choose File` button at the center of your screen to select the `gatherpress.zip` file you just downloaded.
+4. Select the proper zip file, click Open, then `Install Now`.
+5. Activate the plugin.
+
+<img width="954" alt="upload-plugin" src="https://github.com/user-attachments/assets/f9751adb-30c7-49a8-bb70-1330e6a03504">
 
 ### Requirements
 
@@ -94,7 +111,7 @@ To run GatherPress, we recommend your host supports:
 - MySQL version 5.6 or greater, or, MariaDB version 10.0 or greater.
 - HTTPS support.
 
-### Configure GatherPress
+## Configure GatherPress
 
 In WP Admin, go to `Events`  > `Settings`.
 
@@ -201,9 +218,3 @@ As we continue to refine and develop the core plugin, we've created the [GatherP
 ## Changelog
 
 See complete changelog at https://github.com/GatherPress/gatherpress/releases.
-
-## Upgrade Notice
-
-### 1.0.0
-
-See: https://gatherpress.org/releases/version-1-0-0
