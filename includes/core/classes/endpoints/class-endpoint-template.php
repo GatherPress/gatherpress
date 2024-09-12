@@ -137,7 +137,7 @@ class Endpoint_Template extends Endpoint_Type {
 		// out whether block templates are supported and this template exists.
 		$template = locate_block_template(
 			$template,
-			pathinfo( $file_name, PATHINFO_FILENAME ) ), // Name of the file without extension.
+			pathinfo( $file_name, PATHINFO_FILENAME ), // Name of the file without extension.
 			$templates
 		);
 
