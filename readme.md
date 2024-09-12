@@ -44,9 +44,9 @@ The playground is built on the WordPress Playground with customizable json data 
 - Run end-to-end tests (still a PR)
 - Curating and maintaining your own set of demo-data, which is reusable in all WP Playgrounds.
 
-For an introduction as to what we are creating and the specific features needed to host events and gather well, please view the [introductory video](https://www.youtube.com/watch?v=BnYS36C5d38&t=2s).
+For an introduction as to what we are creating and the specific features needed to host events and gather well, please view the [introductory video](https://gatherpress.org/demovideo).
 
-https://gatherpress.org/demovideo
+<https://gatherpress.org/demovideo>
 
 ### Features
 
@@ -188,13 +188,7 @@ Yes, GatherPress can be run on a network of sites. The additional database table
 
 GatherPress can also be activated per site.
 
-### What’s about the PRO version?
-
-As a Community powered plugin, GatherPress is already the PRO-version.
-
-Because we strive for close-to-core development, love decisions - not options and follow a lot of well known best-practices within the WordPress space, we can and do focus on what matters most - powering our community's event management needs.
-
-## GatherPress‘ Best Practices:
+## GatherPress‘ Best Practices
 
 - Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
 - Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
@@ -217,4 +211,4 @@ As we continue to refine and develop the core plugin, we've created the [GatherP
 
 ## Changelog
 
-See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+See complete changelog at <https://github.com/GatherPress/gatherpress/releases>.
