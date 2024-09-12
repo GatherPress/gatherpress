@@ -86,5 +86,5 @@ abstract class Endpoint_Type {
 	 *
 	 * @return void
 	 */
-	public function activate(): void {}
+	abstract public function activate(): void;
 }

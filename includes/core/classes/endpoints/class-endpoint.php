@@ -375,13 +375,6 @@ class Endpoint {
 				)
 			)
 		);
-		// if ( $this->has_redirects() ) {
-		// $endpoint_type->activate();
-		// }
-
-		// if ( $this->has_templates() ) {
-		// $endpoint_type->activate();
-		// }
 		$endpoint_type->activate();
 	}
 
@@ -431,42 +424,6 @@ class Endpoint {
 	}
 
 	/**
-	 * Checks if the currently requested endpoint has redirects attached.
-	 *
-	 * This method determines if the endpoint has an associated redirect based on
-	 * the custom query variable and the list of available redirect slugs.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return bool True if the endpoint has a redirect, false otherwise.
-
-	public function has_redirects(): bool {
-		return in_array(
-			get_query_var( $this->query_var ),
-			$this->get_slugs( __NAMESPACE__ . '\Endpoint_Redirect' ),
-			true
-		);
-	}    */
-
-	/**
-	 * Checks if the currently requested endpoint has templates to load.
-	 *
-	 * This method determines if the endpoint has an associated template based on
-	 * the custom query variable and the list of available template slugs.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return bool True if the endpoint has a template, false otherwise.
-
-	public function has_templates(): bool {
-		return in_array(
-			get_query_var( $this->query_var ),
-			$this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ),
-			true
-		);
-	}    */
-
-	/**
 	 * Retrieves the slugs of the specified endpoint types.
 	 *
 	 * This method filters the `types` array to get the slugs for either a specific type of endpoint
@@ -488,9 +445,39 @@ class Endpoint {
 			: array_filter(
 				$this->types,
 				function ( $type ) use ( $entity ) {
-					return $type instanceof $entity;
+					return self::is_of_class( $type, $entity );
 				}
 			);
 		return wp_list_pluck( $types, 'slug' );
+	}
+
+	/**
+	 * 
+	 *
+	 * @param  Endpoint_Type $type
+	 * @param  string        $entity
+	 *
+	 * @return bool
+	 */
+	private static function is_of_class( Endpoint_Type $type, string $entity ) : bool {
+		return self::is_in_class( $entity ) && $type instanceof $entity;
+	}
+
+	/**
+	 * 
+	 *
+	 * @param  string $entity
+	 *
+	 * @return bool
+	 */
+	private static function is_in_class( string $entity ) : bool {
+		return in_array(
+			$entity,
+			array(
+				__NAMESPACE__ . '\Endpoint_Redirect',
+				__NAMESPACE__ . '\Endpoint_Template',
+			),
+			true
+		);
 	}
 }
