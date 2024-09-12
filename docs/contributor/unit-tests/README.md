@@ -64,3 +64,26 @@ To run only specific tests, you can call `npm run test:unit:php`:
     ```
 
 - or with any other of [phpunit's command-line options](https://docs.phpunit.de/en/10.5/textui.html#command-line-options).
+
+## Resources
+
+### PMC Unit Test Framework
+
+GatherPress uses the *PMC Unit Test Framework* because it:
+
+> [...] provide[s] common utilities and data mocking for unit tests in a WordPress environment.
+
+> This plugin was originally written for internal use at Penske Media [...] Our hope is that other teams find this plugin as useful as we do when writing unit tests in WordPress.
+>
+> https://github.com/penske-media-corp/pmc-unit-test
+
+* [Installation](https://github.com/penske-media-corp/pmc-unit-test/tree/main?tab=readme-ov-file#installation)
+* [Usage](https://github.com/penske-media-corp/pmc-unit-test/tree/main?tab=readme-ov-file#usage)
+* [Data Mocking Overview](https://github.com/penske-media-corp/pmc-unit-test/blob/main/src/mocks/README.md)
+	* [$this->mock->http()](https://github.com/penske-media-corp/pmc-unit-test/blob/main/docs/mock-http.md)
+	* [$this->mock->input()](https://github.com/penske-media-corp/pmc-unit-test/blob/main/docs/mock-input.md)
+	* [$this->mock->mail()](https://github.com/penske-media-corp/pmc-unit-test/blob/main/docs/mock-mail.md)
+	* [$this->mock->post()](https://github.com/penske-media-corp/pmc-unit-test/blob/main/docs/mock-post.md)
+	* [$this->mock->post()->is_amp()](https://github.com/penske-media-corp/pmc-unit-test/blob/main/docs/mock-post.md)
+	* [$this->mock->user()](https://github.com/penske-media-corp/pmc-unit-test/blob/main/docs/mock-user.md)
+	* [$this->mock->wp()](https://github.com/penske-media-corp/pmc-unit-test/blob/main/docs/mock-wp.md)
