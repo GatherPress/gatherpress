@@ -55,6 +55,7 @@ class Event_Setup {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
+		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
 		add_action(
 			sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
@@ -184,6 +185,59 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
+			'gatherpress_datetime'               => array(
+				'auth_callback'     => static function () {
+					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_datetime_start'         => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+			),
+			'gatherpress_datetime_start_gmt'     => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_datetime_end'           => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_datetime_end_gmt'       => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_timezone'               => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
 			'gatherpress_max_guest_limit'        => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
@@ -414,5 +468,42 @@ class Event_Setup {
 		}
 
 		return $post_states;
+	}
+
+	/**
+	 * Set the date and time metadata for an event post.
+	 *
+	 * This method checks if the given post ID is for an event post, retrieves the
+	 * associated 'gatherpress_datetime' metadata, and processes the date/time and
+	 * timezone information. It then saves the event's date and time details.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id The ID of the post being saved.
+	 *
+	 * @return void
+	 */
+	public function set_datetimes( int $post_id ): void {
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			return;
+		}
+
+		$data = get_post_meta( $post_id, 'gatherpress_datetime', true );
+
+		if ( empty( $data ) ) {
+			return;
+		}
+
+		$data = json_decode( (string) $data, true ) ?? array();
+
+		$event  = new Event( $post_id );
+		$params = array(
+			'post_id'        => $post_id,
+			'datetime_start' => $data['dateTimeStart'] ?? '',
+			'datetime_end'   => $data['dateTimeEnd'] ?? '',
+			'timezone'       => $data['timezone'] ?? '',
+		);
+
+		$event->save_datetimes( $params );
 	}
 }

@@ -12,7 +12,7 @@ import {
 	updateDateTimeStart,
 	updateDateTimeEnd,
 	dateTimeLabelFormat,
-	getTimeZone,
+	getTimezone,
 } from '../helpers/datetime';
 
 /**
@@ -30,7 +30,7 @@ export const DateTimeStartLabel = (props) => {
 	const { dateTimeStart } = props;
 
 	return moment
-		.tz(dateTimeStart, getTimeZone())
+		.tz(dateTimeStart, getTimezone())
 		.format(dateTimeLabelFormat());
 };
 
@@ -48,7 +48,7 @@ export const DateTimeStartLabel = (props) => {
 export const DateTimeEndLabel = (props) => {
 	const { dateTimeEnd } = props;
 
-	return moment.tz(dateTimeEnd, getTimeZone()).format(dateTimeLabelFormat());
+	return moment.tz(dateTimeEnd, getTimezone()).format(dateTimeLabelFormat());
 };
 
 /**
@@ -81,7 +81,10 @@ export const DateTimeStartPicker = (props) => {
 	return (
 		<DateTimePicker
 			currentDate={dateTimeStart}
-			onChange={(date) => updateDateTimeStart(date, setDateTimeStart)}
+			onChange={(date) => {
+				// updateDateTimeMeta({ dateTimeStart: date });
+				updateDateTimeStart(date, setDateTimeStart);
+			}}
 			is12Hour={is12HourTime}
 		/>
 	);

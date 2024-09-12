@@ -95,50 +95,9 @@ class Event_Rest_Api {
 	 */
 	protected function get_event_routes(): array {
 		return array(
-			$this->datetime_route(),
 			$this->email_route(),
 			$this->rsvp_route(),
 			$this->events_list_route(),
-		);
-	}
-
-	/**
-	 * Define the REST route for updating event date and time.
-	 *
-	 * This method sets up the REST route for updating the date and time of an event.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array The REST route configuration.
-	 */
-	protected function datetime_route(): array {
-		return array(
-			'route' => 'datetime',
-			'args'  => array(
-				'methods'             => WP_REST_Server::EDITABLE,
-				'callback'            => array( $this, 'update_datetime' ),
-				'permission_callback' => static function (): bool {
-					return current_user_can( 'edit_posts' );
-				},
-				'args'                => array(
-					'post_id'        => array(
-						'required'          => true,
-						'validate_callback' => array( $this, 'validate_event_post_id' ),
-					),
-					'datetime_start' => array(
-						'required'          => true,
-						'validate_callback' => array( $this, 'validate_datetime' ),
-					),
-					'datetime_end'   => array(
-						'required'          => true,
-						'validate_callback' => array( $this, 'validate_datetime' ),
-					),
-					'timezone'       => array(
-						'required'          => false,
-						'validate_callback' => array( $this, 'validate_timezone' ),
-					),
-				),
-			),
 		);
 	}
 
@@ -372,35 +331,6 @@ class Event_Rest_Api {
 	 */
 	public function validate_timezone( string $param ): bool {
 		return in_array( Utility::maybe_convert_utc_offset( $param ), Utility::list_timezone_and_utc_offsets(), true );
-	}
-
-	/**
-	 * Update the custom event table with start and end Datetime.
-	 *
-	 * This method is used to update the custom event table with new start and end Datetimes for a specific event.
-	 * It checks the user's capability to edit posts before making any changes. If the user doesn't have the required
-	 * capability, the method returns a response with 'success' set to false.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param WP_REST_Request $request Contains data from the request.
-	 * @return WP_REST_Response The response indicating the success of the operation.
-	 *
-	 * @throws Exception When an exception occurs during the process.
-	 */
-	public function update_datetime( WP_REST_Request $request ): WP_REST_Response {
-		$params             = wp_parse_args( $request->get_params(), $request->get_default_params() );
-		$params['timezone'] = Utility::maybe_convert_utc_offset( $params['timezone'] );
-		$event              = new Event( $params['post_id'] );
-
-		unset( $params['post_id'] );
-
-		$success  = $event->save_datetimes( $params );
-		$response = array(
-			'success' => $success,
-		);
-
-		return new WP_REST_Response( $response );
 	}
 
 	/**

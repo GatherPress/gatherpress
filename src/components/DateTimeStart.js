@@ -15,17 +15,17 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
+import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
 import { DateTimeStartLabel, DateTimeStartPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
-import { Broadcaster } from '../helpers/broadcasting';
 import {
 	dateTimeMomentFormat,
 	getDateTimeStart,
-	getTimeZone,
+	getTimezone,
 } from '../helpers/datetime';
 
 /**
@@ -33,38 +33,35 @@ import {
  *
  * This component manages the selection of the start date and time. It uses
  * DateTimeStartPicker for the user to pick the date and time. The selected
- * values are formatted and broadcasted using Broadcaster. The component
- * subscribes to the saveDateTime function and triggers the hasEventPastNotice
- * function to handle any event past notices.
+ * values are formatted and saved. The component subscribes to the saveDateTime
+ * function and triggers the hasEventPastNotice function to handle any event past notices.
  *
  * @since 1.0.0
  *
- * @param {Object}   props                  - Component properties.
- * @param {string}   props.dateTimeStart    - The current start date and time.
- * @param {Function} props.setDateTimeStart - Function to set the start date and time.
- *
  * @return {JSX.Element} The rendered React component.
  */
-const DateTimeStart = (props) => {
-	const { dateTimeStart, setDateTimeStart } = props;
+const DateTimeStart = () => {
+	const { dateTimeStart } = useSelect(
+		(select) => ({
+			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
+		}),
+		[]
+	);
+	const { setDateTimeStart } = useDispatch('gatherpress/datetime');
 
 	useEffect(() => {
 		setDateTimeStart(
 			moment
-				.tz(getDateTimeStart(), getTimeZone())
+				.tz(getDateTimeStart(), getTimezone())
 				.format(dateTimeMomentFormat)
 		);
-
-		Broadcaster({
-			setDateTimeStart: dateTimeStart,
-		});
 
 		hasEventPastNotice();
 	});
 
 	return (
 		<PanelRow>
-			<Flex direction="column" gap="0">
+			<Flex direction="row" gap="0">
 				<FlexItem>
 					<label htmlFor="gatherpress-datetime-start">
 						{__('Start', 'gatherpress')}

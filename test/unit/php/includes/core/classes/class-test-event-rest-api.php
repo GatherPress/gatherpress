@@ -80,11 +80,6 @@ class Test_Event_Rest_Api extends Base {
 		);
 		$this->assertEquals(
 			1,
-			$namespace[ sprintf( '/%s/event/datetime', GATHERPRESS_REST_NAMESPACE ) ],
-			'Failed to assert datetime endpoint is registered'
-		);
-		$this->assertEquals(
-			1,
 			$namespace[ sprintf( '/%s/event/email', GATHERPRESS_REST_NAMESPACE ) ],
 			'Failed to assert email endpoint is registered'
 		);
@@ -104,7 +99,6 @@ class Test_Event_Rest_Api extends Base {
 	 * Coverage for get_event_routes method.
 	 *
 	 * @covers ::get_event_routes
-	 * @covers ::datetime_route
 	 * @covers ::email_route
 	 * @covers ::rsvp_route
 	 * @covers ::events_list_route
@@ -115,28 +109,22 @@ class Test_Event_Rest_Api extends Base {
 		$instance = Event_Rest_Api::get_instance();
 		$routes   = Utility::invoke_hidden_method( $instance, 'get_event_routes' );
 
-		$this->assertSame( 'datetime', $routes[0]['route'], 'Failed to assert route is datetime.' );
+		$this->assertSame( 'email', $routes[0]['route'], 'Failed to assert route is email.' );
 		$this->assertSame(
 			WP_REST_Server::EDITABLE,
 			$routes[0]['args']['methods'],
 			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'email', $routes[1]['route'], 'Failed to assert route is email.' );
+		$this->assertSame( 'rsvp', $routes[1]['route'], 'Failed to assert route is rsvp.' );
 		$this->assertSame(
 			WP_REST_Server::EDITABLE,
 			$routes[1]['args']['methods'],
 			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'rsvp', $routes[2]['route'], 'Failed to assert route is rsvp.' );
-		$this->assertSame(
-			WP_REST_Server::EDITABLE,
-			$routes[2]['args']['methods'],
-			'Failed to assert methods is POST, PUT, PATCH.'
-		);
-		$this->assertSame( 'events-list', $routes[3]['route'], 'Failed to assert route is rsvp.' );
+		$this->assertSame( 'events-list', $routes[2]['route'], 'Failed to assert route is rsvp.' );
 		$this->assertSame(
 			WP_REST_Server::READABLE,
-			$routes[3]['args']['methods'],
+			$routes[2]['args']['methods'],
 			'Failed to assert methods is GET.'
 		);
 	}
@@ -329,47 +317,6 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertTrue(
 			$instance->validate_timezone( 'America/New_York' ),
 			'Failed to assert valid timezone.'
-		);
-	}
-
-	/**
-	 * Coverage for update_datetime method.
-	 *
-	 * @covers ::update_datetime
-	 *
-	 * @return void
-	 */
-	public function test_update_datetime(): void {
-
-		update_option( 'date_format', 'l, F j, Y' );
-		update_option( 'time_format', 'g:i A' );
-
-		$instance = Event_Rest_Api::get_instance();
-
-		$request  = new WP_REST_Request( 'POST' );
-		$event_id = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		$request->set_query_params(
-			array(
-				'datetime_end'   => '2023-09-13 20:00:00',
-				'datetime_start' => '2023-09-13 19:00:00',
-				'post_id'        => $event_id,
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$response = $instance->update_datetime( $request );
-
-		$this->assertEquals( 1, $response->data['success'], 'Failed to assert that success was true.' );
-
-		$event = new Event( $event_id );
-
-		$this->assertSame(
-			'Wednesday, September 13, 2023 7:00 PM to 8:00 PM EDT',
-			$event->get_display_datetime(),
-			'Failed to assert datetime display matches.'
 		);
 	}
 
