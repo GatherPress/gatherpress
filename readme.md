@@ -211,4 +211,4 @@ As we continue to refine and develop the core plugin, we've created the [GatherP
 
 ## Changelog
 
-See complete changelog at <https://github.com/GatherPress/gatherpress/releases>.
+See complete changelog at https://github.com/GatherPress/gatherpress/releases.
