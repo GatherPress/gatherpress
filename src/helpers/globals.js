@@ -18,19 +18,21 @@ export function enableSave() {
 }
 
 /**
- * Checks if the current editor session is editing a post type entity.
+ * Checks if the current post type is a GatherPress event or venue.
  *
- * This function determines if the current context within the WordPress editor
- * is focused on editing an entity that is classified as a post type. This includes
- * single posts, pages, and custom post types. It is particularly useful for distinguishing
- * editor sessions that are editing post type entities from those editing other types of content,
- * such as widget areas or templates in the full site editor, ensuring that specific actions or features
- * are correctly applied only when editing post type entities.
+ * This function determines if the post type being edited in the WordPress block editor
+ * is either 'gatherpress_event' or 'gatherpress_venue', which are custom post types
+ * related to GatherPress. It is used to ensure that specific actions or functionality
+ * are applied only to these post types.
  *
- * @return {boolean} True if the current editor session is for editing a post type entity, false otherwise.
+ * @since 1.0.0
+ *
+ * @return {boolean} True if the current post type is 'gatherpress_event' or 'gatherpress_venue', false otherwise.
  */
-export function isSinglePostInEditor() {
-	return 'string' === typeof select('core/editor')?.getCurrentPostType();
+export function isGatherPressPostType() {
+	const postType = select('core/editor')?.getCurrentPostType();
+
+	return 'gatherpress_event' === postType || 'gatherpress_venue' === postType;
 }
 
 /**
