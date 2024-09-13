@@ -180,7 +180,7 @@ class Endpoint {
 				),
 				array( $this, 'load_feed_template' )
 			);
-			do_action( $action );
+			do_action( $action ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 		}
 	}
 
@@ -244,6 +244,18 @@ class Endpoint {
 		);
 	}
 
+	/**
+	 * Creates a flag option to indicate that rewrite rules need to be flushed.
+	 *
+	 * This method DOES NO checks if the 'gatherpress_flush_rewrite_rules_flag' option
+	 * exists. It just adds the option and sets it to true. This flag
+	 * is being used to determine when rewrite rules should be flushed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  string $reg_ex_pattern The regular expression pattern for matching the custom endpoint URL structure.
+	 * @return void
+	 */
 	private function maybe_flush_rewrite_rules( string $reg_ex_pattern ): void {
 		$rules = get_option( 'rewrite_rules' );
 		if ( ! isset( $rules[ $reg_ex_pattern ] ) ) {
@@ -420,7 +432,7 @@ class Endpoint {
 	 * @return bool True if the query is valid, false otherwise.
 	 */
 	public function is_valid_query(): bool {
-		return ($this->validation_callback)() && ! empty( get_query_var( $this->query_var ) );
+		return ( $this->validation_callback )() && ! empty( get_query_var( $this->query_var ) );
 	}
 
 	/**
@@ -437,7 +449,7 @@ class Endpoint {
 	 * @return string[]           An array of slugs for the specified or all types.
 	 */
 	protected function get_slugs( string|null $entity = null ): array {
-		// Determine Enpoint_Types to get slug names from.
+		// Determine Endpoint_Types to get slug names from.
 		$types = ( null === $entity )
 			// All?
 			? $this->types
@@ -452,25 +464,37 @@ class Endpoint {
 	}
 
 	/**
-	 * 
+	 * Checks if the given endpoint type is an instance of the specified class.
 	 *
-	 * @param  Endpoint_Type $type
-	 * @param  string        $entity
+	 * This method verifies whether the provided `$type` is an instance of the `$entity`
+	 * class. It first checks if the `$entity` exists in the defined list of valid endpoint
+	 * classes by calling `is_in_class()`. If the entity is valid, it further checks if the
+	 * `$type` is an instance of that class.
 	 *
-	 * @return bool
+	 * @since 1.0.0
+	 *
+	 * @param  Endpoint_Type $type   The endpoint type object to check.
+	 * @param  string        $entity The class name of the entity to check against (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
+	 * @return bool                  True if the `$type` is an instance of the `$entity` class, false otherwise.
 	 */
-	private static function is_of_class( Endpoint_Type $type, string $entity ) : bool {
+	private static function is_of_class( Endpoint_Type $type, string $entity ): bool {
 		return self::is_in_class( $entity ) && $type instanceof $entity;
 	}
 
 	/**
-	 * 
+	 * Checks if the given entity is a valid endpoint class in the current namespace.
 	 *
-	 * @param  string $entity
+	 * This method verifies whether the provided `$entity` exists in the predefined list
+	 * of valid endpoint classes within the current namespace. It helps ensure that only
+	 * valid classes (like `Endpoint_Redirect` or `Endpoint_Template`) are used when
+	 * checking endpoint types.
 	 *
-	 * @return bool
+	 * @since 1.0.0
+	 *
+	 * @param  string $entity The class name of the entity to check (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
+	 * @return bool           True if the `$entity` is a valid endpoint class, false otherwise.
 	 */
-	private static function is_in_class( string $entity ) : bool {
+	private static function is_in_class( string $entity ): bool {
 		return in_array(
 			$entity,
 			array(

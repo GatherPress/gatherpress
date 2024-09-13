@@ -30,33 +30,33 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  */
 class Endpoint_Template extends Endpoint_Type {
 
-    /**
-     * Directory path for plugin templates.
-     *
-     * @var string
-     */
-    protected $plugin_template_dir;
+	/**
+	 * Directory path for plugin templates.
+	 *
+	 * @var string
+	 */
+	protected $plugin_template_dir;
 
-    /**
-     * Class constructor.
-     *
-     * Initializes the `Endpoint_Template` object by setting the slug, callback, and
-     * plugin template directory. The parent constructor initializes the slug and callback,
-     * while this constructor adds the plugin template default.
-     *
-     * @since 1.0.0
-     *
-     * @param string   $slug                The slug used to identify the endpoint in the URL.
-     * @param callable $callback            The callback function to retrieve file name and path of the endpoint template.
-     * @param string   $plugin_template_dir The directory path for the plugin templates.
-     */
-    public function __construct(string $slug, callable $callback, string $plugin_template_dir = '') {
-        parent::__construct($slug, $callback);
-        $this->plugin_template_dir = $plugin_template_dir ?: sprintf(
+	/**
+	 * Class constructor.
+	 *
+	 * Initializes the `Endpoint_Template` object by setting the slug, callback, and
+	 * plugin template directory. The parent constructor initializes the slug and callback,
+	 * while this constructor adds the plugin template default.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string   $slug                The slug used to identify the endpoint in the URL.
+	 * @param callable $callback            The callback function to retrieve file name and path of the endpoint template.
+	 * @param string   $plugin_template_dir The directory path for the plugin templates.
+	 */
+	public function __construct( string $slug, callable $callback, string $plugin_template_dir = '' ) {
+		parent::__construct( $slug, $callback );
+		$this->plugin_template_dir = ( ! empty( $plugin_template_dir ) ) ? $plugin_template_dir : sprintf(
 			'%s/includes/templates/endpoints',
 			GATHERPRESS_CORE_PATH
 		);
-    }
+	}
 
 
 	/**
@@ -85,46 +85,46 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @return string          The path of the template to include, either from the theme or plugin.
 	 */
 	public function template_include( string $template ): string {
-        $presets = $this->get_template_presets();
+		$presets = $this->get_template_presets();
 
-        $file_name = $presets['file_name'];
-        $dir_path  = $presets['dir_path'] ?? $this->plugin_template_dir;
+		$file_name = $presets['file_name'];
+		$dir_path  = $presets['dir_path'] ?? $this->plugin_template_dir;
 
-        // Check if the theme provides a custom template.
-        $theme_template = $this->get_template_from_theme($file_name);
-        if ($theme_template) {
-            return $theme_template;
-        }
+		// Check if the theme provides a custom template.
+		$theme_template = $this->get_template_from_theme( $file_name );
+		if ( $theme_template ) {
+			return $theme_template;
+		}
 
-        // Check if the plugin has a template file.
-        $plugin_template = $this->get_template_from_plugin($file_name, $dir_path,);
-        if ($plugin_template) {
-            return $plugin_template;
-        }
+		// Check if the plugin has a template file.
+		$plugin_template = $this->get_template_from_plugin( $file_name, $dir_path, );
+		if ( $plugin_template ) {
+			return $plugin_template;
+		}
 
-        // Fallback to the default template.
-        return $template;
+		// Fallback to the default template.
+		return $template;
 	}
 
 
-    /**
-     * Retrieve template presets by invoking the callback.
-     *
-     * @return array Template preset data including file_name and optional dir_path.
-     */
-    protected function get_template_presets(): array {
-        return ($this->callback)();
-    }
+	/**
+	 * Retrieve template presets by invoking the callback.
+	 *
+	 * @return array Template preset data including file_name and optional dir_path.
+	 */
+	protected function get_template_presets(): array {
+		return ( $this->callback )();
+	}
 
-    /**
-     * Locate a template in the theme or child theme.
-	 * 
+	/**
+	 * Locate a template in the theme or child theme.
+	 *
 	 * @todo Maybe better put in the Utility class?
-     *
-     * @param string $file_name The name of the template file.
-     * @return string|false     The path to the theme template or false if not found.
-     */
-    protected function get_template_from_theme(string $file_name) {
+	 *
+	 * @param string $file_name The name of the template file.
+	 * @return string|false     The path to the theme template or false if not found.
+	 */
+	protected function get_template_from_theme( string $file_name ) {
 
 		// locate_template() doesn't cares,
 		// but locate_block_template() needs this to be an array.
@@ -142,21 +142,19 @@ class Endpoint_Template extends Endpoint_Type {
 		);
 
 		return $template;
-    }
+	}
 
-    /**
-     * Build the full path to the plugin's template file.
-	 * 
+	/**
+	 * Build the full path to the plugin's template file.
+	 *
 	 * @todo Maybe better put in the Utility class?
-     *
-     * @param string $file_name The name of the template file.
-     * @param string $dir_path  The directory path where the template is stored.
-     * @return string|false     The full path to the template file or false if file not exists.
-     */
-    protected function get_template_from_plugin(string $file_name, string $dir_path ): string {
-        $template = trailingslashit($dir_path) . $file_name;
+	 *
+	 * @param string $file_name The name of the template file.
+	 * @param string $dir_path  The directory path where the template is stored.
+	 * @return string|false     The full path to the template file or false if file not exists.
+	 */
+	protected function get_template_from_plugin( string $file_name, string $dir_path ): string {
+		$template = trailingslashit( $dir_path ) . $file_name;
 		return file_exists( $template ) ? $template : false;
-    }
-
-
+	}
 }

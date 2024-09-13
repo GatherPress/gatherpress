@@ -189,6 +189,23 @@ class Endpoints {
 		);
 	}
 
+	/**
+	 * Prints <link rel="alternate> tags to the rendered output, one per related calendar endpoint.
+	 *
+	 * Depending on the current request this can be one or multiple link tags,
+	 * one for each relevant calendar link.
+	 *
+	 * At least the link-tag for the main `/event/feed/ical`-endpoint is generated on each request.
+	 *
+	 * DRYed-out adoption of WordPress' core feed_links_extra() function.
+	 * Structure and flow of this method is directly replicated from
+	 * the `feed_links()` and `feed_links_extra()` functions in WordPress core.
+	 *
+	 * @since  1.0.0
+	 * @see    https://developer.wordpress.org/reference/functions/feed_links_extra/
+	 *
+	 * @return void
+	 */
 	public function alternate_links(): void {
 
 		if ( ! current_theme_supports( 'automatic-feed-links' ) ) {
@@ -200,7 +217,7 @@ class Endpoints {
 		$args = array(
 			'blogtitle'     => get_bloginfo( 'name' ),
 			/* translators: Separator between site name and feed type in feed links. */
-			'separator'     => _x( '&raquo;', 'feed link', 'default' ),
+			'separator'     => _x( '&raquo;', 'feed link separator', 'gatherpress' ),
 			/* translators: 1: Site name, 2: Separator (raquo), 3: Post title. */
 			'singletitle'   => __( '📅 %1$s %2$s %3$s iCal Download', 'gatherpress' ),
 			/* translators: 1: Site title, 2: Separator (raquo). */
@@ -226,7 +243,7 @@ class Endpoints {
 
 		if ( is_singular( 'gatherpress_event' ) ) {
 			$alternate_links[] = array(
-				'url'  => trailingslashit( get_permalink() ) . self::ICAL_SLUG,
+				'url'  => self::get_url( self::ICAL_SLUG ),
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
@@ -281,7 +298,7 @@ class Endpoints {
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/venue/my-sample-venue/feed/ical/".
 			$alternate_links[] = array(
-				'url'  => get_post_comments_feed_link( 0, self::ICAL_SLUG ),
+				'url'  => get_post_comments_feed_link( get_queried_object_id(), self::ICAL_SLUG ),
 				'attr' => sprintf(
 					$args['singletitle'],
 					$args['blogtitle'],
@@ -389,8 +406,9 @@ class Endpoints {
 
 	/**
 	 * Get sanitized endpoint url for a given slug, post and query parameter.
-	 * 
+	 *
 	 * Inspired by get_post_embed_url()
+	 *
 	 * @see https://developer.wordpress.org/reference/functions/get_post_embed_url/
 	 *
 	 * @param  string           $endpoint_slug The visible suffix to the posts permalink.
@@ -399,7 +417,7 @@ class Endpoints {
 	 *
 	 * @return string|false                    URL of the posts endpoint or false if something went wrong.
 	 */
-	public static function get_url( string $endpoint_slug, WP_Post|int|null $post = null, string $query_var = self::QUERY_VAR ) : string|false {
+	public static function get_url( string $endpoint_slug, WP_Post|int|null $post = null, string $query_var = self::QUERY_VAR ): string|false {
 		$post = get_post( $post );
 
 		if ( ! $post ) {
@@ -436,13 +454,14 @@ class Endpoints {
 		 * @param string  $endpoint_url The post embed URL.
 		 * @param WP_Post $post      The corresponding post object.
 		 */
-		$endpoint_url = sanitize_url( apply_filters(
-			'gatherpress_endpoint_url',
-			$endpoint_url,
-			$post
-		));
+		$endpoint_url = sanitize_url(
+			apply_filters(
+				'gatherpress_endpoint_url',
+				$endpoint_url,
+				$post
+			)
+		);
 
 		return sanitize_url( $endpoint_url );
 	}
-
 }
