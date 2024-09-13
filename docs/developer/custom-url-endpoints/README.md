@@ -95,6 +95,8 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 
 	Let's create an endpoint to immediately add an event to a *Office365 Calendar*, similar to the existing for *Google* and *Yahoo*.
 
+	![Screenshot from the 'Rewrite Analyzer' plugin page with a matching rewrite for office365-endpoint from this example.](./custom-url-endpoints__office365-calendar.png)
+
 	To set up a new endpoint for single events, use the [`Posttype_Single_Endpoint()`](https://github.com/GatherPress/gatherpress/tree/main/includes/core/classes/endpoints/class-posttype-single-endpoint.php) class.
 
 	```php
