@@ -25,8 +25,9 @@ use GatherPress\Core\Endpoints\Posttype_Feed_Endpoint;
 use GatherPress\Core\Endpoints\Taxonomy_Feed_Endpoint;
 use GatherPress\Core\Endpoints\Endpoint_Redirect;
 use GatherPress\Core\Endpoints\Endpoint_Template;
-use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Event;
+use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use GatherPress\Core\Venue;
 use WP_Post;
 use WP_Term;
@@ -378,7 +379,7 @@ class Endpoints {
 	 */
 	public function get_ical_download_template(): array {
 		return array(
-			'file_name' => 'ical-download.php',
+			'file_name' => Utility::prefix_key( 'ical-download.php' ),
 		);
 	}
 
@@ -400,7 +401,7 @@ class Endpoints {
 	 */
 	public function get_ical_feed_template(): array {
 		return array(
-			'file_name' => 'ical-feed.php',
+			'file_name' => Utility::prefix_key( 'ical-feed.php' ),
 		);
 	}
 

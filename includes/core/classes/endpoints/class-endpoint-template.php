@@ -15,6 +15,8 @@ namespace GatherPress\Core\Endpoints;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Utility;
+
 /**
  * Handles template rendering for custom endpoints in GatherPress.
  *
@@ -154,6 +156,12 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @return string|false     The full path to the template file or false if file not exists.
 	 */
 	protected function get_template_from_plugin( string $file_name, string $dir_path ): string {
+		// Remove prefix to keep file-names simple,
+		// for templates of core GatherPress.
+		if ( $this->plugin_template_dir === $dir_path ) {
+			$file_name = Utility::unprefix_key( $file_name );
+		}
+
 		$template = trailingslashit( $dir_path ) . $file_name;
 		return file_exists( $template ) ? $template : false;
 	}
