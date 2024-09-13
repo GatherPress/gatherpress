@@ -36,7 +36,7 @@ const DateTimeRange = () => {
 	let dateTimeMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
-				.gatherpress_datetime
+				?.gatherpress_datetime
 	);
 
 	try {

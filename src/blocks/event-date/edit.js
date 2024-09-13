@@ -26,7 +26,7 @@ import {
 	getUtcOffset,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
-import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
+import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -116,7 +116,7 @@ const Edit = ({ attributes: { textAlign }, setAttributes }) => {
 				/>
 			</BlockControls>
 			{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
-			{isSinglePostInEditor() && (
+			{isGatherPressPostType() && (
 				<InspectorControls>
 					<PanelBody>
 						<DateTimeRange />
