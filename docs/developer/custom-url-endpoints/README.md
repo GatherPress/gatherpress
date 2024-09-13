@@ -91,7 +91,7 @@ To become properly callable as URL, the endpoints needs to know *what* to do whe
 
 Example for a new redirection endpoint like `example.org/event/my-sample-event/office365-calendar`
 
-### Setup new endpoint
+### 1. Setup new endpoint
 
 ```php
 new Posttype_Single_Endpoint(
@@ -108,7 +108,11 @@ new Posttype_Single_Endpoint(
 > [!TIP]
 > Run this on the `registered_post_type_{post_type}` action, to ensure that custom endpoints are registered after their post type is initialized. GatherPress will trigger php WARNINGs if called too early or or with unsupported arguments.
 
-### Use & retrieve endpoints
+### 2. Define the endpoints callback
+
+
+
+### 3. Use & retrieve endpoints
 
 To use the newly created endpoints, you can use `Endpoints::get_url()` and rely on WordPress core functions accordingly:
 
