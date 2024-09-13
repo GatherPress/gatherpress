@@ -174,7 +174,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 
 - ### 3. Use & retrieve the endpoint
 
-	To use the newly created endpoints, you can use `Endpoints::get_url()` and rely on the used WordPress core functions internaly:
+	To use the newly created endpoints, you can use `Endpoints::get_url()` and rely on the used WordPress core functions internally:
 
 	```php
 	use GatherPress\Core\Endpoints;
