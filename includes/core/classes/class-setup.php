@@ -59,7 +59,7 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
-		Calendar_Endpoints::get_instance();
+		Endpoints::get_instance();
 		Event_Query::get_instance();
 		Event_Setup::get_instance();
 		Export::get_instance();

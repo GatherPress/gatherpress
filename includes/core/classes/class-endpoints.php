@@ -44,7 +44,7 @@ use WP_Term;
  *
  * @since 1.0.0
  */
-class Calendar_Endpoints {
+class Endpoints {
 	/**
 	 * Enforces a single instance of this class.
 	 */
