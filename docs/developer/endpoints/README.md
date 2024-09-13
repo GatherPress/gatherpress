@@ -36,11 +36,11 @@ The most obvious functions to create such within WordPress seem to be [`add_feed
 
 Unfortunately both functions share a common pitfall, they are not restricitive to any post type at all. That would result in having a `/feed/ical` endpoint for all posts AND every other non-hierachical, custom post type which seemed to be the wrong way to go. A lot of code would have had to be written, to patch this behavior and remove those superflous endpoints.
 
-That's why GatherPress created its own Endpoint API and tries to fix the mentioned problems before they appear.
+That's why GatherPress created its own Endpoint ~~API~~ helper and tries to fix the mentioned problems before they appear.
 
 ## GatherPress' own Endpoint API
 
-In opposite to the former mentioned WordPress core functions GatherPress Endpoint API is flexible enough to not only provide endpoints for GatherPress. You can utilize its classes to create a plenty of different endpoints for your post types and taxonomies as well.
+In opposite to the former mentioned WordPress core functions GatherPress Endpoint API is flexible enough to not *only* provide endpoints for GatherPress. You can utilize its classes to create a plenty of different endpoints for your post types and taxonomies as well.
 
 In general, one endpoint can be created ...
 
@@ -87,9 +87,11 @@ To become properly callable as URL, the endpoints needs to know *what* to do whe
 
 - [`Endpoint_Template()`](https://github.com/GatherPress/gatherpress/tree/main/includes/core/classes/endpoints/class-endpoint-template.php)
 
-#### Example
+## Example 1 | Add events to *Office365 Calendar*
 
-Example for new redirection endpoints like `example.org/event/my-sample-event/office365-calendar`
+Example for a new redirection endpoint like `example.org/event/my-sample-event/office365-calendar`
+
+### Setup new endpoint
 
 ```php
 new Posttype_Single_Endpoint(
@@ -103,11 +105,15 @@ new Posttype_Single_Endpoint(
 );
 ```
 
+> [!TIP]
+> Run this on the `registered_post_type_{post_type}` action, to ensure that custom endpoints are registered after their post type is initialized. GatherPress will trigger php WARNINGs if called too early or or with unsupported arguments.
+
 ### Use & retrieve endpoints
 
-To use the newly created endpoints, you can rely on WordPress core functions accordingly:
+To use the newly created endpoints, you can use `Endpoints::get_url()` and rely on WordPress core functions accordingly:
 
-- `trailingslashit( get_permalink() ) . 'office365-calendar'`
+- `Endpoints::get_url( 'office365-calendar' )`
+
 
 
 

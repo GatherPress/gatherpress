@@ -443,20 +443,20 @@ class Event {
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'google-calendar',
+				'link' => Endpoints::get_url( 'google-calendar',  $this->event->ID ),
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
-				'download' => trailingslashit( get_the_permalink( $this->event ) ) . 'ical',
+				'download' => Endpoints::get_url( 'ical',  $this->event->ID ),
 			),
 			'outlook' => array(
 				'name'     => __( 'Outlook', 'gatherpress' ),
-				'download' => trailingslashit( get_the_permalink( $this->event ) ) . 'outlook',
+				'download' => Endpoints::get_url( 'outlook',  $this->event->ID ),
 
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => trailingslashit( get_the_permalink( $this->event ) ) . 'yahoo-calendar',
+				'link' => Endpoints::get_url( 'yahoo-calendar',  $this->event->ID ),
 			),
 		);
 	}

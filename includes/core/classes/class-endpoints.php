@@ -2,12 +2,13 @@
 /**
  * Class responsible for managing calendar-related endpoints in GatherPress.
  *
- * This file defines the `Calendar_Endpoints` class, which is responsible for
+ * This file defines the `Endpoints` class, which is responsible for
  * registering and managing custom endpoints related to calendar functionality,
  * such as export to third-party calendars and iCal download.
  *
- * It utilizes the `Posttype_Single_Endpoint` class to create endpoints
- * for single calendar events and provides logic for template rendering and external redirects.
+ * It utilizes the `Endpoint` sub-classes to create endpoints
+ * for single events, post type and taxonomy archives as well.
+ * These classes provide the logic for template rendering and external redirects.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -27,20 +28,16 @@ use GatherPress\Core\Endpoints\Endpoint_Template;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
+use WP_Post;
 use WP_Term;
 
 /**
  * Manages Custom Calendar Endpoints for GatherPress.
  *
- * The `Calendar_Endpoints` class handles the registration and management of
+ * The `Endpoints` class handles the registration and management of
  * custom endpoints for calendar-related functionality in GatherPress, such as:
  * - Adding Google Calendar and Yahoo Calendar links for events.
  * - Providing iCal and Outlook download templates for events.
- *
- * The class uses the `Posttype_Single_Endpoint` to create these endpoints for
- * single instances of the `gatherpress_event` post type. It also handles the
- * redirection logic for external calendars and provides the necessary templates
- * for downloading calendar data.
  *
  * @since 1.0.0
  */
@@ -389,4 +386,63 @@ class Endpoints {
 			'file_name' => 'ical-feed.php',
 		);
 	}
+
+	/**
+	 * Get sanitized endpoint url for a given slug, post and query parameter.
+	 * 
+	 * Inspired by get_post_embed_url()
+	 * @see https://developer.wordpress.org/reference/functions/get_post_embed_url/
+	 *
+	 * @param  string           $endpoint_slug The visible suffix to the posts permalink.
+	 * @param  WP_Post|int|null $post          The post to get the endpoint for.
+	 * @param  string           $query_var     The internal query variable used by WordPress to route the request.
+	 *
+	 * @return string|false                    URL of the posts endpoint or false if something went wrong.
+	 */
+	public static function get_url( string $endpoint_slug, WP_Post|int|null $post = null, string $query_var = self::QUERY_VAR ) : string|false {
+		$post = get_post( $post );
+
+		if ( ! $post ) {
+			return false;
+		}
+
+		$is_feed_endpoint = strpos( 'feed/', $endpoint_slug );
+		if ( false !== $is_feed_endpoint ) {
+			// Feels weird to use a *_comments_* function here, but it delivers clean results
+			// in the form of "domain.tld/event/my-sample-event/feed/ical/".
+			return get_post_comments_feed_link(
+				$post->ID,
+				substr( $endpoint_slug, $is_feed_endpoint )
+			);
+		}
+
+		$post_url      = get_permalink( $post );
+		$endpoint_url  = trailingslashit( $post_url ) . user_trailingslashit( $endpoint_slug );
+		$path_conflict = get_page_by_path(
+			str_replace( home_url(), '', $endpoint_url ),
+			OBJECT,
+			get_post_types( array( 'public' => true ) )
+		);
+
+		if ( ! get_option( 'permalink_structure' ) || $path_conflict ) {
+			$endpoint_url = add_query_arg( array( $query_var => $endpoint_slug ), $post_url );
+		}
+
+		/**
+		 * Filters the endpoint URL of a specific post.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string  $endpoint_url The post embed URL.
+		 * @param WP_Post $post      The corresponding post object.
+		 */
+		$endpoint_url = sanitize_url( apply_filters(
+			'gatherpress_endpoint_url',
+			$endpoint_url,
+			$post
+		));
+
+		return sanitize_url( $endpoint_url );
+	}
+
 }
