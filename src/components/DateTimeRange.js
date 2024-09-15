@@ -12,11 +12,7 @@ import { useEffect } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import {
-	dateTimeDatabaseFormat,
-	dateTimeOffset,
-	durationOptions,
-} from '../helpers/datetime';
+import { dateTimeDatabaseFormat } from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import Timezone from './Timezone';
@@ -25,15 +21,19 @@ import Duration from '../components/Duration';
 /**
  * DateTimeRange component for GatherPress.
  *
- * This component manages the date and time range selection. It includes
- * DateTimeStart, DateTimeEnd, and Timezone components. The selected values
- * for the start date and time, end date and time, and timezone are managed in the
- * component's state. The component subscribes to the saveDateTime function,
- * which is triggered to save the selected date and time values.
+ * This component manages the selection of a date and time range for events.
+ * It includes DateTimeStart, DateTimeEnd, and Timezone components to allow users
+ * to set the event's start date, end date, and timezone. The component pulls
+ * these values from the state using WordPress data stores and subscribes to changes
+ * via the `saveDateTime` function. On changes, the component updates the post meta
+ * with the selected date and time values, formatted for the database.
+ *
+ * The component also handles the duration of the event, checking if the end time
+ * matches a predefined duration option and updating the duration accordingly.
  *
  * @since 1.0.0
  *
- * @return {JSX.Element} The rendered React component.
+ * @return {JSX.Element} The rendered DateTimeRange React component.
  */
 const DateTimeRange = () => {
 	const editPost = useDispatch('core/editor').editPost;
@@ -75,13 +75,6 @@ const DateTimeRange = () => {
 		});
 		const meta = { gatherpress_datetime: payload };
 
-		setDuration(
-			durationOptions.some(
-				(option) => dateTimeOffset(option.value) === dateTimeEnd
-			)
-				? duration
-				: false
-		);
 		editPost({ meta });
 	}, [
 		dateTimeStart,

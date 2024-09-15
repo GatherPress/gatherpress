@@ -8,6 +8,7 @@ import moment from 'moment';
  */
 import {
 	Button,
+	DateTimePicker,
 	Dropdown,
 	Flex,
 	FlexItem,
@@ -20,14 +21,15 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { DateTimeStartLabel, DateTimeStartPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
 import {
 	dateTimeDatabaseFormat,
+	dateTimeLabelFormat,
 	dateTimeOffset,
-	getDateTimeStart,
 	getTimezone,
+	updateDateTimeStart,
 } from '../helpers/datetime';
+import { getSettings } from '@wordpress/date';
 
 /**
  * DateTimeStart component for GatherPress.
@@ -52,11 +54,20 @@ const DateTimeStart = () => {
 	const { setDateTimeStart, setDateTimeEnd } = useDispatch(
 		'gatherpress/datetime'
 	);
+	const settings = getSettings();
+	const is12HourTime = /a(?!\\)/i.test(
+		settings.formats.time
+			.toLowerCase()
+			.replace(/\\\\/g, '')
+			.split('')
+			.reverse()
+			.join('')
+	);
 
 	useEffect(() => {
 		setDateTimeStart(
 			moment
-				.tz(getDateTimeStart(), getTimezone())
+				.tz(dateTimeStart, getTimezone())
 				.format(dateTimeDatabaseFormat)
 		);
 
@@ -87,15 +98,22 @@ const DateTimeStart = () => {
 								aria-expanded={isOpen}
 								isLink
 							>
-								<DateTimeStartLabel
-									dateTimeStart={dateTimeStart}
-								/>
+								{moment
+									.tz(dateTimeStart, getTimezone())
+									.format(dateTimeLabelFormat())}
 							</Button>
 						)}
 						renderContent={() => (
-							<DateTimeStartPicker
-								dateTimeStart={dateTimeStart}
-								setDateTimeStart={setDateTimeStart}
+							<DateTimePicker
+								currentDate={dateTimeStart}
+								onChange={(date) => {
+									updateDateTimeStart(
+										date,
+										setDateTimeStart,
+										setDateTimeEnd
+									);
+								}}
+								is12Hour={is12HourTime}
 							/>
 						)}
 					/>

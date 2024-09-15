@@ -321,15 +321,25 @@ export function getDateTimeEnd() {
 /**
  * Updates the start date and time for an event, performs validation, and triggers the save functionality.
  *
+ * This function sets the new start date and time of the event, validates the input
+ * to ensure it meets the required criteria, and updates the global state. It also
+ * triggers a save action if the `enableSave` function is available. If a `setDateTimeStart`
+ * callback is provided, it is invoked with the new date.
+ *
  * @since 1.0.0
  *
- * @param {string}   date             - The new start date and time to be set.
- * @param {Function} setDateTimeStart - Optional callback function to update the state or perform additional actions.
+ * @param {string}        date             - The new start date and time to be set in a valid format.
+ * @param {Function|null} setDateTimeStart - Optional callback function to update the state or perform additional actions with the new start date.
+ * @param {Function|null} setDateTimeEnd   - Optional callback function to update the end date, if validation requires an update.
  *
  * @return {void}
  */
-export function updateDateTimeStart(date, setDateTimeStart = null) {
-	validateDateTimeStart(date);
+export function updateDateTimeStart(
+	date,
+	setDateTimeStart = null,
+	setDateTimeEnd = null
+) {
+	validateDateTimeStart(date, setDateTimeEnd);
 
 	setToGlobal('eventDetails.dateTime.datetime_start', date);
 
@@ -341,20 +351,28 @@ export function updateDateTimeStart(date, setDateTimeStart = null) {
 }
 
 /**
- * Update the end date and time of the event and trigger necessary actions.
+ * Updates the end date and time of the event and triggers necessary actions.
  *
  * This function sets the end date and time of the event to the specified value,
- * validates the input, and triggers additional actions such as updating the UI.
+ * validates the input, and triggers additional actions such as updating the UI and
+ * enabling save functionality. The `setDateTimeEnd` callback can be used to update
+ * the UI with the new end date and time, if provided. Optionally, `setDateTimeStart`
+ * can be used for validation against the start date and time.
  *
  * @since 1.0.0
  *
- * @param {string}        date           - The new end date and time in a valid format.
- * @param {Function|null} setDateTimeEnd - Optional callback to update the UI with the new end date and time.
+ * @param {string}        date             - The new end date and time in a valid format.
+ * @param {Function|null} setDateTimeEnd   - Optional callback to update the UI with the new end date and time.
+ * @param {Function|null} setDateTimeStart - Optional callback for validating the end date against the start date.
  *
  * @return {void}
  */
-export function updateDateTimeEnd(date, setDateTimeEnd = null) {
-	validateDateTimeEnd(date);
+export function updateDateTimeEnd(
+	date,
+	setDateTimeEnd = null,
+	setDateTimeStart = null
+) {
+	validateDateTimeEnd(date, setDateTimeStart);
 
 	setToGlobal('eventDetails.dateTime.datetime_end', date);
 
@@ -366,19 +384,21 @@ export function updateDateTimeEnd(date, setDateTimeEnd = null) {
 }
 
 /**
- * Validate the start date and time of the event and perform necessary adjustments if needed.
+ * Validates the start date and time of the event and performs necessary adjustments if needed.
  *
  * This function compares the provided start date and time with the current end date
  * and time of the event. If the start date is greater than or equal to the end date,
- * it adjusts the end date to ensure a minimum two-hour duration.
+ * it adjusts the end date to ensure a minimum two-hour duration from the start date.
+ * If `setDateTimeEnd` is provided, it updates the end date accordingly.
  *
  * @since 1.0.0
  *
- * @param {string} dateTimeStart - The start date and time in a valid format.
+ * @param {string}        dateTimeStart  - The start date and time in a valid format.
+ * @param {Function|null} setDateTimeEnd - Optional callback to update the end date and time.
  *
  * @return {void}
  */
-export function validateDateTimeStart(dateTimeStart) {
+export function validateDateTimeStart(dateTimeStart, setDateTimeEnd = null) {
 	const dateTimeEndNumeric = moment
 		.tz(getFromGlobal('eventDetails.dateTime.datetime_end'), getTimezone())
 		.valueOf();
@@ -392,24 +412,26 @@ export function validateDateTimeStart(dateTimeStart) {
 			.add(2, 'hours')
 			.format(dateTimeDatabaseFormat);
 
-		updateDateTimeEnd(dateTimeEnd);
+		updateDateTimeEnd(dateTimeEnd, setDateTimeEnd);
 	}
 }
 
 /**
- * Validate the end date and time of the event and perform necessary adjustments if needed.
+ * Validates the end date and time of the event and performs necessary adjustments if needed.
  *
  * This function compares the provided end date and time with the current start date
  * and time of the event. If the end date is less than or equal to the start date,
- * it adjusts the start date to ensure a minimum two-hour duration.
+ * it adjusts the start date to ensure a minimum two-hour duration from the end date.
+ * If `setDateTimeStart` is provided, it updates the start date accordingly.
  *
  * @since 1.0.0
  *
- * @param {string} dateTimeEnd - The end date and time in a valid format.
+ * @param {string}        dateTimeEnd      - The end date and time in a valid format.
+ * @param {Function|null} setDateTimeStart - Optional callback to update the start date and time.
  *
  * @return {void}
  */
-export function validateDateTimeEnd(dateTimeEnd) {
+export function validateDateTimeEnd(dateTimeEnd, setDateTimeStart = null) {
 	const dateTimeStartNumeric = moment
 		.tz(
 			getFromGlobal('eventDetails.dateTime.datetime_start'),
@@ -423,7 +445,7 @@ export function validateDateTimeEnd(dateTimeEnd) {
 			.tz(dateTimeEndNumeric, getTimezone())
 			.subtract(2, 'hours')
 			.format(dateTimeDatabaseFormat);
-		updateDateTimeStart(dateTimeStart);
+		updateDateTimeStart(dateTimeStart, setDateTimeStart);
 	}
 }
 
