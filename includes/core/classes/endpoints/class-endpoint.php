@@ -218,7 +218,7 @@ class Endpoint {
 		add_rewrite_rule( $reg_ex_pattern, $rewrite_url, 'top' );
 
 		// Trigger a flush of rewrite rules.
-		$this->maybe_flush_rewrite_rules( $reg_ex_pattern );
+		$this->maybe_flush_rewrite_rules( $reg_ex_pattern, $rewrite_url );
 
 		// Allow the custom query variable by filtering the public query vars.
 		add_filter( 'query_vars', array( $this, 'allow_query_vars' ) );
@@ -246,6 +246,10 @@ class Endpoint {
 
 	/**
 	 * Creates a flag option to indicate that rewrite rules need to be flushed.
+	 * 
+	 * This method checks if the generated rewrite rules already exist in the DB,
+	 * and if its rewrite URL matches the recently generated rewrite URL.
+	 * If any of this checks fail, the option to flush the rewrite rules will be set.
 	 *
 	 * This method DOES NO checks if the 'gatherpress_flush_rewrite_rules_flag' option
 	 * exists. It just adds the option and sets it to true. This flag
@@ -254,11 +258,13 @@ class Endpoint {
 	 * @since 1.0.0
 	 *
 	 * @param  string $reg_ex_pattern The regular expression pattern for matching the custom endpoint URL structure.
+	 * @param  string $rewrite_url    The URL structure for handling matched requests via query vars.
 	 * @return void
 	 */
-	private function maybe_flush_rewrite_rules( string $reg_ex_pattern ): void {
+	private function maybe_flush_rewrite_rules( string $reg_ex_pattern, string $rewrite_url ): void {
 		$rules = get_option( 'rewrite_rules' );
-		if ( ! isset( $rules[ $reg_ex_pattern ] ) ) {
+
+		if ( ! isset( $rules[ $reg_ex_pattern ] ) || $rules[ $reg_ex_pattern ] !== $rewrite_url ) {
 			// Event_Setup->maybe_create_flush_rewrite_rules_flag // @todo maybe make this a public method ?!
 			// @see https://github.com/GatherPress/gatherpress/blob/3d91f2bcb30b5d02ebf459cd5a42d4f43bc05ea5/includes/core/classes/class-settings.php#L760C1-L761C63 .
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
