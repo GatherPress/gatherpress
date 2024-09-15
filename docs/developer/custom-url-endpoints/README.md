@@ -116,7 +116,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 	```
 
 	> [!TIP]
-	> Run this on the `registered_post_type_{post_type}` action, to ensure that custom endpoints are registered after their post type is initialized. GatherPress will trigger php WARNINGs if called too early or or with unsupported arguments.
+	> Run this on the `registered_post_type_{post_type}` action, to ensure that custom endpoints are registered after their post type is initialized. GatherPress will trigger php warnings if called too early or or with unsupported arguments.
 
 - ### 2. Define the callback for the endpoint
 
