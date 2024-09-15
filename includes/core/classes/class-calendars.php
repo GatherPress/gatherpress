@@ -611,7 +611,7 @@ class Calendars {
 		$number          = ( is_feed('ical') ) ? -1 : get_option('posts_per_page');
 		$topics          = array();
 		$venues          = array();
-		$output          = '';
+		$output          = array();
 
 		if ( is_post_type_archive( 'gatherpress_event' ) ) {
 
@@ -636,13 +636,13 @@ class Calendars {
 		$query  = Event_Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$output .= self::get_ics_calendar_event();
+			$output[] = self::get_ics_calendar_event();
 		}
 
 		// Restore original Post Data.
 		wp_reset_postdata();
 
-		return $output;
+		return implode( "\r\n", $output );
 	}
 
 
