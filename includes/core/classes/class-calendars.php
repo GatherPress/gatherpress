@@ -2,7 +2,7 @@
 /**
  * Class responsible for managing calendar-related endpoints in GatherPress.
  *
- * This file defines the `Endpoints` class, which is responsible for
+ * This file defines the `Calendars` class, which is responsible for
  * registering and managing custom endpoints related to calendar functionality,
  * such as export to third-party calendars and iCal download.
  *
@@ -35,20 +35,20 @@ use WP_Term;
 /**
  * Manages Custom Calendar Endpoints for GatherPress.
  *
- * The `Endpoints` class handles the registration and management of
+ * The `Calendars` class handles the registration and management of
  * custom endpoints for calendar-related functionality in GatherPress, such as:
  * - Adding Google Calendar and Yahoo Calendar links for events.
  * - Providing iCal and Outlook download templates for events.
  *
  * @since 1.0.0
  */
-class Endpoints {
+class Calendars {
 	/**
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
 
-	const QUERY_VAR = 'gatherpress_calendar';
+	const QUERY_VAR = 'gatherpress_calendars';
 	const ICAL_SLUG = 'ical'; // Make sure nobody tries to change or translate this string ;) !
 
 	/**
@@ -130,8 +130,8 @@ class Endpoints {
 			array(
 				new Endpoint_Template( self::ICAL_SLUG, array( $this, 'get_ical_download_template' ) ),
 				new Endpoint_Template( 'outlook', array( $this, 'get_ical_download_template' ) ),
-				new Endpoint_Redirect( 'google-calendar', array( $this, 'get_redirect_to' ) ),
-				new Endpoint_Redirect( 'yahoo-calendar', array( $this, 'get_redirect_to' ) ),
+				new Endpoint_Redirect( 'google-calendar', array( $this, 'get_google_calendar_link' ) ),
+				new Endpoint_Redirect( 'yahoo-calendar', array( $this, 'get_yahoo_calendar_link' ) ),
 			),
 			self::QUERY_VAR
 		);
@@ -341,28 +341,6 @@ class Endpoints {
 	}
 
 	/**
-	 * Returns the external calendar URL for the current event.
-	 *
-	 * This method generates the appropriate URL for either Google Calendar or Yahoo Calendar,
-	 * depending on the value of the `gatherpress_ext_calendar` query variable. It uses the
-	 * `Event` class to retrieve the necessary data for the event.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The URL to redirect the user to the appropriate calendar service.
-	 */
-	public function get_redirect_to(): string {
-		$event = new Event( get_queried_object_id() );
-		// Determine which calendar service to redirect to based on the query var.
-		switch ( get_query_var( self::QUERY_VAR ) ) {
-			case 'google-calendar':
-				return $event->get_google_calendar_link();
-			case 'yahoo-calendar':
-				return $event->get_yahoo_calendar_link();
-		}
-	}
-
-	/**
 	 * Returns the template for the current calendar download.
 	 *
 	 * This method provides the template file to be used for iCal and Outlook downloads.
@@ -464,5 +442,249 @@ class Endpoints {
 		);
 
 		return sanitize_url( $endpoint_url );
+	}
+
+	/**
+	 * Get the Google Calendar add event link for the event.
+	 *
+	 * This method generates and returns a Google Calendar link that allows users to add the event to their
+	 * Google Calendar. The link includes event details such as the event name, date, time, location, and a
+	 * link to the event's details page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The Google Calendar add event link for the event.
+	 *
+	 * @throws Exception If there is an issue while generating the Google Calendar link.
+	 */
+	public function get_google_calendar_link(): string {
+		$event       = new Event( get_queried_object_id() );
+		$date_start  = $event->get_formatted_datetime( 'Ymd', 'start', false );
+		$time_start  = $event->get_formatted_datetime( 'His', 'start', false );
+		$date_end    = $event->get_formatted_datetime( 'Ymd', 'end', false );
+		$time_end    = $event->get_formatted_datetime( 'His', 'end', false );
+		$datetime    = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		$venue       = $event->get_venue_information();
+		$location    = $venue['name'];
+		$description = $event->get_calendar_description();
+
+		if ( ! empty( $venue['full_address'] ) ) {
+			$location .= sprintf( ', %s', $venue['full_address'] );
+		}
+
+		$params = array(
+			'action'   => 'TEMPLATE',
+			'text'     => sanitize_text_field( $event->event->post_title ),
+			'dates'    => sanitize_text_field( $datetime ),
+			'details'  => sanitize_text_field( $description ),
+			'location' => sanitize_text_field( $location ),
+			'sprop'    => 'name:',
+		);
+
+		return add_query_arg(
+			rawurlencode_deep( $params ),
+			'https://www.google.com/calendar/event'
+		);
+	}
+
+	/**
+	 * Get the "Add to Yahoo! Calendar" link for the event.
+	 *
+	 * This method generates and returns a URL that allows users to add the event to their Yahoo! Calendar.
+	 * The URL includes event details such as the event title, start time, duration, description, and location.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The Yahoo! Calendar link for adding the event.
+	 *
+	 * @throws Exception If an error occurs while generating the Yahoo! Calendar link.
+	 */
+	public function get_yahoo_calendar_link(): string {
+		$event          = new Event( get_queried_object_id() );
+		$date_start     = $event->get_formatted_datetime( 'Ymd', 'start', false );
+		$time_start     = $event->get_formatted_datetime( 'His', 'start', false );
+		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+
+		// Figure out duration of event in hours and minutes: hhmm format.
+		$diff_start  = $event->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
+		$diff_end    = $event->get_formatted_datetime( self::DATETIME_FORMAT, 'end', false );
+		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
+		$full        = intval( $duration );
+		$fraction    = ( $duration - $full );
+		$hours       = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
+		$minutes     = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+		$venue       = $event->get_venue_information();
+		$location    = $venue['name'];
+		$description = $event->get_calendar_description();
+
+		if ( ! empty( $venue['full_address'] ) ) {
+			$location .= sprintf( ', %s', $venue['full_address'] );
+		}
+
+		$params = array(
+			'v'      => '60',
+			'view'   => 'd',
+			'type'   => '20',
+			'title'  => sanitize_text_field( $event->event->post_title ),
+			'st'     => sanitize_text_field( $datetime_start ),
+			'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
+			'desc'   => sanitize_text_field( $description ),
+			'in_loc' => sanitize_text_field( $location ),
+		);
+
+		return add_query_arg(
+			rawurlencode_deep( $params ),
+			'https://calendar.yahoo.com/'
+		);
+	}
+
+	public static function get_ics_calendar_wrap( string $calendar_data ): string {
+
+		// Prpeare 2-DIGIT lang code.
+		$title = get_bloginfo('title');
+		$lang  = strtoupper( substr( get_locale(), 0, 2 ) );
+		$args  = array(
+			'BEGIN:VCALENDAR',
+			'VERSION:2.0',
+			sprintf(
+				'PRODID:-//%s//GatherPress//%s',
+				$title,
+				$lang
+			),
+			$calendar_data,
+			'END:VCALENDAR',
+		);
+
+		return implode( "\r\n", $args );
+	}
+
+	/**
+	 * Get the ICS download link for the event.
+	 *
+	 * This method generates and returns a URL that allows users to download the event in ICS (iCalendar) format.
+	 * The URL includes event details such as the event title, start time, end time, description, location, and more.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The ICS download link for the event.
+	 *
+	 * @throws Exception If an error occurs while generating the ICS download link.
+	 */
+	public static function get_ics_calendar_event(): string {
+
+		$event          = new Event( get_queried_object_id() );
+		$date_start     = $event->get_formatted_datetime( 'Ymd', 'start', false );
+		$time_start     = $event->get_formatted_datetime( 'His', 'start', false );
+		$date_end       = $event->get_formatted_datetime( 'Ymd', 'end', false );
+		$time_end       = $event->get_formatted_datetime( 'His', 'end', false );
+		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
+		$modified_date  = strtotime( $event->event->post_modified );
+		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
+		$venue          = $event->get_venue_information();
+		$location       = $venue['name'];
+		$description    = $event->get_calendar_description();
+
+		if ( ! empty( $venue['full_address'] ) ) {
+			$location .= sprintf( ', %s', $venue['full_address'] );
+		}
+
+		$args = array(
+			'BEGIN:VEVENT',
+			sprintf( 'URL:%s', esc_url_raw( get_permalink( $event->event->ID ) ) ),
+			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
+			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
+			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
+			sprintf( 'SUMMARY:%s', self::eventorganiser_fold_ical_text( sanitize_text_field( $event->event->post_title ) ) ),
+			sprintf( 'DESCRIPTION:%s', self::eventorganiser_fold_ical_text( sanitize_text_field( $description ) ) ),
+			sprintf( 'LOCATION:%s', self::eventorganiser_fold_ical_text( sanitize_text_field( $location ) ) ),
+			'UID:gatherpress_' . intval( $event->event->ID ),
+			'END:VEVENT',
+		);
+
+		return implode( "\r\n", $args );
+	}
+
+	public static function get_ics_calendar_list(): string {
+
+		$event_list_type = 'upcoming';
+		$number          = ( is_feed('ical') ) ? -1 : get_option('posts_per_page');
+		$topics          = array();
+		$venues          = array();
+		$output          = '';
+
+		if ( is_post_type_archive( 'gatherpress_event' ) ) {
+
+		} elseif ( is_singular( 'gatherpress_venue' ) ) {
+
+			$slug   = '_' . get_queried_object()->post_name;
+			$venues = array( $slug );
+
+		} elseif ( is_tax() ) {
+			$term = get_queried_object();
+
+			// @todo How to be prepared for foreign taxonomies that might be registered by 3rd-parties?
+			if ( $term && is_object_in_taxonomy( 'gatherpress_event', $term->taxonomy ) ) {
+				// add the tax to the query here
+			}
+
+			if ( is_tax( 'gatherpress_topic' ) ) {
+				$topics = array( $term->slug );
+			}
+		}
+
+		$query  = Event_Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
+		while ( $query->have_posts() ) {
+			$query->the_post();
+			$output .= self::get_ics_calendar_event();
+		}
+
+		// Restore original Post Data.
+		wp_reset_postdata();
+
+		return $output;
+	}
+
+
+	public static function get_ics_calendar_download(): string {
+		return self::get_ics_calendar_wrap( self::get_ics_calendar_event() );
+	}
+
+	public static function get_ics_calendar_feed(): string {
+		return self::get_ics_calendar_wrap( self::get_ics_calendar_list() );
+	}
+
+
+	/**
+	 * @author Stephan Harris (@stephenharris)
+	 * @source https://github.com/stephenharris/Event-Organiser/blob/develop/includes/event-organiser-utility-functions.php#L1663
+	 *
+	 * Fold text as per [iCal specifications](http://www.ietf.org/rfc/rfc2445.txt)
+	 *
+	 * Lines of text SHOULD NOT be longer than 75 octets, excluding the line
+	 * break. Long content lines SHOULD be split into a multiple line
+	 * representations using a line "folding" technique. That is, a long
+	 * line can be split between any two characters by inserting a CRLF
+	 * immediately followed by a single linear white space character (i.e.,
+	 * SPACE, US-ASCII decimal 32 or HTAB, US-ASCII decimal 9). Any sequence
+	 * of CRLF followed immediately by a single linear white space character
+	 * is ignored (i.e., removed) when processing the content type.
+	 *
+	 * @ignore
+	 * @since 2.7
+	 * @param string $text The string to be escaped
+	 * @return string The escaped string.
+	 */
+	private static function eventorganiser_fold_ical_text( string $text ): string {
+
+		$text_arr = array();
+
+		$lines = ceil( mb_strlen( $text ) / 75 );
+
+		for( $i = 0; $i < $lines; $i++ ){
+			$text_arr[$i] = mb_substr( $text, $i * 75, 75 );
+		}
+
+		return join( "\r\n ", $text_arr );
 	}
 }

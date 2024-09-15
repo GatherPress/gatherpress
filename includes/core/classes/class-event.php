@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Calendars;
 use DateTimeZone;
 use Exception;
 use WP_Post;
@@ -264,7 +265,7 @@ class Event {
 	 *
 	 * @throws Exception If there is an issue while formatting the datetime value.
 	 */
-	protected function get_formatted_datetime(
+	public function get_formatted_datetime(
 		string $format = 'D, F j, g:ia T',
 		string $which = 'start',
 		bool $local = true
@@ -443,163 +444,22 @@ class Event {
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => Endpoints::get_url( 'google-calendar', $this->event->ID ),
+				'link' => Calendars::get_url( 'google-calendar', $this->event->ID ),
 			),
 			'ical'    => array(
 				'name'     => __( 'iCal', 'gatherpress' ),
-				'download' => Endpoints::get_url( 'ical', $this->event->ID ),
+				'download' => Calendars::get_url( 'ical', $this->event->ID ),
 			),
 			'outlook' => array(
 				'name'     => __( 'Outlook', 'gatherpress' ),
-				'download' => Endpoints::get_url( 'outlook', $this->event->ID ),
+				'download' => Calendars::get_url( 'outlook', $this->event->ID ),
 
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => Endpoints::get_url( 'yahoo-calendar', $this->event->ID ),
+				'link' => Calendars::get_url( 'yahoo-calendar', $this->event->ID ),
 			),
 		);
-	}
-
-	/**
-	 * Get the Google Calendar add event link for the event.
-	 *
-	 * This method generates and returns a Google Calendar link that allows users to add the event to their
-	 * Google Calendar. The link includes event details such as the event name, date, time, location, and a
-	 * link to the event's details page.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The Google Calendar add event link for the event.
-	 *
-	 * @throws Exception If there is an issue while generating the Google Calendar link.
-	 */
-	public function get_google_calendar_link(): string {
-		$date_start  = $this->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start  = $this->get_formatted_datetime( 'His', 'start', false );
-		$date_end    = $this->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end    = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime    = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
-		$venue       = $this->get_venue_information();
-		$location    = $venue['name'];
-		$description = $this->get_calendar_description();
-
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
-		}
-
-		$params = array(
-			'action'   => 'TEMPLATE',
-			'text'     => sanitize_text_field( $this->event->post_title ),
-			'dates'    => sanitize_text_field( $datetime ),
-			'details'  => sanitize_text_field( $description ),
-			'location' => sanitize_text_field( $location ),
-			'sprop'    => 'name:',
-		);
-
-		return add_query_arg(
-			rawurlencode_deep( $params ),
-			'https://www.google.com/calendar/event'
-		);
-	}
-
-	/**
-	 * Get the "Add to Yahoo! Calendar" link for the event.
-	 *
-	 * This method generates and returns a URL that allows users to add the event to their Yahoo! Calendar.
-	 * The URL includes event details such as the event title, start time, duration, description, and location.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The Yahoo! Calendar link for adding the event.
-	 *
-	 * @throws Exception If an error occurs while generating the Yahoo! Calendar link.
-	 */
-	public function get_yahoo_calendar_link(): string {
-		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
-
-		// Figure out duration of event in hours and minutes: hhmm format.
-		$diff_start  = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
-		$diff_end    = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'end', false );
-		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
-		$full        = intval( $duration );
-		$fraction    = ( $duration - $full );
-		$hours       = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes     = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
-		$venue       = $this->get_venue_information();
-		$location    = $venue['name'];
-		$description = $this->get_calendar_description();
-
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
-		}
-
-		$params = array(
-			'v'      => '60',
-			'view'   => 'd',
-			'type'   => '20',
-			'title'  => sanitize_text_field( $this->event->post_title ),
-			'st'     => sanitize_text_field( $datetime_start ),
-			'dur'    => sanitize_text_field( (string) $hours . (string) $minutes ),
-			'desc'   => sanitize_text_field( $description ),
-			'in_loc' => sanitize_text_field( $location ),
-		);
-
-		return add_query_arg(
-			rawurlencode_deep( $params ),
-			'https://calendar.yahoo.com/'
-		);
-	}
-
-	/**
-	 * Get the ICS download link for the event.
-	 *
-	 * This method generates and returns a URL that allows users to download the event in ICS (iCalendar) format.
-	 * The URL includes event details such as the event title, start time, end time, description, location, and more.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string The ICS download link for the event.
-	 *
-	 * @throws Exception If an error occurs while generating the ICS download link.
-	 */
-	public function get_ics_calendar_download(): string {
-		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
-		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
-		$date_end       = $this->get_formatted_datetime( 'Ymd', 'end', false );
-		$time_end       = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
-		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
-		$modified_date  = strtotime( $this->event->post_modified );
-		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
-		$venue          = $this->get_venue_information();
-		$location       = $venue['name'];
-		$description    = $this->get_calendar_description();
-
-		if ( ! empty( $venue['full_address'] ) ) {
-			$location .= sprintf( ', %s', $venue['full_address'] );
-		}
-
-		$args = array(
-			'BEGIN:VCALENDAR',
-			'VERSION:2.0',
-			'PRODID:-//GatherPress//RemoteApi//EN',
-			'BEGIN:VEVENT',
-			sprintf( 'URL:%s', esc_url_raw( get_permalink( $this->event->ID ) ) ),
-			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
-			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
-			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
-			sprintf( 'SUMMARY:%s', sanitize_text_field( $this->event->post_title ) ),
-			sprintf( 'DESCRIPTION:%s', sanitize_text_field( $description ) ),
-			sprintf( 'LOCATION:%s', sanitize_text_field( $location ) ),
-			'UID:gatherpress_' . intval( $this->event->ID ),
-			'END:VEVENT',
-			'END:VCALENDAR',
-		);
-
-		return implode( "\r\n", $args );
 	}
 
 	/**
@@ -612,7 +472,7 @@ class Event {
 	 *
 	 * @return string The calendar event description with the event details link.
 	 */
-	protected function get_calendar_description(): string {
+	public function get_calendar_description(): string {
 		/* translators: %s: event link. */
 		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 	}
