@@ -656,7 +656,7 @@ class Calendars {
 
 
 	/**
-	 * @author Stephan Harris (@stephenharris)
+	 * @author Stephen Harris (@stephenharris)
 	 * @source https://github.com/stephenharris/Event-Organiser/blob/develop/includes/event-organiser-utility-functions.php#L1663
 	 *
 	 * Fold text as per [iCal specifications](http://www.ietf.org/rfc/rfc2445.txt)
