@@ -14,11 +14,7 @@ import DateTimeRange from '../../../components/DateTimeRange';
  * @return {JSX.Element} The JSX element for the DateTimeRangePanel.
  */
 const DateTimeRangePanel = () => {
-	return (
-		<section>
-			<DateTimeRange />
-		</section>
-	);
+	return <DateTimeRange />;
 };
 
 export default DateTimeRangePanel;

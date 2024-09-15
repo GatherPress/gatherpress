@@ -17,7 +17,7 @@ import {
 	hasEventPast,
 	hasEventPastNotice,
 } from '../../../../../src/helpers/event';
-import { dateTimeMomentFormat } from '../../../../../src/helpers/datetime';
+import { dateTimeDatabaseFormat } from '../../../../../src/helpers/datetime';
 
 // Mock the @wordpress/data module
 jest.mock('@wordpress/data', () => ({
@@ -38,7 +38,7 @@ describe('hasEventPast', () => {
 				dateTime: {
 					datetime_end: moment()
 						.subtract(1, 'days')
-						.format(dateTimeMomentFormat),
+						.format(dateTimeDatabaseFormat),
 					timezone: 'America/New_York',
 				},
 			},
@@ -58,7 +58,7 @@ describe('hasEventPast', () => {
 				dateTime: {
 					datetime_end: moment()
 						.add(1, 'days')
-						.format(dateTimeMomentFormat),
+						.format(dateTimeDatabaseFormat),
 					timezone: 'America/New_York',
 				},
 			},
@@ -89,7 +89,7 @@ describe('hasEventPastNotice', () => {
 				dateTime: {
 					datetime_end: moment()
 						.subtract(1, 'days')
-						.format(dateTimeMomentFormat),
+						.format(dateTimeDatabaseFormat),
 					timezone: 'America/New_York',
 				},
 			},

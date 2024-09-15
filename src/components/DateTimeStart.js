@@ -8,6 +8,7 @@ import moment from 'moment';
  */
 import {
 	Button,
+	DateTimePicker,
 	Dropdown,
 	Flex,
 	FlexItem,
@@ -20,13 +21,15 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { DateTimeStartLabel, DateTimeStartPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
 import {
-	dateTimeMomentFormat,
-	getDateTimeStart,
+	dateTimeDatabaseFormat,
+	dateTimeLabelFormat,
+	dateTimeOffset,
 	getTimezone,
+	updateDateTimeStart,
 } from '../helpers/datetime';
+import { getSettings } from '@wordpress/date';
 
 /**
  * DateTimeStart component for GatherPress.
@@ -41,31 +44,49 @@ import {
  * @return {JSX.Element} The rendered React component.
  */
 const DateTimeStart = () => {
-	const { dateTimeStart } = useSelect(
+	const { dateTimeStart, duration } = useSelect(
 		(select) => ({
 			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
+			duration: select('gatherpress/datetime').getDuration(),
 		}),
 		[]
 	);
-	const { setDateTimeStart } = useDispatch('gatherpress/datetime');
+	const { setDateTimeStart, setDateTimeEnd } = useDispatch(
+		'gatherpress/datetime'
+	);
+	const settings = getSettings();
+	const is12HourTime = /a(?!\\)/i.test(
+		settings.formats.time
+			.toLowerCase()
+			.replace(/\\\\/g, '')
+			.split('')
+			.reverse()
+			.join('')
+	);
 
 	useEffect(() => {
 		setDateTimeStart(
 			moment
-				.tz(getDateTimeStart(), getTimezone())
-				.format(dateTimeMomentFormat)
+				.tz(dateTimeStart, getTimezone())
+				.format(dateTimeDatabaseFormat)
 		);
 
+		if (duration) {
+			setDateTimeEnd(dateTimeOffset(duration));
+		}
+
 		hasEventPastNotice();
-	});
+	}, [dateTimeStart, duration, setDateTimeStart, setDateTimeEnd]);
 
 	return (
 		<PanelRow>
-			<Flex direction="row" gap="0">
+			<Flex direction="column" gap="1">
 				<FlexItem>
-					<label htmlFor="gatherpress-datetime-start">
-						{__('Start', 'gatherpress')}
-					</label>
+					<h3 style={{ marginBottom: 0 }}>
+						<label htmlFor="gatherpress-datetime-start">
+							{__('Date & time start', 'gatherpress')}
+						</label>
+					</h3>
 				</FlexItem>
 				<FlexItem>
 					<Dropdown
@@ -77,15 +98,22 @@ const DateTimeStart = () => {
 								aria-expanded={isOpen}
 								isLink
 							>
-								<DateTimeStartLabel
-									dateTimeStart={dateTimeStart}
-								/>
+								{moment
+									.tz(dateTimeStart, getTimezone())
+									.format(dateTimeLabelFormat())}
 							</Button>
 						)}
 						renderContent={() => (
-							<DateTimeStartPicker
-								dateTimeStart={dateTimeStart}
-								setDateTimeStart={setDateTimeStart}
+							<DateTimePicker
+								currentDate={dateTimeStart}
+								onChange={(date) => {
+									updateDateTimeStart(
+										date,
+										setDateTimeStart,
+										setDateTimeEnd
+									);
+								}}
+								is12Hour={is12HourTime}
 							/>
 						)}
 					/>

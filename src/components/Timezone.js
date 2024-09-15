@@ -16,7 +16,7 @@ import {
 } from '../helpers/datetime';
 
 /**
- * TimeZone component for GatherPress.
+ * Timezone component for GatherPress.
  *
  * This component allows users to select their preferred time zone from a list of choices.
  * It includes a SelectControl with options grouped by regions. The selected time zone is
@@ -26,7 +26,7 @@ import {
  *
  * @return {JSX.Element} The rendered React component.
  */
-const TimeZone = () => {
+const Timezone = () => {
 	const { timezone } = useSelect(
 		(select) => ({
 			timezone: select('gatherpress/datetime').getTimezone(),
@@ -51,6 +51,7 @@ const TimeZone = () => {
 					setTimezone(value);
 					enableSave();
 				}}
+				__nexthasnomarginbottom
 			>
 				{Object.keys(choices).map((group) => {
 					return (
@@ -70,4 +71,4 @@ const TimeZone = () => {
 	);
 };
 
-export default TimeZone;
+export default Timezone;

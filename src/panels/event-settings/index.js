@@ -44,7 +44,7 @@ const EventSettings = () => {
 				initialOpen={true}
 				className="gatherpress-event-settings"
 			>
-				<VStack spacing={6}>
+				<VStack spacing={4}>
 					<DateTimeRangePanel />
 					<VenueSelectorPanel />
 					<OnlineEventLinkPanel />

@@ -8,6 +8,7 @@ import moment from 'moment';
  */
 import {
 	Button,
+	DateTimePicker,
 	Dropdown,
 	Flex,
 	FlexItem,
@@ -20,13 +21,14 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { DateTimeEndLabel, DateTimeEndPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
 import {
-	dateTimeMomentFormat,
-	getDateTimeEnd,
+	dateTimeDatabaseFormat,
+	dateTimeLabelFormat,
 	getTimezone,
+	updateDateTimeEnd,
 } from '../helpers/datetime';
+import { getSettings } from '@wordpress/date';
 
 /**
  * DateTimeEnd component for GatherPress.
@@ -47,13 +49,22 @@ const DateTimeEnd = () => {
 		}),
 		[]
 	);
-	const { setDateTimeEnd } = useDispatch('gatherpress/datetime');
+	const { setDateTimeEnd, setDateTimeStart } = useDispatch(
+		'gatherpress/datetime'
+	);
+	const settings = getSettings();
+	const is12HourTime = /a(?!\\)/i.test(
+		settings.formats.time
+			.toLowerCase()
+			.replace(/\\\\/g, '')
+			.split('')
+			.reverse()
+			.join('')
+	);
 
 	useEffect(() => {
 		setDateTimeEnd(
-			moment
-				.tz(getDateTimeEnd(), getTimezone())
-				.format(dateTimeMomentFormat)
+			moment.tz(dateTimeEnd, getTimezone()).format(dateTimeDatabaseFormat)
 		);
 
 		hasEventPastNotice();
@@ -61,11 +72,13 @@ const DateTimeEnd = () => {
 
 	return (
 		<PanelRow>
-			<Flex direction="row" gap="0">
+			<Flex direction="column" gap="1">
 				<FlexItem>
-					<label htmlFor="gatherpress-datetime-end">
-						{__('End', 'gatherpress')}
-					</label>
+					<h3 style={{ marginBottom: 0 }}>
+						<label htmlFor="gatherpress-datetime-end">
+							{__('Date & time end', 'gatherpress')}
+						</label>
+					</h3>
 				</FlexItem>
 				<FlexItem>
 					<Dropdown
@@ -77,13 +90,22 @@ const DateTimeEnd = () => {
 								aria-expanded={isOpen}
 								isLink
 							>
-								<DateTimeEndLabel dateTimeEnd={dateTimeEnd} />
+								{moment
+									.tz(dateTimeEnd, getTimezone())
+									.format(dateTimeLabelFormat())}
 							</Button>
 						)}
 						renderContent={() => (
-							<DateTimeEndPicker
-								dateTimeEnd={dateTimeEnd}
-								setDateTimeEnd={setDateTimeEnd}
+							<DateTimePicker
+								currentDate={dateTimeEnd}
+								onChange={(date) =>
+									updateDateTimeEnd(
+										date,
+										setDateTimeEnd,
+										setDateTimeStart
+									)
+								}
+								is12Hour={is12HourTime}
 							/>
 						)}
 					/>
