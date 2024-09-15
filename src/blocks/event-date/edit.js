@@ -14,7 +14,11 @@ import {
 	InspectorControls,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import { PanelBody } from '@wordpress/components';
+import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalVStack as VStack,
+	PanelBody,
+} from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
 /**
@@ -43,25 +47,26 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
 	const timeFormat = convertPHPToMomentFormat(
 		getFromGlobal('settings.timeFormat')
 	);
-	const timeZoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
+	const timezoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
 	const startFormat = dateFormat + ' ' + timeFormat;
-	const timeZone = getTimezone(timezone);
 
-	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timeZoneFormat;
+	timezone = getTimezone(timezone);
+
+	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timezoneFormat;
 
 	if (
-		moment.tz(dateTimeStart, timeZone).format(dateFormat) ===
-		moment.tz(dateTimeEnd, timeZone).format(dateFormat)
+		moment.tz(dateTimeStart, timezone).format(dateFormat) ===
+		moment.tz(dateTimeEnd, timezone).format(dateFormat)
 	) {
-		endFormat = timeFormat + ' ' + timeZoneFormat;
+		endFormat = timeFormat + ' ' + timezoneFormat;
 	}
 
 	return sprintf(
 		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
 		__('%1$s to %2$s %3$s', 'gatherpress'),
-		moment.tz(dateTimeStart, timeZone).format(startFormat),
-		moment.tz(dateTimeEnd, timeZone).format(endFormat),
-		getUtcOffset(timeZone)
+		moment.tz(dateTimeStart, timezone).format(startFormat),
+		moment.tz(dateTimeEnd, timezone).format(endFormat),
+		getUtcOffset(timezone)
 	);
 };
 
@@ -119,7 +124,9 @@ const Edit = ({ attributes: { textAlign }, setAttributes }) => {
 			{isGatherPressPostType() && (
 				<InspectorControls>
 					<PanelBody>
-						<DateTimeRange />
+						<VStack spacing={4}>
+							<DateTimeRange />
+						</VStack>
 					</PanelBody>
 				</InspectorControls>
 			)}

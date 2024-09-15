@@ -8,21 +8,25 @@ import moment from 'moment';
  */
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
-import { dateTimeDatabaseFormat } from '../helpers/datetime';
+import {
+	dateTimeDatabaseFormat,
+	dateTimeOffset,
+	durationOptions,
+} from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
-import TimeZone from '../components/TimeZone';
+import Timezone from './Timezone';
+import Duration from '../components/Duration';
 
 /**
  * DateTimeRange component for GatherPress.
  *
  * This component manages the date and time range selection. It includes
- * DateTimeStart, DateTimeEnd, and TimeZone components. The selected values
+ * DateTimeStart, DateTimeEnd, and Timezone components. The selected values
  * for the start date and time, end date and time, and timezone are managed in the
  * component's state. The component subscribes to the saveDateTime function,
  * which is triggered to save the selected date and time values.
@@ -45,14 +49,16 @@ const DateTimeRange = () => {
 		dateTimeMetaData = {};
 	}
 
-	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
+	const { dateTimeStart, dateTimeEnd, duration, timezone } = useSelect(
 		(select) => ({
 			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
 			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
+			duration: select('gatherpress/datetime').getDuration(),
 			timezone: select('gatherpress/datetime').getTimezone(),
 		}),
 		[]
 	);
+	const { setDuration } = useDispatch('gatherpress/datetime');
 
 	useEffect(() => {
 		const payload = JSON.stringify({
@@ -69,15 +75,33 @@ const DateTimeRange = () => {
 		});
 		const meta = { gatherpress_datetime: payload };
 
+		setDuration(
+			durationOptions.some(
+				(option) => dateTimeOffset(option.value) === dateTimeEnd
+			)
+				? duration
+				: false
+		);
 		editPost({ meta });
-	}, [dateTimeStart, dateTimeEnd, timezone, dateTimeMetaData, editPost]);
+	}, [
+		dateTimeStart,
+		dateTimeEnd,
+		timezone,
+		dateTimeMetaData,
+		editPost,
+		setDuration,
+		duration,
+	]);
 
 	return (
 		<>
-			<h3>{__('Date & time', 'gatherpress')}</h3>
-			<DateTimeStart />
-			<DateTimeEnd />
-			<TimeZone />
+			<section>
+				<DateTimeStart />
+			</section>
+			<section>{duration ? <Duration /> : <DateTimeEnd />}</section>
+			<section>
+				<Timezone />
+			</section>
 		</>
 	);
 };

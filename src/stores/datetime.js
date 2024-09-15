@@ -7,7 +7,11 @@ import { createReduxStore, register } from '@wordpress/data';
  * Internal dependencies.
  */
 import { getFromGlobal, setToGlobal } from '../helpers/globals';
-import { defaultDateTimeEnd, defaultDateTimeStart } from '../helpers/datetime';
+import {
+	defaultDateTimeEnd,
+	defaultDateTimeStart,
+	getDateTimeOffset,
+} from '../helpers/datetime';
 
 const DEFAULT_STATE = {
 	dateTimeStart: getFromGlobal('eventDetails.dateTime.datetime_start')
@@ -16,6 +20,7 @@ const DEFAULT_STATE = {
 	dateTimeEnd: getFromGlobal('eventDetails.dateTime.datetime_end')
 		? getFromGlobal('eventDetails.dateTime.datetime_end')
 		: defaultDateTimeEnd,
+	duration: getDateTimeOffset(),
 	timezone: getFromGlobal('eventDetails.dateTime.timezone'),
 };
 
@@ -36,6 +41,12 @@ const actions = {
 			dateTimeEnd,
 		};
 	},
+	setDuration(duration) {
+		return {
+			type: 'SET_DURATION',
+			duration,
+		};
+	},
 	setTimezone(timezone) {
 		setToGlobal('eventDetails.dateTime.timezone', timezone);
 
@@ -52,6 +63,8 @@ const reducer = (state = DEFAULT_STATE, action) => {
 			return { ...state, dateTimeStart: action.dateTimeStart };
 		case 'SET_DATETIME_END':
 			return { ...state, dateTimeEnd: action.dateTimeEnd };
+		case 'SET_DURATION':
+			return { ...state, duration: action.duration };
 		case 'SET_TIMEZONE':
 			return { ...state, timezone: action.timezone };
 		default:
@@ -65,6 +78,7 @@ const store = createReduxStore('gatherpress/datetime', {
 	selectors: {
 		getDateTimeStart: (state) => state.dateTimeStart,
 		getDateTimeEnd: (state) => state.dateTimeEnd,
+		getDuration: (state) => state.duration,
 		getTimezone: (state) => state.timezone,
 	},
 });

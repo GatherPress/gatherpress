@@ -16,18 +16,6 @@ import { enableSave, getFromGlobal, setToGlobal } from './globals';
 import DateTimePreview from '../components/DateTimePreview';
 
 /**
- * Date and time format string for use with Moment.js.
- *
- * This format is designed to represent date and time in the format
- * "YYYY-MM-DDTHH:mm:ss" for compatibility with Moment.js library.
- *
- * @since 1.0.0
- *
- * @type {string}
- */
-export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
-
-/**
  * Database-compatible date and time format string for storage.
  *
  * This format is designed to represent date and time in the format
@@ -53,7 +41,7 @@ export const defaultDateTimeStart = moment
 	.set('hour', 18)
 	.set('minute', 0)
 	.set('second', 0)
-	.format(dateTimeMomentFormat);
+	.format(dateTimeDatabaseFormat);
 
 /**
  * The default end date and time for an event.
@@ -66,7 +54,83 @@ export const defaultDateTimeStart = moment
 export const defaultDateTimeEnd = moment
 	.tz(defaultDateTimeStart, getTimezone())
 	.add(2, 'hours')
-	.format(dateTimeMomentFormat);
+	.format(dateTimeDatabaseFormat);
+
+/**
+ * Predefined duration options for event scheduling.
+ *
+ * This array contains a list of duration options in hours that can be selected
+ * for an event. Each option includes a label for display and a corresponding
+ * value representing the duration in hours. The last option allows the user
+ * to set a custom end time by selecting `false`.
+ *
+ * @since 1.0.0
+ *
+ * @type {Array<Object>} durationOptions
+ * @property {string}         label - The human-readable label for the duration option.
+ * @property {number|boolean} value - The value representing the duration in hours, or `false` if a custom end time is to be set.
+ */
+export const durationOptions = [
+	{
+		label: __('1 hour', 'gatherpress'),
+		value: 1,
+	},
+	{
+		label: __('1.5 hours', 'gatherpress'),
+		value: 1.5,
+	},
+	{
+		label: __('2 hours', 'gatherpress'),
+		value: 2,
+	},
+	{
+		label: __('3 hours', 'gatherpress'),
+		value: 3,
+	},
+	{
+		label: __('Set an end time…', 'gatherpress'),
+		value: false,
+	},
+];
+
+/**
+ * Calculates an offset in hours from the start date and time of an event.
+ *
+ * This function retrieves the event's start date and time, applies the provided
+ * offset in hours, and returns the result formatted for database storage.
+ *
+ * @since 1.0.0
+ *
+ * @param {number} hours - The number of hours to offset from the event's start date and time.
+ *
+ * @return {string} The adjusted date and time formatted in a database-compatible format.
+ */
+export function dateTimeOffset(hours) {
+	return moment
+		.tz(getDateTimeStart(), getTimezone())
+		.add(hours, 'hours')
+		.format(dateTimeDatabaseFormat);
+}
+
+/**
+ * Retrieves the duration offset based on the end time of the event.
+ *
+ * This function checks the available duration options and compares
+ * the offset value with the calculated end time of the event. If a
+ * matching offset is found, it returns the corresponding value. If
+ * no match is found, it returns false.
+ *
+ * @since 1.0.0
+ *
+ * @return {number|boolean} The matching duration value or false if no match is found.
+ */
+export function getDateTimeOffset() {
+	return (
+		durationOptions.find(
+			(option) => dateTimeOffset(option.value) === getDateTimeEnd()
+		)?.value || false
+	);
+}
 
 /**
  * Get the combined date and time format for event labels.
@@ -224,7 +288,7 @@ export function getDateTimeStart() {
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, getTimezone()).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, getTimezone()).format(dateTimeDatabaseFormat)
 			: defaultDateTimeStart;
 
 	setToGlobal('eventDetails.dateTime.datetime_start', dateTime);
@@ -246,7 +310,7 @@ export function getDateTimeEnd() {
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, getTimezone()).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, getTimezone()).format(dateTimeDatabaseFormat)
 			: defaultDateTimeEnd;
 
 	setToGlobal('eventDetails.dateTime.datetime_end', dateTime);
@@ -326,7 +390,7 @@ export function validateDateTimeStart(dateTimeStart) {
 		const dateTimeEnd = moment
 			.tz(dateTimeStartNumeric, getTimezone())
 			.add(2, 'hours')
-			.format(dateTimeMomentFormat);
+			.format(dateTimeDatabaseFormat);
 
 		updateDateTimeEnd(dateTimeEnd);
 	}
@@ -358,7 +422,7 @@ export function validateDateTimeEnd(dateTimeEnd) {
 		const dateTimeStart = moment
 			.tz(dateTimeEndNumeric, getTimezone())
 			.subtract(2, 'hours')
-			.format(dateTimeMomentFormat);
+			.format(dateTimeDatabaseFormat);
 		updateDateTimeStart(dateTimeStart);
 	}
 }

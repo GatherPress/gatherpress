@@ -23,7 +23,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import { DateTimeEndLabel, DateTimeEndPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
 import {
-	dateTimeMomentFormat,
+	dateTimeDatabaseFormat,
 	getDateTimeEnd,
 	getTimezone,
 } from '../helpers/datetime';
@@ -53,7 +53,7 @@ const DateTimeEnd = () => {
 		setDateTimeEnd(
 			moment
 				.tz(getDateTimeEnd(), getTimezone())
-				.format(dateTimeMomentFormat)
+				.format(dateTimeDatabaseFormat)
 		);
 
 		hasEventPastNotice();
@@ -61,11 +61,13 @@ const DateTimeEnd = () => {
 
 	return (
 		<PanelRow>
-			<Flex direction="row" gap="0">
+			<Flex direction="column" gap="1">
 				<FlexItem>
-					<label htmlFor="gatherpress-datetime-end">
-						{__('End', 'gatherpress')}
-					</label>
+					<h3 style={{ marginBottom: 0 }}>
+						<label htmlFor="gatherpress-datetime-end">
+							{__('Date & time end', 'gatherpress')}
+						</label>
+					</h3>
 				</FlexItem>
 				<FlexItem>
 					<Dropdown
