@@ -1,13 +1,13 @@
 # Theme customizations
 
-GatherPress provides different ways to customize its output via theme files. Some of this customization oppurtunities come from GatherPress, but the most are just pure WordPress. A site could provide one or more of the following templates from one of: 
+GatherPress provides different ways to customize its output via theme files. Some of this customization opportunities come from GatherPress, but the most are just pure WordPress. A site could provide one or more of the following templates from one of: 
 
 - a child theme’s `/templates` folder (if child theme is active).
 - the theme’s `/templates` folder.
 
 ## Default template overrides
 
-Following the [default WordPress template hierachy](https://developer.wordpress.org/themes/templates/template-hierarchy).
+Following the [default WordPress template hierarchy](https://developer.wordpress.org/themes/templates/template-hierarchy).
 
 ### Events
 
