@@ -246,7 +246,7 @@ class Endpoint {
 
 	/**
 	 * Creates a flag option to indicate that rewrite rules need to be flushed.
-	 * 
+	 *
 	 * This method checks if the generated rewrite rules already exist in the DB,
 	 * and if its rewrite URL matches the recently generated rewrite URL.
 	 * If any of this checks fail, the option to flush the rewrite rules will be set.

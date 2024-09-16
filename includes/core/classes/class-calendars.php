@@ -541,7 +541,7 @@ class Calendars {
 	public static function get_ics_calendar_wrap( string $calendar_data ): string {
 
 		// Prpeare 2-DIGIT lang code.
-		$title = get_bloginfo('title');
+		$title = get_bloginfo( 'title' );
 		$lang  = strtoupper( substr( get_locale(), 0, 2 ) );
 		$args  = array(
 			'BEGIN:VCALENDAR',
@@ -614,18 +614,15 @@ class Calendars {
 		$output          = array();
 
 		if ( is_post_type_archive( 'gatherpress_event' ) ) {
-
 		} elseif ( is_singular( 'gatherpress_venue' ) ) {
-
 			$slug   = '_' . get_queried_object()->post_name;
 			$venues = array( $slug );
-
 		} elseif ( is_tax() ) {
 			$term = get_queried_object();
 
 			// @todo How to be prepared for foreign taxonomies that might be registered by 3rd-parties?
 			if ( $term && is_object_in_taxonomy( 'gatherpress_event', $term->taxonomy ) ) {
-				// add the tax to the query here
+				// Add the tax to the query here.
 			}
 
 			if ( is_tax( 'gatherpress_topic' ) ) {
@@ -633,7 +630,7 @@ class Calendars {
 			}
 		}
 
-		$query  = Event_Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
+		$query = Event_Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$output[] = self::get_ics_calendar_event();
@@ -731,7 +728,7 @@ class Calendars {
 	 *
 	 * @ignore
 	 * @since 2.7
-	 * @param string $text The string to be escaped
+	 * @param string $text The string to be escaped.
 	 * @return string The escaped string.
 	 */
 	private static function eventorganiser_fold_ical_text( string $text ): string {
@@ -740,8 +737,8 @@ class Calendars {
 
 		$lines = ceil( mb_strlen( $text ) / 75 );
 
-		for( $i = 0; $i < $lines; $i++ ){
-			$text_arr[$i] = mb_substr( $text, $i * 75, 75 );
+		for ( $i = 0; $i < $lines; $i++ ) {
+			$text_arr[ $i ] = mb_substr( $text, $i * 75, 75 );
 		}
 
 		return join( "\r\n ", $text_arr );
