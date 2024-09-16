@@ -27,7 +27,7 @@ function gatherpress_output_ics_file() {
     Calendars::send_ics_headers( $filename );
 
 	// Output the generated iCalendar content.
-	echo wp_kses_post( Calendars::get_ics_calendar_feed() );
+	echo wp_kses_post( Calendars::get_ical_feed() );
 
 	// Get the generated output and calculate file size.
 	$ics_content = ob_get_contents();

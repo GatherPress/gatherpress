@@ -128,8 +128,8 @@ class Calendars {
 		);
 		new Posttype_Single_Endpoint(
 			array(
-				new Endpoint_Template( self::ICAL_SLUG, array( $this, 'get_ical_download_template' ) ),
-				new Endpoint_Template( 'outlook', array( $this, 'get_ical_download_template' ) ),
+				new Endpoint_Template( self::ICAL_SLUG, array( $this, 'get_ical_file_template' ) ),
+				new Endpoint_Template( 'outlook', array( $this, 'get_ical_file_template' ) ),
 				new Endpoint_Redirect( 'google-calendar', array( $this, 'get_google_calendar_link' ) ),
 				new Endpoint_Redirect( 'yahoo-calendar', array( $this, 'get_yahoo_calendar_link' ) ),
 			),
@@ -355,7 +355,7 @@ class Calendars {
 	 *               - 'file_name': the file name of the template to be loaded from the theme. Will load defaults from the plugin if theme files do not exist.
 	 *               - 'dir_path':  (Optional) Absolute path to some template directory outside of the theme folder.
 	 */
-	public function get_ical_download_template(): array {
+	public function get_ical_file_template(): array {
 		return array(
 			'file_name' => Utility::prefix_key( 'ical-download.php' ),
 		);
@@ -538,7 +538,7 @@ class Calendars {
 		);
 	}
 
-	public static function get_ics_calendar_wrap( string $calendar_data ): string {
+	public static function get_ical_wrap( string $calendar_data ): string {
 
 		// Prpeare 2-DIGIT lang code.
 		$title = get_bloginfo( 'title' );
@@ -570,7 +570,7 @@ class Calendars {
 	 *
 	 * @throws Exception If an error occurs while generating the ICS download link.
 	 */
-	public static function get_ics_calendar_event(): string {
+	public static function get_ical_event(): string {
 
 		$event          = new Event( get_queried_object_id() );
 		$date_start     = $event->get_formatted_datetime( 'Ymd', 'start', false );
@@ -605,7 +605,7 @@ class Calendars {
 		return implode( "\r\n", $args );
 	}
 
-	public static function get_ics_calendar_list(): string {
+	public static function get_ical_list(): string {
 
 		$event_list_type = ''; // Keep empty, to get all events from upcoming & past.
 		$number          = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
@@ -633,7 +633,7 @@ class Calendars {
 		$query = Event_Query::get_instance()->get_events_list( $event_list_type, $number, $topics, $venues );
 		while ( $query->have_posts() ) {
 			$query->the_post();
-			$output[] = self::get_ics_calendar_event();
+			$output[] = self::get_ical_event();
 		}
 
 		// Restore original Post Data.
@@ -643,12 +643,12 @@ class Calendars {
 	}
 
 
-	public static function get_ics_calendar_download(): string {
-		return self::get_ics_calendar_wrap( self::get_ics_calendar_event() );
+	public static function get_ical_file(): string {
+		return self::get_ical_wrap( self::get_ical_event() );
 	}
 
-	public static function get_ics_calendar_feed(): string {
-		return self::get_ics_calendar_wrap( self::get_ics_calendar_list() );
+	public static function get_ical_feed(): string {
+		return self::get_ical_wrap( self::get_ical_list() );
 	}
 
 	/**

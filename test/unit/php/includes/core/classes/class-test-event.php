@@ -371,7 +371,7 @@ class Test_Event extends Base {
 	 *
 	 * @covers ::get_calendar_links
 	 * @covers ::get_google_calendar_link
-	 * @covers ::get_ics_calendar_download
+	 * @covers ::get_ical_file
 	 * @covers ::get_yahoo_calendar_link
 	 * @covers ::get_calendar_description
 	 *
