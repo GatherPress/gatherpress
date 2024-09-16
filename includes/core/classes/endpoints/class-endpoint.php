@@ -130,7 +130,7 @@ class Endpoint {
 		callable $validation_callback,
 		array $types,
 		string $reg_ex,
-		string $object_type = 'post_type',
+		string $object_type = 'post_type'
 	) {
 		// ...
 		if ( $this->is_valid_registration( $type_name, $types, $object_type ) ) {
@@ -454,7 +454,7 @@ class Endpoint {
 	 *                            If null, it retrieves slugs for all types.
 	 * @return string[]           An array of slugs for the specified or all types.
 	 */
-	protected function get_slugs( string|null $entity = null ): array {
+	protected function get_slugs( ?string $entity = null ): array {
 		// Determine Endpoint_Types to get slug names from.
 		$types = ( null === $entity )
 			// All?

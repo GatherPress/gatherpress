@@ -73,7 +73,7 @@ abstract class Endpoint_Type {
 	 */
 	public function __construct(
 		string $slug,
-		callable $callback,
+		callable $callback
 	) {
 		$this->slug     = $slug;
 		$this->callback = $callback;

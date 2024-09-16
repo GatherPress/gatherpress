@@ -168,7 +168,7 @@ class Calendars {
 	 *
 	 * @return void
 	 */
-	public function init_taxonomies( string $taxonomy, string|array $object_type ): void {
+	public function init_taxonomies( string $taxonomy, $object_type ): void {
 
 		// Stop, if the currently registered taxonomy is ...
 		if ( // ... not registered for the events post type.
@@ -396,7 +396,7 @@ class Calendars {
 	 *
 	 * @return string|false                    URL of the posts endpoint or false if something went wrong.
 	 */
-	public static function get_url( string $endpoint_slug, WP_Post|int|null $post = null, string $query_var = self::QUERY_VAR ): string|false {
+	public static function get_url( string $endpoint_slug, $post = null, string $query_var = self::QUERY_VAR ): string|false {
 		$post = get_post( $post );
 
 		if ( ! $post ) {

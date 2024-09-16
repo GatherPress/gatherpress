@@ -126,7 +126,7 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @param string $file_name The name of the template file.
 	 * @return string|false     The path to the theme template or false if not found.
 	 */
-	protected function get_template_from_theme( string $file_name ) {
+	protected function get_template_from_theme( string $file_name ): string|false {
 
 		// locate_template() doesn't cares,
 		// but locate_block_template() needs this to be an array.
