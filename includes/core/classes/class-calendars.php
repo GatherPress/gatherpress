@@ -607,8 +607,8 @@ class Calendars {
 
 	public static function get_ics_calendar_list(): string {
 
-		$event_list_type = 'upcoming';
-		$number          = ( is_feed('ical') ) ? -1 : get_option('posts_per_page');
+		$event_list_type = ''; // Keep empty, to get all events from upcoming & past.
+		$number          = ( is_feed( self::ICAL_SLUG ) ) ? -1 : get_option( 'posts_per_page' );
 		$topics          = array();
 		$venues          = array();
 		$output          = array();
