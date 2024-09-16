@@ -654,6 +654,65 @@ class Calendars {
 		return self::get_ics_calendar_wrap( self::get_ics_calendar_list() );
 	}
 
+	/**
+	 * Generate the .ics filename based on the queried object.
+	 *
+	 * @return string Name of the calendar ics file.
+	 */
+	public static function generate_ics_filename() {
+		$queried_object = get_queried_object();
+		$filename       = 'calendar';
+
+		if ( is_singular( 'gatherpress_event' ) ) {
+
+			$event     = new Event( $queried_object->ID );
+			$date      = $event->get_datetime_start( 'Y-m-d' );
+			$post_name = $event->event->post_name;
+			$filename  = $date . '_' . $post_name;
+
+		} elseif ( is_singular( 'gatherpress_venue' ) ) {
+
+			$filename = $queried_object->post_name;
+
+		} elseif ( is_tax() ) {
+
+			// @todo How to be prepared for foreign taxonomies that might be registered by 3rd-parties?
+			if ( is_object_in_taxonomy( 'gatherpress_event', $queried_object->taxonomy ) ) {
+				$filename = $queried_object->slug;
+			}
+		}
+
+		return $file_name . '.ics';
+	}
+
+	/**
+	 * Send the necessary headers for the iCalendar file download.
+	 *
+	 * @param  string $filename 
+	 *
+	 * @return void
+	 */
+	public static function send_ics_headers( string $filename ) {
+
+		$charset = strtolower( get_option( 'blog_charset' ) );
+
+		header( 'Content-Description: File Transfer' );
+
+		// Ensure proper content type for the calendar file.
+		header( 'Content-Type: text/calendar; charset=' . $charset );
+
+		// Force download in most browsers.
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+
+		// Avoid browser caching issues.
+		header( 'Cache-Control: no-store, no-cache, must-revalidate' );
+		header( 'Cache-Control: post-check=0, pre-check=0', false );
+		header( 'Pragma: no-cache' );
+		header( 'Expires: 0' );
+
+		// Prevent content sniffing which might lead to MIME type mismatch.
+		header( 'X-Content-Type-Options: nosniff' );
+	}
 
 	/**
 	 * @author Stephen Harris (@stephenharris)
