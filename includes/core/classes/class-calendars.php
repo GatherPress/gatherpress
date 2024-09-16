@@ -679,7 +679,7 @@ class Calendars {
 			}
 		}
 
-		return $file_name . '.ics';
+		return $filename . '.ics';
 	}
 
 	/**
@@ -709,6 +709,41 @@ class Calendars {
 
 		// Prevent content sniffing which might lead to MIME type mismatch.
 		header( 'X-Content-Type-Options: nosniff' );
+	}
+
+	/**
+	 * Output the event(s) as an iCalendar (.ics) file.
+	 *
+	 * @return void
+	 */
+	public static function send_ics_file() {
+		// Start output buffering to capture all output.
+		ob_start();
+
+		// Prepare the filename.
+		$filename = Calendars::generate_ics_filename();
+
+		// Send headers for downloading the .ics file.
+		Calendars::send_ics_headers( $filename );
+
+		// Output the generated iCalendar content.
+		$get_ical_method = ( is_feed() ) ? 'get_ical_feed' : 'get_ical_file';
+		echo wp_kses_post( Calendars::$get_ical_method() );
+
+		// Get the generated output and calculate file size.
+		$ics_content = ob_get_contents();
+		$filesize    = strlen( $ics_content );
+
+		// Send the file size in the header.
+		header( 'Content-Length: ' . $filesize );
+
+		// End output buffering and clean up.
+		ob_end_clean();
+
+		// Output the iCalendar content.
+		echo wp_kses_post( $ics_content );
+
+		exit(); // Terminate the script after the file has been output.
 	}
 
 	/**
