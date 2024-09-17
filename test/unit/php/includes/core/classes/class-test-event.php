@@ -403,8 +403,7 @@ class Test_Event extends Base {
 
 		$event->save_datetimes( $params );
 
-
-		/* 
+		/*
 		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit%20Test%20Event&dates=20200511T150000Z%2F20200511T170000Z&details=' . rawurlencode( $description ) . '&location=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042&sprop=name%3A';
 		$expected_yahoo_link  = 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200&desc=' . rawurlencode( $description ) . '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
 
@@ -425,62 +424,55 @@ class Test_Event extends Base {
 				'name' => 'Yahoo Calendar',
 				'link' => $expected_yahoo_link,
 			),
-		); */
-		$output = $event->get_calendar_links();
+		);
+		*/
+		$output  = $event->get_calendar_links();
 		$expects = array(
 			'google'  => array(
 				'name' => 'Google Calendar',
-				'link' => home_url('/?gatherpress_event=unit-test-event&gatherpress_calendars=google-calendar'),
+				'link' => home_url( '/?gatherpress_event=unit-test-event&gatherpress_calendars=google-calendar' ),
 			),
 			'ical'    => array(
 				'name'     => 'iCal',
-				'download' => home_url('/?gatherpress_event=unit-test-event&gatherpress_calendars=ical'),
+				'download' => home_url( '/?gatherpress_event=unit-test-event&gatherpress_calendars=ical' ),
 			),
 			'outlook' => array(
 				'name'     => 'Outlook',
-				'download' => home_url('/?gatherpress_event=unit-test-event&gatherpress_calendars=outlook'),
+				'download' => home_url( '/?gatherpress_event=unit-test-event&gatherpress_calendars=outlook' ),
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',
-				'link' => home_url('/?gatherpress_event=unit-test-event&gatherpress_calendars=yahoo-calendar'),
+				'link' => home_url( '/?gatherpress_event=unit-test-event&gatherpress_calendars=yahoo-calendar' ),
 			),
 		);
 
 		$this->assertSame( $expects, $output );
 
-		// update_option( 'permalink_structure', '/%postname%/');
-		// flush_rewrite_rules();
-		// global $wp_rewrite;
-		// $wp_rewrite->set_permalink_structure('/%postname%/');
-		// $wp_rewrite->generate_rewrite_rules( $wp_rewrite->permalink_structure, EP_PERMALINK );
-    // Update permalink structure to '/%postname%/'.
-    update_option( 'permalink_structure', '/%postname%/' );
+		// Update permalink structure to '/%postname%/'.
+		update_option( 'permalink_structure', '/%postname%/' );
 
-    // Reload the global rewrite rules object to ensure it reflects the changes.
-    global $wp_rewrite;
-    $wp_rewrite->init();
-    flush_rewrite_rules();
-
-    // Simulate a frontend request to trigger the new rewrite rules.
-    // $this->go_to( home_url( '/event/unit-test-event' ) );
+		// Reload the global rewrite rules object to ensure it reflects the changes.
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		flush_rewrite_rules();
 
 		$output  = $event->get_calendar_links();
 		$expects = array(
 			'google'  => array(
 				'name' => 'Google Calendar',
-				'link' => home_url('/event/unit-test-event/google-calendar'),
+				'link' => home_url( '/event/unit-test-event/google-calendar' ),
 			),
 			'ical'    => array(
 				'name'     => 'iCal',
-				'download' => home_url('/event/unit-test-event/ical'),
+				'download' => home_url( '/event/unit-test-event/ical' ),
 			),
 			'outlook' => array(
 				'name'     => 'Outlook',
-				'download' => home_url('/event/unit-test-event/outlook'),
+				'download' => home_url( '/event/unit-test-event/outlook' ),
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',
-				'link' => home_url('/event/unit-test-event/yahoo-calendar'),
+				'link' => home_url( '/event/unit-test-event/yahoo-calendar' ),
 			),
 		);
 		$this->assertSame( $expects, $output );
