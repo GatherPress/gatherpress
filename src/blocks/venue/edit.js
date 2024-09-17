@@ -231,7 +231,10 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 								label={
 									mapCustomLatLng
 										? __('Use custom values', 'gatherpress')
-										: __('Use default values', 'gatherpress')
+										: __(
+												'Use default values',
+												'gatherpress'
+											)
 								}
 								checked={mapCustomLatLng}
 								onChange={(value) => {
