@@ -28,6 +28,10 @@
 		"mapHeight": {
 			"type": "number",
 			"default": 300
+		},
+		"mapCustomLatLng": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"supports": {

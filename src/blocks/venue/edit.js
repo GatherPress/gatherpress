@@ -11,7 +11,7 @@ import {
 	ToggleControl,
 	TextControl,
 } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
@@ -24,7 +24,7 @@ import { isVenuePostType } from '../../helpers/venue';
 import VenueSelector from '../../components/VenueSelector';
 import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
-import { Listener } from '../../helpers/broadcasting';
+import { Broadcaster, Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
 import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
 
@@ -61,7 +61,17 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 				?.gatherpress_online_event_link
 	);
 
-	let { mapShow } = attributes;
+	let { mapShow, mapCustomLatLng } = attributes;
+	const editPost = useDispatch('core/editor').editPost;
+	const updateVenueMeta = (metaData) => {
+		const payload = JSON.stringify({
+			...venueInformationMetaData,
+			...metaData,
+		});
+		const meta = { gatherpress_venue_information: payload };
+
+		editPost({ meta });
+	};
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
@@ -219,32 +229,36 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						<PanelRow>
 							<ToggleControl
 								label={
-									mapShow
-										? __('Use default values', 'gatherpress')
-										: __('Use custom values', 'gatherpress')
+									mapCustomLatLng
+										? __('Use custom values', 'gatherpress')
+										: __('Use default values', 'gatherpress')
 								}
-								checked={mapShow}
+								checked={mapCustomLatLng}
 								onChange={(value) => {
-									setAttributes({ mapShow: value });
+									setAttributes({ mapCustomLatLng: value });
 								}}
 							/>
 						</PanelRow>
-						<TextControl
-							label={__('Latitude', 'gatherpress')}
-							value={latitude}
-							onChange={(value) => {
-								Broadcaster({ setLatitude: value });
-								updateVenueMeta({ latitude: value });
-							}}
-						/>
-						<TextControl
-							label={__('Longitude', 'gatherpress')}
-							value={longitude}
-							onChange={(value) => {
-								Broadcaster({ setLongitude: value });
-								updateVenueMeta({ longitude: value });
-							}}
-						/>
+						{mapCustomLatLng && (
+							<>
+								<TextControl
+									label={__('Latitude', 'gatherpress')}
+									value={latitude}
+									onChange={(value) => {
+										Broadcaster({ setLatitude: value });
+										updateVenueMeta({ latitude: value });
+									}}
+								/>
+								<TextControl
+									label={__('Longitude', 'gatherpress')}
+									value={longitude}
+									onChange={(value) => {
+										Broadcaster({ setLongitude: value });
+										updateVenueMeta({ longitude: value });
+									}}
+								/>
+							</>
+						)}
 					</PanelBody>
 				)}
 			</InspectorControls>

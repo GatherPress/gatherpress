@@ -95,8 +95,22 @@ const Edit = ({
   const mapPlatform = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_14__.getFromGlobal)('settings.mapPlatform');
   const onlineEventLink = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core/editor')?.getEditedPostAttribute('meta')?.gatherpress_online_event_link);
   let {
-    mapShow
+    mapShow,
+    mapCustomLatLng
   } = attributes;
+  const editPost = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useDispatch)('core/editor').editPost;
+  const updateVenueMeta = metaData => {
+    const payload = JSON.stringify({
+      ...venueInformationMetaData,
+      ...metaData
+    });
+    const meta = {
+      gatherpress_venue_information: payload
+    };
+    editPost({
+      meta
+    });
+  };
   let venueInformationMetaData = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => select('core/editor')?.getEditedPostAttribute('meta')?.gatherpress_venue_information);
   if (venueInformationMetaData) {
     venueInformationMetaData = JSON.parse(venueInformationMetaData);
@@ -206,36 +220,38 @@ const Edit = ({
           children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Latitude / Longitude', 'gatherpress')
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelRow, {
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
-            label: mapShow ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Use default values', 'gatherpress') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Use custom values', 'gatherpress'),
-            checked: mapShow,
+            label: mapCustomLatLng ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Use custom values', 'gatherpress') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Use default values', 'gatherpress'),
+            checked: mapCustomLatLng,
             onChange: value => {
               setAttributes({
-                mapShow: value
+                mapCustomLatLng: value
               });
             }
           })
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Latitude', 'gatherpress'),
-          value: latitude,
-          onChange: value => {
-            Broadcaster({
-              setLatitude: value
-            });
-            updateVenueMeta({
-              latitude: value
-            });
-          }
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Longitude', 'gatherpress'),
-          value: longitude,
-          onChange: value => {
-            Broadcaster({
-              setLongitude: value
-            });
-            updateVenueMeta({
-              longitude: value
-            });
-          }
+        }), mapCustomLatLng && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Latitude', 'gatherpress'),
+            value: latitude,
+            onChange: value => {
+              (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_12__.Broadcaster)({
+                setLatitude: value
+              });
+              updateVenueMeta({
+                latitude: value
+              });
+            }
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Longitude', 'gatherpress'),
+            value: longitude,
+            onChange: value => {
+              (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_12__.Broadcaster)({
+                setLongitude: value
+              });
+              updateVenueMeta({
+                longitude: value
+              });
+            }
+          })]
         })]
       })]
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_15__.jsx)("div", {
@@ -7597,7 +7613,7 @@ const h="react-tooltip-core-styles",w="react-tooltip-base-styles",b={core:!1,bas
 /***/ ((module) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/venue","version":"1.1.0","title":"Venue","category":"gatherpress","icon":"location","example":{},"description":"Provides information about an event venue.","attributes":{"mapShow":{"type":"boolean","default":true},"mapAlign":{"type":"string","default":""},"mapZoomLevel":{"type":"number","default":10},"mapType":{"type":"string","default":"m"},"mapHeight":{"type":"number","default":300}},"supports":{"align":["wide"],"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./venue.js","viewStyle":"file:./venue.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":2,"name":"gatherpress/venue","version":"1.1.0","title":"Venue","category":"gatherpress","icon":"location","example":{},"description":"Provides information about an event venue.","attributes":{"mapShow":{"type":"boolean","default":true},"mapAlign":{"type":"string","default":""},"mapZoomLevel":{"type":"number","default":10},"mapType":{"type":"string","default":"m"},"mapHeight":{"type":"number","default":300},"mapCustomLatLng":{"type":"boolean","default":false}},"supports":{"align":["wide"],"html":false},"textdomain":"gatherpress","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./venue.js","viewStyle":"file:./venue.css","render":"file:./render.php"}');
 
 /***/ })
 
