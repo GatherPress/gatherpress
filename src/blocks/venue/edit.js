@@ -9,6 +9,7 @@ import {
 	RadioControl,
 	RangeControl,
 	ToggleControl,
+	TextControl,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
@@ -211,6 +212,38 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							}
 							min={100}
 							max={1000}
+						/>
+						<PanelRow>
+							{__('Latitude / Longitude', 'gatherpress')}
+						</PanelRow>
+						<PanelRow>
+							<ToggleControl
+								label={
+									mapShow
+										? __('Use default values', 'gatherpress')
+										: __('Use custom values', 'gatherpress')
+								}
+								checked={mapShow}
+								onChange={(value) => {
+									setAttributes({ mapShow: value });
+								}}
+							/>
+						</PanelRow>
+						<TextControl
+							label={__('Latitude', 'gatherpress')}
+							value={latitude}
+							onChange={(value) => {
+								Broadcaster({ setLatitude: value });
+								updateVenueMeta({ latitude: value });
+							}}
+						/>
+						<TextControl
+							label={__('Longitude', 'gatherpress')}
+							value={longitude}
+							onChange={(value) => {
+								Broadcaster({ setLongitude: value });
+								updateVenueMeta({ longitude: value });
+							}}
 						/>
 					</PanelBody>
 				)}
