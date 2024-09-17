@@ -538,18 +538,29 @@ class Calendars {
 		);
 	}
 
+	/**
+	 * Wraps the provided calendar data in a VCALENDAR structure for iCal.
+	 *
+	 * This method generates the necessary headers for an iCal file (such as the `BEGIN:VCALENDAR`
+	 * and `END:VCALENDAR` lines), wraps the provided calendar data, and returns the entire iCal
+	 * content as a formatted string. It also includes the blog's title and the current locale
+	 * in the `PRODID` header, ensuring that the calendar is properly identified.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $calendar_data The events to be included in the iCal file.
+	 * @return string               The complete iCal data wrapped in the VCALENDAR format.
+	 */
 	public static function get_ical_wrap( string $calendar_data ): string {
 
-		// Prpeare 2-DIGIT lang code.
-		$title = get_bloginfo( 'title' );
-		$lang  = strtoupper( substr( get_locale(), 0, 2 ) );
-		$args  = array(
+		$args = array(
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
 			sprintf(
 				'PRODID:-//%s//GatherPress//%s',
-				$title,
-				$lang
+				get_bloginfo( 'title' ),
+				// Prpeare 2-DIGIT lang code.
+				strtoupper( substr( get_locale(), 0, 2 ) )
 			),
 			$calendar_data,
 			'END:VCALENDAR',
@@ -605,6 +616,24 @@ class Calendars {
 		return implode( "\r\n", $args );
 	}
 
+	/**
+	 * Generates a list of events in iCal format based on the current query.
+	 *
+	 * This method generates iCal data for a list of events,
+	 * taking into account the currently queried archive or taxonomy context.
+	 *
+	 * It supports fetching events from:
+	 * - The `gatherpress_event` post type archive (upcoming and past events).
+	 * - Single `gatherpress_venue` requests (events specific to a venue).
+	 * - and `gatherpress_topic` taxonomy (events tagged with specific topics).
+	 *
+	 * It builds an iCal event list, wraps each event in the appropriate iCal format, and returns
+	 * the entire list of events as a single string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The iCal formatted list of events, ready for export or download.
+	 */
 	public static function get_ical_list(): string {
 
 		$event_list_type = ''; // Keep empty, to get all events from upcoming & past.
@@ -613,8 +642,7 @@ class Calendars {
 		$venues          = array();
 		$output          = array();
 
-		if ( is_post_type_archive( 'gatherpress_event' ) ) {
-		} elseif ( is_singular( 'gatherpress_venue' ) ) {
+		if ( is_singular( 'gatherpress_venue' ) ) {
 			$slug   = '_' . get_queried_object()->post_name;
 			$venues = array( $slug );
 		} elseif ( is_tax() ) {
@@ -623,10 +651,10 @@ class Calendars {
 			// @todo How to be prepared for foreign taxonomies that might be registered by 3rd-parties?
 			if ( $term && is_object_in_taxonomy( 'gatherpress_event', $term->taxonomy ) ) {
 				// Add the tax to the query here.
-			}
 
-			if ( is_tax( 'gatherpress_topic' ) ) {
-				$topics = array( $term->slug );
+				if ( is_tax( 'gatherpress_topic' ) ) {
+					$topics = array( $term->slug );
+				}
 			}
 		}
 
@@ -642,11 +670,32 @@ class Calendars {
 		return implode( "\r\n", $output );
 	}
 
-
+	/**
+	 * Generates the complete iCal file content for an event.
+	 *
+	 * This method calls the `get_ical_event()` method to retrieve the event data in iCal format
+	 * and then wraps the event data using `get_ical_wrap()` to include the necessary VCALENDAR
+	 * headers and footers. It returns the fully formatted iCal file content as a string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The complete iCal file content for the event, ready for download or export.
+	 */
 	public static function get_ical_file(): string {
 		return self::get_ical_wrap( self::get_ical_event() );
 	}
 
+	/**
+	 * Generates the complete iCal file content for a list of events.
+	 *
+	 * This method calls the `get_ical_list()` method to retrieve the data for all (queried) events in iCal format
+	 * and then wraps the events using `get_ical_wrap()` to include the necessary VCALENDAR
+	 * headers and footers.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The complete iCal feed containing the list of events.
+	 */
 	public static function get_ical_feed(): string {
 		return self::get_ical_wrap( self::get_ical_list() );
 	}
@@ -661,16 +710,12 @@ class Calendars {
 		$filename       = 'calendar';
 
 		if ( is_singular( 'gatherpress_event' ) ) {
-
 			$event     = new Event( $queried_object->ID );
 			$date      = $event->get_datetime_start( 'Y-m-d' );
 			$post_name = $event->event->post_name;
 			$filename  = $date . '_' . $post_name;
-
 		} elseif ( is_singular( 'gatherpress_venue' ) ) {
-
 			$filename = $queried_object->post_name;
-
 		} elseif ( is_tax() ) {
 
 			// @todo How to be prepared for foreign taxonomies that might be registered by 3rd-parties?
@@ -685,7 +730,7 @@ class Calendars {
 	/**
 	 * Send the necessary headers for the iCalendar file download.
 	 *
-	 * @param  string $filename 
+	 * @param string $filename Generated name of the file.
 	 *
 	 * @return void
 	 */
@@ -721,14 +766,14 @@ class Calendars {
 		ob_start();
 
 		// Prepare the filename.
-		$filename = Calendars::generate_ics_filename();
+		$filename = self::generate_ics_filename();
 
 		// Send headers for downloading the .ics file.
-		Calendars::send_ics_headers( $filename );
+		self::send_ics_headers( $filename );
 
 		// Output the generated iCalendar content.
 		$get_ical_method = ( is_feed() ) ? 'get_ical_feed' : 'get_ical_file';
-		echo wp_kses_post( Calendars::$get_ical_method() );
+		echo wp_kses_post( self::$get_ical_method() );
 
 		// Get the generated output and calculate file size.
 		$ics_content = ob_get_contents();
