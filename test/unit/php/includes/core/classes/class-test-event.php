@@ -370,9 +370,10 @@ class Test_Event extends Base {
 	 * Coverage for get_calendar_links method.
 	 *
 	 * @covers ::get_calendar_links
-	 * @covers ::get_google_calendar_link
-	 * @covers ::get_ical_file
-	 * @covers ::get_yahoo_calendar_link
+	 * @covers Calendars::get_url
+	 * @covers Calendars::get_google_calendar_link
+	 * @covers Calendars::get_ical_file
+	 * @covers Calendars::get_yahoo_calendar_link
 	 * @covers ::get_calendar_description
 	 *
 	 * @return void
