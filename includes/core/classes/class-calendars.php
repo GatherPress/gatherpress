@@ -396,7 +396,7 @@ class Calendars {
 	 *
 	 * @return string|false                    URL of the posts endpoint or false if something went wrong.
 	 */
-	public static function get_url( string $endpoint_slug, $post = null, string $query_var = self::QUERY_VAR ): string|false {
+	public static function get_url( string $endpoint_slug, $post = null, string $query_var = self::QUERY_VAR ) {
 		$post = get_post( $post );
 
 		if ( ! $post ) {
@@ -407,7 +407,7 @@ class Calendars {
 		if ( false !== $is_feed_endpoint ) {
 			// Feels weird to use a *_comments_* function here, but it delivers clean results
 			// in the form of "domain.tld/event/my-sample-event/feed/ical/".
-			return get_post_comments_feed_link(
+			return (string) get_post_comments_feed_link(
 				$post->ID,
 				substr( $endpoint_slug, $is_feed_endpoint )
 			);
@@ -441,7 +441,7 @@ class Calendars {
 			)
 		);
 
-		return sanitize_url( $endpoint_url );
+		return (string) sanitize_url( $endpoint_url );
 	}
 
 	/**
