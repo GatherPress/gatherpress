@@ -88,6 +88,14 @@ In fact, after the initial setup, you may notice that in your code editor, there
 
 ![Development Site Plugins/Themes](../media/gitignore—gatherpress.png)
 
+#### Installing Dependencies
+
+1. Install the version of Node in `.nvmrc.`. [NVM](https://github.com/nvm-sh/nvm) can be used to achieve this.
+2. Install [Composer](https://getcomposer.org/doc/00-intro.md)
+3. In your terminal window, `cd` to the `gatherpress` directory
+4. Run `npm install` to get node dependencies
+5. Run `composer install` to get PHPUnit dependencies
+
 #### To shut down your development session
 
 Simply run:
