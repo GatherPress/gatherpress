@@ -264,7 +264,7 @@ class Event {
 	 *
 	 * @throws Exception If there is an issue while formatting the datetime value.
 	 */
-	protected function get_formatted_datetime(
+	public function get_formatted_datetime(
 		string $format = 'D, F j, g:ia T',
 		string $which = 'start',
 		bool $local = true
@@ -611,7 +611,7 @@ class Event {
 	 *
 	 * @return string The calendar event description with the event details link.
 	 */
-	protected function get_calendar_description(): string {
+	public function get_calendar_description(): string {
 		/* translators: %s: event link. */
 		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 	}
