@@ -235,6 +235,14 @@ class Setup {
 		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 			die;
 		}
+
+		// Check if the user opted to delete data on uninstall.
+		$delete_data = get_option( 'delete_data_on_uninstall', false );
+
+		// If the option is not enabled, exit early to prevent data on uninstall.
+		if( ! $delete_data ) {
+			return;
+		}
 	
 		// GatherPress-specific options and transients to be deleted.
 		$option_names = array(
