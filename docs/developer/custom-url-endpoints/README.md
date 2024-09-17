@@ -22,15 +22,15 @@ GatherPress provides some different and custom URL endpoints, for example `/ical
 
 - `example.org/event/feed/ical`
 
-   provides a subscribe-able event feed in xcal format with all events of the site.
+   provides a subscribe-able event feed in ical format with all events of the site.
 
 - `example.org/venue/my-sample-venue/feed/ical`
 
-   provides a subscribe-able event feed in xcal format with all events at that venue.
+   provides a subscribe-able event feed in ical format with all events at that venue.
 
 - `example.org/topic/my-sample-topic/feed/ical`
 
-   provides a subscribe-able event feed in xcal format with all events grouped into that topic.
+   provides a subscribe-able event feed in ical format with all events grouped into that topic.
 
 The most obvious functions to create such within WordPress seem to be [`add_feed()`](https://developer.wordpress.org/reference/functions/add_feed/) and [`add_rewrite_endpoint()`](https://developer.wordpress.org/reference/functions/add_rewrite_endpoint/) for this purpose.
 
