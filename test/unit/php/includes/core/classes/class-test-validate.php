@@ -27,7 +27,6 @@ class Test_Validate extends Base {
 	 * @return void
 	 */
 	public function test_rsvp_status(): void {
-
 		$this->assertTrue(
 			Validate::rsvp_status( 'attending' ),
 			'Failed to assert valid attendance status.'
@@ -150,7 +149,6 @@ class Test_Validate extends Base {
 	 * @return void
 	 */
 	public function test_event_list_type(): void {
-
 		$this->assertTrue(
 			Validate::event_list_type( 'upcoming' ),
 			'Failed to assert valid event list type.'
@@ -173,12 +171,10 @@ class Test_Validate extends Base {
 	 * @return void
 	 */
 	public function test_datetime(): void {
-
 		$this->assertFalse(
 			Validate::datetime( 'unit-test' ),
 			'Failed to assert invalid datetime.'
 		);
-
 		$this->assertTrue(
 			Validate::datetime( '2023-05-11 08:30:00' ),
 			'Failed to assert valid datatime.'
@@ -193,12 +189,10 @@ class Test_Validate extends Base {
 	 * @return void
 	 */
 	public function test_timezone(): void {
-
 		$this->assertFalse(
 			Validate::timezone( 'unit-test' ),
 			'Failed to assert invalid timezone.'
 		);
-
 		$this->assertTrue(
 			Validate::timezone( 'America/New_York' ),
 			'Failed to assert valid timezone.'
