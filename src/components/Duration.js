@@ -4,7 +4,8 @@
 import { SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { dateTimeOffset, durationOptions } from '../helpers/datetime';
+import { dateTimeOffset } from '../helpers/datetime';
+import DurationOptions from './DurationOptions';
 
 /**
  * Duration component for GatherPress.
@@ -35,11 +36,11 @@ const Duration = () => {
 		<SelectControl
 			label={__('Duration', 'gatherpress')}
 			value={
-				durationOptions.some((option) => option.value === duration)
+				DurationOptions.some((option) => option.value === duration)
 					? duration
 					: false
 			}
-			options={durationOptions}
+			options={DurationOptions}
 			onChange={(value) => {
 				value = 'false' === value ? false : parseFloat(value);
 
