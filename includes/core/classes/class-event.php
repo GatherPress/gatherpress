@@ -611,7 +611,7 @@ class Event {
 	 *
 	 * @return string The calendar event description with the event details link.
 	 */
-	protected function get_calendar_description(): string {
+	public function get_calendar_description(): string {
 		/* translators: %s: event link. */
 		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 	}
