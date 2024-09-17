@@ -237,10 +237,11 @@ class Setup {
 		}
 
 		// Check if the user opted to delete data on uninstall.
-		$delete_data = get_option( 'delete_data_on_uninstall', false );
-
+		$settings    = Settings::get_instance();
+		$delete_data = $settings->get_value( 'general', 'general', 'delete_data_on_uninstall' );
+		
 		// If the option is not enabled, exit early to prevent data on uninstall.
-		if( ! $delete_data ) {
+		if( intval( $delete_data )  !== 1 ) {
 			return;
 		}
 	
