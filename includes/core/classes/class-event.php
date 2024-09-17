@@ -264,7 +264,7 @@ class Event {
 	 *
 	 * @throws Exception If there is an issue while formatting the datetime value.
 	 */
-	protected function get_formatted_datetime(
+	public function get_formatted_datetime(
 		string $format = 'D, F j, g:ia T',
 		string $which = 'start',
 		bool $local = true
