@@ -222,53 +222,69 @@ class Setup {
 	/**
 	 * Uninstalls the GatherPress plugin.
 	 *
-	 * This method handles the uninstallation of the GatherPress plugin, ensuring that all
-	 * options and custom database tables created by the plugin are removed. It is designed
-	 * to handle both single-site and multisite WordPress installations.
-	 *
-	 * When the plugin is uninstalled, this method performs the following actions:
-	 * - Deletes the plugin-specific option from the database.
-	 * - Deletes the site-specific option in a multisite installation.
-	 * - Drops the custom database table created by the plugin.
-	 * - In a multisite network, loops through all sites to drop the custom table for each site.
-	 *
-	 * Note: This method is registered as the uninstall hook using `register_uninstall_hook`.
-	 * It ensures that the script is called from within WordPress by checking the `WP_UNINSTALL_PLUGIN` constant.
-	 *
 	 * @since 1.0.0
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
 	 * @return void
 	 */
-	public function uninstall_gatherpress_plugin(): void {
+	public static function uninstall_gatherpress_plugin() {
+		global $wpdb;
+	
 		// Ensure the uninstallation script is called from within WordPress.
-		if( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 			die;
 		}
-
-		global $wpdb;
-
-		// Delete Options.
-		$option_name = 'wporg_option';
-		delete_option( $option_name );
-		delete_site_option( $option_name );
-
-		// Create variable for custom table.
-		$event_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
-
-		// Drop custom tables for each site in a multisite network.
-		if ( is_multisite() ) {
-			$site_ids = get_sites( array( 'fields' => 'ids' ) );
-			foreach( $site_ids as $site_id ) {
-				switch_to_blog( $site_id );
-				$wpdb->query( "DROP TABLE IF EXISTS {$event_table}" );
-				restore_current_blog();
+	
+		// GatherPress-specific options and transients to be deleted.
+		$option_names = array(
+			'gatherpress_flush_rewrite_rules_flag',
+			'gatherpress_general',
+			'gatherpress_suppress_site_notification'
+		);
+	
+		// Delete options in single-site or multisite setup.
+		foreach ( $option_names as $option ) {
+			delete_option( $option );
+			if ( is_multisite() ) {
+				delete_site_option( $option );
 			}
-		} else {
-			$wpdb->query( "DROP TABLE IF EXISTS {$event_table}" );
 		}
+	
+		// Drop custom tables for events and RSVPs.
+		$event_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$rsvp_table  = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
+		
+		// Drop the tables if they exist.
+		$wpdb->query( "DROP TABLE IF EXISTS {$event_table}" );
+		$wpdb->query( "DROP TABLE IF EXISTS {$rsvp_table}" );
+	
+		// Delete any custom taxonomies if required (like 'gatherpress_venue', 'gatherpress_event_category').
+		$taxonomies = array( 'gatherpress_venue', 'gatherpress_event_category' );
+
+		foreach ( $taxonomies as $taxonomy ) {
+			$terms = get_terms( array( 'taxonomy' => $taxonomy, 'hide_empty' => false ) );
+			if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+				foreach ( $terms as $term ) {
+					wp_delete_term( $term->term_id, $taxonomy );
+				}
+			}
+		}
+	
+		// Remove user meta related to GatherPress.
+		$meta_keys = array(
+			'gatherpress_event_meta',
+			'gatherpress_venue_meta',
+			'gatherpress_rsvp_meta',
+		);
+
+		$meta_query = implode( ', ', array_fill( 0, count( $meta_keys ), '%s' ) );
+		$wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->usermeta WHERE meta_key IN ( {$meta_query} )", $meta_keys ) );
+	
+		// Clear rewrite rules to remove any custom rewrites added by the plugin.
+		flush_rewrite_rules();
 	}
+	
 
 
 	/**
