@@ -9,7 +9,8 @@ test.describe('Venues in the Editor', () => {
 	});
 
 	test('The admin should be able to create a new Venue.', async ({
-		page,
+		editor,
+		page
 	}) => {
 		await page.getByLabel('Add title').isVisible();
 		await page.getByLabel('Add title').fill('Test venue');
@@ -21,6 +22,8 @@ test.describe('Venues in the Editor', () => {
 		await page
 			.getByLabel('Empty block; start writing or')
 			.fill('test venue information');
+
+		await editor.publishPost(); // this is missing the force and doesnt work.
 
 		// await page.getByLabel('Toggle block inserter').click();
 		// await page.getByRole('option', { name: 'Paragraph' }).click();

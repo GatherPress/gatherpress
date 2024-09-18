@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-const { test } = require('@wordpress/e2e-test-utils-playwright');
+const { test, expect } = require('@wordpress/e2e-test-utils-playwright');
 
 test.describe('Events in the Editor', () => {
 	test.beforeEach(async ({ admin, page }) => {
@@ -18,16 +18,50 @@ test.describe('Events in the Editor', () => {
 		const panelToggle = page.getByRole('button', {
 			name: 'Event settings',
 		});
+		
+		
+		// page.pause();
+
 
 		if ((await panelToggle.getAttribute('aria-expanded')) === 'false') {
-			await panelToggle.click();
+			// Check if the inserter button is visible
+			await expect(panelToggle).toBeVisible();
+
+			// Ensure the panelToggle is enabled before interacting with it
+			await expect(panelToggle).toBeEnabled();
+
+			// Click the panelToggle
+			// Just click() without forcing led to timeouts, timeouts, timeouts...
+			await panelToggle.click({ force: true });
 		}
 	});
 
 	test.afterEach(async ({ editor, page }) => {
 		// Click again to close the element, to let upcoming tests not get flaky.
-		await page.getByRole('button', { name: 'Event settings' }).click();
-		await editor.publishPost();
+		const panelToggle = page.getByRole('button', {
+			name: 'Event settings',
+		});
+
+		if ((await panelToggle.getAttribute('aria-expanded')) === 'false') {
+			// Check if the inserter button is visible
+			await expect(panelToggle).toBeVisible();
+
+			// Ensure the panelToggle is enabled before interacting with it
+			await expect(panelToggle).toBeEnabled();
+
+			// Click the panelToggle
+			// Just click() without forcing led to timeouts, timeouts, timeouts...
+			await panelToggle.click({ force: true });
+		}
+
+		await editor.publishPost(); // this is missing the force and doesnt work.
+		// const publishButton = page.getByRole('button', {
+		// 	name: 'Publish',
+		// });
+
+		// // Click the publishButton
+		// // Just click() without forcing led to timeouts, timeouts, timeouts...
+		// await publishButton.click({ force: true });
 	});
 
 	test('An admin should be able to publish an online event', async ({
