@@ -59,22 +59,22 @@ Immediately the testing website will be reachable at `http://127.0.0.1:9400`, th
 
 Now while Playground is running in the background, it's possible to start the screenshot generator.
 
-#### _Choose one of the following options:_
+#### *Choose one of the following options:*
 
-1. For the _headless_ mode, use the following command:
+1. For the *headless* mode, use the following command:
 
    ```bash
    npm run screenshots:wporg
    ```
 
-2. Run Playwright _visually_ (to run generating screenshots in isolation and change what's happening), use:
+2. Run Playwright *visually* (to run generating screenshots in isolation and change what's happening), use:
 
    ```bash
    npm run screenshots:wporg:ui
    ```
 
 
-3. For _debug_ mode (which will open the browser along with Playwright Editor and allows you to record what's happening), use the following command:
+3. For *debug* mode (which will open the browser along with Playwright Editor and allows you to record what's happening), use the following command:
 
    ```bash
    npm run screenshots:wporg:debug
@@ -89,7 +89,7 @@ Now while Playground is running in the background, it's possible to start the sc
    > [!NOTE]
    > When writing a screenshot-generator(-test), using the debug mode is recommended since it will allow you to see the browser and the test in action.
 
-4. Run Tests independently _AND_ visually using the [Playwright VSCode extension](https://playwright.dev/docs/getting-started-vscode)
+4. Run Tests independently *AND* visually using the [Playwright VSCode extension](https://playwright.dev/docs/getting-started-vscode)
 
    Tell the VSCode extension what webserver to use, by adding the following to your `settings.json`:
 
