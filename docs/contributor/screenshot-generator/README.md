@@ -59,7 +59,7 @@ Immediately the testing website will be reachable at `http://127.0.0.1:9400`, th
 
 Now while Playground is running in the background, it's possible to start the screenshot generator.
 
-_Choose one of the following options_
+#### _Choose one of the following options:_
 
 1. For the _headless_ mode, use the following command:
 
