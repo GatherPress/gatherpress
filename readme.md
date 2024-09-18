@@ -190,7 +190,7 @@ Yes, GatherPress can be run on a network of sites. The additional database table
 
 GatherPress can also be activated per site.
 
-## GatherPress‘ Best Practices:
+## GatherPress‘ Best Practices
 
 - Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
 - Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
