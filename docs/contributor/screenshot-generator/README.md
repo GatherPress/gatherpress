@@ -30,6 +30,7 @@ The workflow scripts can also be used to **manually create screenshots**. In gen
 ### Install dependencies
 
 1. To generate screenshots you will have to install playwright using the following command:
+
    ```bash
    npx playwright install --with-deps
    ```
@@ -51,6 +52,7 @@ A call to `npm run playground` will automatically setup a `wp-playground/cli` po
 ```bash
 npm run playground -- --blueprint=./my/sample/addon/blueprint.json
 ```
+
 Immediately the testing website will be reachable at `http://127.0.0.1:9400`, the user is `admin` and the password is `password`. 
 
 ### Run the Screenshot generator
@@ -79,6 +81,7 @@ _Choose one of the following options_
    ```
 
    Run files that have *events.spec* in the file name.
+
    ```bash
    npm run screenshots:wporg:debug -- events.spec
    ```
@@ -89,6 +92,7 @@ _Choose one of the following options_
 4. Run Tests independently _AND_ visually using the [Playwright VSCode extension](https://playwright.dev/docs/getting-started-vscode)
 
    Tell the VSCode extension what webserver to use, by adding the following to your `settings.json`:
+
    ```json
    "playwright.env": {
       "WP_BASE_URL":"http://127.0.0.1:9400"
