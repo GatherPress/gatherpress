@@ -50,10 +50,11 @@ jobs:
       # @source https://dev.to/suzukishunsuke/secure-github-actions-by-pullrequesttarget-641#checkout-merge-commits
       - uses: suzuki-shunsuke/get-pr-action@v0.1.0
         id: pr
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{steps.pr.outputs.merge_commit_sha}}
+          ref: ${{ steps.pr.outputs.merge_commit_sha }}
           show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
 
       - name: Setup PHP
@@ -70,10 +71,32 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          cache: npm
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      # Restoring the short lived node_modules cache
+      # to be used across all workflows running on the last commit.
+      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+      - uses: actions/cache/restore@v4
+        id: node_modules-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node_modules-${{ steps.pr.outputs.merge_commit_sha }}-${{ hashFiles('package-lock.json') }}
+
+      - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        run: npm ci --legacy-peer-deps
+
+      # Creating a short lived node_modules cache
+      - uses: actions/cache/save@v4
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ./node_modules
+          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
       - name: Build plugin
         # - [Incorrect version number used when creating zip archive · Issue #92 · wp-cli/dist-archive-command](https://github.com/wp-cli/dist-archive-command/issues/92)

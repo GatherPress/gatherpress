@@ -6,8 +6,6 @@ import moment from 'moment';
 /**
  * WordPress dependencies.
  */
-import { select } from '@wordpress/data';
-import apiFetch from '@wordpress/api-fetch';
 import { __ } from '@wordpress/i18n';
 import { createRoot } from '@wordpress/element';
 
@@ -15,20 +13,7 @@ import { createRoot } from '@wordpress/element';
  * Internal dependencies.
  */
 import { enableSave, getFromGlobal, setToGlobal } from './globals';
-import { isEventPostType, triggerEventCommuncation } from './event';
 import DateTimePreview from '../components/DateTimePreview';
-
-/**
- * Date and time format string for use with Moment.js.
- *
- * This format is designed to represent date and time in the format
- * "YYYY-MM-DDTHH:mm:ss" for compatibility with Moment.js library.
- *
- * @since 1.0.0
- *
- * @type {string}
- */
-export const dateTimeMomentFormat = 'YYYY-MM-DDTHH:mm:ss';
 
 /**
  * Database-compatible date and time format string for storage.
@@ -51,12 +36,12 @@ export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
  * @type {string} Formatted default start date and time in the application's timezone.
  */
 export const defaultDateTimeStart = moment
-	.tz(getTimeZone())
+	.tz(getTimezone())
 	.add(1, 'day')
 	.set('hour', 18)
 	.set('minute', 0)
 	.set('second', 0)
-	.format(dateTimeMomentFormat);
+	.format(dateTimeDatabaseFormat);
 
 /**
  * The default end date and time for an event.
@@ -67,9 +52,85 @@ export const defaultDateTimeStart = moment
  * @type {string} Formatted default end date and time in the application's timezone.
  */
 export const defaultDateTimeEnd = moment
-	.tz(defaultDateTimeStart, getTimeZone())
+	.tz(defaultDateTimeStart, getTimezone())
 	.add(2, 'hours')
-	.format(dateTimeMomentFormat);
+	.format(dateTimeDatabaseFormat);
+
+/**
+ * Predefined duration options for event scheduling.
+ *
+ * This array contains a list of duration options in hours that can be selected
+ * for an event. Each option includes a label for display and a corresponding
+ * value representing the duration in hours. The last option allows the user
+ * to set a custom end time by selecting `false`.
+ *
+ * @since 1.0.0
+ *
+ * @type {Array<Object>} durationOptions
+ * @property {string}         label - The human-readable label for the duration option.
+ * @property {number|boolean} value - The value representing the duration in hours, or `false` if a custom end time is to be set.
+ */
+export const durationOptions = [
+	{
+		label: __('1 hour', 'gatherpress'),
+		value: 1,
+	},
+	{
+		label: __('1.5 hours', 'gatherpress'),
+		value: 1.5,
+	},
+	{
+		label: __('2 hours', 'gatherpress'),
+		value: 2,
+	},
+	{
+		label: __('3 hours', 'gatherpress'),
+		value: 3,
+	},
+	{
+		label: __('Set an end time…', 'gatherpress'),
+		value: false,
+	},
+];
+
+/**
+ * Calculates an offset in hours from the start date and time of an event.
+ *
+ * This function retrieves the event's start date and time, applies the provided
+ * offset in hours, and returns the result formatted for database storage.
+ *
+ * @since 1.0.0
+ *
+ * @param {number} hours - The number of hours to offset from the event's start date and time.
+ *
+ * @return {string} The adjusted date and time formatted in a database-compatible format.
+ */
+export function dateTimeOffset(hours) {
+	return moment
+		.tz(getDateTimeStart(), getTimezone())
+		.add(hours, 'hours')
+		.format(dateTimeDatabaseFormat);
+}
+
+/**
+ * Retrieves the duration offset based on the end time of the event.
+ *
+ * This function checks the available duration options and compares
+ * the offset value with the calculated end time of the event. If a
+ * matching offset is found, it returns the corresponding value. If
+ * no match is found, it returns false.
+ *
+ * @since 1.0.0
+ *
+ * @return {number|boolean} The matching duration value or false if no match is found.
+ */
+export function getDateTimeOffset() {
+	return (
+		durationOptions.find(
+			(option) => dateTimeOffset(option.value) === getDateTimeEnd()
+		)?.value || false
+	);
+}
 
 /**
  * Get the combined date and time format for event labels.
@@ -102,7 +163,7 @@ export function dateTimeLabelFormat() {
  *
  * @return {string} The retrieved timezone, or 'GMT' if the provided timezone is invalid.
  */
-export function getTimeZone(
+export function getTimezone(
 	timezone = getFromGlobal('eventDetails.dateTime.timezone')
 ) {
 	if (!!moment.tz.zone(timezone)) {
@@ -123,7 +184,7 @@ export function getTimeZone(
  * @return {string} UTC offset without the colon if the timezone is set to 'GMT', otherwise an empty string.
  */
 export function getUtcOffset(timezone) {
-	timezone = getTimeZone(timezone);
+	timezone = getTimezone(timezone);
 
 	if (__('GMT', 'gatherpress') !== timezone) {
 		return '';
@@ -227,7 +288,7 @@ export function getDateTimeStart() {
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, getTimeZone()).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, getTimezone()).format(dateTimeDatabaseFormat)
 			: defaultDateTimeStart;
 
 	setToGlobal('eventDetails.dateTime.datetime_start', dateTime);
@@ -249,7 +310,7 @@ export function getDateTimeEnd() {
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, getTimeZone()).format(dateTimeMomentFormat)
+			? moment.tz(dateTime, getTimezone()).format(dateTimeDatabaseFormat)
 			: defaultDateTimeEnd;
 
 	setToGlobal('eventDetails.dateTime.datetime_end', dateTime);
@@ -260,15 +321,25 @@ export function getDateTimeEnd() {
 /**
  * Updates the start date and time for an event, performs validation, and triggers the save functionality.
  *
+ * This function sets the new start date and time of the event, validates the input
+ * to ensure it meets the required criteria, and updates the global state. It also
+ * triggers a save action if the `enableSave` function is available. If a `setDateTimeStart`
+ * callback is provided, it is invoked with the new date.
+ *
  * @since 1.0.0
  *
- * @param {string}   date             - The new start date and time to be set.
- * @param {Function} setDateTimeStart - Optional callback function to update the state or perform additional actions.
+ * @param {string}        date             - The new start date and time to be set in a valid format.
+ * @param {Function|null} setDateTimeStart - Optional callback function to update the state or perform additional actions with the new start date.
+ * @param {Function|null} setDateTimeEnd   - Optional callback function to update the end date, if validation requires an update.
  *
  * @return {void}
  */
-export function updateDateTimeStart(date, setDateTimeStart = null) {
-	validateDateTimeStart(date);
+export function updateDateTimeStart(
+	date,
+	setDateTimeStart = null,
+	setDateTimeEnd = null
+) {
+	validateDateTimeStart(date, setDateTimeEnd);
 
 	setToGlobal('eventDetails.dateTime.datetime_start', date);
 
@@ -280,20 +351,28 @@ export function updateDateTimeStart(date, setDateTimeStart = null) {
 }
 
 /**
- * Update the end date and time of the event and trigger necessary actions.
+ * Updates the end date and time of the event and triggers necessary actions.
  *
  * This function sets the end date and time of the event to the specified value,
- * validates the input, and triggers additional actions such as updating the UI.
+ * validates the input, and triggers additional actions such as updating the UI and
+ * enabling save functionality. The `setDateTimeEnd` callback can be used to update
+ * the UI with the new end date and time, if provided. Optionally, `setDateTimeStart`
+ * can be used for validation against the start date and time.
  *
  * @since 1.0.0
  *
- * @param {string}        date           - The new end date and time in a valid format.
- * @param {Function|null} setDateTimeEnd - Optional callback to update the UI with the new end date and time.
+ * @param {string}        date             - The new end date and time in a valid format.
+ * @param {Function|null} setDateTimeEnd   - Optional callback to update the UI with the new end date and time.
+ * @param {Function|null} setDateTimeStart - Optional callback for validating the end date against the start date.
  *
  * @return {void}
  */
-export function updateDateTimeEnd(date, setDateTimeEnd = null) {
-	validateDateTimeEnd(date);
+export function updateDateTimeEnd(
+	date,
+	setDateTimeEnd = null,
+	setDateTimeStart = null
+) {
+	validateDateTimeEnd(date, setDateTimeStart);
 
 	setToGlobal('eventDetails.dateTime.datetime_end', date);
 
@@ -305,106 +384,68 @@ export function updateDateTimeEnd(date, setDateTimeEnd = null) {
 }
 
 /**
- * Validate the start date and time of the event and perform necessary adjustments if needed.
+ * Validates the start date and time of the event and performs necessary adjustments if needed.
  *
  * This function compares the provided start date and time with the current end date
  * and time of the event. If the start date is greater than or equal to the end date,
- * it adjusts the end date to ensure a minimum two-hour duration.
+ * it adjusts the end date to ensure a minimum two-hour duration from the start date.
+ * If `setDateTimeEnd` is provided, it updates the end date accordingly.
  *
  * @since 1.0.0
  *
- * @param {string} dateTimeStart - The start date and time in a valid format.
+ * @param {string}        dateTimeStart  - The start date and time in a valid format.
+ * @param {Function|null} setDateTimeEnd - Optional callback to update the end date and time.
  *
  * @return {void}
  */
-export function validateDateTimeStart(dateTimeStart) {
+export function validateDateTimeStart(dateTimeStart, setDateTimeEnd = null) {
 	const dateTimeEndNumeric = moment
-		.tz(getFromGlobal('eventDetails.dateTime.datetime_end'), getTimeZone())
+		.tz(getFromGlobal('eventDetails.dateTime.datetime_end'), getTimezone())
 		.valueOf();
 	const dateTimeStartNumeric = moment
-		.tz(dateTimeStart, getTimeZone())
+		.tz(dateTimeStart, getTimezone())
 		.valueOf();
 
 	if (dateTimeStartNumeric >= dateTimeEndNumeric) {
 		const dateTimeEnd = moment
-			.tz(dateTimeStartNumeric, getTimeZone())
+			.tz(dateTimeStartNumeric, getTimezone())
 			.add(2, 'hours')
-			.format(dateTimeMomentFormat);
+			.format(dateTimeDatabaseFormat);
 
-		updateDateTimeEnd(dateTimeEnd);
+		updateDateTimeEnd(dateTimeEnd, setDateTimeEnd);
 	}
 }
 
 /**
- * Validate the end date and time of the event and perform necessary adjustments if needed.
+ * Validates the end date and time of the event and performs necessary adjustments if needed.
  *
  * This function compares the provided end date and time with the current start date
  * and time of the event. If the end date is less than or equal to the start date,
- * it adjusts the start date to ensure a minimum two-hour duration.
+ * it adjusts the start date to ensure a minimum two-hour duration from the end date.
+ * If `setDateTimeStart` is provided, it updates the start date accordingly.
  *
  * @since 1.0.0
  *
- * @param {string} dateTimeEnd - The end date and time in a valid format.
+ * @param {string}        dateTimeEnd      - The end date and time in a valid format.
+ * @param {Function|null} setDateTimeStart - Optional callback to update the start date and time.
  *
  * @return {void}
  */
-export function validateDateTimeEnd(dateTimeEnd) {
+export function validateDateTimeEnd(dateTimeEnd, setDateTimeStart = null) {
 	const dateTimeStartNumeric = moment
 		.tz(
 			getFromGlobal('eventDetails.dateTime.datetime_start'),
-			getTimeZone()
+			getTimezone()
 		)
 		.valueOf();
-	const dateTimeEndNumeric = moment.tz(dateTimeEnd, getTimeZone()).valueOf();
+	const dateTimeEndNumeric = moment.tz(dateTimeEnd, getTimezone()).valueOf();
 
 	if (dateTimeEndNumeric <= dateTimeStartNumeric) {
 		const dateTimeStart = moment
-			.tz(dateTimeEndNumeric, getTimeZone())
+			.tz(dateTimeEndNumeric, getTimezone())
 			.subtract(2, 'hours')
-			.format(dateTimeMomentFormat);
-		updateDateTimeStart(dateTimeStart);
-	}
-}
-
-/**
- * Save the event date, time, and timezone to the server.
- *
- * This function sends a POST request to the server with the updated event date,
- * time, and timezone information for storage. It is triggered during the process
- * of saving an event post in the WordPress editor.
- *
- * @since 1.0.0
- *
- * @return {void}
- */
-export function saveDateTime() {
-	const isSavingPost = select('core/editor').isSavingPost(),
-		isAutosavingPost = select('core/editor').isAutosavingPost();
-
-	if (isEventPostType() && isSavingPost && !isAutosavingPost) {
-		apiFetch({
-			path: getFromGlobal('urls.eventRestApi') + '/datetime',
-			method: 'POST',
-			data: {
-				post_id: getFromGlobal('eventDetails.postId'),
-				datetime_start: moment
-					.tz(
-						getFromGlobal('eventDetails.dateTime.datetime_start'),
-						getTimeZone()
-					)
-					.format(dateTimeDatabaseFormat),
-				datetime_end: moment
-					.tz(
-						getFromGlobal('eventDetails.dateTime.datetime_end'),
-						getTimeZone()
-					)
-					.format(dateTimeDatabaseFormat),
-				timezone: getFromGlobal('eventDetails.dateTime.timezone'),
-				_wpnonce: getFromGlobal('misc.nonce'),
-			},
-		}).then(() => {
-			triggerEventCommuncation();
-		});
+			.format(dateTimeDatabaseFormat);
+		updateDateTimeStart(dateTimeStart, setDateTimeStart);
 	}
 }
 

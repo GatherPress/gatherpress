@@ -4,14 +4,21 @@ on:
     branches:
       - main
   pull_request:
-
+    paths:
+    - '.github/workflows/coding-standards.yml'
+    - 'includes/**'
+    - 'src/**'
+    - 'test/**'
+    - 'package.*'
+    - '*.js'
+    - '*.php'
 jobs:
   phpcs:
     name: PHP Coding Standards
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -53,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Log debug information
         run: |
@@ -64,12 +71,35 @@ jobs:
           composer --version
 
       - name: Install NodeJS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-            node-version-file: '.nvmrc'
+          node-version-file: '.nvmrc'
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
+
+      # Restoring the short lived node_modules cache
+      # to be used across all workflows running on the last commit.
+      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+      - uses: actions/cache/restore@v4
+        id: node_modules-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
 
       - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
         run: npm ci --legacy-peer-deps
+
+      # Creating a short lived node_modules cache
+      - uses: actions/cache/save@v4
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ./node_modules
+          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
       - name: Run JSHint
         run: npm run lint:js
@@ -77,10 +107,12 @@ jobs:
 
   stylelint:
     name: CSS Coding Standards
+    needs: jshint # Wait for jshint job, to make use of node_modules caching.
+    if: always()  # Run always, even when the jshint job didn't ran.
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Log debug information
         run: |
@@ -91,12 +123,35 @@ jobs:
           composer --version
 
       - name: Install NodeJS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
+
+      # Restoring the short lived node_modules cache
+      # to be used across all workflows running on the last commit.
+      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+      - uses: actions/cache/restore@v4
+        id: node_modules-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
 
       - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
         run: npm ci --legacy-peer-deps
+
+      # Creating a short lived node_modules cache
+      - uses: actions/cache/save@v4
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ./node_modules
+          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
       - name: Run StyleLint
         run: npm run lint:css

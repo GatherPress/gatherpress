@@ -21,7 +21,7 @@ jobs:
         php_versions: [ '7.4', '8.0', '8.1', '8.2', '8.3' ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -33,9 +33,13 @@ jobs:
         run: composer install --optimize-autoloader --prefer-dist
 
       - name: Install NodeJS
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
 
       - name: Log debug information
         run: |

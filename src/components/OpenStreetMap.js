@@ -12,7 +12,7 @@ import { getFromGlobal } from '../helpers/globals';
 /**
  * OpenStreetMap component for GatherPress.
  *
- * This component is used to embed an Open Street Map with specified location,
+ * This component is used to embed an OpenStreetMap with specified location,
  * zoom level, and height using the Leaflet platform.
  *
  * @since 1.0.0

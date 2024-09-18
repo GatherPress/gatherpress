@@ -1,6 +1,6 @@
 {
 	"name": "gatherpress",
-	"version": "0.30.0",
+	"version": "0.31.0-alpha",
 	"description": "Powering Communities with WordPress",
 	"main": "index.js",
 	"scripts": {
@@ -23,9 +23,6 @@
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
 		"start": "wp-scripts start",
-		"prescreenshots:wporg": "wp-scripts build && wp-env start",
-		"prescreenshots:wporg:debug": "wp-scripts build && wp-env start",
-		"prescreenshots:wporg:ui": "wp-scripts build && wp-env start",
 		"screenshots:wporg": "wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts",
 		"screenshots:wporg:debug": "wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts --debug",
 		"screenshots:wporg:ui": "wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts --ui",
@@ -78,8 +75,9 @@
 		"@wordpress/notices": "^5.4.0",
 		"@wordpress/plugins": "^7.4.0",
 		"@wordpress/scripts": "^28.4.0",
-		"@wp-playground/cli": "^0.9.31",
+		"@wp-playground/cli": "^0.9.32",
 		"classnames": "^2.5.1",
+		"clsx": "^2.1.1",
 		"dotenv": "^16.4.5",
 		"eslint": "^8.57.0",
 		"eslint-plugin-import": "^2.29.1",

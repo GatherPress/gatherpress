@@ -1,11 +1,17 @@
 # Dependency Review Action
 #
-# This Action will scan dependency manifest files that change as part of a Pull Reqest, surfacing known-incompatible licenses and/or known-vulnerable versions of the packages declared or updated in the PR. Once installed, if the workflow run is marked as required, PRs introducing known-incompatible licenses or known-vulnerable packages will be blocked from merging.
+# This Action will scan dependency manifest files that change as part of a Pull Request, surfacing known-incompatible licenses and/or known-vulnerable versions of the packages declared or updated in the PR. Once installed, if the workflow run is marked as required, PRs introducing known-incompatible licenses or known-vulnerable packages will be blocked from merging.
 #
 # Source repository: https://github.com/actions/dependency-review-action
 # Public documentation: https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-dependency-review#dependency-review-enforcement
 name: 'Dependency Review'
-on: [pull_request]
+on:
+  pull_request:
+    paths:
+    - '.github/workflows/dependency-review.yml'
+    - 'package*'
+    - 'composer*'
+
 
 permissions:
   contents: read
@@ -32,8 +38,13 @@ jobs:
         with:
           license-check: true
           vulnerability-check: false
-          comment-summary-in-pr: on-failure
-          # You can only include one of these two options: `allow-licenses` and `deny-licences`
+
+          # Prevent this workflow to create a comment on the PR on forks outside of the GatherPress organization,
+          # because the required permission would not be given and the workflow would fail.
+          # Using a condition check will skip commenting.
+          comment-summary-in-pr: ${{ github.repository_owner == 'GatherPress' && 'on-failure' || 'never' }}
+
+          # You can only include one of these two options: `allow-licenses` and `deny-licenses`
           # ([String]). Only allow these licenses (optional)
           # Possible values: Any `spdx_id` value(s) from https://docs.github.com/en/rest/licenses 
           # The following list is an attempt to match exactly what's listed on https://www.gnu.org/licenses/license-list.html#GPLCompatibleLicenses as GPL Compatible (currently ignoring the FSF Free/Libre and OSI Approved column data from the SPDX License List at https://spdx.org/licenses/):

@@ -1,18 +1,4 @@
-@import "../mixins";
-
-.gatherpress-event-date {
-	&__icon {
-		align-items: flex-start;
-		display: flex;
-	}
-
-	&__item {
-		align-items: center;
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	&__row {
-		display: flex;
-	}
+.wp-block-gatherpress-event-date {
+	// This block has customizable padding, border-box makes that more predictable.
+	box-sizing: border-box;
 }

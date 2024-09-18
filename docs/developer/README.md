@@ -14,33 +14,33 @@ Although you can download a zip file of the plugin at:
 https://github.com/GatherPress/gatherpress
 ```
 
-If you want to help out with development, we suggest forking the code to your own Github repository and creating a branch from there.
+If you want to help out with development, we suggest forking the code to your own GitHub repository and creating a branch from there.
 
 #### Clone this repository
 
 Once you've forked the repo, you should now have a mirrored copy of GatherPress, but on your profile's URL, or something like this:
 
 ```
-https://github.com/YourGithubUsername/gatherpress
+https://github.com/YourGitHubUsername/gatherpress
 ```
 
-where `YourGithubUsername` corresponds to your login name for Github.
+where `YourGitHubUsername` corresponds to your login name for GitHub.
 
 To clone a local copy, open a terminal window and run the following command:
 
 ```sh
-git clone git@github.com:YourGithubUsername/gatherpress.git
+git clone git@github.com:YourGitHubUsername/gatherpress.git
 ```
 
 if you have your SSH keys set up. If not, run:
 
 ```sh
-git clone https://github.com/YourGithubUsername/gatherpress.git
+git clone https://github.com/YourGitHubUsername/gatherpress.git
 ```
 
 ##### Note about customizing the URL
 
-Once you have forked the GatherPress repo, you can also change the folder name of your version of the repository by going into your settings of your repo on Github's website.
+Once you have forked the GatherPress repo, you can also change the folder name of your version of the repository by going into your settings of your repo on GitHub's website.
 
 ```
 https://github.com/pbrocks/gatherpress
@@ -87,6 +87,14 @@ To further customize the development site using your favorite or most familiar d
 In fact, after the initial setup, you may notice that in your code editor, there is now a `wp-core` folder containing the default plugins and themes, but it is grayed out, so the contents of this folder will not be committed to the GatherPress repository.
 
 ![Development Site Plugins/Themes](../media/gitignore—gatherpress.png)
+
+#### Installing Dependencies
+
+1. Install the version of Node in `.nvmrc.`. [NVM](https://github.com/nvm-sh/nvm) can be used to achieve this.
+2. Install [Composer](https://getcomposer.org/doc/00-intro.md)
+3. In your terminal window, `cd` to the `gatherpress` directory
+4. Run `npm install` to get node dependencies
+5. Run `composer install` to get PHPUnit dependencies
 
 #### To shut down your development session
 

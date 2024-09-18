@@ -2,6 +2,13 @@ name: 'WordPress.org plugin directory guidelines'
 on: # rebuild any PRs and main branch changes
   workflow_dispatch:
   pull_request:
+    paths:
+    - '.github/workflows/wordpress-org-plugin-guidelines.yml'
+    - 'includes/**'
+    - 'src/**'
+    - 'package.*'
+    - '*.js'
+    - '*.php'
   push:
     branches:
     - main
@@ -29,10 +36,32 @@ jobs:
         with:
           # Make sure to use the same version like WordPress/gutenberg.
           node-version-file: '.nvmrc'
-          cache: npm
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      # Restoring the short lived node_modules cache
+      # to be used across all workflows running on the last commit.
+      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+      - uses: actions/cache/restore@v4
+        id: node_modules-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+
+      - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        run: npm ci --legacy-peer-deps
+
+      # Creating a short lived node_modules cache
+      - uses: actions/cache/save@v4
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ./node_modules
+          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
       - name: Build plugin
         run: |

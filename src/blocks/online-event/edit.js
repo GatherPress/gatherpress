@@ -11,7 +11,7 @@ import { useSelect } from '@wordpress/data';
 import OnlineEvent from '../../components/OnlineEvent';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import EditCover from '../../components/EditCover';
-import { isSinglePostInEditor } from '../../helpers/globals';
+import { isGatherPressPostType } from '../../helpers/globals';
 
 /**
  * Edit component for the GatherPress Online Event block.
@@ -37,7 +37,7 @@ const Edit = ({ isSelected }) => {
 
 	return (
 		<>
-			{isSinglePostInEditor() && (
+			{isGatherPressPostType() && (
 				<InspectorControls>
 					<PanelBody>
 						<PanelRow>

@@ -25,7 +25,7 @@ import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
-import { getFromGlobal, isSinglePostInEditor } from '../../helpers/globals';
+import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
 
 /**
  * Edit component for the GatherPress Venue block.
@@ -78,7 +78,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		mapShow = true;
 	}
 
-	if (mapShow && !isSinglePostInEditor()) {
+	if (mapShow && !isGatherPressPostType()) {
 		mapShow = true;
 	}
 
@@ -107,7 +107,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			}
 		}
 
-		if (isEventPostType() || !isSinglePostInEditor()) {
+		if (isEventPostType() || !isGatherPressPostType()) {
 			if (!fullAddress && !phoneNumber && !website) {
 				setName(__('No venue selected.', 'gatherpress'));
 			} else {
@@ -136,7 +136,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	return (
 		<>
 			<InspectorControls>
-				{isSinglePostInEditor() && (
+				{isGatherPressPostType() && (
 					<PanelBody
 						title={__('Venue settings', 'gatherpress')}
 						initialOpen={true}
