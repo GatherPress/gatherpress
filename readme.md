@@ -4,7 +4,7 @@ Stable tag: 0.31.0-alpha
 Tested up to: 6.6.1  
 License: GPL v2 or later  
 Tags: events, event, meetup, community  
-Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, prayagm, pbrocks, linusx007
+Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, pbrocks
 
 ![](.wordpress-org/banner-1544x500.jpg)
 
