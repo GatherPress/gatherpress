@@ -128,6 +128,7 @@ class Event_Setup {
 						),
 					),
 					array( 'gatherpress/rsvp-response' ),
+					// The future! // array( 'core/pattern', array( 'slug' => 'gatherpress/event-template' ) ), // phpcs:ignore Squiz.PHP.CommentedOutCode.Found !
 				),
 				'menu_position' => 4,
 				'supports'      => array(

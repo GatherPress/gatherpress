@@ -132,6 +132,7 @@ class Venue {
 				'menu_icon'    => 'dashicons-location',
 				'template'     => array(
 					array( 'gatherpress/venue' ),
+					// The future! // array( 'core/pattern', array( 'slug' => 'gatherpress/venue-template' ) ), // phpcs:ignore Squiz.PHP.CommentedOutCode.Found !
 				),
 				'has_archive'  => true,
 				'rewrite'      => array(
