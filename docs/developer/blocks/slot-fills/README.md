@@ -9,6 +9,10 @@ Similar to the hookable patterns, GatherPress provides multiple ways to modify i
 
 All slots will be rendered into the `PluginDocumentSettingPanel` imported from the `@wordpress/editor` package. This panel is shown in the document sidebar for the event and venue post types [in both the post and site editor][devnote]. 
 
+## Fills by GatherPress
+
+- `VenuePluginFill` loads the `VenuePluginDocumentSettings` slot into the `EventPluginDocumentSettings` slot, so that venue changes can be made from within an event context.
+
 
 ## Add or remove UI elemnts
 

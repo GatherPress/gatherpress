@@ -15,7 +15,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  */
 import { isVenuePostType } from '../../helpers/venue';
 import VenueInformationPanel from './venue-information';
-import { VenuePluginDocumentSettings } from './slot.js';
+import { VenuePluginDocumentSettings } from './slot';
 
 /**
  * VenueSettings Component

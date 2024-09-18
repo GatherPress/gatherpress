@@ -22,7 +22,7 @@ import MaxAttendanceLimitPanel from './max-attendance-limit';
 import NotifyMembersPanel from './notify-members';
 import OnlineEventLinkPanel from './online-link';
 import VenueSelectorPanel from './venue-selector';
-import { EventPluginDocumentSettings } from './slot.js';
+import { EventPluginDocumentSettings } from './slot';
 
 /**
  * A settings panel for event-specific settings in the block editor.
