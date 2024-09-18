@@ -22,6 +22,7 @@ import MaxAttendanceLimitPanel from './max-attendance-limit';
 import NotifyMembersPanel from './notify-members';
 import OnlineEventLinkPanel from './online-link';
 import VenueSelectorPanel from './venue-selector';
+import { EventPluginDocumentSettings } from './slot.js';
 
 /**
  * A settings panel for event-specific settings in the block editor.
@@ -44,6 +45,9 @@ const EventSettings = () => {
 				initialOpen={true}
 				className="gatherpress-event-settings"
 			>
+				{/* Extendable entry point for "Event Settings" panel. */}
+				<EventPluginDocumentSettings.Slot />
+
 				<VStack spacing={4}>
 					<DateTimeRangePanel />
 					<VenueSelectorPanel />

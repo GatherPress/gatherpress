@@ -15,6 +15,7 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  */
 import { isVenuePostType } from '../../helpers/venue';
 import VenueInformationPanel from './venue-information';
+import { VenuePluginDocumentSettings } from './slot.js';
 
 /**
  * VenueSettings Component
@@ -35,6 +36,9 @@ const VenueSettings = () => {
 				initialOpen={true}
 				className="gatherpress-venue-settings"
 			>
+				{/* Extendable entry point for "Venue Settings" panel. */}
+				<VenuePluginDocumentSettings.Slot />
+
 				<VStack spacing={6}>
 					<VenueInformationPanel />
 				</VStack>
