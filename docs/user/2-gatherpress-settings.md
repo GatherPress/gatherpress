@@ -1,5 +1,6 @@
 
 # 2. GatherPress settings
+
 ## Allow site registration
 
 To provide visitors to your website the ability to RSVP to events, you'll need to allow site registration.
