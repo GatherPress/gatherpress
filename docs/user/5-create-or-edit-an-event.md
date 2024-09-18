@@ -7,6 +7,7 @@ Once in the editor, add a title - this will be used as the name of your event.
 A range of options are then available through the sidebar.
 
 ## Date and time
+
 To set the date and time, click on the relevant block and change the date and time on the right sidebar.
 The default time zone, date format and time format are defined in the [2. GatherPress settings](./2-gatherpress-settings.md)
 
@@ -27,4 +28,5 @@ You can also add any block in the body to customize your event page.
 ![Add blocks](../media/user-5-create-or-edit-an-event-2.png)
 
 ## Additional Features
+
 On the right sidebar under `event`, you can also add a featured image, change general post settings, and also select your event topic.
