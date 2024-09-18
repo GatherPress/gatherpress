@@ -8,7 +8,7 @@ import {
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { registerPlugin } from '@wordpress/plugins';
-import { PluginDocumentSettingPanel } from '@wordpress/edit-post';
+import { PluginDocumentSettingPanel } from '@wordpress/editor';
 
 /**
  * Internal dependencies.
