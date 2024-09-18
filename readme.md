@@ -6,6 +6,7 @@ License: GPL v2 or later
 Tags: events, event, meetup, community  
 Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, prayagm, pbrocks, linusx007
 
+<!-- markdownlint-disable-next-line MD045 -->
 ![](.wordpress-org/banner-1544x500.jpg)
 
 GatherPress, powering our community's event management needs.
