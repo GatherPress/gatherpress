@@ -91,7 +91,7 @@ GatherPress is now available on the WordPress plugins repository and able to be 
 2. Search for `gatherpress` in the search box and click the Install button.
 3. Activate the plugin.
 
-<img width="854" alt="plugins-page-search" src="https://github.com/user-attachments/assets/579f5cd4-741e-4870-86e9-838714cb91bb">
+![Install GatherPress from the WordPress Admin](https://github.com/user-attachments/assets/579f5cd4-741e-4870-86e9-838714cb91bb)
 
 ### Installation from GitHub
 
@@ -103,7 +103,7 @@ Since this plugin is in active development by the community, features and functi
 4. Select the proper zip file, click Open, then `Install Now`.
 5. Activate the plugin.
 
-<img width="954" alt="upload-plugin" src="https://github.com/user-attachments/assets/f9751adb-30c7-49a8-bb70-1330e6a03504">
+![Install GatherPress from a zip-file upload](https://github.com/user-attachments/assets/f9751adb-30c7-49a8-bb70-1330e6a03504)
 
 ### Requirements
 
