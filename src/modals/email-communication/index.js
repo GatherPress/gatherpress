@@ -3,7 +3,7 @@
  */
 import { __, _x } from '@wordpress/i18n';
 import domReady from '@wordpress/dom-ready';
-import { createRoot, useState, useEffect } from '@wordpress/element';
+import { createRoot, useState, useEffect, useRef } from '@wordpress/element';
 import {
 	Button,
 	CheckboxControl,
@@ -40,6 +40,7 @@ const EventCommunicationModal = () => {
 	const [isCheckBoxDisabled, setCheckBoxDisabled] = useState(false);
 	const [buttonDisabled, setButtonDisabled] = useState(false);
 	const [message, setMessage] = useState('');
+	const textareaRef = useRef(null);
 	const closeModal = () => setOpen(false);
 	const sendMessage = () => {
 		if (
@@ -101,6 +102,13 @@ const EventCommunicationModal = () => {
 
 	Listener({ setOpen });
 
+	useEffect(() => {
+		// Focus the TextareaControl when the modal opens
+		if (isOpen && textareaRef.current) {
+			textareaRef.current.focus();
+		}
+	}, [isOpen]);
+
 	return (
 		<>
 			{isOpen && (
@@ -112,7 +120,9 @@ const EventCommunicationModal = () => {
 					<TextareaControl
 						label={__('Optional message', 'gatherpress')}
 						value={message}
+						focus
 						onChange={(value) => setMessage(value)}
+						ref={textareaRef}
 					/>
 					<p className="description">
 						{__(

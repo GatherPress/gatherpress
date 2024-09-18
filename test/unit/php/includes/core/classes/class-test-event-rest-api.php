@@ -1,6 +1,6 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Query.
+ * Class handles unit tests for GatherPress\Core\Event_Rest_Api.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -9,18 +9,18 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Rest_Api;
+use GatherPress\Core\Event_Rest_Api;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
 use WP_REST_Request;
 use WP_REST_Server;
 
 /**
- * Class Test_Query.
+ * Class Test_Event_Rest_Api.
  *
- * @coversDefaultClass \GatherPress\Core\Rest_Api
+ * @coversDefaultClass \GatherPress\Core\Event_Rest_Api
  */
-class Test_Rest_Api extends Base {
+class Test_Event_Rest_Api extends Base {
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -30,7 +30,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_setup_hooks(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 		$hooks    = array(
 			array(
 				'type'     => 'action',
@@ -63,7 +63,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_register_endpoints(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 
 		$instance->register_endpoints();
 
@@ -77,11 +77,6 @@ class Test_Rest_Api extends Base {
 			1,
 			$namespace[ sprintf( '/%s/event', GATHERPRESS_REST_NAMESPACE ) ],
 			'Failed to assert general event endpoint is registered'
-		);
-		$this->assertEquals(
-			1,
-			$namespace[ sprintf( '/%s/event/datetime', GATHERPRESS_REST_NAMESPACE ) ],
-			'Failed to assert datetime endpoint is registered'
 		);
 		$this->assertEquals(
 			1,
@@ -104,7 +99,6 @@ class Test_Rest_Api extends Base {
 	 * Coverage for get_event_routes method.
 	 *
 	 * @covers ::get_event_routes
-	 * @covers ::datetime_route
 	 * @covers ::email_route
 	 * @covers ::rsvp_route
 	 * @covers ::events_list_route
@@ -112,31 +106,25 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_event_routes(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 		$routes   = Utility::invoke_hidden_method( $instance, 'get_event_routes' );
 
-		$this->assertSame( 'datetime', $routes[0]['route'], 'Failed to assert route is datetime.' );
+		$this->assertSame( 'email', $routes[0]['route'], 'Failed to assert route is email.' );
 		$this->assertSame(
 			WP_REST_Server::EDITABLE,
 			$routes[0]['args']['methods'],
 			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'email', $routes[1]['route'], 'Failed to assert route is email.' );
+		$this->assertSame( 'rsvp', $routes[1]['route'], 'Failed to assert route is rsvp.' );
 		$this->assertSame(
 			WP_REST_Server::EDITABLE,
 			$routes[1]['args']['methods'],
 			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'rsvp', $routes[2]['route'], 'Failed to assert route is rsvp.' );
-		$this->assertSame(
-			WP_REST_Server::EDITABLE,
-			$routes[2]['args']['methods'],
-			'Failed to assert methods is POST, PUT, PATCH.'
-		);
-		$this->assertSame( 'events-list', $routes[3]['route'], 'Failed to assert route is rsvp.' );
+		$this->assertSame( 'events-list', $routes[2]['route'], 'Failed to assert route is rsvp.' );
 		$this->assertSame(
 			WP_REST_Server::READABLE,
-			$routes[3]['args']['methods'],
+			$routes[2]['args']['methods'],
 			'Failed to assert methods is GET.'
 		);
 	}
@@ -149,7 +137,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_validate_rsvp_status(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 
 		$this->assertTrue(
 			$instance->validate_rsvp_status( 'attending' ),
@@ -228,7 +216,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_validate_send( $params, bool $expects ): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 
 		$this->assertSame( $expects, $instance->validate_send( $params ) );
 	}
@@ -242,7 +230,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_validate_event_post_id(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 		$post     = $this->mock->post()->get();
 		$event    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 
@@ -276,7 +264,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_validate_event_list_type(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 
 		$this->assertTrue(
 			$instance->validate_event_list_type( 'upcoming' ),
@@ -300,7 +288,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_validate_datetime(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 
 		$this->assertFalse(
 			$instance->validate_datetime( 'unit-test' ),
@@ -320,7 +308,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_validate_timezone(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 		$this->assertFalse(
 			$instance->validate_timezone( 'unit-test' ),
 			'Failed to assert invalid timezone.'
@@ -329,47 +317,6 @@ class Test_Rest_Api extends Base {
 		$this->assertTrue(
 			$instance->validate_timezone( 'America/New_York' ),
 			'Failed to assert valid timezone.'
-		);
-	}
-
-	/**
-	 * Coverage for update_datetime method.
-	 *
-	 * @covers ::update_datetime
-	 *
-	 * @return void
-	 */
-	public function test_update_datetime(): void {
-
-		update_option( 'date_format', 'l, F j, Y' );
-		update_option( 'time_format', 'g:i A' );
-
-		$instance = Rest_Api::get_instance();
-
-		$request  = new WP_REST_Request( 'POST' );
-		$event_id = $this->mock->post(
-			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
-
-		$request->set_query_params(
-			array(
-				'datetime_end'   => '2023-09-13 20:00:00',
-				'datetime_start' => '2023-09-13 19:00:00',
-				'post_id'        => $event_id,
-				'timezone'       => 'America/New_York',
-			)
-		);
-
-		$response = $instance->update_datetime( $request );
-
-		$this->assertEquals( 1, $response->data['success'], 'Failed to assert that success was true.' );
-
-		$event = new Event( $event_id );
-
-		$this->assertSame(
-			'Wednesday, September 13, 2023 7:00 PM to 8:00 PM EDT',
-			$event->get_display_datetime(),
-			'Failed to assert datetime display matches.'
 		);
 	}
 
@@ -383,7 +330,7 @@ class Test_Rest_Api extends Base {
 	public function test_email(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
 
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 		$request  = new WP_REST_Request( 'POST' );
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
@@ -417,7 +364,7 @@ class Test_Rest_Api extends Base {
 	public function test_send_email(): void {
 		add_filter( 'pre_wp_mail', '__return_false' );
 
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -454,7 +401,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_get_members(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
@@ -545,7 +492,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_events_list(): void {
-		$instance          = Rest_Api::get_instance();
+		$instance          = Event_Rest_Api::get_instance();
 		$request           = new WP_REST_Request( 'POST' );
 		$upcoming_event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
@@ -621,7 +568,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_max_number(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 
 		$this->assertEquals(
 			5,
@@ -643,7 +590,7 @@ class Test_Rest_Api extends Base {
 	 * @return void
 	 */
 	public function test_update_rsvp(): void {
-		$instance = Rest_Api::get_instance();
+		$instance = Event_Rest_Api::get_instance();
 		$request  = new WP_REST_Request( 'POST' );
 		$user_id  = $this->mock->user( true, 'admin' )->get()->ID;
 		$event_id = $this->mock->post(

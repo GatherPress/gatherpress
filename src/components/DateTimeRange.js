@@ -1,50 +1,100 @@
 /**
+ * External dependencies.
+ */
+import moment from 'moment';
+
+/**
  * WordPress dependencies.
  */
-import { subscribe } from '@wordpress/data';
-import { useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { useDispatch, useSelect } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
-import { saveDateTime } from '../helpers/datetime';
+import { dateTimeDatabaseFormat } from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
-import TimeZone from '../components/TimeZone';
+import Timezone from './Timezone';
+import Duration from '../components/Duration';
 
 /**
  * DateTimeRange component for GatherPress.
  *
- * This component manages the date and time range selection. It includes
- * DateTimeStart, DateTimeEnd, and TimeZone components. The selected values
- * for start date and time, end date and time, and timezone are managed in the
- * component's state. The component subscribes to the saveDateTime function,
- * which is triggered to save the selected date and time values.
+ * This component manages the selection of a date and time range for events.
+ * It includes DateTimeStart, DateTimeEnd, and Timezone components to allow users
+ * to set the event's start date, end date, and timezone. The component pulls
+ * these values from the state using WordPress data stores and subscribes to changes
+ * via the `saveDateTime` function. On changes, the component updates the post meta
+ * with the selected date and time values, formatted for the database.
+ *
+ * The component also handles the duration of the event, checking if the end time
+ * matches a predefined duration option and updating the duration accordingly.
  *
  * @since 1.0.0
  *
- * @return {JSX.Element} The rendered React component.
+ * @return {JSX.Element} The rendered DateTimeRange React component.
  */
 const DateTimeRange = () => {
-	const [dateTimeStart, setDateTimeStart] = useState();
-	const [dateTimeEnd, setDateTimeEnd] = useState();
-	const [timezone, setTimezone] = useState();
+	const editPost = useDispatch('core/editor').editPost;
+	let dateTimeMetaData = useSelect(
+		(select) =>
+			select('core/editor').getEditedPostAttribute('meta')
+				?.gatherpress_datetime
+	);
 
-	subscribe(saveDateTime);
+	try {
+		dateTimeMetaData = dateTimeMetaData ? JSON.parse(dateTimeMetaData) : {};
+	} catch (e) {
+		dateTimeMetaData = {};
+	}
+
+	const { dateTimeStart, dateTimeEnd, duration, timezone } = useSelect(
+		(select) => ({
+			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
+			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
+			duration: select('gatherpress/datetime').getDuration(),
+			timezone: select('gatherpress/datetime').getTimezone(),
+		}),
+		[]
+	);
+	const { setDuration } = useDispatch('gatherpress/datetime');
+
+	useEffect(() => {
+		const payload = JSON.stringify({
+			...dateTimeMetaData,
+			...{
+				dateTimeStart: moment
+					.tz(dateTimeStart, timezone)
+					.format(dateTimeDatabaseFormat),
+				dateTimeEnd: moment
+					.tz(dateTimeEnd, timezone)
+					.format(dateTimeDatabaseFormat),
+				timezone,
+			},
+		});
+		const meta = { gatherpress_datetime: payload };
+
+		editPost({ meta });
+	}, [
+		dateTimeStart,
+		dateTimeEnd,
+		timezone,
+		dateTimeMetaData,
+		editPost,
+		setDuration,
+		duration,
+	]);
 
 	return (
 		<>
-			<h3>{__('Date & time', 'gatherpress')}</h3>
-			<DateTimeStart
-				dateTimeStart={dateTimeStart}
-				setDateTimeStart={setDateTimeStart}
-			/>
-			<DateTimeEnd
-				dateTimeEnd={dateTimeEnd}
-				setDateTimeEnd={setDateTimeEnd}
-			/>
-			<TimeZone timezone={timezone} setTimezone={setTimezone} />
+			<section>
+				<DateTimeStart />
+			</section>
+			<section>{duration ? <Duration /> : <DateTimeEnd />}</section>
+			<section>
+				<Timezone />
+			</section>
 		</>
 	);
 };

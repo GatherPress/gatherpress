@@ -8,6 +8,7 @@ import moment from 'moment';
  */
 import {
 	Button,
+	DateTimePicker,
 	Dropdown,
 	Flex,
 	FlexItem,
@@ -15,18 +16,19 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
+import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { DateTimeEndLabel, DateTimeEndPicker } from './DateTime';
 import { hasEventPastNotice } from '../helpers/event';
-import { Broadcaster } from '../helpers/broadcasting';
 import {
-	dateTimeMomentFormat,
-	getDateTimeEnd,
-	getTimeZone,
+	dateTimeDatabaseFormat,
+	dateTimeLabelFormat,
+	getTimezone,
+	updateDateTimeEnd,
 } from '../helpers/datetime';
+import { getSettings } from '@wordpress/date';
 
 /**
  * DateTimeEnd component for GatherPress.
@@ -34,41 +36,49 @@ import {
  * This component renders the end date and time selection in the editor.
  * It includes a DateTimeEndPicker for selecting the end date and time.
  * The component also updates the state using the setDateTimeEnd callback.
- * Additionally, it broadcasts the end date and time using the Broadcaster utility.
- * If the event has passed, it displays a notice using hasEventPastNotice function.
+ * If the event has passed, it displays a notice using the hasEventPastNotice function.
  *
  * @since 1.0.0
  *
- * @param {Object}   props                - Component props.
- * @param {Date}     props.dateTimeEnd    - The current date and time for the picker.
- * @param {Function} props.setDateTimeEnd - Callback function to update the end date and time.
- *
  * @return {JSX.Element} The rendered React component.
  */
-const DateTimeEnd = (props) => {
-	const { dateTimeEnd, setDateTimeEnd } = props;
+const DateTimeEnd = () => {
+	const { dateTimeEnd } = useSelect(
+		(select) => ({
+			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
+		}),
+		[]
+	);
+	const { setDateTimeEnd, setDateTimeStart } = useDispatch(
+		'gatherpress/datetime'
+	);
+	const settings = getSettings();
+	const is12HourTime = /a(?!\\)/i.test(
+		settings.formats.time
+			.toLowerCase()
+			.replace(/\\\\/g, '')
+			.split('')
+			.reverse()
+			.join('')
+	);
 
 	useEffect(() => {
 		setDateTimeEnd(
-			moment
-				.tz(getDateTimeEnd(), getTimeZone())
-				.format(dateTimeMomentFormat)
+			moment.tz(dateTimeEnd, getTimezone()).format(dateTimeDatabaseFormat)
 		);
-
-		Broadcaster({
-			setDateTimeEnd: dateTimeEnd,
-		});
 
 		hasEventPastNotice();
 	});
 
 	return (
 		<PanelRow>
-			<Flex direction="column" gap="0">
+			<Flex direction="column" gap="1">
 				<FlexItem>
-					<label htmlFor="gatherpress-datetime-end">
-						{__('End', 'gatherpress')}
-					</label>
+					<h3 style={{ marginBottom: 0 }}>
+						<label htmlFor="gatherpress-datetime-end">
+							{__('Date & time end', 'gatherpress')}
+						</label>
+					</h3>
 				</FlexItem>
 				<FlexItem>
 					<Dropdown
@@ -80,13 +90,22 @@ const DateTimeEnd = (props) => {
 								aria-expanded={isOpen}
 								isLink
 							>
-								<DateTimeEndLabel dateTimeEnd={dateTimeEnd} />
+								{moment
+									.tz(dateTimeEnd, getTimezone())
+									.format(dateTimeLabelFormat())}
 							</Button>
 						)}
 						renderContent={() => (
-							<DateTimeEndPicker
-								dateTimeEnd={dateTimeEnd}
-								setDateTimeEnd={setDateTimeEnd}
+							<DateTimePicker
+								currentDate={dateTimeEnd}
+								onChange={(date) =>
+									updateDateTimeEnd(
+										date,
+										setDateTimeEnd,
+										setDateTimeStart
+									)
+								}
+								is12Hour={is12HourTime}
 							/>
 						)}
 					/>

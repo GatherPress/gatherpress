@@ -97,7 +97,6 @@ class Test_Event extends Base {
 	 * @return void
 	 */
 	public function test_get_display_datetime( array $params, string $expects ): void {
-
 		update_option( 'date_format', 'l, F j, Y' );
 		update_option( 'time_format', 'g:i A' );
 
@@ -114,6 +113,23 @@ class Test_Event extends Base {
 			$output = $event->save_datetimes( $params );
 
 			$this->assertTrue( $output, 'Failed to assert that datetimes saved.' );
+			$this->assertSame(
+				$params['datetime_start'],
+				get_post_meta( $post->ID, 'gatherpress_datetime_start', true ),
+				'Failed to assert that datetime start matches parameter.'
+			);
+			$this->assertSame(
+				$params['datetime_end'],
+				get_post_meta( $post->ID, 'gatherpress_datetime_end', true ),
+				'Failed to assert that datetime end matches parameter.'
+			);
+			if ( ! empty( $params['timezone'] ) ) {
+				$this->assertSame(
+					$params['timezone'],
+					get_post_meta( $post->ID, 'gatherpress_timezone', true ),
+					'Failed to assert that timezone matches parameter.'
+				);
+			}
 		}
 
 		$this->assertSame(

@@ -41,7 +41,9 @@
 		"@wordpress/notices": "^5.4.0",
 		"@wordpress/plugins": "^7.4.0",
 		"@wordpress/scripts": "^28.4.0",
+		"@wp-playground/cli": "^0.9.32",
 		"classnames": "^2.5.1",
+		"clsx": "^2.1.1",
 		"dotenv": "^16.4.5",
 		"eslint": "^8.57.0",
 		"eslint-plugin-import": "^2.29.1",
@@ -75,15 +77,13 @@
 		"lint:js": "wp-scripts lint-js",
 		"lint:js:fix": "wp-scripts lint-js --fix",
 		"lint:md:docs": "wp-scripts lint-md-docs",
+		"lint:md:js": "wp-scripts lint-md-js",
 		"lint:php": "vendor/bin/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .",
 		"lint:php:fix": "vendor/bin/phpcbf --standard=phpcs.ruleset.xml -p -v .",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
 		"start": "wp-scripts start",
-		"prescreenshots:wporg": "wp-scripts build && wp-env start",
-		"prescreenshots:wporg:debug": "wp-scripts build && wp-env start",
-		"prescreenshots:wporg:ui": "wp-scripts build && wp-env start",
 		"screenshots:wporg": "wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts",
 		"screenshots:wporg:debug": "wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts --debug",
 		"screenshots:wporg:ui": "wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts --ui",
@@ -91,6 +91,8 @@
 		"test:unit:js": "wp-scripts test-unit-js --coverage --testResultsProcessor=jest-sonar-reporter",
 		"pretest:unit:php": "wp-env start --xdebug",
 		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report",
-		"wp-env": "wp-env"
+		"wp-env": "wp-env",
+		"playground": "./node_modules/@wp-playground/cli/wp-playground.js server",
+		"playground:mount": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress"
 	}
 }
