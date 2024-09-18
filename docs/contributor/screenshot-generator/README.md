@@ -1,4 +1,4 @@
-## Generate Screenshots using Playwright & Playground
+# Generate Screenshots using Playwright & Playground
 
 > Generating screenshots in multiple languages for the plugin and keeping them up to date with the development might become a time intensive task.
 
