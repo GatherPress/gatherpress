@@ -46,6 +46,7 @@ The playground is built on the WordPress Playground with customizable json data 
 
 For an introduction as to what we are creating and the specific features needed to host events and gather well, please view the [introductory video](https://gatherpress.org/demovideo).
 
+<!-- markdownlint-disable-next-line MD034 -->
 https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
 
 ### Features
@@ -211,4 +212,4 @@ As we continue to refine and develop the core plugin, we've created the [GatherP
 
 ## Changelog
 
-See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+See complete changelog at [https://github.com/GatherPress/gatherpress/releases](https://github.com/GatherPress/gatherpress/releases).
