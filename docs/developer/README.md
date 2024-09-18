@@ -10,7 +10,7 @@ If you have Docker installed, you could use the `wp-env` package to load a WordP
 
 Although you can download a zip file of the plugin at:
 
-```
+```sh
 https://github.com/GatherPress/gatherpress
 ```
 
@@ -20,7 +20,7 @@ If you want to help out with development, we suggest forking the code to your ow
 
 Once you've forked the repo, you should now have a mirrored copy of GatherPress, but on your profile's URL, or something like this:
 
-```
+```sh
 https://github.com/YourGitHubUsername/gatherpress
 ```
 
@@ -42,7 +42,7 @@ git clone https://github.com/YourGitHubUsername/gatherpress.git
 
 Once you have forked the GatherPress repo, you can also change the folder name of your version of the repository by going into your settings of your repo on GitHub's website.
 
-```
+```sh
 https://github.com/pbrocks/gatherpress
 ```
 
