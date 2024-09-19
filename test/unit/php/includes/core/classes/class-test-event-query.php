@@ -200,19 +200,19 @@ class Test_Event_Query extends Base {
 	 */
 	public function test_adjust_admin_event_sorting(): void {
 		$instance = Event_Query::get_instance();
+		global $wp_query;
 
 		$this->mock->user( false, 'admin' );
-		$response = $instance->adjust_admin_event_sorting( array() );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 		$this->assertEmpty( $response, 'Failed to assert array is not empty' );
 
 		$this->mock->user( true, 'admin' );
 
 		// Set 'orderby' admin query to 'datetime'.
-		global $wp_query;
 		$wp_query->set( 'orderby', 'datetime' );
 
 		// Run function with empty array passed as 'pieces' argument.
-		$response = $instance->adjust_admin_event_sorting( array() );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 
 		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
 		$this->assertNotEmpty( $response, 'Failed to assert array is empty' );
@@ -239,11 +239,11 @@ class Test_Event_Query extends Base {
 		$retval = $instance->adjust_event_sql( array(), 'past', 'desc' );
 
 		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
-		$this->assertStringContainsString( "AND `{$table}`.datetime_end_gmt <", $retval['where'] );
+		$this->assertStringContainsString( "AND `{$table}`.`datetime_end_gmt` <", $retval['where'] );
 
 		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'ASC' );
 
 		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
-		$this->assertStringContainsString( "AND `{$table}`.datetime_end_gmt >=", $retval['where'] );
+		$this->assertStringContainsString( "AND `{$table}`.`datetime_end_gmt` >=", $retval['where'] );
 	}
 }
