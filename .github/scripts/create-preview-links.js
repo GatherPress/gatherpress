@@ -219,7 +219,7 @@ ${previewLinks}
 	}
 
 	// Create a new comment with preview links
-	await github.rest.issues.createComment({
+	github.rest.issues.createComment({
 		issue_number: prNumber,
 		...commentObject,
 	});
