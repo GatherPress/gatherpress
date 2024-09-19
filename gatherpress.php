@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       GatherPress
  * Plugin URI:        https://github.com/GatherPress/gatherpress
- * Description:       Powering Communities with WordPress.
+ * Description:       Powering Communities with 💙 and WordPress.
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
  * Version:           0.31.0-alpha
