@@ -1,6 +1,12 @@
 # Slots & fills in GatherPress Admin UI
 
-Similar to the hookable patterns, GatherPress provides multiple ways to modify its admin user-interface using slots and fills.
+Similar to the central entry points for blocks – GatherPress' [hookable-patterns](./../hookable-patterns/), the plugin provides central administrative entry-points within the post- and site-editor for all block settings.
+
+GatherPress keeps relevant post data about the currently edited venue or event post within slot inside the `InseptorControls` panel, specific for each post type. These open slots are used by GatherPress itself and can be filled externally.
+
+Every slot belongs to one of each post type. Additionally the venue-slot will be added to the event-slot automatically.
+
+Every GatherPress block with own administrative sidebar-elements registers a fill for either the venue- or the events-slot. Plugin developers should provide their additions to GatherPress within the slots as well, which will help keeping the overall admin interface clean & consistent.
 
 ## Available Slots
 
