@@ -336,7 +336,7 @@ class Event_Query {
 		array $pieces,
 		string $type = 'all',
 		string $order = 'DESC',
-		array|string $order_by = array( 'datetime' ),
+		$order_by = array( 'datetime' ),
 		bool $inclusive = true
 	): array {
 		global $wpdb;
