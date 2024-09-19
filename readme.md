@@ -206,8 +206,8 @@ As we continue to refine and develop the core plugin, we've created the [GatherP
    ![Create a new event](.wordpress-org/screenshot-1.png)
 2. Edit an event
    ![Edit an event](.wordpress-org/screenshot-2.png)
-3. Quickedit an event
-   ![Quickedit an event](.wordpress-org/screenshot-3.png)
+3. Quick Edit an event
+   ![Quick Edit an event](.wordpress-org/screenshot-3.png)
 4. Create a new venue
    ![Create a new venue](.wordpress-org/screenshot-4.png)
 5. General Settings

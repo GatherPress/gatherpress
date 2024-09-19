@@ -17,7 +17,7 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
             local_code,
             '.png'
         ].join('').toLowerCase();
-    }	// List all comments.
+    }
 
 
     test.beforeAll( async ( { requestUtils } ) => {
@@ -32,7 +32,6 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
         } );
 
         if ( latest_event && Array.isArray( latest_event ) && latest_event.length > 0 ) {
-            // console.log('Latest Event:', latest_event[0]);
             latest_event_data = latest_event[0];
         } else {
             console.warn('No event found or the response was invalid.');
@@ -96,7 +95,7 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
     });
 
     // The test-description should match the caption for screenshot-# in the readme.md
-    test('Quickedit an event', async ({
+    test('Quick Edit an event', async ({
         admin,
         editor,
         page,
@@ -108,14 +107,17 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
                 'post_type=gatherpress_event'
             );
             const tr = await page.locator( '#post-' + latest_event_data.id );
-            // Make Quickedit visible.
+
+            // Make Quick Edit visible.
             await expect(tr).toBeVisible();
-            
             await tr.hover();
-            // Open the Quickedit panel for the last event.
+
+            // Open the Quick Edit panel for the last event.
             await tr.getByText('Quick Edit').click();
+
             // Wait for 2 seconds
             await page.waitForTimeout(2000);
+
             // https://playwright.dev/docs/api/class-pageassertions#page-assertions-to-have-screenshot-1
             await expect(page).toHaveScreenshot( getFileName( 'screenshot-3' ), {
                 fullPage: true
