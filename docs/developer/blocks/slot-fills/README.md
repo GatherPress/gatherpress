@@ -20,7 +20,7 @@ All slots will be rendered into the `PluginDocumentSettingPanel` imported from t
 - `VenuePluginFill` loads the `VenuePluginDocumentSettings` slot into the `EventPluginDocumentSettings` slot, so that venue changes can be made from within an event context.
 
 
-## Add or remove UI elemnts
+## Add or remove UI elements
 
 ```js
 export default function GatherPressAwesomeFill() {
@@ -35,7 +35,7 @@ export default function GatherPressAwesomeFill() {
 ```
 
 
-### Ressources
+### Resources
 
 - [Unified Extensibility APIs in 6.6][devnote]
 

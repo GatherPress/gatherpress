@@ -35,7 +35,7 @@ A new created venue will have the following blocks prepared by default:
 
 ## Venue Details within any post
 
-### Ressources
+### Resources
 
 - [@wordpress/hooks - Block Editor Handbook | Developer.WordPress.org](https://developer.wordpress.org/block-editor/reference-guides/packages/packages-hooks/)
 - [#devnote - Introducing Block Hooks for dynamic blocks - Make WordPress Core](https://make.wordpress.org/core/2023/10/15/introducing-block-hooks-for-dynamic-blocks/)

@@ -231,7 +231,7 @@ class Venue {
 				'show_in_rest'       => true,
 			)
 		);
-		// It is neccessary to make this taxonomy visible on event posts, within REST responses.
+		// It is necessary to make this taxonomy visible on event posts, within REST responses.
 		register_taxonomy_for_object_type( self::TAXONOMY, Event::POST_TYPE );
 	}
 
