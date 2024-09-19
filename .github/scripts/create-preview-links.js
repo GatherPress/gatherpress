@@ -164,7 +164,7 @@ async function createPreviewLinksComment(github, context) {
 	const prText         = `for PR#${prNumber}`;  // Descriptive text for the PR
 
 	// Retrieve PHP versions from environment variable (JSON string)
-	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.2","7.4"]';  // Default to common versions if not set
+	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.3","7.4"]';  // Default to common versions if not set
 	const phpVersions    = JSON.parse( phpVersionsEnv );  // Parse the JSON string into an array
 
 	// Generate preview links for each PHP version
@@ -184,9 +184,9 @@ You can preview the recent changes ${prText} with the following PHP versions:
 
 ${previewLinks}
 
-- [Download <code>.zip</code> with build changes](${zipArtifactUrl})
+[Download <code>.zip</code> with build changes](${zipArtifactUrl})
 
-**⚠️ Note:** The preview sites are created using [WordPress Playground](https://wordpress.org/playground/). Changes will not persist between sessions.
+*Made with 💙 from GatherPress & a little bit of [WordPress Playground](https://wordpress.org/playground/). Changes will not persist between sessions.*
 `;
 
 	const repoData = {
