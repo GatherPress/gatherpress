@@ -1,13 +1,14 @@
 # Hookable patterns for events & venues
 
-GatherPress uses block-patterns to set up new created events or venues.
+GatherPress registers multiple invisible block-patterns, that are used as template properties of the main post types.
 
-Whenever you create e.g. a new event post, it gets pre-poulated with a set of blocks, curated within a block-pattern named `gatherpress/event-template`.
+Patterns allow to be filtered by the (upgraded since WordPress 6.5) Block Hooks API. Making use of this API brings some advantages, which are at least:
 
-This is basically an almost empty pattern by registration, but...
+- GatherPress' blocks can be easily moved, modified or removed by extenders via standardised core code
+- GatherPress provides central entry points for plugin developers to hook in own blocks, to extend GatherPress
+- GatherPress' blocks will provide their hooking code themself, which keeps concerns separate and code clean
 
-- it gets all necessary blocks hooked in via the Block Hooks API
-- blocks can be added or removed easily by plugins
+For example when you create a new event post, it gets pre-poulated with a set of blocks, curated within a block-pattern named `gatherpress/event-template`.
 
 GatherPress combines four of such block-patterns to curate the creation of:
 

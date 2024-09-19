@@ -88,7 +88,8 @@ class Block {
 
 		/**
 		 * Made to be used with the 'template' parameter
-		 * when registering the 'gatherpress_event' post type.
+		 * when registering the 'gatherpress_event' post type
+		 * and will not be visible to the editor at any point.
 		 */
 		\register_block_pattern(
 			'gatherpress/event-template',
@@ -105,7 +106,8 @@ class Block {
 
 		/**
 		 * Made to be used with the 'template' parameter
-		 * when registering the 'gatherpress_venue' post type.
+		 * when registering the 'gatherpress_venue' post type
+		 * and will not be visible to the editor at any point.
 		 */
 		\register_block_pattern(
 			'gatherpress/venue-template',
@@ -123,7 +125,8 @@ class Block {
 		/**
 		 * Mainly for use with the 'venue-details' block,
 		 * which is a group block under the hood
-		 * and uses this pattern as innerBlocks template.
+		 * and uses this pattern as innerBlocks template,
+		 * it will not be visible to the editor at any point.
 		 */
 		\register_block_pattern(
 			'gatherpress/venue-details',
