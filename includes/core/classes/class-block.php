@@ -76,11 +76,12 @@ class Block {
 
 
 	/**
-	 * Register custom block patterns.
+	 * Register block patterns.
 	 *
-	 * This method ...
+	 * This method registers multiple different block-patterns for GatherPress.
 	 *
 	 * @since 1.0.0
+	 * @see   https://developer.wordpress.org/reference/functions/register_block_pattern/
 	 *
 	 * @return void
 	 */
