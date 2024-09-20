@@ -158,10 +158,12 @@ class Venue {
 	public static function get_localized_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
 		$slug            = _x( 'venue', 'Post Type Slug', 'gatherpress' );
-		$slug            = sanitize_title( $slug, '', 'save' );
+		$slug            = sanitize_title( $slug );
+
 		if ( $switched_locale ) {
 			restore_previous_locale();
 		}
+
 		return $slug;
 	}
 
