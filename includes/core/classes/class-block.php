@@ -92,7 +92,7 @@ class Block {
 		 * when registering the 'gatherpress_event' post type
 		 * and will not be visible to the editor at any point.
 		 */
-		\register_block_pattern(
+		register_block_pattern(
 			'gatherpress/event-template',
 			array(
 				'title'    => __( 'Invisible Event Template Block Pattern', 'gatherpress' ),
@@ -110,7 +110,7 @@ class Block {
 		 * when registering the 'gatherpress_venue' post type
 		 * and will not be visible to the editor at any point.
 		 */
-		\register_block_pattern(
+		register_block_pattern(
 			'gatherpress/venue-template',
 			array(
 				'title'    => __( 'Invisible Venue Template Block Pattern', 'gatherpress' ),
@@ -129,7 +129,7 @@ class Block {
 		 * and uses this pattern as innerBlocks template,
 		 * it will not be visible to the editor at any point.
 		 */
-		\register_block_pattern(
+		register_block_pattern(
 			'gatherpress/venue-details',
 			array(
 				'title'    => __( 'Invisible Venue Details Block Pattern', 'gatherpress' ),
