@@ -236,7 +236,12 @@ class Test_Event_Query extends Base {
 		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
 		$this->assertEmpty( $retval['where'] );
 
-		$retval = $instance->adjust_event_sql( array(), 'past', 'desc' );
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc' ); // inclusive will be TRUE by default
+
+		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND `{$table}`.`datetime_start_gmt` <", $retval['where'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'datetime', false );
 
 		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND `{$table}`.`datetime_end_gmt` <", $retval['where'] );
