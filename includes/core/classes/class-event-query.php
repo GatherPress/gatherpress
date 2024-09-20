@@ -390,7 +390,7 @@ class Event_Query {
 
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
-		$column = ( ( $inclusive && 'upcoming' === $type ) || ( ! $inclusive && 'past' === $type ) ) ? 'datetime_end_gmt' : 'datetime_start_gmt';
+		$column = $this->get_datetime_comparison_column( $type, $inclusive );
 
 		if ( 'upcoming' === $type ) {
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
@@ -399,5 +399,31 @@ class Event_Query {
 		}
 
 		return $pieces;
+	}
+
+	/**
+	 * Determine which db column to compare against,
+	 * based on the type of event query (either upcoming or past)
+	 * and if started but unfinished events should be included.
+	 *
+	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past') (Can not be 'all' anymore).
+	 * @param  bool   $inclusive Whether to include currently running events in the query.
+	 *
+	 * @return string Name of the DB column, which content to compare against the current time.
+	 */
+	protected static function get_datetime_comparison_column( string $type, bool $inclusive ) : string {
+		if (
+			// Upcoming events, including ones that are running.
+			( $inclusive && 'upcoming' === $type ) ||
+			// Past events, that are finished already.
+			( ! $inclusive && 'past' === $type )
+		) {
+			return 'datetime_end_gmt';
+		}
+
+		// All others, means:
+		// - Upcoming events, without running events.
+		// - Past events, that are still running.
+		return 'datetime_start_gmt';
 	}
 }
