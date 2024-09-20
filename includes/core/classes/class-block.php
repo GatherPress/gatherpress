@@ -49,7 +49,7 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'init', array( $this, 'register_block_patterns' ), 10 );
+		add_action( 'init', array( $this, 'register_block_patterns' ) );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
 	}
