@@ -389,8 +389,7 @@ class Event_Query {
 		}
 
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
-
-		$column = $this->get_datetime_comparison_column( $type, $inclusive );
+		$column  = $this->get_datetime_comparison_column( $type, $inclusive );
 
 		if ( 'upcoming' === $type ) {
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
@@ -411,7 +410,7 @@ class Event_Query {
 	 *
 	 * @return string Name of the DB column, which content to compare against the current time.
 	 */
-	protected static function get_datetime_comparison_column( string $type, bool $inclusive ) : string {
+	protected static function get_datetime_comparison_column( string $type, bool $inclusive ): string {
 		if (
 			// Upcoming events, including ones that are running.
 			( $inclusive && 'upcoming' === $type ) ||
