@@ -95,7 +95,7 @@ class Block {
 		\register_block_pattern(
 			'gatherpress/event-template',
 			array(
-				'title'    => 'Invisible Event Template Block Pattern',
+				'title'    => __( 'Invisible Event Template Block Pattern', 'gatherpress' ),
 				// Even this paragraph seems useless, it's not.
 				// It is the entry point for all our hooked blocks
 				// and as such absolutely important!
@@ -113,7 +113,7 @@ class Block {
 		\register_block_pattern(
 			'gatherpress/venue-template',
 			array(
-				'title'    => 'Invisible Venue Template Block Pattern',
+				'title'    => __( 'Invisible Venue Template Block Pattern', 'gatherpress' ),
 				// Even this paragraph seems useless, it's not.
 				// It is the entry point for all our hooked blocks
 				// and as such absolutely important!
@@ -132,7 +132,7 @@ class Block {
 		\register_block_pattern(
 			'gatherpress/venue-details',
 			array(
-				'title'    => 'Invisible Venue Details Block Pattern',
+				'title'    => __( 'Invisible Venue Details Block Pattern', 'gatherpress' ),
 				// Even this post-title seems useless, it's not.
 				// It is the entry point for all our hooked blocks
 				// and as such absolutely important!
