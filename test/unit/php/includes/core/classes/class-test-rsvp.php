@@ -114,8 +114,7 @@ class Test_Rsvp extends Base {
 		// Simulate error saving RSVP.
 		add_filter( 'query', '__return_false' );
 
-		$user_id  = $this->factory->user->create();
-		$result   = $rsvp->save( $user_id, 'attending' );
+		$result   = $rsvp->save( $user_1_id, 'attending' );
 		$expected = array(
 			'post_id'   => 0,
 			'user_id'   => 0,
