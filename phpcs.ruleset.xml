@@ -32,6 +32,8 @@
 	<!-- https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties -->
 	<config name="minimum_wp_version" value="6.4"/>
 	<rule ref="WordPress"/>
+	<!-- Trigger a Warning on @todo comments. -->
+	<rule ref="Generic.Commenting.Todo"/>
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<!-- Value: replace the function, class, and variable prefixes used. Separate multiple prefixes with a comma. -->
