@@ -1,15 +1,41 @@
 /**
  * External Dependencies
  */
-const path = require('path');
+const fs                = require('fs');
+const path              = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 /**
  * WordPress Dependencies
  */
 const defaultConfig = require('@wordpress/scripts/config/webpack.config.js');
 
+function getVariationEntries() {
+	const variationsDir = path.resolve(process.cwd(), 'src', 'variations');
+	const entries = {};
+
+	const variationDirs = fs.readdirSync(variationsDir);
+	for (const variation of variationDirs) {
+		const variationPath = path.join(variationsDir, variation);
+		entries[`variations/${variation}/index`] = path.join(variationPath, 'index.js');
+	};
+	return entries;
+}
+
 module.exports = {
 	...defaultConfig,
+	plugins: [
+		...defaultConfig.plugins,
+		new CopyWebpackPlugin({
+			patterns: [
+			  {
+				from: 'variations/**/class-*.php',
+				to: '[path][name][ext]',
+				context: 'src',
+			  },
+			],
+		  }),
+	],
 	entry: {
 		...defaultConfig.entry(),
 		admin_style: path.resolve(process.cwd(), 'src', 'admin.scss'),
@@ -24,6 +50,8 @@ module.exports = {
 		),
 		profile: path.resolve(process.cwd(), 'src/profile', 'index.js'),
 		profile_style: path.resolve(process.cwd(), 'src/profile', 'style.scss'),
+		// 'variations/add-to-calendar/index': path.resolve(process.cwd(), 'src/variations/add-to-calendar', 'index.js'),
+		...getVariationEntries(),
 	},
 	module: {
 		...defaultConfig.module,
