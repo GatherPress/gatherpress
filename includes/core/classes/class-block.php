@@ -50,6 +50,7 @@ class Block {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
+		add_action( 'init', array( $this, 'register_block_variations' ) );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
 	}
@@ -72,6 +73,35 @@ class Block {
 				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
 			);
 		}
+	}
+
+	public function register_block_variations(): void {
+		foreach ( $this->get_block_variations() as $block ) {
+			$name = $this->get_classname_from_foldername( $block );
+			require_once sprintf( '%1$s/build/variations/%2$s/class-%2$s.php', GATHERPRESS_CORE_PATH, $block );
+			$name::get_instance();
+		}
+	}
+
+	protected static function get_block_variations(): array {
+		$blocks_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
+		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
+
+		return $blocks; // maybe cache in var.
+	}
+
+	/**
+	 * Get class name from folder name.
+	 *
+	 * @param  string $foldername
+	 *
+	 * @return string
+	 */
+	protected static function get_classname_from_foldername( string $foldername ) : string {
+		return join( '\\', array(
+			__CLASS__,
+			ucwords( str_replace( '-', '_', $foldername ), '_' )
+		));
 	}
 
 
