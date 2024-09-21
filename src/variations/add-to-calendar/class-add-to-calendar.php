@@ -13,7 +13,7 @@ namespace GatherPress\Core\Block;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Traits\Block_Variation;
 
 // Could potentially use a ...
 // use GatherPress\Core\Traits\Block_Variation;
@@ -27,9 +27,9 @@ use GatherPress\Core\Traits\Singleton;
  */
 class Add_To_Calendar {
 	/**
-	 * Enforces a single instance of this class.
+	 * 
 	 */
-	use Singleton;
+	use Block_Variation;
 
 	/**
 	 * Class constructor.
@@ -52,6 +52,8 @@ class Add_To_Calendar {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		// $this->register();
+		$this->register_and_enqueue_assets();
         // wp_die('variation test end.');
 
         // add_action( 'init', array( $this, 'register_block_bindings_sources' ) );

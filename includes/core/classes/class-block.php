@@ -49,8 +49,10 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+
+		// Priority 9 needed to allow the Block_Variation(s) to register their assets on init:10, without worries.
+		add_action( 'init', array( $this, 'register_block_variations' ), 9 );
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
-		add_action( 'init', array( $this, 'register_block_variations' ) );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
 	}
@@ -92,6 +94,8 @@ class Block {
 
 	/**
 	 * Get class name from folder name.
+	 * 
+	 * @todo maybe better in the Utility class?
 	 *
 	 * @param  string $foldername
 	 *
