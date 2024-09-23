@@ -113,7 +113,7 @@ test.describe( 'Screenshots for the wordpress.org/plugins repository', () => {
             await tr.hover();
 
             // Open the Quick Edit panel for the last event.
-            await tr.getByText('Quick Edit').click();
+            await tr.locator('css=button.editinline').click(); // Even a DOM based locator is discouraged, within WP, we can be relatively sure this class will be there for a while.
 
             // Wait for 2 seconds
             await page.waitForTimeout(2000);
