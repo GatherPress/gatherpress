@@ -146,8 +146,7 @@ jobs:
         npm run playground -- --blueprint=./localized_blueprint.json  & \
         sleep 60 && \
         echo 'Playground is ready now, lets take some pictures.' && \
-        WP_BASE_URL='http://127.0.0.1:9400/' \
-        DEBUG=pw:api,pw:webserver \
+        # DEBUG=pw:api,pw:webserver \
         npm run screenshots:wporg
 
     - name: Updating the Screenshots
@@ -166,8 +165,7 @@ jobs:
         npm run playground -- --blueprint=./localized_blueprint.json & \
         sleep 60 && \
         echo 'Playground is ready now, lets take some pictures.' && \
-        WP_BASE_URL='http://127.0.0.1:9400/' \
-        DEBUG=pw:api,pw:webserver \
+        # DEBUG=pw:api,pw:webserver \
         npm run screenshots:wporg -- --update-snapshots
 
     - name: Commit updated screenshots
