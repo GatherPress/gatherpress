@@ -4,8 +4,9 @@ Stable tag: 0.31.0-alpha
 Tested up to: 6.6.1  
 License: GPL v2 or later  
 Tags: events, event, meetup, community  
-Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, prayagm, pbrocks, linusx007
+Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, pbrocks
 
+<!-- markdownlint-disable-next-line MD045 -->
 ![](.wordpress-org/banner-1544x500.jpg)
 
 GatherPress, powering our community's event management needs.
@@ -46,6 +47,7 @@ The playground is built on the WordPress Playground with customizable json data 
 
 For an introduction as to what we are creating and the specific features needed to host events and gather well, please view the [introductory video](https://gatherpress.org/demovideo).
 
+<!-- markdownlint-disable-next-line MD034 -->
 https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
 
 ### Features
@@ -89,7 +91,7 @@ GatherPress is now available on the WordPress plugins repository and able to be 
 2. Search for `gatherpress` in the search box and click the Install button.
 3. Activate the plugin.
 
-<img width="854" alt="plugins-page-search" src="https://github.com/user-attachments/assets/579f5cd4-741e-4870-86e9-838714cb91bb">
+![Install GatherPress from the WordPress Admin](https://github.com/user-attachments/assets/579f5cd4-741e-4870-86e9-838714cb91bb)
 
 ### Installation from GitHub
 
@@ -101,7 +103,7 @@ Since this plugin is in active development by the community, features and functi
 4. Select the proper zip file, click Open, then `Install Now`.
 5. Activate the plugin.
 
-<img width="954" alt="upload-plugin" src="https://github.com/user-attachments/assets/f9751adb-30c7-49a8-bb70-1330e6a03504">
+![Install GatherPress from a zip-file upload](https://github.com/user-attachments/assets/f9751adb-30c7-49a8-bb70-1330e6a03504)
 
 ### Requirements
 
@@ -188,7 +190,7 @@ Yes, GatherPress can be run on a network of sites. The additional database table
 
 GatherPress can also be activated per site.
 
-## GatherPress‘ Best Practices:
+## GatherPress‘ Best Practices
 
 - Tested & validated against [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/)
 - Not only once, but consequently tested & validated against the [WordPress plugin review guidelines](https://github.com/WordPress/plugin-check-action).
@@ -202,13 +204,17 @@ As we continue to refine and develop the core plugin, we've created the [GatherP
 
 1. Create a new event
    ![Create a new event](.wordpress-org/screenshot-1.png)
-2. Create a new venue
-   ![Create a new venue](.wordpress-org/screenshot-2.png)
-3. General Settings
-   ![General Settings](.wordpress-org/screenshot-3.png)
-4. Leadership Settings
-   ![Leadership Settings](.wordpress-org/screenshot-4.png)
+2. Edit an event
+   ![Edit an event](.wordpress-org/screenshot-2.png)
+3. Quick Edit an event
+   ![Quick Edit an event](.wordpress-org/screenshot-3.png)
+4. Create a new venue
+   ![Create a new venue](.wordpress-org/screenshot-4.png)
+5. General Settings
+   ![General Settings](.wordpress-org/screenshot-5.png)
+6. Leadership Settings
+   ![Leadership Settings](.wordpress-org/screenshot-6.png)
 
 ## Changelog
 
-See complete changelog at https://github.com/GatherPress/gatherpress/releases.
+See complete changelog at [https://github.com/GatherPress/gatherpress/releases](https://github.com/GatherPress/gatherpress/releases).

@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Rsvp;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
+use WP_Error;
 
 /**
  * Class Test_Rsvp.
@@ -109,6 +110,23 @@ class Test_Rsvp extends Base {
 		$rsvp      = new Rsvp( $post->ID );
 		$user_1_id = $this->factory->user->create();
 		$this->assertSame( 2, $rsvp->save( $user_1_id, 'attending', 0, 3 )['guests'], 'Failed to assert that user 1 can only bring 2 guests at most.' );
+
+		// Simulate error saving RSVP.
+		add_filter( 'query', '__return_false' );
+
+		$result   = $rsvp->save( $user_1_id, 'attending' );
+		$expected = array(
+			'post_id'   => 0,
+			'user_id'   => 0,
+			'timestamp' => '0000-00-00 00:00:00',
+			'status'    => 'no_status',
+			'guests'    => 0,
+			'anonymous' => 0,
+		);
+
+		$this->assertEquals( $expected, $result );
+
+		remove_filter( 'query', '__return_false' );
 	}
 
 	/**
