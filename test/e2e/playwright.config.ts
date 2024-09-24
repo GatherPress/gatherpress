@@ -101,7 +101,7 @@ export default defineConfig({
 		// and is going to start stepping through the blueprint, but hasn't loaded GatherPress nor imported any data;
 		// Resulting in failing tests.
 		//
-		// Sending just >undefined< is an idea, taken from @swisspidy at: 
+		// Sending just >undefined< is an idea, taken from @swisspidy at:
 		// https://github.com/swissspidy/wp-performance-action/pull/173/files#diff-980717ce45eb5ef0a66e87dd5b664656800d31ca809fe902f069b5e8f3cdcd31
 		command: undefined,
 		port: 9400,

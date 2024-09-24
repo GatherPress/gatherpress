@@ -24,6 +24,5 @@ test.describe('Venues in the Editor', () => {
 			.fill('test venue information');
 
 		await editor.publishPost(); // this is missing the force and doesnt work.
-
 	});
 });
