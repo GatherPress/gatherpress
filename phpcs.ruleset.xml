@@ -36,6 +36,39 @@
 	<rule ref="WordPress-Docs"/>
 	<!-- Trigger a Warning on @todo comments. -->
 	<rule ref="Generic.Commenting.Todo"/>
+
+	<!-- @source:
+	- https://github.com/squizlabs/PHP_CodeSniffer/wiki/Annotated-Ruleset#the-annotated-sample-file
+	- https://github.com/squizlabs/PHP_CodeSniffer/issues/3769#issuecomment-1452605087
+
+	Here we are including a specific sniff but also changing
+	the error message of a specific message inside the sniff.
+	Note that the specific code for the message, which is
+	TaskFound in this case, is defined by the sniff developer.
+	You can display these codes by using the -s command line
+	argument when checking a file.
+
+	Also note that this message has a variable inside it,
+	which is why it is important that sniffs use a printf style
+	format for their error messages.
+
+	We also drop the severity of this message from the
+	default value (5) so that it is hidden by default. It can be
+	displayed by setting the minimum severity on the PHP_CodeSniffer
+	command line. This is great if you want to use some messages
+	only in code reviews and not have them block code commits.
+	-->
+	<!-- This error code is for when no description is found. -->
+	<rule ref="Generic.Commenting.Todo.CommentFound">
+		<message>Please review this TODO comment</message>
+		<severity>3</severity>
+	</rule>
+	<!-- This error code is used when a task description is found. -->
+	<rule ref="Generic.Commenting.Todo.TaskFound">
+		<message>Please review this TODO comment: %s</message>
+		<severity>3</severity>
+	</rule>
+
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<!-- Value: replace the function, class, and variable prefixes used. Separate multiple prefixes with a comma. -->
