@@ -56,7 +56,7 @@ jobs:
         cache: 'npm'
 
     # Restoring the short lived node_modules cache
-    # to be used accross all workflows running on the last commit.
+    # to be used across all workflows running on the last commit.
     # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
     - uses: actions/cache/restore@v4
       id: node_modules-cache
@@ -115,8 +115,7 @@ jobs:
         npm run playground:mount -- --blueprint=./temp.blueprint.json & \
         sleep 60 && \
         echo 'Playground is ready now, lets take some pictures.' && \
-        WP_BASE_URL='http://127.0.0.1:9400/' \
-        DEBUG=pw:api,pw:webserver \
+        # DEBUG=pw:api,pw:webserver \
         xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- \
         npm run test:e2e
 

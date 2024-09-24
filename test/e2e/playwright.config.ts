@@ -83,10 +83,9 @@ export default defineConfig({
 	retries: 0,
 	webServer: {
 		...baseConfig.webServer,
-		command:
-			'npm run playground:mount -- --blueprint=./test/e2e/blueprint.json',
+		command: undefined,
+		// 'npm run playground:mount -- --blueprint=./test/e2e/blueprint.json',
 		port: 9400,
-		// reuseExistingServer: !process.env.CI,
 		reuseExistingServer: true,
 	},
 });

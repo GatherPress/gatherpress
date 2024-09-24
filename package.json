@@ -88,7 +88,7 @@
 		"screenshots:wporg:debug": "wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts --debug",
 		"screenshots:wporg:ui": "wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts --ui",
 		"pretest:e2e": "npm run build",
-		"test:e2e": "wp-scripts test-playwright --config test/e2e/playwright.config.ts",
+		"test:e2e": "WP_BASE_URL='http://127.0.0.1:9400/' wp-scripts test-playwright --config test/e2e/playwright.config.ts",
 		"test:e2e:debug": "npm run test:e2e -- --debug",
 		"test:e2e:ui": "npm run test:e2e -- --ui",
 		"test:unit:js": "wp-scripts test-unit-js --coverage --testResultsProcessor=jest-sonar-reporter",
