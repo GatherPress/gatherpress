@@ -80,7 +80,8 @@ jobs:
     - name: Install Playwright dependencies
       run: npx playwright install --with-deps
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-    - run: npx playwright install-deps
+    # - run: npx playwright install-deps
+    - run: npx playwright install --with-deps # DEBUG ONLY 
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
     - name: Prepare preferredVersions for blueprint
@@ -96,22 +97,26 @@ jobs:
         echo "Use jq to prepend the preferred versions to the existing blueprint JSON file."
         jq --argjson preferredVersions "$preferredVersions" '{preferredVersions: $preferredVersions} + .' ./test/e2e/blueprint.json > temp.blueprint.json
 
-    - name: Starting Playground
-      # Having this as a separate workflow step, should help making sure Playwright runs only, when this is DONE & READY.
-      #
-      # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
-      # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
-      # 
-      # The "&" is important to allow the next step to start!
-      run: |
-        npm run playground:mount -- --blueprint=./temp.blueprint.json &
+  #  - name: Starting Playground
+  #    # Having this as a separate workflow step, should help making sure Playwright runs only, when this is DONE & READY.
+  #    #
+  #    # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
+  #    # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
+  #    # 
+  #    # The "&" is important to allow the next step to start!
+  #    run: |
+  #      npm run playground:mount -- --blueprint=./temp.blueprint.json &
 
     - name: Starting Playwright & Running the tests
       env:
-        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1,
-        WP_BASE_URL: 'http://127.0.0.1:9400/'
+        # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1,
+        # WP_BASE_URL: 'http://127.0.0.1:9400/'
       run: |
-        DEBUG=pw:webserver \
+        npm run playground:mount -- --blueprint=./temp.blueprint.json & \
+        sleep 60 && \
+        echo 'Playground is ready now, lets take some pictures.' && \
+        WP_BASE_URL='http://127.0.0.1:9400/' \
+        DEBUG=pw:api,pw:webserver \
         xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- \
         npm run test:e2e
 
