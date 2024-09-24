@@ -108,7 +108,7 @@ jobs:
   #      npm run playground:mount -- --blueprint=./temp.blueprint.json &
 
     - name: Starting Playwright & Running the tests
-      env:
+      # env:
         # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1,
         # WP_BASE_URL: 'http://127.0.0.1:9400/'
       run: |
