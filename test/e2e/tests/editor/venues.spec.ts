@@ -10,7 +10,7 @@ test.describe('Venues in the Editor', () => {
 
 	test('The admin should be able to create a new Venue.', async ({
 		editor,
-		page
+		page,
 	}) => {
 		await page.getByLabel('Add title').isVisible();
 		await page.getByLabel('Add title').fill('Test venue');

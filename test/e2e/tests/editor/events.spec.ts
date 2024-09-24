@@ -18,10 +18,8 @@ test.describe('Events in the Editor', () => {
 		const panelToggle = page.getByRole('button', {
 			name: 'Event settings',
 		});
-		
-		
-		// page.pause();
 
+		// page.pause();
 
 		if ((await panelToggle.getAttribute('aria-expanded')) === 'false') {
 			// Check if the inserter button is visible

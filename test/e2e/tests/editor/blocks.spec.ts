@@ -17,8 +17,9 @@ test.describe('Blocks & Patterns in the Editor', () => {
 	 * @see https://github.com/WordPress/gutenberg/blob/ddadd1a95d18270908ac4a1fd8d6e354cfadf61c/test/e2e/specs/editor/plugins/block-variations.spec.js#L62
 	 */
 	test('Is 1 block available?', async ({ page }) => {
-		const inserter = await page
-			.getByRole('button', { name: 'Toggle block inserter' });
+		const inserter = await page.getByRole('button', {
+			name: 'Toggle block inserter',
+		});
 
 		// Check if the inserter button is visible
 		await expect(inserter).toBeVisible();
