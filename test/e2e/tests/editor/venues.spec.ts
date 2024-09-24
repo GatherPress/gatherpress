@@ -25,8 +25,5 @@ test.describe('Venues in the Editor', () => {
 
 		await editor.publishPost(); // this is missing the force and doesnt work.
 
-		// await page.getByLabel('Toggle block inserter').click();
-		// await page.getByRole('option', { name: 'Paragraph' }).click();
-		// await page.screenshot({ path: 'new-venue.png' });
 	});
 });

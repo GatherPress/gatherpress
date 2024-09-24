@@ -19,8 +19,6 @@ test.describe('Events in the Editor', () => {
 			name: 'Event settings',
 		});
 
-		// page.pause();
-
 		if ((await panelToggle.getAttribute('aria-expanded')) === 'false') {
 			// Check if the inserter button is visible
 			await expect(panelToggle).toBeVisible();
@@ -53,13 +51,6 @@ test.describe('Events in the Editor', () => {
 		}
 
 		await editor.publishPost(); // this is missing the force and doesnt work.
-		// const publishButton = page.getByRole('button', {
-		// 	name: 'Publish',
-		// });
-
-		// // Click the publishButton
-		// // Just click() without forcing led to timeouts, timeouts, timeouts...
-		// await publishButton.click({ force: true });
 	});
 
 	test('An admin should be able to publish an online event', async ({

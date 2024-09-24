@@ -80,8 +80,7 @@ jobs:
     - name: Install Playwright dependencies
       run: npx playwright install --with-deps
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-    # - run: npx playwright install-deps
-    - run: npx playwright install --with-deps # DEBUG ONLY 
+    - run: npx playwright install-deps
       if: steps.playwright-cache.outputs.cache-hit == 'true'
 
     - name: Prepare preferredVersions for blueprint
@@ -97,20 +96,31 @@ jobs:
         echo "Use jq to prepend the preferred versions to the existing blueprint JSON file."
         jq --argjson preferredVersions "$preferredVersions" '{preferredVersions: $preferredVersions} + .' ./test/e2e/blueprint.json > temp.blueprint.json
 
-  #  - name: Starting Playground
-  #    # Having this as a separate workflow step, should help making sure Playwright runs only, when this is DONE & READY.
-  #    #
-  #    # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
-  #    # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
-  #    # 
-  #    # The "&" is important to allow the next step to start!
-  #    run: |
-  #      npm run playground:mount -- --blueprint=./temp.blueprint.json &
+    - name: Starting Playground, staring Playwright & running the tests
+      # This is kind of a hack PART 1/2,
+      # to make sure Playwright DOES NOT start the webserver on its own.
+      #
+      # Part 2/2 is the "command: undefined," declaration
+      # in test/e2e/playwright.config.ts
+      #
+      # While auto-loading the webserver when needed sounded nice, it introduced a race-condition
+      # between the setup of Playground and Playwrights own start event.
+      # Playwright listens for the availability of the webserver relatively simple,
+      # as soon as there is a status code 200, Playwright starts all engines.
+      #
+      # Unfortunately Playground is not ready at this point, it hast started WordPress
+      # and is going to start stepping through the blueprint, but hasn't loaded GatherPress nor imported any data;
+      # Resulting in failing tests.
+      #
+      # It was not possible (for me) to keep the setup of Playground in a separate step,
+      # why this "run > sleep > run" became necessary.
+      # The setup process usually takes about 20sec, so 60 is just a good extra, to not run into errors.
+      #
+      # The sleep step, should help making sure Playwright runs only, when this is DONE & READY.
+      #
+      # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
+      # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
 
-    - name: Starting Playwright & Running the tests
-      # env:
-        # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1,
-        # WP_BASE_URL: 'http://127.0.0.1:9400/'
       run: |
         npm run playground:mount -- --blueprint=./temp.blueprint.json & \
         sleep 60 && \
