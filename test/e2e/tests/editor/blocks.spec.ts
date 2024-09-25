@@ -21,15 +21,7 @@ test.describe('Blocks & Patterns in the Editor', () => {
 			name: 'Toggle block inserter',
 		});
 
-		// Check if the inserter button is visible
-		await expect(inserter).toBeVisible();
-
-		// Ensure the inserter button is enabled before interacting with it
-		await expect(inserter).toBeEnabled();
-
-		// Click the inserter button
-		// Just click() without forcing led to timeouts, timeouts, timeouts...
-		await inserter.click({ force: true });
+		await inserter.click({ timeout: 10000 }); // Increase timeout if necessary.
 
 		await page
 			.getByRole('region', { name: 'Block Library' })
