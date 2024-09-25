@@ -75,6 +75,7 @@
 		"@wp-playground/cli": "^0.9.32",
 		"classnames": "^2.5.1",
 		"clsx": "^2.1.1",
+		"copy-webpack-plugin": "^12.0.2",
 		"dotenv": "^16.4.5",
 		"eslint": "^8.57.0",
 		"eslint-plugin-import": "^2.29.1",
