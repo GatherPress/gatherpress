@@ -17,37 +17,24 @@ test.describe('Events in the Editor', () => {
 		// Open the Document -> Event settings panel.
 		const panelToggle = page.getByRole('button', {
 			name: 'Event settings',
+			expanded: false,
 		});
 
-		if ((await panelToggle.getAttribute('aria-expanded')) === 'false') {
-			// Check if the inserter button is visible
-			await expect(panelToggle).toBeVisible();
-
-			// Ensure the panelToggle is enabled before interacting with it
-			await expect(panelToggle).toBeEnabled();
-
-			// Click the panelToggle
-			// Just click() without forcing led to timeouts, timeouts, timeouts...
-			await panelToggle.click({ force: true });
+		if (await panelToggle.isVisible()) {
+			await panelToggle.click();
 		}
 	});
 
 	test.afterEach(async ({ editor, page }) => {
-		// Click again to close the element, to let upcoming tests not get flaky.
+		// Close the Document -> Event settings panel.
+		// To let upcoming tests not get flaky.
 		const panelToggle = page.getByRole('button', {
 			name: 'Event settings',
+			expanded: true,
 		});
 
-		if ((await panelToggle.getAttribute('aria-expanded')) === 'false') {
-			// Check if the inserter button is visible
-			await expect(panelToggle).toBeVisible();
-
-			// Ensure the panelToggle is enabled before interacting with it
-			await expect(panelToggle).toBeEnabled();
-
-			// Click the panelToggle
-			// Just click() without forcing led to timeouts, timeouts, timeouts...
-			await panelToggle.click({ force: true });
+		if (await panelToggle.isVisible()) {
+			await panelToggle.click();
 		}
 
 		await editor.publishPost(); // this is missing the force and doesnt work.
