@@ -77,6 +77,11 @@ class Block {
 		}
 	}
 
+	/**
+	 * Require files & instantiate block-variation classes.
+	 *
+	 * @return void
+	 */
 	public function register_block_variations(): void {
 		foreach ( $this->get_block_variations() as $block ) {
 			$name = $this->get_classname_from_foldername( $block );
@@ -85,6 +90,11 @@ class Block {
 		}
 	}
 
+	/**
+	 * Get list of all block variations based on the build directory.
+	 *
+	 * @return string[] List of block-variations foldernames.
+	 */
 	protected static function get_block_variations(): array {
 		$blocks_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
@@ -94,20 +104,22 @@ class Block {
 
 	/**
 	 * Get class name from folder name.
-	 * 
+	 *
 	 * @todo maybe better in the Utility class?
 	 *
-	 * @param  string $foldername
+	 * @param  string $foldername String with name of a folder.
 	 *
-	 * @return string
+	 * @return string Class name that reflects the given foldername.
 	 */
-	protected static function get_classname_from_foldername( string $foldername ) : string {
-		return join( '\\', array(
-			__CLASS__,
-			ucwords( str_replace( '-', '_', $foldername ), '_' )
-		));
+	protected static function get_classname_from_foldername( string $foldername ): string {
+		return join(
+			'\\',
+			array(
+				__CLASS__,
+				ucwords( str_replace( '-', '_', $foldername ), '_' ),
+			)
+		);
 	}
-
 
 	/**
 	 * Register block patterns.

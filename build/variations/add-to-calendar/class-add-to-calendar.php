@@ -1,8 +1,7 @@
 <?php
 /**
- * 
- *
- * ....
+ * The "Add to calendar" class manages the core-block-variation,
+ * registers and enqueues assets and prepares the output of the block.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -13,23 +12,18 @@ namespace GatherPress\Core\Block;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
-
-// Could potentially use a ...
-// use GatherPress\Core\Traits\Block_Variation;
+use GatherPress\Core\Traits\Block_Variation;
 
 /**
- * 
- *
- * ....
+ * Class responsible for managing the core-block-variation "Add to calendar".
  *
  * @since 1.0.0
  */
 class Add_To_Calendar {
 	/**
-	 * Enforces a single instance of this class.
+	 * Common class that handles registering and enqueuing of assets.
 	 */
-	use Singleton;
+	use Block_Variation;
 
 	/**
 	 * Class constructor.
@@ -52,10 +46,11 @@ class Add_To_Calendar {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-        // wp_die('variation test end.');
+		$this->register_and_enqueue_assets();
 
-        // add_action( 'init', array( $this, 'register_block_bindings_sources' ) );
-        // add_action( 'init', array( $this, 'register_blocks_styles' ) );
+		// phpcs:disable Squiz.PHP.CommentedOutCode.Found
+		// add_action( 'init', array( $this, 'register_block_bindings_sources' ) );
+		// add_action( 'init', array( $this, 'register_blocks_styles' ) ); //.
+		// phpcs:enable Squiz.PHP.CommentedOutCode.Found
 	}
-
 }
