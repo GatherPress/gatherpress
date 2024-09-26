@@ -259,7 +259,7 @@ class Event_Rest_Api {
 				continue;
 			}
 			if ( $member->user_email ) {
-				$to = $member->user_email;
+				$to              = $member->user_email;
 				$switched_locale = switch_to_user_locale( $member->ID );
 
 				// Set the current user to the actual member to mail to,
