@@ -92,7 +92,7 @@ class Multisite {
 	}
 
 	/**
-	 * Hook into options-processing to ahre (get & set) GatherPress options per network.
+	 * Hook into options-processing to share (get & set) GatherPress options per network.
 	 *
 	 * @param  string $option Option name.
 	 *
