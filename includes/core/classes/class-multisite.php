@@ -58,17 +58,51 @@ class Multisite {
 	 */
 	public function init_shared_options(): void {
 
-		// DEBUG ONLY // Set Site option "gatherpress_shared_options" to enable feature, until UI is in place.
-		add_filter( sprintf( 'pre_site_option_%s', Utility::prefix_key( 'shared_options' ) ), '__return_true' );
+		// DEVELOPMENT ONLY // REMOVE BEFORE MERGE // Set Site option "gatherpress_shared_options" to enable feature, until UI, or filter, or whatever is in place.
+		add_filter(
+			sprintf( 'pre_site_option_%s', Utility::prefix_key( 'shared_options' ) ),
+			function () {
+				return array( Utility::prefix_key( 'general' ) );
+			}
+		);
 
-		if ( ! is_multisite() || ! get_site_option( Utility::prefix_key( 'shared_options' ) ) ) {
+		$shared_options = $this->get_shared_options();
+		if ( empty( $shared_options ) ) {
 			return;
 		}
 
-		add_filter( sprintf( 'pre_option_%s', Utility::prefix_key( 'general' ) ), array( $this, 'pre_option' ), 10, 3 );
+		array_map(
+			array( $this, 'init_shared_options_for' ),
+			$shared_options
+		);
+	}
+
+	/**
+	 * Get list of shared setting-slugs, when conditions are met.
+	 *
+	 * @return array
+	 */
+	protected function get_shared_options(): array {
+		$shared_options = get_site_option( Utility::prefix_key( 'shared_options' ) );
+		return (
+			is_multisite() &&
+			is_array( $shared_options ) &&
+			! empty( $shared_options )
+		) ? $shared_options : array();
+	}
+
+	/**
+	 * Hook into options-processing to ahre (get & set) GatherPress options per network.
+	 *
+	 * @param  string $option Option name.
+	 *
+	 * @return void
+	 */
+	protected function init_shared_options_for( string $option ): void {
+		add_filter( sprintf( 'pre_option_%s', $option ), array( $this, 'pre_option' ), 10, 2 );
 
 		if ( is_main_site() ) {
-			add_action( sprintf( 'update_option_%s', Utility::prefix_key( 'general' ) ), array( $this, 'update_option' ), 10, 3 );
+			add_action( sprintf( 'update_option_%s', $option ), array( $this, 'update_option' ), 10, 3 );
 		}
 	}
 
