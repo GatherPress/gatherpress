@@ -268,7 +268,7 @@ class Event_Rest_Api {
 				wp_set_current_user( $member->ID );
 
 				/* translators: %s: event title. */
-				$subject = sprintf( __( '📅 %s', 'gatherpress' ), get_the_title( $post_id ) );
+				$subject = sprintf( _x( '📅 %s', 'Email subject for event updates', 'gatherpress' ), get_the_title( $post_id ) );
 				$body    = Utility::render_template(
 					sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
 					array(
