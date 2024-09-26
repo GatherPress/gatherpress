@@ -8,13 +8,13 @@ import moment from 'moment';
  */
 import { __ } from '@wordpress/i18n';
 import { createRoot } from '@wordpress/element';
+import { applyFilters } from '@wordpress/hooks';
 
 /**
  * Internal dependencies.
  */
 import { enableSave, getFromGlobal, setToGlobal } from './globals';
 import DateTimePreview from '../components/DateTimePreview';
-import DurationOptions from "../components/DurationOptions";
 
 /**
  * Database-compatible date and time format string for storage.
@@ -58,6 +58,47 @@ export const defaultDateTimeEnd = moment
 	.format(dateTimeDatabaseFormat);
 
 /**
+ * Predefined duration options for event scheduling.
+ *
+ * This array contains a list of duration options in hours that can be selected
+ * for an event. Each option includes a label for display and a corresponding
+ * value representing the duration in hours. The last option allows the user
+ * to set a custom end time by selecting `false`.
+ *
+ * @since 1.0.0
+ *
+ * @property {string}         label - The human-readable label for the duration option.
+ * @property {number|boolean} value - The value representing the duration in hours, or `false` if a custom end time is to be set.
+ */
+
+export function durationOptions() {
+	const options = [
+		{
+			label: __('1 hour', 'gatherpress'),
+			value: 1,
+		},
+		{
+			label: __('1.5 hours', 'gatherpress'),
+			value: 1.5,
+		},
+		{
+			label: __('2 hours', 'gatherpress'),
+			value: 2,
+		},
+		{
+			label: __('3 hours', 'gatherpress'),
+			value: 3,
+		},
+		{
+			label: __('Set an end time…', 'gatherpress'),
+			value: false,
+		},
+	]
+
+	return applyFilters('gatherpress.durationOptions', options);
+}
+
+/**
  * Calculates an offset in hours from the start date and time of an event.
  *
  * This function retrieves the event's start date and time, applies the provided
@@ -90,7 +131,7 @@ export function dateTimeOffset(hours) {
  */
 export function getDateTimeOffset() {
 	return (
-		DurationOptions.find(
+		durationOptions().find(
 			(option) => dateTimeOffset(option.value) === getDateTimeEnd()
 		)?.value || false
 	);
