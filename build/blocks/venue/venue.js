@@ -1,2 +1,6457 @@
-(()=>{var e,t,n,r,o={5413:(e,t)=>{"use strict";var n;Object.defineProperty(t,"__esModule",{value:!0}),t.Doctype=t.CDATA=t.Tag=t.Style=t.Script=t.Comment=t.Directive=t.Text=t.Root=t.isTag=t.ElementType=void 0,function(e){e.Root="root",e.Text="text",e.Directive="directive",e.Comment="comment",e.Script="script",e.Style="style",e.Tag="tag",e.CDATA="cdata",e.Doctype="doctype"}(n=t.ElementType||(t.ElementType={})),t.isTag=function(e){return e.type===n.Tag||e.type===n.Script||e.type===n.Style},t.Root=n.Root,t.Text=n.Text,t.Directive=n.Directive,t.Comment=n.Comment,t.Script=n.Script,t.Style=n.Style,t.Tag=n.Tag,t.CDATA=n.CDATA,t.Doctype=n.Doctype},1141:function(e,t,n){"use strict";var r=this&&this.__createBinding||(Object.create?function(e,t,n,r){void 0===r&&(r=n);var o=Object.getOwnPropertyDescriptor(t,n);o&&!("get"in o?!t.__esModule:o.writable||o.configurable)||(o={enumerable:!0,get:function(){return t[n]}}),Object.defineProperty(e,r,o)}:function(e,t,n,r){void 0===r&&(r=n),e[r]=t[n]}),o=this&&this.__exportStar||function(e,t){for(var n in e)"default"===n||Object.prototype.hasOwnProperty.call(t,n)||r(t,e,n)};Object.defineProperty(t,"__esModule",{value:!0}),t.DomHandler=void 0;var i=n(5413),l=n(6957);o(n(6957),t);var a={withStartIndices:!1,withEndIndices:!1,xmlMode:!1},s=function(){function e(e,t,n){this.dom=[],this.root=new l.Document(this.dom),this.done=!1,this.tagStack=[this.root],this.lastNode=null,this.parser=null,"function"==typeof t&&(n=t,t=a),"object"==typeof e&&(t=e,e=void 0),this.callback=null!=e?e:null,this.options=null!=t?t:a,this.elementCB=null!=n?n:null}return e.prototype.onparserinit=function(e){this.parser=e},e.prototype.onreset=function(){this.dom=[],this.root=new l.Document(this.dom),this.done=!1,this.tagStack=[this.root],this.lastNode=null,this.parser=null},e.prototype.onend=function(){this.done||(this.done=!0,this.parser=null,this.handleCallback(null))},e.prototype.onerror=function(e){this.handleCallback(e)},e.prototype.onclosetag=function(){this.lastNode=null;var e=this.tagStack.pop();this.options.withEndIndices&&(e.endIndex=this.parser.endIndex),this.elementCB&&this.elementCB(e)},e.prototype.onopentag=function(e,t){var n=this.options.xmlMode?i.ElementType.Tag:void 0,r=new l.Element(e,t,void 0,n);this.addNode(r),this.tagStack.push(r)},e.prototype.ontext=function(e){var t=this.lastNode;if(t&&t.type===i.ElementType.Text)t.data+=e,this.options.withEndIndices&&(t.endIndex=this.parser.endIndex);else{var n=new l.Text(e);this.addNode(n),this.lastNode=n}},e.prototype.oncomment=function(e){if(this.lastNode&&this.lastNode.type===i.ElementType.Comment)this.lastNode.data+=e;else{var t=new l.Comment(e);this.addNode(t),this.lastNode=t}},e.prototype.oncommentend=function(){this.lastNode=null},e.prototype.oncdatastart=function(){var e=new l.Text(""),t=new l.CDATA([e]);this.addNode(t),e.parent=t,this.lastNode=e},e.prototype.oncdataend=function(){this.lastNode=null},e.prototype.onprocessinginstruction=function(e,t){var n=new l.ProcessingInstruction(e,t);this.addNode(n)},e.prototype.handleCallback=function(e){if("function"==typeof this.callback)this.callback(e,this.dom);else if(e)throw e},e.prototype.addNode=function(e){var t=this.tagStack[this.tagStack.length-1],n=t.children[t.children.length-1];this.options.withStartIndices&&(e.startIndex=this.parser.startIndex),this.options.withEndIndices&&(e.endIndex=this.parser.endIndex),t.children.push(e),n&&(e.prev=n,n.next=e),e.parent=t,this.lastNode=null},e}();t.DomHandler=s,t.default=s},6957:function(e,t,n){"use strict";var r,o=this&&this.__extends||(r=function(e,t){return r=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(e,t){e.__proto__=t}||function(e,t){for(var n in t)Object.prototype.hasOwnProperty.call(t,n)&&(e[n]=t[n])},r(e,t)},function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Class extends value "+String(t)+" is not a constructor or null");function __(){this.constructor=e}r(e,t),e.prototype=null===t?Object.create(t):(__.prototype=t.prototype,new __)}),i=this&&this.__assign||function(){return i=Object.assign||function(e){for(var t,n=1,r=arguments.length;n<r;n++)for(var o in t=arguments[n])Object.prototype.hasOwnProperty.call(t,o)&&(e[o]=t[o]);return e},i.apply(this,arguments)};Object.defineProperty(t,"__esModule",{value:!0}),t.cloneNode=t.hasChildren=t.isDocument=t.isDirective=t.isComment=t.isText=t.isCDATA=t.isTag=t.Element=t.Document=t.CDATA=t.NodeWithChildren=t.ProcessingInstruction=t.Comment=t.Text=t.DataNode=t.Node=void 0;var l=n(5413),a=function(){function e(){this.parent=null,this.prev=null,this.next=null,this.startIndex=null,this.endIndex=null}return Object.defineProperty(e.prototype,"parentNode",{get:function(){return this.parent},set:function(e){this.parent=e},enumerable:!1,configurable:!0}),Object.defineProperty(e.prototype,"previousSibling",{get:function(){return this.prev},set:function(e){this.prev=e},enumerable:!1,configurable:!0}),Object.defineProperty(e.prototype,"nextSibling",{get:function(){return this.next},set:function(e){this.next=e},enumerable:!1,configurable:!0}),e.prototype.cloneNode=function(e){return void 0===e&&(e=!1),E(this,e)},e}();t.Node=a;var s=function(e){function t(t){var n=e.call(this)||this;return n.data=t,n}return o(t,e),Object.defineProperty(t.prototype,"nodeValue",{get:function(){return this.data},set:function(e){this.data=e},enumerable:!1,configurable:!0}),t}(a);t.DataNode=s;var c=function(e){function t(){var t=null!==e&&e.apply(this,arguments)||this;return t.type=l.ElementType.Text,t}return o(t,e),Object.defineProperty(t.prototype,"nodeType",{get:function(){return 3},enumerable:!1,configurable:!0}),t}(s);t.Text=c;var u=function(e){function t(){var t=null!==e&&e.apply(this,arguments)||this;return t.type=l.ElementType.Comment,t}return o(t,e),Object.defineProperty(t.prototype,"nodeType",{get:function(){return 8},enumerable:!1,configurable:!0}),t}(s);t.Comment=u;var d=function(e){function t(t,n){var r=e.call(this,n)||this;return r.name=t,r.type=l.ElementType.Directive,r}return o(t,e),Object.defineProperty(t.prototype,"nodeType",{get:function(){return 1},enumerable:!1,configurable:!0}),t}(s);t.ProcessingInstruction=d;var f=function(e){function t(t){var n=e.call(this)||this;return n.children=t,n}return o(t,e),Object.defineProperty(t.prototype,"firstChild",{get:function(){var e;return null!==(e=this.children[0])&&void 0!==e?e:null},enumerable:!1,configurable:!0}),Object.defineProperty(t.prototype,"lastChild",{get:function(){return this.children.length>0?this.children[this.children.length-1]:null},enumerable:!1,configurable:!0}),Object.defineProperty(t.prototype,"childNodes",{get:function(){return this.children},set:function(e){this.children=e},enumerable:!1,configurable:!0}),t}(a);t.NodeWithChildren=f;var p=function(e){function t(){var t=null!==e&&e.apply(this,arguments)||this;return t.type=l.ElementType.CDATA,t}return o(t,e),Object.defineProperty(t.prototype,"nodeType",{get:function(){return 4},enumerable:!1,configurable:!0}),t}(f);t.CDATA=p;var h=function(e){function t(){var t=null!==e&&e.apply(this,arguments)||this;return t.type=l.ElementType.Root,t}return o(t,e),Object.defineProperty(t.prototype,"nodeType",{get:function(){return 9},enumerable:!1,configurable:!0}),t}(f);t.Document=h;var m=function(e){function t(t,n,r,o){void 0===r&&(r=[]),void 0===o&&(o="script"===t?l.ElementType.Script:"style"===t?l.ElementType.Style:l.ElementType.Tag);var i=e.call(this,r)||this;return i.name=t,i.attribs=n,i.type=o,i}return o(t,e),Object.defineProperty(t.prototype,"nodeType",{get:function(){return 1},enumerable:!1,configurable:!0}),Object.defineProperty(t.prototype,"tagName",{get:function(){return this.name},set:function(e){this.name=e},enumerable:!1,configurable:!0}),Object.defineProperty(t.prototype,"attributes",{get:function(){var e=this;return Object.keys(this.attribs).map((function(t){var n,r;return{name:t,value:e.attribs[t],namespace:null===(n=e["x-attribsNamespace"])||void 0===n?void 0:n[t],prefix:null===(r=e["x-attribsPrefix"])||void 0===r?void 0:r[t]}}))},enumerable:!1,configurable:!0}),t}(f);function y(e){return(0,l.isTag)(e)}function g(e){return e.type===l.ElementType.CDATA}function v(e){return e.type===l.ElementType.Text}function b(e){return e.type===l.ElementType.Comment}function w(e){return e.type===l.ElementType.Directive}function x(e){return e.type===l.ElementType.Root}function E(e,t){var n;if(void 0===t&&(t=!1),v(e))n=new c(e.data);else if(b(e))n=new u(e.data);else if(y(e)){var r=t?_(e.children):[],o=new m(e.name,i({},e.attribs),r);r.forEach((function(e){return e.parent=o})),null!=e.namespace&&(o.namespace=e.namespace),e["x-attribsNamespace"]&&(o["x-attribsNamespace"]=i({},e["x-attribsNamespace"])),e["x-attribsPrefix"]&&(o["x-attribsPrefix"]=i({},e["x-attribsPrefix"])),n=o}else if(g(e)){r=t?_(e.children):[];var l=new p(r);r.forEach((function(e){return e.parent=l})),n=l}else if(x(e)){r=t?_(e.children):[];var a=new h(r);r.forEach((function(e){return e.parent=a})),e["x-mode"]&&(a["x-mode"]=e["x-mode"]),n=a}else{if(!w(e))throw new Error("Not implemented yet: ".concat(e.type));var s=new d(e.name,e.data);null!=e["x-name"]&&(s["x-name"]=e["x-name"],s["x-publicId"]=e["x-publicId"],s["x-systemId"]=e["x-systemId"]),n=s}return n.startIndex=e.startIndex,n.endIndex=e.endIndex,null!=e.sourceCodeLocation&&(n.sourceCodeLocation=e.sourceCodeLocation),n}function _(e){for(var t=e.map((function(e){return E(e,!0)})),n=1;n<t.length;n++)t[n].prev=t[n-1],t[n-1].next=t[n];return t}t.Element=m,t.isTag=y,t.isCDATA=g,t.isText=v,t.isComment=b,t.isDirective=w,t.isDocument=x,t.hasChildren=function(e){return Object.prototype.hasOwnProperty.call(e,"children")},t.cloneNode=E},5270:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.CASE_SENSITIVE_TAG_NAMES_MAP=t.CASE_SENSITIVE_TAG_NAMES=void 0,t.CASE_SENSITIVE_TAG_NAMES=["animateMotion","animateTransform","clipPath","feBlend","feColorMatrix","feComponentTransfer","feComposite","feConvolveMatrix","feDiffuseLighting","feDisplacementMap","feDropShadow","feFlood","feFuncA","feFuncB","feFuncG","feFuncR","feGaussianBlur","feImage","feMerge","feMergeNode","feMorphology","feOffset","fePointLight","feSpecularLighting","feSpotLight","feTile","feTurbulence","foreignObject","linearGradient","radialGradient","textPath"],t.CASE_SENSITIVE_TAG_NAMES_MAP=t.CASE_SENSITIVE_TAG_NAMES.reduce((function(e,t){return e[t.toLowerCase()]=t,e}),{})},5496:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.default=function(e){var t,u,d=e.match(i),f=d&&d[1]?d[1].toLowerCase():"";switch(f){case n:var h=c(e);return l.test(e)||null===(t=null==(y=h.querySelector(r))?void 0:y.parentNode)||void 0===t||t.removeChild(y),a.test(e)||null===(u=null==(y=h.querySelector(o))?void 0:y.parentNode)||void 0===u||u.removeChild(y),h.querySelectorAll(n);case r:case o:var m=s(e).querySelectorAll(f);return a.test(e)&&l.test(e)?m[0].parentNode.childNodes:m;default:return p?p(e):(y=s(e,o).querySelector(o)).childNodes;var y}};var n="html",r="head",o="body",i=/<([a-zA-Z]+[0-9]?)/,l=/<head[^]*>/i,a=/<body[^]*>/i,s=function(e,t){throw new Error("This browser does not support `document.implementation.createHTMLDocument`")},c=function(e,t){throw new Error("This browser does not support `DOMParser.prototype.parseFromString`")},u="object"==typeof window&&window.DOMParser;if("function"==typeof u){var d=new u;s=c=function(e,t){return t&&(e="<".concat(t,">").concat(e,"</").concat(t,">")),d.parseFromString(e,"text/html")}}if("object"==typeof document&&document.implementation){var f=document.implementation.createHTMLDocument();s=function(e,t){if(t){var n=f.documentElement.querySelector(t);return n&&(n.innerHTML=e),f}return f.documentElement.innerHTML=e,f}}var p,h="object"==typeof document&&document.createElement("template");h&&h.content&&(p=function(e){return h.innerHTML=e,h.content.childNodes})},2471:function(e,t,n){"use strict";var r=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.default=function(e){if("string"!=typeof e)throw new TypeError("First argument must be a string");if(!e)return[];var t=e.match(l),n=t?t[1]:void 0;return(0,i.formatDOM)((0,o.default)(e),null,n)};var o=r(n(5496)),i=n(7731),l=/<(![a-zA-Z\s]+)>/},7731:(e,t,n)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.formatAttributes=i,t.formatDOM=function e(t,n,o){void 0===n&&(n=null);for(var a,s=[],c=0,u=t.length;c<u;c++){var d=t[c];switch(d.nodeType){case 1:var f=l(d.nodeName);(a=new r.Element(f,i(d.attributes))).children=e("template"===f?d.content.childNodes:d.childNodes,a);break;case 3:a=new r.Text(d.nodeValue);break;case 8:a=new r.Comment(d.nodeValue);break;default:continue}var p=s[c-1]||null;p&&(p.next=a),a.parent=n,a.prev=p,a.next=null,s.push(a)}return o&&((a=new r.ProcessingInstruction(o.substring(0,o.indexOf(" ")).toLowerCase(),o)).next=s[0]||null,a.parent=n,s.unshift(a),s[1]&&(s[1].prev=s[0])),s};var r=n(1141),o=n(5270);function i(e){for(var t={},n=0,r=e.length;n<r;n++){var o=e[n];t[o.name]=o.value}return t}function l(e){return function(e){return o.CASE_SENSITIVE_TAG_NAMES_MAP[e]}(e=e.toLowerCase())||e}},840:(e,t,n)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.default=function(e,t){void 0===e&&(e={});var n={},c=Boolean(e.type&&a[e.type]);for(var u in e){var d=e[u];if((0,r.isCustomAttribute)(u))n[u]=d;else{var f=u.toLowerCase(),p=s(f);if(p){var h=(0,r.getPropertyInfo)(p);switch(i.includes(p)&&l.includes(t)&&!c&&(p=s("default"+f)),n[p]=d,h&&h.type){case r.BOOLEAN:n[p]=!0;break;case r.OVERLOADED_BOOLEAN:""===d&&(n[p]=!0)}}else o.PRESERVE_CUSTOM_ATTRIBUTES&&(n[u]=d)}}return(0,o.setStyleProp)(e.style,n),n};var r=n(4210),o=n(4958),i=["checked","value"],l=["input","select","textarea"],a={reset:!0,submit:!0};function s(e){return r.possibleStandardNames[e]}},308:function(e,t,n){"use strict";var r=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.default=function e(t,n){void 0===n&&(n={});for(var r=[],o="function"==typeof n.replace,c=n.transform||l.returnFirstArg,u=n.library||a,d=u.cloneElement,f=u.createElement,p=u.isValidElement,h=t.length,m=0;m<h;m++){var y=t[m];if(o){var g=n.replace(y,m);if(p(g)){h>1&&(g=d(g,{key:g.key||m})),r.push(c(g,y,m));continue}}if("text"!==y.type){var v=y,b={};s(v)?((0,l.setStyleProp)(v.attribs.style,v.attribs),b=v.attribs):v.attribs&&(b=(0,i.default)(v.attribs,v.name));var w=void 0;switch(y.type){case"script":case"style":y.children[0]&&(b.dangerouslySetInnerHTML={__html:y.children[0].data});break;case"tag":"textarea"===y.name&&y.children[0]?b.defaultValue=y.children[0].data:y.children&&y.children.length&&(w=e(y.children,n));break;default:continue}h>1&&(b.key=m),r.push(c(f(y.name,b,w),y,m))}else{var x=!y.data.trim().length;if(x&&y.parent&&!(0,l.canTextBeChildOfNode)(y.parent))continue;if(n.trim&&x)continue;r.push(c(y.data,y,m))}}return 1===r.length?r[0]:r};var o=n(1609),i=r(n(840)),l=n(4958),a={cloneElement:o.cloneElement,createElement:o.createElement,isValidElement:o.isValidElement};function s(e){return l.PRESERVE_CUSTOM_ATTRIBUTES&&"tag"===e.type&&(0,l.isCustomComponent)(e.name,e.attribs)}},442:function(e,t,n){"use strict";var r=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.htmlToDOM=t.domToReact=t.attributesToProps=t.Text=t.ProcessingInstruction=t.Element=t.Comment=void 0,t.default=function(e,t){if("string"!=typeof e)throw new TypeError("First argument must be a string");return e?(0,l.default)((0,o.default)(e,(null==t?void 0:t.htmlparser2)||s),t):[]};var o=r(n(2471));t.htmlToDOM=o.default;var i=r(n(840));t.attributesToProps=i.default;var l=r(n(308));t.domToReact=l.default;var a=n(1141);Object.defineProperty(t,"Comment",{enumerable:!0,get:function(){return a.Comment}}),Object.defineProperty(t,"Element",{enumerable:!0,get:function(){return a.Element}}),Object.defineProperty(t,"ProcessingInstruction",{enumerable:!0,get:function(){return a.ProcessingInstruction}}),Object.defineProperty(t,"Text",{enumerable:!0,get:function(){return a.Text}});var s={lowerCaseAttributeNames:!1}},4958:function(e,t,n){"use strict";var r=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0}),t.returnFirstArg=t.canTextBeChildOfNode=t.ELEMENTS_WITH_NO_TEXT_CHILDREN=t.PRESERVE_CUSTOM_ATTRIBUTES=void 0,t.isCustomComponent=function(e,t){return e.includes("-")?!l.has(e):Boolean(t&&"string"==typeof t.is)},t.setStyleProp=function(e,t){if("string"==typeof e)if(e.trim())try{t.style=(0,i.default)(e,a)}catch(e){t.style={}}else t.style={}};var o=n(1609),i=r(n(5229)),l=new Set(["annotation-xml","color-profile","font-face","font-face-src","font-face-uri","font-face-format","font-face-name","missing-glyph"]),a={reactCompat:!0};t.PRESERVE_CUSTOM_ATTRIBUTES=Number(o.version.split(".")[0])>=16,t.ELEMENTS_WITH_NO_TEXT_CHILDREN=new Set(["tr","tbody","thead","tfoot","colgroup","table","head","html","frameset"]),t.canTextBeChildOfNode=function(e){return!t.ELEMENTS_WITH_NO_TEXT_CHILDREN.has(e.name)},t.returnFirstArg=function(e){return e}},9788:e=>{var t=/\/\*[^*]*\*+([^/*][^*]*\*+)*\//g,n=/\n/g,r=/^\s*/,o=/^(\*?[-#/*\\\w]+(\[[0-9a-z_-]+\])?)\s*/,i=/^:\s*/,l=/^((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^)]*?\)|[^};])+)/,a=/^[;\s]*/,s=/^\s+|\s+$/g,c="";function u(e){return e?e.replace(s,c):c}e.exports=function(e,s){if("string"!=typeof e)throw new TypeError("First argument must be a string");if(!e)return[];s=s||{};var d=1,f=1;function p(e){var t=e.match(n);t&&(d+=t.length);var r=e.lastIndexOf("\n");f=~r?e.length-r:f+e.length}function h(){var e={line:d,column:f};return function(t){return t.position=new m(e),b(),t}}function m(e){this.start=e,this.end={line:d,column:f},this.source=s.source}m.prototype.content=e;var y=[];function g(t){var n=new Error(s.source+":"+d+":"+f+": "+t);if(n.reason=t,n.filename=s.source,n.line=d,n.column=f,n.source=e,!s.silent)throw n;y.push(n)}function v(t){var n=t.exec(e);if(n){var r=n[0];return p(r),e=e.slice(r.length),n}}function b(){v(r)}function w(e){var t;for(e=e||[];t=x();)!1!==t&&e.push(t);return e}function x(){var t=h();if("/"==e.charAt(0)&&"*"==e.charAt(1)){for(var n=2;c!=e.charAt(n)&&("*"!=e.charAt(n)||"/"!=e.charAt(n+1));)++n;if(n+=2,c===e.charAt(n-1))return g("End of comment missing");var r=e.slice(2,n-2);return f+=2,p(r),e=e.slice(n),f+=2,t({type:"comment",comment:r})}}function E(){var e=h(),n=v(o);if(n){if(x(),!v(i))return g("property missing ':'");var r=v(l),s=e({type:"declaration",property:u(n[0].replace(t,c)),value:r?u(r[0].replace(t,c)):c});return v(a),s}}return b(),function(){var e,t=[];for(w(t);e=E();)!1!==e&&(t.push(e),w(t));return t}()}},4210:(e,t,n)=>{"use strict";function r(e,t,n,r,o,i,l){this.acceptsBooleans=2===t||3===t||4===t,this.attributeName=r,this.attributeNamespace=o,this.mustUseProperty=n,this.propertyName=e,this.type=t,this.sanitizeURL=i,this.removeEmptyString=l}const o={};["children","dangerouslySetInnerHTML","defaultValue","defaultChecked","innerHTML","suppressContentEditableWarning","suppressHydrationWarning","style"].forEach((e=>{o[e]=new r(e,0,!1,e,null,!1,!1)})),[["acceptCharset","accept-charset"],["className","class"],["htmlFor","for"],["httpEquiv","http-equiv"]].forEach((([e,t])=>{o[e]=new r(e,1,!1,t,null,!1,!1)})),["contentEditable","draggable","spellCheck","value"].forEach((e=>{o[e]=new r(e,2,!1,e.toLowerCase(),null,!1,!1)})),["autoReverse","externalResourcesRequired","focusable","preserveAlpha"].forEach((e=>{o[e]=new r(e,2,!1,e,null,!1,!1)})),["allowFullScreen","async","autoFocus","autoPlay","controls","default","defer","disabled","disablePictureInPicture","disableRemotePlayback","formNoValidate","hidden","loop","noModule","noValidate","open","playsInline","readOnly","required","reversed","scoped","seamless","itemScope"].forEach((e=>{o[e]=new r(e,3,!1,e.toLowerCase(),null,!1,!1)})),["checked","multiple","muted","selected"].forEach((e=>{o[e]=new r(e,3,!0,e,null,!1,!1)})),["capture","download"].forEach((e=>{o[e]=new r(e,4,!1,e,null,!1,!1)})),["cols","rows","size","span"].forEach((e=>{o[e]=new r(e,6,!1,e,null,!1,!1)})),["rowSpan","start"].forEach((e=>{o[e]=new r(e,5,!1,e.toLowerCase(),null,!1,!1)}));const i=/[\-\:]([a-z])/g,l=e=>e[1].toUpperCase();["accent-height","alignment-baseline","arabic-form","baseline-shift","cap-height","clip-path","clip-rule","color-interpolation","color-interpolation-filters","color-profile","color-rendering","dominant-baseline","enable-background","fill-opacity","fill-rule","flood-color","flood-opacity","font-family","font-size","font-size-adjust","font-stretch","font-style","font-variant","font-weight","glyph-name","glyph-orientation-horizontal","glyph-orientation-vertical","horiz-adv-x","horiz-origin-x","image-rendering","letter-spacing","lighting-color","marker-end","marker-mid","marker-start","overline-position","overline-thickness","paint-order","panose-1","pointer-events","rendering-intent","shape-rendering","stop-color","stop-opacity","strikethrough-position","strikethrough-thickness","stroke-dasharray","stroke-dashoffset","stroke-linecap","stroke-linejoin","stroke-miterlimit","stroke-opacity","stroke-width","text-anchor","text-decoration","text-rendering","underline-position","underline-thickness","unicode-bidi","unicode-range","units-per-em","v-alphabetic","v-hanging","v-ideographic","v-mathematical","vector-effect","vert-adv-y","vert-origin-x","vert-origin-y","word-spacing","writing-mode","xmlns:xlink","x-height"].forEach((e=>{const t=e.replace(i,l);o[t]=new r(t,1,!1,e,null,!1,!1)})),["xlink:actuate","xlink:arcrole","xlink:role","xlink:show","xlink:title","xlink:type"].forEach((e=>{const t=e.replace(i,l);o[t]=new r(t,1,!1,e,"http://www.w3.org/1999/xlink",!1,!1)})),["xml:base","xml:lang","xml:space"].forEach((e=>{const t=e.replace(i,l);o[t]=new r(t,1,!1,e,"http://www.w3.org/XML/1998/namespace",!1,!1)})),["tabIndex","crossOrigin"].forEach((e=>{o[e]=new r(e,1,!1,e.toLowerCase(),null,!1,!1)})),o.xlinkHref=new r("xlinkHref",1,!1,"xlink:href","http://www.w3.org/1999/xlink",!0,!1),["src","href","action","formAction"].forEach((e=>{o[e]=new r(e,1,!1,e.toLowerCase(),null,!0,!0)}));const{CAMELCASE:a,SAME:s,possibleStandardNames:c}=n(6811),u=RegExp.prototype.test.bind(new RegExp("^(data|aria)-[:A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040]*$")),d=Object.keys(c).reduce(((e,t)=>{const n=c[t];return n===s?e[t]=t:n===a?e[t.toLowerCase()]=t:e[t]=n,e}),{});t.BOOLEAN=3,t.BOOLEANISH_STRING=2,t.NUMERIC=5,t.OVERLOADED_BOOLEAN=4,t.POSITIVE_NUMERIC=6,t.RESERVED=0,t.STRING=1,t.getPropertyInfo=function(e){return o.hasOwnProperty(e)?o[e]:null},t.isCustomAttribute=u,t.possibleStandardNames=d},6811:(e,t)=>{t.SAME=0,t.CAMELCASE=1,t.possibleStandardNames={accept:0,acceptCharset:1,"accept-charset":"acceptCharset",accessKey:1,action:0,allowFullScreen:1,alt:0,as:0,async:0,autoCapitalize:1,autoComplete:1,autoCorrect:1,autoFocus:1,autoPlay:1,autoSave:1,capture:0,cellPadding:1,cellSpacing:1,challenge:0,charSet:1,checked:0,children:0,cite:0,class:"className",classID:1,className:1,cols:0,colSpan:1,content:0,contentEditable:1,contextMenu:1,controls:0,controlsList:1,coords:0,crossOrigin:1,dangerouslySetInnerHTML:1,data:0,dateTime:1,default:0,defaultChecked:1,defaultValue:1,defer:0,dir:0,disabled:0,disablePictureInPicture:1,disableRemotePlayback:1,download:0,draggable:0,encType:1,enterKeyHint:1,for:"htmlFor",form:0,formMethod:1,formAction:1,formEncType:1,formNoValidate:1,formTarget:1,frameBorder:1,headers:0,height:0,hidden:0,high:0,href:0,hrefLang:1,htmlFor:1,httpEquiv:1,"http-equiv":"httpEquiv",icon:0,id:0,innerHTML:1,inputMode:1,integrity:0,is:0,itemID:1,itemProp:1,itemRef:1,itemScope:1,itemType:1,keyParams:1,keyType:1,kind:0,label:0,lang:0,list:0,loop:0,low:0,manifest:0,marginWidth:1,marginHeight:1,max:0,maxLength:1,media:0,mediaGroup:1,method:0,min:0,minLength:1,multiple:0,muted:0,name:0,noModule:1,nonce:0,noValidate:1,open:0,optimum:0,pattern:0,placeholder:0,playsInline:1,poster:0,preload:0,profile:0,radioGroup:1,readOnly:1,referrerPolicy:1,rel:0,required:0,reversed:0,role:0,rows:0,rowSpan:1,sandbox:0,scope:0,scoped:0,scrolling:0,seamless:0,selected:0,shape:0,size:0,sizes:0,span:0,spellCheck:1,src:0,srcDoc:1,srcLang:1,srcSet:1,start:0,step:0,style:0,summary:0,tabIndex:1,target:0,title:0,type:0,useMap:1,value:0,width:0,wmode:0,wrap:0,about:0,accentHeight:1,"accent-height":"accentHeight",accumulate:0,additive:0,alignmentBaseline:1,"alignment-baseline":"alignmentBaseline",allowReorder:1,alphabetic:0,amplitude:0,arabicForm:1,"arabic-form":"arabicForm",ascent:0,attributeName:1,attributeType:1,autoReverse:1,azimuth:0,baseFrequency:1,baselineShift:1,"baseline-shift":"baselineShift",baseProfile:1,bbox:0,begin:0,bias:0,by:0,calcMode:1,capHeight:1,"cap-height":"capHeight",clip:0,clipPath:1,"clip-path":"clipPath",clipPathUnits:1,clipRule:1,"clip-rule":"clipRule",color:0,colorInterpolation:1,"color-interpolation":"colorInterpolation",colorInterpolationFilters:1,"color-interpolation-filters":"colorInterpolationFilters",colorProfile:1,"color-profile":"colorProfile",colorRendering:1,"color-rendering":"colorRendering",contentScriptType:1,contentStyleType:1,cursor:0,cx:0,cy:0,d:0,datatype:0,decelerate:0,descent:0,diffuseConstant:1,direction:0,display:0,divisor:0,dominantBaseline:1,"dominant-baseline":"dominantBaseline",dur:0,dx:0,dy:0,edgeMode:1,elevation:0,enableBackground:1,"enable-background":"enableBackground",end:0,exponent:0,externalResourcesRequired:1,fill:0,fillOpacity:1,"fill-opacity":"fillOpacity",fillRule:1,"fill-rule":"fillRule",filter:0,filterRes:1,filterUnits:1,floodOpacity:1,"flood-opacity":"floodOpacity",floodColor:1,"flood-color":"floodColor",focusable:0,fontFamily:1,"font-family":"fontFamily",fontSize:1,"font-size":"fontSize",fontSizeAdjust:1,"font-size-adjust":"fontSizeAdjust",fontStretch:1,"font-stretch":"fontStretch",fontStyle:1,"font-style":"fontStyle",fontVariant:1,"font-variant":"fontVariant",fontWeight:1,"font-weight":"fontWeight",format:0,from:0,fx:0,fy:0,g1:0,g2:0,glyphName:1,"glyph-name":"glyphName",glyphOrientationHorizontal:1,"glyph-orientation-horizontal":"glyphOrientationHorizontal",glyphOrientationVertical:1,"glyph-orientation-vertical":"glyphOrientationVertical",glyphRef:1,gradientTransform:1,gradientUnits:1,hanging:0,horizAdvX:1,"horiz-adv-x":"horizAdvX",horizOriginX:1,"horiz-origin-x":"horizOriginX",ideographic:0,imageRendering:1,"image-rendering":"imageRendering",in2:0,in:0,inlist:0,intercept:0,k1:0,k2:0,k3:0,k4:0,k:0,kernelMatrix:1,kernelUnitLength:1,kerning:0,keyPoints:1,keySplines:1,keyTimes:1,lengthAdjust:1,letterSpacing:1,"letter-spacing":"letterSpacing",lightingColor:1,"lighting-color":"lightingColor",limitingConeAngle:1,local:0,markerEnd:1,"marker-end":"markerEnd",markerHeight:1,markerMid:1,"marker-mid":"markerMid",markerStart:1,"marker-start":"markerStart",markerUnits:1,markerWidth:1,mask:0,maskContentUnits:1,maskUnits:1,mathematical:0,mode:0,numOctaves:1,offset:0,opacity:0,operator:0,order:0,orient:0,orientation:0,origin:0,overflow:0,overlinePosition:1,"overline-position":"overlinePosition",overlineThickness:1,"overline-thickness":"overlineThickness",paintOrder:1,"paint-order":"paintOrder",panose1:0,"panose-1":"panose1",pathLength:1,patternContentUnits:1,patternTransform:1,patternUnits:1,pointerEvents:1,"pointer-events":"pointerEvents",points:0,pointsAtX:1,pointsAtY:1,pointsAtZ:1,prefix:0,preserveAlpha:1,preserveAspectRatio:1,primitiveUnits:1,property:0,r:0,radius:0,refX:1,refY:1,renderingIntent:1,"rendering-intent":"renderingIntent",repeatCount:1,repeatDur:1,requiredExtensions:1,requiredFeatures:1,resource:0,restart:0,result:0,results:0,rotate:0,rx:0,ry:0,scale:0,security:0,seed:0,shapeRendering:1,"shape-rendering":"shapeRendering",slope:0,spacing:0,specularConstant:1,specularExponent:1,speed:0,spreadMethod:1,startOffset:1,stdDeviation:1,stemh:0,stemv:0,stitchTiles:1,stopColor:1,"stop-color":"stopColor",stopOpacity:1,"stop-opacity":"stopOpacity",strikethroughPosition:1,"strikethrough-position":"strikethroughPosition",strikethroughThickness:1,"strikethrough-thickness":"strikethroughThickness",string:0,stroke:0,strokeDasharray:1,"stroke-dasharray":"strokeDasharray",strokeDashoffset:1,"stroke-dashoffset":"strokeDashoffset",strokeLinecap:1,"stroke-linecap":"strokeLinecap",strokeLinejoin:1,"stroke-linejoin":"strokeLinejoin",strokeMiterlimit:1,"stroke-miterlimit":"strokeMiterlimit",strokeWidth:1,"stroke-width":"strokeWidth",strokeOpacity:1,"stroke-opacity":"strokeOpacity",suppressContentEditableWarning:1,suppressHydrationWarning:1,surfaceScale:1,systemLanguage:1,tableValues:1,targetX:1,targetY:1,textAnchor:1,"text-anchor":"textAnchor",textDecoration:1,"text-decoration":"textDecoration",textLength:1,textRendering:1,"text-rendering":"textRendering",to:0,transform:0,typeof:0,u1:0,u2:0,underlinePosition:1,"underline-position":"underlinePosition",underlineThickness:1,"underline-thickness":"underlineThickness",unicode:0,unicodeBidi:1,"unicode-bidi":"unicodeBidi",unicodeRange:1,"unicode-range":"unicodeRange",unitsPerEm:1,"units-per-em":"unitsPerEm",unselectable:0,vAlphabetic:1,"v-alphabetic":"vAlphabetic",values:0,vectorEffect:1,"vector-effect":"vectorEffect",version:0,vertAdvY:1,"vert-adv-y":"vertAdvY",vertOriginX:1,"vert-origin-x":"vertOriginX",vertOriginY:1,"vert-origin-y":"vertOriginY",vHanging:1,"v-hanging":"vHanging",vIdeographic:1,"v-ideographic":"vIdeographic",viewBox:1,viewTarget:1,visibility:0,vMathematical:1,"v-mathematical":"vMathematical",vocab:0,widths:0,wordSpacing:1,"word-spacing":"wordSpacing",writingMode:1,"writing-mode":"writingMode",x1:0,x2:0,x:0,xChannelSelector:1,xHeight:1,"x-height":"xHeight",xlinkActuate:1,"xlink:actuate":"xlinkActuate",xlinkArcrole:1,"xlink:arcrole":"xlinkArcrole",xlinkHref:1,"xlink:href":"xlinkHref",xlinkRole:1,"xlink:role":"xlinkRole",xlinkShow:1,"xlink:show":"xlinkShow",xlinkTitle:1,"xlink:title":"xlinkTitle",xlinkType:1,"xlink:type":"xlinkType",xmlBase:1,"xml:base":"xmlBase",xmlLang:1,"xml:lang":"xmlLang",xmlns:0,"xml:space":"xmlSpace",xmlnsXlink:1,"xmlns:xlink":"xmlnsXlink",xmlSpace:1,y1:0,y2:0,y:0,yChannelSelector:1,z:0,zoomAndPan:1}},5229:function(e,t,n){"use strict";var r=(this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}})(n(1133)),o=n(8917);function i(e,t){var n={};return e&&"string"==typeof e?((0,r.default)(e,(function(e,r){e&&r&&(n[(0,o.camelCase)(e,t)]=r)})),n):n}i.default=i,e.exports=i},8917:(e,t)=>{"use strict";Object.defineProperty(t,"__esModule",{value:!0}),t.camelCase=void 0;var n=/^--[a-zA-Z0-9-]+$/,r=/-([a-z])/g,o=/^[^-]+$/,i=/^-(webkit|moz|ms|o|khtml)-/,l=/^-(ms)-/,a=function(e,t){return t.toUpperCase()},s=function(e,t){return"".concat(t,"-")};t.camelCase=function(e,t){return void 0===t&&(t={}),function(e){return!e||o.test(e)||n.test(e)}(e)?e:(e=e.toLowerCase(),(e=t.reactCompat?e.replace(l,s):e.replace(i,s)).replace(r,a))}},1133:function(e,t,n){"use strict";var r=this&&this.__importDefault||function(e){return e&&e.__esModule?e:{default:e}};Object.defineProperty(t,"__esModule",{value:!0});var o=r(n(9788));t.default=function(e,t){var n=null;if(!e||"string"!=typeof e)return n;var r=(0,o.default)(e),i="function"==typeof t;return r.forEach((function(e){if("declaration"===e.type){var r=e.property,o=e.value;i?t(r,o,e):o&&((n=n||{})[r]=o)}})),n}},1609:e=>{"use strict";e.exports=window.React},6942:(e,t)=>{var n;!function(){"use strict";var r={}.hasOwnProperty;function o(){for(var e="",t=0;t<arguments.length;t++){var n=arguments[t];n&&(e=l(e,i(n)))}return e}function i(e){if("string"==typeof e||"number"==typeof e)return e;if("object"!=typeof e)return"";if(Array.isArray(e))return o.apply(null,e);if(e.toString!==Object.prototype.toString&&!e.toString.toString().includes("[native code]"))return e.toString();var t="";for(var n in e)r.call(e,n)&&e[n]&&(t=l(t,n));return t}function l(e,t){return t?e?e+" "+t:e+t:e}e.exports?(o.default=o,e.exports=o):void 0===(n=function(){return o}.apply(t,[]))||(e.exports=n)}()}},i={};function l(e){var t=i[e];if(void 0!==t)return t.exports;var n=i[e]={exports:{}};return o[e].call(n.exports,n,n.exports,l),n.exports}l.m=o,l.n=e=>{var t=e&&e.__esModule?()=>e.default:()=>e;return l.d(t,{a:t}),t},t=Object.getPrototypeOf?e=>Object.getPrototypeOf(e):e=>e.__proto__,l.t=function(n,r){if(1&r&&(n=this(n)),8&r)return n;if("object"==typeof n&&n){if(4&r&&n.__esModule)return n;if(16&r&&"function"==typeof n.then)return n}var o=Object.create(null);l.r(o);var i={};e=e||[null,t({}),t([]),t(t)];for(var a=2&r&&n;"object"==typeof a&&!~e.indexOf(a);a=t(a))Object.getOwnPropertyNames(a).forEach((e=>i[e]=()=>n[e]));return i.default=()=>n,l.d(o,i),o},l.d=(e,t)=>{for(var n in t)l.o(t,n)&&!l.o(e,n)&&Object.defineProperty(e,n,{enumerable:!0,get:t[n]})},l.f={},l.e=e=>Promise.all(Object.keys(l.f).reduce(((t,n)=>(l.f[n](e,t),t)),[])),l.u=e=>e+".js",l.miniCssF=e=>e+".css",l.g=function(){if("object"==typeof globalThis)return globalThis;try{return this||new Function("return this")()}catch(e){if("object"==typeof window)return window}}(),l.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),n={},r="gatherpress:",l.l=(e,t,o,i)=>{if(n[e])n[e].push(t);else{var a,s;if(void 0!==o)for(var c=document.getElementsByTagName("script"),u=0;u<c.length;u++){var d=c[u];if(d.getAttribute("src")==e||d.getAttribute("data-webpack")==r+o){a=d;break}}a||(s=!0,(a=document.createElement("script")).charset="utf-8",a.timeout=120,l.nc&&a.setAttribute("nonce",l.nc),a.setAttribute("data-webpack",r+o),a.src=e),n[e]=[t];var f=(t,r)=>{a.onerror=a.onload=null,clearTimeout(p);var o=n[e];if(delete n[e],a.parentNode&&a.parentNode.removeChild(a),o&&o.forEach((e=>e(r))),t)return t(r)},p=setTimeout(f.bind(null,void 0,{type:"timeout",target:a}),12e4);a.onerror=f.bind(null,a.onerror),a.onload=f.bind(null,a.onload),s&&document.head.appendChild(a)}},l.r=e=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},(()=>{var e;l.g.importScripts&&(e=l.g.location+"");var t=l.g.document;if(!e&&t&&(t.currentScript&&"SCRIPT"===t.currentScript.tagName.toUpperCase()&&(e=t.currentScript.src),!e)){var n=t.getElementsByTagName("script");if(n.length)for(var r=n.length-1;r>-1&&(!e||!/^http(s?):/.test(e));)e=n[r--].src}if(!e)throw new Error("Automatic publicPath is not supported in this browser");e=e.replace(/#.*$/,"").replace(/\?.*$/,"").replace(/\/[^\/]+$/,"/"),l.p=e+"../../"})(),(()=>{if("undefined"!=typeof document){var e={233:0};l.f.miniCss=(t,n)=>{e[t]?n.push(e[t]):0!==e[t]&&{535:1}[t]&&n.push(e[t]=(e=>new Promise(((t,n)=>{var r=l.miniCssF(e),o=l.p+r;if(((e,t)=>{for(var n=document.getElementsByTagName("link"),r=0;r<n.length;r++){var o=(l=n[r]).getAttribute("data-href")||l.getAttribute("href");if("stylesheet"===l.rel&&(o===e||o===t))return l}var i=document.getElementsByTagName("style");for(r=0;r<i.length;r++){var l;if((o=(l=i[r]).getAttribute("data-href"))===e||o===t)return l}})(r,o))return t();((e,t,n,r,o)=>{var i=document.createElement("link");i.rel="stylesheet",i.type="text/css",l.nc&&(i.nonce=l.nc),i.onerror=i.onload=n=>{if(i.onerror=i.onload=null,"load"===n.type)r();else{var l=n&&n.type,a=n&&n.target&&n.target.href||t,s=new Error("Loading CSS chunk "+e+" failed.\n("+l+": "+a+")");s.name="ChunkLoadError",s.code="CSS_CHUNK_LOAD_FAILED",s.type=l,s.request=a,i.parentNode&&i.parentNode.removeChild(i),o(s)}},i.href=t,document.head.appendChild(i)})(e,o,0,t,n)})))(t).then((()=>{e[t]=0}),(n=>{throw delete e[t],n})))}}})(),(()=>{var e={233:0};l.f.j=(t,n)=>{var r=l.o(e,t)?e[t]:void 0;if(0!==r)if(r)n.push(r[2]);else{var o=new Promise(((n,o)=>r=e[t]=[n,o]));n.push(r[2]=o);var i=l.p+l.u(t),a=new Error;l.l(i,(n=>{if(l.o(e,t)&&(0!==(r=e[t])&&(e[t]=void 0),r)){var o=n&&("load"===n.type?"missing":n.type),i=n&&n.target&&n.target.src;a.message="Loading chunk "+t+" failed.\n("+o+": "+i+")",a.name="ChunkLoadError",a.type=o,a.request=i,r[1](a)}}),"chunk-"+t,t)}};var t=(t,n)=>{var r,o,[i,a,s]=n,c=0;if(i.some((t=>0!==e[t]))){for(r in a)l.o(a,r)&&(l.m[r]=a[r]);s&&s(l)}for(t&&t(n);c<i.length;c++)o=i[c],l.o(e,o)&&e[o]&&e[o][0](),e[o]=0},n=globalThis.webpackChunkgatherpress=globalThis.webpackChunkgatherpress||[];n.forEach(t.bind(null,0)),n.push=t.bind(null,n.push.bind(n))})(),(()=>{"use strict";const e=window.wp.domReady;var t=l.n(e);const n=window.wp.element,r=window.wp.data,o=window.ReactJSXRuntime,i=e=>{const{zoom:t,type:n,className:r,location:i,height:l}=e,a={border:0,height:l,width:"100%"},s="https://maps.google.com/maps?"+new URLSearchParams({q:i,z:t||10,t:n||"m",output:"embed"}).toString();return(0,o.jsx)("iframe",{src:s,style:a,className:r,title:i})},a=window.wp.i18n;function s(e){if("object"==typeof GatherPress)return e.split(".").reduce(((e,t)=>e&&e[t]),GatherPress)}const c=e=>{const{zoom:t=10,className:r,location:i,height:c=300,latitude:u,longitude:d}=e,[f,p]=(0,n.useState)(null),h={height:c};return(0,n.useEffect)((()=>{(async()=>{const{default:e}=await l.e(481).then(l.t.bind(l,3481,23));await l.e(535).then(l.bind(l,1535)),await l.e(272).then(l.t.bind(l,1272,17)),await l.e(980).then(l.t.bind(l,8980,17)),p(e)})()}),[]),(0,n.useEffect)((()=>{if(!f||!u||!d)return;const e=f.map("map").setView([u,d],t);return f.Icon.Default.imagePath=s("urls.pluginUrl")+"build/images/",f.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:(0,a.sprintf)(/* translators: %s: Link to OpenStreetMap contributors. */ /* translators: %s: Link to OpenStreetMap contributors. */
-(0,a.__)("© %s contributors","gatherpress"),'<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>')}).addTo(e),f.marker([u,d]).addTo(e).bindPopup(i),()=>{e.remove()}}),[f,u,i,d,t]),f&&u&&d?(0,o.jsx)("div",{className:r,id:"map",style:h}):null},u=e=>{const t=(0,r.select)("core")?.canUser("create","posts"),n=Boolean((0,r.select)("core/edit-post")),{zoom:l,type:a,className:u,latitude:d,longitude:f}=e;let{location:p,height:h}=e;h||(h=300),!t||n||p||(p="660 4th Street #119 San Francisco CA 94107, USA");const m=s("settings.mapPlatform");return p&&m?"google"===m?(0,o.jsx)(i,{location:p,className:u,zoom:l,type:a,height:h}):"osm"===m?(0,o.jsx)(c,{location:p,latitude:d,longitude:f,className:u,zoom:l,height:h}):(0,o.jsx)(o.Fragment,{}):(0,o.jsx)(o.Fragment,{})};var d=l(1609);const f=Math.min,p=Math.max,h=Math.round,m=Math.floor,y=e=>({x:e,y:e}),g={left:"right",right:"left",bottom:"top",top:"bottom"},v={start:"end",end:"start"};function b(e,t,n){return p(e,f(t,n))}function w(e,t){return"function"==typeof e?e(t):e}function x(e){return e.split("-")[0]}function E(e){return e.split("-")[1]}function _(e){return"x"===e?"y":"x"}function S(e){return"y"===e?"height":"width"}function T(e){return["top","bottom"].includes(x(e))?"y":"x"}function k(e){return _(T(e))}function A(e){return e.replace(/start|end/g,(e=>v[e]))}function O(e){return e.replace(/left|right|bottom|top/g,(e=>g[e]))}function C(e){return"number"!=typeof e?function(e){return{top:0,right:0,bottom:0,left:0,...e}}(e):{top:e,right:e,bottom:e,left:e}}function N(e){const{x:t,y:n,width:r,height:o}=e;return{width:r,height:o,top:n,left:t,right:t+r,bottom:n+o,x:t,y:n}}function R(e,t,n){let{reference:r,floating:o}=e;const i=T(t),l=k(t),a=S(l),s=x(t),c="y"===i,u=r.x+r.width/2-o.width/2,d=r.y+r.height/2-o.height/2,f=r[a]/2-o[a]/2;let p;switch(s){case"top":p={x:u,y:r.y-o.height};break;case"bottom":p={x:u,y:r.y+r.height};break;case"right":p={x:r.x+r.width,y:d};break;case"left":p={x:r.x-o.width,y:d};break;default:p={x:r.x,y:r.y}}switch(E(t)){case"start":p[l]-=f*(n&&c?-1:1);break;case"end":p[l]+=f*(n&&c?-1:1)}return p}async function L(e,t){var n;void 0===t&&(t={});const{x:r,y:o,platform:i,rects:l,elements:a,strategy:s}=e,{boundary:c="clippingAncestors",rootBoundary:u="viewport",elementContext:d="floating",altBoundary:f=!1,padding:p=0}=w(t,e),h=C(p),m=a[f?"floating"===d?"reference":"floating":d],y=N(await i.getClippingRect({element:null==(n=await(null==i.isElement?void 0:i.isElement(m)))||n?m:m.contextElement||await(null==i.getDocumentElement?void 0:i.getDocumentElement(a.floating)),boundary:c,rootBoundary:u,strategy:s})),g="floating"===d?{x:r,y:o,width:l.floating.width,height:l.floating.height}:l.reference,v=await(null==i.getOffsetParent?void 0:i.getOffsetParent(a.floating)),b=await(null==i.isElement?void 0:i.isElement(v))&&await(null==i.getScale?void 0:i.getScale(v))||{x:1,y:1},x=N(i.convertOffsetParentRelativeRectToViewportRelativeRect?await i.convertOffsetParentRelativeRectToViewportRelativeRect({elements:a,rect:g,offsetParent:v,strategy:s}):g);return{top:(y.top-x.top+h.top)/b.y,bottom:(x.bottom-y.bottom+h.bottom)/b.y,left:(y.left-x.left+h.left)/b.x,right:(x.right-y.right+h.right)/b.x}}function j(e){return D(e)?(e.nodeName||"").toLowerCase():"#document"}function P(e){var t;return(null==e||null==(t=e.ownerDocument)?void 0:t.defaultView)||window}function I(e){var t;return null==(t=(D(e)?e.ownerDocument:e.document)||window.document)?void 0:t.documentElement}function D(e){return e instanceof Node||e instanceof P(e).Node}function M(e){return e instanceof Element||e instanceof P(e).Element}function F(e){return e instanceof HTMLElement||e instanceof P(e).HTMLElement}function z(e){return"undefined"!=typeof ShadowRoot&&(e instanceof ShadowRoot||e instanceof P(e).ShadowRoot)}function B(e){const{overflow:t,overflowX:n,overflowY:r,display:o}=$(e);return/auto|scroll|overlay|hidden|clip/.test(t+r+n)&&!["inline","contents"].includes(o)}function H(e){return["table","td","th"].includes(j(e))}function V(e){return[":popover-open",":modal"].some((t=>{try{return e.matches(t)}catch(e){return!1}}))}function q(e){const t=W(),n=M(e)?$(e):e;return"none"!==n.transform||"none"!==n.perspective||!!n.containerType&&"normal"!==n.containerType||!t&&!!n.backdropFilter&&"none"!==n.backdropFilter||!t&&!!n.filter&&"none"!==n.filter||["transform","perspective","filter"].some((e=>(n.willChange||"").includes(e)))||["paint","layout","strict","content"].some((e=>(n.contain||"").includes(e)))}function W(){return!("undefined"==typeof CSS||!CSS.supports)&&CSS.supports("-webkit-backdrop-filter","none")}function U(e){return["html","body","#document"].includes(j(e))}function $(e){return P(e).getComputedStyle(e)}function X(e){return M(e)?{scrollLeft:e.scrollLeft,scrollTop:e.scrollTop}:{scrollLeft:e.scrollX,scrollTop:e.scrollY}}function G(e){if("html"===j(e))return e;const t=e.assignedSlot||e.parentNode||z(e)&&e.host||I(e);return z(t)?t.host:t}function K(e){const t=G(e);return U(t)?e.ownerDocument?e.ownerDocument.body:e.body:F(t)&&B(t)?t:K(t)}function Y(e,t,n){var r;void 0===t&&(t=[]),void 0===n&&(n=!0);const o=K(e),i=o===(null==(r=e.ownerDocument)?void 0:r.body),l=P(o);return i?t.concat(l,l.visualViewport||[],B(o)?o:[],l.frameElement&&n?Y(l.frameElement):[]):t.concat(o,Y(o,[],n))}function Z(e){const t=$(e);let n=parseFloat(t.width)||0,r=parseFloat(t.height)||0;const o=F(e),i=o?e.offsetWidth:n,l=o?e.offsetHeight:r,a=h(n)!==i||h(r)!==l;return a&&(n=i,r=l),{width:n,height:r,$:a}}function J(e){return M(e)?e:e.contextElement}function Q(e){const t=J(e);if(!F(t))return y(1);const n=t.getBoundingClientRect(),{width:r,height:o,$:i}=Z(t);let l=(i?h(n.width):n.width)/r,a=(i?h(n.height):n.height)/o;return l&&Number.isFinite(l)||(l=1),a&&Number.isFinite(a)||(a=1),{x:l,y:a}}const ee=y(0);function te(e){const t=P(e);return W()&&t.visualViewport?{x:t.visualViewport.offsetLeft,y:t.visualViewport.offsetTop}:ee}function ne(e,t,n,r){void 0===t&&(t=!1),void 0===n&&(n=!1);const o=e.getBoundingClientRect(),i=J(e);let l=y(1);t&&(r?M(r)&&(l=Q(r)):l=Q(e));const a=function(e,t,n){return void 0===t&&(t=!1),!(!n||t&&n!==P(e))&&t}(i,n,r)?te(i):y(0);let s=(o.left+a.x)/l.x,c=(o.top+a.y)/l.y,u=o.width/l.x,d=o.height/l.y;if(i){const e=P(i),t=r&&M(r)?P(r):r;let n=e,o=n.frameElement;for(;o&&r&&t!==n;){const e=Q(o),t=o.getBoundingClientRect(),r=$(o),i=t.left+(o.clientLeft+parseFloat(r.paddingLeft))*e.x,l=t.top+(o.clientTop+parseFloat(r.paddingTop))*e.y;s*=e.x,c*=e.y,u*=e.x,d*=e.y,s+=i,c+=l,n=P(o),o=n.frameElement}}return N({width:u,height:d,x:s,y:c})}function re(e){return ne(I(e)).left+X(e).scrollLeft}function oe(e,t,n){let r;if("viewport"===t)r=function(e,t){const n=P(e),r=I(e),o=n.visualViewport;let i=r.clientWidth,l=r.clientHeight,a=0,s=0;if(o){i=o.width,l=o.height;const e=W();(!e||e&&"fixed"===t)&&(a=o.offsetLeft,s=o.offsetTop)}return{width:i,height:l,x:a,y:s}}(e,n);else if("document"===t)r=function(e){const t=I(e),n=X(e),r=e.ownerDocument.body,o=p(t.scrollWidth,t.clientWidth,r.scrollWidth,r.clientWidth),i=p(t.scrollHeight,t.clientHeight,r.scrollHeight,r.clientHeight);let l=-n.scrollLeft+re(e);const a=-n.scrollTop;return"rtl"===$(r).direction&&(l+=p(t.clientWidth,r.clientWidth)-o),{width:o,height:i,x:l,y:a}}(I(e));else if(M(t))r=function(e,t){const n=ne(e,!0,"fixed"===t),r=n.top+e.clientTop,o=n.left+e.clientLeft,i=F(e)?Q(e):y(1);return{width:e.clientWidth*i.x,height:e.clientHeight*i.y,x:o*i.x,y:r*i.y}}(t,n);else{const n=te(e);r={...t,x:t.x-n.x,y:t.y-n.y}}return N(r)}function ie(e,t){const n=G(e);return!(n===t||!M(n)||U(n))&&("fixed"===$(n).position||ie(n,t))}function le(e,t,n){const r=F(t),o=I(t),i="fixed"===n,l=ne(e,!0,i,t);let a={scrollLeft:0,scrollTop:0};const s=y(0);if(r||!r&&!i)if(("body"!==j(t)||B(o))&&(a=X(t)),r){const e=ne(t,!0,i,t);s.x=e.x+t.clientLeft,s.y=e.y+t.clientTop}else o&&(s.x=re(o));return{x:l.left+a.scrollLeft-s.x,y:l.top+a.scrollTop-s.y,width:l.width,height:l.height}}function ae(e){return"static"===$(e).position}function se(e,t){return F(e)&&"fixed"!==$(e).position?t?t(e):e.offsetParent:null}function ce(e,t){const n=P(e);if(V(e))return n;if(!F(e)){let t=G(e);for(;t&&!U(t);){if(M(t)&&!ae(t))return t;t=G(t)}return n}let r=se(e,t);for(;r&&H(r)&&ae(r);)r=se(r,t);return r&&U(r)&&ae(r)&&!q(r)?n:r||function(e){let t=G(e);for(;F(t)&&!U(t);){if(q(t))return t;if(V(t))return null;t=G(t)}return null}(e)||n}const ue={convertOffsetParentRelativeRectToViewportRelativeRect:function(e){let{elements:t,rect:n,offsetParent:r,strategy:o}=e;const i="fixed"===o,l=I(r),a=!!t&&V(t.floating);if(r===l||a&&i)return n;let s={scrollLeft:0,scrollTop:0},c=y(1);const u=y(0),d=F(r);if((d||!d&&!i)&&(("body"!==j(r)||B(l))&&(s=X(r)),F(r))){const e=ne(r);c=Q(r),u.x=e.x+r.clientLeft,u.y=e.y+r.clientTop}return{width:n.width*c.x,height:n.height*c.y,x:n.x*c.x-s.scrollLeft*c.x+u.x,y:n.y*c.y-s.scrollTop*c.y+u.y}},getDocumentElement:I,getClippingRect:function(e){let{element:t,boundary:n,rootBoundary:r,strategy:o}=e;const i=[..."clippingAncestors"===n?V(t)?[]:function(e,t){const n=t.get(e);if(n)return n;let r=Y(e,[],!1).filter((e=>M(e)&&"body"!==j(e))),o=null;const i="fixed"===$(e).position;let l=i?G(e):e;for(;M(l)&&!U(l);){const t=$(l),n=q(l);n||"fixed"!==t.position||(o=null),(i?!n&&!o:!n&&"static"===t.position&&o&&["absolute","fixed"].includes(o.position)||B(l)&&!n&&ie(e,l))?r=r.filter((e=>e!==l)):o=t,l=G(l)}return t.set(e,r),r}(t,this._c):[].concat(n),r],l=i[0],a=i.reduce(((e,n)=>{const r=oe(t,n,o);return e.top=p(r.top,e.top),e.right=f(r.right,e.right),e.bottom=f(r.bottom,e.bottom),e.left=p(r.left,e.left),e}),oe(t,l,o));return{width:a.right-a.left,height:a.bottom-a.top,x:a.left,y:a.top}},getOffsetParent:ce,getElementRects:async function(e){const t=this.getOffsetParent||ce,n=this.getDimensions,r=await n(e.floating);return{reference:le(e.reference,await t(e.floating),e.strategy),floating:{x:0,y:0,width:r.width,height:r.height}}},getClientRects:function(e){return Array.from(e.getClientRects())},getDimensions:function(e){const{width:t,height:n}=Z(e);return{width:t,height:n}},getScale:Q,isElement:M,isRTL:function(e){return"rtl"===$(e).direction}};const de=function(e){return void 0===e&&(e=0),{name:"offset",options:e,async fn(t){var n,r;const{x:o,y:i,placement:l,middlewareData:a}=t,s=await async function(e,t){const{placement:n,platform:r,elements:o}=e,i=await(null==r.isRTL?void 0:r.isRTL(o.floating)),l=x(n),a=E(n),s="y"===T(n),c=["left","top"].includes(l)?-1:1,u=i&&s?-1:1,d=w(t,e);let{mainAxis:f,crossAxis:p,alignmentAxis:h}="number"==typeof d?{mainAxis:d,crossAxis:0,alignmentAxis:null}:{mainAxis:0,crossAxis:0,alignmentAxis:null,...d};return a&&"number"==typeof h&&(p="end"===a?-1*h:h),s?{x:p*u,y:f*c}:{x:f*c,y:p*u}}(t,e);return l===(null==(n=a.offset)?void 0:n.placement)&&null!=(r=a.arrow)&&r.alignmentOffset?{}:{x:o+s.x,y:i+s.y,data:{...s,placement:l}}}}},fe=function(e){return void 0===e&&(e={}),{name:"shift",options:e,async fn(t){const{x:n,y:r,placement:o}=t,{mainAxis:i=!0,crossAxis:l=!1,limiter:a={fn:e=>{let{x:t,y:n}=e;return{x:t,y:n}}},...s}=w(e,t),c={x:n,y:r},u=await L(t,s),d=T(x(o)),f=_(d);let p=c[f],h=c[d];if(i){const e="y"===f?"bottom":"right";p=b(p+u["y"===f?"top":"left"],p,p-u[e])}if(l){const e="y"===d?"bottom":"right";h=b(h+u["y"===d?"top":"left"],h,h-u[e])}const m=a.fn({...t,[f]:p,[d]:h});return{...m,data:{x:m.x-n,y:m.y-r}}}}},pe=function(e){return void 0===e&&(e={}),{name:"flip",options:e,async fn(t){var n,r;const{placement:o,middlewareData:i,rects:l,initialPlacement:a,platform:s,elements:c}=t,{mainAxis:u=!0,crossAxis:d=!0,fallbackPlacements:f,fallbackStrategy:p="bestFit",fallbackAxisSideDirection:h="none",flipAlignment:m=!0,...y}=w(e,t);if(null!=(n=i.arrow)&&n.alignmentOffset)return{};const g=x(o),v=T(a),b=x(a)===a,_=await(null==s.isRTL?void 0:s.isRTL(c.floating)),C=f||(b||!m?[O(a)]:function(e){const t=O(e);return[A(e),t,A(t)]}(a)),N="none"!==h;!f&&N&&C.push(...function(e,t,n,r){const o=E(e);let i=function(e,t,n){const r=["left","right"],o=["right","left"],i=["top","bottom"],l=["bottom","top"];switch(e){case"top":case"bottom":return n?t?o:r:t?r:o;case"left":case"right":return t?i:l;default:return[]}}(x(e),"start"===n,r);return o&&(i=i.map((e=>e+"-"+o)),t&&(i=i.concat(i.map(A)))),i}(a,m,h,_));const R=[a,...C],j=await L(t,y),P=[];let I=(null==(r=i.flip)?void 0:r.overflows)||[];if(u&&P.push(j[g]),d){const e=function(e,t,n){void 0===n&&(n=!1);const r=E(e),o=k(e),i=S(o);let l="x"===o?r===(n?"end":"start")?"right":"left":"start"===r?"bottom":"top";return t.reference[i]>t.floating[i]&&(l=O(l)),[l,O(l)]}(o,l,_);P.push(j[e[0]],j[e[1]])}if(I=[...I,{placement:o,overflows:P}],!P.every((e=>e<=0))){var D,M;const e=((null==(D=i.flip)?void 0:D.index)||0)+1,t=R[e];if(t)return{data:{index:e,overflows:I},reset:{placement:t}};let n=null==(M=I.filter((e=>e.overflows[0]<=0)).sort(((e,t)=>e.overflows[1]-t.overflows[1]))[0])?void 0:M.placement;if(!n)switch(p){case"bestFit":{var F;const e=null==(F=I.filter((e=>{if(N){const t=T(e.placement);return t===v||"y"===t}return!0})).map((e=>[e.placement,e.overflows.filter((e=>e>0)).reduce(((e,t)=>e+t),0)])).sort(((e,t)=>e[1]-t[1]))[0])?void 0:F[0];e&&(n=e);break}case"initialPlacement":n=a}if(o!==n)return{reset:{placement:n}}}return{}}}},he=(e,t,n)=>{const r=new Map,o={platform:ue,...n},i={...o.platform,_c:r};return(async(e,t,n)=>{const{placement:r="bottom",strategy:o="absolute",middleware:i=[],platform:l}=n,a=i.filter(Boolean),s=await(null==l.isRTL?void 0:l.isRTL(t));let c=await l.getElementRects({reference:e,floating:t,strategy:o}),{x:u,y:d}=R(c,r,s),f=r,p={},h=0;for(let n=0;n<a.length;n++){const{name:i,fn:m}=a[n],{x:y,y:g,data:v,reset:b}=await m({x:u,y:d,initialPlacement:r,placement:f,strategy:o,middlewareData:p,rects:c,platform:l,elements:{reference:e,floating:t}});u=null!=y?y:u,d=null!=g?g:d,p={...p,[i]:{...p[i],...v}},b&&h<=50&&(h++,"object"==typeof b&&(b.placement&&(f=b.placement),b.rects&&(c=!0===b.rects?await l.getElementRects({reference:e,floating:t,strategy:o}):b.rects),({x:u,y:d}=R(c,f,s))),n=-1)}return{x:u,y:d,placement:f,strategy:o,middlewareData:p}})(e,t,{...o,platform:i})};var me=l(6942);const ye={core:!1,base:!1};function ge({css:e,id:t="react-tooltip-base-styles",type:n="base",ref:r}){var o,i;if(!e||"undefined"==typeof document||ye[n])return;if("core"===n&&"undefined"!=typeof process&&(null===(o=null===process||void 0===process?void 0:process.env)||void 0===o?void 0:o.REACT_TOOLTIP_DISABLE_CORE_STYLES))return;if("base"!==n&&"undefined"!=typeof process&&(null===(i=null===process||void 0===process?void 0:process.env)||void 0===i?void 0:i.REACT_TOOLTIP_DISABLE_BASE_STYLES))return;"core"===n&&(t="react-tooltip-core-styles"),r||(r={});const{insertAt:l}=r;if(document.getElementById(t))return;const a=document.head||document.getElementsByTagName("head")[0],s=document.createElement("style");s.id=t,s.type="text/css","top"===l&&a.firstChild?a.insertBefore(s,a.firstChild):a.appendChild(s),s.styleSheet?s.styleSheet.cssText=e:s.appendChild(document.createTextNode(e)),ye[n]=!0}const ve=async({elementReference:e=null,tooltipReference:t=null,tooltipArrowReference:n=null,place:r="top",offset:o=10,strategy:i="absolute",middlewares:l=[de(Number(o)),pe({fallbackAxisSideDirection:"start"}),fe({padding:5})],border:a})=>{if(!e)return{tooltipStyles:{},tooltipArrowStyles:{},place:r};if(null===t)return{tooltipStyles:{},tooltipArrowStyles:{},place:r};const s=l;return n?(s.push({name:"arrow",options:c={element:n,padding:5},async fn(e){const{x:t,y:n,placement:r,rects:o,platform:i,elements:l,middlewareData:a}=e,{element:s,padding:u=0}=w(c,e)||{};if(null==s)return{};const d=C(u),p={x:t,y:n},h=k(r),m=S(h),y=await i.getDimensions(s),g="y"===h,v=g?"top":"left",x=g?"bottom":"right",_=g?"clientHeight":"clientWidth",T=o.reference[m]+o.reference[h]-p[h]-o.floating[m],A=p[h]-o.reference[h],O=await(null==i.getOffsetParent?void 0:i.getOffsetParent(s));let N=O?O[_]:0;N&&await(null==i.isElement?void 0:i.isElement(O))||(N=l.floating[_]||o.floating[m]);const R=T/2-A/2,L=N/2-y[m]/2-1,j=f(d[v],L),P=f(d[x],L),I=j,D=N-y[m]-P,M=N/2-y[m]/2+R,F=b(I,M,D),z=!a.arrow&&null!=E(r)&&M!==F&&o.reference[m]/2-(M<I?j:P)-y[m]/2<0,B=z?M<I?M-I:M-D:0;return{[h]:p[h]+B,data:{[h]:F,centerOffset:M-F-B,...z&&{alignmentOffset:B}},reset:z}}}),he(e,t,{placement:r,strategy:i,middleware:s}).then((({x:e,y:t,placement:n,middlewareData:r})=>{var o,i;const l={left:`${e}px`,top:`${t}px`,border:a},{x:s,y:c}=null!==(o=r.arrow)&&void 0!==o?o:{x:0,y:0},u=null!==(i={top:"bottom",right:"left",bottom:"top",left:"right"}[n.split("-")[0]])&&void 0!==i?i:"bottom",d=a&&{borderBottom:a,borderRight:a};let f=0;if(a){const e=`${a}`.match(/(\d+)px/);f=(null==e?void 0:e[1])?Number(e[1]):1}return{tooltipStyles:l,tooltipArrowStyles:{left:null!=s?`${s}px`:"",top:null!=c?`${c}px`:"",right:"",bottom:"",...d,[u]:`-${4+f}px`},place:n}}))):he(e,t,{placement:"bottom",strategy:i,middleware:s}).then((({x:e,y:t,placement:n})=>({tooltipStyles:{left:`${e}px`,top:`${t}px`},tooltipArrowStyles:{},place:n})));var c},be=(e,t)=>!("CSS"in window&&"supports"in window.CSS)||window.CSS.supports(e,t),we=(e,t,n)=>{let r=null;const o=function(...o){const i=()=>{r=null,n||e.apply(this,o)};n&&!r&&(e.apply(this,o),r=setTimeout(i,t)),n||(r&&clearTimeout(r),r=setTimeout(i,t))};return o.cancel=()=>{r&&(clearTimeout(r),r=null)},o},xe=e=>null!==e&&!Array.isArray(e)&&"object"==typeof e,Ee=(e,t)=>{if(e===t)return!0;if(Array.isArray(e)&&Array.isArray(t))return e.length===t.length&&e.every(((e,n)=>Ee(e,t[n])));if(Array.isArray(e)!==Array.isArray(t))return!1;if(!xe(e)||!xe(t))return e===t;const n=Object.keys(e),r=Object.keys(t);return n.length===r.length&&n.every((n=>Ee(e[n],t[n])))},_e=e=>{if(!(e instanceof HTMLElement||e instanceof SVGElement))return!1;const t=getComputedStyle(e);return["overflow","overflow-x","overflow-y"].some((e=>{const n=t.getPropertyValue(e);return"auto"===n||"scroll"===n}))},Se=e=>{if(!e)return null;let t=e.parentElement;for(;t;){if(_e(t))return t;t=t.parentElement}return document.scrollingElement||document.documentElement},Te="undefined"!=typeof window?d.useLayoutEffect:d.useEffect,ke=e=>{e.current&&(clearTimeout(e.current),e.current=null)},Ae={anchorRefs:new Set,activeAnchor:{current:null},attach:()=>{},detach:()=>{},setActiveAnchor:()=>{}},Oe=(0,d.createContext)({getTooltipData:()=>Ae});function Ce(e="DEFAULT_TOOLTIP_ID"){return(0,d.useContext)(Oe).getTooltipData(e)}var Ne={tooltip:"core-styles-module_tooltip__3vRRp",fixed:"core-styles-module_fixed__pcSol",arrow:"core-styles-module_arrow__cvMwQ",noArrow:"core-styles-module_noArrow__xock6",clickable:"core-styles-module_clickable__ZuTTB",show:"core-styles-module_show__Nt9eE",closing:"core-styles-module_closing__sGnxF"},Re={tooltip:"styles-module_tooltip__mnnfp",arrow:"styles-module_arrow__K0L3T",dark:"styles-module_dark__xNqje",light:"styles-module_light__Z6W-X",success:"styles-module_success__A2AKt",warning:"styles-module_warning__SCK0X",error:"styles-module_error__JvumD",info:"styles-module_info__BWdHW"};const Le=({forwardRef:e,id:t,className:n,classNameArrow:r,variant:o="dark",anchorId:i,anchorSelect:l,place:a="top",offset:s=10,events:c=["hover"],openOnClick:u=!1,positionStrategy:h="absolute",middlewares:y,wrapper:g,delayShow:v=0,delayHide:b=0,float:w=!1,hidden:x=!1,noArrow:E=!1,clickable:_=!1,closeOnEsc:S=!1,closeOnScroll:T=!1,closeOnResize:k=!1,openEvents:A,closeEvents:O,globalCloseEvents:C,imperativeModeOnly:N,style:R,position:L,afterShow:j,afterHide:P,content:D,contentWrapperRef:M,isOpen:F,defaultIsOpen:z=!1,setIsOpen:B,activeAnchor:H,setActiveAnchor:V,border:q,opacity:W,arrowColor:U,role:$="tooltip"})=>{var X;const G=(0,d.useRef)(null),K=(0,d.useRef)(null),Z=(0,d.useRef)(null),Q=(0,d.useRef)(null),ee=(0,d.useRef)(null),[te,re]=(0,d.useState)({tooltipStyles:{},tooltipArrowStyles:{},place:a}),[oe,ie]=(0,d.useState)(!1),[le,ae]=(0,d.useState)(!1),[se,ce]=(0,d.useState)(null),ue=(0,d.useRef)(!1),de=(0,d.useRef)(null),{anchorRefs:fe,setActiveAnchor:pe}=Ce(t),he=(0,d.useRef)(!1),[ye,ge]=(0,d.useState)([]),be=(0,d.useRef)(!1),xe=u||c.includes("click"),_e=xe||(null==A?void 0:A.click)||(null==A?void 0:A.dblclick)||(null==A?void 0:A.mousedown),Ae=A?{...A}:{mouseover:!0,focus:!0,mouseenter:!1,click:!1,dblclick:!1,mousedown:!1};!A&&xe&&Object.assign(Ae,{mouseenter:!1,focus:!1,mouseover:!1,click:!0});const Oe=O?{...O}:{mouseout:!0,blur:!0,mouseleave:!1,click:!1,dblclick:!1,mouseup:!1};!O&&xe&&Object.assign(Oe,{mouseleave:!1,blur:!1,mouseout:!1});const Le=C?{...C}:{escape:S||!1,scroll:T||!1,resize:k||!1,clickOutsideAnchor:_e||!1};N&&(Object.assign(Ae,{mouseenter:!1,focus:!1,click:!1,dblclick:!1,mousedown:!1}),Object.assign(Oe,{mouseleave:!1,blur:!1,click:!1,dblclick:!1,mouseup:!1}),Object.assign(Le,{escape:!1,scroll:!1,resize:!1,clickOutsideAnchor:!1})),Te((()=>(be.current=!0,()=>{be.current=!1})),[]);const je=e=>{be.current&&(e&&ae(!0),setTimeout((()=>{be.current&&(null==B||B(e),void 0===F&&ie(e))}),10))};(0,d.useEffect)((()=>{if(void 0===F)return()=>null;F&&ae(!0);const e=setTimeout((()=>{ie(F)}),10);return()=>{clearTimeout(e)}}),[F]),(0,d.useEffect)((()=>{if(oe!==ue.current)if(ke(ee),ue.current=oe,oe)null==j||j();else{const e=(()=>{const e=getComputedStyle(document.body).getPropertyValue("--rt-transition-show-delay").match(/^([\d.]+)(ms|s)$/);if(!e)return 0;const[,t,n]=e;return Number(t)*("ms"===n?1:1e3)})();ee.current=setTimeout((()=>{ae(!1),ce(null),null==P||P()}),e+25)}}),[oe]);const Pe=e=>{re((t=>Ee(t,e)?t:e))},Ie=(e=v)=>{ke(Z),le?je(!0):Z.current=setTimeout((()=>{je(!0)}),e)},De=(e=b)=>{ke(Q),Q.current=setTimeout((()=>{he.current||je(!1)}),e)},Me=e=>{var t;if(!e)return;const n=null!==(t=e.currentTarget)&&void 0!==t?t:e.target;if(!(null==n?void 0:n.isConnected))return V(null),void pe({current:null});v?Ie():je(!0),V(n),pe({current:n}),ke(Q)},Fe=()=>{_?De(b||100):b?De():je(!1),ke(Z)},ze=({x:e,y:t})=>{var n;const r={getBoundingClientRect:()=>({x:e,y:t,width:0,height:0,top:t,left:e,right:e,bottom:t})};ve({place:null!==(n=null==se?void 0:se.place)&&void 0!==n?n:a,offset:s,elementReference:r,tooltipReference:G.current,tooltipArrowReference:K.current,strategy:h,middlewares:y,border:q}).then((e=>{Pe(e)}))},Be=e=>{if(!e)return;const t=e,n={x:t.clientX,y:t.clientY};ze(n),de.current=n},He=e=>{var t;if(!oe)return;const n=e.target;n.isConnected&&((null===(t=G.current)||void 0===t?void 0:t.contains(n))||[document.querySelector(`[id='${i}']`),...ye].some((e=>null==e?void 0:e.contains(n)))||(je(!1),ke(Z)))},Ve=we(Me,50,!0),qe=we(Fe,50,!0),We=e=>{qe.cancel(),Ve(e)},Ue=()=>{Ve.cancel(),qe()},$e=(0,d.useCallback)((()=>{var e,t;const n=null!==(e=null==se?void 0:se.position)&&void 0!==e?e:L;n?ze(n):w?de.current&&ze(de.current):(null==H?void 0:H.isConnected)&&ve({place:null!==(t=null==se?void 0:se.place)&&void 0!==t?t:a,offset:s,elementReference:H,tooltipReference:G.current,tooltipArrowReference:K.current,strategy:h,middlewares:y,border:q}).then((e=>{be.current&&Pe(e)}))}),[oe,H,D,R,a,null==se?void 0:se.place,s,h,L,null==se?void 0:se.position,w]);(0,d.useEffect)((()=>{var e,t;const n=new Set(fe);ye.forEach((e=>{n.add({current:e})}));const r=document.querySelector(`[id='${i}']`);r&&n.add({current:r});const o=()=>{je(!1)},l=Se(H),a=Se(G.current);Le.scroll&&(window.addEventListener("scroll",o),null==l||l.addEventListener("scroll",o),null==a||a.addEventListener("scroll",o));let s=null;Le.resize?window.addEventListener("resize",o):H&&G.current&&(s=function(e,t,n,r){void 0===r&&(r={});const{ancestorScroll:o=!0,ancestorResize:i=!0,elementResize:l="function"==typeof ResizeObserver,layoutShift:a="function"==typeof IntersectionObserver,animationFrame:s=!1}=r,c=J(e),u=o||i?[...c?Y(c):[],...Y(t)]:[];u.forEach((e=>{o&&e.addEventListener("scroll",n,{passive:!0}),i&&e.addEventListener("resize",n)}));const d=c&&a?function(e,t){let n,r=null;const o=I(e);function i(){var e;clearTimeout(n),null==(e=r)||e.disconnect(),r=null}return function l(a,s){void 0===a&&(a=!1),void 0===s&&(s=1),i();const{left:c,top:u,width:d,height:h}=e.getBoundingClientRect();if(a||t(),!d||!h)return;const y={rootMargin:-m(u)+"px "+-m(o.clientWidth-(c+d))+"px "+-m(o.clientHeight-(u+h))+"px "+-m(c)+"px",threshold:p(0,f(1,s))||1};let g=!0;function v(e){const t=e[0].intersectionRatio;if(t!==s){if(!g)return l();t?l(!1,t):n=setTimeout((()=>{l(!1,1e-7)}),1e3)}g=!1}try{r=new IntersectionObserver(v,{...y,root:o.ownerDocument})}catch(e){r=new IntersectionObserver(v,y)}r.observe(e)}(!0),i}(c,n):null;let h,y=-1,g=null;l&&(g=new ResizeObserver((e=>{let[r]=e;r&&r.target===c&&g&&(g.unobserve(t),cancelAnimationFrame(y),y=requestAnimationFrame((()=>{var e;null==(e=g)||e.observe(t)}))),n()})),c&&!s&&g.observe(c),g.observe(t));let v=s?ne(e):null;return s&&function t(){const r=ne(e);!v||r.x===v.x&&r.y===v.y&&r.width===v.width&&r.height===v.height||n(),v=r,h=requestAnimationFrame(t)}(),n(),()=>{var e;u.forEach((e=>{o&&e.removeEventListener("scroll",n),i&&e.removeEventListener("resize",n)})),null==d||d(),null==(e=g)||e.disconnect(),g=null,s&&cancelAnimationFrame(h)}}(H,G.current,$e,{ancestorResize:!0,elementResize:!0,layoutShift:!0}));const c=e=>{"Escape"===e.key&&je(!1)};Le.escape&&window.addEventListener("keydown",c),Le.clickOutsideAnchor&&window.addEventListener("click",He);const u=[],d=e=>{oe&&(null==e?void 0:e.target)===H||Me(e)},h=e=>{oe&&(null==e?void 0:e.target)===H&&Fe()},y=["mouseover","mouseout","mouseenter","mouseleave","focus","blur"],g=["click","dblclick","mousedown","mouseup"];Object.entries(Ae).forEach((([e,t])=>{t&&(y.includes(e)?u.push({event:e,listener:We}):g.includes(e)&&u.push({event:e,listener:d}))})),Object.entries(Oe).forEach((([e,t])=>{t&&(y.includes(e)?u.push({event:e,listener:Ue}):g.includes(e)&&u.push({event:e,listener:h}))})),w&&u.push({event:"pointermove",listener:Be});const v=()=>{he.current=!0},b=()=>{he.current=!1,Fe()};return _&&!_e&&(null===(e=G.current)||void 0===e||e.addEventListener("mouseenter",v),null===(t=G.current)||void 0===t||t.addEventListener("mouseleave",b)),u.forEach((({event:e,listener:t})=>{n.forEach((n=>{var r;null===(r=n.current)||void 0===r||r.addEventListener(e,t)}))})),()=>{var e,t;Le.scroll&&(window.removeEventListener("scroll",o),null==l||l.removeEventListener("scroll",o),null==a||a.removeEventListener("scroll",o)),Le.resize?window.removeEventListener("resize",o):null==s||s(),Le.clickOutsideAnchor&&window.removeEventListener("click",He),Le.escape&&window.removeEventListener("keydown",c),_&&!_e&&(null===(e=G.current)||void 0===e||e.removeEventListener("mouseenter",v),null===(t=G.current)||void 0===t||t.removeEventListener("mouseleave",b)),u.forEach((({event:e,listener:t})=>{n.forEach((n=>{var r;null===(r=n.current)||void 0===r||r.removeEventListener(e,t)}))}))}}),[H,$e,le,fe,ye,A,O,C,xe,v,b]),(0,d.useEffect)((()=>{var e,n;let r=null!==(n=null!==(e=null==se?void 0:se.anchorSelect)&&void 0!==e?e:l)&&void 0!==n?n:"";!r&&t&&(r=`[data-tooltip-id='${t.replace(/'/g,"\\'")}']`);const o=new MutationObserver((e=>{const n=[],o=[];e.forEach((e=>{if("attributes"===e.type&&"data-tooltip-id"===e.attributeName&&(e.target.getAttribute("data-tooltip-id")===t?n.push(e.target):e.oldValue===t&&o.push(e.target)),"childList"===e.type){if(H){const t=[...e.removedNodes].filter((e=>1===e.nodeType));if(r)try{o.push(...t.filter((e=>e.matches(r)))),o.push(...t.flatMap((e=>[...e.querySelectorAll(r)])))}catch(e){}t.some((e=>{var t;return!!(null===(t=null==e?void 0:e.contains)||void 0===t?void 0:t.call(e,H))&&(ae(!1),je(!1),V(null),ke(Z),ke(Q),!0)}))}if(r)try{const t=[...e.addedNodes].filter((e=>1===e.nodeType));n.push(...t.filter((e=>e.matches(r)))),n.push(...t.flatMap((e=>[...e.querySelectorAll(r)])))}catch(e){}}})),(n.length||o.length)&&ge((e=>[...e.filter((e=>!o.includes(e))),...n]))}));return o.observe(document.body,{childList:!0,subtree:!0,attributes:!0,attributeFilter:["data-tooltip-id"],attributeOldValue:!0}),()=>{o.disconnect()}}),[t,l,null==se?void 0:se.anchorSelect,H]),(0,d.useEffect)((()=>{$e()}),[$e]),(0,d.useEffect)((()=>{if(!(null==M?void 0:M.current))return()=>null;const e=new ResizeObserver((()=>{setTimeout((()=>$e()))}));return e.observe(M.current),()=>{e.disconnect()}}),[D,null==M?void 0:M.current]),(0,d.useEffect)((()=>{var e;const t=document.querySelector(`[id='${i}']`),n=[...ye,t];H&&n.includes(H)||V(null!==(e=ye[0])&&void 0!==e?e:t)}),[i,ye,H]),(0,d.useEffect)((()=>(z&&je(!0),()=>{ke(Z),ke(Q)})),[]),(0,d.useEffect)((()=>{var e;let n=null!==(e=null==se?void 0:se.anchorSelect)&&void 0!==e?e:l;if(!n&&t&&(n=`[data-tooltip-id='${t.replace(/'/g,"\\'")}']`),n)try{const e=Array.from(document.querySelectorAll(n));ge(e)}catch(e){ge([])}}),[t,l,null==se?void 0:se.anchorSelect]),(0,d.useEffect)((()=>{Z.current&&(ke(Z),Ie(v))}),[v]);const Xe=null!==(X=null==se?void 0:se.content)&&void 0!==X?X:D,Ge=oe&&Object.keys(te.tooltipStyles).length>0;return(0,d.useImperativeHandle)(e,(()=>({open:e=>{if(null==e?void 0:e.anchorSelect)try{document.querySelector(e.anchorSelect)}catch(t){return void console.warn(`[react-tooltip] "${e.anchorSelect}" is not a valid CSS selector`)}ce(null!=e?e:null),(null==e?void 0:e.delay)?Ie(e.delay):je(!0)},close:e=>{(null==e?void 0:e.delay)?De(e.delay):je(!1)},activeAnchor:H,place:te.place,isOpen:Boolean(le&&!x&&Xe&&Ge)}))),le&&!x&&Xe?d.createElement(g,{id:t,role:$,className:me("react-tooltip",Ne.tooltip,Re.tooltip,Re[o],n,`react-tooltip__place-${te.place}`,Ne[Ge?"show":"closing"],Ge?"react-tooltip__show":"react-tooltip__closing","fixed"===h&&Ne.fixed,_&&Ne.clickable),onTransitionEnd:e=>{ke(ee),oe||"opacity"!==e.propertyName||(ae(!1),ce(null),null==P||P())},style:{...R,...te.tooltipStyles,opacity:void 0!==W&&Ge?W:void 0},ref:G},Xe,d.createElement(g,{className:me("react-tooltip-arrow",Ne.arrow,Re.arrow,r,E&&Ne.noArrow),style:{...te.tooltipArrowStyles,background:U?`linear-gradient(to right bottom, transparent 50%, ${U} 50%)`:void 0},ref:K})):null},je=({content:e})=>d.createElement("span",{dangerouslySetInnerHTML:{__html:e}}),Pe=d.forwardRef((({id:e,anchorId:t,anchorSelect:n,content:r,html:o,render:i,className:l,classNameArrow:a,variant:s="dark",place:c="top",offset:u=10,wrapper:f="div",children:p=null,events:h=["hover"],openOnClick:m=!1,positionStrategy:y="absolute",middlewares:g,delayShow:v=0,delayHide:b=0,float:w=!1,hidden:x=!1,noArrow:E=!1,clickable:_=!1,closeOnEsc:S=!1,closeOnScroll:T=!1,closeOnResize:k=!1,openEvents:A,closeEvents:O,globalCloseEvents:C,imperativeModeOnly:N=!1,style:R,position:L,isOpen:j,defaultIsOpen:P=!1,disableStyleInjection:I=!1,border:D,opacity:M,arrowColor:F,setIsOpen:z,afterShow:B,afterHide:H,role:V="tooltip"},q)=>{const[W,U]=(0,d.useState)(r),[$,X]=(0,d.useState)(o),[G,K]=(0,d.useState)(c),[Y,Z]=(0,d.useState)(s),[J,Q]=(0,d.useState)(u),[ee,te]=(0,d.useState)(v),[ne,re]=(0,d.useState)(b),[oe,ie]=(0,d.useState)(w),[le,ae]=(0,d.useState)(x),[se,ce]=(0,d.useState)(f),[ue,de]=(0,d.useState)(h),[fe,pe]=(0,d.useState)(y),[he,ye]=(0,d.useState)(null),[ge,ve]=(0,d.useState)(null),we=(0,d.useRef)(I),{anchorRefs:xe,activeAnchor:Ee}=Ce(e),_e=e=>null==e?void 0:e.getAttributeNames().reduce(((t,n)=>{var r;return n.startsWith("data-tooltip-")&&(t[n.replace(/^data-tooltip-/,"")]=null!==(r=null==e?void 0:e.getAttribute(n))&&void 0!==r?r:null),t}),{}),Se=e=>{const t={place:e=>{var t;K(null!==(t=e)&&void 0!==t?t:c)},content:e=>{U(null!=e?e:r)},html:e=>{X(null!=e?e:o)},variant:e=>{var t;Z(null!==(t=e)&&void 0!==t?t:s)},offset:e=>{Q(null===e?u:Number(e))},wrapper:e=>{var t;ce(null!==(t=e)&&void 0!==t?t:f)},events:e=>{const t=null==e?void 0:e.split(" ");de(null!=t?t:h)},"position-strategy":e=>{var t;pe(null!==(t=e)&&void 0!==t?t:y)},"delay-show":e=>{te(null===e?v:Number(e))},"delay-hide":e=>{re(null===e?b:Number(e))},float:e=>{ie(null===e?w:"true"===e)},hidden:e=>{ae(null===e?x:"true"===e)},"class-name":e=>{ye(e)}};Object.values(t).forEach((e=>e(null))),Object.entries(e).forEach((([e,n])=>{var r;null===(r=t[e])||void 0===r||r.call(t,n)}))};(0,d.useEffect)((()=>{U(r)}),[r]),(0,d.useEffect)((()=>{X(o)}),[o]),(0,d.useEffect)((()=>{K(c)}),[c]),(0,d.useEffect)((()=>{Z(s)}),[s]),(0,d.useEffect)((()=>{Q(u)}),[u]),(0,d.useEffect)((()=>{te(v)}),[v]),(0,d.useEffect)((()=>{re(b)}),[b]),(0,d.useEffect)((()=>{ie(w)}),[w]),(0,d.useEffect)((()=>{ae(x)}),[x]),(0,d.useEffect)((()=>{pe(y)}),[y]),(0,d.useEffect)((()=>{we.current!==I&&console.warn("[react-tooltip] Do not change `disableStyleInjection` dynamically.")}),[I]),(0,d.useEffect)((()=>{"undefined"!=typeof window&&window.dispatchEvent(new CustomEvent("react-tooltip-inject-styles",{detail:{disableCore:"core"===I,disableBase:I}}))}),[]),(0,d.useEffect)((()=>{var r;const o=new Set(xe);let i=n;if(!i&&e&&(i=`[data-tooltip-id='${e.replace(/'/g,"\\'")}']`),i)try{document.querySelectorAll(i).forEach((e=>{o.add({current:e})}))}catch(r){console.warn(`[react-tooltip] "${i}" is not a valid CSS selector`)}const l=document.querySelector(`[id='${t}']`);if(l&&o.add({current:l}),!o.size)return()=>null;const a=null!==(r=null!=ge?ge:l)&&void 0!==r?r:Ee.current,s=new MutationObserver((e=>{e.forEach((e=>{var t;if(!a||"attributes"!==e.type||!(null===(t=e.attributeName)||void 0===t?void 0:t.startsWith("data-tooltip-")))return;const n=_e(a);Se(n)}))})),c={attributes:!0,childList:!1,subtree:!1};if(a){const e=_e(a);Se(e),s.observe(a,c)}return()=>{s.disconnect()}}),[xe,Ee,ge,t,n]),(0,d.useEffect)((()=>{(null==R?void 0:R.border)&&console.warn("[react-tooltip] Do not set `style.border`. Use `border` prop instead."),D&&!be("border",`${D}`)&&console.warn(`[react-tooltip] "${D}" is not a valid \`border\`.`),(null==R?void 0:R.opacity)&&console.warn("[react-tooltip] Do not set `style.opacity`. Use `opacity` prop instead."),M&&!be("opacity",`${M}`)&&console.warn(`[react-tooltip] "${M}" is not a valid \`opacity\`.`)}),[]);let Te=p;const ke=(0,d.useRef)(null);if(i){const e=i({content:(null==ge?void 0:ge.getAttribute("data-tooltip-content"))||W||null,activeAnchor:ge});Te=e?d.createElement("div",{ref:ke,className:"react-tooltip-content-wrapper"},e):null}else W&&(Te=W);$&&(Te=d.createElement(je,{content:$}));const Ae={forwardRef:q,id:e,anchorId:t,anchorSelect:n,className:me(l,he),classNameArrow:a,content:Te,contentWrapperRef:ke,place:G,variant:Y,offset:J,wrapper:se,events:ue,openOnClick:m,positionStrategy:fe,middlewares:g,delayShow:ee,delayHide:ne,float:oe,hidden:le,noArrow:E,clickable:_,closeOnEsc:S,closeOnScroll:T,closeOnResize:k,openEvents:A,closeEvents:O,globalCloseEvents:C,imperativeModeOnly:N,style:R,position:L,isOpen:j,defaultIsOpen:P,border:D,opacity:M,arrowColor:F,setIsOpen:z,afterShow:B,afterHide:H,activeAnchor:ge,setActiveAnchor:e=>ve(e),role:V};return d.createElement(Le,{...Ae})}));"undefined"!=typeof window&&window.addEventListener("react-tooltip-inject-styles",(e=>{e.detail.disableCore||ge({css:":root{--rt-color-white:#fff;--rt-color-dark:#222;--rt-color-success:#8dc572;--rt-color-error:#be6464;--rt-color-warning:#f0ad4e;--rt-color-info:#337ab7;--rt-opacity:0.9;--rt-transition-show-delay:0.15s;--rt-transition-closing-delay:0.15s}.core-styles-module_tooltip__3vRRp{position:absolute;top:0;left:0;pointer-events:none;opacity:0;will-change:opacity}.core-styles-module_fixed__pcSol{position:fixed}.core-styles-module_arrow__cvMwQ{position:absolute;background:inherit}.core-styles-module_noArrow__xock6{display:none}.core-styles-module_clickable__ZuTTB{pointer-events:auto}.core-styles-module_show__Nt9eE{opacity:var(--rt-opacity);transition:opacity var(--rt-transition-show-delay)ease-out}.core-styles-module_closing__sGnxF{opacity:0;transition:opacity var(--rt-transition-closing-delay)ease-in}",type:"core"}),e.detail.disableBase||ge({css:"\n.styles-module_tooltip__mnnfp{padding:8px 16px;border-radius:3px;font-size:90%;width:max-content}.styles-module_arrow__K0L3T{width:8px;height:8px}[class*='react-tooltip__place-top']>.styles-module_arrow__K0L3T{transform:rotate(45deg)}[class*='react-tooltip__place-right']>.styles-module_arrow__K0L3T{transform:rotate(135deg)}[class*='react-tooltip__place-bottom']>.styles-module_arrow__K0L3T{transform:rotate(225deg)}[class*='react-tooltip__place-left']>.styles-module_arrow__K0L3T{transform:rotate(315deg)}.styles-module_dark__xNqje{background:var(--rt-color-dark);color:var(--rt-color-white)}.styles-module_light__Z6W-X{background-color:var(--rt-color-white);color:var(--rt-color-dark)}.styles-module_success__A2AKt{background-color:var(--rt-color-success);color:var(--rt-color-white)}.styles-module_warning__SCK0X{background-color:var(--rt-color-warning);color:var(--rt-color-white)}.styles-module_error__JvumD{background-color:var(--rt-color-error);color:var(--rt-color-white)}.styles-module_info__BWdHW{background-color:var(--rt-color-info);color:var(--rt-color-white)}",type:"base"})}));const Ie=window.wp.components,De=({onlineEventLinkDefault:e=""})=>{const t=(0,a.__)("Online event","gatherpress"),[r,i]=(0,n.useState)(e);return((e,t="")=>{for(const[n,r]of Object.entries(e)){let e=n;t&&(e+="_"+String(t)),addEventListener(e,(e=>{r(e.detail)}),!1)}})({setOnlineEventLink:i},s("eventDetails.postId")),(0,o.jsxs)(Ie.Flex,{justify:"normal",gap:"3",children:[(0,o.jsx)(Ie.FlexItem,{display:"flex",children:(0,o.jsx)(Ie.Icon,{icon:"video-alt2"})}),(0,o.jsxs)(Ie.FlexItem,{children:[!r&&(0,o.jsxs)(o.Fragment,{children:[(0,o.jsx)("span",{tabIndex:"0",className:"gatherpress-tooltip","data-tooltip-id":"gatherpress-online-event-tooltip","data-tooltip-content":(0,a.__)("Link available for attendees only.","gatherpress"),children:t}),(0,o.jsx)(Pe,{id:"gatherpress-online-event-tooltip"})]}),r&&(0,o.jsx)("a",{href:r,rel:"noreferrer",target:"_blank",children:t})]})]})};var Me=l(442);const Fe=Me.default||Me,ze=({name:e,fullAddress:t,phoneNumber:n,website:r})=>(0,o.jsxs)(o.Fragment,{children:[(e||t)&&(0,o.jsxs)(Ie.Flex,{justify:"normal",align:"flex-start",gap:"4",children:[(0,o.jsx)(Ie.FlexItem,{display:"flex",className:"gatherpress-venue__icon",children:(0,o.jsx)(Ie.Icon,{icon:"location"})}),(0,o.jsxs)(Ie.FlexItem,{children:[e&&(0,o.jsx)("div",{className:"gatherpress-venue__name",children:(0,o.jsx)("strong",{children:Fe(e)})}),t&&(0,o.jsx)("div",{className:"gatherpress-venue__full-address",children:Fe(t)})]})]}),(n||r)&&(0,o.jsxs)(Ie.Flex,{justify:"normal",gap:"8",children:[n&&(0,o.jsx)(Ie.FlexItem,{children:(0,o.jsxs)(Ie.Flex,{justify:"normal",gap:"4",children:[(0,o.jsx)(Ie.FlexItem,{display:"flex",className:"gatherpress-venue__icon",children:(0,o.jsx)(Ie.Icon,{icon:"phone"})}),(0,o.jsx)(Ie.FlexItem,{children:(0,o.jsx)("div",{className:"gatherpress-venue__phone-number",children:n})})]})}),r&&(0,o.jsx)(Ie.FlexItem,{children:(0,o.jsxs)(Ie.Flex,{justify:"normal",gap:"4",children:[(0,o.jsx)(Ie.FlexItem,{display:"flex",className:"gatherpress-venue__icon",children:(0,o.jsx)(Ie.Icon,{icon:"admin-site-alt3"})}),(0,o.jsx)(Ie.FlexItem,{children:(0,o.jsx)("div",{className:"gatherpress-venue__website",children:(0,o.jsx)("a",{href:r,target:"_blank",rel:"noreferrer noopener",children:r})})})]})})]})]}),Be=({name:e="",fullAddress:t,phoneNumber:n,website:r,isOnlineEventTerm:i=!1,onlineEventLink:l=""})=>(0,o.jsxs)(o.Fragment,{children:[!i&&(0,o.jsx)(ze,{name:e,fullAddress:t,phoneNumber:n,website:r}),i&&(0,o.jsx)(De,{onlineEventLinkDefault:l})]});t()((()=>{let e=document.querySelectorAll('[data-gatherpress_block_name="venue"]');for(let c=0;c<e.length;c++){var t,r,i,l,a,s;const u=JSON.parse(e[c].dataset.gatherpress_block_attrs);(0,n.createRoot)(e[c]).render((0,o.jsx)(Be,{name:null!==(t=u.name)&&void 0!==t?t:"",fullAddress:null!==(r=u.fullAddress)&&void 0!==r?r:"",phoneNumber:null!==(i=u.phoneNumber)&&void 0!==i?i:"",website:null!==(l=u.website)&&void 0!==l?l:"",isOnlineEventTerm:null!==(a=u.isOnlineEventTerm)&&void 0!==a&&a,onlineEventLink:null!==(s=u.onlineEventLink)&&void 0!==s?s:""}))}e=document.querySelectorAll('[data-gatherpress_block_name="map-embed"]');for(let t=0;t<e.length;t++){const r=JSON.parse(e[t].dataset.gatherpress_block_attrs);r.isOnlineEventTerm||(0,n.createRoot)(e[t]).render((0,o.jsx)(u,{location:r.fullAddress,latitude:r.latitude,longitude:r.longitude,zoom:r.mapZoomLevel,type:r.mapType,height:r.mapHeight}))}}))})()})();
+/******/ (() => { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/components/GoogleMap.js":
+/*!*************************************!*\
+  !*** ./src/components/GoogleMap.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__);
+
+/**
+ * GoogleMap component for GatherPress.
+ *
+ * This component is used to embed a Google Map with specified location,
+ * zoom level, map type, and height.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props              - Component properties.
+ * @param {string} props.location     - The location to be displayed on the map.
+ * @param {number} [props.zoom=10]    - The zoom level of the map.
+ * @param {string} [props.type='m']   - The type of the map (e.g., 'm' for roadmap).
+ * @param {number} [props.height=300] - The height of the map container.
+ * @param {string} [props.className]  - Additional CSS class names for styling.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
+const GoogleMap = props => {
+  const {
+    zoom,
+    type,
+    className,
+    location,
+    height
+  } = props;
+  const style = {
+    border: 0,
+    height,
+    width: '100%'
+  };
+  const baseUrl = 'https://maps.google.com/maps';
+  const params = new URLSearchParams({
+    q: location,
+    z: zoom || 10,
+    t: type || 'm',
+    output: 'embed'
+  });
+  const srcURL = baseUrl + '?' + params.toString();
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_0__.jsx)("iframe", {
+    src: srcURL,
+    style: style,
+    className: className,
+    title: location
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (GoogleMap);
+
+/***/ }),
+
+/***/ "./src/components/MapEmbed.js":
+/*!************************************!*\
+  !*** ./src/components/MapEmbed.js ***!
+  \************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _GoogleMap__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./GoogleMap */ "./src/components/GoogleMap.js");
+/* harmony import */ var _OpenStreetMap__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./OpenStreetMap */ "./src/components/OpenStreetMap.js");
+/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../helpers/globals */ "./src/helpers/globals.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__);
+/**
+ * WordPress dependencies.
+ */
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+
+/**
+ * MapEmbed component for GatherPress.
+ *
+ * This component is used to embed a Google Map with specified location,
+ * zoom level, map type, and height.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props              - Component properties.
+ * @param {string} props.location     - The location to be displayed on the map.
+ * @param {string} props.latitude     - The latitdue of the location to be displayed on the map.
+ * @param {string} props.longitude    - The longitude of the location to be displayed on the map.
+ * @param {number} [props.zoom=10]    - The zoom level of the map.
+ * @param {string} [props.type='m']   - The type of the map (e.g., 'm' for roadmap).
+ * @param {number} [props.height=300] - The height of the map container.
+ * @param {string} [props.className]  - Additional CSS class names for styling.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
+
+const MapEmbed = props => {
+  const isAdmin = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_0__.select)('core')?.canUser('create', 'posts');
+  const isPostEditor = Boolean((0,_wordpress_data__WEBPACK_IMPORTED_MODULE_0__.select)('core/edit-post'));
+  const {
+    zoom,
+    type,
+    className,
+    latitude,
+    longitude
+  } = props;
+  let {
+    location,
+    height
+  } = props;
+  if (!height) {
+    height = 300;
+  }
+  if (isAdmin && !isPostEditor && !location) {
+    location = '660 4th Street #119 San Francisco CA 94107, USA';
+  }
+  const mapPlatform = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_3__.getFromGlobal)('settings.mapPlatform');
+  if (!location || !mapPlatform) {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {});
+  } else if (mapPlatform === 'google') {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_GoogleMap__WEBPACK_IMPORTED_MODULE_1__["default"], {
+      location: location,
+      className: className,
+      zoom: zoom,
+      type: type,
+      height: height
+    });
+  } else if (mapPlatform === 'osm') {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_OpenStreetMap__WEBPACK_IMPORTED_MODULE_2__["default"], {
+      location: location,
+      latitude: latitude,
+      longitude: longitude,
+      className: className,
+      zoom: zoom,
+      height: height
+    });
+  }
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {});
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (MapEmbed);
+
+/***/ }),
+
+/***/ "./src/components/OnlineEvent.js":
+/*!***************************************!*\
+  !*** ./src/components/OnlineEvent.js ***!
+  \***************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var react_tooltip__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react-tooltip */ "./node_modules/react-tooltip/dist/react-tooltip.min.mjs");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../helpers/broadcasting */ "./src/helpers/broadcasting.js");
+/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../helpers/globals */ "./src/helpers/globals.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__);
+/**
+ * External dependencies.
+ */
+
+/**
+ * WordPress dependencies.
+ */
+
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+/**
+ * OnlineEvent component for GatherPress.
+ *
+ * This component is used to display information about online events, including an icon
+ * and an optional link for attendees.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props                             - Component properties.
+ * @param {string} [props.onlineEventLinkDefault=''] - The default online event link.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
+
+const OnlineEvent = ({
+  onlineEventLinkDefault = ''
+}) => {
+  const text = (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Online event', 'gatherpress');
+  const [onlineEventLink, setOnlineEventLink] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(onlineEventLinkDefault);
+  (0,_helpers_broadcasting__WEBPACK_IMPORTED_MODULE_4__.Listener)({
+    setOnlineEventLink
+  }, (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_5__.getFromGlobal)('eventDetails.postId'));
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Flex, {
+    justify: "normal",
+    gap: "3",
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FlexItem, {
+      display: "flex",
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Icon, {
+        icon: "video-alt2"
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FlexItem, {
+      children: [!onlineEventLink && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("span", {
+          tabIndex: "0",
+          className: "gatherpress-tooltip",
+          "data-tooltip-id": "gatherpress-online-event-tooltip",
+          "data-tooltip-content": (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('Link available for attendees only.', 'gatherpress'),
+          children: text
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(react_tooltip__WEBPACK_IMPORTED_MODULE_0__.Tooltip, {
+          id: "gatherpress-online-event-tooltip"
+        })]
+      }), onlineEventLink && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("a", {
+        href: onlineEventLink,
+        rel: "noreferrer",
+        target: "_blank",
+        children: text
+      })]
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (OnlineEvent);
+
+/***/ }),
+
+/***/ "./src/components/OpenStreetMap.js":
+/*!*****************************************!*\
+  !*** ./src/components/OpenStreetMap.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _helpers_globals__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../helpers/globals */ "./src/helpers/globals.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__);
+/**
+ * WordPress dependencies.
+ */
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+/**
+ * OpenStreetMap component for GatherPress.
+ *
+ * This component is used to embed an Open Street Map with specified location,
+ * zoom level, and height using the Leaflet platform.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props              - Component properties.
+ * @param {string} props.location     - The location to be displayed on the map.
+ * @param {string} props.latitude     - The latitude of the location to be displayed on the map.
+ * @param {string} props.longitude    - The longitude of the location to be displayed on the map.
+ * @param {number} [props.zoom=10]    - The zoom level of the map.
+ * @param {number} [props.height=300] - The height of the map container.
+ * @param {string} [props.className]  - Additional CSS class names for styling.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
+
+const OpenStreetMap = props => {
+  const {
+    zoom = 10,
+    className,
+    location,
+    height = 300,
+    latitude,
+    longitude
+  } = props;
+  const [Leaflet, setLeaflet] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useState)(null);
+  const style = {
+    height
+  };
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
+    // Load Leaflet and its assets dynamically
+    const loadLeaflet = async () => {
+      const {
+        default: L
+      } = await __webpack_require__.e(/*! import() */ "vendors-node_modules_leaflet_dist_leaflet-src_js").then(__webpack_require__.t.bind(__webpack_require__, /*! leaflet */ "./node_modules/leaflet/dist/leaflet-src.js", 23));
+      await Promise.all(/*! import() */[__webpack_require__.e("vendors-node_modules_leaflet_dist_leaflet_css"), __webpack_require__.e("node_modules_leaflet_dist_leaflet_css")]).then(__webpack_require__.bind(__webpack_require__, /*! leaflet/dist/leaflet.css */ "./node_modules/leaflet/dist/leaflet.css"));
+      await __webpack_require__.e(/*! import() */ "node_modules_leaflet_dist_images_marker-icon-2x_png").then(__webpack_require__.t.bind(__webpack_require__, /*! leaflet/dist/images/marker-icon-2x.png */ "./node_modules/leaflet/dist/images/marker-icon-2x.png", 17));
+      await __webpack_require__.e(/*! import() */ "node_modules_leaflet_dist_images_marker-shadow_png").then(__webpack_require__.t.bind(__webpack_require__, /*! leaflet/dist/images/marker-shadow.png */ "./node_modules/leaflet/dist/images/marker-shadow.png", 17));
+      setLeaflet(L);
+    };
+    loadLeaflet();
+  }, []);
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
+    if (!Leaflet || !latitude || !longitude) {
+      return;
+    }
+    const map = Leaflet.map('map').setView([latitude, longitude], zoom);
+    Leaflet.Icon.Default.imagePath = (0,_helpers_globals__WEBPACK_IMPORTED_MODULE_2__.getFromGlobal)('urls.pluginUrl') + 'build/images/';
+    Leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.sprintf)( /* translators: %s: Link to OpenStreetMap contributors. */
+      (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('© %s contributors', 'gatherpress'), '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>')
+    }).addTo(map);
+    Leaflet.marker([latitude, longitude]).addTo(map).bindPopup(location);
+    return () => {
+      map.remove();
+    };
+  }, [Leaflet, latitude, location, longitude, zoom]);
+  if (!Leaflet || !latitude || !longitude) {
+    return null;
+  }
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+    className: className,
+    id: "map",
+    style: style
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (OpenStreetMap);
+
+/***/ }),
+
+/***/ "./src/components/Venue.js":
+/*!*********************************!*\
+  !*** ./src/components/Venue.js ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var html_react_parser__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! html-react-parser */ "./node_modules/html-react-parser/esm/index.mjs");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__);
+/**
+ * External dependencies.
+ */
+
+
+/**
+ * WordPress dependencies.
+ */
+
+
+/**
+ * Venue component for GatherPress.
+ *
+ * This component displays information about a venue, including its name, full address,
+ * phone number, and website. It utilizes the Flex component to arrange the information
+ * in a visually appealing manner. Icons are used to represent location, phone, and website.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} props             - Component props.
+ * @param {string} props.name        - The name of the venue.
+ * @param {string} props.fullAddress - The full address of the venue.
+ * @param {string} props.phoneNumber - The phone number of the venue.
+ * @param {string} props.website     - The website URL of the venue.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
+
+const Venue = ({
+  name,
+  fullAddress,
+  phoneNumber,
+  website
+}) => {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.Fragment, {
+    children: [(name || fullAddress) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Flex, {
+      justify: "normal",
+      align: "flex-start",
+      gap: "4",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+        display: "flex",
+        className: "gatherpress-venue__icon",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Icon, {
+          icon: "location"
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+        children: [name && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+          className: "gatherpress-venue__name",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("strong", {
+            children: (0,html_react_parser__WEBPACK_IMPORTED_MODULE_0__["default"])(name)
+          })
+        }), fullAddress && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+          className: "gatherpress-venue__full-address",
+          children: (0,html_react_parser__WEBPACK_IMPORTED_MODULE_0__["default"])(fullAddress)
+        })]
+      })]
+    }), (phoneNumber || website) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Flex, {
+      justify: "normal",
+      gap: "8",
+      children: [phoneNumber && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Flex, {
+          justify: "normal",
+          gap: "4",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+            display: "flex",
+            className: "gatherpress-venue__icon",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Icon, {
+              icon: "phone"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+              className: "gatherpress-venue__phone-number",
+              children: phoneNumber
+            })
+          })]
+        })
+      }), website && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Flex, {
+          justify: "normal",
+          gap: "4",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+            display: "flex",
+            className: "gatherpress-venue__icon",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.Icon, {
+              icon: "admin-site-alt3"
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.FlexItem, {
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+              className: "gatherpress-venue__website",
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("a", {
+                href: website,
+                target: "_blank",
+                rel: "noreferrer noopener",
+                children: website
+              })
+            })
+          })]
+        })
+      })]
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Venue);
+
+/***/ }),
+
+/***/ "./src/components/VenueOrOnlineEvent.js":
+/*!**********************************************!*\
+  !*** ./src/components/VenueOrOnlineEvent.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _OnlineEvent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./OnlineEvent */ "./src/components/OnlineEvent.js");
+/* harmony import */ var _Venue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Venue */ "./src/components/Venue.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__);
+/**
+ * Internal dependencies.
+ */
+
+
+
+/**
+ * VenueOrOnlineEvent component for GatherPress.
+ *
+ * This component serves as a conditional renderer based on whether an event is an in-person
+ * event or an online event. It takes various parameters such as name, fullAddress, phoneNumber,
+ * website for in-person events, and isOnlineEventTerm, onlineEventLink for online events. It
+ * conditionally renders the `Venue` component or the `OnlineEvent` component accordingly.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}  props                           - The component props.
+ * @param {string}  [props.name='']                 - The name of the venue.
+ * @param {string}  props.fullAddress               - The full address of the venue.
+ * @param {string}  props.phoneNumber               - The phone number of the venue.
+ * @param {string}  props.website                   - The website of the venue.
+ * @param {boolean} [props.isOnlineEventTerm=false] - A flag indicating if the event is online.
+ * @param {string}  [props.onlineEventLink='']      - The default online event link for online events.
+ *
+ * @return {JSX.Element} The rendered React component.
+ */
+
+const VenueOrOnlineEvent = ({
+  name = '',
+  fullAddress,
+  phoneNumber,
+  website,
+  isOnlineEventTerm = false,
+  onlineEventLink = ''
+}) => {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.Fragment, {
+    children: [!isOnlineEventTerm && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_Venue__WEBPACK_IMPORTED_MODULE_1__["default"], {
+      name: name,
+      fullAddress: fullAddress,
+      phoneNumber: phoneNumber,
+      website: website
+    }), isOnlineEventTerm && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_OnlineEvent__WEBPACK_IMPORTED_MODULE_0__["default"], {
+      onlineEventLinkDefault: onlineEventLink
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (VenueOrOnlineEvent);
+
+/***/ }),
+
+/***/ "./src/helpers/broadcasting.js":
+/*!*************************************!*\
+  !*** ./src/helpers/broadcasting.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Broadcaster: () => (/* binding */ Broadcaster),
+/* harmony export */   Listener: () => (/* binding */ Listener)
+/* harmony export */ });
+/**
+ * Broadcasts custom events based on the provided payload, optionally appending an identifier to each event type.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} payload    - An object containing data to be dispatched with custom events.
+ * @param {string} identifier - An optional identifier to append to each event type.
+ *
+ * @return {void}
+ */
+const Broadcaster = (payload, identifier = '') => {
+  for (const [key, value] of Object.entries(payload)) {
+    let type = key;
+    if (identifier) {
+      type += '_' + String(identifier);
+    }
+    const dispatcher = new CustomEvent(type, {
+      detail: value
+    });
+    dispatchEvent(dispatcher);
+  }
+};
+
+/**
+ * Sets up event listeners for custom events based on the provided payload, optionally appending an identifier to each event type.
+ * When an event is triggered, the corresponding listener callback is executed with the event detail.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object} payload    - An object specifying event types and their corresponding listener callbacks.
+ * @param {string} identifier - An optional identifier to append to each event type.
+ *
+ * @return {void}
+ */
+const Listener = (payload, identifier = '') => {
+  for (const [key, value] of Object.entries(payload)) {
+    let type = key;
+    if (identifier) {
+      type += '_' + String(identifier);
+    }
+    addEventListener(type, e => {
+      value(e.detail);
+    }, false);
+  }
+};
+
+/***/ }),
+
+/***/ "./src/helpers/globals.js":
+/*!********************************!*\
+  !*** ./src/helpers/globals.js ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   enableSave: () => (/* binding */ enableSave),
+/* harmony export */   getFromGlobal: () => (/* binding */ getFromGlobal),
+/* harmony export */   isGatherPressPostType: () => (/* binding */ isGatherPressPostType),
+/* harmony export */   setToGlobal: () => (/* binding */ setToGlobal)
+/* harmony export */ });
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_0__);
+
+
+/**
+ * Enable the Save buttons after making an update.
+ *
+ * This function uses a hacky approach to trigger a change in the post's meta, which prompts
+ * Gutenberg to recognize that changes have been made and enables the Save buttons.
+ * It dispatches an editPost action with a non-existing meta key.
+ *
+ * @since 1.0.0
+ *
+ * @todo This is a hacky approach and relies on the behavior described in
+ *       https://github.com/WordPress/gutenberg/issues/13774.
+ *       Monitor the issue for any updates or changes in the Gutenberg behavior.
+ */
+function enableSave() {
+  (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_0__.dispatch)('core/editor')?.editPost({
+    meta: {
+      _non_existing_meta: true
+    }
+  });
+}
+
+/**
+ * Checks if the current post type is a GatherPress event or venue.
+ *
+ * This function determines if the post type being edited in the WordPress block editor
+ * is either 'gatherpress_event' or 'gatherpress_venue', which are custom post types
+ * related to GatherPress. It is used to ensure that specific actions or functionality
+ * are applied only to these post types.
+ *
+ * @since 1.0.0
+ *
+ * @return {boolean} True if the current post type is 'gatherpress_event' or 'gatherpress_venue', false otherwise.
+ */
+function isGatherPressPostType() {
+  const postType = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_0__.select)('core/editor')?.getCurrentPostType();
+  return 'gatherpress_event' === postType || 'gatherpress_venue' === postType;
+}
+
+/**
+ * Get a value from the global GatherPress object based on the provided dot-separated path.
+ *
+ * This function is designed to retrieve values from the global GatherPress object.
+ * It takes a dot-separated path as an argument and traverses the object to return the specified value.
+ * If the object or any level along the path is undefined, it returns undefined.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} args - Dot-separated path to the desired property in the GatherPress global object.
+ * @return {*} The value at the specified path in the GatherPress global object or undefined if not found.
+ */
+function getFromGlobal(args) {
+  // eslint-disable-next-line no-undef
+  if ('object' !== typeof GatherPress) {
+    return undefined;
+  }
+  return args.split('.').reduce(
+  // eslint-disable-next-line no-undef
+  (GatherPress, level) => GatherPress && GatherPress[level],
+  // eslint-disable-next-line no-undef
+  GatherPress);
+}
+
+/**
+ * Set a value to a global object based on the provided path.
+ *
+ * This function allows setting values within a nested global object using a dot-separated path.
+ * If the global object (GatherPress) does not exist, it will be initialized.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} args  - Dot-separated path to the property.
+ * @param {*}      value - The value to set.
+ *
+ * @return {void}
+ */
+function setToGlobal(args, value) {
+  // eslint-disable-next-line no-undef
+  if ('object' !== typeof GatherPress) {
+    return;
+  }
+  const properties = args.split('.');
+  const last = properties.pop();
+
+  // eslint-disable-next-line no-undef
+  properties.reduce((all, item) => {
+    var _all$item;
+    return (_all$item = all[item]) !== null && _all$item !== void 0 ? _all$item : all[item] = {};
+  }, GatherPress)[last] = value;
+}
+
+/***/ }),
+
+/***/ "./node_modules/domelementtype/lib/index.js":
+/*!**************************************************!*\
+  !*** ./node_modules/domelementtype/lib/index.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Doctype = exports.CDATA = exports.Tag = exports.Style = exports.Script = exports.Comment = exports.Directive = exports.Text = exports.Root = exports.isTag = exports.ElementType = void 0;
+/** Types of elements found in htmlparser2's DOM */
+var ElementType;
+(function (ElementType) {
+    /** Type for the root element of a document */
+    ElementType["Root"] = "root";
+    /** Type for Text */
+    ElementType["Text"] = "text";
+    /** Type for <? ... ?> */
+    ElementType["Directive"] = "directive";
+    /** Type for <!-- ... --> */
+    ElementType["Comment"] = "comment";
+    /** Type for <script> tags */
+    ElementType["Script"] = "script";
+    /** Type for <style> tags */
+    ElementType["Style"] = "style";
+    /** Type for Any tag */
+    ElementType["Tag"] = "tag";
+    /** Type for <![CDATA[ ... ]]> */
+    ElementType["CDATA"] = "cdata";
+    /** Type for <!doctype ...> */
+    ElementType["Doctype"] = "doctype";
+})(ElementType = exports.ElementType || (exports.ElementType = {}));
+/**
+ * Tests whether an element is a tag or not.
+ *
+ * @param elem Element to test
+ */
+function isTag(elem) {
+    return (elem.type === ElementType.Tag ||
+        elem.type === ElementType.Script ||
+        elem.type === ElementType.Style);
+}
+exports.isTag = isTag;
+// Exports for backwards compatibility
+/** Type for the root element of a document */
+exports.Root = ElementType.Root;
+/** Type for Text */
+exports.Text = ElementType.Text;
+/** Type for <? ... ?> */
+exports.Directive = ElementType.Directive;
+/** Type for <!-- ... --> */
+exports.Comment = ElementType.Comment;
+/** Type for <script> tags */
+exports.Script = ElementType.Script;
+/** Type for <style> tags */
+exports.Style = ElementType.Style;
+/** Type for Any tag */
+exports.Tag = ElementType.Tag;
+/** Type for <![CDATA[ ... ]]> */
+exports.CDATA = ElementType.CDATA;
+/** Type for <!doctype ...> */
+exports.Doctype = ElementType.Doctype;
+
+
+/***/ }),
+
+/***/ "./node_modules/domhandler/lib/index.js":
+/*!**********************************************!*\
+  !*** ./node_modules/domhandler/lib/index.js ***!
+  \**********************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DomHandler = void 0;
+var domelementtype_1 = __webpack_require__(/*! domelementtype */ "./node_modules/domelementtype/lib/index.js");
+var node_js_1 = __webpack_require__(/*! ./node.js */ "./node_modules/domhandler/lib/node.js");
+__exportStar(__webpack_require__(/*! ./node.js */ "./node_modules/domhandler/lib/node.js"), exports);
+// Default options
+var defaultOpts = {
+    withStartIndices: false,
+    withEndIndices: false,
+    xmlMode: false,
+};
+var DomHandler = /** @class */ (function () {
+    /**
+     * @param callback Called once parsing has completed.
+     * @param options Settings for the handler.
+     * @param elementCB Callback whenever a tag is closed.
+     */
+    function DomHandler(callback, options, elementCB) {
+        /** The elements of the DOM */
+        this.dom = [];
+        /** The root element for the DOM */
+        this.root = new node_js_1.Document(this.dom);
+        /** Indicated whether parsing has been completed. */
+        this.done = false;
+        /** Stack of open tags. */
+        this.tagStack = [this.root];
+        /** A data node that is still being written to. */
+        this.lastNode = null;
+        /** Reference to the parser instance. Used for location information. */
+        this.parser = null;
+        // Make it possible to skip arguments, for backwards-compatibility
+        if (typeof options === "function") {
+            elementCB = options;
+            options = defaultOpts;
+        }
+        if (typeof callback === "object") {
+            options = callback;
+            callback = undefined;
+        }
+        this.callback = callback !== null && callback !== void 0 ? callback : null;
+        this.options = options !== null && options !== void 0 ? options : defaultOpts;
+        this.elementCB = elementCB !== null && elementCB !== void 0 ? elementCB : null;
+    }
+    DomHandler.prototype.onparserinit = function (parser) {
+        this.parser = parser;
+    };
+    // Resets the handler back to starting state
+    DomHandler.prototype.onreset = function () {
+        this.dom = [];
+        this.root = new node_js_1.Document(this.dom);
+        this.done = false;
+        this.tagStack = [this.root];
+        this.lastNode = null;
+        this.parser = null;
+    };
+    // Signals the handler that parsing is done
+    DomHandler.prototype.onend = function () {
+        if (this.done)
+            return;
+        this.done = true;
+        this.parser = null;
+        this.handleCallback(null);
+    };
+    DomHandler.prototype.onerror = function (error) {
+        this.handleCallback(error);
+    };
+    DomHandler.prototype.onclosetag = function () {
+        this.lastNode = null;
+        var elem = this.tagStack.pop();
+        if (this.options.withEndIndices) {
+            elem.endIndex = this.parser.endIndex;
+        }
+        if (this.elementCB)
+            this.elementCB(elem);
+    };
+    DomHandler.prototype.onopentag = function (name, attribs) {
+        var type = this.options.xmlMode ? domelementtype_1.ElementType.Tag : undefined;
+        var element = new node_js_1.Element(name, attribs, undefined, type);
+        this.addNode(element);
+        this.tagStack.push(element);
+    };
+    DomHandler.prototype.ontext = function (data) {
+        var lastNode = this.lastNode;
+        if (lastNode && lastNode.type === domelementtype_1.ElementType.Text) {
+            lastNode.data += data;
+            if (this.options.withEndIndices) {
+                lastNode.endIndex = this.parser.endIndex;
+            }
+        }
+        else {
+            var node = new node_js_1.Text(data);
+            this.addNode(node);
+            this.lastNode = node;
+        }
+    };
+    DomHandler.prototype.oncomment = function (data) {
+        if (this.lastNode && this.lastNode.type === domelementtype_1.ElementType.Comment) {
+            this.lastNode.data += data;
+            return;
+        }
+        var node = new node_js_1.Comment(data);
+        this.addNode(node);
+        this.lastNode = node;
+    };
+    DomHandler.prototype.oncommentend = function () {
+        this.lastNode = null;
+    };
+    DomHandler.prototype.oncdatastart = function () {
+        var text = new node_js_1.Text("");
+        var node = new node_js_1.CDATA([text]);
+        this.addNode(node);
+        text.parent = node;
+        this.lastNode = text;
+    };
+    DomHandler.prototype.oncdataend = function () {
+        this.lastNode = null;
+    };
+    DomHandler.prototype.onprocessinginstruction = function (name, data) {
+        var node = new node_js_1.ProcessingInstruction(name, data);
+        this.addNode(node);
+    };
+    DomHandler.prototype.handleCallback = function (error) {
+        if (typeof this.callback === "function") {
+            this.callback(error, this.dom);
+        }
+        else if (error) {
+            throw error;
+        }
+    };
+    DomHandler.prototype.addNode = function (node) {
+        var parent = this.tagStack[this.tagStack.length - 1];
+        var previousSibling = parent.children[parent.children.length - 1];
+        if (this.options.withStartIndices) {
+            node.startIndex = this.parser.startIndex;
+        }
+        if (this.options.withEndIndices) {
+            node.endIndex = this.parser.endIndex;
+        }
+        parent.children.push(node);
+        if (previousSibling) {
+            node.prev = previousSibling;
+            previousSibling.next = node;
+        }
+        node.parent = parent;
+        this.lastNode = null;
+    };
+    return DomHandler;
+}());
+exports.DomHandler = DomHandler;
+exports["default"] = DomHandler;
+
+
+/***/ }),
+
+/***/ "./node_modules/domhandler/lib/node.js":
+/*!*********************************************!*\
+  !*** ./node_modules/domhandler/lib/node.js ***!
+  \*********************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.cloneNode = exports.hasChildren = exports.isDocument = exports.isDirective = exports.isComment = exports.isText = exports.isCDATA = exports.isTag = exports.Element = exports.Document = exports.CDATA = exports.NodeWithChildren = exports.ProcessingInstruction = exports.Comment = exports.Text = exports.DataNode = exports.Node = void 0;
+var domelementtype_1 = __webpack_require__(/*! domelementtype */ "./node_modules/domelementtype/lib/index.js");
+/**
+ * This object will be used as the prototype for Nodes when creating a
+ * DOM-Level-1-compliant structure.
+ */
+var Node = /** @class */ (function () {
+    function Node() {
+        /** Parent of the node */
+        this.parent = null;
+        /** Previous sibling */
+        this.prev = null;
+        /** Next sibling */
+        this.next = null;
+        /** The start index of the node. Requires `withStartIndices` on the handler to be `true. */
+        this.startIndex = null;
+        /** The end index of the node. Requires `withEndIndices` on the handler to be `true. */
+        this.endIndex = null;
+    }
+    Object.defineProperty(Node.prototype, "parentNode", {
+        // Read-write aliases for properties
+        /**
+         * Same as {@link parent}.
+         * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
+         */
+        get: function () {
+            return this.parent;
+        },
+        set: function (parent) {
+            this.parent = parent;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Node.prototype, "previousSibling", {
+        /**
+         * Same as {@link prev}.
+         * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
+         */
+        get: function () {
+            return this.prev;
+        },
+        set: function (prev) {
+            this.prev = prev;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Node.prototype, "nextSibling", {
+        /**
+         * Same as {@link next}.
+         * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
+         */
+        get: function () {
+            return this.next;
+        },
+        set: function (next) {
+            this.next = next;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    /**
+     * Clone this node, and optionally its children.
+     *
+     * @param recursive Clone child nodes as well.
+     * @returns A clone of the node.
+     */
+    Node.prototype.cloneNode = function (recursive) {
+        if (recursive === void 0) { recursive = false; }
+        return cloneNode(this, recursive);
+    };
+    return Node;
+}());
+exports.Node = Node;
+/**
+ * A node that contains some data.
+ */
+var DataNode = /** @class */ (function (_super) {
+    __extends(DataNode, _super);
+    /**
+     * @param data The content of the data node
+     */
+    function DataNode(data) {
+        var _this = _super.call(this) || this;
+        _this.data = data;
+        return _this;
+    }
+    Object.defineProperty(DataNode.prototype, "nodeValue", {
+        /**
+         * Same as {@link data}.
+         * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
+         */
+        get: function () {
+            return this.data;
+        },
+        set: function (data) {
+            this.data = data;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return DataNode;
+}(Node));
+exports.DataNode = DataNode;
+/**
+ * Text within the document.
+ */
+var Text = /** @class */ (function (_super) {
+    __extends(Text, _super);
+    function Text() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = domelementtype_1.ElementType.Text;
+        return _this;
+    }
+    Object.defineProperty(Text.prototype, "nodeType", {
+        get: function () {
+            return 3;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return Text;
+}(DataNode));
+exports.Text = Text;
+/**
+ * Comments within the document.
+ */
+var Comment = /** @class */ (function (_super) {
+    __extends(Comment, _super);
+    function Comment() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = domelementtype_1.ElementType.Comment;
+        return _this;
+    }
+    Object.defineProperty(Comment.prototype, "nodeType", {
+        get: function () {
+            return 8;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return Comment;
+}(DataNode));
+exports.Comment = Comment;
+/**
+ * Processing instructions, including doc types.
+ */
+var ProcessingInstruction = /** @class */ (function (_super) {
+    __extends(ProcessingInstruction, _super);
+    function ProcessingInstruction(name, data) {
+        var _this = _super.call(this, data) || this;
+        _this.name = name;
+        _this.type = domelementtype_1.ElementType.Directive;
+        return _this;
+    }
+    Object.defineProperty(ProcessingInstruction.prototype, "nodeType", {
+        get: function () {
+            return 1;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return ProcessingInstruction;
+}(DataNode));
+exports.ProcessingInstruction = ProcessingInstruction;
+/**
+ * A `Node` that can have children.
+ */
+var NodeWithChildren = /** @class */ (function (_super) {
+    __extends(NodeWithChildren, _super);
+    /**
+     * @param children Children of the node. Only certain node types can have children.
+     */
+    function NodeWithChildren(children) {
+        var _this = _super.call(this) || this;
+        _this.children = children;
+        return _this;
+    }
+    Object.defineProperty(NodeWithChildren.prototype, "firstChild", {
+        // Aliases
+        /** First child of the node. */
+        get: function () {
+            var _a;
+            return (_a = this.children[0]) !== null && _a !== void 0 ? _a : null;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(NodeWithChildren.prototype, "lastChild", {
+        /** Last child of the node. */
+        get: function () {
+            return this.children.length > 0
+                ? this.children[this.children.length - 1]
+                : null;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(NodeWithChildren.prototype, "childNodes", {
+        /**
+         * Same as {@link children}.
+         * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
+         */
+        get: function () {
+            return this.children;
+        },
+        set: function (children) {
+            this.children = children;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return NodeWithChildren;
+}(Node));
+exports.NodeWithChildren = NodeWithChildren;
+var CDATA = /** @class */ (function (_super) {
+    __extends(CDATA, _super);
+    function CDATA() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = domelementtype_1.ElementType.CDATA;
+        return _this;
+    }
+    Object.defineProperty(CDATA.prototype, "nodeType", {
+        get: function () {
+            return 4;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return CDATA;
+}(NodeWithChildren));
+exports.CDATA = CDATA;
+/**
+ * The root node of the document.
+ */
+var Document = /** @class */ (function (_super) {
+    __extends(Document, _super);
+    function Document() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = domelementtype_1.ElementType.Root;
+        return _this;
+    }
+    Object.defineProperty(Document.prototype, "nodeType", {
+        get: function () {
+            return 9;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return Document;
+}(NodeWithChildren));
+exports.Document = Document;
+/**
+ * An element within the DOM.
+ */
+var Element = /** @class */ (function (_super) {
+    __extends(Element, _super);
+    /**
+     * @param name Name of the tag, eg. `div`, `span`.
+     * @param attribs Object mapping attribute names to attribute values.
+     * @param children Children of the node.
+     */
+    function Element(name, attribs, children, type) {
+        if (children === void 0) { children = []; }
+        if (type === void 0) { type = name === "script"
+            ? domelementtype_1.ElementType.Script
+            : name === "style"
+                ? domelementtype_1.ElementType.Style
+                : domelementtype_1.ElementType.Tag; }
+        var _this = _super.call(this, children) || this;
+        _this.name = name;
+        _this.attribs = attribs;
+        _this.type = type;
+        return _this;
+    }
+    Object.defineProperty(Element.prototype, "nodeType", {
+        get: function () {
+            return 1;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Element.prototype, "tagName", {
+        // DOM Level 1 aliases
+        /**
+         * Same as {@link name}.
+         * [DOM spec](https://dom.spec.whatwg.org)-compatible alias.
+         */
+        get: function () {
+            return this.name;
+        },
+        set: function (name) {
+            this.name = name;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Element.prototype, "attributes", {
+        get: function () {
+            var _this = this;
+            return Object.keys(this.attribs).map(function (name) {
+                var _a, _b;
+                return ({
+                    name: name,
+                    value: _this.attribs[name],
+                    namespace: (_a = _this["x-attribsNamespace"]) === null || _a === void 0 ? void 0 : _a[name],
+                    prefix: (_b = _this["x-attribsPrefix"]) === null || _b === void 0 ? void 0 : _b[name],
+                });
+            });
+        },
+        enumerable: false,
+        configurable: true
+    });
+    return Element;
+}(NodeWithChildren));
+exports.Element = Element;
+/**
+ * @param node Node to check.
+ * @returns `true` if the node is a `Element`, `false` otherwise.
+ */
+function isTag(node) {
+    return (0, domelementtype_1.isTag)(node);
+}
+exports.isTag = isTag;
+/**
+ * @param node Node to check.
+ * @returns `true` if the node has the type `CDATA`, `false` otherwise.
+ */
+function isCDATA(node) {
+    return node.type === domelementtype_1.ElementType.CDATA;
+}
+exports.isCDATA = isCDATA;
+/**
+ * @param node Node to check.
+ * @returns `true` if the node has the type `Text`, `false` otherwise.
+ */
+function isText(node) {
+    return node.type === domelementtype_1.ElementType.Text;
+}
+exports.isText = isText;
+/**
+ * @param node Node to check.
+ * @returns `true` if the node has the type `Comment`, `false` otherwise.
+ */
+function isComment(node) {
+    return node.type === domelementtype_1.ElementType.Comment;
+}
+exports.isComment = isComment;
+/**
+ * @param node Node to check.
+ * @returns `true` if the node has the type `ProcessingInstruction`, `false` otherwise.
+ */
+function isDirective(node) {
+    return node.type === domelementtype_1.ElementType.Directive;
+}
+exports.isDirective = isDirective;
+/**
+ * @param node Node to check.
+ * @returns `true` if the node has the type `ProcessingInstruction`, `false` otherwise.
+ */
+function isDocument(node) {
+    return node.type === domelementtype_1.ElementType.Root;
+}
+exports.isDocument = isDocument;
+/**
+ * @param node Node to check.
+ * @returns `true` if the node has children, `false` otherwise.
+ */
+function hasChildren(node) {
+    return Object.prototype.hasOwnProperty.call(node, "children");
+}
+exports.hasChildren = hasChildren;
+/**
+ * Clone a node, and optionally its children.
+ *
+ * @param recursive Clone child nodes as well.
+ * @returns A clone of the node.
+ */
+function cloneNode(node, recursive) {
+    if (recursive === void 0) { recursive = false; }
+    var result;
+    if (isText(node)) {
+        result = new Text(node.data);
+    }
+    else if (isComment(node)) {
+        result = new Comment(node.data);
+    }
+    else if (isTag(node)) {
+        var children = recursive ? cloneChildren(node.children) : [];
+        var clone_1 = new Element(node.name, __assign({}, node.attribs), children);
+        children.forEach(function (child) { return (child.parent = clone_1); });
+        if (node.namespace != null) {
+            clone_1.namespace = node.namespace;
+        }
+        if (node["x-attribsNamespace"]) {
+            clone_1["x-attribsNamespace"] = __assign({}, node["x-attribsNamespace"]);
+        }
+        if (node["x-attribsPrefix"]) {
+            clone_1["x-attribsPrefix"] = __assign({}, node["x-attribsPrefix"]);
+        }
+        result = clone_1;
+    }
+    else if (isCDATA(node)) {
+        var children = recursive ? cloneChildren(node.children) : [];
+        var clone_2 = new CDATA(children);
+        children.forEach(function (child) { return (child.parent = clone_2); });
+        result = clone_2;
+    }
+    else if (isDocument(node)) {
+        var children = recursive ? cloneChildren(node.children) : [];
+        var clone_3 = new Document(children);
+        children.forEach(function (child) { return (child.parent = clone_3); });
+        if (node["x-mode"]) {
+            clone_3["x-mode"] = node["x-mode"];
+        }
+        result = clone_3;
+    }
+    else if (isDirective(node)) {
+        var instruction = new ProcessingInstruction(node.name, node.data);
+        if (node["x-name"] != null) {
+            instruction["x-name"] = node["x-name"];
+            instruction["x-publicId"] = node["x-publicId"];
+            instruction["x-systemId"] = node["x-systemId"];
+        }
+        result = instruction;
+    }
+    else {
+        throw new Error("Not implemented yet: ".concat(node.type));
+    }
+    result.startIndex = node.startIndex;
+    result.endIndex = node.endIndex;
+    if (node.sourceCodeLocation != null) {
+        result.sourceCodeLocation = node.sourceCodeLocation;
+    }
+    return result;
+}
+exports.cloneNode = cloneNode;
+function cloneChildren(childs) {
+    var children = childs.map(function (child) { return cloneNode(child, true); });
+    for (var i = 1; i < children.length; i++) {
+        children[i].prev = children[i - 1];
+        children[i - 1].next = children[i];
+    }
+    return children;
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/html-dom-parser/lib/client/constants.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/html-dom-parser/lib/client/constants.js ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CASE_SENSITIVE_TAG_NAMES_MAP = exports.CASE_SENSITIVE_TAG_NAMES = void 0;
+/**
+ * SVG elements are case-sensitive.
+ *
+ * @see https://developer.mozilla.org/docs/Web/SVG/Element#svg_elements_a_to_z
+ */
+exports.CASE_SENSITIVE_TAG_NAMES = [
+    'animateMotion',
+    'animateTransform',
+    'clipPath',
+    'feBlend',
+    'feColorMatrix',
+    'feComponentTransfer',
+    'feComposite',
+    'feConvolveMatrix',
+    'feDiffuseLighting',
+    'feDisplacementMap',
+    'feDropShadow',
+    'feFlood',
+    'feFuncA',
+    'feFuncB',
+    'feFuncG',
+    'feFuncR',
+    'feGaussianBlur',
+    'feImage',
+    'feMerge',
+    'feMergeNode',
+    'feMorphology',
+    'feOffset',
+    'fePointLight',
+    'feSpecularLighting',
+    'feSpotLight',
+    'feTile',
+    'feTurbulence',
+    'foreignObject',
+    'linearGradient',
+    'radialGradient',
+    'textPath',
+];
+exports.CASE_SENSITIVE_TAG_NAMES_MAP = exports.CASE_SENSITIVE_TAG_NAMES.reduce(function (accumulator, tagName) {
+    accumulator[tagName.toLowerCase()] = tagName;
+    return accumulator;
+}, {});
+//# sourceMappingURL=constants.js.map
+
+/***/ }),
+
+/***/ "./node_modules/html-dom-parser/lib/client/domparser.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/html-dom-parser/lib/client/domparser.js ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports["default"] = domparser;
+// constants
+var HTML = 'html';
+var HEAD = 'head';
+var BODY = 'body';
+var FIRST_TAG_REGEX = /<([a-zA-Z]+[0-9]?)/; // e.g., <h1>
+// match-all-characters in case of newlines (DOTALL)
+var HEAD_TAG_REGEX = /<head[^]*>/i;
+var BODY_TAG_REGEX = /<body[^]*>/i;
+// falls back to `parseFromString` if `createHTMLDocument` cannot be used
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+var parseFromDocument = function (html, tagName) {
+    /* istanbul ignore next */
+    throw new Error('This browser does not support `document.implementation.createHTMLDocument`');
+};
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+var parseFromString = function (html, tagName) {
+    /* istanbul ignore next */
+    throw new Error('This browser does not support `DOMParser.prototype.parseFromString`');
+};
+var DOMParser = typeof window === 'object' && window.DOMParser;
+/**
+ * DOMParser (performance: slow).
+ *
+ * @see https://developer.mozilla.org/docs/Web/API/DOMParser#Parsing_an_SVG_or_HTML_document
+ */
+if (typeof DOMParser === 'function') {
+    var domParser_1 = new DOMParser();
+    var mimeType_1 = 'text/html';
+    /**
+     * Creates an HTML document using `DOMParser.parseFromString`.
+     *
+     * @param html - The HTML string.
+     * @param tagName - The element to render the HTML (with 'body' as fallback).
+     * @returns - Document.
+     */
+    parseFromString = function (html, tagName) {
+        if (tagName) {
+            /* istanbul ignore next */
+            html = "<".concat(tagName, ">").concat(html, "</").concat(tagName, ">");
+        }
+        return domParser_1.parseFromString(html, mimeType_1);
+    };
+    parseFromDocument = parseFromString;
+}
+/**
+ * DOMImplementation (performance: fair).
+ *
+ * @see https://developer.mozilla.org/docs/Web/API/DOMImplementation/createHTMLDocument
+ */
+if (typeof document === 'object' && document.implementation) {
+    var htmlDocument_1 = document.implementation.createHTMLDocument();
+    /**
+     * Use HTML document created by `document.implementation.createHTMLDocument`.
+     *
+     * @param html - The HTML string.
+     * @param tagName - The element to render the HTML (with 'body' as fallback).
+     * @returns - Document
+     */
+    parseFromDocument = function (html, tagName) {
+        if (tagName) {
+            var element = htmlDocument_1.documentElement.querySelector(tagName);
+            if (element) {
+                element.innerHTML = html;
+            }
+            return htmlDocument_1;
+        }
+        htmlDocument_1.documentElement.innerHTML = html;
+        return htmlDocument_1;
+    };
+}
+/**
+ * Template (performance: fast).
+ *
+ * @see https://developer.mozilla.org/docs/Web/HTML/Element/template
+ */
+var template = typeof document === 'object' && document.createElement('template');
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+var parseFromTemplate;
+if (template && template.content) {
+    /**
+     * Uses a template element (content fragment) to parse HTML.
+     *
+     * @param html - HTML string.
+     * @returns - Nodes.
+     */
+    parseFromTemplate = function (html) {
+        template.innerHTML = html;
+        return template.content.childNodes;
+    };
+}
+/**
+ * Parses HTML string to DOM nodes.
+ *
+ * @param html - HTML markup.
+ * @returns - DOM nodes.
+ */
+function domparser(html) {
+    var _a, _b;
+    var match = html.match(FIRST_TAG_REGEX);
+    var firstTagName = match && match[1] ? match[1].toLowerCase() : '';
+    switch (firstTagName) {
+        case HTML: {
+            var doc = parseFromString(html);
+            // the created document may come with filler head/body elements,
+            // so make sure to remove them if they don't actually exist
+            if (!HEAD_TAG_REGEX.test(html)) {
+                var element = doc.querySelector(HEAD);
+                (_a = element === null || element === void 0 ? void 0 : element.parentNode) === null || _a === void 0 ? void 0 : _a.removeChild(element);
+            }
+            if (!BODY_TAG_REGEX.test(html)) {
+                var element = doc.querySelector(BODY);
+                (_b = element === null || element === void 0 ? void 0 : element.parentNode) === null || _b === void 0 ? void 0 : _b.removeChild(element);
+            }
+            return doc.querySelectorAll(HTML);
+        }
+        case HEAD:
+        case BODY: {
+            var elements = parseFromDocument(html).querySelectorAll(firstTagName);
+            // if there's a sibling element, then return both elements
+            if (BODY_TAG_REGEX.test(html) && HEAD_TAG_REGEX.test(html)) {
+                return elements[0].parentNode.childNodes;
+            }
+            return elements;
+        }
+        // low-level tag or text
+        default: {
+            if (parseFromTemplate) {
+                return parseFromTemplate(html);
+            }
+            var element = parseFromDocument(html, BODY).querySelector(BODY);
+            return element.childNodes;
+        }
+    }
+}
+//# sourceMappingURL=domparser.js.map
+
+/***/ }),
+
+/***/ "./node_modules/html-dom-parser/lib/client/html-to-dom.js":
+/*!****************************************************************!*\
+  !*** ./node_modules/html-dom-parser/lib/client/html-to-dom.js ***!
+  \****************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports["default"] = HTMLDOMParser;
+var domparser_1 = __importDefault(__webpack_require__(/*! ./domparser */ "./node_modules/html-dom-parser/lib/client/domparser.js"));
+var utilities_1 = __webpack_require__(/*! ./utilities */ "./node_modules/html-dom-parser/lib/client/utilities.js");
+var DIRECTIVE_REGEX = /<(![a-zA-Z\s]+)>/; // e.g., <!doctype html>
+/**
+ * Parses HTML string to DOM nodes in browser.
+ *
+ * @param html - HTML markup.
+ * @returns - DOM elements.
+ */
+function HTMLDOMParser(html) {
+    if (typeof html !== 'string') {
+        throw new TypeError('First argument must be a string');
+    }
+    if (!html) {
+        return [];
+    }
+    // match directive
+    var match = html.match(DIRECTIVE_REGEX);
+    var directive = match ? match[1] : undefined;
+    return (0, utilities_1.formatDOM)((0, domparser_1.default)(html), null, directive);
+}
+//# sourceMappingURL=html-to-dom.js.map
+
+/***/ }),
+
+/***/ "./node_modules/html-dom-parser/lib/client/utilities.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/html-dom-parser/lib/client/utilities.js ***!
+  \**************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.formatAttributes = formatAttributes;
+exports.formatDOM = formatDOM;
+var domhandler_1 = __webpack_require__(/*! domhandler */ "./node_modules/domhandler/lib/index.js");
+var constants_1 = __webpack_require__(/*! ./constants */ "./node_modules/html-dom-parser/lib/client/constants.js");
+/**
+ * Gets case-sensitive tag name.
+ *
+ * @param tagName - Tag name in lowercase.
+ * @returns - Case-sensitive tag name.
+ */
+function getCaseSensitiveTagName(tagName) {
+    return constants_1.CASE_SENSITIVE_TAG_NAMES_MAP[tagName];
+}
+/**
+ * Formats DOM attributes to a hash map.
+ *
+ * @param attributes - List of attributes.
+ * @returns - Map of attribute name to value.
+ */
+function formatAttributes(attributes) {
+    var map = {};
+    var index = 0;
+    var attributesLength = attributes.length;
+    // `NamedNodeMap` is array-like
+    for (; index < attributesLength; index++) {
+        var attribute = attributes[index];
+        map[attribute.name] = attribute.value;
+    }
+    return map;
+}
+/**
+ * Corrects the tag name if it is case-sensitive (SVG).
+ * Otherwise, returns the lowercase tag name (HTML).
+ *
+ * @param tagName - Lowercase tag name.
+ * @returns - Formatted tag name.
+ */
+function formatTagName(tagName) {
+    tagName = tagName.toLowerCase();
+    var caseSensitiveTagName = getCaseSensitiveTagName(tagName);
+    if (caseSensitiveTagName) {
+        return caseSensitiveTagName;
+    }
+    return tagName;
+}
+/**
+ * Transforms DOM nodes to `domhandler` nodes.
+ *
+ * @param nodes - DOM nodes.
+ * @param parent - Parent node.
+ * @param directive - Directive.
+ * @returns - Nodes.
+ */
+function formatDOM(nodes, parent, directive) {
+    if (parent === void 0) { parent = null; }
+    var domNodes = [];
+    var current;
+    var index = 0;
+    var nodesLength = nodes.length;
+    for (; index < nodesLength; index++) {
+        var node = nodes[index];
+        // set the node data given the type
+        switch (node.nodeType) {
+            case 1: {
+                var tagName = formatTagName(node.nodeName);
+                // script, style, or tag
+                current = new domhandler_1.Element(tagName, formatAttributes(node.attributes));
+                current.children = formatDOM(
+                // template children are on content
+                tagName === 'template'
+                    ? node.content.childNodes
+                    : node.childNodes, current);
+                break;
+            }
+            case 3:
+                current = new domhandler_1.Text(node.nodeValue);
+                break;
+            case 8:
+                current = new domhandler_1.Comment(node.nodeValue);
+                break;
+            default:
+                continue;
+        }
+        // set previous node next
+        var prev = domNodes[index - 1] || null;
+        if (prev) {
+            prev.next = current;
+        }
+        // set properties for current node
+        current.parent = parent;
+        current.prev = prev;
+        current.next = null;
+        domNodes.push(current);
+    }
+    if (directive) {
+        current = new domhandler_1.ProcessingInstruction(directive.substring(0, directive.indexOf(' ')).toLowerCase(), directive);
+        current.next = domNodes[0] || null;
+        current.parent = parent;
+        domNodes.unshift(current);
+        if (domNodes[1]) {
+            domNodes[1].prev = domNodes[0];
+        }
+    }
+    return domNodes;
+}
+//# sourceMappingURL=utilities.js.map
+
+/***/ }),
+
+/***/ "./node_modules/html-react-parser/lib/attributes-to-props.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/html-react-parser/lib/attributes-to-props.js ***!
+  \*******************************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports["default"] = attributesToProps;
+var react_property_1 = __webpack_require__(/*! react-property */ "./node_modules/react-property/lib/index.js");
+var utilities_1 = __webpack_require__(/*! ./utilities */ "./node_modules/html-react-parser/lib/utilities.js");
+// https://react.dev/learn/sharing-state-between-components#controlled-and-uncontrolled-components
+// https://developer.mozilla.org/docs/Web/HTML/Attributes
+var UNCONTROLLED_COMPONENT_ATTRIBUTES = ['checked', 'value'];
+var UNCONTROLLED_COMPONENT_NAMES = ['input', 'select', 'textarea'];
+var valueOnlyInputs = {
+    reset: true,
+    submit: true,
+};
+/**
+ * Converts HTML/SVG DOM attributes to React props.
+ *
+ * @param attributes - HTML/SVG DOM attributes.
+ * @param nodeName - DOM node name.
+ * @returns - React props.
+ */
+function attributesToProps(attributes, nodeName) {
+    if (attributes === void 0) { attributes = {}; }
+    var props = {};
+    var isInputValueOnly = Boolean(attributes.type && valueOnlyInputs[attributes.type]);
+    for (var attributeName in attributes) {
+        var attributeValue = attributes[attributeName];
+        // ARIA (aria-*) or custom data (data-*) attribute
+        if ((0, react_property_1.isCustomAttribute)(attributeName)) {
+            props[attributeName] = attributeValue;
+            continue;
+        }
+        // convert HTML/SVG attribute to React prop
+        var attributeNameLowerCased = attributeName.toLowerCase();
+        var propName = getPropName(attributeNameLowerCased);
+        if (propName) {
+            var propertyInfo = (0, react_property_1.getPropertyInfo)(propName);
+            // convert attribute to uncontrolled component prop (e.g., `value` to `defaultValue`)
+            if (UNCONTROLLED_COMPONENT_ATTRIBUTES.includes(propName) &&
+                UNCONTROLLED_COMPONENT_NAMES.includes(nodeName) &&
+                !isInputValueOnly) {
+                propName = getPropName('default' + attributeNameLowerCased);
+            }
+            props[propName] = attributeValue;
+            switch (propertyInfo && propertyInfo.type) {
+                case react_property_1.BOOLEAN:
+                    props[propName] = true;
+                    break;
+                case react_property_1.OVERLOADED_BOOLEAN:
+                    if (attributeValue === '') {
+                        props[propName] = true;
+                    }
+                    break;
+            }
+            continue;
+        }
+        // preserve custom attribute if React >=16
+        if (utilities_1.PRESERVE_CUSTOM_ATTRIBUTES) {
+            props[attributeName] = attributeValue;
+        }
+    }
+    // transform inline style to object
+    (0, utilities_1.setStyleProp)(attributes.style, props);
+    return props;
+}
+/**
+ * Gets prop name from lowercased attribute name.
+ *
+ * @param attributeName - Lowercased attribute name.
+ * @returns - Prop name.
+ */
+function getPropName(attributeName) {
+    return react_property_1.possibleStandardNames[attributeName];
+}
+//# sourceMappingURL=attributes-to-props.js.map
+
+/***/ }),
+
+/***/ "./node_modules/html-react-parser/lib/dom-to-react.js":
+/*!************************************************************!*\
+  !*** ./node_modules/html-react-parser/lib/dom-to-react.js ***!
+  \************************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports["default"] = domToReact;
+var react_1 = __webpack_require__(/*! react */ "react");
+var attributes_to_props_1 = __importDefault(__webpack_require__(/*! ./attributes-to-props */ "./node_modules/html-react-parser/lib/attributes-to-props.js"));
+var utilities_1 = __webpack_require__(/*! ./utilities */ "./node_modules/html-react-parser/lib/utilities.js");
+var React = {
+    cloneElement: react_1.cloneElement,
+    createElement: react_1.createElement,
+    isValidElement: react_1.isValidElement,
+};
+/**
+ * Converts DOM nodes to JSX element(s).
+ *
+ * @param nodes - DOM nodes.
+ * @param options - Options.
+ * @returns - String or JSX element(s).
+ */
+function domToReact(nodes, options) {
+    if (options === void 0) { options = {}; }
+    var reactElements = [];
+    var hasReplace = typeof options.replace === 'function';
+    var transform = options.transform || utilities_1.returnFirstArg;
+    var _a = options.library || React, cloneElement = _a.cloneElement, createElement = _a.createElement, isValidElement = _a.isValidElement;
+    var nodesLength = nodes.length;
+    for (var index = 0; index < nodesLength; index++) {
+        var node = nodes[index];
+        // replace with custom React element (if present)
+        if (hasReplace) {
+            var replaceElement = options.replace(node, index);
+            if (isValidElement(replaceElement)) {
+                // set "key" prop for sibling elements
+                // https://react.dev/learn/rendering-lists#rules-of-keys
+                if (nodesLength > 1) {
+                    replaceElement = cloneElement(replaceElement, {
+                        key: replaceElement.key || index,
+                    });
+                }
+                reactElements.push(transform(replaceElement, node, index));
+                continue;
+            }
+        }
+        if (node.type === 'text') {
+            var isWhitespace = !node.data.trim().length;
+            // We have a whitespace node that can't be nested in its parent
+            // so skip it
+            if (isWhitespace &&
+                node.parent &&
+                !(0, utilities_1.canTextBeChildOfNode)(node.parent)) {
+                continue;
+            }
+            // Trim is enabled and we have a whitespace node
+            // so skip it
+            if (options.trim && isWhitespace) {
+                continue;
+            }
+            // We have a text node that's not whitespace and it can be nested
+            // in its parent so add it to the results
+            reactElements.push(transform(node.data, node, index));
+            continue;
+        }
+        var element = node;
+        var props = {};
+        if (skipAttributesToProps(element)) {
+            (0, utilities_1.setStyleProp)(element.attribs.style, element.attribs);
+            props = element.attribs;
+        }
+        else if (element.attribs) {
+            props = (0, attributes_to_props_1.default)(element.attribs, element.name);
+        }
+        var children = void 0;
+        switch (node.type) {
+            case 'script':
+            case 'style':
+                // prevent text in <script> or <style> from being escaped
+                // https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html
+                if (node.children[0]) {
+                    props.dangerouslySetInnerHTML = {
+                        __html: node.children[0].data,
+                    };
+                }
+                break;
+            case 'tag':
+                // setting textarea value in children is an antipattern in React
+                // https://react.dev/reference/react-dom/components/textarea#caveats
+                if (node.name === 'textarea' && node.children[0]) {
+                    props.defaultValue = node.children[0].data;
+                }
+                else if (node.children && node.children.length) {
+                    // continue recursion of creating React elements (if applicable)
+                    children = domToReact(node.children, options);
+                }
+                break;
+            // skip all other cases (e.g., comment)
+            default:
+                continue;
+        }
+        // set "key" prop for sibling elements
+        // https://react.dev/learn/rendering-lists#rules-of-keys
+        if (nodesLength > 1) {
+            props.key = index;
+        }
+        reactElements.push(transform(createElement(node.name, props, children), node, index));
+    }
+    return reactElements.length === 1 ? reactElements[0] : reactElements;
+}
+/**
+ * Determines whether DOM element attributes should be transformed to props.
+ * Web Components should not have their attributes transformed except for `style`.
+ *
+ * @param node - Element node.
+ * @returns - Whether the node attributes should be converted to props.
+ */
+function skipAttributesToProps(node) {
+    return (utilities_1.PRESERVE_CUSTOM_ATTRIBUTES &&
+        node.type === 'tag' &&
+        (0, utilities_1.isCustomComponent)(node.name, node.attribs));
+}
+//# sourceMappingURL=dom-to-react.js.map
+
+/***/ }),
+
+/***/ "./node_modules/html-react-parser/lib/index.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/html-react-parser/lib/index.js ***!
+  \*****************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.htmlToDOM = exports.domToReact = exports.attributesToProps = exports.Text = exports.ProcessingInstruction = exports.Element = exports.Comment = void 0;
+exports["default"] = HTMLReactParser;
+var html_dom_parser_1 = __importDefault(__webpack_require__(/*! html-dom-parser */ "./node_modules/html-dom-parser/lib/client/html-to-dom.js"));
+exports.htmlToDOM = html_dom_parser_1.default;
+var attributes_to_props_1 = __importDefault(__webpack_require__(/*! ./attributes-to-props */ "./node_modules/html-react-parser/lib/attributes-to-props.js"));
+exports.attributesToProps = attributes_to_props_1.default;
+var dom_to_react_1 = __importDefault(__webpack_require__(/*! ./dom-to-react */ "./node_modules/html-react-parser/lib/dom-to-react.js"));
+exports.domToReact = dom_to_react_1.default;
+var domhandler_1 = __webpack_require__(/*! domhandler */ "./node_modules/domhandler/lib/index.js");
+Object.defineProperty(exports, "Comment", ({ enumerable: true, get: function () { return domhandler_1.Comment; } }));
+Object.defineProperty(exports, "Element", ({ enumerable: true, get: function () { return domhandler_1.Element; } }));
+Object.defineProperty(exports, "ProcessingInstruction", ({ enumerable: true, get: function () { return domhandler_1.ProcessingInstruction; } }));
+Object.defineProperty(exports, "Text", ({ enumerable: true, get: function () { return domhandler_1.Text; } }));
+var domParserOptions = { lowerCaseAttributeNames: false };
+/**
+ * Converts HTML string to React elements.
+ *
+ * @param html - HTML string.
+ * @param options - Parser options.
+ * @returns - React element(s), empty array, or string.
+ */
+function HTMLReactParser(html, options) {
+    if (typeof html !== 'string') {
+        throw new TypeError('First argument must be a string');
+    }
+    if (!html) {
+        return [];
+    }
+    return (0, dom_to_react_1.default)((0, html_dom_parser_1.default)(html, (options === null || options === void 0 ? void 0 : options.htmlparser2) || domParserOptions), options);
+}
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ "./node_modules/html-react-parser/lib/utilities.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/html-react-parser/lib/utilities.js ***!
+  \*********************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.returnFirstArg = exports.canTextBeChildOfNode = exports.ELEMENTS_WITH_NO_TEXT_CHILDREN = exports.PRESERVE_CUSTOM_ATTRIBUTES = void 0;
+exports.isCustomComponent = isCustomComponent;
+exports.setStyleProp = setStyleProp;
+var react_1 = __webpack_require__(/*! react */ "react");
+var style_to_js_1 = __importDefault(__webpack_require__(/*! style-to-js */ "./node_modules/style-to-js/cjs/index.js"));
+var RESERVED_SVG_MATHML_ELEMENTS = new Set([
+    'annotation-xml',
+    'color-profile',
+    'font-face',
+    'font-face-src',
+    'font-face-uri',
+    'font-face-format',
+    'font-face-name',
+    'missing-glyph',
+]);
+/**
+ * Check if a tag is a custom component.
+ *
+ * @see {@link https://github.com/facebook/react/blob/v16.6.3/packages/react-dom/src/shared/isCustomComponent.js}
+ *
+ * @param tagName - Tag name.
+ * @param props - Props passed to the element.
+ * @returns - Whether the tag is custom component.
+ */
+function isCustomComponent(tagName, props) {
+    if (!tagName.includes('-')) {
+        return Boolean(props && typeof props.is === 'string');
+    }
+    // These are reserved SVG and MathML elements.
+    // We don't mind this whitelist too much because we expect it to never grow.
+    // The alternative is to track the namespace in a few places which is convoluted.
+    // https://w3c.github.io/webcomponents/spec/custom/#custom-elements-core-concepts
+    if (RESERVED_SVG_MATHML_ELEMENTS.has(tagName)) {
+        return false;
+    }
+    return true;
+}
+var styleOptions = {
+    reactCompat: true,
+};
+/**
+ * Sets style prop.
+ *
+ * @param style - Inline style.
+ * @param props - Props object.
+ */
+function setStyleProp(style, props) {
+    if (typeof style !== 'string') {
+        return;
+    }
+    if (!style.trim()) {
+        props.style = {};
+        return;
+    }
+    try {
+        props.style = (0, style_to_js_1.default)(style, styleOptions);
+    }
+    catch (error) {
+        props.style = {};
+    }
+}
+/**
+ * @see https://reactjs.org/blog/2017/09/08/dom-attributes-in-react-16.html
+ */
+exports.PRESERVE_CUSTOM_ATTRIBUTES = Number(react_1.version.split('.')[0]) >= 16;
+/**
+ * @see https://github.com/facebook/react/blob/cae635054e17a6f107a39d328649137b83f25972/packages/react-dom/src/client/validateDOMNesting.js#L213
+ */
+exports.ELEMENTS_WITH_NO_TEXT_CHILDREN = new Set([
+    'tr',
+    'tbody',
+    'thead',
+    'tfoot',
+    'colgroup',
+    'table',
+    'head',
+    'html',
+    'frameset',
+]);
+/**
+ * Checks if the given node can contain text nodes
+ *
+ * @param node - Element node.
+ * @returns - Whether the node can contain text nodes.
+ */
+var canTextBeChildOfNode = function (node) {
+    return !exports.ELEMENTS_WITH_NO_TEXT_CHILDREN.has(node.name);
+};
+exports.canTextBeChildOfNode = canTextBeChildOfNode;
+/**
+ * Returns the first argument as is.
+ *
+ * @param arg - The argument to be returned.
+ * @returns - The input argument `arg`.
+ */
+var returnFirstArg = function (arg) { return arg; };
+exports.returnFirstArg = returnFirstArg;
+//# sourceMappingURL=utilities.js.map
+
+/***/ }),
+
+/***/ "./node_modules/inline-style-parser/index.js":
+/*!***************************************************!*\
+  !*** ./node_modules/inline-style-parser/index.js ***!
+  \***************************************************/
+/***/ ((module) => {
+
+// http://www.w3.org/TR/CSS21/grammar.html
+// https://github.com/visionmedia/css-parse/pull/49#issuecomment-30088027
+var COMMENT_REGEX = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g;
+
+var NEWLINE_REGEX = /\n/g;
+var WHITESPACE_REGEX = /^\s*/;
+
+// declaration
+var PROPERTY_REGEX = /^(\*?[-#/*\\\w]+(\[[0-9a-z_-]+\])?)\s*/;
+var COLON_REGEX = /^:\s*/;
+var VALUE_REGEX = /^((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^)]*?\)|[^};])+)/;
+var SEMICOLON_REGEX = /^[;\s]*/;
+
+// https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/Trim#Polyfill
+var TRIM_REGEX = /^\s+|\s+$/g;
+
+// strings
+var NEWLINE = '\n';
+var FORWARD_SLASH = '/';
+var ASTERISK = '*';
+var EMPTY_STRING = '';
+
+// types
+var TYPE_COMMENT = 'comment';
+var TYPE_DECLARATION = 'declaration';
+
+/**
+ * @param {String} style
+ * @param {Object} [options]
+ * @return {Object[]}
+ * @throws {TypeError}
+ * @throws {Error}
+ */
+module.exports = function (style, options) {
+  if (typeof style !== 'string') {
+    throw new TypeError('First argument must be a string');
+  }
+
+  if (!style) return [];
+
+  options = options || {};
+
+  /**
+   * Positional.
+   */
+  var lineno = 1;
+  var column = 1;
+
+  /**
+   * Update lineno and column based on `str`.
+   *
+   * @param {String} str
+   */
+  function updatePosition(str) {
+    var lines = str.match(NEWLINE_REGEX);
+    if (lines) lineno += lines.length;
+    var i = str.lastIndexOf(NEWLINE);
+    column = ~i ? str.length - i : column + str.length;
+  }
+
+  /**
+   * Mark position and patch `node.position`.
+   *
+   * @return {Function}
+   */
+  function position() {
+    var start = { line: lineno, column: column };
+    return function (node) {
+      node.position = new Position(start);
+      whitespace();
+      return node;
+    };
+  }
+
+  /**
+   * Store position information for a node.
+   *
+   * @constructor
+   * @property {Object} start
+   * @property {Object} end
+   * @property {undefined|String} source
+   */
+  function Position(start) {
+    this.start = start;
+    this.end = { line: lineno, column: column };
+    this.source = options.source;
+  }
+
+  /**
+   * Non-enumerable source string.
+   */
+  Position.prototype.content = style;
+
+  var errorsList = [];
+
+  /**
+   * Error `msg`.
+   *
+   * @param {String} msg
+   * @throws {Error}
+   */
+  function error(msg) {
+    var err = new Error(
+      options.source + ':' + lineno + ':' + column + ': ' + msg
+    );
+    err.reason = msg;
+    err.filename = options.source;
+    err.line = lineno;
+    err.column = column;
+    err.source = style;
+
+    if (options.silent) {
+      errorsList.push(err);
+    } else {
+      throw err;
+    }
+  }
+
+  /**
+   * Match `re` and return captures.
+   *
+   * @param {RegExp} re
+   * @return {undefined|Array}
+   */
+  function match(re) {
+    var m = re.exec(style);
+    if (!m) return;
+    var str = m[0];
+    updatePosition(str);
+    style = style.slice(str.length);
+    return m;
+  }
+
+  /**
+   * Parse whitespace.
+   */
+  function whitespace() {
+    match(WHITESPACE_REGEX);
+  }
+
+  /**
+   * Parse comments.
+   *
+   * @param {Object[]} [rules]
+   * @return {Object[]}
+   */
+  function comments(rules) {
+    var c;
+    rules = rules || [];
+    while ((c = comment())) {
+      if (c !== false) {
+        rules.push(c);
+      }
+    }
+    return rules;
+  }
+
+  /**
+   * Parse comment.
+   *
+   * @return {Object}
+   * @throws {Error}
+   */
+  function comment() {
+    var pos = position();
+    if (FORWARD_SLASH != style.charAt(0) || ASTERISK != style.charAt(1)) return;
+
+    var i = 2;
+    while (
+      EMPTY_STRING != style.charAt(i) &&
+      (ASTERISK != style.charAt(i) || FORWARD_SLASH != style.charAt(i + 1))
+    ) {
+      ++i;
+    }
+    i += 2;
+
+    if (EMPTY_STRING === style.charAt(i - 1)) {
+      return error('End of comment missing');
+    }
+
+    var str = style.slice(2, i - 2);
+    column += 2;
+    updatePosition(str);
+    style = style.slice(i);
+    column += 2;
+
+    return pos({
+      type: TYPE_COMMENT,
+      comment: str
+    });
+  }
+
+  /**
+   * Parse declaration.
+   *
+   * @return {Object}
+   * @throws {Error}
+   */
+  function declaration() {
+    var pos = position();
+
+    // prop
+    var prop = match(PROPERTY_REGEX);
+    if (!prop) return;
+    comment();
+
+    // :
+    if (!match(COLON_REGEX)) return error("property missing ':'");
+
+    // val
+    var val = match(VALUE_REGEX);
+
+    var ret = pos({
+      type: TYPE_DECLARATION,
+      property: trim(prop[0].replace(COMMENT_REGEX, EMPTY_STRING)),
+      value: val
+        ? trim(val[0].replace(COMMENT_REGEX, EMPTY_STRING))
+        : EMPTY_STRING
+    });
+
+    // ;
+    match(SEMICOLON_REGEX);
+
+    return ret;
+  }
+
+  /**
+   * Parse declarations.
+   *
+   * @return {Object[]}
+   */
+  function declarations() {
+    var decls = [];
+
+    comments(decls);
+
+    // declarations
+    var decl;
+    while ((decl = declaration())) {
+      if (decl !== false) {
+        decls.push(decl);
+        comments(decls);
+      }
+    }
+
+    return decls;
+  }
+
+  whitespace();
+  return declarations();
+};
+
+/**
+ * Trim `str`.
+ *
+ * @param {String} str
+ * @return {String}
+ */
+function trim(str) {
+  return str ? str.replace(TRIM_REGEX, EMPTY_STRING) : EMPTY_STRING;
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/react-property/lib/index.js":
+/*!**************************************************!*\
+  !*** ./node_modules/react-property/lib/index.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * 
+ */
+
+
+
+
+// A reserved attribute.
+// It is handled by React separately and shouldn't be written to the DOM.
+const RESERVED = 0;
+
+// A simple string attribute.
+// Attributes that aren't in the filter are presumed to have this type.
+const STRING = 1;
+
+// A string attribute that accepts booleans in React. In HTML, these are called
+// "enumerated" attributes with "true" and "false" as possible values.
+// When true, it should be set to a "true" string.
+// When false, it should be set to a "false" string.
+const BOOLEANISH_STRING = 2;
+
+// A real boolean attribute.
+// When true, it should be present (set either to an empty string or its name).
+// When false, it should be omitted.
+const BOOLEAN = 3;
+
+// An attribute that can be used as a flag as well as with a value.
+// When true, it should be present (set either to an empty string or its name).
+// When false, it should be omitted.
+// For any other value, should be present with that value.
+const OVERLOADED_BOOLEAN = 4;
+
+// An attribute that must be numeric or parse as a numeric.
+// When falsy, it should be removed.
+const NUMERIC = 5;
+
+// An attribute that must be positive numeric or parse as a positive numeric.
+// When falsy, it should be removed.
+const POSITIVE_NUMERIC = 6;
+
+function getPropertyInfo(name) {
+  return properties.hasOwnProperty(name) ? properties[name] : null;
+}
+
+function PropertyInfoRecord(
+  name,
+  type,
+  mustUseProperty,
+  attributeName,
+  attributeNamespace,
+  sanitizeURL,
+  removeEmptyString,
+) {
+  this.acceptsBooleans =
+    type === BOOLEANISH_STRING ||
+    type === BOOLEAN ||
+    type === OVERLOADED_BOOLEAN;
+  this.attributeName = attributeName;
+  this.attributeNamespace = attributeNamespace;
+  this.mustUseProperty = mustUseProperty;
+  this.propertyName = name;
+  this.type = type;
+  this.sanitizeURL = sanitizeURL;
+  this.removeEmptyString = removeEmptyString;
+}
+
+// When adding attributes to this list, be sure to also add them to
+// the `possibleStandardNames` module to ensure casing and incorrect
+// name warnings.
+const properties = {};
+
+// These props are reserved by React. They shouldn't be written to the DOM.
+const reservedProps = [
+  'children',
+  'dangerouslySetInnerHTML',
+  // TODO: This prevents the assignment of defaultValue to regular
+  // elements (not just inputs). Now that ReactDOMInput assigns to the
+  // defaultValue property -- do we need this?
+  'defaultValue',
+  'defaultChecked',
+  'innerHTML',
+  'suppressContentEditableWarning',
+  'suppressHydrationWarning',
+  'style',
+];
+
+reservedProps.forEach(name => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    RESERVED,
+    false, // mustUseProperty
+    name, // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// A few React string attributes have a different name.
+// This is a mapping from React prop names to the attribute names.
+[
+  ['acceptCharset', 'accept-charset'],
+  ['className', 'class'],
+  ['htmlFor', 'for'],
+  ['httpEquiv', 'http-equiv'],
+].forEach(([name, attributeName]) => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    STRING,
+    false, // mustUseProperty
+    attributeName, // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These are "enumerated" HTML attributes that accept "true" and "false".
+// In React, we let users pass `true` and `false` even though technically
+// these aren't boolean attributes (they are coerced to strings).
+['contentEditable', 'draggable', 'spellCheck', 'value'].forEach(name => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    BOOLEANISH_STRING,
+    false, // mustUseProperty
+    name.toLowerCase(), // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These are "enumerated" SVG attributes that accept "true" and "false".
+// In React, we let users pass `true` and `false` even though technically
+// these aren't boolean attributes (they are coerced to strings).
+// Since these are SVG attributes, their attribute names are case-sensitive.
+[
+  'autoReverse',
+  'externalResourcesRequired',
+  'focusable',
+  'preserveAlpha',
+].forEach(name => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    BOOLEANISH_STRING,
+    false, // mustUseProperty
+    name, // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These are HTML boolean attributes.
+[
+  'allowFullScreen',
+  'async',
+  // Note: there is a special case that prevents it from being written to the DOM
+  // on the client side because the browsers are inconsistent. Instead we call focus().
+  'autoFocus',
+  'autoPlay',
+  'controls',
+  'default',
+  'defer',
+  'disabled',
+  'disablePictureInPicture',
+  'disableRemotePlayback',
+  'formNoValidate',
+  'hidden',
+  'loop',
+  'noModule',
+  'noValidate',
+  'open',
+  'playsInline',
+  'readOnly',
+  'required',
+  'reversed',
+  'scoped',
+  'seamless',
+  // Microdata
+  'itemScope',
+].forEach(name => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    BOOLEAN,
+    false, // mustUseProperty
+    name.toLowerCase(), // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These are the few React props that we set as DOM properties
+// rather than attributes. These are all booleans.
+[
+  'checked',
+  // Note: `option.selected` is not updated if `select.multiple` is
+  // disabled with `removeAttribute`. We have special logic for handling this.
+  'multiple',
+  'muted',
+  'selected',
+
+  // NOTE: if you add a camelCased prop to this list,
+  // you'll need to set attributeName to name.toLowerCase()
+  // instead in the assignment below.
+].forEach(name => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    BOOLEAN,
+    true, // mustUseProperty
+    name, // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These are HTML attributes that are "overloaded booleans": they behave like
+// booleans, but can also accept a string value.
+[
+  'capture',
+  'download',
+
+  // NOTE: if you add a camelCased prop to this list,
+  // you'll need to set attributeName to name.toLowerCase()
+  // instead in the assignment below.
+].forEach(name => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    OVERLOADED_BOOLEAN,
+    false, // mustUseProperty
+    name, // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These are HTML attributes that must be positive numbers.
+[
+  'cols',
+  'rows',
+  'size',
+  'span',
+
+  // NOTE: if you add a camelCased prop to this list,
+  // you'll need to set attributeName to name.toLowerCase()
+  // instead in the assignment below.
+].forEach(name => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    POSITIVE_NUMERIC,
+    false, // mustUseProperty
+    name, // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These are HTML attributes that must be numbers.
+['rowSpan', 'start'].forEach(name => {
+  properties[name] = new PropertyInfoRecord(
+    name,
+    NUMERIC,
+    false, // mustUseProperty
+    name.toLowerCase(), // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+const CAMELIZE = /[\-\:]([a-z])/g;
+const capitalize = token => token[1].toUpperCase();
+
+// This is a list of all SVG attributes that need special casing, namespacing,
+// or boolean value assignment. Regular attributes that just accept strings
+// and have the same names are omitted, just like in the HTML attribute filter.
+// Some of these attributes can be hard to find. This list was created by
+// scraping the MDN documentation.
+[
+  'accent-height',
+  'alignment-baseline',
+  'arabic-form',
+  'baseline-shift',
+  'cap-height',
+  'clip-path',
+  'clip-rule',
+  'color-interpolation',
+  'color-interpolation-filters',
+  'color-profile',
+  'color-rendering',
+  'dominant-baseline',
+  'enable-background',
+  'fill-opacity',
+  'fill-rule',
+  'flood-color',
+  'flood-opacity',
+  'font-family',
+  'font-size',
+  'font-size-adjust',
+  'font-stretch',
+  'font-style',
+  'font-variant',
+  'font-weight',
+  'glyph-name',
+  'glyph-orientation-horizontal',
+  'glyph-orientation-vertical',
+  'horiz-adv-x',
+  'horiz-origin-x',
+  'image-rendering',
+  'letter-spacing',
+  'lighting-color',
+  'marker-end',
+  'marker-mid',
+  'marker-start',
+  'overline-position',
+  'overline-thickness',
+  'paint-order',
+  'panose-1',
+  'pointer-events',
+  'rendering-intent',
+  'shape-rendering',
+  'stop-color',
+  'stop-opacity',
+  'strikethrough-position',
+  'strikethrough-thickness',
+  'stroke-dasharray',
+  'stroke-dashoffset',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'stroke-miterlimit',
+  'stroke-opacity',
+  'stroke-width',
+  'text-anchor',
+  'text-decoration',
+  'text-rendering',
+  'underline-position',
+  'underline-thickness',
+  'unicode-bidi',
+  'unicode-range',
+  'units-per-em',
+  'v-alphabetic',
+  'v-hanging',
+  'v-ideographic',
+  'v-mathematical',
+  'vector-effect',
+  'vert-adv-y',
+  'vert-origin-x',
+  'vert-origin-y',
+  'word-spacing',
+  'writing-mode',
+  'xmlns:xlink',
+  'x-height',
+
+  // NOTE: if you add a camelCased prop to this list,
+  // you'll need to set attributeName to name.toLowerCase()
+  // instead in the assignment below.
+].forEach(attributeName => {
+  const name = attributeName.replace(CAMELIZE, capitalize);
+  properties[name] = new PropertyInfoRecord(
+    name,
+    STRING,
+    false, // mustUseProperty
+    attributeName,
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// String SVG attributes with the xlink namespace.
+[
+  'xlink:actuate',
+  'xlink:arcrole',
+  'xlink:role',
+  'xlink:show',
+  'xlink:title',
+  'xlink:type',
+
+  // NOTE: if you add a camelCased prop to this list,
+  // you'll need to set attributeName to name.toLowerCase()
+  // instead in the assignment below.
+].forEach(attributeName => {
+  const name = attributeName.replace(CAMELIZE, capitalize);
+  properties[name] = new PropertyInfoRecord(
+    name,
+    STRING,
+    false, // mustUseProperty
+    attributeName,
+    'http://www.w3.org/1999/xlink',
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// String SVG attributes with the xml namespace.
+[
+  'xml:base',
+  'xml:lang',
+  'xml:space',
+
+  // NOTE: if you add a camelCased prop to this list,
+  // you'll need to set attributeName to name.toLowerCase()
+  // instead in the assignment below.
+].forEach(attributeName => {
+  const name = attributeName.replace(CAMELIZE, capitalize);
+  properties[name] = new PropertyInfoRecord(
+    name,
+    STRING,
+    false, // mustUseProperty
+    attributeName,
+    'http://www.w3.org/XML/1998/namespace',
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These attribute exists both in HTML and SVG.
+// The attribute name is case-sensitive in SVG so we can't just use
+// the React name like we do for attributes that exist only in HTML.
+['tabIndex', 'crossOrigin'].forEach(attributeName => {
+  properties[attributeName] = new PropertyInfoRecord(
+    attributeName,
+    STRING,
+    false, // mustUseProperty
+    attributeName.toLowerCase(), // attributeName
+    null, // attributeNamespace
+    false, // sanitizeURL
+    false, // removeEmptyString
+  );
+});
+
+// These attributes accept URLs. These must not allow javascript: URLS.
+// These will also need to accept Trusted Types object in the future.
+const xlinkHref = 'xlinkHref';
+properties[xlinkHref] = new PropertyInfoRecord(
+  'xlinkHref',
+  STRING,
+  false, // mustUseProperty
+  'xlink:href',
+  'http://www.w3.org/1999/xlink',
+  true, // sanitizeURL
+  false, // removeEmptyString
+);
+
+['src', 'href', 'action', 'formAction'].forEach(attributeName => {
+  properties[attributeName] = new PropertyInfoRecord(
+    attributeName,
+    STRING,
+    false, // mustUseProperty
+    attributeName.toLowerCase(), // attributeName
+    null, // attributeNamespace
+    true, // sanitizeURL
+    true, // removeEmptyString
+  );
+});
+
+// 
+const {
+  CAMELCASE,
+  SAME,
+  possibleStandardNames: possibleStandardNamesOptimized
+} = __webpack_require__(/*! ../lib/possibleStandardNamesOptimized */ "./node_modules/react-property/lib/possibleStandardNamesOptimized.js");
+
+const ATTRIBUTE_NAME_START_CHAR =
+  ':A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD';
+
+const ATTRIBUTE_NAME_CHAR =
+  ATTRIBUTE_NAME_START_CHAR + '\\-.0-9\\u00B7\\u0300-\\u036F\\u203F-\\u2040';
+
+/**
+ * Checks whether a property name is a custom attribute.
+ *
+ * @see https://github.com/facebook/react/blob/15-stable/src/renderers/dom/shared/HTMLDOMPropertyConfig.js#L23-L25
+ *
+ * @type {(attribute: string) => boolean}
+ */
+const isCustomAttribute =
+  RegExp.prototype.test.bind(
+    // eslint-disable-next-line no-misleading-character-class
+    new RegExp('^(data|aria)-[' + ATTRIBUTE_NAME_CHAR + ']*$')
+  );
+
+/**
+ * @type {Record<string, string>}
+ */
+const possibleStandardNames = Object.keys(
+  possibleStandardNamesOptimized
+).reduce((accumulator, standardName) => {
+  const propName = possibleStandardNamesOptimized[standardName];
+  if (propName === SAME) {
+    accumulator[standardName] = standardName;
+  } else if (propName === CAMELCASE) {
+    accumulator[standardName.toLowerCase()] = standardName;
+  } else {
+    accumulator[standardName] = propName;
+  }
+  return accumulator;
+}, {});
+
+exports.BOOLEAN = BOOLEAN;
+exports.BOOLEANISH_STRING = BOOLEANISH_STRING;
+exports.NUMERIC = NUMERIC;
+exports.OVERLOADED_BOOLEAN = OVERLOADED_BOOLEAN;
+exports.POSITIVE_NUMERIC = POSITIVE_NUMERIC;
+exports.RESERVED = RESERVED;
+exports.STRING = STRING;
+exports.getPropertyInfo = getPropertyInfo;
+exports.isCustomAttribute = isCustomAttribute;
+exports.possibleStandardNames = possibleStandardNames;
+
+
+/***/ }),
+
+/***/ "./node_modules/react-property/lib/possibleStandardNamesOptimized.js":
+/*!***************************************************************************!*\
+  !*** ./node_modules/react-property/lib/possibleStandardNamesOptimized.js ***!
+  \***************************************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+// An attribute in which the DOM/SVG standard name is the same as the React prop name (e.g., 'accept').
+var SAME = 0;
+exports.SAME = SAME;
+
+// An attribute in which the React prop name is the camelcased version of the DOM/SVG standard name (e.g., 'acceptCharset').
+var CAMELCASE = 1;
+exports.CAMELCASE = CAMELCASE;
+
+exports.possibleStandardNames = {
+  accept: 0,
+  acceptCharset: 1,
+  'accept-charset': 'acceptCharset',
+  accessKey: 1,
+  action: 0,
+  allowFullScreen: 1,
+  alt: 0,
+  as: 0,
+  async: 0,
+  autoCapitalize: 1,
+  autoComplete: 1,
+  autoCorrect: 1,
+  autoFocus: 1,
+  autoPlay: 1,
+  autoSave: 1,
+  capture: 0,
+  cellPadding: 1,
+  cellSpacing: 1,
+  challenge: 0,
+  charSet: 1,
+  checked: 0,
+  children: 0,
+  cite: 0,
+  class: 'className',
+  classID: 1,
+  className: 1,
+  cols: 0,
+  colSpan: 1,
+  content: 0,
+  contentEditable: 1,
+  contextMenu: 1,
+  controls: 0,
+  controlsList: 1,
+  coords: 0,
+  crossOrigin: 1,
+  dangerouslySetInnerHTML: 1,
+  data: 0,
+  dateTime: 1,
+  default: 0,
+  defaultChecked: 1,
+  defaultValue: 1,
+  defer: 0,
+  dir: 0,
+  disabled: 0,
+  disablePictureInPicture: 1,
+  disableRemotePlayback: 1,
+  download: 0,
+  draggable: 0,
+  encType: 1,
+  enterKeyHint: 1,
+  for: 'htmlFor',
+  form: 0,
+  formMethod: 1,
+  formAction: 1,
+  formEncType: 1,
+  formNoValidate: 1,
+  formTarget: 1,
+  frameBorder: 1,
+  headers: 0,
+  height: 0,
+  hidden: 0,
+  high: 0,
+  href: 0,
+  hrefLang: 1,
+  htmlFor: 1,
+  httpEquiv: 1,
+  'http-equiv': 'httpEquiv',
+  icon: 0,
+  id: 0,
+  innerHTML: 1,
+  inputMode: 1,
+  integrity: 0,
+  is: 0,
+  itemID: 1,
+  itemProp: 1,
+  itemRef: 1,
+  itemScope: 1,
+  itemType: 1,
+  keyParams: 1,
+  keyType: 1,
+  kind: 0,
+  label: 0,
+  lang: 0,
+  list: 0,
+  loop: 0,
+  low: 0,
+  manifest: 0,
+  marginWidth: 1,
+  marginHeight: 1,
+  max: 0,
+  maxLength: 1,
+  media: 0,
+  mediaGroup: 1,
+  method: 0,
+  min: 0,
+  minLength: 1,
+  multiple: 0,
+  muted: 0,
+  name: 0,
+  noModule: 1,
+  nonce: 0,
+  noValidate: 1,
+  open: 0,
+  optimum: 0,
+  pattern: 0,
+  placeholder: 0,
+  playsInline: 1,
+  poster: 0,
+  preload: 0,
+  profile: 0,
+  radioGroup: 1,
+  readOnly: 1,
+  referrerPolicy: 1,
+  rel: 0,
+  required: 0,
+  reversed: 0,
+  role: 0,
+  rows: 0,
+  rowSpan: 1,
+  sandbox: 0,
+  scope: 0,
+  scoped: 0,
+  scrolling: 0,
+  seamless: 0,
+  selected: 0,
+  shape: 0,
+  size: 0,
+  sizes: 0,
+  span: 0,
+  spellCheck: 1,
+  src: 0,
+  srcDoc: 1,
+  srcLang: 1,
+  srcSet: 1,
+  start: 0,
+  step: 0,
+  style: 0,
+  summary: 0,
+  tabIndex: 1,
+  target: 0,
+  title: 0,
+  type: 0,
+  useMap: 1,
+  value: 0,
+  width: 0,
+  wmode: 0,
+  wrap: 0,
+  about: 0,
+  accentHeight: 1,
+  'accent-height': 'accentHeight',
+  accumulate: 0,
+  additive: 0,
+  alignmentBaseline: 1,
+  'alignment-baseline': 'alignmentBaseline',
+  allowReorder: 1,
+  alphabetic: 0,
+  amplitude: 0,
+  arabicForm: 1,
+  'arabic-form': 'arabicForm',
+  ascent: 0,
+  attributeName: 1,
+  attributeType: 1,
+  autoReverse: 1,
+  azimuth: 0,
+  baseFrequency: 1,
+  baselineShift: 1,
+  'baseline-shift': 'baselineShift',
+  baseProfile: 1,
+  bbox: 0,
+  begin: 0,
+  bias: 0,
+  by: 0,
+  calcMode: 1,
+  capHeight: 1,
+  'cap-height': 'capHeight',
+  clip: 0,
+  clipPath: 1,
+  'clip-path': 'clipPath',
+  clipPathUnits: 1,
+  clipRule: 1,
+  'clip-rule': 'clipRule',
+  color: 0,
+  colorInterpolation: 1,
+  'color-interpolation': 'colorInterpolation',
+  colorInterpolationFilters: 1,
+  'color-interpolation-filters': 'colorInterpolationFilters',
+  colorProfile: 1,
+  'color-profile': 'colorProfile',
+  colorRendering: 1,
+  'color-rendering': 'colorRendering',
+  contentScriptType: 1,
+  contentStyleType: 1,
+  cursor: 0,
+  cx: 0,
+  cy: 0,
+  d: 0,
+  datatype: 0,
+  decelerate: 0,
+  descent: 0,
+  diffuseConstant: 1,
+  direction: 0,
+  display: 0,
+  divisor: 0,
+  dominantBaseline: 1,
+  'dominant-baseline': 'dominantBaseline',
+  dur: 0,
+  dx: 0,
+  dy: 0,
+  edgeMode: 1,
+  elevation: 0,
+  enableBackground: 1,
+  'enable-background': 'enableBackground',
+  end: 0,
+  exponent: 0,
+  externalResourcesRequired: 1,
+  fill: 0,
+  fillOpacity: 1,
+  'fill-opacity': 'fillOpacity',
+  fillRule: 1,
+  'fill-rule': 'fillRule',
+  filter: 0,
+  filterRes: 1,
+  filterUnits: 1,
+  floodOpacity: 1,
+  'flood-opacity': 'floodOpacity',
+  floodColor: 1,
+  'flood-color': 'floodColor',
+  focusable: 0,
+  fontFamily: 1,
+  'font-family': 'fontFamily',
+  fontSize: 1,
+  'font-size': 'fontSize',
+  fontSizeAdjust: 1,
+  'font-size-adjust': 'fontSizeAdjust',
+  fontStretch: 1,
+  'font-stretch': 'fontStretch',
+  fontStyle: 1,
+  'font-style': 'fontStyle',
+  fontVariant: 1,
+  'font-variant': 'fontVariant',
+  fontWeight: 1,
+  'font-weight': 'fontWeight',
+  format: 0,
+  from: 0,
+  fx: 0,
+  fy: 0,
+  g1: 0,
+  g2: 0,
+  glyphName: 1,
+  'glyph-name': 'glyphName',
+  glyphOrientationHorizontal: 1,
+  'glyph-orientation-horizontal': 'glyphOrientationHorizontal',
+  glyphOrientationVertical: 1,
+  'glyph-orientation-vertical': 'glyphOrientationVertical',
+  glyphRef: 1,
+  gradientTransform: 1,
+  gradientUnits: 1,
+  hanging: 0,
+  horizAdvX: 1,
+  'horiz-adv-x': 'horizAdvX',
+  horizOriginX: 1,
+  'horiz-origin-x': 'horizOriginX',
+  ideographic: 0,
+  imageRendering: 1,
+  'image-rendering': 'imageRendering',
+  in2: 0,
+  in: 0,
+  inlist: 0,
+  intercept: 0,
+  k1: 0,
+  k2: 0,
+  k3: 0,
+  k4: 0,
+  k: 0,
+  kernelMatrix: 1,
+  kernelUnitLength: 1,
+  kerning: 0,
+  keyPoints: 1,
+  keySplines: 1,
+  keyTimes: 1,
+  lengthAdjust: 1,
+  letterSpacing: 1,
+  'letter-spacing': 'letterSpacing',
+  lightingColor: 1,
+  'lighting-color': 'lightingColor',
+  limitingConeAngle: 1,
+  local: 0,
+  markerEnd: 1,
+  'marker-end': 'markerEnd',
+  markerHeight: 1,
+  markerMid: 1,
+  'marker-mid': 'markerMid',
+  markerStart: 1,
+  'marker-start': 'markerStart',
+  markerUnits: 1,
+  markerWidth: 1,
+  mask: 0,
+  maskContentUnits: 1,
+  maskUnits: 1,
+  mathematical: 0,
+  mode: 0,
+  numOctaves: 1,
+  offset: 0,
+  opacity: 0,
+  operator: 0,
+  order: 0,
+  orient: 0,
+  orientation: 0,
+  origin: 0,
+  overflow: 0,
+  overlinePosition: 1,
+  'overline-position': 'overlinePosition',
+  overlineThickness: 1,
+  'overline-thickness': 'overlineThickness',
+  paintOrder: 1,
+  'paint-order': 'paintOrder',
+  panose1: 0,
+  'panose-1': 'panose1',
+  pathLength: 1,
+  patternContentUnits: 1,
+  patternTransform: 1,
+  patternUnits: 1,
+  pointerEvents: 1,
+  'pointer-events': 'pointerEvents',
+  points: 0,
+  pointsAtX: 1,
+  pointsAtY: 1,
+  pointsAtZ: 1,
+  prefix: 0,
+  preserveAlpha: 1,
+  preserveAspectRatio: 1,
+  primitiveUnits: 1,
+  property: 0,
+  r: 0,
+  radius: 0,
+  refX: 1,
+  refY: 1,
+  renderingIntent: 1,
+  'rendering-intent': 'renderingIntent',
+  repeatCount: 1,
+  repeatDur: 1,
+  requiredExtensions: 1,
+  requiredFeatures: 1,
+  resource: 0,
+  restart: 0,
+  result: 0,
+  results: 0,
+  rotate: 0,
+  rx: 0,
+  ry: 0,
+  scale: 0,
+  security: 0,
+  seed: 0,
+  shapeRendering: 1,
+  'shape-rendering': 'shapeRendering',
+  slope: 0,
+  spacing: 0,
+  specularConstant: 1,
+  specularExponent: 1,
+  speed: 0,
+  spreadMethod: 1,
+  startOffset: 1,
+  stdDeviation: 1,
+  stemh: 0,
+  stemv: 0,
+  stitchTiles: 1,
+  stopColor: 1,
+  'stop-color': 'stopColor',
+  stopOpacity: 1,
+  'stop-opacity': 'stopOpacity',
+  strikethroughPosition: 1,
+  'strikethrough-position': 'strikethroughPosition',
+  strikethroughThickness: 1,
+  'strikethrough-thickness': 'strikethroughThickness',
+  string: 0,
+  stroke: 0,
+  strokeDasharray: 1,
+  'stroke-dasharray': 'strokeDasharray',
+  strokeDashoffset: 1,
+  'stroke-dashoffset': 'strokeDashoffset',
+  strokeLinecap: 1,
+  'stroke-linecap': 'strokeLinecap',
+  strokeLinejoin: 1,
+  'stroke-linejoin': 'strokeLinejoin',
+  strokeMiterlimit: 1,
+  'stroke-miterlimit': 'strokeMiterlimit',
+  strokeWidth: 1,
+  'stroke-width': 'strokeWidth',
+  strokeOpacity: 1,
+  'stroke-opacity': 'strokeOpacity',
+  suppressContentEditableWarning: 1,
+  suppressHydrationWarning: 1,
+  surfaceScale: 1,
+  systemLanguage: 1,
+  tableValues: 1,
+  targetX: 1,
+  targetY: 1,
+  textAnchor: 1,
+  'text-anchor': 'textAnchor',
+  textDecoration: 1,
+  'text-decoration': 'textDecoration',
+  textLength: 1,
+  textRendering: 1,
+  'text-rendering': 'textRendering',
+  to: 0,
+  transform: 0,
+  typeof: 0,
+  u1: 0,
+  u2: 0,
+  underlinePosition: 1,
+  'underline-position': 'underlinePosition',
+  underlineThickness: 1,
+  'underline-thickness': 'underlineThickness',
+  unicode: 0,
+  unicodeBidi: 1,
+  'unicode-bidi': 'unicodeBidi',
+  unicodeRange: 1,
+  'unicode-range': 'unicodeRange',
+  unitsPerEm: 1,
+  'units-per-em': 'unitsPerEm',
+  unselectable: 0,
+  vAlphabetic: 1,
+  'v-alphabetic': 'vAlphabetic',
+  values: 0,
+  vectorEffect: 1,
+  'vector-effect': 'vectorEffect',
+  version: 0,
+  vertAdvY: 1,
+  'vert-adv-y': 'vertAdvY',
+  vertOriginX: 1,
+  'vert-origin-x': 'vertOriginX',
+  vertOriginY: 1,
+  'vert-origin-y': 'vertOriginY',
+  vHanging: 1,
+  'v-hanging': 'vHanging',
+  vIdeographic: 1,
+  'v-ideographic': 'vIdeographic',
+  viewBox: 1,
+  viewTarget: 1,
+  visibility: 0,
+  vMathematical: 1,
+  'v-mathematical': 'vMathematical',
+  vocab: 0,
+  widths: 0,
+  wordSpacing: 1,
+  'word-spacing': 'wordSpacing',
+  writingMode: 1,
+  'writing-mode': 'writingMode',
+  x1: 0,
+  x2: 0,
+  x: 0,
+  xChannelSelector: 1,
+  xHeight: 1,
+  'x-height': 'xHeight',
+  xlinkActuate: 1,
+  'xlink:actuate': 'xlinkActuate',
+  xlinkArcrole: 1,
+  'xlink:arcrole': 'xlinkArcrole',
+  xlinkHref: 1,
+  'xlink:href': 'xlinkHref',
+  xlinkRole: 1,
+  'xlink:role': 'xlinkRole',
+  xlinkShow: 1,
+  'xlink:show': 'xlinkShow',
+  xlinkTitle: 1,
+  'xlink:title': 'xlinkTitle',
+  xlinkType: 1,
+  'xlink:type': 'xlinkType',
+  xmlBase: 1,
+  'xml:base': 'xmlBase',
+  xmlLang: 1,
+  'xml:lang': 'xmlLang',
+  xmlns: 0,
+  'xml:space': 'xmlSpace',
+  xmlnsXlink: 1,
+  'xmlns:xlink': 'xmlnsXlink',
+  xmlSpace: 1,
+  y1: 0,
+  y2: 0,
+  y: 0,
+  yChannelSelector: 1,
+  z: 0,
+  zoomAndPan: 1
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/style-to-js/cjs/index.js":
+/*!***********************************************!*\
+  !*** ./node_modules/style-to-js/cjs/index.js ***!
+  \***********************************************/
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var style_to_object_1 = __importDefault(__webpack_require__(/*! style-to-object */ "./node_modules/style-to-object/cjs/index.js"));
+var utilities_1 = __webpack_require__(/*! ./utilities */ "./node_modules/style-to-js/cjs/utilities.js");
+/**
+ * Parses CSS inline style to JavaScript object (camelCased).
+ */
+function StyleToJS(style, options) {
+    var output = {};
+    if (!style || typeof style !== 'string') {
+        return output;
+    }
+    (0, style_to_object_1.default)(style, function (property, value) {
+        // skip CSS comment
+        if (property && value) {
+            output[(0, utilities_1.camelCase)(property, options)] = value;
+        }
+    });
+    return output;
+}
+StyleToJS.default = StyleToJS;
+module.exports = StyleToJS;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ "./node_modules/style-to-js/cjs/utilities.js":
+/*!***************************************************!*\
+  !*** ./node_modules/style-to-js/cjs/utilities.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.camelCase = void 0;
+var CUSTOM_PROPERTY_REGEX = /^--[a-zA-Z0-9-]+$/;
+var HYPHEN_REGEX = /-([a-z])/g;
+var NO_HYPHEN_REGEX = /^[^-]+$/;
+var VENDOR_PREFIX_REGEX = /^-(webkit|moz|ms|o|khtml)-/;
+var MS_VENDOR_PREFIX_REGEX = /^-(ms)-/;
+/**
+ * Checks whether to skip camelCase.
+ */
+var skipCamelCase = function (property) {
+    return !property ||
+        NO_HYPHEN_REGEX.test(property) ||
+        CUSTOM_PROPERTY_REGEX.test(property);
+};
+/**
+ * Replacer that capitalizes first character.
+ */
+var capitalize = function (match, character) {
+    return character.toUpperCase();
+};
+/**
+ * Replacer that removes beginning hyphen of vendor prefix property.
+ */
+var trimHyphen = function (match, prefix) { return "".concat(prefix, "-"); };
+/**
+ * CamelCases a CSS property.
+ */
+var camelCase = function (property, options) {
+    if (options === void 0) { options = {}; }
+    if (skipCamelCase(property)) {
+        return property;
+    }
+    property = property.toLowerCase();
+    if (options.reactCompat) {
+        // `-ms` vendor prefix should not be capitalized
+        property = property.replace(MS_VENDOR_PREFIX_REGEX, trimHyphen);
+    }
+    else {
+        // for non-React, remove first hyphen so vendor prefix is not capitalized
+        property = property.replace(VENDOR_PREFIX_REGEX, trimHyphen);
+    }
+    return property.replace(HYPHEN_REGEX, capitalize);
+};
+exports.camelCase = camelCase;
+//# sourceMappingURL=utilities.js.map
+
+/***/ }),
+
+/***/ "./node_modules/style-to-object/cjs/index.js":
+/*!***************************************************!*\
+  !*** ./node_modules/style-to-object/cjs/index.js ***!
+  \***************************************************/
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var inline_style_parser_1 = __importDefault(__webpack_require__(/*! inline-style-parser */ "./node_modules/inline-style-parser/index.js"));
+/**
+ * Parses inline style to object.
+ *
+ * @param style - Inline style.
+ * @param iterator - Iterator.
+ * @returns - Style object or null.
+ *
+ * @example Parsing inline style to object:
+ *
+ * ```js
+ * import parse from 'style-to-object';
+ * parse('line-height: 42;'); // { 'line-height': '42' }
+ * ```
+ */
+function StyleToObject(style, iterator) {
+    var styleObject = null;
+    if (!style || typeof style !== 'string') {
+        return styleObject;
+    }
+    var declarations = (0, inline_style_parser_1.default)(style);
+    var hasIterator = typeof iterator === 'function';
+    declarations.forEach(function (declaration) {
+        if (declaration.type !== 'declaration') {
+            return;
+        }
+        var property = declaration.property, value = declaration.value;
+        if (hasIterator) {
+            iterator(property, value, declaration);
+        }
+        else if (value) {
+            styleObject = styleObject || {};
+            styleObject[property] = value;
+        }
+    });
+    return styleObject;
+}
+exports["default"] = StyleToObject;
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
+/***/ "react":
+/*!************************!*\
+  !*** external "React" ***!
+  \************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = window["React"];
+
+/***/ }),
+
+/***/ "react/jsx-runtime":
+/*!**********************************!*\
+  !*** external "ReactJSXRuntime" ***!
+  \**********************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = window["ReactJSXRuntime"];
+
+/***/ }),
+
+/***/ "@wordpress/components":
+/*!************************************!*\
+  !*** external ["wp","components"] ***!
+  \************************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = window["wp"]["components"];
+
+/***/ }),
+
+/***/ "@wordpress/data":
+/*!******************************!*\
+  !*** external ["wp","data"] ***!
+  \******************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = window["wp"]["data"];
+
+/***/ }),
+
+/***/ "@wordpress/dom-ready":
+/*!**********************************!*\
+  !*** external ["wp","domReady"] ***!
+  \**********************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = window["wp"]["domReady"];
+
+/***/ }),
+
+/***/ "@wordpress/element":
+/*!*********************************!*\
+  !*** external ["wp","element"] ***!
+  \*********************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = window["wp"]["element"];
+
+/***/ }),
+
+/***/ "@wordpress/i18n":
+/*!******************************!*\
+  !*** external ["wp","i18n"] ***!
+  \******************************/
+/***/ ((module) => {
+
+"use strict";
+module.exports = window["wp"]["i18n"];
+
+/***/ }),
+
+/***/ "./node_modules/classnames/index.js":
+/*!******************************************!*\
+  !*** ./node_modules/classnames/index.js ***!
+  \******************************************/
+/***/ ((module, exports) => {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
+	Copyright (c) 2018 Jed Watson.
+	Licensed under the MIT License (MIT), see
+	http://jedwatson.github.io/classnames
+*/
+/* global define */
+
+(function () {
+	'use strict';
+
+	var hasOwn = {}.hasOwnProperty;
+
+	function classNames () {
+		var classes = '';
+
+		for (var i = 0; i < arguments.length; i++) {
+			var arg = arguments[i];
+			if (arg) {
+				classes = appendClass(classes, parseValue(arg));
+			}
+		}
+
+		return classes;
+	}
+
+	function parseValue (arg) {
+		if (typeof arg === 'string' || typeof arg === 'number') {
+			return arg;
+		}
+
+		if (typeof arg !== 'object') {
+			return '';
+		}
+
+		if (Array.isArray(arg)) {
+			return classNames.apply(null, arg);
+		}
+
+		if (arg.toString !== Object.prototype.toString && !arg.toString.toString().includes('[native code]')) {
+			return arg.toString();
+		}
+
+		var classes = '';
+
+		for (var key in arg) {
+			if (hasOwn.call(arg, key) && arg[key]) {
+				classes = appendClass(classes, key);
+			}
+		}
+
+		return classes;
+	}
+
+	function appendClass (value, newClass) {
+		if (!newClass) {
+			return value;
+		}
+	
+		if (value) {
+			return value + ' ' + newClass;
+		}
+	
+		return value + newClass;
+	}
+
+	if ( true && module.exports) {
+		classNames.default = classNames;
+		module.exports = classNames;
+	} else if (true) {
+		// register as 'classnames', consistent with npm package name
+		!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+			return classNames;
+		}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+		__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	} else {}
+}());
+
+
+/***/ }),
+
+/***/ "./node_modules/@floating-ui/core/dist/floating-ui.core.mjs":
+/*!******************************************************************!*\
+  !*** ./node_modules/@floating-ui/core/dist/floating-ui.core.mjs ***!
+  \******************************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   arrow: () => (/* binding */ arrow),
+/* harmony export */   autoPlacement: () => (/* binding */ autoPlacement),
+/* harmony export */   computePosition: () => (/* binding */ computePosition),
+/* harmony export */   detectOverflow: () => (/* binding */ detectOverflow),
+/* harmony export */   flip: () => (/* binding */ flip),
+/* harmony export */   hide: () => (/* binding */ hide),
+/* harmony export */   inline: () => (/* binding */ inline),
+/* harmony export */   limitShift: () => (/* binding */ limitShift),
+/* harmony export */   offset: () => (/* binding */ offset),
+/* harmony export */   rectToClientRect: () => (/* reexport safe */ _floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.rectToClientRect),
+/* harmony export */   shift: () => (/* binding */ shift),
+/* harmony export */   size: () => (/* binding */ size)
+/* harmony export */ });
+/* harmony import */ var _floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @floating-ui/utils */ "./node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs");
+
+
+
+function computeCoordsFromPlacement(_ref, placement, rtl) {
+  let {
+    reference,
+    floating
+  } = _ref;
+  const sideAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSideAxis)(placement);
+  const alignmentAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignmentAxis)(placement);
+  const alignLength = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAxisLength)(alignmentAxis);
+  const side = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement);
+  const isVertical = sideAxis === 'y';
+  const commonX = reference.x + reference.width / 2 - floating.width / 2;
+  const commonY = reference.y + reference.height / 2 - floating.height / 2;
+  const commonAlign = reference[alignLength] / 2 - floating[alignLength] / 2;
+  let coords;
+  switch (side) {
+    case 'top':
+      coords = {
+        x: commonX,
+        y: reference.y - floating.height
+      };
+      break;
+    case 'bottom':
+      coords = {
+        x: commonX,
+        y: reference.y + reference.height
+      };
+      break;
+    case 'right':
+      coords = {
+        x: reference.x + reference.width,
+        y: commonY
+      };
+      break;
+    case 'left':
+      coords = {
+        x: reference.x - floating.width,
+        y: commonY
+      };
+      break;
+    default:
+      coords = {
+        x: reference.x,
+        y: reference.y
+      };
+  }
+  switch ((0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(placement)) {
+    case 'start':
+      coords[alignmentAxis] -= commonAlign * (rtl && isVertical ? -1 : 1);
+      break;
+    case 'end':
+      coords[alignmentAxis] += commonAlign * (rtl && isVertical ? -1 : 1);
+      break;
+  }
+  return coords;
+}
+
+/**
+ * Computes the `x` and `y` coordinates that will place the floating element
+ * next to a given reference element.
+ *
+ * This export does not have any `platform` interface logic. You will need to
+ * write one for the platform you are using Floating UI with.
+ */
+const computePosition = async (reference, floating, config) => {
+  const {
+    placement = 'bottom',
+    strategy = 'absolute',
+    middleware = [],
+    platform
+  } = config;
+  const validMiddleware = middleware.filter(Boolean);
+  const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(floating));
+  let rects = await platform.getElementRects({
+    reference,
+    floating,
+    strategy
+  });
+  let {
+    x,
+    y
+  } = computeCoordsFromPlacement(rects, placement, rtl);
+  let statefulPlacement = placement;
+  let middlewareData = {};
+  let resetCount = 0;
+  for (let i = 0; i < validMiddleware.length; i++) {
+    const {
+      name,
+      fn
+    } = validMiddleware[i];
+    const {
+      x: nextX,
+      y: nextY,
+      data,
+      reset
+    } = await fn({
+      x,
+      y,
+      initialPlacement: placement,
+      placement: statefulPlacement,
+      strategy,
+      middlewareData,
+      rects,
+      platform,
+      elements: {
+        reference,
+        floating
+      }
+    });
+    x = nextX != null ? nextX : x;
+    y = nextY != null ? nextY : y;
+    middlewareData = {
+      ...middlewareData,
+      [name]: {
+        ...middlewareData[name],
+        ...data
+      }
+    };
+    if (reset && resetCount <= 50) {
+      resetCount++;
+      if (typeof reset === 'object') {
+        if (reset.placement) {
+          statefulPlacement = reset.placement;
+        }
+        if (reset.rects) {
+          rects = reset.rects === true ? await platform.getElementRects({
+            reference,
+            floating,
+            strategy
+          }) : reset.rects;
+        }
+        ({
+          x,
+          y
+        } = computeCoordsFromPlacement(rects, statefulPlacement, rtl));
+      }
+      i = -1;
+    }
+  }
+  return {
+    x,
+    y,
+    placement: statefulPlacement,
+    strategy,
+    middlewareData
+  };
+};
+
+/**
+ * Resolves with an object of overflow side offsets that determine how much the
+ * element is overflowing a given clipping boundary on each side.
+ * - positive = overflowing the boundary by that number of pixels
+ * - negative = how many pixels left before it will overflow
+ * - 0 = lies flush with the boundary
+ * @see https://floating-ui.com/docs/detectOverflow
+ */
+async function detectOverflow(state, options) {
+  var _await$platform$isEle;
+  if (options === void 0) {
+    options = {};
+  }
+  const {
+    x,
+    y,
+    platform,
+    rects,
+    elements,
+    strategy
+  } = state;
+  const {
+    boundary = 'clippingAncestors',
+    rootBoundary = 'viewport',
+    elementContext = 'floating',
+    altBoundary = false,
+    padding = 0
+  } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+  const paddingObject = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getPaddingObject)(padding);
+  const altContext = elementContext === 'floating' ? 'reference' : 'floating';
+  const element = elements[altBoundary ? altContext : elementContext];
+  const clippingClientRect = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.rectToClientRect)(await platform.getClippingRect({
+    element: ((_await$platform$isEle = await (platform.isElement == null ? void 0 : platform.isElement(element))) != null ? _await$platform$isEle : true) ? element : element.contextElement || (await (platform.getDocumentElement == null ? void 0 : platform.getDocumentElement(elements.floating))),
+    boundary,
+    rootBoundary,
+    strategy
+  }));
+  const rect = elementContext === 'floating' ? {
+    x,
+    y,
+    width: rects.floating.width,
+    height: rects.floating.height
+  } : rects.reference;
+  const offsetParent = await (platform.getOffsetParent == null ? void 0 : platform.getOffsetParent(elements.floating));
+  const offsetScale = (await (platform.isElement == null ? void 0 : platform.isElement(offsetParent))) ? (await (platform.getScale == null ? void 0 : platform.getScale(offsetParent))) || {
+    x: 1,
+    y: 1
+  } : {
+    x: 1,
+    y: 1
+  };
+  const elementClientRect = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.rectToClientRect)(platform.convertOffsetParentRelativeRectToViewportRelativeRect ? await platform.convertOffsetParentRelativeRectToViewportRelativeRect({
+    elements,
+    rect,
+    offsetParent,
+    strategy
+  }) : rect);
+  return {
+    top: (clippingClientRect.top - elementClientRect.top + paddingObject.top) / offsetScale.y,
+    bottom: (elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom) / offsetScale.y,
+    left: (clippingClientRect.left - elementClientRect.left + paddingObject.left) / offsetScale.x,
+    right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
+  };
+}
+
+/**
+ * Provides data to position an inner element of the floating element so that it
+ * appears centered to the reference element.
+ * @see https://floating-ui.com/docs/arrow
+ */
+const arrow = options => ({
+  name: 'arrow',
+  options,
+  async fn(state) {
+    const {
+      x,
+      y,
+      placement,
+      rects,
+      platform,
+      elements,
+      middlewareData
+    } = state;
+    // Since `element` is required, we don't Partial<> the type.
+    const {
+      element,
+      padding = 0
+    } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state) || {};
+    if (element == null) {
+      return {};
+    }
+    const paddingObject = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getPaddingObject)(padding);
+    const coords = {
+      x,
+      y
+    };
+    const axis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignmentAxis)(placement);
+    const length = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAxisLength)(axis);
+    const arrowDimensions = await platform.getDimensions(element);
+    const isYAxis = axis === 'y';
+    const minProp = isYAxis ? 'top' : 'left';
+    const maxProp = isYAxis ? 'bottom' : 'right';
+    const clientProp = isYAxis ? 'clientHeight' : 'clientWidth';
+    const endDiff = rects.reference[length] + rects.reference[axis] - coords[axis] - rects.floating[length];
+    const startDiff = coords[axis] - rects.reference[axis];
+    const arrowOffsetParent = await (platform.getOffsetParent == null ? void 0 : platform.getOffsetParent(element));
+    let clientSize = arrowOffsetParent ? arrowOffsetParent[clientProp] : 0;
+
+    // DOM platform can return `window` as the `offsetParent`.
+    if (!clientSize || !(await (platform.isElement == null ? void 0 : platform.isElement(arrowOffsetParent)))) {
+      clientSize = elements.floating[clientProp] || rects.floating[length];
+    }
+    const centerToReference = endDiff / 2 - startDiff / 2;
+
+    // If the padding is large enough that it causes the arrow to no longer be
+    // centered, modify the padding so that it is centered.
+    const largestPossiblePadding = clientSize / 2 - arrowDimensions[length] / 2 - 1;
+    const minPadding = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(paddingObject[minProp], largestPossiblePadding);
+    const maxPadding = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(paddingObject[maxProp], largestPossiblePadding);
+
+    // Make sure the arrow doesn't overflow the floating element if the center
+    // point is outside the floating element's bounds.
+    const min$1 = minPadding;
+    const max = clientSize - arrowDimensions[length] - maxPadding;
+    const center = clientSize / 2 - arrowDimensions[length] / 2 + centerToReference;
+    const offset = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.clamp)(min$1, center, max);
+
+    // If the reference is small enough that the arrow's padding causes it to
+    // to point to nothing for an aligned placement, adjust the offset of the
+    // floating element itself. To ensure `shift()` continues to take action,
+    // a single reset is performed when this is true.
+    const shouldAddOffset = !middlewareData.arrow && (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(placement) != null && center !== offset && rects.reference[length] / 2 - (center < min$1 ? minPadding : maxPadding) - arrowDimensions[length] / 2 < 0;
+    const alignmentOffset = shouldAddOffset ? center < min$1 ? center - min$1 : center - max : 0;
+    return {
+      [axis]: coords[axis] + alignmentOffset,
+      data: {
+        [axis]: offset,
+        centerOffset: center - offset - alignmentOffset,
+        ...(shouldAddOffset && {
+          alignmentOffset
+        })
+      },
+      reset: shouldAddOffset
+    };
+  }
+});
+
+function getPlacementList(alignment, autoAlignment, allowedPlacements) {
+  const allowedPlacementsSortedByAlignment = alignment ? [...allowedPlacements.filter(placement => (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(placement) === alignment), ...allowedPlacements.filter(placement => (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(placement) !== alignment)] : allowedPlacements.filter(placement => (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement) === placement);
+  return allowedPlacementsSortedByAlignment.filter(placement => {
+    if (alignment) {
+      return (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(placement) === alignment || (autoAlignment ? (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getOppositeAlignmentPlacement)(placement) !== placement : false);
+    }
+    return true;
+  });
+}
+/**
+ * Optimizes the visibility of the floating element by choosing the placement
+ * that has the most space available automatically, without needing to specify a
+ * preferred placement. Alternative to `flip`.
+ * @see https://floating-ui.com/docs/autoPlacement
+ */
+const autoPlacement = function (options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: 'autoPlacement',
+    options,
+    async fn(state) {
+      var _middlewareData$autoP, _middlewareData$autoP2, _placementsThatFitOnE;
+      const {
+        rects,
+        middlewareData,
+        placement,
+        platform,
+        elements
+      } = state;
+      const {
+        crossAxis = false,
+        alignment,
+        allowedPlacements = _floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.placements,
+        autoAlignment = true,
+        ...detectOverflowOptions
+      } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+      const placements$1 = alignment !== undefined || allowedPlacements === _floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.placements ? getPlacementList(alignment || null, autoAlignment, allowedPlacements) : allowedPlacements;
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const currentIndex = ((_middlewareData$autoP = middlewareData.autoPlacement) == null ? void 0 : _middlewareData$autoP.index) || 0;
+      const currentPlacement = placements$1[currentIndex];
+      if (currentPlacement == null) {
+        return {};
+      }
+      const alignmentSides = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignmentSides)(currentPlacement, rects, await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating)));
+
+      // Make `computeCoords` start from the right place.
+      if (placement !== currentPlacement) {
+        return {
+          reset: {
+            placement: placements$1[0]
+          }
+        };
+      }
+      const currentOverflows = [overflow[(0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(currentPlacement)], overflow[alignmentSides[0]], overflow[alignmentSides[1]]];
+      const allOverflows = [...(((_middlewareData$autoP2 = middlewareData.autoPlacement) == null ? void 0 : _middlewareData$autoP2.overflows) || []), {
+        placement: currentPlacement,
+        overflows: currentOverflows
+      }];
+      const nextPlacement = placements$1[currentIndex + 1];
+
+      // There are more placements to check.
+      if (nextPlacement) {
+        return {
+          data: {
+            index: currentIndex + 1,
+            overflows: allOverflows
+          },
+          reset: {
+            placement: nextPlacement
+          }
+        };
+      }
+      const placementsSortedByMostSpace = allOverflows.map(d => {
+        const alignment = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(d.placement);
+        return [d.placement, alignment && crossAxis ?
+        // Check along the mainAxis and main crossAxis side.
+        d.overflows.slice(0, 2).reduce((acc, v) => acc + v, 0) :
+        // Check only the mainAxis.
+        d.overflows[0], d.overflows];
+      }).sort((a, b) => a[1] - b[1]);
+      const placementsThatFitOnEachSide = placementsSortedByMostSpace.filter(d => d[2].slice(0,
+      // Aligned placements should not check their opposite crossAxis
+      // side.
+      (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(d[0]) ? 2 : 3).every(v => v <= 0));
+      const resetPlacement = ((_placementsThatFitOnE = placementsThatFitOnEachSide[0]) == null ? void 0 : _placementsThatFitOnE[0]) || placementsSortedByMostSpace[0][0];
+      if (resetPlacement !== placement) {
+        return {
+          data: {
+            index: currentIndex + 1,
+            overflows: allOverflows
+          },
+          reset: {
+            placement: resetPlacement
+          }
+        };
+      }
+      return {};
+    }
+  };
+};
+
+/**
+ * Optimizes the visibility of the floating element by flipping the `placement`
+ * in order to keep it in view when the preferred placement(s) will overflow the
+ * clipping boundary. Alternative to `autoPlacement`.
+ * @see https://floating-ui.com/docs/flip
+ */
+const flip = function (options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: 'flip',
+    options,
+    async fn(state) {
+      var _middlewareData$arrow, _middlewareData$flip;
+      const {
+        placement,
+        middlewareData,
+        rects,
+        initialPlacement,
+        platform,
+        elements
+      } = state;
+      const {
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = true,
+        fallbackPlacements: specifiedFallbackPlacements,
+        fallbackStrategy = 'bestFit',
+        fallbackAxisSideDirection = 'none',
+        flipAlignment = true,
+        ...detectOverflowOptions
+      } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+
+      // If a reset by the arrow was caused due to an alignment offset being
+      // added, we should skip any logic now since `flip()` has already done its
+      // work.
+      // https://github.com/floating-ui/floating-ui/issues/2549#issuecomment-1719601643
+      if ((_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
+        return {};
+      }
+      const side = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement);
+      const initialSideAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSideAxis)(initialPlacement);
+      const isBasePlacement = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(initialPlacement) === initialPlacement;
+      const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating));
+      const fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipAlignment ? [(0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getOppositePlacement)(initialPlacement)] : (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getExpandedPlacements)(initialPlacement));
+      const hasFallbackAxisSideDirection = fallbackAxisSideDirection !== 'none';
+      if (!specifiedFallbackPlacements && hasFallbackAxisSideDirection) {
+        fallbackPlacements.push(...(0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getOppositeAxisPlacements)(initialPlacement, flipAlignment, fallbackAxisSideDirection, rtl));
+      }
+      const placements = [initialPlacement, ...fallbackPlacements];
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const overflows = [];
+      let overflowsData = ((_middlewareData$flip = middlewareData.flip) == null ? void 0 : _middlewareData$flip.overflows) || [];
+      if (checkMainAxis) {
+        overflows.push(overflow[side]);
+      }
+      if (checkCrossAxis) {
+        const sides = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignmentSides)(placement, rects, rtl);
+        overflows.push(overflow[sides[0]], overflow[sides[1]]);
+      }
+      overflowsData = [...overflowsData, {
+        placement,
+        overflows
+      }];
+
+      // One or more sides is overflowing.
+      if (!overflows.every(side => side <= 0)) {
+        var _middlewareData$flip2, _overflowsData$filter;
+        const nextIndex = (((_middlewareData$flip2 = middlewareData.flip) == null ? void 0 : _middlewareData$flip2.index) || 0) + 1;
+        const nextPlacement = placements[nextIndex];
+        if (nextPlacement) {
+          // Try next placement and re-run the lifecycle.
+          return {
+            data: {
+              index: nextIndex,
+              overflows: overflowsData
+            },
+            reset: {
+              placement: nextPlacement
+            }
+          };
+        }
+
+        // First, find the candidates that fit on the mainAxis side of overflow,
+        // then find the placement that fits the best on the main crossAxis side.
+        let resetPlacement = (_overflowsData$filter = overflowsData.filter(d => d.overflows[0] <= 0).sort((a, b) => a.overflows[1] - b.overflows[1])[0]) == null ? void 0 : _overflowsData$filter.placement;
+
+        // Otherwise fallback.
+        if (!resetPlacement) {
+          switch (fallbackStrategy) {
+            case 'bestFit':
+              {
+                var _overflowsData$filter2;
+                const placement = (_overflowsData$filter2 = overflowsData.filter(d => {
+                  if (hasFallbackAxisSideDirection) {
+                    const currentSideAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSideAxis)(d.placement);
+                    return currentSideAxis === initialSideAxis ||
+                    // Create a bias to the `y` side axis due to horizontal
+                    // reading directions favoring greater width.
+                    currentSideAxis === 'y';
+                  }
+                  return true;
+                }).map(d => [d.placement, d.overflows.filter(overflow => overflow > 0).reduce((acc, overflow) => acc + overflow, 0)]).sort((a, b) => a[1] - b[1])[0]) == null ? void 0 : _overflowsData$filter2[0];
+                if (placement) {
+                  resetPlacement = placement;
+                }
+                break;
+              }
+            case 'initialPlacement':
+              resetPlacement = initialPlacement;
+              break;
+          }
+        }
+        if (placement !== resetPlacement) {
+          return {
+            reset: {
+              placement: resetPlacement
+            }
+          };
+        }
+      }
+      return {};
+    }
+  };
+};
+
+function getSideOffsets(overflow, rect) {
+  return {
+    top: overflow.top - rect.height,
+    right: overflow.right - rect.width,
+    bottom: overflow.bottom - rect.height,
+    left: overflow.left - rect.width
+  };
+}
+function isAnySideFullyClipped(overflow) {
+  return _floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.sides.some(side => overflow[side] >= 0);
+}
+/**
+ * Provides data to hide the floating element in applicable situations, such as
+ * when it is not in the same clipping context as the reference element.
+ * @see https://floating-ui.com/docs/hide
+ */
+const hide = function (options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: 'hide',
+    options,
+    async fn(state) {
+      const {
+        rects
+      } = state;
+      const {
+        strategy = 'referenceHidden',
+        ...detectOverflowOptions
+      } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+      switch (strategy) {
+        case 'referenceHidden':
+          {
+            const overflow = await detectOverflow(state, {
+              ...detectOverflowOptions,
+              elementContext: 'reference'
+            });
+            const offsets = getSideOffsets(overflow, rects.reference);
+            return {
+              data: {
+                referenceHiddenOffsets: offsets,
+                referenceHidden: isAnySideFullyClipped(offsets)
+              }
+            };
+          }
+        case 'escaped':
+          {
+            const overflow = await detectOverflow(state, {
+              ...detectOverflowOptions,
+              altBoundary: true
+            });
+            const offsets = getSideOffsets(overflow, rects.floating);
+            return {
+              data: {
+                escapedOffsets: offsets,
+                escaped: isAnySideFullyClipped(offsets)
+              }
+            };
+          }
+        default:
+          {
+            return {};
+          }
+      }
+    }
+  };
+};
+
+function getBoundingRect(rects) {
+  const minX = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(...rects.map(rect => rect.left));
+  const minY = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(...rects.map(rect => rect.top));
+  const maxX = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(...rects.map(rect => rect.right));
+  const maxY = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(...rects.map(rect => rect.bottom));
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY
+  };
+}
+function getRectsByLine(rects) {
+  const sortedRects = rects.slice().sort((a, b) => a.y - b.y);
+  const groups = [];
+  let prevRect = null;
+  for (let i = 0; i < sortedRects.length; i++) {
+    const rect = sortedRects[i];
+    if (!prevRect || rect.y - prevRect.y > prevRect.height / 2) {
+      groups.push([rect]);
+    } else {
+      groups[groups.length - 1].push(rect);
+    }
+    prevRect = rect;
+  }
+  return groups.map(rect => (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.rectToClientRect)(getBoundingRect(rect)));
+}
+/**
+ * Provides improved positioning for inline reference elements that can span
+ * over multiple lines, such as hyperlinks or range selections.
+ * @see https://floating-ui.com/docs/inline
+ */
+const inline = function (options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: 'inline',
+    options,
+    async fn(state) {
+      const {
+        placement,
+        elements,
+        rects,
+        platform,
+        strategy
+      } = state;
+      // A MouseEvent's client{X,Y} coords can be up to 2 pixels off a
+      // ClientRect's bounds, despite the event listener being triggered. A
+      // padding of 2 seems to handle this issue.
+      const {
+        padding = 2,
+        x,
+        y
+      } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+      const nativeClientRects = Array.from((await (platform.getClientRects == null ? void 0 : platform.getClientRects(elements.reference))) || []);
+      const clientRects = getRectsByLine(nativeClientRects);
+      const fallback = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.rectToClientRect)(getBoundingRect(nativeClientRects));
+      const paddingObject = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getPaddingObject)(padding);
+      function getBoundingClientRect() {
+        // There are two rects and they are disjoined.
+        if (clientRects.length === 2 && clientRects[0].left > clientRects[1].right && x != null && y != null) {
+          // Find the first rect in which the point is fully inside.
+          return clientRects.find(rect => x > rect.left - paddingObject.left && x < rect.right + paddingObject.right && y > rect.top - paddingObject.top && y < rect.bottom + paddingObject.bottom) || fallback;
+        }
+
+        // There are 2 or more connected rects.
+        if (clientRects.length >= 2) {
+          if ((0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSideAxis)(placement) === 'y') {
+            const firstRect = clientRects[0];
+            const lastRect = clientRects[clientRects.length - 1];
+            const isTop = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement) === 'top';
+            const top = firstRect.top;
+            const bottom = lastRect.bottom;
+            const left = isTop ? firstRect.left : lastRect.left;
+            const right = isTop ? firstRect.right : lastRect.right;
+            const width = right - left;
+            const height = bottom - top;
+            return {
+              top,
+              bottom,
+              left,
+              right,
+              width,
+              height,
+              x: left,
+              y: top
+            };
+          }
+          const isLeftSide = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement) === 'left';
+          const maxRight = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(...clientRects.map(rect => rect.right));
+          const minLeft = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(...clientRects.map(rect => rect.left));
+          const measureRects = clientRects.filter(rect => isLeftSide ? rect.left === minLeft : rect.right === maxRight);
+          const top = measureRects[0].top;
+          const bottom = measureRects[measureRects.length - 1].bottom;
+          const left = minLeft;
+          const right = maxRight;
+          const width = right - left;
+          const height = bottom - top;
+          return {
+            top,
+            bottom,
+            left,
+            right,
+            width,
+            height,
+            x: left,
+            y: top
+          };
+        }
+        return fallback;
+      }
+      const resetRects = await platform.getElementRects({
+        reference: {
+          getBoundingClientRect
+        },
+        floating: elements.floating,
+        strategy
+      });
+      if (rects.reference.x !== resetRects.reference.x || rects.reference.y !== resetRects.reference.y || rects.reference.width !== resetRects.reference.width || rects.reference.height !== resetRects.reference.height) {
+        return {
+          reset: {
+            rects: resetRects
+          }
+        };
+      }
+      return {};
+    }
+  };
+};
+
+// For type backwards-compatibility, the `OffsetOptions` type was also
+// Derivable.
+
+async function convertValueToCoords(state, options) {
+  const {
+    placement,
+    platform,
+    elements
+  } = state;
+  const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating));
+  const side = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement);
+  const alignment = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(placement);
+  const isVertical = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSideAxis)(placement) === 'y';
+  const mainAxisMulti = ['left', 'top'].includes(side) ? -1 : 1;
+  const crossAxisMulti = rtl && isVertical ? -1 : 1;
+  const rawValue = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+
+  // eslint-disable-next-line prefer-const
+  let {
+    mainAxis,
+    crossAxis,
+    alignmentAxis
+  } = typeof rawValue === 'number' ? {
+    mainAxis: rawValue,
+    crossAxis: 0,
+    alignmentAxis: null
+  } : {
+    mainAxis: 0,
+    crossAxis: 0,
+    alignmentAxis: null,
+    ...rawValue
+  };
+  if (alignment && typeof alignmentAxis === 'number') {
+    crossAxis = alignment === 'end' ? alignmentAxis * -1 : alignmentAxis;
+  }
+  return isVertical ? {
+    x: crossAxis * crossAxisMulti,
+    y: mainAxis * mainAxisMulti
+  } : {
+    x: mainAxis * mainAxisMulti,
+    y: crossAxis * crossAxisMulti
+  };
+}
+
+/**
+ * Modifies the placement by translating the floating element along the
+ * specified axes.
+ * A number (shorthand for `mainAxis` or distance), or an axes configuration
+ * object may be passed.
+ * @see https://floating-ui.com/docs/offset
+ */
+const offset = function (options) {
+  if (options === void 0) {
+    options = 0;
+  }
+  return {
+    name: 'offset',
+    options,
+    async fn(state) {
+      var _middlewareData$offse, _middlewareData$arrow;
+      const {
+        x,
+        y,
+        placement,
+        middlewareData
+      } = state;
+      const diffCoords = await convertValueToCoords(state, options);
+
+      // If the placement is the same and the arrow caused an alignment offset
+      // then we don't need to change the positioning coordinates.
+      if (placement === ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse.placement) && (_middlewareData$arrow = middlewareData.arrow) != null && _middlewareData$arrow.alignmentOffset) {
+        return {};
+      }
+      return {
+        x: x + diffCoords.x,
+        y: y + diffCoords.y,
+        data: {
+          ...diffCoords,
+          placement
+        }
+      };
+    }
+  };
+};
+
+/**
+ * Optimizes the visibility of the floating element by shifting it in order to
+ * keep it in view when it will overflow the clipping boundary.
+ * @see https://floating-ui.com/docs/shift
+ */
+const shift = function (options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: 'shift',
+    options,
+    async fn(state) {
+      const {
+        x,
+        y,
+        placement
+      } = state;
+      const {
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = false,
+        limiter = {
+          fn: _ref => {
+            let {
+              x,
+              y
+            } = _ref;
+            return {
+              x,
+              y
+            };
+          }
+        },
+        ...detectOverflowOptions
+      } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+      const coords = {
+        x,
+        y
+      };
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const crossAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSideAxis)((0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement));
+      const mainAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getOppositeAxis)(crossAxis);
+      let mainAxisCoord = coords[mainAxis];
+      let crossAxisCoord = coords[crossAxis];
+      if (checkMainAxis) {
+        const minSide = mainAxis === 'y' ? 'top' : 'left';
+        const maxSide = mainAxis === 'y' ? 'bottom' : 'right';
+        const min = mainAxisCoord + overflow[minSide];
+        const max = mainAxisCoord - overflow[maxSide];
+        mainAxisCoord = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.clamp)(min, mainAxisCoord, max);
+      }
+      if (checkCrossAxis) {
+        const minSide = crossAxis === 'y' ? 'top' : 'left';
+        const maxSide = crossAxis === 'y' ? 'bottom' : 'right';
+        const min = crossAxisCoord + overflow[minSide];
+        const max = crossAxisCoord - overflow[maxSide];
+        crossAxisCoord = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.clamp)(min, crossAxisCoord, max);
+      }
+      const limitedCoords = limiter.fn({
+        ...state,
+        [mainAxis]: mainAxisCoord,
+        [crossAxis]: crossAxisCoord
+      });
+      return {
+        ...limitedCoords,
+        data: {
+          x: limitedCoords.x - x,
+          y: limitedCoords.y - y
+        }
+      };
+    }
+  };
+};
+/**
+ * Built-in `limiter` that will stop `shift()` at a certain point.
+ */
+const limitShift = function (options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    options,
+    fn(state) {
+      const {
+        x,
+        y,
+        placement,
+        rects,
+        middlewareData
+      } = state;
+      const {
+        offset = 0,
+        mainAxis: checkMainAxis = true,
+        crossAxis: checkCrossAxis = true
+      } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+      const coords = {
+        x,
+        y
+      };
+      const crossAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSideAxis)(placement);
+      const mainAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getOppositeAxis)(crossAxis);
+      let mainAxisCoord = coords[mainAxis];
+      let crossAxisCoord = coords[crossAxis];
+      const rawOffset = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(offset, state);
+      const computedOffset = typeof rawOffset === 'number' ? {
+        mainAxis: rawOffset,
+        crossAxis: 0
+      } : {
+        mainAxis: 0,
+        crossAxis: 0,
+        ...rawOffset
+      };
+      if (checkMainAxis) {
+        const len = mainAxis === 'y' ? 'height' : 'width';
+        const limitMin = rects.reference[mainAxis] - rects.floating[len] + computedOffset.mainAxis;
+        const limitMax = rects.reference[mainAxis] + rects.reference[len] - computedOffset.mainAxis;
+        if (mainAxisCoord < limitMin) {
+          mainAxisCoord = limitMin;
+        } else if (mainAxisCoord > limitMax) {
+          mainAxisCoord = limitMax;
+        }
+      }
+      if (checkCrossAxis) {
+        var _middlewareData$offse, _middlewareData$offse2;
+        const len = mainAxis === 'y' ? 'width' : 'height';
+        const isOriginSide = ['top', 'left'].includes((0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement));
+        const limitMin = rects.reference[crossAxis] - rects.floating[len] + (isOriginSide ? ((_middlewareData$offse = middlewareData.offset) == null ? void 0 : _middlewareData$offse[crossAxis]) || 0 : 0) + (isOriginSide ? 0 : computedOffset.crossAxis);
+        const limitMax = rects.reference[crossAxis] + rects.reference[len] + (isOriginSide ? 0 : ((_middlewareData$offse2 = middlewareData.offset) == null ? void 0 : _middlewareData$offse2[crossAxis]) || 0) - (isOriginSide ? computedOffset.crossAxis : 0);
+        if (crossAxisCoord < limitMin) {
+          crossAxisCoord = limitMin;
+        } else if (crossAxisCoord > limitMax) {
+          crossAxisCoord = limitMax;
+        }
+      }
+      return {
+        [mainAxis]: mainAxisCoord,
+        [crossAxis]: crossAxisCoord
+      };
+    }
+  };
+};
+
+/**
+ * Provides data that allows you to change the size of the floating element —
+ * for instance, prevent it from overflowing the clipping boundary or match the
+ * width of the reference element.
+ * @see https://floating-ui.com/docs/size
+ */
+const size = function (options) {
+  if (options === void 0) {
+    options = {};
+  }
+  return {
+    name: 'size',
+    options,
+    async fn(state) {
+      const {
+        placement,
+        rects,
+        platform,
+        elements
+      } = state;
+      const {
+        apply = () => {},
+        ...detectOverflowOptions
+      } = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.evaluate)(options, state);
+      const overflow = await detectOverflow(state, detectOverflowOptions);
+      const side = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSide)(placement);
+      const alignment = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getAlignment)(placement);
+      const isYAxis = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.getSideAxis)(placement) === 'y';
+      const {
+        width,
+        height
+      } = rects.floating;
+      let heightSide;
+      let widthSide;
+      if (side === 'top' || side === 'bottom') {
+        heightSide = side;
+        widthSide = alignment === ((await (platform.isRTL == null ? void 0 : platform.isRTL(elements.floating))) ? 'start' : 'end') ? 'left' : 'right';
+      } else {
+        widthSide = side;
+        heightSide = alignment === 'end' ? 'top' : 'bottom';
+      }
+      const maximumClippingHeight = height - overflow.top - overflow.bottom;
+      const maximumClippingWidth = width - overflow.left - overflow.right;
+      const overflowAvailableHeight = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(height - overflow[heightSide], maximumClippingHeight);
+      const overflowAvailableWidth = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(width - overflow[widthSide], maximumClippingWidth);
+      const noShift = !state.middlewareData.shift;
+      let availableHeight = overflowAvailableHeight;
+      let availableWidth = overflowAvailableWidth;
+      if (isYAxis) {
+        availableWidth = alignment || noShift ? (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(overflowAvailableWidth, maximumClippingWidth) : maximumClippingWidth;
+      } else {
+        availableHeight = alignment || noShift ? (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.min)(overflowAvailableHeight, maximumClippingHeight) : maximumClippingHeight;
+      }
+      if (noShift && !alignment) {
+        const xMin = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(overflow.left, 0);
+        const xMax = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(overflow.right, 0);
+        const yMin = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(overflow.top, 0);
+        const yMax = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(overflow.bottom, 0);
+        if (isYAxis) {
+          availableWidth = width - 2 * (xMin !== 0 || xMax !== 0 ? xMin + xMax : (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(overflow.left, overflow.right));
+        } else {
+          availableHeight = height - 2 * (yMin !== 0 || yMax !== 0 ? yMin + yMax : (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_0__.max)(overflow.top, overflow.bottom));
+        }
+      }
+      await apply({
+        ...state,
+        availableWidth,
+        availableHeight
+      });
+      const nextDimensions = await platform.getDimensions(elements.floating);
+      if (width !== nextDimensions.width || height !== nextDimensions.height) {
+        return {
+          reset: {
+            rects: true
+          }
+        };
+      }
+      return {};
+    }
+  };
+};
+
+
+
+
+/***/ }),
+
+/***/ "./node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs":
+/*!****************************************************************!*\
+  !*** ./node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs ***!
+  \****************************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   arrow: () => (/* binding */ arrow),
+/* harmony export */   autoPlacement: () => (/* binding */ autoPlacement),
+/* harmony export */   autoUpdate: () => (/* binding */ autoUpdate),
+/* harmony export */   computePosition: () => (/* binding */ computePosition),
+/* harmony export */   detectOverflow: () => (/* binding */ detectOverflow),
+/* harmony export */   flip: () => (/* binding */ flip),
+/* harmony export */   getOverflowAncestors: () => (/* reexport safe */ _floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getOverflowAncestors),
+/* harmony export */   hide: () => (/* binding */ hide),
+/* harmony export */   inline: () => (/* binding */ inline),
+/* harmony export */   limitShift: () => (/* binding */ limitShift),
+/* harmony export */   offset: () => (/* binding */ offset),
+/* harmony export */   platform: () => (/* binding */ platform),
+/* harmony export */   shift: () => (/* binding */ shift),
+/* harmony export */   size: () => (/* binding */ size)
+/* harmony export */ });
+/* harmony import */ var _floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @floating-ui/utils */ "./node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs");
+/* harmony import */ var _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @floating-ui/core */ "./node_modules/@floating-ui/core/dist/floating-ui.core.mjs");
+/* harmony import */ var _floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @floating-ui/utils/dom */ "./node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs");
+
+
+
+
+
+function getCssDimensions(element) {
+  const css = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(element);
+  // In testing environments, the `width` and `height` properties are empty
+  // strings for SVG elements, returning NaN. Fallback to `0` in this case.
+  let width = parseFloat(css.width) || 0;
+  let height = parseFloat(css.height) || 0;
+  const hasOffset = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(element);
+  const offsetWidth = hasOffset ? element.offsetWidth : width;
+  const offsetHeight = hasOffset ? element.offsetHeight : height;
+  const shouldFallback = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.round)(width) !== offsetWidth || (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.round)(height) !== offsetHeight;
+  if (shouldFallback) {
+    width = offsetWidth;
+    height = offsetHeight;
+  }
+  return {
+    width,
+    height,
+    $: shouldFallback
+  };
+}
+
+function unwrapElement(element) {
+  return !(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement)(element) ? element.contextElement : element;
+}
+
+function getScale(element) {
+  const domElement = unwrapElement(element);
+  if (!(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(domElement)) {
+    return (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.createCoords)(1);
+  }
+  const rect = domElement.getBoundingClientRect();
+  const {
+    width,
+    height,
+    $
+  } = getCssDimensions(domElement);
+  let x = ($ ? (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.round)(rect.width) : rect.width) / width;
+  let y = ($ ? (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.round)(rect.height) : rect.height) / height;
+
+  // 0, NaN, or Infinity should always fallback to 1.
+
+  if (!x || !Number.isFinite(x)) {
+    x = 1;
+  }
+  if (!y || !Number.isFinite(y)) {
+    y = 1;
+  }
+  return {
+    x,
+    y
+  };
+}
+
+const noOffsets = /*#__PURE__*/(0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.createCoords)(0);
+function getVisualOffsets(element) {
+  const win = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getWindow)(element);
+  if (!(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isWebKit)() || !win.visualViewport) {
+    return noOffsets;
+  }
+  return {
+    x: win.visualViewport.offsetLeft,
+    y: win.visualViewport.offsetTop
+  };
+}
+function shouldAddVisualOffsets(element, isFixed, floatingOffsetParent) {
+  if (isFixed === void 0) {
+    isFixed = false;
+  }
+  if (!floatingOffsetParent || isFixed && floatingOffsetParent !== (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getWindow)(element)) {
+    return false;
+  }
+  return isFixed;
+}
+
+function getBoundingClientRect(element, includeScale, isFixedStrategy, offsetParent) {
+  if (includeScale === void 0) {
+    includeScale = false;
+  }
+  if (isFixedStrategy === void 0) {
+    isFixedStrategy = false;
+  }
+  const clientRect = element.getBoundingClientRect();
+  const domElement = unwrapElement(element);
+  let scale = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.createCoords)(1);
+  if (includeScale) {
+    if (offsetParent) {
+      if ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement)(offsetParent)) {
+        scale = getScale(offsetParent);
+      }
+    } else {
+      scale = getScale(element);
+    }
+  }
+  const visualOffsets = shouldAddVisualOffsets(domElement, isFixedStrategy, offsetParent) ? getVisualOffsets(domElement) : (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.createCoords)(0);
+  let x = (clientRect.left + visualOffsets.x) / scale.x;
+  let y = (clientRect.top + visualOffsets.y) / scale.y;
+  let width = clientRect.width / scale.x;
+  let height = clientRect.height / scale.y;
+  if (domElement) {
+    const win = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getWindow)(domElement);
+    const offsetWin = offsetParent && (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement)(offsetParent) ? (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getWindow)(offsetParent) : offsetParent;
+    let currentWin = win;
+    let currentIFrame = currentWin.frameElement;
+    while (currentIFrame && offsetParent && offsetWin !== currentWin) {
+      const iframeScale = getScale(currentIFrame);
+      const iframeRect = currentIFrame.getBoundingClientRect();
+      const css = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(currentIFrame);
+      const left = iframeRect.left + (currentIFrame.clientLeft + parseFloat(css.paddingLeft)) * iframeScale.x;
+      const top = iframeRect.top + (currentIFrame.clientTop + parseFloat(css.paddingTop)) * iframeScale.y;
+      x *= iframeScale.x;
+      y *= iframeScale.y;
+      width *= iframeScale.x;
+      height *= iframeScale.y;
+      x += left;
+      y += top;
+      currentWin = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getWindow)(currentIFrame);
+      currentIFrame = currentWin.frameElement;
+    }
+  }
+  return (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.rectToClientRect)({
+    width,
+    height,
+    x,
+    y
+  });
+}
+
+function convertOffsetParentRelativeRectToViewportRelativeRect(_ref) {
+  let {
+    elements,
+    rect,
+    offsetParent,
+    strategy
+  } = _ref;
+  const isFixed = strategy === 'fixed';
+  const documentElement = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getDocumentElement)(offsetParent);
+  const topLayer = elements ? (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isTopLayer)(elements.floating) : false;
+  if (offsetParent === documentElement || topLayer && isFixed) {
+    return rect;
+  }
+  let scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  let scale = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.createCoords)(1);
+  const offsets = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.createCoords)(0);
+  const isOffsetParentAnElement = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(offsetParent);
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+    if ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getNodeName)(offsetParent) !== 'body' || (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isOverflowElement)(documentElement)) {
+      scroll = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getNodeScroll)(offsetParent);
+    }
+    if ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(offsetParent)) {
+      const offsetRect = getBoundingClientRect(offsetParent);
+      scale = getScale(offsetParent);
+      offsets.x = offsetRect.x + offsetParent.clientLeft;
+      offsets.y = offsetRect.y + offsetParent.clientTop;
+    }
+  }
+  return {
+    width: rect.width * scale.x,
+    height: rect.height * scale.y,
+    x: rect.x * scale.x - scroll.scrollLeft * scale.x + offsets.x,
+    y: rect.y * scale.y - scroll.scrollTop * scale.y + offsets.y
+  };
+}
+
+function getClientRects(element) {
+  return Array.from(element.getClientRects());
+}
+
+function getWindowScrollBarX(element) {
+  // If <html> has a CSS width greater than the viewport, then this will be
+  // incorrect for RTL.
+  return getBoundingClientRect((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getDocumentElement)(element)).left + (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getNodeScroll)(element).scrollLeft;
+}
+
+// Gets the entire size of the scrollable document area, even extending outside
+// of the `<html>` and `<body>` rect bounds if horizontally scrollable.
+function getDocumentRect(element) {
+  const html = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getDocumentElement)(element);
+  const scroll = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getNodeScroll)(element);
+  const body = element.ownerDocument.body;
+  const width = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.max)(html.scrollWidth, html.clientWidth, body.scrollWidth, body.clientWidth);
+  const height = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.max)(html.scrollHeight, html.clientHeight, body.scrollHeight, body.clientHeight);
+  let x = -scroll.scrollLeft + getWindowScrollBarX(element);
+  const y = -scroll.scrollTop;
+  if ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(body).direction === 'rtl') {
+    x += (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.max)(html.clientWidth, body.clientWidth) - width;
+  }
+  return {
+    width,
+    height,
+    x,
+    y
+  };
+}
+
+function getViewportRect(element, strategy) {
+  const win = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getWindow)(element);
+  const html = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getDocumentElement)(element);
+  const visualViewport = win.visualViewport;
+  let width = html.clientWidth;
+  let height = html.clientHeight;
+  let x = 0;
+  let y = 0;
+  if (visualViewport) {
+    width = visualViewport.width;
+    height = visualViewport.height;
+    const visualViewportBased = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isWebKit)();
+    if (!visualViewportBased || visualViewportBased && strategy === 'fixed') {
+      x = visualViewport.offsetLeft;
+      y = visualViewport.offsetTop;
+    }
+  }
+  return {
+    width,
+    height,
+    x,
+    y
+  };
+}
+
+// Returns the inner client rect, subtracting scrollbars if present.
+function getInnerBoundingClientRect(element, strategy) {
+  const clientRect = getBoundingClientRect(element, true, strategy === 'fixed');
+  const top = clientRect.top + element.clientTop;
+  const left = clientRect.left + element.clientLeft;
+  const scale = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(element) ? getScale(element) : (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.createCoords)(1);
+  const width = element.clientWidth * scale.x;
+  const height = element.clientHeight * scale.y;
+  const x = left * scale.x;
+  const y = top * scale.y;
+  return {
+    width,
+    height,
+    x,
+    y
+  };
+}
+function getClientRectFromClippingAncestor(element, clippingAncestor, strategy) {
+  let rect;
+  if (clippingAncestor === 'viewport') {
+    rect = getViewportRect(element, strategy);
+  } else if (clippingAncestor === 'document') {
+    rect = getDocumentRect((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getDocumentElement)(element));
+  } else if ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement)(clippingAncestor)) {
+    rect = getInnerBoundingClientRect(clippingAncestor, strategy);
+  } else {
+    const visualOffsets = getVisualOffsets(element);
+    rect = {
+      ...clippingAncestor,
+      x: clippingAncestor.x - visualOffsets.x,
+      y: clippingAncestor.y - visualOffsets.y
+    };
+  }
+  return (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.rectToClientRect)(rect);
+}
+function hasFixedPositionAncestor(element, stopNode) {
+  const parentNode = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getParentNode)(element);
+  if (parentNode === stopNode || !(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement)(parentNode) || (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isLastTraversableNode)(parentNode)) {
+    return false;
+  }
+  return (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(parentNode).position === 'fixed' || hasFixedPositionAncestor(parentNode, stopNode);
+}
+
+// A "clipping ancestor" is an `overflow` element with the characteristic of
+// clipping (or hiding) child elements. This returns all clipping ancestors
+// of the given element up the tree.
+function getClippingElementAncestors(element, cache) {
+  const cachedResult = cache.get(element);
+  if (cachedResult) {
+    return cachedResult;
+  }
+  let result = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getOverflowAncestors)(element, [], false).filter(el => (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement)(el) && (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getNodeName)(el) !== 'body');
+  let currentContainingBlockComputedStyle = null;
+  const elementIsFixed = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(element).position === 'fixed';
+  let currentNode = elementIsFixed ? (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getParentNode)(element) : element;
+
+  // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
+  while ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement)(currentNode) && !(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isLastTraversableNode)(currentNode)) {
+    const computedStyle = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(currentNode);
+    const currentNodeIsContaining = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isContainingBlock)(currentNode);
+    if (!currentNodeIsContaining && computedStyle.position === 'fixed') {
+      currentContainingBlockComputedStyle = null;
+    }
+    const shouldDropCurrentNode = elementIsFixed ? !currentNodeIsContaining && !currentContainingBlockComputedStyle : !currentNodeIsContaining && computedStyle.position === 'static' && !!currentContainingBlockComputedStyle && ['absolute', 'fixed'].includes(currentContainingBlockComputedStyle.position) || (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isOverflowElement)(currentNode) && !currentNodeIsContaining && hasFixedPositionAncestor(element, currentNode);
+    if (shouldDropCurrentNode) {
+      // Drop non-containing blocks.
+      result = result.filter(ancestor => ancestor !== currentNode);
+    } else {
+      // Record last containing block for next iteration.
+      currentContainingBlockComputedStyle = computedStyle;
+    }
+    currentNode = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getParentNode)(currentNode);
+  }
+  cache.set(element, result);
+  return result;
+}
+
+// Gets the maximum area that the element is visible in due to any number of
+// clipping ancestors.
+function getClippingRect(_ref) {
+  let {
+    element,
+    boundary,
+    rootBoundary,
+    strategy
+  } = _ref;
+  const elementClippingAncestors = boundary === 'clippingAncestors' ? (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isTopLayer)(element) ? [] : getClippingElementAncestors(element, this._c) : [].concat(boundary);
+  const clippingAncestors = [...elementClippingAncestors, rootBoundary];
+  const firstClippingAncestor = clippingAncestors[0];
+  const clippingRect = clippingAncestors.reduce((accRect, clippingAncestor) => {
+    const rect = getClientRectFromClippingAncestor(element, clippingAncestor, strategy);
+    accRect.top = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.max)(rect.top, accRect.top);
+    accRect.right = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.min)(rect.right, accRect.right);
+    accRect.bottom = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.min)(rect.bottom, accRect.bottom);
+    accRect.left = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.max)(rect.left, accRect.left);
+    return accRect;
+  }, getClientRectFromClippingAncestor(element, firstClippingAncestor, strategy));
+  return {
+    width: clippingRect.right - clippingRect.left,
+    height: clippingRect.bottom - clippingRect.top,
+    x: clippingRect.left,
+    y: clippingRect.top
+  };
+}
+
+function getDimensions(element) {
+  const {
+    width,
+    height
+  } = getCssDimensions(element);
+  return {
+    width,
+    height
+  };
+}
+
+function getRectRelativeToOffsetParent(element, offsetParent, strategy) {
+  const isOffsetParentAnElement = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(offsetParent);
+  const documentElement = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getDocumentElement)(offsetParent);
+  const isFixed = strategy === 'fixed';
+  const rect = getBoundingClientRect(element, true, isFixed, offsetParent);
+  let scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  const offsets = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.createCoords)(0);
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+    if ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getNodeName)(offsetParent) !== 'body' || (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isOverflowElement)(documentElement)) {
+      scroll = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getNodeScroll)(offsetParent);
+    }
+    if (isOffsetParentAnElement) {
+      const offsetRect = getBoundingClientRect(offsetParent, true, isFixed, offsetParent);
+      offsets.x = offsetRect.x + offsetParent.clientLeft;
+      offsets.y = offsetRect.y + offsetParent.clientTop;
+    } else if (documentElement) {
+      offsets.x = getWindowScrollBarX(documentElement);
+    }
+  }
+  const x = rect.left + scroll.scrollLeft - offsets.x;
+  const y = rect.top + scroll.scrollTop - offsets.y;
+  return {
+    x,
+    y,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+function isStaticPositioned(element) {
+  return (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(element).position === 'static';
+}
+
+function getTrueOffsetParent(element, polyfill) {
+  if (!(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(element) || (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(element).position === 'fixed') {
+    return null;
+  }
+  if (polyfill) {
+    return polyfill(element);
+  }
+  return element.offsetParent;
+}
+
+// Gets the closest ancestor positioned element. Handles some edge cases,
+// such as table ancestors and cross browser bugs.
+function getOffsetParent(element, polyfill) {
+  const win = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getWindow)(element);
+  if ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isTopLayer)(element)) {
+    return win;
+  }
+  if (!(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isHTMLElement)(element)) {
+    let svgOffsetParent = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getParentNode)(element);
+    while (svgOffsetParent && !(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isLastTraversableNode)(svgOffsetParent)) {
+      if ((0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement)(svgOffsetParent) && !isStaticPositioned(svgOffsetParent)) {
+        return svgOffsetParent;
+      }
+      svgOffsetParent = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getParentNode)(svgOffsetParent);
+    }
+    return win;
+  }
+  let offsetParent = getTrueOffsetParent(element, polyfill);
+  while (offsetParent && (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isTableElement)(offsetParent) && isStaticPositioned(offsetParent)) {
+    offsetParent = getTrueOffsetParent(offsetParent, polyfill);
+  }
+  if (offsetParent && (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isLastTraversableNode)(offsetParent) && isStaticPositioned(offsetParent) && !(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isContainingBlock)(offsetParent)) {
+    return win;
+  }
+  return offsetParent || (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getContainingBlock)(element) || win;
+}
+
+const getElementRects = async function (data) {
+  const getOffsetParentFn = this.getOffsetParent || getOffsetParent;
+  const getDimensionsFn = this.getDimensions;
+  const floatingDimensions = await getDimensionsFn(data.floating);
+  return {
+    reference: getRectRelativeToOffsetParent(data.reference, await getOffsetParentFn(data.floating), data.strategy),
+    floating: {
+      x: 0,
+      y: 0,
+      width: floatingDimensions.width,
+      height: floatingDimensions.height
+    }
+  };
+};
+
+function isRTL(element) {
+  return (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getComputedStyle)(element).direction === 'rtl';
+}
+
+const platform = {
+  convertOffsetParentRelativeRectToViewportRelativeRect,
+  getDocumentElement: _floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getDocumentElement,
+  getClippingRect,
+  getOffsetParent,
+  getElementRects,
+  getClientRects,
+  getDimensions,
+  getScale,
+  isElement: _floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.isElement,
+  isRTL
+};
+
+// https://samthor.au/2021/observing-dom/
+function observeMove(element, onMove) {
+  let io = null;
+  let timeoutId;
+  const root = (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getDocumentElement)(element);
+  function cleanup() {
+    var _io;
+    clearTimeout(timeoutId);
+    (_io = io) == null || _io.disconnect();
+    io = null;
+  }
+  function refresh(skip, threshold) {
+    if (skip === void 0) {
+      skip = false;
+    }
+    if (threshold === void 0) {
+      threshold = 1;
+    }
+    cleanup();
+    const {
+      left,
+      top,
+      width,
+      height
+    } = element.getBoundingClientRect();
+    if (!skip) {
+      onMove();
+    }
+    if (!width || !height) {
+      return;
+    }
+    const insetTop = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.floor)(top);
+    const insetRight = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.floor)(root.clientWidth - (left + width));
+    const insetBottom = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.floor)(root.clientHeight - (top + height));
+    const insetLeft = (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.floor)(left);
+    const rootMargin = -insetTop + "px " + -insetRight + "px " + -insetBottom + "px " + -insetLeft + "px";
+    const options = {
+      rootMargin,
+      threshold: (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.max)(0, (0,_floating_ui_utils__WEBPACK_IMPORTED_MODULE_1__.min)(1, threshold)) || 1
+    };
+    let isFirstUpdate = true;
+    function handleObserve(entries) {
+      const ratio = entries[0].intersectionRatio;
+      if (ratio !== threshold) {
+        if (!isFirstUpdate) {
+          return refresh();
+        }
+        if (!ratio) {
+          // If the reference is clipped, the ratio is 0. Throttle the refresh
+          // to prevent an infinite loop of updates.
+          timeoutId = setTimeout(() => {
+            refresh(false, 1e-7);
+          }, 1000);
+        } else {
+          refresh(false, ratio);
+        }
+      }
+      isFirstUpdate = false;
+    }
+
+    // Older browsers don't support a `document` as the root and will throw an
+    // error.
+    try {
+      io = new IntersectionObserver(handleObserve, {
+        ...options,
+        // Handle <iframe>s
+        root: root.ownerDocument
+      });
+    } catch (e) {
+      io = new IntersectionObserver(handleObserve, options);
+    }
+    io.observe(element);
+  }
+  refresh(true);
+  return cleanup;
+}
+
+/**
+ * Automatically updates the position of the floating element when necessary.
+ * Should only be called when the floating element is mounted on the DOM or
+ * visible on the screen.
+ * @returns cleanup function that should be invoked when the floating element is
+ * removed from the DOM or hidden from the screen.
+ * @see https://floating-ui.com/docs/autoUpdate
+ */
+function autoUpdate(reference, floating, update, options) {
+  if (options === void 0) {
+    options = {};
+  }
+  const {
+    ancestorScroll = true,
+    ancestorResize = true,
+    elementResize = typeof ResizeObserver === 'function',
+    layoutShift = typeof IntersectionObserver === 'function',
+    animationFrame = false
+  } = options;
+  const referenceEl = unwrapElement(reference);
+  const ancestors = ancestorScroll || ancestorResize ? [...(referenceEl ? (0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getOverflowAncestors)(referenceEl) : []), ...(0,_floating_ui_utils_dom__WEBPACK_IMPORTED_MODULE_0__.getOverflowAncestors)(floating)] : [];
+  ancestors.forEach(ancestor => {
+    ancestorScroll && ancestor.addEventListener('scroll', update, {
+      passive: true
+    });
+    ancestorResize && ancestor.addEventListener('resize', update);
+  });
+  const cleanupIo = referenceEl && layoutShift ? observeMove(referenceEl, update) : null;
+  let reobserveFrame = -1;
+  let resizeObserver = null;
+  if (elementResize) {
+    resizeObserver = new ResizeObserver(_ref => {
+      let [firstEntry] = _ref;
+      if (firstEntry && firstEntry.target === referenceEl && resizeObserver) {
+        // Prevent update loops when using the `size` middleware.
+        // https://github.com/floating-ui/floating-ui/issues/1740
+        resizeObserver.unobserve(floating);
+        cancelAnimationFrame(reobserveFrame);
+        reobserveFrame = requestAnimationFrame(() => {
+          var _resizeObserver;
+          (_resizeObserver = resizeObserver) == null || _resizeObserver.observe(floating);
+        });
+      }
+      update();
+    });
+    if (referenceEl && !animationFrame) {
+      resizeObserver.observe(referenceEl);
+    }
+    resizeObserver.observe(floating);
+  }
+  let frameId;
+  let prevRefRect = animationFrame ? getBoundingClientRect(reference) : null;
+  if (animationFrame) {
+    frameLoop();
+  }
+  function frameLoop() {
+    const nextRefRect = getBoundingClientRect(reference);
+    if (prevRefRect && (nextRefRect.x !== prevRefRect.x || nextRefRect.y !== prevRefRect.y || nextRefRect.width !== prevRefRect.width || nextRefRect.height !== prevRefRect.height)) {
+      update();
+    }
+    prevRefRect = nextRefRect;
+    frameId = requestAnimationFrame(frameLoop);
+  }
+  update();
+  return () => {
+    var _resizeObserver2;
+    ancestors.forEach(ancestor => {
+      ancestorScroll && ancestor.removeEventListener('scroll', update);
+      ancestorResize && ancestor.removeEventListener('resize', update);
+    });
+    cleanupIo == null || cleanupIo();
+    (_resizeObserver2 = resizeObserver) == null || _resizeObserver2.disconnect();
+    resizeObserver = null;
+    if (animationFrame) {
+      cancelAnimationFrame(frameId);
+    }
+  };
+}
+
+/**
+ * Resolves with an object of overflow side offsets that determine how much the
+ * element is overflowing a given clipping boundary on each side.
+ * - positive = overflowing the boundary by that number of pixels
+ * - negative = how many pixels left before it will overflow
+ * - 0 = lies flush with the boundary
+ * @see https://floating-ui.com/docs/detectOverflow
+ */
+const detectOverflow = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.detectOverflow;
+
+/**
+ * Modifies the placement by translating the floating element along the
+ * specified axes.
+ * A number (shorthand for `mainAxis` or distance), or an axes configuration
+ * object may be passed.
+ * @see https://floating-ui.com/docs/offset
+ */
+const offset = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.offset;
+
+/**
+ * Optimizes the visibility of the floating element by choosing the placement
+ * that has the most space available automatically, without needing to specify a
+ * preferred placement. Alternative to `flip`.
+ * @see https://floating-ui.com/docs/autoPlacement
+ */
+const autoPlacement = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.autoPlacement;
+
+/**
+ * Optimizes the visibility of the floating element by shifting it in order to
+ * keep it in view when it will overflow the clipping boundary.
+ * @see https://floating-ui.com/docs/shift
+ */
+const shift = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.shift;
+
+/**
+ * Optimizes the visibility of the floating element by flipping the `placement`
+ * in order to keep it in view when the preferred placement(s) will overflow the
+ * clipping boundary. Alternative to `autoPlacement`.
+ * @see https://floating-ui.com/docs/flip
+ */
+const flip = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.flip;
+
+/**
+ * Provides data that allows you to change the size of the floating element —
+ * for instance, prevent it from overflowing the clipping boundary or match the
+ * width of the reference element.
+ * @see https://floating-ui.com/docs/size
+ */
+const size = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.size;
+
+/**
+ * Provides data to hide the floating element in applicable situations, such as
+ * when it is not in the same clipping context as the reference element.
+ * @see https://floating-ui.com/docs/hide
+ */
+const hide = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.hide;
+
+/**
+ * Provides data to position an inner element of the floating element so that it
+ * appears centered to the reference element.
+ * @see https://floating-ui.com/docs/arrow
+ */
+const arrow = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.arrow;
+
+/**
+ * Provides improved positioning for inline reference elements that can span
+ * over multiple lines, such as hyperlinks or range selections.
+ * @see https://floating-ui.com/docs/inline
+ */
+const inline = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.inline;
+
+/**
+ * Built-in `limiter` that will stop `shift()` at a certain point.
+ */
+const limitShift = _floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.limitShift;
+
+/**
+ * Computes the `x` and `y` coordinates that will place the floating element
+ * next to a given reference element.
+ */
+const computePosition = (reference, floating, options) => {
+  // This caches the expensive `getClippingElementAncestors` function so that
+  // multiple lifecycle resets re-use the same result. It only lives for a
+  // single call. If other functions become expensive, we can add them as well.
+  const cache = new Map();
+  const mergedOptions = {
+    platform,
+    ...options
+  };
+  const platformWithCache = {
+    ...mergedOptions.platform,
+    _c: cache
+  };
+  return (0,_floating_ui_core__WEBPACK_IMPORTED_MODULE_2__.computePosition)(reference, floating, {
+    ...mergedOptions,
+    platform: platformWithCache
+  });
+};
+
+
+
+
+/***/ }),
+
+/***/ "./node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs":
+/*!************************************************************************!*\
+  !*** ./node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs ***!
+  \************************************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   getComputedStyle: () => (/* binding */ getComputedStyle),
+/* harmony export */   getContainingBlock: () => (/* binding */ getContainingBlock),
+/* harmony export */   getDocumentElement: () => (/* binding */ getDocumentElement),
+/* harmony export */   getNearestOverflowAncestor: () => (/* binding */ getNearestOverflowAncestor),
+/* harmony export */   getNodeName: () => (/* binding */ getNodeName),
+/* harmony export */   getNodeScroll: () => (/* binding */ getNodeScroll),
+/* harmony export */   getOverflowAncestors: () => (/* binding */ getOverflowAncestors),
+/* harmony export */   getParentNode: () => (/* binding */ getParentNode),
+/* harmony export */   getWindow: () => (/* binding */ getWindow),
+/* harmony export */   isContainingBlock: () => (/* binding */ isContainingBlock),
+/* harmony export */   isElement: () => (/* binding */ isElement),
+/* harmony export */   isHTMLElement: () => (/* binding */ isHTMLElement),
+/* harmony export */   isLastTraversableNode: () => (/* binding */ isLastTraversableNode),
+/* harmony export */   isNode: () => (/* binding */ isNode),
+/* harmony export */   isOverflowElement: () => (/* binding */ isOverflowElement),
+/* harmony export */   isShadowRoot: () => (/* binding */ isShadowRoot),
+/* harmony export */   isTableElement: () => (/* binding */ isTableElement),
+/* harmony export */   isTopLayer: () => (/* binding */ isTopLayer),
+/* harmony export */   isWebKit: () => (/* binding */ isWebKit)
+/* harmony export */ });
+function getNodeName(node) {
+  if (isNode(node)) {
+    return (node.nodeName || '').toLowerCase();
+  }
+  // Mocked nodes in testing environments may not be instances of Node. By
+  // returning `#document` an infinite loop won't occur.
+  // https://github.com/floating-ui/floating-ui/issues/2317
+  return '#document';
+}
+function getWindow(node) {
+  var _node$ownerDocument;
+  return (node == null || (_node$ownerDocument = node.ownerDocument) == null ? void 0 : _node$ownerDocument.defaultView) || window;
+}
+function getDocumentElement(node) {
+  var _ref;
+  return (_ref = (isNode(node) ? node.ownerDocument : node.document) || window.document) == null ? void 0 : _ref.documentElement;
+}
+function isNode(value) {
+  return value instanceof Node || value instanceof getWindow(value).Node;
+}
+function isElement(value) {
+  return value instanceof Element || value instanceof getWindow(value).Element;
+}
+function isHTMLElement(value) {
+  return value instanceof HTMLElement || value instanceof getWindow(value).HTMLElement;
+}
+function isShadowRoot(value) {
+  // Browsers without `ShadowRoot` support.
+  if (typeof ShadowRoot === 'undefined') {
+    return false;
+  }
+  return value instanceof ShadowRoot || value instanceof getWindow(value).ShadowRoot;
+}
+function isOverflowElement(element) {
+  const {
+    overflow,
+    overflowX,
+    overflowY,
+    display
+  } = getComputedStyle(element);
+  return /auto|scroll|overlay|hidden|clip/.test(overflow + overflowY + overflowX) && !['inline', 'contents'].includes(display);
+}
+function isTableElement(element) {
+  return ['table', 'td', 'th'].includes(getNodeName(element));
+}
+function isTopLayer(element) {
+  return [':popover-open', ':modal'].some(selector => {
+    try {
+      return element.matches(selector);
+    } catch (e) {
+      return false;
+    }
+  });
+}
+function isContainingBlock(elementOrCss) {
+  const webkit = isWebKit();
+  const css = isElement(elementOrCss) ? getComputedStyle(elementOrCss) : elementOrCss;
+
+  // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
+  return css.transform !== 'none' || css.perspective !== 'none' || (css.containerType ? css.containerType !== 'normal' : false) || !webkit && (css.backdropFilter ? css.backdropFilter !== 'none' : false) || !webkit && (css.filter ? css.filter !== 'none' : false) || ['transform', 'perspective', 'filter'].some(value => (css.willChange || '').includes(value)) || ['paint', 'layout', 'strict', 'content'].some(value => (css.contain || '').includes(value));
+}
+function getContainingBlock(element) {
+  let currentNode = getParentNode(element);
+  while (isHTMLElement(currentNode) && !isLastTraversableNode(currentNode)) {
+    if (isContainingBlock(currentNode)) {
+      return currentNode;
+    } else if (isTopLayer(currentNode)) {
+      return null;
+    }
+    currentNode = getParentNode(currentNode);
+  }
+  return null;
+}
+function isWebKit() {
+  if (typeof CSS === 'undefined' || !CSS.supports) return false;
+  return CSS.supports('-webkit-backdrop-filter', 'none');
+}
+function isLastTraversableNode(node) {
+  return ['html', 'body', '#document'].includes(getNodeName(node));
+}
+function getComputedStyle(element) {
+  return getWindow(element).getComputedStyle(element);
+}
+function getNodeScroll(element) {
+  if (isElement(element)) {
+    return {
+      scrollLeft: element.scrollLeft,
+      scrollTop: element.scrollTop
+    };
+  }
+  return {
+    scrollLeft: element.scrollX,
+    scrollTop: element.scrollY
+  };
+}
+function getParentNode(node) {
+  if (getNodeName(node) === 'html') {
+    return node;
+  }
+  const result =
+  // Step into the shadow DOM of the parent of a slotted node.
+  node.assignedSlot ||
+  // DOM Element detected.
+  node.parentNode ||
+  // ShadowRoot detected.
+  isShadowRoot(node) && node.host ||
+  // Fallback.
+  getDocumentElement(node);
+  return isShadowRoot(result) ? result.host : result;
+}
+function getNearestOverflowAncestor(node) {
+  const parentNode = getParentNode(node);
+  if (isLastTraversableNode(parentNode)) {
+    return node.ownerDocument ? node.ownerDocument.body : node.body;
+  }
+  if (isHTMLElement(parentNode) && isOverflowElement(parentNode)) {
+    return parentNode;
+  }
+  return getNearestOverflowAncestor(parentNode);
+}
+function getOverflowAncestors(node, list, traverseIframes) {
+  var _node$ownerDocument2;
+  if (list === void 0) {
+    list = [];
+  }
+  if (traverseIframes === void 0) {
+    traverseIframes = true;
+  }
+  const scrollableAncestor = getNearestOverflowAncestor(node);
+  const isBody = scrollableAncestor === ((_node$ownerDocument2 = node.ownerDocument) == null ? void 0 : _node$ownerDocument2.body);
+  const win = getWindow(scrollableAncestor);
+  if (isBody) {
+    return list.concat(win, win.visualViewport || [], isOverflowElement(scrollableAncestor) ? scrollableAncestor : [], win.frameElement && traverseIframes ? getOverflowAncestors(win.frameElement) : []);
+  }
+  return list.concat(scrollableAncestor, getOverflowAncestors(scrollableAncestor, [], traverseIframes));
+}
+
+
+
+
+/***/ }),
+
+/***/ "./node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs":
+/*!********************************************************************!*\
+  !*** ./node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs ***!
+  \********************************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   alignments: () => (/* binding */ alignments),
+/* harmony export */   clamp: () => (/* binding */ clamp),
+/* harmony export */   createCoords: () => (/* binding */ createCoords),
+/* harmony export */   evaluate: () => (/* binding */ evaluate),
+/* harmony export */   expandPaddingObject: () => (/* binding */ expandPaddingObject),
+/* harmony export */   floor: () => (/* binding */ floor),
+/* harmony export */   getAlignment: () => (/* binding */ getAlignment),
+/* harmony export */   getAlignmentAxis: () => (/* binding */ getAlignmentAxis),
+/* harmony export */   getAlignmentSides: () => (/* binding */ getAlignmentSides),
+/* harmony export */   getAxisLength: () => (/* binding */ getAxisLength),
+/* harmony export */   getExpandedPlacements: () => (/* binding */ getExpandedPlacements),
+/* harmony export */   getOppositeAlignmentPlacement: () => (/* binding */ getOppositeAlignmentPlacement),
+/* harmony export */   getOppositeAxis: () => (/* binding */ getOppositeAxis),
+/* harmony export */   getOppositeAxisPlacements: () => (/* binding */ getOppositeAxisPlacements),
+/* harmony export */   getOppositePlacement: () => (/* binding */ getOppositePlacement),
+/* harmony export */   getPaddingObject: () => (/* binding */ getPaddingObject),
+/* harmony export */   getSide: () => (/* binding */ getSide),
+/* harmony export */   getSideAxis: () => (/* binding */ getSideAxis),
+/* harmony export */   max: () => (/* binding */ max),
+/* harmony export */   min: () => (/* binding */ min),
+/* harmony export */   placements: () => (/* binding */ placements),
+/* harmony export */   rectToClientRect: () => (/* binding */ rectToClientRect),
+/* harmony export */   round: () => (/* binding */ round),
+/* harmony export */   sides: () => (/* binding */ sides)
+/* harmony export */ });
+/**
+ * Custom positioning reference element.
+ * @see https://floating-ui.com/docs/virtual-elements
+ */
+
+const sides = ['top', 'right', 'bottom', 'left'];
+const alignments = ['start', 'end'];
+const placements = /*#__PURE__*/sides.reduce((acc, side) => acc.concat(side, side + "-" + alignments[0], side + "-" + alignments[1]), []);
+const min = Math.min;
+const max = Math.max;
+const round = Math.round;
+const floor = Math.floor;
+const createCoords = v => ({
+  x: v,
+  y: v
+});
+const oppositeSideMap = {
+  left: 'right',
+  right: 'left',
+  bottom: 'top',
+  top: 'bottom'
+};
+const oppositeAlignmentMap = {
+  start: 'end',
+  end: 'start'
+};
+function clamp(start, value, end) {
+  return max(start, min(value, end));
+}
+function evaluate(value, param) {
+  return typeof value === 'function' ? value(param) : value;
+}
+function getSide(placement) {
+  return placement.split('-')[0];
+}
+function getAlignment(placement) {
+  return placement.split('-')[1];
+}
+function getOppositeAxis(axis) {
+  return axis === 'x' ? 'y' : 'x';
+}
+function getAxisLength(axis) {
+  return axis === 'y' ? 'height' : 'width';
+}
+function getSideAxis(placement) {
+  return ['top', 'bottom'].includes(getSide(placement)) ? 'y' : 'x';
+}
+function getAlignmentAxis(placement) {
+  return getOppositeAxis(getSideAxis(placement));
+}
+function getAlignmentSides(placement, rects, rtl) {
+  if (rtl === void 0) {
+    rtl = false;
+  }
+  const alignment = getAlignment(placement);
+  const alignmentAxis = getAlignmentAxis(placement);
+  const length = getAxisLength(alignmentAxis);
+  let mainAlignmentSide = alignmentAxis === 'x' ? alignment === (rtl ? 'end' : 'start') ? 'right' : 'left' : alignment === 'start' ? 'bottom' : 'top';
+  if (rects.reference[length] > rects.floating[length]) {
+    mainAlignmentSide = getOppositePlacement(mainAlignmentSide);
+  }
+  return [mainAlignmentSide, getOppositePlacement(mainAlignmentSide)];
+}
+function getExpandedPlacements(placement) {
+  const oppositePlacement = getOppositePlacement(placement);
+  return [getOppositeAlignmentPlacement(placement), oppositePlacement, getOppositeAlignmentPlacement(oppositePlacement)];
+}
+function getOppositeAlignmentPlacement(placement) {
+  return placement.replace(/start|end/g, alignment => oppositeAlignmentMap[alignment]);
+}
+function getSideList(side, isStart, rtl) {
+  const lr = ['left', 'right'];
+  const rl = ['right', 'left'];
+  const tb = ['top', 'bottom'];
+  const bt = ['bottom', 'top'];
+  switch (side) {
+    case 'top':
+    case 'bottom':
+      if (rtl) return isStart ? rl : lr;
+      return isStart ? lr : rl;
+    case 'left':
+    case 'right':
+      return isStart ? tb : bt;
+    default:
+      return [];
+  }
+}
+function getOppositeAxisPlacements(placement, flipAlignment, direction, rtl) {
+  const alignment = getAlignment(placement);
+  let list = getSideList(getSide(placement), direction === 'start', rtl);
+  if (alignment) {
+    list = list.map(side => side + "-" + alignment);
+    if (flipAlignment) {
+      list = list.concat(list.map(getOppositeAlignmentPlacement));
+    }
+  }
+  return list;
+}
+function getOppositePlacement(placement) {
+  return placement.replace(/left|right|bottom|top/g, side => oppositeSideMap[side]);
+}
+function expandPaddingObject(padding) {
+  return {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    ...padding
+  };
+}
+function getPaddingObject(padding) {
+  return typeof padding !== 'number' ? expandPaddingObject(padding) : {
+    top: padding,
+    right: padding,
+    bottom: padding,
+    left: padding
+  };
+}
+function rectToClientRect(rect) {
+  const {
+    x,
+    y,
+    width,
+    height
+  } = rect;
+  return {
+    width,
+    height,
+    top: y,
+    left: x,
+    right: x + width,
+    bottom: y + height,
+    x,
+    y
+  };
+}
+
+
+
+
+/***/ }),
+
+/***/ "./node_modules/html-react-parser/esm/index.mjs":
+/*!******************************************************!*\
+  !*** ./node_modules/html-react-parser/esm/index.mjs ***!
+  \******************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Comment: () => (/* reexport safe */ _lib_index_js__WEBPACK_IMPORTED_MODULE_0__.Comment),
+/* harmony export */   Element: () => (/* reexport safe */ _lib_index_js__WEBPACK_IMPORTED_MODULE_0__.Element),
+/* harmony export */   ProcessingInstruction: () => (/* reexport safe */ _lib_index_js__WEBPACK_IMPORTED_MODULE_0__.ProcessingInstruction),
+/* harmony export */   Text: () => (/* reexport safe */ _lib_index_js__WEBPACK_IMPORTED_MODULE_0__.Text),
+/* harmony export */   attributesToProps: () => (/* reexport safe */ _lib_index_js__WEBPACK_IMPORTED_MODULE_0__.attributesToProps),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   domToReact: () => (/* reexport safe */ _lib_index_js__WEBPACK_IMPORTED_MODULE_0__.domToReact),
+/* harmony export */   htmlToDOM: () => (/* reexport safe */ _lib_index_js__WEBPACK_IMPORTED_MODULE_0__.htmlToDOM)
+/* harmony export */ });
+/* harmony import */ var _lib_index_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../lib/index.js */ "./node_modules/html-react-parser/lib/index.js");
+
+
+
+
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (_lib_index_js__WEBPACK_IMPORTED_MODULE_0__["default"] || _lib_index_js__WEBPACK_IMPORTED_MODULE_0__);
+
+
+/***/ }),
+
+/***/ "./node_modules/react-tooltip/dist/react-tooltip.min.mjs":
+/*!***************************************************************!*\
+  !*** ./node_modules/react-tooltip/dist/react-tooltip.min.mjs ***!
+  \***************************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Tooltip: () => (/* binding */ M),
+/* harmony export */   TooltipProvider: () => (/* binding */ I),
+/* harmony export */   TooltipWrapper: () => (/* binding */ B),
+/* harmony export */   removeStyle: () => (/* binding */ g)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "react");
+/* harmony import */ var _floating_ui_dom__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @floating-ui/dom */ "./node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs");
+/* harmony import */ var classnames__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! classnames */ "./node_modules/classnames/index.js");
+/*
+* React Tooltip
+* {@link https://github.com/ReactTooltip/react-tooltip}
+* @copyright ReactTooltip Team
+* @license MIT
+*/
+const h="react-tooltip-core-styles",w="react-tooltip-base-styles",b={core:!1,base:!1};function S({css:e,id:t=w,type:o="base",ref:l}){var r,n;if(!e||"undefined"==typeof document||b[o])return;if("core"===o&&"undefined"!=typeof process&&(null===(r=null===process||void 0===process?void 0:process.env)||void 0===r?void 0:r.REACT_TOOLTIP_DISABLE_CORE_STYLES))return;if("base"!==o&&"undefined"!=typeof process&&(null===(n=null===process||void 0===process?void 0:process.env)||void 0===n?void 0:n.REACT_TOOLTIP_DISABLE_BASE_STYLES))return;"core"===o&&(t=h),l||(l={});const{insertAt:i}=l;if(document.getElementById(t))return;const c=document.head||document.getElementsByTagName("head")[0],s=document.createElement("style");s.id=t,s.type="text/css","top"===i&&c.firstChild?c.insertBefore(s,c.firstChild):c.appendChild(s),s.styleSheet?s.styleSheet.cssText=e:s.appendChild(document.createTextNode(e)),b[o]=!0}function g({type:e="base",id:t=w}={}){if(!b[e])return;"core"===e&&(t=h);const o=document.getElementById(t);"style"===(null==o?void 0:o.tagName)?null==o||o.remove():console.warn(`[react-tooltip] Failed to remove 'style' element with id '${t}'. Call \`injectStyle()\` first`),b[e]=!1}const E=async({elementReference:e=null,tooltipReference:t=null,tooltipArrowReference:o=null,place:l="top",offset:r=10,strategy:n="absolute",middlewares:i=[(0,_floating_ui_dom__WEBPACK_IMPORTED_MODULE_2__.offset)(Number(r)),(0,_floating_ui_dom__WEBPACK_IMPORTED_MODULE_2__.flip)({fallbackAxisSideDirection:"start"}),(0,_floating_ui_dom__WEBPACK_IMPORTED_MODULE_2__.shift)({padding:5})],border:c})=>{if(!e)return{tooltipStyles:{},tooltipArrowStyles:{},place:l};if(null===t)return{tooltipStyles:{},tooltipArrowStyles:{},place:l};const s=i;return o?(s.push((0,_floating_ui_dom__WEBPACK_IMPORTED_MODULE_2__.arrow)({element:o,padding:5})),(0,_floating_ui_dom__WEBPACK_IMPORTED_MODULE_2__.computePosition)(e,t,{placement:l,strategy:n,middleware:s}).then((({x:e,y:t,placement:o,middlewareData:l})=>{var r,n;const i={left:`${e}px`,top:`${t}px`,border:c},{x:s,y:a}=null!==(r=l.arrow)&&void 0!==r?r:{x:0,y:0},u=null!==(n={top:"bottom",right:"left",bottom:"top",left:"right"}[o.split("-")[0]])&&void 0!==n?n:"bottom",d=c&&{borderBottom:c,borderRight:c};let p=0;if(c){const e=`${c}`.match(/(\d+)px/);p=(null==e?void 0:e[1])?Number(e[1]):1}return{tooltipStyles:i,tooltipArrowStyles:{left:null!=s?`${s}px`:"",top:null!=a?`${a}px`:"",right:"",bottom:"",...d,[u]:`-${4+p}px`},place:o}}))):(0,_floating_ui_dom__WEBPACK_IMPORTED_MODULE_2__.computePosition)(e,t,{placement:"bottom",strategy:n,middleware:s}).then((({x:e,y:t,placement:o})=>({tooltipStyles:{left:`${e}px`,top:`${t}px`},tooltipArrowStyles:{},place:o})))},A=(e,t)=>!("CSS"in window&&"supports"in window.CSS)||window.CSS.supports(e,t),_=(e,t,o)=>{let l=null;const r=function(...r){const n=()=>{l=null,o||e.apply(this,r)};o&&!l&&(e.apply(this,r),l=setTimeout(n,t)),o||(l&&clearTimeout(l),l=setTimeout(n,t))};return r.cancel=()=>{l&&(clearTimeout(l),l=null)},r},O=e=>null!==e&&!Array.isArray(e)&&"object"==typeof e,k=(e,t)=>{if(e===t)return!0;if(Array.isArray(e)&&Array.isArray(t))return e.length===t.length&&e.every(((e,o)=>k(e,t[o])));if(Array.isArray(e)!==Array.isArray(t))return!1;if(!O(e)||!O(t))return e===t;const o=Object.keys(e),l=Object.keys(t);return o.length===l.length&&o.every((o=>k(e[o],t[o])))},T=e=>{if(!(e instanceof HTMLElement||e instanceof SVGElement))return!1;const t=getComputedStyle(e);return["overflow","overflow-x","overflow-y"].some((e=>{const o=t.getPropertyValue(e);return"auto"===o||"scroll"===o}))},L=e=>{if(!e)return null;let t=e.parentElement;for(;t;){if(T(t))return t;t=t.parentElement}return document.scrollingElement||document.documentElement},C="undefined"!=typeof window?react__WEBPACK_IMPORTED_MODULE_0__.useLayoutEffect:react__WEBPACK_IMPORTED_MODULE_0__.useEffect,R=e=>{e.current&&(clearTimeout(e.current),e.current=null)},x="DEFAULT_TOOLTIP_ID",N={anchorRefs:new Set,activeAnchor:{current:null},attach:()=>{},detach:()=>{},setActiveAnchor:()=>{}},$=(0,react__WEBPACK_IMPORTED_MODULE_0__.createContext)({getTooltipData:()=>N}),I=({children:t})=>{const[o,l]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({[x]:new Set}),[c,s]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({[x]:{current:null}}),a=(e,...t)=>{l((o=>{var l;const r=null!==(l=o[e])&&void 0!==l?l:new Set;return t.forEach((e=>r.add(e))),{...o,[e]:new Set(r)}}))},u=(e,...t)=>{l((o=>{const l=o[e];return l?(t.forEach((e=>l.delete(e))),{...o}):o}))},d=(0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(((e=x)=>{var t,l;return{anchorRefs:null!==(t=o[e])&&void 0!==t?t:new Set,activeAnchor:null!==(l=c[e])&&void 0!==l?l:{current:null},attach:(...t)=>a(e,...t),detach:(...t)=>u(e,...t),setActiveAnchor:t=>((e,t)=>{s((o=>{var l;return(null===(l=o[e])||void 0===l?void 0:l.current)===t.current?o:{...o,[e]:t}}))})(e,t)}}),[o,c,a,u]),p=(0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)((()=>({getTooltipData:d})),[d]);return react__WEBPACK_IMPORTED_MODULE_0__.createElement($.Provider,{value:p},t)};function j(e=x){return (0,react__WEBPACK_IMPORTED_MODULE_0__.useContext)($).getTooltipData(e)}const B=({tooltipId:t,children:l,className:r,place:n,content:i,html:c,variant:a,offset:u,wrapper:d,events:p,positionStrategy:v,delayShow:m,delayHide:f})=>{const{attach:h,detach:w}=j(t),b=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);return (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>(h(b),()=>{w(b)})),[]),react__WEBPACK_IMPORTED_MODULE_0__.createElement("span",{ref:b,className:classnames__WEBPACK_IMPORTED_MODULE_1__("react-tooltip-wrapper",r),"data-tooltip-place":n,"data-tooltip-content":i,"data-tooltip-html":c,"data-tooltip-variant":a,"data-tooltip-offset":u,"data-tooltip-wrapper":d,"data-tooltip-events":p,"data-tooltip-position-strategy":v,"data-tooltip-delay-show":m,"data-tooltip-delay-hide":f},l)};var z={tooltip:"core-styles-module_tooltip__3vRRp",fixed:"core-styles-module_fixed__pcSol",arrow:"core-styles-module_arrow__cvMwQ",noArrow:"core-styles-module_noArrow__xock6",clickable:"core-styles-module_clickable__ZuTTB",show:"core-styles-module_show__Nt9eE",closing:"core-styles-module_closing__sGnxF"},D={tooltip:"styles-module_tooltip__mnnfp",arrow:"styles-module_arrow__K0L3T",dark:"styles-module_dark__xNqje",light:"styles-module_light__Z6W-X",success:"styles-module_success__A2AKt",warning:"styles-module_warning__SCK0X",error:"styles-module_error__JvumD",info:"styles-module_info__BWdHW"};const q=({forwardRef:t,id:l,className:i,classNameArrow:c,variant:u="dark",anchorId:d,anchorSelect:p,place:v="top",offset:m=10,events:h=["hover"],openOnClick:w=!1,positionStrategy:b="absolute",middlewares:S,wrapper:g,delayShow:A=0,delayHide:O=0,float:T=!1,hidden:x=!1,noArrow:N=!1,clickable:$=!1,closeOnEsc:I=!1,closeOnScroll:B=!1,closeOnResize:q=!1,openEvents:H,closeEvents:M,globalCloseEvents:W,imperativeModeOnly:P,style:V,position:F,afterShow:K,afterHide:U,content:X,contentWrapperRef:Y,isOpen:G,defaultIsOpen:Z=!1,setIsOpen:J,activeAnchor:Q,setActiveAnchor:ee,border:te,opacity:oe,arrowColor:le,role:re="tooltip"})=>{var ne;const ie=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null),ce=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null),se=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null),ae=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null),ue=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null),[de,pe]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({tooltipStyles:{},tooltipArrowStyles:{},place:v}),[ve,me]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(!1),[fe,ye]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(!1),[he,we]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),be=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(!1),Se=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null),{anchorRefs:ge,setActiveAnchor:Ee}=j(l),Ae=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(!1),[_e,Oe]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),ke=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(!1),Te=w||h.includes("click"),Le=Te||(null==H?void 0:H.click)||(null==H?void 0:H.dblclick)||(null==H?void 0:H.mousedown),Ce=H?{...H}:{mouseover:!0,focus:!0,mouseenter:!1,click:!1,dblclick:!1,mousedown:!1};!H&&Te&&Object.assign(Ce,{mouseenter:!1,focus:!1,mouseover:!1,click:!0});const Re=M?{...M}:{mouseout:!0,blur:!0,mouseleave:!1,click:!1,dblclick:!1,mouseup:!1};!M&&Te&&Object.assign(Re,{mouseleave:!1,blur:!1,mouseout:!1});const xe=W?{...W}:{escape:I||!1,scroll:B||!1,resize:q||!1,clickOutsideAnchor:Le||!1};P&&(Object.assign(Ce,{mouseenter:!1,focus:!1,click:!1,dblclick:!1,mousedown:!1}),Object.assign(Re,{mouseleave:!1,blur:!1,click:!1,dblclick:!1,mouseup:!1}),Object.assign(xe,{escape:!1,scroll:!1,resize:!1,clickOutsideAnchor:!1})),C((()=>(ke.current=!0,()=>{ke.current=!1})),[]);const Ne=e=>{ke.current&&(e&&ye(!0),setTimeout((()=>{ke.current&&(null==J||J(e),void 0===G&&me(e))}),10))};(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{if(void 0===G)return()=>null;G&&ye(!0);const e=setTimeout((()=>{me(G)}),10);return()=>{clearTimeout(e)}}),[G]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{if(ve!==be.current)if(R(ue),be.current=ve,ve)null==K||K();else{const e=(e=>{const t=e.match(/^([\d.]+)(ms|s)$/);if(!t)return 0;const[,o,l]=t;return Number(o)*("ms"===l?1:1e3)})(getComputedStyle(document.body).getPropertyValue("--rt-transition-show-delay"));ue.current=setTimeout((()=>{ye(!1),we(null),null==U||U()}),e+25)}}),[ve]);const $e=e=>{pe((t=>k(t,e)?t:e))},Ie=(e=A)=>{R(se),fe?Ne(!0):se.current=setTimeout((()=>{Ne(!0)}),e)},je=(e=O)=>{R(ae),ae.current=setTimeout((()=>{Ae.current||Ne(!1)}),e)},Be=e=>{var t;if(!e)return;const o=null!==(t=e.currentTarget)&&void 0!==t?t:e.target;if(!(null==o?void 0:o.isConnected))return ee(null),void Ee({current:null});A?Ie():Ne(!0),ee(o),Ee({current:o}),R(ae)},ze=()=>{$?je(O||100):O?je():Ne(!1),R(se)},De=({x:e,y:t})=>{var o;const l={getBoundingClientRect:()=>({x:e,y:t,width:0,height:0,top:t,left:e,right:e,bottom:t})};E({place:null!==(o=null==he?void 0:he.place)&&void 0!==o?o:v,offset:m,elementReference:l,tooltipReference:ie.current,tooltipArrowReference:ce.current,strategy:b,middlewares:S,border:te}).then((e=>{$e(e)}))},qe=e=>{if(!e)return;const t=e,o={x:t.clientX,y:t.clientY};De(o),Se.current=o},He=e=>{var t;if(!ve)return;const o=e.target;if(!o.isConnected)return;if(null===(t=ie.current)||void 0===t?void 0:t.contains(o))return;[document.querySelector(`[id='${d}']`),..._e].some((e=>null==e?void 0:e.contains(o)))||(Ne(!1),R(se))},Me=_(Be,50,!0),We=_(ze,50,!0),Pe=e=>{We.cancel(),Me(e)},Ve=()=>{Me.cancel(),We()},Fe=(0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)((()=>{var e,t;const o=null!==(e=null==he?void 0:he.position)&&void 0!==e?e:F;o?De(o):T?Se.current&&De(Se.current):(null==Q?void 0:Q.isConnected)&&E({place:null!==(t=null==he?void 0:he.place)&&void 0!==t?t:v,offset:m,elementReference:Q,tooltipReference:ie.current,tooltipArrowReference:ce.current,strategy:b,middlewares:S,border:te}).then((e=>{ke.current&&$e(e)}))}),[ve,Q,X,V,v,null==he?void 0:he.place,m,b,F,null==he?void 0:he.position,T]);(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{var e,t;const o=new Set(ge);_e.forEach((e=>{o.add({current:e})}));const l=document.querySelector(`[id='${d}']`);l&&o.add({current:l});const r=()=>{Ne(!1)},n=L(Q),i=L(ie.current);xe.scroll&&(window.addEventListener("scroll",r),null==n||n.addEventListener("scroll",r),null==i||i.addEventListener("scroll",r));let c=null;xe.resize?window.addEventListener("resize",r):Q&&ie.current&&(c=(0,_floating_ui_dom__WEBPACK_IMPORTED_MODULE_2__.autoUpdate)(Q,ie.current,Fe,{ancestorResize:!0,elementResize:!0,layoutShift:!0}));const s=e=>{"Escape"===e.key&&Ne(!1)};xe.escape&&window.addEventListener("keydown",s),xe.clickOutsideAnchor&&window.addEventListener("click",He);const a=[],u=e=>{ve&&(null==e?void 0:e.target)===Q||Be(e)},p=e=>{ve&&(null==e?void 0:e.target)===Q&&ze()},v=["mouseover","mouseout","mouseenter","mouseleave","focus","blur"],m=["click","dblclick","mousedown","mouseup"];Object.entries(Ce).forEach((([e,t])=>{t&&(v.includes(e)?a.push({event:e,listener:Pe}):m.includes(e)&&a.push({event:e,listener:u}))})),Object.entries(Re).forEach((([e,t])=>{t&&(v.includes(e)?a.push({event:e,listener:Ve}):m.includes(e)&&a.push({event:e,listener:p}))})),T&&a.push({event:"pointermove",listener:qe});const y=()=>{Ae.current=!0},h=()=>{Ae.current=!1,ze()};return $&&!Le&&(null===(e=ie.current)||void 0===e||e.addEventListener("mouseenter",y),null===(t=ie.current)||void 0===t||t.addEventListener("mouseleave",h)),a.forEach((({event:e,listener:t})=>{o.forEach((o=>{var l;null===(l=o.current)||void 0===l||l.addEventListener(e,t)}))})),()=>{var e,t;xe.scroll&&(window.removeEventListener("scroll",r),null==n||n.removeEventListener("scroll",r),null==i||i.removeEventListener("scroll",r)),xe.resize?window.removeEventListener("resize",r):null==c||c(),xe.clickOutsideAnchor&&window.removeEventListener("click",He),xe.escape&&window.removeEventListener("keydown",s),$&&!Le&&(null===(e=ie.current)||void 0===e||e.removeEventListener("mouseenter",y),null===(t=ie.current)||void 0===t||t.removeEventListener("mouseleave",h)),a.forEach((({event:e,listener:t})=>{o.forEach((o=>{var l;null===(l=o.current)||void 0===l||l.removeEventListener(e,t)}))}))}}),[Q,Fe,fe,ge,_e,H,M,W,Te,A,O]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{var e,t;let o=null!==(t=null!==(e=null==he?void 0:he.anchorSelect)&&void 0!==e?e:p)&&void 0!==t?t:"";!o&&l&&(o=`[data-tooltip-id='${l.replace(/'/g,"\\'")}']`);const r=new MutationObserver((e=>{const t=[],r=[];e.forEach((e=>{if("attributes"===e.type&&"data-tooltip-id"===e.attributeName){e.target.getAttribute("data-tooltip-id")===l?t.push(e.target):e.oldValue===l&&r.push(e.target)}if("childList"===e.type){if(Q){const t=[...e.removedNodes].filter((e=>1===e.nodeType));if(o)try{r.push(...t.filter((e=>e.matches(o)))),r.push(...t.flatMap((e=>[...e.querySelectorAll(o)])))}catch(e){}t.some((e=>{var t;return!!(null===(t=null==e?void 0:e.contains)||void 0===t?void 0:t.call(e,Q))&&(ye(!1),Ne(!1),ee(null),R(se),R(ae),!0)}))}if(o)try{const l=[...e.addedNodes].filter((e=>1===e.nodeType));t.push(...l.filter((e=>e.matches(o)))),t.push(...l.flatMap((e=>[...e.querySelectorAll(o)])))}catch(e){}}})),(t.length||r.length)&&Oe((e=>[...e.filter((e=>!r.includes(e))),...t]))}));return r.observe(document.body,{childList:!0,subtree:!0,attributes:!0,attributeFilter:["data-tooltip-id"],attributeOldValue:!0}),()=>{r.disconnect()}}),[l,p,null==he?void 0:he.anchorSelect,Q]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{Fe()}),[Fe]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{if(!(null==Y?void 0:Y.current))return()=>null;const e=new ResizeObserver((()=>{setTimeout((()=>Fe()))}));return e.observe(Y.current),()=>{e.disconnect()}}),[X,null==Y?void 0:Y.current]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{var e;const t=document.querySelector(`[id='${d}']`),o=[..._e,t];Q&&o.includes(Q)||ee(null!==(e=_e[0])&&void 0!==e?e:t)}),[d,_e,Q]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>(Z&&Ne(!0),()=>{R(se),R(ae)})),[]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{var e;let t=null!==(e=null==he?void 0:he.anchorSelect)&&void 0!==e?e:p;if(!t&&l&&(t=`[data-tooltip-id='${l.replace(/'/g,"\\'")}']`),t)try{const e=Array.from(document.querySelectorAll(t));Oe(e)}catch(e){Oe([])}}),[l,p,null==he?void 0:he.anchorSelect]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{se.current&&(R(se),Ie(A))}),[A]);const Ke=null!==(ne=null==he?void 0:he.content)&&void 0!==ne?ne:X,Ue=ve&&Object.keys(de.tooltipStyles).length>0;return (0,react__WEBPACK_IMPORTED_MODULE_0__.useImperativeHandle)(t,(()=>({open:e=>{if(null==e?void 0:e.anchorSelect)try{document.querySelector(e.anchorSelect)}catch(t){return void console.warn(`[react-tooltip] "${e.anchorSelect}" is not a valid CSS selector`)}we(null!=e?e:null),(null==e?void 0:e.delay)?Ie(e.delay):Ne(!0)},close:e=>{(null==e?void 0:e.delay)?je(e.delay):Ne(!1)},activeAnchor:Q,place:de.place,isOpen:Boolean(fe&&!x&&Ke&&Ue)}))),fe&&!x&&Ke?react__WEBPACK_IMPORTED_MODULE_0__.createElement(g,{id:l,role:re,className:classnames__WEBPACK_IMPORTED_MODULE_1__("react-tooltip",z.tooltip,D.tooltip,D[u],i,`react-tooltip__place-${de.place}`,z[Ue?"show":"closing"],Ue?"react-tooltip__show":"react-tooltip__closing","fixed"===b&&z.fixed,$&&z.clickable),onTransitionEnd:e=>{R(ue),ve||"opacity"!==e.propertyName||(ye(!1),we(null),null==U||U())},style:{...V,...de.tooltipStyles,opacity:void 0!==oe&&Ue?oe:void 0},ref:ie},Ke,react__WEBPACK_IMPORTED_MODULE_0__.createElement(g,{className:classnames__WEBPACK_IMPORTED_MODULE_1__("react-tooltip-arrow",z.arrow,D.arrow,c,N&&z.noArrow),style:{...de.tooltipArrowStyles,background:le?`linear-gradient(to right bottom, transparent 50%, ${le} 50%)`:void 0},ref:ce})):null},H=({content:t})=>react__WEBPACK_IMPORTED_MODULE_0__.createElement("span",{dangerouslySetInnerHTML:{__html:t}}),M=react__WEBPACK_IMPORTED_MODULE_0__.forwardRef((({id:t,anchorId:l,anchorSelect:n,content:i,html:c,render:a,className:u,classNameArrow:d,variant:p="dark",place:v="top",offset:m=10,wrapper:f="div",children:h=null,events:w=["hover"],openOnClick:b=!1,positionStrategy:S="absolute",middlewares:g,delayShow:E=0,delayHide:_=0,float:O=!1,hidden:k=!1,noArrow:T=!1,clickable:L=!1,closeOnEsc:C=!1,closeOnScroll:R=!1,closeOnResize:x=!1,openEvents:N,closeEvents:$,globalCloseEvents:I,imperativeModeOnly:B=!1,style:z,position:D,isOpen:M,defaultIsOpen:W=!1,disableStyleInjection:P=!1,border:V,opacity:F,arrowColor:K,setIsOpen:U,afterShow:X,afterHide:Y,role:G="tooltip"},Z)=>{const[J,Q]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(i),[ee,te]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(c),[oe,le]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(v),[re,ne]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(p),[ie,ce]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(m),[se,ae]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(E),[ue,de]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(_),[pe,ve]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(O),[me,fe]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(k),[ye,he]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(f),[we,be]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(w),[Se,ge]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(S),[Ee,Ae]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),[_e,Oe]=(0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),ke=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(P),{anchorRefs:Te,activeAnchor:Le}=j(t),Ce=e=>null==e?void 0:e.getAttributeNames().reduce(((t,o)=>{var l;if(o.startsWith("data-tooltip-")){t[o.replace(/^data-tooltip-/,"")]=null!==(l=null==e?void 0:e.getAttribute(o))&&void 0!==l?l:null}return t}),{}),Re=e=>{const t={place:e=>{var t;le(null!==(t=e)&&void 0!==t?t:v)},content:e=>{Q(null!=e?e:i)},html:e=>{te(null!=e?e:c)},variant:e=>{var t;ne(null!==(t=e)&&void 0!==t?t:p)},offset:e=>{ce(null===e?m:Number(e))},wrapper:e=>{var t;he(null!==(t=e)&&void 0!==t?t:f)},events:e=>{const t=null==e?void 0:e.split(" ");be(null!=t?t:w)},"position-strategy":e=>{var t;ge(null!==(t=e)&&void 0!==t?t:S)},"delay-show":e=>{ae(null===e?E:Number(e))},"delay-hide":e=>{de(null===e?_:Number(e))},float:e=>{ve(null===e?O:"true"===e)},hidden:e=>{fe(null===e?k:"true"===e)},"class-name":e=>{Ae(e)}};Object.values(t).forEach((e=>e(null))),Object.entries(e).forEach((([e,o])=>{var l;null===(l=t[e])||void 0===l||l.call(t,o)}))};(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{Q(i)}),[i]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{te(c)}),[c]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{le(v)}),[v]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{ne(p)}),[p]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{ce(m)}),[m]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{ae(E)}),[E]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{de(_)}),[_]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{ve(O)}),[O]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{fe(k)}),[k]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{ge(S)}),[S]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{ke.current!==P&&console.warn("[react-tooltip] Do not change `disableStyleInjection` dynamically.")}),[P]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{"undefined"!=typeof window&&window.dispatchEvent(new CustomEvent("react-tooltip-inject-styles",{detail:{disableCore:"core"===P,disableBase:P}}))}),[]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{var e;const o=new Set(Te);let r=n;if(!r&&t&&(r=`[data-tooltip-id='${t.replace(/'/g,"\\'")}']`),r)try{document.querySelectorAll(r).forEach((e=>{o.add({current:e})}))}catch(e){console.warn(`[react-tooltip] "${r}" is not a valid CSS selector`)}const i=document.querySelector(`[id='${l}']`);if(i&&o.add({current:i}),!o.size)return()=>null;const c=null!==(e=null!=_e?_e:i)&&void 0!==e?e:Le.current,s=new MutationObserver((e=>{e.forEach((e=>{var t;if(!c||"attributes"!==e.type||!(null===(t=e.attributeName)||void 0===t?void 0:t.startsWith("data-tooltip-")))return;const o=Ce(c);Re(o)}))})),a={attributes:!0,childList:!1,subtree:!1};if(c){const e=Ce(c);Re(e),s.observe(c,a)}return()=>{s.disconnect()}}),[Te,Le,_e,l,n]),(0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)((()=>{(null==z?void 0:z.border)&&console.warn("[react-tooltip] Do not set `style.border`. Use `border` prop instead."),V&&!A("border",`${V}`)&&console.warn(`[react-tooltip] "${V}" is not a valid \`border\`.`),(null==z?void 0:z.opacity)&&console.warn("[react-tooltip] Do not set `style.opacity`. Use `opacity` prop instead."),F&&!A("opacity",`${F}`)&&console.warn(`[react-tooltip] "${F}" is not a valid \`opacity\`.`)}),[]);let xe=h;const Ne=(0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);if(a){const t=a({content:(null==_e?void 0:_e.getAttribute("data-tooltip-content"))||J||null,activeAnchor:_e});xe=t?react__WEBPACK_IMPORTED_MODULE_0__.createElement("div",{ref:Ne,className:"react-tooltip-content-wrapper"},t):null}else J&&(xe=J);ee&&(xe=react__WEBPACK_IMPORTED_MODULE_0__.createElement(H,{content:ee}));const $e={forwardRef:Z,id:t,anchorId:l,anchorSelect:n,className:classnames__WEBPACK_IMPORTED_MODULE_1__(u,Ee),classNameArrow:d,content:xe,contentWrapperRef:Ne,place:oe,variant:re,offset:ie,wrapper:ye,events:we,openOnClick:b,positionStrategy:Se,middlewares:g,delayShow:se,delayHide:ue,float:pe,hidden:me,noArrow:T,clickable:L,closeOnEsc:C,closeOnScroll:R,closeOnResize:x,openEvents:N,closeEvents:$,globalCloseEvents:I,imperativeModeOnly:B,style:z,position:D,isOpen:M,defaultIsOpen:W,border:V,opacity:F,arrowColor:K,setIsOpen:U,afterShow:X,afterHide:Y,activeAnchor:_e,setActiveAnchor:e=>Oe(e),role:G};return react__WEBPACK_IMPORTED_MODULE_0__.createElement(q,{...$e})}));"undefined"!=typeof window&&window.addEventListener("react-tooltip-inject-styles",(e=>{e.detail.disableCore||S({css:`:root{--rt-color-white:#fff;--rt-color-dark:#222;--rt-color-success:#8dc572;--rt-color-error:#be6464;--rt-color-warning:#f0ad4e;--rt-color-info:#337ab7;--rt-opacity:0.9;--rt-transition-show-delay:0.15s;--rt-transition-closing-delay:0.15s}.core-styles-module_tooltip__3vRRp{position:absolute;top:0;left:0;pointer-events:none;opacity:0;will-change:opacity}.core-styles-module_fixed__pcSol{position:fixed}.core-styles-module_arrow__cvMwQ{position:absolute;background:inherit}.core-styles-module_noArrow__xock6{display:none}.core-styles-module_clickable__ZuTTB{pointer-events:auto}.core-styles-module_show__Nt9eE{opacity:var(--rt-opacity);transition:opacity var(--rt-transition-show-delay)ease-out}.core-styles-module_closing__sGnxF{opacity:0;transition:opacity var(--rt-transition-closing-delay)ease-in}`,type:"core"}),e.detail.disableBase||S({css:`
+.styles-module_tooltip__mnnfp{padding:8px 16px;border-radius:3px;font-size:90%;width:max-content}.styles-module_arrow__K0L3T{width:8px;height:8px}[class*='react-tooltip__place-top']>.styles-module_arrow__K0L3T{transform:rotate(45deg)}[class*='react-tooltip__place-right']>.styles-module_arrow__K0L3T{transform:rotate(135deg)}[class*='react-tooltip__place-bottom']>.styles-module_arrow__K0L3T{transform:rotate(225deg)}[class*='react-tooltip__place-left']>.styles-module_arrow__K0L3T{transform:rotate(315deg)}.styles-module_dark__xNqje{background:var(--rt-color-dark);color:var(--rt-color-white)}.styles-module_light__Z6W-X{background-color:var(--rt-color-white);color:var(--rt-color-dark)}.styles-module_success__A2AKt{background-color:var(--rt-color-success);color:var(--rt-color-white)}.styles-module_warning__SCK0X{background-color:var(--rt-color-warning);color:var(--rt-color-white)}.styles-module_error__JvumD{background-color:var(--rt-color-error);color:var(--rt-color-white)}.styles-module_info__BWdHW{background-color:var(--rt-color-info);color:var(--rt-color-white)}`,type:"base"})}));
+
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/create fake namespace object */
+/******/ 	(() => {
+/******/ 		var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
+/******/ 		var leafPrototypes;
+/******/ 		// create a fake namespace object
+/******/ 		// mode & 1: value is a module id, require it
+/******/ 		// mode & 2: merge all properties of value into the ns
+/******/ 		// mode & 4: return value when already ns object
+/******/ 		// mode & 16: return value when it's Promise-like
+/******/ 		// mode & 8|1: behave like require
+/******/ 		__webpack_require__.t = function(value, mode) {
+/******/ 			if(mode & 1) value = this(value);
+/******/ 			if(mode & 8) return value;
+/******/ 			if(typeof value === 'object' && value) {
+/******/ 				if((mode & 4) && value.__esModule) return value;
+/******/ 				if((mode & 16) && typeof value.then === 'function') return value;
+/******/ 			}
+/******/ 			var ns = Object.create(null);
+/******/ 			__webpack_require__.r(ns);
+/******/ 			var def = {};
+/******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
+/******/ 			for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
+/******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
+/******/ 			}
+/******/ 			def['default'] = () => (value);
+/******/ 			__webpack_require__.d(ns, def);
+/******/ 			return ns;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/ensure chunk */
+/******/ 	(() => {
+/******/ 		__webpack_require__.f = {};
+/******/ 		// This file contains only the entry chunk.
+/******/ 		// The chunk loading function for additional chunks
+/******/ 		__webpack_require__.e = (chunkId) => {
+/******/ 			return Promise.all(Object.keys(__webpack_require__.f).reduce((promises, key) => {
+/******/ 				__webpack_require__.f[key](chunkId, promises);
+/******/ 				return promises;
+/******/ 			}, []));
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/get javascript chunk filename */
+/******/ 	(() => {
+/******/ 		// This function allow to reference async chunks
+/******/ 		__webpack_require__.u = (chunkId) => {
+/******/ 			// return url for filenames based on template
+/******/ 			return "" + chunkId + ".js";
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/get mini-css chunk filename */
+/******/ 	(() => {
+/******/ 		// This function allow to reference async chunks
+/******/ 		__webpack_require__.miniCssF = (chunkId) => {
+/******/ 			// return url for filenames based on template
+/******/ 			return "" + chunkId + ".css";
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/global */
+/******/ 	(() => {
+/******/ 		__webpack_require__.g = (function() {
+/******/ 			if (typeof globalThis === 'object') return globalThis;
+/******/ 			try {
+/******/ 				return this || new Function('return this')();
+/******/ 			} catch (e) {
+/******/ 				if (typeof window === 'object') return window;
+/******/ 			}
+/******/ 		})();
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/load script */
+/******/ 	(() => {
+/******/ 		var inProgress = {};
+/******/ 		var dataWebpackPrefix = "gatherpress:";
+/******/ 		// loadScript function to load a script via script tag
+/******/ 		__webpack_require__.l = (url, done, key, chunkId) => {
+/******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
+/******/ 			var script, needAttach;
+/******/ 			if(key !== undefined) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				for(var i = 0; i < scripts.length; i++) {
+/******/ 					var s = scripts[i];
+/******/ 					if(s.getAttribute("src") == url || s.getAttribute("data-webpack") == dataWebpackPrefix + key) { script = s; break; }
+/******/ 				}
+/******/ 			}
+/******/ 			if(!script) {
+/******/ 				needAttach = true;
+/******/ 				script = document.createElement('script');
+/******/ 		
+/******/ 				script.charset = 'utf-8';
+/******/ 				script.timeout = 120;
+/******/ 				if (__webpack_require__.nc) {
+/******/ 					script.setAttribute("nonce", __webpack_require__.nc);
+/******/ 				}
+/******/ 				script.setAttribute("data-webpack", dataWebpackPrefix + key);
+/******/ 		
+/******/ 				script.src = url;
+/******/ 			}
+/******/ 			inProgress[url] = [done];
+/******/ 			var onScriptComplete = (prev, event) => {
+/******/ 				// avoid mem leaks in IE.
+/******/ 				script.onerror = script.onload = null;
+/******/ 				clearTimeout(timeout);
+/******/ 				var doneFns = inProgress[url];
+/******/ 				delete inProgress[url];
+/******/ 				script.parentNode && script.parentNode.removeChild(script);
+/******/ 				doneFns && doneFns.forEach((fn) => (fn(event)));
+/******/ 				if(prev) return prev(event);
+/******/ 			}
+/******/ 			var timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), 120000);
+/******/ 			script.onerror = onScriptComplete.bind(null, script.onerror);
+/******/ 			script.onload = onScriptComplete.bind(null, script.onload);
+/******/ 			needAttach && document.head.appendChild(script);
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/publicPath */
+/******/ 	(() => {
+/******/ 		var scriptUrl;
+/******/ 		if (__webpack_require__.g.importScripts) scriptUrl = __webpack_require__.g.location + "";
+/******/ 		var document = __webpack_require__.g.document;
+/******/ 		if (!scriptUrl && document) {
+/******/ 			if (document.currentScript && document.currentScript.tagName.toUpperCase() === 'SCRIPT')
+/******/ 				scriptUrl = document.currentScript.src;
+/******/ 			if (!scriptUrl) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				if(scripts.length) {
+/******/ 					var i = scripts.length - 1;
+/******/ 					while (i > -1 && (!scriptUrl || !/^http(s?):/.test(scriptUrl))) scriptUrl = scripts[i--].src;
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/ 		// When supporting browsers where an automatic publicPath is not supported you must specify an output.publicPath manually via configuration
+/******/ 		// or pass an empty string ("") and set the __webpack_public_path__ variable from your code to use your own logic.
+/******/ 		if (!scriptUrl) throw new Error("Automatic publicPath is not supported in this browser");
+/******/ 		scriptUrl = scriptUrl.replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/");
+/******/ 		__webpack_require__.p = scriptUrl + "../../";
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/css loading */
+/******/ 	(() => {
+/******/ 		if (typeof document === "undefined") return;
+/******/ 		var createStylesheet = (chunkId, fullhref, oldTag, resolve, reject) => {
+/******/ 			var linkTag = document.createElement("link");
+/******/ 		
+/******/ 			linkTag.rel = "stylesheet";
+/******/ 			linkTag.type = "text/css";
+/******/ 			if (__webpack_require__.nc) {
+/******/ 				linkTag.nonce = __webpack_require__.nc;
+/******/ 			}
+/******/ 			var onLinkComplete = (event) => {
+/******/ 				// avoid mem leaks.
+/******/ 				linkTag.onerror = linkTag.onload = null;
+/******/ 				if (event.type === 'load') {
+/******/ 					resolve();
+/******/ 				} else {
+/******/ 					var errorType = event && event.type;
+/******/ 					var realHref = event && event.target && event.target.href || fullhref;
+/******/ 					var err = new Error("Loading CSS chunk " + chunkId + " failed.\n(" + errorType + ": " + realHref + ")");
+/******/ 					err.name = "ChunkLoadError";
+/******/ 					err.code = "CSS_CHUNK_LOAD_FAILED";
+/******/ 					err.type = errorType;
+/******/ 					err.request = realHref;
+/******/ 					if (linkTag.parentNode) linkTag.parentNode.removeChild(linkTag)
+/******/ 					reject(err);
+/******/ 				}
+/******/ 			}
+/******/ 			linkTag.onerror = linkTag.onload = onLinkComplete;
+/******/ 			linkTag.href = fullhref;
+/******/ 		
+/******/ 		
+/******/ 			if (oldTag) {
+/******/ 				oldTag.parentNode.insertBefore(linkTag, oldTag.nextSibling);
+/******/ 			} else {
+/******/ 				document.head.appendChild(linkTag);
+/******/ 			}
+/******/ 			return linkTag;
+/******/ 		};
+/******/ 		var findStylesheet = (href, fullhref) => {
+/******/ 			var existingLinkTags = document.getElementsByTagName("link");
+/******/ 			for(var i = 0; i < existingLinkTags.length; i++) {
+/******/ 				var tag = existingLinkTags[i];
+/******/ 				var dataHref = tag.getAttribute("data-href") || tag.getAttribute("href");
+/******/ 				if(tag.rel === "stylesheet" && (dataHref === href || dataHref === fullhref)) return tag;
+/******/ 			}
+/******/ 			var existingStyleTags = document.getElementsByTagName("style");
+/******/ 			for(var i = 0; i < existingStyleTags.length; i++) {
+/******/ 				var tag = existingStyleTags[i];
+/******/ 				var dataHref = tag.getAttribute("data-href");
+/******/ 				if(dataHref === href || dataHref === fullhref) return tag;
+/******/ 			}
+/******/ 		};
+/******/ 		var loadStylesheet = (chunkId) => {
+/******/ 			return new Promise((resolve, reject) => {
+/******/ 				var href = __webpack_require__.miniCssF(chunkId);
+/******/ 				var fullhref = __webpack_require__.p + href;
+/******/ 				if(findStylesheet(href, fullhref)) return resolve();
+/******/ 				createStylesheet(chunkId, fullhref, null, resolve, reject);
+/******/ 			});
+/******/ 		}
+/******/ 		// object to store loaded CSS chunks
+/******/ 		var installedCssChunks = {
+/******/ 			"blocks/venue/venue": 0
+/******/ 		};
+/******/ 		
+/******/ 		__webpack_require__.f.miniCss = (chunkId, promises) => {
+/******/ 			var cssChunks = {"vendors-node_modules_leaflet_dist_leaflet_css":1};
+/******/ 			if(installedCssChunks[chunkId]) promises.push(installedCssChunks[chunkId]);
+/******/ 			else if(installedCssChunks[chunkId] !== 0 && cssChunks[chunkId]) {
+/******/ 				promises.push(installedCssChunks[chunkId] = loadStylesheet(chunkId).then(() => {
+/******/ 					installedCssChunks[chunkId] = 0;
+/******/ 				}, (e) => {
+/******/ 					delete installedCssChunks[chunkId];
+/******/ 					throw e;
+/******/ 				}));
+/******/ 			}
+/******/ 		};
+/******/ 		
+/******/ 		// no hmr
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"blocks/venue/venue": 0
+/******/ 		};
+/******/ 		
+/******/ 		__webpack_require__.f.j = (chunkId, promises) => {
+/******/ 				// JSONP chunk loading for javascript
+/******/ 				var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
+/******/ 				if(installedChunkData !== 0) { // 0 means "already installed".
+/******/ 		
+/******/ 					// a Promise means "currently loading".
+/******/ 					if(installedChunkData) {
+/******/ 						promises.push(installedChunkData[2]);
+/******/ 					} else {
+/******/ 						if("vendors-node_modules_leaflet_dist_leaflet_css" != chunkId) {
+/******/ 							// setup Promise in chunk cache
+/******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
+/******/ 							promises.push(installedChunkData[2] = promise);
+/******/ 		
+/******/ 							// start chunk loading
+/******/ 							var url = __webpack_require__.p + __webpack_require__.u(chunkId);
+/******/ 							// create error before stack unwound to get useful stacktrace later
+/******/ 							var error = new Error();
+/******/ 							var loadingEnded = (event) => {
+/******/ 								if(__webpack_require__.o(installedChunks, chunkId)) {
+/******/ 									installedChunkData = installedChunks[chunkId];
+/******/ 									if(installedChunkData !== 0) installedChunks[chunkId] = undefined;
+/******/ 									if(installedChunkData) {
+/******/ 										var errorType = event && (event.type === 'load' ? 'missing' : event.type);
+/******/ 										var realSrc = event && event.target && event.target.src;
+/******/ 										error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
+/******/ 										error.name = 'ChunkLoadError';
+/******/ 										error.type = errorType;
+/******/ 										error.request = realSrc;
+/******/ 										installedChunkData[1](error);
+/******/ 									}
+/******/ 								}
+/******/ 							};
+/******/ 							__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
+/******/ 						} else installedChunks[chunkId] = 0;
+/******/ 					}
+/******/ 				}
+/******/ 		};
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		// no on chunks loaded
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 		
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunkgatherpress"] = globalThis["webpackChunkgatherpress"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+/*!***********************************!*\
+  !*** ./src/blocks/venue/venue.js ***!
+  \***********************************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_dom_ready__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/dom-ready */ "@wordpress/dom-ready");
+/* harmony import */ var _wordpress_dom_ready__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_dom_ready__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _components_MapEmbed__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../components/MapEmbed */ "./src/components/MapEmbed.js");
+/* harmony import */ var _components_VenueOrOnlineEvent__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../components/VenueOrOnlineEvent */ "./src/components/VenueOrOnlineEvent.js");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__);
+/**
+ * WordPress dependencies.
+ */
+
+
+
+/**
+ * Internal dependencies.
+ */
+
+
+
+/**
+ * Render GatherPress Venue and Map Embed blocks.
+ *
+ * This code initializes the rendering of GatherPress Venue and Map Embed blocks
+ * on the frontend. It identifies the blocks using the 'data-gatherpress_block_name' attribute,
+ * extracts the block attributes from the dataset, and renders the corresponding components.
+ *
+ * @since 1.0.0
+ *
+ * @return {void}
+ */
+
+_wordpress_dom_ready__WEBPACK_IMPORTED_MODULE_0___default()(() => {
+  let containers = document.querySelectorAll(`[data-gatherpress_block_name="venue"]`);
+  for (let i = 0; i < containers.length; i++) {
+    var _attrs$name, _attrs$fullAddress, _attrs$phoneNumber, _attrs$website, _attrs$isOnlineEventT, _attrs$onlineEventLin;
+    const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.createRoot)(containers[i]).render( /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_components_VenueOrOnlineEvent__WEBPACK_IMPORTED_MODULE_3__["default"], {
+      name: (_attrs$name = attrs.name) !== null && _attrs$name !== void 0 ? _attrs$name : '',
+      fullAddress: (_attrs$fullAddress = attrs.fullAddress) !== null && _attrs$fullAddress !== void 0 ? _attrs$fullAddress : '',
+      phoneNumber: (_attrs$phoneNumber = attrs.phoneNumber) !== null && _attrs$phoneNumber !== void 0 ? _attrs$phoneNumber : '',
+      website: (_attrs$website = attrs.website) !== null && _attrs$website !== void 0 ? _attrs$website : '',
+      isOnlineEventTerm: (_attrs$isOnlineEventT = attrs.isOnlineEventTerm) !== null && _attrs$isOnlineEventT !== void 0 ? _attrs$isOnlineEventT : false,
+      onlineEventLink: (_attrs$onlineEventLin = attrs.onlineEventLink) !== null && _attrs$onlineEventLin !== void 0 ? _attrs$onlineEventLin : ''
+    }));
+  }
+  containers = document.querySelectorAll(`[data-gatherpress_block_name="map-embed"]`);
+  for (let i = 0; i < containers.length; i++) {
+    const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
+    if (attrs.isOnlineEventTerm) {
+      continue;
+    }
+    (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_1__.createRoot)(containers[i]).render( /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_components_MapEmbed__WEBPACK_IMPORTED_MODULE_2__["default"], {
+      location: attrs.fullAddress,
+      latitude: attrs.latitude,
+      longitude: attrs.longitude,
+      zoom: attrs.mapZoomLevel,
+      type: attrs.mapType,
+      height: attrs.mapHeight
+    }));
+  }
+});
+})();
+
+/******/ })()
+;
+//# sourceMappingURL=venue.js.map
