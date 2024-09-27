@@ -103,6 +103,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 	use GatherPress\Core\Endpoints\Posttype_Single_Endpoint;
 	use GatherPress\Core\Endpoints\Endpoint_Redirect;
 	```
+
 	```php
 	new Posttype_Single_Endpoint(
 		array(
@@ -123,6 +124,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 	```php
 	use GatherPress\Core\Event;
 	```
+
 	```php
 
 	/**
@@ -179,6 +181,7 @@ Example for a new redirection endpoint like `example.org/event/my-sample-event/o
 	```php
 	use GatherPress\Core\Endpoints;
 	```
+
 	```php
 	Endpoints::get_url(
 		'office365-calendar'
