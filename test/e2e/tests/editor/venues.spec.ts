@@ -16,7 +16,7 @@ test.describe('Venues in the Editor', () => {
 		await page.getByLabel('Add title').fill('Test venue');
 		await page.getByLabel('Add title').press('Tab');
 
-		const venue = await page.$('.gatherpress-venue__name');
+		const venue = page.locator('.gatherpress-venue__name');
 		await venue.press('Backspace');
 
 		await page
