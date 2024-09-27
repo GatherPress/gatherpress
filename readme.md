@@ -29,7 +29,7 @@ GatherPress, a plugin created by and for the WordPress community, is a response 
 
 ## Community-built
 
-This project is the result of a collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and with the grit, sweat, and love of **the community, for the community**. We encourage all interested, whether a user, community member, or developer, to follow our emerging presence on our [GatherPress Blog](https://gatherpress.org/blog/), our [GitHub repositories](https://github.com/GatherPress/), our [GatherPress Documentation](https://gatherpress.org/documentation/), or new features on our [GatherPress Playground](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress-awesome/main/.wordpress-org/blueprints/blueprint.json).
+This project is the result of a collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and with the grit, sweat, and love of **the community, for the community**. We encourage all interested, whether a user, community member, or developer, to follow our emerging presence on our [GatherPress Blog](https://gatherpress.org/blog/), our [GitHub repositories](https://github.com/GatherPress/), our [GatherPress Documentation](https://gatherpress.org/documentation/), or new features on our [GatherPress Playground](https://wordpress.org/plugins/gatherpress/?preview=1).
 
 ## Playground Environment
 
