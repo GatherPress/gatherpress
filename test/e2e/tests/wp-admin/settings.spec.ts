@@ -16,11 +16,11 @@ test.describe('Settings', () => {
 		const settingsMenu = menu.getByRole('link', {
 			name: 'Settings',
 		});
-		const settingsMenuUrl = await settingsMenu.getAttribute('href');
 
 		await expect(settingsMenu).toBeVisible();
-		await expect(settingsMenuUrl).toContain(
-			'admin.php?page=gatherpress_general'
+		await expect(settingsMenu).toHaveAttribute(
+			'href',
+			/admin\.php\?page=gatherpress_general/
 		);
 	});
 });
