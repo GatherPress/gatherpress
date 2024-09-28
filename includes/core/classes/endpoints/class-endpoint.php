@@ -351,7 +351,7 @@ class Endpoint {
 	}
 
 	/**
-	 * Determine wether the endpoint is meant for a feed
+	 * Determine whether the endpoint is meant for a feed
 	 * and if it has a proper Endpoint_Template defined.
 	 *
 	 * @return string The slug of the endpoint or an empty string if not a feed template.
