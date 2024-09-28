@@ -160,28 +160,6 @@ class Endpoint {
 		$current_priority = $wp_filter[ $current_filter ]->current_priority();
 
 		add_action( $current_filter, array( $this, 'init' ), $current_priority + 1 );
-
-		if ( false !== strpos( $this->reg_ex, '/feed/' ) ) {
-			$feed_slug = $this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' )[0];
-			$action    = sprintf(
-				'gatherpress_load_feed_template_for_%s',
-				$feed_slug
-			);
-
-			// Do not hook this action multiple times.
-			if ( 0 < did_action( $action ) ) {
-				return;
-			}
-			// Hook into WordPress' feed handling to load the custom feed template.
-			add_action(
-				sprintf(
-					'do_feed_%s',
-					$feed_slug
-				),
-				array( $this, 'load_feed_template' )
-			);
-			do_action( $action ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
-		}
 	}
 
 	/**
@@ -223,8 +201,16 @@ class Endpoint {
 		// Allow the custom query variable by filtering the public query vars.
 		add_filter( 'query_vars', array( $this, 'allow_query_vars' ) );
 
-		// Handle whether to include a template or redirect the request.
-		add_action( 'template_redirect', array( $this, 'template_redirect' ) );
+		// A call to any /feed/ endpoint is handled by WordPress
+		// prior "template_redirect" and as such prior 'Endpoint_Template's template_include hook would run.
+		$feed_slug = $this->has_feed_template();
+		if ( $feed_slug ) {
+			// Hook into WordPress' feed handling to load the custom feed template.
+			add_action( sprintf( 'do_feed_%s', $feed_slug ), array( $this, 'load_feed_template' ) );
+		} else {
+			// Handle whether to include a template or redirect the request.
+			add_action( 'template_redirect', array( $this, 'template_redirect' ) );
+		}
 	}
 
 	/**
@@ -365,35 +351,19 @@ class Endpoint {
 	}
 
 	/**
-	 * Fires before determining which template to load or whether to redirect.
+	 * Determine wether the endpoint is meant for a feed
+	 * and if it has a proper Endpoint_Template defined.
 	 *
-	 * This method is responsible for:
-	 * - Validating the query to ensure the endpoint is correctly matched.
-	 * - Performing redirects if the current endpoint has associated redirects.
-	 * - Loading a custom template if the endpoint defines one.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @see https://developer.wordpress.org/reference/hooks/template_redirect/
-	 *
-	 * @return void
+	 * @return string The slug of the endpoint or an empty string if not a feed template.
 	 */
-	public function template_redirect(): void {
-
-		if ( ! $this->is_valid_query() ) {
-			return;
+	protected function has_feed_template(): string {
+		if ( false !== strpos( $this->reg_ex, '/feed/' ) ) {
+			$feed_slug = current( $this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ) );
+			if ( ! empty( $feed_slug ) ) {
+				return $feed_slug;
+			}
 		}
-
-		// Get the currently requested endpoint from the list of registered endpoint types.
-		$endpoint_type = current(
-			wp_list_filter(
-				$this->types,
-				array(
-					'slug' => get_query_var( $this->query_var ),
-				)
-			)
-		);
-		$endpoint_type->activate();
+		return '';
 	}
 
 	/**
@@ -424,6 +394,39 @@ class Endpoint {
 	 */
 	public function load_feed_template() {
 		load_template( $this->types[0]->template_include( false ) );
+	}
+
+
+	/**
+	 * Fires before determining which template to load or whether to redirect.
+	 *
+	 * This method is responsible for:
+	 * - Validating the query to ensure the endpoint is correctly matched.
+	 * - Performing redirects if the current endpoint has associated redirects.
+	 * - Loading a custom template if the endpoint defines one.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @see https://developer.wordpress.org/reference/hooks/template_redirect/
+	 *
+	 * @return void
+	 */
+	public function template_redirect(): void {
+
+		if ( ! $this->is_valid_query() ) {
+			return;
+		}
+
+		// Get the currently requested endpoint from the list of registered endpoint types.
+		$endpoint_type = current(
+			wp_list_filter(
+				$this->types,
+				array(
+					'slug' => get_query_var( $this->query_var ),
+				)
+			)
+		);
+		$endpoint_type->activate();
 	}
 
 	/**
