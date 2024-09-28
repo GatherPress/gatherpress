@@ -20,7 +20,7 @@ const DEFAULT_STATE = {
 	dateTimeEnd: getFromGlobal('eventDetails.dateTime.datetime_end')
 		? getFromGlobal('eventDetails.dateTime.datetime_end')
 		: defaultDateTimeEnd,
-	duration: getDateTimeOffset(),
+	duration: null,
 	timezone: getFromGlobal('eventDetails.dateTime.timezone'),
 };
 
@@ -78,7 +78,7 @@ const store = createReduxStore('gatherpress/datetime', {
 	selectors: {
 		getDateTimeStart: (state) => state.dateTimeStart,
 		getDateTimeEnd: (state) => state.dateTimeEnd,
-		getDuration: (state) => state.duration,
+		getDuration: (state) => state.duration === false ? false : getDateTimeOffset(),
 		getTimezone: (state) => state.timezone,
 	},
 });
