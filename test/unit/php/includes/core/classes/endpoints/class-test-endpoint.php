@@ -27,22 +27,33 @@ class Test_Endpoint extends Base {
 	 * @covers ::__construct
 	 *
 	 * @return void
-	
+	 */
 	public function test___construct(): void {
-		$slug             = 'custom-endpoint';
-		$callback         = function () {
-			return array(
-				'file_name' => 'endpoint-template.php',
-				'dir_path'  => '/path/to/theme',
-			);
-		};
-		$plugin_default   = '/mock/plugin/templates';
-		$template_default = '/default/template.php';
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = function(){};
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+		);
+		$reg_ex    = 'reg_ex';
 
-		// Create a mock for Endpoint.
-		$endpoint_template = new Endpoint_Template( $slug, $callback, $plugin_default );
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
 
-	} */
+		$this->assertSame( $query_var, $instance->query_var, 'Failed to assert that query_var is persisted.' );
+		$this->assertSame( get_post_type_object( $post_type ), $instance->type_object, 'Failed to assert that type_object is persisted.' );
+		$this->assertSame( $callback, $instance->validation_callback, 'Failed to assert that validation_callback is persisted.' );
+		$this->assertSame( $types, $instance->types, 'Failed to assert that endpoint types are persisted.' );
+		$this->assertSame( $reg_ex, $instance->reg_ex, 'Failed to assert that reg_ex is persisted.' );
+		$this->assertSame( 'post_type', $instance->object_type, 'Failed to assert that object_type is set by default.' );
+	}
 
 	/**
 	 * Coverage for get_slugs method.
@@ -52,14 +63,15 @@ class Test_Endpoint extends Base {
 	 * @return void
 	 */
 	public function test_get_slugs(): void {
+		// ini_set('display_errors', '1');
+		// ini_set('display_startup_errors', '1');
+		// error_reporting(E_ALL);
 
-		// // Simulate 'init' hook being fired
-		// \do_action('init');
-					
 		$callback = function(){};
 		$instance = new Endpoint(
 			'query_var',
-			'post',
+			// 'post', // has rewrite=false , why?
+			'gatherpress_event',
 			$callback,
 			array(
 				new Endpoint_Template( 'endpoint_template_1', $callback ),
@@ -68,8 +80,6 @@ class Test_Endpoint extends Base {
 			),
 			'reg_ex',
 		);
-		// var_dump($instance->types);
-
 		$this->assertSame(
 			array(
 				'endpoint_template_1',
@@ -79,9 +89,6 @@ class Test_Endpoint extends Base {
 			Utility::invoke_hidden_method( $instance, 'get_slugs' ),
 			'Failed to assert that endpoint slugs match.'
 		);
-
-		// $this->mock->wp()->reset();
-
 	}
 
 }
