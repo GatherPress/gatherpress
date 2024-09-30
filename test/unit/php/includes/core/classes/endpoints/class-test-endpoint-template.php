@@ -27,20 +27,38 @@ class Test_Endpoint_Template extends Base {
 	 * @return void
 	 */
 	public function test___construct(): void {
-		$slug             = 'custom-endpoint';
+		$slug             = 'endpoint-template';
 		$callback         = function () {
 			return array(
 				'file_name' => 'endpoint-template.php',
 				'dir_path'  => '/path/to/theme',
 			);
 		};
+		// Create a mock for Endpoint.
+		$endpoint_template = new Endpoint_Template( $slug, $callback );
+
+		$this->assertIsString( Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ) );
+		$this->assertNotEmpty( Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ) );
+		$this->assertSame(
+			sprintf(
+				'%s/includes/templates/endpoints',
+				GATHERPRESS_CORE_PATH
+			),
+			Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ),
+			'Failed to assert, plugin_template_dir is set to fallback directory.'
+		);
+
 		$plugin_default   = '/mock/plugin/templates';
-		$template_default = '/default/template.php';
+		// $template_default = '/default/template.php';
 
-		// Create a mock for Endpoint_Template.
-		$instance = new Endpoint_Template( $slug, $callback, $plugin_default );
+		// Create a mock for Endpoint.
+		$endpoint_template = new Endpoint_Template( $slug, $callback, $plugin_default );
 
-		$this->assertInstanceOf( Endpoint_Template::class, $instance );
+		$this->assertSame(
+			'/mock/plugin/templates',
+			Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ),
+			'Failed to assert, plugin_template_dir is set to test directory.'
+		);
 	}
 
 	/**
