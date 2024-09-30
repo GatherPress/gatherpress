@@ -70,7 +70,6 @@ class Test_Endpoint extends Base {
 		$callback = function(){};
 		$instance = new Endpoint(
 			'query_var',
-			// 'post', // has rewrite=false , why?
 			'gatherpress_event',
 			$callback,
 			array(
@@ -91,4 +90,33 @@ class Test_Endpoint extends Base {
 		);
 	}
 
+	/**
+	 * Coverage for get_rewrite_atts method.
+	 *
+	 * @covers ::get_rewrite_atts
+	 *
+	 * @return void
+	 */
+	public function test_get_rewrite_atts(): void {
+		$callback = function(){};
+		$instance = new Endpoint(
+			'query_var',
+			'gatherpress_event',
+			$callback,
+			array(
+				new Endpoint_Template( 'endpoint_template_1', $callback ),
+				new Endpoint_Template( 'endpoint_template_2', $callback ),
+				new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+			),
+			'reg_ex',
+		);
+		$this->assertSame(
+			array(
+				'gatherpress_event' => '$matches[1]',
+				'query_var'         => '$matches[2]',
+			),
+			$instance->get_rewrite_atts(),
+			'Failed to assert that rewrite attributes match.'
+		);
+	}
 }
