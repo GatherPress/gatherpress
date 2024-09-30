@@ -140,7 +140,10 @@ class Endpoint {
 			$this->reg_ex              = $reg_ex;
 			$this->object_type         = $object_type;
 
-			$this->setup_hooks();
+			// Maybe its pointless to hook this onto the next round?
+			// $this->setup_hooks();
+			// Maybe just start ?
+			$this->init();
 		}
 	}
 
@@ -152,15 +155,14 @@ class Endpoint {
 	 * @since 1.0.0
 	 *
 	 * @return void
-	 */
+	
 	protected function setup_hooks(): void {
-
 		global $wp_filter;
 		$current_filter   = current_filter();
 		$current_priority = $wp_filter[ $current_filter ]->current_priority();
 
 		add_action( $current_filter, array( $this, 'init' ), $current_priority + 1 );
-	}
+	} */
 
 	/**
 	 * Initializes the endpoint by registering rewrite rules and handling query variables.
