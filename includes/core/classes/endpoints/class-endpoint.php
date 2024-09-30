@@ -466,51 +466,10 @@ class Endpoint {
 			: array_filter(
 				$this->types,
 				function ( $type ) use ( $entity ) {
-					return self::is_of_class( $type, $entity );
+					return $type->is_of_class( $entity );
 				}
 			);
 		return wp_list_pluck( $types, 'slug' );
 	}
 
-	/**
-	 * Checks if the given endpoint type is an instance of the specified class.
-	 *
-	 * This method verifies whether the provided `$type` is an instance of the `$entity`
-	 * class. It first checks if the `$entity` exists in the defined list of valid endpoint
-	 * classes by calling `is_in_class()`. If the entity is valid, it further checks if the
-	 * `$type` is an instance of that class.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param  Endpoint_Type $type   The endpoint type object to check.
-	 * @param  string        $entity The class name of the entity to check against (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
-	 * @return bool                  True if the `$type` is an instance of the `$entity` class, false otherwise.
-	 */
-	private static function is_of_class( Endpoint_Type $type, string $entity ): bool {
-		return self::is_in_class( $entity ) && $type instanceof $entity;
-	}
-
-	/**
-	 * Checks if the given entity is a valid endpoint class in the current namespace.
-	 *
-	 * This method verifies whether the provided `$entity` exists in the predefined list
-	 * of valid endpoint classes within the current namespace. It helps ensure that only
-	 * valid classes (like `Endpoint_Redirect` or `Endpoint_Template`) are used when
-	 * checking endpoint types.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param  string $entity The class name of the entity to check (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
-	 * @return bool           True if the `$entity` is a valid endpoint class, false otherwise.
-	 */
-	private static function is_in_class( string $entity ): bool {
-		return in_array(
-			$entity,
-			array(
-				__NAMESPACE__ . '\Endpoint_Redirect',
-				__NAMESPACE__ . '\Endpoint_Template',
-			),
-			true
-		);
-	}
 }
