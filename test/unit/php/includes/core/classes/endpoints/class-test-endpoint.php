@@ -38,7 +38,6 @@ class Test_Endpoint extends Base {
 			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
 		);
 		$reg_ex    = 'reg_ex';
-
 		$instance  = new Endpoint(
 			$query_var,
 			$post_type,
@@ -67,18 +66,23 @@ class Test_Endpoint extends Base {
 		// ini_set('display_startup_errors', '1');
 		// error_reporting(E_ALL);
 
-		$callback = function(){};
-		$instance = new Endpoint(
-			'query_var',
-			'gatherpress_event',
-			$callback,
-			array(
-				new Endpoint_Template( 'endpoint_template_1', $callback ),
-				new Endpoint_Template( 'endpoint_template_2', $callback ),
-				new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
-			),
-			'reg_ex',
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = function(){};
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
 		);
+		$reg_ex    = 'reg_ex';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
 		$this->assertSame(
 			array(
 				'endpoint_template_1',
@@ -98,18 +102,23 @@ class Test_Endpoint extends Base {
 	 * @return void
 	 */
 	public function test_get_rewrite_atts(): void {
-		$callback = function(){};
-		$instance = new Endpoint(
-			'query_var',
-			'gatherpress_event',
-			$callback,
-			array(
-				new Endpoint_Template( 'endpoint_template_1', $callback ),
-				new Endpoint_Template( 'endpoint_template_2', $callback ),
-				new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
-			),
-			'reg_ex',
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = function(){};
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
 		);
+		$reg_ex    = 'reg_ex';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
 		$this->assertSame(
 			array(
 				'gatherpress_event' => '$matches[1]',
@@ -119,4 +128,50 @@ class Test_Endpoint extends Base {
 			'Failed to assert that rewrite attributes match.'
 		);
 	}
+
+	/**
+	 * Coverage for maybe_flush_rewrite_rules method.
+	 *
+	 * @covers ::maybe_flush_rewrite_rules
+	 *
+	 * @return void
+	 */
+	public function test_maybe_flush_rewrite_rules(): void {}
+
+	/**
+	 * Coverage for allow_query_vars method.
+	 *
+	 * @covers ::allow_query_vars
+	 *
+	 * @return void
+	 */
+	public function test_allow_query_vars(): void {
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = function(){};
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+		);
+		$reg_ex    = 'reg_ex';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		$this->assertSame(
+			array(
+				'apples',
+				'oranges',
+				'query_var',
+			),
+			$instance->allow_query_vars( array( 'apples', 'oranges' )),
+			'Failed to assert that merged query variables match.'
+		);
+	}
+
 }
