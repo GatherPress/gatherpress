@@ -96,7 +96,7 @@ class Test_Block extends Base {
 	public function test_register_block_variations(): void {
 		$this->assertFalse(
 			class_exists( 'GatherPress\Core\Block\Add_To_Calendar' ),
-			'Failed to assert Add_To_Calendar singelton does not yet exist.'
+			'Failed to assert Add_To_Calendar singleton does not yet exist.'
 		);
 
 		// Register our block variations.
@@ -104,7 +104,7 @@ class Test_Block extends Base {
 
 		$this->assertTrue(
 			class_exists( 'GatherPress\Core\Block\Add_To_Calendar' ),
-			'Failed to assert Add_To_Calendar singelton does exist.'
+			'Failed to assert Add_To_Calendar singleton does exist.'
 		);
 	}
 
@@ -120,7 +120,7 @@ class Test_Block extends Base {
 
 		$this->assertSame(
 			array(
-				'add-to-calendar'
+				'add-to-calendar',
 			),
 			Utility::invoke_hidden_method( $instance, 'get_block_variations' ),
 			'Failed to assert, to get all block variations from the "/src" directory.'
@@ -151,10 +151,9 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_register_block_patterns(): void {
-		$instance            = Block::get_instance();
-		$block_patterns      = array(
+		$instance               = Block::get_instance();
+		$block_patterns         = array(
 			'gatherpress/event-template',
-			// 'gatherpress/event-details',
 			'gatherpress/venue-template',
 			'gatherpress/venue-details',
 		);
@@ -177,15 +176,16 @@ class Test_Block extends Base {
 	 * @return void
 	 */
 	public function test_docs_contain_patterns(): void {
-		
-		$doc_file = file_get_contents( sprintf(
-			'%s/docs/%s',
-			GATHERPRESS_CORE_PATH,
-			'developer/blocks/hookable-patterns/README.md'
-		) );
+
+		$doc_file = file_get_contents( // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			sprintf(
+				'%s/docs/%s',
+				GATHERPRESS_CORE_PATH,
+				'developer/blocks/hookable-patterns/README.md'
+			)
+		);
 
 		$this->assertStringContainsString( '`gatherpress/event-template`', $doc_file );
-		// $this->assertStringContainsString( '`gatherpress/event-details`', $doc_file );
 		$this->assertStringContainsString( '`gatherpress/venue-template`', $doc_file );
 		$this->assertStringContainsString( '`gatherpress/venue-details`', $doc_file );
 	}
