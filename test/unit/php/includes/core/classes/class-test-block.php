@@ -137,8 +137,13 @@ class Test_Block extends Base {
 	public function test_get_classname_from_foldername(): void {
 		$instance = Block::get_instance();
 		$this->assertSame(
-			'',
+			'', // @todo Handling a string with slashes, like __DIR__.
 			Utility::invoke_hidden_method( $instance, 'get_classname_from_foldername', array( __DIR__ ) ),
+			'Failed to assert, to get class name from foldername.'
+		);
+		$this->assertSame(
+			'Unit_Test',
+			Utility::invoke_hidden_method( $instance, 'get_classname_from_foldername', array( 'unit-test' ) ),
 			'Failed to assert, to get class name from foldername.'
 		);
 	}
