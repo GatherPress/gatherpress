@@ -242,4 +242,72 @@ class Test_Endpoint extends Base {
 	}
 
 
+
+	/**
+	 * Coverage for is_valid_query method.
+	 *
+	 * @covers ::is_valid_query
+	 *
+	 * @return void
+	 */
+	public function test_is_valid_query(): void {
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = '__return_true';
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+		);
+		$reg_ex    = 'reg_ex';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		$this->mock->wp( [
+			'query_vars' => [
+				$query_var => 'endpoint_template_1',
+			]
+		] );
+
+		$this->assertTrue(
+			$instance->is_valid_query(),
+			'Failed to validate the prepared query.'
+		);
+
+		$callback = '__return_false';
+		$instance_2 = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		$this->assertFalse(
+			$instance_2->is_valid_query(),
+			'Failed to validate the prepared query.'
+		);
+		$this->mock->wp()->reset();
+
+
+		$this->mock->wp( [
+			'is_category' => true,
+			'query_vars'  => [
+				'cat' => 'category-slug',
+			],
+		] );
+
+		$this->assertFalse(
+			$instance->is_valid_query(),
+			'Failed to validate the prepared query.'
+		);
+
+		$this->mock->wp()->reset();
+	}
+	
 }
