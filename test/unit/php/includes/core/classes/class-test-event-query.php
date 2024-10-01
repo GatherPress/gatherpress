@@ -234,23 +234,39 @@ class Test_Event_Query extends Base {
 		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
 		$retval = $instance->adjust_event_sql( array(), 'all', 'DESC' );
 
-		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( '.datetime_start_gmt DESC', $retval['orderby'] );
 		$this->assertEmpty( $retval['where'] );
 
 		$retval = $instance->adjust_event_sql( array(), 'past', 'desc' ); // inclusive will be TRUE by default.
 
-		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( '.datetime_start_gmt DESC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND `{$table}`.`datetime_start_gmt` <", $retval['where'] );
 
 		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'datetime', false );
 
-		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( '.datetime_start_gmt DESC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND `{$table}`.`datetime_end_gmt` <", $retval['where'] );
 
 		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'ASC' );
 
-		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
+		$this->assertStringContainsString( '.datetime_start_gmt ASC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND `{$table}`.`datetime_end_gmt` >=", $retval['where'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'id', false );
+
+		$this->assertStringContainsString( '.ID DESC', $retval['orderby'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'title', false );
+
+		$this->assertStringContainsString( '.post_name DESC', $retval['orderby'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'modified', false );
+
+		$this->assertStringContainsString( '.post_modified_gmt DESC', $retval['orderby'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'desc', 'rand', false );
+
+		$this->assertStringContainsString( 'RAND()', $retval['orderby'] );
 	}
 
 	/**
