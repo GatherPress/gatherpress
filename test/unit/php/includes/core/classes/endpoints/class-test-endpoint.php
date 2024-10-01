@@ -55,46 +55,6 @@ class Test_Endpoint extends Base {
 	}
 
 	/**
-	 * Coverage for get_slugs method.
-	 *
-	 * @covers ::get_slugs
-	 *
-	 * @return void
-	 */
-	public function test_get_slugs(): void {
-		// ini_set('display_errors', '1');
-		// ini_set('display_startup_errors', '1');
-		// error_reporting(E_ALL);
-
-		$query_var = 'query_var';
-		$post_type = 'gatherpress_event';
-		$callback  = function(){};
-		$types     = array(
-			new Endpoint_Template( 'endpoint_template_1', $callback ),
-			new Endpoint_Template( 'endpoint_template_2', $callback ),
-			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
-		);
-		$reg_ex    = 'reg_ex';
-		$instance  = new Endpoint(
-			$query_var,
-			$post_type,
-			$callback,
-			$types,
-			$reg_ex,
-		);
-
-		$this->assertSame(
-			array(
-				'endpoint_template_1',
-				'endpoint_template_2',
-				'endpoint_redirect_1',
-			),
-			Utility::invoke_hidden_method( $instance, 'get_slugs' ),
-			'Failed to assert that endpoint slugs match.'
-		);
-	}
-
-	/**
 	 * Coverage for get_rewrite_atts method.
 	 *
 	 * @covers ::get_rewrite_atts
@@ -136,7 +96,15 @@ class Test_Endpoint extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_maybe_flush_rewrite_rules(): void {}
+	public function test_maybe_flush_rewrite_rules(): void {
+		// ini_set('display_errors', '1');
+		// ini_set('display_startup_errors', '1');
+		// // error_reporting(E_ALL);
+
+		// var_export('hallo test welt',true);
+		// update_option( 'rewrite_rules', 'hallo test welt option !' );
+		// var_export(get_option( 'rewrite_rules' ),true);
+	}
 
 	/**
 	 * Coverage for allow_query_vars method.
@@ -241,8 +209,6 @@ class Test_Endpoint extends Base {
 		);
 	}
 
-
-
 	/**
 	 * Coverage for is_valid_query method.
 	 *
@@ -309,5 +275,41 @@ class Test_Endpoint extends Base {
 
 		$this->mock->wp()->reset();
 	}
-	
+
+	/**
+	 * Coverage for get_slugs method.
+	 *
+	 * @covers ::get_slugs
+	 *
+	 * @return void
+	 */
+	public function test_get_slugs(): void {
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = function(){};
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+		);
+		$reg_ex    = 'reg_ex';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		$this->assertSame(
+			array(
+				'endpoint_template_1',
+				'endpoint_template_2',
+				'endpoint_redirect_1',
+			),
+			Utility::invoke_hidden_method( $instance, 'get_slugs' ),
+			'Failed to assert that endpoint slugs match.'
+		);
+	}
+
 }
