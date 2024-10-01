@@ -142,5 +142,21 @@ class Test_Block extends Base {
 		);
 	}
 
-
+	/**
+	 * Coverage for existence of pattern slugs in developer docs.
+	 *
+	 * @return void
+	 */
+	public function test_docs_contain_patterns(): void {
+		
+		$doc_file = file_get_contents( sprintf(
+			'%s/docs/%s',
+			GATHERPRESS_CORE_PATH,
+			'developer/blocks/hookable-patterns/README.md'
+		) );
+		$this->assertStringContainsString( '`gatherpress/event-template`', $doc_file );
+		$this->assertStringContainsString( '`gatherpress/event-details`', $doc_file );
+		$this->assertStringContainsString( '`gatherpress/venue-template`', $doc_file );
+		$this->assertStringContainsString( '`gatherpress/venue-details`', $doc_file );
+	}
 }
