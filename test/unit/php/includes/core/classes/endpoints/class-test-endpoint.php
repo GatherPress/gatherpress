@@ -55,6 +55,40 @@ class Test_Endpoint extends Base {
 	}
 
 	/**
+	 * Coverage for get_regex_pattern method.
+	 *
+	 * @covers ::get_regex_pattern
+	 *
+	 * @return void
+	 */
+	public function test_get_regex_pattern(): void {
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = function () {};
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+		);
+		// Regular expression to match singular event endpoints.
+		// Example: 'event/my-sample-event/(custom-endpoint)(/)'.
+		$reg_ex    = '%s/([^/]+)/(%s)/?$';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		$this->assertSame(
+			'event/([^/]+)/(endpoint_template_1|endpoint_template_2|endpoint_redirect_1)/?$',
+			Utility::invoke_hidden_method( $instance, 'get_regex_pattern' ),
+			'Failed to assert that the generated regex pattern matches.'
+		);
+	}
+
+	/**
 	 * Coverage for get_rewrite_atts method.
 	 *
 	 * @covers ::get_rewrite_atts
