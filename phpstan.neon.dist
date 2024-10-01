@@ -1,16 +1,32 @@
 includes:
     - vendor/szepeviktor/phpstan-wordpress/extension.neon
-parameters:
+    # Bleeding edge offers a preview of the next major version.
+    # When you enable Bleeding edge in your configuration file, you will get new rules,
+    # behaviour, and bug fixes that will be enabled for everyone later
+    # when the next PHPStan’s major version is released.
+    - phar://phpstan.phar/conf/bleedingEdge.neon
 
-    # the analysis level, from 0 (loose) to 8 (strict)
+parameters:
+#    bootstrapFiles:
+#        - vendor/pmc/unit-test/src/classes/autoloader.php
+#        - vendor/autoload.php
+#        - gatherpress.php
+
+    parallel:
+        maximumNumberOfProcesses: 1
+        processTimeout: 300.0
+
+    # the analysis level, from 0 (loose) to 9 (strict)
     # https://phpstan.org/user-guide/rule-levels
     level: 5
 
     paths:
         - includes/
+#        - test/
 
-    excludePaths:
-        - vendor/
+#    excludePaths:
+#        analyse:
+#            - vendor/
 
     ignoreErrors:
         - '#^Constant GATHERPRESS_CORE_FILE not found\.$#'
