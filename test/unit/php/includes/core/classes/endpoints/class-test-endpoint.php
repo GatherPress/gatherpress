@@ -96,7 +96,61 @@ class Test_Endpoint extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_maybe_flush_rewrite_rules(): void {}
+	public function test_maybe_flush_rewrite_rules(): void {
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = function () {};
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+		);
+		// Regular expression to match singular event endpoints.
+		// Example: 'event/my-sample-event/(custom-endpoint)(/)'.
+		$reg_ex    = '%s/([^/]+)/(%s)/?$';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		delete_option('rewrite_rules');
+		delete_option('gatherpress_flush_rewrite_rules_flag');
+
+		$this->assertEmpty( get_option('rewrite_rules'), 'Failed to assert that rewrite_rules are unset.' );
+		$this->assertFalse( get_option('gatherpress_flush_rewrite_rules_flag'), 'Failed to assert that GatherPress\' flag to flush the rewrite_rules is unset.' );
+		
+		// Build the regular expression pattern for matching the custom endpoint URL structure.
+		$reg_ex_pattern = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
+
+		// Define the URL structure for handling matched requests via query vars.
+		// Example result: 'index.php?gatherpress_event=$matches[1]&gatherpress_ext_calendar=$matches[2]'.
+		$rewrite_url = add_query_arg( $instance->get_rewrite_atts(), 'index.php' );
+
+		Utility::invoke_hidden_method( $instance, 'maybe_flush_rewrite_rules', array( $reg_ex_pattern, $rewrite_url ) );
+		$this->assertTrue( get_option('gatherpress_flush_rewrite_rules_flag'), 'Failed to assert that GatherPress\' flag to flush the rewrite_rules is set now.' );
+
+		// Normally done automatically via ...
+		flush_rewrite_rules( false );
+		delete_option('gatherpress_flush_rewrite_rules_flag');
+
+		$this->assertContains(
+			$reg_ex_pattern,
+			array_keys( get_option('rewrite_rules') ),
+			'Failed to assert that the GatherPress rewrite_rules are now part of the rewrite_rules option.'
+		);
+		$this->assertSame(
+			$rewrite_url,
+			get_option('rewrite_rules')[ $reg_ex_pattern ],
+			'Failed to assert that the GatherPress rewrite_rules have been saved correctly.'
+		);
+		
+		// Run again.
+		Utility::invoke_hidden_method( $instance, 'maybe_flush_rewrite_rules', array( $reg_ex_pattern, $rewrite_url ) );
+		$this->assertFalse( get_option('gatherpress_flush_rewrite_rules_flag'), 'Failed to assert that the GatherPress\' flag to flush the rewrite_rules is not set again after the rewrite_rules were flushed.' );
+	}
 
 	/**
 	 * Coverage for allow_query_vars method.
