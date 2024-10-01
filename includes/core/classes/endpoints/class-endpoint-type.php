@@ -99,7 +99,7 @@ abstract class Endpoint_Type {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param  string        $entity The class name of the entity to check against (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
+	 * @param  string $entity The class name of the entity to check against (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
 	 * @return bool                  True if the `$type` is an instance of the `$entity` class, false otherwise.
 	 */
 	public function is_of_class( string $entity ): bool {

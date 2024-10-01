@@ -31,7 +31,7 @@ class Test_Endpoint extends Base {
 	public function test___construct(): void {
 		$query_var = 'query_var';
 		$post_type = 'gatherpress_event';
-		$callback  = function(){};
+		$callback  = function () {};
 		$types     = array(
 			new Endpoint_Template( 'endpoint_template_1', $callback ),
 			new Endpoint_Template( 'endpoint_template_2', $callback ),
@@ -64,7 +64,7 @@ class Test_Endpoint extends Base {
 	public function test_get_rewrite_atts(): void {
 		$query_var = 'query_var';
 		$post_type = 'gatherpress_event';
-		$callback  = function(){};
+		$callback  = function () {};
 		$types     = array(
 			new Endpoint_Template( 'endpoint_template_1', $callback ),
 			new Endpoint_Template( 'endpoint_template_2', $callback ),
@@ -96,15 +96,7 @@ class Test_Endpoint extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_maybe_flush_rewrite_rules(): void {
-		// ini_set('display_errors', '1');
-		// ini_set('display_startup_errors', '1');
-		// // error_reporting(E_ALL);
-
-		// var_export('hallo test welt',true);
-		// update_option( 'rewrite_rules', 'hallo test welt option !' );
-		// var_export(get_option( 'rewrite_rules' ),true);
-	}
+	public function test_maybe_flush_rewrite_rules(): void {}
 
 	/**
 	 * Coverage for allow_query_vars method.
@@ -116,7 +108,7 @@ class Test_Endpoint extends Base {
 	public function test_allow_query_vars(): void {
 		$query_var = 'query_var';
 		$post_type = 'gatherpress_event';
-		$callback  = function(){};
+		$callback  = function () {};
 		$types     = array(
 			new Endpoint_Template( 'endpoint_template_1', $callback ),
 			new Endpoint_Template( 'endpoint_template_2', $callback ),
@@ -137,7 +129,7 @@ class Test_Endpoint extends Base {
 				'oranges',
 				'query_var',
 			),
-			$instance->allow_query_vars( array( 'apples', 'oranges' )),
+			$instance->allow_query_vars( array( 'apples', 'oranges' ) ),
 			'Failed to assert that merged query variables match.'
 		);
 	}
@@ -152,7 +144,7 @@ class Test_Endpoint extends Base {
 	public function test_has_feed_template(): void {
 		$query_var = 'query_var';
 		$post_type = 'gatherpress_event';
-		$callback  = function(){};
+		$callback  = function () {};
 		$types     = array(
 			new Endpoint_Template( 'endpoint_template_1', $callback ),
 			new Endpoint_Template( 'endpoint_template_2', $callback ),
@@ -172,11 +164,11 @@ class Test_Endpoint extends Base {
 			'Failed to assert, endpoint is not for feeds.'
 		);
 
-		$types     = array(
+		$types    = array(
 			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
 		);
-		$reg_ex    = 'reg_ex/feed/';
-		$instance  = new Endpoint(
+		$reg_ex   = 'reg_ex/feed/';
+		$instance = new Endpoint(
 			$query_var,
 			$post_type,
 			$callback,
@@ -189,12 +181,12 @@ class Test_Endpoint extends Base {
 			'Failed to assert, endpoint is for feeds, but has no Endpoint_Template type.'
 		);
 
-		$types     = array(
+		$types    = array(
 			new Endpoint_Template( 'endpoint_template_1', $callback ),
 			new Endpoint_Template( 'endpoint_template_2', $callback ),
 		);
-		$reg_ex    = 'reg_ex/feed/';
-		$instance  = new Endpoint(
+		$reg_ex   = 'reg_ex/feed/';
+		$instance = new Endpoint(
 			$query_var,
 			$post_type,
 			$callback,
@@ -234,18 +226,20 @@ class Test_Endpoint extends Base {
 			$reg_ex,
 		);
 
-		$this->mock->wp( [
-			'query_vars' => [
-				$query_var => 'endpoint_template_1',
-			]
-		] );
+		$this->mock->wp(
+			array(
+				'query_vars' => array(
+					$query_var => 'endpoint_template_1',
+				),
+			)
+		);
 
 		$this->assertTrue(
 			$instance->is_valid_query(),
 			'Failed to validate the prepared query.'
 		);
 
-		$callback = '__return_false';
+		$callback   = '__return_false';
 		$instance_2 = new Endpoint(
 			$query_var,
 			$post_type,
@@ -260,13 +254,14 @@ class Test_Endpoint extends Base {
 		);
 		$this->mock->wp()->reset();
 
-
-		$this->mock->wp( [
-			'is_category' => true,
-			'query_vars'  => [
-				'cat' => 'category-slug',
-			],
-		] );
+		$this->mock->wp(
+			array(
+				'is_category' => true,
+				'query_vars'  => array(
+					'cat' => 'category-slug',
+				),
+			)
+		);
 
 		$this->assertFalse(
 			$instance->is_valid_query(),
@@ -286,7 +281,7 @@ class Test_Endpoint extends Base {
 	public function test_get_slugs(): void {
 		$query_var = 'query_var';
 		$post_type = 'gatherpress_event';
-		$callback  = function(){};
+		$callback  = function () {};
 		$types     = array(
 			new Endpoint_Template( 'endpoint_template_1', $callback ),
 			new Endpoint_Template( 'endpoint_template_2', $callback ),
@@ -311,5 +306,4 @@ class Test_Endpoint extends Base {
 			'Failed to assert that endpoint slugs match.'
 		);
 	}
-
 }

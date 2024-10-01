@@ -155,7 +155,7 @@ class Endpoint {
 	 * @since 1.0.0
 	 *
 	 * @return void
-	
+
 	protected function setup_hooks(): void {
 		global $wp_filter;
 		$current_filter   = current_filter();
@@ -473,5 +473,4 @@ class Endpoint {
 			);
 		return wp_list_pluck( $types, 'slug' );
 	}
-
 }

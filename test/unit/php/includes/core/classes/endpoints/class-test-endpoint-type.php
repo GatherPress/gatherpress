@@ -29,8 +29,8 @@ class Test_Endpoint_Type extends Base {
 	 * @return void
 	 */
 	public function test___construct(): void {
-		$slug             = 'endpoint-template';
-		$callback         = function () {
+		$slug     = 'endpoint-template';
+		$callback = function () {
 			return array(
 				'file_name' => 'endpoint-template.php',
 				'dir_path'  => '/path/to/theme',
@@ -52,7 +52,7 @@ class Test_Endpoint_Type extends Base {
 	 * @return void
 	 */
 	public function test_is_of_class(): void {
-		$instance = new Endpoint_Redirect( 'slug', function(){} );
+		$instance = new Endpoint_Redirect( 'slug', function () {} );
 
 		$this->assertTrue(
 			Utility::invoke_hidden_method( $instance, 'is_of_class', array( 'GatherPress\Core\Endpoints\Endpoint_Redirect' ) ),
@@ -73,7 +73,7 @@ class Test_Endpoint_Type extends Base {
 	 * @return void
 	 */
 	public function test_is_in_class(): void {
-		$instance = new Endpoint_Redirect( 'slug', function(){} );
+		$instance = new Endpoint_Redirect( 'slug', function () {} );
 
 		$this->assertTrue(
 			Utility::invoke_hidden_method( $instance, 'is_in_class', array( 'GatherPress\Core\Endpoints\Endpoint_Redirect' ) ),

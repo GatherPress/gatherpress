@@ -27,14 +27,13 @@ class Test_Endpoint_Template extends Base {
 	 * @return void
 	 */
 	public function test___construct(): void {
-		$slug             = 'endpoint-template';
-		$callback         = function () {
+		$slug              = 'endpoint-template';
+		$callback          = function () {
 			return array(
 				'file_name' => 'endpoint-template.php',
 				'dir_path'  => '/path/to/theme',
 			);
 		};
-		// Create a mock for Endpoint.
 		$endpoint_template = new Endpoint_Template( $slug, $callback );
 
 		$this->assertIsString( Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ) );
@@ -48,10 +47,7 @@ class Test_Endpoint_Template extends Base {
 			'Failed to assert, plugin_template_dir is set to fallback directory.'
 		);
 
-		$plugin_default   = '/mock/plugin/templates';
-		// $template_default = '/default/template.php';
-
-		// Create a mock for Endpoint.
+		$plugin_default    = '/mock/plugin/templates';
 		$endpoint_template = new Endpoint_Template( $slug, $callback, $plugin_default );
 
 		$this->assertSame(
@@ -59,41 +55,6 @@ class Test_Endpoint_Template extends Base {
 			Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ),
 			'Failed to assert, plugin_template_dir is set to test directory.'
 		);
-	}
-
-	/**
-	 * Coverage for activate.
-	 *
-	 * @covers ::activate
-	 *
-	 * @return void
-	*/
-	public function test_activate(): void {
-		$slug             = 'custom-endpoint';
-		$callback         = function () {
-			return array(
-				'file_name' => 'endpoint-template.php',
-				'dir_path'  => '/path/to/theme',
-			);
-		};
-		$plugin_default   = '/mock/plugin/templates';
-		$template_default = '/default/template.php';
-
-		// Create a mock for Endpoint_Template.
-		$instance = new Endpoint_Template( $slug, $callback, $plugin_default );
-		// var_dump($instance);
-		// $instance->activate();
-
-		// $hooks    = array(
-		// 	array(
-		// 		'type'     => 'filter',
-		// 		'name'     => 'template_include',
-		// 		'priority' => 10,
-		// 		'callback' => array( $instance, 'template_include' ),
-		// 	),
-		// );
-
-		// $this->assert_hooks( $hooks, $instance ); // DOES NOT WORK WITH NON-SINGLETONS, BUT WILL NOT THROW AN ERROR.
 	}
 
 	/**
@@ -114,7 +75,6 @@ class Test_Endpoint_Template extends Base {
 		$plugin_default   = '/mock/plugin/templates';
 		$template_default = '/default/template.php';
 
-		// Create a mock for Endpoint_Template.
 		$instance = new Endpoint_Template( $slug, $callback, $plugin_default );
 
 		// Simulate theme template existing.
