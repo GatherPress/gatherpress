@@ -15,6 +15,8 @@ namespace GatherPress\Core\Endpoints;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Endpoints\Endpoint;
+
 /**
  * Abstract class for defining custom endpoint behavior.
  *
@@ -84,9 +86,10 @@ abstract class Endpoint_Type {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param Endpoint|null $endpoint Class for custom rewrite endpoints and their query handling in GatherPress.
 	 * @return void
 	 */
-	abstract public function activate(): void;
+	abstract public function activate( ?Endpoint $endpoint = null ): void;
 
 
 	/**

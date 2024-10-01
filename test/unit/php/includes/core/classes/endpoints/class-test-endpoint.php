@@ -223,13 +223,13 @@ class Test_Endpoint extends Base {
 	}
 
 	/**
-	 * Coverage for has_feed_template method.
+	 * Coverage for has_feed method.
 	 *
-	 * @covers ::has_feed_template
+	 * @covers ::has_feed
 	 *
 	 * @return void
 	 */
-	public function test_has_feed_template(): void {
+	public function test_has_feed(): void {
 		$query_var = 'query_var';
 		$post_type = 'gatherpress_event';
 		$callback  = function () {};
@@ -248,7 +248,7 @@ class Test_Endpoint extends Base {
 		);
 
 		$this->assertEmpty(
-			Utility::invoke_hidden_method( $instance, 'has_feed_template' ),
+			Utility::invoke_hidden_method( $instance, 'has_feed' ),
 			'Failed to assert, endpoint is not for feeds.'
 		);
 
@@ -265,7 +265,7 @@ class Test_Endpoint extends Base {
 		);
 
 		$this->assertEmpty(
-			Utility::invoke_hidden_method( $instance, 'has_feed_template' ),
+			Utility::invoke_hidden_method( $instance, 'has_feed' ),
 			'Failed to assert, endpoint is for feeds, but has no Endpoint_Template type.'
 		);
 
@@ -284,7 +284,7 @@ class Test_Endpoint extends Base {
 
 		$this->assertSame(
 			'endpoint_template_1',
-			Utility::invoke_hidden_method( $instance, 'has_feed_template' ),
+			Utility::invoke_hidden_method( $instance, 'has_feed' ),
 			'Failed to assert, that feed template is found.'
 		);
 	}

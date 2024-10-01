@@ -58,6 +58,26 @@ class Test_Endpoint_Template extends Base {
 	}
 
 	/**
+	 * Coverage for activate method.
+	 *
+	 * @covers ::activate
+	 *
+	 * @return void
+	 */
+	public function test_activate(): void {
+		$slug     = 'endpoint-template';
+		$callback = function () {
+			return array(
+				'file_name' => 'endpoint-template.php',
+				'dir_path'  => '/path/to/theme',
+			);
+		};
+		$instance = new Endpoint_Template( $slug, $callback );
+
+		
+	}
+
+	/**
 	 * Tests template_include method when the theme has the template.
 	 *
 	 * @covers ::template_include

@@ -16,6 +16,8 @@ namespace GatherPress\Core\Endpoints;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Endpoints\Endpoint;
+
 /**
  * Handles safe URL redirection for custom endpoints in GatherPress.
  *
@@ -52,9 +54,10 @@ class Endpoint_Redirect extends Endpoint_Type {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param Endpoint|null $endpoint Class for custom rewrite endpoints and their query handling in GatherPress.
 	 * @return void
 	 */
-	public function activate(): void {
+	public function activate( ?Endpoint $endpoint = null ): void {
 		$this->url = ( $this->callback )();
 		if ( $this->url ) {
 			// Add the target host to the list of allowed redirect hosts.

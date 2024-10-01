@@ -1,6 +1,6 @@
 <?php
 /**
- * Endpoint Class for Custom Rewrite Rules and Query Handling in GatherPress.
+ * Class for custom rewrite endpoints and their query handling in GatherPress.
  *
  * This file defines the `Endpoint` class, which is responsible for managing
  * custom rewrite rules, query variables, and template redirects for endpoints
@@ -194,16 +194,8 @@ class Endpoint {
 		// Allow the custom query variable by filtering the public query vars.
 		add_filter( 'query_vars', array( $this, 'allow_query_vars' ) );
 
-		// A call to any /feed/ endpoint is handled by WordPress
-		// prior "template_redirect" and as such prior 'Endpoint_Template's template_include hook would run.
-		$feed_slug = $this->has_feed_template();
-		if ( $feed_slug ) {
-			// Hook into WordPress' feed handling to load the custom feed template.
-			add_action( sprintf( 'do_feed_%s', $feed_slug ), array( $this, 'load_feed_template' ) );
-		} else {
-			// Handle whether to include a template or redirect the request.
-			add_action( 'template_redirect', array( $this, 'template_redirect' ) );
-		}
+		// Handle whether to include a template or redirect the request.
+		add_action( 'template_redirect', array( $this, 'template_redirect' ) );
 	}
 
 	/**
@@ -360,53 +352,6 @@ class Endpoint {
 	}
 
 	/**
-	 * Determine whether the endpoint is meant for a feed
-	 * and if it has a proper Endpoint_Template defined.
-	 *
-	 * @return string The slug of the endpoint or an empty string if not a feed template.
-	 */
-	protected function has_feed_template(): string {
-		if ( false !== strpos( $this->reg_ex, '/feed/' ) ) {
-			$feed_slug = current( $this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ) );
-			if ( ! empty( $feed_slug ) ) {
-				return $feed_slug;
-			}
-		}
-		return '';
-	}
-
-	/**
-	 * Load the theme-overridable feed template from the plugin.
-	 *
-	 * This method ensures that a feed template is loaded when a request is made to
-	 * a custom feed endpoint. If the theme provides an override for the feed template,
-	 * it will be used; otherwise, the default template from the plugin is loaded. The
-	 * method ensures that WordPress does not return a 404 for custom feed URLs.
-	 *
-	 * A call to any post types /feed/anything endpoint is handled by WordPress
-	 * prior 'Endpoint_Template's template_include hook would run.
-	 * Therefore WordPress will throw an xml'ed 404 error,
-	 * if nothing is hooked onto the 'do_feed_anything' action.
-	 *
-	 * That's the reason for this method, it delivers what WordPress wants
-	 * and re-uses the parameters provided by the class.
-	 *
-	 * We expect that a endpoint, that contains the /feed/ string, only has one 'Redirect_Template' attached.
-	 * This might be wrong or short sightened, please open an issue in that case: https://github.com/GatherPress/gatherpress/issues
-	 *
-	 * Until then, we *just* use the first of the provided endpoint-types,
-	 * to hook into WordPress, which should be the valid template endpoint.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function load_feed_template() {
-		load_template( $this->types[0]->template_include( false ) );
-	}
-
-
-	/**
 	 * Fires before determining which template to load or whether to redirect.
 	 *
 	 * This method is responsible for:
@@ -435,7 +380,23 @@ class Endpoint {
 				)
 			)
 		);
-		$endpoint_type->activate();
+		$endpoint_type->activate( $this );
+	}
+
+	/**
+	 * Determine whether the endpoint is meant for a feed
+	 * and if it has a proper Endpoint_Template defined.
+	 *
+	 * @return string The slug of the endpoint or an empty string if not a feed template.
+	 */
+	protected function has_feed(): string {
+		if ( false !== strpos( $this->reg_ex, '/feed/' ) ) {
+			$feed_slug = current( $this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ) );
+			if ( ! empty( $feed_slug ) ) {
+				return $feed_slug;
+			}
+		}
+		return '';
 	}
 
 	/**
