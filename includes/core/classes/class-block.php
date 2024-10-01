@@ -97,7 +97,12 @@ class Block {
 	 */
 	protected static function get_block_variations(): array {
 		$blocks_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
-		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
+		$blocks           = array_values(
+			array_diff(
+				scandir( $blocks_directory ),
+				array( '..', '.' )
+			)
+		);
 
 		return $blocks; // maybe cache in var.
 	}
