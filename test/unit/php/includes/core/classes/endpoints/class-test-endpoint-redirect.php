@@ -27,8 +27,8 @@ class Test_Endpoint_Redirect extends Base {
 	 * @return void
 	 */
 	public function test___construct(): void {
-		$slug              = 'endpoint-redirect';
-		$callback          = function () {
+		$slug     = 'endpoint-redirect';
+		$callback = function () {
 			return 'https://example.org/';
 		};
 		$instance = new Endpoint_Redirect( $slug, $callback );
@@ -54,8 +54,8 @@ class Test_Endpoint_Redirect extends Base {
 	 * @return void
 	 */
 	public function test_activate(): void {
-		$slug              = 'endpoint-redirect';
-		$callback          = function () {
+		$slug     = 'endpoint-redirect';
+		$callback = function () {
 			return 'https://example.org/';
 		};
 		$instance = new Endpoint_Redirect( $slug, $callback );
@@ -74,18 +74,18 @@ class Test_Endpoint_Redirect extends Base {
 	 * @return void
 	 */
 	public function test_allowed_redirect_hosts(): void {
-		$slug              = 'endpoint-redirect';
-		$callback          = function () {
+		$slug     = 'endpoint-redirect';
+		$callback = function () {
 			return 'https://example.org/';
 		};
 		$instance = new Endpoint_Redirect( $slug, $callback );
-		Utility::set_and_get_hidden_property( $instance, 'url', ($callback)() );
+		Utility::set_and_get_hidden_property( $instance, 'url', ( $callback )() );
 
 		$this->assertSame(
 			array(
 				'apples',
 				'oranges',
-				'example.org'
+				'example.org',
 			),
 			$instance->allowed_redirect_hosts( array( 'apples', 'oranges' ) ),
 			'Failed to assert, that the redirect url got merged into allowed_redirect_hosts.'

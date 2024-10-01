@@ -27,8 +27,8 @@ class Test_Endpoint_Template extends Base {
 	 * @return void
 	 */
 	public function test___construct(): void {
-		$slug              = 'endpoint-template';
-		$callback          = function () {
+		$slug     = 'endpoint-template';
+		$callback = function () {
 			return array(
 				'file_name' => 'endpoint-template.php',
 				'dir_path'  => '/path/to/theme',
@@ -47,8 +47,8 @@ class Test_Endpoint_Template extends Base {
 			'Failed to assert, plugin_template_dir is set to fallback directory.'
 		);
 
-		$plugin_default    = '/mock/plugin/templates';
-		$instance = new Endpoint_Template( $slug, $callback, $plugin_default );
+		$plugin_default = '/mock/plugin/templates';
+		$instance       = new Endpoint_Template( $slug, $callback, $plugin_default );
 
 		$this->assertSame(
 			'/mock/plugin/templates',
