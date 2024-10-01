@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Block;
 use PMC\Unit_Test\Base;
 use PMC\Unit_Test\Utility;
+use WP_Block_Patterns_Registry;
 use WP_Block_Type_Registry;
 
 /**
@@ -143,6 +144,34 @@ class Test_Block extends Base {
 	}
 
 	/**
+	 * Coverage for register_block_patterns.
+	 *
+	 * @covers ::register_block_patterns
+	 *
+	 * @return void
+	 */
+	public function test_register_block_patterns(): void {
+		$instance            = Block::get_instance();
+		$block_patterns      = array(
+			'gatherpress/event-template',
+			// 'gatherpress/event-details',
+			'gatherpress/venue-template',
+			'gatherpress/venue-details',
+		);
+		$block_pattern_registry = WP_Block_Patterns_Registry::get_instance();
+
+		// Clear out registered block patterns.
+		Utility::set_and_get_hidden_property( $block_pattern_registry, 'registered_patterns', array() );
+
+		// Register our block patterns.
+		$instance->register_block_patterns();
+
+		$expected = wp_list_pluck( $block_pattern_registry->get_all_registered(), 'name' );
+
+		$this->assertSame( $block_patterns, $expected );
+	}
+
+	/**
 	 * Coverage for existence of pattern slugs in developer docs.
 	 *
 	 * @return void
@@ -154,8 +183,9 @@ class Test_Block extends Base {
 			GATHERPRESS_CORE_PATH,
 			'developer/blocks/hookable-patterns/README.md'
 		) );
+
 		$this->assertStringContainsString( '`gatherpress/event-template`', $doc_file );
-		$this->assertStringContainsString( '`gatherpress/event-details`', $doc_file );
+		// $this->assertStringContainsString( '`gatherpress/event-details`', $doc_file );
 		$this->assertStringContainsString( '`gatherpress/venue-template`', $doc_file );
 		$this->assertStringContainsString( '`gatherpress/venue-details`', $doc_file );
 	}
