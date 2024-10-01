@@ -33,6 +33,18 @@ class Test_Block extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
+				'priority' => 9,
+				'callback' => array( $instance, 'register_block_variations' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_block_patterns' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
 				'priority' => 11,
 				'callback' => array( $instance, 'register_blocks' ),
 			),
