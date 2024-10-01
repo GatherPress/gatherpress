@@ -72,8 +72,8 @@ class Test_Endpoint extends Base {
 		);
 		// Regular expression to match singular event endpoints.
 		// Example: 'event/my-sample-event/(custom-endpoint)(/)'.
-		$reg_ex    = '%s/([^/]+)/(%s)/?$';
-		$instance  = new Endpoint(
+		$reg_ex   = '%s/([^/]+)/(%s)/?$';
+		$instance = new Endpoint(
 			$query_var,
 			$post_type,
 			$callback,
@@ -141,8 +141,8 @@ class Test_Endpoint extends Base {
 		);
 		// Regular expression to match singular event endpoints.
 		// Example: 'event/my-sample-event/(custom-endpoint)(/)'.
-		$reg_ex    = '%s/([^/]+)/(%s)/?$';
-		$instance  = new Endpoint(
+		$reg_ex   = '%s/([^/]+)/(%s)/?$';
+		$instance = new Endpoint(
 			$query_var,
 			$post_type,
 			$callback,
@@ -150,12 +150,12 @@ class Test_Endpoint extends Base {
 			$reg_ex,
 		);
 
-		delete_option('rewrite_rules');
-		delete_option('gatherpress_flush_rewrite_rules_flag');
+		delete_option( 'rewrite_rules' );
+		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
 
-		$this->assertEmpty( get_option('rewrite_rules'), 'Failed to assert that rewrite_rules are unset.' );
-		$this->assertFalse( get_option('gatherpress_flush_rewrite_rules_flag'), 'Failed to assert that GatherPress\' flag to flush the rewrite_rules is unset.' );
-		
+		$this->assertEmpty( get_option( 'rewrite_rules' ), 'Failed to assert that rewrite_rules are unset.' );
+		$this->assertFalse( get_option( 'gatherpress_flush_rewrite_rules_flag' ), 'Failed to assert that GatherPress\' flag to flush the rewrite_rules is unset.' );
+
 		// Build the regular expression pattern for matching the custom endpoint URL structure.
 		$reg_ex_pattern = Utility::invoke_hidden_method( $instance, 'get_regex_pattern' );
 
@@ -164,26 +164,26 @@ class Test_Endpoint extends Base {
 		$rewrite_url = add_query_arg( $instance->get_rewrite_atts(), 'index.php' );
 
 		Utility::invoke_hidden_method( $instance, 'maybe_flush_rewrite_rules', array( $reg_ex_pattern, $rewrite_url ) );
-		$this->assertTrue( get_option('gatherpress_flush_rewrite_rules_flag'), 'Failed to assert that GatherPress\' flag to flush the rewrite_rules is set now.' );
+		$this->assertTrue( get_option( 'gatherpress_flush_rewrite_rules_flag' ), 'Failed to assert that GatherPress\' flag to flush the rewrite_rules is set now.' );
 
 		// Normally done automatically via ...
 		flush_rewrite_rules( false );
-		delete_option('gatherpress_flush_rewrite_rules_flag');
+		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
 
 		$this->assertContains(
 			$reg_ex_pattern,
-			array_keys( get_option('rewrite_rules') ),
+			array_keys( get_option( 'rewrite_rules' ) ),
 			'Failed to assert that the GatherPress rewrite_rules are now part of the rewrite_rules option.'
 		);
 		$this->assertSame(
 			$rewrite_url,
-			get_option('rewrite_rules')[ $reg_ex_pattern ],
+			get_option( 'rewrite_rules' )[ $reg_ex_pattern ],
 			'Failed to assert that the GatherPress rewrite_rules have been saved correctly.'
 		);
-		
+
 		// Run again.
 		Utility::invoke_hidden_method( $instance, 'maybe_flush_rewrite_rules', array( $reg_ex_pattern, $rewrite_url ) );
-		$this->assertFalse( get_option('gatherpress_flush_rewrite_rules_flag'), 'Failed to assert that the GatherPress\' flag to flush the rewrite_rules is not set again after the rewrite_rules were flushed.' );
+		$this->assertFalse( get_option( 'gatherpress_flush_rewrite_rules_flag' ), 'Failed to assert that the GatherPress\' flag to flush the rewrite_rules is not set again after the rewrite_rules were flushed.' );
 	}
 
 	/**

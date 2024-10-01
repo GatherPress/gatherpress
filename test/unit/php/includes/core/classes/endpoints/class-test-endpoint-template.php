@@ -73,8 +73,6 @@ class Test_Endpoint_Template extends Base {
 			);
 		};
 		$instance = new Endpoint_Template( $slug, $callback );
-
-		
 	}
 
 	/**
