@@ -17,6 +17,7 @@ use WP_Block_Type_Registry;
  * Class Test_Block.
  *
  * @coversDefaultClass \GatherPress\Core\Block
+ * @group              blocks
  */
 class Test_Block extends Base {
 	/**
