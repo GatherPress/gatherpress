@@ -1,0 +1,20 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+parameters:
+
+    # the analysis level, from 0 (loose) to 8 (strict)
+    # https://phpstan.org/user-guide/rule-levels
+    level: 5
+
+    paths:
+        - includes/
+
+    excludePaths:
+        - vendor/
+
+    ignoreErrors:
+        - '#^Constant GATHERPRESS_CORE_FILE not found\.$#'
+        - '#^Constant GATHERPRESS_CORE_PATH not found\.$#'
+        - '#^Constant GATHERPRESS_CORE_URL not found\.$#'
+        - '#^Constant GATHERPRESS_REST_NAMESPACE not found\.$#'
+        - '#^Constant GATHERPRESS_REQUIRES_PHP not found\.$#'
