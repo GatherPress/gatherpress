@@ -14,6 +14,7 @@ use GatherPress\Core\Event_Query;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Event_Query.
@@ -250,5 +251,39 @@ class Test_Event_Query extends Base {
 
 		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
 		$this->assertStringContainsString( "AND `{$table}`.`datetime_end_gmt` >=", $retval['where'] );
+	}
+
+	/**
+	 * Coverage for get_datetime_comparison_column method.
+	 *
+	 * @covers ::get_datetime_comparison_column
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_comparison_column(): void {
+
+		$instance = Event_Query::get_instance();
+
+		$this->assertSame(
+			'datetime_end_gmt',
+			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'upcoming', true ) ),
+			'Failed to assert, that inclusive, upcoming events should be ordered by datetime_end_gmt.'
+		);
+		$this->assertSame(
+			'datetime_start_gmt',
+			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'upcoming', false ) ),
+			'Failed to assert, that non-inclusive, upcoming events should be ordered by datetime_start_gmt.'
+		);
+
+		$this->assertSame(
+			'datetime_start_gmt',
+			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'past', true ) ),
+			'Failed to assert, that inclusive, past events should be ordered by datetime_start_gmt.'
+		);
+		$this->assertSame(
+			'datetime_end_gmt',
+			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'past', false ) ),
+			'Failed to assert, that non-inclusive, past events should be ordered by datetime_end_gmt.'
+		);
 	}
 }
