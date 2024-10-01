@@ -86,6 +86,28 @@ class Test_Block extends Base {
 	}
 
 	/**
+	 * Coverage for register_block_variations.
+	 *
+	 * @covers ::register_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_register_block_variations(): void {
+		$this->assertFalse(
+			class_exists( 'GatherPress\Core\Block\Add_To_Calendar' ),
+			'Failed to assert Add_To_Calendar singelton does not yet exist.'
+		);
+
+		// Register our block variations.
+		$instance->register_block_variations();
+
+		$this->assertTrue(
+			class_exists( 'GatherPress\Core\Block\Add_To_Calendar' ),
+			'Failed to assert Add_To_Calendar singelton does exist.'
+		);
+	}
+
+	/**
 	 * Coverage for get_block_variations.
 	 *
 	 * @covers ::get_block_variations
@@ -103,4 +125,22 @@ class Test_Block extends Base {
 			'Failed to assert, to get all block variations from the "/src" directory.'
 		);
 	}
+
+	/**
+	 * Coverage for get_classname_from_foldername.
+	 *
+	 * @covers ::get_classname_from_foldername
+	 *
+	 * @return void
+	 */
+	public function test_get_classname_from_foldername(): void {
+		$instance = Block::get_instance();
+		$this->assertSame(
+			'',
+			Utility::invoke_hidden_method( $instance, 'get_classname_from_foldername', array( __DIR__ ) ),
+			'Failed to assert, to get class name from foldername.'
+		);
+	}
+
+
 }
