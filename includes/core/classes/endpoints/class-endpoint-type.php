@@ -102,7 +102,7 @@ abstract class Endpoint_Type {
 	 * @param  string        $entity The class name of the entity to check against (e.g., 'Endpoint_Redirect' or 'Endpoint_Template').
 	 * @return bool                  True if the `$type` is an instance of the `$entity` class, false otherwise.
 	 */
-	private function is_of_class( string $entity ): bool {
+	public function is_of_class( string $entity ): bool {
 		return self::is_in_class( $entity ) && $this instanceof $entity;
 	}
 
