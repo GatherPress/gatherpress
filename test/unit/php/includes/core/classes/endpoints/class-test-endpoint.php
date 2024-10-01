@@ -174,4 +174,72 @@ class Test_Endpoint extends Base {
 		);
 	}
 
+	/**
+	 * Coverage for has_feed_template method.
+	 *
+	 * @covers ::has_feed_template
+	 *
+	 * @return void
+	 */
+	public function test_has_feed_template(): void {
+		$query_var = 'query_var';
+		$post_type = 'gatherpress_event';
+		$callback  = function(){};
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+		);
+		$reg_ex    = 'reg_ex';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		$this->assertEmpty(
+			Utility::invoke_hidden_method( $instance, 'has_feed_template' ),
+			'Failed to assert, endpoint is not for feeds.'
+		);
+
+		$types     = array(
+			new Endpoint_Redirect( 'endpoint_redirect_1', $callback ),
+		);
+		$reg_ex    = 'reg_ex/feed/';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		$this->assertEmpty(
+			Utility::invoke_hidden_method( $instance, 'has_feed_template' ),
+			'Failed to assert, endpoint is for feeds, but has no Endpoint_Template type.'
+		);
+
+		$types     = array(
+			new Endpoint_Template( 'endpoint_template_1', $callback ),
+			new Endpoint_Template( 'endpoint_template_2', $callback ),
+		);
+		$reg_ex    = 'reg_ex/feed/';
+		$instance  = new Endpoint(
+			$query_var,
+			$post_type,
+			$callback,
+			$types,
+			$reg_ex,
+		);
+
+		$this->assertSame(
+			'endpoint_template_1',
+			Utility::invoke_hidden_method( $instance, 'has_feed_template' ),
+			'Failed to assert, that feed template is found.'
+		);
+	}
+
+
 }
