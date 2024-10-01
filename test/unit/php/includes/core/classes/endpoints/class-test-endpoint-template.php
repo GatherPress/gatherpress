@@ -34,25 +34,25 @@ class Test_Endpoint_Template extends Base {
 				'dir_path'  => '/path/to/theme',
 			);
 		};
-		$endpoint_template = new Endpoint_Template( $slug, $callback );
+		$instance = new Endpoint_Template( $slug, $callback );
 
-		$this->assertIsString( Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ) );
-		$this->assertNotEmpty( Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ) );
+		$this->assertIsString( Utility::get_hidden_property( $instance, 'plugin_template_dir' ) );
+		$this->assertNotEmpty( Utility::get_hidden_property( $instance, 'plugin_template_dir' ) );
 		$this->assertSame(
 			sprintf(
 				'%s/includes/templates/endpoints',
 				GATHERPRESS_CORE_PATH
 			),
-			Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ),
+			Utility::get_hidden_property( $instance, 'plugin_template_dir' ),
 			'Failed to assert, plugin_template_dir is set to fallback directory.'
 		);
 
 		$plugin_default    = '/mock/plugin/templates';
-		$endpoint_template = new Endpoint_Template( $slug, $callback, $plugin_default );
+		$instance = new Endpoint_Template( $slug, $callback, $plugin_default );
 
 		$this->assertSame(
 			'/mock/plugin/templates',
-			Utility::get_hidden_property( $endpoint_template, 'plugin_template_dir' ),
+			Utility::get_hidden_property( $instance, 'plugin_template_dir' ),
 			'Failed to assert, plugin_template_dir is set to test directory.'
 		);
 	}
