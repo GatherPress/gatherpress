@@ -83,4 +83,23 @@ class Test_Block extends Base {
 
 		$this->assertSame( $blocks, $expected );
 	}
+
+	/**
+	 * Coverage for get_block_variations.
+	 *
+	 * @covers ::get_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_get_block_variations(): void {
+		$instance = Block::get_instance();
+
+		$this->assertSame(
+			array(
+				'add-to-calendar'
+			),
+			Utility::invoke_hidden_method( $instance, 'get_block_variations' ),
+			'Failed to assert, to get all block variations from the "/src" directory.'
+		);
+	}
 }
