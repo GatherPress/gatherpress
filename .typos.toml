@@ -25,6 +25,7 @@ extend-ignore-re = [
 "Github" = "GitHub"
 "Wordpress" = "WordPress"
 "Gatherpress" = "GatherPress"
+"Open Street Maps" = "OpenStreetMap"
 
 
 # Case sensitive, matches entire word.

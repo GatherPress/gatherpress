@@ -392,9 +392,9 @@ class Event_Query {
 		$column  = $this->get_datetime_comparison_column( $type, $inclusive );
 
 		if ( 'upcoming' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
 		} elseif ( 'past' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i < %s', $table, $column, $current ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i < %s', $table, $column, $current );
 		}
 
 		return $pieces;

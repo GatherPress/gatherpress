@@ -2,7 +2,7 @@
 
 > Generating screenshots in multiple languages for the plugin and keeping them up to date with the development might become a time intensive task.
 
-GatherPress allows to generate screenshots for the plugin **automated & manually**, while sharing the same, [`wp-playground/cli`](https://github.com/WordPress/wordpress-playground/pull/1289) powered, setup. The started playground imports the [`GatherPress/demo-data`](https://github.com/GatherPress/demo-data) and sets some options, e.g. to hide GatherPress' admin-notices.
+GatherPress allows to generate screenshots for the plugin **automated & manually**, while sharing the same, [`wp-playground/cli`](https://github.com/WordPress/wordpress-playground/pull/1289) powered, setup. The started playground imports the [`GatherPress/gatherpress-demo-data`](https://github.com/GatherPress/gatherpress-demo-data) and sets some options, e.g. to hide GatherPress' admin-notices.
 
 GatherPress uses Playwright for this task, which is a tool to do [end-to-end testing](../e2e-tests). Playwright has an advanced [screenshots API](https://playwright.dev/docs/screenshots), that allows to take screenshots for a full-page or an element only. Like for the e2e tests, it is configurable what browsers to use, what screenresolution to set, etc. Which screenshots to take is defined in a [wporg.spec.ts](../../../.github/scripts/wordpress-org-screenshots/wporg.spec.ts) file. The names of the generated files match the captions in the plugins [readme.md](../../../readme.md)!
 

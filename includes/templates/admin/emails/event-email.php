@@ -20,13 +20,14 @@ if ( ! isset( $event_id, $message ) ) {
 	return;
 }
 
-$gatherpress_event = new Event( $event_id );
-$gatherpress_venue = $gatherpress_event->get_venue_information()['name'];
+$gatherpress_event       = new Event( $event_id );
+$gatherpress_event_image = get_the_post_thumbnail_url( $event_id, 'full' );
+$gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 
 ?>
 
 <!DOCTYPE html>
-<html lang="en-US">
+<html <?php language_attributes(); ?>>
 	<head>
 		<title><?php echo wp_kses_post( get_the_title( $event_id ) ); ?></title>
 	</head>
@@ -36,8 +37,10 @@ $gatherpress_venue = $gatherpress_event->get_venue_information()['name'];
 				<?php echo wp_kses( nl2br( $message ), array( 'br' => array() ) ); ?>
 			</p>
 		<?php endif; ?>
-		<!-- Feature Image -->
-		<img src="<?php echo esc_url( get_the_post_thumbnail_url( $event_id, 'full' ) ); ?>" alt="<?php esc_attr_e( 'Event Image', 'gatherpress' ); ?>" style="max-width: 100%;">
+		<?php if ( $gatherpress_event_image ) : ?>
+			<!-- Feature Image -->
+			<img src="<?php echo esc_url( $gatherpress_event_image ); ?>" alt="<?php esc_attr_e( 'Event Image', 'gatherpress' ); ?>" style="max-width: 100%;">
+		<?php endif; ?>
 
 		<!-- Event Title -->
 		<h1 style="text-align: center;"><?php echo wp_kses_post( get_the_title( $event_id ) ); ?></h1>

@@ -1,10 +1,10 @@
 # GatherPress
 
 Stable tag: 0.31.0-alpha  
-Tested up to: 6.6.1  
+Tested up to: 6.6.2  
 License: GPL v2 or later  
 Tags: events, event, meetup, community  
-Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, prayagm, pbrocks, linusx007
+Contributors: mauteri, hrmervin, patricia70, carstenbach, jmarx75, stephenerdelyi, calebthedev, pbrocks
 
 <!-- markdownlint-disable-next-line MD045 -->
 ![](.wordpress-org/banner-1544x500.jpg)
@@ -29,7 +29,7 @@ GatherPress, a plugin created by and for the WordPress community, is a response 
 
 ## Community-built
 
-This project is the result of a collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and with the grit, sweat, and love of **the community, for the community**. We encourage all interested, whether a user, community member, or developer, to follow our emerging presence on our [GatherPress Blog](https://gatherpress.org/blog/), our [GitHub repositories](https://github.com/GatherPress/), our [GatherPress Documentation](https://gatherpress.org/documentation/), or new features on our [GatherPress Playground](https://playground.wordpress.net/builder/builder.html?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress-awesome/main/.wordpress-org/blueprints/blueprint.json).
+This project is the result of a collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and with the grit, sweat, and love of **the community, for the community**. We encourage all interested, whether a user, community member, or developer, to follow our emerging presence on our [GatherPress Blog](https://gatherpress.org/blog/), our [GitHub repositories](https://github.com/GatherPress/), our [GatherPress Documentation](https://gatherpress.org/documentation/), or new features on our [GatherPress Playground](https://wordpress.org/plugins/gatherpress/?preview=1).
 
 ## Playground Environment
 
@@ -204,12 +204,16 @@ As we continue to refine and develop the core plugin, we've created the [GatherP
 
 1. Create a new event
    ![Create a new event](.wordpress-org/screenshot-1.png)
-2. Create a new venue
-   ![Create a new venue](.wordpress-org/screenshot-2.png)
-3. General Settings
-   ![General Settings](.wordpress-org/screenshot-3.png)
-4. Leadership Settings
-   ![Leadership Settings](.wordpress-org/screenshot-4.png)
+2. Edit an event
+   ![Edit an event](.wordpress-org/screenshot-2.png)
+3. Quick Edit an event
+   ![Quick Edit an event](.wordpress-org/screenshot-3.png)
+4. Create a new venue
+   ![Create a new venue](.wordpress-org/screenshot-4.png)
+5. General Settings
+   ![General Settings](.wordpress-org/screenshot-5.png)
+6. Leadership Settings
+   ![Leadership Settings](.wordpress-org/screenshot-6.png)
 
 ## Changelog
 
