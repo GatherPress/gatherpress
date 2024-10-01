@@ -178,21 +178,12 @@ class Endpoint {
 	 */
 	public function init(): void {
 
-		// Retrieve the rewrite base (slug) for the post type or taxonomy.
-		$rewrite_base = $this->type_object->rewrite['slug'];
-		$slugs        = join( '|', $this->get_slugs() );
 		// Build the regular expression pattern for matching the custom endpoint URL structure.
-		$reg_ex_pattern = sprintf(
-			$this->reg_ex,
-			$rewrite_base,
-			$slugs
-		);
+		$reg_ex_pattern = $this->get_regex_pattern();
+
 		// Define the URL structure for handling matched requests via query vars.
 		// Example result: 'index.php?gatherpress_event=$matches[1]&gatherpress_ext_calendar=$matches[2]'.
-		$rewrite_url = add_query_arg(
-			$this->get_rewrite_atts(),
-			'index.php'
-		);
+		$rewrite_url = add_query_arg( $this->get_rewrite_atts(), 'index.php' );
 
 		// Add the rewrite rule to WordPress.
 		add_rewrite_rule( $reg_ex_pattern, $rewrite_url, 'top' );
@@ -213,6 +204,22 @@ class Endpoint {
 			// Handle whether to include a template or redirect the request.
 			add_action( 'template_redirect', array( $this, 'template_redirect' ) );
 		}
+	}
+
+	/**
+	 * Build the regular expression pattern for matching the custom endpoint URL structure,
+	 * based on the rewrite base (slug) for the post type or taxonomy.
+	 *
+	 * @return string
+	 */
+	private function get_regex_pattern(): string {
+		$rewrite_base = $this->type_object->rewrite['slug'];
+		$slugs        = join( '|', $this->get_slugs() );
+		return sprintf(
+			$this->reg_ex,
+			$rewrite_base,
+			$slugs
+		);
 	}
 
 	/**
