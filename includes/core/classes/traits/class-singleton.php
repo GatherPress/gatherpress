@@ -27,9 +27,9 @@ trait Singleton {
 	 * The single instance of the class.
 	 *
 	 * @since 1.0.0
-	 * @var ?self|null The instance of the class.
+	 * @var self|null The instance of the class or null if not instantiated.
 	 */
-	private static $instance = null;
+	private static ?self $instance = null;
 
 	/**
 	 * Get the instance of the Singleton class.
