@@ -88,6 +88,7 @@ class Autoloader {
 
 					switch ( $class_type ) {
 						case 'commands':
+						case 'endpoints':
 						case 'settings':
 						case 'traits':
 							array_pop( $structure );

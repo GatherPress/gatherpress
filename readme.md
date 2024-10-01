@@ -62,6 +62,8 @@ https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
 - Multi-event management: capability to handle multiple events simultaneously.
 - Multisite environment: This setup allows for centralized management while providing flexibility for each site to host its own unique events with its settings (language, timezone, date time format) and set of users.
 - Works with blocks.
+- Add events to your calendar app, using iCal and dedicated support for platforms like *Google Calendar* or *Yahoo Calendar*.
+- Subscribe with your calendar app, to stay updated about all new & upcoming events, events at a specific venue or events of a specific topic.
 - Fully internationalized.
 - Freedom to add content besides the default event/venue blocks, to remove default blocks, and add synced patterns (useful for adding consistent information across all events).
 

@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Post;
 

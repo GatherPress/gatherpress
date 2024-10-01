@@ -386,9 +386,6 @@ class Test_Event extends Base {
 	 * Coverage for get_calendar_links method.
 	 *
 	 * @covers ::get_calendar_links
-	 * @covers ::get_google_calendar_link
-	 * @covers ::get_ics_calendar_download
-	 * @covers ::get_yahoo_calendar_link
 	 * @covers ::get_calendar_description
 	 *
 	 * @return void
@@ -422,8 +419,7 @@ class Test_Event extends Base {
 
 		$event->save_datetimes( $params );
 
-		$output = $event->get_calendar_links();
-
+		/*
 		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit%20Test%20Event&dates=20200511T150000Z%2F20200511T170000Z&details=' . rawurlencode( $description ) . '&location=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042&sprop=name%3A';
 		$expected_yahoo_link  = 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200&desc=' . rawurlencode( $description ) . '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
 
@@ -445,7 +441,56 @@ class Test_Event extends Base {
 				'link' => $expected_yahoo_link,
 			),
 		);
+		*/
+		$output  = $event->get_calendar_links();
+		$expects = array(
+			'google'  => array(
+				'name' => 'Google Calendar',
+				'link' => home_url( '/?gatherpress_event=unit-test-event&gatherpress_calendars=google-calendar' ),
+			),
+			'ical'    => array(
+				'name'     => 'iCal',
+				'download' => home_url( '/?gatherpress_event=unit-test-event&gatherpress_calendars=ical' ),
+			),
+			'outlook' => array(
+				'name'     => 'Outlook',
+				'download' => home_url( '/?gatherpress_event=unit-test-event&gatherpress_calendars=outlook' ),
+			),
+			'yahoo'   => array(
+				'name' => 'Yahoo Calendar',
+				'link' => home_url( '/?gatherpress_event=unit-test-event&gatherpress_calendars=yahoo-calendar' ),
+			),
+		);
 
+		$this->assertSame( $expects, $output );
+
+		// Update permalink structure to '/%postname%/'.
+		update_option( 'permalink_structure', '/%postname%/' );
+
+		// Reload the global rewrite rules object to ensure it reflects the changes.
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		flush_rewrite_rules();
+
+		$output  = $event->get_calendar_links();
+		$expects = array(
+			'google'  => array(
+				'name' => 'Google Calendar',
+				'link' => home_url( '/event/unit-test-event/google-calendar' ),
+			),
+			'ical'    => array(
+				'name'     => 'iCal',
+				'download' => home_url( '/event/unit-test-event/ical' ),
+			),
+			'outlook' => array(
+				'name'     => 'Outlook',
+				'download' => home_url( '/event/unit-test-event/outlook' ),
+			),
+			'yahoo'   => array(
+				'name' => 'Yahoo Calendar',
+				'link' => home_url( '/event/unit-test-event/yahoo-calendar' ),
+			),
+		);
 		$this->assertSame( $expects, $output );
 
 		Utility::set_and_get_hidden_property( $event, 'event', null );
