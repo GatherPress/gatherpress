@@ -29,7 +29,8 @@
 		"format": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcbf --report=summary,source",
 		"lint": "@php ./vendor/squizlabs/php_codesniffer/bin/phpcs --report=summary,source",
 		"lint:errors": "@lint -n",
-		"test": "@php ./vendor/phpunit/phpunit/phpunit"
+		"test": "@php ./vendor/phpunit/phpunit/phpunit",
+		"test:phpstan": "@php ./vendor/bin/phpstan analyze -vv --memory-limit=2G"
 	},
 	"config": {
 		"allow-plugins": {
