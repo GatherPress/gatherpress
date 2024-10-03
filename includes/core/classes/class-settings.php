@@ -725,8 +725,6 @@ class Settings {
 					$suffix = _x( 'sample-topic-term', 'sample topic term slug', 'gatherpress' );
 					break;
 
-				default:
-					break;
 			}
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
