@@ -10,6 +10,7 @@
  * @param string $name        The name attribute for the input field.
  * @param string $label       The label text displayed next to the checkbox.
  * @param string $option      The option name in which the field value is stored.
+ * @param string $options     The options for the select field.
  * @param mixed  $value       The current value of the checkbox (boolean or equivalent).
  * @param string $description Optional. The description or tooltip text for the field.
  */
@@ -17,7 +18,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $name, $label, $options, $options['items'], $value, $description ) ) {
+if ( ! isset( $name, $label, $option, $options, $options['items'], $value, $description ) ) {
 	return;
 }
 ?>
