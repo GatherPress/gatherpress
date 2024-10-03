@@ -7,11 +7,12 @@ includes:
     - phar://phpstan.phar/conf/bleedingEdge.neon
 
 parameters:
-#    bootstrapFiles:
+    bootstrapFiles:
+        # Constants, functions, etc. used by GatherPress
+        - phpstan.stubs
 #        - vendor/pmc/unit-test/src/classes/autoloader.php
 #        - vendor/autoload.php
 #        - gatherpress.php
-
     parallel:
         maximumNumberOfProcesses: 1
         processTimeout: 300.0

@@ -29,6 +29,7 @@ phpcs.xml.dist
 phpcs.ruleset.xml
 phpstan.neon
 phpstan.neon.dist
+phpstan.stubs
 phpunit.xml
 phpunit.xml.dist
 playwright.config.js
