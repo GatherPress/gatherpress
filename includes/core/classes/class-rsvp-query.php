@@ -54,7 +54,7 @@ class Rsvp_Query {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
+		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
 	}
 
@@ -107,11 +107,11 @@ class Rsvp_Query {
 		// Never allow count-only return, we always want array.
 		$args['count'] = false;
 
-		remove_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
+		remove_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 
 		$rsvps = get_comments( $args );
 
-		add_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
+		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 
 		return (array) $rsvps;
 	}
