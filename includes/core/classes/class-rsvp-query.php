@@ -153,13 +153,10 @@ class Rsvp_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param WP_Comment_Query $query The comment query object.
+	 * @param WP_Comment_Query $query Current instance of WP_Comment_Query (passed by reference).
 	 * @return void
 	 */
-	public function exclude_rsvp_from_comment_query( $query ) {
-		if ( ! $query instanceof WP_Comment_Query ) {
-			return;
-		}
+	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ) {
 
 		$current_comment_types = $query->query_vars['type'];
 
