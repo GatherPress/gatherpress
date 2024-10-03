@@ -525,8 +525,8 @@ class Event {
 		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
 		$full        = intval( $duration );
 		$fraction    = ( $duration - $full );
-		$hours       = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes     = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+		$hours       = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
+		$minutes     = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
 		$venue       = $this->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();
