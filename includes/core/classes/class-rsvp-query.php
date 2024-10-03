@@ -15,7 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use WP_comment;
+use WP_Comment;
 use WP_Comment_Query;
 use WP_Tax_Query;
 
