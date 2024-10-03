@@ -73,7 +73,7 @@ class Export extends Migrate {
 	 * @return void
 	 */
 	public function export(): void {
-		add_action( 'the_post', array( $this, 'prepare' ), 10, 2 );
+		add_action( 'the_post', array( $this, 'prepare' ) );
 		add_filter( 'wxr_export_skip_postmeta', array( $this, 'extend' ), 10, 3 );
 	}
 
