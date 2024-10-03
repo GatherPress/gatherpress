@@ -310,7 +310,7 @@ class Setup {
 	 */
 	public function on_site_create( WP_Site $new_site ): void {
 		if ( is_plugin_active_for_network( 'gatherpress/gatherpress.php' ) ) {
-			switch_to_blog( $new_site->blog_id );
+			switch_to_blog( intval( $new_site->blog_id ) );
 			$this->create_tables();
 			restore_current_blog();
 		}
