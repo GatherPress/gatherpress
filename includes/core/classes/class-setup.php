@@ -331,7 +331,7 @@ class Setup {
 	public function on_site_delete( array $tables ): array {
 		global $wpdb;
 
-		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
 		return $tables;
 	}

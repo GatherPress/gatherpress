@@ -329,7 +329,7 @@ class Event_Setup {
 			return;
 		}
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
 		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$table,
