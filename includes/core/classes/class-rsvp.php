@@ -542,9 +542,11 @@ class Rsvp {
 	 *
 	 * @param array $first  First response to compare in the sort.
 	 * @param array $second Second response to compare in the sort.
-	 * @return bool True if the first response's timestamp is earlier than the second response's timestamp; otherwise, false.
+	 * @return int Returns a negative number if the first response's timestamp is earlier,
+	 *             a positive number if the second response's timestamp is earlier,
+	 *             or 0 if both are equal.
 	 */
-	public function sort_by_timestamp( array $first, array $second ): bool {
-		return ( strtotime( $first['timestamp'] ) > strtotime( $second['timestamp'] ) );
+	public function sort_by_timestamp( array $first, array $second ): int {
+		return strtotime( $first['timestamp'] ) <=> strtotime( $second['timestamp'] );
 	}
 }
