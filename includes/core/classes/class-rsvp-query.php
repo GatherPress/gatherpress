@@ -67,17 +67,17 @@ class Rsvp_Query {
 	 * @since 1.0.0
 	 *
 	 * @param array            $clauses       The clauses for the query.
-	 * @param WP_Comment_Query $comment_query The comment query object.
+	 * @param WP_Comment_Query $comment_query Current instance of WP_Comment_Query (passed by reference).
 	 * @return array Modified query clauses.
 	 */
 	public function taxonomy_query( array $clauses, WP_Comment_Query $comment_query ): array {
 		global $wpdb;
 
 		if ( ! empty( $comment_query->query_vars['tax_query'] ) ) {
-			$comment_query->tax_query = new WP_Tax_Query( $comment_query->query_vars['tax_query'] );
-			$pieces                   = $comment_query->tax_query->get_sql( $wpdb->comments, 'comment_ID' );
-			$clauses['join']         .= $pieces['join'];
-			$clauses['where']        .= $pieces['where'];
+			$comment_tax_query = new WP_Tax_Query( $comment_query->query_vars['tax_query'] );
+			$pieces            = $comment_tax_query->get_sql( $wpdb->comments, 'comment_ID' );
+			$clauses['join']  .= $pieces['join'];
+			$clauses['where'] .= $pieces['where'];
 		}
 
 		return $clauses;
