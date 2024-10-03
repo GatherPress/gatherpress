@@ -285,7 +285,7 @@ class Setup {
 			);
 		} else {
 			wp_update_term(
-				$term['term_id'],
+				intval( $term['term_id'] ),
 				Venue::TAXONOMY,
 				array(
 					'name' => $term_name,
