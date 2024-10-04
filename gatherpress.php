@@ -5,9 +5,9 @@
  * Description:       Powering Communities with WordPress.
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
- * Version:           0.31.0-alpha
+ * Version:           0.31.0
  * Requires PHP:      7.4
- * Requires at least: 6.4
+ * Requires at least: 6.6
  * Text Domain:       gatherpress
  * License:           GNU General Public License v2.0 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
