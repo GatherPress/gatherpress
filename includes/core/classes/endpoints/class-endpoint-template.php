@@ -111,7 +111,7 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @return void
 	 */
 	public function load_feed_template() {
-		load_template( $this->template_include( '' ) );
+		load_template( $this->template_include() );
 	}
 
 	/**
@@ -124,10 +124,11 @@ class Endpoint_Template extends Endpoint_Type {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $template The path of the default template to include.
+	 * @param string $template The path of the default template to include,
+	 *                         defaults to '' so that the template loader keeps looking for templates.
 	 * @return string          The path of the template to include, either from the theme or plugin.
 	 */
-	public function template_include( string $template ): string {
+	public function template_include( string $template = '' ): string {
 		$presets = $this->get_template_presets();
 
 		$file_name = $presets['file_name'];
@@ -165,9 +166,9 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @todo Maybe better put in the Utility class?
 	 *
 	 * @param string $file_name The name of the template file.
-	 * @return string|false     The path to the theme template or false if not found.
+	 * @return string The path to the theme template or an empty string if not found.
 	 */
-	protected function get_template_from_theme( string $file_name ) {
+	protected function get_template_from_theme( string $file_name ): string {
 
 		// locate_template() doesn't cares,
 		// but locate_block_template() needs this to be an array.
@@ -184,7 +185,7 @@ class Endpoint_Template extends Endpoint_Type {
 			$templates
 		);
 
-		return ( is_string( $template ) && ! empty( $template ) ) ? $template : false;
+		return $template;
 	}
 
 	/**
@@ -194,7 +195,7 @@ class Endpoint_Template extends Endpoint_Type {
 	 *
 	 * @param string $file_name The name of the template file.
 	 * @param string $dir_path  The directory path where the template is stored.
-	 * @return string|false     The full path to the template file or false if file not exists.
+	 * @return string The full path to the template file or an empty string if file not exists.
 	 */
 	protected function get_template_from_plugin( string $file_name, string $dir_path ): string {
 		// Remove prefix to keep file-names simple,
@@ -204,6 +205,6 @@ class Endpoint_Template extends Endpoint_Type {
 		}
 
 		$template = trailingslashit( $dir_path ) . $file_name;
-		return file_exists( $template ) ? $template : false;
+		return file_exists( $template ) ? $template : '';
 	}
 }
