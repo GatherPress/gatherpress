@@ -104,8 +104,8 @@ class Assets {
 	 * @return void
 	 */
 	public function add_global_object(): void {
-		// phpcs:ignore Universal.Operators.DisallowShortTernary.Found ?>
-		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( get_the_ID() ?: 0 ) ); ?></script>
+		?>
+		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( intval( get_the_ID() ) ) ); ?></script>
 		<?php
 	}
 
