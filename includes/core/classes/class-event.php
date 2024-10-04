@@ -412,7 +412,7 @@ class Event {
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['website']      = $venue_meta->website ?? '';
-			$venue_information['permalink']    = get_permalink( $venue->ID ) ?? '';
+			$venue_information['permalink']    = (string) get_permalink( $venue->ID );
 		}
 
 		return $venue_information;
@@ -525,8 +525,8 @@ class Event {
 		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
 		$full        = intval( $duration );
 		$fraction    = ( $duration - $full );
-		$hours       = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes     = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+		$hours       = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
+		$minutes     = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
 		$venue       = $this->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();

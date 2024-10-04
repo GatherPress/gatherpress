@@ -614,7 +614,7 @@ class Settings {
 		$first['priority']  = isset( $first['priority'] ) ? intval( $first['priority'] ) : 10;
 		$second['priority'] = isset( $second['priority'] ) ? intval( $second['priority'] ) : 10;
 
-		return ( $first['priority'] > $second['priority'] );
+		return $first['priority'] <=> $second['priority'];
 	}
 
 	/**
@@ -723,9 +723,6 @@ class Settings {
 
 				case 'gatherpress_general[urls][topics]':
 					$suffix = _x( 'sample-topic-term', 'sample topic term slug', 'gatherpress' );
-					break;
-
-				default:
 					break;
 			}
 			Utility::render_template(
