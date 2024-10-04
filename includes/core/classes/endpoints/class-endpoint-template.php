@@ -111,7 +111,7 @@ class Endpoint_Template extends Endpoint_Type {
 	 * @return void
 	 */
 	public function load_feed_template() {
-		load_template( $this->template_include( false ) );
+		load_template( $this->template_include( '' ) );
 	}
 
 	/**
