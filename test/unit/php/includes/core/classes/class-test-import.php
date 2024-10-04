@@ -123,4 +123,33 @@ class Test_Import extends Base {
 			'Failed to assert that the "add_post_metadata" filter was added.'
 		);
 	}
+
+	/**
+	 * Coverage for run.
+	 *
+	 * @covers ::run
+	 *
+	 * @return void
+	 */
+	public function test_run(): void {
+		$instance = Import::get_instance();
+
+		// Defined for readablity,
+		// parameters are unrelated to the method under test.
+		$check      = true;
+		$object_id  = 0;
+		$meta_value = 'data';
+		$unique     = true;
+
+		$this->assertNull(
+			$instance->run( $check, $object_id, 'unit-test', $meta_value, $unique ),
+			'Failed to assert that the import would not run for non-existing post_meta keys.'
+		);
+
+		$this->assertFalse(
+			$instance->run( $check, $object_id, 'gatherpress_datetimes', $meta_value, $unique ),
+			'Failed to assert that the import would run for existing, valid post_meta keys.'
+		);
+	}
+
 }
