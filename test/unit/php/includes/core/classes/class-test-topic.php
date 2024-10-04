@@ -92,7 +92,7 @@ class Test_Topic extends Base {
 		 * @param string $context     Context information for the translators.
 		 * @return string Translated text.
 		 */
-		add_filter(  'gettext_with_context_gatherpress', $filter, 10, 3 );
+		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );
 
 		$this->assertSame(
 			'unit-test',
@@ -100,6 +100,6 @@ class Test_Topic extends Base {
 			'Failed to assert taxonomy slug is "unit-test".'
 		);
 
-		remove_filter(  'gettext_with_context_gatherpress', $filter );
+		remove_filter( 'gettext_with_context_gatherpress', $filter );
 	}
 }
