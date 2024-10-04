@@ -42,7 +42,7 @@ class Test_Event_Rest_Api extends Base {
 				'type'     => 'action',
 				'name'     => 'gatherpress_send_emails',
 				'priority' => 10,
-				'callback' => array( $instance, 'send_emails' ),
+				'callback' => array( $instance, 'handle_email_send_action' ),
 			),
 			array(
 				'type'     => 'filter',

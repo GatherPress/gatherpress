@@ -329,4 +329,34 @@ class Test_Settings extends Base {
 			'Failed to assert that credits is last key.'
 		);
 	}
+
+	/**
+	 * Coverage for sort_sub_pages_by_priority method.
+	 *
+	 * @covers ::sort_sub_pages_by_priority
+	 *
+	 * @return void
+	 */
+	public function test_sort_sub_pages_by_priority(): void {
+		$instance  = Settings::get_instance();
+		$sub_pages = $instance->get_sub_pages();
+
+		$this->assertSame(
+			-1,
+			$instance->sort_sub_pages_by_priority( array( 'priority' => 2 ), array( 'priority' => 42 ) ),
+			'Failed to assert that it returns a negative number while the first sub-page has a lower priority.'
+		);
+
+		$this->assertSame(
+			1,
+			$instance->sort_sub_pages_by_priority( array( 'priority' => 42 ), array( 'priority' => 2 ) ),
+			'Failed to assert that it returns a positive number while the second sub-page has a lower priority.'
+		);
+
+		$this->assertSame(
+			0,
+			$instance->sort_sub_pages_by_priority( array( 'priority' => 42 ), array( 'priority' => 42 ) ),
+			'Failed to assert that it returns 0 while their priorities are equal.'
+		);
+	}
 }

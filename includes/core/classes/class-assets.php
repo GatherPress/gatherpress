@@ -105,7 +105,7 @@ class Assets {
 	 */
 	public function add_global_object(): void {
 		?>
-		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( get_the_ID() ?? 0 ) ); ?></script>
+		<script>window.GatherPress = <?php echo wp_json_encode( $this->localize( intval( get_the_ID() ) ) ); ?></script>
 		<?php
 	}
 
@@ -385,7 +385,6 @@ class Assets {
 
 		switch ( get_post_type() ) {
 			case Event::POST_TYPE:
-				$blocks;
 				break;
 			case Venue::POST_TYPE:
 				$blocks = array(
