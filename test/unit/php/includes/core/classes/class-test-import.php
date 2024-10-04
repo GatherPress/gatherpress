@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Import;
 use PMC\Unit_Test\Base;
 
@@ -45,4 +46,34 @@ class Test_Import extends Base {
 
 		$this->assert_hooks( $hooks, $instance );
 	}
+
+	/**
+	 * Coverage for prepare.
+	 *
+	 * @covers ::prepare
+	 *
+	 * @return void
+	 */
+	public function test_prepare(): void {
+		$instance = Import::get_instance();
+
+		$post_data_raw = array();
+		$instance->prepare( $post_data_raw );
+
+		$this->assertFinite(
+			0,
+			did_action('gatherpress_import'),
+			'Failed to assert that the import was not prepared for non-validating post data.'
+		);
+
+		$post_data_raw = array( 'post_type' => Event::POST_TYPE );
+		$instance->prepare( $post_data_raw );
+
+		$this->assertFinite(
+			1,
+			did_action('gatherpress_import'),
+			'Failed to assert that the import was prepared for valid post data.'
+		);
+	}
+
 }
