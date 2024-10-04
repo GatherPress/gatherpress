@@ -30,6 +30,7 @@ parameters:
 #            - vendor/
 
     ignoreErrors:
+        - '#^Constant GATHERPRESS_CACHE_GROUP not found\.$#'
         - '#^Constant GATHERPRESS_CORE_FILE not found\.$#'
         - '#^Constant GATHERPRESS_CORE_PATH not found\.$#'
         - '#^Constant GATHERPRESS_CORE_URL not found\.$#'
