@@ -134,7 +134,7 @@ class Test_Import extends Base {
 	public function test_run(): void {
 		$instance = Import::get_instance();
 
-		// Defined for readablity,
+		// Defined for readability,
 		// parameters are unrelated to the method under test.
 		$check      = true;
 		$object_id  = 0;
