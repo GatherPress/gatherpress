@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Import;
 use PMC\Unit_Test\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Import.
@@ -76,4 +77,26 @@ class Test_Import extends Base {
 		);
 	}
 
+	/**
+	 * Coverage for validate.
+	 *
+	 * @covers ::validate
+	 *
+	 * @return void
+	 */
+	public function test_validate(): void {
+		$instance = Import::get_instance();
+
+		$post_data_raw = array();
+		$this->assertFalse(
+			Utility::invoke_hidden_method( $instance, 'validate', array( $post_data_raw ) ),
+			'Failed to assert that validation fails for non-validating post data.'
+		);
+
+		$post_data_raw = array( 'post_type' => Event::POST_TYPE );
+		$this->assertTrue(
+			Utility::invoke_hidden_method( $instance, 'validate', array( $post_data_raw ) ),
+			'Failed to assert that validation passes for valid post data.'
+		);
+	}
 }
