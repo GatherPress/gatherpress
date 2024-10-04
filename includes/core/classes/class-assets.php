@@ -385,7 +385,6 @@ class Assets {
 
 		switch ( get_post_type() ) {
 			case Event::POST_TYPE:
-				$blocks;
 				break;
 			case Venue::POST_TYPE:
 				$blocks = array(
