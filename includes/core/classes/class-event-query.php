@@ -196,14 +196,14 @@ class Event_Query {
 						$query->is_post_type_archive = array( Event::POST_TYPE );
 
 						// This will force a page to behave like an archive page. Use -1 as that is not a valid ID.
-						$query->queried_object_id = '-1';
+						$query->queried_object_id = -1;
 
 						// Option adjustments for page_for_posts and show_on_front to force archive page.
 						add_filter(
 							'pre_option',
 							static function ( $pre, $option ) {
 								if ( 'page_for_posts' === $option ) {
-									return '-1';
+									return -1;
 								}
 
 								if ( 'show_on_front' === $option ) {
