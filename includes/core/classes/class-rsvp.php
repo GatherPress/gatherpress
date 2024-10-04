@@ -137,9 +137,9 @@ class Rsvp {
 		if ( ! empty( $rsvp ) ) {
 			$data['id']        = $rsvp->user_id;
 			$data['timestamp'] = $rsvp->comment_date;
-			$data['anonymous'] = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
-			$data['guests']    = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_guests', true ) );
-			$terms             = wp_get_object_terms( $rsvp->comment_ID, self::TAXONOMY );
+			$data['anonymous'] = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_anonymous', true ) );
+			$data['guests']    = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_guests', true ) );
+			$terms             = wp_get_object_terms( intval( $rsvp->comment_ID ), self::TAXONOMY );
 
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
 				$data['status'] = $terms[0]->slug;
