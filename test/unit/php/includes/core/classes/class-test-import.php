@@ -152,4 +152,56 @@ class Test_Import extends Base {
 		);
 	}
 
+	/**
+	 * Coverage for datetimes_callback.
+	 *
+	 * @covers ::datetimes_callback
+	 *
+	 * @return void
+	 */
+	public function test_datetimes_callback(): void {
+		$instance = Import::get_instance();
+
+		$post  = $this->mock->post(
+			array(
+				'post_title'   => 'Unit Test Event',
+				'post_type'    => 'gatherpress_event',
+				'post_content' => 'Unit Test description.',
+			)
+		)->get();
+		$event = new Event( $post->ID );
+
+		$instance->datetimes_callback( $post->ID, 0 );
+		$this->assertSame(
+			array(
+				'datetime_start'     => '',
+				'datetime_start_gmt' => '',
+				'datetime_end'       => '',
+				'datetime_end_gmt'   => '',
+				'timezone'           => '+00:00',
+			),
+			$event->get_datetime()
+		);
+
+		$meta_data_value = array(
+			'post_id'        => $post->ID,
+			'datetime_start' => '2020-05-11 15:00:00',
+			'datetime_end'   => '2020-05-12 17:00:00',
+			'timezone'       => 'America/New_York',
+		);
+		$instance->datetimes_callback( $post->ID, $meta_data_value );
+
+		$expect = array(
+			'datetime_start'     => '2020-05-11 15:00:00',
+			'datetime_start_gmt' => '2020-05-11 19:00:00',
+			'datetime_end'       => '2020-05-12 17:00:00',
+			'datetime_end_gmt'   => '2020-05-12 21:00:00',
+			'timezone'           => 'America/New_York',
+		);
+
+		$this->assertSame(
+			$expect,
+			$event->get_datetime()
+		);
+	}
 }
