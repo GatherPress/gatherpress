@@ -8,8 +8,6 @@
 
 namespace GatherPress\Tests\Core;
 
-use GatherPress\Core\Event;
-use GatherPress\Core\Rsvp;
 use GatherPress\Core\Topic;
 use PMC\Unit_Test\Base;
 
@@ -76,6 +74,13 @@ class Test_Topic extends Base {
 			'Failed to assert english taxonomy slug is "topic".'
 		);
 
+		$filter = static function ( string $translation, string $text, string $context ): string {
+			if ( 'topic' !== $text || 'Taxonomy Slug' !== $context ) {
+				return $translation;
+			}
+			return 'Ünit Tést';
+		};
+
 		/**
 		 * Instead of loading additional languages into the unit test suite,
 		 * we just filter the translated value, to mock different languages.
@@ -87,22 +92,14 @@ class Test_Topic extends Base {
 		 * @param string $context     Context information for the translators.
 		 * @return string Translated text.
 		 */
-		add_filter(
-			'gettext_with_context_gatherpress',
-			function ( string $translation, string $text, string $context ): string {
-				if ( 'topic' !== $text || 'Taxonomy Slug' !== $context ) {
-					return $translation;
-				}
-				return 'Ünit Tést';
-			},
-			10,
-			3
-		);
+		add_filter(  'gettext_with_context_gatherpress', $filter, 10, 3 );
 
 		$this->assertSame(
 			'unit-test',
 			$instance->get_localized_taxonomy_slug(),
 			'Failed to assert taxonomy slug is "unit-test".'
 		);
+
+		remove_filter(  'gettext_with_context_gatherpress', $filter );
 	}
 }
