@@ -63,7 +63,7 @@ class Test_Import extends Base {
 
 		$this->assertFinite(
 			0,
-			did_action('gatherpress_import'),
+			did_action( 'gatherpress_import' ),
 			'Failed to assert that the import was not prepared for non-validating post data.'
 		);
 
@@ -72,7 +72,7 @@ class Test_Import extends Base {
 
 		$this->assertFinite(
 			1,
-			did_action('gatherpress_import'),
+			did_action( 'gatherpress_import' ),
 			'Failed to assert that the import was prepared for valid post data.'
 		);
 	}
@@ -111,7 +111,7 @@ class Test_Import extends Base {
 		$instance = Import::get_instance();
 
 		$this->assertFalse(
-			has_filter( 'add_post_metadata', array( $instance, 'run') ),
+			has_filter( 'add_post_metadata', array( $instance, 'run' ) ),
 			'Failed to assert that the "add_post_metadata" filter is not already added.'
 		);
 
@@ -119,7 +119,7 @@ class Test_Import extends Base {
 
 		$this->assertSame(
 			10,
-			has_filter( 'add_post_metadata', array( $instance, 'run') ),
+			has_filter( 'add_post_metadata', array( $instance, 'run' ) ),
 			'Failed to assert that the "add_post_metadata" filter was added.'
 		);
 	}
