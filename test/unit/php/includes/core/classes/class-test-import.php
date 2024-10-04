@@ -99,4 +99,28 @@ class Test_Import extends Base {
 			'Failed to assert that validation passes for valid post data.'
 		);
 	}
+
+	/**
+	 * Coverage for extend.
+	 *
+	 * @covers ::extend
+	 *
+	 * @return void
+	 */
+	public function test_extend(): void {
+		$instance = Import::get_instance();
+
+		$this->assertFalse(
+			has_filter( 'add_post_metadata', array( $instance, 'run') ),
+			'Failed to assert that the "add_post_metadata" filter is not already added.'
+		);
+
+		$instance->extend();
+
+		$this->assertSame(
+			10,
+			has_filter( 'add_post_metadata', array( $instance, 'run') ),
+			'Failed to assert that the "add_post_metadata" filter was added.'
+		);
+	}
 }
