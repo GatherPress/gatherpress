@@ -37,3 +37,4 @@ extend-ignore-re = [
 # [default.extend-words]
 # bellow = "below"
 # toi = "toi"
+# Skelton = "Skelton"
