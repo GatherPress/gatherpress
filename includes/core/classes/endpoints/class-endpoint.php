@@ -280,7 +280,7 @@ class Endpoint {
 		if ( 0 === did_action( 'init' ) ) {
 			wp_trigger_error(
 				__CLASS__,
-				'was called too early! Run on init:11 to make all the rewrite-vodoo work.',
+				'was called too early! Run on init to make all the rewrite-vodoo work.',
 				E_USER_WARNING
 			);
 			return false;
