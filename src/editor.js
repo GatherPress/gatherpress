@@ -25,17 +25,17 @@ import { getFromGlobal } from './helpers/globals';
 
 // Execute the following code when the DOM is ready.
 domReady(() => {
-
 	const selectEditPost = select('core/edit-post');
 	const dispatchEditPost = dispatch('core/edit-post');
 
-	if ( ! selectEditPost || ! dispatchEditPost ) {
+	if (!selectEditPost || !dispatchEditPost) {
 		return;
 	}
 
-	const isEditorSidebarOpened = selectEditPost.isEditorSidebarOpened('edit-post/document');
+	const isEditorSidebarOpened =
+		selectEditPost.isEditorSidebarOpened('edit-post/document');
 
-	if ( ! isEditorSidebarOpened ) {
+	if (!isEditorSidebarOpened) {
 		dispatchEditPost.openGeneralSidebar('edit-post/document');
 	}
 

@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import domReady from "@wordpress/dom-ready";
+import domReady from '@wordpress/dom-ready';
 import { dispatch, select } from '@wordpress/data';
 import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
@@ -85,18 +85,21 @@ registerPlugin('gatherpress-event-settings', {
  *
  * @return {void}
  */
-domReady( () => {
-
+domReady(() => {
 	const selectEditPost = select('core/edit-post');
 	const dispatchEditor = dispatch('core/editor');
 
-	if ( ! selectEditPost || ! dispatchEditor ) {
+	if (!selectEditPost || !dispatchEditor) {
 		return;
 	}
 
-	const isEventSettingsPanelOpen = selectEditPost.isEditorPanelOpened('gatherpress-event-settings/gatherpress-event-settings');
+	const isEventSettingsPanelOpen = selectEditPost.isEditorPanelOpened(
+		'gatherpress-event-settings/gatherpress-event-settings'
+	);
 
-	if ( ! isEventSettingsPanelOpen ) {
-		dispatchEditor.toggleEditorPanelOpened('gatherpress-event-settings/gatherpress-event-settings');
+	if (!isEventSettingsPanelOpen) {
+		dispatchEditor.toggleEditorPanelOpened(
+			'gatherpress-event-settings/gatherpress-event-settings'
+		);
 	}
-})
+});

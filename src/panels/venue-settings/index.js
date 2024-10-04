@@ -68,18 +68,21 @@ registerPlugin('gatherpress-venue-settings', {
  *
  * @return {void}
  */
-domReady( () => {
-
+domReady(() => {
 	const selectEditPost = select('core/edit-post');
 	const dispatchEditor = dispatch('core/editor');
 
-	if ( ! selectEditPost || ! dispatchEditor ) {
+	if (!selectEditPost || !dispatchEditor) {
 		return;
 	}
 
-	const isVenuePanelOpened = selectEditPost.isEditorPanelOpened('gatherpress-venue-settings/gatherpress-venue-settings');
+	const isVenuePanelOpened = selectEditPost.isEditorPanelOpened(
+		'gatherpress-venue-settings/gatherpress-venue-settings'
+	);
 
-	if ( ! isVenuePanelOpened ) {
-		dispatchEditor.toggleEditorPanelOpened('gatherpress-venue-settings/gatherpress-venue-settings');
+	if (!isVenuePanelOpened) {
+		dispatchEditor.toggleEditorPanelOpened(
+			'gatherpress-venue-settings/gatherpress-venue-settings'
+		);
 	}
-})
+});
