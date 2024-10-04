@@ -496,7 +496,7 @@ class Rsvp {
 			$retval[ $status ]['count']     = count( $retval[ $status ]['responses'] ) + $guests;
 		}
 
-		wp_cache_set( $cache_key, $retval, 15 * MINUTE_IN_SECONDS );
+		wp_cache_set( $cache_key, $retval, '', 15 * MINUTE_IN_SECONDS );
 
 		return $retval;
 	}
