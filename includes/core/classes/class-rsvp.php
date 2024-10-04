@@ -239,7 +239,7 @@ class Rsvp {
 			wp_update_comment( $args );
 		}
 
-		if ( is_wp_error( $comment_id ) || empty( $comment_id ) ) {
+		if ( empty( $comment_id ) ) {
 			return $data;
 		}
 
