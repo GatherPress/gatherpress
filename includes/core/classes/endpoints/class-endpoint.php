@@ -389,7 +389,7 @@ class Endpoint {
 	 *
 	 * @return string The slug of the endpoint or an empty string if not a feed template.
 	 */
-	protected function has_feed(): string {
+	public function has_feed(): string {
 		if ( false !== strpos( $this->reg_ex, '/feed/' ) ) {
 			$feed_slug = current( $this->get_slugs( __NAMESPACE__ . '\Endpoint_Template' ) );
 			if ( ! empty( $feed_slug ) ) {
