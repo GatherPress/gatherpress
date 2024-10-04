@@ -277,7 +277,7 @@ class Rsvp {
 			'anonymous' => intval( $anonymous ),
 		);
 
-		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE );
+		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
 
 		if ( ! $limit_reached ) {
 			$this->check_waiting_list();
@@ -383,7 +383,7 @@ class Rsvp {
 	public function responses(): array {
 		$post_id    = $this->event->ID;
 		$cache_key  = sprintf( self::CACHE_KEY, $post_id );
-		$retval     = wp_cache_get( $cache_key, GATHERPRESS_CACHE );
+		$retval     = wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP );
 		$rsvp_query = Rsvp_Query::get_instance();
 
 		// @todo add testing with cache.
@@ -496,7 +496,7 @@ class Rsvp {
 			$retval[ $status ]['count']     = count( $retval[ $status ]['responses'] ) + $guests;
 		}
 
-		wp_cache_set( $cache_key, $retval, GATHERPRESS_CACHE, 15 * MINUTE_IN_SECONDS );
+		wp_cache_set( $cache_key, $retval, GATHERPRESS_CACHE_GROUP, 15 * MINUTE_IN_SECONDS );
 
 		return $retval;
 	}

@@ -22,7 +22,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 // Constants.
-define( 'GATHERPRESS_CACHE', 'gatherpress_cache' );
+define( 'GATHERPRESS_CACHE_GROUP', 'gatherpress_cache' );
 define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );

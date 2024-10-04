@@ -266,7 +266,7 @@ class Test_Rsvp extends Base {
 		wp_delete_user( $user_id_2 );
 
 		// User will remain while cached until it expires.
-		wp_cache_delete( sprintf( Rsvp::CACHE_KEY, $post->ID ), GATHERPRESS_CACHE );
+		wp_cache_delete( sprintf( Rsvp::CACHE_KEY, $post->ID ), GATHERPRESS_CACHE_GROUP );
 
 		$responses = $rsvp->responses();
 
