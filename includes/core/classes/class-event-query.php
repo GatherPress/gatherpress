@@ -193,7 +193,7 @@ class Event_Query {
 						$query->is_page              = false;
 						$query->is_singular          = false;
 						$query->is_archive           = true;
-						$query->is_post_type_archive = array( Event::POST_TYPE );
+						$query->is_post_type_archive = true;
 
 						// This will force a page to behave like an archive page. Use -1 as that is not a valid ID.
 						$query->queried_object_id = -1;
