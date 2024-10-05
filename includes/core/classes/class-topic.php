@@ -79,8 +79,8 @@ class Topic {
 			Event::POST_TYPE,
 			array(
 				'labels'            => array(
-					'name'              => _x( 'Topics', 'taxonomy general name', 'gatherpress' ),
-					'singular_name'     => _x( 'Topic', 'taxonomy singular name', 'gatherpress' ),
+					'name'              => _x( 'Topics', 'Taxonomy General Name', 'gatherpress' ),
+					'singular_name'     => _x( 'Topic', 'Taxonomy Singular Name', 'gatherpress' ),
 					'search_items'      => __( 'Search Topics', 'gatherpress' ),
 					'all_items'         => __( 'All Topics', 'gatherpress' ),
 					'view_item'         => __( 'View Topic', 'gatherpress' ),
