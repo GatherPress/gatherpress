@@ -77,6 +77,52 @@ class Test_Export extends Base {
 	}
 
 	/**
+	 * Coverage for prepare.
+	 *
+	 * @covers ::prepare
+	 *
+	 * @return void
+	 */
+	public function test_prepare(): void {
+		$instance = Export::get_instance();
+		$post     = $this->mock->post()->get();
+
+
+		$this->assertEmpty(
+			get_post_meta( $post->ID, Export::POST_META, true ),
+			'Failed to assert the post meta "gatherpress_extend_export" didn\'t exist yet.'
+		);
+
+		// Run method under test with a post.
+		$instance->prepare( $post );
+
+		$this->assertEmpty(
+			get_post_meta( $post->ID, Export::POST_META, true ),
+			'Failed to assert the post meta "gatherpress_extend_export" wasn\'t saved for a regular post.'
+		);
+
+		$post = $this->mock->post(
+			array(
+				'post_title'   => 'Unit Test Event',
+				'post_type'    => 'gatherpress_event',
+				'post_content' => 'Unit Test description.',
+			)
+		)->get();
+
+		// Run method under test with a gatherpress_event.
+		$instance->prepare( $post );
+
+		$this->assertSame(
+			'1',
+			get_post_meta( $post->ID, Export::POST_META, true ),
+			'Failed to assert the post meta "gatherpress_extend_export" was saved.'
+		);
+
+		// Clean up for later tests.
+		delete_post_meta( $post->ID, Export::POST_META );
+	}
+
+	/**
 	 * Coverage for validate.
 	 *
 	 * @covers ::validate
