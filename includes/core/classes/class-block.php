@@ -84,9 +84,19 @@ class Block {
 	 */
 	public function register_block_variations(): void {
 		foreach ( $this->get_block_variations() as $block ) {
-			$name = $this->get_classname_from_foldername( $block );
-			require_once sprintf( '%1$s/build/variations/%2$s/class-%2$s.php', GATHERPRESS_CORE_PATH, $block );
-			$name::get_instance();
+			// Prepare namespaced class-name
+			// in the following shape: "GatherPress\Core\Blocks\Block_Variation"  (example).
+			$name = join(
+				'\\',
+				array(
+					__NAMESPACE__,
+					'Blocks',
+					$this->get_classname_from_foldername( $block ),
+				)
+			);
+			if ( class_exists( $name ) ) {
+				$name::get_instance();
+			}
 		}
 	}
 
@@ -117,13 +127,8 @@ class Block {
 	 * @return string Class name that reflects the given foldername.
 	 */
 	protected static function get_classname_from_foldername( string $foldername ): string {
-		return join(
-			'\\',
-			array(
-				__CLASS__,
-				ucwords( str_replace( '-', '_', $foldername ), '_' ),
-			)
-		);
+		$foldername = basename( $foldername );
+		return ucwords( str_replace( '-', '_', $foldername ), '_' );
 	}
 
 	/**
