@@ -185,7 +185,11 @@ class Export extends Migrate {
 	 * @since 1.0.0
 	 */
 	public function render( array $callbacks, string $key, WP_Post $post ) {
-		if ( ! isset( $callbacks['export_callback'] ) || ! is_callable( $callbacks['export_callback'] ) ) {
+		if (
+			! isset( $callbacks['export_callback'] ) ||
+			! is_callable( $callbacks['export_callback'] ) ||
+			! function_exists( 'wxr_cdata' )
+		) {
 			return;
 		}
 

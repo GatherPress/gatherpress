@@ -72,6 +72,52 @@ class Test_Export extends Base {
 	}
 
 	/**
+	 * Coverage for extend.
+	 *
+	 * @covers ::extend
+	 *
+	 * @return void
+	 */
+	public function test_extend(): void {
+		$instance = Export::get_instance();
+
+		$post_id  = $this->mock->post()->get()->post_id;
+		$meta_key = '';
+		$meta     = (object) [
+			"post_id" => $post_id
+		];
+		$this->assertTrue(
+			$instance->extend( true, $meta_key, $meta ),
+			'Failed to assert the method accepts wether to "skip" saving the current post meta, independent from the data to save.'
+		);
+		$this->assertFalse(
+			$instance->extend( false, $meta_key, $meta ),
+			'Failed to assert the method accepts wether to "skip" saving the current post meta, independent from the data to save.'
+		);
+
+		$skip     = false;
+		$meta_key = Export::POST_META;
+
+		$this->assertSame(
+			'gatherpress_extend_export',
+			$meta_key,
+			'Failed to assert the post meta key hasn\'t changed.'
+		);
+
+		// Add temporary marker.
+		add_post_meta( $post_id, $meta_key, 'temp-unit-test' );
+
+		$this->assertTrue(
+			$instance->extend( $skip, $meta_key, $meta ),
+			'Failed to assert the method returns true, even with false given, because the "meta_key" matches.'
+		);
+		$this->assertFalse(
+			get_post_meta( $post_id, $meta_key ),
+			'Failed to assert the temporary marker was deleted from post meta.'
+		);
+	}
+
+	/**
 	 * Coverage for datetime_callback method.
 	 *
 	 * @covers ::datetimes_callback
