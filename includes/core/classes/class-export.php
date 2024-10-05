@@ -97,6 +97,18 @@ class Export extends Migrate {
 	}
 
 	/**
+	 * Checks if the currently exported post is of type 'gatherpress_event'.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  WP_Post $post Current meta key.
+	 * @return bool          True, when the currently exported post is of type 'gatherpress_event', false otherwise.
+	 */
+	protected function validate( WP_Post $post ): bool {
+		return ( Event::POST_TYPE === $post->post_type );
+	}
+
+	/**
 	 * Extend WordPress' native Export
 	 *
 	 * WordPress' native Export can be extended in hacky way using `wxr_export_skip_postmeta`
@@ -138,18 +150,6 @@ class Export extends Migrate {
 	}
 
 	/**
-	 * Checks if the currently exported post is of type 'gatherpress_event'.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param  WP_Post $post Current meta key.
-	 * @return bool          True, when the currently exported post is of type 'gatherpress_event', false otherwise.
-	 */
-	protected function validate( WP_Post $post ): bool {
-		return ( Event::POST_TYPE === $post->post_type );
-	}
-
-	/**
 	 * Exports all custom data.
 	 *
 	 * Gets all 'pseudopostmetas' and generates WXR-compatible output for each,
@@ -185,7 +185,11 @@ class Export extends Migrate {
 	 * @since 1.0.0
 	 */
 	public function render( array $callbacks, string $key, WP_Post $post ) {
-		if ( ! isset( $callbacks['export_callback'] ) || ! is_callable( $callbacks['export_callback'] ) ) {
+		if (
+			! isset( $callbacks['export_callback'] ) ||
+			! is_callable( $callbacks['export_callback'] ) ||
+			! function_exists( 'wxr_cdata' )
+		) {
 			return;
 		}
 

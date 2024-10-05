@@ -15,6 +15,7 @@ use PMC\Unit_Test\Base;
  * Class Test_Migrate.
  *
  * @coversDefaultClass \GatherPress\Core\Migrate
+ * @group migrate
  */
 class Test_Migrate extends Base {
 	/**
