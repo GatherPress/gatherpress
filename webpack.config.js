@@ -13,6 +13,10 @@ function getVariationEntries() {
 	const variationsDir = path.resolve(process.cwd(), 'src', 'variations');
 	const entries = {};
 
+	if ( ! fs.existsSync(variationsDir) ) {
+		return entries;
+	}
+
 	const variationDirs = fs.readdirSync(variationsDir);
 	for (const variation of variationDirs) {
 		const variationPath = path.join(variationsDir, variation);
