@@ -43,6 +43,40 @@ class Test_Export extends Base {
 	}
 
 	/**
+	 * Coverage for export.
+	 *
+	 * @covers ::export
+	 *
+	 * @return void
+	 */
+	public function test_export(): void {
+		$instance = Export::get_instance();
+
+		$this->assertFalse(
+			has_action( 'the_post', array( $instance, 'prepare' ) ),
+			'Failed to assert that the "the_post" action is not already added.'
+		);
+		$this->assertFalse(
+			has_filter( 'wxr_export_skip_postmeta', array( $instance, 'extend' ) ),
+			'Failed to assert that the "wxr_export_skip_postmeta" filter is not already added.'
+		);
+
+		$instance->export();
+
+		$this->assertSame(
+			10,
+			has_action( 'the_post', array( $instance, 'prepare' ) ),
+			'Failed to assert that the "the_post" action was added.'
+		);
+
+		$this->assertSame(
+			10,
+			has_filter( 'wxr_export_skip_postmeta', array( $instance, 'extend' ) ),
+			'Failed to assert that the "wxr_export_skip_postmeta" filter was added.'
+		);
+	}
+
+	/**
 	 * Coverage for validate.
 	 *
 	 * @covers ::validate
