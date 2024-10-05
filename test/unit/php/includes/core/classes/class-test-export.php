@@ -122,11 +122,11 @@ class Test_Export extends Base {
 		);
 		$this->assertTrue(
 			$instance->extend( true, $meta_key, $meta ),
-			'Failed to assert the method accepts wether to "skip" saving the current post meta, independent from the data to save.'
+			'Failed to assert the method accepts whether to "skip" saving the current post meta, independent from the data to save.'
 		);
 		$this->assertFalse(
 			$instance->extend( false, $meta_key, $meta ),
-			'Failed to assert the method accepts wether to "skip" saving the current post meta, independent from the data to save.'
+			'Failed to assert the method accepts whether to "skip" saving the current post meta, independent from the data to save.'
 		);
 
 		$skip     = false;
