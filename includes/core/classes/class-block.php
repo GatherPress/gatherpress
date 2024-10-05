@@ -107,6 +107,10 @@ class Block {
 	 */
 	protected static function get_block_variations(): array {
 		$blocks_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
+		if ( ! file_exists( $blocks_directory ) ) {
+			return array();
+		}
+
 		$blocks           = array_values(
 			array_diff(
 				scandir( $blocks_directory ),
