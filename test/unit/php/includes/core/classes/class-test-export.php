@@ -117,9 +117,9 @@ class Test_Export extends Base {
 
 		$post_id  = $this->mock->post()->get()->post_id;
 		$meta_key = '';
-		$meta     = (object) [
-			"post_id" => $post_id
-		];
+		$meta     = (object) array(
+			'post_id' => $post_id,
+		);
 		$this->assertTrue(
 			$instance->extend( true, $meta_key, $meta ),
 			'Failed to assert the method accepts wether to "skip" saving the current post meta, independent from the data to save.'
