@@ -90,6 +90,21 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Coverage for get_localized_post_type_slug method.
+	 *
+	 * @covers ::get_localized_post_type_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_localized_post_type_slug(): void {
+		$this->assertSame(
+			'venue',
+			Venue::get_localized_post_type_slug(),
+			'Failed to assert that post type slug is same.'
+		);
+	}
+
+	/**
 	 * Coverage for register_post_meta method.
 	 *
 	 * @covers ::register_post_meta

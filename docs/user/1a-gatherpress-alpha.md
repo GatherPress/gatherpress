@@ -24,6 +24,6 @@ As we continue to refine and develop GatherPress, please use the GatherPress Alp
 
 GatherPress Alpha also has a WP-CLI you can run to fix GatherPress. Simply run:
 
-```
+```sh
 wp gatherpress alpha fix
 ```

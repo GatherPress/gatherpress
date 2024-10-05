@@ -86,7 +86,7 @@ class Import extends Migrate {
 			 *
 			 * @since 1.0.0
 			 *
-			 * @param {array} $post_data_raw Unprocessesd 'gatherpress_event' post being imported.
+			 * @param array $post_data_raw Unprocessesd 'gatherpress_event' post being imported.
 			 */
 			do_action( 'gatherpress_import', $post_data_raw );
 		}

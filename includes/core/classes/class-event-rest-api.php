@@ -57,7 +57,7 @@ class Event_Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_action( 'gatherpress_send_emails', array( $this, 'send_emails' ), 10, 3 );
+		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 3 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 	}
 
@@ -122,7 +122,7 @@ class Event_Rest_Api {
 				'args'                => array(
 					'post_id' => array(
 						'required'          => true,
-						'validate_callback' => array( $this, 'validate_event_post_id' ),
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
 					'message' => array(
 						'required'          => false,
@@ -130,7 +130,7 @@ class Event_Rest_Api {
 					),
 					'send'    => array(
 						'required'          => true,
-						'validate_callback' => array( $this, 'validate_send' ),
+						'validate_callback' => array( Validate::class, 'send' ),
 					),
 				),
 			),
@@ -158,11 +158,11 @@ class Event_Rest_Api {
 				'args'                => array(
 					'post_id' => array(
 						'required'          => true,
-						'validate_callback' => array( $this, 'validate_event_post_id' ),
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
 					'status'  => array(
 						'required'          => true,
-						'validate_callback' => array( $this, 'validate_rsvp_status' ),
+						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
 				),
 			),
@@ -188,11 +188,11 @@ class Event_Rest_Api {
 				'args'                => array(
 					'event_list_type' => array(
 						'required'          => true,
-						'validate_callback' => array( $this, 'validate_event_list_type' ),
+						'validate_callback' => array( Validate::class, 'event_list_type' ),
 					),
 					'max_number'      => array(
 						'required'          => true,
-						'validate_callback' => array( $this, 'validate_number' ),
+						'validate_callback' => array( Validate::class, 'number' ),
 					),
 					'datetime_format' => array(
 						'required' => false,
@@ -203,134 +203,6 @@ class Event_Rest_Api {
 				),
 			),
 		);
-	}
-
-	/**
-	 * Validate RSVP status.
-	 *
-	 * Validates whether a given parameter is a valid RSVP status.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $param An RSVP status to validate.
-	 * @return bool True if the parameter is a valid RSVP status, false otherwise.
-	 */
-	public function validate_rsvp_status( $param ): bool {
-		return in_array(
-			$param,
-			array(
-				'attending',
-				'waiting_list',
-				'not_attending',
-				'no_status',
-			),
-			true
-		);
-	}
-
-	/**
-	 * Validate Event Post ID.
-	 *
-	 * Validates whether a given parameter is a valid Event Post ID.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int|string $param A Post ID to validate.
-	 * @return bool True if the parameter is a valid Event Post ID, false otherwise.
-	 */
-	public function validate_event_post_id( $param ): bool {
-		return (
-			$this->validate_number( $param ) &&
-			Event::POST_TYPE === get_post_type( $param )
-		);
-	}
-
-	/**
-	 * Validate recipients for sending emails.
-	 *
-	 * Validates an array of email recipient options to ensure they are correctly structured.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param mixed $param An array of email recipients.
-	 * @return bool True if the parameter is a valid array of email recipients, false otherwise.
-	 */
-	public function validate_send( $param ): bool {
-		$expected_params = array( 'all', 'attending', 'waiting_list', 'not_attending' );
-
-		if ( is_array( $param ) ) {
-			foreach ( $expected_params as $expected_param ) {
-				if (
-					! array_key_exists( $expected_param, $param ) ||
-					! is_bool( $param[ $expected_param ] )
-				) {
-					return false;
-				}
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Validate a numeric value.
-	 *
-	 * Validates whether the given parameter is a valid numeric value greater than zero.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int|string $param The value to validate.
-	 * @return bool True if the parameter is a valid numeric value greater than zero, false otherwise.
-	 */
-	public function validate_number( $param ): bool {
-		return (
-			0 < intval( $param ) &&
-			is_numeric( $param )
-		);
-	}
-
-	/**
-	 * Validate an event list type.
-	 *
-	 * Validates whether the given event list type parameter is valid (either 'upcoming' or 'past').
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $param The event list type to validate.
-	 * @return bool True if the parameter is a valid event list type, false otherwise.
-	 */
-	public function validate_event_list_type( string $param ): bool {
-		return in_array( $param, array( 'upcoming', 'past' ), true );
-	}
-
-	/**
-	 * Validate a datetime string.
-	 *
-	 * Validates whether the given datetime string parameter is in the valid 'Y-m-d H:i:s' format.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $param The datetime string to validate.
-	 * @return bool True if the parameter is a valid datetime string, false otherwise.
-	 */
-	public function validate_datetime( string $param ): bool {
-		return (bool) \DateTime::createFromFormat( 'Y-m-d H:i:s', $param );
-	}
-
-	/**
-	 * Validate a timezone identifier.
-	 *
-	 * Validates whether the given timezone identifier parameter is valid.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $param The timezone identifier to validate.
-	 * @return bool True if the parameter is a valid timezone identifier, false otherwise.
-	 */
-	public function validate_timezone( string $param ): bool {
-		return in_array( Utility::maybe_convert_utc_offset( $param ), Utility::list_timezone_and_utc_offsets(), true );
 	}
 
 	/**
@@ -359,37 +231,44 @@ class Event_Rest_Api {
 	}
 
 	/**
-	 * Send event-related emails to selected members.
+	 * Hooked method to trigger the sending of related emails.
 	 *
-	 * This method is responsible for sending event-related emails to specific members. It first checks if the given
-	 * `$post_id` corresponds to an event post type, and if not, it returns early. Then, it retrieves a list of members
-	 * to send the email to and constructs the email subject, body, and headers. Finally, it sends the email to each
-	 * selected member.
+	 * This method hooks into a WordPress action, triggering the `send_emails` method to send emails to selected members.
+	 * It doesn't return any value, as it's intended to be called by an action hook.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $post_id Event Post ID.
+	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
-	 * @return bool
+	 * @return void
+	 */
+	public function handle_email_send_action( int $post_id, array $send, string $message ): void {
+		$this->send_emails( $post_id, $send, $message );
+	}
+
+	/**
+	 * Send emails to selected members.
+	 *
+	 * This method is responsible for sending emails to specific members. It checks if the given
+	 * `$post_id` corresponds to a specific post type, retrieves the list of members to email, and sends the email with
+	 * the appropriate subject, body, and headers.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param array  $send    Members to send the email to.
+	 * @param string $message Optional message to include in the email.
+	 * @return bool True if emails were successfully sent, false otherwise.
 	 */
 	public function send_emails( int $post_id, array $send, string $message ): bool {
 		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return false;
 		}
 
-		$members = $this->get_members( $send, $post_id );
-		/* translators: %s: event title. */
-		$subject = sprintf( __( '📅 %s', 'gatherpress' ), get_the_title( $post_id ) );
-		$body    = Utility::render_template(
-			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'event_id' => $post_id,
-				'message'  => $message,
-			),
-		);
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
+		// Keep the currently logged-in user.
+		$current_user = wp_get_current_user();
+		$members      = $this->get_members( $send, $post_id );
 
 		foreach ( $members as $member ) {
 			if ( '0' === get_user_meta( $member->ID, 'gatherpress_event_updates_opt_in', true ) ) {
@@ -397,9 +276,34 @@ class Event_Rest_Api {
 			}
 
 			if ( $member->user_email ) {
-				$to = $member->user_email;
+				$to              = $member->user_email;
+				$switched_locale = switch_to_user_locale( $member->ID );
+
+				// Set the current user to the actual member to mail to,
+				// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
+				// are recognized by the functions inside render_template().
+				wp_set_current_user( $member->ID );
+
+				/* translators: %s: event title. */
+				$subject = sprintf( _x( '📅 %s', 'Email subject for event updates', 'gatherpress' ), get_the_title( $post_id ) );
+				$body    = Utility::render_template(
+					sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
+					array(
+						'event_id' => $post_id,
+						'message'  => $message,
+					),
+				);
+				$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+				$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
+
+				// Reset the current user to the editor sending the email.
+				wp_set_current_user( $current_user->ID );
 
 				wp_mail( $to, $subject, $body, $headers );
+
+				if ( $switched_locale ) {
+					restore_previous_locale();
+				}
 			}
 		}
 

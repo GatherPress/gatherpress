@@ -230,7 +230,7 @@ class Test_Event_Query extends Base {
 
 		$instance = Event_Query::get_instance();
 
-		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$retval = $instance->adjust_event_sql( array(), 'all', 'DESC' );
 
 		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
