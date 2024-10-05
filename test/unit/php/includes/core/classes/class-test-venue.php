@@ -100,8 +100,38 @@ class Test_Venue extends Base {
 		$this->assertSame(
 			'venue',
 			Venue::get_localized_post_type_slug(),
-			'Failed to assert that post type slug is same.'
+			'Failed to assert english post type slug is "venue".'
 		);
+		
+		// This also checks that the post type is still registered with the same 'Post Type Singular Name' label,
+		// which is used by the method under test and the test itself.
+		$filter = static function ( string $translation, string $text, string $context ): string {
+			if ( 'Venue' !== $text || 'Post Type Singular Name' !== $context ) {
+				return $translation;
+			}
+			return 'Ünit Tést';
+		};
+
+		/**
+		 * Instead of loading additional languages into the unit test suite,
+		 * we just filter the translated value, to mock different languages.
+		 *
+		 * Filters text with its translation based on context information for a domain.
+		 *
+		 * @param string $translation Translated text.
+		 * @param string $text        Text to translate.
+		 * @param string $context     Context information for the translators.
+		 * @return string Translated text.
+		 */
+		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );
+
+		$this->assertSame(
+			'unit-test',
+			Venue::get_localized_post_type_slug(),
+			'Failed to assert the post type slug is "unit-test".'
+		);
+
+		remove_filter( 'gettext_with_context_gatherpress', $filter );
 	}
 
 	/**
