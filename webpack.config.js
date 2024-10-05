@@ -3,7 +3,6 @@
  */
 const fs = require('fs');
 const path = require('path');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 /**
  * WordPress Dependencies
@@ -27,18 +26,6 @@ function getVariationEntries() {
 
 module.exports = {
 	...defaultConfig,
-	plugins: [
-		...defaultConfig.plugins,
-		new CopyWebpackPlugin({
-			patterns: [
-				{
-					from: 'variations/**/class-*.php',
-					to: '[path][name][ext]',
-					context: 'src',
-				},
-			],
-		}),
-	],
 	entry: {
 		...defaultConfig.entry(),
 		admin_style: path.resolve(process.cwd(), 'src', 'admin.scss'),
@@ -53,7 +40,6 @@ module.exports = {
 		),
 		profile: path.resolve(process.cwd(), 'src/profile', 'index.js'),
 		profile_style: path.resolve(process.cwd(), 'src/profile', 'style.scss'),
-		// 'variations/add-to-calendar/index': path.resolve(process.cwd(), 'src/variations/add-to-calendar', 'index.js'),
 		...getVariationEntries(),
 	},
 	module: {
