@@ -125,8 +125,31 @@ class Test_Event_Setup extends Base {
 		$this->assertSame(
 			'event',
 			Event_Setup::get_localized_post_type_slug(),
-			'Failed to assert english post type slug is "event".'
+			'Failed to assert English post type slug is "event".'
 		);
+
+		$user_id  = $this->factory->user->create();
+		update_user_meta( $user_id, 'locale', 'es_ES' );
+		switch_to_user_locale( $user_id );
+
+		// @todo This assertion CAN NOT FAIL,
+		//       until real translations do exist in the wp-env instance.
+		//       Because WordPress doesn't have any translation files to load,
+		//       it will return the string in English.
+		$this->assertSame(
+			'event',
+			Event_Setup::get_localized_post_type_slug(),
+			'Failed to assert post type slug is "event", even the locale is not English anymore.'
+		);
+		// But at least the restoring of the user locale can be tested, without .po files.
+		$this->assertSame(
+			'es_ES',
+			determine_locale(),
+			'Failed to assert locale was reset to Spanish, after switching to ~ and restoring from English.'
+		);
+
+		// Restore default locale for following tests.
+		switch_to_locale( 'en_US' );
 
 		// This also checks that the post type is still registered with the same 'Post Type Singular Name' label,
 		// which is used by the method under test and the test itself.
