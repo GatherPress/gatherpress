@@ -97,6 +97,18 @@ class Export extends Migrate {
 	}
 
 	/**
+	 * Checks if the currently exported post is of type 'gatherpress_event'.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  WP_Post $post Current meta key.
+	 * @return bool          True, when the currently exported post is of type 'gatherpress_event', false otherwise.
+	 */
+	protected function validate( WP_Post $post ): bool {
+		return ( Event::POST_TYPE === $post->post_type );
+	}
+
+	/**
 	 * Extend WordPress' native Export
 	 *
 	 * WordPress' native Export can be extended in hacky way using `wxr_export_skip_postmeta`
@@ -135,18 +147,6 @@ class Export extends Migrate {
 		}
 
 		return $skip;
-	}
-
-	/**
-	 * Checks if the currently exported post is of type 'gatherpress_event'.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param  WP_Post $post Current meta key.
-	 * @return bool          True, when the currently exported post is of type 'gatherpress_event', false otherwise.
-	 */
-	protected function validate( WP_Post $post ): bool {
-		return ( Event::POST_TYPE === $post->post_type );
 	}
 
 	/**
