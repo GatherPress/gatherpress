@@ -66,16 +66,17 @@ class Test_Topic extends Base {
 	 * @return void
 	 */
 	public function test_get_localized_taxonomy_slug(): void {
-		$instance = Topic::get_instance();
 
 		$this->assertSame(
 			'topic',
-			$instance->get_localized_taxonomy_slug(),
+			Topic::get_localized_taxonomy_slug(),
 			'Failed to assert english taxonomy slug is "topic".'
 		);
-
+		
+		// This also checks that the taxonomy is still registered with the same 'Taxonomy Singular Name' label,
+		// which is used by the method under test and the test itself.
 		$filter = static function ( string $translation, string $text, string $context ): string {
-			if ( 'topic' !== $text || 'Taxonomy Slug' !== $context ) {
+			if ( 'Topic' !== $text || 'Taxonomy Singular Name' !== $context ) {
 				return $translation;
 			}
 			return 'Ünit Tést';
@@ -96,7 +97,7 @@ class Test_Topic extends Base {
 
 		$this->assertSame(
 			'unit-test',
-			$instance->get_localized_taxonomy_slug(),
+			Topic::get_localized_taxonomy_slug(),
 			'Failed to assert taxonomy slug is "unit-test".'
 		);
 
