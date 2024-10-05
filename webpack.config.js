@@ -1,12 +1,32 @@
 /**
  * External Dependencies
  */
+const fs = require('fs');
 const path = require('path');
 
 /**
  * WordPress Dependencies
  */
 const defaultConfig = require('@wordpress/scripts/config/webpack.config.js');
+
+function getVariationEntries() {
+	const variationsDir = path.resolve(process.cwd(), 'src', 'variations');
+	const entries = {};
+
+	if (!fs.existsSync(variationsDir)) {
+		return entries;
+	}
+
+	const variationDirs = fs.readdirSync(variationsDir);
+	for (const variation of variationDirs) {
+		const variationPath = path.join(variationsDir, variation);
+		entries[`variations/${variation}/index`] = path.join(
+			variationPath,
+			'index.js'
+		);
+	}
+	return entries;
+}
 
 module.exports = {
 	...defaultConfig,
@@ -24,6 +44,7 @@ module.exports = {
 		),
 		profile: path.resolve(process.cwd(), 'src/profile', 'index.js'),
 		profile_style: path.resolve(process.cwd(), 'src/profile', 'style.scss'),
+		...getVariationEntries(),
 	},
 	module: {
 		...defaultConfig.module,
