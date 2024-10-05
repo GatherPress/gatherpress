@@ -111,7 +111,7 @@ class Block {
 			return array();
 		}
 
-		$blocks           = array_values(
+		$blocks = array_values(
 			array_diff(
 				scandir( $blocks_directory ),
 				array( '..', '.' )
