@@ -102,7 +102,7 @@ class Test_Venue extends Base {
 			Venue::get_localized_post_type_slug(),
 			'Failed to assert english post type slug is "venue".'
 		);
-		
+
 		// This also checks that the post type is still registered with the same 'Post Type Singular Name' label,
 		// which is used by the method under test and the test itself.
 		$filter = static function ( string $translation, string $text, string $context ): string {

@@ -72,7 +72,7 @@ class Test_Topic extends Base {
 			Topic::get_localized_taxonomy_slug(),
 			'Failed to assert english taxonomy slug is "topic".'
 		);
-		
+
 		// This also checks that the taxonomy is still registered with the same 'Taxonomy Singular Name' label,
 		// which is used by the method under test and the test itself.
 		$filter = static function ( string $translation, string $text, string $context ): string {
