@@ -148,29 +148,29 @@ jobs:
           if-no-files-found: ignore
 
 
-  merge-artifacts:
-    name: Merge Artifacts
-    if: ${{ ! cancelled() }}
-    needs: [e2e-tests]
-    runs-on: ubuntu-latest
-    outputs:
-      has-flaky-test-report: ${{ !!steps.merge-flaky-tests-reports.outputs.artifact-id }}
-    steps:
-      - name: Merge failures artifacts
-        uses: actions/upload-artifact/merge@v4
-        # Don't fail the job if there aren't any artifacts to merge.
-        continue-on-error: true
-        with:
-          name: failures-artifacts
-          # Retain the merged artifacts in case of a rerun.
-          pattern: failures-artifacts*
-          delete-merged: true
+  # merge-artifacts:
+  #   name: Merge Artifacts
+  #   if: ${{ ! cancelled() }}
+  #   needs: [e2e-tests]
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     has-flaky-test-report: ${{ !!steps.merge-flaky-tests-reports.outputs.artifact-id }}
+  #   steps:
+  #     - name: Merge failures artifacts
+  #       uses: actions/upload-artifact/merge@v4
+  #       # Don't fail the job if there aren't any artifacts to merge.
+  #       continue-on-error: true
+  #       with:
+  #         name: failures-artifacts
+  #         # Retain the merged artifacts in case of a rerun.
+  #         pattern: failures-artifacts*
+  #         delete-merged: true
 
-      - name: Merge flaky tests reports
-        id: merge-flaky-tests-reports
-        uses: actions/upload-artifact/merge@v4
-        continue-on-error: true
-        with:
-          name: flaky-tests-report
-          pattern: flaky-tests-report*
-          delete-merged: true
+  #     - name: Merge flaky tests reports
+  #       id: merge-flaky-tests-reports
+  #       uses: actions/upload-artifact/merge@v4
+  #       continue-on-error: true
+  #       with:
+  #         name: flaky-tests-report
+  #         pattern: flaky-tests-report*
+  #         delete-merged: true
