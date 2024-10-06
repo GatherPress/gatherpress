@@ -124,7 +124,7 @@ jobs:
       run: |
         npm run playground:mount -- --blueprint=./temp.blueprint.json & \
         sleep 60 && \
-        echo 'Playground is ready now, lets take some pictures.' && \
+        echo 'Playground is ready now, lets run some end-to-end tests.' && \
         # DEBUG=pw:api,pw:webserver \
         xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- \
         npm run test:e2e
