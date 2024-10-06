@@ -42,7 +42,9 @@ test.describe('RSVP to an event', () => {
 
 	test('A logged in user can perform RSVP action', async ({ page }) => {
 		await page.goto('/');
-		await page.getByRole('link', { name: 'Events' }).click({ force: true }); // Imported from of https://github.com/GatherPress/gatherpress-demo-data
+		// Be explicit witn the header,
+		// because "TT5" has an "Events" demo link in its footer.
+		await page.locator('header').getByRole('link', { name: 'Events' }).click({ force: true }); // Imported from of https://github.com/GatherPress/gatherpress-demo-data
 
 		await page.evaluate(() => window.scrollTo(0, 5000));
 		await page
