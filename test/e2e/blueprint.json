@@ -23,9 +23,6 @@
 			}
 		},
 		{
-			"step": "login"
-		},
-		{
 			"step": "activatePlugin",
 			"pluginName": "gatherpress",
 			"pluginPath": "/wordpress/wp-content/plugins/gatherpress"
