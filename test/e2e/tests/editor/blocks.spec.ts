@@ -21,7 +21,7 @@ test.describe('Blocks & Patterns in the Editor', () => {
 			name: 'Toggle block inserter',
 		});
 
-		await inserter.click({ timeout: 10000 }); // Increase timeout if necessary.
+		await inserter.click({ force: true, timeout: 10000 }); // Increase timeout if necessary.
 
 		await page
 			.getByRole('region', { name: 'Block Library' })
