@@ -168,18 +168,47 @@ jobs:
         # DEBUG=pw:api,pw:webserver \
         npm run screenshots:wporg -- --update-snapshots
 
+    - name: Checkout new branch
+      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+      # And, as you already guessed, if: failure() looks at 'conclusion'.
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        # Remove untracked, temporary file
+        rm -f ./localized_blueprint.json
+        git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
+
+    - name: Compress Images
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      id: compress-images
+      uses: calibreapp/image-actions@main
+      with:
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
+        # Use the compressOnly option with true value to skip the commit and summary comment.
+        compressOnly: true
+        # ignorePaths accepts a comma-separated string with globbing support # https://www.npmjs.com/package/glob
+        ignorePaths: 'artifacts,build,node_modules/**'
+
     - name: Commit updated screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
       if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       run: |
-        git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        # Remove untracked, temporary file
-        rm -f ./localized_blueprint.json
+
         git add -A
         git commit -m "Screenshots for ${{ matrix.locale }} updated!"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push new branch to origin
+      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+      # And, as you already guessed, if: failure() looks at 'conclusion'.
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
         git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -191,6 +220,6 @@ jobs:
       # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
-      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action'
+      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${{ steps.compress-images.outputs.markdown }}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

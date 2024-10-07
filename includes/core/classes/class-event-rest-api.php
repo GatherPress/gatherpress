@@ -57,7 +57,7 @@ class Event_Rest_Api {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
-		add_action( 'gatherpress_send_emails', array( $this, 'send_emails' ), 10, 3 );
+		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 3 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
 	}
 
@@ -231,37 +231,44 @@ class Event_Rest_Api {
 	}
 
 	/**
-	 * Send event-related emails to selected members.
+	 * Hooked method to trigger the sending of related emails.
 	 *
-	 * This method is responsible for sending event-related emails to specific members. It first checks if the given
-	 * `$post_id` corresponds to an event post type, and if not, it returns early. Then, it retrieves a list of members
-	 * to send the email to and constructs the email subject, body, and headers. Finally, it sends the email to each
-	 * selected member.
+	 * This method hooks into a WordPress action, triggering the `send_emails` method to send emails to selected members.
+	 * It doesn't return any value, as it's intended to be called by an action hook.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $post_id Event Post ID.
+	 * @param int    $post_id Post ID.
 	 * @param array  $send    Members to send the email to.
 	 * @param string $message Optional message to include in the email.
-	 * @return bool
+	 * @return void
+	 */
+	public function handle_email_send_action( int $post_id, array $send, string $message ): void {
+		$this->send_emails( $post_id, $send, $message );
+	}
+
+	/**
+	 * Send emails to selected members.
+	 *
+	 * This method is responsible for sending emails to specific members. It checks if the given
+	 * `$post_id` corresponds to a specific post type, retrieves the list of members to email, and sends the email with
+	 * the appropriate subject, body, and headers.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param array  $send    Members to send the email to.
+	 * @param string $message Optional message to include in the email.
+	 * @return bool True if emails were successfully sent, false otherwise.
 	 */
 	public function send_emails( int $post_id, array $send, string $message ): bool {
 		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return false;
 		}
 
-		$members = $this->get_members( $send, $post_id );
-		/* translators: %s: event title. */
-		$subject = sprintf( __( '📅 %s', 'gatherpress' ), get_the_title( $post_id ) );
-		$body    = Utility::render_template(
-			sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
-			array(
-				'event_id' => $post_id,
-				'message'  => $message,
-			),
-		);
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
+		// Keep the currently logged-in user.
+		$current_user = wp_get_current_user();
+		$members      = $this->get_members( $send, $post_id );
 
 		foreach ( $members as $member ) {
 			if ( '0' === get_user_meta( $member->ID, 'gatherpress_event_updates_opt_in', true ) ) {
@@ -269,9 +276,34 @@ class Event_Rest_Api {
 			}
 
 			if ( $member->user_email ) {
-				$to = $member->user_email;
+				$to              = $member->user_email;
+				$switched_locale = switch_to_user_locale( $member->ID );
+
+				// Set the current user to the actual member to mail to,
+				// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
+				// are recognized by the functions inside render_template().
+				wp_set_current_user( $member->ID );
+
+				/* translators: %s: event title. */
+				$subject = sprintf( _x( '📅 %s', 'Email subject for event updates', 'gatherpress' ), get_the_title( $post_id ) );
+				$body    = Utility::render_template(
+					sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
+					array(
+						'event_id' => $post_id,
+						'message'  => $message,
+					),
+				);
+				$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+				$subject = stripslashes_deep( html_entity_decode( $subject, ENT_QUOTES, 'UTF-8' ) );
+
+				// Reset the current user to the editor sending the email.
+				wp_set_current_user( $current_user->ID );
 
 				wp_mail( $to, $subject, $body, $headers );
+
+				if ( $switched_locale ) {
+					restore_previous_locale();
+				}
 			}
 		}
 

@@ -265,6 +265,9 @@ class Test_Rsvp extends Base {
 
 		wp_delete_user( $user_id_2 );
 
+		// User will remain while cached until it expires.
+		wp_cache_delete( sprintf( Rsvp::CACHE_KEY, $post->ID ), GATHERPRESS_CACHE_GROUP );
+
 		$responses = $rsvp->responses();
 
 		$this->assertEmpty(
@@ -344,13 +347,22 @@ class Test_Rsvp extends Base {
 		$newer = array( 'timestamp' => '2023-05-11 08:30:00' );
 		$older = array( 'timestamp' => '2022-05-11 08:30:00' );
 
-		$this->assertTrue(
-			$rsvp->sort_by_timestamp( $newer, $older ),
-			'Failed to assert correct sorting of timestamp.'
-		);
-		$this->assertFalse(
+		$this->assertSame(
+			-1,
 			$rsvp->sort_by_timestamp( $older, $newer ),
-			'Failed to assert correct sorting of timestamp.'
+			'Failed to assert that it returns a negative number while the first response\'s timestamp is earlier.'
+		);
+
+		$this->assertSame(
+			1,
+			$rsvp->sort_by_timestamp( $newer, $older ),
+			'Failed to assert that it returns a positive number while the second response\'s timestamp is earlier.'
+		);
+
+		$this->assertSame(
+			0,
+			$rsvp->sort_by_timestamp( $newer, $newer ),
+			'Failed to assert that it returns 0 while both response\'s timestamps are equal.'
 		);
 	}
 }

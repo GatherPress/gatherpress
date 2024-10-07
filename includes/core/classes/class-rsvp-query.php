@@ -15,7 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use WP_comment;
+use WP_Comment;
 use WP_Comment_Query;
 use WP_Tax_Query;
 
@@ -54,7 +54,7 @@ class Rsvp_Query {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
+		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
 	}
 
@@ -67,17 +67,17 @@ class Rsvp_Query {
 	 * @since 1.0.0
 	 *
 	 * @param array            $clauses       The clauses for the query.
-	 * @param WP_Comment_Query $comment_query The comment query object.
+	 * @param WP_Comment_Query $comment_query Current instance of WP_Comment_Query (passed by reference).
 	 * @return array Modified query clauses.
 	 */
 	public function taxonomy_query( array $clauses, WP_Comment_Query $comment_query ): array {
 		global $wpdb;
 
 		if ( ! empty( $comment_query->query_vars['tax_query'] ) ) {
-			$comment_query->tax_query = new WP_Tax_Query( $comment_query->query_vars['tax_query'] );
-			$pieces                   = $comment_query->tax_query->get_sql( $wpdb->comments, 'comment_ID' );
-			$clauses['join']         .= $pieces['join'];
-			$clauses['where']        .= $pieces['where'];
+			$comment_tax_query = new WP_Tax_Query( $comment_query->query_vars['tax_query'] );
+			$pieces            = $comment_tax_query->get_sql( $wpdb->comments, 'comment_ID' );
+			$clauses['join']  .= $pieces['join'];
+			$clauses['where'] .= $pieces['where'];
 		}
 
 		return $clauses;
@@ -107,11 +107,11 @@ class Rsvp_Query {
 		// Never allow count-only return, we always want array.
 		$args['count'] = false;
 
-		remove_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
+		remove_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 
 		$rsvps = get_comments( $args );
 
-		add_filter( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
+		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 
 		return (array) $rsvps;
 	}
@@ -153,13 +153,10 @@ class Rsvp_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param WP_Comment_Query $query The comment query object.
+	 * @param WP_Comment_Query $query Current instance of WP_Comment_Query (passed by reference).
 	 * @return void
 	 */
-	public function exclude_rsvp_from_comment_query( $query ) {
-		if ( ! $query instanceof WP_Comment_Query ) {
-			return;
-		}
+	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ) {
 
 		$current_comment_types = $query->query_vars['type'];
 

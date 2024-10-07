@@ -331,7 +331,7 @@ class Venue {
 			} else {
 				// Update the existing term with the new name and slug.
 				wp_update_term(
-					$term['term_id'],
+					intval( $term['term_id'] ),
 					self::TAXONOMY,
 					array(
 						'name' => $title,

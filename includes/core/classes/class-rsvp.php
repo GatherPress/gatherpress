@@ -137,9 +137,9 @@ class Rsvp {
 		if ( ! empty( $rsvp ) ) {
 			$data['id']        = $rsvp->user_id;
 			$data['timestamp'] = $rsvp->comment_date;
-			$data['anonymous'] = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
-			$data['guests']    = intval( get_comment_meta( $rsvp->comment_ID, 'gatherpress_rsvp_guests', true ) );
-			$terms             = wp_get_object_terms( $rsvp->comment_ID, self::TAXONOMY );
+			$data['anonymous'] = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_anonymous', true ) );
+			$data['guests']    = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_guests', true ) );
+			$terms             = wp_get_object_terms( intval( $rsvp->comment_ID ), self::TAXONOMY );
 
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
 				$data['status'] = $terms[0]->slug;
@@ -239,7 +239,7 @@ class Rsvp {
 			wp_update_comment( $args );
 		}
 
-		if ( is_wp_error( $comment_id ) || empty( $comment_id ) ) {
+		if ( empty( $comment_id ) ) {
 			return $data;
 		}
 
@@ -277,7 +277,7 @@ class Rsvp {
 			'anonymous' => intval( $anonymous ),
 		);
 
-		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ) );
+		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
 
 		if ( ! $limit_reached ) {
 			$this->check_waiting_list();
@@ -383,7 +383,7 @@ class Rsvp {
 	public function responses(): array {
 		$post_id    = $this->event->ID;
 		$cache_key  = sprintf( self::CACHE_KEY, $post_id );
-		$retval     = wp_cache_get( $cache_key );
+		$retval     = wp_cache_get( $cache_key, GATHERPRESS_CACHE_GROUP );
 		$rsvp_query = Rsvp_Query::get_instance();
 
 		// @todo add testing with cache.
@@ -496,7 +496,7 @@ class Rsvp {
 			$retval[ $status ]['count']     = count( $retval[ $status ]['responses'] ) + $guests;
 		}
 
-		wp_cache_set( $cache_key, $retval, 15 * MINUTE_IN_SECONDS );
+		wp_cache_set( $cache_key, $retval, GATHERPRESS_CACHE_GROUP, 15 * MINUTE_IN_SECONDS );
 
 		return $retval;
 	}
@@ -542,9 +542,11 @@ class Rsvp {
 	 *
 	 * @param array $first  First response to compare in the sort.
 	 * @param array $second Second response to compare in the sort.
-	 * @return bool True if the first response's timestamp is earlier than the second response's timestamp; otherwise, false.
+	 * @return int Returns a negative number if the first response's timestamp is earlier,
+	 *             a positive number if the second response's timestamp is earlier,
+	 *             or 0 if both are equal.
 	 */
-	public function sort_by_timestamp( array $first, array $second ): bool {
-		return ( strtotime( $first['timestamp'] ) > strtotime( $second['timestamp'] ) );
+	public function sort_by_timestamp( array $first, array $second ): int {
+		return strtotime( $first['timestamp'] ) <=> strtotime( $second['timestamp'] );
 	}
 }
