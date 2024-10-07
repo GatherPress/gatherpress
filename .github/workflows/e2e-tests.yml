@@ -33,6 +33,12 @@ jobs:
           php: [
             '7.4',
             '8.3'
+          ],
+          wp: [
+            '6.4',
+            '6.5',
+            '6.6',
+            'latest'
           ]
 
     steps:
@@ -91,7 +97,7 @@ jobs:
       run: |
         preferredVersions='{
           "php": "${{ matrix.php }}",
-          "wp": "latest"
+          "wp": "${{ matrix.wp }}"
         }'
         echo "Use jq to prepend the preferred versions to the existing blueprint JSON file."
         jq --argjson preferredVersions "$preferredVersions" '{preferredVersions: $preferredVersions} + .' ./test/e2e/blueprint.json > temp.blueprint.json
