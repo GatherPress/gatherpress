@@ -4,7 +4,6 @@
 const { test, expect } = require('@wordpress/e2e-test-utils-playwright');
 
 test.describe('Events in the Editor', () => {
-
 	let venueSelector;
 
 	test.beforeEach(async ({ admin, page }) => {
@@ -13,16 +12,14 @@ test.describe('Events in the Editor', () => {
 
 		venueSelector = await page.getByLabel('Venue Selector');
 		venueSelector.waitFor();
-		await expect( venueSelector ).toBeVisible();
+		await expect(venueSelector).toBeVisible();
 	});
 
 	test('An admin should be able to publish an online event', async ({
 		editor,
 		page,
-		pageUtils,
+		// pageUtils,
 	}) => {
-
-
 		await venueSelector.selectOption('Online event');
 		await page
 			.getByPlaceholder('Add link to online event')
@@ -32,9 +29,8 @@ test.describe('Events in the Editor', () => {
 		// await pageUtils.pressKeys( 'primary+s' );
 		await page.reload();
 
-		await expect( venueSelector ).toBeVisible();
-		await expect( venueSelector ).toHaveText( 'Online event' );
-
+		await expect(venueSelector).toBeVisible();
+		await expect(venueSelector).toHaveText('Online event');
 	});
 
 	test('An admin should be able to publish an offline event', async ({
@@ -47,9 +43,7 @@ test.describe('Events in the Editor', () => {
 		// await pageUtils.pressKeys( 'primary+s' );
 		await page.reload();
 
-		await expect( venueSelector ).toBeVisible();
-		await expect( venueSelector ).toHaveText( 'Turin' );
-
+		await expect(venueSelector).toBeVisible();
+		await expect(venueSelector).toHaveText('Turin');
 	});
-
 });
