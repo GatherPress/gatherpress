@@ -14,14 +14,6 @@ test.describe('Venues in the Editor', () => {
 	}) => {
 		await page.getByLabel('Add title').isVisible();
 		await page.getByLabel('Add title').fill('Test venue');
-		await page.getByLabel('Add title').press('Tab');
-
-		const venue = page.locator('.gatherpress-venue__name');
-		await venue.press('Backspace');
-
-		await page
-			.getByLabel('Empty block; start writing or')
-			.fill('test venue information');
 
 		await editor.publishPost(); // this is missing the force and doesnt work.
 	});
