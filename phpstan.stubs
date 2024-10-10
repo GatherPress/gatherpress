@@ -5,6 +5,14 @@
  */
 
 namespace {
+
+    define( 'GATHERPRESS_CACHE_GROUP', '');
+    define( 'GATHERPRESS_CORE_FILE', './gatherpress.php');
+    define( 'GATHERPRESS_CORE_PATH', '.');
+    define( 'GATHERPRESS_CORE_URL', '');
+    define( 'GATHERPRESS_REST_NAMESPACE', '');
+    define( 'GATHERPRESS_REQUIRES_PHP', '');
+
     /**
      * Used in includes/core/classes/class-export.php
      *

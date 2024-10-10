@@ -10,9 +10,7 @@ parameters:
     bootstrapFiles:
         # Constants, functions, etc. used by GatherPress
         - phpstan.stubs
-#        - vendor/pmc/unit-test/src/classes/autoloader.php
-#        - vendor/autoload.php
-#        - gatherpress.php
+
     parallel:
         maximumNumberOfProcesses: 1
         processTimeout: 300.0
@@ -23,20 +21,8 @@ parameters:
 
     paths:
         - includes/
-#        - test/
-
-#    excludePaths:
-#        analyse:
-#            - vendor/
 
     ignoreErrors:
-        - '#^Constant GATHERPRESS_CACHE_GROUP not found\.$#'
-        - '#^Constant GATHERPRESS_CORE_FILE not found\.$#'
-        - '#^Constant GATHERPRESS_CORE_PATH not found\.$#'
-        - '#^Constant GATHERPRESS_CORE_URL not found\.$#'
-        - '#^Constant GATHERPRESS_REST_NAMESPACE not found\.$#'
-        - '#^Constant GATHERPRESS_REQUIRES_PHP not found\.$#'
-
         # core/classes/class-setup.php
         #
         # A dev-only error, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
