@@ -43,9 +43,11 @@ const OpenStreetMap = (props) => {
 		// Load Leaflet and its assets dynamically
 		const loadLeaflet = async () => {
 			const { default: L } = await import('leaflet');
+
 			await import('leaflet/dist/leaflet.css');
 			await import('leaflet/dist/images/marker-icon-2x.png');
 			await import('leaflet/dist/images/marker-shadow.png');
+
 			setLeaflet(L);
 		};
 
