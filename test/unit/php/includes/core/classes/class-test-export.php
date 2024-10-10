@@ -176,7 +176,6 @@ class Test_Export extends Base {
 	 * @return void
 	 */
 	public function test_run_and_render(): void {
-
 		$export = Export::get_instance();
 		$post   = $this->mock->post(
 			array(
