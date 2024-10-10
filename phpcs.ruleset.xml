@@ -34,7 +34,7 @@
 	<rule ref="WordPress"/>
 	<!-- Let's also check that everything is properly documented. -->
 	<rule ref="WordPress-Docs"/>
-	<!-- Trigger a Warning on @todo comments. -->
+	<!-- Trigger a Warning on @todolist comments. -->
 	<rule ref="Generic.Commenting.Todo"/>
 
 	<!-- @source:

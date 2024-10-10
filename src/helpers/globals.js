@@ -9,7 +9,7 @@ import { dispatch, select } from '@wordpress/data';
  *
  * @since 1.0.0
  *
- * @todo This is a hacky approach and relies on the behavior described in
+ * @todolist This is a hacky approach and relies on the behavior described in
  *       https://github.com/WordPress/gutenberg/issues/13774.
  *       Monitor the issue for any updates or changes in the Gutenberg behavior.
  */

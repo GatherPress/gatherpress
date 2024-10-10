@@ -90,6 +90,28 @@ class Assets {
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
+//		add_action( 'wp_enqueue_scripts', function() {
+////			wp_enqueue_script( 'wp-interactivity' );
+//			$asset = $this->get_asset_data( 'test' );
+//			// Enqueue the JS file.
+//			// It assumes that the JS file is in the same directory as this PHP file
+////			wp_enqueue_script(
+////				'@my-plugin/entry',
+////				$this->build . 'test.js',
+////				$asset['dependencies'],
+////				$asset['version'],
+////				true
+////			);
+//			if ( ! wp_script_is( 'wp-interactivity', 'registered' ) ) {
+//				wp_enqueue_script( 'wp-interactivity', 'http://gatherpress-org.test/wp-includes/js/dist/interactivity.js', array(), false, true );
+//			}
+//			wp_enqueue_script_module(
+//				'@my-plugin/entry',
+//				$this->build . 'test.js',
+//				$asset['dependencies'],
+//				$asset['version'],
+//			);
+//		});
 	}
 
 	/**

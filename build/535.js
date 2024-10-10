@@ -1,1 +1,1 @@
-"use strict";(globalThis.webpackChunkgatherpress=globalThis.webpackChunkgatherpress||[]).push([[535],{1535:(s,e,h)=>{h.r(e)}}]);
+"use strict";(self.webpackChunkgatherpress=self.webpackChunkgatherpress||[]).push([[535],{1535:(e,s,r)=>{r.r(s)}}]);
