@@ -37,6 +37,7 @@
 		"@wordpress/element": "^6.4.0",
 		"@wordpress/env": "^10.5.0",
 		"@wordpress/eslint-plugin": "^20.1.0",
+		"@wordpress/interactivity": "^6.9.0",
 		"@wordpress/notices": "^5.4.0",
 		"@wordpress/plugins": "^7.4.0",
 		"@wordpress/scripts": "^28.4.0",
@@ -64,7 +65,7 @@
 		"stylelint-scss": "^6.4.1"
 	},
 	"scripts": {
-		"build": "wp-scripts build",
+		"build": "wp-scripts build --experimental-modules",
 		"check-engines": "wp-scripts check-engines",
 		"check-licenses": "wp-scripts check-licenses",
 		"format": "wp-scripts format",
@@ -79,7 +80,7 @@
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "wp-scripts plugin-zip",
-		"start": "wp-scripts start",
+		"start": "wp-scripts start --experimental-modules",
 		"screenshots:wporg": "WP_BASE_URL='http://127.0.0.1:9400/' wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts",
 		"screenshots:wporg:debug": "npm run screenshots:wporg -- --debug",
 		"screenshots:wporg:ui": "npm run screenshots:wporg -- --ui",
