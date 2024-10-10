@@ -65,7 +65,7 @@ cd gatherpress
 wp-env start
 ```
 
-You should then see that a development site has been configured for you on localhost port 2003
+You should then see that a development site has been configured for you on localhost port 8889
 
 ![Development Site Login](../media/wp-env.json-startup.png)
 
