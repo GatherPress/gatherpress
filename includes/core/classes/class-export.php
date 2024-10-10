@@ -91,21 +91,9 @@ class Export extends Migrate {
 	 * @return void
 	 */
 	public function prepare( WP_Post $post ): void {
-		if ( $this->validate( $post ) ) {
+		if ( Validate::event_post_id( $post->ID ) ) {
 			add_post_meta( $post->ID, self::POST_META, true );
 		}
-	}
-
-	/**
-	 * Checks if the currently exported post is of type 'gatherpress_event'.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param  WP_Post $post Current meta key.
-	 * @return bool          True, when the currently exported post is of type 'gatherpress_event', false otherwise.
-	 */
-	protected function validate( WP_Post $post ): bool {
-		return ( Event::POST_TYPE === $post->post_type );
 	}
 
 	/**

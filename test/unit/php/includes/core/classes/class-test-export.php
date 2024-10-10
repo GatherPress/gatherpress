@@ -122,35 +122,6 @@ class Test_Export extends Base {
 	}
 
 	/**
-	 * Coverage for validate.
-	 *
-	 * @covers ::validate
-	 *
-	 * @return void
-	 */
-	public function test_validate(): void {
-		$instance = Export::get_instance();
-
-		$post = $this->mock->post()->get();
-		$this->assertFalse(
-			Utility::invoke_hidden_method( $instance, 'validate', array( $post ) ),
-			'Failed to assert that validation fails for non-validating post data.'
-		);
-
-		$post = $this->mock->post(
-			array(
-				'post_title'   => 'Unit Test Event',
-				'post_type'    => 'gatherpress_event',
-				'post_content' => 'Unit Test description.',
-			)
-		)->get();
-		$this->assertTrue(
-			Utility::invoke_hidden_method( $instance, 'validate', array( $post ) ),
-			'Failed to assert that validation passes for valid post data.'
-		);
-	}
-
-	/**
 	 * Coverage for extend.
 	 *
 	 * @covers ::extend
