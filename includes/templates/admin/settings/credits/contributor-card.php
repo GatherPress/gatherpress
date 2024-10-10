@@ -34,7 +34,7 @@ $gatherpress_role                = ! empty( $gatherpress_role ) ? $gatherpress_r
 		<span>
 			<?php echo esc_html( $gatherpress_role ); ?>
 		</span>
-	<?php
+		<?php
 	endif;
 	?>
 </li>
