@@ -124,7 +124,7 @@ class Topic {
 	public static function get_localized_taxonomy_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
 		$slug            = _x( 'Topic', 'Taxonomy Singular Name', 'gatherpress' );
-		$slug            = sanitize_title( $slug, '', 'save' );
+		$slug            = sanitize_title( $slug );
 		if ( $switched_locale ) {
 			restore_previous_locale();
 		}
