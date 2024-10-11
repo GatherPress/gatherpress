@@ -66,16 +66,40 @@ class Test_Topic extends Base {
 	 * @return void
 	 */
 	public function test_get_localized_taxonomy_slug(): void {
-		$instance = Topic::get_instance();
 
 		$this->assertSame(
 			'topic',
-			$instance->get_localized_taxonomy_slug(),
-			'Failed to assert english taxonomy slug is "topic".'
+			Topic::get_localized_taxonomy_slug(),
+			'Failed to assert English taxonomy slug is "topic".'
 		);
 
+		$user_id = $this->factory->user->create();
+		update_user_meta( $user_id, 'locale', 'es_ES' );
+		switch_to_user_locale( $user_id );
+
+		// @todo This assertion CAN NOT FAIL,
+		// until real translations do exist in the wp-env instance.
+		// Because WordPress doesn't have any translation files to load,
+		// it will return the string in English.
+		$this->assertSame(
+			'topic',
+			Topic::get_localized_taxonomy_slug(),
+			'Failed to assert taxonomy slug is "topic", even the locale is not English anymore.'
+		);
+		// But at least the restoring of the user locale can be tested, without .po files.
+		$this->assertSame(
+			'es_ES',
+			determine_locale(),
+			'Failed to assert locale was reset to Spanish, after switching to ~ and restoring from English.'
+		);
+
+		// Restore default locale for following tests.
+		switch_to_locale( 'en_US' );
+
+		// This also checks that the taxonomy is still registered with the same 'Taxonomy Singular Name' label,
+		// which is used by the method under test and the test itself.
 		$filter = static function ( string $translation, string $text, string $context ): string {
-			if ( 'topic' !== $text || 'Taxonomy Slug' !== $context ) {
+			if ( 'Topic' !== $text || 'Taxonomy Singular Name' !== $context ) {
 				return $translation;
 			}
 			return 'Ünit Tést';
@@ -96,7 +120,7 @@ class Test_Topic extends Base {
 
 		$this->assertSame(
 			'unit-test',
-			$instance->get_localized_taxonomy_slug(),
+			Topic::get_localized_taxonomy_slug(),
 			'Failed to assert taxonomy slug is "unit-test".'
 		);
 
