@@ -9,27 +9,44 @@
 		}
 	}
 
+	&__credits-wrapper {
+		max-width: 60rem;
+		margin: 0 auto;
+
+		h3 {
+			font-size: 2rem;
+			text-align: center;
+		}
+
+	}
+
 	&__credits-featured {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 1rem;
-		margin-bottom: 2rem;
+		margin: 0;
+		padding: 1rem 0;
 
 		a {
-			display: block;
+			align-items: center;
+			display: flex;
+			flex-direction: column;
 			font-size: 1.2rem;
 			font-weight: 600;
-			padding: 1rem;
 		}
 
 		img {
 			border-radius: 999rem;
 			margin-bottom: 0.5rem;
+			max-width: 96px;
 		}
 
 		li {
+			display: flex;
+			flex-direction: column;
+			margin-bottom: 2rem;
 			text-align: center;
-			width: 10rem;
+			width: 14rem;
 		}
 	}
 
