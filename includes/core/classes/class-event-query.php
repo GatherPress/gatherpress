@@ -258,7 +258,6 @@ class Event_Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces, WP_Query $query ): array {
-
 		return $this->adjust_event_sql(
 			$query_pieces,
 			'upcoming',
@@ -358,25 +357,21 @@ class Event_Query {
 		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
 
 			// ORDERBY is an array, which allows to orderby multiple values.
-			// Currently it is only allowed to order events by ONE value.
+			// Currently, it is only allowed to order events by ONE value.
 			$order_by = ( is_array( $order_by ) ) ? $order_by[0] : $order_by;
 			switch ( strtolower( $order_by ) ) {
 				case 'id':
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.ID %s', esc_sql( $order ) );
 					break;
-
 				case 'title':
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_name %s', esc_sql( $order ) );
 					break;
-
 				case 'modified':
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_modified_gmt %s', esc_sql( $order ) );
 					break;
-
 				case 'rand':
 					$pieces['orderby'] = esc_sql( 'RAND()' );
 					break;
-
 				case 'datetime':
 				default:
 					$pieces['orderby'] = sprintf( esc_sql( $table ) . '.datetime_start_gmt %s', esc_sql( $order ) );
@@ -405,7 +400,7 @@ class Event_Query {
 	 * based on the type of event query (either upcoming or past)
 	 * and if started but unfinished events should be included.
 	 *
-	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past') (Can not be 'all' anymore).
+	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past') (Cannot be 'all' anymore).
 	 * @param  bool   $inclusive Whether to include currently running events in the query.
 	 *
 	 * @return string Name of the DB column, which content to compare against the current time.

@@ -277,7 +277,6 @@ class Test_Event_Query extends Base {
 	 * @return void
 	 */
 	public function test_get_datetime_comparison_column(): void {
-
 		$instance = Event_Query::get_instance();
 
 		$this->assertSame(
