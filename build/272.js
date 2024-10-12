@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkgatherpress=self.webpackChunkgatherpress||[]).push([[272],{1272:(e,s,p)=>{e.exports=p.p+"images/marker-icon-2x.png"}}]);

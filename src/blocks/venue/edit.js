@@ -4,12 +4,13 @@
 import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalNumberControl as NumberControl,
 	PanelBody,
 	PanelRow,
 	RadioControl,
 	RangeControl,
 	ToggleControl,
-	TextControl,
 } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
@@ -244,7 +245,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						</PanelRow>
 						{mapCustomLatLng && (
 							<>
-								<TextControl
+								<NumberControl
 									label={__('Latitude', 'gatherpress')}
 									value={latitude}
 									onChange={(value) => {
@@ -252,7 +253,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 										updateVenueMeta({ latitude: value });
 									}}
 								/>
-								<TextControl
+								<NumberControl
 									label={__('Longitude', 'gatherpress')}
 									value={longitude}
 									onChange={(value) => {
