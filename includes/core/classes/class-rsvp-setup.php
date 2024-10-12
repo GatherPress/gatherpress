@@ -98,6 +98,6 @@ class Rsvp_Setup {
 
 		$comment_count = get_comment_count( $post_id );
 
-		return $comment_count['approved'] ?? 0;
+		return $comment_count['approved'];
 	}
 }

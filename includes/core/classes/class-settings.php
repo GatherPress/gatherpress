@@ -614,7 +614,7 @@ class Settings {
 		$first['priority']  = isset( $first['priority'] ) ? intval( $first['priority'] ) : 10;
 		$second['priority'] = isset( $second['priority'] ) ? intval( $second['priority'] ) : 10;
 
-		return ( $first['priority'] > $second['priority'] );
+		return $first['priority'] <=> $second['priority'];
 	}
 
 	/**
@@ -724,9 +724,6 @@ class Settings {
 				case 'gatherpress_general[urls][topics]':
 					$suffix = _x( 'sample-topic-term', 'sample topic term slug', 'gatherpress' );
 					break;
-
-				default:
-					break;
 			}
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
@@ -757,7 +754,7 @@ class Settings {
 			isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ||
 			$old_value['urls'] !== $new_value['urls']
 		) {
-			// Event_Setup->maybe_create_flush_rewrite_rules_flag // TODO maybe make this a public method ?!
+			// Event_Setup->maybe_create_flush_rewrite_rules_flag //@TODO https://github.com/GatherPress/gatherpress/issues/880 Maybe make this a public method ?!
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
 	}

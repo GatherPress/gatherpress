@@ -12,7 +12,7 @@ import { getFromGlobal } from '../helpers/globals';
 /**
  * OpenStreetMap component for GatherPress.
  *
- * This component is used to embed an Open Street Map with specified location,
+ * This component is used to embed an OpenStreetMap with specified location,
  * zoom level, and height using the Leaflet platform.
  *
  * @since 1.0.0
@@ -43,9 +43,11 @@ const OpenStreetMap = (props) => {
 		// Load Leaflet and its assets dynamically
 		const loadLeaflet = async () => {
 			const { default: L } = await import('leaflet');
+
 			await import('leaflet/dist/leaflet.css');
 			await import('leaflet/dist/images/marker-icon-2x.png');
 			await import('leaflet/dist/images/marker-shadow.png');
+
 			setLeaflet(L);
 		};
 

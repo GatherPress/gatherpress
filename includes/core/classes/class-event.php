@@ -264,7 +264,7 @@ class Event {
 	 *
 	 * @throws Exception If there is an issue while formatting the datetime value.
 	 */
-	protected function get_formatted_datetime(
+	public function get_formatted_datetime(
 		string $format = 'D, F j, g:ia T',
 		string $which = 'start',
 		bool $local = true
@@ -360,10 +360,14 @@ class Event {
 	 * @return string The converted date in GMT (UTC) time zone in 'Y-m-d H:i:s' format.
 	 */
 	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
+		if ( empty( $date ) ) {
+			return '';
+		}
+
 		$datetime = date_create( $date, $timezone );
 
 		if ( false === $datetime ) {
-			return '0000-00-00 00:00:00';
+			return '';
 		}
 
 		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( self::DATETIME_FORMAT );
@@ -412,7 +416,7 @@ class Event {
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['website']      = $venue_meta->website ?? '';
-			$venue_information['permalink']    = get_permalink( $venue->ID ) ?? '';
+			$venue_information['permalink']    = (string) get_permalink( $venue->ID );
 		}
 
 		return $venue_information;
@@ -525,8 +529,8 @@ class Event {
 		$duration    = ( ( strtotime( $diff_end ) - strtotime( $diff_start ) ) / 60 / 60 );
 		$full        = intval( $duration );
 		$fraction    = ( $duration - $full );
-		$hours       = str_pad( intval( $duration ), 2, '0', STR_PAD_LEFT );
-		$minutes     = str_pad( intval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
+		$hours       = str_pad( strval( $duration ), 2, '0', STR_PAD_LEFT );
+		$minutes     = str_pad( strval( $fraction * 60 ), 2, '0', STR_PAD_LEFT );
 		$venue       = $this->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();
@@ -611,7 +615,7 @@ class Event {
 	 *
 	 * @return string The calendar event description with the event details link.
 	 */
-	protected function get_calendar_description(): string {
+	public function get_calendar_description(): string {
 		/* translators: %s: event link. */
 		return sprintf( __( 'For details go to %s', 'gatherpress' ), get_the_permalink( $this->event ) );
 	}
@@ -640,10 +644,18 @@ class Event {
 	public function save_datetimes( array $params ): bool {
 		global $wpdb;
 
-		$params['post_id'] = $this->event->ID;
-		$fields            = array_filter(
+		$params = array_merge(
+			array(
+				'post_id'        => $this->event->ID,
+				'datetime_start' => '',
+				'datetime_end'   => '',
+				'timezone'       => '',
+			),
+			$params
+		);
+		$fields = array_filter(
 			$params,
-			function ( $key ) {
+			static function ( $key ) {
 				return in_array(
 					$key,
 					array(
@@ -665,8 +677,8 @@ class Event {
 		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
 		$timezone           = new DateTimeZone( $fields['timezone'] );
 
-		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( $fields['datetime_start'], $timezone );
-		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( $fields['datetime_end'], $timezone );
+		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( (string) $fields['datetime_start'], $timezone );
+		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( (string) $fields['datetime_end'], $timezone );
 
 		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 

@@ -1,0 +1,44 @@
+name: PHPStan Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+    - '.github/workflows/phpstan-tests.yml'
+    - 'includes/**'
+    # - 'test/unit/php**'
+    # - '*.php'
+    - 'phpstan.neon.dist'
+    - 'composer.*'
+jobs:
+  test-phpstan:
+    name: PHPStan for WordPress
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # phpstan requires PHP 7.1+.
+          php-version: 7.4
+          extensions: dom, iconv, json, libxml, zip
+          coverage: none
+          tools: cs2pr
+
+      - name: Composer Install
+        run: composer install --optimize-autoloader --prefer-dist
+
+      - name: Log debug information
+        run: |
+          git --version
+          php --version
+          composer --version
+
+      - name: Running PHPStan Analyze
+        if: ${{ success() || failure() }}
+        run: |
+          vendor/bin/phpstan --version
+          vendor/bin/phpstan analyze -vv --memory-limit=2G --error-format=checkstyle | cs2pr

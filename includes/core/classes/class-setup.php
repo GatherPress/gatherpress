@@ -285,7 +285,7 @@ class Setup {
 			);
 		} else {
 			wp_update_term(
-				$term['term_id'],
+				intval( $term['term_id'] ),
 				Venue::TAXONOMY,
 				array(
 					'name' => $term_name,
@@ -310,7 +310,7 @@ class Setup {
 	 */
 	public function on_site_create( WP_Site $new_site ): void {
 		if ( is_plugin_active_for_network( 'gatherpress/gatherpress.php' ) ) {
-			switch_to_blog( $new_site->blog_id );
+			switch_to_blog( intval( $new_site->blog_id ) );
 			$this->create_tables();
 			restore_current_blog();
 		}
@@ -331,7 +331,7 @@ class Setup {
 	public function on_site_delete( array $tables ): array {
 		global $wpdb;
 
-		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+		$tables[] = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
 		return $tables;
 	}

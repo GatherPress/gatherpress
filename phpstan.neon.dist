@@ -1,0 +1,29 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+    # Bleeding edge offers a preview of the next major version.
+    # When you enable Bleeding edge in your configuration file, you will get new rules,
+    # behaviour, and bug fixes that will be enabled for everyone later
+    # when the next PHPStan’s major version is released.
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+
+parameters:
+    bootstrapFiles:
+        # Constants, functions, etc. used by GatherPress
+        - phpstan.stubs
+
+    parallel:
+        maximumNumberOfProcesses: 1
+        processTimeout: 300.0
+
+    # the analysis level, from 0 (loose) to 9 (strict)
+    # https://phpstan.org/user-guide/rule-levels
+    level: 5
+
+    paths:
+        - includes/
+
+    ignoreErrors:
+        # core/classes/class-setup.php
+        #
+        # A dev-only error, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
+        - '#^Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file or it does not exist\.$#'

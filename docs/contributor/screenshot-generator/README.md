@@ -1,8 +1,8 @@
-## Generate Screenshots using Playwright & Playground
+# Generate Screenshots using Playwright & Playground
 
 > Generating screenshots in multiple languages for the plugin and keeping them up to date with the development might become a time intensive task.
 
-GatherPress allows to generate screenshots for the plugin **automated & manually**, while sharing the same, [`wp-playground/cli`](https://github.com/WordPress/wordpress-playground/pull/1289) powered, setup. The started playground imports the [`GatherPress/demo-data`](https://github.com/GatherPress/demo-data) and sets some options, e.g. to hide GatherPress' admin-notices.
+GatherPress allows to generate screenshots for the plugin **automated & manually**, while sharing the same, [`wp-playground/cli`](https://github.com/WordPress/wordpress-playground/pull/1289) powered, setup. The started playground imports the [`GatherPress/gatherpress-demo-data`](https://github.com/GatherPress/gatherpress-demo-data) and sets some options, e.g. to hide GatherPress' admin-notices.
 
 GatherPress uses Playwright for this task, which is a tool to do [end-to-end testing](../e2e-tests). Playwright has an advanced [screenshots API](https://playwright.dev/docs/screenshots), that allows to take screenshots for a full-page or an element only. Like for the e2e tests, it is configurable what browsers to use, what screenresolution to set, etc. Which screenshots to take is defined in a [wporg.spec.ts](../../../.github/scripts/wordpress-org-screenshots/wporg.spec.ts) file. The names of the generated files match the captions in the plugins [readme.md](../../../readme.md)!
 
@@ -30,6 +30,7 @@ The workflow scripts can also be used to **manually create screenshots**. In gen
 ### Install dependencies
 
 1. To generate screenshots you will have to install playwright using the following command:
+
    ```bash
    npx playwright install --with-deps
    ```
@@ -51,34 +52,36 @@ A call to `npm run playground` will automatically setup a `wp-playground/cli` po
 ```bash
 npm run playground -- --blueprint=./my/sample/addon/blueprint.json
 ```
+
 Immediately the testing website will be reachable at `http://127.0.0.1:9400`, the user is `admin` and the password is `password`. 
 
 ### Run the Screenshot generator
 
 Now while Playground is running in the background, it's possible to start the screenshot generator.
 
-_Choose one of the following options_
+#### *Choose one of the following options:*
 
-1. For the _headless_ mode, use the following command:
+1. For the *headless* mode, use the following command:
 
    ```bash
    npm run screenshots:wporg
    ```
 
-2. Run Playwright _visually_ (to run generating screenshots in isolation and change what's happening), use:
+2. Run Playwright *visually* (to run generating screenshots in isolation and change what's happening), use:
 
    ```bash
    npm run screenshots:wporg:ui
    ```
 
 
-3. For _debug_ mode (which will open the browser along with Playwright Editor and allows you to record what's happening), use the following command:
+3. For *debug* mode (which will open the browser along with Playwright Editor and allows you to record what's happening), use the following command:
 
    ```bash
    npm run screenshots:wporg:debug
    ```
 
    Run files that have *events.spec* in the file name.
+
    ```bash
    npm run screenshots:wporg:debug -- events.spec
    ```
@@ -86,9 +89,10 @@ _Choose one of the following options_
    > [!NOTE]
    > When writing a screenshot-generator(-test), using the debug mode is recommended since it will allow you to see the browser and the test in action.
 
-4. Run Tests independently _AND_ visually using the [Playwright VSCode extension](https://playwright.dev/docs/getting-started-vscode)
+4. Run Tests independently *AND* visually using the [Playwright VSCode extension](https://playwright.dev/docs/getting-started-vscode)
 
    Tell the VSCode extension what webserver to use, by adding the following to your `settings.json`:
+
    ```json
    "playwright.env": {
       "WP_BASE_URL":"http://127.0.0.1:9400"
