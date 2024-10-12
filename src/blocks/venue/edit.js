@@ -62,7 +62,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 				?.gatherpress_online_event_link
 	);
 
-	let { mapShow, mapCustomLatLng } = attributes;
+	let { mapShow, mapCustomLatLong } = attributes;
 	const editPost = useDispatch('core/editor').editPost;
 	const updateVenueMeta = (metaData) => {
 		const payload = JSON.stringify({
@@ -230,20 +230,20 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						<PanelRow>
 							<ToggleControl
 								label={
-									mapCustomLatLng
+									mapCustomLatLong
 										? __('Use custom values', 'gatherpress')
 										: __(
 												'Use default values',
 												'gatherpress'
 											)
 								}
-								checked={mapCustomLatLng}
+								checked={mapCustomLatLong}
 								onChange={(value) => {
-									setAttributes({ mapCustomLatLng: value });
+									setAttributes({ mapCustomLatLong: value });
 								}}
 							/>
 						</PanelRow>
-						{mapCustomLatLng && (
+						{mapCustomLatLong && (
 							<>
 								<NumberControl
 									label={__('Latitude', 'gatherpress')}
