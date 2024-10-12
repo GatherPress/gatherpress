@@ -11,6 +11,8 @@ namespace GatherPress\Core\Traits;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use Error;
+
 /**
  * Common class that handles registering and enqueuing of assets.
  *
@@ -47,7 +49,7 @@ trait Block_Variation {
 	 * @return void
 	 */
 	public function register_assets(): void {
-		\array_map(
+		array_map(
 			array( $this, 'register_asset' ),
 			array( $this->get_foldername_from_classname() )
 		);
@@ -60,7 +62,7 @@ trait Block_Variation {
 	 * @return void
 	 */
 	public function enqueue_assets(): void {
-		\array_map(
+		array_map(
 			array( $this, 'enqueue_asset' ),
 			array( $this->get_foldername_from_classname() )
 		);
@@ -77,25 +79,28 @@ trait Block_Variation {
 	 * @return void
 	 */
 	protected function register_asset( string $asset ): void {
-
 		$asset_path        = sprintf( '%1$s/build/variations/%2$s', GATHERPRESS_CORE_PATH, $asset );
 		$script_asset_path = sprintf( '%1$s/index.asset.php', $asset_path );
 		$style_asset_path  = sprintf( '%1$s/index.css', $asset_path );
 
-		if ( ! \file_exists( $script_asset_path ) ) {
-			$error_message = "You need to run `npm start` or `npm run build` for the '$asset' block-asset first.";
-			if ( \in_array( wp_get_environment_type(), array( 'local', 'development' ), true ) ) {
-				throw new \Error( esc_html( $error_message ) );
+		if ( ! file_exists( $script_asset_path ) ) {
+			$error_message = sprintf(
+				__( 'You need to run `npm start` or `npm run build` for the "%s" block-asset first.', 'gatherpress' ), $asset
+			);
+
+			if ( in_array( wp_get_environment_type(), array( 'local', 'development' ), true ) ) {
+				throw new Error( esc_html( $error_message ) );
 			} else {
 				// Should write to the \error_log( $error_message ); if possible.
 				return;
 			}
 		}
 
-		$index_js     = "build/variations/$asset/index.js";
+		$index_js     = sprintf( 'build/variations/%s/index.js', $asset );
 		$script_asset = require $script_asset_path;
-		\wp_register_script(
-			"gatherpress--$asset",
+
+		wp_register_script(
+			sprintf( 'gatherpress--%s', $asset ),
 			plugins_url( $index_js, GATHERPRESS_CORE_FILE ),
 			$script_asset['dependencies'],
 			$script_asset['version'],
@@ -103,14 +108,15 @@ trait Block_Variation {
 		);
 
 		wp_set_script_translations(
-			"gatherpress--$asset",
+			sprintf( 'gatherpress--%s', $asset ),
 			'gatherpress'
 		);
 
-		if ( \file_exists( $style_asset_path ) ) {
-			$index_css = "build/variations/$asset/index.css";
-			\wp_register_style(
-				"gatherpress--$asset",
+		if ( file_exists( $style_asset_path ) ) {
+			$index_css = sprintf( 'build/variations/%s/index.css', $asset );
+
+			wp_register_style(
+				sprintf( 'gatherpress--%s', $asset ),
 				plugins_url( $index_css, GATHERPRESS_CORE_FILE ),
 				array( 'global-styles' ),
 				$script_asset['version'],
@@ -118,7 +124,6 @@ trait Block_Variation {
 			);
 		}
 	}
-
 
 	/**
 	 * Enqueue a script.
@@ -128,13 +133,16 @@ trait Block_Variation {
 	 * @return void
 	 */
 	protected function enqueue_asset( string $asset ): void {
-		wp_enqueue_script( "gatherpress--$asset" );
+		wp_enqueue_script(
+			sprintf( 'gatherpress--%s', $asset )
+		);
 
 		if ( wp_style_is( $asset, 'registered' ) ) {
-			wp_enqueue_style( "gatherpress--$asset" );
+			wp_enqueue_style(
+				sprintf( 'gatherpress--%s', $asset )
+			);
 		}
 	}
-
 
 	/**
 	 * Get foldername from classname.
