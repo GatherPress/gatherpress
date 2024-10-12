@@ -29,7 +29,7 @@
 			"type": "number",
 			"default": 300
 		},
-		"mapCustomLatLng": {
+		"mapCustomLatLong": {
 			"type": "boolean",
 			"default": false
 		}
