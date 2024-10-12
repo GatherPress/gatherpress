@@ -100,8 +100,61 @@ class Test_Venue extends Base {
 		$this->assertSame(
 			'venue',
 			Venue::get_localized_post_type_slug(),
-			'Failed to assert that post type slug is same.'
+			'Failed to assert English post type slug is "venue".'
 		);
+
+		$user_id = $this->factory->user->create();
+		update_user_meta( $user_id, 'locale', 'es_ES' );
+		switch_to_user_locale( $user_id );
+
+		// @todo This assertion CAN NOT FAIL,
+		// until real translations do exist in the wp-env instance.
+		// Because WordPress doesn't have any translation files to load,
+		// it will return the string in English.
+		$this->assertSame(
+			'venue',
+			Venue::get_localized_post_type_slug(),
+			'Failed to assert post type slug is "venue", even the locale is not English anymore.'
+		);
+		// But at least the restoring of the user locale can be tested, without .po files.
+		$this->assertSame(
+			'es_ES',
+			determine_locale(),
+			'Failed to assert locale was reset to Spanish, after switching to ~ and restoring from English.'
+		);
+
+		// Restore default locale for following tests.
+		switch_to_locale( 'en_US' );
+
+		// This also checks that the post type is still registered with the same 'Post Type Singular Name' label,
+		// which is used by the method under test and the test itself.
+		$filter = static function ( string $translation, string $text, string $context ): string {
+			if ( 'Venue' !== $text || 'Post Type Singular Name' !== $context ) {
+				return $translation;
+			}
+			return 'Ünit Tést';
+		};
+
+		/**
+		 * Instead of loading additional languages into the unit test suite,
+		 * we just filter the translated value, to mock different languages.
+		 *
+		 * Filters text with its translation based on context information for a domain.
+		 *
+		 * @param string $translation Translated text.
+		 * @param string $text        Text to translate.
+		 * @param string $context     Context information for the translators.
+		 * @return string Translated text.
+		 */
+		add_filter( 'gettext_with_context_gatherpress', $filter, 10, 3 );
+
+		$this->assertSame(
+			'unit-test',
+			Venue::get_localized_post_type_slug(),
+			'Failed to assert the post type slug is "unit-test".'
+		);
+
+		remove_filter( 'gettext_with_context_gatherpress', $filter );
 	}
 
 	/**

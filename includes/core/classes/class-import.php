@@ -176,6 +176,6 @@ class Import extends Migrate {
 	public function datetimes_callback( int $post_id, $data ): void {
 		$event = new Event( $post_id );
 
-		$event->save_datetimes( maybe_unserialize( $data ) );
+		$event->save_datetimes( (array) maybe_unserialize( $data ) );
 	}
 }

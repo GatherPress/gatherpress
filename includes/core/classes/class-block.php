@@ -76,6 +76,7 @@ class Block {
 		}
 	}
 
+<<<<<<< HEAD
 	/**
 	 * Require files & instantiate block-variation classes.
 	 *
@@ -136,6 +137,8 @@ class Block {
 		return ucwords( str_replace( '-', '_', $foldername ), '_' );
 	}
 
+=======
+>>>>>>> 9baff99061fdf6481e786eb1b17611779fd391db
 	/**
 	 * Register block patterns.
 	 *
