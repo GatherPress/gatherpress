@@ -49,6 +49,7 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_action( 'init', array( $this, 'register_block_patterns' ) );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
 	}
@@ -70,6 +71,66 @@ class Block {
 			register_block_type(
 				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
 			);
+		}
+	}
+
+	/**
+	 * Register block patterns.
+	 *
+	 * This method registers multiple different block-patterns for GatherPress.
+	 *
+	 * @since 1.0.0
+	 * @see   https://developer.wordpress.org/reference/functions/register_block_pattern/
+	 *
+	 * @return void
+	 */
+	public function register_block_patterns(): void {
+		$block_patterns = array(
+			array(
+				'gatherpress/event-template',
+				array(
+					'title'    => __( 'Invisible Event Template Block Pattern', 'gatherpress' ),
+					// Even this paragraph seems useless, it's not.
+					// It is the entry point for all our hooked blocks
+					// and as such absolutely important!
+					'content'  => '<!-- gatherpress:event-date /--><!-- wp:pattern {"slug":"gatherpress/venue-details"} /-->', // Other blocks are hooked-in here.
+					'inserter' => false,
+					'source'   => 'plugin',
+				),
+			),
+			array(
+				'gatherpress/venue-template',
+				array(
+					'title'    => __( 'Invisible Venue Template Block Pattern', 'gatherpress' ),
+					// Even this paragraph seems useless, it's not.
+					// It is the entry point for all our hooked blocks
+					// and as such absolutely important!
+					'content'  => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // Other blocks are hooked-in here.
+					'inserter' => false,
+					'source'   => 'plugin',
+				),
+			),
+			array(
+				'gatherpress/venue-details',
+				array(
+					'title'    => __( 'Invisible Venue Details Block Pattern', 'gatherpress' ),
+					// Even this post-title seems useless, it's not.
+					// It is the entry point for all our hooked blocks
+					// and as such absolutely important!
+					'content'  => '<!-- wp:post-title /-->', // Other blocks are hooked-in here.
+					'inserter' => false,
+					'source'   => 'plugin',
+				),
+			),
+		);
+
+		foreach ( $block_patterns as $block_pattern ) {
+			/**
+			 * Made to be used with the 'template' parameter
+			 * when registering the 'gatherpress_event' post type
+			 * and will not be visible to the editor at any point.
+			 */
+			register_block_pattern( $block_pattern[0], $block_pattern[1] );
 		}
 	}
 }
