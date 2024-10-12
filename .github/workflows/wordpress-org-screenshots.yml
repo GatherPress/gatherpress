@@ -28,13 +28,13 @@ jobs:
       matrix:
         # Use all locales with more than 90% complete translations on https://translate.wordpress.org/projects/wp-plugins/gatherpress/
         locale: [
-          'en_US',
           'fr_FR',
           'de_DE',
           'es_ES',
           'mr',
           'nl_BE',
-          'it_IT'
+          'it_IT',
+          'en_US'
         ]
 
     steps:
@@ -111,16 +111,6 @@ jobs:
           jq --argjson languageStep "$language_step" '.steps += $languageStep' .github/scripts/wordpress-org-screenshots/blueprint.json > localized_blueprint.json
         fi
 
-    - name: Starting Playground
-      # Having this as a separate workflow step, should help making sure Playwright runs only, when this is DONE & READY.
-      #
-      # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
-      # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
-      # 
-      # The "&" is important to allow the next step to start!
-      run: |
-        npm run playground -- --blueprint=./localized_blueprint.json &
-
     - name: Running the screenshot tests
       id: screenshot-tests
       # Having set "continue-on-error:true" should help the workflow to pass (and get a green checkmark)
@@ -129,9 +119,34 @@ jobs:
       if: ${{ ! github.event.inputs.updateAllSnapshots }}
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-        WP_BASE_URL: 'http://127.0.0.1:9400/'
+      # This is kind of a hack PART 1/2,
+      # to make sure Playwright DOES NOT start the webserver on its own.
+      #
+      # Part 2/2 is the "command: undefined," declaration
+      # in .github/scripts/wordpress-org-screenshots/playwright.config.ts
+      #
+      # While auto-loading the webserver when needed sounded nice, it introduced a race-condition
+      # between the setup of Playground and Playwrights own start event.
+      # Playwright listens for the availability of the webserver relatively simple,
+      # as soon as there is a status code 200, Playwright starts all engines.
+      #
+      # Unfortunately Playground is not ready at this point, it hast started WordPress
+      # and is going to start stepping through the blueprint, but hasn't loaded GatherPress nor imported any data;
+      # Resulting in failing tests.
+      #
+      # It was not possible (for me) to keep the setup of Playground in a separate step,
+      # why this "run > sleep > run" became necessary.
+      # The setup process usually takes about 20sec, so 60 is just a good extra, to not run into errors.
+      #
+      # The sleep step, should help making sure Playwright runs only, when this is DONE & READY.
+      #
+      # Because it seems to be a problem to "wait on webServer.command" https://github.com/microsoft/playwright/issues/11811
+      # & "it seems that globalSetup runs before webServer is started." https://github.com/microsoft/playwright/issues/11811#issuecomment-1040732201
       run: |
-        DEBUG=pw:webserver \
+        npm run playground -- --blueprint=./localized_blueprint.json  & \
+        sleep 60 && \
+        echo 'Playground is ready now, lets take some pictures.' && \
+        # DEBUG=pw:api,pw:webserver \
         npm run screenshots:wporg
 
     - name: Updating the Screenshots
@@ -143,24 +158,57 @@ jobs:
       if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       env:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-        WP_BASE_URL: 'http://127.0.0.1:9400/'
-        UPDATE_ALL_SNAPSHOTS: ${{ github.event.inputs.updateAllSnapshots }} 
+        UPDATE_ALL_SNAPSHOTS: ${{ github.event.inputs.updateAllSnapshots }}
+      # Important Documentation about this "run"
+      # can be found on the "screenshot-tests" step!
       run: |
-        DEBUG=pw:webserver \
+        npm run playground -- --blueprint=./localized_blueprint.json & \
+        sleep 60 && \
+        echo 'Playground is ready now, lets take some pictures.' && \
+        # DEBUG=pw:api,pw:webserver \
         npm run screenshots:wporg -- --update-snapshots
+
+    - name: Checkout new branch
+      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+      # And, as you already guessed, if: failure() looks at 'conclusion'.
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        # Remove untracked, temporary file
+        rm -f ./localized_blueprint.json
+        git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
+
+    - name: Compress Images
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      id: compress-images
+      uses: calibreapp/image-actions@main
+      with:
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
+        # Use the compressOnly option with true value to skip the commit and summary comment.
+        compressOnly: true
+        # ignorePaths accepts a comma-separated string with globbing support # https://www.npmjs.com/package/glob
+        ignorePaths: 'artifacts,build,node_modules/**'
 
     - name: Commit updated screenshots
       # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
       # And, as you already guessed, if: failure() looks at 'conclusion'.
       if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
       run: |
-        git checkout -b fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        # Remove untracked, temporary file
-        rm -f ./localized_blueprint.json
+
         git add -A
         git commit -m "Screenshots for ${{ matrix.locale }} updated!"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push new branch to origin
+      # Using "continue-on-error:true" results in 'conclusion' being a success in any case, while the 'outcome' can differ.
+      # And, as you already guessed, if: failure() looks at 'conclusion'.
+      if: ${{ github.event.inputs.updateAllSnapshots || steps.screenshot-tests.outcome == 'failure' }}
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
         git push origin fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -172,6 +220,6 @@ jobs:
       # Using GitHub CLI in Workflows
       # https://docs.github.com/en/actions/using-workflows/using-github-cli-in-workflows
       # https://cli.github.com/manual/gh_pr_create
-      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action'
+      run: gh pr create -B main -H fix/wp-org-screenshots-${{ matrix.locale }}-${{ github.sha }} --title 'Update ${{ matrix.locale }} screenshots for wordpress.org' --body 'Created with ❤️ by WordPress Playground, Playwright & GitHub action <br /><br />${{ steps.compress-images.outputs.markdown }}'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

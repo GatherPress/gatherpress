@@ -79,8 +79,8 @@ class Topic {
 			Event::POST_TYPE,
 			array(
 				'labels'            => array(
-					'name'              => _x( 'Topics', 'taxonomy general name', 'gatherpress' ),
-					'singular_name'     => _x( 'Topic', 'taxonomy singular name', 'gatherpress' ),
+					'name'              => _x( 'Topics', 'Taxonomy General Name', 'gatherpress' ),
+					'singular_name'     => _x( 'Topic', 'Taxonomy Singular Name', 'gatherpress' ),
 					'search_items'      => __( 'Search Topics', 'gatherpress' ),
 					'all_items'         => __( 'All Topics', 'gatherpress' ),
 					'view_item'         => __( 'View Topic', 'gatherpress' ),
@@ -123,8 +123,8 @@ class Topic {
 	 */
 	public static function get_localized_taxonomy_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'topic', 'Taxonomy Slug', 'gatherpress' );
-		$slug            = sanitize_title( $slug, '', 'save' );
+		$slug            = _x( 'Topic', 'Taxonomy Singular Name', 'gatherpress' );
+		$slug            = sanitize_title( $slug );
 		if ( $switched_locale ) {
 			restore_previous_locale();
 		}

@@ -214,8 +214,8 @@ class User {
 		}
 
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( filter_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
-		update_user_meta( $user_id, 'gatherpress_date_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_date_format' ) ) );
-		update_user_meta( $user_id, 'gatherpress_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_time_format' ) ) );
+		update_user_meta( $user_id, 'gatherpress_date_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_date_format', FILTER_SANITIZE_ADD_SLASHES ) ) );
+		update_user_meta( $user_id, 'gatherpress_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_time_format', FILTER_SANITIZE_ADD_SLASHES ) ) );
 		update_user_meta( $user_id, 'gatherpress_timezone', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_timezone' ) ) );
 	}
 }

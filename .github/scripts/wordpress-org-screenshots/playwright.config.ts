@@ -42,14 +42,33 @@ export default defineConfig({
 	reportSlowTests: null,
 	use: {
 		...baseConfig.use,
+		// Gutenberg uses wp-env by default for Playwright tests,
+		// which runs on a different port.
+		// Playground runs on port: 9400.
 		baseURL: process.env.WP_BASE_URL || 'http://127.0.0.1:9400',
 	},
 	retries: 0,
 	webServer: {
 		...baseConfig.webServer,
-		command: 'npm run playground -- --blueprint=./localized_blueprint.json',
+		// This is kind of a hack PART 2/2,
+		// to make sure Playwright DOES NOT start the webserver on its own.
+		//
+		// Part 1/2 is the "run" of the "Running (& Updating) the screenshot tests" steps
+		// in .github/workflows/wordpress-org-screenshots.yml
+		//
+		// While auto-loading the webserver when needed sounded nice, it introduced a race-condition
+		// between the setup of Playground and Playwrights own start event.
+		// Playwright listens for the availability of the webserver relatively simple,
+		// as soon as there is a status code 200, Playwright starts all engines.
+		//
+		// Unfortunately Playground is not ready at this point, it hast started WordPress
+		// and is going to start stepping through the blueprint, but hasn't loaded GatherPress nor imported any data;
+		// Resulting in failing tests.
+		//
+		// Sending just >undefined< is an idea, taken from @swisspidy at: 
+		// https://github.com/swissspidy/wp-performance-action/pull/173/files#diff-980717ce45eb5ef0a66e87dd5b664656800d31ca809fe902f069b5e8f3cdcd31
+		command: undefined,
 		port: 9400,
-		// reuseExistingServer: !process.env.CI,
 		reuseExistingServer: true,
 	},
 });

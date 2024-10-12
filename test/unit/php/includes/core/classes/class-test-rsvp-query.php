@@ -11,7 +11,6 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Query;
-use GatherPress\Core\Rsvp_Setup;
 use PMC\Unit_Test\Base;
 use WP_Comment_Query;
 
@@ -52,29 +51,26 @@ class Test_Rsvp_Query extends Base {
 	/**
 	 * Coverage for taxonomy_query method.
 	 *
+	 * @covers ::taxonomy_query
+	 *
 	 * @return void
 	 */
 	public function test_taxonomy_query(): void {
-		$instance = RSVP_Query::get_instance();
+		$instance = Rsvp_Query::get_instance();
 		$user_id  = $this->factory->user->create();
-		$event    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+		$post     = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
 		$clauses  = array(
 			'join'  => '',
 			'where' => '',
 		);
-		$rsvp     = wp_insert_comment(
-			array(
-				'comment_post_ID' => $event->ID,
-				'comment_type'    => Rsvp::COMMENT_TYPE,
-				'user_id'         => $user_id,
-			)
-		);
+		$event    = new Event( $post->ID );
 
-		wp_set_object_terms( $rsvp, 'attending', Rsvp::TAXONOMY );
+		$event->rsvp->save( $user_id, 'attending' );
 
 		$comment_query = new WP_Comment_Query(
 			array(
 				'post_id'   => $event->ID,
+				'user_id'   => $user_id,
 				'tax_query' => array( //phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 					array(
 						'taxonomy' => Rsvp::TAXONOMY,
@@ -86,15 +82,15 @@ class Test_Rsvp_Query extends Base {
 		);
 
 		$pieces = $instance->taxonomy_query( $clauses, $comment_query );
+		$term   = get_term_by( 'slug', 'attending', Rsvp::TAXONOMY );
 
 		$this->assertSame(
 			' LEFT JOIN wp_term_relationships ON (wp_comments.comment_ID = wp_term_relationships.object_id)',
 			$pieces['join'],
 			'Failed to assert that join is the same.'
 		);
-
 		$this->assertSame(
-			' AND ( wp_term_relationships.term_taxonomy_id IN (' . $user_id . ') )',
+			' AND ( wp_term_relationships.term_taxonomy_id IN (' . $term->term_id . ') )',
 			preg_replace( '/\s+/', ' ', $pieces['where'] ),
 			'Failed to assert where is the same.'
 		);

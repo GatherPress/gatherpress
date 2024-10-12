@@ -1,0 +1,116 @@
+name: General Linting
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+    - '.github/workflows/general-linting.yml'
+    - 'docs/**'
+    - '*.md'
+    - 'package.json'
+
+jobs:
+  mdlinting:
+    name: Markdown
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log debug information
+        run: |
+          npm --version
+          node --version
+          git --version
+          php --version
+          composer --version
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
+
+      # Restoring the short lived node_modules cache
+      # to be used across all workflows running on the last commit.
+      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+      - uses: actions/cache/restore@v4
+        id: node_modules-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+
+      - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        run: npm ci --legacy-peer-deps
+
+      # Creating a short lived node_modules cache
+      - uses: actions/cache/save@v4
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ./node_modules
+          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
+
+      - name: The lint-md-docs package uses markdownlint to lint the markup of markdown files to enforce standards.
+        run: npm run lint:md:docs
+        if: ${{ success() || failure() }}
+
+  pckg-json-linting:
+    name: package.json
+    needs: mdlinting # Wait for mdlinting job, to make use of node_modules caching.
+    if: always()     # Run always, even when the mdlinting job didn't ran.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log debug information
+        run: |
+          npm --version
+          node --version
+          git --version
+          php --version
+          composer --version
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
+
+      # Restoring the short lived node_modules cache
+      # to be used across all workflows running on the last commit.
+      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+      - uses: actions/cache/restore@v4
+        id: node_modules-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+
+      - name: NPM install
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        run: npm ci --legacy-peer-deps
+
+      # Creating a short lived node_modules cache
+      - uses: actions/cache/save@v4
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            ./node_modules
+          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
+
+      - name: The lint-pkg-json package helps to enforce standards for the package.json files.
+        run: npm run lint:pkg-json
+        if: ${{ success() || failure() }}
+
