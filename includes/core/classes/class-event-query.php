@@ -354,11 +354,12 @@ class Event_Query {
 		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID='
 						. esc_sql( $table ) . '.post_id';
 		$order           = strtoupper( $order );
-		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
 
+		if ( in_array( $order, array( 'DESC', 'ASC' ), true ) ) {
 			// ORDERBY is an array, which allows to orderby multiple values.
 			// Currently, it is only allowed to order events by ONE value.
 			$order_by = ( is_array( $order_by ) ) ? $order_by[0] : $order_by;
+
 			switch ( strtolower( $order_by ) ) {
 				case 'id':
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.ID %s', esc_sql( $order ) );
