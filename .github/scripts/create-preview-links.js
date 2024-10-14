@@ -52,9 +52,6 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 		},
 		steps: [
 			{
-				step: 'enableMultisite',
-			},
-			{
 				step: 'login',
 				username: 'admin',
 				password: 'password',
@@ -126,6 +123,16 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 					resource: 'url',
 					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-2024.xml'
 				}
+			},
+			/**
+			 * Run 'enableMultisite' after the plugin activation!
+			 *
+			 * There have been some weird errors with this step, when ran after the login.
+			 * Having it here at the end -kinda- fixes the problem.
+			 * @see https://github.com/GatherPress/gatherpress/issues/950
+			 */
+			{
+				step: 'enableMultisite',
 			},
 		],
 	};
