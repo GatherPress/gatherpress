@@ -23,9 +23,7 @@ GatherPress combines four of such block-patterns to curate the creation of:
 
 GatherPress adds the following blocks by default into a new created event:
 
-- A block-pattern named `gatherpress/event-template`.
-
-    #### This pattern contains the following blocks by default
+- A block-pattern named `gatherpress/event-template`, which contains the following blocks by default:
 
     - `gatherpress/event-date`
     - `gatherpress/add-to-calendar`
@@ -39,9 +37,7 @@ GatherPress adds the following blocks by default into a new created event:
 
 A new created venue will have the following blocks prepared by default:
 
-- A block-pattern named `gatherpress/venue-template`
-
-    #### This pattern contains the following blocks by default
+- A block-pattern named `gatherpress/venue-template`, which contains the following block by default:
 
     - `gatherpress/venue`
 
