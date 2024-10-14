@@ -107,7 +107,10 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 			*/
 			{
 				step: 'unzip',
-				zipPath: '/wordpress/pr/pr.zip',
+				zipFile: {
+					resource: 'vfs',
+					path: '/wordpress/pr/pr.zip',
+				},
 				extractToPath: '/wordpress/pr',
 			},
 			{
