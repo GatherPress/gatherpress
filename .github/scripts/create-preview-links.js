@@ -115,7 +115,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 			},
 			{
 				step: 'installPlugin',
-				pluginZipFile: {
+				pluginData: {
 					resource: 'vfs',
 					path: '/wordpress/pr/gatherpress.zip',
 				},
