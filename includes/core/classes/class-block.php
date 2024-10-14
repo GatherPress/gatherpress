@@ -221,7 +221,7 @@ class Block {
 			return $parsed_hooked_block;
 		}
 
-		// ... paragraph block.
+		// The opener text for new Events... a paragraph block.
 		if ( 'core/paragraph' === $hooked_block_type ) {
 			$parsed_hooked_block['attrs']['placeholder'] = __(
 				'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
