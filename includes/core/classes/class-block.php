@@ -115,7 +115,7 @@ class Block {
 	 *
 	 * @return string[] List of block-variations foldernames.
 	 */
-	public static function get_block_variations(): array {
+	public function get_block_variations(): array {
 		$variations_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
 
 		if ( ! file_exists( $variations_directory ) ) {
