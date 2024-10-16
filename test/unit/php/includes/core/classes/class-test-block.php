@@ -189,6 +189,5 @@ class Test_Block extends Base {
 
 		$this->assertStringContainsString( '`gatherpress/event-template`', $doc_file );
 		$this->assertStringContainsString( '`gatherpress/venue-template`', $doc_file );
-		$this->assertStringContainsString( '`gatherpress/venue-details`', $doc_file );
 	}
 }

@@ -19,11 +19,11 @@ const defaultConfig = require('@wordpress/scripts/config/webpack.config.js');
  * is in the format `variations/{variation}/index` and the value is the
  * path to the `index.js` file.
  *
- * @returns {Object} An object where each key is a variation entry path
- *                   (e.g., `variations/{variation}/index`) and each value
- *                   is the corresponding path to the `index.js` file for
- *                   that variation. Returns an empty object if the
- *                   'variations' directory does not exist.
+ * @return {Object} An object where each key is a variation entry path
+ *                  (e.g., `variations/{variation}/index`) and each value
+ *                  is the corresponding path to the `index.js` file for
+ *                  that variation. Returns an empty object if the
+ *                  'variations' directory does not exist.
  */
 function getVariationEntries() {
 	const variationsDir = path.resolve(process.cwd(), 'src', 'variations');
@@ -38,8 +38,8 @@ function getVariationEntries() {
 	for (const variation of variationDirs) {
 		const variationPath = path.join(variationsDir, variation);
 		entries[`variations/${variation}/index`] = path.join(
-		variationPath,
-		'index.js'
+			variationPath,
+			'index.js'
 		);
 	}
 

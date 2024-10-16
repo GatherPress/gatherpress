@@ -26,5 +26,4 @@ parameters:
         # core/classes/class-setup.php
         #
         # A dev-only errors, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
-        - '#^Path in require_once\(\) "\./wp-admin/includes/file\.php" is not a file or it does not exist\.$#'
         - '#^Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file or it does not exist\.$#'
