@@ -29,6 +29,14 @@ class Block {
 	use Singleton;
 
 	/**
+	 * An array used to cache block variation names.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	protected array $block_variation_names = array();
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -101,25 +109,28 @@ class Block {
 	}
 
 	/**
-	 * Get list of all block variations based on the build directory.
+	 * Get a list of subfolder names from the /build/variations/ directory.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return string[] List of block-variations foldernames.
 	 */
-	protected static function get_block_variations(): array {
-		$blocks_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
+	public static function get_block_variations(): array {
+		$variations_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
 
-		if ( ! file_exists( $blocks_directory ) ) {
+		if ( ! file_exists( $variations_directory ) ) {
 			return array();
 		}
 
-		$blocks = array_values(
-			array_diff(
-				scandir( $blocks_directory ),
-				array( '..', '.' )
-			)
-		);
-
-		return $blocks; // maybe cache in var.
+		if ( empty( $this->block_variation_names ) ) {
+			$this->block_variation_names = array_values(
+				array_diff(
+					scandir( $variations_directory ),
+					array( '..', '.' )
+				)
+			);
+		}
+		return array_filter( $this->block_variation_names );
 	}
 
 	/**

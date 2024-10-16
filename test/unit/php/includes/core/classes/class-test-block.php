@@ -123,7 +123,7 @@ class Test_Block extends Base {
 			array(
 				// 'add-to-calendar',
 			),
-			Utility::invoke_hidden_method( $instance, 'get_block_variations' ),
+			$instance->get_block_variations(),
 			'Failed to assert, to get all block variations from the "/src" directory.'
 		);
 	}

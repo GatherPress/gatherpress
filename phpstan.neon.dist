@@ -25,7 +25,6 @@ parameters:
     ignoreErrors:
         # core/classes/class-setup.php
         #
-        # A dev-only error, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
+        # A dev-only errors, which can occur if the gatherpress is symlinked into a WP instance or called via wp-env or Playground.
+        - '#^Path in require_once\(\) "\./wp-admin/includes/file\.php" is not a file or it does not exist\.$#'
         - '#^Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file or it does not exist\.$#'
-        # Ignore until first block-variation is in place.
-        - '#^Trait GatherPress\\Core\\Traits\\Block_Variation is used zero times and is not analysed\.$#'
