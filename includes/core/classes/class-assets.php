@@ -12,7 +12,9 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
+use Error;
 
 /**
  * Class Assets.
@@ -87,6 +89,8 @@ class Assets {
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
+		add_action( 'init', array( $this, 'register_variation_assets' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
@@ -418,14 +422,144 @@ class Assets {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $asset The file name of the asset.
+	 * @param string  $asset The file name of the asset.
+	 * @param ?string $path  (Optional) The absolute path to the asset file
+	 *                       or null to use the path based on the default naming scheme.
 	 * @return array An array containing asset-related data.
 	 */
-	protected function get_asset_data( string $asset ): array {
+	protected function get_asset_data( string $asset, string $path = null ): array {
+		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
-			$this->asset_data[ $asset ] = require_once $this->path . sprintf( '%s.asset.php', $asset );
+			$this->asset_data[ $asset ] = require_once $path;
 		}
 
 		return (array) $this->asset_data[ $asset ];
+	}
+
+	/**
+	 * Register all assets.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_variation_assets(): void {
+		array_map(
+			array( $this, 'register_asset' ),
+			Block::get_instance()->get_block_variations()
+		);
+	}
+
+	/**
+	 * Enqueue all assets.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function enqueue_variation_assets(): void {
+		array_map(
+			array( $this, 'enqueue_asset' ),
+			Block::get_instance()->get_block_variations()
+		);
+	}
+
+	/**
+	 * Register a new script and sets translated strings for the script.
+
+	 * @since 1.0.0
+	 *
+	 * @param string $folder_name Slug of the block to register scripts and translations for.
+	 * @param string $build_dir Name of the folder ro register assets from, relative to the plugins root directory.
+	 *
+	 * @return void
+	 */
+	protected function register_asset( string $folder_name, $build_dir = 'variations/' ): void {
+		$slug     = sprintf( 'gatherpress-%s', $folder_name );
+		$folders  = sprintf( '%1$s%2$s', $build_dir, $folder_name );
+		$dir      = sprintf( '%1$s%2$s', $this->path, $folders );
+		$path_php = sprintf( '%1$s/index.asset.php', $dir );
+		$path_css = sprintf( '%1$s/index.css', $dir );
+		$url_js   = sprintf( '%s/index.js', $this->build );
+		$url_css  = sprintf( '%s/index.css', $this->build );
+
+		if ( ! $this->asset_exists( $path_php, $folder_name ) ) {
+			return;
+		}
+
+		$asset = $this->get_asset_data( $folder_name, $path_php );
+
+		wp_register_script(
+			$slug,
+			$url_js,
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
+
+		wp_set_script_translations( $slug, 'gatherpress' );
+
+		if ( $this->asset_exists( $path_css, $folder_name ) ) {
+			wp_register_style(
+				$slug,
+				$url_css,
+				array( 'global-styles' ),
+				$asset['version'],
+				'screen'
+			);
+		}
+	}
+
+	/**
+	 * Enqueue a script and a style with the same name, if registered.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  string $folder_name Slug of the block to load the frontend scripts for.
+	 *
+	 * @return void
+	 */
+	protected function enqueue_asset( string $folder_name ): void {
+		$slug = sprintf( 'gatherpress-%s', $folder_name );
+		wp_enqueue_script( $slug );
+
+		if ( wp_style_is( $slug, 'registered' ) ) {
+			wp_enqueue_style( $slug );
+		}
+	}
+
+	/**
+	 * A better file_exists with built-in error handling.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @throws Error Throws error for non-existent file with given path,
+	 *               if this is a development environment,
+	 *               returns false for all other environments.
+	 *
+	 * @param  string $path Absolute path to the file to check.
+	 * @param  string $name Name of the file.
+	 *
+	 * @return bool
+	 */
+	protected function asset_exists( string $path, string $name ): bool {
+		if ( ! file_exists( $path ) ) {
+			$error_message = sprintf(
+				/* Translators: %s Name of a block-asset */
+				__(
+					'You need to run `npm start` or `npm run build` for the "%s" block-asset first.',
+					'gatherpress'
+				),
+				$name
+			);
+
+			if ( in_array( wp_get_environment_type(), array( 'local', 'development' ), true ) ) {
+				throw new Error( esc_html( $error_message ) );
+			} else {
+				// Should write to the \error_log( $error_message ); if possible.
+				return false;
+			}
+		}
+		return true;
 	}
 }

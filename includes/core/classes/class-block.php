@@ -31,6 +31,14 @@ class Block {
 	use Singleton;
 
 	/**
+	 * An array used to cache block variation names.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	protected array $block_variation_names = array();
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -51,6 +59,8 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		// Priority 9 needed to allow the Block_Variation(s) to register their assets on init:10, without worries.
+		add_action( 'init', array( $this, 'register_block_variations' ), 9 );
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
@@ -77,6 +87,70 @@ class Block {
 				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
 			);
 		}
+	}
+
+	/**
+	 * Require files & instantiate block-variation classes.
+	 *
+	 * @return void
+	 */
+	public function register_block_variations(): void {
+		foreach ( $this->get_block_variations() as $block ) {
+			// Prepare namespaced class-name
+			// in the following shape: "GatherPress\Core\Blocks\Block_Variation"  (example).
+			$name = join(
+				'\\',
+				array(
+					__NAMESPACE__,
+					'Blocks',
+					$this->get_classname_from_foldername( $block ),
+				)
+			);
+
+			if ( class_exists( $name ) ) {
+				$name::get_instance();
+			}
+		}
+	}
+
+	/**
+	 * Get a list of subfolder names from the /build/variations/ directory.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string[] List of block-variations foldernames.
+	 */
+	public function get_block_variations(): array {
+		$variations_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
+
+		if ( ! file_exists( $variations_directory ) ) {
+			return array();
+		}
+
+		if ( empty( $this->block_variation_names ) ) {
+			$this->block_variation_names = array_values(
+				array_diff(
+					scandir( $variations_directory ),
+					array( '..', '.' )
+				)
+			);
+		}
+		return array_filter( $this->block_variation_names );
+	}
+
+	/**
+	 * Get class name from folder name.
+	 *
+	 * @todo maybe better in the Utility class?
+	 *
+	 * @param  string $foldername String with name of a folder.
+	 *
+	 * @return string Class name that reflects the given foldername.
+	 */
+	protected static function get_classname_from_foldername( string $foldername ): string {
+		$foldername = basename( $foldername );
+
+		return ucwords( str_replace( '-', '_', $foldername ), '_' );
 	}
 
 	/**
