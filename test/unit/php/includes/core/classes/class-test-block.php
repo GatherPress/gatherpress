@@ -50,6 +50,18 @@ class Test_Block extends Base {
 				'priority' => 11,
 				'callback' => array( $instance, 'register_blocks' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'hooked_block_types',
+				'priority' => 9,
+				'callback' => array( $instance, 'hook_blocks_into_patterns' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'hooked_block_core/paragraph',
+				'priority' => 9,
+				'callback' => array( $instance, 'modify_hooked_blocks_in_patterns' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
