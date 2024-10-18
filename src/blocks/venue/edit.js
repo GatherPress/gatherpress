@@ -61,6 +61,24 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const blockProps = useBlockProps();
 	const mapPlatform = getFromGlobal('settings.mapPlatform');
 
+	const { latitudeState } = useSelect(
+		(select) => ({
+			latitudeState: select('gatherpress/venue').getVenueLatitude(),
+		}),
+		[]
+	);
+	const { longitudeState } = useSelect(
+		(select) => ({
+			longitudeState: select('gatherpress/venue').getVenueLongitude(),
+		}),
+		[]
+	);
+
+	useEffect(() => {
+		console.log('Updated longitude:', longitudeState);
+		console.log('Updated latitude:', latitudeState);
+	}, [longitudeState, latitudeState]);
+
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch('gatherpress/venue');
 
@@ -265,7 +283,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 									label={__('Longitude', 'gatherpress')}
 									value={longitude}
 									onChange={(value) => {
-										console.log(value);
 										updateVenueLongitude(value);
 										updateVenueMeta({ longitude: value });
 									}}
