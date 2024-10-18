@@ -1,7 +1,7 @@
 <?php
 /**
  * The "Add to calendar" class manages the core-block-variation,
- * registers and enqueues assets and prepares the output of the block.
+ * it mainly prepares the output of the block.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -12,7 +12,9 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Block_Variation;
+use GatherPress\Core\Event;
+use GatherPress\Core\Validate;
+use GatherPress\Core\Traits\Singleton;
 use WP_Block;
 
 /**
@@ -23,9 +25,9 @@ use WP_Block;
  */
 class Add_To_Calendar {
 	/**
-	 * Common class that handles registering and enqueuing of assets.
+	 * Enforces a single instance of this class.
 	 */
-	use Block_Variation;
+	use Singleton;
 
 	/**
 	 * Class constructor.
@@ -48,10 +50,6 @@ class Add_To_Calendar {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-
-		// Load JS and CSS from the "/build" directory.
-		$this->register_and_enqueue_assets();
-
 		add_action( 'init', array( $this, 'register_block_bindings_sources' ) );
 	}
 
@@ -74,7 +72,7 @@ class Add_To_Calendar {
 			'gatherpress/add-to-calendar',
 			array(
 				'label'              => __( 'Add to calendar', 'gatherpress' ),
-				'get_value_callback' => array( $this, 'get_block_binding_values' ) ),
+				'get_value_callback' => array( $this, 'get_block_binding_values' ),
 				'uses_context'       => array( 'postId' ),
 			)
 		);
@@ -87,37 +85,39 @@ class Add_To_Calendar {
 	 *
 	 * @param array    $source_args    An array of arguments passed via the metadata.bindings.$attribute.args property from the block.
 	 * @param WP_Block $block_instance The current instance of the block the binding is connected to as a WP_Block object.
-	 * @param mixed    $attribute_name The current attribute set via the metadata.bindings.$attribute property on the block.
 	 *
 	 * @return string|null The block binding value or null if something went wrong.
 	 */
 	public function get_block_binding_values( array $source_args, WP_Block $block_instance ): ?string {
 
-		// If no 'label' or 'support' argument is set, bail early with the current post type.
-		if ( ! isset( $source_args['service'] ) ) {
+		// If no 'service' argument is set, bail early.
+		if ( empty( $source_args['service'] ) ) {
 			return null;
 		}
 
-		// Get the post type from context.
+		// Get the post id from context.
 		$post_id = $block_instance->context['postId'];
-		$event   = new Event( $post_id );
 
-		// If 'service' argument is set, return with the requested url for the add-to-calendar service.
-		if ( ! empty( $source_args['service'] ) && $event ) {
-			switch ( $source_args['service'] ) {
-				case 'google':
-					// return $event->get_google_calendar_link(); // protected method !
-					return $event->get_calendar_links()['google']['link']; // TEMP. workaround !
-				case 'ical':
-					// return $event->get_ics_calendar_download(); // protected method !
-					return $event->get_calendar_links()['ical']['download']; // TEMP. workaround !
-				case 'outlook':
-					// return $event->get_ics_calendar_download(); // protected method !
-					return $event->get_calendar_links()['outlook']['download']; // TEMP. workaround !
-				case 'yahoo':
-					// return $event->get_yahoo_calendar_link(); // protected method !
-					return $event->get_calendar_links()['yahoo']['link']; // TEMP. workaround !
-			}
+		// Check, its an event.
+		if ( ! Validate::event_post_id( $post_id ) ) {
+			return null;
+		}
+		// If is a valid event,
+		// return with the requested url for the add-to-calendar service.
+		$event = new Event( $post_id );
+		switch ( $source_args['service'] ) {
+			case 'google':
+				// return $event->get_google_calendar_link(); // protected method !
+				return $event->get_calendar_links()['google']['link']; // TEMP. workaround until the successor of #831 is in place, which will replace this code!
+			case 'ical':
+				// return $event->get_ics_calendar_download(); // protected method !
+				return $event->get_calendar_links()['ical']['download']; // TEMP. workaround until the successor of #831 is in place, which will replace this code!
+			case 'outlook':
+				// return $event->get_ics_calendar_download(); // protected method !
+				return $event->get_calendar_links()['outlook']['download']; // TEMP. workaround until the successor of #831 is in place, which will replace this code!
+			case 'yahoo':
+				// return $event->get_yahoo_calendar_link(); // protected method !
+				return $event->get_calendar_links()['yahoo']['link']; // TEMP. workaround !
 		}
 
 		return null;
