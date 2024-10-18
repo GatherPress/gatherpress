@@ -16,7 +16,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 // At the top of the file, with other imports
-import { store as venueStore } from '../../store/venue';
+//import { store as venueStore } from '../../store/venue';
 
 /**
  * Internal dependencies.
@@ -60,9 +60,9 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
 	const mapPlatform = getFromGlobal('settings.mapPlatform');
-	// Then in the Edit component
+
 	const { updateVenueLatitude, updateVenueLongitude } =
-		useDispatch(venueStore);
+		useDispatch('gatherpress/venue');
 
 	const onlineEventLink = useSelect(
 		(select) =>
@@ -257,7 +257,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 									label={__('Latitude', 'gatherpress')}
 									value={latitude}
 									onChange={(value) => {
-										console.log(value);
 										updateVenueLatitude(value);
 										updateVenueMeta({ latitude: value });
 									}}
