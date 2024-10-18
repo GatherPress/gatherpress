@@ -95,7 +95,7 @@ function createButtonAttributes(titleText, buttonText, service) {
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-variations/
  *
  * @param {string} titleText  Text of buttons title attribute.
- * @param {string} buttonText Visible buttin text.
+ * @param {string} buttonText Visible button text.
  * @param {string} service    Name of calendar service
  * @return {Array}           List of button attributes.
  */

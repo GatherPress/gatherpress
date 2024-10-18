@@ -79,7 +79,7 @@ class Add_To_Calendar {
 	}
 
 	/**
-	 * Handle returing the block binding value for the current post type.
+	 * Handle returning the block binding value for the current post.
 	 *
 	 * @since 1.0.0
 	 *
