@@ -15,6 +15,9 @@ import {
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
+// At the top of the file, with other imports
+import { store as venueStore } from '../../store/venue';
+
 /**
  * Internal dependencies.
  */
@@ -28,6 +31,7 @@ import OnlineEventLink from '../../components/OnlineEventLink';
 import { Broadcaster, Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
 import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
+
 
 /**
  * Edit component for the GatherPress Venue block.
@@ -56,6 +60,10 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
 	const mapPlatform = getFromGlobal('settings.mapPlatform');
+	// Then in the Edit component
+	const { updateVenueLatitude, updateVenueLongitude } =
+		useDispatch(venueStore);
+
 	const onlineEventLink = useSelect(
 		(select) =>
 			select('core/editor')?.getEditedPostAttribute('meta')
@@ -249,7 +257,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 									label={__('Latitude', 'gatherpress')}
 									value={latitude}
 									onChange={(value) => {
-										Broadcaster({ setLatitude: value });
+										console.log(value);
+										updateVenueLatitude(value);
 										updateVenueMeta({ latitude: value });
 									}}
 								/>
@@ -257,7 +266,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 									label={__('Longitude', 'gatherpress')}
 									value={longitude}
 									onChange={(value) => {
-										Broadcaster({ setLongitude: value });
+										console.log(value);
+										updateVenueLongitude(value);
 										updateVenueMeta({ longitude: value });
 									}}
 								/>
