@@ -121,7 +121,7 @@ class Test_Block extends Base {
 
 		$this->assertSame(
 			array(
-				// 'add-to-calendar',
+				'add-to-calendar',
 			),
 			$instance->get_block_variations(),
 			'Failed to assert, to get all block variations from the "/src" directory.'
