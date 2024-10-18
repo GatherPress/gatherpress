@@ -548,7 +548,7 @@ class Assets {
 			$error_message = sprintf(
 				/* Translators: %s Name of a block-asset */
 				__(
-					'You need to run `npm start` or `npm run build` for the "%s" block-asset first. %s does not exist.',
+					'You need to run `npm start` or `npm run build` for the "%1$s" block-asset first. %2$s does not exist.',
 					'gatherpress'
 				),
 				$name,
