@@ -107,17 +107,25 @@ class Add_To_Calendar {
 		$event = new Event( $post_id );
 		switch ( $source_args['service'] ) {
 			case 'google':
-				// return $event->get_google_calendar_link(); // protected method !
-				return $event->get_calendar_links()['google']['link']; // TEMP. workaround until the successor of #831 is in place, which will replace this code!
+				// TEMP. workaround until the successor of #831 is in place,
+				// which will replace this code and
+				// make $event->get_google_calendar_link() a public method.
+				return $event->get_calendar_links()['google']['link'];
 			case 'ical':
-				// return $event->get_ics_calendar_download(); // protected method !
-				return $event->get_calendar_links()['ical']['download']; // TEMP. workaround until the successor of #831 is in place, which will replace this code!
+				// TEMP. workaround until the successor of #831 is in place,
+				// which will replace this code and
+				// make $event->get_ics_calendar_download() a public method.
+				return $event->get_calendar_links()['ical']['download'];
 			case 'outlook':
-				// return $event->get_ics_calendar_download(); // protected method !
-				return $event->get_calendar_links()['outlook']['download']; // TEMP. workaround until the successor of #831 is in place, which will replace this code!
+				// TEMP. workaround until the successor of #831 is in place,
+				// which will replace this code and
+				// make $event->get_ics_calendar_download() a public method.
+				return $event->get_calendar_links()['outlook']['download'];
 			case 'yahoo':
-				// return $event->get_yahoo_calendar_link(); // protected method !
-				return $event->get_calendar_links()['yahoo']['link']; // TEMP. workaround !
+				// TEMP. workaround until the successor of #831 is in place,
+				// which will replace this code and
+				// make $event->get_yahoo_calendar_link() a public method.
+				return $event->get_calendar_links()['yahoo']['link'];
 		}
 
 		return null;
