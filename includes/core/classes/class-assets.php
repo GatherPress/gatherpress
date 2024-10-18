@@ -480,8 +480,8 @@ class Assets {
 		$dir      = sprintf( '%1$s%2$s', $this->path, $folders );
 		$path_php = sprintf( '%1$s/index.asset.php', $dir );
 		$path_css = sprintf( '%1$s/index.css', $dir );
-		$url_js   = sprintf( '%s/index.js', $this->build );
-		$url_css  = sprintf( '%s/index.css', $this->build );
+		$url_js   = sprintf( '%s/index.js', $this->build . $folders );
+		$url_css  = sprintf( '%s/index.css', $this->build . $folders );
 
 		if ( ! $this->asset_exists( $path_php, $folder_name ) ) {
 			return;
@@ -499,7 +499,7 @@ class Assets {
 
 		wp_set_script_translations( $slug, 'gatherpress' );
 
-		if ( $this->asset_exists( $path_css, $folder_name ) ) {
+		if ( $this->asset_exists( $path_css, $folder_name, false ) ) {
 			wp_register_style(
 				$slug,
 				$url_css,
@@ -538,22 +538,24 @@ class Assets {
 	 *               returns false for all other environments.
 	 *
 	 * @param  string $path Absolute path to the file to check.
-	 * @param  string $name Name of the file.
+	 * @param  string $name Name of the asset, without file type.
+	 * @param  bool   $critical Whether file is mandatory for the plugin to work, defaults to true.
 	 *
 	 * @return bool
 	 */
-	protected function asset_exists( string $path, string $name ): bool {
+	protected function asset_exists( string $path, string $name, bool $critical = true ): bool {
 		if ( ! file_exists( $path ) ) {
 			$error_message = sprintf(
 				/* Translators: %s Name of a block-asset */
 				__(
-					'You need to run `npm start` or `npm run build` for the "%s" block-asset first.',
+					'You need to run `npm start` or `npm run build` for the "%1$s" block-asset first. %2$s does not exist.',
 					'gatherpress'
 				),
-				$name
+				$name,
+				$path
 			);
 
-			if ( in_array( wp_get_environment_type(), array( 'local', 'development' ), true ) ) {
+			if ( in_array( wp_get_environment_type(), array( 'local', 'development' ), true ) && $critical ) {
 				throw new Error( esc_html( $error_message ) );
 			} else {
 				// Should write to the \error_log( $error_message ); if possible.
