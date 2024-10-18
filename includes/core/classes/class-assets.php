@@ -480,8 +480,8 @@ class Assets {
 		$dir      = sprintf( '%1$s%2$s', $this->path, $folders );
 		$path_php = sprintf( '%1$s/index.asset.php', $dir );
 		$path_css = sprintf( '%1$s/index.css', $dir );
-		$url_js   = sprintf( '%s/index.js', $this->build );
-		$url_css  = sprintf( '%s/index.css', $this->build );
+		$url_js   = sprintf( '%s/index.js', $this->build . $folders );
+		$url_css  = sprintf( '%s/index.css', $this->build . $folders );
 
 		if ( ! $this->asset_exists( $path_php, $folder_name ) ) {
 			return;
