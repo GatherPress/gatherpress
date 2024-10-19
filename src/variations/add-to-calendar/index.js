@@ -14,77 +14,51 @@ const VARIATION_ATTRIBUTES = {
 const BUTTON_ATTRIBUTES = {
 	tagName: 'a', // By setting this to 'button', instead of 'a', we can completely prevent the LinkControl getting rendered into the Toolbar.
 };
-
-const BUTTON_ATTRIBUTES_GOOGLE = registerButtonVariation(
-	__('Add event to your Google calendar.', 'gatherpress'),
-	'Google',
-	'google'
-);
-const BUTTON_ATTRIBUTES_ICAL = registerButtonVariation(
-	__('Download event as ical file.', 'gatherpress'),
-	'iCal',
-	'ical'
-);
-const BUTTON_ATTRIBUTES_OUTLOOK = registerButtonVariation(
-	__('Download event as outlook file.', 'gatherpress'),
-	'Outlook',
-	'outlook'
-);
-const BUTTON_ATTRIBUTES_YAHOO = registerButtonVariation(
-	__('Add event to your Yahoo calendar.', 'gatherpress'),
-	'Yahoo',
-	'yahoo'
-);
-
-const INNER_BLOCKS = [
-	[
-		'core/button',
-		{
-			...BUTTON_ATTRIBUTES_GOOGLE,
-		},
-	],
-	[
-		'core/button',
-		{
-			...BUTTON_ATTRIBUTES_ICAL,
-		},
-	],
-	[
-		'core/button',
-		{
-			...BUTTON_ATTRIBUTES_OUTLOOK,
-		},
-	],
-	[
-		'core/button',
-		{
-			...BUTTON_ATTRIBUTES_YAHOO,
-		},
-	],
+const SERVICES = [
+	{
+		service: 'google',
+		text: __('Google', 'gatherpress'),
+		title: __('Add event to your Google calendar.', 'gatherpress'),
+	},
+	{
+		service: 'ical',
+		text: __('iCal', 'gatherpress'),
+		title: __('Download event as iCal file.', 'gatherpress'),
+	},
+	{
+		service: 'outlook',
+		text: __('Outlook', 'gatherpress'),
+		title: __('Download event as Outlook file.', 'gatherpress'),
+	},
+	{
+		service: 'yahoo',
+		text: __('Yahoo', 'gatherpress'),
+		title: __('Add event to your Yahoo calendar.', 'gatherpress'),
+	},
 ];
 
-function createButtonAttributes(titleText, buttonText, service) {
+// Helper to generate button attributes based on service.
+function createButtonAttributes(serviceData) {
+	const { service, title, text } = serviceData;
 	return {
 		...BUTTON_ATTRIBUTES,
-		title: titleText,
-		text: buttonText,
+		title,
+		text,
 		rel:
 			service === 'google' || service === 'yahoo'
 				? 'noopener norefferrer'
 				: null,
 		linkTarget:
 			service === 'google' || service === 'yahoo' ? '_blank' : null,
-		placeholder: buttonText,
+		placeholder: text,
 		metadata: {
 			bindings: {
 				url: {
 					source: 'gatherpress/add-to-calendar',
-					args: {
-						service,
-					},
+					args: { service },
 				},
 			},
-			name: buttonText,
+			name: text,
 		},
 	};
 }
@@ -93,31 +67,24 @@ function createButtonAttributes(titleText, buttonText, service) {
  * Registers multiple block variations of the 'core/button' block, one per each calendar service.
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-variations/
- *
- * @param {string} titleText  Text of buttons title attribute.
- * @param {string} buttonText Visible button text.
- * @param {string} service    Name of calendar service
- * @return {Array}           List of button attributes.
  */
-function registerButtonVariation(titleText, buttonText, service) {
-	const buttonAttributes = createButtonAttributes(
-		titleText,
-		buttonText,
-		service
-	);
+SERVICES.forEach((serviceData) => {
+	const attributes = createButtonAttributes(serviceData);
 
 	registerBlockVariation('core/button', {
 		...VARIATION_ATTRIBUTES,
-		name: NAME + '-' + service,
-		title: buttonText,
-		description: titleText,
-		attributes: {
-			...buttonAttributes,
-		},
+		name: `${NAME}-${serviceData.service}`,
+		title: serviceData.text,
+		description: serviceData.title,
+		attributes,
 	});
+});
 
-	return { ...buttonAttributes };
-}
+// Generate innerBlocks array dynamically based on the services.
+const INNER_BLOCKS = SERVICES.map((serviceData) => [
+	'core/button',
+	createButtonAttributes(serviceData),
+]);
 
 /**
  * A Trap block, that looks like a single button, hohoho.
@@ -134,13 +101,17 @@ registerBlockVariation('core/buttons', {
 	),
 	category: 'gatherpress',
 	icon: calendar,
-	name: 'pseudo-' + NAME,
+	name: `pseudo-${NAME}`,
 	// isActive: [ 'namespace', 'title' ], // This is not used/disabled by purpose.
 	innerBlocks: INNER_BLOCKS,
 	example: {
-		innerBlocks: INNER_BLOCKS,
+		innerBlocks: SERVICES.map(({text}) => ({
+			name: 'core/button',
+			attributes: { text },
+		})),
 	},
 });
+
 registerBlockVariation('core/details', {
 	title: __('Add to calendar (DETAILS)', 'gatherpress'),
 	description: __(
@@ -149,13 +120,13 @@ registerBlockVariation('core/details', {
 	),
 	category: 'gatherpress',
 	icon: calendar,
-	name: 'pseudo-details-' + NAME,
+	name: `pseudo-details-${NAME}`,
 	// isActive: [ 'namespace', 'title' ], // This is not used/disabled by purpose.
 	attributes: {
 		summary: __('Add to calendar', 'gatherpress'),
 	},
-	innerBlocks: [['core/buttons', {}, [...INNER_BLOCKS]]],
+	innerBlocks: [['core/buttons', {}, INNER_BLOCKS]],
 	example: {
-		innerBlocks: [['core/buttons', {}, [...INNER_BLOCKS]]],
+		innerBlocks: [['core/buttons', {}, INNER_BLOCKS]],
 	},
 });
