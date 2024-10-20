@@ -4,13 +4,15 @@
 import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalNumberControl as NumberControl,
 	PanelBody,
 	PanelRow,
 	RadioControl,
 	RangeControl,
 	ToggleControl,
 } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
@@ -23,7 +25,7 @@ import { isVenuePostType } from '../../helpers/venue';
 import VenueSelector from '../../components/VenueSelector';
 import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
-import { Listener } from '../../helpers/broadcasting';
+import { Broadcaster, Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
 import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
 
@@ -60,7 +62,17 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 				?.gatherpress_online_event_link
 	);
 
-	let { mapShow } = attributes;
+	let { mapShow, mapCustomLatLong } = attributes;
+	const editPost = useDispatch('core/editor').editPost;
+	const updateVenueMeta = (metaData) => {
+		const payload = JSON.stringify({
+			...venueInformationMetaData,
+			...metaData,
+		});
+		const meta = { gatherpress_venue_information: payload };
+
+		editPost({ meta });
+	};
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
@@ -212,6 +224,45 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							min={100}
 							max={1000}
 						/>
+						<PanelRow>
+							{__('Latitude / Longitude', 'gatherpress')}
+						</PanelRow>
+						<PanelRow>
+							<ToggleControl
+								label={
+									mapCustomLatLong
+										? __('Use custom values', 'gatherpress')
+										: __(
+												'Use default values',
+												'gatherpress'
+											)
+								}
+								checked={mapCustomLatLong}
+								onChange={(value) => {
+									setAttributes({ mapCustomLatLong: value });
+								}}
+							/>
+						</PanelRow>
+						{mapCustomLatLong && (
+							<>
+								<NumberControl
+									label={__('Latitude', 'gatherpress')}
+									value={latitude}
+									onChange={(value) => {
+										Broadcaster({ setLatitude: value });
+										updateVenueMeta({ latitude: value });
+									}}
+								/>
+								<NumberControl
+									label={__('Longitude', 'gatherpress')}
+									value={longitude}
+									onChange={(value) => {
+										Broadcaster({ setLongitude: value });
+										updateVenueMeta({ longitude: value });
+									}}
+								/>
+							</>
+						)}
 					</PanelBody>
 				)}
 			</InspectorControls>
