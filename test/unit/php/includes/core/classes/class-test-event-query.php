@@ -14,6 +14,7 @@ use GatherPress\Core\Event_Query;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use PMC\Unit_Test\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Event_Query.
@@ -200,19 +201,19 @@ class Test_Event_Query extends Base {
 	 */
 	public function test_adjust_admin_event_sorting(): void {
 		$instance = Event_Query::get_instance();
+		global $wp_query;
 
 		$this->mock->user( false, 'admin' );
-		$response = $instance->adjust_admin_event_sorting( array() );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 		$this->assertEmpty( $response, 'Failed to assert array is not empty' );
 
 		$this->mock->user( true, 'admin' );
 
 		// Set 'orderby' admin query to 'datetime'.
-		global $wp_query;
 		$wp_query->set( 'orderby', 'datetime' );
 
 		// Run function with empty array passed as 'pieces' argument.
-		$response = $instance->adjust_admin_event_sorting( array() );
+		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 
 		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
 		$this->assertNotEmpty( $response, 'Failed to assert array is empty' );
@@ -233,17 +234,71 @@ class Test_Event_Query extends Base {
 		$table  = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$retval = $instance->adjust_event_sql( array(), 'all', 'DESC' );
 
-		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
+		$this->assertStringContainsString( '.datetime_start_gmt DESC', $retval['orderby'] );
 		$this->assertEmpty( $retval['where'] );
 
-		$retval = $instance->adjust_event_sql( array(), 'past', 'desc' );
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc' ); // inclusive will be TRUE by default.
 
-		$this->assertStringContainsString( 'DESC', $retval['orderby'] );
-		$this->assertStringContainsString( "AND `{$table}`.datetime_end_gmt <", $retval['where'] );
+		$this->assertStringContainsString( '.datetime_start_gmt DESC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND `{$table}`.`datetime_start_gmt` <", $retval['where'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'datetime', false );
+
+		$this->assertStringContainsString( '.datetime_start_gmt DESC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND `{$table}`.`datetime_end_gmt` <", $retval['where'] );
 
 		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'ASC' );
 
-		$this->assertStringContainsString( 'ASC', $retval['orderby'] );
-		$this->assertStringContainsString( "AND `{$table}`.datetime_end_gmt >=", $retval['where'] );
+		$this->assertStringContainsString( '.datetime_start_gmt ASC', $retval['orderby'] );
+		$this->assertStringContainsString( "AND `{$table}`.`datetime_end_gmt` >=", $retval['where'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'id', false );
+
+		$this->assertStringContainsString( '.ID DESC', $retval['orderby'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'title', false );
+
+		$this->assertStringContainsString( '.post_name DESC', $retval['orderby'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'past', 'desc', 'modified', false );
+
+		$this->assertStringContainsString( '.post_modified_gmt DESC', $retval['orderby'] );
+
+		$retval = $instance->adjust_event_sql( array(), 'upcoming', 'desc', 'rand', false );
+
+		$this->assertStringContainsString( 'RAND()', $retval['orderby'] );
+	}
+
+	/**
+	 * Coverage for get_datetime_comparison_column method.
+	 *
+	 * @covers ::get_datetime_comparison_column
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_comparison_column(): void {
+		$instance = Event_Query::get_instance();
+
+		$this->assertSame(
+			'datetime_end_gmt',
+			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'upcoming', true ) ),
+			'Failed to assert, that inclusive, upcoming events should be ordered by datetime_end_gmt.'
+		);
+		$this->assertSame(
+			'datetime_start_gmt',
+			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'upcoming', false ) ),
+			'Failed to assert, that non-inclusive, upcoming events should be ordered by datetime_start_gmt.'
+		);
+
+		$this->assertSame(
+			'datetime_start_gmt',
+			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'past', true ) ),
+			'Failed to assert, that inclusive, past events should be ordered by datetime_start_gmt.'
+		);
+		$this->assertSame(
+			'datetime_end_gmt',
+			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'past', false ) ),
+			'Failed to assert, that non-inclusive, past events should be ordered by datetime_end_gmt.'
+		);
 	}
 }
