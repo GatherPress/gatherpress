@@ -53,31 +53,30 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapZoomLevel, mapType, mapHeight } = attributes;
 	const [name, setName] = useState('');
 	const [fullAddress, setFullAddress] = useState('');
-	const [latitude, setLatitude] = useState('');
-	const [longitude, setLongitude] = useState('');
 	const [phoneNumber, setPhoneNumber] = useState('');
+	const [latitudeState, setLatitude] = useState('');
 	const [website, setWebsite] = useState('');
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
 	const mapPlatform = getFromGlobal('settings.mapPlatform');
 
-	const { latitudeState } = useSelect(
+	const { latitude } = useSelect(
 		(select) => ({
-			latitudeState: select('gatherpress/venue').getVenueLatitude(),
+			latitude: select('gatherpress/venue').getVenueLatitude(),
 		}),
 		[]
 	);
-	const { longitudeState } = useSelect(
+	const { longitude } = useSelect(
 		(select) => ({
-			longitudeState: select('gatherpress/venue').getVenueLongitude(),
+			longitude: select('gatherpress/venue').getVenueLongitude(),
 		}),
 		[]
 	);
 
 	useEffect(() => {
-		console.log('Updated longitude:', longitudeState);
-		console.log('Updated latitude:', latitudeState);
-	}, [longitudeState, latitudeState]);
+		console.log('Updated longitude:', longitude);
+		console.log('Updated latitude:', latitude);
+	}, [longitude, latitude]);
 
 	const { updateVenueLatitude, updateVenueLongitude } =
 		useDispatch('gatherpress/venue');
@@ -126,8 +125,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		setPhoneNumber,
 		setWebsite,
 		setIsOnlineEventTerm,
-		setLatitude,
-		setLongitude,
 	});
 
 	useEffect(() => {
@@ -135,8 +132,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			setFullAddress(venueInformationMetaData.fullAddress);
 			setPhoneNumber(venueInformationMetaData.phoneNumber);
 			setWebsite(venueInformationMetaData.website);
-			setLatitude(venueInformationMetaData.latitude);
-			setLongitude(venueInformationMetaData.longitude);
+			updateVenueLatitude(venueInformationMetaData.latitude);
+			updateVenueLongitude(venueInformationMetaData.longitude);
 
 			if (!fullAddress && !phoneNumber && !website) {
 				setName(__('Add venue information.', 'gatherpress'));
@@ -163,7 +160,12 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		website,
 		latitude,
 		longitude,
+		updateVenueLongitude,
+		updateVenueLatitude,
 	]);
+
+	console.log('latitude state', latitude);
+	console.log('longitude state', longitude);
 
 	useEffect(() => {
 		// Trigger a window resize event
@@ -275,6 +277,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 									label={__('Latitude', 'gatherpress')}
 									value={latitude}
 									onChange={(value) => {
+										console.log('Latitude from state:', value);
 										updateVenueLatitude(value);
 										updateVenueMeta({ latitude: value });
 									}}
