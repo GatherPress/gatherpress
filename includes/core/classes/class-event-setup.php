@@ -114,20 +114,7 @@ class Event_Setup {
 				'public'        => true,
 				'hierarchical'  => false,
 				'template'      => array(
-					array( 'gatherpress/event-date' ),
-					array( 'gatherpress/add-to-calendar' ),
-					array( 'gatherpress/venue' ),
-					array( 'gatherpress/rsvp' ),
-					array(
-						'core/paragraph',
-						array(
-							'placeholder' => __(
-								'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
-								'gatherpress'
-							),
-						),
-					),
-					array( 'gatherpress/rsvp-response' ),
+					array( 'core/pattern', array( 'slug' => 'gatherpress/event-template' ) ),
 				),
 				'menu_position' => 4,
 				'supports'      => array(

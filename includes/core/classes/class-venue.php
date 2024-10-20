@@ -131,7 +131,7 @@ class Venue {
 				),
 				'menu_icon'    => 'dashicons-location',
 				'template'     => array(
-					array( 'gatherpress/venue' ),
+					array( 'core/pattern', array( 'slug' => 'gatherpress/venue-template' ) ),
 				),
 				'has_archive'  => true,
 				'rewrite'      => array(
@@ -232,6 +232,8 @@ class Venue {
 				'show_in_rest'       => true,
 			)
 		);
+		// It is necessary to make this taxonomy visible on event posts, within REST responses.
+		register_taxonomy_for_object_type( self::TAXONOMY, Event::POST_TYPE );
 	}
 
 	/**
