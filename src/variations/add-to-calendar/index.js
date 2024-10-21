@@ -105,7 +105,7 @@ registerBlockVariation('core/buttons', {
 	// isActive: [ 'namespace', 'title' ], // This is not used/disabled by purpose.
 	innerBlocks: INNER_BLOCKS,
 	example: {
-		innerBlocks: SERVICES.map(({text}) => ({
+		innerBlocks: SERVICES.map(({ text }) => ({
 			name: 'core/button',
 			attributes: { text },
 		})),
