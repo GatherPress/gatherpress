@@ -29,7 +29,7 @@ GatherPress, a plugin created by and for the WordPress community, is a response 
 
 ## Community-built
 
-This project is the result of a collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and with the grit, sweat, and love of **the community, for the community**. We encourage all interested, whether a user, community member, or developer, to follow our emerging presence on our [GatherPress Blog](https://gatherpress.org/blog/), our [GitHub repositories](https://github.com/GatherPress/), our [GatherPress Documentation](https://gatherpress.org/documentation/), or new features on our [GatherPress Playground](https://wordpress.org/plugins/gatherpress/?preview=1).
+This project is the result of a collaborative effort to build a compelling event management application using open source tools such as *WordPress* and *BuddyPress* and with the grit, sweat, and love of **the community, for the community**. We encourage all interested, whether a user, community member, or developer, to follow our emerging presence on our [GatherPress Blog](https://gatherpress.org/blog/), our [GitHub repositories](https://github.com/GatherPress/), our [GatherPress Documentation](https://gatherpress.org/documentation/), or new features on our [GatherPress Playground](https://wordpress.org/plugins/gatherpress/?preview=1).
 
 ## Playground Environment
 
@@ -62,6 +62,8 @@ https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
 - Multi-event management: capability to handle multiple events simultaneously.
 - Multisite environment: This setup allows for centralized management while providing flexibility for each site to host its own unique events with its settings (language, timezone, date time format) and set of users.
 - Works with blocks.
+- Add events to your calendar app, using iCal and dedicated support for platforms like *Google Calendar* or *Yahoo Calendar*.
+- Subscribe with your calendar app, to stay updated about all new & upcoming events, events at a specific venue or events of a specific topic.
 - Fully internationalized.
 - Freedom to add content besides the default event/venue blocks, to remove default blocks, and add synced patterns (useful for adding consistent information across all events).
 
@@ -159,7 +161,7 @@ Topics are like post categories, but for events.
 
 ## Contribute
 
-If you wish to share in the collaborative of work to build _GatherPress_, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
+If you wish to share in the collaborative of work to build *GatherPress*, please drop us a line either via [WordPress Slack](https://make.wordpress.org/chat/) or on [GatherPress.org](htps://gatherpress.org/get-involved). The development location of the GatherPress project can be found at [https://github.com/gatherpress/gatherpress](https://github.com/gatherpress/gatherpress). All contributions are welcome: code, design, user interface, documentation, translation, and more.
 
 ### Read Developer Documentation
 
