@@ -33,7 +33,7 @@ const MapEmbed = (props) => {
 	const isAdmin = select('core')?.canUser('create', 'posts');
 	const isPostEditor = Boolean(select('core/edit-post'));
 	const { zoom, type, className, latitude, longitude } = props;
-	let { location, height } = props;
+	let { location, height, mapCustomLatLong } = props;
 
 	if (!height) {
 		height = 300;
@@ -59,6 +59,7 @@ const MapEmbed = (props) => {
 	} else if (mapPlatform === 'osm') {
 		return (
 			<OpenStreetMap
+				mapCustomLatLong={mapCustomLatLong}
 				location={location}
 				latitude={latitude}
 				longitude={longitude}

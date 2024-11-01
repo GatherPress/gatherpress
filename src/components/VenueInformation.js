@@ -37,6 +37,17 @@ const VenueInformation = () => {
 		editPost({ meta });
 	};
 
+	const { mapCustomLatLong } = useSelect(
+		(select) => ({
+			mapCustomLatLong: select('gatherpress/venue').getMapCustomLatLong(),
+		}),
+		[]
+	);
+
+	useEffect(() => {
+		console.log('mapCustomLatLong changed:', mapCustomLatLong);
+	}, [mapCustomLatLong]);
+
 	let venueInformationMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
@@ -86,23 +97,19 @@ const VenueInformation = () => {
 					lat = data.features[0].geometry.coordinates[1];
 					lng = data.features[0].geometry.coordinates[0];
 				}
-				updateVenueMetaRef.current({
-					latitude: lat,
-					longitude: lng,
-				});
+				console.log('mapCustomLatLong: in VI', mapCustomLatLong);
+				if (!mapCustomLatLong) {
+					updateVenueMetaRef.current({
+						latitude: lat,
+						longitude: lng,
+					});
+				}
 			});
-	}, [fullAddress]);
-
-	const debouncedGetData = useDebounce(getData, 300);
+	}, [fullAddress, mapCustomLatLong, updateVenueMetaRef]);
 
 	useEffect(() => {
-		updateVenueMetaRef.current = updateVenueMeta;
-	}, [updateVenueMeta]);
-
-	useEffect(() => {
-		debouncedGetData();
-	}, [fullAddress, debouncedGetData]);
-
+		getData();
+	}, [getData]);
 	return (
 		<>
 			<TextControl

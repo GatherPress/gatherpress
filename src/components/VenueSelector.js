@@ -100,8 +100,6 @@ const VenueSelector = () => {
 		setWebsite(websiteUpdated);
 		updateVenueLatitude(latitudeUpdated);
 		updateVenueLongitude(longitudeUpdated);
-		console.log('latitudeUpdated with store:', latitudeUpdated);
-		console.log('longitudeUpdated with store:', latitudeUpdated);
 
 		Broadcaster({
 			setName: nameUpdated,

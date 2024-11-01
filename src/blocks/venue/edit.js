@@ -73,13 +73,13 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		[]
 	);
 
-	useEffect(() => {
-		console.log('Updated longitude:', longitude);
-		console.log('Updated latitude:', latitude);
-	}, [longitude, latitude]);
 
-	const { updateVenueLatitude, updateVenueLongitude } =
-		useDispatch('gatherpress/venue');
+
+	const {
+		updateVenueLatitude,
+		updateVenueLongitude,
+		updateMapCustomLatLong,
+	} = useDispatch('gatherpress/venue');
 
 	const onlineEventLink = useSelect(
 		(select) =>
@@ -88,6 +88,11 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	);
 
 	let { mapShow, mapCustomLatLong } = attributes;
+
+	useEffect(() => {
+		updateMapCustomLatLong(mapCustomLatLong);
+	}, [mapCustomLatLong, updateMapCustomLatLong]);
+	
 	const editPost = useDispatch('core/editor').editPost;
 	const updateVenueMeta = (metaData) => {
 		const payload = JSON.stringify({
@@ -163,9 +168,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		updateVenueLongitude,
 		updateVenueLatitude,
 	]);
-
-	console.log('latitude state', latitude);
-	console.log('longitude state', longitude);
 
 	useEffect(() => {
 		// Trigger a window resize event
@@ -255,29 +257,37 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						<PanelRow>
 							{__('Latitude / Longitude', 'gatherpress')}
 						</PanelRow>
-						<PanelRow>
-							<ToggleControl
-								label={
-									mapCustomLatLong
-										? __('Use custom values', 'gatherpress')
-										: __(
-												'Use default values',
-												'gatherpress'
-											)
-								}
-								checked={mapCustomLatLong}
-								onChange={(value) => {
-									setAttributes({ mapCustomLatLong: value });
-								}}
-							/>
-						</PanelRow>
-						{mapCustomLatLong && (
+						{isVenuePostType() && (
+							<PanelRow>
+								<ToggleControl
+									label={
+										mapCustomLatLong
+											? __(
+													'Use custom values',
+													'gatherpress'
+												)
+											: __(
+													'Use default values',
+													'gatherpress'
+												)
+									}
+									checked={mapCustomLatLong}
+									onChange={(value) => {
+										setAttributes({
+											mapCustomLatLong: value,
+										});
+										updateMapCustomLatLong(value);
+
+									}}
+								/>
+							</PanelRow>
+						)}
+						{mapCustomLatLong && isVenuePostType() && (
 							<>
 								<NumberControl
 									label={__('Latitude', 'gatherpress')}
 									value={latitude}
 									onChange={(value) => {
-										console.log('Latitude from state:', value);
 										updateVenueLatitude(value);
 										updateVenueMeta({ latitude: value });
 									}}
@@ -309,6 +319,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						/>
 						{mapShow && !isOnlineEventTerm && (
 							<MapEmbed
+								mapCustomLatLong={mapCustomLatLong}
 								location={fullAddress}
 								latitude={latitude}
 								longitude={longitude}

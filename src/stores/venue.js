@@ -3,6 +3,7 @@ import { createReduxStore, register } from '@wordpress/data';
 const DEFAULT_STATE = {
 	latitude: 0,
 	longitude: 0,
+	mapCustomLatLong: false,
 };
 
 const actions = {
@@ -18,21 +19,31 @@ const actions = {
 			longitude,
 		};
 	},
+	updateMapCustomLatLong(mapCustomLatLong) {
+		return {
+			type: 'UPDATE_MAP_CUSTOM_LAT_LONG',
+			mapCustomLatLong,
+		};
+	},
 };
 
 const reducer = (state = DEFAULT_STATE, action) => {
 	switch (action.type) {
 		case 'UPDATE_VENUE_LATITUDE':
-            console.log('Updating latitude:', action.latitude);
 			return {
 				...state,
 				latitude: action.latitude,
 			};
 		case 'UPDATE_VENUE_LONGITUDE':
-            console.log('Updating longitude:', action.longitude);
 			return {
 				...state,
 				longitude: action.longitude,
+			};
+		case 'UPDATE_MAP_CUSTOM_LAT_LONG':
+            console.log('Updating mapCustomLatLong:', action.mapCustomLatLong);
+			return {
+				...state,
+				mapCustomLatLong: action.mapCustomLatLong,
 			};
 		default:
 			return state;
@@ -45,6 +56,9 @@ const selectors = {
 	},
 	getVenueLongitude(state) {
 		return state.longitude;
+	},
+	getMapCustomLatLong(state) {
+		return state.mapCustomLatLong;
 	},
 };
 
