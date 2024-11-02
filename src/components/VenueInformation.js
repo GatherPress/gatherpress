@@ -47,9 +47,6 @@ const VenueInformation = () => {
 		[]
 	);
 
-	useEffect(() => {
-	}, [mapCustomLatLong]);
-
 	let venueInformationMetaData = useSelect(
 		(select) =>
 			select('core/editor').getEditedPostAttribute('meta')
@@ -75,6 +72,7 @@ const VenueInformation = () => {
 	Listener({ setFullAddress, setPhoneNumber, setWebsite });
 
 	const updateVenueMetaRef = useRef(updateVenueMeta);
+
 	const getData = useCallback(() => {
 		let lat = null;
 		let lng = null;
@@ -108,11 +106,23 @@ const VenueInformation = () => {
 					});
 				}
 			});
-	}, [fullAddress, mapCustomLatLong, updateVenueMetaRef]);
+	}, [
+		fullAddress,
+		mapCustomLatLong,
+		updateVenueLatitude,
+		updateVenueLongitude,
+	]);
+
+	const debouncedGetData = useDebounce(getData, 300);
 
 	useEffect(() => {
-		getData();
-	}, [getData]);
+		updateVenueMetaRef.current = updateVenueMeta;
+	}, [updateVenueMeta]);
+
+	useEffect(() => {
+		debouncedGetData();
+	}, [fullAddress, debouncedGetData]);
+
 	return (
 		<>
 			<TextControl
