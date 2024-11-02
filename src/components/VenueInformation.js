@@ -48,7 +48,6 @@ const VenueInformation = () => {
 	);
 
 	useEffect(() => {
-		console.log('mapCustomLatLong changed:', mapCustomLatLong);
 	}, [mapCustomLatLong]);
 
 	let venueInformationMetaData = useSelect(
@@ -100,7 +99,6 @@ const VenueInformation = () => {
 					lat = data.features[0].geometry.coordinates[1];
 					lng = data.features[0].geometry.coordinates[0];
 				}
-				console.log('mapCustomLatLong: in VI', mapCustomLatLong);
 				if (!mapCustomLatLong) {
 					updateVenueLatitude(lat);
 					updateVenueLongitude(lng);
