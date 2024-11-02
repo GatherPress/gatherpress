@@ -56,6 +56,18 @@ class Test_Assets extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'enqueue_block_editor_assets',
+				'priority' => 10,
+				'callback' => array( $instance, 'enqueue_variation_assets' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_variation_assets' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_head',
 				'priority' => PHP_INT_MIN,
 				'callback' => array( $instance, 'add_global_object' ),
