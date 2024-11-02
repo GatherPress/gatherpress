@@ -37,6 +37,9 @@ const VenueInformation = () => {
 		editPost({ meta });
 	};
 
+	const { updateVenueLatitude, updateVenueLongitude } =
+	useDispatch('gatherpress/venue');
+
 	const { mapCustomLatLong } = useSelect(
 		(select) => ({
 			mapCustomLatLong: select('gatherpress/venue').getMapCustomLatLong(),
@@ -99,6 +102,8 @@ const VenueInformation = () => {
 				}
 				console.log('mapCustomLatLong: in VI', mapCustomLatLong);
 				if (!mapCustomLatLong) {
+					updateVenueLatitude(lat);
+					updateVenueLongitude(lng);
 					updateVenueMetaRef.current({
 						latitude: lat,
 						longitude: lng,
