@@ -254,9 +254,11 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							min={100}
 							max={1000}
 						/>
-						<PanelRow>
-							{__('Latitude / Longitude', 'gatherpress')}
-						</PanelRow>
+						{isVenuePostType() && (
+							<PanelRow>
+								{__('Latitude / Longitude', 'gatherpress')}
+							</PanelRow>
+						)}
 						{isVenuePostType() && (
 							<PanelRow>
 								<ToggleControl
