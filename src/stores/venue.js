@@ -40,7 +40,6 @@ const reducer = (state = DEFAULT_STATE, action) => {
 				longitude: action.longitude,
 			};
 		case 'UPDATE_MAP_CUSTOM_LAT_LONG':
-            console.log('Updating mapCustomLatLong:', action.mapCustomLatLong);
 			return {
 				...state,
 				mapCustomLatLong: action.mapCustomLatLong,

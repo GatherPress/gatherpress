@@ -38,7 +38,7 @@ const VenueInformation = () => {
 	};
 
 	const { updateVenueLatitude, updateVenueLongitude } =
-	useDispatch('gatherpress/venue');
+		useDispatch('gatherpress/venue');
 
 	const { mapCustomLatLong } = useSelect(
 		(select) => ({

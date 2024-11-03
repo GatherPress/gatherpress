@@ -28,10 +28,9 @@ import { isVenuePostType } from '../../helpers/venue';
 import VenueSelector from '../../components/VenueSelector';
 import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
-import { Broadcaster, Listener } from '../../helpers/broadcasting';
+import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
 import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
-
 
 /**
  * Edit component for the GatherPress Venue block.
@@ -54,7 +53,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const [name, setName] = useState('');
 	const [fullAddress, setFullAddress] = useState('');
 	const [phoneNumber, setPhoneNumber] = useState('');
-	const [latitudeState, setLatitude] = useState('');
 	const [website, setWebsite] = useState('');
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
@@ -73,8 +71,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		[]
 	);
 
-
-
 	const {
 		updateVenueLatitude,
 		updateVenueLongitude,
@@ -92,7 +88,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	useEffect(() => {
 		updateMapCustomLatLong(mapCustomLatLong);
 	}, [mapCustomLatLong, updateMapCustomLatLong]);
-	
+
 	const editPost = useDispatch('core/editor').editPost;
 	const updateVenueMeta = (metaData) => {
 		const payload = JSON.stringify({
@@ -279,7 +275,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 											mapCustomLatLong: value,
 										});
 										updateMapCustomLatLong(value);
-
 									}}
 								/>
 							</PanelRow>
