@@ -15,9 +15,6 @@ import {
 import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
-// At the top of the file, with other imports
-//import { store as venueStore } from '../../store/venue';
-
 /**
  * Internal dependencies.
  */
