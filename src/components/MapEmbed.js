@@ -50,6 +50,8 @@ const MapEmbed = (props) => {
 		return (
 			<GoogleMap
 				location={location}
+				latitude={latitude}
+				longitude={longitude}
 				className={className}
 				zoom={zoom}
 				type={type}
@@ -59,7 +61,6 @@ const MapEmbed = (props) => {
 	} else if (mapPlatform === 'osm') {
 		return (
 			<OpenStreetMap
-				mapCustomLatLong={mapCustomLatLong}
 				location={location}
 				latitude={latitude}
 				longitude={longitude}
