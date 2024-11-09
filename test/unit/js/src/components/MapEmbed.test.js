@@ -45,7 +45,11 @@ test('Google MapEmbed returns address in source when location is set', () => {
 		},
 	};
 	const { container } = render(
-		<MapEmbed location="50 South Fullerton Avenue, Montclair, NJ 07042" latitude="40.8117036" longitude="-74.2187738" />
+		<MapEmbed
+			location="50 South Fullerton Avenue, Montclair, NJ 07042"
+			latitude="40.8117036"
+			longitude="-74.2187738"
+		/>
 	);
 
 	expect(container.children[0].getAttribute('src')).toContain(
