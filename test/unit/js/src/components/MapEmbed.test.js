@@ -45,11 +45,11 @@ test('Google MapEmbed returns address in source when location is set', () => {
 		},
 	};
 	const { container } = render(
-		<MapEmbed location="50 South Fullerton Avenue, Montclair, NJ 07042" />
+		<MapEmbed location="50 South Fullerton Avenue, Montclair, NJ 07042" latitude="40.8117036" longitude="-74.2187738" />
 	);
 
 	expect(container.children[0].getAttribute('src')).toContain(
-		'?q=50+South+Fullerton+Avenue%2C+Montclair%2C+NJ+07042'
+		'?q=40.8117036%2C-74.2187738'
 	);
 	expect(container.children[0].getAttribute('src')).toContain('&z=10');
 	expect(container.children[0].getAttribute('src')).toContain('&t=m');
@@ -65,6 +65,8 @@ test('MapEmbed returns address in source when location, zoom, map type, height, 
 	const { container } = render(
 		<MapEmbed
 			location="50 South Fullerton Avenue, Montclair, NJ 07042"
+			latitude="40.8117036"
+			longitude="-74.2187738"
 			zoom={20}
 			type="k"
 			className="unit-test"
@@ -72,7 +74,7 @@ test('MapEmbed returns address in source when location, zoom, map type, height, 
 		/>
 	);
 	expect(container.children[0].getAttribute('src')).toContain(
-		'q=50+South+Fullerton+Avenue%2C+Montclair%2C+NJ+07042'
+		'?q=40.8117036%2C-74.2187738'
 	);
 	expect(container.children[0].getAttribute('src')).toContain('&z=20');
 	expect(container.children[0].getAttribute('src')).toContain('&t=k');

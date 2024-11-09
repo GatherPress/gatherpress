@@ -33,7 +33,7 @@ const MapEmbed = (props) => {
 	const isAdmin = select('core')?.canUser('create', 'posts');
 	const isPostEditor = Boolean(select('core/edit-post'));
 	const { zoom, type, className, latitude, longitude } = props;
-	let { location, height, mapCustomLatLong } = props;
+	let { location, height } = props;
 
 	if (!height) {
 		height = 300;

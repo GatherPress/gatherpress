@@ -177,7 +177,7 @@ class Test_Validate extends Base {
 		);
 		$this->assertTrue(
 			Validate::datetime( '2023-05-11 08:30:00' ),
-			'Failed to assert valid datatime.'
+			'Failed to assert valid datetime.'
 		);
 	}
 
