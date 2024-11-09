@@ -1,1 +1,3 @@
 import './datetime';
+
+import './test';

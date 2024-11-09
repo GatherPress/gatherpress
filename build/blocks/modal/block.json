@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "gatherpress/modal",
+  "version": "1.0.0",
+  "title": "Modal",
+  "category": "gatherpress",
+  "icon": "insert",
+  "example": {},
+  "description": "Enables members to easily confirm their attendance for an event.",
+  "attributes": {
+    "content": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string"
+    }
+  },
+  "supports": {
+    "html": false
+  },
+  "textdomain": "gatherpress",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css"
+}

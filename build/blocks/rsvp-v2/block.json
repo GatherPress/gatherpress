@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "gatherpress/rsvp-v2",
+  "version": "2.0.0",
+  "title": "RSVP V2",
+  "category": "gatherpress",
+  "icon": "insert",
+  "example": {},
+  "description": "Enables members to easily confirm their attendance for an event.",
+  "attributes": {
+    "initialLabel": {
+      "type": "string",
+      "default": "RSVP"
+    },
+    "interactedLabel": {
+      "type": "string",
+      "default": "Edit RSVP"
+    }
+  },
+  "supports": {
+    "html": false
+  },
+  "textdomain": "gatherpress",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "viewScriptModule": "file:./view.js"
+}

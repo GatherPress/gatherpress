@@ -1,0 +1,1 @@
+(()=>{"use strict";const t=window.wp.blocks;window.wp.i18n,window.wp.interactivity,(0,t.registerBlockVariation)("core/group",{name:"single-button-group",title:"Single Button Group",icon:"button",attributes:{align:"center"},innerBlocks:[["core/button",{text:"Attend"}]],isDefault:!1})})();

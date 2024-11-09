@@ -1,0 +1,1 @@
+import*as t from"@wordpress/interactivity";var r={d:(t,e)=>{for(var o in e)r.o(e,o)&&!r.o(t,o)&&Object.defineProperty(t,o,{enumerable:!0,get:e[o]})},o:(t,r)=>Object.prototype.hasOwnProperty.call(t,r)};var e,o;(0,(e={store:()=>t.store},o={},r.d(o,e),o).store)("my-plugin/button-interactivity",{actions:{logSomething(){alert("hi")}}});
