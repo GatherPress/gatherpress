@@ -63,6 +63,9 @@ const VenueSelector = () => {
 		})
 	);
 
+	const { updateVenueLatitude, updateVenueLongitude } =
+		useDispatch('gatherpress/venue');
+
 	useEffect(() => {
 		let venueInformation = {};
 
@@ -95,8 +98,8 @@ const VenueSelector = () => {
 		setFullAddress(fullAddressUpdated);
 		setPhoneNumber(phoneNumberUpdated);
 		setWebsite(websiteUpdated);
-		setLatitude(latitudeUpdated);
-		setLongitude(longitudeUpdated);
+		updateVenueLatitude(latitudeUpdated);
+		updateVenueLongitude(longitudeUpdated);
 
 		Broadcaster({
 			setName: nameUpdated,
@@ -107,7 +110,14 @@ const VenueSelector = () => {
 			setLongitude: longitudeUpdated,
 			setIsOnlineEventTerm: venueSlug === 'online-event',
 		});
-	}, [venueSlug, venuePost, slug, venueValue]);
+	}, [
+		venueSlug,
+		venuePost,
+		slug,
+		venueValue,
+		updateVenueLatitude,
+		updateVenueLongitude,
+	]);
 
 	let venues = useSelect((select) => {
 		return select('core').getEntityRecords(
