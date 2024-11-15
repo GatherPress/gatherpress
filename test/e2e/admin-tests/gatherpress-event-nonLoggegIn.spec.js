@@ -1,5 +1,4 @@
 const { test, expect } = require('@playwright/test');
-const { loginUser } = require('../reusable-user-steps/user-login');
 const { login } = require('../reusable-user-steps/common');
 
 test.describe('e2e test for home page event on develop.gatherpress.org', () => {
@@ -13,7 +12,7 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 test('01-the user should be able to publish an offline event', async ({
 	page,
 }) => {
-	await login({ page, username: 'testuser1' });
+	await login({ page });
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
 	await page
 		.locator('#wpbody-content')
@@ -55,19 +54,19 @@ test('01-the user should be able to publish an offline event', async ({
 test('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
 	page,
 }) => {
-	await page.goto('https://develop.gatherpress.org');
+	await page.goto('/');
 	await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
 	await page
 		.locator('div')
 		.filter({ hasText: /^online Test Event$/ })
 		.isVisible();
 
-	await page.getByRole('link', { name: 'RSVP' }).first().isVisible();
+	await page.getByRole('link', { name: 'RSVP' }).first().isVisible({ timeout: 60000 });
 
-	await page.getByRole('link', { name: 'RSVP' }).first().click();
+	await page.getByRole('link', { name: 'RSVP' }).first().click({ timeout: 60000 });
 	await page.getByText('Login', { exact: true }).click();
 
-	await loginUser({ page, username: 'testuser1' });
+	await login({ page, goToLoginPage: false });
 	await page.evaluate(() => window.scrollTo(0, 1000));
 
 	await page

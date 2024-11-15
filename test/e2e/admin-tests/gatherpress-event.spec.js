@@ -6,7 +6,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
-		await login({ page, username: 'testuser1' });
+		await login({ page });
 	});
 
 	test('the user should be able to publish an online event', async ({

@@ -11,12 +11,15 @@
  */
 const login = async ({
 	page,
-	username,
+	username = process.env.WP_ADMIN_USERNAME,
 	password = process.env.WP_ADMIN_PASSWORD,
+	goToLoginPage = true,
 }) => {
-	page.goto('/wp-login.php', {
-		timeout: 40000,
-	});
+	if(goToLoginPage) {
+		page.goto('/wp-login.php', {
+			timeout: 40000,
+		});
+	}
 
 	await page.getByLabel('Username or Email Address').isVisible();
 	await page.getByLabel('Username or Email Address').fill(username);
