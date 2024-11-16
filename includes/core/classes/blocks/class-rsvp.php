@@ -12,10 +12,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Event;
-use GatherPress\Core\Validate;
 use GatherPress\Core\Traits\Singleton;
-use WP_Block;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -70,8 +67,8 @@ class Rsvp {
 
 			// Locate the <button> tag and set the attributes
 			if ( $p->next_tag() && $p->next_tag() ) {
-				$p->set_attribute( 'data-wp-interactive', 'my-plugin/button-interactivity' );
-				$p->set_attribute( 'data-wp-on--click', 'actions.logSomething' );
+				$p->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
+				$p->set_attribute( 'data-wp-on--click', 'actions.handleRSVPClick' );
 			}
 
 			// Update the block content with new attributes

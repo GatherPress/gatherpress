@@ -1,0 +1,27 @@
+.wp-block-gatherpress-modal {
+	&.gatherpress-is-visible {
+		display: block;
+	}
+
+	display: none;
+	position: fixed;
+	background-color: rgba(255, 255, 255, 0.75);
+	z-index: 999999999;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+
+	> div {
+		position: absolute;
+		inset: 50% auto auto 50%;
+		border: 1px solid rgb(204, 204, 204);
+		background: rgb(255, 255, 255);
+		overflow: auto;
+		border-radius: 4px;
+		outline: none;
+		padding: 20px;
+		margin-right: -50%;
+		transform: translate(-50%, -50%);
+	}
+}

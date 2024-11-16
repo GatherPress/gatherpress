@@ -93,9 +93,21 @@ const Edit = () => {
 			[
 				[
 					'core/button', {
-						text: initialLabel,
-						tagName: 'button',
-						className: 'gatherpress-rsvp-v2',
+					text: initialLabel,
+					tagName: 'button',
+					className: 'gatherpress-rsvp-v2',
+				}
+				]
+			]
+		],
+		[
+			'gatherpress/modal',
+			{ className: 'gatherpress-rsvp-modal' },
+			[
+				[
+					'core/paragraph',
+					{
+						content: 'This is the modal.',
 					}
 				]
 			]

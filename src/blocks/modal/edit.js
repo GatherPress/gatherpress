@@ -33,7 +33,9 @@ const Edit = () => {
 	];
 	return (
 		<div {...blockProps}>
-			<InnerBlocks />
+			<div>
+				<InnerBlocks />
+			</div>
 		</div>
 	);
 };

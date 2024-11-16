@@ -25,7 +25,9 @@ registerBlockType(metadata, {
 	save: () => {
 		return (
 			<div {...useBlockProps.save()}>
-				<InnerBlocks.Content />
+				<div>
+					<InnerBlocks.Content />
+				</div>
 			</div>
 		);
 	}
