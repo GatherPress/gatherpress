@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "title": "Modal",
   "category": "gatherpress",
-  "icon": "insert",
+  "icon": "external",
   "example": {},
   "description": "Enables members to easily confirm their attendance for an event.",
   "attributes": {
