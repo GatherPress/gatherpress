@@ -55,6 +55,10 @@ class Multisite {
 
 	/**
 	 * Fires after WordPress has finished loading but before any headers are sent.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	public function init_shared_options(): void {
 
@@ -80,6 +84,8 @@ class Multisite {
 	/**
 	 * Get list of shared setting-slugs, when conditions are met.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return array
 	 */
 	protected function get_shared_options(): array {
@@ -96,6 +102,8 @@ class Multisite {
 	 *
 	 * @param  string $option Option name.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	protected function init_shared_options_for( string $option ): void {
@@ -103,11 +111,17 @@ class Multisite {
 
 		if ( is_main_site() ) {
 			add_action( sprintf( 'update_option_%s', $option ), array( $this, 'update_option' ), 10, 3 );
+		} else {
+			// $hook_suffix = 'gatherpress_event_page_gatherpress_general';
+			$hook_suffix = sprintf( 'gatherpress_event_page_%s', $option );
+			add_action( sprintf( 'admin_head-%s', $hook_suffix ), array( $this, 'read_only_js' ) );
 		}
 	}
 
 	/**
 	 * Filters the value of an existing option before it is retrieved.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param mixed  $pre_option    The value to return instead of the option value. This differs from <code>$default_value</code>, which is used as the fallback value in the event the option doesn't exist elsewhere in get_option(). Default false (to skip past the short-circuit).
 	 * @param string $option        Option name.
@@ -120,6 +134,8 @@ class Multisite {
 	/**
 	 * Fires after the value of a specific option has been successfully updated.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param mixed  $old_value The old option value.
 	 * @param mixed  $value     The new option value.
 	 * @param string $option    Option name.
@@ -127,4 +143,47 @@ class Multisite {
 	public function update_option( $old_value, $value, string $option ): void {
 		update_site_option( $option, $value );
 	}
+
+	/**
+	 * Fires in head section for a specific admin page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function read_only_js(): void { ?>
+		<style>
+			/* Overwriting build/style-settings_style.css */
+			.gatherpress-settings .components-form-token-field__input-container {
+				background: unset;
+			}
+		</style>
+		<script>
+			document.addEventListener("DOMContentLoaded", function () {
+				const formWrapper = document.querySelector('.gatherpress-settings form');
+
+				if (!formWrapper) return;
+
+				// Select all form fields inside the wrapper
+				const formFields = formWrapper.querySelectorAll("input, textarea, select, button");
+
+				formFields.forEach(field => {
+					switch (field.tagName) {
+						case "INPUT":
+						case "TEXTAREA":
+							field.setAttribute("readonly", true);
+							break;
+						case "SELECT":
+						case "BUTTON":
+							field.disabled = true;
+							break;
+					}
+					// Additional handling for input types
+					if (field.type === "checkbox" || field.type === "radio" || field.type === "submit") {
+						field.disabled = true;
+					}
+				});
+			});
+		</script>
+	<?php }
 }
