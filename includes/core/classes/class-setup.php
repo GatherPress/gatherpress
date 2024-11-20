@@ -91,6 +91,7 @@ class Setup {
 		add_action( 'network_admin_notices', array( $this, 'check_users_can_register' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
+		add_action( 'admin_notices', array( $this, 'check_shared_options' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
@@ -447,6 +448,57 @@ class Setup {
 			sprintf( '%s/includes/templates/admin/setup/gatherpress-alpha-check.php', GATHERPRESS_CORE_PATH ),
 			array(),
 			true
+		);
+	}
+
+	/**
+	 * 
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function check_shared_options(): void {
+		if (
+			filter_var( ! is_multisite(), FILTER_VALIDATE_BOOLEAN ) ||
+			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN )
+		) {
+			return;
+		}
+
+		$shared_options = get_site_option( Utility::prefix_key( 'shared_options' ) );
+		if (
+			filter_var( $shared_options, FILTER_VALIDATE_BOOLEAN ) || (
+				false === strpos( get_current_screen()->id, 'gatherpress_general' ) // @TODO: should be more abstract, based on the $shared_options array.
+			)
+		) {
+			return;
+		}
+
+		if ( is_main_site() ) {
+			$notice = __( 'You are managing settings for the whole multisite.', 'gatherpress' );
+		} else {
+			$main_site_id   = get_main_site_id();
+			$main_site_name = get_blog_option( $main_site_id, 'blogname' );
+			$main_site_url  = get_admin_url( $main_site_id, 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ); // @TODO: should be more abstract, based on the $shared_options array.
+			$main_site_link = sprintf(
+				'<a href="%s" title="%s">%s</a>',
+				esc_url( $main_site_url ),
+				esc_attr( $main_site_name ),
+				esc_html( $main_site_name )
+			);
+			$notice = sprintf(
+				__( 'Settings are inherited from the main site of your multisite and can only be edited from %s.', 'gatherpress' ),
+				$main_site_link
+			);
+		}
+
+		wp_admin_notice(
+			$notice,
+			array(
+				'type'        => 'info',
+				'dismissible' => true,
+			)
 		);
 	}
 }
