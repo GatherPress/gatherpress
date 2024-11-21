@@ -65,7 +65,6 @@ class Setup {
 		Event_Setup::get_instance();
 		Export::get_instance();
 		Import::get_instance();
-		Multisite::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
 		Settings::get_instance();
