@@ -19,6 +19,18 @@
     }
   },
   "supports": {
+    "align": [
+      "wide",
+      "full"
+    ],
+    "layout": {
+      "allowSwitching": false,
+      "allowInheriting": false,
+      "default": {
+        "justifyContent": "center",
+        "type": "flex"
+      }
+    },
     "html": false
   },
   "textdomain": "gatherpress",

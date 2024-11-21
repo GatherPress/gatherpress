@@ -30,77 +30,30 @@ const Edit = () => {
 	const status = 'Attending';
 	const [ initialLabel, setInitialLabel ] = useState( __('RSVP', 'gatherpress'));
 	const [ interactedLabel, setInteractedLabel ] = useState( __('Edit RSVP', 'gatherpress'));
-
-
-	// Get clientId of the current block to target the InnerBlocks within it
-	const clientId = useSelect((select) =>
-		select('core/block-editor').getSelectedBlock()?.clientId, []
-	);
-
-	// Get InnerBlocks within the 'gatherpress/rsvp-v2' block
-	const innerBlocks = useSelect((select) =>
-		clientId ? select('core/block-editor').getBlocks(clientId) : [],
-	[clientId]);
-
-	// Helper function to recursively search for the core/button block
-	const findButtonBlock = (blocks) => {
-		for (const block of blocks) {
-			if (block.name === 'core/button') {
-				return block;
-			}
-			if (block.innerBlocks.length > 0) {
-				const found = findButtonBlock(block.innerBlocks);
-				if (found) return found;
-			}
-		}
-		return null;
-	};
-
-	useEffect(() => {
-		// Find the `core/button` block within the nested InnerBlocks
-		const buttonBlock = findButtonBlock(innerBlocks);
-
-		if (buttonBlock) {
-			// Update `text` attribute of the `core/button` block whenever `initialLabel` changes
-			dispatch('core/block-editor').updateBlockAttributes(buttonBlock.clientId, {
-				text: initialLabel,
-			});
-		}
-
-	}, [initialLabel, innerBlocks]);
-
-	// Use `useSelect` to get the currently selected block.
-	const selectedBlock = useSelect((select) => {
-		return select('core/block-editor').getSelectedBlock();
-	}, []); // Empty dependency array to call it once on mount
-
-	useEffect(() => {
-		// Ensure that a block is selected and it is the one you want to target
-		if (
-			selectedBlock &&
-			selectedBlock.name === 'core/button' &&
-			selectedBlock.attributes?.className.includes('gatherpress-rsvp-v2')
-		) {
-			console.log(selectedBlock.attributes);
-			console.log('Selected block is core/button');
-			// Perform any actions related to the selected block here
-		}
-	}, [selectedBlock]); // Re-run the effect when the selected block changes
-
 	const TEMPLATE = [
 		[
 			'core/buttons',
-			{ align: 'center', layout: { type: 'flex', justifyContent: 'center' } },
+			{
+				align: 'center',
+				layout: { type: 'flex', justifyContent: 'center' },
+			},
 			[
 				[
 					'core/button',
 					{
-						text: initialLabel,
+						// text: initialLabel,
+						text: __('RSVP', 'gatherpress'),
 						tagName: 'button',
-						className: 'gatherpress-rsvp-v2',
+						className: 'gatherpress-rsvp--js-open-modal',
 					}
 				]
 			]
+		],
+		[
+			'core/paragraph',
+			{
+				content: __('Attending', 'gatherpress'),
+			}
 		],
 		[
 			'gatherpress/modal',
@@ -127,6 +80,7 @@ const Edit = () => {
 							'core/button',
 							{
 								text: __('Attend', 'gatherpress'),
+								tagName: 'button',
 								className: 'modal-button-1',
 							}
 						],
@@ -134,7 +88,8 @@ const Edit = () => {
 							'core/button',
 							{
 								text: __('Close', 'gatherpress'),
-								className: 'modal-button-2',
+								tagName: 'button',
+								className: 'gatherpress-rsvp--js-close-modal',
 							}
 						]
 					]
@@ -142,6 +97,63 @@ const Edit = () => {
 			]
 		]
 	];
+
+
+	// Get clientId of the current block to target the InnerBlocks within it
+	const clientId = useSelect((select) =>
+		select('core/block-editor').getSelectedBlock()?.clientId, []
+	);
+
+	// Get InnerBlocks within the 'gatherpress/rsvp-v2' block
+	const innerBlocks = useSelect((select) =>
+		clientId ? select('core/block-editor').getBlocks(clientId) : [],
+	[clientId]);
+
+	// Helper function to recursively search for the core/button block
+	const findButtonBlock = (blocks) => {
+		for (const block of blocks) {
+			if (block.name === 'core/button') {
+				return block;
+			}
+			if (block.innerBlocks.length > 0) {
+				const found = findButtonBlock(block.innerBlocks);
+				if (found) return found;
+			}
+		}
+		return null;
+	};
+
+	// useEffect(() => {
+	// 	// Find the `core/button` block within the nested InnerBlocks
+	// 	const buttonBlock = findButtonBlock(innerBlocks);
+	//
+	// 	if (buttonBlock) {
+	// 		// Update `text` attribute of the `core/button` block whenever `initialLabel` changes
+	// 		dispatch('core/block-editor').updateBlockAttributes(buttonBlock.clientId, {
+	// 			text: initialLabel,
+	// 		});
+	// 	}
+	//
+	// }, [initialLabel, innerBlocks]);
+
+	// Use `useSelect` to get the currently selected block.
+	const selectedBlock = useSelect((select) => {
+		return select('core/block-editor').getSelectedBlock();
+	}, []); // Empty dependency array to call it once on mount
+
+	useEffect(() => {
+		// Ensure that a block is selected and it is the one you want to target
+		if (
+			selectedBlock &&
+			selectedBlock.name === 'core/button' &&
+			selectedBlock.attributes?.className.includes('gatherpress-rsvp-v2')
+		) {
+			console.log(selectedBlock.attributes);
+			console.log('Selected block is core/button');
+			// Perform any actions related to the selected block here
+		}
+	}, [selectedBlock]); // Re-run the effect when the selected block changes
+
 	return (
 		<>
 			<InspectorControls>
@@ -160,7 +172,7 @@ const Edit = () => {
 			</InspectorControls>
 			<div {...blockProps}>
 				<InnerBlocks
-					template={TEMPLATE}
+					template={ TEMPLATE }
 					templateLock="all"
 					renderAppender={false}
 				/>

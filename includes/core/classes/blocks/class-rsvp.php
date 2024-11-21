@@ -61,14 +61,31 @@ class Rsvp {
 		if (
 			$block['blockName'] === 'core/button' &&
 			isset( $block['attrs']['className'] ) &&
-			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp-v2' )
+			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp--js-open-modal' )
 		) {
 			$p = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes
 			if ( $p->next_tag() && $p->next_tag() ) {
 				$p->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
-				$p->set_attribute( 'data-wp-on--click', 'actions.handleRSVPClick' );
+				$p->set_attribute( 'data-wp-on--click', 'actions.rsvpOpenModal' );
+			}
+
+			// Update the block content with new attributes
+			$block_content = $p->get_updated_html();
+		}
+
+		if (
+			$block['blockName'] === 'core/button' &&
+			isset( $block['attrs']['className'] ) &&
+			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp--js-close-modal' )
+		) {
+			$p = new WP_HTML_Tag_Processor( $block_content );
+
+			// Locate the <button> tag and set the attributes
+			if ( $p->next_tag() && $p->next_tag() ) {
+				$p->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
+				$p->set_attribute( 'data-wp-on--click', 'actions.rsvpCloseModal' );
 			}
 
 			// Update the block content with new attributes
