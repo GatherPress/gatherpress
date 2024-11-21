@@ -4,9 +4,9 @@
 	}
 
 	display: none;
-	position: fixed;
+	position: fixed !important;
 	background-color: rgba(255, 255, 255, 0.75);
-	z-index: 999999999;
+	z-index: 30;
 	top: 0;
 	right: 0;
 	bottom: 0;
@@ -23,5 +23,6 @@
 		padding: 20px;
 		margin-right: -50%;
 		transform: translate(-50%, -50%);
+		width: 320px;
 	}
 }

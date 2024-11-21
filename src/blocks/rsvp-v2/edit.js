@@ -89,14 +89,16 @@ const Edit = () => {
 
 	const TEMPLATE = [
 		[
-			'core/buttons', { align: 'center', layout: { type: 'flex', justifyContent: 'center' } },
+			'core/buttons',
+			{ align: 'center', layout: { type: 'flex', justifyContent: 'center' } },
 			[
 				[
-					'core/button', {
-					text: initialLabel,
-					tagName: 'button',
-					className: 'gatherpress-rsvp-v2',
-				}
+					'core/button',
+					{
+						text: initialLabel,
+						tagName: 'button',
+						className: 'gatherpress-rsvp-v2',
+					}
 				]
 			]
 		],
@@ -105,15 +107,41 @@ const Edit = () => {
 			{ className: 'gatherpress-rsvp-modal' },
 			[
 				[
+					'core/heading',
+					{
+						level: 3,
+						content: __('You\'re attending', 'gatherpress'),
+					}
+				],
+				[
 					'core/paragraph',
 					{
-						content: 'This is the modal.',
+						content: __('To set or change your attending status, simply click the Not Attending button below.', 'gatherpress'),
 					}
+				],
+				[
+					'core/buttons',
+					{ align: 'left', layout: { type: 'flex', justifyContent: 'flex-start' } },
+					[
+						[
+							'core/button',
+							{
+								text: __('Attend', 'gatherpress'),
+								className: 'modal-button-1',
+							}
+						],
+						[
+							'core/button',
+							{
+								text: __('Close', 'gatherpress'),
+								className: 'modal-button-2',
+							}
+						]
+					]
 				]
 			]
 		]
 	];
-
 	return (
 		<>
 			<InspectorControls>
