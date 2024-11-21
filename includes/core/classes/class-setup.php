@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Settings;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -452,7 +453,15 @@ class Setup {
 	}
 
 	/**
-	 * 
+	 * Display a notification in the case that GatherPress settings are managed for the whole Multisite.
+	 *
+	 * This method checks if the current site is part of a Multisite,
+	 * if "shared options" exist and the current user is capable to edit those.
+	 *
+	 * On the main site of a Multisite the admin-user is notified about the fact,
+	 * that changes to the settings will affect all sites of the network,
+	 * on any subsite of a Multisite the admin-user is notified,
+	 * that settings are managed and can only be changed from the main site.
 	 *
 	 * @since 1.0.0
 	 *
@@ -480,14 +489,15 @@ class Setup {
 		} else {
 			$main_site_id   = get_main_site_id();
 			$main_site_name = get_blog_option( $main_site_id, 'blogname' );
-			$main_site_url  = get_admin_url( $main_site_id, 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ); // @TODO: should be more abstract, based on the $shared_options array.
+			$main_site_url  = get_admin_url( $main_site_id, Settings::PARENT_SLUG . '&page=gatherpress_general' ); // @TODO: should be more abstract, based on the $shared_options array.
 			$main_site_link = sprintf(
-				'<a href="%s" title="%s">%s</a>',
+				'<a href="%1$s" title="%2$s">%3$s</a>',
 				esc_url( $main_site_url ),
 				esc_attr( $main_site_name ),
 				esc_html( $main_site_name )
 			);
-			$notice = sprintf(
+			$notice         = sprintf(
+				/* translators: %s is a link to the main site of a Multisite network, named by the blogs title. */
 				__( 'Settings are inherited from the main site of your multisite and can only be edited from %s.', 'gatherpress' ),
 				$main_site_link
 			);
@@ -496,8 +506,7 @@ class Setup {
 		wp_admin_notice(
 			$notice,
 			array(
-				'type'        => 'info',
-				'dismissible' => true,
+				'type' => 'info',
 			)
 		);
 	}
