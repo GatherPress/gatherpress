@@ -34,7 +34,8 @@ jobs:
           'mr',
           'nl_BE',
           'it_IT',
-          'en_US'
+          'en_US',
+          'pt_BR'
         ]
 
     steps:
