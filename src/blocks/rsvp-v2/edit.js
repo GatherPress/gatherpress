@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import { InnerBlocks, InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import {PanelBody, TextControl} from '@wordpress/components';
+import {PanelBody, SelectControl, TextControl} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies.
@@ -25,11 +25,10 @@ import {useDispatch, useSelect, dispatch, select } from '@wordpress/data';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Edit = () => {
+const Edit = ( { attributes, setAttributes } ) => {
 	const blockProps = useBlockProps();
-	const status = 'Attending';
-	const [ initialLabel, setInitialLabel ] = useState( __('RSVP', 'gatherpress'));
-	const [ interactedLabel, setInteractedLabel ] = useState( __('Edit RSVP', 'gatherpress'));
+	const { noStatusLabel, attendingLabel, waitingListLabel, notAttendingLabel } = attributes;
+	const [ status, setStatus ] = useState( 'no_status' );
 	const TEMPLATE = [
 		[
 			'core/buttons',
@@ -63,13 +62,13 @@ const Edit = () => {
 					'core/heading',
 					{
 						level: 3,
-						content: __('You\'re attending', 'gatherpress'),
+						content: __('Update your RSVP', 'gatherpress'),
 					}
 				],
 				[
 					'core/paragraph',
 					{
-						content: __('To set or change your attending status, simply click the Not Attending button below.', 'gatherpress'),
+						content: __('To set or change your attending status, simply click the <strong>Not Attending</strong> button below.', 'gatherpress'),
 					}
 				],
 				[
@@ -81,7 +80,7 @@ const Edit = () => {
 							{
 								text: __('Attend', 'gatherpress'),
 								tagName: 'button',
-								className: 'modal-button-1',
+								className: 'gatherpress-rsvp--js-status-attending',
 							}
 						],
 						[
@@ -97,7 +96,6 @@ const Edit = () => {
 			]
 		]
 	];
-
 
 	// Get clientId of the current block to target the InnerBlocks within it
 	const clientId = useSelect((select) =>
@@ -123,6 +121,29 @@ const Edit = () => {
 		return null;
 	};
 
+	const buttonBlock = findButtonBlock(innerBlocks);
+
+	useEffect(() => {
+		if (buttonBlock) {
+			const buttonText = buttonBlock.attributes.text;
+
+			switch (status) {
+				case 'no_status':
+					setAttributes( { noStatusLabel: buttonText } );
+					break;
+				case 'attending':
+					setAttributes( { attendingLabel: buttonText } );
+					break;
+				case 'waiting_list':
+					setAttributes( { waitingListLabel: buttonText } );
+					break;
+				case 'not_attending':
+					setAttributes( { notAttendingLabel: buttonText } );
+					break;
+			}
+		}
+	}, [ buttonBlock ] );
+
 	// useEffect(() => {
 	// 	// Find the `core/button` block within the nested InnerBlocks
 	// 	const buttonBlock = findButtonBlock(innerBlocks);
@@ -136,38 +157,65 @@ const Edit = () => {
 	//
 	// }, [initialLabel, innerBlocks]);
 
+	useEffect(() => {
+		let newLabel = '';
+
+		switch (status) {
+			case 'no_status':
+				newLabel = noStatusLabel;
+				break;
+			case 'attending':
+				newLabel = attendingLabel;
+				break;
+			case 'waiting_list':
+				newLabel = waitingListLabel;
+				break;
+			case 'not_attending':
+				newLabel = notAttendingLabel;
+				break;
+		}
+
+		if (buttonBlock) {
+			dispatch('core/block-editor').updateBlockAttributes(buttonBlock.clientId, {
+				text: newLabel,
+			});
+		}
+	}, [ status ] );
+
+	useEffect(() => {
+
+	});
+
 	// Use `useSelect` to get the currently selected block.
 	const selectedBlock = useSelect((select) => {
 		return select('core/block-editor').getSelectedBlock();
 	}, []); // Empty dependency array to call it once on mount
 
-	useEffect(() => {
-		// Ensure that a block is selected and it is the one you want to target
-		if (
-			selectedBlock &&
-			selectedBlock.name === 'core/button' &&
-			selectedBlock.attributes?.className.includes('gatherpress-rsvp-v2')
-		) {
-			console.log(selectedBlock.attributes);
-			console.log('Selected block is core/button');
-			// Perform any actions related to the selected block here
-		}
-	}, [selectedBlock]); // Re-run the effect when the selected block changes
-
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody>
-					<TextControl
-						label={ __('Initial Label', 'gatherpress') }
-						value={ initialLabel }
-						onChange={ ( value ) => setInitialLabel( value ) }
+					<SelectControl
+						label={ __('Status', 'gatherpress') }
+						value={ status }
+						options={ [
+							{ label: __('No Status', 'gatherpress'), value: 'no_status' },
+							{ label: __('Attending', 'gatherpress'), value: 'attending' },
+							{ label: __('Waiting List', 'gatherpress'), value: 'waiting_list' },
+							{ label: __('Not Attending', 'gatherpress'), value: 'not_attending' },
+						] }
+						onChange={ ( newStatus ) => setStatus( newStatus ) }
 					/>
-					<TextControl
-						label={ __('Interacted Label', 'gatherpress') }
-						value={ interactedLabel }
-						onChange={ ( value ) => setInteractedLabel( value ) }
-					/>
+					{/*<TextControl*/}
+					{/*	label={ __('Initial Label', 'gatherpress') }*/}
+					{/*	value={ initialLabel }*/}
+					{/*	onChange={ ( value ) => setInitialLabel( value ) }*/}
+					{/*/>*/}
+					{/*<TextControl*/}
+					{/*	label={ __('Interacted Label', 'gatherpress') }*/}
+					{/*	value={ interactedLabel }*/}
+					{/*	onChange={ ( value ) => setInteractedLabel( value ) }*/}
+					{/*/>*/}
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>

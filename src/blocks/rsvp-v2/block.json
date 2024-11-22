@@ -9,11 +9,19 @@
 	"example": {},
 	"description": "Enables members to easily confirm their attendance for an event.",
 	"attributes": {
-		"initialLabel": {
+		"noStatusLabel": {
 			"type": "string",
 			"default": "RSVP"
 		},
-		"interactedLabel": {
+		"attendingLabel": {
+			"type": "string",
+			"default": "Edit RSVP"
+		},
+		"waitingListLabel": {
+			"type": "string",
+			"default": "Edit RSVP"
+		},
+		"notAttendingLabel": {
 			"type": "string",
 			"default": "Edit RSVP"
 		}
