@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "gatherpress/rsvp-response-v2",
+  "version": "2.0.0",
+  "title": "RSVP Response V2",
+  "category": "gatherpress",
+  "icon": "groups",
+  "example": {},
+  "description": "Displays a list of members who have confirmed their attendance for an event.",
+  "attributes": {},
+  "supports": {
+    "align": [
+      "wide",
+      "full"
+    ],
+    "html": false
+  },
+  "textdomain": "gatherpress",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "viewScriptModule": "file:./view.js"
+}

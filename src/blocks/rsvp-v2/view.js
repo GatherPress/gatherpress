@@ -1,10 +1,16 @@
+/**
+ * WordPress dependencies.
+ */
 import { store } from '@wordpress/interactivity';
-// import apiFetch from '@wordpress/api-fetch';
-// import {getFromGlobal} from '../../helpers/globals';
 
-store("gatherpress/rsvp-interactivity", {
+/**
+ * Internal dependencies.
+ */
+import { getFromGlobal } from '../../helpers/globals';
+
+store('gatherpress/rsvp-interactivity', {
 	actions: {
-		rsvpOpenModal() {
+		rsvpOpenModal(e) {
 			const modal = document.querySelector('.gatherpress-rsvp-modal');
 
 			if (modal) {
@@ -23,28 +29,29 @@ store("gatherpress/rsvp-interactivity", {
 			const guests = 0;
 			const anonymous = 0;
 
-			fetch('http://gatherpress-org.test/wp-json/gatherpress/v1/event/rsvp?_locale=user', {
+			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-WP-Nonce': global.GatherPress.misc.nonce, // Include nonce in headers for authentication
+					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
 				body: JSON.stringify({
-					post_id: global.GatherPress.eventDetails.postId,
+					// post_id: global.GatherPress.eventDetails.postId,
+					post_id: getFromGlobal('eventDetails.postId'),
 					status,
 					guests,
 					anonymous,
 				}),
 			})
-			.then((response) => response.json()) // Parse the JSON response
-			.then((res) => {
-				if (res.success) {
-					console.log('SUCCESS');
-				}
-			})
-			.catch((error) => {
-				console.error('Error:', error);
-			});
-		}
+				.then((response) => response.json()) // Parse the JSON response
+				.then((res) => {
+					if (res.success) {
+						console.log('SUCCESS');
+					}
+				})
+				.catch((error) => {
+					console.error('Error:', error);
+				});
+		},
 	},
 });

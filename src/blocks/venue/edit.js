@@ -27,7 +27,8 @@ import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
-import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
+import { getFromGlobal } from '../../helpers/globals';
+import { isGatherPressPostType } from '../../helpers/editor';
 
 /**
  * Edit component for the GatherPress Venue block.

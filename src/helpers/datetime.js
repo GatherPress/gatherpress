@@ -12,7 +12,8 @@ import { createRoot } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import { enableSave, getFromGlobal, setToGlobal } from './globals';
+import { getFromGlobal, setToGlobal } from './globals';
+import { enableSave } from './editor';
 import DateTimePreview from '../components/DateTimePreview';
 
 /**

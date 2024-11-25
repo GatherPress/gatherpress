@@ -27,9 +27,14 @@ const Edit = () => {
 	const postId = getFromGlobal('eventDetails.postId');
 	const currentUser = getFromGlobal('eventDetails.currentUser');
 	const TEMPLATE = [
-		['core/buttons', { align: 'center', layout: { type: 'flex', justifyContent: 'center' } }, [
-			['core/button', { text: 'RSVP' }]
-		]]
+		[
+			'core/buttons',
+			{
+				align: 'center',
+				layout: { type: 'flex', justifyContent: 'center' },
+			},
+			[['core/button', { text: 'RSVP' }]],
+		],
 	];
 	return (
 		<div {...blockProps}>

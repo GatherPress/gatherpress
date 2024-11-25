@@ -42,3 +42,15 @@ GatherPress\Core\Autoloader::register();
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+
+
+// Test...
+add_action('pre_get_comments', function ($query) {
+	if ( is_a( $query, 'WP_Comment_Query' ) ) {
+//		$query->query_vars['type'] = 'gatherpress_rsvp';
+//		echo '<pre>';
+//		print_r($query);
+//		echo '</pre>';
+	}
+});

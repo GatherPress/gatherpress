@@ -71,7 +71,7 @@ const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 	 */
 	const updateUserStatus = (userId, status = 'attending') => {
 		apiFetch({
-			path: getFromGlobal('urls.eventRestApi') + '/rsvp',
+			path: getFromGlobal('urls.eventApiPath') + '/rsvp',
 			method: 'POST',
 			data: {
 				post_id: postId,

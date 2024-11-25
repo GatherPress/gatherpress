@@ -30,5 +30,5 @@ registerBlockType(metadata, {
 				</div>
 			</div>
 		);
-	}
+	},
 });

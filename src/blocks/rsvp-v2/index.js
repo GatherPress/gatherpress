@@ -28,5 +28,5 @@ registerBlockType(metadata, {
 				<InnerBlocks.Content />
 			</div>
 		);
-	}
+	},
 });

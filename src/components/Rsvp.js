@@ -106,7 +106,7 @@ const Rsvp = ({
 		}
 
 		apiFetch({
-			path: getFromGlobal('urls.eventRestApi') + '/rsvp',
+			path: getFromGlobal('urls.eventApiPath') + '/rsvp',
 			method: 'POST',
 			data: {
 				post_id: postId,
