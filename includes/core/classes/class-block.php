@@ -59,8 +59,7 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// Priority 9 needed to allow the Block_Variation(s) to register their assets on init:10, without worries.
-		add_action( 'init', array( $this, 'register_block_variations' ), 9 );
+		add_action( 'init', array( $this, 'register_block_classes' ) );
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
@@ -90,27 +89,13 @@ class Block {
 	}
 
 	/**
-	 * Require files & instantiate block-variation classes.
+	 * Instantiate block classes.
 	 *
 	 * @return void
 	 */
-	public function register_block_variations(): void {
-		foreach ( $this->get_block_variations() as $block ) {
-			// Prepare namespaced class-name
-			// in the following shape: "GatherPress\Core\Blocks\Block_Variation"  (example).
-			$name = join(
-				'\\',
-				array(
-					__NAMESPACE__,
-					'Blocks',
-					$this->get_classname_from_foldername( $block ),
-				)
-			);
-
-			if ( class_exists( $name ) ) {
-				$name::get_instance();
-			}
-		}
+	public function register_block_classes(): void {
+		Blocks\Add_To_Calendar::get_instance();
+		Blocks\Rsvp::get_instance();
 	}
 
 	/**
