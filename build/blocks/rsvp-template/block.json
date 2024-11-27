@@ -2,17 +2,19 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
   "name": "gatherpress/rsvp-template",
+  "version": "1.0.0",
   "title": "RSVP Template",
-  "category": "widgets",
+  "category": "gatherpress",
   "icon": "groups",
+  "example": {},
   "description": "Define a reusable template for RSVP entries dynamically populated with data.",
   "attributes": {},
   "supports": {
     "html": false
   },
   "parent": [
-    "core/group"
+    "core/grid"
   ],
-  "editorScript": "file:./index.js",
-  "render": "file:./render.php"
+  "textdomain": "gatherpress",
+  "editorScript": "file:./index.js"
 }

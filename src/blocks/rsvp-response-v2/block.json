@@ -8,8 +8,7 @@
 	"icon": "groups",
 	"example": {},
 	"description": "Displays a list of members who have confirmed their attendance for an event.",
-	"attributes": {
-	},
+	"attributes": {},
 	"supports": {
 		"align": [ "wide", "full" ],
 		"html": false

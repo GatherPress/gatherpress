@@ -8,6 +8,7 @@ import {
 } from '@wordpress/block-editor';
 import { PanelBody, SelectControl, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+
 /**
  * Internal dependencies.
  */
@@ -34,37 +35,59 @@ import { useDispatch, useSelect, dispatch, select } from '@wordpress/data';
  */
 const Edit = ({ attributes, setAttributes }) => {
 	const blockProps = useBlockProps();
-	const generateTemplate = (users) => {
-		return [
-			[
-				'core/group',
-				{
-					layout: {
-						type: 'grid',
-						columns: 3,
-						justifyContent: 'center',
-						alignContent: 'space-around',
-					},
-					className: 'custom-grid-group',
+	// const generateTemplate = (users) => {
+	// 	return [
+	// 		[
+	// 			'core/group',
+	// 			{
+	// 				layout: {
+	// 					type: 'grid',
+	// 					columns: 3,
+	// 					justifyContent: 'center',
+	// 					alignContent: 'space-around',
+	// 				},
+	// 				className: 'custom-grid-group',
+	// 			},
+	// 			users.map((user) => [
+	// 				'core/group',
+	// 				{ className: 'custom-grid-item' },
+	// 				[
+	// 					[
+	// 						'core/image',
+	// 						{
+	// 							url: user.photo,
+	// 							linkDestination: 'custom',
+	// 							className: 'rounded-image is-style-rounded',
+	// 							href: user.profile,
+	// 						},
+	// 					],
+	// 					['core/paragraph', { content: user.name }],
+	// 				],
+	// 			]),
+	// 		],
+	// 	];
+	// };
+
+	const TEMPLATE = [
+		[
+			'core/group',
+			{
+				className: 'rsvp-grid',
+				layout: {
+					type: 'grid',
+					columns: 3,
+					justifyContent: 'center',
+					alignContent: 'space-around',
 				},
-				users.map((user) => [
-					'core/group',
-					{ className: 'custom-grid-item' },
-					[
-						['core/image',
-							{
-								url: user.photo,
-								linkDestination: 'custom',
-								className: 'rounded-image is-style-rounded',
-								href: user.profile,
-							}
-						],
-						['core/paragraph', { content: user.name }],
-					],
-				]),
+			},
+			[
+				[
+					'gatherpress/rsvp-template',
+					{},
+				],
 			],
-		];
-	};
+		],
+	];
 
 	return (
 		<>
@@ -73,9 +96,9 @@ const Edit = ({ attributes, setAttributes }) => {
 			</InspectorControls>
 			<div {...blockProps}>
 				<InnerBlocks
-					template={generateTemplate(getFromGlobal('eventDetails.responses.attending.responses'))}
-					templateLock="all"
-					renderAppender={false}
+					template={ TEMPLATE }
+					// templateLock="all"
+					// renderAppender={false}
 				/>
 			</div>
 		</>

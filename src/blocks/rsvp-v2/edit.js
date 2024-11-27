@@ -168,19 +168,6 @@ const Edit = ({ attributes, setAttributes }) => {
 		}
 	}, [buttonBlock]);
 
-	// useEffect(() => {
-	// 	// Find the `core/button` block within the nested InnerBlocks
-	// 	const buttonBlock = findButtonBlock(innerBlocks);
-	//
-	// 	if (buttonBlock) {
-	// 		// Update `text` attribute of the `core/button` block whenever `initialLabel` changes
-	// 		dispatch('core/block-editor').updateBlockAttributes(buttonBlock.clientId, {
-	// 			text: initialLabel,
-	// 		});
-	// 	}
-	//
-	// }, [initialLabel, innerBlocks]);
-
 	useEffect(() => {
 		let newLabel = '';
 
@@ -243,23 +230,13 @@ const Edit = ({ attributes, setAttributes }) => {
 						]}
 						onChange={(newStatus) => setStatus(newStatus)}
 					/>
-					{/*<TextControl*/}
-					{/*	label={ __('Initial Label', 'gatherpress') }*/}
-					{/*	value={ initialLabel }*/}
-					{/*	onChange={ ( value ) => setInitialLabel( value ) }*/}
-					{/*/>*/}
-					{/*<TextControl*/}
-					{/*	label={ __('Interacted Label', 'gatherpress') }*/}
-					{/*	value={ interactedLabel }*/}
-					{/*	onChange={ ( value ) => setInteractedLabel( value ) }*/}
-					{/*/>*/}
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
 				<InnerBlocks
 					template={TEMPLATE}
-					templateLock="all"
-					renderAppender={false}
+					// templateLock="all"
+					// renderAppender={false}
 				/>
 			</div>
 		</>
