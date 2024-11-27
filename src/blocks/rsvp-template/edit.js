@@ -15,14 +15,8 @@ import { useSelect } from '@wordpress/data';
 import { getFromGlobal } from '../../helpers/globals';
 
 const TEMPLATE = [
-	[
-		'core/image',
-		{
-			url: 'https://via.placeholder.com/150', // Replace with your default image URL
-			alt: 'Default image', // Optional: Add default alt text
-		},
-	],
-	['core/paragraph'],
+	['core/avatar'],
+	['core/comment-author-name'],
 ];
 
 const getPlaceholder = () => {};
@@ -36,9 +30,8 @@ const TemplateInnerBlocks = ( {
 		{ template: TEMPLATE }
 	);
 
-	console.log(children);
 	return(
-		<div { ...innerBlocksProps}>
+		<div { ...innerBlocksProps }>
 			{ children }
 		</div>
 	);
@@ -50,12 +43,15 @@ const List = ({
 } ) => (
 	<>
 		{ responses &&
-			responses.map( ( response, index ) => (
+			responses.map( ( { commentId, ...response }, index ) => (
 				<BlockContextProvider
-					key={ index }
+					key={ response.commentId || index }
+					value={ {
+						commentId: commentId< 0 ? null : commentId,
+					} }
 				>
 					<TemplateInnerBlocks
-						response={ response }
+						response={ { commentId, ...response } }
 						blocks={ blocks }
 					/>
 				</BlockContextProvider>

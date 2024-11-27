@@ -427,6 +427,7 @@ class Rsvp {
 		}
 
 		foreach ( $data as $response ) {
+			$comment_id  = $response->comment_ID;
 			$user_id     = intval( $response->user_id );
 			$user_status = '';
 			$user_guests = intval( get_comment_meta( $response->comment_ID, 'gatherpress_rsvp_guests', true ) );
@@ -461,6 +462,7 @@ class Rsvp {
 
 			$responses[] = array(
 				'id'        => $user_id,
+				'commentId' => $comment_id,
 				'name'      => $user_info->display_name ?? __( 'Anonymous', 'gatherpress' ),
 				'photo'     => get_avatar_url( $user_id ),
 				'profile'   => $profile,
