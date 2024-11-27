@@ -12,7 +12,6 @@
 	"supports": {
 		"html": false
 	},
-	"parent": [ "core/grid" ],
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js"
 }

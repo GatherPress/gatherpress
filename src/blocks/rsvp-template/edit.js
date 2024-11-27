@@ -43,7 +43,7 @@ const TemplateInnerBlocks = ( {
 	return (
 		<div {...innerBlocksProps}>
 			{ response.commentId === activeRsvpId ? children : null }
-
+			{/*{ children }*/}
 			<MemoizedRsvpTemplatePreview
 				blocks={ blocks }
 				commentId={ response.commentId }
@@ -124,8 +124,8 @@ const List = ({responses, blocks, blockProps, activeRsvpId, setActiveRsvpId}) =>
 
 const Edit = ( { clientId, context: { postId } } ) => {
 	const blockProps = useBlockProps();
-	const [ activeRsvpId, setActiveRsvpId ] = useState();
 	const responses = getFromGlobal('eventDetails.responses');
+	const [ activeRsvpId, setActiveRsvpId ] = useState( parseInt(responses.attending.responses[0]?.commentId, 10) ?? null);
 	const { blocks } = useSelect(
 		( select ) => {
 			const { getBlocks } = select( blockEditorStore );
