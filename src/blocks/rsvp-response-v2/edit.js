@@ -80,12 +80,7 @@ const Edit = ({ attributes, setAttributes }) => {
 					alignContent: 'space-around',
 				},
 			},
-			[
-				[
-					'gatherpress/rsvp-template',
-					{},
-				],
-			],
+			[['gatherpress/rsvp-template', {}]],
 		],
 	];
 
@@ -95,9 +90,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				<PanelBody></PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<InnerBlocks
-					template={ TEMPLATE }
-				/>
+				<InnerBlocks template={TEMPLATE} />
 			</div>
 		</>
 	);

@@ -4,7 +4,8 @@
 import { __ } from '@wordpress/i18n';
 import {
 	BlockContextProvider,
-	useBlockProps, useInnerBlocksProps,
+	useBlockProps,
+	useInnerBlocksProps,
 	store as blockEditorStore,
 	__experimentalUseBlockPreview as useBlockPreview,
 } from '@wordpress/block-editor';
@@ -14,27 +15,21 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import { getFromGlobal } from '../../helpers/globals';
-import {memo, useState} from '@wordpress/element';
+import { memo, useState } from '@wordpress/element';
 
 const TEMPLATE = [
-	[
-		'core/group', {},
-		[
-			['core/avatar'],
-			['core/comment-author-name'],
-		],
-	],
+	['core/group', {}, [['core/avatar'], ['core/comment-author-name']]],
 ];
 
 const getPlaceholder = () => {};
 
-const TemplateInnerBlocks = ( {
+const TemplateInnerBlocks = ({
 	response,
 	blocks,
 	blockProps,
 	activeRsvpId,
 	setActiveRsvpId,
-} ) => {
+}) => {
 	const { children, ...innerBlocksProps } = useInnerBlocksProps(
 		{},
 		{ template: TEMPLATE }
@@ -42,33 +37,30 @@ const TemplateInnerBlocks = ( {
 
 	return (
 		<div {...innerBlocksProps}>
-			{ response.commentId === activeRsvpId ? children : null }
+			{response.commentId === activeRsvpId ? children : null}
 			{/*{ children }*/}
 			<MemoizedRsvpTemplatePreview
-				blocks={ blocks }
-				commentId={ response.commentId }
-				setActiveRsvpId={ setActiveRsvpId }
-				isHidden={
-					response.commentId === activeRsvpId
-				}
+				blocks={blocks}
+				commentId={response.commentId}
+				setActiveRsvpId={setActiveRsvpId}
+				isHidden={response.commentId === activeRsvpId}
 			/>
 		</div>
-
 	);
 };
 
-const RsvpTemplatePreview = ( {
+const RsvpTemplatePreview = ({
 	blocks,
 	commentId,
 	setActiveRsvpId,
 	isHidden,
-} ) => {
-	const blockPreviewProps = useBlockPreview( {
+}) => {
+	const blockPreviewProps = useBlockPreview({
 		blocks,
-	} );
+	});
 
 	const handleOnClick = () => {
-		setActiveRsvpId( commentId );
+		setActiveRsvpId(commentId);
 	};
 
 	// We have to hide the preview block if the `comment` props points to
@@ -82,20 +74,26 @@ const RsvpTemplatePreview = ( {
 
 	return (
 		<div
-			{ ...blockPreviewProps }
-			tabIndex={ 0 }
+			{...blockPreviewProps}
+			tabIndex={0}
 			role="button"
-			style={ style }
+			style={style}
 			// eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
-			onClick={ handleOnClick }
-			onKeyPress={ handleOnClick }
+			onClick={handleOnClick}
+			onKeyPress={handleOnClick}
 		/>
 	);
 };
 
-const MemoizedRsvpTemplatePreview = memo( RsvpTemplatePreview );
+const MemoizedRsvpTemplatePreview = memo(RsvpTemplatePreview);
 
-const List = ({responses, blocks, blockProps, activeRsvpId, setActiveRsvpId}) => (
+const List = ({
+	responses,
+	blocks,
+	blockProps,
+	activeRsvpId,
+	setActiveRsvpId,
+}) => (
 	<>
 		{responses &&
 			responses.map(({ commentId, ...response }, index) => {
@@ -106,15 +104,19 @@ const List = ({responses, blocks, blockProps, activeRsvpId, setActiveRsvpId}) =>
 					<BlockContextProvider
 						key={forcedCommentId || index}
 						value={{
-							commentId: forcedCommentId < 0 ? null : forcedCommentId,
+							commentId:
+								forcedCommentId < 0 ? null : forcedCommentId,
 						}}
 					>
 						<TemplateInnerBlocks
-							response={{ commentId: forcedCommentId, ...response }}
-							blockProps={ blockProps }
+							response={{
+								commentId: forcedCommentId,
+								...response,
+							}}
+							blockProps={blockProps}
 							blocks={blocks}
-							activeRsvpId={ activeRsvpId }
-							setActiveRsvpId={ setActiveRsvpId }
+							activeRsvpId={activeRsvpId}
+							setActiveRsvpId={setActiveRsvpId}
 						/>
 					</BlockContextProvider>
 				);
@@ -122,27 +124,29 @@ const List = ({responses, blocks, blockProps, activeRsvpId, setActiveRsvpId}) =>
 	</>
 );
 
-const Edit = ( { clientId, context: { postId } } ) => {
+const Edit = ({ clientId, context: { postId } }) => {
 	const blockProps = useBlockProps();
 	const responses = getFromGlobal('eventDetails.responses');
-	const [ activeRsvpId, setActiveRsvpId ] = useState( parseInt(responses.attending.responses[0]?.commentId, 10) ?? null);
+	const [activeRsvpId, setActiveRsvpId] = useState(
+		parseInt(responses.attending.responses[0]?.commentId, 10) ?? null
+	);
 	const { blocks } = useSelect(
-		( select ) => {
-			const { getBlocks } = select( blockEditorStore );
+		(select) => {
+			const { getBlocks } = select(blockEditorStore);
 			return {
-				blocks: getBlocks( clientId ),
+				blocks: getBlocks(clientId),
 			};
 		},
-		[ clientId ]
+		[clientId]
 	);
 
 	return (
 		<List
-			responses={ responses.attending.responses }
-			blockProps={ blockProps }
-			blocks={ blocks }
-			activeRsvpId={ activeRsvpId }
-			setActiveRsvpId={ setActiveRsvpId }
+			responses={responses.attending.responses}
+			blockProps={blockProps}
+			blocks={blocks}
+			activeRsvpId={activeRsvpId}
+			setActiveRsvpId={setActiveRsvpId}
 		/>
 	);
 };
