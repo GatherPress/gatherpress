@@ -102,7 +102,7 @@ class Rsvp_Response {
 			if ( isset( $metadata['ancestor'] ) && is_array( $metadata['ancestor'] ) ) {
 				$metadata['ancestor'][] = 'gatherpress/rsvp-template';
 			} else {
-				$metadata['ancestor'] = [ 'gatherpress/rsvp-template' ];
+				$metadata['ancestor'] = array( 'gatherpress/rsvp-template' );
 			}
 		}
 

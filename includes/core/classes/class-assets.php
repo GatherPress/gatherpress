@@ -322,7 +322,7 @@ class Assets {
 			),
 			'urls'         => array(
 				'pluginUrl'       => GATHERPRESS_CORE_URL,
-				'eventApiPath'   => '/' . $event_rest_api_slug,
+				'eventApiPath'    => '/' . $event_rest_api_slug,
 				'eventApiUrl'     => home_url( 'wp-json/' . $event_rest_api_slug ),
 				'loginUrl'        => $this->get_login_url( $post_id ),
 				'registrationUrl' => $this->get_registration_url( $post_id ),
