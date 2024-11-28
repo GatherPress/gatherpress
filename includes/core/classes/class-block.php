@@ -96,6 +96,7 @@ class Block {
 	public function register_block_classes(): void {
 		Blocks\Add_To_Calendar::get_instance();
 		Blocks\Rsvp::get_instance();
+		Blocks\Rsvp_Response::get_instance();
 	}
 
 	/**

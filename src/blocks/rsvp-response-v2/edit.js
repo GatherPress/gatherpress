@@ -97,8 +97,6 @@ const Edit = ({ attributes, setAttributes }) => {
 			<div {...blockProps}>
 				<InnerBlocks
 					template={ TEMPLATE }
-					// templateLock="all"
-					// renderAppender={false}
 				/>
 			</div>
 		</>

@@ -8,10 +8,17 @@
 	"icon": "groups",
 	"example": {},
 	"description": "Define a reusable template for RSVP entries dynamically populated with data.",
-	"attributes": {},
+	"attributes": {
+		"commentId": {
+			"type": "integer",
+			"default": 0
+		}
+	},
 	"supports": {
 		"html": false
 	},
+	"parent": [ "core/group" ],
+	"ancestor": [ "core/rsvp-response-v2" ],
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js"
 }

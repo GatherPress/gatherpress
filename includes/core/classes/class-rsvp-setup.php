@@ -53,7 +53,6 @@ class Rsvp_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
-		add_filter( 'get_avatar_data', array( $this, 'modify_avatar_for_gatherpress_rsvp' ), 10, 2 );
 	}
 
 	/**
@@ -90,6 +89,7 @@ class Rsvp_Setup {
 	 *
 	 * @param int $comments_number The original number of comments.
 	 * @param int $post_id         The ID of the post.
+	 *
 	 * @return int Adjusted number of comments.
 	 */
 	public function adjust_comments_number( int $comments_number, int $post_id ): int {
@@ -100,35 +100,5 @@ class Rsvp_Setup {
 		$comment_count = get_comment_count( $post_id );
 
 		return $comment_count['approved'];
-	}
-
-	/**
-	 * Fixes an issue where the REST API does not return avatar URLs for custom comment types.
-	 *
-	 * This method addresses a limitation in the REST API by ensuring that the `gatherpress_rsvp`
-	 * custom comment type includes a valid avatar URL. It checks if the current request is a
-	 * REST API request (`REST_REQUEST`) and if the provided comment is of type `gatherpress_rsvp`.
-	 * If these conditions are met, it modifies the avatar data `$args` to include the user's
-	 * avatar URL based on their user ID.
-	 *
-	 * @param array $args    Array of arguments for the avatar data.
-	 * @param mixed $comment The comment object or other data passed to the filter.
-	 *
-	 * @return array Modified array of avatar arguments, including the correct URL for the avatar.
-	 */
-	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
-		if (
-			defined( 'REST_REQUEST' ) &&
-			REST_REQUEST &&
-			$comment &&
-			is_a( $comment, 'WP_Comment' ) &&
-			'gatherpress_rsvp' === $comment->comment_type
-		) {
-			// Currently, the avatar URL is retrieved based on the user ID.
-			// In the future, when non-user RSVPs are supported, the email address can be used as well.
-			$args['url'] = get_avatar_url( $comment->user_id );
-		}
-
-		return $args;
 	}
 }

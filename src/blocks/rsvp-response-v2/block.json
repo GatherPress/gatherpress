@@ -13,6 +13,14 @@
 		"align": [ "wide", "full" ],
 		"html": false
 	},
+	"allowedBlocks": [
+		"core/group",
+		"core/comment-author-name",
+		"core/avatar"
+	],
+	"providesContext": {
+		"commentId": "commentId"
+	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
