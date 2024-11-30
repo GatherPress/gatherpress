@@ -1,7 +1,7 @@
 <?php
 /**
- * The "Add to calendar" class manages the core-block-variation,
- * it mainly prepares the output of the block.
+ * Class manages the RSVP Response block for GatherPress, preparing its output and
+ * handling associated hooks for customizing functionality.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -13,11 +13,14 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use WP_HTML_Tag_Processor;
 
 /**
- * Class responsible for managing the "Add to calendar" block,
- * which is a block-variation of 'core/buttons'.
+ * Class Rsvp_Response.
+ *
+ * This class manages the RSVP Response block for GatherPress, handling the
+ * preparation of block output and adding hooks for customizations.
+ *
+ * It ensures smooth integration with WordPress's block editor and REST API.
  *
  * @since 1.0.0
  */
@@ -53,13 +56,11 @@ class Rsvp_Response {
 	}
 
 	/**
-	 * Fixes an issue where the REST API does not return avatar URLs for custom comment types.
+	 * Modifies avatar URLs for the `gatherpress_rsvp` custom comment type.
 	 *
-	 * This method addresses a limitation in the REST API by ensuring that the `gatherpress_rsvp`
-	 * custom comment type includes a valid avatar URL. It checks if the current request is a
-	 * REST API request (`REST_REQUEST`) and if the provided comment is of type `gatherpress_rsvp`.
-	 * If these conditions are met, it modifies the avatar data `$args` to include the user's
-	 * avatar URL based on their user ID.
+	 * This method ensures that the `gatherpress_rsvp` custom comment type includes a valid avatar URL.
+	 * It checks if the provided comment is of type `gatherpress_rsvp` and modifies the avatar data `$args`
+	 * to include the user's avatar URL based on their user ID.
 	 *
 	 * @since 1.0.0
 	 *
@@ -70,8 +71,6 @@ class Rsvp_Response {
 	 */
 	public function modify_avatar_for_gatherpress_rsvp( array $args, $comment ): array {
 		if (
-			defined( 'REST_REQUEST' ) &&
-			REST_REQUEST &&
 			$comment &&
 			is_a( $comment, 'WP_Comment' ) &&
 			'gatherpress_rsvp' === $comment->comment_type

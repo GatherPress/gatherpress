@@ -81,10 +81,39 @@ class Block {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
 
+		// Define custom settings for specific blocks.
+		$custom_block_settings = array(
+			'rsvp-template' => array(
+				'render_callback' => function( $attributes, $content, $block ) {
+					// Fetch RSVP responses for the event.
+					$event = new Event( get_the_ID() );
+					$responses = $event->rsvp->responses()['attending']['responses'];
+					$content = '';
+
+					if ( empty( $responses ) ) {
+						return '<p>No RSVPs found.</p>';
+					}
+
+					// Start capturing the output.
+
+					foreach ( $responses as $response ) {
+						$response_id = $response['commentId'];
+						$content .= ( new \WP_Block( $block->parsed_block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => false ) );
+					}
+
+					return $content;
+				},
+			),
+		);
+
 		foreach ( $blocks as $block ) {
-			register_block_type(
-				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
-			);
+			$block_metadata_path = sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block );
+
+			if ( is_dir( $block_metadata_path ) ) {
+				// Apply custom settings if available.
+				$settings = $custom_block_settings[ $block ] ?? array();
+				register_block_type( $block_metadata_path, $settings );
+			}
 		}
 	}
 

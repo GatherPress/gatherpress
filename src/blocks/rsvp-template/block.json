@@ -14,6 +14,5 @@
 	"parent": [ "core/group" ],
 	"ancestor": [ "core/rsvp-response-v2" ],
 	"textdomain": "gatherpress",
-	"editorScript": "file:./index.js",
-	"render": "file:./render.php"
+	"editorScript": "file:./index.js"
 }
