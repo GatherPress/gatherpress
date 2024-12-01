@@ -1,46 +1,31 @@
 /**
  * WordPress dependencies.
  */
-import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InnerBlocks, store as blockEditorStore } from '@wordpress/block-editor';
+import { useSelect } from '@wordpress/data';
 
-/**
- * Internal dependencies.
- */
-import Rsvp from '../../components/Rsvp';
-import { getFromGlobal } from '../../helpers/globals';
-import EditCover from '../../components/EditCover';
+const Edit = ( { clientId, isSelected }) => {
+	const hasSelectedInnerBlock = useSelect(
+		(select) => select(blockEditorStore).hasSelectedInnerBlock(clientId, true),
+		[clientId]
+	);
+	const blockProps = useBlockProps({
+		style: {
+			display: isSelected || hasSelectedInnerBlock ? 'block' : 'none',
+		},
+		className: 'alignfull',
+	});
 
-/**
- * Edit component for the GatherPress RSVP block.
- *
- * This component renders the edit view of the GatherPress RSVP block.
- * It provides an interface for users to respond to the RSVP for the associated event.
- * The component includes the RSVP component and passes the event ID, current user,
- * and type of RSVP as props.
- *
- * @since 1.0.0
- *
- * @return {JSX.Element} The rendered React component.
- */
-const Edit = () => {
-	const blockProps = useBlockProps();
-	const postId = getFromGlobal('eventDetails.postId');
-	const currentUser = getFromGlobal('eventDetails.currentUser');
 	const TEMPLATE = [
 		[
-			'core/buttons',
-			{
-				align: 'center',
-				layout: { type: 'flex', justifyContent: 'center' },
-			},
-			[['core/button', { text: 'RSVP' }]],
+			'gatherpress/modal-content',
+			{},
 		],
 	];
+
 	return (
 		<div {...blockProps}>
-			<div>
-				<InnerBlocks />
-			</div>
+			<InnerBlocks template={TEMPLATE} />
 		</div>
 	);
 };

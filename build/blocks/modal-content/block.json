@@ -1,35 +1,30 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "gatherpress/modal",
+  "name": "gatherpress/modal-content",
   "version": "1.0.0",
-  "title": "Modal",
+  "title": "Modal Content",
+  "parent": [
+    "gatherpress/modal"
+  ],
   "category": "gatherpress",
   "icon": "external",
   "example": {},
   "description": "Enables members to easily confirm their attendance for an event.",
-  "attributes": {
-    "style": {
-      "type": "object",
-      "default": {
-        "color": {
-          "background": "rgba(0, 0, 0, 0.5)"
-        }
-      }
-    }
-  },
+  "attributes": {},
   "supports": {
     "html": false,
     "color": {
       "gradients": true,
       "__experimentalDefaultControls": {
-        "background": true
+        "background": true,
+        "text": true
       }
+    },
+    "spacing": {
+      "padding": true
     }
   },
-  "allowedBlocks": [
-    "gatherpress/modal-content"
-  ],
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
   "style": "file:./style-index.css"

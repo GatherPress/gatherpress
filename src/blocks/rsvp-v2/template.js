@@ -33,43 +33,49 @@ const TEMPLATE = [
 		{ className: 'gatherpress-rsvp-modal' },
 		[
 			[
-				'core/heading',
-				{
-					level: 3,
-					content: __('Update your RSVP', 'gatherpress'),
-				},
-			],
-			[
-				'core/paragraph',
-				{
-					content: __(
-						'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
-						'gatherpress'
-					),
-				},
-			],
-			[
-				'core/buttons',
-				{
-					align: 'left',
-					layout: { type: 'flex', justifyContent: 'flex-start' },
-				},
+				'gatherpress/modal-content',
+				{ className: 'gatherpress-rsvp-modal-content' },
 				[
 					[
-						'core/button',
+						'core/heading',
 						{
-							text: __('Attend', 'gatherpress'),
-							tagName: 'button',
-							className: 'gatherpress-rsvp--js-status-attending',
+							level: 3,
+							content: __('Update your RSVP', 'gatherpress'),
 						},
 					],
 					[
-						'core/button',
+						'core/paragraph',
 						{
-							text: __('Close', 'gatherpress'),
-							tagName: 'button',
-							className: 'gatherpress-rsvp--js-close-modal',
+							content: __(
+								'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
+								'gatherpress'
+							),
 						},
+					],
+					[
+						'core/buttons',
+						{
+							align: 'left',
+							layout: { type: 'flex', justifyContent: 'flex-start' },
+						},
+						[
+							[
+								'core/button',
+								{
+									text: __('Attend', 'gatherpress'),
+									tagName: 'button',
+									className: 'gatherpress-rsvp--js-status-attending',
+								},
+							],
+							[
+								'core/button',
+								{
+									text: __('Close', 'gatherpress'),
+									tagName: 'button',
+									className: 'gatherpress-rsvp--js-close-modal',
+								},
+							],
+						],
 					],
 				],
 			],

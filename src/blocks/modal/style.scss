@@ -5,7 +5,6 @@
 
 	display: none;
 	position: fixed !important;
-	background-color: rgba(255, 255, 255, 0.75);
 	z-index: 30;
 	top: 0;
 	right: 0;
@@ -15,12 +14,12 @@
 	> div {
 		position: absolute;
 		inset: 50% auto auto 50%;
-		border: 1px solid rgb(204, 204, 204);
-		background: rgb(255, 255, 255);
-		overflow: auto;
-		border-radius: 4px;
-		outline: none;
-		padding: 20px;
+		//border: 1px solid rgb(204, 204, 204);
+		//background: rgb(255, 255, 255);
+		//overflow: auto;
+		//border-radius: 4px;
+		//outline: none;
+		//padding: 20px;
 		margin-right: -50%;
 		transform: translate(-50%, -50%);
 		width: 320px;

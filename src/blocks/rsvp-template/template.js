@@ -1,20 +1,7 @@
 const TEMPLATE = [
 	[
 		'core/group',
-		{
-			style: {
-				border: {
-					radius: '10px',
-					width: '1px',
-				},
-				spacing: {
-					padding: {
-						top: 'var:preset|spacing|20',
-						bottom: 'var:preset|spacing|20',
-					},
-				},
-			},
-		},
+		{},
 		[
 			[
 				'core/avatar',

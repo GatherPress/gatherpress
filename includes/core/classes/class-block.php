@@ -13,6 +13,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block_Template;
 use WP_Post;
@@ -85,41 +86,7 @@ class Block {
 		$custom_block_settings = array(
 			'rsvp-template' => array(
 				'skip_inner_blocks' => true,
-				'render_callback' => function( $attributes, $content, $block ) {
-					// Fetch RSVP responses for the event.
-					$event = new Event( get_the_ID() );
-					if ( ! $event->rsvp ) {
-						return $content;
-					}
-
-					$responses = $event->rsvp->responses()['attending']['responses'];
-					$content = '';
-
-//					if ( empty( $responses ) ) {
-//						return '<p>No RSVPs found.</p>';
-//					}
-
-					$responses[] = ['commentId' => -1];
-					$rsvp_response_template = '';
-
-					// Start capturing the output.
-					foreach ( $responses as $response ) {
-						$response_id = intval( $response['commentId'] );
-
-						if ( $response_id === -1 ) {
-							$inner_blocks_json = wp_json_encode( $block->parsed_block['innerBlocks'] );
-
-							$rsvp_response_template = '<div class="gatherpress-rsvp-template__inner-blocks-data" data-inner-blocks="' . esc_attr( $inner_blocks_json ) . '"></div>';
-							continue;
-						}
-
-						 $block_content = ( new \WP_Block( $block->parsed_block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => false ) );
-
-						 $content .= sprintf( '<div id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
-					}
-
-					return $content . $rsvp_response_template;
-				},
+				'render_callback'   => array( Rsvp_Template::get_instance(), 'render_block' ),
 			),
 		);
 
@@ -143,6 +110,7 @@ class Block {
 		Blocks\Add_To_Calendar::get_instance();
 		Blocks\Rsvp::get_instance();
 		Blocks\Rsvp_Response::get_instance();
+		Blocks\Rsvp_Template::get_instance();
 	}
 
 	/**

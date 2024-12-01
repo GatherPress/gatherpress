@@ -59,20 +59,20 @@ class Rsvp {
 	 */
 	public function transform_inner_block_content( string $block_content, array $block ): string {
 		if ( 'gatherpress/rsvp-v2' === $block['blockName'] ) {
-			$p = new WP_HTML_Tag_Processor( $block_content );
-			$p->set_attribute(
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+			$tag->set_attribute(
 				'data-gatherpress-no-status-label',
 				$block['attrs']['noStatusLabel'] ?? __( 'RSVP', 'gatherpress' )
 			);
-			$p->set_attribute(
+			$tag->set_attribute(
 				'data-gatherpress-attending-label',
 				$block['attrs']['attendingLabel'] ?? __( 'Edit RSVP', 'gatherpress' )
 			);
-			$p->set_attribute(
+			$tag->set_attribute(
 				'data-gatherpress-waiting-list-label',
 				$block['attrs']['waitingListLabel'] ?? __( 'Edit RSVP', 'gatherpress' )
 			);
-			$p->set_attribute(
+			$tag->set_attribute(
 				'data-gatherpress-not-attending-label',
 				$block['attrs']['notAttendingLabel'] ?? __( 'Edit RSVP', 'gatherpress' )
 			);
@@ -82,16 +82,17 @@ class Rsvp {
 			isset( $block['attrs']['className'] ) &&
 			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp--js-open-modal' )
 		) {
-			$p = new WP_HTML_Tag_Processor( $block_content );
+			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes
-			if ( $p->next_tag() && $p->next_tag() ) {
-				$p->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
-				$p->set_attribute( 'data-wp-on--click', 'actions.rsvpOpenModal' );
+			$button_tag = $this->get_button_tag( $tag );
+			if ( $button_tag ) {
+				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
+				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpOpenModal' );
 			}
 
 			// Update the block content with new attributes
-			$block_content = $p->get_updated_html();
+			$block_content = $tag->get_updated_html();
 		}
 
 		if (
@@ -99,16 +100,17 @@ class Rsvp {
 			isset( $block['attrs']['className'] ) &&
 			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp--js-close-modal' )
 		) {
-			$p = new WP_HTML_Tag_Processor( $block_content );
+			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes
-			if ( $p->next_tag() && $p->next_tag() ) {
-				$p->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
-				$p->set_attribute( 'data-wp-on--click', 'actions.rsvpCloseModal' );
+			$button_tag = $this->get_button_tag( $tag );
+			if ( $button_tag ) {
+				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
+				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpCloseModal' );
 			}
 
 			// Update the block content with new attributes
-			$block_content = $p->get_updated_html();
+			$block_content = $tag->get_updated_html();
 		}
 
 		if (
@@ -116,18 +118,27 @@ class Rsvp {
 			isset( $block['attrs']['className'] ) &&
 			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp--js-status-attending' )
 		) {
-			$p = new WP_HTML_Tag_Processor( $block_content );
+			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes
-			if ( $p->next_tag() && $p->next_tag() ) {
-				$p->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
-				$p->set_attribute( 'data-wp-on--click', 'actions.rsvpStatusAttending' );
+			$button_tag = $this->get_button_tag( $tag );
+			if ( $button_tag ) {
+				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp-interactivity' );
+				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpStatusAttending' );
 			}
 
 			// Update the block content with new attributes
-			$block_content = $p->get_updated_html();
+			$block_content = $tag->get_updated_html();
 		}
 
 		return $block_content;
+	}
+
+	private function get_button_tag( $tag ) {
+		if ( $tag->next_tag( 'div' ) && $tag->next_tag( 'button' ) ) {
+			return $tag;
+		}
+
+		return null;
 	}
 }
