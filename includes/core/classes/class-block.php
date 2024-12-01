@@ -84,9 +84,14 @@ class Block {
 		// Define custom settings for specific blocks.
 		$custom_block_settings = array(
 			'rsvp-template' => array(
+				'skip_inner_blocks' => true,
 				'render_callback' => function( $attributes, $content, $block ) {
 					// Fetch RSVP responses for the event.
 					$event = new Event( get_the_ID() );
+					if ( ! $event->rsvp ) {
+						return $content;
+					}
+
 					$responses = $event->rsvp->responses()['attending']['responses'];
 					$content = '';
 
@@ -97,8 +102,11 @@ class Block {
 					// Start capturing the output.
 
 					foreach ( $responses as $response ) {
-						$response_id = $response['commentId'];
-						$content .= ( new \WP_Block( $block->parsed_block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => false ) );
+						$response_id = intval( $response['commentId'] );
+
+						 $block_content = ( new \WP_Block( $block->parsed_block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => false ) );
+
+						 $content .= sprintf( '<div id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 					}
 
 					return $content;

@@ -1,27 +1,25 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
 import {
+	__experimentalUseBlockPreview as useBlockPreview,
 	BlockContextProvider,
+	store as blockEditorStore,
 	useBlockProps,
 	useInnerBlocksProps,
-	store as blockEditorStore,
-	__experimentalUseBlockPreview as useBlockPreview,
 } from '@wordpress/block-editor';
-import { useSelect } from '@wordpress/data';
+import {useSelect} from '@wordpress/data';
+import {__} from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../../helpers/globals';
-import { memo, useState } from '@wordpress/element';
+import {getFromGlobal} from '../../helpers/globals';
+import {memo, useState} from '@wordpress/element';
 
 const TEMPLATE = [
 	['core/group', {}, [['core/avatar'], ['core/comment-author-name']]],
 ];
-
-const getPlaceholder = () => {};
 
 const TemplateInnerBlocks = ({
 	response,
@@ -29,6 +27,7 @@ const TemplateInnerBlocks = ({
 	blockProps,
 	activeRsvpId,
 	setActiveRsvpId,
+	firstRsvpId,
 }) => {
 	const { children, ...innerBlocksProps } = useInnerBlocksProps(
 		{},
@@ -37,13 +36,13 @@ const TemplateInnerBlocks = ({
 
 	return (
 		<div {...innerBlocksProps}>
-			{response.commentId === activeRsvpId ? children : null}
+			{response.commentId === (activeRsvpId  || firstRsvpId) ? children : null}
 			{/*{ children }*/}
 			<MemoizedRsvpTemplatePreview
 				blocks={blocks}
 				commentId={response.commentId}
 				setActiveRsvpId={setActiveRsvpId}
-				isHidden={response.commentId === activeRsvpId}
+				isHidden={response.commentId === (activeRsvpId || firstRsvpId)}
 			/>
 		</div>
 	);
@@ -93,10 +92,12 @@ const List = ({
 	blockProps,
 	activeRsvpId,
 	setActiveRsvpId,
+	firstRsvpId,
 }) => (
 	<>
 		{responses &&
 			responses.map(({ commentId, ...response }, index) => {
+				console.log(commentId);
 				// Force commentId to be an integer
 				const forcedCommentId = parseInt(commentId, 10);
 
@@ -117,6 +118,7 @@ const List = ({
 							blocks={blocks}
 							activeRsvpId={activeRsvpId}
 							setActiveRsvpId={setActiveRsvpId}
+							firstRsvpId={firstRsvpId}
 						/>
 					</BlockContextProvider>
 				);
@@ -140,13 +142,20 @@ const Edit = ({ clientId, context: { postId } }) => {
 		[clientId]
 	);
 
+	let rsvps = [{ commentId: -1 }];
+
+	if (responses.attending.responses.length) {
+		rsvps = responses.attending.responses;
+	}
+
 	return (
 		<List
-			responses={responses.attending.responses}
+			responses={rsvps}
 			blockProps={blockProps}
 			blocks={blocks}
 			activeRsvpId={activeRsvpId}
 			setActiveRsvpId={setActiveRsvpId}
+			firstRsvpId={rsvps[0]?.commentId}
 		/>
 	);
 };

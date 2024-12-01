@@ -72,7 +72,6 @@ const Edit = ({ attributes, setAttributes }) => {
 		[
 			'core/group',
 			{
-				className: 'rsvp-grid',
 				layout: {
 					type: 'grid',
 					columns: 3,
