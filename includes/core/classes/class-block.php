@@ -95,21 +95,30 @@ class Block {
 					$responses = $event->rsvp->responses()['attending']['responses'];
 					$content = '';
 
-					if ( empty( $responses ) ) {
-						return '<p>No RSVPs found.</p>';
-					}
+//					if ( empty( $responses ) ) {
+//						return '<p>No RSVPs found.</p>';
+//					}
+
+					$responses[] = ['commentId' => -1];
+					$rsvp_response_template = '';
 
 					// Start capturing the output.
-
 					foreach ( $responses as $response ) {
 						$response_id = intval( $response['commentId'] );
+
+						if ( $response_id === -1 ) {
+							$inner_blocks_json = wp_json_encode( $block->parsed_block['innerBlocks'] );
+
+							$rsvp_response_template = '<div class="gatherpress-rsvp-template__inner-blocks-data" data-inner-blocks="' . esc_attr( $inner_blocks_json ) . '"></div>';
+							continue;
+						}
 
 						 $block_content = ( new \WP_Block( $block->parsed_block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => false ) );
 
 						 $content .= sprintf( '<div id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 					}
 
-					return $content;
+					return $content . $rsvp_response_template;
 				},
 			),
 		);

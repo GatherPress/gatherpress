@@ -16,6 +16,7 @@ import { getFromGlobal } from '../../helpers/globals';
 import EditCover from '../../components/EditCover';
 import { useEffect, useState } from '@wordpress/element';
 import { useDispatch, useSelect, dispatch, select } from '@wordpress/data';
+import TEMPLATE from './template';
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -41,80 +42,6 @@ const Edit = ({ attributes, setAttributes }) => {
 		notAttendingLabel,
 	} = attributes;
 	const [status, setStatus] = useState('no_status');
-	const TEMPLATE = [
-		[
-			'core/buttons',
-			{
-				align: 'center',
-				layout: { type: 'flex', justifyContent: 'center' },
-			},
-			[
-				[
-					'core/button',
-					{
-						// text: initialLabel,
-						text: __('RSVP', 'gatherpress'),
-						tagName: 'button',
-						className: 'gatherpress-rsvp--js-open-modal',
-					},
-				],
-			],
-		],
-		[
-			'core/paragraph',
-			{
-				content: __('Attending', 'gatherpress'),
-			},
-		],
-		[
-			'gatherpress/modal',
-			{ className: 'gatherpress-rsvp-modal' },
-			[
-				[
-					'core/heading',
-					{
-						level: 3,
-						content: __('Update your RSVP', 'gatherpress'),
-					},
-				],
-				[
-					'core/paragraph',
-					{
-						content: __(
-							'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
-							'gatherpress'
-						),
-					},
-				],
-				[
-					'core/buttons',
-					{
-						align: 'left',
-						layout: { type: 'flex', justifyContent: 'flex-start' },
-					},
-					[
-						[
-							'core/button',
-							{
-								text: __('Attend', 'gatherpress'),
-								tagName: 'button',
-								className:
-									'gatherpress-rsvp--js-status-attending',
-							},
-						],
-						[
-							'core/button',
-							{
-								text: __('Close', 'gatherpress'),
-								tagName: 'button',
-								className: 'gatherpress-rsvp--js-close-modal',
-							},
-						],
-					],
-				],
-			],
-		],
-	];
 
 	// Get clientId of the current block to target the InnerBlocks within it
 	const clientId = useSelect(

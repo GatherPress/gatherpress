@@ -18,5 +18,6 @@
     "core/rsvp-response-v2"
   ],
   "textdomain": "gatherpress",
-  "editorScript": "file:./index.js"
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css"
 }

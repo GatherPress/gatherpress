@@ -35,38 +35,6 @@ import { useDispatch, useSelect, dispatch, select } from '@wordpress/data';
  */
 const Edit = ({ attributes, setAttributes }) => {
 	const blockProps = useBlockProps();
-	// const generateTemplate = (users) => {
-	// 	return [
-	// 		[
-	// 			'core/group',
-	// 			{
-	// 				layout: {
-	// 					type: 'grid',
-	// 					columns: 3,
-	// 					justifyContent: 'center',
-	// 					alignContent: 'space-around',
-	// 				},
-	// 				className: 'custom-grid-group',
-	// 			},
-	// 			users.map((user) => [
-	// 				'core/group',
-	// 				{ className: 'custom-grid-item' },
-	// 				[
-	// 					[
-	// 						'core/image',
-	// 						{
-	// 							url: user.photo,
-	// 							linkDestination: 'custom',
-	// 							className: 'rounded-image is-style-rounded',
-	// 							href: user.profile,
-	// 						},
-	// 					],
-	// 					['core/paragraph', { content: user.name }],
-	// 				],
-	// 			]),
-	// 		],
-	// 	];
-	// };
 
 	const TEMPLATE = [
 		[
@@ -77,6 +45,7 @@ const Edit = ({ attributes, setAttributes }) => {
 					columns: 3,
 					justifyContent: 'center',
 					alignContent: 'space-around',
+					minimumColumnWidth: '8rem',
 				},
 			},
 			[['gatherpress/rsvp-template', {}]],

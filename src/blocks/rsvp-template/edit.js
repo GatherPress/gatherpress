@@ -16,10 +16,7 @@ import {__} from '@wordpress/i18n';
  */
 import {getFromGlobal} from '../../helpers/globals';
 import {memo, useState} from '@wordpress/element';
-
-const TEMPLATE = [
-	['core/group', {}, [['core/avatar'], ['core/comment-author-name']]],
-];
+import TEMPLATE from './template';
 
 const TemplateInnerBlocks = ({
 	response,
