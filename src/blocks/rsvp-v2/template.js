@@ -43,8 +43,8 @@ const TEMPLATE = [
 				'core/paragraph',
 				{
 					content: __(
-					'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
-					'gatherpress'
+						'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
+						'gatherpress'
 					),
 				},
 			],
@@ -60,8 +60,7 @@ const TEMPLATE = [
 						{
 							text: __('Attend', 'gatherpress'),
 							tagName: 'button',
-							className:
-							'gatherpress-rsvp--js-status-attending',
+							className: 'gatherpress-rsvp--js-status-attending',
 						},
 					],
 					[

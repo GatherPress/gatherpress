@@ -8,14 +8,14 @@ import {
 	useBlockProps,
 	useInnerBlocksProps,
 } from '@wordpress/block-editor';
-import {useSelect} from '@wordpress/data';
-import {__} from '@wordpress/i18n';
+import { useSelect } from '@wordpress/data';
+import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
  */
-import {getFromGlobal} from '../../helpers/globals';
-import {memo, useState} from '@wordpress/element';
+import { getFromGlobal } from '../../helpers/globals';
+import { memo, useState } from '@wordpress/element';
 import TEMPLATE from './template';
 
 const TemplateInnerBlocks = ({
@@ -33,7 +33,9 @@ const TemplateInnerBlocks = ({
 
 	return (
 		<div {...innerBlocksProps}>
-			{response.commentId === (activeRsvpId  || firstRsvpId) ? children : null}
+			{response.commentId === (activeRsvpId || firstRsvpId)
+				? children
+				: null}
 			{/*{ children }*/}
 			<MemoizedRsvpTemplatePreview
 				blocks={blocks}
