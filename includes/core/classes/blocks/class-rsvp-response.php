@@ -13,6 +13,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use WP_HTML_Tag_Processor;
 
 /**
  * Class Rsvp_Response.
@@ -51,8 +52,25 @@ class Rsvp_Response {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
 		add_filter( 'get_avatar_data', array( $this, 'modify_avatar_for_gatherpress_rsvp' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'add_rsvp_to_comment_ancestor' ) );
+	}
+
+	public function transform_block_content( string $block_content, array $block ): string {
+		if ( 'gatherpress/rsvp-response-v2' === $block['blockName'] ) {
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			if ( $tag->next_tag() ) {
+				$tag->set_attribute(
+					'data-wp-interactive',
+					'gatherpress/rsvp'
+				);
+				$block_content = $tag->get_updated_html();
+			}
+		}
+
+		return $block_content;
 	}
 
 	/**

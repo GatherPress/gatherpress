@@ -16,5 +16,5 @@
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"viewScript": [ "file:./view.js", "gatherpress-rsvp-template-view" ]
+	"viewScriptModule": [ "file:./view.js" ]
 }

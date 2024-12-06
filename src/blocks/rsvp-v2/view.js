@@ -1,14 +1,14 @@
 /**
  * WordPress dependencies.
  */
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext, useState } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies.
  */
 import { getFromGlobal } from '../../helpers/globals';
 
-const { state } = store('gatherpress/rsvp-interactivity', {
+const { state } = store('gatherpress/rsvp', {
 	state: {
 		attendingCount: getFromGlobal('eventDetails.responses.attending.count'),
 	},
@@ -49,8 +49,7 @@ const { state } = store('gatherpress/rsvp-interactivity', {
 				.then((response) => response.json()) // Parse the JSON response
 				.then((res) => {
 					if (res.success) {
-						state.attendingCount = res.responses.attending.count;
-						state.isOpen = true;
+						state.status = 'attending';
 						console.log('SUCCESS');
 					}
 				})
@@ -59,11 +58,4 @@ const { state } = store('gatherpress/rsvp-interactivity', {
 				});
 		},
 	},
-	callbacks: {
-		logIsOpen() {
-			if (state.isOpen) {
-				alert('attending!');
-			}
-		}
-	}
 });

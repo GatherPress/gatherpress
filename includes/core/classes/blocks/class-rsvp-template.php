@@ -55,39 +55,33 @@ class Rsvp_Template {
 	}
 
 	public function render_block( $attributes, $content, $block ): string {
-		// Fetch RSVP responses for the event.
 		$event = new Event( get_the_ID() );
+
 		if ( ! $event->rsvp ) {
 			return $content;
 		}
 
 		$responses = $event->rsvp->responses()['attending']['responses'];
-		$content = '';
+		$content   = '';
 
-		//					if ( empty( $responses ) ) {
-		//						return '<p>No RSVPs found.</p>';
-		//					}
-
-		$responses[] = ['commentId' => -1];
+		// Used for generating a parsed block for calls to API on the front end.
+		$responses[]            = [ 'commentId' => -1 ];
 		$rsvp_response_template = '';
 
-		// Start capturing the output.
 		foreach ( $responses as $response ) {
 			$response_id = intval( $response['commentId'] );
 
 			if ( $response_id === -1 ) {
-
-				$parsed_block = wp_json_encode( $block->parsed_block );
-				$rsvp_response_template = '<div class="gatherpress-rsvp-template__parsed-blocks-data" data-parsed-block="' . esc_attr( $parsed_block ) . '"></div>';
+				$blocks           = wp_json_encode( $block->parsed_block );
+				$rsvp_response_template = '<div data-wp-interactive="gatherpress/rsvp" data-wp-context=\'{ "postId": ' . intval( get_the_ID() ) . ', "isOpen": false, "status": "no_status" }\' data-wp-watch="callbacks.renderBlocks" data-blocks="' . esc_attr( $blocks ) . '"></div>';
 				continue;
 			}
 
 			$block_content = ( new \WP_Block( $block->parsed_block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => false ) );
-			$content .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
+			$content      .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 		}
 
-		$content .= '<div data-wp-interactive="gatherpress/rsvp-interactivity" data-wp-context=\'{ "isOpen": false }\' data-wp-watch="callbacks.logIsOpen"></div>';
-
-		return $content . $rsvp_response_template;
+		return $rsvp_response_template;
+//		return $content . $rsvp_response_template;
 	}
 }

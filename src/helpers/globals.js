@@ -49,3 +49,32 @@ export function setToGlobal(args, value) {
 	properties.reduce((all, item) => (all[item] ??= {}), GatherPress)[last] =
 		value;
 }
+
+export function sanitizeHtml(html) {
+	// List of problematic tags to remove.
+	const disallowedTags = [
+		'script', 'iframe', 'embed', 'object', 'applet', 'style',
+		'link', 'meta', 'form', 'input', 'textarea', 'button',
+		'select', 'option', 'frameset', 'frame', 'noframes',
+	];
+
+	// Create a temporary DOM element to parse the HTML.
+	const tempDiv = document.createElement('div');
+	tempDiv.innerHTML = html;
+
+	// Remove all disallowed tags.
+	tempDiv.querySelectorAll(disallowedTags.join(',')).forEach((element) => {
+		element.remove();
+	});
+
+	// Remove all attributes starting with "on" (e.g., onclick, onmouseover).
+	tempDiv.querySelectorAll('*').forEach((element) => {
+		Array.from(element.attributes).forEach((attr) => {
+			if (attr.name.startsWith('on')) {
+				element.removeAttribute(attr.name);
+			}
+		});
+	});
+
+	return tempDiv.innerHTML;
+}

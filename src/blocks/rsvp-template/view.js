@@ -1,70 +1,50 @@
-import { createBlock, getBlockContent } from '@wordpress/blocks';
+/**
+ * WordPress dependencies.
+ */
+import { store, getContext, getElement, useState } from '@wordpress/interactivity';
+import { sanitizeHtml } from '../../helpers/globals';
 
-// Add commentId context to all blocks recursively
-const addCommentIdContext = (blocks, commentId) => {
-	return blocks.map((block) => {
-		// Create the block with its attributes and recursively process innerBlocks
-		// const updatedBlock = createBlock(
-		const updatedBlock = wp.blocks.createBlock(
-			block.blockName,
-			{
-				...block.attrs,
-			},
-			addCommentIdContext(block.innerBlocks || [], commentId) // Recursively process inner blocks
-		);
+/**
+ * Internal dependencies.
+ */
+import { getFromGlobal } from '../../helpers/globals';
 
-		// Attach the commentId to the context of the block
-		updatedBlock.context = {
-			...updatedBlock.context,
-			commentId,
-		};
+const { state } = store('gatherpress/rsvp', {
+	callbacks: {
+		renderBlocks() {
+			const element = getElement();
+			const context = getContext();
 
-		return updatedBlock;
-	});
-};
+			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-render', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': getFromGlobal('misc.nonce'),
+				},
+				body: JSON.stringify({
+					// comment_id: 109,
+					status: state.status,
+					post_id: context.postId,
+					block_data: element.attributes['data-blocks'],
+				}),
+			})
+			.then((response) => response.json()) // Parse the JSON response
+			.then((res) => {
+				if (res.success) {
+					const parent = element.ref.parentElement;
+					Array.from(parent.children).forEach((sibling) => {
+						if (sibling !== element.ref && sibling.hasAttribute('data-id')) {
+							sibling.remove();
+						}
+					});
 
-// Function to recursively render blocks and their innerBlocks
-const renderBlocksRecursively = (blocks) => {
-	return blocks
-		.map((block) => {
-			// Render the current block's content
-			// let blockMarkup = getBlockContent(block);
-			let blockMarkup = wp.blocks.getBlockContent(block);
-
-			// If the block has innerBlocks, render them recursively
-			if (block.innerBlocks && block.innerBlocks.length > 0) {
-				// Recursively render the inner blocks
-				const innerBlocksMarkup = renderBlocksRecursively(block.innerBlocks);
-
-				// Replace the block comments with the actual inner block markup
-				blockMarkup = blockMarkup.replace(/<!-- wp:.* \/-->/g, innerBlocksMarkup);
-			}
-
-			return blockMarkup;
-		})
-		.join('');
-};
-
-// Example Test
-const blockData = document.querySelector('.gatherpress-rsvp-template__inner-blocks-data')
-	?.getAttribute('data-inner-blocks');
-
-if (blockData) {
-	// Parse the data-inner-blocks attribute
-	const innerBlocks = JSON.parse(blockData);
-
-	// Add the commentId context
-	const blocksWithContext = addCommentIdContext(innerBlocks, 138);
-
-	// Render the blocks recursively
-	const fullMarkup = renderBlocksRecursively(blocksWithContext);
-
-	// Log the final output
-	console.log(fullMarkup);
-
-	// Optionally, insert into the DOM for testing
-	const container = document.querySelector('.gatherpress-rsvp-template__output');
-	if (container) {
-		container.innerHTML = fullMarkup;
+					element.ref.insertAdjacentHTML('beforebegin', sanitizeHtml(res.content));
+					console.log('SUCCESS');
+				}
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+		}
 	}
-}
+});

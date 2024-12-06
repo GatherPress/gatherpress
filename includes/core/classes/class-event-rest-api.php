@@ -97,6 +97,7 @@ class Event_Rest_Api {
 		return array(
 			$this->email_route(),
 			$this->rsvp_route(),
+			$this->rsvp_render_route(),
 			$this->events_list_route(),
 		);
 	}
@@ -167,6 +168,37 @@ class Event_Rest_Api {
 				),
 			),
 		);
+	}
+
+	protected function rsvp_render_route(): array {
+		return array(
+			'route' => 'rsvp-render',
+			'args'  => array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'render_rsvp' ),
+				'permission_callback' => static function (): bool {
+					return is_user_logged_in();
+				},
+				'args'                => array(
+					'post_id' => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
+					),
+					'block_data' => array(
+						'required' => true,
+					),
+//					'post_id' => array(
+//						'required'          => true,
+//						'validate_callback' => array( Validate::class, 'event_post_id' ),
+//					),
+//					'status'  => array(
+//						'required'          => true,
+//						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+//					),
+				),
+			),
+		);
+
 	}
 
 	/**
@@ -511,6 +543,28 @@ class Event_Rest_Api {
 			'anonymous'   => $anonymous,
 			'responses'   => $event->rsvp->responses(),
 			'online_link' => $event->maybe_get_online_event_link(),
+		);
+
+		return new WP_REST_Response( $response );
+	}
+
+	public function render_rsvp( WP_REST_Request $request ): WP_REST_Response {
+		$params          = $request->get_params();
+		$post_id         = intval( $params['post_id'] );
+		$block_data          = $params['block_data'];
+		$block_data = json_decode( $block_data, true );
+		$rsvp = new Rsvp( $post_id );
+		$responses = $rsvp->responses();
+		$content = '';
+		foreach ( $responses['attending']['responses'] as $response ) {
+			$block_content = ( new \WP_Block( $block_data, array( 'commentId' => $response['commentId'] ) ) )->render( array( 'dynamic' => false ) );
+			$content .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response['commentId'], $block_content );
+		}
+		$success         = true;
+
+		$response = array(
+			'success' => $success,
+			'content' => $content,
 		);
 
 		return new WP_REST_Response( $response );
