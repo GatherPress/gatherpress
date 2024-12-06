@@ -52,7 +52,7 @@ const blockData = document.querySelector('.gatherpress-rsvp-template__inner-bloc
 if (blockData) {
 	// Parse the data-inner-blocks attribute
 	const innerBlocks = JSON.parse(blockData);
-console.log(innerBlocks);
+
 	// Add the commentId context
 	const blocksWithContext = addCommentIdContext(innerBlocks, 138);
 

@@ -50,6 +50,7 @@ const { state } = store('gatherpress/rsvp-interactivity', {
 				.then((res) => {
 					if (res.success) {
 						state.attendingCount = res.responses.attending.count;
+						state.isOpen = true;
 						console.log('SUCCESS');
 					}
 				})
@@ -58,4 +59,11 @@ const { state } = store('gatherpress/rsvp-interactivity', {
 				});
 		},
 	},
+	callbacks: {
+		logIsOpen() {
+			if (state.isOpen) {
+				alert('attending!');
+			}
+		}
+	}
 });

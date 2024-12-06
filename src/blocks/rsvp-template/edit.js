@@ -96,7 +96,6 @@ const List = ({
 	<>
 		{responses &&
 			responses.map(({ commentId, ...response }, index) => {
-				console.log(commentId);
 				// Force commentId to be an integer
 				const forcedCommentId = parseInt(commentId, 10);
 

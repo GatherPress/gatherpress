@@ -95,35 +95,33 @@ const Edit = ({ attributes, setAttributes }) => {
 		}
 	}, [buttonBlock]);
 
-	useEffect(() => {
-		let newLabel = '';
-
-		switch (status) {
-			case 'no_status':
-				newLabel = noStatusLabel;
-				break;
-			case 'attending':
-				newLabel = attendingLabel;
-				break;
-			case 'waiting_list':
-				newLabel = waitingListLabel;
-				break;
-			case 'not_attending':
-				newLabel = notAttendingLabel;
-				break;
-		}
-
-		if (buttonBlock) {
-			dispatch('core/block-editor').updateBlockAttributes(
-				buttonBlock.clientId,
-				{
-					text: newLabel,
-				}
-			);
-		}
-	}, [status]);
-
-	useEffect(() => {});
+	// useEffect(() => {
+	// 	let newLabel = '';
+	//
+	// 	switch (status) {
+	// 		case 'no_status':
+	// 			newLabel = noStatusLabel;
+	// 			break;
+	// 		case 'attending':
+	// 			newLabel = attendingLabel;
+	// 			break;
+	// 		case 'waiting_list':
+	// 			newLabel = waitingListLabel;
+	// 			break;
+	// 		case 'not_attending':
+	// 			newLabel = notAttendingLabel;
+	// 			break;
+	// 	}
+	//
+	// 	if (buttonBlock) {
+	// 		dispatch('core/block-editor').updateBlockAttributes(
+	// 			buttonBlock.clientId,
+	// 			{
+	// 				text: newLabel,
+	// 			}
+	// 		);
+	// 	}
+	// }, [status]);
 
 	// Use `useSelect` to get the currently selected block.
 	const selectedBlock = useSelect((select) => {

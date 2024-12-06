@@ -42,3 +42,14 @@ GatherPress\Core\Autoloader::register();
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+//add_action( 'wp', function() {
+//
+//	$block_data = '{"blockName":"gatherpress/rsvp-template","attrs":[],"innerBlocks":[{"blockName":"core/group","attrs":{"style":{"border":{"width":"1px","radius":"20px"},"spacing":{"padding":{"top":"var:preset|spacing|30","bottom":"var:preset|spacing|30"}},"shadow":"var:preset|shadow|outlined"}},"innerBlocks":[{"blockName":"core/avatar","attrs":{"isLink":true,"align":"center"},"innerBlocks":[],"innerHTML":"","innerContent":[]},{"blockName":"core/comment-author-name","attrs":{"textAlign":"center","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"fontSize":"medium"},"innerBlocks":[],"innerHTML":"","innerContent":[]}],"innerHTML":"\\n<div class=\\"wp-block-group\\" style=\\"border-width:1px;border-radius:20px;padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30);box-shadow:var(--wp--preset--shadow--outlined)\\">\\n\\n<\\/div>\\n","innerContent":["\\n<div class=\\"wp-block-group\\" style=\\"border-width:1px;border-radius:20px;padding-top:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--30);box-shadow:var(--wp--preset--shadow--outlined)\\">",null,"\\n\\n",null,"<\\/div>\\n"]}],"innerHTML":"\\n\\n","innerContent":["\\n",null,"\\n"],"parentLayout":{"type":"grid","columns":3,"justifyContent":"center","alignContent":"space-around","minimumColumnWidth":"8rem"}}';
+//
+//	$block_data = json_decode( $block_data, true );
+//	$response_id = 109;
+//	$block_content = ( new \WP_Block( $block_data, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => false ) );
+//	$content = sprintf( '<div id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
+//	echo $content; die;
+//});
