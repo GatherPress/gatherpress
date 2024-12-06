@@ -55,7 +55,16 @@ class Rsvp_Template {
 	}
 
 	public function render_block( $attributes, $content, $block ): string {
-
+//		// Testing...
+//		ob_start();
+//			?>
+<!--		<ul data-wp-interactive="gatherpress/rsvp-interactivity" data-wp-context='{ "list": [ "hello", "hola", "olá" ] }'>-->
+<!--			<template data-wp-each--greeting="context.list">-->
+<!--				<li data-wp-text="context.greeting"></li>-->
+<!--			</template>-->
+<!--		</ul>-->
+<!--			--><?php
+//		return ob_get_clean();
 		// Fetch RSVP responses for the event.
 		$event = new Event( get_the_ID() );
 		if ( ! $event->rsvp ) {
@@ -77,8 +86,8 @@ class Rsvp_Template {
 			$response_id = intval( $response['commentId'] );
 
 			if ( $response_id === -1 ) {
-				$inner_blocks_json = wp_json_encode( $block->parsed_block['innerBlocks'] );
 
+				$inner_blocks_json = wp_json_encode( $block->parsed_block['innerBlocks'] );
 				$rsvp_response_template = '<div class="gatherpress-rsvp-template__inner-blocks-data" data-inner-blocks="' . esc_attr( $inner_blocks_json ) . '"></div>';
 				continue;
 			}
@@ -87,7 +96,9 @@ class Rsvp_Template {
 
 			$content .= sprintf( '<div id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 		}
-		$content .= '<div data-wp-text="context.randomText || "></div>';
+
+		$content .= '<div data-wp-interactive="gatherpress/rsvp-interactivity"><div data-wp-text="state.attendingCount"></div></div>';
+
 		return $content . $rsvp_response_template;
 	}
 }

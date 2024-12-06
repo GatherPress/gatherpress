@@ -36,7 +36,8 @@
 				"type": "flex"
 			}
 		},
-		"html": false
+		"html": false,
+		"interactivity": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

@@ -22,9 +22,14 @@ import './style.scss';
  */
 registerBlockType(metadata, {
 	edit,
-	save: () => {
+	save: ({ attributes }) => {
+		const { style } = attributes;
+
+		const blockProps = useBlockProps.save({
+			style: style?.dimensions, // Apply width dynamically in save output
+		});
 		return (
-			<div {...useBlockProps.save()}>
+			<div {...blockProps}>
 				<InnerBlocks.Content />
 			</div>
 		);

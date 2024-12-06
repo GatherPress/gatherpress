@@ -12,8 +12,8 @@ const Edit = ( { clientId, isSelected }) => {
 	const blockProps = useBlockProps({
 		style: {
 			display: isSelected || hasSelectedInnerBlock ? 'block' : 'none',
+			maxWidth: 'none',
 		},
-		className: 'alignfull',
 	});
 
 	const TEMPLATE = [

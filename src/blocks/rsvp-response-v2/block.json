@@ -11,6 +11,7 @@
 	"attributes": {},
 	"supports": {
 		"align": [ "wide", "full" ],
+		"interactivity": true,
 		"html": false
 	},
 	"allowedBlocks": [

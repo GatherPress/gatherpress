@@ -10,6 +10,24 @@
 	"example": {},
 	"description": "Enables members to easily confirm their attendance for an event.",
 	"attributes": {
+		"style": {
+			"type": "object",
+			"default": {
+				"color": {
+					"background": "#FFFFFF"
+				},
+				"spacing": {
+					"padding": "20px"
+				},
+				"dimensions": {
+					"width": "320px"
+				}
+			}
+		},
+		"width": {
+			"type": "string",
+			"default": "320px"
+		}
 	},
 	"supports": {
 		"html": false,
@@ -20,8 +38,23 @@
 				"text": true
 			}
 		},
+		"dimensions": {
+			"width": true
+		},
 		"spacing": {
 			"padding": true
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"style": true,
+				"width": true
+			}
 		}
 	},
 	"textdomain": "gatherpress",
