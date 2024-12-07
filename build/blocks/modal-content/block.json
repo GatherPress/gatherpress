@@ -15,9 +15,6 @@
     "style": {
       "type": "object",
       "default": {
-        "color": {
-          "background": "#FFFFFF"
-        },
         "spacing": {
           "padding": "20px"
         },
@@ -26,9 +23,13 @@
         }
       }
     },
-    "width": {
+    "backgroundColor": {
       "type": "string",
-      "default": "320px"
+      "default": "white"
+    },
+    "textColor": {
+      "type": "string",
+      "default": "contrast"
     }
   },
   "supports": {
