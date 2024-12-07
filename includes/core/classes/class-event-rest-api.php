@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -561,17 +562,19 @@ class Event_Rest_Api {
 	 * @return WP_REST_Response The REST API response containing the rendered content and a success flag.
 	 */
 	public function render_rsvp( WP_REST_Request $request ): WP_REST_Response {
-		$params     = $request->get_params();
-		$post_id    = intval( $params['post_id'] );
-		$block_data = $params['block_data'];
-		$block_data = json_decode( $block_data, true );
-		$rsvp       = new Rsvp( $post_id );
-		$responses  = $rsvp->responses();
-		$content    = '';
+		$rsvp_template = Rsvp_Template::get_instance();
+		$params        = $request->get_params();
+		$post_id       = intval( $params['post_id'] );
+		$block_data    = $params['block_data'];
+		$block_data    = json_decode( $block_data, true );
+		$rsvp          = new Rsvp( $post_id );
+		$responses     = $rsvp->responses();
+		$content       = '';
+
 		foreach ( $responses['attending']['responses'] as $response ) {
-			$block_content = ( new \WP_Block( $block_data, array( 'commentId' => $response['commentId'] ) ) )->render( array( 'dynamic' => false ) );
-			$content      .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response['commentId'], $block_content );
+			$content .= $rsvp_template->get_block_content( $block_data, $response['commentId'] );
 		}
+
 		$success = true;
 
 		$response = array(

@@ -11,8 +11,13 @@ import { getFromGlobal, sanitizeHtml } from '../../helpers/globals';
 const { state } = store('gatherpress/rsvp', {
 	callbacks: {
 		renderBlocks() {
-			const element = getElement();
 			const context = getContext();
+
+			if (!state.status || context.postId !== state.activePostId) {
+				return;
+			}
+
+			const element = getElement();
 
 			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-render', {
 				method: 'POST',
@@ -21,7 +26,6 @@ const { state } = store('gatherpress/rsvp', {
 					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
 				body: JSON.stringify({
-					// comment_id: 109,
 					status: state.status,
 					post_id: context.postId,
 					block_data: element.attributes['data-blocks'],

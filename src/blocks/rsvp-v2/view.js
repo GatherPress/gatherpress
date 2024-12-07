@@ -9,9 +9,6 @@ import { store } from '@wordpress/interactivity';
 import { getFromGlobal } from '../../helpers/globals';
 
 const { state } = store('gatherpress/rsvp', {
-	state: {
-		attendingCount: getFromGlobal('eventDetails.responses.attending.count'),
-	},
 	actions: {
 		rsvpOpenModal() {
 			const modal = document.querySelector('.gatherpress-rsvp-modal');
@@ -49,7 +46,8 @@ const { state } = store('gatherpress/rsvp', {
 				.then((response) => response.json()) // Parse the JSON response
 				.then((res) => {
 					if (res.success) {
-						state.status = 'attending';
+						state.activePostId = res.event_id;
+						state.status = res.status;
 					}
 				})
 				.catch(() => {});

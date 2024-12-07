@@ -67,14 +67,38 @@ class Rsvp_Template {
 
 			if ( -1 === $response_id ) {
 				$blocks                 = wp_json_encode( $block->parsed_block );
-				$rsvp_response_template = '<div data-wp-interactive="gatherpress/rsvp" data-wp-context=\'{ "postId": ' . intval( get_the_ID() ) . ', "isOpen": false, "status": "no_status" }\' data-wp-watch="callbacks.renderBlocks" data-blocks="' . esc_attr( $blocks ) . '"></div>';
+				$rsvp_response_template = '<div data-wp-interactive="gatherpress/rsvp" data-wp-context=\'{ "postId": ' . intval( get_the_ID() ) . ' }\' data-wp-watch="callbacks.renderBlocks" data-blocks="' . esc_attr( $blocks ) . '"></div>';
 				continue;
 			}
 
-			$block_content = ( new \WP_Block( $block->parsed_block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => false ) );
-			$content      .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
+			$content .= $this->get_block_content( $block->parsed_block, $response_id );
 		}
 
 		return $content . $rsvp_response_template;
+	}
+
+	/**
+	 * Generates the content for an RSVP block based on the parsed block data and a response ID.
+	 *
+	 * This method renders a block with the specified parsed block data and attaches
+	 * the given response ID as a context. It wraps the rendered block in a div with
+	 * a data-id attribute for identification.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $parsed_block The parsed block data, typically from a block's JSON structure.
+	 * @param int   $response_id  The ID of the response used to populate the block's context.
+	 *
+	 * @return string The rendered block content wrapped in a div with a data-id attribute.
+	 */
+	public function get_block_content( array $parsed_block, int $response_id ): string {
+		$block_content = (
+			new \WP_Block(
+				$parsed_block,
+				array( 'commentId' => $response_id )
+			)
+		)->render( array( 'dynamic' => false ) );
+
+		return sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 	}
 }
