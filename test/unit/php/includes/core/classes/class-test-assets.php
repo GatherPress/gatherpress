@@ -234,8 +234,10 @@ class Test_Assets extends Base {
 				array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
+					'gatherpress/modal',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
+					'gatherpress/rsvp-v2',
 					'gatherpress/rsvp-response',
 					'gatherpress/venue',
 				),
@@ -245,8 +247,10 @@ class Test_Assets extends Base {
 				array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
+					'gatherpress/modal',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
+					'gatherpress/rsvp-v2',
 					'gatherpress/rsvp-response',
 					'gatherpress/venue',
 				),

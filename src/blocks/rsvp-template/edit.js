@@ -2,6 +2,7 @@
  * WordPress dependencies.
  */
 import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalUseBlockPreview as useBlockPreview,
 	BlockContextProvider,
 	store as blockEditorStore,
@@ -9,7 +10,6 @@ import {
 	useInnerBlocksProps,
 } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
-import { __ } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
@@ -21,7 +21,6 @@ import TEMPLATE from './template';
 const TemplateInnerBlocks = ({
 	response,
 	blocks,
-	blockProps,
 	activeRsvpId,
 	setActiveRsvpId,
 	firstRsvpId,
@@ -36,7 +35,7 @@ const TemplateInnerBlocks = ({
 			{response.commentId === (activeRsvpId || firstRsvpId)
 				? children
 				: null}
-			{/*{ children }*/}
+
 			<MemoizedRsvpTemplatePreview
 				blocks={blocks}
 				commentId={response.commentId}
@@ -124,7 +123,7 @@ const List = ({
 	</>
 );
 
-const Edit = ({ clientId, context: { postId } }) => {
+const Edit = ({ clientId }) => {
 	const blockProps = useBlockProps();
 	const responses = getFromGlobal('eventDetails.responses');
 	const [activeRsvpId, setActiveRsvpId] = useState(

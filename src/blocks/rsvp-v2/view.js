@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { store, getContext, useState } from '@wordpress/interactivity';
+import { store } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies.
@@ -13,7 +13,7 @@ const { state } = store('gatherpress/rsvp', {
 		attendingCount: getFromGlobal('eventDetails.responses.attending.count'),
 	},
 	actions: {
-		rsvpOpenModal(e) {
+		rsvpOpenModal() {
 			const modal = document.querySelector('.gatherpress-rsvp-modal');
 
 			if (modal) {
@@ -50,12 +50,9 @@ const { state } = store('gatherpress/rsvp', {
 				.then((res) => {
 					if (res.success) {
 						state.status = 'attending';
-						console.log('SUCCESS');
 					}
 				})
-				.catch((error) => {
-					console.error('Error:', error);
-				});
+				.catch(() => {});
 		},
 	},
 });

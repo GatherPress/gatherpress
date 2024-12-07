@@ -6,64 +6,58 @@ import {
 	InspectorControls,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, TextControl } from '@wordpress/components';
+import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { useEffect, useState } from '@wordpress/element';
+
 /**
  * Internal dependencies.
  */
-import Rsvp from '../../components/Rsvp';
-import { getFromGlobal } from '../../helpers/globals';
-import EditCover from '../../components/EditCover';
-import { useEffect, useState } from '@wordpress/element';
-import { useDispatch, useSelect, dispatch, select } from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 import TEMPLATE from './template';
 
 /**
  * Edit component for the GatherPress RSVP block.
  *
- * This component renders the edit view of the GatherPress RSVP block.
- * It provides an interface for users to respond to the RSVP for the associated event.
- * The component includes the RSVP component and passes the event ID, current user,
- * and type of RSVP as props.
+ * This component defines the edit interface for the GatherPress RSVP block in the block editor.
+ * It dynamically manages and updates block attributes based on user input and the status of
+ * nested blocks. The component includes:
+ * - `InspectorControls` for managing RSVP statuses via a dropdown.
+ * - Logic to locate and update text labels of nested `core/button` blocks based on the current RSVP status.
+ * - `InnerBlocks` to allow nested content within the RSVP block.
  *
- * @param  root0
- * @param  root0.attributes
- * @param  root0.setAttributes
+ * The `useEffect` hook ensures that changes to the RSVP status or inner blocks dynamically update
+ * the block attributes, ensuring consistent behavior and text labels.
+ *
+ * @param {Object}   props               The props passed to the component.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ *
  * @since 1.0.0
  *
- * @return {JSX.Element} The rendered React component.
+ * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
-const Edit = ({ attributes, setAttributes }) => {
+const Edit = ({ setAttributes }) => {
 	const blockProps = useBlockProps();
-	const {
-		noStatusLabel,
-		attendingLabel,
-		waitingListLabel,
-		notAttendingLabel,
-	} = attributes;
 	const [status, setStatus] = useState('no_status');
 
-	// Get clientId of the current block to target the InnerBlocks within it
 	const clientId = useSelect(
 		(select) => select('core/block-editor').getSelectedBlock()?.clientId,
 		[]
 	);
 
-	// Get InnerBlocks within the 'gatherpress/rsvp-v2' block
 	const innerBlocks = useSelect(
 		(select) =>
 			clientId ? select('core/block-editor').getBlocks(clientId) : [],
 		[clientId]
 	);
 
-	// Helper function to recursively search for the core/button block
-	const findButtonBlock = (blocks) => {
+	const locateButtonBlock = (blocks) => {
 		for (const block of blocks) {
 			if (block.name === 'core/button') {
 				return block;
 			}
 			if (block.innerBlocks.length > 0) {
-				const found = findButtonBlock(block.innerBlocks);
+				const found = locateButtonBlock(block.innerBlocks);
 				if (found) {
 					return found;
 				}
@@ -72,7 +66,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		return null;
 	};
 
-	const buttonBlock = findButtonBlock(innerBlocks);
+	const buttonBlock = locateButtonBlock(innerBlocks);
 
 	useEffect(() => {
 		if (buttonBlock) {
@@ -93,40 +87,7 @@ const Edit = ({ attributes, setAttributes }) => {
 					break;
 			}
 		}
-	}, [buttonBlock]);
-
-	// useEffect(() => {
-	// 	let newLabel = '';
-	//
-	// 	switch (status) {
-	// 		case 'no_status':
-	// 			newLabel = noStatusLabel;
-	// 			break;
-	// 		case 'attending':
-	// 			newLabel = attendingLabel;
-	// 			break;
-	// 		case 'waiting_list':
-	// 			newLabel = waitingListLabel;
-	// 			break;
-	// 		case 'not_attending':
-	// 			newLabel = notAttendingLabel;
-	// 			break;
-	// 	}
-	//
-	// 	if (buttonBlock) {
-	// 		dispatch('core/block-editor').updateBlockAttributes(
-	// 			buttonBlock.clientId,
-	// 			{
-	// 				text: newLabel,
-	// 			}
-	// 		);
-	// 	}
-	// }, [status]);
-
-	// Use `useSelect` to get the currently selected block.
-	const selectedBlock = useSelect((select) => {
-		return select('core/block-editor').getSelectedBlock();
-	}, []); // Empty dependency array to call it once on mount
+	}, [buttonBlock, setAttributes, status]);
 
 	return (
 		<>
@@ -158,11 +119,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<InnerBlocks
-					template={TEMPLATE}
-					// templateLock="all"
-					// renderAppender={false}
-				/>
+				<InnerBlocks template={TEMPLATE} />
 			</div>
 		</>
 	);

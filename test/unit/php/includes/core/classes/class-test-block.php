@@ -80,9 +80,14 @@ class Test_Block extends Base {
 			'gatherpress/add-to-calendar',
 			'gatherpress/event-date',
 			'gatherpress/events-list',
+			'gatherpress/modal',
+			'gatherpress/modal-content',
 			'gatherpress/online-event',
 			'gatherpress/rsvp',
 			'gatherpress/rsvp-response',
+			'gatherpress/rsvp-response-v2',
+			'gatherpress/rsvp-template',
+			'gatherpress/rsvp-v2',
 			'gatherpress/venue',
 		);
 		$block_type_registry = WP_Block_Type_Registry::get_instance();

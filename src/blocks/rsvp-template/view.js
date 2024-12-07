@@ -1,18 +1,12 @@
 /**
  * WordPress dependencies.
  */
-import {
-	store,
-	getContext,
-	getElement,
-	useState,
-} from '@wordpress/interactivity';
-import { sanitizeHtml } from '../../helpers/globals';
+import { store, getContext, getElement } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../../helpers/globals';
+import { getFromGlobal, sanitizeHtml } from '../../helpers/globals';
 
 const { state } = store('gatherpress/rsvp', {
 	callbacks: {
@@ -50,12 +44,9 @@ const { state } = store('gatherpress/rsvp', {
 							'beforebegin',
 							sanitizeHtml(res.content)
 						);
-						console.log('SUCCESS');
 					}
 				})
-				.catch((error) => {
-					console.error('Error:', error);
-				});
+				.catch(() => {});
 		},
 	},
 });
