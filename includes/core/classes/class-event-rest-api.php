@@ -170,6 +170,16 @@ class Event_Rest_Api {
 		);
 	}
 
+	/**
+	 * Define the REST route for rendering RSVP blocks.
+	 *
+	 * This method sets up the REST route for dynamically rendering RSVP block content.
+	 * The route is used to process RSVP responses and generate block markup on demand.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
 	protected function rsvp_render_route(): array {
 		return array(
 			'route' => 'rsvp-render',
@@ -185,14 +195,6 @@ class Event_Rest_Api {
 					'block_data' => array(
 						'required' => true,
 					),
-				// 'post_id' => array(
-				// 'required'          => true,
-				// 'validate_callback' => array( Validate::class, 'event_post_id' ),
-				// ),
-				// 'status'  => array(
-				// 'required'          => true,
-				// 'validate_callback' => array( Validate::class, 'rsvp_status' ),
-				// ),
 				),
 			),
 		);
@@ -545,6 +547,19 @@ class Event_Rest_Api {
 		return new WP_REST_Response( $response );
 	}
 
+	/**
+	 * Handles the RSVP block rendering via a REST API endpoint.
+	 *
+	 * This method retrieves RSVP responses for a given post, processes the block data,
+	 * and dynamically renders the RSVP content for the responses. The output includes
+	 * rendered block HTML wrapped in individual containers with data attributes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The REST API request object containing parameters such as post ID and block data.
+	 *
+	 * @return WP_REST_Response The REST API response containing the rendered content and a success flag.
+	 */
 	public function render_rsvp( WP_REST_Request $request ): WP_REST_Response {
 		$params     = $request->get_params();
 		$post_id    = intval( $params['post_id'] );

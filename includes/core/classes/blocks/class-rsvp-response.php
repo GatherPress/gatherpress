@@ -57,6 +57,20 @@ class Rsvp_Response {
 		add_filter( 'block_type_metadata', array( $this, 'add_rsvp_to_comment_ancestor' ) );
 	}
 
+	/**
+	 * Transforms the content of a block before rendering.
+	 *
+	 * This method modifies the HTML content of the specified block by adding
+	 * interactivity attributes if the block matches certain conditions.
+	 * It uses the `WP_HTML_Tag_Processor` to locate and update the block's attributes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The original HTML content of the block.
+	 * @param array  $block         An associative array containing block data, including `blockName` and attributes.
+	 *
+	 * @return string The modified block content with updated attributes.
+	 */
 	public function transform_block_content( string $block_content, array $block ): string {
 		if ( 'gatherpress/rsvp-response-v2' === $block['blockName'] ) {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
