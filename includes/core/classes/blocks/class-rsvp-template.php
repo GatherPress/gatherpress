@@ -81,7 +81,7 @@ class Rsvp_Template {
 			$content      .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 		}
 
-		return $rsvp_response_template;
-//		return $content . $rsvp_response_template;
+//		return $rsvp_response_template;
+		return $content . $rsvp_response_template;
 	}
 }

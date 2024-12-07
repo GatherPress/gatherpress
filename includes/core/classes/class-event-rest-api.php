@@ -176,9 +176,7 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'render_rsvp' ),
-				'permission_callback' => static function (): bool {
-					return is_user_logged_in();
-				},
+				'permission_callback' => '__return_true',
 				'args'                => array(
 					'post_id' => array(
 						'required'          => true,
