@@ -1,7 +1,7 @@
 <?php
 /**
- * The "Add to calendar" class manages the core-block-variation,
- * it mainly prepares the output of the block.
+ * The "RSVP" class manages the RSVP block and its variations,
+ * primarily transforming block content and preparing it for output.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -16,8 +16,8 @@ use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
 /**
- * Class responsible for managing the "Add to calendar" block,
- * which is a block-variation of 'core/buttons'.
+ * Class responsible for managing the "RSVP" block and its variations,
+ * including dynamic transformations and enhancements for interactive functionality.
  *
  * @since 1.0.0
  */
@@ -52,10 +52,16 @@ class Rsvp {
 	}
 
 	/**
-	 * @param string $block_content
-	 * @param array  $block
+	 * Modifies the content of the RSVP block and its inner blocks before rendering.
 	 *
-	 * @return string
+	 * This method dynamically applies specific modifications to the block content
+	 * based on its name and attributes, ensuring the appropriate attributes and
+	 * interactivity settings are added where necessary.
+	 *
+	 * @param string $block_content The original HTML content of the block.
+	 * @param array  $block         An associative array containing block data, including `blockName` and `attrs`.
+	 *
+	 * @return string The updated block content with the applied transformations.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
 		if ( 'gatherpress/rsvp-v2' === $block['blockName'] ) {
@@ -85,7 +91,7 @@ class Rsvp {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes
-			$button_tag = $this->get_button_tag( $tag );
+			$button_tag = $this->locate_button_tag( $tag );
 			if ( $button_tag ) {
 				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpOpenModal' );
@@ -103,7 +109,7 @@ class Rsvp {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes
-			$button_tag = $this->get_button_tag( $tag );
+			$button_tag = $this->locate_button_tag( $tag );
 			if ( $button_tag ) {
 				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpCloseModal' );
@@ -121,7 +127,7 @@ class Rsvp {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes
-			$button_tag = $this->get_button_tag( $tag );
+			$button_tag = $this->locate_button_tag( $tag );
 			if ( $button_tag ) {
 				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpStatusAttending' );
@@ -134,7 +140,20 @@ class Rsvp {
 		return $block_content;
 	}
 
-	private function get_button_tag( $tag ) {
+	/**
+	 * Locates the button tag within a specific block structure.
+	 *
+	 * This method searches for a button tag following a div tag within
+	 * the given HTML tag processor instance. If both tags are found,
+	 * the processor is returned for further manipulation.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_HTML_Tag_Processor $tag The HTML tag processor instance representing the block content.
+	 *
+	 * @return WP_HTML_Tag_Processor|null The tag processor instance if the button is located, or null otherwise.
+	 */
+	private function locate_button_tag( $tag ): ?WP_HTML_Tag_Processor {
 		if ( $tag->next_tag( 'div' ) && $tag->next_tag( 'button' ) ) {
 			return $tag;
 		}

@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use WP_Block;
 
 /**
  * Class Rsvp_Response.
@@ -32,29 +33,22 @@ class Rsvp_Template {
 	use Singleton;
 
 	/**
-	 * Class constructor.
+	 * Renders the RSVP Template block dynamically based on the event's RSVP responses.
 	 *
-	 * This method initializes the object and sets up necessary hooks.
-	 *
-	 * @since 1.0.0
-	 */
-	protected function __construct() {
-		$this->setup_hooks();
-	}
-
-	/**
-	 * Set up hooks for various purposes.
-	 *
-	 * This method adds hooks for different purposes as needed.
+	 * This method fetches RSVP responses for the current event and renders
+	 * the block content dynamically for each response. If no valid responses
+	 * are available, a default template is appended to enable front-end API
+	 * interactions and maintain the block structure.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return void
+	 * @param array    $attributes The block's attributes.
+	 * @param string   $content    The initial content of the block.
+	 * @param WP_Block $block      The block instance, including parsed block data.
+	 *
+	 * @return string The rendered block content, including responses and a default template.
 	 */
-	protected function setup_hooks(): void {
-	}
-
-	public function render_block( $attributes, $content, $block ): string {
+	public function render_block( array $attributes, string $content, WP_Block $block ): string {
 		$event = new Event( get_the_ID() );
 
 		if ( ! $event->rsvp ) {
@@ -71,7 +65,7 @@ class Rsvp_Template {
 		foreach ( $responses as $response ) {
 			$response_id = intval( $response['commentId'] );
 
-			if ( $response_id === -1 ) {
+			if ( -1 === $response_id ) {
 				$blocks                 = wp_json_encode( $block->parsed_block );
 				$rsvp_response_template = '<div data-wp-interactive="gatherpress/rsvp" data-wp-context=\'{ "postId": ' . intval( get_the_ID() ) . ', "isOpen": false, "status": "no_status" }\' data-wp-watch="callbacks.renderBlocks" data-blocks="' . esc_attr( $blocks ) . '"></div>';
 				continue;
@@ -81,7 +75,6 @@ class Rsvp_Template {
 			$content      .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 		}
 
-		// return $rsvp_response_template;
 		return $content . $rsvp_response_template;
 	}
 }
