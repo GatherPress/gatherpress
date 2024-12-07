@@ -149,12 +149,12 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param WP_HTML_Tag_Processor $tag The HTML tag processor instance representing the block content.
+	 * @param WP_HTML_Tag_Processor $tag The HTML tag processor instance for the block content.
 	 *
 	 * @return WP_HTML_Tag_Processor|null The tag processor instance if the button is located, or null otherwise.
 	 */
-	private function locate_button_tag( $tag ): ?WP_HTML_Tag_Processor {
-		if ( $tag->next_tag( 'div' ) && $tag->next_tag( 'button' ) ) {
+	private function locate_button_tag( WP_HTML_Tag_Processor $tag ): ?WP_HTML_Tag_Processor {
+		if ( $tag->next_tag( array( 'tag_name' => 'div' ) ) && $tag->next_tag( array( 'tag_name' => 'button' ) ) ) {
 			return $tag;
 		}
 
