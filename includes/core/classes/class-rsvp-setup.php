@@ -53,9 +53,9 @@ class Rsvp_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
-//		add_filter( 'get_comment_author_url', function( $comment_author_url, $comment_id, $comment ) {
-//			return 'https://google.com';
-//		}, 10, 3);
+		// add_filter( 'get_comment_author_url', function( $comment_author_url, $comment_id, $comment ) {
+		// return 'https://google.com';
+		// }, 10, 3);
 	}
 
 	/**

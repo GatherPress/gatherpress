@@ -1,7 +1,11 @@
 /**
  * WordPress dependencies.
  */
-import {useBlockProps, InnerBlocks, InspectorControls} from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	InnerBlocks,
+	InspectorControls,
+} from '@wordpress/block-editor';
 import { PanelBody, RangeControl } from '@wordpress/components';
 
 const Edit = ({ attributes, setAttributes }) => {
@@ -9,19 +13,13 @@ const Edit = ({ attributes, setAttributes }) => {
 	const { dimensions = {}, color = {} } = style;
 	const width = parseInt(dimensions.width || '320px', 10);
 
-
 	const blockProps = useBlockProps({
 		style: {
 			...color,
 			...dimensions,
 		},
 	});
-	const TEMPLATE = [
-		[
-			'core/paragraph',
-			{},
-		],
-	];
+	const TEMPLATE = [['core/paragraph', {}]];
 
 	return (
 		<>
@@ -47,7 +45,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<InnerBlocks template={TEMPLATE}/>
+				<InnerBlocks template={TEMPLATE} />
 			</div>
 		</>
 	);

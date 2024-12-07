@@ -56,7 +56,10 @@ const TEMPLATE = [
 						'core/buttons',
 						{
 							align: 'left',
-							layout: { type: 'flex', justifyContent: 'flex-start' },
+							layout: {
+								type: 'flex',
+								justifyContent: 'flex-start',
+							},
 						},
 						[
 							[
@@ -64,7 +67,8 @@ const TEMPLATE = [
 								{
 									text: __('Attend', 'gatherpress'),
 									tagName: 'button',
-									className: 'gatherpress-rsvp--js-status-attending',
+									className:
+										'gatherpress-rsvp--js-status-attending',
 								},
 							],
 							[
@@ -72,7 +76,8 @@ const TEMPLATE = [
 								{
 									text: __('Close', 'gatherpress'),
 									tagName: 'button',
-									className: 'gatherpress-rsvp--js-close-modal',
+									className:
+										'gatherpress-rsvp--js-close-modal',
 								},
 							],
 						],

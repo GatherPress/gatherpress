@@ -1,7 +1,12 @@
 /**
  * WordPress dependencies.
  */
-import { store, getContext, getElement, useState } from '@wordpress/interactivity';
+import {
+	store,
+	getContext,
+	getElement,
+	useState,
+} from '@wordpress/interactivity';
 import { sanitizeHtml } from '../../helpers/globals';
 
 /**
@@ -28,23 +33,29 @@ const { state } = store('gatherpress/rsvp', {
 					block_data: element.attributes['data-blocks'],
 				}),
 			})
-			.then((response) => response.json()) // Parse the JSON response
-			.then((res) => {
-				if (res.success) {
-					const parent = element.ref.parentElement;
-					Array.from(parent.children).forEach((sibling) => {
-						if (sibling !== element.ref && sibling.hasAttribute('data-id')) {
-							sibling.remove();
-						}
-					});
+				.then((response) => response.json()) // Parse the JSON response
+				.then((res) => {
+					if (res.success) {
+						const parent = element.ref.parentElement;
+						Array.from(parent.children).forEach((sibling) => {
+							if (
+								sibling !== element.ref &&
+								sibling.hasAttribute('data-id')
+							) {
+								sibling.remove();
+							}
+						});
 
-					element.ref.insertAdjacentHTML('beforebegin', sanitizeHtml(res.content));
-					console.log('SUCCESS');
-				}
-			})
-			.catch((error) => {
-				console.error('Error:', error);
-			});
-		}
-	}
+						element.ref.insertAdjacentHTML(
+							'beforebegin',
+							sanitizeHtml(res.content)
+						);
+						console.log('SUCCESS');
+					}
+				})
+				.catch((error) => {
+					console.error('Error:', error);
+				});
+		},
+	},
 });

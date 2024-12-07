@@ -65,14 +65,14 @@ class Rsvp_Template {
 		$content   = '';
 
 		// Used for generating a parsed block for calls to API on the front end.
-		$responses[]            = [ 'commentId' => -1 ];
+		$responses[]            = array( 'commentId' => -1 );
 		$rsvp_response_template = '';
 
 		foreach ( $responses as $response ) {
 			$response_id = intval( $response['commentId'] );
 
 			if ( $response_id === -1 ) {
-				$blocks           = wp_json_encode( $block->parsed_block );
+				$blocks                 = wp_json_encode( $block->parsed_block );
 				$rsvp_response_template = '<div data-wp-interactive="gatherpress/rsvp" data-wp-context=\'{ "postId": ' . intval( get_the_ID() ) . ', "isOpen": false, "status": "no_status" }\' data-wp-watch="callbacks.renderBlocks" data-blocks="' . esc_attr( $blocks ) . '"></div>';
 				continue;
 			}
@@ -81,7 +81,7 @@ class Rsvp_Template {
 			$content      .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 		}
 
-//		return $rsvp_response_template;
+		// return $rsvp_response_template;
 		return $content . $rsvp_response_template;
 	}
 }

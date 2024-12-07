@@ -178,25 +178,24 @@ class Event_Rest_Api {
 				'callback'            => array( $this, 'render_rsvp' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'post_id' => array(
+					'post_id'    => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
 					'block_data' => array(
 						'required' => true,
 					),
-//					'post_id' => array(
-//						'required'          => true,
-//						'validate_callback' => array( Validate::class, 'event_post_id' ),
-//					),
-//					'status'  => array(
-//						'required'          => true,
-//						'validate_callback' => array( Validate::class, 'rsvp_status' ),
-//					),
+				// 'post_id' => array(
+				// 'required'          => true,
+				// 'validate_callback' => array( Validate::class, 'event_post_id' ),
+				// ),
+				// 'status'  => array(
+				// 'required'          => true,
+				// 'validate_callback' => array( Validate::class, 'rsvp_status' ),
+				// ),
 				),
 			),
 		);
-
 	}
 
 	/**
@@ -547,18 +546,18 @@ class Event_Rest_Api {
 	}
 
 	public function render_rsvp( WP_REST_Request $request ): WP_REST_Response {
-		$params          = $request->get_params();
-		$post_id         = intval( $params['post_id'] );
-		$block_data          = $params['block_data'];
+		$params     = $request->get_params();
+		$post_id    = intval( $params['post_id'] );
+		$block_data = $params['block_data'];
 		$block_data = json_decode( $block_data, true );
-		$rsvp = new Rsvp( $post_id );
-		$responses = $rsvp->responses();
-		$content = '';
+		$rsvp       = new Rsvp( $post_id );
+		$responses  = $rsvp->responses();
+		$content    = '';
 		foreach ( $responses['attending']['responses'] as $response ) {
 			$block_content = ( new \WP_Block( $block_data, array( 'commentId' => $response['commentId'] ) ) )->render( array( 'dynamic' => false ) );
-			$content .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response['commentId'], $block_content );
+			$content      .= sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response['commentId'], $block_content );
 		}
-		$success         = true;
+		$success = true;
 
 		$response = array(
 			'success' => $success,

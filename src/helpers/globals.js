@@ -53,9 +53,23 @@ export function setToGlobal(args, value) {
 export function sanitizeHtml(html) {
 	// List of problematic tags to remove.
 	const disallowedTags = [
-		'script', 'iframe', 'embed', 'object', 'applet', 'style',
-		'link', 'meta', 'form', 'input', 'textarea', 'button',
-		'select', 'option', 'frameset', 'frame', 'noframes',
+		'script',
+		'iframe',
+		'embed',
+		'object',
+		'applet',
+		'style',
+		'link',
+		'meta',
+		'form',
+		'input',
+		'textarea',
+		'button',
+		'select',
+		'option',
+		'frameset',
+		'frame',
+		'noframes',
 	];
 
 	// Create a temporary DOM element to parse the HTML.
