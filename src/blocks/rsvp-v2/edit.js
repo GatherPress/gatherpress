@@ -8,12 +8,12 @@ import {
 } from '@wordpress/block-editor';
 import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
-import { useSelect } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
 import TEMPLATE from './template';
 
 /**
@@ -38,7 +38,14 @@ import TEMPLATE from './template';
  */
 const Edit = ({ setAttributes }) => {
 	const blockProps = useBlockProps();
-	const [status, setStatus] = useState('no_status');
+	const dispatch = useDispatch();
+	const { setStatus } = dispatch('gatherpress/rsvp-status');
+	const { status } = useSelect(
+		(select) => ({
+			status: select('gatherpress/rsvp-status').getStatus(),
+		}),
+		[]
+	);
 
 	const clientId = useSelect(
 		(select) => select('core/block-editor').getSelectedBlock()?.clientId,
@@ -67,7 +74,6 @@ const Edit = ({ setAttributes }) => {
 	};
 
 	const buttonBlock = locateButtonBlock(innerBlocks);
-
 	useEffect(() => {
 		if (buttonBlock) {
 			const buttonText = buttonBlock.attributes.text;

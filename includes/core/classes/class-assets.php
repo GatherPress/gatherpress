@@ -397,6 +397,7 @@ class Assets {
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
 					'gatherpress/rsvp-response',
+					'gatherpress/rsvp-status',
 				);
 				break;
 			default:
@@ -408,6 +409,8 @@ class Assets {
 					'gatherpress/rsvp',
 					'gatherpress/rsvp-v2',
 					'gatherpress/rsvp-response',
+					'gatherpress/rsvp-response-v2',
+					'gatherpress/rsvp-status',
 					'gatherpress/venue',
 				);
 		}
