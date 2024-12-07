@@ -94,23 +94,35 @@ const Edit = ({ setAttributes }) => {
 			<InspectorControls>
 				<PanelBody>
 					<SelectControl
-						label={__('Status', 'gatherpress')}
+						label={__('RSVP Status', 'gatherpress')}
 						value={status}
 						options={[
 							{
-								label: __('No Status', 'gatherpress'),
+								label: __(
+									'No Status (User has not responded)',
+									'gatherpress'
+								),
 								value: 'no_status',
 							},
 							{
-								label: __('Attending', 'gatherpress'),
+								label: __(
+									'Attending (User is confirmed)',
+									'gatherpress'
+								),
 								value: 'attending',
 							},
 							{
-								label: __('Waiting List', 'gatherpress'),
+								label: __(
+									'Waiting List (Pending confirmation)',
+									'gatherpress'
+								),
 								value: 'waiting_list',
 							},
 							{
-								label: __('Not Attending', 'gatherpress'),
+								label: __(
+									'Not Attending (User declined)',
+									'gatherpress'
+								),
 								value: 'not_attending',
 							},
 						]}
