@@ -61,7 +61,7 @@ const RsvpTemplatePreview = ({
 	};
 
 	// We have to hide the preview block if the `comment` props points to
-	// the curently active block!
+	// the currently active block!
 
 	// Or, to put it differently, every preview block is visible unless it is the
 	// currently active block - in this case we render its inner blocks.
