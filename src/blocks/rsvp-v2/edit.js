@@ -5,95 +5,81 @@ import {
 	InnerBlocks,
 	InspectorControls,
 	useBlockProps,
+	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useState, useCallback } from '@wordpress/element';
+import { useDispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { useDispatch, useSelect } from '@wordpress/data';
 import TEMPLATE from './template';
 
 /**
  * Edit component for the GatherPress RSVP block.
  *
- * This component defines the edit interface for the GatherPress RSVP block in the block editor.
- * It dynamically manages and updates block attributes based on user input and the status of
- * nested blocks. The component includes:
- * - `InspectorControls` for managing RSVP statuses via a dropdown.
- * - Logic to locate and update text labels of nested `core/button` blocks based on the current RSVP status.
- * - `InnerBlocks` to allow nested content within the RSVP block.
- *
- * The `useEffect` hook ensures that changes to the RSVP status or inner blocks dynamically update
- * the block attributes, ensuring consistent behavior and text labels.
- *
  * @param {Object}   props               The props passed to the component.
+ * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
+ * @param {string}   props.clientId      The unique ID of the block instance.
  *
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
-const Edit = ({ setAttributes }) => {
+const Edit = ({ attributes, setAttributes, clientId }) => {
+	const { serializedInnerBlocks = '{}' } = attributes;
+	const [status, setStatus] = useState('no_status');
 	const blockProps = useBlockProps();
-	const dispatch = useDispatch();
-	const { setStatus } = dispatch('gatherpress/rsvp-status');
-	const { status } = useSelect(
-		(select) => ({
-			status: select('gatherpress/rsvp-status').getStatus(),
-		}),
-		[]
-	);
+	const { replaceInnerBlocks } = useDispatch(blockEditorStore);
 
-	const clientId = useSelect(
-		(select) => select('core/block-editor').getSelectedBlock()?.clientId,
-		[]
-	);
-
+	// Get the current inner blocks
 	const innerBlocks = useSelect(
-		(select) =>
-			clientId ? select('core/block-editor').getBlocks(clientId) : [],
+		(select) => select(blockEditorStore).getBlocks(clientId),
 		[clientId]
 	);
 
-	const locateButtonBlock = (blocks) => {
-		for (const block of blocks) {
-			if (block.name === 'core/button') {
-				return block;
-			}
-			if (block.innerBlocks.length > 0) {
-				const found = locateButtonBlock(block.innerBlocks);
-				if (found) {
-					return found;
-				}
-			}
-		}
-		return null;
+	// Save the provided inner blocks to the serializedInnerBlocks attribute
+	const saveInnerBlocks = (state, blocks) => {
+		const currentSerializedBlocks = JSON.parse(
+			serializedInnerBlocks || '{}'
+		);
+		const updatedBlocks = {
+			...currentSerializedBlocks,
+			[state]: blocks,
+		};
+
+		setAttributes({
+			serializedInnerBlocks: JSON.stringify(updatedBlocks),
+		});
 	};
 
-	const buttonBlock = locateButtonBlock(innerBlocks);
-	useEffect(() => {
-		if (buttonBlock) {
-			const buttonText = buttonBlock.attributes.text;
-
-			switch (status) {
-				case 'no_status':
-					setAttributes({ noStatusLabel: buttonText });
-					break;
-				case 'attending':
-					setAttributes({ attendingLabel: buttonText });
-					break;
-				case 'waiting_list':
-					setAttributes({ waitingListLabel: buttonText });
-					break;
-				case 'not_attending':
-					setAttributes({ notAttendingLabel: buttonText });
-					break;
+	// Load inner blocks for a given state
+	const loadInnerBlocksForState = useCallback(
+		(state) => {
+			const savedBlocks = JSON.parse(serializedInnerBlocks || '{}')[
+				state
+			];
+			if (savedBlocks && savedBlocks.length > 0) {
+				replaceInnerBlocks(clientId, savedBlocks);
 			}
-		}
-	}, [buttonBlock, setAttributes, status]);
+		},
+		[clientId, replaceInnerBlocks, serializedInnerBlocks]
+	);
+
+	// Handle status change: save current inner blocks and load new ones
+	const handleStatusChange = (newStatus) => {
+		saveInnerBlocks(status, innerBlocks); // Save current inner blocks before switching state
+		setStatus(newStatus); // Update the state
+		loadInnerBlocksForState(newStatus); // Load blocks for the new state
+	};
+
+	// On initial render, ensure correct blocks are loaded
+	useEffect(() => {
+		loadInnerBlocksForState(status);
+	}, [status, loadInnerBlocksForState]);
 
 	return (
 		<>
@@ -132,7 +118,7 @@ const Edit = ({ setAttributes }) => {
 								value: 'not_attending',
 							},
 						]}
-						onChange={(newStatus) => setStatus(newStatus)}
+						onChange={handleStatusChange}
 					/>
 				</PanelBody>
 			</InspectorControls>
@@ -142,4 +128,5 @@ const Edit = ({ setAttributes }) => {
 		</>
 	);
 };
+
 export default Edit;

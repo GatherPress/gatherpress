@@ -396,7 +396,9 @@ class Assets {
 					'gatherpress/event-date',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
+					'gatherpress/rsvp-v2',
 					'gatherpress/rsvp-response',
+					'gatherpress/rsvp-response-v2',
 					'gatherpress/rsvp-status',
 				);
 				break;

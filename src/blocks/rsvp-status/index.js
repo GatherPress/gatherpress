@@ -10,8 +10,7 @@ import { useBlockProps } from '@wordpress/block-editor';
 import metadata from './block.json';
 import Edit from './edit';
 
-registerBlockType(metadata.name, {
-	...metadata,
+registerBlockType(metadata, {
 	edit: Edit,
 	save: () => {
 		// Use blockProps to ensure proper WordPress class handling
