@@ -1,19 +1,14 @@
 /**
  * WordPress dependencies.
  */
-import {
-	store,
-	getContext,
-	getElement,
-	splitTask,
-} from '@wordpress/interactivity';
+import { store, getContext, getElement } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies.
  */
 import { getFromGlobal } from '../../helpers/globals';
 
-const { state } = store('gatherpress/rsvp', {
+const { state, actions } = store('gatherpress/rsvp', {
 	actions: {
 		rsvpOpenModal() {
 			const modal = document.querySelector('.gatherpress-rsvp-modal');
@@ -61,7 +56,6 @@ const { state } = store('gatherpress/rsvp', {
 	callbacks: {
 		renderRsvpBlock() {
 			const element = getElement();
-			const context = getContext();
 
 			const serializedInnerBlocks = JSON.parse(
 				element.ref.getAttribute('data-serialized-inner-blocks')
@@ -70,9 +64,10 @@ const { state } = store('gatherpress/rsvp', {
 				getFromGlobal('eventDetails.currentUser.status') ?? 'no_status';
 
 			if (!serializedInnerBlocks || !serializedInnerBlocks[status]) {
-				console.error('No inner blocks found for status:', status);
 				return;
 			}
+
+			const context = getContext();
 
 			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-render', {
 				method: 'POST',
@@ -93,17 +88,35 @@ const { state } = store('gatherpress/rsvp', {
 							res.content
 						);
 
-						// Initialize interactivity for the new content
+						// Initialize interactivity for the new content.
 						const interactiveElements =
 							element.ref.querySelectorAll(
 								'[data-wp-interactive]'
 							);
 
-						interactiveElements.forEach(async (el) => {
-							global.wp.htmlEntities(el);
-							console.log(el);
-							// console.log(await splitTask());
-							// await splitTask();
+						interactiveElements.forEach((el) => {
+							// Extract the action string (e.g., "actions.rsvpOpenModal").
+							const actionString =
+								el.getAttribute('data-wp-on--click');
+
+							if (
+								actionString &&
+								actionString.startsWith('actions.')
+							) {
+								// Dynamically resolve the action from the store.
+								const actionName = actionString.replace(
+									'actions.',
+									''
+								);
+								const action = actions[actionName];
+
+								// Validate and execute the resolved action.
+								if (typeof action === 'function') {
+									el.addEventListener('click', () =>
+										action()
+									);
+								}
+							}
 						});
 					}
 				})

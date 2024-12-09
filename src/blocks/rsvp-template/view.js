@@ -6,7 +6,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal, sanitizeHtml } from '../../helpers/globals';
+import { getFromGlobal } from '../../helpers/globals';
 
 const { state } = store('gatherpress/rsvp', {
 	callbacks: {
