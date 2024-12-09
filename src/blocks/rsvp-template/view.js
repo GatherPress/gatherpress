@@ -19,7 +19,7 @@ const { state } = store('gatherpress/rsvp', {
 
 			const element = getElement();
 
-			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-render', {
+			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-response-render', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ const { state } = store('gatherpress/rsvp', {
 
 						element.ref.insertAdjacentHTML(
 							'beforebegin',
-							sanitizeHtml(res.content)
+							global.wp.dom.safeHTML(res.content)
 						);
 					}
 				})

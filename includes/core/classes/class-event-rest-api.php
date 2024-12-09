@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
+use WP_Block;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -98,6 +99,7 @@ class Event_Rest_Api {
 		return array(
 			$this->email_route(),
 			$this->rsvp_route(),
+			$this->rsvp_response_render_route(),
 			$this->rsvp_render_route(),
 			$this->events_list_route(),
 		);
@@ -181,6 +183,26 @@ class Event_Rest_Api {
 	 *
 	 * @return array The REST route configuration.
 	 */
+	protected function rsvp_response_render_route(): array {
+		return array(
+			'route' => 'rsvp-response-render',
+			'args'  => array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'render_rsvp_response' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'post_id'    => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
+					),
+					'block_data' => array(
+						'required' => true,
+					),
+				),
+			),
+		);
+	}
+
 	protected function rsvp_render_route(): array {
 		return array(
 			'route' => 'rsvp-render',
@@ -561,7 +583,7 @@ class Event_Rest_Api {
 	 *
 	 * @return WP_REST_Response The REST API response containing the rendered content and a success flag.
 	 */
-	public function render_rsvp( WP_REST_Request $request ): WP_REST_Response {
+	public function render_rsvp_response( WP_REST_Request $request ): WP_REST_Response {
 		$rsvp_template = Rsvp_Template::get_instance();
 		$params        = $request->get_params();
 		$post_id       = intval( $params['post_id'] );
@@ -580,6 +602,29 @@ class Event_Rest_Api {
 		$response = array(
 			'success' => $success,
 			'content' => $content,
+		);
+
+		return new WP_REST_Response( $response );
+	}
+
+	public function render_rsvp( WP_REST_Request $request ): WP_REST_Response {
+		$params     = $request->get_params();
+		$post_id    = intval( $params['post_id'] );
+		$block_data = $params['block_data'];
+		// var_dump(extract_serialized_parent_block( $block_data )); die;
+		// $block_data    = json_decode( $block_data, true );
+		// var_dump(do_blocks(rawurldecode($block_data))); die;
+		// var_dump(($block_data)); die;
+		// var_dump(render_block($block_data)); die;
+		// $block_content = ( new WP_Block( $block_data ) )->render( array( 'dynamic' => false ) );
+		// var_dump(do_blocks(rawurldecode($block_data))); die;
+		$block_content = do_blocks( rawurldecode( $block_data ) );
+		// print_r($block_content); die;
+		$success = true;
+
+		$response = array(
+			'success' => $success,
+			'content' => $block_content,
 		);
 
 		return new WP_REST_Response( $response );

@@ -11,11 +11,12 @@ import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useState, useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
+import { parse, serialize } from '@wordpress/blocks';
 
 /**
  * Internal dependencies.
  */
-import TEMPLATE from './template';
+import TEMPLATES from './templates';
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -46,9 +47,14 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		const currentSerializedBlocks = JSON.parse(
 			serializedInnerBlocks || '{}'
 		);
+		const serialized = serialize(blocks);
+
+		// Encode the serialized content for safe use in HTML attributes
+		const sanitizedSerialized = encodeURIComponent(serialized);
+
 		const updatedBlocks = {
 			...currentSerializedBlocks,
-			[state]: blocks,
+			[state]: sanitizedSerialized,
 		};
 
 		setAttributes({
@@ -63,7 +69,10 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				state
 			];
 			if (savedBlocks && savedBlocks.length > 0) {
-				replaceInnerBlocks(clientId, savedBlocks);
+				replaceInnerBlocks(
+					clientId,
+					parse(decodeURIComponent(savedBlocks))
+				);
 			}
 		},
 		[clientId, replaceInnerBlocks, serializedInnerBlocks]
@@ -123,7 +132,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<InnerBlocks template={TEMPLATE} />
+				<InnerBlocks template={TEMPLATES[status]} />
 			</div>
 		</>
 	);

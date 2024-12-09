@@ -66,23 +66,23 @@ class Rsvp {
 	public function transform_block_content( string $block_content, array $block ): string {
 		if ( 'gatherpress/rsvp-v2' === $block['blockName'] ) {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
+			$tag->next_tag();
 			$tag->set_attribute(
-				'data-gatherpress-no-status-label',
-				$block['attrs']['noStatusLabel'] ?? __( 'RSVP', 'gatherpress' )
+				'data-wp-interactive',
+				'gatherpress/rsvp'
 			);
 			$tag->set_attribute(
-				'data-gatherpress-attending-label',
-				$block['attrs']['attendingLabel'] ?? __( 'Edit RSVP', 'gatherpress' )
+				'data-wp-context',
+				wp_json_encode( array( 'postId' => get_the_ID() ) )
 			);
 			$tag->set_attribute(
-				'data-gatherpress-waiting-list-label',
-				$block['attrs']['waitingListLabel'] ?? __( 'Edit RSVP', 'gatherpress' )
+				'data-wp-watch',
+				'callbacks.renderRsvpBlock'
 			);
-			$tag->set_attribute(
-				'data-gatherpress-not-attending-label',
-				$block['attrs']['notAttendingLabel'] ?? __( 'Edit RSVP', 'gatherpress' )
-			);
+
+			$block_content = $tag->get_updated_html();
 		}
+
 		if (
 			'core/button' === $block['blockName'] &&
 			isset( $block['attrs']['className'] ) &&

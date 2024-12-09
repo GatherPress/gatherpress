@@ -3,7 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 
-const TEMPLATE = [
+const WAITING_LIST = [
 	[
 		'core/buttons',
 		{
@@ -88,4 +88,4 @@ const TEMPLATE = [
 	],
 ];
 
-export default TEMPLATE;
+export default WAITING_LIST;
