@@ -1,17 +1,19 @@
 const { test } = require('@playwright/test');
-const { login } = require('../reusable-user-steps/common');
+//const { login } = require('../reusable-user-steps/common.js');
+const{login}	= require('../reusable-user-steps/common.js')
 
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
-		await login({ page, username: 'testuser1' });
+		//await login({ page, username: '' });
 	});
 
 	test('the user should be able to publish an online event', async ({
 		page,
 	}) => {
+		await login({ page, username: 'prashantbellad' });
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
@@ -27,10 +29,20 @@ test.describe('e2e test for publish event through admin side', () => {
 			.first()
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
+
+		 await page.getByLabel('Settings', { exact: true }).click();
+		 await page.getByLabel('Settings', { exact: true }).click();
+
+
+		await page.getByRole('button', { name: 'Event settings' }).isVisible();
+
 		await page.getByRole('button', { name: 'Event settings' }).click();
+		await page.getByRole('button', { name: 'Event settings' }).click();
+		await page.getByRole('button', { name: 'Event settings' }).click();
+
 		await page
 			.getByLabel('Venue Selector')
-			.selectOption('ol', { timeout: 60000 });
+			.selectOption('33:online-event', { timeout: 60000 });
 		await page.getByRole('button', { name: 'Event settings' }).click();
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
@@ -52,6 +64,7 @@ test.describe('e2e test for publish event through admin side', () => {
 	test('the user should be able publish an offline event', async ({
 		page,
 	}) => {
+		await login({ page, username: 'prashantbellad' });
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
@@ -67,12 +80,11 @@ test.describe('e2e test for publish event through admin side', () => {
 			.first()
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
-		await page.getByRole('button', { name: 'Event settings' }).click();
-		await page
-			.getByLabel('Venue Selector')
-			.selectOption('offline event', { timeout: 60000 });
 
+		
 		await page.getByRole('button', { name: 'Event settings' }).click();
+  		await page.getByLabel('Venue Selector').selectOption('73:test-offline-event');
+
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();

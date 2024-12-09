@@ -10,21 +10,19 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 	});
 });
 
-test('01-the user should be able to publish an offline event', async ({
+test('the user should be able publish an offline event', async ({
 	page,
 }) => {
-	await login({ page, username: 'testuser1' });
+	await login({ page, username: 'prashantbellad' });
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
 	await page
 		.locator('#wpbody-content')
 		.getByRole('link', { name: 'Add New' })
 		.click();
-
 	const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 	const eventTitle = await page
 		.getByLabel('Add title')
 		.fill(`offline T-Event:${currentDate}`);
-
 	await page
 		.getByLabel('Block: Event Date')
 		.locator('div')
@@ -32,12 +30,16 @@ test('01-the user should be able to publish an offline event', async ({
 		.isVisible();
 	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
+	
 	await page.getByRole('button', { name: 'Event settings' }).click();
-	await page.getByLabel('Venue Selector').selectOption('offline event');
-
 	await page.getByRole('button', { name: 'Event settings' }).click();
+	await page.getByRole('button', { name: 'Event settings' }).click();
+	
+	await page.getByLabel('Venue Selector').selectOption('73:test-offline-event');
 
-	await page.getByRole('button', { name: 'Publish', exact: true }).click();
+	await page
+		.getByRole('button', { name: 'Publish', exact: true })
+		.click();
 	await page
 		.getByLabel('Editor publish')
 		.getByRole('button', { name: 'Publish', exact: true })
@@ -45,17 +47,17 @@ test('01-the user should be able to publish an offline event', async ({
 
 	await page
 		.getByText(`${eventTitle} is now live.`)
-		.isVisible({ timeout: 60000 }); //verified the event is live.
+		.isVisible({ timeout: 60000 }); // verified the event is live.
 	await page
 		.locator('.post-publish-panel__postpublish-buttons')
 		.filter({ hasText: 'View Event' })
-		.isVisible(); //verify the view event button.
+		.isVisible({ timeout: 30000 }); // verified the view event button.
 });
 
 test('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
 	page,
 }) => {
-	await page.goto('https://develop.gatherpress.org');
+	await page.goto('https://test.gatherpress.org');
 	await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
 	await page
 		.locator('div')
@@ -67,7 +69,7 @@ test('02-verify the non-logged in user view RSVP button on home page and perform
 	await page.getByRole('link', { name: 'RSVP' }).first().click();
 	await page.getByText('Login', { exact: true }).click();
 
-	await loginUser({ page, username: 'testuser1' });
+	await loginUser({ page, username: 'prashantbellad' });
 	await page.evaluate(() => window.scrollTo(0, 1000));
 
 	await page
