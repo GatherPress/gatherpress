@@ -203,6 +203,16 @@ class Event_Rest_Api {
 		);
 	}
 
+	/**
+	 * Define the REST route for rendering RSVP blocks.
+	 *
+	 * This method sets up the REST route for dynamically rendering RSVP block content.
+	 * The route processes block data and generates the block's markup on demand.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
 	protected function rsvp_render_route(): array {
 		return array(
 			'route' => 'rsvp-render',
@@ -607,20 +617,25 @@ class Event_Rest_Api {
 		return new WP_REST_Response( $response );
 	}
 
+	/**
+	 * Renders an RSVP block for a given post via a REST API request.
+	 *
+	 * This method processes the provided block data, renders the block content,
+	 * and returns it as part of a REST API response. Typically used for dynamically
+	 * rendering RSVP blocks with updated data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The REST API request object containing parameters for rendering the RSVP block.
+	 *
+	 * @return WP_REST_Response The REST API response containing the rendered block content and a success flag.
+	 */
 	public function render_rsvp( WP_REST_Request $request ): WP_REST_Response {
-		$params     = $request->get_params();
-		$post_id    = intval( $params['post_id'] );
-		$block_data = $params['block_data'];
-		// var_dump(extract_serialized_parent_block( $block_data )); die;
-		// $block_data    = json_decode( $block_data, true );
-		// var_dump(do_blocks(rawurldecode($block_data))); die;
-		// var_dump(($block_data)); die;
-		// var_dump(render_block($block_data)); die;
-		// $block_content = ( new WP_Block( $block_data ) )->render( array( 'dynamic' => false ) );
-		// var_dump(do_blocks(rawurldecode($block_data))); die;
+		$params        = $request->get_params();
+		$post_id       = intval( $params['post_id'] );
+		$block_data    = $params['block_data'];
 		$block_content = do_blocks( rawurldecode( $block_data ) );
-		// print_r($block_content); die;
-		$success = true;
+		$success       = true;
 
 		$response = array(
 			'success' => $success,

@@ -121,16 +121,22 @@ class Test_Event_Rest_Api extends Base {
 			$routes[1]['args']['methods'],
 			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'rsvp-render', $routes[2]['route'], 'Failed to assert route is render-rsvp.' );
+		$this->assertSame( 'rsvp-response-render', $routes[2]['route'], 'Failed to assert route is rsvp-response-render.' );
 		$this->assertSame(
 			WP_REST_Server::EDITABLE,
 			$routes[2]['args']['methods'],
 			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'events-list', $routes[3]['route'], 'Failed to assert route is events-list.' );
+		$this->assertSame( 'rsvp-render', $routes[3]['route'], 'Failed to assert route is rsvp-render.' );
+		$this->assertSame(
+			WP_REST_Server::EDITABLE,
+			$routes[3]['args']['methods'],
+			'Failed to assert methods is POST, PUT, PATCH.'
+		);
+		$this->assertSame( 'events-list', $routes[4]['route'], 'Failed to assert route is events-list.' );
 		$this->assertSame(
 			WP_REST_Server::READABLE,
-			$routes[3]['args']['methods'],
+			$routes[4]['args']['methods'],
 			'Failed to assert methods is GET.'
 		);
 	}
