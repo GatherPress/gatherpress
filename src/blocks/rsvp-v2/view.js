@@ -24,8 +24,20 @@ const { state, actions } = store('gatherpress/rsvp', {
 				modal.classList.remove('gatherpress--is-visible');
 			}
 		},
-		rsvpStatusAttending() {
-			const status = 'attending';
+		rsvpChangeStatus() {
+			let status =
+				state.rsvpStatus ??
+				getFromGlobal('eventDetails.currentUser.status') ??
+				'no_status';
+
+			if ('not_attending' === status || 'no_status' === status) {
+				status = 'attending';
+			} else {
+				status = 'not_attending';
+			}
+
+			// state.rsvpStatus = getFromGlobal('eventDetails.currentUser.status') ?? 'no_status';
+			// const status = state.rsvpStatus;
 			const guests = 0;
 			const anonymous = 0;
 
@@ -47,7 +59,8 @@ const { state, actions } = store('gatherpress/rsvp', {
 				.then((res) => {
 					if (res.success) {
 						state.activePostId = res.event_id;
-						state.status = res.status;
+						state.rsvpResponseStatus = res.status;
+						state.rsvpStatus = res.status;
 					}
 				})
 				.catch(() => {});
@@ -60,10 +73,13 @@ const { state, actions } = store('gatherpress/rsvp', {
 			const serializedInnerBlocks = JSON.parse(
 				element.ref.getAttribute('data-serialized-inner-blocks')
 			);
-			const status =
-				getFromGlobal('eventDetails.currentUser.status') ?? 'no_status';
 
-			if (!serializedInnerBlocks || !serializedInnerBlocks[status]) {
+			const status = getFromGlobal('eventDetails.currentUser.status');
+
+			if (
+				!serializedInnerBlocks ||
+				!serializedInnerBlocks[state.rsvpStatus ?? status]
+			) {
 				return;
 			}
 
@@ -76,9 +92,10 @@ const { state, actions } = store('gatherpress/rsvp', {
 					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
 				body: JSON.stringify({
-					status: state.status,
+					status: state.rsvpStatus,
 					post_id: context.postId,
-					block_data: serializedInnerBlocks[status],
+					block_data:
+						serializedInnerBlocks[state.rsvpStatus ?? status],
 				}),
 			})
 				.then((response) => response.json()) // Parse the JSON response

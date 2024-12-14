@@ -130,7 +130,7 @@ class Rsvp {
 			$button_tag = $this->locate_button_tag( $tag );
 			if ( $button_tag ) {
 				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
-				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpStatusAttending' );
+				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpChangeStatus' );
 			}
 
 			// Update the block content with new attributes.

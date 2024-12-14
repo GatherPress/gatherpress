@@ -13,7 +13,10 @@ const { state } = store('gatherpress/rsvp', {
 		renderBlocks() {
 			const context = getContext();
 
-			if (!state.status || context.postId !== state.activePostId) {
+			if (
+				!state.rsvpResponseStatus ||
+				context.postId !== state.activePostId
+			) {
 				return;
 			}
 
@@ -26,7 +29,7 @@ const { state } = store('gatherpress/rsvp', {
 					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
 				body: JSON.stringify({
-					status: state.status,
+					status: state.rsvpResponseStatus,
 					post_id: context.postId,
 					block_data: element.attributes['data-blocks'],
 				}),
