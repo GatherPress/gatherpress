@@ -85,7 +85,7 @@ class Rsvp {
 					$serialized_inner_blocks,
 					true
 				);
-				$serialized_inner_blocks[ $saved_status ] = rawurlencode( serialize_blocks( $inner_blocks ) );
+				$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 				$serialized_inner_blocks                  = wp_json_encode( $serialized_inner_blocks );
 
 				$tag->remove_attribute( 'data-saved-status' );

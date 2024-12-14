@@ -634,7 +634,7 @@ class Event_Rest_Api {
 		$params        = $request->get_params();
 		$post_id       = intval( $params['post_id'] );
 		$block_data    = $params['block_data'];
-		$block_content = do_blocks( rawurldecode( $block_data ) );
+		$block_content = do_blocks( $block_data );
 		$success       = true;
 
 		$response = array(

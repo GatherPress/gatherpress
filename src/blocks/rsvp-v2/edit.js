@@ -63,10 +63,9 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			const currentSerializedBlocks = JSON.parse(
 				serializedInnerBlocks || '{}'
 			);
-			const serialized = serialize(blocks);
 
 			// Encode the serialized content for safe use in HTML attributes
-			const sanitizedSerialized = encodeURIComponent(serialized);
+			const sanitizedSerialized = serialize(blocks);
 
 			const updatedBlocks = {
 				...currentSerializedBlocks,
@@ -91,7 +90,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			if (savedBlocks && savedBlocks.length > 0) {
 				replaceInnerBlocks(
 					clientId,
-					parse(decodeURIComponent(savedBlocks), {})
+					parse(savedBlocks, {})
 				);
 			}
 		},
@@ -124,10 +123,8 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 
 					if (templateKey !== selectedStatus) {
 						const blocks = templateToBlocks(TEMPLATES[templateKey]);
-						const serialized = serialize(blocks);
 
-						updatedSerializedBlocks[templateKey] =
-							encodeURIComponent(serialized);
+						updatedSerializedBlocks[templateKey] = serialize(blocks);
 					}
 
 					return updatedSerializedBlocks;
