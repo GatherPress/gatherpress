@@ -47,7 +47,7 @@ function templateToBlocks(template) {
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
 const Edit = ({ attributes, setAttributes, clientId }) => {
-	const { serializedInnerBlocks = '{}', status } = attributes;
+	const { serializedInnerBlocks = '{}', selectedStatus } = attributes;
 	const blockProps = useBlockProps();
 	const { replaceInnerBlocks } = useDispatch(blockEditorStore);
 
@@ -102,9 +102,9 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	const handleStatusChange = (newStatus) => {
 		loadInnerBlocksForState(newStatus); // Load blocks for the new state
 		setAttributes({
-			status: newStatus,
+			selectedStatus: newStatus,
 		}); // Update the state
-		saveInnerBlocks(status, newStatus, innerBlocks); // Save current inner blocks before switching state
+		saveInnerBlocks(selectedStatus, newStatus, innerBlocks); // Save current inner blocks before switching state
 	};
 
 	// Hydrate inner blocks for all statuses if not set
@@ -122,7 +122,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						return updatedSerializedBlocks;
 					}
 
-					if (templateKey !== status) {
+					if (templateKey !== selectedStatus) {
 						const blocks = templateToBlocks(TEMPLATES[templateKey]);
 						const serialized = serialize(blocks);
 
@@ -141,7 +141,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		};
 
 		hydrateInnerBlocks();
-	}, [serializedInnerBlocks, setAttributes, status]);
+	}, [serializedInnerBlocks, setAttributes, selectedStatus]);
 
 	return (
 		<>
@@ -149,7 +149,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				<PanelBody>
 					<SelectControl
 						label={__('RSVP Status', 'gatherpress')}
-						value={status}
+						value={selectedStatus}
 						options={[
 							{
 								label: __(
@@ -185,7 +185,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
-				<InnerBlocks template={TEMPLATES[status]} />
+				<InnerBlocks template={TEMPLATES[selectedStatus]} />
 			</div>
 		</>
 	);

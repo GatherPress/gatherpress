@@ -13,7 +13,7 @@
 			"type": "string",
 			"default": "[]"
 		},
-		"status": {
+		"selectedStatus": {
 			"type": "string",
 			"default": "no_status"
 		}

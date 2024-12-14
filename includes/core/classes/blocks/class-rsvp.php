@@ -67,6 +67,7 @@ class Rsvp {
 		if ( 'gatherpress/rsvp-v2' === $block['blockName'] ) {
 			$inner_blocks = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
 			$tag          = new WP_HTML_Tag_Processor( $block_content );
+			$attributes   = isset( $block['attrs'] ) ? $block['attrs'] : array();
 
 			if ( $tag->next_tag() ) {
 				/**
@@ -78,14 +79,16 @@ class Rsvp {
 				 * with the current inner blocks. The updated serialized inner blocks are then re-encoded and
 				 * saved as an attribute.
 				 */
-				$saved_status                             = $tag->get_attribute( 'data-saved-status' );
+				$saved_status                             = $attributes['selectedStatus'] ?? 'no_status';
+				$serialized_inner_blocks                  = $attributes['serializedInnerBlocks'] ?? '';
 				$serialized_inner_blocks                  = json_decode(
-					$tag->get_attribute( 'data-serialized-inner-blocks' ),
+					$serialized_inner_blocks,
 					true
 				);
 				$serialized_inner_blocks[ $saved_status ] = rawurlencode( serialize_blocks( $inner_blocks ) );
 				$serialized_inner_blocks                  = wp_json_encode( $serialized_inner_blocks );
 
+				$tag->remove_attribute( 'data-saved-status' );
 				$tag->set_attribute(
 					'data-serialized-inner-blocks',
 					$serialized_inner_blocks
