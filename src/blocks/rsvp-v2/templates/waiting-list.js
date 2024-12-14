@@ -15,18 +15,12 @@ const WAITING_LIST = [
 				'core/button',
 				{
 					// text: initialLabel,
-					text: __('RSVP', 'gatherpress'),
+					text: __('Edit RSVP', 'gatherpress'),
 					tagName: 'button',
 					className: 'gatherpress-rsvp--js-open-modal',
 				},
 			],
 		],
-	],
-	[
-		'core/paragraph',
-		{
-			content: __('Attending', 'gatherpress'),
-		},
 	],
 	[
 		'gatherpress/modal',
@@ -65,7 +59,7 @@ const WAITING_LIST = [
 							[
 								'core/button',
 								{
-									text: __('Attend', 'gatherpress'),
+									text: __('Attending', 'gatherpress'),
 									tagName: 'button',
 									className:
 										'gatherpress-rsvp--js-status-attending',

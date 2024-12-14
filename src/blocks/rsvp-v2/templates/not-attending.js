@@ -15,18 +15,12 @@ const NOT_ATTENDING = [
 				'core/button',
 				{
 					// text: initialLabel,
-					text: __('RSVP', 'gatherpress'),
+					text: __('Edit RSVP', 'gatherpress'),
 					tagName: 'button',
 					className: 'gatherpress-rsvp--js-open-modal',
 				},
 			],
 		],
-	],
-	[
-		'core/paragraph',
-		{
-			content: __('Attending', 'gatherpress'),
-		},
 	],
 	[
 		'gatherpress/modal',
@@ -47,7 +41,7 @@ const NOT_ATTENDING = [
 						'core/paragraph',
 						{
 							content: __(
-								'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
+								'To set or change your attending status, simply click the <strong>Attending</strong> button below.',
 								'gatherpress'
 							),
 						},
@@ -65,7 +59,7 @@ const NOT_ATTENDING = [
 							[
 								'core/button',
 								{
-									text: __('Attend', 'gatherpress'),
+									text: __('Attending', 'gatherpress'),
 									tagName: 'button',
 									className:
 										'gatherpress-rsvp--js-status-attending',

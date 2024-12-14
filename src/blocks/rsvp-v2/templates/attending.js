@@ -15,18 +15,12 @@ const ATTENDING = [
 				'core/button',
 				{
 					// text: initialLabel,
-					text: __('RSVP', 'gatherpress'),
+					text: __('Edit RSVP', 'gatherpress'),
 					tagName: 'button',
 					className: 'gatherpress-rsvp--js-open-modal',
 				},
 			],
 		],
-	],
-	[
-		'core/paragraph',
-		{
-			content: __('Attending', 'gatherpress'),
-		},
 	],
 	[
 		'gatherpress/modal',
@@ -65,7 +59,7 @@ const ATTENDING = [
 							[
 								'core/button',
 								{
-									text: __('Attend', 'gatherpress'),
+									text: __('Not Attending', 'gatherpress'),
 									tagName: 'button',
 									className:
 										'gatherpress-rsvp--js-status-attending',

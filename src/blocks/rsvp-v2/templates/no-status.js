@@ -23,12 +23,6 @@ const NO_STATUS = [
 		],
 	],
 	[
-		'core/paragraph',
-		{
-			content: __('Attending', 'gatherpress'),
-		},
-	],
-	[
 		'gatherpress/modal',
 		{ className: 'gatherpress-rsvp-modal' },
 		[
@@ -47,7 +41,7 @@ const NO_STATUS = [
 						'core/paragraph',
 						{
 							content: __(
-								'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
+								'To set or change your attending status, simply click the <strong>Attending</strong> button below.',
 								'gatherpress'
 							),
 						},
@@ -65,7 +59,7 @@ const NO_STATUS = [
 							[
 								'core/button',
 								{
-									text: __('Attend', 'gatherpress'),
+									text: __('Attending', 'gatherpress'),
 									tagName: 'button',
 									className:
 										'gatherpress-rsvp--js-status-attending',
