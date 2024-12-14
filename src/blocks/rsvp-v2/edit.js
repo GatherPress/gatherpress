@@ -9,14 +9,30 @@ import {
 } from '@wordpress/block-editor';
 import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useState, useCallback } from '@wordpress/element';
+import { useEffect, useCallback } from '@wordpress/element';
 import { useDispatch, useSelect } from '@wordpress/data';
-import { parse, serialize } from '@wordpress/blocks';
+import { createBlock, parse, serialize } from '@wordpress/blocks';
 
 /**
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
+
+/**
+ * Helper function to convert a template to blocks.
+ *
+ * @param {Array} template The block template structure.
+ * @return {Array} Array of blocks created from the template.
+ */
+function templateToBlocks(template) {
+	return template.map(([name, attributes, innerBlocks]) => {
+		return createBlock(
+			name,
+			attributes,
+			templateToBlocks(innerBlocks || [])
+		);
+	});
+}
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -31,8 +47,7 @@ import TEMPLATES from './templates';
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
 const Edit = ({ attributes, setAttributes, clientId }) => {
-	const { serializedInnerBlocks = '{}' } = attributes;
-	const [status, setStatus] = useState('no_status');
+	const { serializedInnerBlocks = '{}', status } = attributes;
 	const blockProps = useBlockProps();
 	const { replaceInnerBlocks } = useDispatch(blockEditorStore);
 
@@ -43,24 +58,29 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	);
 
 	// Save the provided inner blocks to the serializedInnerBlocks attribute
-	const saveInnerBlocks = (state, blocks) => {
-		const currentSerializedBlocks = JSON.parse(
-			serializedInnerBlocks || '{}'
-		);
-		const serialized = serialize(blocks);
+	const saveInnerBlocks = useCallback(
+		(state, newState, blocks) => {
+			const currentSerializedBlocks = JSON.parse(
+				serializedInnerBlocks || '{}'
+			);
+			const serialized = serialize(blocks);
 
-		// Encode the serialized content for safe use in HTML attributes
-		const sanitizedSerialized = encodeURIComponent(serialized);
+			// Encode the serialized content for safe use in HTML attributes
+			const sanitizedSerialized = encodeURIComponent(serialized);
 
-		const updatedBlocks = {
-			...currentSerializedBlocks,
-			[state]: sanitizedSerialized,
-		};
+			const updatedBlocks = {
+				...currentSerializedBlocks,
+				[state]: sanitizedSerialized,
+			};
 
-		setAttributes({
-			serializedInnerBlocks: JSON.stringify(updatedBlocks),
-		});
-	};
+			delete updatedBlocks[newState];
+
+			setAttributes({
+				serializedInnerBlocks: JSON.stringify(updatedBlocks),
+			});
+		},
+		[serializedInnerBlocks, setAttributes]
+	);
 
 	// Load inner blocks for a given state
 	const loadInnerBlocksForState = useCallback(
@@ -71,7 +91,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			if (savedBlocks && savedBlocks.length > 0) {
 				replaceInnerBlocks(
 					clientId,
-					parse(decodeURIComponent(savedBlocks))
+					parse(decodeURIComponent(savedBlocks), {})
 				);
 			}
 		},
@@ -80,15 +100,48 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 
 	// Handle status change: save current inner blocks and load new ones
 	const handleStatusChange = (newStatus) => {
-		saveInnerBlocks(status, innerBlocks); // Save current inner blocks before switching state
-		setStatus(newStatus); // Update the state
 		loadInnerBlocksForState(newStatus); // Load blocks for the new state
+		setAttributes({
+			status: newStatus,
+		}); // Update the state
+		saveInnerBlocks(status, newStatus, innerBlocks); // Save current inner blocks before switching state
 	};
 
-	// On initial render, ensure correct blocks are loaded
+	// Hydrate inner blocks for all statuses if not set
 	useEffect(() => {
-		loadInnerBlocksForState(status);
-	}, [status, loadInnerBlocksForState]);
+		const hydrateInnerBlocks = () => {
+			const currentSerializedBlocks = JSON.parse(
+				serializedInnerBlocks || '{}'
+			);
+
+			const updatedBlocks = Object.keys(TEMPLATES).reduce(
+				(updatedSerializedBlocks, templateKey) => {
+					if (currentSerializedBlocks[templateKey]) {
+						updatedSerializedBlocks[templateKey] =
+							currentSerializedBlocks[templateKey];
+						return updatedSerializedBlocks;
+					}
+
+					if (templateKey !== status) {
+						const blocks = templateToBlocks(TEMPLATES[templateKey]);
+						const serialized = serialize(blocks);
+
+						updatedSerializedBlocks[templateKey] =
+							encodeURIComponent(serialized);
+					}
+
+					return updatedSerializedBlocks;
+				},
+				{ ...currentSerializedBlocks }
+			);
+
+			setAttributes({
+				serializedInnerBlocks: JSON.stringify(updatedBlocks),
+			});
+		};
+
+		hydrateInnerBlocks();
+	}, [serializedInnerBlocks, setAttributes, status]);
 
 	return (
 		<>

@@ -23,12 +23,13 @@ import './style.scss';
 registerBlockType(metadata, {
 	edit,
 	save: ({ attributes }) => {
+		const { serializedInnerBlocks, status } = attributes;
 		const blockProps = useBlockProps.save();
-		const { serializedInnerBlocks } = attributes;
 
 		return (
 			<div
 				{...blockProps}
+				data-saved-status={status}
 				data-serialized-inner-blocks={serializedInnerBlocks}
 			>
 				<InnerBlocks.Content />

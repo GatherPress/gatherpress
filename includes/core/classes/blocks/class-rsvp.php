@@ -65,22 +65,45 @@ class Rsvp {
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
 		if ( 'gatherpress/rsvp-v2' === $block['blockName'] ) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
-			$tag->next_tag();
-			$tag->set_attribute(
-				'data-wp-interactive',
-				'gatherpress/rsvp'
-			);
-			$tag->set_attribute(
-				'data-wp-context',
-				wp_json_encode( array( 'postId' => get_the_ID() ) )
-			);
-			$tag->set_attribute(
-				'data-wp-watch',
-				'callbacks.renderRsvpBlock'
-			);
+			$inner_blocks = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
+			$tag          = new WP_HTML_Tag_Processor( $block_content );
 
-			$block_content = $tag->get_updated_html();
+			if ( $tag->next_tag() ) {
+				/**
+				 * Update the serialized inner blocks to ensure the current inner blocks for the saved status
+				 * are stored correctly. This addresses the issue where saving blocks for a specific status
+				 * doesn't persist changes.
+				 *
+				 * We retrieve the saved status and dynamically replace the corresponding serialized inner block
+				 * with the current inner blocks. The updated serialized inner blocks are then re-encoded and
+				 * saved as an attribute.
+				 */
+				$saved_status                             = $tag->get_attribute( 'data-saved-status' );
+				$serialized_inner_blocks                  = json_decode(
+					$tag->get_attribute( 'data-serialized-inner-blocks' ),
+					true
+				);
+				$serialized_inner_blocks[ $saved_status ] = rawurlencode( serialize_blocks( $inner_blocks ) );
+				$serialized_inner_blocks                  = wp_json_encode( $serialized_inner_blocks );
+
+				$tag->set_attribute(
+					'data-serialized-inner-blocks',
+					$serialized_inner_blocks
+				);
+				$tag->set_attribute(
+					'data-wp-interactive',
+					'gatherpress/rsvp'
+				);
+				$tag->set_attribute(
+					'data-wp-context',
+					wp_json_encode( array( 'postId' => get_the_ID() ) )
+				);
+				$tag->set_attribute(
+					'data-wp-watch',
+					'callbacks.renderRsvpBlock'
+				);
+				$block_content = $tag->get_updated_html();
+			}
 		}
 
 		if (

@@ -12,6 +12,10 @@
     "serializedInnerBlocks": {
       "type": "string",
       "default": "[]"
+    },
+    "status": {
+      "type": "string",
+      "default": "no_status"
     }
   },
   "supports": {
