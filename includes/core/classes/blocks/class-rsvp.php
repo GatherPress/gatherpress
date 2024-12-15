@@ -13,7 +13,6 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
-use GatherPress\Core\Blocks;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 

@@ -1,7 +1,10 @@
 <?php
 /**
- * The "RSVP" class manages the RSVP block and its variations,
- * primarily transforming block content and preparing it for output.
+ * The "Modal Manager" class handles the functionality of the Modal Manager block,
+ * enabling dynamic management of modals and their associated triggers.
+ *
+ * This class is responsible for transforming block content, ensuring proper behavior
+ * of modal interactions, and preparing the block for output.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -17,8 +20,8 @@ use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
 /**
- * Class responsible for managing the "RSVP" block and its variations,
- * including dynamic transformations and enhancements for interactive functionality.
+ * Class responsible for managing the "Modal Manager" block and its associated functionality,
+ * including dynamic transformations, modal interactions, and enhancements for interactivity.
  *
  * @since 1.0.0
  */

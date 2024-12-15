@@ -1,7 +1,7 @@
 <?php
 /**
- * Class manages the RSVP Response block for GatherPress, preparing its output and
- * handling associated hooks for customizing functionality.
+ * Class responsible for managing the RSVP Template block for GatherPress,
+ * including preparation of its output and handling hooks for customization and interactivity.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -19,12 +19,12 @@ use WP_Block_Type_Registry;
 use WP_HTML_Tag_Processor;
 
 /**
- * Class Rsvp_Response.
+ * Class Rsvp_Template.
  *
- * This class manages the RSVP Response block for GatherPress, handling the
+ * This class manages the RSVP Template block for GatherPress, handling the
  * preparation of block output and adding hooks for customizations.
  *
- * It ensures smooth integration with WordPress's block editor and REST API.
+ * It ensures seamless integration with WordPress's block editor and dynamic functionality.
  *
  * @since 1.0.0
  */
