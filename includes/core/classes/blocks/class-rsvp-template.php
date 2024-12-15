@@ -15,6 +15,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
+use WP_Block_Type_Registry;
+use WP_HTML_Tag_Processor;
 
 /**
  * Class Rsvp_Response.
@@ -31,6 +33,93 @@ class Rsvp_Template {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Class constructor.
+	 *
+	 * This method initializes the object and sets up necessary hooks.
+	 *
+	 * @since 1.0.0
+	 */
+	protected function __construct() {
+		$this->setup_hooks();
+	}
+
+	/**
+	 * Set up hooks for various purposes.
+	 *
+	 * This method adds hooks for different purposes as needed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function setup_hooks(): void {
+		add_filter( 'render_block', array( $this, 'ensure_block_styles_loaded' ), 10, 2 );
+	}
+
+	/**
+	 * Recursively retrieves all block names from a given array of blocks.
+	 *
+	 * This method traverses a nested block structure and collects the block names,
+	 * including those of any inner blocks, into a flat array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $blocks An array of block data, typically including `blockName` and `innerBlocks`.
+	 *
+	 * @return array An array of block names found within the provided block structure.
+	 */
+	private function get_block_names( array $blocks ): array {
+		$block_names = array();
+
+		if ( isset( $blocks['blockName'] ) ) {
+			$block_names[] = $blocks['blockName'];
+		}
+
+		if ( ! empty( $blocks['innerBlocks'] ) ) {
+			foreach ( $blocks['innerBlocks'] as $inner_block ) {
+				$block_names = array_merge( $block_names, $this->get_block_names( $inner_block ) );
+			}
+		}
+
+		return $block_names;
+	}
+
+	/**
+	 * Ensures that the required block styles are loaded for the `gatherpress/rsvp-template` block.
+	 *
+	 * This function checks if the `gatherpress/rsvp-template` block contains inner blocks and retrieves
+	 * their block names. It then enqueues the associated styles for each inner block dynamically.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The content of the current block being rendered.
+	 * @param array  $block         The block data, including attributes and inner blocks.
+	 *
+	 * @return string The filtered block content.
+	 */
+	public function ensure_block_styles_loaded( string $block_content, array $block ): string {
+		if ( 'gatherpress/rsvp-template' === $block['blockName'] ) {
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			if ( $tag->next_tag() ) {
+				$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
+				$inner_blocks = $this->get_block_names( $inner_blocks );
+
+				foreach ( $inner_blocks as $inner_block ) {
+					$block_registry = WP_Block_Type_Registry::get_instance();
+					$block_type     = $block_registry->get_registered( $inner_block );
+
+					if ( $block_type && ! empty( $block_type->style ) ) {
+						wp_enqueue_style( $block_type->style );
+					}
+				}
+			}
+		}
+
+		return $block_content;
+	}
 
 	/**
 	 * Renders the RSVP Template block dynamically based on the event's RSVP responses.
