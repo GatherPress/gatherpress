@@ -12,6 +12,7 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
@@ -59,34 +60,6 @@ class Rsvp_Template {
 	}
 
 	/**
-	 * Recursively retrieves all block names from a given array of blocks.
-	 *
-	 * This method traverses a nested block structure and collects the block names,
-	 * including those of any inner blocks, into a flat array.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $blocks An array of block data, typically including `blockName` and `innerBlocks`.
-	 *
-	 * @return array An array of block names found within the provided block structure.
-	 */
-	private function get_block_names( array $blocks ): array {
-		$block_names = array();
-
-		if ( isset( $blocks['blockName'] ) ) {
-			$block_names[] = $blocks['blockName'];
-		}
-
-		if ( ! empty( $blocks['innerBlocks'] ) ) {
-			foreach ( $blocks['innerBlocks'] as $inner_block ) {
-				$block_names = array_merge( $block_names, $this->get_block_names( $inner_block ) );
-			}
-		}
-
-		return $block_names;
-	}
-
-	/**
 	 * Ensures that the required block styles are loaded for the `gatherpress/rsvp-template` block.
 	 *
 	 * This function checks if the `gatherpress/rsvp-template` block contains inner blocks and retrieves
@@ -101,11 +74,12 @@ class Rsvp_Template {
 	 */
 	public function ensure_block_styles_loaded( string $block_content, array $block ): string {
 		if ( 'gatherpress/rsvp-template' === $block['blockName'] ) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
+			$block_instance = Block::get_instance();
+			$tag            = new WP_HTML_Tag_Processor( $block_content );
 
 			if ( $tag->next_tag() ) {
 				$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
-				$inner_blocks = $this->get_block_names( $inner_blocks );
+				$inner_blocks = $block_instance->get_block_names( $inner_blocks );
 
 				foreach ( $inner_blocks as $inner_block ) {
 					$block_registry = WP_Block_Type_Registry::get_instance();

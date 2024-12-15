@@ -309,6 +309,34 @@ class Block {
 	}
 
 	/**
+	 * Recursively retrieves all block names from a given array of blocks.
+	 *
+	 * This method traverses a nested block structure and collects the block names,
+	 * including those of any inner blocks, into a flat array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $blocks An array of block data, typically including `blockName` and `innerBlocks`.
+	 *
+	 * @return array An array of block names found within the provided block structure.
+	 */
+	public function get_block_names( array $blocks ): array {
+		$block_names = array();
+
+		if ( isset( $blocks['blockName'] ) ) {
+			$block_names[] = $blocks['blockName'];
+		}
+
+		if ( ! empty( $blocks['innerBlocks'] ) ) {
+			foreach ( $blocks['innerBlocks'] as $inner_block ) {
+				$block_names = array_merge( $block_names, $this->get_block_names( $inner_block ) );
+			}
+		}
+
+		return $block_names;
+	}
+
+	/**
 	 * Locates a specific tag within a block structure.
 	 *
 	 * This method searches for a specified tag (e.g., button or anchor) following a div tag
