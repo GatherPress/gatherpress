@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block_Template;
+use WP_HTML_Tag_Processor;
 use WP_Post;
 
 /**
@@ -108,6 +109,7 @@ class Block {
 	 */
 	public function register_block_classes(): void {
 		Blocks\Add_To_Calendar::get_instance();
+		Blocks\Modal_Manager::get_instance();
 		Blocks\Rsvp::get_instance();
 		Blocks\Rsvp_Response::get_instance();
 		Blocks\Rsvp_Template::get_instance();
@@ -304,5 +306,27 @@ class Block {
 		}
 
 		return $parsed_hooked_block;
+	}
+
+	/**
+	 * Locates a specific tag within a block structure.
+	 *
+	 * This method searches for a specified tag (e.g., button or anchor) following a div tag
+	 * within the given HTML tag processor instance. If the specified tags are found, the
+	 * processor is returned for further manipulation.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_HTML_Tag_Processor $tag      The HTML tag processor instance for the block content.
+	 * @param string                $tag_name The name of the tag to locate (e.g., 'button', 'a'). Defaults to 'button'.
+	 *
+	 * @return WP_HTML_Tag_Processor|null The tag processor instance if the specified tag is located, or null otherwise.
+	 */
+	public function locate_button_tag( WP_HTML_Tag_Processor $tag, $tag_name = 'button' ): ?WP_HTML_Tag_Processor {
+		if ( $tag->next_tag( array( 'tag_name' => 'div' ) ) && $tag->next_tag( array( 'tag_name' => $tag_name ) ) ) {
+			return $tag;
+		}
+
+		return null;
 	}
 }

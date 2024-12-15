@@ -4,6 +4,7 @@
 	"name": "gatherpress/modal",
 	"version": "1.0.0",
 	"title": "Modal",
+	"parent": ["gatherpress/modal-manager"],
 	"category": "gatherpress",
 	"icon": "external",
 	"example": {},

@@ -12,6 +12,8 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Block;
+use GatherPress\Core\Blocks;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
@@ -64,6 +66,8 @@ class Rsvp {
 	 * @return string The updated block content with the applied transformations.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
+		$block_instance = Block::get_instance();
+
 		if ( 'gatherpress/rsvp-v2' === $block['blockName'] ) {
 			$inner_blocks = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
 			$tag          = new WP_HTML_Tag_Processor( $block_content );
@@ -117,7 +121,7 @@ class Rsvp {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes.
-			$button_tag = $this->locate_button_tag( $tag );
+			$button_tag = $block_instance->locate_button_tag( $tag );
 			if ( $button_tag ) {
 				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpOpenModal' );
@@ -135,7 +139,7 @@ class Rsvp {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes.
-			$button_tag = $this->locate_button_tag( $tag );
+			$button_tag = $block_instance->locate_button_tag( $tag );
 			if ( $button_tag ) {
 				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpCloseModal' );
@@ -153,7 +157,7 @@ class Rsvp {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes.
-			$button_tag = $this->locate_button_tag( $tag );
+			$button_tag = $block_instance->locate_button_tag( $tag );
 			if ( $button_tag ) {
 				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpChangeStatus' );
@@ -164,26 +168,5 @@ class Rsvp {
 		}
 
 		return $block_content;
-	}
-
-	/**
-	 * Locates the button tag within a specific block structure.
-	 *
-	 * This method searches for a button tag following a div tag within
-	 * the given HTML tag processor instance. If both tags are found,
-	 * the processor is returned for further manipulation.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param WP_HTML_Tag_Processor $tag The HTML tag processor instance for the block content.
-	 *
-	 * @return WP_HTML_Tag_Processor|null The tag processor instance if the button is located, or null otherwise.
-	 */
-	private function locate_button_tag( WP_HTML_Tag_Processor $tag ): ?WP_HTML_Tag_Processor {
-		if ( $tag->next_tag( array( 'tag_name' => 'div' ) ) && $tag->next_tag( array( 'tag_name' => 'button' ) ) ) {
-			return $tag;
-		}
-
-		return null;
 	}
 }
