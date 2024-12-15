@@ -82,6 +82,7 @@ class Test_Block extends Base {
 			'gatherpress/events-list',
 			'gatherpress/modal',
 			'gatherpress/modal-content',
+			'gatherpress/modal-manager',
 			'gatherpress/online-event',
 			'gatherpress/rsvp',
 			'gatherpress/rsvp-response',
