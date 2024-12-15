@@ -10,21 +10,7 @@ import { getFromGlobal } from '../../helpers/globals';
 
 const { state, actions } = store('gatherpress', {
 	actions: {
-		rsvpOpenModal() {
-			const modal = document.querySelector('.gatherpress-rsvp-modal');
-
-			if (modal) {
-				modal.classList.add('gatherpress--is-visible');
-			}
-		},
-		rsvpCloseModal() {
-			const modal = document.querySelector('.gatherpress-rsvp-modal');
-
-			if (modal) {
-				modal.classList.remove('gatherpress--is-visible');
-			}
-		},
-		rsvpChangeStatus() {
+		updateRsvp() {
 			let status =
 				state.rsvpStatus ??
 				getFromGlobal('eventDetails.currentUser.status') ??
