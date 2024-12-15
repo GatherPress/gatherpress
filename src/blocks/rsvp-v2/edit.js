@@ -88,10 +88,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				state
 			];
 			if (savedBlocks && savedBlocks.length > 0) {
-				replaceInnerBlocks(
-					clientId,
-					parse(savedBlocks, {})
-				);
+				replaceInnerBlocks(clientId, parse(savedBlocks, {}));
 			}
 		},
 		[clientId, replaceInnerBlocks, serializedInnerBlocks]
@@ -124,7 +121,8 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					if (templateKey !== selectedStatus) {
 						const blocks = templateToBlocks(TEMPLATES[templateKey]);
 
-						updatedSerializedBlocks[templateKey] = serialize(blocks);
+						updatedSerializedBlocks[templateKey] =
+							serialize(blocks);
 					}
 
 					return updatedSerializedBlocks;
