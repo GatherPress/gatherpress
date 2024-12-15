@@ -90,7 +90,7 @@ class Modal_Manager {
 				$button_tag &&
 				false !== strpos( $block['attrs']['className'], 'gatherpress--open-modal' )
 			) {
-				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/modal' );
+				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
 			}
 
@@ -98,7 +98,7 @@ class Modal_Manager {
 				$button_tag &&
 				false !== strpos( $block['attrs']['className'], 'gatherpress--close-modal' )
 			) {
-				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/modal' );
+				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
 			}
 

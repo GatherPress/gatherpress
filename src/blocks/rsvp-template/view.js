@@ -8,7 +8,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
  */
 import { getFromGlobal } from '../../helpers/globals';
 
-const { state } = store('gatherpress/rsvp', {
+const { state } = store('gatherpress', {
 	callbacks: {
 		renderBlocks() {
 			const context = getContext();

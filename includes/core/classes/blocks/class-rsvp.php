@@ -99,7 +99,7 @@ class Rsvp {
 				);
 				$tag->set_attribute(
 					'data-wp-interactive',
-					'gatherpress/rsvp'
+					'gatherpress'
 				);
 				$tag->set_attribute(
 					'data-wp-context',
@@ -116,50 +116,14 @@ class Rsvp {
 		if (
 			'core/button' === $block['blockName'] &&
 			isset( $block['attrs']['className'] ) &&
-			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp--js-open-modal' )
+			false !== strpos( $block['attrs']['className'], 'gatherpress--update-rsvp' )
 		) {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			// Locate the <button> tag and set the attributes.
 			$button_tag = $block_instance->locate_button_tag( $tag );
 			if ( $button_tag ) {
-				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
-				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpOpenModal' );
-			}
-
-			// Update the block content with new attributes.
-			$block_content = $tag->get_updated_html();
-		}
-
-		if (
-			'core/button' === $block['blockName'] &&
-			isset( $block['attrs']['className'] ) &&
-			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp--js-close-modal' )
-		) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
-
-			// Locate the <button> tag and set the attributes.
-			$button_tag = $block_instance->locate_button_tag( $tag );
-			if ( $button_tag ) {
-				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
-				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpCloseModal' );
-			}
-
-			// Update the block content with new attributes.
-			$block_content = $tag->get_updated_html();
-		}
-
-		if (
-			'core/button' === $block['blockName'] &&
-			isset( $block['attrs']['className'] ) &&
-			false !== strpos( $block['attrs']['className'], 'gatherpress-rsvp--js-status-attending' )
-		) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
-
-			// Locate the <button> tag and set the attributes.
-			$button_tag = $block_instance->locate_button_tag( $tag );
-			if ( $button_tag ) {
-				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
+				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$button_tag->set_attribute( 'data-wp-on--click', 'actions.rsvpChangeStatus' );
 			}
 

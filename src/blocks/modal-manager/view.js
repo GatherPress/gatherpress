@@ -1,15 +1,15 @@
 /**
  * WordPress dependencies.
  */
-import { store, getElement } from '@wordpress/interactivity';
+import { store } from '@wordpress/interactivity';
 
-store('gatherpress/modal', {
+store('gatherpress', {
 	actions: {
 		openModal(event) {
 			event.preventDefault();
 
-			const element = getElement();
-			const modalManager = element.ref.closest(
+			const element = event.target;
+			const modalManager = element.closest(
 				'.wp-block-gatherpress-modal-manager'
 			);
 
@@ -26,8 +26,8 @@ store('gatherpress/modal', {
 		closeModal(event) {
 			event.preventDefault();
 
-			const element = getElement();
-			const modalManager = element.ref.closest(
+			const element = event.target;
+			const modalManager = element.closest(
 				'.wp-block-gatherpress-modal-manager'
 			);
 

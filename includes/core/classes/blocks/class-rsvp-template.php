@@ -156,7 +156,7 @@ class Rsvp_Template {
 
 			if ( -1 === $response_id ) {
 				$blocks                 = wp_json_encode( $block->parsed_block );
-				$rsvp_response_template = '<div data-wp-interactive="gatherpress/rsvp" data-wp-context=\'{ "postId": ' . intval( get_the_ID() ) . ' }\' data-wp-watch="callbacks.renderBlocks" data-blocks="' . esc_attr( $blocks ) . '"></div>';
+				$rsvp_response_template = '<div data-wp-interactive="gatherpress" data-wp-context=\'{ "postId": ' . intval( get_the_ID() ) . ' }\' data-wp-watch="callbacks.renderBlocks" data-blocks="' . esc_attr( $blocks ) . '"></div>';
 				continue;
 			}
 

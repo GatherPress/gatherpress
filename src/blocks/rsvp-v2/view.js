@@ -8,7 +8,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
  */
 import { getFromGlobal } from '../../helpers/globals';
 
-const { state, actions } = store('gatherpress/rsvp', {
+const { state, actions } = store('gatherpress', {
 	actions: {
 		rsvpOpenModal() {
 			const modal = document.querySelector('.gatherpress-rsvp-modal');
@@ -69,11 +69,9 @@ const { state, actions } = store('gatherpress/rsvp', {
 	callbacks: {
 		renderRsvpBlock() {
 			const element = getElement();
-
 			const serializedInnerBlocks = JSON.parse(
 				element.ref.getAttribute('data-serialized-inner-blocks')
 			);
-
 			const status = getFromGlobal('eventDetails.currentUser.status');
 
 			if (
@@ -125,12 +123,13 @@ const { state, actions } = store('gatherpress/rsvp', {
 									'actions.',
 									''
 								);
+
 								const action = actions[actionName];
 
 								// Validate and execute the resolved action.
 								if (typeof action === 'function') {
-									el.addEventListener('click', () =>
-										action()
+									el.addEventListener('click', (e) =>
+										action(e)
 									);
 								}
 							}
