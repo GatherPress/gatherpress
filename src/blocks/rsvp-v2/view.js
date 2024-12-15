@@ -22,8 +22,6 @@ const { state, actions } = store('gatherpress', {
 				status = 'not_attending';
 			}
 
-			// state.rsvpStatus = getFromGlobal('eventDetails.currentUser.status') ?? 'no_status';
-			// const status = state.rsvpStatus;
 			const guests = 0;
 			const anonymous = 0;
 
@@ -34,7 +32,6 @@ const { state, actions } = store('gatherpress', {
 					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
 				body: JSON.stringify({
-					// post_id: global.GatherPress.eventDetails.postId,
 					post_id: getFromGlobal('eventDetails.postId'),
 					status,
 					guests,
@@ -69,7 +66,7 @@ const { state, actions } = store('gatherpress', {
 
 			const context = getContext();
 
-			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-render', {
+			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-block-html', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -82,7 +79,7 @@ const { state, actions } = store('gatherpress', {
 						serializedInnerBlocks[state.rsvpStatus ?? status],
 				}),
 			})
-				.then((response) => response.json()) // Parse the JSON response
+				.then((response) => response.json())
 				.then((res) => {
 					if (res.success) {
 						element.ref.innerHTML = global.wp.dom.safeHTML(
@@ -96,7 +93,7 @@ const { state, actions } = store('gatherpress', {
 							);
 
 						interactiveElements.forEach((el) => {
-							// Extract the action string (e.g., "actions.rsvpOpenModal").
+							// Extract the action string (e.g., "actions.openModal").
 							const actionString =
 								el.getAttribute('data-wp-on--click');
 

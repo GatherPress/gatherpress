@@ -182,7 +182,7 @@ class Rsvp_Template {
 	 */
 	public function get_block_content( array $parsed_block, int $response_id ): string {
 		$block_content = (
-			new \WP_Block(
+			new WP_Block(
 				$parsed_block,
 				array( 'commentId' => $response_id )
 			)

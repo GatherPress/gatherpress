@@ -17,7 +17,6 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use Exception;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
-use WP_Block;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -99,8 +98,8 @@ class Event_Rest_Api {
 		return array(
 			$this->email_route(),
 			$this->rsvp_route(),
-			$this->rsvp_response_render_route(),
-			$this->rsvp_render_route(),
+			$this->rsvp_status_html_route(),
+			$this->rsvp_block_html_route(),
 			$this->events_list_route(),
 		);
 	}
@@ -174,21 +173,23 @@ class Event_Rest_Api {
 	}
 
 	/**
-	 * Define the REST route for rendering RSVP blocks.
+	 * Define the REST route for rendering RSVP block HTML.
 	 *
-	 * This method sets up the REST route for dynamically rendering RSVP block content.
-	 * The route is used to process RSVP responses and generate block markup on demand.
+	 * This method registers a REST API route for dynamically generating HTML markup
+	 * for RSVP blocks based on the provided block data and post ID.
+	 * The generated HTML reflects the current RSVP status and can be used
+	 * to re-render block content when status changes occur.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return array The REST route configuration.
 	 */
-	protected function rsvp_response_render_route(): array {
+	protected function rsvp_status_html_route(): array {
 		return array(
-			'route' => 'rsvp-response-render',
+			'route' => 'rsvp-status-html',
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
-				'callback'            => array( $this, 'render_rsvp_response' ),
+				'callback'            => array( $this, 'rsvp_status_html' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
 					'post_id'    => array(
@@ -204,21 +205,20 @@ class Event_Rest_Api {
 	}
 
 	/**
-	 * Define the REST route for rendering RSVP blocks.
+	 * Defines the REST route for dynamically rendering RSVP block HTML.
 	 *
-	 * This method sets up the REST route for dynamically rendering RSVP block content.
-	 * The route processes block data and generates the block's markup on demand.
+	 * Registers a REST API route to process block data and generate RSVP block markup on demand.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array The REST route configuration.
+	 * @return array Configuration for the REST route.
 	 */
-	protected function rsvp_render_route(): array {
+	protected function rsvp_block_html_route(): array {
 		return array(
-			'route' => 'rsvp-render',
+			'route' => 'rsvp-block-html',
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
-				'callback'            => array( $this, 'render_rsvp' ),
+				'callback'            => array( $this, 'rsvp_block_html' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
 					'post_id'    => array(
@@ -581,19 +581,25 @@ class Event_Rest_Api {
 	}
 
 	/**
-	 * Handles the RSVP block rendering via a REST API endpoint.
+	 * Handles rendering RSVP block HTML via a REST API endpoint.
 	 *
-	 * This method retrieves RSVP responses for a given post, processes the block data,
-	 * and dynamically renders the RSVP content for the responses. The output includes
-	 * rendered block HTML wrapped in individual containers with data attributes.
+	 * This method dynamically generates HTML markup for RSVP blocks based on the
+	 * provided block data and the responses for a given post ID. It processes the
+	 * RSVP responses and renders the corresponding content using the block template.
+	 * Each response is wrapped in its own container with data attributes to facilitate
+	 * interactivity and styling.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param WP_REST_Request $request The REST API request object containing parameters such as post ID and block data.
+	 * @param WP_REST_Request $request The REST API request object containing parameters:
+	 *                                 - post_id (int): The ID of the post associated with the RSVP.
+	 *                                 - block_data (string): JSON-encoded block data used to render the RSVP content.
 	 *
-	 * @return WP_REST_Response The REST API response containing the rendered content and a success flag.
+	 * @return WP_REST_Response The REST API response containing:
+	 *                          - success (bool): Whether the content was successfully generated.
+	 *                          - content (string): The dynamically rendered HTML markup for the RSVP responses.
 	 */
-	public function render_rsvp_response( WP_REST_Request $request ): WP_REST_Response {
+	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
 		$rsvp_template = Rsvp_Template::get_instance();
 		$params        = $request->get_params();
 		$post_id       = intval( $params['post_id'] );
@@ -618,27 +624,25 @@ class Event_Rest_Api {
 	}
 
 	/**
-	 * Renders an RSVP block for a given post via a REST API request.
+	 * Processes a REST API request to render RSVP block HTML.
 	 *
-	 * This method processes the provided block data, renders the block content,
-	 * and returns it as part of a REST API response. Typically used for dynamically
-	 * rendering RSVP blocks with updated data.
+	 * Generates block content using provided data and returns it in the API response.
+	 * Typically used for dynamic updates of RSVP block content.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param WP_REST_Request $request The REST API request object containing parameters for rendering the RSVP block.
+	 * @param WP_REST_Request $request The REST API request containing parameters like post ID and block data.
 	 *
-	 * @return WP_REST_Response The REST API response containing the rendered block content and a success flag.
+	 * @return WP_REST_Response The response with the rendered block content and success status.
 	 */
-	public function render_rsvp( WP_REST_Request $request ): WP_REST_Response {
+	public function rsvp_block_html( WP_REST_Request $request ): WP_REST_Response {
 		$params        = $request->get_params();
 		$post_id       = intval( $params['post_id'] );
 		$block_data    = $params['block_data'];
 		$block_content = do_blocks( $block_data );
-		$success       = true;
 
 		$response = array(
-			'success' => $success,
+			'success' => true,
 			'content' => $block_content,
 		);
 

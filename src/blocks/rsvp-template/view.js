@@ -22,7 +22,7 @@ const { state } = store('gatherpress', {
 
 			const element = getElement();
 
-			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-response-render', {
+			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-status-html', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
