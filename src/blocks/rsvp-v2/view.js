@@ -8,7 +8,7 @@ import { store, getElement } from '@wordpress/interactivity';
  */
 import { getFromGlobal } from '../../helpers/globals';
 
-const { state } = store('gatherpress', {
+const { state, actions } = store('gatherpress', {
 	state: {
 		rsvpStatus:
 			getFromGlobal('eventDetails.currentUser.status') ?? 'no_status',
@@ -16,6 +16,7 @@ const { state } = store('gatherpress', {
 	actions: {
 		updateRsvp() {
 			let status = 'not_attending';
+			const element = getElement();
 
 			if (['not_attending', 'no_status'].includes(state.rsvpStatus)) {
 				status = 'attending';
@@ -43,6 +44,7 @@ const { state } = store('gatherpress', {
 						state.activePostId = res.event_id;
 						state.rsvpResponseStatus = res.status;
 						state.rsvpStatus = res.status;
+						actions.closeModal(null, element.ref);
 					}
 				})
 				.catch(() => {});
@@ -54,12 +56,18 @@ const { state } = store('gatherpress', {
 			const status =
 				state.rsvpStatus ??
 				getFromGlobal('eventDetails.currentUser.status');
+
 			const innerBlocks =
 				element.ref.querySelectorAll('[data-rsvp-status]');
 
 			innerBlocks.forEach((innerBlock) => {
+				const parent = innerBlock.parentNode;
+
 				if (innerBlock.getAttribute('data-rsvp-status') === status) {
 					innerBlock.style.display = '';
+
+					// Move the visible block to the start of its parent.
+					parent.insertBefore(innerBlock, parent.firstChild);
 				} else {
 					innerBlock.style.display = 'none';
 				}

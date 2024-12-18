@@ -5,10 +5,13 @@ import { store } from '@wordpress/interactivity';
 
 store('gatherpress', {
 	actions: {
-		openModal(event) {
-			event.preventDefault();
+		openModal(event = null, element = null) {
+			if (event) {
+				event.preventDefault();
+			}
 
-			const element = event.target;
+			element = element ?? event.target;
+
 			const modalManager = element.closest(
 				'.wp-block-gatherpress-modal-manager'
 			);
@@ -23,10 +26,13 @@ store('gatherpress', {
 				}
 			}
 		},
-		closeModal(event) {
-			event.preventDefault();
+		closeModal(event = null, element = null) {
+			if (event) {
+				event.preventDefault();
+			}
 
-			const element = event.target;
+			element = element ?? event.target;
+
 			const modalManager = element.closest(
 				'.wp-block-gatherpress-modal-manager'
 			);
