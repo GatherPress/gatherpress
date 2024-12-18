@@ -1,25 +1,24 @@
 /**
  * WordPress dependencies.
  */
-import { store, getContext, getElement } from '@wordpress/interactivity';
+import { store, getElement } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies.
  */
 import { getFromGlobal } from '../../helpers/globals';
 
-const { state, actions } = store('gatherpress', {
+const { state } = store('gatherpress', {
+	state: {
+		rsvpStatus:
+			getFromGlobal('eventDetails.currentUser.status') ?? 'no_status',
+	},
 	actions: {
 		updateRsvp() {
-			let status =
-				state.rsvpStatus ??
-				getFromGlobal('eventDetails.currentUser.status') ??
-				'no_status';
+			let status = 'not_attending';
 
-			if ('not_attending' === status || 'no_status' === status) {
+			if (['not_attending', 'no_status'].includes(state.rsvpStatus)) {
 				status = 'attending';
-			} else {
-				status = 'not_attending';
 			}
 
 			const guests = 0;
@@ -52,74 +51,19 @@ const { state, actions } = store('gatherpress', {
 	callbacks: {
 		renderRsvpBlock() {
 			const element = getElement();
-			const serializedInnerBlocks = JSON.parse(
-				element.ref.getAttribute('data-serialized-inner-blocks')
-			);
-			const status = getFromGlobal('eventDetails.currentUser.status');
+			const status =
+				state.rsvpStatus ??
+				getFromGlobal('eventDetails.currentUser.status');
+			const innerBlocks =
+				element.ref.querySelectorAll('[data-rsvp-status]');
 
-			if (
-				!serializedInnerBlocks ||
-				!serializedInnerBlocks[state.rsvpStatus ?? status]
-			) {
-				return;
-			}
-
-			const context = getContext();
-
-			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-block-html', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': getFromGlobal('misc.nonce'),
-				},
-				body: JSON.stringify({
-					status: state.rsvpStatus,
-					post_id: context.postId,
-					block_data:
-						serializedInnerBlocks[state.rsvpStatus ?? status],
-				}),
-			})
-				.then((response) => response.json())
-				.then((res) => {
-					if (res.success) {
-						element.ref.innerHTML = global.wp.dom.safeHTML(
-							res.content
-						);
-
-						// Initialize interactivity for the new content.
-						const interactiveElements =
-							element.ref.querySelectorAll(
-								'[data-wp-interactive]'
-							);
-
-						interactiveElements.forEach((el) => {
-							// Extract the action string (e.g., "actions.openModal").
-							const actionString =
-								el.getAttribute('data-wp-on--click');
-
-							if (
-								actionString &&
-								actionString.startsWith('actions.')
-							) {
-								// Dynamically resolve the action from the store.
-								const actionName = actionString.replace(
-									'actions.',
-									''
-								);
-
-								const action = actions[actionName];
-
-								// Validate and execute the resolved action.
-								if (typeof action === 'function') {
-									el.addEventListener('click', (e) =>
-										action(e)
-									);
-								}
-							}
-						});
-					}
-				})
-				.catch(() => {});
+			innerBlocks.forEach((innerBlock) => {
+				if (innerBlock.getAttribute('data-rsvp-status') === status) {
+					innerBlock.style.display = '';
+				} else {
+					innerBlock.style.display = 'none';
+				}
+			});
 		},
 	},
 });

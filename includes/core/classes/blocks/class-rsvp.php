@@ -74,41 +74,52 @@ class Rsvp {
 
 			if ( $tag->next_tag() ) {
 				/**
-				 * Update the serialized inner blocks to ensure the current inner blocks for the saved status
-				 * are stored correctly. This addresses the issue where saving blocks for a specific status
-				 * doesn't persist changes.
+				 * Dynamically render inner blocks based on the saved RSVP status.
 				 *
-				 * We retrieve the saved status and dynamically replace the corresponding serialized inner block
-				 * with the current inner blocks. The updated serialized inner blocks are then re-encoded and
-				 * saved as an attribute.
+				 * This ensures that the block correctly renders the inner blocks
+				 * for the currently selected RSVP status and updates the serialized
+				 * inner blocks attribute. It addresses the issue of inner blocks
+				 * not persisting properly when switching between statuses.
+				 *
+				 * The method generates dynamic markup for all statuses, wrapping each
+				 * rendered inner block set in a container with a `data-rsvp-status`
+				 * attribute.
 				 */
-				$saved_status                             = $attributes['selectedStatus'] ?? 'no_status';
-				$serialized_inner_blocks                  = $attributes['serializedInnerBlocks'] ?? '';
-				$serialized_inner_blocks                  = json_decode(
-					$serialized_inner_blocks,
-					true
-				);
-				$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
-				$serialized_inner_blocks                  = wp_json_encode( $serialized_inner_blocks );
+				$saved_status = $attributes['selectedStatus'] ?? 'no_status';
 
-				$tag->remove_attribute( 'data-saved-status' );
-				$tag->set_attribute(
-					'data-serialized-inner-blocks',
-					$serialized_inner_blocks
-				);
-				$tag->set_attribute(
-					'data-wp-interactive',
-					'gatherpress'
-				);
-				$tag->set_attribute(
-					'data-wp-context',
-					wp_json_encode( array( 'postId' => get_the_ID() ) )
-				);
-				$tag->set_attribute(
-					'data-wp-watch',
-					'callbacks.renderRsvpBlock'
-				);
+				// Decode serialized inner blocks from attributes.
+				$serialized_inner_blocks = $attributes['serializedInnerBlocks'] ?? '';
+				$serialized_inner_blocks = json_decode( $serialized_inner_blocks, true );
+
+				// Serialize the current inner blocks for the saved status.
+				$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
+
+				// Render inner blocks for all statuses.
+				$inner_blocks_markup = '';
+				foreach ( $serialized_inner_blocks as $status => $serialized_inner_block ) {
+					$inner_blocks_markup .= '<div style="display:none;" data-rsvp-status="' . esc_attr( $status ) . '">' . do_blocks( $serialized_inner_block ) . '</div>';
+				}
+
+				// Set dynamic attributes for interactivity.
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => get_the_ID() ) ) );
+				$tag->set_attribute( 'data-wp-watch', 'callbacks.renderRsvpBlock' );
+
+				// Get the updated block content.
 				$block_content = $tag->get_updated_html();
+
+				// @todo: Replace this workaround with a method to properly update inner blocks
+				// when https://github.com/WordPress/gutenberg/issues/60397 is resolved.
+				preg_match( '/<div\b[^>]*>/i', $block_content, $matches );
+
+				// Use the matched opening <div> tag or fallback to a generic <div>.
+				$opening_div = $matches[0] ?? '<div>';
+
+				// Close the block with a standard </div>.
+				$closing_div = '</div>';
+
+				// Construct the updated block content with the new inner blocks markup.
+				$block_content = $opening_div . $inner_blocks_markup . $closing_div;
 			}
 		}
 
