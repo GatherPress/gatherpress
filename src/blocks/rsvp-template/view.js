@@ -6,7 +6,7 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../../helpers/globals';
+import { getFromGlobal, safeHTML } from '../../helpers/globals';
 
 const { state } = store('gatherpress', {
 	callbacks: {
@@ -49,7 +49,7 @@ const { state } = store('gatherpress', {
 
 						element.ref.insertAdjacentHTML(
 							'beforebegin',
-							global.wp.dom.safeHTML(res.content)
+							safeHTML(res.content)
 						);
 					}
 				})

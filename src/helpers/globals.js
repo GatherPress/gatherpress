@@ -49,3 +49,42 @@ export function setToGlobal(args, value) {
 	properties.reduce((all, item) => (all[item] ??= {}), GatherPress)[last] =
 		value;
 }
+
+/**
+ * Strip <script> tags and "on*" attributes from HTML to sanitize it.
+ *
+ * This function removes <script> elements and any attributes starting with "on" (e.g., event handlers)
+ * to mitigate potential XSS vulnerabilities. It is a similar implementation to WordPress Core's `safeHTML` function
+ * in `dom.js`, tailored for use when the Core implementation is unavailable or unnecessary.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} html - The raw HTML string to sanitize.
+ *
+ * @return {string} The sanitized HTML string.
+ */
+export function safeHTML(html) {
+	const { body } = document.implementation.createHTMLDocument('');
+	body.innerHTML = html;
+	const elements = body.getElementsByTagName('*');
+	let elementIndex = elements.length;
+
+	while (elementIndex--) {
+		const element = elements[elementIndex];
+		if ('SCRIPT' === element.tagName) {
+			if (element.parentNode) {
+				element.parentNode.removeChild(element);
+			}
+		} else {
+			let attributeIndex = element.attributes.length;
+			while (attributeIndex--) {
+				const { name: key } = element.attributes[attributeIndex];
+				if (key.startsWith('on')) {
+					element.removeAttribute(key);
+				}
+			}
+		}
+	}
+
+	return body.innerHTML;
+}
