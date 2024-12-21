@@ -8,7 +8,7 @@
  * @since 1.0.0
  */
 
-$gatherpress_icon         = $attributes['gatherpress_icon'] ?? 'yes-alt';
+$gatherpress_icon         = $attributes['icon'] ?? 'nametag';
 $gatherpress_icon_color   = $attributes['iconColor'] ?? '';
 $gatherpress_icon_size    = $attributes['iconSize'] ?? 20;
 $gatherpress_svg_base_url = GATHERPRESS_CORE_URL . '/assets/svg/';
@@ -53,7 +53,8 @@ $gatherpress_svg_args      = array(
 $gatherpress_allowed_tags  = array_merge( $gatherpress_kses_defaults, $gatherpress_svg_args );
 
 printf(
-	'<div class="wp-block-gatherpress-gatherpress_icon-block" style="%s">%s</div>',
+	'<div %1$s class="wp-block-gatherpress-gatherpress_icon-block" style="%2$s">%3$s</div>',
+	wp_kses_data( get_block_wrapper_attributes() ),
 	esc_attr( $gatherpress_styles ),
 	wp_kses( $gatherpress_svg_content, $gatherpress_allowed_tags )
 );

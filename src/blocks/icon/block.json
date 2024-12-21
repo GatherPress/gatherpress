@@ -11,7 +11,7 @@
 	"attributes": {
 		"icon": {
 			"type": "string",
-			"default": "yes-alt"
+			"default": "nametag"
 		},
 		"iconColor": {
 			"type": "string",
@@ -19,7 +19,7 @@
 		},
 		"iconSize": {
 			"type": "number",
-			"default": 20
+			"default": 24
 		}
 	},
 	"supports": {

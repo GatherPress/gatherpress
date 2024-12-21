@@ -22,6 +22,10 @@ const Edit = ({ attributes, setAttributes }) => {
 	// Icon original source: https://github.com/WordPress/dashicons/tree/master/svg-min.
 	const ICON_OPTIONS = [
 		{ label: __('Calendar', 'gatherpress'), value: 'calendar' },
+		{ label: __('Dismiss', 'gatherpress'), value: 'dismiss' },
+		{ label: __('Editor Help', 'gatherpress'), value: 'editor-help' },
+		{ label: __('Location', 'gatherpress'), value: 'location' },
+		{ label: __('Nametag', 'gatherpress'), value: 'nametag' },
 		{ label: __('Yes Alt', 'gatherpress'), value: 'yes-alt' },
 	];
 
@@ -32,7 +36,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				.then((svg) => setSvgContent(svg))
 				.catch(() =>
 					setSvgContent(
-						'<svg><text x="0" y="15">SVG Error</text></svg>'
+						`<svg><text x="0" y="15">${__('SVG Error', 'gatherpress')}</text></svg>`
 					)
 				);
 		}
@@ -65,8 +69,8 @@ const Edit = ({ attributes, setAttributes }) => {
 							setAttributes({ iconSize: newSize })
 						}
 						min={8}
-						max={64}
-						initialPosition={20}
+						max={240}
+						initialPosition={24}
 					/>
 				</PanelBody>
 			</InspectorControls>

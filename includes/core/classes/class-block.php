@@ -355,6 +355,12 @@ class Block {
 			return $tag;
 		}
 
+		// If unable to locate a child tag, assume the current tag is valid.
+		if ( $tag->next_tag() ) {
+			return $tag;
+		}
+
+		// Return null if no valid tag is found.
 		return null;
 	}
 }
