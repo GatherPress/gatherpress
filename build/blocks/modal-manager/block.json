@@ -10,6 +10,18 @@
   "description": "Manage modals and their triggers with ease.",
   "attributes": {},
   "supports": {
+    "align": [
+      "wide",
+      "full"
+    ],
+    "layout": {
+      "allowSwitching": false,
+      "allowInheriting": false,
+      "default": {
+        "justifyContent": "center",
+        "type": "flex"
+      }
+    },
     "html": false,
     "interactivity": true
   },

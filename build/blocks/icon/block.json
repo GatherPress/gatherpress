@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "gatherpress/icon",
+  "version": "1.0.0",
+  "title": "Icon",
+  "category": "gatherpress",
+  "icon": "format-image",
+  "example": {},
+  "description": "Adds customizable icons to visually enhance your content.",
+  "attributes": {
+    "icon": {
+      "type": "string",
+      "default": "yes-alt"
+    },
+    "iconColor": {
+      "type": "string",
+      "default": ""
+    },
+    "iconSize": {
+      "type": "number",
+      "default": 20
+    }
+  },
+  "supports": {
+    "html": false
+  },
+  "textdomain": "gatherpress",
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php"
+}
