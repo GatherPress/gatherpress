@@ -80,6 +80,7 @@ class Test_Block extends Base {
 			'gatherpress/add-to-calendar',
 			'gatherpress/event-date',
 			'gatherpress/events-list',
+			'gatherpress/icon',
 			'gatherpress/modal',
 			'gatherpress/modal-content',
 			'gatherpress/modal-manager',
