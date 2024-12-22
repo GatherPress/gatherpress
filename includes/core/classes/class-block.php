@@ -97,6 +97,7 @@ class Block {
 			if ( is_dir( $block_metadata_path ) ) {
 				// Apply custom settings if available.
 				$settings = $custom_block_settings[ $block ] ?? array();
+
 				register_block_type( $block_metadata_path, $settings );
 			}
 		}

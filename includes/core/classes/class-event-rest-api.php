@@ -99,7 +99,6 @@ class Event_Rest_Api {
 			$this->email_route(),
 			$this->rsvp_route(),
 			$this->rsvp_status_html_route(),
-			$this->rsvp_block_html_route(),
 			$this->events_list_route(),
 		);
 	}
@@ -190,35 +189,6 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'rsvp_status_html' ),
-				'permission_callback' => '__return_true',
-				'args'                => array(
-					'post_id'    => array(
-						'required'          => true,
-						'validate_callback' => array( Validate::class, 'event_post_id' ),
-					),
-					'block_data' => array(
-						'required' => true,
-					),
-				),
-			),
-		);
-	}
-
-	/**
-	 * Defines the REST route for dynamically rendering RSVP block HTML.
-	 *
-	 * Registers a REST API route to process block data and generate RSVP block markup on demand.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array Configuration for the REST route.
-	 */
-	protected function rsvp_block_html_route(): array {
-		return array(
-			'route' => 'rsvp-block-html',
-			'args'  => array(
-				'methods'             => WP_REST_Server::EDITABLE,
-				'callback'            => array( $this, 'rsvp_block_html' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
 					'post_id'    => array(
@@ -618,32 +588,6 @@ class Event_Rest_Api {
 		$response = array(
 			'success' => $success,
 			'content' => $content,
-		);
-
-		return new WP_REST_Response( $response );
-	}
-
-	/**
-	 * Processes a REST API request to render RSVP block HTML.
-	 *
-	 * Generates block content using provided data and returns it in the API response.
-	 * Typically used for dynamic updates of RSVP block content.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param WP_REST_Request $request The REST API request containing parameters like post ID and block data.
-	 *
-	 * @return WP_REST_Response The response with the rendered block content and success status.
-	 */
-	public function rsvp_block_html( WP_REST_Request $request ): WP_REST_Response {
-		$params        = $request->get_params();
-		$post_id       = intval( $params['post_id'] );
-		$block_data    = $params['block_data'];
-		$block_content = do_blocks( $block_data );
-
-		$response = array(
-			'success' => true,
-			'content' => $block_content,
 		);
 
 		return new WP_REST_Response( $response );

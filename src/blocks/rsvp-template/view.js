@@ -38,6 +38,7 @@ const { state } = store('gatherpress', {
 				.then((res) => {
 					if (res.success) {
 						const parent = element.ref.parentElement;
+
 						Array.from(parent.children).forEach((sibling) => {
 							if (
 								sibling !== element.ref &&
