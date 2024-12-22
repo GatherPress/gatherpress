@@ -78,31 +78,37 @@ class Modal_Manager {
 		$block_instance = Block::get_instance();
 
 		if (
-			'core/button' === $block['blockName'] &&
-			isset( $block['attrs']['className'] )
-		) {
-			$tag        = new WP_HTML_Tag_Processor( $block_content );
-			$button_tag = $block_instance->locate_button_tag( $tag, 'button' );
-
-			if ( empty( $button_tag ) ) {
-				$tag        = new WP_HTML_Tag_Processor( $block_content );
-				$button_tag = $block_instance->locate_button_tag( $tag, 'a' );
-			}
-
-			if (
-				$button_tag &&
-				false !== strpos( $block['attrs']['className'], 'gatherpress--open-modal' )
-			) {
-				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$button_tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
-			}
-
-			if (
-				$button_tag &&
+			isset( $block['attrs']['className'] ) &&
+			(
+				false !== strpos( $block['attrs']['className'], 'gatherpress--open-modal' ) ||
 				false !== strpos( $block['attrs']['className'], 'gatherpress--close-modal' )
-			) {
-				$button_tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$button_tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
+			)
+		) {
+			$action = 'actions.openModal';
+
+			if ( false !== strpos( $block['attrs']['className'], 'gatherpress--close-modal' ) ) {
+				$action = 'actions.closeModal';
+			}
+
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			if ( 'core/button' === $block['blockName'] ) {
+				$tag = $block_instance->locate_button_tag( $tag );
+			} elseif ( 'gatherpress/icon' === $block['blockName'] ) {
+				$tag->next_tag();
+				$tag->next_tag();
+				$tag->set_attribute( 'tabindex', '0' );
+				$tag->set_attribute( 'role', 'button' );
+				$tag->set_attribute( 'data-wp-on--keydown', $action . 'KeyHandler' );
+			} else {
+				$tag->next_tag();
+				$tag->set_attribute( 'tabindex', '0' );
+				$tag->set_attribute( 'role', 'button' );
+			}
+
+			if ( $tag ) {
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-on--click', $action );
 			}
 
 			$block_content = $tag->get_updated_html();

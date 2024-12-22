@@ -343,24 +343,16 @@ class Block {
 	 * within the given HTML tag processor instance. If the specified tags are found, the
 	 * processor is returned for further manipulation.
 	 *
-	 * @since 1.0.0
-	 *
-	 * @param WP_HTML_Tag_Processor $tag      The HTML tag processor instance for the block content.
-	 * @param string                $tag_name The name of the tag to locate (e.g., 'button', 'a'). Defaults to 'button'.
+	 * @param WP_HTML_Tag_Processor $tag The HTML tag processor instance for the block content.
 	 *
 	 * @return WP_HTML_Tag_Processor|null The tag processor instance if the specified tag is located, or null otherwise.
+	 * @since 1.0.0
 	 */
-	public function locate_button_tag( WP_HTML_Tag_Processor $tag, $tag_name = 'button' ): ?WP_HTML_Tag_Processor {
-		if ( $tag->next_tag( array( 'tag_name' => 'div' ) ) && $tag->next_tag( array( 'tag_name' => $tag_name ) ) ) {
+	public function locate_button_tag( WP_HTML_Tag_Processor $tag ): ?WP_HTML_Tag_Processor {
+		if ( $tag->next_tag( array( 'tag_name' => 'div' ) ) && $tag->next_tag() ) {
 			return $tag;
 		}
 
-		// If unable to locate a child tag, assume the current tag is valid.
-		if ( $tag->next_tag() ) {
-			return $tag;
-		}
-
-		// Return null if no valid tag is found.
 		return null;
 	}
 }

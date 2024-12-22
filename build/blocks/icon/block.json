@@ -23,9 +23,22 @@
     }
   },
   "supports": {
-    "html": false
+    "align": [
+      "left",
+      "center",
+      "right"
+    ],
+    "anchor": true,
+    "html": false,
+    "spacing": {
+      "margin": true
+    },
+    "shadow": {
+      "__experimentalSkipSerialization": true
+    }
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
   "render": "file:./render.php"
 }

@@ -3,7 +3,7 @@
  */
 import { store } from '@wordpress/interactivity';
 
-store('gatherpress', {
+const { actions } = store('gatherpress', {
 	actions: {
 		openModal(event = null, element = null) {
 			if (event) {
@@ -26,6 +26,11 @@ store('gatherpress', {
 				}
 			}
 		},
+		openModalKeyHandler(event) {
+			if ('Enter' === event.key || ' ' === event.key) {
+				actions.openModal(event);
+			}
+		},
 		closeModal(event = null, element = null) {
 			if (event) {
 				event.preventDefault();
@@ -45,6 +50,11 @@ store('gatherpress', {
 				if (modal) {
 					modal.classList.remove('gatherpress--is-visible');
 				}
+			}
+		},
+		closeModalKeyHandler(event) {
+			if ('Enter' === event.key || ' ' === event.key) {
+				actions.closeModal(event);
 			}
 		},
 	},

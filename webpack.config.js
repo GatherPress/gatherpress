@@ -53,6 +53,7 @@ module.exports = [
 		entry: {
 			...defaultConfig[0].entry(),
 			admin_style: path.resolve(process.cwd(), 'src', 'admin.scss'),
+			utility_style: path.resolve(process.cwd(), 'src', 'utility.scss'),
 			editor: path.resolve(process.cwd(), 'src', 'editor.js'),
 			panels: path.resolve(process.cwd(), 'src/panels', 'index.js'),
 			modals: path.resolve(process.cwd(), 'src/modals', 'index.js'),

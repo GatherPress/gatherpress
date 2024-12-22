@@ -8,9 +8,9 @@
  * @since 1.0.0
  */
 
-$gatherpress_icon         = $attributes['icon'] ?? 'nametag';
-$gatherpress_icon_color   = $attributes['iconColor'] ?? '';
-$gatherpress_icon_size    = $attributes['iconSize'] ?? 20;
+$gatherpress_icon         = ! empty( $attributes['icon'] ) ? $attributes['icon'] : 'nametag';
+$gatherpress_icon_color   = ! empty( $attributes['iconColor'] ) ? $attributes['iconColor'] : 'inherit';
+$gatherpress_icon_size    = ! empty( $attributes['iconSize'] ) ? $attributes['iconSize'] : 20;
 $gatherpress_svg_base_url = GATHERPRESS_CORE_URL . '/assets/svg/';
 $gatherpress_svg_url      = $gatherpress_svg_base_url . $gatherpress_icon . '.svg';
 $gatherpress_svg_content  = '<svg><text x="0" y="15">' . esc_html__( 'SVG Error', 'gatherpress' ) . '</text></svg>';
@@ -53,7 +53,7 @@ $gatherpress_svg_args      = array(
 $gatherpress_allowed_tags  = array_merge( $gatherpress_kses_defaults, $gatherpress_svg_args );
 
 printf(
-	'<div %1$s class="wp-block-gatherpress-gatherpress_icon-block" style="%2$s">%3$s</div>',
+	'<div %1$s><div style="%2$s">%3$s</div></div>',
 	wp_kses_data( get_block_wrapper_attributes() ),
 	esc_attr( $gatherpress_styles ),
 	wp_kses( $gatherpress_svg_content, $gatherpress_allowed_tags )

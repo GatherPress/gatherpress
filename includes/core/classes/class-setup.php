@@ -402,8 +402,6 @@ class Setup {
 			return;
 		}
 
-		wp_enqueue_style( 'gatherpress-admin-style' );
-
 		if (
 			'gatherpress_suppress_site_notification' === filter_input( INPUT_GET, 'action' ) &&
 			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&

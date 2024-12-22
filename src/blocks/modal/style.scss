@@ -1,8 +1,4 @@
 .wp-block-gatherpress-modal {
-	&.gatherpress--is-visible {
-		display: block;
-	}
-
 	display: none;
 	max-width: none !important;
 	position: fixed !important;
