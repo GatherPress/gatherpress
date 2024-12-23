@@ -29,6 +29,14 @@ class Rsvp {
 	use Singleton;
 
 	/**
+	 * Constant representing the Block Name.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const BLOCK_NAME = 'gatherpress/rsvp-v2';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -67,7 +75,7 @@ class Rsvp {
 	public function transform_block_content( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 
-		if ( 'gatherpress/rsvp-v2' === $block['blockName'] ) {
+		if ( self::BLOCK_NAME === $block['blockName'] ) {
 			$inner_blocks = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
 			$tag          = new WP_HTML_Tag_Processor( $block_content );
 			$attributes   = isset( $block['attrs'] ) ? $block['attrs'] : array();
@@ -143,14 +151,6 @@ class Rsvp {
 
 			// Update the block content with new attributes.
 			$block_content = $tag->get_updated_html();
-		}
-
-		if (
-			isset( $block['attrs']['className'] ) &&
-			false !== strpos( $block['attrs']['className'], 'gatherpress--has-registration-url' ) &&
-			! get_option( 'users_can_register' )
-		) {
-			return '';
 		}
 
 		return $block_content;

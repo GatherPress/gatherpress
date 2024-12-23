@@ -24,6 +24,7 @@ const Edit = ({ attributes, setAttributes }) => {
 		{ label: __('Calendar', 'gatherpress'), value: 'calendar' },
 		{ label: __('Dismiss', 'gatherpress'), value: 'dismiss' },
 		{ label: __('Editor Help', 'gatherpress'), value: 'editor-help' },
+		{ label: __('Groups', 'gatherpress'), value: 'groups' },
 		{ label: __('Location', 'gatherpress'), value: 'location' },
 		{ label: __('Nametag', 'gatherpress'), value: 'nametag' },
 		{ label: __('Yes Alt', 'gatherpress'), value: 'yes-alt' },
