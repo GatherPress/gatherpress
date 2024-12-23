@@ -11,7 +11,7 @@
 $gatherpress_icon         = ! empty( $attributes['icon'] ) ? $attributes['icon'] : 'nametag';
 $gatherpress_icon_color   = ! empty( $attributes['iconColor'] ) ? $attributes['iconColor'] : 'inherit';
 $gatherpress_icon_size    = ! empty( $attributes['iconSize'] ) ? $attributes['iconSize'] : 20;
-$gatherpress_svg_base_url = GATHERPRESS_CORE_URL . '/assets/svg/';
+$gatherpress_svg_base_url = GATHERPRESS_CORE_URL . '/includes/assets/svg/';
 $gatherpress_svg_url      = $gatherpress_svg_base_url . $gatherpress_icon . '.svg';
 $gatherpress_svg_content  = '<svg><text x="0" y="15">' . esc_html__( 'SVG Error', 'gatherpress' ) . '</text></svg>';
 $gatherpress_response     = wp_safe_remote_get( $gatherpress_svg_url );

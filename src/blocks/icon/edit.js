@@ -17,7 +17,7 @@ const Edit = ({ attributes, setAttributes }) => {
 	const blockProps = useBlockProps();
 	const { icon, iconColor, iconSize } = attributes;
 	const [svgContent, setSvgContent] = useState('');
-	const svgBaseUrl = `${getFromGlobal('urls.pluginUrl')}assets/svg/`;
+	const svgBaseUrl = `${getFromGlobal('urls.pluginUrl')}includes/assets/svg/`;
 
 	// Icon original source: https://github.com/WordPress/dashicons/tree/master/svg-min.
 	const ICON_OPTIONS = [
