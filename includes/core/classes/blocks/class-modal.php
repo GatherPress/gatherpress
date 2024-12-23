@@ -60,29 +60,28 @@ class Modal {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'modify_block_output' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'adjust_block_z_index' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'filter_login_modal' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'filter_rsvp_modal' ), 10, 2 );
 	}
 
 	/**
-	 * Modifies the block output to dynamically adjust attributes or styles.
+	 * Adjusts the block's `z-index` dynamically.
 	 *
 	 * This method processes the block's rendered HTML content and applies
-	 * adjustments to its attributes, styles, or structure based on the block's
-	 * attributes or context. It ensures the block behaves as intended when
-	 * rendered on the front end.
+	 * the `z-index` value from the block's attributes to the block's `style` attribute.
+	 * If no `z-index` is specified, a default value of `1000` is used.
 	 *
-	 * Custom modifications, such as dynamically setting styles or attributes,
-	 * are handled within this method to enhance the block's functionality or
-	 * interactivity.
+	 * This ensures proper stacking behavior for the block in the DOM.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The HTML content of the block.
 	 * @param array  $block         The parsed block data.
 	 *
-	 * @return string The updated block content with the applied adjustments.
+	 * @return string The updated block content with the applied `z-index` styling.
 	 */
-	public function modify_block_output( string $block_content, array $block ): string {
+	public function adjust_block_z_index( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 
 		if ( self::BLOCK_NAME === $block['blockName'] ) {
@@ -101,6 +100,60 @@ class Modal {
 			}
 
 			$block_content = $tag->get_updated_html();
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Filters the output of login modals for logged-in users.
+	 *
+	 * This method checks if the block is a `gatherpress/modal` block with the
+	 * `gatherpress--is-login-modal` class. If the user is logged in, it removes
+	 * the block's output.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 * @param array  $block         The parsed block data.
+	 *
+	 * @return string The modified block content. Returns an empty string if the block should be removed.
+	 */
+	public function filter_login_modal( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME === $block['blockName'] ) {
+			if (
+				false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-login-modal' ) &&
+				is_user_logged_in()
+			) {
+				return '';
+			}
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Filters the output of RSVP modals for non-logged-in users.
+	 *
+	 * This method checks if the block is a `gatherpress/modal` block with the
+	 * `gatherpress--is-rsvp-modal` class. If the user is not logged in, it removes
+	 * the block's output.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 * @param array  $block         The parsed block data.
+	 *
+	 * @return string The modified block content. Returns an empty string if the block should be removed.
+	 */
+	public function filter_rsvp_modal( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME === $block['blockName'] ) {
+			if (
+				false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-rsvp-modal' ) &&
+				! is_user_logged_in()
+			) {
+				return '';
+			}
 		}
 
 		return $block_content;

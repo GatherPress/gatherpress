@@ -77,22 +77,6 @@ class Modal_Manager {
 	public function inject_modal_behavior( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 
-		if ( 'gatherpress/modal' === $block['blockName'] ) {
-			if (
-				false !== strpos( $block['attrs']['className'], 'gatherpress--is-login-modal' ) &&
-				is_user_logged_in()
-			) {
-				return '';
-			}
-
-			if (
-				false !== strpos( $block['attrs']['className'], 'gatherpress--is-rsvp-modal' ) &&
-				! is_user_logged_in()
-			) {
-				return '';
-			}
-		}
-
 		if (
 			isset( $block['attrs']['className'] ) &&
 			(
