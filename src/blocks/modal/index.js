@@ -31,5 +31,5 @@ registerBlockType(metadata, {
 			</div>
 		);
 	},
-	variations
+	variations,
 });
