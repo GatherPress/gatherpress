@@ -69,7 +69,7 @@ const NO_STATUS = [
 								'core/paragraph',
 								{
 									content: __(
-										'To set or change your attending status, simply click the <strong>Attend</strong> button below.',
+										'To set or change your attending status, simply click the <strong>Attending</strong> button below.',
 										'gatherpress'
 									),
 								},
@@ -97,7 +97,10 @@ const NO_STATUS = [
 									[
 										'core/button',
 										{
-											text: __('Attend', 'gatherpress'),
+											text: __(
+												'Attending',
+												'gatherpress'
+											),
 											tagName: 'button',
 											className:
 												'gatherpress--update-rsvp',

@@ -13,12 +13,14 @@ const NOT_ATTENDING = [
 				{
 					align: 'center',
 					layout: { type: 'flex', justifyContent: 'center' },
+					metadata: {
+						name: __('RSVP Buttons', 'gatherpress'),
+					},
 				},
 				[
 					[
 						'core/button',
 						{
-							// text: initialLabel,
 							text: __('Edit RSVP', 'gatherpress'),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
@@ -27,19 +29,75 @@ const NOT_ATTENDING = [
 				],
 			],
 			[
+				'core/group',
+				{
+					style: {
+						spacing: {
+							blockGap: 'var:preset|spacing|20',
+						},
+					},
+					layout: {
+						type: 'flex',
+						flexWrap: 'nowrap',
+					},
+				},
+				[
+					[
+						'gatherpress/icon',
+						{
+							icon: 'dismiss',
+							iconSize: 24,
+						},
+					],
+					[
+						'core/paragraph',
+						{
+							style: {
+								spacing: {
+									margin: {
+										top: '0',
+									},
+									padding: {
+										top: '0',
+									},
+								},
+							},
+							content: __(
+								'<strong>Not Attending</strong>',
+								'gatherpress'
+							),
+						},
+					],
+				],
+			],
+			[
 				'gatherpress/modal',
-				{ className: 'gatherpress-rsvp-modal' },
+				{
+					className: 'gatherpress--is-rsvp-modal',
+					metadata: {
+						name: __('RSVP Modal', 'gatherpress'),
+					},
+				},
 				[
 					[
 						'gatherpress/modal-content',
-						{ className: 'gatherpress-rsvp-modal-content' },
+						{},
 						[
 							[
-								'core/heading',
+								'core/paragraph',
 								{
-									level: 3,
+									style: {
+										spacing: {
+											margin: {
+												top: '0',
+											},
+											padding: {
+												top: '0',
+											},
+										},
+									},
 									content: __(
-										'Update your RSVP',
+										"<strong>You're Not Attending</strong>",
 										'gatherpress'
 									),
 								},
@@ -61,6 +119,16 @@ const NOT_ATTENDING = [
 										type: 'flex',
 										justifyContent: 'flex-start',
 									},
+									style: {
+										spacing: {
+											margin: {
+												bottom: '0',
+											},
+											padding: {
+												bottom: '0',
+											},
+										},
+									},
 								},
 								[
 									[
@@ -81,7 +149,7 @@ const NOT_ATTENDING = [
 											text: __('Close', 'gatherpress'),
 											tagName: 'button',
 											className:
-												'gatherpress--close-modal',
+												'is-style-outline gatherpress--close-modal',
 										},
 									],
 								],

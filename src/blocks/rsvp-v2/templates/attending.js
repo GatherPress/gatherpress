@@ -13,6 +13,9 @@ const ATTENDING = [
 				{
 					align: 'center',
 					layout: { type: 'flex', justifyContent: 'center' },
+					metadata: {
+						name: __('RSVP Buttons', 'gatherpress'),
+					},
 				},
 				[
 					[
@@ -26,9 +29,51 @@ const ATTENDING = [
 				],
 			],
 			[
+				'core/group',
+				{
+					style: {
+						spacing: {
+							blockGap: 'var:preset|spacing|20',
+						},
+					},
+					layout: {
+						type: 'flex',
+						flexWrap: 'nowrap',
+					},
+				},
+				[
+					[
+						'gatherpress/icon',
+						{
+							icon: 'yes-alt',
+							iconSize: 24,
+						},
+					],
+					[
+						'core/paragraph',
+						{
+							style: {
+								spacing: {
+									margin: {
+										top: '0',
+									},
+									padding: {
+										top: '0',
+									},
+								},
+							},
+							content: __(
+								'<strong>Attending</strong>',
+								'gatherpress'
+							),
+						},
+					],
+				],
+			],
+			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress-rsvp-modal',
+					className: 'gatherpress--is-rsvp-modal',
 					metadata: {
 						name: __('RSVP Modal', 'gatherpress'),
 					},
@@ -36,14 +81,23 @@ const ATTENDING = [
 				[
 					[
 						'gatherpress/modal-content',
-						{ className: 'gatherpress-rsvp-modal-content' },
+						{},
 						[
 							[
-								'core/heading',
+								'core/paragraph',
 								{
-									level: 3,
+									style: {
+										spacing: {
+											margin: {
+												top: '0',
+											},
+											padding: {
+												top: '0',
+											},
+										},
+									},
 									content: __(
-										'Update your RSVP',
+										"<strong>You're Attending</strong>",
 										'gatherpress'
 									),
 								},
@@ -65,6 +119,16 @@ const ATTENDING = [
 										type: 'flex',
 										justifyContent: 'flex-start',
 									},
+									style: {
+										spacing: {
+											margin: {
+												bottom: '0',
+											},
+											padding: {
+												bottom: '0',
+											},
+										},
+									},
 								},
 								[
 									[
@@ -85,7 +149,7 @@ const ATTENDING = [
 											text: __('Close', 'gatherpress'),
 											tagName: 'button',
 											className:
-												'gatherpress--close-modal',
+												'is-style-outline gatherpress--close-modal',
 										},
 									],
 								],
