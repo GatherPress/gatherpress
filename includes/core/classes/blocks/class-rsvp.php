@@ -97,7 +97,11 @@ class Rsvp {
 				// Render inner blocks for all statuses.
 				$inner_blocks_markup = '';
 				foreach ( $serialized_inner_blocks as $status => $serialized_inner_block ) {
-					$inner_blocks_markup .= '<div style="display:none;" data-rsvp-status="' . esc_attr( $status ) . '">' . do_blocks( $serialized_inner_block ) . '</div>';
+					$inner_blocks_markup .= sprintf(
+						'<div style="display:none;" data-rsvp-status="%s">%s</div>',
+						esc_attr( $status ),
+						do_blocks( $serialized_inner_block )
+					);
 				}
 
 				// Set dynamic attributes for interactivity.

@@ -36,6 +36,14 @@ class Rsvp_Template {
 	use Singleton;
 
 	/**
+	 * Constant representing the Block Name.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const BLOCK_NAME = 'gatherpress/rsvp-template';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -73,7 +81,7 @@ class Rsvp_Template {
 	 * @return string The filtered block content.
 	 */
 	public function ensure_block_styles_loaded( string $block_content, array $block ): string {
-		if ( 'gatherpress/rsvp-template' === $block['blockName'] ) {
+		if ( self::BLOCK_NAME === $block['blockName'] ) {
 			$block_instance = Block::get_instance();
 			$tag            = new WP_HTML_Tag_Processor( $block_content );
 
@@ -130,7 +138,11 @@ class Rsvp_Template {
 
 			if ( -1 === $response_id ) {
 				$blocks                 = wp_json_encode( $block->parsed_block );
-				$rsvp_response_template = '<div data-wp-interactive="gatherpress" data-wp-context=\'{ "postId": ' . intval( get_the_ID() ) . ' }\' data-wp-watch="callbacks.renderBlocks" data-blocks="' . esc_attr( $blocks ) . '"></div>';
+				$rsvp_response_template = sprintf(
+					'<div data-wp-interactive="gatherpress" data-wp-context=\'{ "postId": %d }\' data-wp-watch="callbacks.renderBlocks" data-blocks="%s"></div>',
+					intval( get_the_ID() ),
+					esc_attr( $blocks )
+				);
 				continue;
 			}
 
