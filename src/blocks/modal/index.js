@@ -10,7 +10,6 @@ import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
 import edit from './edit';
 import metadata from './block.json';
 import './style.scss';
-import variations from './variations';
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -31,5 +30,4 @@ registerBlockType(metadata, {
 			</div>
 		);
 	},
-	variations,
 });

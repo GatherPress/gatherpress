@@ -1,12 +1,19 @@
 /**
  * WordPress dependencies.
  */
+import { __ } from '@wordpress/i18n';
 import {
+	BlockControls,
 	InnerBlocks,
-	InspectorControls,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import { PanelBody } from '@wordpress/components';
+import { ToolbarButton, ToolbarGroup } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+
+/**
+ * Internal dependencies.
+ */
+import RsvpManager from './rsvp-manager';
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -22,6 +29,12 @@ import { PanelBody } from '@wordpress/components';
  */
 const Edit = () => {
 	const blockProps = useBlockProps();
+	const [editMode, setEditMode] = useState(false);
+	const onEditClick = (e) => {
+		e.preventDefault();
+		setEditMode(!editMode);
+	};
+	const [defaultStatus, setDefaultStatus] = useState('attending');
 
 	const TEMPLATE = [
 		[
@@ -40,14 +53,28 @@ const Edit = () => {
 	];
 
 	return (
-		<>
-			<InspectorControls>
-				<PanelBody></PanelBody>
-			</InspectorControls>
-			<div {...blockProps}>
-				<InnerBlocks template={TEMPLATE} />
-			</div>
-		</>
+		<div {...blockProps}>
+			<BlockControls>
+				<ToolbarGroup>
+					<ToolbarButton
+						label={__('Edit', 'gatherpress')}
+						text={
+							editMode
+								? __('Preview', 'gatherpress')
+								: __('Edit', 'gatherpress')
+						}
+						onClick={onEditClick}
+					/>
+				</ToolbarGroup>
+			</BlockControls>
+			{editMode && (
+				<RsvpManager
+					defaultStatus={defaultStatus}
+					setDefaultStatus={setDefaultStatus}
+				/>
+			)}
+			{!editMode && <InnerBlocks template={TEMPLATE} />}
+		</div>
 	);
 };
 export default Edit;

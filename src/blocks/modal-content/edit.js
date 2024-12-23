@@ -11,7 +11,7 @@ import { PanelBody, RangeControl } from '@wordpress/components';
 const Edit = ({ attributes, setAttributes }) => {
 	const { style = {} } = attributes;
 	const { dimensions = {}, color = {} } = style;
-	const width = parseInt(dimensions.width || '320px', 10);
+	const maxWidth = parseInt(dimensions.maxWidth || '400px', 10);
 
 	const blockProps = useBlockProps({
 		style: {
@@ -26,21 +26,21 @@ const Edit = ({ attributes, setAttributes }) => {
 			<InspectorControls>
 				<PanelBody title="Width Settings">
 					<RangeControl
-						label="Width"
-						value={width}
+						label="Max Width"
+						value={maxWidth}
 						onChange={(value) =>
 							setAttributes({
 								style: {
 									...style,
 									dimensions: {
 										...dimensions,
-										width: `${value}px`,
+										maxWidth: `${value}px`,
 									},
 								},
 							})
 						}
-						min={320}
-						max={800}
+						min={300}
+						max={900}
 					/>
 				</PanelBody>
 			</InspectorControls>

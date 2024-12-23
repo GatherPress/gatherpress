@@ -77,6 +77,22 @@ class Modal_Manager {
 	public function inject_modal_behavior( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 
+		if ( 'gatherpress/modal' === $block['blockName'] ) {
+			if (
+				false !== strpos( $block['attrs']['className'], 'gatherpress--is-login-modal' ) &&
+				is_user_logged_in()
+			) {
+				return '';
+			}
+
+			if (
+				false !== strpos( $block['attrs']['className'], 'gatherpress--is-rsvp-modal' ) &&
+				! is_user_logged_in()
+			) {
+				return '';
+			}
+		}
+
 		if (
 			isset( $block['attrs']['className'] ) &&
 			(
@@ -99,7 +115,7 @@ class Modal_Manager {
 				$tag->next_tag();
 				$tag->set_attribute( 'tabindex', '0' );
 				$tag->set_attribute( 'role', 'button' );
-				$tag->set_attribute( 'data-wp-on--keydown', $action . 'KeyHandler' );
+				$tag->set_attribute( 'data-wp-on--keydown', $action . 'OnEnter' );
 			} else {
 				$tag->next_tag();
 				$tag->set_attribute( 'tabindex', '0' );

@@ -19,7 +19,7 @@
           "padding": "20px"
         },
         "dimensions": {
-          "width": "320px"
+          "maxWidth": "400px"
         }
       }
     },

@@ -27,7 +27,12 @@ const ATTENDING = [
 			],
 			[
 				'gatherpress/modal',
-				{ className: 'gatherpress-rsvp-modal' },
+				{
+					className: 'gatherpress-rsvp-modal',
+					metadata: {
+						name: __('RSVP Modal', 'gatherpress'),
+					},
+				},
 				[
 					[
 						'gatherpress/modal-content',

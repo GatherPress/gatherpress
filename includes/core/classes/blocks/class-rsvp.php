@@ -141,6 +141,14 @@ class Rsvp {
 			$block_content = $tag->get_updated_html();
 		}
 
+		if (
+			isset( $block['attrs']['className'] ) &&
+			false !== strpos( $block['attrs']['className'], 'gatherpress--has-registration-url' ) &&
+			! get_option( 'users_can_register' )
+		) {
+			return '';
+		}
+
 		return $block_content;
 	}
 }

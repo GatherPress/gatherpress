@@ -1,7 +1,12 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
+
+/**
+ * Internal dependencies.
+ */
+import { getFromGlobal } from '../../../helpers/globals';
 
 const NO_STATUS = [
 	[
@@ -13,12 +18,14 @@ const NO_STATUS = [
 				{
 					align: 'center',
 					layout: { type: 'flex', justifyContent: 'center' },
+					metadata: {
+						name: __('RSVP Buttons', 'gatherpress'),
+					},
 				},
 				[
 					[
 						'core/button',
 						{
-							// text: initialLabel,
 							text: __('RSVP', 'gatherpress'),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
@@ -28,18 +35,32 @@ const NO_STATUS = [
 			],
 			[
 				'gatherpress/modal',
-				{ className: 'gatherpress-rsvp-modal' },
+				{
+					className: 'gatherpress--is-rsvp-modal',
+					metadata: {
+						name: __('RSVP Modal', 'gatherpress'),
+					},
+				},
 				[
 					[
 						'gatherpress/modal-content',
-						{ className: 'gatherpress-rsvp-modal-content' },
+						{},
 						[
 							[
-								'core/heading',
+								'core/paragraph',
 								{
-									level: 3,
+									style: {
+										spacing: {
+											margin: {
+												top: '0',
+											},
+											padding: {
+												top: '0',
+											},
+										},
+									},
 									content: __(
-										'Update your RSVP',
+										'<strong>RSVP to this event</strong>',
 										'gatherpress'
 									),
 								},
@@ -48,7 +69,7 @@ const NO_STATUS = [
 								'core/paragraph',
 								{
 									content: __(
-										'To set or change your attending status, simply click the <strong>Attending</strong> button below.',
+										'To set or change your attending status, simply click the <strong>Attend</strong> button below.',
 										'gatherpress'
 									),
 								},
@@ -61,20 +82,123 @@ const NO_STATUS = [
 										type: 'flex',
 										justifyContent: 'flex-start',
 									},
+									style: {
+										spacing: {
+											margin: {
+												bottom: '0',
+											},
+											padding: {
+												bottom: '0',
+											},
+										},
+									},
 								},
 								[
 									[
 										'core/button',
 										{
-											text: __(
-												'Attending',
-												'gatherpress'
-											),
+											text: __('Attend', 'gatherpress'),
 											tagName: 'button',
 											className:
 												'gatherpress--update-rsvp',
 										},
 									],
+									[
+										'core/button',
+										{
+											text: __('Close', 'gatherpress'),
+											tagName: 'button',
+											className:
+												'is-style-outline gatherpress--close-modal',
+										},
+									],
+								],
+							],
+						],
+					],
+				],
+			],
+			[
+				'gatherpress/modal',
+				{
+					className: 'gatherpress--is-login-modal',
+					metadata: {
+						name: __('Login Modal', 'gatherpress'),
+					},
+				},
+				[
+					[
+						'gatherpress/modal-content',
+						{},
+						[
+							[
+								'core/paragraph',
+								{
+									style: {
+										spacing: {
+											margin: {
+												top: '0',
+											},
+											padding: {
+												top: '0',
+											},
+										},
+									},
+									content: __(
+										'<strong>Login Required</strong>',
+										'gatherpress'
+									),
+								},
+							],
+							[
+								'core/paragraph',
+								{
+									content: sprintf(
+										/* translators: %s: Login URL. */
+										__(
+											'This action requires an account. Please <a href="%s">Login</a> to RSVP to this event.',
+											'gatherpress'
+										),
+										getFromGlobal('urls.loginUrl')
+									),
+									className: 'gatherpress--has-login-url',
+								},
+							],
+							[
+								'core/paragraph',
+								{
+									content: sprintf(
+										/* translators: %s: Registration URL. */
+										__(
+											'Don\'t have an account? <a href="%s">Register here</a> to create one.',
+											'gatherpress'
+										),
+										getFromGlobal('urls.registrationUrl')
+									),
+									className:
+										'gatherpress--has-registration-url',
+								},
+							],
+							[
+								'core/buttons',
+								{
+									align: 'left',
+									layout: {
+										type: 'flex',
+										justifyContent: 'flex-start',
+									},
+									style: {
+										spacing: {
+											margin: {
+												bottom: '0',
+											},
+											padding: {
+												bottom: '0',
+											},
+										},
+									},
+								},
+								[
 									[
 										'core/button',
 										{

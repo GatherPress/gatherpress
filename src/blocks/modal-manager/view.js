@@ -52,8 +52,8 @@ const { actions } = store('gatherpress', {
 				}
 			}
 		},
-		closeModalKeyHandler(event) {
-			if ('Enter' === event.key || ' ' === event.key) {
+		closeModalOnEnter(event) {
+			if ('Enter' === event.key) {
 				actions.closeModal(event);
 			}
 		},
