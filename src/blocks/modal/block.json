@@ -17,6 +17,10 @@
 					"background": "rgba(0, 0, 0, 0.5)"
 				}
 			}
+		},
+		"zIndex": {
+			"type": "number",
+			"default": 1000
 		}
 	},
 	"supports": {

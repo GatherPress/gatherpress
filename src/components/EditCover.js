@@ -17,7 +17,7 @@ const EditCover = (props) => {
 	const display = isSelected ? 'none' : 'block';
 
 	return (
-		<div style={{ position: 'relative' }}>
+		<div style={{ position: 'relative', zIndex: '0' }}>
 			{props.children}
 			<div
 				style={{
