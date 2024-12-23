@@ -7,14 +7,17 @@ import {
 	InspectorControls,
 	store as blockEditorStore,
 } from '@wordpress/block-editor';
-import { useSelect } from '@wordpress/data';
+import { useSelect, select, dispatch } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { PanelBody, RangeControl } from '@wordpress/components';
+import { PanelBody, Button, RangeControl } from '@wordpress/components';
 
 const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 	const hasSelectedInnerBlock = useSelect(
-		(select) =>
-			select(blockEditorStore).hasSelectedInnerBlock(clientId, true),
+		(blockEditorSelect) =>
+			blockEditorSelect(blockEditorStore).hasSelectedInnerBlock(
+				clientId,
+				true
+			),
 		[clientId]
 	);
 	const blockProps = useBlockProps({
@@ -24,7 +27,15 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 		},
 	});
 	const { zIndex } = attributes;
-
+	const modalManagerClientId = select('core/block-editor').getBlockParents(
+		clientId,
+		{ levels: 1 }
+	)?.[0];
+	const goToModalManager = () => {
+		if (modalManagerClientId) {
+			dispatch('core/block-editor').selectBlock(modalManagerClientId);
+		}
+	};
 	const TEMPLATE = [['gatherpress/modal-content', {}]];
 
 	return (
@@ -45,6 +56,9 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 							'gatherpress'
 						)}
 					/>
+					<Button variant="secondary" onClick={goToModalManager}>
+						{__('Back to Modal Manager', 'gatherpress')}
+					</Button>
 				</PanelBody>
 			</InspectorControls>
 			<div {...blockProps}>
