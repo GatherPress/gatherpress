@@ -13,6 +13,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
+use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
@@ -76,6 +77,7 @@ class Rsvp {
 		$block_instance = Block::get_instance();
 
 		if ( self::BLOCK_NAME === $block['blockName'] ) {
+			$event        = new Event( get_the_ID() );
 			$inner_blocks = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
 			$tag          = new WP_HTML_Tag_Processor( $block_content );
 			$attributes   = isset( $block['attrs'] ) ? $block['attrs'] : array();
@@ -102,20 +104,24 @@ class Rsvp {
 				// Serialize the current inner blocks for the saved status.
 				$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
-				// Render inner blocks for all statuses.
-				$inner_blocks_markup = '';
-				foreach ( $serialized_inner_blocks as $status => $serialized_inner_block ) {
-					$inner_blocks_markup .= sprintf(
-						'<div style="display:none;" data-rsvp-status="%s">%s</div>',
-						esc_attr( $status ),
-						do_blocks( $serialized_inner_block )
-					);
-				}
+				if ( $event->has_event_past() ) {
+					$inner_blocks_markup = do_blocks( $serialized_inner_blocks['past'] ?? '' );
+				} else {
+					// Render inner blocks for all statuses.
+					$inner_blocks_markup = '';
+					foreach ( $serialized_inner_blocks as $status => $serialized_inner_block ) {
+						$inner_blocks_markup .= sprintf(
+							'<div style="display:none;" data-rsvp-status="%s">%s</div>',
+							esc_attr( $status ),
+							do_blocks( $serialized_inner_block )
+						);
+					}
 
-				// Set dynamic attributes for interactivity.
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => get_the_ID() ) ) );
-				$tag->set_attribute( 'data-wp-watch', 'callbacks.renderRsvpBlock' );
+					// Set dynamic attributes for interactivity.
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => get_the_ID() ) ) );
+					$tag->set_attribute( 'data-wp-watch', 'callbacks.renderRsvpBlock' );
+				}
 
 				// Get the updated block content.
 				$block_content = $tag->get_updated_html();

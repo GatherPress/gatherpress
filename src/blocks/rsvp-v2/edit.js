@@ -174,6 +174,13 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 								),
 								value: 'not_attending',
 							},
+							{
+								label: __(
+									'Past Event (Event has already occurred)',
+									'gatherpress'
+								),
+								value: 'past',
+							},
 						]}
 						onChange={handleStatusChange}
 					/>
