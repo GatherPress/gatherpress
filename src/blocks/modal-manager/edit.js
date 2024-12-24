@@ -10,6 +10,7 @@ import {
 import { PanelBody, ButtonGroup, Button } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { select, dispatch, subscribe } from '@wordpress/data';
+import TEMPLATE from './template';
 
 const Edit = ({ clientId }) => {
 	const blockProps = useBlockProps();
@@ -37,10 +38,6 @@ const Edit = ({ clientId }) => {
 
 		return () => unsubscribe();
 	}, [activeModalId]);
-
-	const TEMPLATE = [
-		['gatherpress/modal', {}, [['gatherpress/modal-content', {}]]],
-	];
 
 	return (
 		<>
