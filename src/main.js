@@ -12,16 +12,22 @@ const setupModalCloseHandlers = () => {
 	// Handle Escape key to close modals
 	const handleEscapeKey = (event) => {
 		if (event.key === 'Escape') {
-			const openModals = document.querySelectorAll('.gatherpress--is-visible');
+			const openModals = document.querySelectorAll(
+				'.gatherpress--is-visible'
+			);
 			openModals.forEach((modal) => closeModal(modal));
 		}
 	};
 
 	// Handle clicks outside modal content
 	const handleOutsideClick = (event) => {
-		const openModals = document.querySelectorAll('.wp-block-gatherpress-modal.gatherpress--is-visible');
+		const openModals = document.querySelectorAll(
+			'.wp-block-gatherpress-modal.gatherpress--is-visible'
+		);
 		openModals.forEach((modal) => {
-			const modalContent = modal.querySelector('.wp-block-gatherpress-modal-content');
+			const modalContent = modal.querySelector(
+				'.wp-block-gatherpress-modal-content'
+			);
 
 			// Close modal if the click is outside the modal content
 			if (

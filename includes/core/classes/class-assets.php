@@ -233,6 +233,16 @@ class Assets {
 		}
 	}
 
+	/**
+	 * Enqueues scripts for the frontend.
+	 *
+	 * Registers and enqueues JavaScript files required for the plugin's frontend functionality.
+	 * Ensures proper handling of dependencies and versioning.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
 	public function frontend_enqueue_scripts(): void {
 		$asset = $this->get_asset_data( 'main' );
 

@@ -54,20 +54,24 @@ const { actions } = store('gatherpress', {
 					}
 
 					// Trap focus within the modal content.
-					const handleFocusTrap = (event) => {
-						if (event.key === 'Tab') {
-							if (event.shiftKey) {
+					const handleFocusTrap = (e) => {
+						if ('Tab' === e.key) {
+							if (
+								e.shiftKey &&
+								global.document.activeElement ===
+									firstFocusableElement
+							) {
 								// Shift + Tab (backward navigation).
-								if (document.activeElement === firstFocusableElement) {
-									event.preventDefault();
-									lastFocusableElement.focus();
-								}
-							} else {
+								e.preventDefault();
+								lastFocusableElement.focus();
+							} else if (
+								!e.shiftKey &&
+								global.document.activeElement ===
+									lastFocusableElement
+							) {
 								// Tab (forward navigation).
-								if (document.activeElement === lastFocusableElement) {
-									event.preventDefault();
-									firstFocusableElement.focus();
-								}
+								e.preventDefault();
+								firstFocusableElement.focus();
 							}
 						}
 					};
@@ -83,7 +87,10 @@ const { actions } = store('gatherpress', {
 					if (closeButton) {
 						closeButton.addEventListener('click', () => {
 							modal.classList.remove('gatherpress--is-visible');
-							modalContent.removeEventListener('keydown', handleFocusTrap);
+							modalContent.removeEventListener(
+								'keydown',
+								handleFocusTrap
+							);
 						});
 					}
 				}
