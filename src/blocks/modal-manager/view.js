@@ -23,6 +23,69 @@ const { actions } = store('gatherpress', {
 
 				if (modal) {
 					modal.classList.add('gatherpress--is-visible');
+
+					const modalContent = modal.querySelector(
+						'.wp-block-gatherpress-modal-content'
+					);
+
+					// Trap focus when the modal opens.
+					const focusableSelectors = [
+						'a[href]',
+						'button:not([disabled])',
+						'textarea:not([disabled])',
+						'input[type="text"]:not([disabled])',
+						'input[type="radio"]:not([disabled])',
+						'input[type="checkbox"]:not([disabled])',
+						'select:not([disabled])',
+						'[tabindex]:not([tabindex="-1"])',
+					];
+
+					const focusableElements = modalContent.querySelectorAll(
+						focusableSelectors.join(',')
+					);
+
+					const firstFocusableElement = focusableElements[0];
+					const lastFocusableElement =
+						focusableElements[focusableElements.length - 1];
+
+					// Automatically focus the first focusable element.
+					if (firstFocusableElement) {
+						firstFocusableElement.focus();
+					}
+
+					// Trap focus within the modal content.
+					const handleFocusTrap = (event) => {
+						if (event.key === 'Tab') {
+							if (event.shiftKey) {
+								// Shift + Tab (backward navigation).
+								if (document.activeElement === firstFocusableElement) {
+									event.preventDefault();
+									lastFocusableElement.focus();
+								}
+							} else {
+								// Tab (forward navigation).
+								if (document.activeElement === lastFocusableElement) {
+									event.preventDefault();
+									firstFocusableElement.focus();
+								}
+							}
+						}
+					};
+
+					// Add keydown listener for trapping focus.
+					modalContent.addEventListener('keydown', handleFocusTrap);
+
+					// Cleanup focus trapping when the modal is closed.
+					const closeButton = modal.querySelector(
+						'.gatherpress--close-modal'
+					);
+
+					if (closeButton) {
+						closeButton.addEventListener('click', () => {
+							modal.classList.remove('gatherpress--is-visible');
+							modalContent.removeEventListener('keydown', handleFocusTrap);
+						});
+					}
 				}
 			}
 		},

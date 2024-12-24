@@ -53,9 +53,9 @@ module.exports = [
 		entry: {
 			...defaultConfig[0].entry(),
 			admin_style: path.resolve(process.cwd(), 'src', 'admin.scss'),
-			utility_style: path.resolve(process.cwd(), 'src', 'utility.scss'),
 			editor: path.resolve(process.cwd(), 'src', 'editor.js'),
 			panels: path.resolve(process.cwd(), 'src/panels', 'index.js'),
+			main: path.resolve(process.cwd(), 'src', 'main.js'),
 			modals: path.resolve(process.cwd(), 'src/modals', 'index.js'),
 			settings: path.resolve(process.cwd(), 'src/settings', 'index.js'),
 			settings_style: path.resolve(
@@ -69,6 +69,7 @@ module.exports = [
 				'src/profile',
 				'style.scss'
 			),
+			utility_style: path.resolve(process.cwd(), 'src', 'utility.scss'),
 			...getVariationEntries(),
 		},
 		module: {

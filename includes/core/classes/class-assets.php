@@ -86,7 +86,8 @@ class Assets {
 	protected function setup_hooks(): void {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'frontend_enqueue_scripts' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
@@ -122,7 +123,7 @@ class Assets {
 	 *
 	 * @return void
 	 */
-	public function enqueue_scripts(): void {
+	public function block_enqueue_scripts(): void {
 		// @todo remove once new blocks are completed.
 		wp_enqueue_style( 'dashicons' );
 
@@ -230,6 +231,18 @@ class Assets {
 
 			wp_set_script_translations( 'gatherpress-profile', 'gatherpress' );
 		}
+	}
+
+	public function frontend_enqueue_scripts(): void {
+		$asset = $this->get_asset_data( 'main' );
+
+		wp_enqueue_script(
+			'gatherpress-main',
+			$this->build . 'main.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
 	}
 
 	/**
