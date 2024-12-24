@@ -8,7 +8,12 @@
   "icon": "groups",
   "example": {},
   "description": "Displays a list of members who have confirmed their attendance for an event.",
-  "attributes": {},
+  "attributes": {
+    "emptyRsvpMessage": {
+      "type": "string",
+      "default": "No one is attending this event yet."
+    }
+  },
   "supports": {
     "align": [
       "wide",

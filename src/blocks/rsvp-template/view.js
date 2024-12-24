@@ -48,6 +48,24 @@ const { state } = store('gatherpress', {
 							}
 						});
 
+						const grandParent = parent.parentElement;
+						const emptyRsvpMessageElement =
+							grandParent.querySelector(
+								'.gatherpress--empty-rsvp-message'
+							);
+
+						if (emptyRsvpMessageElement) {
+							if (0 === res.responses.attending.count) {
+								emptyRsvpMessageElement.classList.add(
+									'gatherpress--is-visible'
+								);
+							} else {
+								emptyRsvpMessageElement.classList.remove(
+									'gatherpress--is-visible'
+								);
+							}
+						}
+
 						element.ref.insertAdjacentHTML(
 							'beforebegin',
 							safeHTML(res.content)

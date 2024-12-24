@@ -13,6 +13,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Event;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -30,6 +31,14 @@ class Rsvp_Response {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Constant representing the Block Name.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const BLOCK_NAME = 'gatherpress/rsvp-response-v2';
 
 	/**
 	 * Class constructor.
@@ -72,15 +81,31 @@ class Rsvp_Response {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		if ( 'gatherpress/rsvp-response-v2' === $block['blockName'] ) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
+		if ( self::BLOCK_NAME === $block['blockName'] ) {
+			$event              = new Event( get_the_ID() );
+			$tag                = new WP_HTML_Tag_Processor( $block_content );
+			$empty_rsvp_message = $block['attrs']['emptyRsvpMessage'] ?? __( 'No one is attending this event yet.', 'gatherpress' );
+
+			if ( ! $event->rsvp ) {
+				return $block_content;
+			}
 
 			if ( $tag->next_tag() ) {
 				$tag->set_attribute(
 					'data-wp-interactive',
 					'gatherpress/rsvp'
 				);
-				$block_content = $tag->get_updated_html();
+				$responses        = (int) $event->rsvp->responses()['attending']['count'];
+				$visibility_class = empty( $responses ) ? 'gatherpress--is-visible' : '';
+				$block_content    = $tag->get_updated_html();
+
+				// @todo: Replace this workaround with a method to properly update inner blocks
+				// when https://github.com/WordPress/gutenberg/issues/60397 is resolved.
+				$block_content = preg_replace(
+					'/(<\/div>)\s*$/',
+					sprintf( '<p class="gatherpress--empty-rsvp-message %s">' . wp_kses_post( $empty_rsvp_message ) . '</p>$1', esc_attr( $visibility_class ) ),
+					$block_content
+				);
 			}
 		}
 

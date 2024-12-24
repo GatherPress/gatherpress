@@ -586,8 +586,9 @@ class Event_Rest_Api {
 		$success = true;
 
 		$response = array(
-			'success' => $success,
-			'content' => $content,
+			'success'   => $success,
+			'content'   => $content,
+			'responses' => $responses,
 		);
 
 		return new WP_REST_Response( $response );
