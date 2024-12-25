@@ -9,7 +9,12 @@ import {
 } from '@wordpress/block-editor';
 import { useSelect, select, dispatch } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { PanelBody, Button, RangeControl, TextControl } from '@wordpress/components';
+import {
+	PanelBody,
+	Button,
+	RangeControl,
+	TextControl,
+} from '@wordpress/components';
 
 const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 	const hasSelectedInnerBlock = useSelect(
@@ -28,8 +33,6 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 		},
 	});
 	const { zIndex, metadata = {} } = attributes;
-
-	const defaultName = metadata.name || __('Modal', 'gatherpress');
 
 	const modalManagerClientId = select('core/block-editor').getBlockParents(
 		clientId,
