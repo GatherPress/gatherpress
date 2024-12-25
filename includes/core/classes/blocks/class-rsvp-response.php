@@ -94,7 +94,11 @@ class Rsvp_Response {
 
 				$responses = (int) $event->rsvp->responses()['attending']['count'];
 
-				while ( $tag->next_tag() ) {
+				while ( true ) {
+					if ( ! $tag->next_tag() ) {
+						break;
+					}
+
 					$class_attr = $tag->get_attribute( 'class' );
 
 					if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
