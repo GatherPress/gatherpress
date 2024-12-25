@@ -119,6 +119,7 @@ class Rsvp_Response {
 					// @phpstan-ignore-next-line
 				} while ( $tag->next_tag() );
 
+				// @phpstan-ignore-next-line
 				$block_content = $tag->get_updated_html();
 			}
 		}
