@@ -8,12 +8,7 @@
   "icon": "groups",
   "example": {},
   "description": "Displays a list of members who have confirmed their attendance for an event.",
-  "attributes": {
-    "emptyRsvpMessage": {
-      "type": "string",
-      "default": "No one is attending this event yet."
-    }
-  },
+  "attributes": {},
   "supports": {
     "align": [
       "wide",
@@ -22,11 +17,6 @@
     "interactivity": true,
     "html": false
   },
-  "allowedBlocks": [
-    "core/group",
-    "core/comment-author-name",
-    "core/avatar"
-  ],
   "providesContext": {
     "commentId": "commentId"
   },

@@ -82,30 +82,43 @@ class Rsvp_Response {
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
 		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			$event              = new Event( get_the_ID() );
-			$tag                = new WP_HTML_Tag_Processor( $block_content );
-			$empty_rsvp_message = $block['attrs']['emptyRsvpMessage'] ?? __( 'No one is attending this event yet.', 'gatherpress' );
+			$event = new Event( get_the_ID() );
+			$tag   = new WP_HTML_Tag_Processor( $block_content );
 
 			if ( ! $event->rsvp ) {
 				return $block_content;
 			}
 
 			if ( $tag->next_tag() ) {
-				$tag->set_attribute(
-					'data-wp-interactive',
-					'gatherpress/rsvp'
-				);
-				$responses        = (int) $event->rsvp->responses()['attending']['count'];
-				$visibility_class = empty( $responses ) ? 'gatherpress--is-visible' : '';
-				$block_content    = $tag->get_updated_html();
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 
-				// @todo: Replace this workaround with a method to properly update inner blocks
-				// when https://github.com/WordPress/gutenberg/issues/60397 is resolved.
-				$block_content = preg_replace(
-					'/(<\/div>)\s*$/',
-					sprintf( '<p class="gatherpress--empty-rsvp-message %s">' . wp_kses_post( $empty_rsvp_message ) . '</p>$1', esc_attr( $visibility_class ) ),
-					$block_content
-				);
+				$responses = (int) $event->rsvp->responses()['attending']['count'];
+
+				while ( $tag->next_tag() ) {
+					$class_attr = $tag->get_attribute( 'class' );
+
+					if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
+						if ( ! empty( $responses ) ) {
+							$updated_class  = str_replace(
+								'gatherpress--is-visible',
+								'',
+								$class_attr
+							);
+							$updated_class .= ' gatherpress--is-not-visible';
+						} else {
+							$updated_class  = str_replace(
+								'gatherpress--is-not-visible',
+								'',
+								$class_attr
+							);
+							$updated_class .= ' gatherpress--is-visible';
+						}
+
+						$tag->set_attribute( 'class', trim( $updated_class ) );
+					}
+				}
+
+				$block_content = $tag->get_updated_html();
 			}
 		}
 

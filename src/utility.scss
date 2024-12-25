@@ -6,10 +6,6 @@
 	display: none !important;
 }
 
-.gatherpress--empty-rsvp-message {
-	display: none;
-}
-
 .gatherpress--open-modal,
 .gatherpress--close-modal {
 	cursor: pointer;
@@ -17,6 +13,5 @@
 
 .gatherpress--is-disabled {
 	pointer-events: none;
-	opacity: 0.6;
 	cursor: not-allowed;
 }

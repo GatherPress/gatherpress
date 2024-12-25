@@ -51,7 +51,7 @@ const { state } = store('gatherpress', {
 						const grandParent = parent.parentElement;
 						const emptyRsvpMessageElement =
 							grandParent.querySelector(
-								'.gatherpress--empty-rsvp-message'
+								'.gatherpress--empty-rsvp'
 							);
 
 						if (emptyRsvpMessageElement) {
@@ -59,7 +59,13 @@ const { state } = store('gatherpress', {
 								emptyRsvpMessageElement.classList.add(
 									'gatherpress--is-visible'
 								);
+								emptyRsvpMessageElement.classList.remove(
+									'gatherpress--is-not-visible'
+								);
 							} else {
+								emptyRsvpMessageElement.classList.add(
+									'gatherpress--is-not-visible'
+								);
 								emptyRsvpMessageElement.classList.remove(
 									'gatherpress--is-visible'
 								);
