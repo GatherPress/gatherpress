@@ -60,9 +60,43 @@ class Modal {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_filter( 'render_block', array( $this, 'apply_modal_attributes' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'adjust_block_z_index' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'filter_login_modal' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'filter_rsvp_modal' ), 10, 2 );
+	}
+
+	/**
+	 * Modifies the modal block's attributes for accessibility.
+	 *
+	 * Dynamically updates the modal block's rendered content to include necessary
+	 * attributes for improved accessibility and functionality.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 * @param array  $block         The parsed block data.
+	 *
+	 * @return string The modified block content with updated attributes.
+	 */
+	public function apply_modal_attributes( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME === $block['blockName'] ) {
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			if ( $tag->next_tag() ) {
+				$modal_name = $block['attrs']['metadata']['name'] ?? __( 'Modal', 'gatherpress' );
+
+				$tag->set_attribute( 'role', 'dialog' );
+				$tag->set_attribute( 'aria-modal', 'true' );
+				$tag->set_attribute( 'aria-hidden', 'true' );
+				$tag->set_attribute( 'aria-label', esc_attr( $modal_name ) );
+				$tag->set_attribute( 'tabindex', '-1' );
+
+				$block_content = $tag->get_updated_html();
+			}
+		}
+
+		return $block_content;
 	}
 
 	/**

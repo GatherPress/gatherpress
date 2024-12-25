@@ -9,7 +9,7 @@ import {
 } from '@wordpress/block-editor';
 import { useSelect, select, dispatch } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { PanelBody, Button, RangeControl } from '@wordpress/components';
+import { PanelBody, Button, RangeControl, TextControl } from '@wordpress/components';
 
 const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 	const hasSelectedInnerBlock = useSelect(
@@ -20,28 +20,52 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 			),
 		[clientId]
 	);
+
 	const blockProps = useBlockProps({
 		style: {
 			display: isSelected || hasSelectedInnerBlock ? 'block' : 'none',
 			maxWidth: 'none',
 		},
 	});
-	const { zIndex } = attributes;
+	const { zIndex, metadata = {} } = attributes;
+
+	const defaultName = metadata.name || __('Modal', 'gatherpress');
+
 	const modalManagerClientId = select('core/block-editor').getBlockParents(
 		clientId,
 		{ levels: 1 }
 	)?.[0];
+
 	const goToModalManager = () => {
 		if (modalManagerClientId) {
 			dispatch('core/block-editor').selectBlock(modalManagerClientId);
 		}
 	};
+
+	const handleNameChange = (value) => {
+		setAttributes({
+			metadata: {
+				...metadata,
+				name: value,
+			},
+		});
+	};
+
 	const TEMPLATE = [['gatherpress/modal-content', {}]];
 
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody title={__('Modal Settings', 'gatherpress')}>
+					<TextControl
+						label={__('Modal Name', 'gatherpress')}
+						value={metadata.name || __('Modal', 'gatherpress')}
+						onChange={handleNameChange}
+						help={__(
+							'Set a unique name for this modal. This will be used as the aria-label and metadata name.',
+							'gatherpress'
+						)}
+					/>
 					<RangeControl
 						label={__('Z-Index', 'gatherpress')}
 						value={zIndex}

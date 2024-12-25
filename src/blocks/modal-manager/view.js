@@ -23,6 +23,7 @@ const { actions } = store('gatherpress', {
 
 				if (modal) {
 					modal.classList.add('gatherpress--is-visible');
+					modal.setAttribute('aria-hidden', 'false');
 
 					const modalContent = modal.querySelector(
 						'.wp-block-gatherpress-modal-content'
@@ -119,6 +120,7 @@ const { actions } = store('gatherpress', {
 
 				if (modal) {
 					modal.classList.remove('gatherpress--is-visible');
+					modal.setAttribute('aria-hidden', 'true');
 				}
 			}
 		},
