@@ -92,10 +92,9 @@ class Rsvp_Response {
 			if ( $tag->next_tag() ) {
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 
-				$responses   = (int) $event->rsvp->responses()['attending']['count'];
-				$is_next_tag = $tag->next_tag();
+				$responses = (int) $event->rsvp->responses()['attending']['count'];
 
-				while ( $is_next_tag ) {
+				do {
 					$class_attr = $tag->get_attribute( 'class' );
 
 					if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
@@ -117,9 +116,7 @@ class Rsvp_Response {
 
 						$tag->set_attribute( 'class', trim( $updated_class ) );
 					}
-
-					$is_next_tag = $tag->next_tag();
-				}
+				} while ( $tag->next_tag() );
 
 				$block_content = $tag->get_updated_html();
 			}
