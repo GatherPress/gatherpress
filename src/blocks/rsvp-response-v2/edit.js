@@ -116,7 +116,7 @@ const Edit = ({ clientId }) => {
 						checked={showEmptyRsvpMessage}
 						onChange={(value) => setShowEmptyRsvpMessage(value)}
 						help={__(
-							'Toggle to show or hide the Empty RSVP block. When shown, other blocks are hidden.',
+							'Toggle to show or hide the Empty RSVP block.',
 							'gatherpress'
 						)}
 					/>
