@@ -44,9 +44,15 @@ class Test_Assets extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'wp_enqueue_scripts',
+				'priority' => 10,
+				'callback' => array( $instance, 'frontend_enqueue_scripts' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'enqueue_block_assets',
 				'priority' => 10,
-				'callback' => array( $instance, 'enqueue_scripts' ),
+				'callback' => array( $instance, 'block_enqueue_scripts' ),
 			),
 			array(
 				'type'     => 'action',
@@ -128,15 +134,15 @@ class Test_Assets extends Base {
 
 
 	/**
-	 * Coverage for enqueue_scripts.
+	 * Coverage for block_enqueue_scripts.
 	 *
-	 * @covers ::enqueue_scripts
+	 * @covers ::block_enqueue_scripts
 	 *
 	 * @return void
 	 */
-	public function test_enqueue_scripts(): void {
+	public function test_block_enqueue_scripts(): void {
 		$instance = Assets::get_instance();
-		$instance->enqueue_scripts();
+		$instance->block_enqueue_scripts();
 
 		$this->assertTrue( wp_style_is( 'dashicons', 'enqueued' ) );
 	}
