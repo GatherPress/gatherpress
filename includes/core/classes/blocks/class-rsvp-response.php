@@ -116,6 +116,7 @@ class Rsvp_Response {
 
 						$tag->set_attribute( 'class', trim( $updated_class ) );
 					}
+					// @phpstan-ignore-next-line
 				} while ( $tag->next_tag() );
 
 				$block_content = $tag->get_updated_html();
