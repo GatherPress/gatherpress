@@ -65,7 +65,7 @@ const Edit = ({ attributes, setAttributes, clientId, isSelected }) => {
 						value={metadata.name || __('Modal', 'gatherpress')}
 						onChange={handleNameChange}
 						help={__(
-							'Set a unique name for this modal. This will be used as the aria-label and metadata name.',
+							'Set a unique name for this modal. This will be used as the aria-label.',
 							'gatherpress'
 						)}
 					/>
