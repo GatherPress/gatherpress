@@ -1,0 +1,76 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "gatherpress/dropdown",
+  "title": "Dropdown",
+  "category": "gatherpress",
+  "icon": "menu",
+  "description": "A customizable dropdown menu that allows users to add links or button-like links.",
+  "attributes": {
+    "dropdownId": {
+      "type": "string"
+    },
+    "openOn": {
+      "type": "string",
+      "default": "click",
+      "enum": [
+        "click",
+        "hover"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "default": "Dropdown"
+    },
+    "replaceLabel": {
+      "type": "boolean",
+      "default": false
+    },
+    "alignment": {
+      "type": "string",
+      "default": "left",
+      "enum": [
+        "left",
+        "center",
+        "right",
+        "justify",
+        "stretch"
+      ]
+    },
+    "padding": {
+      "type": "object",
+      "default": {
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    }
+  },
+  "providesContext": {
+    "gatherpress/dropdown/openOn": "openOn",
+    "gatherpress/dropdown/label": "label"
+  },
+  "usesContext": [],
+  "supports": {
+    "align": [
+      "wide",
+      "full"
+    ],
+    "spacing": {
+      "padding": true,
+      "margin": true
+    },
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "html": false
+  },
+  "textdomain": "gatherpress",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "allowedBlocks": [
+    "gatherpress/dropdown-item"
+  ]
+}
