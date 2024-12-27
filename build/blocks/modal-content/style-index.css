@@ -1,9 +1,1 @@
-/*!************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/blocks/modal-content/style.scss ***!
-  \************************************************************************************************************************************************************************************************************************************************************/
-.wp-block-gatherpress-modal-content {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/*# sourceMappingURL=style-index.css.map*/
+.wp-block-gatherpress-modal-content{box-sizing:border-box;width:100%}
