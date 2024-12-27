@@ -19,18 +19,18 @@ const Save = ({ attributes }) => {
 	} = attributes;
 
 	const dropdownStyles = `
-		.wp-block-gatherpress-dropdown .wp-block-gatherpress-dropdown-item {
+		#${dropdownId} .wp-block-gatherpress-dropdown-item {
 			padding: ${itemPadding.top} ${itemPadding.right} ${itemPadding.bottom} ${itemPadding.left};
 			color: ${itemTextColor || 'inherit'};
 			background-color: ${itemBgColor || 'transparent'};
 		}
 
-		.wp-block-gatherpress-dropdown .wp-block-gatherpress-dropdown-item:hover {
+		#${dropdownId} .wp-block-gatherpress-dropdown-item:hover {
 			color: ${itemHoverTextColor || 'inherit'};
 			background-color: ${itemHoverBgColor || 'transparent'};
 		}
 
-		.wp-block-gatherpress-dropdown .wp-block-gatherpress-dropdown-item:not(:first-child) {
+		#${dropdownId} .wp-block-gatherpress-dropdown-item:not(:first-child) {
 			border-top: ${itemDividerThickness || 1}px solid ${itemDividerColor || 'transparent'};
 		}
 	`;
