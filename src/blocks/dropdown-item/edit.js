@@ -7,7 +7,6 @@ import {
 	RichText,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import { useEffect } from '@wordpress/element';
 import { createBlock } from '@wordpress/blocks';
 import { PanelBody } from '@wordpress/components';
 import { dispatch } from '@wordpress/data';
@@ -20,42 +19,36 @@ import { dispatch } from '@wordpress/data';
  * @param {Function} props.setAttributes     Function to update attributes.
  * @param {string}   props.clientId          Unique ID of the block.
  * @param {Function} props.insertBlocksAfter Function to insert blocks after this block.
- * @param {Object}   props.context           Context provided by parent blocks.
  * @return {JSX.Element} The rendered edit component.
  */
-const Edit = ({
-	attributes,
-	setAttributes,
-	clientId,
-	insertBlocksAfter,
-	context,
-}) => {
-	const { text, url, itemPadding, itemTextColor } = attributes;
+const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
+	const { text, url } = attributes;
+	const blockProps = useBlockProps();
 
 	// Synchronize attributes with parent block context only if they differ
-	useEffect(() => {
-		const contextPadding = context['gatherpress/dropdown/itemPadding'];
-		const contextTextColor = context['gatherpress/dropdown/itemTextColor'];
+	// useEffect(() => {
+	// 	const contextPadding = context['gatherpress/dropdown/itemPadding'];
+	// 	const contextTextColor = context['gatherpress/dropdown/itemTextColor'];
 
-		if (
-			JSON.stringify(itemPadding) !== JSON.stringify(contextPadding) ||
-			itemTextColor !== contextTextColor
-		) {
-			setAttributes({
-				itemPadding: contextPadding || itemPadding,
-				itemTextColor: contextTextColor || itemTextColor,
-			});
-		}
-	}, [context, itemPadding, itemTextColor, setAttributes]);
+	// 	if (
+	// 		JSON.stringify(itemPadding) !== JSON.stringify(contextPadding) ||
+	// 		itemTextColor !== contextTextColor
+	// 	) {
+	// 		setAttributes({
+	// 			itemPadding: contextPadding || itemPadding,
+	// 			itemTextColor: contextTextColor || itemTextColor,
+	// 		});
+	// 	}
+	// }, [context, itemPadding, itemTextColor, setAttributes]);
 
 	const isButtonLike = !url || url === '#';
 
-	const blockProps = useBlockProps({
-		style: {
-			padding: `${itemPadding?.top || 0}px ${itemPadding?.right || 0}px ${itemPadding?.bottom || 0}px ${itemPadding?.left || 0}px`,
-			color: itemTextColor,
-		},
-	});
+	// const blockProps = useBlockProps({
+	// 	style: {
+	// 		padding: `${itemPadding?.top || 0}px ${itemPadding?.right || 0}px ${itemPadding?.bottom || 0}px ${itemPadding?.left || 0}px`,
+	// 		color: itemTextColor,
+	// 	},
+	// });
 
 	return (
 		<>

@@ -2,9 +2,10 @@
 	position: relative;
 
 	&__menu {
-		position: absolute !important;
-		z-index: 30;
-		width: 15rem;
 		display: none;
+		overflow: hidden;
+		position: absolute !important;
+		width: 100%;
+		z-index: 20;
 	}
 }

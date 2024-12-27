@@ -50,17 +50,47 @@
 			"type": "string",
 			"default": "#000000"
 		},
+		"itemHoverTextColor": {
+			"type": "string",
+			"default": "#000000"
+		},
 		"itemBgColor": {
 			"type": "string",
 			"default": "#FFFFFF"
+		},
+		"itemHoverBgColor": {
+			"type": "string",
+			"default": "#EEEEEE"
+		},
+		"itemDividerColor": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"itemDividerThickness": {
+			"type": "number",
+			"default": 1
+		},
+		"dropdownZIndex": {
+			"type": "number",
+			"default": 10
+		},
+		"dropdownMaxWidth": {
+			"type": "string",
+			"default": "240px"
+		},
+		"dropdownBorderColor": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"dropdownBorderThickness": {
+			"type": "number",
+			"default": 1
+		},
+		"dropdownBorderRadius": {
+			"type": "number",
+			"default": 0
 		}
 	},
-	"providesContext": {
-		"gatherpress/dropdown/itemPadding": "itemPadding",
-		"gatherpress/dropdown/itemTextColor": "itemTextColor",
-		"gatherpress/dropdown/itemBgColor": "itemBgColor"
-	},
-	"usesContext": [],
 	"supports": {
 		"html": false,
 		"interactivity": true

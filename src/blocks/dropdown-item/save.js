@@ -12,7 +12,8 @@ import { useBlockProps, RichText } from '@wordpress/block-editor';
  */
 const Save = ({ attributes }) => {
 	const blockProps = useBlockProps.save();
-	const { text, url, isButton, itemPadding, itemTextColor } = attributes;
+	const { text, url, isButton, itemHoverTextColor, itemHoverBgColor } =
+		attributes;
 
 	return (
 		<RichText.Content
@@ -20,10 +21,8 @@ const Save = ({ attributes }) => {
 			tagName={isButton ? 'button' : 'a'}
 			href={isButton ? undefined : url}
 			value={text}
-			style={{
-				padding: `${itemPadding?.top || 0}px ${itemPadding?.right || 0}px ${itemPadding?.bottom || 0}px ${itemPadding?.left || 0}px`,
-				color: itemTextColor || undefined,
-			}}
+			data-hover-text-color={itemHoverTextColor || undefined}
+			data-hover-bg-color={itemHoverBgColor || undefined}
 		/>
 	);
 };
