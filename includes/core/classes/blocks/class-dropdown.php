@@ -80,7 +80,10 @@ class Dropdown {
 		if ( self::BLOCK_NAME === $block['blockName'] ) {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
-			if ( $tag->next_tag() && $tag->next_tag() ) {
+			if (
+				$tag->next_tag( array( 'tag_name' => 'div' ) ) &&
+				$tag->next_tag( array( 'tag_name' => 'a' ) )
+			) {
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
