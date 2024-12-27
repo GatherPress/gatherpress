@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkgatherpress=self.webpackChunkgatherpress||[]).push([[4259],{4259:(e,s,r)=>{r.r(s)}}]);

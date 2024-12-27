@@ -18,6 +18,23 @@
 		"isButton": {
 			"type": "boolean",
 			"default": false
+		},
+		"itemPadding": {
+			"type": "object",
+			"default": {
+				"top": 0,
+				"right": 0,
+				"bottom": 0,
+				"left": 0
+			}
+		},
+		"itemTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"itemBgColor": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"parent": ["gatherpress/dropdown"],
@@ -32,6 +49,10 @@
 		},
 		"html": false
 	},
+	"usesContext": [
+		"gatherpress/dropdown/itemPadding",
+		"gatherpress/dropdown/itemTextColor"
+	],
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css"

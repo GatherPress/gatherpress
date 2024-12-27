@@ -2,25 +2,63 @@
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, RichText } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	RichText,
+	InspectorControls,
+} from '@wordpress/block-editor';
+import { useEffect } from '@wordpress/element';
 import { createBlock } from '@wordpress/blocks';
-import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody } from '@wordpress/components';
+import { dispatch } from '@wordpress/data';
 
 /**
  * Edit Component
  *
- * @param {Object} props Block properties.
+ * @param {Object}   props                   Block properties.
+ * @param {Object}   props.attributes        Block attributes.
+ * @param {Function} props.setAttributes     Function to update attributes.
+ * @param {string}   props.clientId          Unique ID of the block.
+ * @param {Function} props.insertBlocksAfter Function to insert blocks after this block.
+ * @param {Object}   props.context           Context provided by parent blocks.
  * @return {JSX.Element} The rendered edit component.
  */
-const Edit = ({ attributes, setAttributes, clientId, onReplace, insertBlocksAfter }) => {
-	const blockProps = useBlockProps();
-	const { text, url } = attributes;
+const Edit = ({
+	attributes,
+	setAttributes,
+	clientId,
+	insertBlocksAfter,
+	context,
+}) => {
+	const { text, url, itemPadding, itemTextColor } = attributes;
+
+	// Synchronize attributes with parent block context only if they differ
+	useEffect(() => {
+		const contextPadding = context['gatherpress/dropdown/itemPadding'];
+		const contextTextColor = context['gatherpress/dropdown/itemTextColor'];
+
+		if (
+			JSON.stringify(itemPadding) !== JSON.stringify(contextPadding) ||
+			itemTextColor !== contextTextColor
+		) {
+			setAttributes({
+				itemPadding: contextPadding || itemPadding,
+				itemTextColor: contextTextColor || itemTextColor,
+			});
+		}
+	}, [context, itemPadding, itemTextColor, setAttributes]);
 
 	const isButtonLike = !url || url === '#';
 
+	const blockProps = useBlockProps({
+		style: {
+			padding: `${itemPadding?.top || 0}px ${itemPadding?.right || 0}px ${itemPadding?.bottom || 0}px ${itemPadding?.left || 0}px`,
+			color: itemTextColor,
+		},
+	});
+
 	return (
-		<div {...blockProps}>
+		<>
 			<InspectorControls>
 				<PanelBody title={__('Dropdown Item Settings', 'gatherpress')}>
 					<p>
@@ -32,6 +70,7 @@ const Edit = ({ attributes, setAttributes, clientId, onReplace, insertBlocksAfte
 				</PanelBody>
 			</InspectorControls>
 			<RichText
+				{...blockProps}
 				tagName="a"
 				href={isButtonLike ? undefined : url}
 				role={isButtonLike ? 'button' : undefined}
@@ -42,11 +81,17 @@ const Edit = ({ attributes, setAttributes, clientId, onReplace, insertBlocksAfte
 					setAttributes({ text: value });
 
 					// Update the metadata name for List View
-					wp.data.dispatch('core/block-editor').updateBlockAttributes(clientId, {
-						metadata: { name: value || __('Dropdown Item', 'gatherpress') },
-					});
+					dispatch('core/block-editor').updateBlockAttributes(
+						clientId,
+						{
+							metadata: {
+								name:
+									value || __('Dropdown Item', 'gatherpress'),
+							},
+						}
+					);
 				}}
-				placeholder={__('Item Text...', 'gatherpress')}
+				placeholder={__('Item Text…', 'gatherpress')}
 				allowedFormats={['core/bold', 'core/italic']}
 				onSplit={(before, after) => {
 					const newBlock = createBlock('gatherpress/dropdown-item', {
@@ -58,7 +103,10 @@ const Edit = ({ attributes, setAttributes, clientId, onReplace, insertBlocksAfte
 				onKeyDown={(event) => {
 					if (event.key === 'Enter') {
 						event.preventDefault();
-						const newBlock = createBlock('gatherpress/dropdown-item', { text: '' });
+						const newBlock = createBlock(
+							'gatherpress/dropdown-item',
+							{ text: '' }
+						);
 						insertBlocksAfter([newBlock]);
 					}
 				}}
@@ -68,7 +116,7 @@ const Edit = ({ attributes, setAttributes, clientId, onReplace, insertBlocksAfte
 					}
 				}}
 			/>
-		</div>
+		</>
 	);
 };
 

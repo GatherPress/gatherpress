@@ -78,6 +78,8 @@ class Test_Block extends Base {
 		$instance            = Block::get_instance();
 		$blocks              = array(
 			'gatherpress/add-to-calendar',
+			'gatherpress/dropdown',
+			'gatherpress/dropdown-item',
 			'gatherpress/event-date',
 			'gatherpress/events-list',
 			'gatherpress/icon',

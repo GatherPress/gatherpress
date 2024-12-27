@@ -1,0 +1,10 @@
+.wp-block-gatherpress-dropdown {
+	position: relative;
+
+	&__menu {
+		position: absolute !important;
+		z-index: 30;
+		width: 15rem;
+		display: none;
+	}
+}

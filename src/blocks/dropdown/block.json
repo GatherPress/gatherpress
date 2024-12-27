@@ -37,7 +37,7 @@
 				"stretch"
 			]
 		},
-		"padding": {
+		"itemPadding": {
 			"type": "object",
 			"default": {
 				"top": 0,
@@ -45,30 +45,26 @@
 				"bottom": 0,
 				"left": 0
 			}
+		},
+		"itemTextColor": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"itemBgColor": {
+			"type": "string",
+			"default": "#FFFFFF"
 		}
 	},
 	"providesContext": {
-		"gatherpress/dropdown/openOn": "openOn",
-		"gatherpress/dropdown/label": "label"
+		"gatherpress/dropdown/itemPadding": "itemPadding",
+		"gatherpress/dropdown/itemTextColor": "itemTextColor",
+		"gatherpress/dropdown/itemBgColor": "itemBgColor"
 	},
 	"usesContext": [],
 	"supports": {
-		"align": [
-			"wide",
-			"full"
-		],
-		"spacing": {
-			"padding": true,
-			"margin": true
-		},
-		"color": {
-			"background": true,
-			"text": true
-		},
 		"html": false
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
-	"style": "file:./style-index.css",
-	"allowedBlocks": ["gatherpress/dropdown-item"]
+	"style": "file:./style-index.css"
 }
