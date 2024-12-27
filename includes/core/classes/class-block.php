@@ -110,6 +110,7 @@ class Block {
 	 */
 	public function register_block_classes(): void {
 		Blocks\Add_To_Calendar::get_instance();
+		Blocks\Dropdown::get_instance();
 		Blocks\General_Block::get_instance();
 		Blocks\Modal::get_instance();
 		Blocks\Modal_Manager::get_instance();

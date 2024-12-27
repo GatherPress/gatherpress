@@ -1,1 +1,705 @@
-(()=>{"use strict";var e,t={3752:()=>{const e=window.wp.blocks,t=JSON.parse('{"UU":"gatherpress/dropdown","DD":"Dropdown","L1":"gatherpress","Kk":"menu","uK":{"dropdownId":{"type":"string"},"openOn":{"type":"string","default":"click","enum":["click","hover"]},"label":{"type":"string","default":"Dropdown"},"replaceLabel":{"type":"boolean","default":false},"alignment":{"type":"string","default":"left","enum":["left","center","right","justify","stretch"]},"itemPadding":{"type":"object","default":{"top":0,"right":0,"bottom":0,"left":0}},"itemTextColor":{"type":"string","default":"#000000"},"itemBgColor":{"type":"string","default":"#FFFFFF"}}}'),o=window.wp.blockEditor,r=window.wp.components,n=window.wp.i18n,l=window.wp.element,a={randomUUID:"undefined"!=typeof crypto&&crypto.randomUUID&&crypto.randomUUID.bind(crypto)};let s;const i=new Uint8Array(16);function d(){if(!s){if("undefined"==typeof crypto||!crypto.getRandomValues)throw new Error("crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported");s=crypto.getRandomValues.bind(crypto)}return s(i)}const c=[];for(let e=0;e<256;++e)c.push((e+256).toString(16).slice(1));const p=function(e,t,o){if(a.randomUUID&&!t&&!e)return a.randomUUID();const r=(e=e||{}).random||(e.rng||d)();if(r[6]=15&r[6]|64,r[8]=63&r[8]|128,t){o=o||0;for(let e=0;e<16;++e)t[o+e]=r[e];return t}return function(e,t=0){return(c[e[t+0]]+c[e[t+1]]+c[e[t+2]]+c[e[t+3]]+"-"+c[e[t+4]]+c[e[t+5]]+"-"+c[e[t+6]]+c[e[t+7]]+"-"+c[e[t+8]]+c[e[t+9]]+"-"+c[e[t+10]]+c[e[t+11]]+c[e[t+12]]+c[e[t+13]]+c[e[t+14]]+c[e[t+15]]).toLowerCase()}(r)},g=window.wp.data,u=window.ReactJSXRuntime;(0,e.registerBlockType)(t.UU,{title:t.DD,category:t.L1,icon:t.Kk,attributes:t.uK,edit:({attributes:e,setAttributes:t,clientId:a})=>{const s=(0,o.useBlockProps)(),i=s.className||"",[d,c]=(0,l.useState)(!1);return(0,l.useEffect)((()=>{if(!e.dropdownId){const e=`dropdown-${p()}`;t({dropdownId:e})}}),[e.dropdownId,t]),(0,l.useEffect)((()=>{const t=e.label||(0,n.__)("Dropdown","gatherpress"),o=(0,g.select)("core/block-editor").getBlockAttributes(a).metadata||{};o.name!==t&&(0,g.dispatch)("core/block-editor").updateBlockAttributes(a,{metadata:{...o,name:t}})}),[e.label,a]),(0,l.useEffect)((()=>{const{updateBlockAttributes:t}=(0,g.dispatch)("core/block-editor"),{getBlockOrder:o,getBlockAttributes:r}=(0,g.select)("core/block-editor");o(a).forEach((o=>{const n=r(o);(JSON.stringify(n.itemPadding)!==JSON.stringify(e.itemPadding)||n.itemTextColor!==e.itemTextColor||n.itemBgColor!==e.itemBgColor)&&t(o,{itemPadding:e.itemPadding,itemTextColor:e.itemTextColor,itemBgColor:e.itemBgColor})}))}),[e.itemPadding,e.itemTextColor,e.itemBgColor,a]),(0,u.jsxs)("div",{...s,children:[(0,u.jsxs)(o.InspectorControls,{children:[(0,u.jsx)(o.PanelColorSettings,{title:(0,n.__)("Colors","gatherpress"),colorSettings:[{value:e.labelColor,onChange:e=>t({labelColor:e}),label:(0,n.__)("Label Text Color","gatherpress")},{value:e.itemTextColor,onChange:e=>t({itemTextColor:e}),label:(0,n.__)("Item Text Color","gatherpress")},{value:e.itemBgColor,onChange:e=>t({itemBgColor:e}),label:(0,n.__)("Item Background Color","gatherpress")}]}),(0,u.jsx)(r.PanelBody,{title:(0,n.__)("Settings","gatherpress"),initialOpen:!1,children:(0,u.jsx)(r.__experimentalBoxControl,{label:(0,n.__)("Item Padding","gatherpress"),values:e.itemPadding,onChange:e=>{const o=Object.fromEntries(Object.entries(e).map((([e,t])=>[e,isNaN(parseInt(t))?0:parseInt(t)])));t({itemPadding:o})}})})]}),(0,u.jsx)(o.BlockControls,{children:(0,u.jsx)(r.ToolbarGroup,{children:(0,u.jsx)(r.ToolbarButton,{icon:d?"no-alt":"plus",onClick:()=>{c((e=>!e))},label:d?(0,n.__)("Close Dropdown","gatherpress"):(0,n.__)("Open Dropdown","gatherpress")})})}),(0,u.jsx)(o.RichText,{tagName:"a",href:"#",role:"button","aria-expanded":d,"aria-controls":e.dropdownId,tabIndex:0,className:`${i}__trigger`,value:e.label,onChange:e=>t({label:e}),placeholder:(0,n.__)("Dropdown Label…","gatherpress"),style:{color:e.labelColor}}),(0,u.jsx)("div",{id:e.dropdownId,role:"region",className:`${i}__menu`,style:{display:d?"block":"none",backgroundColor:e.itemBgColor},children:(0,u.jsx)(o.InnerBlocks,{allowedBlocks:["gatherpress/dropdown-item"]})})]})},save:({attributes:e})=>{const t=o.useBlockProps.save(),{dropdownId:r,label:n,labelColor:l,itemBgColor:a}=e,s=t.className||"";return(0,u.jsxs)("div",{...t,children:[(0,u.jsx)("a",{href:"#",role:"button","aria-expanded":"false","aria-controls":r,tabIndex:0,className:`${s}__trigger`,style:{color:l},children:n}),(0,u.jsx)("div",{id:r,role:"region",className:`${s}__menu`,style:{backgroundColor:a},children:(0,u.jsx)(o.InnerBlocks.Content,{})})]})}})}},o={};function r(e){var n=o[e];if(void 0!==n)return n.exports;var l=o[e]={exports:{}};return t[e](l,l.exports,r),l.exports}r.m=t,e=[],r.O=(t,o,n,l)=>{if(!o){var a=1/0;for(c=0;c<e.length;c++){for(var[o,n,l]=e[c],s=!0,i=0;i<o.length;i++)(!1&l||a>=l)&&Object.keys(r.O).every((e=>r.O[e](o[i])))?o.splice(i--,1):(s=!1,l<a&&(a=l));if(s){e.splice(c--,1);var d=n();void 0!==d&&(t=d)}}return t}l=l||0;for(var c=e.length;c>0&&e[c-1][2]>l;c--)e[c]=e[c-1];e[c]=[o,n,l]},r.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e={8858:0,7822:0};r.O.j=t=>0===e[t];var t=(t,o)=>{var n,l,[a,s,i]=o,d=0;if(a.some((t=>0!==e[t]))){for(n in s)r.o(s,n)&&(r.m[n]=s[n]);if(i)var c=i(r)}for(t&&t(o);d<a.length;d++)l=a[d],r.o(e,l)&&e[l]&&e[l][0](),e[l]=0;return r.O(c)},o=globalThis.webpackChunkgatherpress=globalThis.webpackChunkgatherpress||[];o.forEach(t.bind(null,0)),o.push=t.bind(null,o.push.bind(o))})();var n=r.O(void 0,[7822],(()=>r(3752)));n=r.O(n)})();
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/blocks/dropdown/edit.js":
+/*!*************************************!*\
+  !*** ./src/blocks/dropdown/edit.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var uuid__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! uuid */ "./node_modules/uuid/dist/esm-browser/v4.js");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__);
+/**
+ * WordPress dependencies
+ */
+
+
+
+
+
+
+
+const Edit = ({
+  attributes,
+  setAttributes,
+  clientId
+}) => {
+  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.useBlockProps)();
+  const parentClass = blockProps.className || '';
+  const [isExpanded, setIsExpanded] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+
+  // Generate a persistent unique ID for the dropdown if not already set
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    if (!attributes.dropdownId) {
+      const newId = `dropdown-${(0,uuid__WEBPACK_IMPORTED_MODULE_6__["default"])()}`;
+      setAttributes({
+        dropdownId: newId
+      });
+    }
+  }, [attributes.dropdownId, setAttributes]);
+
+  // Update `metadata.name` with the label value for the List View
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    const currentLabel = attributes.label || (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Dropdown', 'gatherpress');
+    const currentMetadata = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.select)('core/block-editor').getBlockAttributes(clientId).metadata || {};
+
+    // Only update if the metadata name differs from the current label
+    if (currentMetadata.name !== currentLabel) {
+      (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.dispatch)('core/block-editor').updateBlockAttributes(clientId, {
+        metadata: {
+          ...currentMetadata,
+          name: currentLabel
+        }
+      });
+    }
+  }, [attributes.label, clientId]);
+
+  // Ensure dropdown items inherit styles from the parent block
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    const {
+      updateBlockAttributes
+    } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.dispatch)('core/block-editor');
+    const {
+      getBlockOrder,
+      getBlockAttributes
+    } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.select)('core/block-editor');
+    const innerBlockIds = getBlockOrder(clientId);
+    innerBlockIds.forEach(blockId => {
+      const innerBlockAttributes = getBlockAttributes(blockId);
+
+      // Only update child attributes if they differ from the parent
+      const needsUpdate = JSON.stringify(innerBlockAttributes.itemPadding) !== JSON.stringify(attributes.itemPadding) || innerBlockAttributes.itemTextColor !== attributes.itemTextColor || innerBlockAttributes.itemBgColor !== attributes.itemBgColor;
+      if (needsUpdate) {
+        updateBlockAttributes(blockId, {
+          itemPadding: attributes.itemPadding,
+          itemTextColor: attributes.itemTextColor,
+          itemBgColor: attributes.itemBgColor
+        });
+      }
+    });
+  }, [attributes.itemPadding, attributes.itemTextColor, attributes.itemBgColor, clientId]);
+
+  // Handle changes to item padding and sanitize values
+  const handleItemPaddingChange = newPadding => {
+    const sanitizedPadding = Object.fromEntries(Object.entries(newPadding).map(([key, value]) => [key, isNaN(parseInt(value)) ? 0 : parseInt(value)]));
+    setAttributes({
+      itemPadding: sanitizedPadding
+    });
+  };
+
+  // Toggle dropdown visibility
+  const handleToggle = () => {
+    setIsExpanded(prev => !prev);
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
+    ...blockProps,
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.InspectorControls, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.PanelColorSettings, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Colors', 'gatherpress'),
+        colorSettings: [{
+          value: attributes.labelColor,
+          onChange: newColor => setAttributes({
+            labelColor: newColor
+          }),
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Label Text Color', 'gatherpress')
+        }, {
+          value: attributes.itemTextColor,
+          onChange: value => setAttributes({
+            itemTextColor: value
+          }),
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Item Text Color', 'gatherpress')
+        }, {
+          value: attributes.itemBgColor,
+          onChange: value => setAttributes({
+            itemBgColor: value
+          }),
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Item Background Color', 'gatherpress')
+        }]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Settings', 'gatherpress'),
+        initialOpen: false,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.__experimentalBoxControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Item Padding', 'gatherpress'),
+          values: attributes.itemPadding,
+          onChange: handleItemPaddingChange
+        })
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.BlockControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.ToolbarGroup, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_1__.ToolbarButton, {
+          icon: isExpanded ? 'no-alt' : 'plus',
+          onClick: handleToggle,
+          label: isExpanded ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Close Dropdown', 'gatherpress') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Open Dropdown', 'gatherpress')
+        })
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.RichText, {
+      tagName: "a",
+      href: "#",
+      role: "button",
+      "aria-expanded": isExpanded,
+      "aria-controls": attributes.dropdownId,
+      tabIndex: 0,
+      className: `${parentClass}__trigger`,
+      value: attributes.label,
+      onChange: value => setAttributes({
+        label: value
+      }),
+      placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Dropdown Label…', 'gatherpress'),
+      style: {
+        color: attributes.labelColor
+      }
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
+      id: attributes.dropdownId,
+      role: "region",
+      className: `${parentClass}__menu`,
+      style: {
+        display: isExpanded ? 'block' : 'none',
+        backgroundColor: attributes.itemBgColor
+      },
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.InnerBlocks, {
+        allowedBlocks: ['gatherpress/dropdown-item']
+      })
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Edit);
+
+/***/ }),
+
+/***/ "./src/blocks/dropdown/index.js":
+/*!**************************************!*\
+  !*** ./src/blocks/dropdown/index.js ***!
+  \**************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./block.json */ "./src/blocks/dropdown/block.json");
+/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./edit */ "./src/blocks/dropdown/edit.js");
+/* harmony import */ var _save__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./save */ "./src/blocks/dropdown/save.js");
+/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/dropdown/style.scss");
+/**
+ * WordPress dependencies
+ */
+
+
+/**
+ * Internal dependencies
+ */
+
+
+
+
+
+/**
+ * Register the block
+ */
+(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_1__.name, {
+  title: _block_json__WEBPACK_IMPORTED_MODULE_1__.title,
+  category: _block_json__WEBPACK_IMPORTED_MODULE_1__.category,
+  icon: _block_json__WEBPACK_IMPORTED_MODULE_1__.icon,
+  attributes: _block_json__WEBPACK_IMPORTED_MODULE_1__.attributes,
+  edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"],
+  save: _save__WEBPACK_IMPORTED_MODULE_3__["default"]
+});
+
+/***/ }),
+
+/***/ "./src/blocks/dropdown/save.js":
+/*!*************************************!*\
+  !*** ./src/blocks/dropdown/save.js ***!
+  \*************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__);
+
+
+const Save = ({
+  attributes
+}) => {
+  const blockProps = _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.useBlockProps.save();
+  const {
+    dropdownId,
+    label,
+    labelColor,
+    itemBgColor
+  } = attributes;
+
+  // Derive a base class from the parent block's className.
+  const parentClass = blockProps.className || '';
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsxs)("div", {
+    ...blockProps,
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("a", {
+      href: "#",
+      role: "button",
+      "aria-expanded": "false",
+      "aria-controls": dropdownId,
+      tabIndex: 0,
+      className: `${parentClass}__trigger`,
+      style: {
+        color: labelColor
+      },
+      children: label
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
+      id: dropdownId,
+      role: "region",
+      className: `${parentClass}__menu`,
+      style: {
+        backgroundColor: itemBgColor
+      },
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.InnerBlocks.Content, {})
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Save);
+
+/***/ }),
+
+/***/ "./src/blocks/dropdown/style.scss":
+/*!****************************************!*\
+  !*** ./src/blocks/dropdown/style.scss ***!
+  \****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "react/jsx-runtime":
+/*!**********************************!*\
+  !*** external "ReactJSXRuntime" ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = window["ReactJSXRuntime"];
+
+/***/ }),
+
+/***/ "@wordpress/block-editor":
+/*!*************************************!*\
+  !*** external ["wp","blockEditor"] ***!
+  \*************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blockEditor"];
+
+/***/ }),
+
+/***/ "@wordpress/blocks":
+/*!********************************!*\
+  !*** external ["wp","blocks"] ***!
+  \********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blocks"];
+
+/***/ }),
+
+/***/ "@wordpress/components":
+/*!************************************!*\
+  !*** external ["wp","components"] ***!
+  \************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["components"];
+
+/***/ }),
+
+/***/ "@wordpress/data":
+/*!******************************!*\
+  !*** external ["wp","data"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["data"];
+
+/***/ }),
+
+/***/ "@wordpress/element":
+/*!*********************************!*\
+  !*** external ["wp","element"] ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["element"];
+
+/***/ }),
+
+/***/ "@wordpress/i18n":
+/*!******************************!*\
+  !*** external ["wp","i18n"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["i18n"];
+
+/***/ }),
+
+/***/ "./node_modules/uuid/dist/esm-browser/native.js":
+/*!******************************************************!*\
+  !*** ./node_modules/uuid/dist/esm-browser/native.js ***!
+  \******************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+const randomUUID = typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID.bind(crypto);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({ randomUUID });
+
+
+/***/ }),
+
+/***/ "./node_modules/uuid/dist/esm-browser/regex.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/uuid/dist/esm-browser/regex.js ***!
+  \*****************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i);
+
+
+/***/ }),
+
+/***/ "./node_modules/uuid/dist/esm-browser/rng.js":
+/*!***************************************************!*\
+  !*** ./node_modules/uuid/dist/esm-browser/rng.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ rng)
+/* harmony export */ });
+let getRandomValues;
+const rnds8 = new Uint8Array(16);
+function rng() {
+    if (!getRandomValues) {
+        if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+            throw new Error('crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported');
+        }
+        getRandomValues = crypto.getRandomValues.bind(crypto);
+    }
+    return getRandomValues(rnds8);
+}
+
+
+/***/ }),
+
+/***/ "./node_modules/uuid/dist/esm-browser/stringify.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/uuid/dist/esm-browser/stringify.js ***!
+  \*********************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
+/* harmony export */   unsafeStringify: () => (/* binding */ unsafeStringify)
+/* harmony export */ });
+/* harmony import */ var _validate_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./validate.js */ "./node_modules/uuid/dist/esm-browser/validate.js");
+
+const byteToHex = [];
+for (let i = 0; i < 256; ++i) {
+    byteToHex.push((i + 0x100).toString(16).slice(1));
+}
+function unsafeStringify(arr, offset = 0) {
+    return (byteToHex[arr[offset + 0]] +
+        byteToHex[arr[offset + 1]] +
+        byteToHex[arr[offset + 2]] +
+        byteToHex[arr[offset + 3]] +
+        '-' +
+        byteToHex[arr[offset + 4]] +
+        byteToHex[arr[offset + 5]] +
+        '-' +
+        byteToHex[arr[offset + 6]] +
+        byteToHex[arr[offset + 7]] +
+        '-' +
+        byteToHex[arr[offset + 8]] +
+        byteToHex[arr[offset + 9]] +
+        '-' +
+        byteToHex[arr[offset + 10]] +
+        byteToHex[arr[offset + 11]] +
+        byteToHex[arr[offset + 12]] +
+        byteToHex[arr[offset + 13]] +
+        byteToHex[arr[offset + 14]] +
+        byteToHex[arr[offset + 15]]).toLowerCase();
+}
+function stringify(arr, offset = 0) {
+    const uuid = unsafeStringify(arr, offset);
+    if (!(0,_validate_js__WEBPACK_IMPORTED_MODULE_0__["default"])(uuid)) {
+        throw TypeError('Stringified UUID is invalid');
+    }
+    return uuid;
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (stringify);
+
+
+/***/ }),
+
+/***/ "./node_modules/uuid/dist/esm-browser/v4.js":
+/*!**************************************************!*\
+  !*** ./node_modules/uuid/dist/esm-browser/v4.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _native_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./native.js */ "./node_modules/uuid/dist/esm-browser/native.js");
+/* harmony import */ var _rng_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./rng.js */ "./node_modules/uuid/dist/esm-browser/rng.js");
+/* harmony import */ var _stringify_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./stringify.js */ "./node_modules/uuid/dist/esm-browser/stringify.js");
+
+
+
+function v4(options, buf, offset) {
+    if (_native_js__WEBPACK_IMPORTED_MODULE_0__["default"].randomUUID && !buf && !options) {
+        return _native_js__WEBPACK_IMPORTED_MODULE_0__["default"].randomUUID();
+    }
+    options = options || {};
+    const rnds = options.random || (options.rng || _rng_js__WEBPACK_IMPORTED_MODULE_1__["default"])();
+    rnds[6] = (rnds[6] & 0x0f) | 0x40;
+    rnds[8] = (rnds[8] & 0x3f) | 0x80;
+    if (buf) {
+        offset = offset || 0;
+        for (let i = 0; i < 16; ++i) {
+            buf[offset + i] = rnds[i];
+        }
+        return buf;
+    }
+    return (0,_stringify_js__WEBPACK_IMPORTED_MODULE_2__.unsafeStringify)(rnds);
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (v4);
+
+
+/***/ }),
+
+/***/ "./node_modules/uuid/dist/esm-browser/validate.js":
+/*!********************************************************!*\
+  !*** ./node_modules/uuid/dist/esm-browser/validate.js ***!
+  \********************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _regex_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./regex.js */ "./node_modules/uuid/dist/esm-browser/regex.js");
+
+function validate(uuid) {
+    return typeof uuid === 'string' && _regex_js__WEBPACK_IMPORTED_MODULE_0__["default"].test(uuid);
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (validate);
+
+
+/***/ }),
+
+/***/ "./src/blocks/dropdown/block.json":
+/*!****************************************!*\
+  !*** ./src/blocks/dropdown/block.json ***!
+  \****************************************/
+/***/ ((module) => {
+
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"gatherpress/dropdown","title":"Dropdown","category":"gatherpress","icon":"menu","description":"A customizable dropdown menu that allows users to add links or button-like links.","attributes":{"dropdownId":{"type":"string"},"openOn":{"type":"string","default":"click","enum":["click","hover"]},"label":{"type":"string","default":"Dropdown"},"replaceLabel":{"type":"boolean","default":false},"alignment":{"type":"string","default":"left","enum":["left","center","right","justify","stretch"]},"itemPadding":{"type":"object","default":{"top":0,"right":0,"bottom":0,"left":0}},"itemTextColor":{"type":"string","default":"#000000"},"itemBgColor":{"type":"string","default":"#FFFFFF"}},"providesContext":{"gatherpress/dropdown/itemPadding":"itemPadding","gatherpress/dropdown/itemTextColor":"itemTextColor","gatherpress/dropdown/itemBgColor":"itemBgColor"},"usesContext":[],"supports":{"html":false,"interactivity":true},"textdomain":"gatherpress","editorScript":"file:./index.js","style":"file:./style-index.css","viewScriptModule":"file:./view.js"}');
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/chunk loaded */
+/******/ 	(() => {
+/******/ 		var deferred = [];
+/******/ 		__webpack_require__.O = (result, chunkIds, fn, priority) => {
+/******/ 			if(chunkIds) {
+/******/ 				priority = priority || 0;
+/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+/******/ 				deferred[i] = [chunkIds, fn, priority];
+/******/ 				return;
+/******/ 			}
+/******/ 			var notFulfilled = Infinity;
+/******/ 			for (var i = 0; i < deferred.length; i++) {
+/******/ 				var [chunkIds, fn, priority] = deferred[i];
+/******/ 				var fulfilled = true;
+/******/ 				for (var j = 0; j < chunkIds.length; j++) {
+/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every((key) => (__webpack_require__.O[key](chunkIds[j])))) {
+/******/ 						chunkIds.splice(j--, 1);
+/******/ 					} else {
+/******/ 						fulfilled = false;
+/******/ 						if(priority < notFulfilled) notFulfilled = priority;
+/******/ 					}
+/******/ 				}
+/******/ 				if(fulfilled) {
+/******/ 					deferred.splice(i--, 1)
+/******/ 					var r = fn();
+/******/ 					if (r !== undefined) result = r;
+/******/ 				}
+/******/ 			}
+/******/ 			return result;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"blocks/dropdown/index": 0,
+/******/ 			"blocks/dropdown/style-index": 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		__webpack_require__.O.j = (chunkId) => (installedChunks[chunkId] === 0);
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 			return __webpack_require__.O(result);
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunkgatherpress"] = globalThis["webpackChunkgatherpress"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/dropdown/style-index"], () => (__webpack_require__("./src/blocks/dropdown/index.js")))
+/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
+/******/ 	
+/******/ })()
+;
+//# sourceMappingURL=index.js.map
