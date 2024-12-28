@@ -16,7 +16,8 @@
       "default": 0
     },
     "dropdownId": {
-      "type": "string"
+      "type": "string",
+      "default": ""
     },
     "openOn": {
       "type": "string",
@@ -48,11 +49,15 @@
     "itemPadding": {
       "type": "object",
       "default": {
-        "top": 0,
-        "right": 0,
-        "bottom": 0,
-        "left": 0
+        "top": 8,
+        "right": 8,
+        "bottom": 8,
+        "left": 8
       }
+    },
+    "labelTextColor": {
+      "type": "string",
+      "default": "#000000"
     },
     "itemTextColor": {
       "type": "string",
@@ -84,7 +89,7 @@
     },
     "dropdownMaxWidth": {
       "type": "string",
-      "default": "240px"
+      "default": 240
     },
     "dropdownBorderColor": {
       "type": "string",
@@ -96,7 +101,7 @@
     },
     "dropdownBorderRadius": {
       "type": "number",
-      "default": 0
+      "default": 8
     }
   },
   "supports": {

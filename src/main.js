@@ -4,9 +4,13 @@
 import domReady from '@wordpress/dom-ready';
 
 const setupModalCloseHandlers = () => {
-	// Function to close a modal
+	// Function to close a modal.
 	const closeModal = (modal) => {
+		// Remove the visible class from the modal
 		modal.classList.remove('gatherpress--is-visible');
+
+		// Set aria-hidden to true.
+		modal.setAttribute('aria-hidden', 'true');
 	};
 
 	// Handle Escape key to close modals
@@ -47,7 +51,20 @@ const setupModalCloseHandlers = () => {
 const setupDropdownCloseHandlers = () => {
 	// Function to close a dropdown
 	const closeDropdown = (dropdown) => {
+		// Remove the visible class from the dropdown menu
 		dropdown.classList.remove('gatherpress--is-visible');
+
+		// Find the associated trigger element and update aria-expanded
+		const dropdownParent = dropdown.closest(
+			'.wp-block-gatherpress-dropdown'
+		);
+		const trigger = dropdownParent?.querySelector(
+			'.wp-block-gatherpress-dropdown__trigger'
+		);
+
+		if (trigger) {
+			trigger.setAttribute('aria-expanded', 'false');
+		}
 	};
 
 	// Handle Escape key to close dropdowns

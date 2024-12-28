@@ -12,8 +12,7 @@ import { useBlockProps, RichText } from '@wordpress/block-editor';
  */
 const Save = ({ attributes }) => {
 	const blockProps = useBlockProps.save();
-	const { text, url, isButton, itemHoverTextColor, itemHoverBgColor } =
-		attributes;
+	const { text } = attributes;
 
 	return <RichText.Content {...blockProps} tagName="div" value={text} />;
 };

@@ -145,6 +145,21 @@ class Block {
 	}
 
 	/**
+	 * Generate the default CSS class for a block.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_name The block name in the format 'namespace/blockname'.
+	 * @return string The default CSS class for the block.
+	 */
+	public function get_default_block_class( string $block_name ): string {
+		return sprintf(
+			'wp-block-%s',
+			sanitize_key( str_replace( '/', '-', $block_name ) )
+		);
+	}
+
+	/**
 	 * Get class name from folder name.
 	 *
 	 * @todo maybe better in the Utility class?

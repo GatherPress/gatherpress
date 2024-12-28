@@ -11,6 +11,7 @@ import { createBlock } from '@wordpress/blocks';
 import { PanelBody } from '@wordpress/components';
 import { dispatch } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
+import { select } from '@wordpress/data';
 
 /**
  * Edit Component
@@ -54,25 +55,30 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 					);
 					const anchors = parsedDoc.querySelectorAll('a');
 
-					// Default fallback.
+					// Default fallback anchor tag.
+					let openingTag = '<a href="#">';
+					const closingTag = '</a>';
 					let newText = value.trim();
 
-					if (anchors.length === 0) {
-						newText = `<a href="#">${newText}</a>`;
+					if (anchors.length > 0) {
+						// Extract the opening tag from the first anchor.
+						const firstAnchor = anchors[0];
+						const href = firstAnchor.getAttribute('href') || '#';
+						openingTag = `<a href="${href}">`;
 					}
 
-					// If a link exists, use its href and content.
-					if (anchors.length > 1) {
-						const firstAnchor = anchors[anchors[0]];
-						newText = firstAnchor.outerHTML.trim();
-						// Temporarily change `text` to force re-render.
-						setAttributes({ text: '' });
+					// Remove all markup and clean text.
+					const cleanText = parsedDoc.body.textContent.trim();
+
+					// Wrap the clean text with the anchor tags.
+					if (cleanText) {
+						newText = `${openingTag}${cleanText}${closingTag}`;
+					} else {
+						newText = '';
 					}
 
-					setTimeout(() => {
-						// Update attributes with the cleaned-up values.
-						setAttributes({ text: newText });
-					}, 0);
+					// Update attributes with the cleaned-up values.
+					setAttributes({ text: newText });
 
 					// Update metadata for List View.
 					dispatch('core/block-editor').updateBlockAttributes(
@@ -80,7 +86,7 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 						{
 							metadata: {
 								name:
-									newText ||
+									cleanText ||
 									__('Dropdown Item', 'gatherpress'),
 							},
 						}
@@ -103,6 +109,31 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 							{ text: '' }
 						);
 						insertBlocksAfter([newBlock]);
+					}
+
+					if (event.key === 'Backspace' && !attributes.text) {
+						event.preventDefault();
+
+						// Retrieve block order and index
+						const { getBlockOrder, getBlockIndex } =
+							select('core/block-editor');
+						const { removeBlock, selectBlock } =
+							dispatch('core/block-editor');
+
+						const blockOrder = getBlockOrder();
+						const currentIndex = getBlockIndex(clientId);
+
+						// Check if there's a previous block
+						if (currentIndex > 0) {
+							const previousBlockId =
+								blockOrder[currentIndex - 1];
+
+							// Focus the previous block and set the caret to the end
+							selectBlock(previousBlockId, -1);
+
+							// Remove the current block
+							removeBlock(clientId);
+						}
 					}
 				}}
 			/>

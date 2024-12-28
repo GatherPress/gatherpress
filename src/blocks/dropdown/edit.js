@@ -69,7 +69,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 
 	useEffect(() => {
 		// Ensure this effect only runs when `actAsSelect` is enabled
-		if (false === attributes.actAsSelect) {
+		if (!attributes.actAsSelect) {
 			return;
 		}
 
@@ -79,30 +79,40 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		// Validate innerBlocks and selectedIndex
 		if (
 			Array.isArray(innerBlocks) &&
-			0 <= attributes.selectedIndex &&
+			attributes.selectedIndex >= 0 &&
 			attributes.selectedIndex < innerBlocks.length
 		) {
 			const selectedBlock = innerBlocks[attributes.selectedIndex];
 			const selectedBlockText = selectedBlock?.attributes?.text || '';
 
-			// Check for a difference between the label and the selected block's text
-			if (selectedBlockText !== attributes.label) {
-				setAttributes({ label: selectedBlockText });
+			// Parse and extract plain text to remove any markup
+			const plainTextLabel = new DOMParser()
+				.parseFromString(selectedBlockText, 'text/html')
+				.body.textContent.trim();
+
+			// Update the label if it differs from the current one
+			if (plainTextLabel !== attributes.label) {
+				setAttributes({ label: plainTextLabel });
 			}
 		}
-	}, [
-		attributes.actAsSelect,
-		attributes.selectedIndex,
-		attributes.label,
-		clientId,
-	]);
+	}, [attributes.actAsSelect, attributes.selectedIndex, clientId]);
 
 	useEffect(() => {
 		if (attributes.actAsSelect) {
+			const selectedBlockText =
+				innerBlocks[attributes.selectedIndex]?.attributes?.text || '';
+
+			// Parse the selected block's text to remove any HTML markup
+			const plainTextLabel = new DOMParser()
+				.parseFromString(selectedBlockText, 'text/html')
+				.body.textContent.trim();
+
+			// Update the label attribute
 			setAttributes({
 				label:
-					innerBlocks[attributes.selectedIndex]?.attributes?.text ||
-					'',
+					plainTextLabel ||
+					__('Item', 'gatherpress') +
+						` ${attributes.selectedIndex + 1}`,
 			});
 		}
 	}, [innerBlocks]);
@@ -177,14 +187,25 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 										'gatherpress'
 									)}
 									value={attributes.selectedIndex}
-									options={innerBlocks.map(
-										(block, index) => ({
+									options={innerBlocks.map((block, index) => {
+										// Parse and extract plain text to remove markup
+										const plainTextLabel = new DOMParser()
+											.parseFromString(
+												block.attributes.text || '',
+												'text/html'
+											)
+											.body.textContent.trim();
+
+										return {
 											label:
-												block.attributes.text ||
-												`Item ${index + 1}`,
+												plainTextLabel ||
+												__(
+													`Item ${index + 1}`,
+													'gatherpress'
+												),
 											value: index,
-										})
-									)}
+										};
+									})}
 									onChange={(value) =>
 										setAttributes({
 											selectedIndex: parseInt(value, 10),
@@ -251,9 +272,9 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					title={__('Colors', 'gatherpress')}
 					colorSettings={[
 						{
-							value: attributes.labelColor,
-							onChange: (newColor) =>
-								setAttributes({ labelColor: newColor }),
+							value: attributes.labelTextColor,
+							onChange: (value) =>
+								setAttributes({ labelTextColor: value }),
 							label: __('Label Text Color', 'gatherpress'),
 						},
 						{
