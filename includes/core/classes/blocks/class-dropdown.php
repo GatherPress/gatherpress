@@ -82,10 +82,15 @@ class Dropdown {
 			return $block_content;
 		}
 		$block_instance         = Block::get_instance();
-		$attributes             = $block['attrs'] ?? [];
+		$attributes             = $block['attrs'] ?? array();
 		$dropdown_id            = $attributes['dropdownId'] ?? '';
 		$open_on                = $attributes['openOn'] ?? 'click';
-		$item_padding           = $attributes['itemPadding'] ?? [ 'top' => 8, 'right' => 8, 'bottom' => 8, 'left' => 8 ];
+		$item_padding           = $attributes['itemPadding'] ?? array(
+			'top'    => 8,
+			'right'  => 8,
+			'bottom' => 8,
+			'left'   => 8,
+		);
 		$item_text_color        = $attributes['itemTextColor'] ?? '#000000';
 		$item_bg_color          = $attributes['itemBgColor'] ?? '#FFFFFF';
 		$item_hover_text_color  = $attributes['itemHoverTextColor'] ?? '#000000';
@@ -163,7 +168,7 @@ class Dropdown {
 	public function apply_dropdown_attributes( string $block_content, array $block ): string {
 		if ( self::BLOCK_NAME === $block['blockName'] ) {
 			$tag                       = new WP_HTML_Tag_Processor( $block_content );
-			$attributes                = $block['attrs'] ?? [];
+			$attributes                = $block['attrs'] ?? array();
 			$open_on                   = $attributes['openOn'] ?? 'click';
 			$label_color               = $attributes['labelColor'] ?? '#000000';
 			$dropdown_id               = $attributes['dropdownId'] ?? '';
@@ -179,7 +184,7 @@ class Dropdown {
 						'tag_name'   => 'a',
 						'attributes' => array(
 							'class' => 'wp-block-gatherpress-dropdown__trigger',
-						)
+						),
 					),
 				)
 			) {
@@ -192,8 +197,8 @@ class Dropdown {
 				$existing_styles = $tag->get_attribute( 'style' );
 
 				if ( ! empty( $label_color ) ) {
-					$new_style       = sprintf( 'color: %s;', $label_color );
-					$merged_styles   = trim( $existing_styles . ' ' . $new_style );
+					$new_style     = sprintf( 'color: %s;', $label_color );
+					$merged_styles = trim( $existing_styles . ' ' . $new_style );
 
 					$tag->set_attribute( 'style', $merged_styles );
 				}
@@ -210,7 +215,7 @@ class Dropdown {
 					array(
 						'tag_name'   => 'div',
 						'attributes' => array(
-							'class' => 'wp-block-gatherpress-dropdown__menu'
+							'class' => 'wp-block-gatherpress-dropdown__menu',
 						),
 					)
 				)
@@ -236,7 +241,7 @@ class Dropdown {
 					sprintf(
 						'max-width: %dpx;',
 						intval( $dropdown_max_width )
-					)
+					),
 				);
 
 				$merged_styles = trim( $existing_styles . ' ' . implode( ' ', $new_styles ) );
@@ -246,7 +251,6 @@ class Dropdown {
 				$block_content = $tag->get_updated_html();
 			}
 		}
-
 
 		return $block_content;
 	}

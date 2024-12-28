@@ -6,6 +6,7 @@ import {
 	InnerBlocks,
 	useBlockProps,
 	InspectorControls,
+	InspectorAdvancedControls,
 	PanelColorSettings,
 	RichText,
 } from '@wordpress/block-editor';
@@ -143,94 +144,9 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		<div {...blockProps}>
 			<InspectorControls>
 				<PanelBody
-					title={__('Settings', 'gatherpress')}
+					title={__('Dropdown Settings', 'gatherpress')}
 					initialOpen={true}
 				>
-					<ToggleGroupControl
-						label={__('Open on', 'gatherpress')}
-						value={attributes.openOn}
-						isBlock
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-						onChange={(value) => setAttributes({ openOn: value })}
-					>
-						<ToggleGroupControlOption
-							value="click"
-							label={__('Click', 'gatherpress')}
-						/>
-						<ToggleGroupControlOption
-							value="hover"
-							label={__('Hover', 'gatherpress')}
-						/>
-					</ToggleGroupControl>
-					{0 < innerBlocks.length && (
-						<>
-							<ToggleControl
-								label={__('Enable Select Mode', 'gatherpress')}
-								help={__(
-									'When enabled, clicking on an item will set it as the dropdown label, and the selected item will be disabled until another is chosen.',
-									'gatherpress'
-								)}
-								checked={attributes.actAsSelect}
-								onChange={(value) =>
-									setAttributes({ actAsSelect: value })
-								}
-							/>
-							{attributes.actAsSelect && (
-								<SelectControl
-									label={__(
-										'Default Selected Item',
-										'gatherpress'
-									)}
-									help={__(
-										'This item will be selected by default when the dropdown is displayed.',
-										'gatherpress'
-									)}
-									value={attributes.selectedIndex}
-									options={innerBlocks.map((block, index) => {
-										// Parse and extract plain text to remove markup
-										const plainTextLabel = new DOMParser()
-											.parseFromString(
-												block.attributes.text || '',
-												'text/html'
-											)
-											.body.textContent.trim();
-
-										return {
-											label:
-												plainTextLabel ||
-												__(
-													`Item ${index + 1}`,
-													'gatherpress'
-												),
-											value: index,
-										};
-									})}
-									onChange={(value) =>
-										setAttributes({
-											selectedIndex: parseInt(value, 10),
-										})
-									}
-								/>
-							)}
-						</>
-					)}
-					<BoxControl
-						label={__('Item Padding', 'gatherpress')}
-						values={attributes.itemPadding || 8}
-						onChange={(value) =>
-							setAttributes({ itemPadding: value })
-						}
-					/>
-					<RangeControl
-						label={__('Item Divider Thickness', 'gatherpress')}
-						value={attributes.itemDividerThickness || 1}
-						onChange={(value) =>
-							setAttributes({ itemDividerThickness: value })
-						}
-						min={0}
-						max={10}
-					/>
 					<RangeControl
 						label={__('Dropdown Z-Index', 'gatherpress')}
 						value={attributes.dropdownZIndex}
@@ -238,13 +154,13 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 							setAttributes({ dropdownZIndex: value })
 						}
 						min={0}
-						max={1000}
+						max={9999}
 					/>
 					<RangeControl
 						label={__('Dropdown Max Width', 'gatherpress')}
 						value={parseInt(attributes.dropdownMaxWidth, 10)}
 						onChange={(value) =>
-							setAttributes({ dropdownMaxWidth: `${value}px` })
+							setAttributes({ dropdownMaxWidth: value })
 						}
 						min={100}
 						max={800}
@@ -267,9 +183,25 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						min={0}
 						max={50}
 					/>
+					<BoxControl
+						label={__('Item Padding', 'gatherpress')}
+						values={attributes.itemPadding || 8}
+						onChange={(value) =>
+							setAttributes({ itemPadding: value })
+						}
+					/>
+					<RangeControl
+						label={__('Item Divider Thickness', 'gatherpress')}
+						value={attributes.itemDividerThickness || 1}
+						onChange={(value) =>
+							setAttributes({ itemDividerThickness: value })
+						}
+						min={0}
+						max={10}
+					/>
 				</PanelBody>
 				<PanelColorSettings
-					title={__('Colors', 'gatherpress')}
+					title={__('Label Colors', 'gatherpress')}
 					colorSettings={[
 						{
 							value: attributes.labelTextColor,
@@ -277,6 +209,22 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 								setAttributes({ labelTextColor: value }),
 							label: __('Label Text Color', 'gatherpress'),
 						},
+					]}
+				/>
+				<PanelColorSettings
+					title={__('Dropdown Colors', 'gatherpress')}
+					colorSettings={[
+						{
+							value: attributes.dropdownBorderColor,
+							onChange: (value) =>
+								setAttributes({ dropdownBorderColor: value }),
+							label: __('Dropdown Border Color', 'gatherpress'),
+						},
+					]}
+				/>
+				<PanelColorSettings
+					title={__('Item Colors', 'gatherpress')}
+					colorSettings={[
 						{
 							value: attributes.itemTextColor,
 							onChange: (value) =>
@@ -310,16 +258,80 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 								setAttributes({ itemDividerColor: newColor }),
 							label: __('Item Divider Color', 'gatherpress'),
 						},
-						{
-							value: attributes.dropdownBorderColor,
-							onChange: (value) =>
-								setAttributes({ dropdownBorderColor: value }),
-							label: __('Dropdown Border Color', 'gatherpress'),
-						},
 					]}
 				/>
 			</InspectorControls>
+			<InspectorAdvancedControls>
+				<ToggleGroupControl
+					label={__('Open on', 'gatherpress')}
+					value={attributes.openOn}
+					isBlock
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+					onChange={(value) => setAttributes({ openOn: value })}
+				>
+					<ToggleGroupControlOption
+						value="click"
+						label={__('Click', 'gatherpress')}
+					/>
+					<ToggleGroupControlOption
+						value="hover"
+						label={__('Hover', 'gatherpress')}
+					/>
+				</ToggleGroupControl>
+				{0 < innerBlocks.length && (
+					<>
+						<ToggleControl
+							label={__('Enable Select Mode', 'gatherpress')}
+							help={__(
+								'When enabled, clicking on an item will set it as the dropdown label, and the selected item will be disabled until another is chosen.',
+								'gatherpress'
+							)}
+							checked={attributes.actAsSelect}
+							onChange={(value) =>
+								setAttributes({ actAsSelect: value })
+							}
+						/>
+						{attributes.actAsSelect && (
+							<SelectControl
+								label={__(
+									'Default Selected Item',
+									'gatherpress'
+								)}
+								help={__(
+									'This item will be selected by default when the dropdown is displayed.',
+									'gatherpress'
+								)}
+								value={attributes.selectedIndex}
+								options={innerBlocks.map((block, index) => {
+									// Parse and extract plain text to remove markup
+									const plainTextLabel = new DOMParser()
+										.parseFromString(
+											block.attributes.text || '',
+											'text/html'
+										)
+										.body.textContent.trim();
 
+									return {
+										label:
+											plainTextLabel ||
+											__(
+												`Item ${index + 1}`,
+												'gatherpress'
+											),
+										value: index,
+									};
+								})}
+								onChange={(value) =>
+									setAttributes({
+										selectedIndex: parseInt(value, 10),
+									})
+								}
+							/>
+						)}
+					</>
+				)}
+			</InspectorAdvancedControls>
 			<BlockControls>
 				<ToolbarGroup>
 					<ToolbarButton
