@@ -9,7 +9,7 @@
   "attributes": {
     "text": {
       "type": "string",
-      "default": "Item"
+      "default": ""
     },
     "url": {
       "type": "string",

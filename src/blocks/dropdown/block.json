@@ -7,6 +7,14 @@
 	"icon": "menu",
 	"description": "A customizable dropdown menu that allows users to add links or button-like links.",
 	"attributes": {
+		"actAsSelect": {
+			"type": "boolean",
+			"default": false
+		},
+		"selectedIndex": {
+			"type": "number",
+			"default": 0
+		},
 		"dropdownId": {
 			"type": "string"
 		},

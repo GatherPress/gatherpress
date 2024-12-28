@@ -13,25 +13,39 @@ const Save = ({ attributes }) => {
 		itemHoverTextColor,
 		itemDividerColor,
 		itemDividerThickness,
+		openOn,
 		dropdownBorderColor,
 		dropdownBorderThickness,
 		dropdownBorderRadius,
 	} = attributes;
 
+	const parentElement = blockProps.className?.replace(/\s+/g, '.') || '';
+
 	const dropdownStyles = `
-		#${dropdownId} .wp-block-gatherpress-dropdown-item {
-			padding: ${itemPadding.top} ${itemPadding.right} ${itemPadding.bottom} ${itemPadding.left};
+		#${dropdownId} .wp-block-gatherpress-dropdown-item a {
+			padding: ${itemPadding.top}px ${itemPadding.right}px ${itemPadding.bottom}px ${itemPadding.left}px;
 			color: ${itemTextColor || 'inherit'};
 			background-color: ${itemBgColor || 'transparent'};
 		}
 
-		#${dropdownId} .wp-block-gatherpress-dropdown-item:hover {
+		#${dropdownId} .wp-block-gatherpress-dropdown-item a:hover {
 			color: ${itemHoverTextColor || 'inherit'};
 			background-color: ${itemHoverBgColor || 'transparent'};
 		}
 
 		#${dropdownId} .wp-block-gatherpress-dropdown-item:not(:first-child) {
 			border-top: ${itemDividerThickness || 1}px solid ${itemDividerColor || 'transparent'};
+		}
+
+		${
+			openOn === 'hover' && parentElement
+				? `
+					.${parentElement}:hover #${dropdownId},
+					.${parentElement}:focus-within #${dropdownId} {
+						display: block;
+					}
+				`
+				: ''
 		}
 	`;
 

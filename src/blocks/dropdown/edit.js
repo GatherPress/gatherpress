@@ -15,12 +15,16 @@ import {
 	PanelBody,
 	ToolbarButton,
 	RangeControl,
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 	ToolbarGroup,
+	ToggleControl,
+	SelectControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { v4 as uuidv4 } from 'uuid';
-import { dispatch, select } from '@wordpress/data';
+import { dispatch, select, useSelect } from '@wordpress/data';
 
 const Edit = ({ attributes, setAttributes, clientId }) => {
 	const blockProps = useBlockProps();
@@ -34,6 +38,12 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		itemDividerColor,
 		itemDividerThickness,
 	} = attributes;
+	const innerBlocks = useSelect(
+		(select) =>
+			select('core/block-editor').getBlock(clientId)?.innerBlocks || [],
+		[clientId]
+	);
+
 	// Generate a persistent unique ID for the dropdown if not already set
 	useEffect(() => {
 		if (!attributes.dropdownId) {
@@ -57,9 +67,49 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		}
 	}, [attributes.label, clientId]);
 
+	useEffect(() => {
+		// Ensure this effect only runs when `actAsSelect` is enabled
+		if (false === attributes.actAsSelect) {
+			return;
+		}
+
+		// Use a stable reference to the block editor store
+		const innerBlocks = select('core/block-editor').getBlocks(clientId);
+
+		// Validate innerBlocks and selectedIndex
+		if (
+			Array.isArray(innerBlocks) &&
+			0 <= attributes.selectedIndex &&
+			attributes.selectedIndex < innerBlocks.length
+		) {
+			const selectedBlock = innerBlocks[attributes.selectedIndex];
+			const selectedBlockText = selectedBlock?.attributes?.text || '';
+
+			// Check for a difference between the label and the selected block's text
+			if (selectedBlockText !== attributes.label) {
+				setAttributes({ label: selectedBlockText });
+			}
+		}
+	}, [
+		attributes.actAsSelect,
+		attributes.selectedIndex,
+		attributes.label,
+		clientId,
+	]);
+
+	useEffect(() => {
+		if (attributes.actAsSelect) {
+			setAttributes({
+				label:
+					innerBlocks[attributes.selectedIndex]?.attributes?.text ||
+					'',
+			});
+		}
+	}, [innerBlocks]);
+
 	const dropdownStyles = `
 		#${attributes.dropdownId} .wp-block-gatherpress-dropdown-item {
-			padding: ${itemPadding.top} ${itemPadding.right} ${itemPadding.bottom} ${itemPadding.left};
+			padding: ${itemPadding.top}px ${itemPadding.right}px ${itemPadding.bottom}px ${itemPadding.left}px;
 			color: ${itemTextColor || 'inherit'};
 			background-color: ${itemBgColor || 'transparent'};
 		}
@@ -82,62 +132,68 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	return (
 		<div {...blockProps}>
 			<InspectorControls>
-				<PanelColorSettings
-					title={__('Colors', 'gatherpress')}
-					colorSettings={[
-						{
-							value: attributes.labelColor,
-							onChange: (newColor) =>
-								setAttributes({ labelColor: newColor }),
-							label: __('Label Text Color', 'gatherpress'),
-						},
-						{
-							value: attributes.itemTextColor,
-							onChange: (value) =>
-								setAttributes({ itemTextColor: value }),
-							label: __('Item Text Color', 'gatherpress'),
-						},
-						{
-							value: attributes.itemBgColor,
-							onChange: (value) =>
-								setAttributes({ itemBgColor: value }),
-							label: __('Item Background Color', 'gatherpress'),
-						},
-						{
-							value: attributes.itemHoverTextColor,
-							onChange: (value) =>
-								setAttributes({ itemHoverTextColor: value }),
-							label: __('Item Hover Text Color', 'gatherpress'),
-						},
-						{
-							value: attributes.itemHoverBgColor,
-							onChange: (value) =>
-								setAttributes({ itemHoverBgColor: value }),
-							label: __(
-								'Item Hover Background Color',
-								'gatherpress'
-							),
-						},
-						{
-							value: attributes.itemDividerColor,
-							onChange: (newColor) =>
-								setAttributes({ itemDividerColor: newColor }),
-							label: __('Item Divider Color', 'gatherpress'),
-						},
-						{
-							value: attributes.dropdownBorderColor,
-							onChange: (value) =>
-								setAttributes({ dropdownBorderColor: value }),
-							label: __('Dropdown Border Color', 'gatherpress'),
-						},
-					]}
-				/>
-
-				{/* Dropdown Item Settings */}
 				<PanelBody
 					title={__('Settings', 'gatherpress')}
-					initialOpen={false}
+					initialOpen={true}
 				>
+					<ToggleGroupControl
+						label={__('Open on', 'gatherpress')}
+						value={attributes.openOn}
+						isBlock
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						onChange={(value) => setAttributes({ openOn: value })}
+					>
+						<ToggleGroupControlOption
+							value="click"
+							label={__('Click', 'gatherpress')}
+						/>
+						<ToggleGroupControlOption
+							value="hover"
+							label={__('Hover', 'gatherpress')}
+						/>
+					</ToggleGroupControl>
+					{0 < innerBlocks.length && (
+						<>
+							<ToggleControl
+								label={__('Enable Select Mode', 'gatherpress')}
+								help={__(
+									'When enabled, clicking on an item will set it as the dropdown label, and the selected item will be disabled until another is chosen.',
+									'gatherpress'
+								)}
+								checked={attributes.actAsSelect}
+								onChange={(value) =>
+									setAttributes({ actAsSelect: value })
+								}
+							/>
+							{attributes.actAsSelect && (
+								<SelectControl
+									label={__(
+										'Default Selected Item',
+										'gatherpress'
+									)}
+									help={__(
+										'This item will be selected by default when the dropdown is displayed.',
+										'gatherpress'
+									)}
+									value={attributes.selectedIndex}
+									options={innerBlocks.map(
+										(block, index) => ({
+											label:
+												block.attributes.text ||
+												`Item ${index + 1}`,
+											value: index,
+										})
+									)}
+									onChange={(value) =>
+										setAttributes({
+											selectedIndex: parseInt(value, 10),
+										})
+									}
+								/>
+							)}
+						</>
+					)}
 					<BoxControl
 						label={__('Item Padding', 'gatherpress')}
 						values={attributes.itemPadding || 8}
@@ -191,6 +247,56 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						max={50}
 					/>
 				</PanelBody>
+				<PanelColorSettings
+					title={__('Colors', 'gatherpress')}
+					colorSettings={[
+						{
+							value: attributes.labelColor,
+							onChange: (newColor) =>
+								setAttributes({ labelColor: newColor }),
+							label: __('Label Text Color', 'gatherpress'),
+						},
+						{
+							value: attributes.itemTextColor,
+							onChange: (value) =>
+								setAttributes({ itemTextColor: value }),
+							label: __('Item Text Color', 'gatherpress'),
+						},
+						{
+							value: attributes.itemBgColor,
+							onChange: (value) =>
+								setAttributes({ itemBgColor: value }),
+							label: __('Item Background Color', 'gatherpress'),
+						},
+						{
+							value: attributes.itemHoverTextColor,
+							onChange: (value) =>
+								setAttributes({ itemHoverTextColor: value }),
+							label: __('Item Hover Text Color', 'gatherpress'),
+						},
+						{
+							value: attributes.itemHoverBgColor,
+							onChange: (value) =>
+								setAttributes({ itemHoverBgColor: value }),
+							label: __(
+								'Item Hover Background Color',
+								'gatherpress'
+							),
+						},
+						{
+							value: attributes.itemDividerColor,
+							onChange: (newColor) =>
+								setAttributes({ itemDividerColor: newColor }),
+							label: __('Item Divider Color', 'gatherpress'),
+						},
+						{
+							value: attributes.dropdownBorderColor,
+							onChange: (value) =>
+								setAttributes({ dropdownBorderColor: value }),
+							label: __('Dropdown Border Color', 'gatherpress'),
+						},
+					]}
+				/>
 			</InspectorControls>
 
 			<BlockControls>
@@ -207,22 +313,43 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</ToolbarGroup>
 			</BlockControls>
 
-			{/* Dropdown Label */}
-			<RichText
-				tagName="a"
-				href="#"
-				role="button"
-				aria-expanded={isExpanded}
-				aria-controls={attributes.dropdownId}
-				tabIndex={0}
-				className="wp-block-gatherpress-dropdown__trigger"
-				value={attributes.label}
-				onChange={(value) => setAttributes({ label: value })}
-				placeholder={__('Dropdown Label…', 'gatherpress')}
-				style={{
-					color: attributes.labelColor,
-				}}
-			/>
+			{attributes.actAsSelect ? (
+				// Use plain anchor when actAsSelect is enabled
+				<a
+					href="#"
+					role="button"
+					aria-expanded={isExpanded}
+					aria-controls={attributes.dropdownId}
+					tabIndex={0}
+					className="wp-block-gatherpress-dropdown__trigger"
+					style={{
+						color: attributes.labelColor,
+					}}
+				>
+					{attributes.label}
+				</a>
+			) : (
+				// Use RichText when actAsSelect is disabled
+				<RichText
+					tagName="a"
+					href="#"
+					role="button"
+					aria-expanded={isExpanded}
+					aria-controls={attributes.dropdownId}
+					tabIndex={0}
+					className="wp-block-gatherpress-dropdown__trigger"
+					value={attributes.label}
+					onChange={(value) => {
+						// Update label only if not in select mode
+						setAttributes({ label: value });
+					}}
+					allowedFormats={[]}
+					placeholder={__('Dropdown Label…', 'gatherpress')}
+					style={{
+						color: attributes.labelColor,
+					}}
+				/>
+			)}
 
 			{/* Dropdown Items Container */}
 			<style>{dropdownStyles}</style>

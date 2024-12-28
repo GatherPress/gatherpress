@@ -78,7 +78,9 @@ class Dropdown {
 	 */
 	public function apply_dropdown_attributes( string $block_content, array $block ): string {
 		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
+			$attributes = $block['attrs'] ?? [];
+			$open_on    = $attributes['openOn'] ?? 'click';
+			$tag        = new WP_HTML_Tag_Processor( $block_content );
 
 			if (
 				$tag->next_tag( array( 'tag_name' => 'div' ) ) &&
@@ -86,7 +88,10 @@ class Dropdown {
 			) {
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
+
+				if ( 'click' === $open_on ) {
+					$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
+				}
 
 				$block_content = $tag->get_updated_html();
 			}

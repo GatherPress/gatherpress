@@ -10,6 +10,7 @@ import {
 import { createBlock } from '@wordpress/blocks';
 import { PanelBody } from '@wordpress/components';
 import { dispatch } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
 
 /**
  * Edit Component
@@ -24,32 +25,9 @@ import { dispatch } from '@wordpress/data';
 const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 	const { text, url } = attributes;
 	const blockProps = useBlockProps();
-
-	// Synchronize attributes with parent block context only if they differ
-	// useEffect(() => {
-	// 	const contextPadding = context['gatherpress/dropdown/itemPadding'];
-	// 	const contextTextColor = context['gatherpress/dropdown/itemTextColor'];
-
-	// 	if (
-	// 		JSON.stringify(itemPadding) !== JSON.stringify(contextPadding) ||
-	// 		itemTextColor !== contextTextColor
-	// 	) {
-	// 		setAttributes({
-	// 			itemPadding: contextPadding || itemPadding,
-	// 			itemTextColor: contextTextColor || itemTextColor,
-	// 		});
-	// 	}
-	// }, [context, itemPadding, itemTextColor, setAttributes]);
-
-	const isButtonLike = !url || url === '#';
-
-	// const blockProps = useBlockProps({
-	// 	style: {
-	// 		padding: `${itemPadding?.top || 0}px ${itemPadding?.right || 0}px ${itemPadding?.bottom || 0}px ${itemPadding?.left || 0}px`,
-	// 		color: itemTextColor,
-	// 	},
-	// });
-
+	useEffect(() => {
+		// console.log(text);
+	}, [text]);
 	return (
 		<>
 			<InspectorControls>
@@ -64,28 +42,52 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 			</InspectorControls>
 			<RichText
 				{...blockProps}
-				tagName="a"
-				href={isButtonLike ? undefined : url}
-				role={isButtonLike ? 'button' : undefined}
-				tabIndex={isButtonLike ? 0 : undefined}
-				aria-pressed={isButtonLike ? 'false' : undefined}
+				tagName="div"
+				href={url}
 				value={text}
 				onChange={(value) => {
-					setAttributes({ text: value });
+					// Parse the content and clean it up.
+					const parser = new DOMParser();
+					const parsedDoc = parser.parseFromString(
+						value,
+						'text/html'
+					);
+					const anchors = parsedDoc.querySelectorAll('a');
 
-					// Update the metadata name for List View
+					// Default fallback.
+					let newText = value.trim();
+
+					if (anchors.length === 0) {
+						newText = `<a href="#">${newText}</a>`;
+					}
+
+					// If a link exists, use its href and content.
+					if (anchors.length > 1) {
+						const firstAnchor = anchors[anchors[0]];
+						newText = firstAnchor.outerHTML.trim();
+						// Temporarily change `text` to force re-render.
+						setAttributes({ text: '' });
+					}
+
+					setTimeout(() => {
+						// Update attributes with the cleaned-up values.
+						setAttributes({ text: newText });
+					}, 0);
+
+					// Update metadata for List View.
 					dispatch('core/block-editor').updateBlockAttributes(
 						clientId,
 						{
 							metadata: {
 								name:
-									value || __('Dropdown Item', 'gatherpress'),
+									newText ||
+									__('Dropdown Item', 'gatherpress'),
 							},
 						}
 					);
 				}}
 				placeholder={__('Item Text…', 'gatherpress')}
-				allowedFormats={['core/bold', 'core/italic']}
+				allowedFormats={['core/link']}
 				onSplit={(before, after) => {
 					const newBlock = createBlock('gatherpress/dropdown-item', {
 						text: after,
@@ -101,11 +103,6 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 							{ text: '' }
 						);
 						insertBlocksAfter([newBlock]);
-					}
-				}}
-				onClick={(event) => {
-					if (isButtonLike) {
-						event.preventDefault();
 					}
 				}}
 			/>

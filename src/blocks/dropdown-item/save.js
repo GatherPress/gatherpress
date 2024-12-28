@@ -15,16 +15,7 @@ const Save = ({ attributes }) => {
 	const { text, url, isButton, itemHoverTextColor, itemHoverBgColor } =
 		attributes;
 
-	return (
-		<RichText.Content
-			{...blockProps}
-			tagName={isButton ? 'button' : 'a'}
-			href={isButton ? undefined : url}
-			value={text}
-			data-hover-text-color={itemHoverTextColor || undefined}
-			data-hover-bg-color={itemHoverBgColor || undefined}
-		/>
-	);
+	return <RichText.Content {...blockProps} tagName="div" value={text} />;
 };
 
 export default Save;
