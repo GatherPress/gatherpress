@@ -1,16 +1,1 @@
-/*!****************************************************************************************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/blocks/modal/style.scss ***!
-  \****************************************************************************************************************************************************************************************************************************************************/
-.wp-block-gatherpress-modal {
-  display: none;
-  max-width: none !important;
-  position: fixed !important;
-  z-index: 30;
-  inset: 0;
-}
-.wp-block-gatherpress-modal > div {
-  position: absolute;
-  inset: 50% auto auto 50%;
-  margin-left: -50%;
-  transform: translate(50%, -50%);
-}
+.wp-block-gatherpress-modal{display:none;inset:0;max-width:none!important;position:fixed!important;z-index:30}.wp-block-gatherpress-modal>div{inset:50% auto auto 50%;margin-left:-50%;position:absolute;transform:translate(50%,-50%)}
