@@ -3,10 +3,92 @@
  */
 import { store, getElement } from '@wordpress/interactivity';
 
-store('gatherpress', {
+const { actions } = store('gatherpress', {
 	actions: {
-		toggleDropdown(event) {
+		preventDefault(event) {
 			event.preventDefault();
+		},
+		linkHandler(event) {
+			// Prevent the default link behavior
+			actions.preventDefault(event);
+
+			// Get the clicked element
+			const element = getElement();
+
+			// Find the parent `.wp-block-gatherpress-dropdown`
+			const dropdownParent = element.ref.closest(
+				'.wp-block-gatherpress-dropdown'
+			);
+
+			// If the dropdown is in select mode
+			if (
+				dropdownParent &&
+				dropdownParent.dataset.dropdownMode === 'select'
+			) {
+				// Get the dropdown menu and trigger
+				const dropdownMenu = dropdownParent.querySelector(
+					'.wp-block-gatherpress-dropdown__menu'
+				);
+				const dropdownTrigger = dropdownParent.querySelector(
+					'.wp-block-gatherpress-dropdown__trigger'
+				);
+
+				// If the clicked anchor is already disabled, prevent further action
+				const clickedItem = element.ref.closest(
+					'.wp-block-gatherpress-dropdown-item'
+				);
+				if (clickedItem) {
+					const clickedAnchor = clickedItem.querySelector('a');
+					if (
+						clickedAnchor &&
+						clickedAnchor.classList.contains(
+							'gatherpress--is-disabled'
+						)
+					) {
+						return;
+					}
+
+					// Disable the clicked item
+					if (clickedAnchor) {
+						clickedAnchor.classList.add('gatherpress--is-disabled');
+						clickedAnchor.setAttribute('tabindex', '-1');
+						clickedAnchor.setAttribute('aira-disabled', 'true');
+					}
+
+					// Enable siblings
+					const siblingItems = dropdownMenu.querySelectorAll(
+						'.wp-block-gatherpress-dropdown-item'
+					);
+					siblingItems.forEach((sibling) => {
+						const siblingAnchor = sibling.querySelector('a');
+
+						if (siblingAnchor && sibling !== clickedItem) {
+							siblingAnchor.classList.remove(
+								'gatherpress--is-disabled'
+							);
+							siblingAnchor.removeAttribute('tabindex');
+							siblingAnchor.removeAttribute('aria-disabled');
+						}
+					});
+
+					// Update the dropdown trigger text
+					if (dropdownTrigger && clickedAnchor) {
+						dropdownTrigger.textContent =
+							clickedAnchor.textContent.trim();
+					}
+
+					// Close the dropdown menu
+					if (dropdownMenu) {
+						dropdownMenu.classList.remove(
+							'gatherpress--is-visible'
+						);
+						dropdownTrigger.setAttribute('aria-expanded', 'false');
+					}
+				}
+			}
+		},
+		toggleDropdown(event) {
+			actions.preventDefault(event);
 			const element = getElement();
 
 			const menu = element.ref.parentElement.querySelector(
@@ -17,7 +99,9 @@ store('gatherpress', {
 			);
 
 			// Define focus trap logic.
-			const focusableSelectors = ['a[href]'];
+			const focusableSelectors = [
+				'a[href]:not(.gatherpress--is-disabled)',
+			];
 			const focusableElements = [
 				trigger, // Include the trigger for focus trapping.
 				...menu.querySelectorAll(focusableSelectors.join(',')),

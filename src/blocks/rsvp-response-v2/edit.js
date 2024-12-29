@@ -49,17 +49,21 @@ const Edit = ({ clientId }) => {
 			);
 
 			if (blockElement) {
+				const isRsvpResponsesBlock =
+					block.attributes?.className?.includes(
+						'gatherpress--rsvp-responses'
+					);
 				const isEmptyRsvpBlock = block.attributes?.className?.includes(
 					'gatherpress--empty-rsvp'
 				);
 
 				if (showEmptyRsvpMessage && isEmptyRsvpBlock) {
 					blockElement.style.display = '';
+				} else if (showEmptyRsvpMessage && isRsvpResponsesBlock) {
+					blockElement.style.display = 'none';
 				} else if (!showEmptyRsvpMessage && isEmptyRsvpBlock) {
 					blockElement.style.display = 'none';
-				} else if (showEmptyRsvpMessage && !isEmptyRsvpBlock) {
-					blockElement.style.display = 'none';
-				} else {
+				} else if (!showEmptyRsvpMessage && isRsvpResponsesBlock) {
 					blockElement.style.display = '';
 				}
 			}
@@ -82,6 +86,7 @@ const Edit = ({ clientId }) => {
 					alignContent: 'space-around',
 					minimumColumnWidth: '8rem',
 				},
+				className: 'gatherpress--rsvp-responses',
 			},
 			[['gatherpress/rsvp-template', {}]],
 		],

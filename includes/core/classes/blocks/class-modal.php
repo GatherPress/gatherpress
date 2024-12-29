@@ -80,20 +80,22 @@ class Modal {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function apply_modal_attributes( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
 
-			if ( $tag->next_tag() ) {
-				$modal_name = $block['attrs']['metadata']['name'] ?? __( 'Modal', 'gatherpress' );
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-				$tag->set_attribute( 'role', 'dialog' );
-				$tag->set_attribute( 'aria-modal', 'true' );
-				$tag->set_attribute( 'aria-hidden', 'true' );
-				$tag->set_attribute( 'aria-label', esc_attr( $modal_name ) );
-				$tag->set_attribute( 'tabindex', '-1' );
+		if ( $tag->next_tag() ) {
+			$modal_name = $block['attrs']['metadata']['name'] ?? __( 'Modal', 'gatherpress' );
 
-				$block_content = $tag->get_updated_html();
-			}
+			$tag->set_attribute( 'role', 'dialog' );
+			$tag->set_attribute( 'aria-modal', 'true' );
+			$tag->set_attribute( 'aria-hidden', 'true' );
+			$tag->set_attribute( 'aria-label', esc_attr( $modal_name ) );
+			$tag->set_attribute( 'tabindex', '-1' );
+
+			$block_content = $tag->get_updated_html();
 		}
 
 		return $block_content;
@@ -116,25 +118,26 @@ class Modal {
 	 * @return string The updated block content with the applied `z-index` styling.
 	 */
 	public function adjust_block_z_index( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
-
-		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
-
-			if ( $tag->next_tag() ) {
-				$z_index               = $block['attrs']['zIndex'] ?? 1000;
-				$existing_styles       = $tag->get_attribute( 'style' ) ?? '';
-				$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );
-				$existing_styles_clean = implode( ';', array_filter( $existing_styles_array ) ) . ';';
-				$updated_styles        = trim(
-					sprintf( $existing_styles_clean . ' z-index: %d;', $z_index )
-				);
-
-				$tag->set_attribute( 'style', $updated_styles );
-			}
-
-			$block_content = $tag->get_updated_html();
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
 		}
+
+		$block_instance = Block::get_instance();
+		$tag            = new WP_HTML_Tag_Processor( $block_content );
+
+		if ( $tag->next_tag() ) {
+			$z_index               = $block['attrs']['zIndex'] ?? 1000;
+			$existing_styles       = $tag->get_attribute( 'style' ) ?? '';
+			$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );
+			$existing_styles_clean = implode( ';', array_filter( $existing_styles_array ) ) . ';';
+			$updated_styles        = trim(
+				sprintf( $existing_styles_clean . ' z-index: %d;', $z_index )
+			);
+
+			$tag->set_attribute( 'style', $updated_styles );
+		}
+
+		$block_content = $tag->get_updated_html();
 
 		return $block_content;
 	}
@@ -154,13 +157,15 @@ class Modal {
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */
 	public function filter_login_modal( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			if (
-				false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-login-modal' ) &&
-				is_user_logged_in()
-			) {
-				return '';
-			}
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
+
+		if (
+			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-login-modal' ) &&
+			is_user_logged_in()
+		) {
+			return '';
 		}
 
 		return $block_content;
@@ -181,13 +186,15 @@ class Modal {
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			if (
-				false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-rsvp-modal' ) &&
-				! is_user_logged_in()
-			) {
-				return '';
-			}
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
+
+		if (
+			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-rsvp-modal' ) &&
+			! is_user_logged_in()
+		) {
+			return '';
 		}
 
 		return $block_content;

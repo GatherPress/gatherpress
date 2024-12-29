@@ -61,6 +61,7 @@ class Dropdown {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'apply_dropdown_attributes' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'apply_select_mode_attributes' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'generate_block_styles' ), 10, 2 );
 	}
 
@@ -81,6 +82,7 @@ class Dropdown {
 		if ( self::BLOCK_NAME !== $block['blockName'] ) {
 			return $block_content;
 		}
+
 		$block_instance         = Block::get_instance();
 		$attributes             = $block['attrs'] ?? array();
 		$dropdown_id            = $attributes['dropdownId'] ?? '';
@@ -150,6 +152,78 @@ class Dropdown {
 
 		return $block_content;
 	}
+
+	/**
+	 * Adds attributes to dropdown block elements when "Select Mode" is enabled.
+	 *
+	 * This method modifies the block content to set `data-dropdown-mode="select"`
+	 * and adds the `gatherpress--is-disabled` class to the selected dropdown item.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The original block content.
+	 * @param array  $block         The parsed block data.
+	 * @return string The modified block content with select mode attributes.
+	 */
+	public function apply_select_mode_attributes( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
+
+		$tag            = new WP_HTML_Tag_Processor( $block_content );
+		$attributes     = $block['attrs'] ?? array();
+		$act_as_select  = $attributes['actAsSelect'] ?? false;
+		$selected_index = $attributes['selectedIndex'] ?? 0;
+
+		if ( $tag->next_tag() ) {
+			if ( $act_as_select ) {
+				$tag->set_attribute( 'data-dropdown-mode', 'select' );
+				$tag->next_tag(
+					array(
+						'tag_name'   => 'div',
+						'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__menu' ),
+					)
+				);
+
+				// Reset to the parent container and iterate through child items.
+				$item_index = 0;
+				while ( $tag->next_tag(
+					array(
+						'tag_name'   => 'div',
+						'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown-item' ),
+					)
+				) ) {
+					// When select, all links must act like buttons.
+					$tag->next_tag( array( 'tag_name' => 'a' ) );
+
+					$tag->set_attribute( 'href', '#' );
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.linkHandler' );
+					$tag->set_attribute( 'tabindex', '0' );
+					$tag->set_attribute( 'role', 'button' );
+
+					// Check if the current item's index matches $select_index.
+					if ( $item_index === (int) $selected_index ) {
+						$existing_class = $tag->get_attribute( 'class' );
+						$new_class      = $existing_class ? $existing_class . ' gatherpress--is-disabled' : 'gatherpress--is-disabled';
+
+						$tag->set_attribute( 'class', $new_class );
+						$tag->set_attribute( 'tabindex', '-1' );
+						$tag->set_attribute( 'aria-disabled', 'true' );
+
+						break; // Exit the loop once the desired item is found.
+					}
+
+					++$item_index;
+				}
+
+				$block_content = $tag->get_updated_html();
+			}
+		}
+
+		return $block_content;
+	}
+
 	/**
 	 * Modifies the dropdown block's attributes for interactivity.
 	 *
@@ -164,90 +238,121 @@ class Dropdown {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function apply_dropdown_attributes( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			$tag                       = new WP_HTML_Tag_Processor( $block_content );
-			$attributes                = $block['attrs'] ?? array();
-			$open_on                   = $attributes['openOn'] ?? 'click';
-			$label_color               = $attributes['labelColor'] ?? '#000000';
-			$dropdown_id               = $attributes['dropdownId'] ?? '';
-			$dropdown_border_thickness = $attributes['dropdownBorderThickness'] ?? 1;
-			$dropdown_border_color     = $attributes['dropdownBorderColor'] ?? '#000000';
-			$dropdown_border_radius    = $attributes['dropdownBorderRadius'] ?? 8;
-			$dropdown_z_index          = $attributes['dropdownZIndex'] ?? 10;
-			$dropdown_max_width        = $attributes['dropdownMaxWidth'] ?? 240;
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
 
-			if (
-				$tag->next_tag(
-					array(
-						'tag_name'   => 'a',
-						'attributes' => array(
-							'class' => 'wp-block-gatherpress-dropdown__trigger',
-						),
+		$tag                       = new WP_HTML_Tag_Processor( $block_content );
+		$attributes                = $block['attrs'] ?? array();
+		$open_on                   = $attributes['openOn'] ?? 'click';
+		$label_color               = $attributes['labelColor'] ?? '#000000';
+		$dropdown_id               = $attributes['dropdownId'] ?? '';
+		$dropdown_border_thickness = $attributes['dropdownBorderThickness'] ?? 1;
+		$dropdown_border_color     = $attributes['dropdownBorderColor'] ?? '#000000';
+		$dropdown_border_radius    = $attributes['dropdownBorderRadius'] ?? 8;
+		$dropdown_z_index          = $attributes['dropdownZIndex'] ?? 10;
+		$dropdown_max_width        = $attributes['dropdownMaxWidth'] ?? 240;
+
+		if (
+			$tag->next_tag(
+				array(
+					'tag_name'   => 'div',
+					'attributes' => array(
+						'class' => 'wp-block-gatherpress-dropdown',
 					),
-				)
-			) {
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				),
+			)
+		) {
+			$existing_styles = $tag->get_attribute( 'style' );
+			$new_styles      = array(
+				sprintf(
+					'max-width: %dpx;',
+					intval( $dropdown_max_width )
+				),
+			);
+
+			$merged_styles = trim( $existing_styles . ' ' . implode( ' ', $new_styles ) );
+
+			$tag->set_attribute( 'style', $merged_styles );
+
+			$block_content = $tag->get_updated_html();
+		}
+
+		if (
+			$tag->next_tag(
+				array(
+					'tag_name'   => 'a',
+					'attributes' => array(
+						'class' => 'wp-block-gatherpress-dropdown__trigger',
+					),
+				),
+			)
+		) {
+			$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+			$tag->set_attribute( 'role', 'button' );
+
+			if ( 'click' === $open_on ) {
 				$tag->set_attribute( 'aria-controls', $dropdown_id );
-				$tag->set_attribute( 'role', 'button' );
 				$tag->set_attribute( 'aria-expanded', 'false' );
-				$tag->set_attribute( 'tabIndex', '0' );
-
-				$existing_styles = $tag->get_attribute( 'style' );
-
-				if ( ! empty( $label_color ) ) {
-					$new_style     = sprintf( 'color: %s;', $label_color );
-					$merged_styles = trim( $existing_styles . ' ' . $new_style );
-
-					$tag->set_attribute( 'style', $merged_styles );
-				}
-
-				if ( 'click' === $open_on ) {
-					$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
-				}
-
-				$block_content = $tag->get_updated_html();
+				$tag->set_attribute( 'tabindex', '0' );
+				$tag->set_attribute( 'data-wp-on--click', 'actions.toggleDropdown' );
 			}
 
-			if (
-				$tag->next_tag(
-					array(
-						'tag_name'   => 'div',
-						'attributes' => array(
-							'class' => 'wp-block-gatherpress-dropdown__menu',
-						),
-					)
-				)
-			) {
-				$tag->set_attribute( 'role', 'region' );
-				$tag->set_attribute( 'id', $dropdown_id );
+			if ( 'hover' === $open_on ) {
+				$tag->set_attribute( 'data-wp-on--click', 'actions.preventDefault' );
+			}
 
-				$existing_styles = $tag->get_attribute( 'style' );
-				$new_styles      = array(
-					sprintf(
-						'border: %dpx solid %s;',
-						intval( $dropdown_border_thickness ),
-						esc_attr( $dropdown_border_color )
-					),
-					sprintf(
-						'border-radius: %dpx;',
-						intval( $dropdown_border_radius )
-					),
-					sprintf(
-						'z-index: %d;',
-						intval( $dropdown_z_index )
-					),
-					sprintf(
-						'max-width: %dpx;',
-						intval( $dropdown_max_width )
-					),
-				);
+			$existing_styles = $tag->get_attribute( 'style' );
 
-				$merged_styles = trim( $existing_styles . ' ' . implode( ' ', $new_styles ) );
+			if ( ! empty( $label_color ) ) {
+				$new_style     = sprintf( 'color: %s;', $label_color );
+				$merged_styles = trim( $existing_styles . ' ' . $new_style );
 
 				$tag->set_attribute( 'style', $merged_styles );
-
-				$block_content = $tag->get_updated_html();
 			}
+
+			$block_content = $tag->get_updated_html();
+		}
+
+		if (
+			$tag->next_tag(
+				array(
+					'tag_name'   => 'div',
+					'attributes' => array(
+						'class' => 'wp-block-gatherpress-dropdown__menu',
+					),
+				)
+			)
+		) {
+			$tag->set_attribute( 'role', 'region' );
+			$tag->set_attribute( 'id', $dropdown_id );
+
+			$existing_styles = $tag->get_attribute( 'style' );
+			$new_styles      = array(
+				sprintf(
+					'border: %dpx solid %s;',
+					intval( $dropdown_border_thickness ),
+					esc_attr( $dropdown_border_color )
+				),
+				sprintf(
+					'border-radius: %dpx;',
+					intval( $dropdown_border_radius )
+				),
+				sprintf(
+					'z-index: %d;',
+					intval( $dropdown_z_index )
+				),
+				sprintf(
+					'max-width: %dpx;',
+					intval( $dropdown_max_width )
+				),
+			);
+
+			$merged_styles = trim( $existing_styles . ' ' . implode( ' ', $new_styles ) );
+
+			$tag->set_attribute( 'style', $merged_styles );
+
+			$block_content = $tag->get_updated_html();
 		}
 
 		return $block_content;
