@@ -21,6 +21,7 @@ import { useSelect } from '@wordpress/data';
  * Internal dependencies.
  */
 import RsvpManager from './rsvp-manager';
+import TEMPLATE from './template';
 
 /**
  * Edit component for the GatherPress RSVP block.
@@ -74,43 +75,6 @@ const Edit = ({ clientId }) => {
 		e.preventDefault();
 		setEditMode(!editMode);
 	};
-
-	const TEMPLATE = [
-		[
-			'core/group',
-			{
-				layout: {
-					type: 'grid',
-					columns: 3,
-					justifyContent: 'center',
-					alignContent: 'space-around',
-					minimumColumnWidth: '8rem',
-				},
-				className: 'gatherpress--rsvp-responses',
-			},
-			[['gatherpress/rsvp-template', {}]],
-		],
-		[
-			'core/group',
-			{
-				metadata: {
-					name: __('Empty RSVP', 'gatherpress'),
-				},
-				className: 'gatherpress--empty-rsvp',
-			},
-			[
-				[
-					'core/paragraph',
-					{
-						content: __(
-							'No one is attending this event yet.',
-							'gatherpress'
-						),
-					},
-				],
-			],
-		],
-	];
 
 	return (
 		<div {...blockProps}>
