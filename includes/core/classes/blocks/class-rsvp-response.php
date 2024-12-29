@@ -94,7 +94,7 @@ class Rsvp_Response {
 		}
 
 		if ( $tag->next_tag() ) {
-			$tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
+			$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 			$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => get_the_ID() ) ) );
 
 			$responses = (int) $event->rsvp->responses()['attending']['count'];
