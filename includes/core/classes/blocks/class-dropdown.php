@@ -141,14 +141,12 @@ class Dropdown {
 			);
 		}
 
-		// Add styles to block content if applicable.
-		if ( ! empty( $styles ) ) {
-			$block_content = sprintf(
-				'<style>%s</style>%s',
-				$styles,
-				$block_content
-			);
-		}
+		// Add styles to block content.
+		$block_content = sprintf(
+			'<style>%s</style>%s',
+			$styles,
+			$block_content
+		);
 
 		return $block_content;
 	}
