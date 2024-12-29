@@ -62,6 +62,7 @@ class Rsvp_Response {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'attach_dropdown_interactivity' ), 10, 2 );
 		add_filter( 'get_avatar_data', array( $this, 'modify_avatar_for_gatherpress_rsvp' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'add_rsvp_to_comment_ancestor' ) );
 	}
@@ -81,47 +82,49 @@ class Rsvp_Response {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			$event = new Event( get_the_ID() );
-			$tag   = new WP_HTML_Tag_Processor( $block_content );
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
 
-			if ( ! $event->rsvp ) {
-				return $block_content;
-			}
+		$event = new Event( get_the_ID() );
+		$tag   = new WP_HTML_Tag_Processor( $block_content );
 
-			if ( $tag->next_tag() ) {
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
+		if ( ! $event->rsvp ) {
+			return $block_content;
+		}
 
-				$responses = (int) $event->rsvp->responses()['attending']['count'];
+		if ( $tag->next_tag() ) {
+			$tag->set_attribute( 'data-wp-interactive', 'gatherpress/rsvp' );
 
-				do {
-					$class_attr = $tag->get_attribute( 'class' );
+			$responses = (int) $event->rsvp->responses()['attending']['count'];
 
-					if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
-						if ( ! empty( $responses ) ) {
-							$updated_class  = str_replace(
-								'gatherpress--is-visible',
-								'',
-								$class_attr
-							);
-							$updated_class .= ' gatherpress--is-not-visible';
-						} else {
-							$updated_class  = str_replace(
-								'gatherpress--is-not-visible',
-								'',
-								$class_attr
-							);
-							$updated_class .= ' gatherpress--is-visible';
-						}
+			do {
+				$class_attr = $tag->get_attribute( 'class' );
 
-						$tag->set_attribute( 'class', trim( $updated_class ) );
+				if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
+					if ( ! empty( $responses ) ) {
+						$updated_class  = str_replace(
+							'gatherpress--is-visible',
+							'',
+							$class_attr
+						);
+						$updated_class .= ' gatherpress--is-not-visible';
+					} else {
+						$updated_class  = str_replace(
+							'gatherpress--is-not-visible',
+							'',
+							$class_attr
+						);
+						$updated_class .= ' gatherpress--is-visible';
 					}
-					// @phpstan-ignore-next-line
-				} while ( $tag->next_tag() );
 
+					$tag->set_attribute( 'class', trim( $updated_class ) );
+				}
 				// @phpstan-ignore-next-line
-				$block_content = $tag->get_updated_html();
-			}
+			} while ( $tag->next_tag() );
+
+			// @phpstan-ignore-next-line
+			$block_content = $tag->get_updated_html();
 		}
 
 		return $block_content;
@@ -178,5 +181,55 @@ class Rsvp_Response {
 		}
 
 		return $metadata;
+	}
+
+	/**
+	 * Attaches interactivity to the dropdown block.
+	 *
+	 * Adds interactivity attributes to dropdown menu items with specific RSVP-related classes
+	 * for use with the WordPress Interactivity API.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content to modify.
+	 * @param array  $block         The parsed block data.
+	 * @return string Modified block content with interactivity attributes.
+	 */
+	public function attach_dropdown_interactivity( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
+
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		if ( $tag->next_tag(
+			array(
+				'tag_name'   => 'div',
+				'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__menu' ),
+			)
+		) ) {
+			while ( $tag->next_tag(
+				array(
+					'tag_name'   => 'div',
+					'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown-item' ),
+				)
+			) ) {
+				// Check if the current tag has any of the specified classes.
+				$current_class = $tag->get_attribute( 'class' );
+
+				if (
+					$current_class &&
+					preg_match( '/gatherpress--rsvp-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
+					$tag->next_tag( array( 'tag_name' => 'a' ) )
+				) {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-watch', 'callbacks.processRsvpDropdown' );
+				}
+			}
+
+			$block_content = $tag->get_updated_html();
+		}
+
+		return $block_content;
 	}
 }
