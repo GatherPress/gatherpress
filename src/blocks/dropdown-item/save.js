@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies
+ * WordPress dependencies.
  */
 import { useBlockProps, RichText } from '@wordpress/block-editor';
 
