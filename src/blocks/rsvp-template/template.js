@@ -1,7 +1,18 @@
+/**
+ * WordPress dependencies.
+ */
+import { __ } from '@wordpress/i18n';
+
 const TEMPLATE = [
 	[
 		'core/group',
-		{},
+		{
+			style: {
+				spacing: {
+					blockGap: 0,
+				},
+			},
+		},
 		[
 			[
 				'core/avatar',
@@ -13,6 +24,9 @@ const TEMPLATE = [
 			[
 				'core/comment-author-name',
 				{
+					metadata: {
+						name: __('Display Name', 'gatherpress'),
+					},
 					textAlign: 'center',
 					style: {
 						spacing: {

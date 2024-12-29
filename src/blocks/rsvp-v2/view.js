@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { store, getElement } from '@wordpress/interactivity';
+import { store, getElement, getContext } from '@wordpress/interactivity';
 
 /**
  * Internal dependencies.
@@ -17,6 +17,8 @@ const { state, actions } = store('gatherpress', {
 		updateRsvp() {
 			let status = 'not_attending';
 			const element = getElement();
+			const context = getContext();
+			const postId = context?.postId || 0;
 
 			if (['not_attending', 'no_status'].includes(state.rsvpStatus)) {
 				status = 'attending';
@@ -44,6 +46,14 @@ const { state, actions } = store('gatherpress', {
 						state.activePostId = res.event_id;
 						state.rsvpResponseStatus = res.status;
 						state.rsvpStatus = res.status;
+						state.posts[postId] = {
+							...state.posts[postId],
+							eventResponses: {
+								attending: res.responses.attending.count,
+								waitingList: res.responses.waiting_list.count,
+								notAttending: res.responses.not_attending.count,
+							},
+						};
 						actions.closeModal(null, element.ref);
 					}
 				})
