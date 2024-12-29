@@ -16,10 +16,10 @@ store('gatherpress', {
 				'.wp-block-gatherpress-dropdown__trigger'
 			);
 
-			// Define focus trap logic
+			// Define focus trap logic.
 			const focusableSelectors = ['a[href]'];
 			const focusableElements = [
-				trigger, // Include the trigger for focus trapping
+				trigger, // Include the trigger for focus trapping.
 				...menu.querySelectorAll(focusableSelectors.join(',')),
 			];
 			const firstFocusableElement = focusableElements[0];
@@ -30,14 +30,14 @@ store('gatherpress', {
 				if ('Tab' === e.key) {
 					if (
 						e.shiftKey &&
-						document.activeElement === firstFocusableElement
+						global.document.activeElement === firstFocusableElement
 					) {
 						// Shift + Tab (backward navigation).
 						e.preventDefault();
 						lastFocusableElement.focus();
 					} else if (
 						!e.shiftKey &&
-						document.activeElement === lastFocusableElement
+						global.document.activeElement === lastFocusableElement
 					) {
 						// Tab (forward navigation).
 						e.preventDefault();

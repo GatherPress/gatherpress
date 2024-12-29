@@ -5,33 +5,9 @@
 	"title": "Dropdown",
 	"category": "gatherpress",
 	"icon": "menu",
-	"description": "A customizable dropdown menu that allows users to add links or button-like links.",
+	"description": "A customizable dropdown menu block with advanced styling and interaction options.",
 	"attributes": {
 		"actAsSelect": {
-			"type": "boolean",
-			"default": false
-		},
-		"selectedIndex": {
-			"type": "number",
-			"default": 0
-		},
-		"dropdownId": {
-			"type": "string",
-			"default": ""
-		},
-		"openOn": {
-			"type": "string",
-			"default": "click",
-			"enum": [
-				"click",
-				"hover"
-			]
-		},
-		"label": {
-			"type": "string",
-			"default": "Dropdown"
-		},
-		"replaceLabel": {
 			"type": "boolean",
 			"default": false
 		},
@@ -46,34 +22,33 @@
 				"stretch"
 			]
 		},
-		"itemPadding": {
-			"type": "object",
-			"default": {
-				"top": 8,
-				"right": 8,
-				"bottom": 8,
-				"left": 8
-			}
-		},
-		"labelTextColor": {
+		"dropdownBorderColor": {
 			"type": "string",
 			"default": "#000000"
 		},
-		"itemTextColor": {
-			"type": "string",
-			"default": "#000000"
+		"dropdownBorderRadius": {
+			"type": "number",
+			"default": 8
 		},
-		"itemHoverTextColor": {
+		"dropdownBorderThickness": {
+			"type": "number",
+			"default": 1
+		},
+		"dropdownId": {
 			"type": "string",
-			"default": "#000000"
+			"default": ""
+		},
+		"dropdownMaxWidth": {
+			"type": "string",
+			"default": 240
+		},
+		"dropdownZIndex": {
+			"type": "number",
+			"default": 10
 		},
 		"itemBgColor": {
 			"type": "string",
 			"default": "#FFFFFF"
-		},
-		"itemHoverBgColor": {
-			"type": "string",
-			"default": "#EEEEEE"
 		},
 		"itemDividerColor": {
 			"type": "string",
@@ -83,25 +58,46 @@
 			"type": "number",
 			"default": 1
 		},
-		"dropdownZIndex": {
-			"type": "number",
-			"default": 10
-		},
-		"dropdownMaxWidth": {
+		"itemHoverBgColor": {
 			"type": "string",
-			"default": 240
+			"default": "#EEEEEE"
 		},
-		"dropdownBorderColor": {
+		"itemHoverTextColor": {
 			"type": "string",
 			"default": "#000000"
 		},
-		"dropdownBorderThickness": {
-			"type": "number",
-			"default": 1
+		"itemPadding": {
+			"type": "object",
+			"default": {
+				"top": 8,
+				"right": 8,
+				"bottom": 8,
+				"left": 8
+			}
 		},
-		"dropdownBorderRadius": {
+		"itemTextColor": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"label": {
+			"type": "string",
+			"default": "Dropdown"
+		},
+		"labelTextColor": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"openOn": {
+			"type": "string",
+			"default": "click",
+			"enum": [
+				"click",
+				"hover"
+			]
+		},
+		"selectedIndex": {
 			"type": "number",
-			"default": 8
+			"default": 0
 		}
 	},
 	"supports": {

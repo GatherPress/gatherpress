@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies
+ * WordPress dependencies.
  */
 import {
 	BlockControls,
@@ -16,13 +16,15 @@ import {
 	PanelBody,
 	ToolbarButton,
 	RangeControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalToggleGroupControl as ToggleGroupControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 	ToolbarGroup,
 	ToggleControl,
 	SelectControl,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { v4 as uuidv4 } from 'uuid';
 import { dispatch, select, useSelect } from '@wordpress/data';
@@ -31,111 +33,126 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	const blockProps = useBlockProps();
 	const [isExpanded, setIsExpanded] = useState(false);
 	const {
+		actAsSelect,
+		dropdownBorderColor,
+		dropdownBorderRadius,
+		dropdownBorderThickness,
+		dropdownId,
+		dropdownMaxWidth,
+		dropdownZIndex,
 		itemBgColor,
-		itemHoverBgColor,
-		itemPadding,
-		itemTextColor,
-		itemHoverTextColor,
 		itemDividerColor,
 		itemDividerThickness,
+		itemHoverBgColor,
+		itemHoverTextColor,
+		itemPadding,
+		itemTextColor,
+		label,
+		labelTextColor,
+		openOn,
+		selectedIndex,
 	} = attributes;
 	const innerBlocks = useSelect(
-		(select) =>
-			select('core/block-editor').getBlock(clientId)?.innerBlocks || [],
+		(blockEditorSelect) =>
+			blockEditorSelect('core/block-editor').getBlock(clientId)
+				?.innerBlocks || [],
 		[clientId]
 	);
 
-	// Generate a persistent unique ID for the dropdown if not already set
+	// Generate a persistent unique ID for the dropdown if not already set.
 	useEffect(() => {
-		if (!attributes.dropdownId) {
-			const newId = `dropdown-${uuidv4()}`;
-			setAttributes({ dropdownId: newId });
+		if (!dropdownId) {
+			const newDropdownId = `dropdown-${uuidv4()}`;
+			setAttributes({ dropdownId: newDropdownId });
 		}
-	}, [attributes.dropdownId, setAttributes]);
+	}, [dropdownId, setAttributes]);
 
-	// Update `metadata.name` with the label value for the List View
+	// Update `metadata.name` with the label value for the List View.
 	useEffect(() => {
-		const currentLabel = attributes.label || __('Dropdown', 'gatherpress');
+		const currentLabel = label || __('Dropdown', 'gatherpress');
 		const currentMetadata =
 			select('core/block-editor').getBlockAttributes(clientId).metadata ||
 			{};
 
-		// Only update if the metadata name differs from the current label
+		// Only update if the metadata name differs from the current label.
 		if (currentMetadata.name !== currentLabel) {
 			dispatch('core/block-editor').updateBlockAttributes(clientId, {
 				metadata: { ...currentMetadata, name: currentLabel },
 			});
 		}
-	}, [attributes.label, clientId]);
+	}, [label, clientId]);
 
 	useEffect(() => {
-		// Ensure this effect only runs when `actAsSelect` is enabled
-		if (!attributes.actAsSelect) {
+		// Ensure this effect only runs when `actAsSelect` is enabled.
+		if (!actAsSelect) {
 			return;
 		}
 
-		// Use a stable reference to the block editor store
-		const innerBlocks = select('core/block-editor').getBlocks(clientId);
-
-		// Validate innerBlocks and selectedIndex
+		// Validate innerBlocks and selectedIndex.
 		if (
 			Array.isArray(innerBlocks) &&
-			attributes.selectedIndex >= 0 &&
-			attributes.selectedIndex < innerBlocks.length
+			0 <= selectedIndex &&
+			selectedIndex < innerBlocks.length
 		) {
-			const selectedBlock = innerBlocks[attributes.selectedIndex];
+			const selectedBlock = innerBlocks[selectedIndex];
 			const selectedBlockText = selectedBlock?.attributes?.text || '';
 
-			// Parse and extract plain text to remove any markup
+			// Parse and extract plain text to remove any markup.
 			const plainTextLabel = new DOMParser()
 				.parseFromString(selectedBlockText, 'text/html')
 				.body.textContent.trim();
 
-			// Update the label if it differs from the current one
-			if (plainTextLabel !== attributes.label) {
+			// Update the label if it differs from the current one.
+			if (plainTextLabel !== label) {
 				setAttributes({ label: plainTextLabel });
 			}
 		}
-	}, [attributes.actAsSelect, attributes.selectedIndex, clientId]);
+	}, [
+		actAsSelect,
+		selectedIndex,
+		clientId,
+		innerBlocks,
+		label,
+		setAttributes,
+	]);
 
 	useEffect(() => {
-		if (attributes.actAsSelect) {
+		if (actAsSelect) {
 			const selectedBlockText =
-				innerBlocks[attributes.selectedIndex]?.attributes?.text || '';
+				innerBlocks[selectedIndex]?.attributes?.text || '';
 
-			// Parse the selected block's text to remove any HTML markup
+			// Parse the selected block's text to remove any HTML markup.
 			const plainTextLabel = new DOMParser()
 				.parseFromString(selectedBlockText, 'text/html')
 				.body.textContent.trim();
 
-			// Update the label attribute
+			// Update the label attribute.
 			setAttributes({
 				label:
 					plainTextLabel ||
-					__('Item', 'gatherpress') +
-						` ${attributes.selectedIndex + 1}`,
+					__('Item', 'gatherpress') + ` ${selectedIndex + 1}`,
 			});
 		}
-	}, [innerBlocks]);
+	}, [innerBlocks, actAsSelect, selectedIndex, setAttributes]);
 
 	const dropdownStyles = `
-		#${attributes.dropdownId} .wp-block-gatherpress-dropdown-item {
+		#${dropdownId} .wp-block-gatherpress-dropdown-item {
 			padding: ${itemPadding.top}px ${itemPadding.right}px ${itemPadding.bottom}px ${itemPadding.left}px;
 			color: ${itemTextColor || 'inherit'};
 			background-color: ${itemBgColor || 'transparent'};
 		}
 
-		#${attributes.dropdownId} .wp-block-gatherpress-dropdown-item:hover {
+		#${dropdownId} .wp-block-gatherpress-dropdown-item:hover {
 			color: ${itemHoverTextColor || 'inherit'};
 			background-color: ${itemHoverBgColor || 'transparent'};
 		}
 
-		#${attributes.dropdownId} .wp-block-gatherpress-dropdown-item:not(:first-child) {
+		#${dropdownId} .wp-block-gatherpress-dropdown-item:not(:first-child) {
 			border-top: ${itemDividerThickness || 1}px solid ${itemDividerColor || 'transparent'};
 		}
 	`;
 
-	// Toggle dropdown visibility
+	// Toggle dropdown visibility.
 	const handleToggle = () => {
 		setIsExpanded((prev) => !prev);
 	};
@@ -149,7 +166,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				>
 					<RangeControl
 						label={__('Dropdown Z-Index', 'gatherpress')}
-						value={attributes.dropdownZIndex}
+						value={dropdownZIndex}
 						onChange={(value) =>
 							setAttributes({ dropdownZIndex: value })
 						}
@@ -158,7 +175,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					/>
 					<RangeControl
 						label={__('Dropdown Max Width', 'gatherpress')}
-						value={parseInt(attributes.dropdownMaxWidth, 10)}
+						value={parseInt(dropdownMaxWidth, 10)}
 						onChange={(value) =>
 							setAttributes({ dropdownMaxWidth: value })
 						}
@@ -167,7 +184,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					/>
 					<RangeControl
 						label={__('Dropdown Border Thickness', 'gatherpress')}
-						value={attributes.dropdownBorderThickness || 1}
+						value={dropdownBorderThickness || 1}
 						onChange={(value) =>
 							setAttributes({ dropdownBorderThickness: value })
 						}
@@ -176,7 +193,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					/>
 					<RangeControl
 						label={__('Dropdown Border Radius', 'gatherpress')}
-						value={attributes.dropdownBorderRadius}
+						value={dropdownBorderRadius}
 						onChange={(value) =>
 							setAttributes({ dropdownBorderRadius: value })
 						}
@@ -185,14 +202,14 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					/>
 					<BoxControl
 						label={__('Item Padding', 'gatherpress')}
-						values={attributes.itemPadding || 8}
+						values={itemPadding || 8}
 						onChange={(value) =>
 							setAttributes({ itemPadding: value })
 						}
 					/>
 					<RangeControl
 						label={__('Item Divider Thickness', 'gatherpress')}
-						value={attributes.itemDividerThickness || 1}
+						value={itemDividerThickness || 1}
 						onChange={(value) =>
 							setAttributes({ itemDividerThickness: value })
 						}
@@ -204,7 +221,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					title={__('Label Colors', 'gatherpress')}
 					colorSettings={[
 						{
-							value: attributes.labelTextColor,
+							value: labelTextColor,
 							onChange: (value) =>
 								setAttributes({ labelTextColor: value }),
 							label: __('Label Text Color', 'gatherpress'),
@@ -215,7 +232,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					title={__('Dropdown Colors', 'gatherpress')}
 					colorSettings={[
 						{
-							value: attributes.dropdownBorderColor,
+							value: dropdownBorderColor,
 							onChange: (value) =>
 								setAttributes({ dropdownBorderColor: value }),
 							label: __('Dropdown Border Color', 'gatherpress'),
@@ -226,25 +243,25 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					title={__('Item Colors', 'gatherpress')}
 					colorSettings={[
 						{
-							value: attributes.itemTextColor,
+							value: itemTextColor,
 							onChange: (value) =>
 								setAttributes({ itemTextColor: value }),
 							label: __('Item Text Color', 'gatherpress'),
 						},
 						{
-							value: attributes.itemBgColor,
+							value: itemBgColor,
 							onChange: (value) =>
 								setAttributes({ itemBgColor: value }),
 							label: __('Item Background Color', 'gatherpress'),
 						},
 						{
-							value: attributes.itemHoverTextColor,
+							value: itemHoverTextColor,
 							onChange: (value) =>
 								setAttributes({ itemHoverTextColor: value }),
 							label: __('Item Hover Text Color', 'gatherpress'),
 						},
 						{
-							value: attributes.itemHoverBgColor,
+							value: itemHoverBgColor,
 							onChange: (value) =>
 								setAttributes({ itemHoverBgColor: value }),
 							label: __(
@@ -253,7 +270,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 							),
 						},
 						{
-							value: attributes.itemDividerColor,
+							value: itemDividerColor,
 							onChange: (newColor) =>
 								setAttributes({ itemDividerColor: newColor }),
 							label: __('Item Divider Color', 'gatherpress'),
@@ -264,7 +281,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			<InspectorAdvancedControls>
 				<ToggleGroupControl
 					label={__('Open on', 'gatherpress')}
-					value={attributes.openOn}
+					value={openOn}
 					isBlock
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
@@ -287,12 +304,12 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 								'When enabled, clicking on an item will set it as the dropdown label, and the selected item will be disabled until another is chosen.',
 								'gatherpress'
 							)}
-							checked={attributes.actAsSelect}
+							checked={actAsSelect}
 							onChange={(value) =>
 								setAttributes({ actAsSelect: value })
 							}
 						/>
-						{attributes.actAsSelect && (
+						{actAsSelect && (
 							<SelectControl
 								label={__(
 									'Default Selected Item',
@@ -302,9 +319,9 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 									'This item will be selected by default when the dropdown is displayed.',
 									'gatherpress'
 								)}
-								value={attributes.selectedIndex}
+								value={selectedIndex}
 								options={innerBlocks.map((block, index) => {
-									// Parse and extract plain text to remove markup
+									// Parse and extract plain text to remove markup.
 									const plainTextLabel = new DOMParser()
 										.parseFromString(
 											block.attributes.text || '',
@@ -312,13 +329,16 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 										)
 										.body.textContent.trim();
 
+									/* translators: %d is the index of the item. */
+									const labelTemplate = __(
+										'Item %d',
+										'gatherpress'
+									);
+
 									return {
 										label:
 											plainTextLabel ||
-											__(
-												`Item ${index + 1}`,
-												'gatherpress'
-											),
+											sprintf(labelTemplate, index + 1),
 										value: index,
 									};
 								})}
@@ -346,57 +366,56 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</ToolbarGroup>
 			</BlockControls>
 
-			{attributes.actAsSelect ? (
-				// Use plain anchor when actAsSelect is enabled
+			{actAsSelect ? (
+				// Use plain anchor when actAsSelect is enabled.
+				// eslint-disable-next-line jsx-a11y/anchor-is-valid
 				<a
 					href="#"
 					role="button"
 					aria-expanded={isExpanded}
-					aria-controls={attributes.dropdownId}
+					aria-controls={dropdownId}
 					tabIndex={0}
 					className="wp-block-gatherpress-dropdown__trigger"
 					style={{
-						color: attributes.labelColor,
+						color: labelTextColor,
 					}}
 				>
-					{attributes.label}
+					{label}
 				</a>
 			) : (
-				// Use RichText when actAsSelect is disabled
+				// Use RichText when actAsSelect is disabled.
 				<RichText
 					tagName="a"
 					href="#"
 					role="button"
 					aria-expanded={isExpanded}
-					aria-controls={attributes.dropdownId}
+					aria-controls={dropdownId}
 					tabIndex={0}
 					className="wp-block-gatherpress-dropdown__trigger"
-					value={attributes.label}
+					value={label}
 					onChange={(value) => {
-						// Update label only if not in select mode
 						setAttributes({ label: value });
 					}}
 					allowedFormats={[]}
 					placeholder={__('Dropdown Label…', 'gatherpress')}
 					style={{
-						color: attributes.labelColor,
+						color: labelTextColor,
 					}}
 				/>
 			)}
 
-			{/* Dropdown Items Container */}
 			<style>{dropdownStyles}</style>
 			<div
-				id={attributes.dropdownId}
+				id={dropdownId}
 				role="region"
 				className="wp-block-gatherpress-dropdown__menu"
 				style={{
 					display: isExpanded ? 'block' : 'none',
-					backgroundColor: attributes.itemBgColor,
-					border: `${attributes.dropdownBorderThickness || 1}px solid ${attributes.dropdownBorderColor || '#000'}`,
-					borderRadius: `${attributes.dropdownBorderRadius || 0}px`,
-					zIndex: attributes.dropdownZIndex,
-					width: attributes.dropdownMaxWidth,
+					backgroundColor: itemBgColor,
+					border: `${dropdownBorderThickness || 1}px solid ${dropdownBorderColor || '#000000'}`,
+					borderRadius: `${dropdownBorderRadius || 0}px`,
+					zIndex: dropdownZIndex,
+					width: dropdownMaxWidth,
 				}}
 			>
 				<InnerBlocks allowedBlocks={['gatherpress/dropdown-item']} />

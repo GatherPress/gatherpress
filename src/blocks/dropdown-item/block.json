@@ -5,19 +5,11 @@
 	"title": "Dropdown Item",
 	"category": "gatherpress",
 	"icon": "admin-links",
-	"description": "An individual item for the dropdown menu, which can be a link or a button.",
+	"description": "A customizable item for use within the dropdown menu block.",
 	"attributes": {
 		"text": {
 			"type": "string",
 			"default": ""
-		},
-		"url": {
-			"type": "string",
-			"default": "#"
-		},
-		"isButton": {
-			"type": "boolean",
-			"default": false
 		}
 	},
 	"parent": ["gatherpress/dropdown"],
@@ -26,16 +18,12 @@
 			"background": true,
 			"text": true
 		},
+		"html": false,
 		"spacing": {
 			"padding": true,
 			"margin": true
-		},
-		"html": false
+		}
 	},
-	"usesContext": [
-		"gatherpress/dropdown/itemPadding",
-		"gatherpress/dropdown/itemTextColor"
-	],
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css"

@@ -1,5 +1,5 @@
 /**
- * WordPress dependencies
+ * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
 import {
@@ -9,9 +9,7 @@ import {
 } from '@wordpress/block-editor';
 import { createBlock } from '@wordpress/blocks';
 import { PanelBody } from '@wordpress/components';
-import { dispatch } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
-import { select } from '@wordpress/data';
+import { dispatch, select } from '@wordpress/data';
 
 /**
  * Edit Component
@@ -24,18 +22,16 @@ import { select } from '@wordpress/data';
  * @return {JSX.Element} The rendered edit component.
  */
 const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
-	const { text, url } = attributes;
+	const { text } = attributes;
 	const blockProps = useBlockProps();
-	useEffect(() => {
-		// console.log(text);
-	}, [text]);
+
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody title={__('Dropdown Item Settings', 'gatherpress')}>
 					<p>
 						{__(
-							'This item behaves like a button if the link is empty or set to "#".',
+							'This item behaves like a button if the link is set to "#".',
 							'gatherpress'
 						)}
 					</p>
@@ -44,7 +40,6 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 			<RichText
 				{...blockProps}
 				tagName="div"
-				href={url}
 				value={text}
 				onChange={(value) => {
 					// Parse the content and clean it up.
@@ -114,7 +109,7 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 					if (event.key === 'Backspace' && !attributes.text) {
 						event.preventDefault();
 
-						// Retrieve block order and index
+						// Retrieve block order and index.
 						const { getBlockOrder, getBlockIndex } =
 							select('core/block-editor');
 						const { removeBlock, selectBlock } =
@@ -123,15 +118,15 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 						const blockOrder = getBlockOrder();
 						const currentIndex = getBlockIndex(clientId);
 
-						// Check if there's a previous block
+						// Check if there's a previous block.
 						if (currentIndex > 0) {
 							const previousBlockId =
 								blockOrder[currentIndex - 1];
 
-							// Focus the previous block and set the caret to the end
+							// Focus the previous block and set the caret to the end.
 							selectBlock(previousBlockId, -1);
 
-							// Remove the current block
+							// Remove the current block.
 							removeBlock(clientId);
 						}
 					}
