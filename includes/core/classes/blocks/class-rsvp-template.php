@@ -165,15 +165,21 @@ class Rsvp_Template {
 	 * @return string The rendered block content wrapped in a div with a data-id attribute.
 	 */
 	public function get_block_content( array $parsed_block, int $response_id ): string {
+		// Remove the filter to prevent an infinite loop caused by the filter being called within WP_Block.
 		remove_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ) );
+
+		// Render the block content with the provided parsed block and response ID.
 		$block_content = (
 			new WP_Block(
 				$parsed_block,
 				array( 'commentId' => $response_id )
 			)
 		)->render( array( 'dynamic' => false ) );
+
+		// Re-add the filter after rendering to ensure it continues to apply to other blocks.
 		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 2 );
 
+		// Wrap the rendered block content in a container div with a unique data ID for the RSVP response.
 		return sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 	}
 }
