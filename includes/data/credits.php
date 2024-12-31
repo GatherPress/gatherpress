@@ -114,6 +114,19 @@ return array (
         96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    4 => 
+    array (
+      'id' => 14692152,
+      'name' => 'Laura Byrne',
+      'link' => 'https://profiles.wordpress.org/author/newyorkerlaura/',
+      'slug' => 'newyorkerlaura',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
   'contributors' => 
   array (
@@ -288,19 +301,6 @@ return array (
     ),
     13 => 
     array (
-      'id' => 14692152,
-      'name' => 'Laura Byrne',
-      'link' => 'https://profiles.wordpress.org/author/newyorkerlaura/',
-      'slug' => 'newyorkerlaura',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    14 => 
-    array (
       'id' => 13994457,
       'name' => 'Nilo Velez',
       'link' => 'https://profiles.wordpress.org/author/nilovelez/',
@@ -312,7 +312,7 @@ return array (
         96 => '//www.gravatar.com/avatar/82a67d2d011ae384612fe6441576cdf5?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    15 => 
+    14 => 
     array (
       'id' => 15490728,
       'name' => 'Jason Lawton',
@@ -325,7 +325,7 @@ return array (
         96 => '//www.gravatar.com/avatar/ec5ec8357fa89bb2671bf1ab61b2546b?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    16 => 
+    15 => 
     array (
       'id' => 20932248,
       'name' => 'prashantabellad',
@@ -338,7 +338,7 @@ return array (
         96 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    17 => 
+    16 => 
     array (
       'id' => 21156948,
       'name' => 'Prayag Mankar',
@@ -351,7 +351,7 @@ return array (
         96 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    18 => 
+    17 => 
     array (
       'id' => 368236,
       'name' => 'Pascal Birchler',
