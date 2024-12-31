@@ -32,6 +32,14 @@ class Modal_Manager {
 	use Singleton;
 
 	/**
+	 * Constant representing the Block Name.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const BLOCK_NAME = 'gatherpress/modal-manager';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.

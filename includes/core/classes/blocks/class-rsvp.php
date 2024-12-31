@@ -178,6 +178,7 @@ class Rsvp {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		// Process only tags with the specific class 'gatherpress--update-rsvp'.
+		// @phpstan-ignore-next-line
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
