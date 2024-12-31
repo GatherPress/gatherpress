@@ -65,6 +65,7 @@ class Rsvp_Template {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'ensure_block_styles_loaded' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 2 );
 	}
 
 	/**
@@ -81,21 +82,23 @@ class Rsvp_Template {
 	 * @return string The filtered block content.
 	 */
 	public function ensure_block_styles_loaded( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME === $block['blockName'] ) {
-			$block_instance = Block::get_instance();
-			$tag            = new WP_HTML_Tag_Processor( $block_content );
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
 
-			if ( $tag->next_tag() ) {
-				$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
-				$inner_blocks = $block_instance->get_block_names( $inner_blocks );
+		$block_instance = Block::get_instance();
+		$tag            = new WP_HTML_Tag_Processor( $block_content );
 
-				foreach ( $inner_blocks as $inner_block ) {
-					$block_registry = WP_Block_Type_Registry::get_instance();
-					$block_type     = $block_registry->get_registered( $inner_block );
+		if ( $tag->next_tag() ) {
+			$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
+			$inner_blocks = $block_instance->get_block_names( $inner_blocks );
 
-					if ( $block_type && ! empty( $block_type->style ) ) {
-						wp_enqueue_style( $block_type->style );
-					}
+			foreach ( $inner_blocks as $inner_block ) {
+				$block_registry = WP_Block_Type_Registry::get_instance();
+				$block_type     = $block_registry->get_registered( $inner_block );
+
+				if ( $block_type && ! empty( $block_type->style ) ) {
+					wp_enqueue_style( $block_type->style );
 				}
 			}
 		}
@@ -104,51 +107,47 @@ class Rsvp_Template {
 	}
 
 	/**
-	 * Renders the RSVP Template block dynamically based on the event's RSVP responses.
+	 * Dynamically generates the RSVP Template block content based on event responses.
 	 *
-	 * This method fetches RSVP responses for the current event and renders
-	 * the block content dynamically for each response. If no valid responses
-	 * are available, a default template is appended to enable front-end API
-	 * interactions and maintain the block structure.
+	 * This method checks if the current block is the RSVP Template block and dynamically
+	 * renders its content using the event's RSVP responses. If no valid responses are
+	 * found, a default template is added to maintain the block structure and enable
+	 * front-end API interactions.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array    $attributes The block's attributes.
-	 * @param string   $content    The initial content of the block.
-	 * @param WP_Block $block      The block instance, including parsed block data.
+	 * @param string $block_content The original block content.
+	 * @param array  $block         The parsed block data.
 	 *
-	 * @return string The rendered block content, including responses and a default template.
+	 * @return string The dynamically generated block content.
 	 */
-	public function render_block( array $attributes, string $content, WP_Block $block ): string {
+	public function generate_rsvp_template_block( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
+
 		$event = new Event( get_the_ID() );
+		$tag   = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( ! $event->rsvp ) {
-			return $content;
+			return $block_content;
 		}
 
-		$responses = $event->rsvp->responses()['attending']['responses'];
-		$content   = '';
-
-		// Used for generating a parsed block for calls to API on the front end.
-		$responses[]            = array( 'commentId' => -1 );
-		$rsvp_response_template = '';
+		$responses     = $event->rsvp->responses()['attending']['responses'];
+		$block_content = '';
 
 		foreach ( $responses as $response ) {
-			$response_id = intval( $response['commentId'] );
-
-			if ( -1 === $response_id ) {
-				$blocks                 = wp_json_encode( $block->parsed_block );
-				$rsvp_response_template = sprintf(
-					'<div data-wp-interactive="gatherpress" data-wp-watch="callbacks.renderBlocks" data-blocks="%s"></div>',
-					esc_attr( $blocks )
-				);
-				continue;
-			}
-
-			$content .= $this->get_block_content( $block->parsed_block, $response_id );
+			$response_id    = intval( $response['commentId'] );
+			$block_content .= $this->get_block_content( $block, $response_id );
 		}
 
-		return $content . $rsvp_response_template;
+		// Used for generating a parsed block for calls to API on the front end.
+		$blocks                 = wp_json_encode( $block, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+		$rsvp_response_template = sprintf(
+			'<script type="application/json" data-wp-interactive="gatherpress" data-wp-watch="callbacks.renderBlocks">%s</script>',
+			$blocks
+		);
+		return $block_content . $rsvp_response_template;
 	}
 
 	/**
@@ -166,6 +165,10 @@ class Rsvp_Template {
 	 * @return string The rendered block content wrapped in a div with a data-id attribute.
 	 */
 	public function get_block_content( array $parsed_block, int $response_id ): string {
+		// Remove the filter to prevent an infinite loop caused by the filter being called within WP_Block.
+		remove_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ) );
+
+		// Render the block content with the provided parsed block and response ID.
 		$block_content = (
 			new WP_Block(
 				$parsed_block,
@@ -173,6 +176,10 @@ class Rsvp_Template {
 			)
 		)->render( array( 'dynamic' => false ) );
 
+		// Re-add the filter after rendering to ensure it continues to apply to other blocks.
+		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 2 );
+
+		// Wrap the rendered block content in a container div with a unique data ID for the RSVP response.
 		return sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
 	}
 }

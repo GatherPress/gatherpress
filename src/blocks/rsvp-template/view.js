@@ -25,10 +25,10 @@ const { state } = store('gatherpress', {
 						state.posts[context.postId]?.rsvpSelection ||
 						'attending',
 					post_id: context.postId,
-					block_data: element.attributes['data-blocks'],
+					block_data: element.ref.textContent,
 				}),
 			})
-				.then((response) => response.json()) // Parse the JSON response
+				.then((response) => response.json()) // Parse the JSON response.
 				.then((res) => {
 					if (res.success) {
 						const parent = element.ref.parentElement;

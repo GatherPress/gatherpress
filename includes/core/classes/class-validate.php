@@ -157,4 +157,49 @@ class Validate {
 			true
 		);
 	}
+
+	/**
+	 * Validates block data received as a JSON string.
+	 *
+	 * This method checks if the provided JSON string represents
+	 * a valid block structure by ensuring the required properties
+	 * (`blockName`, `attrs`, `innerBlocks`) exist and are of the correct types.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $param The JSON string representing block data.
+	 * @return bool True if the block data is valid, false otherwise.
+	 */
+	public static function validate_block_data( string $param ): bool {
+		// Decode the JSON string.
+		$decoded = json_decode( $param, true );
+
+		// Check if JSON is invalid.
+		if ( null === $decoded ) {
+			return false;
+		}
+
+		// Validate the top-level structure.
+		if ( ! isset( $decoded['blockName'], $decoded['attrs'], $decoded['innerBlocks'] ) ) {
+			return false;
+		}
+
+		// Ensure the `blockName` is a string.
+		if ( ! is_string( $decoded['blockName'] ) ) {
+			return false;
+		}
+
+		// Ensure the `attrs` is an array.
+		if ( ! is_array( $decoded['attrs'] ) ) {
+			return false;
+		}
+
+		// Ensure the `innerBlocks` is an array.
+		if ( ! is_array( $decoded['innerBlocks'] ) ) {
+			return false;
+		}
+
+		// If all checks pass, return true.
+		return true;
+	}
 }

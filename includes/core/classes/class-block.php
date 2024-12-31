@@ -83,22 +83,11 @@ class Block {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
 
-		// Define custom settings for specific blocks.
-		$custom_block_settings = array(
-			'rsvp-template' => array(
-				'skip_inner_blocks' => true,
-				'render_callback'   => array( Rsvp_Template::get_instance(), 'render_block' ),
-			),
-		);
-
 		foreach ( $blocks as $block ) {
 			$block_metadata_path = sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block );
 
 			if ( is_dir( $block_metadata_path ) ) {
-				// Apply custom settings if available.
-				$settings = $custom_block_settings[ $block ] ?? array();
-
-				register_block_type( $block_metadata_path, $settings );
+				register_block_type( $block_metadata_path );
 			}
 		}
 	}
