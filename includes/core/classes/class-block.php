@@ -344,24 +344,4 @@ class Block {
 
 		return $block_names;
 	}
-
-	/**
-	 * Locates a specific tag within a block structure.
-	 *
-	 * This method searches for a specified tag (e.g., button or anchor) following a div tag
-	 * within the given HTML tag processor instance. If the specified tags are found, the
-	 * processor is returned for further manipulation.
-	 *
-	 * @param WP_HTML_Tag_Processor $tag The HTML tag processor instance for the block content.
-	 *
-	 * @return WP_HTML_Tag_Processor|null The tag processor instance if the specified tag is located, or null otherwise.
-	 * @since 1.0.0
-	 */
-	public function locate_button_tag( WP_HTML_Tag_Processor $tag ): ?WP_HTML_Tag_Processor {
-		if ( $tag->next_tag( array( 'tag_name' => 'div' ) ) && $tag->next_tag() ) {
-			return $tag;
-		}
-
-		return null;
-	}
 }

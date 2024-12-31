@@ -241,7 +241,7 @@ class Utility {
 		$timezone_string = get_option( 'timezone_string' );
 
 		// Remove old Etc mappings. Fallback to gmt_offset.
-		if ( str_contains( $timezone_string, 'Etc/GMT' ) ) {
+		if ( false !== strpos( $timezone_string, 'Etc/GMT' ) ) {
 			$timezone_string = '';
 		}
 
