@@ -151,54 +151,6 @@ class Rsvp_Template {
 	}
 
 	/**
-	 * Renders the RSVP Template block dynamically based on the event's RSVP responses.
-	 *
-	 * This method fetches RSVP responses for the current event and renders
-	 * the block content dynamically for each response. If no valid responses
-	 * are available, a default template is appended to enable front-end API
-	 * interactions and maintain the block structure.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array    $attributes The block's attributes.
-	 * @param string   $content    The initial content of the block.
-	 * @param WP_Block $block      The block instance, including parsed block data.
-	 *
-	 * @return string The rendered block content, including responses and a default template.
-	 */
-	public function render_block( array $attributes, string $content, WP_Block $block ): string {
-		$event = new Event( get_the_ID() );
-
-		if ( ! $event->rsvp ) {
-			return $content;
-		}
-
-		$responses = $event->rsvp->responses()['attending']['responses'];
-		$content   = '';
-
-		// Used for generating a parsed block for calls to API on the front end.
-		$responses[]            = array( 'commentId' => -1 );
-		$rsvp_response_template = '';
-
-		foreach ( $responses as $response ) {
-			$response_id = intval( $response['commentId'] );
-
-			if ( -1 === $response_id ) {
-				$blocks                 = wp_json_encode( $block->parsed_block );
-				$rsvp_response_template = sprintf(
-					'<div style="display:none;" data-wp-interactive="gatherpress" data-wp-watch="callbacks.renderBlocks" data-blocks="%s"></div>',
-					esc_attr( $blocks )
-				);
-				continue;
-			}
-
-			$content .= $this->get_block_content( $block->parsed_block, $response_id );
-		}
-
-		return $content . $rsvp_response_template;
-	}
-
-	/**
 	 * Generates the content for an RSVP block based on the parsed block data and a response ID.
 	 *
 	 * This method renders a block with the specified parsed block data and attaches
