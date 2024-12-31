@@ -92,12 +92,12 @@ class Modal_Manager {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		// Process only tags with the specific class 'gatherpress--open-modal'.
-		// @phpstan-ignore-next-line
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
 			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--open-modal' ) ) {
 				if (
+					// @phpstan-ignore-next-line
 					$tag->next_tag() &&
 					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
 				) {
@@ -144,12 +144,12 @@ class Modal_Manager {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		// Process only tags with the specific class 'gatherpress--close-modal'.
-		// @phpstan-ignore-next-line
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
 			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--close-modal' ) ) {
 				if (
+					// @phpstan-ignore-next-line
 					$tag->next_tag() &&
 					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
 				) {
