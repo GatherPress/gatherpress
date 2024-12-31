@@ -60,68 +60,111 @@ class Modal_Manager {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'inject_modal_behavior' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'attach_modal_open_behavior' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'attach_modal_close_behavior' ), 10, 2 );
 	}
 
 	/**
-	 * Injects modal interactivity behavior into block content.
+	 * Attaches modal open behavior to elements with the class 'gatherpress--open-modal'.
 	 *
-	 * This method enhances `core/button` blocks with specific classes by injecting
-	 * attributes necessary for modal interactivity. It supports both `<button>`
-	 * and `<a>` elements and applies the corresponding interactivity attributes
-	 * based on the class names `gatherpress--open-modal` and `gatherpress--close-modal`.
+	 * This method scans the block content for elements containing the 'gatherpress--open-modal'
+	 * class. If such elements are found, it applies the appropriate interactivity attributes
+	 * for opening modals. If the target element is not a link (`<a>`) or button (`<button>`),
+	 * it modifies the element to behave as a button by adding relevant ARIA and keyboard support.
 	 *
-	 * If a block contains the `gatherpress--open-modal` class, it adds attributes
-	 * to handle opening the modal. Similarly, for the `gatherpress--close-modal`
-	 * class, it adds attributes for closing the modal.
+	 * - Adds `data-wp-interactive` for interactivity.
+	 * - Adds `data-wp-on--click` to handle click events.
+	 * - Adds `data-wp-on--keydown` for keyboard accessibility.
+	 * - Sets `role="button"` and `tabindex="0"` for non-native actionable elements.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $block_content The HTML content of the block.
-	 * @param array  $block         The parsed block data.
+	 * @param string $block_content The original block HTML content.
+	 * @param array  $block         The block data, including attributes and block name.
 	 *
-	 * @return string The updated block content with interactivity attributes.
+	 * @return string The modified block content with modal open behavior attributes applied.
 	 */
-	public function inject_modal_behavior( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
-
-		if (
-			isset( $block['attrs']['className'] ) &&
-			(
-				false !== strpos( $block['attrs']['className'], 'gatherpress--open-modal' ) ||
-				false !== strpos( $block['attrs']['className'], 'gatherpress--close-modal' )
-			)
-		) {
-			$action = 'actions.openModal';
-
-			if ( false !== strpos( $block['attrs']['className'], 'gatherpress--close-modal' ) ) {
-				$action = 'actions.closeModal';
-			}
-
-			$tag = new WP_HTML_Tag_Processor( $block_content );
-
-			if ( 'core/button' === $block['blockName'] ) {
-				$tag = $block_instance->locate_button_tag( $tag );
-			} elseif ( 'gatherpress/icon' === $block['blockName'] ) {
-				$tag->next_tag();
-				$tag->next_tag();
-				$tag->set_attribute( 'tabindex', '0' );
-				$tag->set_attribute( 'role', 'button' );
-				$tag->set_attribute( 'data-wp-on--keydown', $action . 'OnEnter' );
-			} else {
-				$tag->next_tag();
-				$tag->set_attribute( 'tabindex', '0' );
-				$tag->set_attribute( 'role', 'button' );
-			}
-
-			if ( $tag ) {
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', $action );
-			}
-
-			$block_content = $tag->get_updated_html();
+	public function attach_modal_open_behavior( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
 		}
 
-		return $block_content;
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		// Process only tags with the specific class 'gatherpress--open-modal'.
+		// @phpstan-ignore-next-line
+		while ( $tag->next_tag() ) {
+			$class_attr = $tag->get_attribute( 'class' );
+
+			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--open-modal' ) ) {
+				if (
+					$tag->next_tag() &&
+					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
+				) {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
+				} else {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
+					$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
+					$tag->set_attribute( 'tabindex', '0' );
+					$tag->set_attribute( 'role', 'button' );
+				}
+			}
+		}
+
+		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Attaches modal close behavior to elements with the class 'gatherpress--close-modal'.
+	 *
+	 * This method scans the block content for elements containing the 'gatherpress--close-modal'
+	 * class. If such elements are found, it applies the appropriate interactivity attributes
+	 * for closing modals. If the target element is not a link (`<a>`) or button (`<button>`),
+	 * it modifies the element to behave as a button by adding relevant ARIA and keyboard support.
+	 *
+	 * - Adds `data-wp-interactive` for interactivity.
+	 * - Adds `data-wp-on--click` to handle click events.
+	 * - Adds `data-wp-on--keydown` for keyboard accessibility.
+	 * - Sets `role="button"` and `tabindex="0"` for non-native actionable elements.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The original block HTML content.
+	 * @param array  $block         The block data, including attributes and block name.
+	 *
+	 * @return string The modified block content with modal close behavior attributes applied.
+	 */
+	public function attach_modal_close_behavior( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
+
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		// Process only tags with the specific class 'gatherpress--close-modal'.
+		// @phpstan-ignore-next-line
+		while ( $tag->next_tag() ) {
+			$class_attr = $tag->get_attribute( 'class' );
+
+			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--close-modal' ) ) {
+				if (
+					$tag->next_tag() &&
+					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
+				) {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
+				} else {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
+					$tag->set_attribute( 'data-wp-on--keydown', 'actions.closeModalOnEnter' );
+					$tag->set_attribute( 'tabindex', '0' );
+					$tag->set_attribute( 'role', 'button' );
+				}
+			}
+		}
+
+		return $tag->get_updated_html();
 	}
 }

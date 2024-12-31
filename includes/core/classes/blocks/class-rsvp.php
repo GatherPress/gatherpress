@@ -183,11 +183,18 @@ class Rsvp {
 			$class_attr = $tag->get_attribute( 'class' );
 
 			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--update-rsvp' ) ) {
-				$tag->next_tag( array( 'tag_name' => array( 'a', 'button' ) ) );
-
-				// Add the desired attributes to the tag with the class 'gatherpress--update-rsvp'.
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+				if (
+					$tag->next_tag() &&
+					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
+				) {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+				} else {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+					$tag->set_attribute( 'tabindex', '0' );
+					$tag->set_attribute( 'role', 'button' );
+				}
 			}
 		}
 

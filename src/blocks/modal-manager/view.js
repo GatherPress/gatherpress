@@ -97,8 +97,8 @@ const { actions } = store('gatherpress', {
 				}
 			}
 		},
-		openModalKeyHandler(event) {
-			if ('Enter' === event.key || ' ' === event.key) {
+		openModalOnEnter(event) {
+			if ('Enter' === event.key) {
 				actions.openModal(event);
 			}
 		},
