@@ -189,6 +189,10 @@ class Rsvp {
 				) {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+
+					if ( 'A' === $tag->get_tag() ) {
+						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
+					}
 				} else {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );

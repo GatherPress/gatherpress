@@ -507,8 +507,8 @@ class Event_Rest_Api {
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
-		$guests          = intval( $params['guests'] );
-		$anonymous       = intval( $params['anonymous'] );
+		$guests          = intval( $params['guests'] ?? 0 );
+		$anonymous       = intval( $params['anonymous'] ?? 0 );
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.

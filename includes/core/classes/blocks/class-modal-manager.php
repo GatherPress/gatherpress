@@ -103,6 +103,10 @@ class Modal_Manager {
 				) {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
+
+					if ( 'A' === $tag->get_tag() ) {
+						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
+					}
 				} else {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
@@ -155,6 +159,10 @@ class Modal_Manager {
 				) {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
+
+					if ( 'A' === $tag->get_tag() ) {
+						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
+					}
 				} else {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
