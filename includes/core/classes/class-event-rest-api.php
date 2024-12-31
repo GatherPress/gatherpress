@@ -195,6 +195,10 @@ class Event_Rest_Api {
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
+					'status'     => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+					),
 					'block_data' => array(
 						'required' => true,
 					),
@@ -573,13 +577,14 @@ class Event_Rest_Api {
 		$rsvp_template = Rsvp_Template::get_instance();
 		$params        = $request->get_params();
 		$post_id       = intval( $params['post_id'] );
+		$status        = $params['status'];
 		$block_data    = $params['block_data'];
 		$block_data    = json_decode( $block_data, true );
 		$rsvp          = new Rsvp( $post_id );
 		$responses     = $rsvp->responses();
 		$content       = '';
 
-		foreach ( $responses['attending']['responses'] as $response ) {
+		foreach ( $responses[ $status ]['responses'] as $response ) {
 			$content .= $rsvp_template->get_block_content( $block_data, $response['commentId'] );
 		}
 

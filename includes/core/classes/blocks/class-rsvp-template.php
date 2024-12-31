@@ -139,8 +139,7 @@ class Rsvp_Template {
 			if ( -1 === $response_id ) {
 				$blocks                 = wp_json_encode( $block->parsed_block );
 				$rsvp_response_template = sprintf(
-					'<div data-wp-interactive="gatherpress" data-wp-context=\'{ "postId": %d }\' data-wp-watch="callbacks.renderBlocks" data-blocks="%s"></div>',
-					intval( get_the_ID() ),
+					'<div data-wp-interactive="gatherpress" data-wp-watch="callbacks.renderBlocks" data-blocks="%s"></div>',
 					esc_attr( $blocks )
 				);
 				continue;

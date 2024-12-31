@@ -137,7 +137,10 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 
 	const dropdownStyles = `
 		#${dropdownId} .wp-block-gatherpress-dropdown-item {
-			padding: ${itemPadding.top}px ${itemPadding.right}px ${itemPadding.bottom}px ${itemPadding.left}px;
+			padding: ${parseInt(itemPadding?.top || 0, 10)}px
+				${parseInt(itemPadding?.right || 0, 10)}px
+				${parseInt(itemPadding?.bottom || 0, 10)}px
+				${parseInt(itemPadding?.left || 0, 10)}px;
 			color: ${itemTextColor || 'inherit'};
 			background-color: ${itemBgColor || 'transparent'};
 		}

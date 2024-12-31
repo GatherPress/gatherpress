@@ -9,10 +9,6 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 import { getFromGlobal } from '../../helpers/globals';
 
 const { state, actions } = store('gatherpress', {
-	state: {
-		rsvpStatus:
-			getFromGlobal('eventDetails.currentUser.status') ?? 'no_status',
-	},
 	actions: {
 		updateRsvp() {
 			let status = 'not_attending';
@@ -20,7 +16,11 @@ const { state, actions } = store('gatherpress', {
 			const context = getContext();
 			const postId = context?.postId || 0;
 
-			if (['not_attending', 'no_status'].includes(state.rsvpStatus)) {
+			if (
+				['not_attending', 'no_status'].includes(
+					state.posts[postId].userRsvpStatus
+				)
+			) {
 				status = 'attending';
 			}
 
@@ -34,7 +34,7 @@ const { state, actions } = store('gatherpress', {
 					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
 				body: JSON.stringify({
-					post_id: getFromGlobal('eventDetails.postId'),
+					post_id: postId,
 					status,
 					guests,
 					anonymous,
@@ -43,9 +43,7 @@ const { state, actions } = store('gatherpress', {
 				.then((response) => response.json()) // Parse the JSON response
 				.then((res) => {
 					if (res.success) {
-						state.activePostId = res.event_id;
-						state.rsvpResponseStatus = res.status;
-						state.rsvpStatus = res.status;
+						state.activePostId = postId;
 						state.posts[postId] = {
 							...state.posts[postId],
 							eventResponses: {
@@ -53,6 +51,8 @@ const { state, actions } = store('gatherpress', {
 								waitingList: res.responses.waiting_list.count,
 								notAttending: res.responses.not_attending.count,
 							},
+							userRsvpStatus: res.status,
+							rsvpSelection: res.status,
 						};
 						actions.closeModal(null, element.ref);
 					}
@@ -63,8 +63,9 @@ const { state, actions } = store('gatherpress', {
 	callbacks: {
 		renderRsvpBlock() {
 			const element = getElement();
+			const context = getContext();
 			const status =
-				state.rsvpStatus ??
+				state.posts[context.postId]?.userRsvpStatus ??
 				getFromGlobal('eventDetails.currentUser.status');
 
 			const innerBlocks =

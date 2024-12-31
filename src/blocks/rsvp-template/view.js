@@ -12,14 +12,6 @@ const { state } = store('gatherpress', {
 	callbacks: {
 		renderBlocks() {
 			const context = getContext();
-
-			if (
-				!state.rsvpResponseStatus ||
-				context.postId !== state.activePostId
-			) {
-				return;
-			}
-
 			const element = getElement();
 
 			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-status-html', {
@@ -29,7 +21,9 @@ const { state } = store('gatherpress', {
 					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
 				body: JSON.stringify({
-					status: state.rsvpResponseStatus,
+					status:
+						state.posts[context.postId]?.rsvpSelection ||
+						'attending',
 					post_id: context.postId,
 					block_data: element.attributes['data-blocks'],
 				}),
@@ -55,7 +49,12 @@ const { state } = store('gatherpress', {
 							);
 
 						if (emptyRsvpMessageElement) {
-							if (0 === res.responses.attending.count) {
+							if (
+								'attending' ===
+									state.posts[context.postId]
+										?.rsvpSelection &&
+								0 === res.responses.attending.count
+							) {
 								emptyRsvpMessageElement.classList.add(
 									'gatherpress--is-visible'
 								);

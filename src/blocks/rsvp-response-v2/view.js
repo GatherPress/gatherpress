@@ -8,9 +8,29 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  */
 import { getFromGlobal } from '../../helpers/globals';
 
-const { state, callbacks } = store('gatherpress', {
+const { state, callbacks, actions } = store('gatherpress', {
 	state: {
 		posts: {},
+	},
+	actions: {
+		processRsvpSelection(event) {
+			// Call the linkHandler action to handle the default link behavior.
+			actions.linkHandler(event);
+
+			const element = getElement();
+
+			if (element && element.ref) {
+				const status = element.ref.getAttribute('data-status');
+
+				if (status) {
+					const context = getContext();
+
+					if (context) {
+						state.posts[context.postId].rsvpSelection = status;
+					}
+				}
+			}
+		},
 	},
 	callbacks: {
 		processRsvpDropdown() {
@@ -36,9 +56,7 @@ const { state, callbacks } = store('gatherpress', {
 			const parentElement = element.ref.parentElement;
 			const classList = parentElement?.classList || [];
 			const dataLabel = element.ref.getAttribute('data-label');
-			const activeElement = element.ref.classList.contains(
-				'gatherpress--is-disabled'
-			);
+			const activeStatus = state.posts[postId]?.rsvpSelection;
 			const dropdownParent = element.ref.closest(
 				'.wp-block-gatherpress-dropdown'
 			);
@@ -60,15 +78,33 @@ const { state, callbacks } = store('gatherpress', {
 				element.ref.textContent = updatedText;
 			}
 
-			if (activeElement) {
-				const activeText = element.ref.textContent.trim();
-				const triggerElement = dropdownParent.querySelector(
-					'.wp-block-gatherpress-dropdown__trigger'
-				);
+			if (activeStatus) {
+				// Find all dropdown items within the dropdownParent.
+				const dropdownItems =
+					dropdownParent.querySelectorAll('[data-status]');
 
-				if (triggerElement) {
-					triggerElement.textContent = activeText;
-				}
+				// Loop through all dropdown items.
+				dropdownItems.forEach((item) => {
+					const itemStatus = item.getAttribute('data-status');
+
+					// If the item's status matches the activeStatus, set it as disabled.
+					if (itemStatus === activeStatus) {
+						item.classList.add('gatherpress--is-disabled');
+
+						// Update the trigger element's text to match the active item's text.
+						const activeText = item.textContent.trim();
+						const triggerElement = dropdownParent.querySelector(
+							'.wp-block-gatherpress-dropdown__trigger'
+						);
+
+						if (triggerElement) {
+							triggerElement.textContent = activeText;
+						}
+					} else {
+						// Remove the disabled class from non-active items.
+						item.classList.remove('gatherpress--is-disabled');
+					}
+				});
 			}
 		},
 		initPostContext() {
@@ -82,6 +118,7 @@ const { state, callbacks } = store('gatherpress', {
 						waitingList: responses?.waiting_list?.count || 0,
 						notAttending: responses?.not_attending?.count || 0,
 					},
+					rsvpSelection: 'attending',
 				};
 			}
 		},

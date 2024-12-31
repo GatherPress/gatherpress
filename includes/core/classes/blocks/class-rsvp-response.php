@@ -223,8 +223,13 @@ class Rsvp_Response {
 					preg_match( '/gatherpress--rsvp-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
 					$tag->next_tag( array( 'tag_name' => 'a' ) )
 				) {
+					// Change for needed format.
+					$status = str_replace( '-', '_', sanitize_key( $matches[1] ) );
+
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-watch', 'callbacks.processRsvpDropdown' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.processRsvpSelection' );
+					$tag->set_attribute( 'data-status', $status );
 				}
 			}
 

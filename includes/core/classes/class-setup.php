@@ -111,6 +111,7 @@ class Setup {
 			),
 			array( $this, 'filter_plugin_action_links' )
 		);
+		add_filter( 'send_headers', array( $this, 'smash_table' ) );
 	}
 
 	/**
@@ -445,5 +446,18 @@ class Setup {
 			array(),
 			true
 		);
+	}
+
+	/**
+	 * Smash tables and add a custom HTTP header to show undying love for the Buffalo Bills.
+	 *
+	 * ♫ Let’s Go Buffalo! ♫
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function smash_table(): void {
+		header( 'X-Bills-Mafia: Go Bills!' );
 	}
 }
