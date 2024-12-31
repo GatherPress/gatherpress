@@ -13,8 +13,10 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block_Template;
+use WP_HTML_Tag_Processor;
 use WP_Post;
 
 /**
@@ -59,8 +61,7 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// Priority 9 needed to allow the Block_Variation(s) to register their assets on init:10, without worries.
-		add_action( 'init', array( $this, 'register_block_variations' ), 9 );
+		add_action( 'init', array( $this, 'register_block_classes' ) );
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
@@ -82,35 +83,41 @@ class Block {
 		$blocks_directory = sprintf( '%1$s/build/blocks/', GATHERPRESS_CORE_PATH );
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
 
+		// Define custom settings for specific blocks.
+		$custom_block_settings = array(
+			'rsvp-template' => array(
+				'skip_inner_blocks' => true,
+				'render_callback'   => array( Rsvp_Template::get_instance(), 'render_block' ),
+			),
+		);
+
 		foreach ( $blocks as $block ) {
-			register_block_type(
-				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
-			);
+			$block_metadata_path = sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block );
+
+			if ( is_dir( $block_metadata_path ) ) {
+				// Apply custom settings if available.
+				$settings = $custom_block_settings[ $block ] ?? array();
+
+				register_block_type( $block_metadata_path, $settings );
+			}
 		}
 	}
 
 	/**
-	 * Require files & instantiate block-variation classes.
+	 * Instantiate block classes.
 	 *
 	 * @return void
 	 */
-	public function register_block_variations(): void {
-		foreach ( $this->get_block_variations() as $block ) {
-			// Prepare namespaced class-name
-			// in the following shape: "GatherPress\Core\Blocks\Block_Variation"  (example).
-			$name = join(
-				'\\',
-				array(
-					__NAMESPACE__,
-					'Blocks',
-					$this->get_classname_from_foldername( $block ),
-				)
-			);
-
-			if ( class_exists( $name ) ) {
-				$name::get_instance();
-			}
-		}
+	public function register_block_classes(): void {
+		Blocks\Add_To_Calendar::get_instance();
+		Blocks\Dropdown::get_instance();
+		Blocks\Dropdown_Item::get_instance();
+		Blocks\General_Block::get_instance();
+		Blocks\Modal::get_instance();
+		Blocks\Modal_Manager::get_instance();
+		Blocks\Rsvp::get_instance();
+		Blocks\Rsvp_Response::get_instance();
+		Blocks\Rsvp_Template::get_instance();
 	}
 
 	/**
@@ -136,6 +143,21 @@ class Block {
 			);
 		}
 		return array_filter( $this->block_variation_names );
+	}
+
+	/**
+	 * Generate the default CSS class for a block.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_name The block name in the format 'namespace/blockname'.
+	 * @return string The default CSS class for the block.
+	 */
+	public function get_default_block_class( string $block_name ): string {
+		return sprintf(
+			'wp-block-%s',
+			sanitize_key( str_replace( '/', '-', $block_name ) )
+		);
 	}
 
 	/**
@@ -304,5 +326,53 @@ class Block {
 		}
 
 		return $parsed_hooked_block;
+	}
+
+	/**
+	 * Recursively retrieves all block names from a given array of blocks.
+	 *
+	 * This method traverses a nested block structure and collects the block names,
+	 * including those of any inner blocks, into a flat array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $blocks An array of block data, typically including `blockName` and `innerBlocks`.
+	 *
+	 * @return array An array of block names found within the provided block structure.
+	 */
+	public function get_block_names( array $blocks ): array {
+		$block_names = array();
+
+		if ( isset( $blocks['blockName'] ) ) {
+			$block_names[] = $blocks['blockName'];
+		}
+
+		if ( ! empty( $blocks['innerBlocks'] ) ) {
+			foreach ( $blocks['innerBlocks'] as $inner_block ) {
+				$block_names = array_merge( $block_names, $this->get_block_names( $inner_block ) );
+			}
+		}
+
+		return $block_names;
+	}
+
+	/**
+	 * Locates a specific tag within a block structure.
+	 *
+	 * This method searches for a specified tag (e.g., button or anchor) following a div tag
+	 * within the given HTML tag processor instance. If the specified tags are found, the
+	 * processor is returned for further manipulation.
+	 *
+	 * @param WP_HTML_Tag_Processor $tag The HTML tag processor instance for the block content.
+	 *
+	 * @return WP_HTML_Tag_Processor|null The tag processor instance if the specified tag is located, or null otherwise.
+	 * @since 1.0.0
+	 */
+	public function locate_button_tag( WP_HTML_Tag_Processor $tag ): ?WP_HTML_Tag_Processor {
+		if ( $tag->next_tag( array( 'tag_name' => 'div' ) ) && $tag->next_tag() ) {
+			return $tag;
+		}
+
+		return null;
 	}
 }

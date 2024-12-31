@@ -85,17 +85,15 @@ const EventsList = (props) => {
 				?.join(',');
 		}
 
-		const endpoint =
-			getFromGlobal('urls.eventRestApi') +
-			`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`;
-
 		/**
 		 * Check if user is logged in, so we have current_user for the event present, which
 		 * allows them to interact with the block.
 		 */
 		if (getFromGlobal('misc.isUserLoggedIn')) {
 			apiFetch({
-				path: endpoint,
+				path:
+					getFromGlobal('urls.eventApiPath') +
+					`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`,
 			}).then((data) => {
 				setLoaded(true);
 				setEvents(data);
@@ -106,7 +104,10 @@ const EventsList = (props) => {
 			 *
 			 * @see https://github.com/GatherPress/gatherpress/issues/300
 			 */
-			fetch(endpoint)
+			fetch(
+				getFromGlobal('urls.eventApiUrl') +
+					`/events-list?event_list_type=${type}&max_number=${maxNumberOfEvents}&datetime_format=${datetimeFormat}&topics=${topicsString}&venues=${venuesString}`
+			)
 				.then((response) => {
 					return response.json();
 				})

@@ -30,7 +30,8 @@ import {
 	getUtcOffset,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
-import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
+import { getFromGlobal } from '../../helpers/globals';
+import { isGatherPressPostType } from '../../helpers/editor';
 
 /**
  * Similar to get_display_datetime method in class-event.php.

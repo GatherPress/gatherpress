@@ -47,7 +47,7 @@ const EventCommunicationModal = () => {
 			global.confirm(__('Confirm you are ready to send?', 'gatherpress'))
 		) {
 			apiFetch({
-				path: getFromGlobal('urls.eventRestApi') + '/email',
+				path: getFromGlobal('urls.eventApiPath') + '/email',
 				method: 'POST',
 				data: {
 					post_id: getFromGlobal('eventDetails.postId'),

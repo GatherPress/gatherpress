@@ -1,7 +1,7 @@
-@import "../mixins";
-@import "../modal";
-@import "../status";
-@import "../buttons";
+@use "../mixins";
+@use "../modal";
+@use "../status";
+@use "../buttons";
 
 .gatherpress-modal__rsvp {
 	.gatherpress-modal {

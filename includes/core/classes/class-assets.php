@@ -12,7 +12,6 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
 use Error;
 
@@ -87,7 +86,8 @@ class Assets {
 	protected function setup_hooks(): void {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'frontend_enqueue_scripts' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
@@ -123,8 +123,18 @@ class Assets {
 	 *
 	 * @return void
 	 */
-	public function enqueue_scripts(): void {
+	public function block_enqueue_scripts(): void {
+		// @todo remove once new blocks are completed.
 		wp_enqueue_style( 'dashicons' );
+
+		$asset = $this->get_asset_data( 'utility_style' );
+
+		wp_enqueue_style(
+			'gatherpress-utility-style',
+			$this->build . 'utility_style.css',
+			$asset['dependencies'],
+			$asset['version']
+		);
 	}
 
 	/**
@@ -142,7 +152,7 @@ class Assets {
 	public function admin_enqueue_scripts( string $hook ): void {
 		$asset = $this->get_asset_data( 'admin_style' );
 
-		wp_register_style(
+		wp_enqueue_style(
 			'gatherpress-admin-style',
 			$this->build . 'admin_style.css',
 			$asset['dependencies'],
@@ -221,6 +231,28 @@ class Assets {
 
 			wp_set_script_translations( 'gatherpress-profile', 'gatherpress' );
 		}
+	}
+
+	/**
+	 * Enqueues scripts for the frontend.
+	 *
+	 * Registers and enqueues JavaScript files required for the plugin's frontend functionality.
+	 * Ensures proper handling of dependencies and versioning.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function frontend_enqueue_scripts(): void {
+		$asset = $this->get_asset_data( 'main' );
+
+		wp_enqueue_script(
+			'gatherpress-main',
+			$this->build . 'main.js',
+			$asset['dependencies'],
+			$asset['version'],
+			true
+		);
 	}
 
 	/**
@@ -322,7 +354,8 @@ class Assets {
 			),
 			'urls'         => array(
 				'pluginUrl'       => GATHERPRESS_CORE_URL,
-				'eventRestApi'    => $event_rest_api,
+				'eventApiPath'    => '/' . $event_rest_api_slug,
+				'eventApiUrl'     => home_url( 'wp-json/' . $event_rest_api_slug ),
 				'loginUrl'        => $this->get_login_url( $post_id ),
 				'registrationUrl' => $this->get_registration_url( $post_id ),
 				'homeUrl'         => get_home_url(),
@@ -396,16 +429,21 @@ class Assets {
 					'gatherpress/event-date',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
+					'gatherpress/rsvp-v2',
 					'gatherpress/rsvp-response',
+					'gatherpress/rsvp-response-v2',
 				);
 				break;
 			default:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
+					'gatherpress/modal',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
+					'gatherpress/rsvp-v2',
 					'gatherpress/rsvp-response',
+					'gatherpress/rsvp-response-v2',
 					'gatherpress/venue',
 				);
 		}

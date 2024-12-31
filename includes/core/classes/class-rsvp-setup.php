@@ -89,6 +89,7 @@ class Rsvp_Setup {
 	 *
 	 * @param int $comments_number The original number of comments.
 	 * @param int $post_id         The ID of the post.
+	 *
 	 * @return int Adjusted number of comments.
 	 */
 	public function adjust_comments_number( int $comments_number, int $post_id ): int {

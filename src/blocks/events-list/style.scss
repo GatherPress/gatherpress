@@ -1,7 +1,7 @@
-@import "../mixins";
-@import "../rsvp-response/style";
-@import "../rsvp/style";
-@import "../tooltip";
+@use "../mixins";
+@use "../rsvp-response/style" as rsvpResponseStyle;
+@use "../rsvp/style" as rsvpStyle;
+@use "../tooltip";
 
 .gatherpress-events-list {
 	&__datetime {
@@ -26,14 +26,14 @@
 		margin-bottom: 2rem;
 		padding-bottom: 2rem;
 
-		@include for-core-mobile {
+		@include mixins.for-core-mobile {
 			line-height: 2.75rem;
 		}
 
 		.gatherpress-rsvp {
 			margin-bottom: 0;
 
-			@include for-core-mobile {
+			@include mixins.for-core-mobile {
 				flex-direction: column;
 			}
 		}

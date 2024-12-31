@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -97,6 +98,7 @@ class Event_Rest_Api {
 		return array(
 			$this->email_route(),
 			$this->rsvp_route(),
+			$this->rsvp_status_html_route(),
 			$this->events_list_route(),
 		);
 	}
@@ -163,6 +165,42 @@ class Event_Rest_Api {
 					'status'  => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Define the REST route for rendering RSVP block HTML.
+	 *
+	 * This method registers a REST API route for dynamically generating HTML markup
+	 * for RSVP blocks based on the provided block data and post ID.
+	 * The generated HTML reflects the current RSVP status and can be used
+	 * to re-render block content when status changes occur.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
+	protected function rsvp_status_html_route(): array {
+		return array(
+			'route' => 'rsvp-status-html',
+			'args'  => array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'rsvp_status_html' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'post_id'    => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
+					),
+					'status'     => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+					),
+					'block_data' => array(
+						'required' => true,
 					),
 				),
 			),
@@ -511,6 +549,51 @@ class Event_Rest_Api {
 			'anonymous'   => $anonymous,
 			'responses'   => $event->rsvp->responses(),
 			'online_link' => $event->maybe_get_online_event_link(),
+		);
+
+		return new WP_REST_Response( $response );
+	}
+
+	/**
+	 * Handles rendering RSVP block HTML via a REST API endpoint.
+	 *
+	 * This method dynamically generates HTML markup for RSVP blocks based on the
+	 * provided block data and the responses for a given post ID. It processes the
+	 * RSVP responses and renders the corresponding content using the block template.
+	 * Each response is wrapped in its own container with data attributes to facilitate
+	 * interactivity and styling.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The REST API request object containing parameters:
+	 *                                 - post_id (int): The ID of the post associated with the RSVP.
+	 *                                 - block_data (string): JSON-encoded block data used to render the RSVP content.
+	 *
+	 * @return WP_REST_Response The REST API response containing:
+	 *                          - success (bool): Whether the content was successfully generated.
+	 *                          - content (string): The dynamically rendered HTML markup for the RSVP responses.
+	 */
+	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
+		$rsvp_template = Rsvp_Template::get_instance();
+		$params        = $request->get_params();
+		$post_id       = intval( $params['post_id'] );
+		$status        = $params['status'];
+		$block_data    = $params['block_data'];
+		$block_data    = json_decode( $block_data, true );
+		$rsvp          = new Rsvp( $post_id );
+		$responses     = $rsvp->responses();
+		$content       = '';
+
+		foreach ( $responses[ $status ]['responses'] as $response ) {
+			$content .= $rsvp_template->get_block_content( $block_data, $response['commentId'] );
+		}
+
+		$success = true;
+
+		$response = array(
+			'success'   => $success,
+			'content'   => $content,
+			'responses' => $responses,
 		);
 
 		return new WP_REST_Response( $response );
