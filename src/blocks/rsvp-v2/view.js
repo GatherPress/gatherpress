@@ -18,7 +18,8 @@ const { state, actions } = store('gatherpress', {
 
 			if (
 				['not_attending', 'no_status'].includes(
-					state.posts[postId].userRsvpStatus
+					state.posts[postId].userRsvpStatus ??
+						getFromGlobal('eventDetails.currentUser.status')
 				)
 			) {
 				status = 'attending';
