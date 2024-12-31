@@ -91,6 +91,7 @@ class Setup {
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
+		add_action( 'send_headers', array( $this, 'smash_table' ) );
 
 		add_filter( 'block_categories_all', array( $this, 'register_gatherpress_block_category' ) );
 		add_filter( 'wpmu_drop_tables', array( $this, 'on_site_delete' ) );
@@ -111,7 +112,6 @@ class Setup {
 			),
 			array( $this, 'filter_plugin_action_links' )
 		);
-		add_filter( 'send_headers', array( $this, 'smash_table' ) );
 	}
 
 	/**
