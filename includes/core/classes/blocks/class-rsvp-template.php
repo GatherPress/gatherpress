@@ -147,6 +147,7 @@ class Rsvp_Template {
 			'<script type="application/json" data-wp-interactive="gatherpress" data-wp-watch="callbacks.renderBlocks">%s</script>',
 			$blocks
 		);
+
 		return $block_content . $rsvp_response_template;
 	}
 
