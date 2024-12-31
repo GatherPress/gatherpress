@@ -200,7 +200,8 @@ class Event_Rest_Api {
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
 					'block_data' => array(
-						'required' => true,
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'validate_block_data' ),
 					),
 				),
 			),
