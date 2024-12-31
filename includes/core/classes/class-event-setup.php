@@ -149,7 +149,7 @@ class Event_Setup {
 				),
 				// @todo continue to work on the event-template.
 				// 'template'      => array(
-				// 	array( 'core/pattern', array( 'slug' => 'gatherpress/event-template' ) ),
+				// array( 'core/pattern', array( 'slug' => 'gatherpress/event-template' ) ),
 				// ),
 				'menu_position' => 4,
 				'supports'      => array(
