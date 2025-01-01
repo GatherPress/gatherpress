@@ -7,82 +7,84 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies.
  */
 import { getFromGlobal } from '../../helpers/globals';
+import {
+	initPostContext,
+	sendRsvpApiRequest,
+} from '../../helpers/interactivity';
 
 const { state, actions } = store('gatherpress', {
 	actions: {
 		updateGuestCount() {
 			const element = getElement();
-			console.log('here');
+			const context = getContext();
+			const postId = context.postId || 0;
+			const currentUser = state.posts[postId].currentUser;
+			currentUser.guests = element.ref.value;
+
+			initPostContext(state, postId);
+
+			sendRsvpApiRequest(postId, currentUser, state);
 		},
-		updateRsvp(e) {
-			e.preventDefault();
+		updateRsvp(event = null) {
+			if (event) {
+				event.preventDefault();
+			}
 
 			const element = getElement();
 			const context = getContext();
 			const postId = context?.postId || 0;
 			const setStatus = element.ref.getAttribute('data-set-status') ?? '';
-			const currentUserStatus =
-				state.posts[postId]?.currentUser?.rsvpStatus ??
-				getFromGlobal('eventDetails.currentUser.status');
+			const currentUserStatus = state.posts[postId].currentUser.status;
 
 			let status = 'not_attending';
 
-			if (
-				['attending', 'waiting_list', 'not_attending'].includes(
-					setStatus
-				)
-			) {
-				status = setStatus;
-			} else if (
-				['not_attending', 'no_status'].includes(currentUserStatus)
-			) {
-				status = 'attending';
+			if (event) {
+				if (
+					['attending', 'waiting_list', 'not_attending'].includes(
+						setStatus
+					)
+				) {
+					status = setStatus;
+				} else if (
+					['not_attending', 'no_status'].includes(currentUserStatus)
+				) {
+					status = 'attending';
+				}
+			} else {
+				status = currentUserStatus;
 			}
 
-			const guests = 0;
+			const guests = state.posts[postId].currentUser.guests;
 			const anonymous = 0;
-
-			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': getFromGlobal('misc.nonce'),
-				},
-				body: JSON.stringify({
-					post_id: postId,
+			sendRsvpApiRequest(
+				postId,
+				{
 					status,
 					guests,
 					anonymous,
-				}),
-			})
-				.then((response) => response.json()) // Parse the JSON response
-				.then((res) => {
-					if (res.success) {
-						state.activePostId = postId;
-						state.posts[postId] = {
-							...state.posts[postId],
-							eventResponses: {
-								attending: res.responses.attending.count,
-								waitingList: res.responses.waiting_list.count,
-								notAttending: res.responses.not_attending.count,
-							},
-							currentUser: {
-								rsvpStatus: res.status,
-							},
-							rsvpSelection: res.status,
-						};
-						actions.closeModal(null, element.ref);
-					}
-				})
-				.catch(() => {});
+				},
+				state,
+				() => {
+					actions.closeModal(null, element.ref);
+				}
+			);
 		},
 	},
 	callbacks: {
+		setGuestCount() {
+			const element = getElement();
+			const context = getContext();
+			const postId = context.postId || 0;
+
+			initPostContext(state, postId);
+
+			element.ref.value = state.posts[postId].currentUser.guests;
+		},
 		renderRsvpBlock() {
 			const element = getElement();
 			const context = getContext();
 			const status =
-				state.posts[context.postId]?.currentUser?.rsvpStatus ??
+				state.posts[context.postId]?.currentUser?.status ??
 				getFromGlobal('eventDetails.currentUser.status');
 
 			const innerBlocks =

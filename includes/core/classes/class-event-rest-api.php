@@ -533,6 +533,11 @@ class Event_Rest_Api {
 			is_user_member_of_blog( $user_id ) &&
 			! $event->has_event_past()
 		) {
+			if ( 'attending' !== $status ) {
+				$guests    = 0;
+				$anonymous = 0;
+			}
+
 			$user_record = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
