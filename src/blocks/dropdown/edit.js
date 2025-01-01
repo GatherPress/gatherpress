@@ -29,6 +29,22 @@ import { useState, useEffect } from '@wordpress/element';
 import { v4 as uuidv4 } from 'uuid';
 import { dispatch, select, useSelect } from '@wordpress/data';
 
+/**
+ * Edit component for the GatherPress Dropdown block.
+ *
+ * This component is used in the WordPress editor to manage the editable interface
+ * for the GatherPress Dropdown block. It allows users to configure the block's
+ * attributes and settings directly within the editor.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props               The props object passed to the component.
+ * @param {Object}   props.attributes    The attributes for the block.
+ * @param {Function} props.setAttributes A function to update block attributes.
+ * @param {string}   props.clientId      The unique identifier for the block instance.
+ *
+ * @return {JSX.Element} The rendered edit interface for the block.
+ */
 const Edit = ({ attributes, setAttributes, clientId }) => {
 	const blockProps = useBlockProps();
 	const [isExpanded, setIsExpanded] = useState(false);

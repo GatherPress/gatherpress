@@ -8,7 +8,7 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  */
 import { initPostContext } from '../../helpers/interactivity';
 
-const { state, callbacks, actions } = store('gatherpress', {
+const { state, actions } = store('gatherpress', {
 	state: {
 		posts: {},
 	},

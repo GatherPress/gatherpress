@@ -1,20 +1,29 @@
 /**
- * WordPress dependencies
+ * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, RichText } from '@wordpress/block-editor';
 import { useEffect } from '@wordpress/element';
 
 /**
- * External dependencies
+ * External dependencies.
  */
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Edit function for Guest Count Input Block
- * @param root0
- * @param root0.attributes
- * @param root0.setAttributes
+ * Edit component for the Guest Count Input Block.
+ *
+ * This component is used in the WordPress editor to manage the editable interface
+ * for the Guest Count Input block. It allows users to configure the label for
+ * the input field and preview its appearance.
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}   props               The props object passed to the component.
+ * @param {Object}   props.attributes    The attributes for the block.
+ * @param {Function} props.setAttributes A function to update block attributes.
+ *
+ * @return {JSX.Element} The rendered edit interface for the block.
  */
 const Edit = ({ attributes, setAttributes }) => {
 	const blockProps = useBlockProps();

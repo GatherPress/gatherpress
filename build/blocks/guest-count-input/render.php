@@ -7,6 +7,7 @@
  * @package GatherPress\Core
  * @since 1.0.0
  */
+
 use GatherPress\Core\Event;
 
 $gatherpress_event           = new Event( get_the_ID() );
