@@ -10,17 +10,27 @@ import { getFromGlobal } from '../../helpers/globals';
 
 const { state, actions } = store('gatherpress', {
 	actions: {
-		updateRsvp() {
-			let status = 'not_attending';
+		updateRsvp(e) {
+			e.preventDefault();
+
 			const element = getElement();
 			const context = getContext();
 			const postId = context?.postId || 0;
+			const setStatus = element.ref.getAttribute('data-set-status') ?? '';
+			const currentUserStatus =
+				state.posts[postId].userRsvpStatus ??
+				getFromGlobal('eventDetails.currentUser.status');
+
+			let status = 'not_attending';
 
 			if (
-				['not_attending', 'no_status'].includes(
-					state.posts[postId].userRsvpStatus ??
-						getFromGlobal('eventDetails.currentUser.status')
+				['attending', 'waiting_list', 'not_attending'].includes(
+					setStatus
 				)
+			) {
+				status = setStatus;
+			} else if (
+				['not_attending', 'no_status'].includes(currentUserStatus)
 			) {
 				status = 'attending';
 			}
