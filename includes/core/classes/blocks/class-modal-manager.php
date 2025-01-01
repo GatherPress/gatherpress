@@ -99,21 +99,17 @@ class Modal_Manager {
 				if (
 					// @phpstan-ignore-next-line
 					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
+					in_array( $tag->get_tag(), array( 'A' ), true )
 				) {
-					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
-
-					if ( 'A' === $tag->get_tag() ) {
-						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-					}
+					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
 				} else {
-					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
 					$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
 					$tag->set_attribute( 'tabindex', '0' );
 					$tag->set_attribute( 'role', 'button' );
 				}
+
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
 			}
 		}
 
@@ -155,21 +151,17 @@ class Modal_Manager {
 				if (
 					// @phpstan-ignore-next-line
 					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
+					in_array( $tag->get_tag(), array( 'A' ), true )
 				) {
-					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-					$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
-
-					if ( 'A' === $tag->get_tag() ) {
-						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-					}
+					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
 				} else {
-					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-					$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
 					$tag->set_attribute( 'data-wp-on--keydown', 'actions.closeModalOnEnter' );
 					$tag->set_attribute( 'tabindex', '0' );
 					$tag->set_attribute( 'role', 'button' );
 				}
+
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
 			}
 		}
 

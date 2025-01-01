@@ -178,26 +178,43 @@ class Rsvp {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		// Process only tags with the specific class 'gatherpress--update-rsvp'.
+		$rsvp_class = 'gatherpress--update-rsvp';
+
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--update-rsvp' ) ) {
+			if ( $class_attr && false !== strpos( $class_attr, $rsvp_class ) ) {
+				$classes        = explode( ' ', $class_attr );
+				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );
+				$matched_status = null;
+
+				foreach ( $classes as $class ) {
+					if ( false !== strpos( $class, $rsvp_class ) ) {
+						foreach ( $statuses as $status ) {
+							if ( sprintf( '%s__%s', $rsvp_class, $status ) === $class ) {
+								$matched_status = $status;
+								break 2;
+							}
+						}
+					}
+				}
+
 				if (
 					// @phpstan-ignore-next-line
 					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
+					in_array( $tag->get_tag(), array( 'A' ), true )
 				) {
-					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
-
-					if ( 'A' === $tag->get_tag() ) {
-						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-					}
+					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
 				} else {
-					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
 					$tag->set_attribute( 'tabindex', '0' );
 					$tag->set_attribute( 'role', 'button' );
+				}
+
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+
+				if ( ! empty( $matched_status ) ) {
+					$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
 				}
 			}
 		}
