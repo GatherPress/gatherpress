@@ -10,6 +10,10 @@ import { getFromGlobal } from '../../helpers/globals';
 
 const { state, actions } = store('gatherpress', {
 	actions: {
+		updateGuestCount() {
+			const element = getElement();
+			console.log('here');
+		},
 		updateRsvp(e) {
 			e.preventDefault();
 
@@ -18,7 +22,7 @@ const { state, actions } = store('gatherpress', {
 			const postId = context?.postId || 0;
 			const setStatus = element.ref.getAttribute('data-set-status') ?? '';
 			const currentUserStatus =
-				state.posts[postId].userRsvpStatus ??
+				state.posts[postId]?.currentUser?.rsvpStatus ??
 				getFromGlobal('eventDetails.currentUser.status');
 
 			let status = 'not_attending';
@@ -62,7 +66,9 @@ const { state, actions } = store('gatherpress', {
 								waitingList: res.responses.waiting_list.count,
 								notAttending: res.responses.not_attending.count,
 							},
-							userRsvpStatus: res.status,
+							currentUser: {
+								rsvpStatus: res.status,
+							},
 							rsvpSelection: res.status,
 						};
 						actions.closeModal(null, element.ref);
@@ -76,7 +82,7 @@ const { state, actions } = store('gatherpress', {
 			const element = getElement();
 			const context = getContext();
 			const status =
-				state.posts[context.postId]?.userRsvpStatus ??
+				state.posts[context.postId]?.currentUser?.rsvpStatus ??
 				getFromGlobal('eventDetails.currentUser.status');
 
 			const innerBlocks =
