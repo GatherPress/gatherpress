@@ -71,7 +71,27 @@ const { state, actions } = store('gatherpress', {
 				},
 				state,
 				() => {
-					actions.closeModal(null, element.ref);
+					const parentWithRsvpStatus =
+						element.ref.closest('[data-rsvp-status]');
+					const rsvpStatus =
+						parentWithRsvpStatus.getAttribute('data-rsvp-status');
+					const rsvpContainer = parentWithRsvpStatus.closest(
+						'.wp-block-gatherpress-rsvp-v2'
+					);
+
+					if (['not_attending', 'no_status'].includes(rsvpStatus)) {
+						const attendingStatusButton =
+							rsvpContainer.querySelector(
+								'[data-rsvp-status="attending"] .gatherpress--update-rsvp'
+							);
+
+						actions.openModal(null, attendingStatusButton);
+					}
+
+					// Close the current modal after a short delay to prevent flicker.
+					setTimeout(() => {
+						actions.closeModal(null, element.ref);
+					}, 1);
 				}
 			);
 		},

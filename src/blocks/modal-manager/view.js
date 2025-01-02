@@ -50,9 +50,11 @@ const { actions } = store('gatherpress', {
 					const lastFocusableElement =
 						focusableElements[focusableElements.length - 1];
 
-					// Automatically focus the first focusable element.
+					// Automatically focus the first focusable element with a short delay.
 					if (firstFocusableElement) {
-						firstFocusableElement.focus();
+						setTimeout(() => {
+							firstFocusableElement.focus();
+						}, 5);
 					}
 
 					// Trap focus within the modal content.
