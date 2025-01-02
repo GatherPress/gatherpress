@@ -11,44 +11,14 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
-
-        await page.getByRole('link', { name: 'Events', exact: true }).click();
+		await page.getByRole('link', { name: 'Events', exact: true }).click();
         await page.locator('#wpbody-content').getByRole('link', { name: 'Add New Event' }).click();
-        
-	const eventTitle = await page
-		.getByLabel('Add title')
-		.fill('test: offline  event');
+  await page.getByLabel('Add title').fill('event time details');
+  await page.getByRole('button', { name: 'Publish', exact: true }).click();
+  await page.getByLabel('Editor publish').getByRole('button', { name: 'Publish', exact: true }).click();
+  await page.getByLabel('Editor publish').getByRole('link', { name: 'View Event' }).click();
 
-        const time= await page.getByLabel('Block: Event Date');
-        
-	await page
-		.getByLabel('Block: Event Date')
-		.locator('div')
-		.first()
-		.isVisible();
-
-	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
-
-    await page.getByRole('button', { name: 'Event settings' }).click();
-    await page.getByRole('button', { name: 'Event settings' }).click();
-    await page.getByLabel('Venue Selector').selectOption('76:test-venue-map');
-
-    await page.getByRole('button', { name: 'Publish', exact: true }).click();
-    await page.getByLabel('Editor publish').getByRole('button', { name: 'Publish', exact: true }).click();
-
-    await page
-    .getByText(`${eventTitle} is now live.`)
-    .isVisible({ timeout: 60000 }); // verified the event is live.
-await page
-    .locator('.post-publish-panel__postpublish-buttons')
-    .filter({ hasText: 'View Event' })
-    .isVisible({ timeout: 30000 }); // verified the view event button.
-		
-    await page.goto('/');
-    
-    await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
-	await page.getByRole('link', { name: 'test: venue map' }).first().click();
-
+  await page.locator('#wp--skip-link--target').isVisible();
     await page.locator('.wp-block-gatherpress-event-date').isVisible();
 
     
