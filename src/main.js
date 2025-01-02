@@ -16,7 +16,7 @@ const setupModalCloseHandlers = () => {
 	// Handle Escape key to close modals
 	const handleEscapeKey = (event) => {
 		if (event.key === 'Escape') {
-			const openModals = document.querySelectorAll(
+			const openModals = global.document.querySelectorAll(
 				'.gatherpress--is-visible'
 			);
 			openModals.forEach((modal) => closeModal(modal));
@@ -25,7 +25,7 @@ const setupModalCloseHandlers = () => {
 
 	// Handle clicks outside modal content
 	const handleOutsideClick = (event) => {
-		const openModals = document.querySelectorAll(
+		const openModals = global.document.querySelectorAll(
 			'.wp-block-gatherpress-modal.gatherpress--is-visible'
 		);
 		openModals.forEach((modal) => {
@@ -44,8 +44,8 @@ const setupModalCloseHandlers = () => {
 	};
 
 	// Attach event listeners
-	document.addEventListener('keydown', handleEscapeKey);
-	document.addEventListener('click', handleOutsideClick);
+	global.document.addEventListener('keydown', handleEscapeKey);
+	global.document.addEventListener('click', handleOutsideClick);
 };
 
 const setupDropdownCloseHandlers = () => {
@@ -70,7 +70,7 @@ const setupDropdownCloseHandlers = () => {
 	// Handle Escape key to close dropdowns
 	const handleEscapeKey = (event) => {
 		if (event.key === 'Escape') {
-			const openDropdowns = document.querySelectorAll(
+			const openDropdowns = global.document.querySelectorAll(
 				'.wp-block-gatherpress-dropdown__menu.gatherpress--is-visible'
 			);
 			openDropdowns.forEach((dropdown) => closeDropdown(dropdown));
@@ -79,7 +79,7 @@ const setupDropdownCloseHandlers = () => {
 
 	// Handle clicks outside dropdown content
 	const handleOutsideClick = (event) => {
-		const openDropdowns = document.querySelectorAll(
+		const openDropdowns = global.document.querySelectorAll(
 			'.wp-block-gatherpress-dropdown__menu.gatherpress--is-visible'
 		);
 		openDropdowns.forEach((dropdown) => {
@@ -98,8 +98,8 @@ const setupDropdownCloseHandlers = () => {
 	};
 
 	// Attach event listeners
-	document.addEventListener('keydown', handleEscapeKey);
-	document.addEventListener('click', handleOutsideClick);
+	global.document.addEventListener('keydown', handleEscapeKey);
+	global.document.addEventListener('click', handleOutsideClick);
 };
 
 domReady(() => {
