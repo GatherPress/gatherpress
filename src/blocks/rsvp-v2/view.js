@@ -19,11 +19,17 @@ const { state, actions } = store('gatherpress', {
 			const context = getContext();
 			const postId = context.postId || 0;
 			const currentUser = state.posts[postId].currentUser;
+
 			currentUser.guests = element.ref.value;
 
 			initPostContext(state, postId);
 
-			sendRsvpApiRequest(postId, currentUser, state);
+			sendRsvpApiRequest(postId, currentUser, state, () => {
+				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
+				setTimeout(() => {
+					element.ref.focus();
+				}, 1);
+			});
 		},
 		updateRsvp(event = null) {
 			if (event) {
