@@ -8,13 +8,24 @@
  * @since 1.0.0
  */
 
-use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
 
-$gatherpress_event           = new Event( get_the_ID() );
-$gatherpress_label           = ! empty( $attributes['label'] ) ? $attributes['label'] : __( 'Number of guests?', 'gatherpress' );
-$gatherpress_current_user    = $gatherpress_event->rsvp->get( get_current_user_id() );
-$gatherpress_max_guest_limit = get_post_meta( $gatherpress_event->event->ID, 'gatherpress_max_guest_limit', true );
-$gatherpress_styles          = sprintf(
+$gatherpress_max_guest_limit = get_post_meta( get_the_ID(), 'gatherpress_max_guest_limit', true );
+
+// If the maximum guest limit is set to 0, guests are not permitted. Do not render the block.
+if ( empty( $gatherpress_max_guest_limit ) ) {
+	return;
+}
+
+$gatherpress_rsvp         = new Rsvp( get_the_ID() );
+$gatherpress_label        = ! empty( $attributes['label'] ) ? $attributes['label'] : __( 'Number of guests?', 'gatherpress' );
+$gatherpress_current_user = array();
+
+if ( $gatherpress_rsvp ) {
+	$gatherpress_current_user = $gatherpress_rsvp->get( get_current_user_id() );
+}
+
+$gatherpress_styles = sprintf(
 	'text-align:%s;',
 	esc_attr( isset( $attributes['textAlign'] ) ? $attributes['textAlign'] : 'left' )
 );

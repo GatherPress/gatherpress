@@ -4,6 +4,7 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, RichText } from '@wordpress/block-editor';
 import { useEffect } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
 
 /**
  * External dependencies.
@@ -35,6 +36,18 @@ const Edit = ({ attributes, setAttributes }) => {
 			setAttributes({ inputId: 'input-' + uuidv4() });
 		}
 	}, [inputId, setAttributes]);
+
+	const maxAttendanceLimit = useSelect(
+		(select) =>
+			select('core/editor').getEditedPostAttribute('meta')
+				?.gatherpress_max_guest_limit,
+		[]
+	);
+
+	// Do not show block if guests are not permitted.
+	if (0 === maxAttendanceLimit) {
+		return '';
+	}
 
 	return (
 		<p {...blockProps}>
