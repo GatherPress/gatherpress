@@ -6,14 +6,14 @@ import domReady from '@wordpress/dom-ready';
 const setupModalCloseHandlers = () => {
 	// Function to close a modal.
 	const closeModal = (modal) => {
-		// Remove the visible class from the modal
+		// Remove the visible class from the modal.
 		modal.classList.remove('gatherpress--is-visible');
 
 		// Set aria-hidden to true.
 		modal.setAttribute('aria-hidden', 'true');
 	};
 
-	// Handle Escape key to close modals
+	// Handle Escape key to close modals.
 	const handleEscapeKey = (event) => {
 		if (event.key === 'Escape') {
 			const openModals = global.document.querySelectorAll(
@@ -23,7 +23,7 @@ const setupModalCloseHandlers = () => {
 		}
 	};
 
-	// Handle clicks outside modal content
+	// Handle clicks outside modal content.
 	const handleOutsideClick = (event) => {
 		const openModals = global.document.querySelectorAll(
 			'.wp-block-gatherpress-modal.gatherpress--is-visible'
@@ -33,28 +33,28 @@ const setupModalCloseHandlers = () => {
 				'.wp-block-gatherpress-modal-content'
 			);
 
-			// Close modal if the click is outside the modal content
+			// Close modal if the click is outside the modal content.
 			if (
-				modal.contains(event.target) && // Click is inside the modal
-				!modalContent.contains(event.target) // Click is NOT inside the modal content
+				modal.contains(event.target) && // Click is inside the modal.
+				!modalContent.contains(event.target) // Click is NOT inside the modal content.
 			) {
 				closeModal(modal);
 			}
 		});
 	};
 
-	// Attach event listeners
+	// Attach event listeners.
 	global.document.addEventListener('keydown', handleEscapeKey);
 	global.document.addEventListener('click', handleOutsideClick);
 };
 
 const setupDropdownCloseHandlers = () => {
-	// Function to close a dropdown
+	// Function to close a dropdown.
 	const closeDropdown = (dropdown) => {
-		// Remove the visible class from the dropdown menu
+		// Remove the visible class from the dropdown menu.
 		dropdown.classList.remove('gatherpress--is-visible');
 
-		// Find the associated trigger element and update aria-expanded
+		// Find the associated trigger element and update aria-expanded.
 		const dropdownParent = dropdown.closest(
 			'.wp-block-gatherpress-dropdown'
 		);
@@ -67,7 +67,7 @@ const setupDropdownCloseHandlers = () => {
 		}
 	};
 
-	// Handle Escape key to close dropdowns
+	// Handle Escape key to close dropdowns.
 	const handleEscapeKey = (event) => {
 		if (event.key === 'Escape') {
 			const openDropdowns = global.document.querySelectorAll(
@@ -77,7 +77,7 @@ const setupDropdownCloseHandlers = () => {
 		}
 	};
 
-	// Handle clicks outside dropdown content
+	// Handle clicks outside dropdown content.
 	const handleOutsideClick = (event) => {
 		const openDropdowns = global.document.querySelectorAll(
 			'.wp-block-gatherpress-dropdown__menu.gatherpress--is-visible'
@@ -87,17 +87,17 @@ const setupDropdownCloseHandlers = () => {
 				'.wp-block-gatherpress-dropdown'
 			);
 
-			// Close dropdown if the click is outside the dropdown
+			// Close dropdown if the click is outside the dropdown.
 			if (
 				dropdownParent &&
-				!dropdownParent.contains(event.target) // Click is NOT inside the dropdown parent
+				!dropdownParent.contains(event.target) // Click is NOT inside the dropdown parent.
 			) {
 				closeDropdown(dropdown);
 			}
 		});
 	};
 
-	// Attach event listeners
+	// Attach event listeners.
 	global.document.addEventListener('keydown', handleEscapeKey);
 	global.document.addEventListener('click', handleOutsideClick);
 };
