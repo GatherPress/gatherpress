@@ -39,6 +39,21 @@ const TEMPLATE = [
 					fontSize: 'medium',
 				},
 			],
+			[
+				'gatherpress/guest-count-display',
+				{
+					align: 'center',
+					style: {
+						spacing: {
+							margin: {
+								top: '0',
+								bottom: '0',
+							},
+						},
+					},
+					fontSize: 'small',
+				},
+			],
 		],
 	],
 ];
