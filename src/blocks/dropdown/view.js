@@ -3,6 +3,11 @@
  */
 import { store, getElement } from '@wordpress/interactivity';
 
+/**
+ * Internal dependencies.
+ */
+import { manageFocusTrap } from '../../helpers/interactivity';
+
 const { actions } = store('gatherpress', {
 	actions: {
 		preventDefault(event) {
@@ -98,85 +103,34 @@ const { actions } = store('gatherpress', {
 				'.wp-block-gatherpress-dropdown__trigger'
 			);
 
-			// Define focus trap logic.
+			if (!menu || !trigger) {
+				return;
+			}
+
+			const isVisible = menu.classList.toggle('gatherpress--is-visible');
+			trigger.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
+
+			// Create focusable elements array
 			const focusableSelectors = [
 				'a[href]:not(.gatherpress--is-disabled)',
 			];
 			const focusableElements = [
-				trigger, // Include the trigger for focus trapping.
+				trigger,
 				...menu.querySelectorAll(focusableSelectors.join(',')),
 			];
-			const firstFocusableElement = focusableElements[0];
-			const lastFocusableElement =
-				focusableElements[focusableElements.length - 1];
 
-			const handleFocusTrap = (e) => {
-				if ('Tab' === e.key) {
-					if (
-						e.shiftKey &&
-						global.document.activeElement === firstFocusableElement
-					) {
-						// Shift + Tab (backward navigation).
-						e.preventDefault();
-						lastFocusableElement.focus();
-					} else if (
-						!e.shiftKey &&
-						global.document.activeElement === lastFocusableElement
-					) {
-						// Tab (forward navigation).
-						e.preventDefault();
-						firstFocusableElement.focus();
-					}
-				}
-			};
-
-			// Handle Escape key to close the dropdown.
-			const handleEscapeKey = (e) => {
-				if ('Escape' === e.key) {
-					menu.classList.remove('gatherpress--is-visible');
-					trigger.setAttribute('aria-expanded', 'false');
-					trigger.focus();
-				}
-
-				if ('Escape' === e.key || 'Enter' === e.key) {
-					cleanupEventListeners();
-				}
-			};
-
-			// Cleanup event listeners.
-			const cleanupEventListeners = () => {
-				menu.removeEventListener('keydown', handleFocusTrap);
-				trigger.removeEventListener('keydown', handleFocusTrap);
-				global.document.removeEventListener('keydown', handleEscapeKey);
-			};
-
-			if (menu) {
-				const isVisible = menu.classList.toggle(
-					'gatherpress--is-visible'
-				);
-
-				// Update aria-expanded based on visibility.
-				if (trigger) {
-					trigger.setAttribute(
-						'aria-expanded',
-						isVisible ? 'true' : 'false'
-					);
-				}
-
-				if (isVisible) {
-					// Open dropdown: trap focus and add event listeners.
-					firstFocusableElement.focus();
-
-					menu.addEventListener('keydown', handleFocusTrap);
-					trigger.addEventListener('keydown', handleFocusTrap);
-					global.document.addEventListener(
-						'keydown',
-						handleEscapeKey
-					);
-				} else {
-					// Close dropdown: remove event listeners.
-					cleanupEventListeners();
-				}
+			// Set up or clean up the focus trap
+			if (isVisible) {
+				// Open dropdown: set focus trap
+				trigger.focus();
+				element.ref.cleanupFocusTrap =
+					manageFocusTrap(focusableElements);
+			} else if (
+				!isVisible &&
+				'function' === typeof element.ref.cleanupFocusTrap
+			) {
+				// Close dropdown: clean up focus trap
+				element.ref.cleanupFocusTrap();
 			}
 		},
 	},

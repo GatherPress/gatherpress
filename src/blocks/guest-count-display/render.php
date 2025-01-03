@@ -20,6 +20,14 @@ if ( ! $gatherpress_rsvp ) {
 $gatherpress_current_user = $gatherpress_rsvp->get( get_current_user_id() );
 $gatherpress_guest_count  = intval( $gatherpress_current_user['guests'] ?? 0 );
 
+if ( ! empty( $block ) && isset( $block->context['commentId'] ) ) {
+	$gatherpress_guest_count = intval( get_comment_meta( intval( $block->context['commentId'] ), 'gatherpress_rsvp_guests', true ) );
+
+	if ( empty( $gatherpress_guest_count ) ) {
+		return;
+	}
+}
+
 /* Translators: %d is the number of guests for the singular case. */
 $gatherpress_singular_label = __( '+%d guest', 'gatherpress' );
 
@@ -34,7 +42,7 @@ $gatherpress_guest_text = sprintf(
 
 // Render the block content.
 printf(
-	'<div %1$s data-wp-watch="callbacks.updateGuestCountDisplay" data-guest-singular="%2$s" data-guest-plural="%3$s">%4$s</div>',
+	'<div %1$s data-guest-singular="%2$s" data-guest-plural="%3$s">%4$s</div>',
 	wp_kses_data( get_block_wrapper_attributes() ),
 	esc_attr( $gatherpress_singular_label ),
 	esc_attr( $gatherpress_plural_label ),

@@ -69,3 +69,63 @@ export function sendRsvpApiRequest(
 		})
 		.catch(() => {});
 }
+
+export function manageFocusTrap(focusableElements) {
+	if (!focusableElements || focusableElements.length === 0) {
+		return () => {}; // Return an empty cleanup function if no elements.
+	}
+	const isElementVisible = (element) => {
+		return (
+			element.offsetParent !== null && // Excludes elements with `display: none`.
+			global.window.getComputedStyle(element).visibility !== 'hidden' && // Excludes elements with `visibility: hidden`.
+			global.window.getComputedStyle(element).opacity !== '0' // Excludes fully transparent elements.
+		);
+	};
+
+	// Filter out hidden elements.
+	const visibleFocusableElements = focusableElements.filter(isElementVisible);
+
+	if (visibleFocusableElements.length === 0) {
+		return () => {}; // No visible elements, no trap needed.
+	}
+
+	const firstFocusableElement = visibleFocusableElements[0];
+	const lastFocusableElement =
+		visibleFocusableElements[visibleFocusableElements.length - 1];
+
+	const handleFocusTrap = (e) => {
+		if ('Tab' === e.key) {
+			if (
+				e.shiftKey && // Shift + Tab.
+				global.document.activeElement === firstFocusableElement
+			) {
+				e.preventDefault();
+				lastFocusableElement.focus();
+			} else if (
+				!e.shiftKey && // Tab.
+				global.document.activeElement === lastFocusableElement
+			) {
+				e.preventDefault();
+				firstFocusableElement.focus();
+			}
+		}
+	};
+
+	const handleEscapeKey = (e) => {
+		if ('Escape' === e.key) {
+			cleanup(); // Trigger cleanup on Escape key.
+		}
+	};
+
+	const cleanup = () => {
+		global.document.removeEventListener('keydown', handleFocusTrap);
+		global.document.removeEventListener('keydown', handleEscapeKey);
+	};
+
+	// Attach the event listeners for focus trap.
+	global.document.addEventListener('keydown', handleFocusTrap);
+	global.document.addEventListener('keydown', handleEscapeKey);
+
+	// Return a cleanup function for the caller.
+	return cleanup;
+}

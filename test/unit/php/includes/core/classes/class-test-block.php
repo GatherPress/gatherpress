@@ -82,6 +82,7 @@ class Test_Block extends Base {
 			'gatherpress/dropdown-item',
 			'gatherpress/event-date',
 			'gatherpress/events-list',
+			'gatherpress/guest-count-display',
 			'gatherpress/guest-count-input',
 			'gatherpress/icon',
 			'gatherpress/modal',

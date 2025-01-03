@@ -92,15 +92,19 @@ const { state, actions } = store('gatherpress', {
 					dropdownParent.querySelectorAll('[data-status]');
 				siblings.forEach((sibling) => {
 					sibling.classList.remove('gatherpress--is-disabled');
+					sibling.removeAttribute('tabindex');
+					sibling.removeAttribute('aria-disabled');
 				});
 
 				element.ref.classList.add('gatherpress--is-disabled');
+				element.ref.setAttribute('tabindex', '-1');
+				element.ref.setAttribute('aira-disabled', 'true');
 
 				triggerElement.textContent = activeText;
 			}
 
 			if (
-				count === 0 &&
+				0 === count &&
 				!classList.contains('gatherpress--rsvp-attending')
 			) {
 				parentElement.classList.add('gatherpress--is-not-visible');
@@ -120,8 +124,10 @@ const { state, actions } = store('gatherpress', {
 				)
 			) {
 				triggerElement.classList.add('gatherpress--is-disabled');
+				triggerElement.setAttribute('tabindex', '-1');
 			} else {
 				triggerElement.classList.remove('gatherpress--is-disabled');
+				triggerElement.setAttribute('tabindex', '0');
 			}
 		},
 	},

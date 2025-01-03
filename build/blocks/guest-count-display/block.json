@@ -8,11 +8,14 @@
   "category": "gatherpress",
   "ancestor": [
     "gatherpress/rsvp-v2",
-    "gatherpress/rsvp-response-v2"
+    "gatherpress/rsvp-template"
   ],
   "icon": "yes",
   "example": {},
   "attributes": {},
+  "usesContext": [
+    "commentId"
+  ],
   "supports": {
     "align": [
       "left",
@@ -22,6 +25,10 @@
     "spacing": {
       "margin": true,
       "padding": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true
     },
     "color": {
       "text": true,
@@ -33,6 +40,5 @@
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
   "style": "file:./style-index.css",
-  "render": "file:./render.php",
-  "viewScriptModule": "file:./view.js"
+  "render": "file:./render.php"
 }
