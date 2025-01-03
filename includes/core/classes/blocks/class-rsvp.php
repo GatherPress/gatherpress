@@ -60,6 +60,7 @@ class Rsvp {
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'apply_rsvp_button_interactivity' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'apply_guest_count_watch' ), 10, 2 );
 	}
 
 	/**
@@ -216,6 +217,38 @@ class Rsvp {
 				if ( ! empty( $matched_status ) ) {
 					$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
 				}
+			}
+		}
+
+		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Adds a data-wp-watch attribute to the Guest Count Display Block.
+	 *
+	 * This method processes the block content of the Guest Count Display Block and
+	 * adds the `data-wp-watch` attribute to enable dynamic updates using the
+	 * specified callback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The original block content.
+	 * @param array  $block         The block data and attributes.
+	 *
+	 * @return string The modified block content with the data-wp-watch attribute applied.
+	 */
+	public function apply_guest_count_watch( string $block_content, array $block ): string {
+		if ( self::BLOCK_NAME !== $block['blockName'] ) {
+			return $block_content;
+		}
+
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		while ( $tag->next_tag() ) {
+			$class_attr = $tag->get_attribute( 'class' );
+
+			if ( $class_attr && false !== strpos( $class_attr, 'wp-block-gatherpress-guest-count-display' ) ) {
+				$tag->set_attribute( 'data-wp-watch', 'callbacks.updateGuestCountDisplay' );
 			}
 		}
 

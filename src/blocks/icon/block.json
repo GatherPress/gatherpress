@@ -4,10 +4,10 @@
 	"name": "gatherpress/icon",
 	"version": "1.0.0",
 	"title": "Icon",
+	"description": "Adds customizable icons to visually enhance your content.",
 	"category": "gatherpress",
 	"icon": "format-image",
 	"example": {},
-	"description": "Adds customizable icons to visually enhance your content.",
 	"attributes": {
 		"icon": {
 			"type": "string",

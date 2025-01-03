@@ -33,41 +33,54 @@ const ATTENDING = [
 				{
 					style: {
 						spacing: {
-							blockGap: 'var:preset|spacing|20',
+							blockGap: '0',
 						},
-					},
-					layout: {
-						type: 'flex',
-						flexWrap: 'nowrap',
 					},
 				},
 				[
 					[
-						'gatherpress/icon',
-						{
-							icon: 'yes-alt',
-							iconSize: 24,
-						},
-					],
-					[
-						'core/paragraph',
+						'core/group',
 						{
 							style: {
 								spacing: {
-									margin: {
-										top: '0',
-									},
-									padding: {
-										top: '0',
-									},
+									blockGap: 'var:preset|spacing|20',
 								},
 							},
-							content: __(
-								'<strong>Attending</strong>',
-								'gatherpress'
-							),
+							layout: {
+								type: 'flex',
+								flexWrap: 'nowrap',
+							},
 						},
+						[
+							[
+								'gatherpress/icon',
+								{
+									icon: 'yes-alt',
+									iconSize: 24,
+								},
+							],
+							[
+								'core/paragraph',
+								{
+									style: {
+										spacing: {
+											margin: {
+												top: '0',
+											},
+											padding: {
+												top: '0',
+											},
+										},
+									},
+									content: __(
+										'<strong>Attending</strong>',
+										'gatherpress'
+									),
+								},
+							],
+						],
 					],
+					['gatherpress/guest-count-display', {}],
 				],
 			],
 			[
@@ -111,6 +124,7 @@ const ATTENDING = [
 									),
 								},
 							],
+							['gatherpress/guest-count-input', {}],
 							[
 								'core/buttons',
 								{

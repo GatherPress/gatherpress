@@ -35,6 +35,7 @@ const { actions } = store('gatherpress', {
 						'button:not([disabled])',
 						'textarea:not([disabled])',
 						'input[type="text"]:not([disabled])',
+						'input[type="number"]:not([disabled])',
 						'input[type="radio"]:not([disabled])',
 						'input[type="checkbox"]:not([disabled])',
 						'select:not([disabled])',
@@ -49,9 +50,11 @@ const { actions } = store('gatherpress', {
 					const lastFocusableElement =
 						focusableElements[focusableElements.length - 1];
 
-					// Automatically focus the first focusable element.
+					// Automatically focus the first focusable element with a short delay.
 					if (firstFocusableElement) {
-						firstFocusableElement.focus();
+						setTimeout(() => {
+							firstFocusableElement.focus();
+						}, 5);
 					}
 
 					// Trap focus within the modal content.

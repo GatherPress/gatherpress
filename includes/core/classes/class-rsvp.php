@@ -110,7 +110,7 @@ class Rsvp {
 	 * @return array An array containing RSVP information, including ID, post ID, user ID, timestamp, status, and guests.
 	 */
 	public function get( int $user_id ): array {
-		$post_id    = $this->event->ID;
+		$post_id    = $this->event->ID ?? 0;
 		$rsvp_query = Rsvp_Query::get_instance();
 
 		if ( 1 > $post_id || 1 > $user_id ) {
@@ -428,7 +428,7 @@ class Rsvp {
 		}
 
 		foreach ( $data as $response ) {
-			$comment_id  = $response->comment_ID;
+			$comment_id  = intval( $response->comment_ID );
 			$user_id     = intval( $response->user_id );
 			$user_status = '';
 			$user_guests = intval( get_comment_meta( $response->comment_ID, 'gatherpress_rsvp_guests', true ) );

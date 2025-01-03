@@ -11,9 +11,9 @@ import metadata from './block.json';
 import './style.scss';
 
 /**
- * Edit component for the GatherPress Icon block.
+ * Edit component for the GatherPress Guest Count Input block.
  *
- * This component renders the edit view of the GatherPress Icon block.
+ * This component renders the edit view of the GatherPress Guest Count Input block.
  *
  * @since 1.0.0
  *

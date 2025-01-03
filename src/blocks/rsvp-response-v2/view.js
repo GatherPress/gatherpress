@@ -6,9 +6,9 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../../helpers/globals';
+import { initPostContext } from '../../helpers/interactivity';
 
-const { state, callbacks, actions } = store('gatherpress', {
+const { state, actions } = store('gatherpress', {
 	state: {
 		posts: {},
 	},
@@ -25,6 +25,8 @@ const { state, callbacks, actions } = store('gatherpress', {
 					const context = getContext();
 					const postId = context?.postId || 0;
 
+					initPostContext(state, postId);
+
 					if (postId) {
 						state.posts[postId].rsvpSelection = status;
 					}
@@ -34,12 +36,13 @@ const { state, callbacks, actions } = store('gatherpress', {
 	},
 	callbacks: {
 		processRsvpDropdown() {
-			callbacks.initPostContext();
+			const context = getContext();
+			const postId = context?.postId || 0;
+
+			initPostContext(state, postId);
 
 			// Get the current element.
 			const element = getElement();
-			const context = getContext();
-			const postId = context?.postId || 0;
 
 			if (element && element.ref) {
 				// Check if the `data-label` attribute is already set.
@@ -89,15 +92,19 @@ const { state, callbacks, actions } = store('gatherpress', {
 					dropdownParent.querySelectorAll('[data-status]');
 				siblings.forEach((sibling) => {
 					sibling.classList.remove('gatherpress--is-disabled');
+					sibling.removeAttribute('tabindex');
+					sibling.removeAttribute('aria-disabled');
 				});
 
 				element.ref.classList.add('gatherpress--is-disabled');
+				element.ref.setAttribute('tabindex', '-1');
+				element.ref.setAttribute('aira-disabled', 'true');
 
 				triggerElement.textContent = activeText;
 			}
 
 			if (
-				count === 0 &&
+				0 === count &&
 				!classList.contains('gatherpress--rsvp-attending')
 			) {
 				parentElement.classList.add('gatherpress--is-not-visible');
@@ -117,23 +124,10 @@ const { state, callbacks, actions } = store('gatherpress', {
 				)
 			) {
 				triggerElement.classList.add('gatherpress--is-disabled');
+				triggerElement.setAttribute('tabindex', '-1');
 			} else {
 				triggerElement.classList.remove('gatherpress--is-disabled');
-			}
-		},
-		initPostContext() {
-			const context = getContext();
-			const responses = getFromGlobal('eventDetails.responses');
-
-			if (!state.posts[context?.postId]) {
-				state.posts[context?.postId] = {
-					eventResponses: {
-						attending: responses?.attending?.count || 0,
-						waitingList: responses?.waiting_list?.count || 0,
-						notAttending: responses?.not_attending?.count || 0,
-					},
-					rsvpSelection: 'attending',
-				};
+				triggerElement.setAttribute('tabindex', '0');
 			}
 		},
 	},

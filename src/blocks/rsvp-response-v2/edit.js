@@ -24,7 +24,7 @@ import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
 
 /**
- * Edit component for the GatherPress RSVP block.
+ * Edit component for the GatherPress RSVP Response block.
  *
  * @param {Object} root0          - The props object passed to the component.
  * @param {string} root0.clientId - The block client ID.

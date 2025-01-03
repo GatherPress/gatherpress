@@ -7,76 +7,110 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies.
  */
 import { getFromGlobal } from '../../helpers/globals';
+import {
+	initPostContext,
+	sendRsvpApiRequest,
+} from '../../helpers/interactivity';
 
 const { state, actions } = store('gatherpress', {
 	actions: {
-		updateRsvp(e) {
-			e.preventDefault();
+		updateGuestCount() {
+			const element = getElement();
+			const context = getContext();
+			const postId = context.postId || 0;
+			const currentUser = state.posts[postId].currentUser;
+
+			currentUser.guests = element.ref.value;
+
+			initPostContext(state, postId);
+
+			sendRsvpApiRequest(postId, currentUser, state, () => {
+				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
+				setTimeout(() => {
+					element.ref.focus();
+				}, 1);
+			});
+		},
+		updateRsvp(event = null) {
+			if (event) {
+				event.preventDefault();
+			}
 
 			const element = getElement();
 			const context = getContext();
 			const postId = context?.postId || 0;
 			const setStatus = element.ref.getAttribute('data-set-status') ?? '';
-			const currentUserStatus =
-				state.posts[postId].userRsvpStatus ??
-				getFromGlobal('eventDetails.currentUser.status');
+			const currentUserStatus = state.posts[postId].currentUser.status;
 
 			let status = 'not_attending';
 
-			if (
-				['attending', 'waiting_list', 'not_attending'].includes(
-					setStatus
-				)
-			) {
-				status = setStatus;
-			} else if (
-				['not_attending', 'no_status'].includes(currentUserStatus)
-			) {
-				status = 'attending';
+			if (event) {
+				if (
+					['attending', 'waiting_list', 'not_attending'].includes(
+						setStatus
+					)
+				) {
+					status = setStatus;
+				} else if (
+					['not_attending', 'no_status'].includes(currentUserStatus)
+				) {
+					status = 'attending';
+				}
+			} else {
+				status = currentUserStatus;
 			}
 
-			const guests = 0;
+			const guests = state.posts[postId].currentUser.guests;
 			const anonymous = 0;
-
-			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': getFromGlobal('misc.nonce'),
-				},
-				body: JSON.stringify({
-					post_id: postId,
+			sendRsvpApiRequest(
+				postId,
+				{
 					status,
 					guests,
 					anonymous,
-				}),
-			})
-				.then((response) => response.json()) // Parse the JSON response
-				.then((res) => {
-					if (res.success) {
-						state.activePostId = postId;
-						state.posts[postId] = {
-							...state.posts[postId],
-							eventResponses: {
-								attending: res.responses.attending.count,
-								waitingList: res.responses.waiting_list.count,
-								notAttending: res.responses.not_attending.count,
-							},
-							userRsvpStatus: res.status,
-							rsvpSelection: res.status,
-						};
-						actions.closeModal(null, element.ref);
+				},
+				state,
+				() => {
+					const parentWithRsvpStatus =
+						element.ref.closest('[data-rsvp-status]');
+					const rsvpStatus =
+						parentWithRsvpStatus.getAttribute('data-rsvp-status');
+					const rsvpContainer = parentWithRsvpStatus.closest(
+						'.wp-block-gatherpress-rsvp-v2'
+					);
+
+					if (['not_attending', 'no_status'].includes(rsvpStatus)) {
+						const attendingStatusButton =
+							rsvpContainer.querySelector(
+								'[data-rsvp-status="attending"] .gatherpress--update-rsvp'
+							);
+
+						actions.openModal(null, attendingStatusButton);
 					}
-				})
-				.catch(() => {});
+
+					// Close the current modal after a short delay to prevent flicker.
+					setTimeout(() => {
+						actions.closeModal(null, element.ref);
+					}, 1);
+				}
+			);
 		},
 	},
 	callbacks: {
+		setGuestCount() {
+			const element = getElement();
+			const context = getContext();
+			const postId = context.postId || 0;
+
+			initPostContext(state, postId);
+
+			element.ref.value = state.posts[postId].currentUser.guests;
+		},
 		renderRsvpBlock() {
 			const element = getElement();
 			const context = getContext();
 			const status =
-				state.posts[context.postId]?.userRsvpStatus ??
+				state.posts[context.postId]?.currentUser?.status ??
 				getFromGlobal('eventDetails.currentUser.status');
 
 			const innerBlocks =
@@ -94,6 +128,41 @@ const { state, actions } = store('gatherpress', {
 					innerBlock.style.display = 'none';
 				}
 			});
+		},
+		updateGuestCountDisplay() {
+			const context = getContext();
+			const postId = context?.postId || 0;
+
+			// Ensure the state is initialized.
+			initPostContext(state, context);
+
+			// Retrieve the current guest count from the state.
+			const guestCount = parseInt(
+				state.posts[postId]?.currentUser?.guests || 0,
+				10
+			);
+
+			// Get the current element.
+			const element = getElement();
+
+			// Get the singular and plural labels from the data attributes.
+			const singularLabel = element.ref.getAttribute(
+				'data-guest-singular'
+			);
+			const pluralLabel = element.ref.getAttribute('data-guest-plural');
+
+			// Determine the text to display based on the guest count.
+			let text = '';
+
+			if (0 < guestCount) {
+				text =
+					1 === guestCount
+						? singularLabel.replace('%d', guestCount)
+						: pluralLabel.replace('%d', guestCount);
+			}
+
+			// Update the element's text content.
+			element.ref.textContent = text;
 		},
 	},
 });
