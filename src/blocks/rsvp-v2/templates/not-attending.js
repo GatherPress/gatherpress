@@ -6,7 +6,13 @@ import { __ } from '@wordpress/i18n';
 const NOT_ATTENDING = [
 	[
 		'gatherpress/modal-manager',
-		{},
+		{
+			style: {
+				spacing: {
+					blockGap: 'var:preset|spacing|40',
+				},
+			},
+		},
 		[
 			[
 				'core/buttons',

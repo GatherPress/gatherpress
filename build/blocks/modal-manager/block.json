@@ -10,10 +10,6 @@
   "description": "Manage modals and their triggers with ease.",
   "attributes": {},
   "supports": {
-    "align": [
-      "wide",
-      "full"
-    ],
     "layout": {
       "allowSwitching": false,
       "allowInheriting": false,
@@ -21,6 +17,11 @@
         "justifyContent": "center",
         "type": "flex"
       }
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true,
+      "blockGap": true
     },
     "html": false,
     "interactivity": true
