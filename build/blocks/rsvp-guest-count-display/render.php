@@ -1,6 +1,6 @@
 <?php
 /**
- * Render Guest Count Display block.
+ * Render RSVP Guest Count Display block.
  *
  * Dynamically displays the number of guests a member is bringing in a formatted string.
  *

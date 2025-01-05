@@ -3,6 +3,7 @@
  */
 import { _n, sprintf } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
+import { useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -10,17 +11,19 @@ import { useBlockProps } from '@wordpress/block-editor';
 import { getFromGlobal } from '../../helpers/globals';
 
 /**
- * Edit function for the Guest Count Display Block.
+ * Edit function for the RSVP Guest Count Display Block.
  *
- * This function defines the edit interface for the Guest Count Display Block,
- * rendering the block's UI within the editor.
+ * This function defines the edit interface for the RSVP Guest Count Display Block,
+ * rendering the block's UI within the editor. It utilizes block context for dynamic data.
+ *
+ * @since 1.0.0
  *
  * @param {Object} root0         - The root properties object.
  * @param {Object} root0.context - The block's context, providing dynamic data.
+ *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
 const Edit = ({ context }) => {
-	const blockProps = useBlockProps();
 	const { commentId } = context;
 
 	// Example guest count.
@@ -38,6 +41,22 @@ const Edit = ({ context }) => {
 			guestCount = matchedResponse.guests;
 		}
 	}
+
+	// Get max attendance limit from meta.
+	const maxAttendanceLimit = useSelect(
+		(select) =>
+			select('core/editor').getEditedPostAttribute('meta')
+				?.gatherpress_max_guest_limit,
+		[]
+	);
+
+	// Add the `gatherpress--is-not-visible` class conditionally via `useBlockProps`.
+	const blockProps = useBlockProps({
+		className:
+			0 === maxAttendanceLimit && !commentId
+				? 'gatherpress--is-not-visible'
+				: '',
+	});
 
 	// If the guest count is 0, return nothing.
 	if (0 === guestCount) {

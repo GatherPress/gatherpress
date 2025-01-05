@@ -12,7 +12,7 @@ import { useSelect } from '@wordpress/data';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Edit component for the Guest Count Input Block.
+ * Edit component for the RSVP Guest Count Input Block.
  *
  * This component is used in the WordPress editor to manage the editable interface
  * for the Guest Count Input block. It allows users to configure the label for
@@ -27,7 +27,6 @@ import { v4 as uuidv4 } from 'uuid';
  * @return {JSX.Element} The rendered edit interface for the block.
  */
 const Edit = ({ attributes, setAttributes }) => {
-	const blockProps = useBlockProps();
 	const { label, inputId } = attributes;
 
 	// Generate UUID for input if not already set.
@@ -44,10 +43,11 @@ const Edit = ({ attributes, setAttributes }) => {
 		[]
 	);
 
-	// Do not show block if guests are not permitted.
-	if (0 === maxAttendanceLimit) {
-		return '';
-	}
+	// Add the `gatherpress--is-not-visible` class conditionally via `useBlockProps`.
+	const blockProps = useBlockProps({
+		className:
+			0 === maxAttendanceLimit ? 'gatherpress--is-not-visible' : '',
+	});
 
 	return (
 		<p {...blockProps}>
