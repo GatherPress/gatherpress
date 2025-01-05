@@ -74,6 +74,7 @@ const NO_STATUS = [
 									),
 								},
 							],
+							['gatherpress/rsvp-anonymous-checkbox', {}],
 							[
 								'core/buttons',
 								{

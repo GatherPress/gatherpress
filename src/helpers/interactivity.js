@@ -29,6 +29,10 @@ export function sendRsvpApiRequest(
 	state = null,
 	onSuccess = null
 ) {
+	if (['no_status', 'waiting_list'].includes(args.status)) {
+		return;
+	}
+
 	fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp', {
 		method: 'POST',
 		headers: {
@@ -57,6 +61,7 @@ export function sendRsvpApiRequest(
 						currentUser: {
 							status: res.status,
 							guests: res.guests,
+							anonymous: res.anonymous,
 						},
 						rsvpSelection: res.status,
 					};

@@ -50,9 +50,9 @@ const { state } = store('gatherpress', {
 
 						if (emptyRsvpMessageElement) {
 							if (
-								'attending' ===
-									state.posts[context.postId]
-										?.rsvpSelection &&
+								['attending', 'no_status'].includes(
+									state.posts[context.postId]?.rsvpSelection
+								) &&
 								0 === res.responses.attending.count
 							) {
 								emptyRsvpMessageElement.classList.add(

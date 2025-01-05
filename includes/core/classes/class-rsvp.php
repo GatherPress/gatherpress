@@ -248,6 +248,8 @@ class Rsvp {
 		if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
 			wp_delete_comment( $comment_id, true );
 
+			wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
+
 			return $data;
 		}
 

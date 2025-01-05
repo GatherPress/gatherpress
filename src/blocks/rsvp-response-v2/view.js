@@ -61,7 +61,10 @@ const { state, actions } = store('gatherpress', {
 			const dataLabel = element.ref.getAttribute('data-label');
 			const activeElement =
 				element.ref.getAttribute('data-status') ===
-				state.posts[postId].rsvpSelection;
+					state.posts[postId].rsvpSelection ||
+				('attending' === element.ref.getAttribute('data-status') &&
+					'no_status' === state.posts[postId].rsvpSelection);
+
 			const dropdownParent = element.ref.closest(
 				'.wp-block-gatherpress-dropdown'
 			);
@@ -71,7 +74,6 @@ const { state, actions } = store('gatherpress', {
 
 			// Determine the count to replace %d with based on the class.
 			let count = 0;
-
 			if (classList.contains('gatherpress--rsvp-attending')) {
 				count = state.posts[postId]?.eventResponses?.attending || 0;
 			} else if (classList.contains('gatherpress--rsvp-waiting-list')) {

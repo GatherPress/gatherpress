@@ -117,6 +117,7 @@ const WAITING_LIST = [
 									),
 								},
 							],
+							['gatherpress/rsvp-anonymous-checkbox', {}],
 							[
 								'core/buttons',
 								{
