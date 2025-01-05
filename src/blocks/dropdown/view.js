@@ -6,7 +6,10 @@ import { store, getElement } from '@wordpress/interactivity';
 /**
  * Internal dependencies.
  */
-import { manageFocusTrap } from '../../helpers/interactivity';
+import {
+	manageFocusTrap,
+	setupCloseHandlers,
+} from '../../helpers/interactivity';
 
 const { actions } = store('gatherpress', {
 	actions: {
@@ -119,18 +122,39 @@ const { actions } = store('gatherpress', {
 				...menu.querySelectorAll(focusableSelectors.join(',')),
 			];
 
-			// Set up or clean up the focus trap
 			if (isVisible) {
-				// Open dropdown: set focus trap
+				// Open dropdown: set focus trap and close handlers
 				trigger.focus();
+
+				// Set up focus trap
 				element.ref.cleanupFocusTrap =
 					manageFocusTrap(focusableElements);
-			} else if (
-				!isVisible &&
-				'function' === typeof element.ref.cleanupFocusTrap
-			) {
-				// Close dropdown: clean up focus trap
-				element.ref.cleanupFocusTrap();
+
+				// Set up close handlers
+				element.ref.cleanupCloseHandlers = setupCloseHandlers(
+					'.wp-block-gatherpress-dropdown__menu',
+					'.wp-block-gatherpress-dropdown__menu',
+					(dropdown) => {
+						// Close the dropdown and clean up
+						dropdown.classList.remove('gatherpress--is-visible');
+						trigger.setAttribute('aria-expanded', 'false');
+
+						// Cleanup focus trap
+						if (
+							'function' === typeof element.ref.cleanupFocusTrap
+						) {
+							element.ref.cleanupFocusTrap();
+						}
+					}
+				);
+			} else {
+				// Close dropdown: clean up focus trap and close handlers
+				if ('function' === typeof element.ref.cleanupFocusTrap) {
+					element.ref.cleanupFocusTrap();
+				}
+				if ('function' === typeof element.ref.cleanupCloseHandlers) {
+					element.ref.cleanupCloseHandlers();
+				}
 			}
 		},
 	},
