@@ -94,6 +94,8 @@ class Assets {
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
+
+		add_filter( 'render_block', [ $this, 'maybe_enqueue_styles' ], 10, 2 );
 	}
 
 	/**
@@ -126,15 +128,30 @@ class Assets {
 	public function block_enqueue_scripts(): void {
 		// @todo remove once new blocks are completed.
 		wp_enqueue_style( 'dashicons' );
+	}
 
-		$asset = $this->get_asset_data( 'utility_style' );
+	/**
+	 * Conditionally enqueue styles if GatherPress blocks are rendered.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content.
+	 * @param array  $block         The block settings.
+	 * @return string The block content.
+	 */
+	public function maybe_enqueue_styles( string $block_content, array $block ): string {
+		if ( 0 === strpos( $block['blockName'], 'gatherpress/' ) ) {
+			$asset = $this->get_asset_data( 'utility_style' );
 
-		wp_enqueue_style(
-			'gatherpress-utility-style',
-			$this->build . 'utility_style.css',
-			$asset['dependencies'],
-			$asset['version']
-		);
+			wp_enqueue_style(
+				'gatherpress-utility-style',
+				$this->build . 'utility_style.css',
+				$asset['dependencies'],
+				$asset['version']
+			);
+		}
+
+		return $block_content;
 	}
 
 	/**
