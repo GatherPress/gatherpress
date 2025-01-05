@@ -90,6 +90,7 @@ class Test_Block extends Base {
 			'gatherpress/modal-manager',
 			'gatherpress/online-event',
 			'gatherpress/rsvp',
+			'gatherpress/rsvp-anonymous-checkbox',
 			'gatherpress/rsvp-response',
 			'gatherpress/rsvp-response-v2',
 			'gatherpress/rsvp-template',
