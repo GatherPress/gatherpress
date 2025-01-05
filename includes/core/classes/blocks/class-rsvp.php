@@ -247,7 +247,7 @@ class Rsvp {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, 'wp-block-gatherpress-guest-count-display' ) ) {
+			if ( $class_attr && false !== strpos( $class_attr, 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.updateGuestCountDisplay' );
 			}
 		}

@@ -1,28 +1,25 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "gatherpress/guest-count-input",
+	"name": "gatherpress/rsvp-guest-count-display",
 	"version": "1.0.0",
-	"title": "Guest Count Input",
-	"description": "Allows members to specify the number of guests they are bringing.",
+	"title": "RSVP Guest Count Display",
+	"description": "Displays the number of guests associated with a member's RSVP.",
 	"category": "gatherpress",
-	"ancestor": ["gatherpress/rsvp-v2"],
+	"ancestor": ["gatherpress/rsvp-v2", "gatherpress/rsvp-template"],
 	"icon": "yes",
 	"example": {},
-	"attributes": {
-		"label": {
-			"type": "string",
-			"default": "Number of guests?"
-		},
-		"inputId": {
-			"type": "string"
-		}
-	},
+	"attributes": {},
+	"usesContext": [ "commentId" ],
 	"supports": {
 		"align": [ "left", "center", "right" ],
 		"spacing": {
 			"margin": true,
 			"padding": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true
 		},
 		"color": {
 			"text": true,

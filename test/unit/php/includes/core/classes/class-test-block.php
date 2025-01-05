@@ -82,8 +82,6 @@ class Test_Block extends Base {
 			'gatherpress/dropdown-item',
 			'gatherpress/event-date',
 			'gatherpress/events-list',
-			'gatherpress/guest-count-display',
-			'gatherpress/guest-count-input',
 			'gatherpress/icon',
 			'gatherpress/modal',
 			'gatherpress/modal-content',
@@ -91,6 +89,8 @@ class Test_Block extends Base {
 			'gatherpress/online-event',
 			'gatherpress/rsvp',
 			'gatherpress/rsvp-anonymous-checkbox',
+			'gatherpress/rsvp-guest-count-display',
+			'gatherpress/rsvp-guest-count-input',
 			'gatherpress/rsvp-response',
 			'gatherpress/rsvp-response-v2',
 			'gatherpress/rsvp-template',
@@ -116,8 +116,7 @@ class Test_Block extends Base {
 	 * @covers ::register_block_variations
 	 *
 	 * @return void
-
-	public function test_register_block_variations(): void {
+	// public function test_register_block_variations(): void {
 
 		// $block_instance = Utility::get_hidden_static_property( 'GatherPress\Core\Blocks\Add_To_Calendar', 'instance' );
 		// // var_export(Utility::has_property('GatherPress\Core\Block\Add_To_Calendar', 'instance') );
@@ -131,7 +130,8 @@ class Test_Block extends Base {
 
 		// Assert that it's still null (meaning the singleton is not instantiated).
 		// $this->assertNotNull($block_instance, 'Failed to assert, the block-variation singleton should be instantiated now.');
-	} */
+	// }
+	 */
 
 	/**
 	 * Coverage for get_block_variations.
