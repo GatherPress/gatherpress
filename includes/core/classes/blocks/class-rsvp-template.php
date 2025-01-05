@@ -169,6 +169,13 @@ class Rsvp_Template {
 		// Remove the filter to prevent an infinite loop caused by the filter being called within WP_Block.
 		remove_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ) );
 
+		if (
+			intval( get_comment_meta( $response_id, 'gatherpress_rsvp_anonymous', true ) ) &&
+			! current_user_can( 'edit_posts' )
+			) {
+			$this->anonymize_rsvp_blocks( $parsed_block['innerBlocks'], $response_id );
+		}
+
 		// Render the block content with the provided parsed block and response ID.
 		$block_content = (
 			new WP_Block(
@@ -182,5 +189,55 @@ class Rsvp_Template {
 
 		// Wrap the rendered block content in a container div with a unique data ID for the RSVP response.
 		return sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
+	}
+
+	/**
+	 * Anonymizes specific RSVP blocks by modifying their attributes and content.
+	 *
+	 * This method processes blocks recursively, updating attributes and content
+	 * to anonymize user information for RSVP responses. Specifically:
+	 * - Disables linking for `core/avatar` blocks by setting `isLink` to 0.
+	 * - Replaces the `core/comment-author-name` block's text with "Anonymous"
+	 *   and converts it into a `core/paragraph` block.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $blocks      The array of blocks to process, passed by reference.
+	 * @param int   $response_id The ID of the response, used for rendering context.
+	 */
+	public function anonymize_rsvp_blocks( array &$blocks, int $response_id ) {
+		foreach ( $blocks as &$block ) {
+			// Handle `core/avatar` block.
+			if ( 'core/avatar' === $block['blockName'] ) {
+				$block['attrs']['isLink'] = 0;
+			}
+
+			// Handle `core/comment-author-name` block.
+			if ( 'core/comment-author-name' === $block['blockName'] ) {
+				// Set `isLink` to 0 to disable linking for the block.
+				$block['attrs']['isLink'] = 0;
+
+				// Render the block with context for commentId.
+				$block_html = ( new WP_Block( $block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => true ) );
+
+				// Process HTML to update text.
+				$tag = new WP_HTML_Tag_Processor( $block_html );
+				$tag->next_tag();
+				$tag->next_token();
+				$tag->set_modifiable_text(
+					esc_html_x( 'Anonymous', 'Label for users who wish to remain anonymous in RSVP responses.', 'gatherpress' )
+				);
+				$block_html = $tag->get_updated_html();
+
+				// Convert to `core/paragraph` block.
+				$block['blockName']    = 'core/paragraph';
+				$block['innerContent'] = array( $block_html );
+			}
+
+			// Recursively process inner blocks.
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$this->anonymize_rsvp_blocks( $block['innerBlocks'], $response_id );
+			}
+		}
 	}
 }
