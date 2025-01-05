@@ -1,9 +1,9 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "gatherpress/guest-count-input",
+	"name": "gatherpress/rsvp-guest-count-input",
 	"version": "1.0.0",
-	"title": "Guest Count Input",
+	"title": "RSVP Guest Count Input",
 	"description": "Allows members to specify the number of guests they are bringing.",
 	"category": "gatherpress",
 	"ancestor": ["gatherpress/rsvp-v2"],

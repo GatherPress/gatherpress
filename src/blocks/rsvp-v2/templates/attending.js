@@ -86,7 +86,7 @@ const ATTENDING = [
 							],
 						],
 					],
-					['gatherpress/guest-count-display', {}],
+					['gatherpress/rsvp-guest-count-display', {}],
 				],
 			],
 			[
@@ -130,7 +130,7 @@ const ATTENDING = [
 									),
 								},
 							],
-							['gatherpress/guest-count-input', {}],
+							['gatherpress/rsvp-guest-count-input', {}],
 							['gatherpress/rsvp-anonymous-checkbox', {}],
 							[
 								'core/buttons',

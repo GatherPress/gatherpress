@@ -427,7 +427,8 @@ class Assets {
 				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
-					'gatherpress/guest-count-input',
+					'gatherpress/rsvp-guest-count-display',
+					'gatherpress/rsvp-guest-count-input',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',
 					'gatherpress/rsvp-v2',
@@ -439,7 +440,8 @@ class Assets {
 				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/event-date',
-					'gatherpress/guest-count-input',
+					'gatherpress/rsvp-guest-count-display',
+					'gatherpress/rsvp-guest-count-input',
 					'gatherpress/modal',
 					'gatherpress/online-event',
 					'gatherpress/rsvp',

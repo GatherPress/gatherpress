@@ -40,7 +40,7 @@ const TEMPLATE = [
 				},
 			],
 			[
-				'gatherpress/guest-count-display',
+				'gatherpress/rsvp-guest-count-display',
 				{
 					align: 'center',
 					style: {

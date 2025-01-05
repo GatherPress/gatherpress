@@ -1,9 +1,9 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "gatherpress/guest-count-display",
+  "name": "gatherpress/rsvp-guest-count-display",
   "version": "1.0.0",
-  "title": "Guest Count Display",
+  "title": "RSVP Guest Count Display",
   "description": "Displays the number of guests associated with a member's RSVP.",
   "category": "gatherpress",
   "ancestor": [
