@@ -172,7 +172,7 @@ class Rsvp_Template {
 		if (
 			intval( get_comment_meta( $response_id, 'gatherpress_rsvp_anonymous', true ) ) &&
 			! current_user_can( 'edit_posts' )
-			) {
+		) {
 			$this->anonymize_rsvp_blocks( $parsed_block['innerBlocks'], $response_id );
 		}
 

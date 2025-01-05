@@ -165,7 +165,7 @@ class Rsvp_Response {
 				$user_id = 0;
 			}
 
-			$args['url'] = get_avatar_url( $user_id, array( 'default' => true ) );
+			$args['url'] = get_avatar_url( $user_id, array( 'default' => 'mystery' ) );
 		}
 
 		return $args;
