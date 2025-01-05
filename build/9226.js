@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkgatherpress=globalThis.webpackChunkgatherpress||[]).push([[9226],{9226:(s,e,h)=>{s.exports=h.p+"80b73f86814517d7770f.js"}}]);

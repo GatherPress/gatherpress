@@ -6,7 +6,10 @@ import { store } from '@wordpress/interactivity';
 /**
  * Internal dependencies.
  */
-import { manageFocusTrap } from '../../helpers/interactivity';
+import {
+	manageFocusTrap,
+	setupCloseHandlers,
+} from '../../helpers/interactivity';
 
 const { actions } = store('gatherpress', {
 	actions: {
@@ -63,13 +66,33 @@ const { actions } = store('gatherpress', {
 						// Set up focus trap using the helper function and store cleanup.
 						modalContent.cleanupFocusTrap =
 							manageFocusTrap(focusableElements);
+
+						// Set up close handlers and store cleanup function.
+						modalContent.cleanupCloseHandlers = setupCloseHandlers(
+							'.wp-block-gatherpress-modal',
+							'.wp-block-gatherpress-modal-content',
+							() => {
+								modal.classList.remove(
+									'gatherpress--is-visible'
+								);
+								modal.setAttribute('aria-hidden', 'true');
+
+								// Clean up focus trap if applicable.
+								if (
+									modalContent &&
+									'function' ===
+										typeof modalContent.cleanupFocusTrap
+								) {
+									modalContent.cleanupFocusTrap();
+								}
+							}
+						);
 					}
 
-					// Handle modal close logic.
+					// Handle explicit close button logic.
 					const closeButton = modal.querySelector(
 						'.gatherpress--close-modal'
 					);
-
 					if (closeButton) {
 						closeButton.addEventListener('click', () => {
 							modal.classList.remove('gatherpress--is-visible');
@@ -82,6 +105,15 @@ const { actions } = store('gatherpress', {
 									typeof modalContent.cleanupFocusTrap
 							) {
 								modalContent.cleanupFocusTrap();
+							}
+
+							// Clean up close handlers if applicable.
+							if (
+								modalContent &&
+								'function' ===
+									typeof modalContent.cleanupCloseHandlers
+							) {
+								modalContent.cleanupCloseHandlers();
 							}
 						});
 					}

@@ -55,7 +55,6 @@ module.exports = [
 			admin_style: path.resolve(process.cwd(), 'src', 'admin.scss'),
 			editor: path.resolve(process.cwd(), 'src', 'editor.js'),
 			panels: path.resolve(process.cwd(), 'src/panels', 'index.js'),
-			main: path.resolve(process.cwd(), 'src', 'main.js'),
 			modals: path.resolve(process.cwd(), 'src/modals', 'index.js'),
 			settings: path.resolve(process.cwd(), 'src/settings', 'index.js'),
 			settings_style: path.resolve(
@@ -87,15 +86,6 @@ module.exports = [
 						type: 'asset/resource',
 						generator: {
 							filename: 'images/[name][ext]',
-						},
-					},
-					// Ignore Leaflet JS/CSS assets.
-					{
-						test: /\.(js|css)$/,
-						include: /node_modules\/leaflet/,
-						type: 'asset/resource',
-						generator: {
-							emit: false, // Prevent output.
 						},
 					},
 				],

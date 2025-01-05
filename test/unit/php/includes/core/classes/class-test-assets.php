@@ -44,12 +44,6 @@ class Test_Assets extends Base {
 			),
 			array(
 				'type'     => 'action',
-				'name'     => 'wp_enqueue_scripts',
-				'priority' => 10,
-				'callback' => array( $instance, 'frontend_enqueue_scripts' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'enqueue_block_assets',
 				'priority' => 10,
 				'callback' => array( $instance, 'block_enqueue_scripts' ),

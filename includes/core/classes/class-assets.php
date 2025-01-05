@@ -86,7 +86,6 @@ class Assets {
 	protected function setup_hooks(): void {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'frontend_enqueue_scripts' ) );
 		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
@@ -248,28 +247,6 @@ class Assets {
 
 			wp_set_script_translations( 'gatherpress-profile', 'gatherpress' );
 		}
-	}
-
-	/**
-	 * Enqueues scripts for the frontend.
-	 *
-	 * Registers and enqueues JavaScript files required for the plugin's frontend functionality.
-	 * Ensures proper handling of dependencies and versioning.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function frontend_enqueue_scripts(): void {
-		$asset = $this->get_asset_data( 'main' );
-
-		wp_enqueue_script(
-			'gatherpress-main',
-			$this->build . 'main.js',
-			$asset['dependencies'],
-			$asset['version'],
-			true
-		);
 	}
 
 	/**
