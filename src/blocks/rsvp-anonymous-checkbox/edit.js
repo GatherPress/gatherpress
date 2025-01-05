@@ -27,7 +27,6 @@ import { v4 as uuidv4 } from 'uuid';
  * @return {JSX.Element} The rendered edit interface for the block.
  */
 const Edit = ({ attributes, setAttributes }) => {
-	const blockProps = useBlockProps();
 	const { label, inputId } = attributes;
 
 	// Generate UUID for input if not already set.
@@ -44,10 +43,11 @@ const Edit = ({ attributes, setAttributes }) => {
 		[]
 	);
 
-	// Do not show block if anonymous are not permitted.
-	if (0 === enableAnonymousRsvp) {
-		return '';
-	}
+	// Add the `gatherpress--is-not-visible` class conditionally via `useBlockProps`.
+	const blockProps = useBlockProps({
+		className:
+			1 !== enableAnonymousRsvp ? 'gatherpress--is-not-visible' : '',
+	});
 
 	return (
 		<p {...blockProps}>

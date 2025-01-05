@@ -1,6 +1,6 @@
 <?php
 /**
- * Render Guest Count Input block.
+ * Render RSVP Guest Count Input block.
  *
  * Dynamically renders a disabled input for specifying guest count with a customizable label.
  *

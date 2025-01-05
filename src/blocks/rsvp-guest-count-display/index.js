@@ -11,9 +11,9 @@ import metadata from './block.json';
 import './style.scss';
 
 /**
- * Edit component for the GatherPress Guest Count Display block.
+ * Edit component for the GatherPress RSVP Guest Count Display block.
  *
- * This component renders the edit view of the GatherPress Guest Count Display block.
+ * This component renders the edit view of the RSVP GatherPress Guest Count Display block.
  *
  * @since 1.0.0
  *
