@@ -131,6 +131,7 @@ const ATTENDING = [
 								},
 							],
 							['gatherpress/guest-count-input', {}],
+							['gatherpress/rsvp-anonymous-checkbox', {}],
 							[
 								'core/buttons',
 								{

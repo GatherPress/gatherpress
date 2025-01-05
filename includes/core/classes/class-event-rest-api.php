@@ -534,8 +534,7 @@ class Event_Rest_Api {
 			! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
-				$guests    = 0;
-				$anonymous = 0;
+				$guests = 0;
 			}
 
 			$user_record = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
@@ -590,8 +589,10 @@ class Event_Rest_Api {
 		$responses     = $rsvp->responses();
 		$content       = '';
 
-		foreach ( $responses[ $status ]['responses'] as $response ) {
-			$content .= $rsvp_template->get_block_content( $block_data, $response['commentId'] );
+		if ( ! empty( $responses[ $status ] ) ) {
+			foreach ( $responses[ $status ]['responses'] as $response ) {
+				$content .= $rsvp_template->get_block_content( $block_data, $response['commentId'] );
+			}
 		}
 
 		$success = true;

@@ -78,7 +78,8 @@ const { state, actions } = store('gatherpress', {
 			}
 
 			const guests = state.posts[postId].currentUser.guests;
-			const anonymous = 0;
+			const anonymous = state.posts[postId].currentUser.anonymous;
+
 			sendRsvpApiRequest(
 				postId,
 				{
@@ -114,6 +115,15 @@ const { state, actions } = store('gatherpress', {
 		},
 	},
 	callbacks: {
+		monitorAnonymousStatus() {
+			const element = getElement();
+			const context = getContext();
+			const postId = context.postId || 0;
+
+			initPostContext(state, postId);
+
+			element.ref.checked = state.posts[postId].currentUser.anonymous;
+		},
 		setGuestCount() {
 			const element = getElement();
 			const context = getContext();

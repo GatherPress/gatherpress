@@ -117,6 +117,7 @@ const NOT_ATTENDING = [
 									),
 								},
 							],
+							['gatherpress/rsvp-anonymous-checkbox', {}],
 							[
 								'core/buttons',
 								{

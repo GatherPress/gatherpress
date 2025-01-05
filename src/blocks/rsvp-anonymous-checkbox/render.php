@@ -39,6 +39,7 @@ printf(
 			id="%2$s"
 			data-wp-interactive="gatherpress"
 			data-wp-on--change="actions.updateAnonymous"
+			data-wp-watch="callbacks.monitorAnonymousStatus"
 			type="checkbox"
 			aria-label="%3$s"
 			value="1"

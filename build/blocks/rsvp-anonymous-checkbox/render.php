@@ -1,8 +1,10 @@
 <?php
 /**
- * Render Guest Count Input block.
+ * Render RSVP Anonymous Checkbox block.
  *
- * Dynamically renders a disabled input for specifying guest count with a customizable label.
+ * Dynamically renders a checkbox allowing users to mark themselves as anonymous in RSVP responses.
+ * The block checks for the `gatherpress_enable_anonymous_rsvp` meta and ensures the checkbox is only
+ * rendered if anonymous RSVPs are permitted for the current post.
  *
  * @package GatherPress\Core
  * @since 1.0.0
@@ -37,6 +39,7 @@ printf(
 			id="%2$s"
 			data-wp-interactive="gatherpress"
 			data-wp-on--change="actions.updateAnonymous"
+			data-wp-watch="callbacks.monitorAnonymousStatus"
 			type="checkbox"
 			aria-label="%3$s"
 			value="1"
