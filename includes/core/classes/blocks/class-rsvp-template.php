@@ -224,6 +224,9 @@ class Rsvp_Template {
 				$tag = new WP_HTML_Tag_Processor( $block_html );
 				$tag->next_tag();
 				$tag->next_token();
+
+				// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
+				// @phpstan-ignore-next-line
 				$tag->set_modifiable_text(
 					esc_html_x( 'Anonymous', 'Label for users who wish to remain anonymous in RSVP responses.', 'gatherpress' )
 				);
