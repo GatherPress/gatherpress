@@ -23,7 +23,6 @@ const { actions } = store('gatherpress', {
 
 				if (modal) {
 					modal.classList.add('gatherpress--is-visible');
-					modal.setAttribute('aria-hidden', 'false');
 
 					const modalContent = modal.querySelector(
 						'.wp-block-gatherpress-modal-content'
@@ -53,6 +52,7 @@ const { actions } = store('gatherpress', {
 					// Automatically focus the first focusable element with a short delay.
 					if (firstFocusableElement) {
 						setTimeout(() => {
+							modal.setAttribute('aria-hidden', 'false');
 							firstFocusableElement.focus();
 						}, 5);
 					}
