@@ -74,6 +74,7 @@ const { state, actions } = store('gatherpress', {
 
 			// Determine the count to replace %d with based on the class.
 			let count = 0;
+
 			if (classList.contains('gatherpress--rsvp-attending')) {
 				count = state.posts[postId]?.eventResponses?.attending || 0;
 			} else if (classList.contains('gatherpress--rsvp-waiting-list')) {
