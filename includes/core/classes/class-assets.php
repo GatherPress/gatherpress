@@ -95,7 +95,7 @@ class Assets {
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
 
-		add_filter( 'render_block', [ $this, 'maybe_enqueue_styles' ], 10, 2 );
+		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
 	}
 
 	/**
