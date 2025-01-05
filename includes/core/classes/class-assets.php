@@ -131,7 +131,7 @@ class Assets {
 	}
 
 	/**
-	 * Conditionally enqueue styles if GatherPress blocks are rendered.
+	 * Conditionally enqueue utility styles if GatherPress blocks are rendered.
 	 *
 	 * @since 1.0.0
 	 *
