@@ -93,40 +93,40 @@ const INNER_BLOCKS = SERVICES.map((serviceData) => [
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-variations/
  */
-registerBlockVariation('core/buttons', {
-	title: __('Add to calendar (BUTTONS)', 'gatherpress'),
-	description: __(
-		'Allows a user to add an event to their preferred calendar.',
-		'gatherpress'
-	),
-	category: 'gatherpress',
-	icon: calendar,
-	name: `pseudo-${NAME}`,
-	// isActive: [ 'namespace', 'title' ], // This is not used/disabled by purpose.
-	innerBlocks: INNER_BLOCKS,
-	example: {
-		innerBlocks: SERVICES.map(({ text }) => ({
-			name: 'core/button',
-			attributes: { text },
-		})),
-	},
-});
+// registerBlockVariation('core/buttons', {
+// 	title: __('Add to calendar (BUTTONS)', 'gatherpress'),
+// 	description: __(
+// 		'Allows a user to add an event to their preferred calendar.',
+// 		'gatherpress'
+// 	),
+// 	category: 'gatherpress',
+// 	icon: calendar,
+// 	name: `pseudo-${NAME}`,
+// 	// isActive: [ 'namespace', 'title' ], // This is not used/disabled by purpose.
+// 	innerBlocks: INNER_BLOCKS,
+// 	example: {
+// 		innerBlocks: SERVICES.map(({ text }) => ({
+// 			name: 'core/button',
+// 			attributes: { text },
+// 		})),
+// 	},
+// });
 
-registerBlockVariation('core/details', {
-	title: __('Add to calendar (DETAILS)', 'gatherpress'),
-	description: __(
-		'Allows a user to add an event to their preferred calendar.',
-		'gatherpress'
-	),
-	category: 'gatherpress',
-	icon: calendar,
-	name: `pseudo-details-${NAME}`,
-	// isActive: [ 'namespace', 'title' ], // This is not used/disabled by purpose.
-	attributes: {
-		summary: __('Add to calendar', 'gatherpress'),
-	},
-	innerBlocks: [['core/buttons', {}, INNER_BLOCKS]],
-	example: {
-		innerBlocks: [['core/buttons', {}, INNER_BLOCKS]],
-	},
-});
+// registerBlockVariation('core/details', {
+// 	title: __('Add to calendar (DETAILS)', 'gatherpress'),
+// 	description: __(
+// 		'Allows a user to add an event to their preferred calendar.',
+// 		'gatherpress'
+// 	),
+// 	category: 'gatherpress',
+// 	icon: calendar,
+// 	name: `pseudo-details-${NAME}`,
+// 	// isActive: [ 'namespace', 'title' ], // This is not used/disabled by purpose.
+// 	attributes: {
+// 		summary: __('Add to calendar', 'gatherpress'),
+// 	},
+// 	innerBlocks: [['core/buttons', {}, INNER_BLOCKS]],
+// 	example: {
+// 		innerBlocks: [['core/buttons', {}, INNER_BLOCKS]],
+// 	},
+// });
