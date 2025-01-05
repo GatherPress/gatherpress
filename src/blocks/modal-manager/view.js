@@ -3,6 +3,11 @@
  */
 import { store } from '@wordpress/interactivity';
 
+/**
+ * Internal dependencies.
+ */
+import { manageFocusTrap } from '../../helpers/interactivity';
+
 const { actions } = store('gatherpress', {
 	actions: {
 		openModal(event = null, element = null) {
@@ -28,62 +33,39 @@ const { actions } = store('gatherpress', {
 						'.wp-block-gatherpress-modal-content'
 					);
 
-					// Trap focus when the modal opens.
-					const focusableSelectors = [
-						'a[href]',
-						'button:not([disabled])',
-						'textarea:not([disabled])',
-						'input[type="text"]:not([disabled])',
-						'input[type="number"]:not([disabled])',
-						'input[type="radio"]:not([disabled])',
-						'input[type="checkbox"]:not([disabled])',
-						'select:not([disabled])',
-						'[tabindex]:not([tabindex="-1"])',
-					];
+					if (modalContent) {
+						// Define focusable elements inside the modal.
+						const focusableSelectors = [
+							'a[href]',
+							'button:not([disabled])',
+							'textarea:not([disabled])',
+							'input[type="text"]:not([disabled])',
+							'input[type="number"]:not([disabled])',
+							'input[type="radio"]:not([disabled])',
+							'input[type="checkbox"]:not([disabled])',
+							'select:not([disabled])',
+							'[tabindex]:not([tabindex="-1"])',
+						];
+						const focusableElements = Array.from(
+							modalContent.querySelectorAll(
+								focusableSelectors.join(',')
+							)
+						);
 
-					const focusableElements = modalContent.querySelectorAll(
-						focusableSelectors.join(',')
-					);
+						// Focus the first focusable element, if available.
+						if (focusableElements[0]) {
+							setTimeout(() => {
+								modal.setAttribute('aria-hidden', 'false');
+								focusableElements[0].focus();
+							}, 1);
+						}
 
-					const firstFocusableElement = focusableElements[0];
-					const lastFocusableElement =
-						focusableElements[focusableElements.length - 1];
-
-					// Automatically focus the first focusable element with a short delay.
-					if (firstFocusableElement) {
-						setTimeout(() => {
-							modal.setAttribute('aria-hidden', 'false');
-							firstFocusableElement.focus();
-						}, 5);
+						// Set up focus trap using the helper function and store cleanup.
+						modalContent.cleanupFocusTrap =
+							manageFocusTrap(focusableElements);
 					}
 
-					// Trap focus within the modal content.
-					const handleFocusTrap = (e) => {
-						if ('Tab' === e.key) {
-							if (
-								e.shiftKey &&
-								global.document.activeElement ===
-									firstFocusableElement
-							) {
-								// Shift + Tab (backward navigation).
-								e.preventDefault();
-								lastFocusableElement.focus();
-							} else if (
-								!e.shiftKey &&
-								global.document.activeElement ===
-									lastFocusableElement
-							) {
-								// Tab (forward navigation).
-								e.preventDefault();
-								firstFocusableElement.focus();
-							}
-						}
-					};
-
-					// Add keydown listener for trapping focus.
-					modalContent.addEventListener('keydown', handleFocusTrap);
-
-					// Cleanup focus trapping when the modal is closed.
+					// Handle modal close logic.
 					const closeButton = modal.querySelector(
 						'.gatherpress--close-modal'
 					);
@@ -91,10 +73,16 @@ const { actions } = store('gatherpress', {
 					if (closeButton) {
 						closeButton.addEventListener('click', () => {
 							modal.classList.remove('gatherpress--is-visible');
-							modalContent.removeEventListener(
-								'keydown',
-								handleFocusTrap
-							);
+							modal.setAttribute('aria-hidden', 'true');
+
+							// Clean up focus trap if applicable.
+							if (
+								modalContent &&
+								'function' ===
+									typeof modalContent.cleanupFocusTrap
+							) {
+								modalContent.cleanupFocusTrap();
+							}
 						});
 					}
 				}

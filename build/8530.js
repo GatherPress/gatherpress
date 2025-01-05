@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkgatherpress=globalThis.webpackChunkgatherpress||[]).push([[8530],{8530:(s,e,a)=>{s.exports=a.p+"b88d04fba731603756b1.css"}}]);

@@ -89,6 +89,15 @@ module.exports = [
 							filename: 'images/[name][ext]',
 						},
 					},
+					// Ignore Leaflet JS/CSS assets.
+					{
+						test: /\.(js|css)$/,
+						include: /node_modules\/leaflet/,
+						type: 'asset/resource',
+						generator: {
+							emit: false, // Prevent output.
+						},
+					},
 				],
 			],
 		},
