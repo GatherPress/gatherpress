@@ -153,7 +153,19 @@ class Rsvp_Response {
 		) {
 			// Currently, the avatar URL is retrieved based on the user ID.
 			// In the future, when non-user RSVPs are supported, the email address can be used as well.
-			$args['url'] = get_avatar_url( $comment->user_id );
+			$user_id = $comment->user_id;
+
+			if (
+				intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
+				! current_user_can( 'edit_posts' )
+			) {
+				// Set the user ID to 0 if the RSVP is marked as anonymous and the current user
+				// does not have permission to edit posts. This ensures the avatar defaults
+				// to a generic or placeholder image for anonymous responses.
+				$user_id = 0;
+			}
+
+			$args['url'] = get_avatar_url( $user_id, array( 'default' => 'mystery' ) );
 		}
 
 		return $args;

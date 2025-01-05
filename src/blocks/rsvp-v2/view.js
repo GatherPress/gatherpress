@@ -20,7 +20,24 @@ const { state, actions } = store('gatherpress', {
 			const postId = context.postId || 0;
 			const currentUser = state.posts[postId].currentUser;
 
-			currentUser.guests = element.ref.value;
+			currentUser.guests = parseInt(element.ref.value, 10);
+
+			initPostContext(state, postId);
+
+			sendRsvpApiRequest(postId, currentUser, state, () => {
+				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
+				setTimeout(() => {
+					element.ref.focus();
+				}, 1);
+			});
+		},
+		updateAnonymous() {
+			const element = getElement();
+			const context = getContext();
+			const postId = context.postId || 0;
+			const currentUser = state.posts[postId].currentUser;
+
+			currentUser.anonymous = element.ref.checked ? 1 : 0;
 
 			initPostContext(state, postId);
 
