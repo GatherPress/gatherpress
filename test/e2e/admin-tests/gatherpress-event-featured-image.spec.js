@@ -24,29 +24,33 @@ test.describe('e2e test for publish event through admin side', () => {
 			.first()
 			.isVisible();
 
-		await page
-			.getByLabel('Add title')
-			.fill('Featured Image test');
+		await page.getByLabel('Add title').fill('Featured Image test');
 
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
+		await page.getByRole('button', { name: 'Set featured image' }).click();
+
+		await page
+			.locator('.attachments-wrapper')
+			.locator('li')
+			.first()
+			.click();
 
 		await page.getByRole('button', { name: 'Set featured image' }).click();
 
-		await page.locator('.attachments-wrapper').locator('li').first().click()
-
-		await page.getByRole('button', { name: 'Set featured image' }).click();
-
-		await page.getByRole('button', { name: 'Publish', exact: true }).click();
-		await page.getByLabel('Editor publish')
+		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
-		await page.getByLabel('Editor publish')
-			.getByRole('link', { name: 'View Event' }).click();
-		await page.locator('#wp--skip-link--target img')
-			.isVisible();
+		await page
+			.getByLabel('Editor publish')
+			.getByRole('button', { name: 'Publish', exact: true })
+			.click();
+		await page
+			.getByLabel('Editor publish')
+			.getByRole('link', { name: 'View Event' })
+			.click();
+		await page.locator('#wp--skip-link--target img').isVisible();
 
-		await page.screenshot({ path: 'featured-image.png', fullPage: true })
+		await page.screenshot({ path: 'featured-image.png', fullPage: true });
 	});
-
-})
+});
