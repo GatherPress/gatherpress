@@ -54,6 +54,9 @@ test.describe('e2e test for venue map through admin side', () => {
 			.click();
 
 		await expect(page.locator('#map')).toBeVisible();
-		await page.screenshot({ path: 'venue_post_map.png', fullPage: true });
+		await expect(page).toHaveScreenshot('event_toggle_on.png', {
+			fullPage: true,
+			map: [page.locator('header'), page.locator('footer')],
+		});
 	});
 });

@@ -29,11 +29,11 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
 		await page.getByLabel('Settings', { exact: true }).click();
-		
+
 		await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
-		await page.locator('#map').isVisible({timeout:30000})
+		await page.locator('#map').isVisible({ timeout: 30000 });
 		await expect(page.locator('#map')).toBeVisible();
 
 		await page
@@ -48,13 +48,14 @@ test.describe('e2e test for venue map through admin side', () => {
 			.getByText(`${eventTitle} is now live.`)
 			.isVisible({ timeout: 60000 }); // verified the event is live.
 
-
-		await page.getByLabel('Editor publish').getByRole('link', { name: 'View Venue' }).click();
-		const location = await page.locator('#map').isVisible();
+		await page
+			.getByLabel('Editor publish')
+			.getByRole('link', { name: 'View Venue' })
+			.click();
+		await page.locator('#map').isVisible({ timeout: 30000 });
 
 		await expect(page).toHaveScreenshot('location_map.png', {
-			fullPage: true
+			fullPage: true,
 		});
-
 	});
 });
