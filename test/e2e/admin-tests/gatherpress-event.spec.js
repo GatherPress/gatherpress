@@ -1,6 +1,6 @@
 const { test } = require('@playwright/test');
 //const { login } = require('../reusable-user-steps/common.js');
-const{login}	= require('../reusable-user-steps/common.js')
+const { login } = require('../reusable-user-steps/common.js');
 
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
@@ -30,9 +30,8 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		 await page.getByLabel('Settings', { exact: true }).click();
-		 await page.getByLabel('Settings', { exact: true }).click();
-
+		await page.getByLabel('Settings', { exact: true }).click();
+		await page.getByLabel('Settings', { exact: true }).click();
 
 		await page.getByRole('button', { name: 'Event settings' }).isVisible();
 
@@ -81,9 +80,10 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		
 		await page.getByRole('button', { name: 'Event settings' }).click();
-  		await page.getByLabel('Venue Selector').selectOption('73:test-offline-event');
+		await page
+			.getByLabel('Venue Selector')
+			.selectOption('73:test-offline-event');
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
