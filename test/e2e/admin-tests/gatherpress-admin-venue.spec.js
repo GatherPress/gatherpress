@@ -11,7 +11,7 @@ test.describe('e2e test for venue through admin side', () => {
 	test('The admin should be able to create a new post for Venue', async ({
 		page,
 	}) => {
-		await login({ page, username: 'testuser1' });
+		await login({ page, username: 'prashantbellad' });
 
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 
