@@ -12,14 +12,13 @@ test.describe('e2e test for publish event through admin side', () => {
 	test('01-the user should be able to publish an online event', async ({
 		page,
 	}) => {
-		
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New' })
 			.click();
 
-			await page.getByLabel('Add title').fill('online event');
+		await page.getByLabel('Add title').fill('online event');
 
 		await page
 			.getByLabel('Block: Event Date')
@@ -28,10 +27,8 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		
 		await page.getByLabel('Settings', { exact: true }).click();
 		await page.getByLabel('Settings', { exact: true }).click();
-
 
 		await page.getByRole('button', { name: 'Event settings' }).click();
 
@@ -69,7 +66,6 @@ test.describe('e2e test for publish event through admin side', () => {
 	test('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
 		page,
 	}) => {
-		
 		await page.getByRole('menuitem', { name: 'GatherPress' }).click();
 
 		await page.evaluate(() => window.scrollTo(0, 5000));

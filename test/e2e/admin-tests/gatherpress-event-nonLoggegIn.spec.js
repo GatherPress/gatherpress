@@ -10,9 +10,7 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 	});
 });
 
-test('the user should be able publish an offline event', async ({
-	page,
-}) => {
+test('the user should be able publish an offline event', async ({ page }) => {
 	await login({ page, username: 'prashantbellad' });
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
 	await page
@@ -30,16 +28,15 @@ test('the user should be able publish an offline event', async ({
 		.isVisible();
 	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-	
 	await page.getByRole('button', { name: 'Event settings' }).click();
 	await page.getByRole('button', { name: 'Event settings' }).click();
 	await page.getByRole('button', { name: 'Event settings' }).click();
-	
-	await page.getByLabel('Venue Selector').selectOption('73:test-offline-event');
 
 	await page
-		.getByRole('button', { name: 'Publish', exact: true })
-		.click();
+		.getByLabel('Venue Selector')
+		.selectOption('73:test-offline-event');
+
+	await page.getByRole('button', { name: 'Publish', exact: true }).click();
 	await page
 		.getByLabel('Editor publish')
 		.getByRole('button', { name: 'Publish', exact: true })
