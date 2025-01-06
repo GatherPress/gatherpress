@@ -13,37 +13,41 @@ test.describe('e2e test for venue map through admin side', () => {
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
-        await page.getByRole('link', { name: 'Events', exact: true }).click();
-        await page.getByRole('link', { name: 'Venues' }).click();
-        await page.getByRole('link', { name: 'Add New Venue' }).click();
+		await page.getByRole('link', { name: 'Events', exact: true }).click();
+		await page.getByRole('link', { name: 'Venues' }).click();
+		await page.getByRole('link', { name: 'Add New Venue' }).click();
 
-        const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
-	const eventTitle = await page
-		.getByLabel('Add title')
-		.fill(`test: venue map:${currentDate}`);
-	await page
-		.getByLabel('Block: Event Date')
-		.locator('div')
-		.first()
-		.isVisible();
-	await page.getByRole('heading', { name: 'Date & time' }).isVisible();
+		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
+		const eventTitle = await page
+			.getByLabel('Add title')
+			.fill(`test: venue map:${currentDate}`);
+		await page
+			.getByLabel('Block: Event Date')
+			.locator('div')
+			.first()
+			.isVisible();
+		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-    await page.getByLabel('Settings', { exact: true }).click();
+		await page.getByLabel('Settings', { exact: true }).click();
 
-    await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
+		await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
 
-    await page.locator('.gatherpress-venue__full-address').isVisible();
-    await expect(page.locator('#map')).toBeVisible();
-    await page.getByRole('button', { name: 'Publish', exact: true }).click();
-    await page.getByLabel('Editor publish').getByRole('button', { name: 'Publish', exact: true }).click();
+		await page.locator('.gatherpress-venue__full-address').isVisible();
+		await expect(page.locator('#map')).toBeVisible();
+		await page
+			.getByRole('button', { name: 'Publish', exact: true })
+			.click();
+		await page
+			.getByLabel('Editor publish')
+			.getByRole('button', { name: 'Publish', exact: true })
+			.click();
 
-    await page
-    .getByText(`${eventTitle} is now live.`)
-    .isVisible({ timeout: 60000 }); // verified the event is live.
-await page
-    .locator('.post-publish-panel__postpublish-buttons')
-    .filter({ hasText: 'View Event' })
-    .isVisible({ timeout: 30000 }); // verified the view event button.
-		
+		await page
+			.getByText(`${eventTitle} is now live.`)
+			.isVisible({ timeout: 60000 }); // verified the event is live.
+		await page
+			.locator('.post-publish-panel__postpublish-buttons')
+			.filter({ hasText: 'View Event' })
+			.isVisible({ timeout: 30000 }); // verified the view event button.
 	});
 });
