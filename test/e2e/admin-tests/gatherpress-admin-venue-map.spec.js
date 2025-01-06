@@ -4,7 +4,7 @@ const { login } = require('../reusable-user-steps/common.js');
 test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
-		await page.setViewportSize({ width: 1920, height: 720 });
+		//await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
 	});
 
@@ -29,11 +29,13 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
 		await page.getByLabel('Settings', { exact: true }).click();
-
+		
 		await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
+		await page.locator('#map').isVisible({timeout:30000})
 		await expect(page.locator('#map')).toBeVisible();
+
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
@@ -45,9 +47,14 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page
 			.getByText(`${eventTitle} is now live.`)
 			.isVisible({ timeout: 60000 }); // verified the event is live.
-		await page
-			.locator('.post-publish-panel__postpublish-buttons')
-			.filter({ hasText: 'View Event' })
-			.isVisible({ timeout: 30000 }); // verified the view event button.
+
+
+		await page.getByLabel('Editor publish').getByRole('link', { name: 'View Venue' }).click();
+		const location = await page.locator('#map').isVisible();
+
+		await expect(page).toHaveScreenshot('location_map.png', {
+			fullPage: true
+		});
+
 	});
 });

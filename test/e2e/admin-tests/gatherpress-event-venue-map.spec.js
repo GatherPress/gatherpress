@@ -51,22 +51,16 @@ test.describe('e2e test for event, the user should view the event map on event p
 		await page
 			.getByText(`${eventTitle} is now live.`)
 			.isVisible({ timeout: 60000 }); // verified the event is live.
-		await page
-			.locator('.post-publish-panel__postpublish-buttons')
-			.filter({ hasText: 'View Event' })
-			.isVisible({ timeout: 30000 }); // verified the view event button.
+	
+			await page.getByLabel('Editor publish').getByRole('link', { name: 'View Event' }).click();
 
-		await page.goto('/');
+			await page.locator('#map').isVisible({timeout:30000})
+			const location = await page.locator('#map').isVisible();
+	
+			await expect(page).toHaveScreenshot('event_location_map.png', {
+				fullPage: true
+			});
 
-		await page
-			.getByRole('heading', { name: 'Upcoming Events' })
-			.isVisible();
-		await page
-			.getByRole('link', { name: 'test: venue map' })
-			.first()
-			.click();
 
-		await expect(page.locator('#map')).toBeVisible();
-		await page.screenshot({ path: 'venue-map.png', fullPage: true });
 	});
 });

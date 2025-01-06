@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 
 test.describe('e2e test for event post, verify the event time is visible on front end', () => {
@@ -17,6 +17,9 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 			.getByRole('link', { name: 'Add New Event' })
 			.click();
 		await page.getByLabel('Add title').fill('event time details');
+
+		await page.getByLabel('Block: Event Date').isVisible();
+		await page.getByLabel('Block: Event Date').screenshot({path:'event-details.png'});
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
@@ -30,6 +33,17 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 			.click();
 
 		await page.locator('#wp--skip-link--target').isVisible();
-		await page.locator('.wp-block-gatherpress-event-date').isVisible();
+		await page.locator('#wp--skip-link--target').screenshot({path:'event-details-post.png'})
+			
+		await expect(page).toHaveScreenshot('event_details.png', {
+				fullPage: true,
+				mask:[
+					page.locator('header'),
+					page.locator('h1'),
+					
+					page.locator('footer')
+				]
+			});
+
 	});
 });
