@@ -1,4 +1,4 @@
-const { test } = require('@playwright/test');
+const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common');
 
 test.describe('e2e test for publish event through admin side', () => {
@@ -9,7 +9,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		await login({ page, username: 'prashantbellad' });
 	});
 
-	test('the user should be able to publish an online event', async ({
+	test('The user should be able add featured image in post and verify the added featured image post', async ({
 		page,
 	}) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
@@ -51,6 +51,8 @@ test.describe('e2e test for publish event through admin side', () => {
 			.click();
 		await page.locator('#wp--skip-link--target img').isVisible();
 
-		await page.screenshot({ path: 'featured-image.png', fullPage: true });
+		// await expect(page).toHaveScreenshot('featured_image.png', {fullPage:true})
+		const FeaturedImage = await page.screenshot({ fullPage: true });
+		expect(FeaturedImage).toMatchSnapshot('featured_image.png');
 	});
 });
