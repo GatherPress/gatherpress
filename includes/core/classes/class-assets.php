@@ -420,30 +420,17 @@ class Assets {
 			case Venue::POST_TYPE:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
-					'gatherpress/event-date',
 					'gatherpress/online-event',
-					'gatherpress/rsvp',
-					'gatherpress/rsvp-anonymous-checkbox',
-					'gatherpress/rsvp-guest-count-display',
-					'gatherpress/rsvp-guest-count-input',
-					'gatherpress/rsvp-v2',
-					'gatherpress/rsvp-response',
-					'gatherpress/rsvp-response-v2',
+					'gatherpress/rsvp', // will be removed when name changes.
+					'gatherpress/rsvp-response', // will be removed when name changes.
 				);
 				break;
 			default:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
-					'gatherpress/event-date',
-					'gatherpress/modal',
 					'gatherpress/online-event',
-					'gatherpress/rsvp',
-					'gatherpress/rsvp-anonymous-checkbox',
-					'gatherpress/rsvp-guest-count-display',
-					'gatherpress/rsvp-guest-count-input',
-					'gatherpress/rsvp-v2',
-					'gatherpress/rsvp-response',
-					'gatherpress/rsvp-response-v2',
+					'gatherpress/rsvp', // will be removed when name changes.
+					'gatherpress/rsvp-response', // will be removed when name changes.
 					'gatherpress/venue',
 				);
 		}

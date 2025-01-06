@@ -8,7 +8,12 @@
 	"icon": "groups",
 	"example": {},
 	"description": "Displays a list of members who have confirmed their attendance for an event.",
-	"attributes": {},
+	"attributes": {
+		"postId": {
+			"type": "number"
+		}
+	},
+	"usesContext": [ "postId", "queryId" ],
 	"supports": {
 		"align": [ "wide", "full" ],
 		"interactivity": true,

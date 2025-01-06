@@ -10,7 +10,14 @@
     "viewportWidth": 350
   },
   "description": "Displays the date and time for an event.",
+  "usesContext": [
+    "postId",
+    "queryId"
+  ],
   "attributes": {
+    "postId": {
+      "type": "number"
+    },
     "eventEnd": {
       "type": "string"
     },

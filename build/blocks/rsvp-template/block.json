@@ -11,6 +11,9 @@
   "supports": {
     "html": false
   },
+  "usesContext": [
+    "gatherpress/rsvpResponses"
+  ],
   "parent": [
     "core/group"
   ],
