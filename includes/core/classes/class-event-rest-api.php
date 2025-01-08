@@ -209,6 +209,16 @@ class Event_Rest_Api {
 		);
 	}
 
+	/**
+	 * Get route configuration for RSVP responses endpoint.
+	 *
+	 * Defines REST route configuration to fetch RSVP response data for an event post.
+	 * Endpoint requires post_id parameter which must validate as an event post type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Route configuration with path, methods, callback and arguments.
+	 */
 	protected function rsvp_responses_route(): array {
 		return array(
 			'route' => 'rsvp-responses',
@@ -624,6 +634,17 @@ class Event_Rest_Api {
 		return new WP_REST_Response( $response );
 	}
 
+	/**
+	 * Handle RSVP responses REST endpoint request.
+	 *
+	 * Retrieves RSVP response data for a given event post ID. Validates that the post
+	 * is an event type before returning response data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
+	 * @return WP_REST_Response Response containing success status and RSVP data.
+	 */
 	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
 		$params    = $request->get_params();
 		$post_id   = intval( $params['post_id'] );
