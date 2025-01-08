@@ -10,12 +10,11 @@ import {
 	useInnerBlocksProps,
 } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
-import { memo, useEffect, useState } from '@wordpress/element';
+import { memo, useState } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../../helpers/globals';
 import TEMPLATE from './template';
 
 const TemplateInnerBlocks = ({
@@ -129,16 +128,9 @@ const Edit = ({ clientId, context }) => {
 	// Access the provided RSVP responses context from the parent block.
 	const rsvpResponses = context?.['gatherpress/rsvpResponses'] ?? null;
 
-	// Log the context for debugging.
-	console.log('Context:', context);
-	console.log('RSVP Responses:', rsvpResponses);
-
 	// Initialize active RSVP ID.
 	const [activeRsvpId, setActiveRsvpId] = useState(
-		parseInt(
-			rsvpResponses?.attending?.records?.[0]?.commentId,
-			10
-		) ?? null
+		parseInt(rsvpResponses?.attending?.records?.[0]?.commentId, 10) ?? null
 	);
 
 	// Get the block's inner blocks.
