@@ -98,13 +98,13 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
 const Edit = ({ attributes, setAttributes, context }) => {
+	const { textAlign } = attributes;
 	const blockProps = useBlockProps({
 		className: clsx({
 			[`has-text-align-${textAlign}`]: textAlign,
 		}),
 	});
 	const { postId } = context;
-	const { textAlign } = attributes;
 
 	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
 		(select) => {
