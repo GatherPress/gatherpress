@@ -6,7 +6,6 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 /**
  * Internal dependencies.
  */
-import { getFromGlobal } from '../../helpers/globals';
 import {
 	initPostContext,
 	sendRsvpApiRequest,
@@ -136,9 +135,26 @@ const { state, actions } = store('gatherpress', {
 		renderRsvpBlock() {
 			const element = getElement();
 			const context = getContext();
-			const status =
-				state.posts[context.postId]?.currentUser?.status ??
-				getFromGlobal('eventDetails.currentUser.status');
+			const postId = context.postId || 0;
+
+			initPostContext(state, postId);
+
+			const userDetails = JSON.parse(
+				element.ref.getAttribute('data-user-details')
+			);
+			// Delete attribute after setting variable. This is just to kick things off...
+			element.ref.removeAttribute('data-user-details');
+
+			if (userDetails) {
+				state.posts[postId] = {
+					...state.posts[postId],
+					currentUser: {
+						status: userDetails?.status || 'no_status',
+						guests: userDetails?.guests || 0,
+						anonymous: userDetails?.anonymous || 0,
+					},
+				};
+			}
 
 			const innerBlocks =
 				element.ref.querySelectorAll('[data-rsvp-status]');
@@ -146,7 +162,10 @@ const { state, actions } = store('gatherpress', {
 			innerBlocks.forEach((innerBlock) => {
 				const parent = innerBlock.parentNode;
 
-				if (innerBlock.getAttribute('data-rsvp-status') === status) {
+				if (
+					innerBlock.getAttribute('data-rsvp-status') ===
+					state.posts[postId].currentUser.status
+				) {
 					innerBlock.style.display = '';
 
 					// Move the visible block to the start of its parent.

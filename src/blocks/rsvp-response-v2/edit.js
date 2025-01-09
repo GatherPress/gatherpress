@@ -17,7 +17,6 @@ import {
 	Spinner,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
-import { useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -46,14 +45,13 @@ async function fetchRsvpResponses(postId) {
 /**
  * Edit component for the GatherPress RSVP Response block.
  *
- * @param {Object} root0          - The props object passed to the component.
- * @param {string} root0.clientId - The block client ID.
- * @param {Object} root0.context  - Block context data containing postId and event info.
+ * @param {Object} root0         - The props object passed to the component.
+ * @param {Object} root0.context - Block context data containing postId and event info.
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
-const Edit = ({ clientId, context }) => {
+const Edit = ({ context }) => {
 	const blockProps = useBlockProps();
 	const [editMode, setEditMode] = useState(false);
 	const [showEmptyRsvpMessage, setShowEmptyRsvpMessage] = useState(false);
@@ -62,38 +60,29 @@ const Edit = ({ clientId, context }) => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const postId = context?.postId ?? null;
-	const innerBlocks = useSelect(
-		(select) => select('core/block-editor').getBlocks(clientId),
-		[clientId]
-	);
 
 	useEffect(() => {
-		innerBlocks.forEach((block) => {
-			const blockElement = global.document.getElementById(
-				`block-${block.clientId}`
+		const emptyBlocks = document.querySelectorAll(
+			'.gatherpress--empty-rsvp'
+		);
+		const responseBlocks = document.querySelectorAll(
+			'.gatherpress--rsvp-responses'
+		);
+
+		emptyBlocks.forEach((block) => {
+			block.classList.toggle(
+				'gatherpress--is-not-visible',
+				!showEmptyRsvpMessage
 			);
-
-			if (blockElement) {
-				const isRsvpResponsesBlock =
-					block.attributes?.className?.includes(
-						'gatherpress--rsvp-responses'
-					);
-				const isEmptyRsvpBlock = block.attributes?.className?.includes(
-					'gatherpress--empty-rsvp'
-				);
-
-				if (showEmptyRsvpMessage && isEmptyRsvpBlock) {
-					blockElement.style.display = '';
-				} else if (showEmptyRsvpMessage && isRsvpResponsesBlock) {
-					blockElement.style.display = 'none';
-				} else if (!showEmptyRsvpMessage && isEmptyRsvpBlock) {
-					blockElement.style.display = 'none';
-				} else if (!showEmptyRsvpMessage && isRsvpResponsesBlock) {
-					blockElement.style.display = '';
-				}
-			}
 		});
-	}, [showEmptyRsvpMessage, innerBlocks, editMode]);
+
+		responseBlocks.forEach((block) => {
+			block.classList.toggle(
+				'gatherpress--is-not-visible',
+				showEmptyRsvpMessage
+			);
+		});
+	}, [showEmptyRsvpMessage, responses]);
 
 	// Fetch responses when postId changes.
 	useEffect(() => {

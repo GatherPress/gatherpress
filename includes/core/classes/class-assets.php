@@ -127,6 +127,15 @@ class Assets {
 	public function block_enqueue_scripts(): void {
 		// @todo remove once new blocks are completed.
 		wp_enqueue_style( 'dashicons' );
+
+		$asset = $this->get_asset_data( 'utility_style' );
+
+		wp_register_style(
+			'gatherpress-utility-style',
+			$this->build . 'utility_style.css',
+			$asset['dependencies'],
+			$asset['version']
+		);
 	}
 
 	/**
@@ -142,12 +151,7 @@ class Assets {
 		if ( 0 === strpos( $block['blockName'], 'gatherpress/' ) ) {
 			$asset = $this->get_asset_data( 'utility_style' );
 
-			wp_enqueue_style(
-				'gatherpress-utility-style',
-				$this->build . 'utility_style.css',
-				$asset['dependencies'],
-				$asset['version']
-			);
+			wp_enqueue_style( 'gatherpress-utility-style' );
 		}
 
 		return $block_content;
@@ -269,6 +273,8 @@ class Assets {
 			$asset['version'],
 			true
 		);
+
+		wp_enqueue_style( 'gatherpress-utility-style' );
 
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}

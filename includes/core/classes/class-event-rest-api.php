@@ -20,6 +20,7 @@ use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WP_User;
 
 /**
  * Class Event_Rest_Api.

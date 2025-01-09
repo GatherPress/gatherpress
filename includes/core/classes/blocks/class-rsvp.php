@@ -129,9 +129,17 @@ class Rsvp {
 					);
 				}
 
+				$user_data = array();
+
+				if ( $event->rsvp ) {
+					$user_data = $event->rsvp->get( get_current_user_id() );
+				}
+				$filtered_data = array_intersect_key( $user_data, array_flip( array( 'status', 'guests', 'anonymous' ) ) );
+
 				// Set dynamic attributes for interactivity.
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => get_the_ID() ) ) );
+				$tag->set_attribute( 'data-user-details', wp_json_encode( $filtered_data ) );
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.renderRsvpBlock' );
 			}
 
