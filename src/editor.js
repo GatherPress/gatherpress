@@ -176,7 +176,7 @@ const withPostIdOverride = createHigherOrderComponent((BlockEdit) => {
 							});
 						}}
 						help={__(
-							'Specify the Post ID of an event to replace the default post ID used by this block.',
+							'Specify the post ID of an event to replace the default post ID used by this block.',
 							'gatherpress'
 						)}
 					/>
