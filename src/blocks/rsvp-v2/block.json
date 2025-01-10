@@ -23,6 +23,9 @@
 		}
 	},
 	"supports": {
+		"gatherpress": {
+			"postIdOverride": true
+		},
 		"html": false,
 		"interactivity": true
 	},

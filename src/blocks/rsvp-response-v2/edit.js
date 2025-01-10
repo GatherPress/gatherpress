@@ -35,23 +35,24 @@ async function fetchRsvpResponses(postId) {
 	const apiUrl = getFromGlobal('urls.eventApiUrl');
 	const response = await fetch(`${apiUrl}/rsvp-responses?post_id=${postId}`);
 
-	if (!response.ok) {
-		throw new Error('Failed to fetch RSVP responses');
-	}
-
 	return response.json();
 }
 
 /**
  * Edit component for the GatherPress RSVP Response block.
  *
- * @param {Object} root0         - The props object passed to the component.
- * @param {Object} root0.context - Block context data containing postId and event info.
+ * This component handles the rendering and logic for the editor interface
+ * of the GatherPress RSVP Response block. It fetches RSVP data, manages
+ * block-specific state, and passes relevant context to child blocks.
+ *
+ * @param {Object} root0            - The props object passed to the component.
+ * @param {Object} root0.attributes - Block attributes containing configuration and data.
+ * @param {Object} root0.context    - Block context data containing postId and event info.
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
-const Edit = ({ context }) => {
+const Edit = ({ attributes, context }) => {
 	const blockProps = useBlockProps();
 	const [editMode, setEditMode] = useState(false);
 	const [showEmptyRsvpMessage, setShowEmptyRsvpMessage] = useState(false);
@@ -59,7 +60,7 @@ const Edit = ({ context }) => {
 	const [responses, setResponses] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
-	const postId = context?.postId ?? null;
+	const postId = attributes?.postId ?? context?.postId ?? null;
 
 	useEffect(() => {
 		const emptyBlocks = document.querySelectorAll(

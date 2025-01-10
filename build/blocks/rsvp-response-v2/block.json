@@ -18,6 +18,9 @@
     "queryId"
   ],
   "supports": {
+    "gatherpress": {
+      "postIdOverride": true
+    },
     "align": [
       "wide",
       "full"

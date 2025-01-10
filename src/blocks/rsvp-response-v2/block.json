@@ -15,6 +15,9 @@
 	},
 	"usesContext": [ "postId", "queryId" ],
 	"supports": {
+		"gatherpress": {
+			"postIdOverride": true
+		},
 		"align": [ "wide", "full" ],
 		"interactivity": true,
 		"html": false
