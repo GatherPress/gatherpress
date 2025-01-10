@@ -14,7 +14,8 @@
   "example": {},
   "attributes": {},
   "usesContext": [
-    "commentId"
+    "commentId",
+    "gatherpress/rsvpResponses"
   ],
   "supports": {
     "align": [

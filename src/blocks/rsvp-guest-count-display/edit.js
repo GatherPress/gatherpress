@@ -6,11 +6,6 @@ import { useBlockProps } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 
 /**
- * Internal dependencies.
- */
-import { getFromGlobal } from '../../helpers/globals';
-
-/**
  * Edit function for the RSVP Guest Count Display Block.
  *
  * This function defines the edit interface for the RSVP Guest Count Display Block,
@@ -25,15 +20,13 @@ import { getFromGlobal } from '../../helpers/globals';
  */
 const Edit = ({ context }) => {
 	const { commentId } = context;
+	const rsvpResponses = context?.['gatherpress/rsvpResponses'] ?? null;
 
 	// Example guest count.
 	let guestCount = 1;
 
-	if (commentId) {
-		const responses = getFromGlobal(
-			'eventDetails.responses.attending.responses'
-		);
-		const matchedResponse = responses.find(
+	if (commentId && rsvpResponses) {
+		const matchedResponse = rsvpResponses.attending.responses.find(
 			(response) => response.commentId === commentId
 		);
 
