@@ -168,13 +168,17 @@ const withPostIdOverride = createHigherOrderComponent((BlockEdit) => {
 				<BlockEdit {...props} />
 				<InspectorAdvancedControls>
 					<NumberControl
-						label={__('Event ID Override', 'gatherpress')}
+						label={__('Post ID Override', 'gatherpress')}
 						value={postId}
 						onChange={(value) => {
 							updateBlockAttributes(clientId, {
 								postId: parseInt(value, 10) || 0,
 							});
 						}}
+						help={__(
+							'Specify the Post ID of an event to replace the default post ID used by this block.',
+							'gatherpress'
+						)}
 					/>
 				</InspectorAdvancedControls>
 			</>
