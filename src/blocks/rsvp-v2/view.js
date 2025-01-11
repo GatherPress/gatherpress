@@ -161,17 +161,15 @@ const { state, actions } = store('gatherpress', {
 
 			innerBlocks.forEach((innerBlock) => {
 				const parent = innerBlock.parentNode;
-
 				if (
 					innerBlock.getAttribute('data-rsvp-status') ===
 					state.posts[postId].currentUser.status
 				) {
-					innerBlock.style.display = '';
-
+					innerBlock.classList.remove('gatherpress--is-not-visible');
 					// Move the visible block to the start of its parent.
 					parent.insertBefore(innerBlock, parent.firstChild);
 				} else {
-					innerBlock.style.display = 'none';
+					innerBlock.classList.add('gatherpress--is-not-visible');
 				}
 			});
 		},
@@ -209,6 +207,12 @@ const { state, actions } = store('gatherpress', {
 
 			// Update the element's text content.
 			element.ref.textContent = text;
+
+			if (0 < guestCount) {
+				element.ref.classList.remove('gatherpress--is-not-visible');
+			} else {
+				element.ref.classList.add('gatherpress--is-not-visible');
+			}
 		},
 	},
 });

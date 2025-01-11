@@ -41,7 +41,7 @@ import { getFromGlobal } from './globals';
  * // }
  */
 export function initPostContext(state, postId) {
-	if (!state.posts[postId]) {
+	if (postId && !state.posts[postId]) {
 		state.posts[postId] = {
 			eventResponses: {
 				attending: 0,

@@ -12,7 +12,8 @@
     "html": false
   },
   "usesContext": [
-    "gatherpress/rsvpResponses"
+    "gatherpress/rsvpResponses",
+    "postId"
   ],
   "parent": [
     "core/group"

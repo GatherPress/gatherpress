@@ -344,4 +344,19 @@ class Block {
 
 		return $block_names;
 	}
+
+	/**
+	 * Get the post ID from block attributes or fallback to the current post ID.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $block The block data.
+	 *
+	 * @return int The resolved post ID.
+	 */
+	public function get_post_id( array $block ): int {
+		$post_id = isset( $block['attrs']['postId'] ) ? intval( $block['attrs']['postId'] ) : 0;
+
+		return $post_id > 0 ? $post_id : get_the_ID();
+	}
 }

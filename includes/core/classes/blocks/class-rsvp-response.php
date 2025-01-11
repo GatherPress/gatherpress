@@ -12,8 +12,10 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -62,7 +64,7 @@ class Rsvp_Response {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'attach_dropdown_interactivity' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'attach_dropdown_interactivity' ), 11, 2 );
 		add_filter( 'get_avatar_data', array( $this, 'modify_avatar_for_gatherpress_rsvp' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'add_rsvp_to_comment_ancestor' ) );
 	}
@@ -86,24 +88,34 @@ class Rsvp_Response {
 			return $block_content;
 		}
 
-		$event = new Event( get_the_ID() );
-		$tag   = new WP_HTML_Tag_Processor( $block_content );
-
-		if ( ! $event->rsvp ) {
-			return $block_content;
-		}
+		$block_instance = Block::get_instance();
+		$post_id        = $block_instance->get_post_id( $block );
+		$rsvp           = new Rsvp( $post_id );
+		$tag            = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
-			$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-			$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => get_the_ID() ) ) );
+			$responses = $rsvp->responses();
+			$counts    = array_reduce(
+				array_filter(
+					array_keys( $responses ),
+					function ( $key ) {
+						return 'all' !== $key;
+					}
+				),
+				function ( $collected_counts, $key ) use ( $responses ) {
+					return array_merge( $collected_counts, array( $key => $responses[ $key ]['count'] ) );
+				},
+				array()
+			);
 
-			$responses = (int) $event->rsvp->responses()['attending']['count'];
+			$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+			$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
+			$tag->set_attribute( 'data-counts', wp_json_encode( $counts ) );
 
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
-
 				if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
-					if ( ! empty( $responses ) ) {
+					if ( ! empty( $counts['attending'] ) ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',
 							'',
@@ -214,6 +226,24 @@ class Rsvp_Response {
 		}
 
 		$tag = new WP_HTML_Tag_Processor( $block_content );
+		$tag->next_tag();
+		$counts = ! empty( $tag->get_attribute( 'data-counts' ) ) ?
+			json_decode( $tag->get_attribute( 'data-counts' ), true ) :
+			array();
+
+		if ( $tag->next_tag(
+			array(
+				'tag_name'   => 'a',
+				'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__trigger' ),
+			)
+		) ) {
+			$class_attr = $tag->get_attribute( 'class' );
+			$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-disabled' );
+
+			$tag->next_token();
+			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ) );
+			$tag->set_modifiable_text( $trigger_text );
+		}
 
 		if ( $tag->next_tag(
 			array(

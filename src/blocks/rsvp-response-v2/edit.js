@@ -131,7 +131,10 @@ const Edit = ({ attributes, context }) => {
 	return (
 		<div {...blockProps}>
 			<BlockContextProvider
-				value={{ 'gatherpress/rsvpResponses': responses }}
+				value={{
+					'gatherpress/rsvpResponses': responses,
+					postId,
+				}}
 			>
 				<InspectorControls>
 					<PanelBody>

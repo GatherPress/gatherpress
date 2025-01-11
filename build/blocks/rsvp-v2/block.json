@@ -13,9 +13,6 @@
     "queryId"
   ],
   "attributes": {
-    "postId": {
-      "type": "number"
-    },
     "serializedInnerBlocks": {
       "type": "string",
       "default": "[]"

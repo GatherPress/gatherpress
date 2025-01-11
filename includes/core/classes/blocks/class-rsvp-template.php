@@ -65,7 +65,7 @@ class Rsvp_Template {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'ensure_block_styles_loaded' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 3 );
 	}
 
 	/**
@@ -116,18 +116,20 @@ class Rsvp_Template {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $block_content The original block content.
-	 * @param array  $block         The parsed block data.
+	 * @param string   $block_content The original block content.
+	 * @param array    $block         The parsed block data.
+	 * @param WP_Block $instance      The block instance.
 	 *
 	 * @return string The dynamically generated block content.
 	 */
-	public function generate_rsvp_template_block( string $block_content, array $block ): string {
+	public function generate_rsvp_template_block( string $block_content, array $block, WP_Block $instance ): string {
 		if ( self::BLOCK_NAME !== $block['blockName'] ) {
 			return $block_content;
 		}
 
-		$event = new Event( get_the_ID() );
-		$tag   = new WP_HTML_Tag_Processor( $block_content );
+		$post_id = $instance->context['postId'];
+		$event   = new Event( $post_id );
+		$tag     = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( ! $event->rsvp ) {
 			return $block_content;
@@ -185,7 +187,7 @@ class Rsvp_Template {
 		)->render( array( 'dynamic' => false ) );
 
 		// Re-add the filter after rendering to ensure it continues to apply to other blocks.
-		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 3 );
 
 		// Wrap the rendered block content in a container div with a unique data ID for the RSVP response.
 		return sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );

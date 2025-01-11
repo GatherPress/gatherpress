@@ -38,11 +38,30 @@ const { state, actions } = store('gatherpress', {
 		processRsvpDropdown() {
 			const context = getContext();
 			const postId = context?.postId || 0;
+			const element = getElement();
+			const rsvpResponseElement = element.ref.closest(
+				'.wp-block-gatherpress-rsvp-response-v2'
+			);
 
 			initPostContext(state, postId);
 
-			// Get the current element.
-			const element = getElement();
+			const counts = JSON.parse(
+				rsvpResponseElement.getAttribute('data-counts')
+			);
+
+			// Delete attribute after setting variable. This is just to kick things off...
+			rsvpResponseElement.removeAttribute('data-counts');
+
+			if (counts) {
+				state.posts[postId] = {
+					...state.posts[postId],
+					eventResponses: {
+						attending: counts?.attending || 0,
+						waitingList: counts?.waiting_list || 0,
+						notAttending: counts?.not_attending || 0,
+					},
+				};
+			}
 
 			if (element && element.ref) {
 				// Check if the `data-label` attribute is already set.
@@ -61,9 +80,9 @@ const { state, actions } = store('gatherpress', {
 			const dataLabel = element.ref.getAttribute('data-label');
 			const activeElement =
 				element.ref.getAttribute('data-status') ===
-					state.posts[postId].rsvpSelection ||
+					state.posts[postId]?.rsvpSelection ||
 				('attending' === element.ref.getAttribute('data-status') &&
-					'no_status' === state.posts[postId].rsvpSelection);
+					'no_status' === state.posts[postId]?.rsvpSelection);
 
 			const dropdownParent = element.ref.closest(
 				'.wp-block-gatherpress-dropdown'
