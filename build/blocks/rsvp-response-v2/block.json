@@ -8,8 +8,14 @@
   "icon": "groups",
   "example": {},
   "description": "Displays a list of members who have confirmed their attendance for an event.",
-  "attributes": {},
+  "usesContext": [
+    "postId",
+    "queryId"
+  ],
   "supports": {
+    "gatherpress": {
+      "postIdOverride": true
+    },
     "align": [
       "wide",
       "full"
@@ -18,7 +24,8 @@
     "html": false
   },
   "providesContext": {
-    "commentId": "commentId"
+    "commentId": "commentId",
+    "postId": "postId"
   },
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",

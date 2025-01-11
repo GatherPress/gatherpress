@@ -41,19 +41,17 @@ import { getFromGlobal } from './globals';
  * // }
  */
 export function initPostContext(state, postId) {
-	const eventDetails = getFromGlobal('eventDetails');
-
-	if (!state.posts[postId]) {
+	if (postId && !state.posts[postId]) {
 		state.posts[postId] = {
 			eventResponses: {
-				attending: eventDetails.responses.attending.count || 0,
-				waitingList: eventDetails.responses.waiting_list.count || 0,
-				notAttending: eventDetails.responses.not_attending.count || 0,
+				attending: 0,
+				waitingList: 0,
+				notAttending: 0,
 			},
 			currentUser: {
-				status: eventDetails.currentUser?.status || 'no_status',
-				guests: eventDetails.currentUser?.guests || 0,
-				anonymous: eventDetails.currentUser?.anonymous || 0,
+				status: 'no_status',
+				guests: 0,
+				anonymous: 0,
 			},
 			rsvpSelection: 'attending',
 		};
@@ -76,7 +74,6 @@ export function initPostContext(state, postId) {
  * @param {number}   [args.guests=0]        - The number of additional guests.
  * @param {boolean}  [args.anonymous=false] - Whether the RSVP is anonymous.
  * @param {Object}   [state=null]           - A state object to update with the API response data.
- *                                          Should contain `activePostId` and `posts` structure.
  * @param {Function} [onSuccess=null]       - A callback function to execute on a successful API response.
  *                                          Receives the API response as its argument.
  *
@@ -119,7 +116,6 @@ export function sendRsvpApiRequest(
 		.then((res) => {
 			if (res.success) {
 				if (state) {
-					state.activePostId = postId;
 					state.posts[postId] = {
 						...state.posts[postId],
 						eventResponses: {

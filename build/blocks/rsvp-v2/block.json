@@ -8,6 +8,10 @@
   "icon": "insert",
   "example": {},
   "description": "Enables members to easily confirm their attendance for an event.",
+  "usesContext": [
+    "postId",
+    "queryId"
+  ],
   "attributes": {
     "serializedInnerBlocks": {
       "type": "string",
@@ -19,6 +23,9 @@
     }
   },
   "supports": {
+    "gatherpress": {
+      "postIdOverride": true
+    },
     "html": false,
     "interactivity": true
   },

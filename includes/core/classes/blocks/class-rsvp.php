@@ -60,7 +60,8 @@ class Rsvp {
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'apply_rsvp_button_interactivity' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'apply_guest_count_watch' ), 10, 2 );
+		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
+		add_filter( 'render_block', array( $this, 'apply_guest_count_watch' ), 11, 2 );
 	}
 
 	/**
@@ -89,7 +90,8 @@ class Rsvp {
 		}
 
 		$block_instance = Block::get_instance();
-		$event          = new Event( get_the_ID() );
+		$post_id        = $block_instance->get_post_id( $block );
+		$event          = new Event( $post_id );
 		$inner_blocks   = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 		$attributes     = isset( $block['attrs'] ) ? $block['attrs'] : array();
@@ -116,14 +118,25 @@ class Rsvp {
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
+			$user_data = array();
+
+			if ( $event->rsvp ) {
+				$user_data = $event->rsvp->get( get_current_user_id() );
+			}
+
+			$filtered_data   = array_intersect_key( $user_data, array_flip( array( 'status', 'guests', 'anonymous' ) ) );
+			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
+
 			if ( $event->has_event_past() ) {
 				$inner_blocks_markup = do_blocks( $serialized_inner_blocks['past'] ?? '' );
 			} else {
 				// Render inner blocks for all statuses.
 				$inner_blocks_markup = '';
 				foreach ( $serialized_inner_blocks as $status => $serialized_inner_block ) {
+					$class                = $status !== $filtered_status ? 'gatherpress--is-not-visible' : '';
 					$inner_blocks_markup .= sprintf(
-						'<div style="display:none;" data-rsvp-status="%s">%s</div>',
+						'<div class="%s" data-rsvp-status="%s">%s</div>',
+						esc_attr( $class ),
 						esc_attr( $status ),
 						do_blocks( $serialized_inner_block )
 					);
@@ -131,7 +144,8 @@ class Rsvp {
 
 				// Set dynamic attributes for interactivity.
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => get_the_ID() ) ) );
+				$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
+				$tag->set_attribute( 'data-user-details', wp_json_encode( $filtered_data ) );
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.renderRsvpBlock' );
 			}
 
@@ -243,12 +257,20 @@ class Rsvp {
 		}
 
 		$tag = new WP_HTML_Tag_Processor( $block_content );
+		$tag->next_tag();
+		$user_details = ! empty( $tag->get_attribute( 'data-user-details' ) ) ?
+			json_decode( $tag->get_attribute( 'data-user-details' ), true ) :
+			array();
 
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
 			if ( $class_attr && false !== strpos( $class_attr, 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.updateGuestCountDisplay' );
+
+				if ( empty( $user_details['guests'] ) ) {
+					$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-not-visible' );
+				}
 			}
 		}
 

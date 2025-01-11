@@ -127,6 +127,15 @@ class Assets {
 	public function block_enqueue_scripts(): void {
 		// @todo remove once new blocks are completed.
 		wp_enqueue_style( 'dashicons' );
+
+		$asset = $this->get_asset_data( 'utility_style' );
+
+		wp_register_style(
+			'gatherpress-utility-style',
+			$this->build . 'utility_style.css',
+			$asset['dependencies'],
+			$asset['version']
+		);
 	}
 
 	/**
@@ -142,12 +151,7 @@ class Assets {
 		if ( 0 === strpos( $block['blockName'], 'gatherpress/' ) ) {
 			$asset = $this->get_asset_data( 'utility_style' );
 
-			wp_enqueue_style(
-				'gatherpress-utility-style',
-				$this->build . 'utility_style.css',
-				$asset['dependencies'],
-				$asset['version']
-			);
+			wp_enqueue_style( 'gatherpress-utility-style' );
 		}
 
 		return $block_content;
@@ -269,6 +273,8 @@ class Assets {
 			$asset['version'],
 			true
 		);
+
+		wp_enqueue_style( 'gatherpress-utility-style' );
 
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}
@@ -420,30 +426,17 @@ class Assets {
 			case Venue::POST_TYPE:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
-					'gatherpress/event-date',
 					'gatherpress/online-event',
-					'gatherpress/rsvp',
-					'gatherpress/rsvp-anonymous-checkbox',
-					'gatherpress/rsvp-guest-count-display',
-					'gatherpress/rsvp-guest-count-input',
-					'gatherpress/rsvp-v2',
-					'gatherpress/rsvp-response',
-					'gatherpress/rsvp-response-v2',
+					'gatherpress/rsvp', // will be removed when name changes.
+					'gatherpress/rsvp-response', // will be removed when name changes.
 				);
 				break;
 			default:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
-					'gatherpress/event-date',
-					'gatherpress/modal',
 					'gatherpress/online-event',
-					'gatherpress/rsvp',
-					'gatherpress/rsvp-anonymous-checkbox',
-					'gatherpress/rsvp-guest-count-display',
-					'gatherpress/rsvp-guest-count-input',
-					'gatherpress/rsvp-v2',
-					'gatherpress/rsvp-response',
-					'gatherpress/rsvp-response-v2',
+					'gatherpress/rsvp', // will be removed when name changes.
+					'gatherpress/rsvp-response', // will be removed when name changes.
 					'gatherpress/venue',
 				);
 		}

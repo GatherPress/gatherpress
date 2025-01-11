@@ -20,6 +20,7 @@ use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WP_User;
 
 /**
  * Class Event_Rest_Api.
@@ -99,6 +100,7 @@ class Event_Rest_Api {
 			$this->email_route(),
 			$this->rsvp_route(),
 			$this->rsvp_status_html_route(),
+			$this->rsvp_responses_route(),
 			$this->events_list_route(),
 		);
 	}
@@ -202,6 +204,33 @@ class Event_Rest_Api {
 					'block_data' => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'validate_block_data' ),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Get route configuration for RSVP responses endpoint.
+	 *
+	 * Defines REST route configuration to fetch RSVP response data for an event post.
+	 * Endpoint requires post_id parameter which must validate as an event post type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Route configuration with path, methods, callback and arguments.
+	 */
+	protected function rsvp_responses_route(): array {
+		return array(
+			'route' => 'rsvp-responses',
+			'args'  => array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'rsvp_responses' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'post_id' => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
 				),
 			),
@@ -601,6 +630,37 @@ class Event_Rest_Api {
 			'success'   => $success,
 			'content'   => $content,
 			'responses' => $responses,
+		);
+
+		return new WP_REST_Response( $response );
+	}
+
+	/**
+	 * Handle RSVP responses REST endpoint request.
+	 *
+	 * Retrieves RSVP response data for a given event post ID. Validates that the post
+	 * is an event type before returning response data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
+	 * @return WP_REST_Response Response containing success status and RSVP data.
+	 */
+	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
+		$params    = $request->get_params();
+		$post_id   = intval( $params['post_id'] );
+		$success   = false;
+		$responses = array();
+
+		if ( Event::POST_TYPE === get_post_type( $post_id ) ) {
+			$success   = true;
+			$rsvp      = new Rsvp( $post_id );
+			$responses = $rsvp->responses();
+		}
+
+		$response = array(
+			'success' => $success,
+			'data'    => $responses,
 		);
 
 		return new WP_REST_Response( $response );

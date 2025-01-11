@@ -58,11 +58,12 @@
 		"playwright": "^1.49.1",
 		"react-modal": "^3.16.3",
 		"react-tooltip": "^5.28.0",
+		"rimraf": "^6.0.1",
 		"stylelint-config-standard": "^36.0.1",
 		"uuid": "^11.0.3"
 	},
 	"scripts": {
-		"build": "wp-scripts build --experimental-modules",
+		"build": "rimraf build && wp-scripts build --experimental-modules",
 		"check-engines": "wp-scripts check-engines",
 		"check-licenses": "wp-scripts check-licenses",
 		"format": "wp-scripts format",
