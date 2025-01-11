@@ -123,7 +123,7 @@ class Event {
 			return sprintf( __( '%1$s to %2$s', 'gatherpress' ), $start, $end );
 		}
 
-		return '';
+		return __( '—', 'gatherpress' );
 	}
 
 	/**
