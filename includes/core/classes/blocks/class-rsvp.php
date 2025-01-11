@@ -60,6 +60,7 @@ class Rsvp {
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'apply_rsvp_button_interactivity' ), 10, 2 );
+		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( 'render_block', array( $this, 'apply_guest_count_watch' ), 11, 2 );
 	}
 

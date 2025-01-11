@@ -64,6 +64,7 @@ class Rsvp_Response {
 	 */
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
+		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( 'render_block', array( $this, 'attach_dropdown_interactivity' ), 11, 2 );
 		add_filter( 'get_avatar_data', array( $this, 'modify_avatar_for_gatherpress_rsvp' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'add_rsvp_to_comment_ancestor' ) );
