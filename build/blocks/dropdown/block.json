@@ -38,7 +38,7 @@
       "type": "string",
       "default": ""
     },
-    "dropdownMaxWidth": {
+    "dropdownWidth": {
       "type": "string",
       "default": 240
     },

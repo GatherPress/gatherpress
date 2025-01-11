@@ -54,7 +54,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		dropdownBorderRadius,
 		dropdownBorderThickness,
 		dropdownId,
-		dropdownMaxWidth,
+		dropdownWidth,
 		dropdownZIndex,
 		itemBgColor,
 		itemDividerColor,
@@ -193,13 +193,13 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						max={9999}
 					/>
 					<RangeControl
-						label={__('Dropdown Max Width', 'gatherpress')}
-						value={parseInt(dropdownMaxWidth, 10)}
+						label={__('Dropdown Width', 'gatherpress')}
+						value={parseInt(dropdownWidth, 10)}
 						onChange={(value) =>
-							setAttributes({ dropdownMaxWidth: value })
+							setAttributes({ dropdownWidth: value })
 						}
 						min={100}
-						max={800}
+						max={300}
 					/>
 					<RangeControl
 						label={__('Dropdown Border Thickness', 'gatherpress')}
@@ -434,7 +434,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					border: `${dropdownBorderThickness || 1}px solid ${dropdownBorderColor || '#000000'}`,
 					borderRadius: `${dropdownBorderRadius || 0}px`,
 					zIndex: dropdownZIndex,
-					width: dropdownMaxWidth,
+					width: dropdownWidth,
 				}}
 			>
 				<InnerBlocks allowedBlocks={['gatherpress/dropdown-item']} />

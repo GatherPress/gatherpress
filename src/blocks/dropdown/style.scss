@@ -1,12 +1,13 @@
 .wp-block-gatherpress-dropdown {
 	position: relative;
-	width: 100%;
 
 	&__menu {
 		display: none;
 		overflow: hidden;
 		position: absolute !important;
 		width: 100%;
+		top: 100%;
+		left: 0;
 		z-index: 20;
 	}
 }
