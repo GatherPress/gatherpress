@@ -18,6 +18,7 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
 	PanelBody,
+	Spinner,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
@@ -26,8 +27,6 @@ import { useSelect } from '@wordpress/data';
  */
 import {
 	convertPHPToMomentFormat,
-	defaultDateTimeStart,
-	defaultDateTimeEnd,
 	getTimezone,
 	getUtcOffset,
 } from '../../helpers/datetime';
@@ -104,7 +103,7 @@ const Edit = ({ attributes, setAttributes, context }) => {
 			[`has-text-align-${textAlign}`]: textAlign,
 		}),
 	});
-	const { postId } = context;
+	const postId = attributes?.postId ?? context?.postId ?? null;
 
 	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
 		(select) => {
@@ -127,15 +126,21 @@ const Edit = ({ attributes, setAttributes, context }) => {
 			)?.meta;
 
 			return {
-				dateTimeStart:
-					meta?.gatherpress_datetime_start || defaultDateTimeStart,
-				dateTimeEnd:
-					meta?.gatherpress_datetime_end || defaultDateTimeEnd,
+				dateTimeStart: meta?.gatherpress_datetime_start,
+				dateTimeEnd: meta?.gatherpress_datetime_end,
 				timezone: meta?.gatherpress_timezone,
 			};
 		},
 		[postId]
 	);
+
+	if (!dateTimeStart || !dateTimeEnd || !timezone) {
+		return (
+			<div {...blockProps}>
+				<Spinner />
+			</div>
+		);
+	}
 
 	return (
 		<div {...blockProps}>

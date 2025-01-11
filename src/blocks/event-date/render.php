@@ -11,8 +11,11 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Event;
+use GatherPress\Core\Block;
 
-$gatherpress_event = new Event( get_the_ID() );
+$gatherpress_block_instance = Block::get_instance();
+$gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->parsed_block );
+$gatherpress_event          = new Event( $gatherpress_post_id );
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
 	<?php echo esc_html( $gatherpress_event->get_display_datetime() ); ?>
