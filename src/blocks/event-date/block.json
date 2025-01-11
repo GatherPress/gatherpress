@@ -12,9 +12,6 @@
 	"description": "Displays the date and time for an event.",
 	"usesContext": [ "postId", "queryId" ],
 	"attributes": {
-		"postId": {
-			"type": "number"
-		},
 		"eventEnd": {
 			"type": "string"
 		},
@@ -26,6 +23,9 @@
 		}
 	},
 	"supports": {
+		"gatherpress": {
+			"postIdOverride": true
+		},
 		"html": false,
 		"color": {
 			"gradients": true,

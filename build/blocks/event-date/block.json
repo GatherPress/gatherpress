@@ -15,9 +15,6 @@
     "queryId"
   ],
   "attributes": {
-    "postId": {
-      "type": "number"
-    },
     "eventEnd": {
       "type": "string"
     },
@@ -29,6 +26,9 @@
     }
   },
   "supports": {
+    "gatherpress": {
+      "postIdOverride": true
+    },
     "html": false,
     "color": {
       "gradients": true,
