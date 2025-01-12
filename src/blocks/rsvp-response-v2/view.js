@@ -7,6 +7,7 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
  * Internal dependencies.
  */
 import { initPostContext } from '../../helpers/interactivity';
+import { toCamelCase } from '../../helpers/globals';
 
 const { state, actions } = store('gatherpress', {
 	state: {
@@ -31,6 +32,67 @@ const { state, actions } = store('gatherpress', {
 						state.posts[postId].rsvpSelection = status;
 					}
 				}
+			}
+		},
+		toggleRsvpVisibility(event) {
+			event.preventDefault();
+
+			const element = getElement();
+			const rsvpResponseElement = element.ref.closest(
+				'.wp-block-gatherpress-rsvp-response-v2'
+			);
+			const limitEnabled =
+				'1' === rsvpResponseElement.dataset.limitEnabled;
+
+			if (!limitEnabled) {
+				return;
+			}
+
+			const limit = parseInt(rsvpResponseElement.dataset.limit, 10) || 8;
+			const rsvpResponsesElement = rsvpResponseElement.querySelector(
+				'.gatherpress--rsvp-responses'
+			);
+
+			if (!rsvpResponsesElement) {
+				return;
+			}
+
+			const showAll =
+				element.ref.getAttribute('aria-label') ===
+				element.ref.dataset.showAll;
+
+			// Update the aria-label and inner text for the toggle link.
+			if (showAll) {
+				element.ref.setAttribute(
+					'aria-label',
+					element.ref.dataset.showFewer
+				);
+				element.ref.textContent = element.ref.dataset.showFewer;
+
+				// Show all RSVP responses by removing the 'gatherpress--is-not-visible' class.
+				const hiddenElements = rsvpResponsesElement.querySelectorAll(
+					'[data-id].gatherpress--is-not-visible'
+				);
+				hiddenElements.forEach((el) =>
+					el.classList.remove('gatherpress--is-not-visible')
+				);
+			} else {
+				element.ref.setAttribute(
+					'aria-label',
+					element.ref.dataset.showAll
+				);
+				element.ref.textContent = element.ref.dataset.showAll;
+
+				// Show only up to the limit and hide the rest.
+				const rsvpItems =
+					rsvpResponsesElement.querySelectorAll('[data-id]');
+				rsvpItems.forEach((el, index) => {
+					if (index >= limit) {
+						el.classList.add('gatherpress--is-not-visible');
+					} else {
+						el.classList.remove('gatherpress--is-not-visible');
+					}
+				});
 			}
 		},
 	},
@@ -150,6 +212,44 @@ const { state, actions } = store('gatherpress', {
 			} else {
 				triggerElement.classList.remove('gatherpress--is-disabled');
 				triggerElement.setAttribute('tabindex', '0');
+			}
+		},
+		showHideToggle() {
+			const element = getElement();
+			const context = getContext();
+			const postId = context?.postId || 0;
+			const rsvpResponseElement = element.ref.closest(
+				'.wp-block-gatherpress-rsvp-response-v2'
+			);
+			const limitEnabled =
+				'1' === rsvpResponseElement.dataset.limitEnabled;
+
+			if (!limitEnabled) {
+				return;
+			}
+
+			const rsvpSelection = toCamelCase(
+				state.posts[postId]?.rsvpSelection ?? 'attending'
+			);
+			const count = state.posts[postId].eventResponses[rsvpSelection];
+			const limit = parseInt(rsvpResponseElement.dataset.limit, 10) || 8;
+
+			// If the count is less than or equal to the limit, apply the class.
+			if (count <= limit) {
+				element.ref.classList.add('gatherpress--is-not-visible');
+			} else {
+				element.ref.classList.remove('gatherpress--is-not-visible');
+			}
+
+			// Reset the anchor.
+			const anchorElement = element.ref.querySelector('a[role="button"]');
+
+			if (anchorElement) {
+				anchorElement.setAttribute(
+					'aria-label',
+					anchorElement.dataset.showAll
+				);
+				anchorElement.textContent = anchorElement.dataset.showAll;
 			}
 		},
 	},

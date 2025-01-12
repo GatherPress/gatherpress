@@ -127,7 +127,7 @@ class Rsvp_Template {
 			return $block_content;
 		}
 
-		$post_id = $instance->context['postId'];
+		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
 		$tag     = new WP_HTML_Tag_Processor( $block_content );
 
@@ -137,10 +137,15 @@ class Rsvp_Template {
 
 		$responses     = $event->rsvp->responses()['attending']['responses'];
 		$block_content = '';
+		$args          = array(
+			'limit_enabled' => (bool) $instance->context['gatherpress/rsvpLimitEnabled'],
+			'limit'         => (int) $instance->context['gatherpress/rsvpLimit'],
+		);
 
-		foreach ( $responses as $response ) {
+		foreach ( $responses as $key => $response ) {
+			$args['index']  = $key;
 			$response_id    = intval( $response['commentId'] );
-			$block_content .= $this->get_block_content( $block, $response_id );
+			$block_content .= $this->get_block_content( $block, $response_id, $args );
 		}
 
 		// Used for generating a parsed block for calls to API on the front end.
@@ -154,20 +159,22 @@ class Rsvp_Template {
 	}
 
 	/**
-	 * Generates the content for an RSVP block based on the parsed block data and a response ID.
+	 * Generates the content for an RSVP block based on the parsed block data, response ID, and additional arguments.
 	 *
 	 * This method renders a block with the specified parsed block data and attaches
-	 * the given response ID as a context. It wraps the rendered block in a div with
-	 * a data-id attribute for identification.
+	 * the given response ID as a context. Additional arguments can be used to control
+	 * rendering behavior. The block content is wrapped in a `div` with a `data-id` attribute
+	 * for identification.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param array $parsed_block The parsed block data, typically from a block's JSON structure.
 	 * @param int   $response_id  The ID of the response used to populate the block's context.
+	 * @param array $args         Optional. Additional arguments for rendering. Default empty array.
 	 *
-	 * @return string The rendered block content wrapped in a div with a data-id attribute.
+	 * @return string The rendered block content wrapped in a `div` with a `data-id` attribute.
 	 */
-	public function get_block_content( array $parsed_block, int $response_id ): string {
+	public function get_block_content( array $parsed_block, int $response_id, array $args = array() ): string {
 		// Remove the filter to prevent an infinite loop caused by the filter being called within WP_Block.
 		remove_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ) );
 
@@ -188,9 +195,19 @@ class Rsvp_Template {
 
 		// Re-add the filter after rendering to ensure it continues to apply to other blocks.
 		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 3 );
+		$class_name = '';
+
+		if ( ! empty( $args ) && ! empty( $args['limit_enabled'] ) ) {
+			if ( isset( $args['limit'], $args['index'] ) ) {
+				// Check if the RSVP limit has been reached.
+				if ( $args['index'] >= $args['limit'] ) {
+					$class_name = 'gatherpress--is-not-visible';
+				}
+			}
+		}
 
 		// Wrap the rendered block content in a container div with a unique data ID for the RSVP response.
-		return sprintf( '<div data-id="rsvp-%1$d">%2$s</div>', $response_id, $block_content );
+		return sprintf( '<div class="%1$s" data-id="rsvp-%2$d">%3$s</div>', $class_name, $response_id, $block_content );
 	}
 
 	/**

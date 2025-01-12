@@ -11,7 +11,7 @@
 	"supports": {
 		"html": false
 	},
-	"usesContext": [ "gatherpress/rsvpResponses", "postId" ],
+	"usesContext": [ "gatherpress/rsvpResponses", "gatherpress/rsvpLimitEnabled", "gatherpress/rsvpLimit", "postId" ],
 	"parent": [ "core/group" ],
 	"ancestor": [ "core/rsvp-response-v2" ],
 	"textdomain": "gatherpress",

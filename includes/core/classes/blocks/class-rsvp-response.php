@@ -89,12 +89,17 @@ class Rsvp_Response {
 			return $block_content;
 		}
 
-		$block_instance = Block::get_instance();
-		$post_id        = $block_instance->get_post_id( $block );
-		$rsvp           = new Rsvp( $post_id );
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
+		$block_instance     = Block::get_instance();
+		$post_id            = $block_instance->get_post_id( $block );
+		$rsvp               = new Rsvp( $post_id );
+		$tag                = new WP_HTML_Tag_Processor( $block_content );
+		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ? (string) $block['attrs']['rsvpLimitEnabled'] : '0';
+		$rsvp_limit         = isset( $block['attrs']['rsvpLimit'] ) ? (string) $block['attrs']['rsvpLimit'] : '8';
 
 		if ( $tag->next_tag() ) {
+			$tag->set_attribute( 'data-limit-enabled', $rsvp_limit_enabled );
+			$tag->set_attribute( 'data-limit', $rsvp_limit );
+
 			$responses = $rsvp->responses();
 			$counts    = array_reduce(
 				array_filter(
@@ -242,7 +247,7 @@ class Rsvp_Response {
 			$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-disabled' );
 
 			$tag->next_token();
-			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ) );
+			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
 
 			// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
 			// @phpstan-ignore-next-line

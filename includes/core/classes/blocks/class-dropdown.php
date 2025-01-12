@@ -251,32 +251,7 @@ class Dropdown {
 		$dropdown_border_color     = $attributes['dropdownBorderColor'] ?? '#000000';
 		$dropdown_border_radius    = $attributes['dropdownBorderRadius'] ?? 8;
 		$dropdown_z_index          = $attributes['dropdownZIndex'] ?? 10;
-		$dropdown_max_width        = $attributes['dropdownMaxWidth'] ?? 240;
-
-		if (
-			$tag->next_tag(
-				array(
-					'tag_name'   => 'div',
-					'attributes' => array(
-						'class' => 'wp-block-gatherpress-dropdown',
-					),
-				),
-			)
-		) {
-			$existing_styles = $tag->get_attribute( 'style' );
-			$new_styles      = array(
-				sprintf(
-					'max-width: %dpx;',
-					intval( $dropdown_max_width )
-				),
-			);
-
-			$merged_styles = trim( $existing_styles . ' ' . implode( ' ', $new_styles ) );
-
-			$tag->set_attribute( 'style', $merged_styles );
-
-			$block_content = $tag->get_updated_html();
-		}
+		$dropdown_width            = $attributes['dropdownWidth'] ?? 240;
 
 		if (
 			$tag->next_tag(
@@ -343,8 +318,8 @@ class Dropdown {
 					intval( $dropdown_z_index )
 				),
 				sprintf(
-					'max-width: %dpx;',
-					intval( $dropdown_max_width )
+					'width: %dpx;',
+					intval( $dropdown_width )
 				),
 			);
 

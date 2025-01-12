@@ -29,45 +29,70 @@ const TEMPLATE = [
 					margin: { bottom: 'var:preset|spacing|30' },
 				},
 			},
-			layout: { type: 'flex', flexWrap: 'nowrap' },
+			layout: {
+				type: 'flex',
+				flexWrap: 'nowrap',
+				justifyContent: 'space-between',
+			},
 		},
 		[
-			['gatherpress/icon', { icon: 'groups' }],
 			[
-				'gatherpress/dropdown',
+				'core/group',
 				{
-					actAsSelect: true,
-					dropdownId: 'dropdown-7968ad05-cf12-41ae-8392-7fb01e166188',
-					label: translations.attending,
-					metadata: { name: translations.attending },
+					style: {
+						spacing: {
+							blockGap: 'var:preset|spacing|20',
+							margin: { bottom: 'var:preset|spacing|30' },
+						},
+					},
+					layout: { type: 'flex', flexWrap: 'nowrap' },
 				},
 				[
+					['gatherpress/icon', { icon: 'groups' }],
 					[
-						'gatherpress/dropdown-item',
+						'gatherpress/dropdown',
 						{
-							text: `<a href="#">${translations.attending}</a>`,
+							actAsSelect: true,
+							dropdownId:
+								'dropdown-7968ad05-cf12-41ae-8392-7fb01e166188',
+							label: translations.attending,
 							metadata: { name: translations.attending },
-							className: 'gatherpress--rsvp-attending',
 						},
-					],
-					[
-						'gatherpress/dropdown-item',
-						{
-							text: `<a href="#">${translations.waitingList}</a>`,
-							metadata: { name: translations.waitingList },
-							className: 'gatherpress--rsvp-waiting-list',
-						},
-					],
-					[
-						'gatherpress/dropdown-item',
-						{
-							text: `<a href="#">${translations.notAttending}</a>`,
-							metadata: { name: translations.notAttending },
-							className: 'gatherpress--rsvp-not-attending',
-						},
+						[
+							[
+								'gatherpress/dropdown-item',
+								{
+									text: `<a href="#">${translations.attending}</a>`,
+									metadata: { name: translations.attending },
+									className: 'gatherpress--rsvp-attending',
+								},
+							],
+							[
+								'gatherpress/dropdown-item',
+								{
+									text: `<a href="#">${translations.waitingList}</a>`,
+									metadata: {
+										name: translations.waitingList,
+									},
+									className: 'gatherpress--rsvp-waiting-list',
+								},
+							],
+							[
+								'gatherpress/dropdown-item',
+								{
+									text: `<a href="#">${translations.notAttending}</a>`,
+									metadata: {
+										name: translations.notAttending,
+									},
+									className:
+										'gatherpress--rsvp-not-attending',
+								},
+							],
+						],
 					],
 				],
 			],
+			['gatherpress/rsvp-response-toggle'],
 		],
 	],
 	[

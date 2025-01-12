@@ -13,7 +13,9 @@ const { state } = store('gatherpress', {
 		renderBlocks() {
 			const context = getContext();
 			const element = getElement();
-
+			const rsvpResponseElement = element.ref.closest(
+				'.wp-block-gatherpress-rsvp-response-v2'
+			);
 			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-status-html', {
 				method: 'POST',
 				headers: {
@@ -26,6 +28,9 @@ const { state } = store('gatherpress', {
 						'attending',
 					post_id: context.postId,
 					block_data: element.ref.textContent,
+					limit_enabled:
+						rsvpResponseElement.dataset.limitEnabled === '1',
+					limit: parseInt(rsvpResponseElement.dataset.limit, 10),
 				}),
 			})
 				.then((response) => response.json()) // Parse the JSON response.
