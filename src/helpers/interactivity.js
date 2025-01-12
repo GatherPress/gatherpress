@@ -256,14 +256,19 @@ export function setupCloseHandlers(elementSelector, contentSelector, onClose) {
 			`${elementSelector}.gatherpress--is-visible`
 		);
 		openElements.forEach((element) => {
-			const content = element.querySelector(contentSelector);
-
-			// Close the element if clicked outside its content.
-			if (
-				element.contains(event.target) && // Click is inside the element.
-				!content.contains(event.target) // Click is NOT inside the content.
-			) {
-				handleClose(element);
+			if (contentSelector) {
+				const content = element.querySelector(contentSelector);
+				if (
+					element.contains(event.target) &&
+					!content.contains(event.target)
+				) {
+					handleClose(element);
+				}
+			} else {
+				const parentContainer = element.parentElement;
+				if (!parentContainer.contains(event.target)) {
+					handleClose(element);
+				}
 			}
 		});
 	};

@@ -133,7 +133,7 @@ const { actions } = store('gatherpress', {
 				// Set up close handlers
 				element.ref.cleanupCloseHandlers = setupCloseHandlers(
 					'.wp-block-gatherpress-dropdown__menu',
-					'.wp-block-gatherpress-dropdown__menu',
+					null,
 					(dropdown) => {
 						// Close the dropdown and clean up
 						dropdown.classList.remove('gatherpress--is-visible');
