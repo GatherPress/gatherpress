@@ -89,12 +89,17 @@ class Rsvp_Response {
 			return $block_content;
 		}
 
-		$block_instance = Block::get_instance();
-		$post_id        = $block_instance->get_post_id( $block );
-		$rsvp           = new Rsvp( $post_id );
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
+		$block_instance     = Block::get_instance();
+		$post_id            = $block_instance->get_post_id( $block );
+		$rsvp               = new Rsvp( $post_id );
+		$tag                = new WP_HTML_Tag_Processor( $block_content );
+		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ? (bool) $block['attrs']['rsvpLimitEnabled'] : false;
+		$rsvp_limit         = isset( $block['attrs']['rsvpLimit'] ) ? (int) $block['attrs']['rsvpLimit'] : 8;
 
 		if ( $tag->next_tag() ) {
+			$tag->set_attribute( 'data-limit-enabled', (int) $rsvp_limit_enabled );
+			$tag->set_attribute( 'data-limit', $rsvp_limit );
+
 			$responses = $rsvp->responses();
 			$counts    = array_reduce(
 				array_filter(

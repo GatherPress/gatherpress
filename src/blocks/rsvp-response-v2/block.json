@@ -9,6 +9,16 @@
 	"example": {},
 	"description": "Displays a list of members who have confirmed their attendance for an event.",
 	"usesContext": [ "postId", "queryId" ],
+	"attributes": {
+		"rsvpLimitEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"rsvpLimit": {
+			"type": "number",
+			"default": 8
+		}
+	},
 	"supports": {
 		"gatherpress": {
 			"postIdOverride": true
@@ -19,7 +29,9 @@
 	},
 	"providesContext": {
 		"commentId": "commentId",
-		"postId": "postId"
+		"postId": "postId",
+		"gatherpress/rsvpLimitEnabled": "rsvpLimitEnabled",
+		"gatherpress/rsvpLimit": "rsvpLimit"
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",

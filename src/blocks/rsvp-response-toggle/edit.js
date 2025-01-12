@@ -20,8 +20,14 @@ const Edit = ({ attributes, setAttributes }) => {
 						label={__('Edit display text', 'gatherpress')}
 						help={
 							isShowingAll
-								? __('Set text for showing all RSVP responses', 'gatherpress')
-								: __('Set text for showing fewer RSVP responses', 'gatherpress')
+								? __(
+										'Set text for showing all RSVP responses',
+										'gatherpress'
+									)
+								: __(
+										'Set text for showing fewer RSVP responses',
+										'gatherpress'
+									)
 						}
 						checked={isShowingAll}
 						onChange={() => setIsShowingAll(!isShowingAll)}

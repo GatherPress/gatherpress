@@ -84,6 +84,23 @@ class Validate {
 	}
 
 	/**
+	 * Validates that the value is a boolean or a value that can be safely cast to a boolean.
+	 *
+	 * This method ensures the value is one of the following:
+	 * - Boolean: true or false
+	 * - Integer: 1 or 0
+	 * - String: '1' or '0'
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $value The value to validate.
+	 * @return bool True if the value is valid, false otherwise.
+	 */
+	public static function boolean( $value ): bool {
+		return is_bool( $value ) || in_array( $value, array( '1', '0', 1, 0 ), true );
+	}
+
+	/**
 	 * Validate recipients for sending emails.
 	 *
 	 * Validates an array of email recipient options to ensure they are correctly structured.
@@ -170,7 +187,7 @@ class Validate {
 	 * @param string $param The JSON string representing block data.
 	 * @return bool True if the block data is valid, false otherwise.
 	 */
-	public static function validate_block_data( string $param ): bool {
+	public static function block_data( string $param ): bool {
 		// Decode the JSON string.
 		$decoded = json_decode( $param, true );
 

@@ -13,6 +13,8 @@
   },
   "usesContext": [
     "gatherpress/rsvpResponses",
+    "gatherpress/rsvpLimitEnabled",
+    "gatherpress/rsvpLimit",
     "postId"
   ],
   "parent": [

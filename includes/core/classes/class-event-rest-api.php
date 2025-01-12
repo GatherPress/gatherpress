@@ -193,17 +193,25 @@ class Event_Rest_Api {
 				'callback'            => array( $this, 'rsvp_status_html' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'post_id'    => array(
+					'post_id'       => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'status'     => array(
+					'status'        => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
-					'block_data' => array(
+					'block_data'    => array(
 						'required'          => true,
-						'validate_callback' => array( Validate::class, 'validate_block_data' ),
+						'validate_callback' => array( Validate::class, 'block_data' ),
+					),
+					'limit_enabled' => array(
+						'required'          => false,
+						'validate_callback' => array( Validate::class, 'boolean' ),
+					),
+					'limit'         => array(
+						'required'          => false,
+						'validate_callback' => array( Validate::class, 'number' ),
 					),
 				),
 			),
@@ -617,10 +625,16 @@ class Event_Rest_Api {
 		$rsvp          = new Rsvp( $post_id );
 		$responses     = $rsvp->responses();
 		$content       = '';
+		// @todo set this up...
+		$args = array(
+			'limit_enabled' => (bool) $params['limit_enabled'],
+			'limit'         => (int) $params['limit'],
+		);
 
 		if ( ! empty( $responses[ $status ] ) ) {
-			foreach ( $responses[ $status ]['responses'] as $response ) {
-				$content .= $rsvp_template->get_block_content( $block_data, $response['commentId'] );
+			foreach ( $responses[ $status ]['responses'] as $key => $response ) {
+				$args['index'] = $key;
+				$content      .= $rsvp_template->get_block_content( $block_data, $response['commentId'], $args );
 			}
 		}
 

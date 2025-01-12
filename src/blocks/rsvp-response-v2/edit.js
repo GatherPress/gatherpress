@@ -10,6 +10,8 @@ import {
 	InspectorControls,
 } from '@wordpress/block-editor';
 import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalNumberControl as NumberControl,
 	PanelBody,
 	ToggleControl,
 	ToolbarButton,
@@ -45,14 +47,15 @@ async function fetchRsvpResponses(postId) {
  * of the GatherPress RSVP Response block. It fetches RSVP data, manages
  * block-specific state, and passes relevant context to child blocks.
  *
- * @param {Object} root0            - The props object passed to the component.
- * @param {Object} root0.attributes - Block attributes containing configuration and data.
- * @param {Object} root0.context    - Block context data containing postId and event info.
+ * @param {Object}   root0               - The props object passed to the component.
+ * @param {Object}   root0.attributes    - Block attributes containing configuration and data.
+ * @param {Object}   root0.context       - Block context data containing postId and event info.
+ * @param {Function} root0.setAttributes - Function to update block attributes.
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
-const Edit = ({ attributes, context }) => {
+const Edit = ({ attributes, setAttributes, context }) => {
 	const blockProps = useBlockProps();
 	const [editMode, setEditMode] = useState(false);
 	const [showEmptyRsvpMessage, setShowEmptyRsvpMessage] = useState(false);
@@ -61,6 +64,7 @@ const Edit = ({ attributes, context }) => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const postId = attributes?.postId ?? context?.postId ?? null;
+	const { rsvpLimitEnabled, rsvpLimit } = attributes;
 
 	useEffect(() => {
 		const emptyBlocks = document.querySelectorAll(
@@ -133,6 +137,8 @@ const Edit = ({ attributes, context }) => {
 			<BlockContextProvider
 				value={{
 					'gatherpress/rsvpResponses': responses,
+					'gatherpress/rsvpLimitEnabled': rsvpLimitEnabled,
+					'gatherpress/rsvpLimit': rsvpLimit,
 					postId,
 				}}
 			>
@@ -147,6 +153,36 @@ const Edit = ({ attributes, context }) => {
 								'gatherpress'
 							)}
 						/>
+						<ToggleControl
+							label={__('Limit RSVP Display', 'gatherpress')}
+							checked={rsvpLimitEnabled}
+							onChange={() =>
+								setAttributes({
+									rsvpLimitEnabled: !rsvpLimitEnabled,
+								})
+							}
+							help={__(
+								'Enable to limit the number of RSVPs displayed in this block.',
+								'gatherpress'
+							)}
+						/>
+						{rsvpLimitEnabled && (
+							<NumberControl
+								label={__('RSVP Display Limit', 'gatherpress')}
+								value={rsvpLimit}
+								onChange={(value) =>
+									setAttributes({
+										rsvpLimit: parseInt(value, 10) || 8,
+									})
+								}
+								min={1}
+								max={100}
+								help={__(
+									'Set the maximum number of RSVPs to display. Default is 8.',
+									'gatherpress'
+								)}
+							/>
+						)}
 					</PanelBody>
 				</InspectorControls>
 				<BlockControls>

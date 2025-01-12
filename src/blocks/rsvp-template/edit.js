@@ -76,7 +76,7 @@ const RsvpTemplatePreview = ({
 			style={style}
 			// eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
 			onClick={handleOnClick}
-			onKeyPress={handleOnClick}
+			onKeyUp={handleOnClick}
 		/>
 	);
 };
@@ -127,6 +127,8 @@ const Edit = ({ clientId, context }) => {
 
 	// Access the provided RSVP responses context from the parent block.
 	const rsvpResponses = context?.['gatherpress/rsvpResponses'] ?? null;
+	const rsvpLimitEnabled = context?.['gatherpress/rsvpLimitEnabled'] ?? false;
+	const rsvpLimit = context?.['gatherpress/rsvpLimit'] ?? 8;
 
 	// Initialize active RSVP ID.
 	const [activeRsvpId, setActiveRsvpId] = useState(
@@ -149,6 +151,11 @@ const Edit = ({ clientId, context }) => {
 
 	if (rsvpResponses?.attending?.responses?.length) {
 		rsvps = rsvpResponses.attending.responses;
+
+		// Apply limit if enabled.
+		if (rsvpLimitEnabled) {
+			rsvps = rsvps.slice(0, rsvpLimit);
+		}
 	}
 
 	return (
