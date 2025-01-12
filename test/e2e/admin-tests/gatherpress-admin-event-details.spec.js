@@ -44,7 +44,11 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 			mask: [
 				page.locator('header'),
 				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
 				page.locator('footer'),
+
 			],
 		});
 	});

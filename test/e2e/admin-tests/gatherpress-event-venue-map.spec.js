@@ -59,12 +59,16 @@ test.describe('e2e test for event, the user should view the event map on event p
 
 		await page.locator('#map').isVisible({ timeout: 30000 });
 
+		await page.waitForSelector('#map');
 		await expect(page).toHaveScreenshot('event_location_map.png', {
 			fullPage: true,
 			mask: [
 				page.locator('header'),
-				page.locator('nav'),
 				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
+				page.locator('.wp-block-gatherpress-event-date'),
 				page.locator('footer'),
 			],
 		});

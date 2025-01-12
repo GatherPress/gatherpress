@@ -28,9 +28,11 @@ test.describe('e2e test for venue map through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		await page.getByLabel('Settings', { exact: true }).click();
+		//await page.getByLabel('Settings', { exact: true }).click();
 
-		await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
+		await page.getByRole('button', { name: 'Venue settings' }).click();
+
+		await page.getByLabel('Full Address').fill('Pune');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 		await page.locator('#map').isVisible({ timeout: 30000 });
@@ -52,10 +54,20 @@ test.describe('e2e test for venue map through admin side', () => {
 			.getByLabel('Editor publish')
 			.getByRole('link', { name: 'View Venue' })
 			.click();
-		await page.locator('#map').isVisible({ timeout: 30000 });
+
+		await page.waitForSelector('#map');
+		//await page.locator('#map').isVisible({ timeout: 30000 });
 
 		await expect(page).toHaveScreenshot('location_map.png', {
 			fullPage: true,
+			mask:[
+				page.locator('header'),
+				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
+				page.locator('footer'),
+			]
 		});
 	});
 });

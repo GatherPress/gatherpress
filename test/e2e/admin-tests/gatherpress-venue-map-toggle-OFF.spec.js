@@ -25,17 +25,15 @@ test.describe('e2e test for venue map through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		await page.getByLabel('Settings', { exact: true }).click();
-		await page.getByLabel('Settings', { exact: true }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
+		// await page.getByLabel('Settings', { exact: true }).click();
+		
 		await page.getByRole('button', { name: 'Venue settings' }).click();
 
-		await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
+		await page.getByLabel('Full Address').fill('Pune');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 
+		await page.waitForSelector('#map');
 		await page.locator('#map').click();
 
 		await page.getByRole('tab', { name: 'Block' }).click();

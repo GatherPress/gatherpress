@@ -31,13 +31,8 @@ test.describe('e2e test for publish event through admin side', () => {
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
 		await page.getByLabel('Settings', { exact: true }).click();
-		await page.getByLabel('Settings', { exact: true }).click();
-
+		
 		await page.getByRole('button', { name: 'Event settings' }).isVisible();
-
-		await page.getByRole('button', { name: 'Event settings' }).click();
-		await page.getByRole('button', { name: 'Event settings' }).click();
-		await page.getByRole('button', { name: 'Event settings' }).click();
 
 		await page
 			.getByLabel('Venue Selector')

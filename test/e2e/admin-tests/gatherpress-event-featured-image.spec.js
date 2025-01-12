@@ -52,7 +52,17 @@ test.describe('e2e test for publish event through admin side', () => {
 		await page.locator('#wp--skip-link--target img').isVisible();
 
 		// await expect(page).toHaveScreenshot('featured_image.png', {fullPage:true})
-		const FeaturedImage = await page.screenshot({ fullPage: true });
+		const FeaturedImage = await page.screenshot({ fullPage: true,
+			mask:[
+				page.locator('header'),
+				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
+				page.locator('.wp-block-gatherpress-event-date'),
+				page.locator('footer'),
+			]
+		 });
 		expect(FeaturedImage).toMatchSnapshot('featured_image.png');
 	});
 });

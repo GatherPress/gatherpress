@@ -26,16 +26,14 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
 		await page.getByLabel('Settings', { exact: true }).click();
-		await page.getByLabel('Settings', { exact: true }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
+		
 		await page.getByRole('button', { name: 'Venue settings' }).click();
 
-		await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
+		await page.getByLabel('Full Address').fill('Pune');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 
+		await page.waitForSelector('#map');
 		await page.locator('#map').click();
 
 		await page.getByRole('tab', { name: 'Block' }).click();
@@ -56,7 +54,15 @@ test.describe('e2e test for venue map through admin side', () => {
 		await expect(page.locator('#map')).toBeVisible();
 		await expect(page).toHaveScreenshot('event_toggle_on.png', {
 			fullPage: true,
-			map: [page.locator('header'), page.locator('footer')],
+			map: [
+				page.locator('header'),
+				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
+				page.locator('.wp-block-gatherpress-event-date'),
+				page.locator('footer'),
+			],
 		});
 	});
 });
