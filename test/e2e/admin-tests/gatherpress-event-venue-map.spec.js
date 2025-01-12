@@ -1,26 +1,27 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 
-test.describe('e2e test for venue map through admin side', () => {
+test.describe('e2e test for event, the user should view the event map on event post.', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		//await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
+	test('Test to create a new offline event and verify the entered location map should be visible on the event post.', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
-		await page.getByRole('link', { name: 'Venues' }).click();
-		await page.getByRole('link', { name: 'Add New Venue' }).click();
+		await page
+			.locator('#wpbody-content')
+			.getByRole('link', { name: 'Add New Event' })
+			.click();
 
-		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 		const eventTitle = await page
 			.getByLabel('Add title')
-			.fill(`test: venue map:${currentDate}`);
+			.fill('test: offline  event');
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
@@ -28,12 +29,15 @@ test.describe('e2e test for venue map through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		await page.getByLabel('Settings', { exact: true }).click();
+		//await page.getByLabel('Settings', { exact: true }).click();
+		// await page.getByLabel('Settings', { exact: true }).click();
 
-		await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
+		await page.getByRole('button', { name: 'Event settings' }).click();
 
-		await page.locator('.gatherpress-venue__full-address').isVisible();
-		await page.locator('#map').isVisible({ timeout: 30000 });
+		await page
+			.getByLabel('Venue Selector')
+			.selectOption('76:test-venue-map');
+
 		await expect(page.locator('#map')).toBeVisible();
 
 		await page
@@ -50,12 +54,19 @@ test.describe('e2e test for venue map through admin side', () => {
 
 		await page
 			.getByLabel('Editor publish')
-			.getByRole('link', { name: 'View Venue' })
+			.getByRole('link', { name: 'View Event' })
 			.click();
+
 		await page.locator('#map').isVisible({ timeout: 30000 });
 
-		await expect(page).toHaveScreenshot('location_map.png', {
+		await expect(page).toHaveScreenshot('event_location_map.png', {
 			fullPage: true,
+			mask: [
+				page.locator('header'),
+				page.locator('nav'),
+				page.locator('h1'),
+				page.locator('footer'),
+			],
 		});
 	});
 });
