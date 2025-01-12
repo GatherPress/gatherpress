@@ -7,10 +7,15 @@ import {
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
-const Edit = ({ attributes, setAttributes }) => {
+const Edit = ({ attributes, setAttributes, context }) => {
 	const blockProps = useBlockProps();
 	const { showAll, showFewer } = attributes;
 	const [isShowingAll, setIsShowingAll] = useState(true);
+	const isLimitEnabled = context?.['gatherpress/rsvpLimitEnabled'] ?? false;
+
+	if (!isLimitEnabled) {
+		return '';
+	}
 
 	return (
 		<div {...blockProps}>

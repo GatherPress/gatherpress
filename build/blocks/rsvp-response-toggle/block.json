@@ -38,6 +38,9 @@
     "html": false,
     "interactivity": true
   },
+  "usesContext": [
+    "gatherpress/rsvpLimitEnabled"
+  ],
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",
   "style": "file:./style-index.css",

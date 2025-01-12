@@ -88,3 +88,23 @@ export function safeHTML(html) {
 
 	return body.innerHTML;
 }
+
+/**
+ * Converts a snake_case string to camelCase.
+ *
+ * This function transforms a string in snake_case format into camelCase format by
+ * removing underscores and capitalizing the first letter of each subsequent word.
+ *
+ * @param {string} snakeCaseString The snake_case string to be converted.
+ * @return {string} The converted string in camelCase format.
+ *
+ * @example
+ * // Converts "not_attending" to "notAttending"
+ * const camelCaseString = toCamelCase("not_attending");
+ * console.log(camelCaseString); // Outputs: "notAttending"
+ */
+export function toCamelCase(snakeCaseString) {
+	return snakeCaseString.replace(/_([a-z])/g, (_, letter) =>
+		letter.toUpperCase()
+	);
+}
