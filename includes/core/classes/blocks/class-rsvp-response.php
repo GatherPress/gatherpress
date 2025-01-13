@@ -63,9 +63,11 @@ class Rsvp_Response {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
+		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
+
+		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
-		add_filter( 'render_block', array( $this, 'attach_dropdown_interactivity' ), 11, 2 );
+		add_filter( $render_block_hook, array( $this, 'attach_dropdown_interactivity' ), 11 );
 		add_filter( 'get_avatar_data', array( $this, 'modify_avatar_for_gatherpress_rsvp' ), 10, 2 );
 		add_filter( 'block_type_metadata', array( $this, 'add_rsvp_to_comment_ancestor' ) );
 	}
@@ -85,10 +87,6 @@ class Rsvp_Response {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		$block_instance     = Block::get_instance();
 		$post_id            = $block_instance->get_post_id( $block );
 		$rsvp               = new Rsvp( $post_id );
@@ -143,6 +141,78 @@ class Rsvp_Response {
 			} while ( $tag->next_tag() );
 
 			// @phpstan-ignore-next-line
+			$block_content = $tag->get_updated_html();
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Attaches interactivity to the dropdown block.
+	 *
+	 * Adds interactivity attributes to dropdown menu items with specific RSVP-related classes
+	 * for use with the WordPress Interactivity API.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content to modify.
+	 *
+	 * @return string Modified block content with interactivity attributes.
+	 */
+	public function attach_dropdown_interactivity( string $block_content ): string {
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+		$tag->next_tag();
+		$counts = ! empty( $tag->get_attribute( 'data-counts' ) ) ?
+			json_decode( $tag->get_attribute( 'data-counts' ), true ) :
+			array();
+
+		if ( $tag->next_tag(
+			array(
+				'tag_name'   => 'a',
+				'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__trigger' ),
+			)
+		) ) {
+			$class_attr = $tag->get_attribute( 'class' );
+			$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-disabled' );
+
+			$tag->next_token();
+			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
+
+			// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
+			// @phpstan-ignore-next-line
+			$tag->set_modifiable_text( $trigger_text );
+		}
+
+		if ( $tag->next_tag(
+			array(
+				'tag_name'   => 'div',
+				'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__menu' ),
+			)
+		) ) {
+			while ( $tag->next_tag(
+				array(
+					'tag_name'   => 'div',
+					'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown-item' ),
+				)
+			) ) {
+				// Check if the current tag has any of the specified classes.
+				$current_class = $tag->get_attribute( 'class' );
+
+				if (
+					$current_class &&
+					preg_match( '/gatherpress--rsvp-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
+					$tag->next_tag( array( 'tag_name' => 'a' ) )
+				) {
+					// Change for needed format.
+					$status = str_replace( '-', '_', sanitize_key( $matches[1] ) );
+
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-watch', 'callbacks.processRsvpDropdown' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.processRsvpSelection' );
+					$tag->set_attribute( 'data-status', $status );
+				}
+			}
+
 			$block_content = $tag->get_updated_html();
 		}
 
@@ -212,81 +282,5 @@ class Rsvp_Response {
 		}
 
 		return $metadata;
-	}
-
-	/**
-	 * Attaches interactivity to the dropdown block.
-	 *
-	 * Adds interactivity attributes to dropdown menu items with specific RSVP-related classes
-	 * for use with the WordPress Interactivity API.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $block_content The block content to modify.
-	 * @param array  $block         The parsed block data.
-	 * @return string Modified block content with interactivity attributes.
-	 */
-	public function attach_dropdown_interactivity( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
-		$tag = new WP_HTML_Tag_Processor( $block_content );
-		$tag->next_tag();
-		$counts = ! empty( $tag->get_attribute( 'data-counts' ) ) ?
-			json_decode( $tag->get_attribute( 'data-counts' ), true ) :
-			array();
-
-		if ( $tag->next_tag(
-			array(
-				'tag_name'   => 'a',
-				'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__trigger' ),
-			)
-		) ) {
-			$class_attr = $tag->get_attribute( 'class' );
-			$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-disabled' );
-
-			$tag->next_token();
-			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
-
-			// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
-			// @phpstan-ignore-next-line
-			$tag->set_modifiable_text( $trigger_text );
-		}
-
-		if ( $tag->next_tag(
-			array(
-				'tag_name'   => 'div',
-				'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown__menu' ),
-			)
-		) ) {
-			while ( $tag->next_tag(
-				array(
-					'tag_name'   => 'div',
-					'attributes' => array( 'class' => 'wp-block-gatherpress-dropdown-item' ),
-				)
-			) ) {
-				// Check if the current tag has any of the specified classes.
-				$current_class = $tag->get_attribute( 'class' );
-
-				if (
-					$current_class &&
-					preg_match( '/gatherpress--rsvp-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
-					$tag->next_tag( array( 'tag_name' => 'a' ) )
-				) {
-					// Change for needed format.
-					$status = str_replace( '-', '_', sanitize_key( $matches[1] ) );
-
-					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-					$tag->set_attribute( 'data-wp-watch', 'callbacks.processRsvpDropdown' );
-					$tag->set_attribute( 'data-wp-on--click', 'actions.processRsvpSelection' );
-					$tag->set_attribute( 'data-status', $status );
-				}
-			}
-
-			$block_content = $tag->get_updated_html();
-		}
-
-		return $block_content;
 	}
 }

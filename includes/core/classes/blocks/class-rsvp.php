@@ -58,10 +58,12 @@ class Rsvp {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'transform_block_content' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'apply_rsvp_button_interactivity' ), 10, 2 );
+		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
+
+		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'apply_rsvp_button_interactivity' ) );
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
-		add_filter( 'render_block', array( $this, 'apply_guest_count_watch' ), 11, 2 );
+		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
 	}
 
 	/**
@@ -85,10 +87,6 @@ class Rsvp {
 	 * @return string The updated block content with dynamically rendered inner blocks and attributes.
 	 */
 	public function transform_block_content( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 		$event          = new Event( $post_id );
@@ -181,15 +179,10 @@ class Rsvp {
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The original block content as a string.
-	 * @param array  $block         The parsed block data.
 	 *
 	 * @return string The modified block content with interactivity attributes added.
 	 */
-	public function apply_rsvp_button_interactivity( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
+	public function apply_rsvp_button_interactivity( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		// Process only tags with the specific class 'gatherpress--update-rsvp'.
@@ -247,15 +240,10 @@ class Rsvp {
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The original block content.
-	 * @param array  $block         The block data and attributes.
 	 *
 	 * @return string The modified block content with the data-wp-watch attribute applied.
 	 */
-	public function apply_guest_count_watch( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
+	public function apply_guest_count_watch( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 		$tag->next_tag();
 		$user_details = ! empty( $tag->get_attribute( 'data-user-details' ) ) ?

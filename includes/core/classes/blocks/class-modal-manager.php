@@ -60,8 +60,10 @@ class Modal_Manager {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'attach_modal_open_behavior' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'attach_modal_close_behavior' ), 10, 2 );
+		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
+
+		add_filter( $render_block_hook, array( $this, 'attach_modal_open_behavior' ) );
+		add_filter( $render_block_hook, array( $this, 'attach_modal_close_behavior' ) );
 	}
 
 	/**
@@ -80,15 +82,10 @@ class Modal_Manager {
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The original block HTML content.
-	 * @param array  $block         The block data, including attributes and block name.
 	 *
 	 * @return string The modified block content with modal open behavior attributes applied.
 	 */
-	public function attach_modal_open_behavior( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
+	public function attach_modal_open_behavior( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		// Process only tags with the specific class 'gatherpress--open-modal'.
@@ -132,15 +129,10 @@ class Modal_Manager {
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The original block HTML content.
-	 * @param array  $block         The block data, including attributes and block name.
 	 *
 	 * @return string The modified block content with modal close behavior attributes applied.
 	 */
-	public function attach_modal_close_behavior( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
+	public function attach_modal_close_behavior( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		// Process only tags with the specific class 'gatherpress--close-modal'.

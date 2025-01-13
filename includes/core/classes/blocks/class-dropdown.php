@@ -60,9 +60,11 @@ class Dropdown {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'apply_dropdown_attributes' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'apply_select_mode_attributes' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'generate_block_styles' ), 10, 2 );
+		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
+
+		add_filter( $render_block_hook, array( $this, 'apply_dropdown_attributes' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'apply_select_mode_attributes' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'generate_block_styles' ), 10, 2 );
 	}
 
 	/**
@@ -79,10 +81,6 @@ class Dropdown {
 	 * @return string The modified block content with inline styles.
 	 */
 	public function generate_block_styles( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		$block_instance         = Block::get_instance();
 		$attributes             = $block['attrs'] ?? array();
 		$dropdown_id            = $attributes['dropdownId'] ?? '';
@@ -166,10 +164,6 @@ class Dropdown {
 	 * @return string The modified block content with select mode attributes.
 	 */
 	public function apply_select_mode_attributes( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 		$attributes     = $block['attrs'] ?? array();
 		$act_as_select  = $attributes['actAsSelect'] ?? false;
@@ -238,10 +232,6 @@ class Dropdown {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function apply_dropdown_attributes( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		$tag                       = new WP_HTML_Tag_Processor( $block_content );
 		$attributes                = $block['attrs'] ?? array();
 		$open_on                   = $attributes['openOn'] ?? 'click';
