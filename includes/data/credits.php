@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.32.0-alpha.1',
+  'version' => '0.32.0-alpha.2',
   'project-leaders' => 
   array (
     0 => 
@@ -125,6 +125,32 @@ return array (
         24 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=24&#038;r=g&#038;d=mm',
         48 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=48&#038;r=g&#038;d=mm',
         96 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    5 => 
+    array (
+      'id' => 21156948,
+      'name' => 'Prayag Mankar',
+      'link' => 'https://profiles.wordpress.org/author/prayagm/',
+      'slug' => 'prayagm',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    6 => 
+    array (
+      'id' => 20932248,
+      'name' => 'prashantabellad',
+      'link' => 'https://profiles.wordpress.org/author/prashantabellad/',
+      'slug' => 'prashantabellad',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=96&#038;r=g&#038;d=mm',
       ),
     ),
   ),
@@ -326,32 +352,6 @@ return array (
       ),
     ),
     15 => 
-    array (
-      'id' => 20932248,
-      'name' => 'prashantabellad',
-      'link' => 'https://profiles.wordpress.org/author/prashantabellad/',
-      'slug' => 'prashantabellad',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/57794a51302818489f91bb191adddc40?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    16 => 
-    array (
-      'id' => 21156948,
-      'name' => 'Prayag Mankar',
-      'link' => 'https://profiles.wordpress.org/author/prayagm/',
-      'slug' => 'prayagm',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
-    17 => 
     array (
       'id' => 368236,
       'name' => 'Pascal Birchler',
