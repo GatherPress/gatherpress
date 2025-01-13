@@ -64,8 +64,10 @@ class Rsvp_Template {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'ensure_block_styles_loaded' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 3 );
+		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
+
+		add_filter( $render_block_hook, array( $this, 'ensure_block_styles_loaded' ) );
+		add_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ), 10, 3 );
 	}
 
 	/**
@@ -77,15 +79,10 @@ class Rsvp_Template {
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The content of the current block being rendered.
-	 * @param array  $block         The block data, including attributes and inner blocks.
 	 *
 	 * @return string The filtered block content.
 	 */
-	public function ensure_block_styles_loaded( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
+	public function ensure_block_styles_loaded( string $block_content ): string {
 		$block_instance = Block::get_instance();
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 
@@ -123,10 +120,6 @@ class Rsvp_Template {
 	 * @return string The dynamically generated block content.
 	 */
 	public function generate_rsvp_template_block( string $block_content, array $block, WP_Block $instance ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
 		$tag     = new WP_HTML_Tag_Processor( $block_content );
@@ -175,8 +168,10 @@ class Rsvp_Template {
 	 * @return string The rendered block content wrapped in a `div` with a `data-id` attribute.
 	 */
 	public function get_block_content( array $parsed_block, int $response_id, array $args = array() ): string {
+		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
+
 		// Remove the filter to prevent an infinite loop caused by the filter being called within WP_Block.
-		remove_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ) );
+		remove_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ) );
 
 		if (
 			intval( get_comment_meta( $response_id, 'gatherpress_rsvp_anonymous', true ) ) &&
@@ -194,7 +189,7 @@ class Rsvp_Template {
 		)->render( array( 'dynamic' => false ) );
 
 		// Re-add the filter after rendering to ensure it continues to apply to other blocks.
-		add_filter( 'render_block', array( $this, 'generate_rsvp_template_block' ), 10, 3 );
+		add_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ), 10, 3 );
 		$class_name = '';
 
 		if ( ! empty( $args ) && ! empty( $args['limit_enabled'] ) ) {

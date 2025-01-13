@@ -60,7 +60,9 @@ class Dropdown_Item {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'apply_dropdown_attributes' ), 10, 2 );
+		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
+
+		add_filter( $render_block_hook, array( $this, 'apply_dropdown_attributes' ) );
 	}
 
 	/**
@@ -73,14 +75,10 @@ class Dropdown_Item {
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The original block content.
-	 * @param array  $block         The parsed block data containing block attributes.
+	 *
 	 * @return string The modified block content with inline styles.
 	 */
-	public function apply_dropdown_attributes( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
+	public function apply_dropdown_attributes( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {

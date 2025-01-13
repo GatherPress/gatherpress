@@ -60,10 +60,12 @@ class Modal {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'apply_modal_attributes' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'adjust_block_z_index' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'filter_login_modal' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'filter_rsvp_modal' ), 10, 2 );
+		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
+
+		add_filter( $render_block_hook, array( $this, 'apply_modal_attributes' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'adjust_block_z_index' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'filter_login_modal' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'filter_rsvp_modal' ), 10, 2 );
 	}
 
 	/**
@@ -80,10 +82,6 @@ class Modal {
 	 * @return string The modified block content with updated attributes.
 	 */
 	public function apply_modal_attributes( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
@@ -118,10 +116,6 @@ class Modal {
 	 * @return string The updated block content with the applied `z-index` styling.
 	 */
 	public function adjust_block_z_index( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		$block_instance = Block::get_instance();
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 
@@ -157,10 +151,6 @@ class Modal {
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */
 	public function filter_login_modal( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		if (
 			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-login-modal' ) &&
 			is_user_logged_in()
@@ -186,10 +176,6 @@ class Modal {
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
-		if ( self::BLOCK_NAME !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		if (
 			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-rsvp-modal' ) &&
 			! is_user_logged_in()
