@@ -58,7 +58,7 @@ async function fetchRsvpResponses(postId) {
 const Edit = ({ attributes, setAttributes, context }) => {
 	const blockProps = useBlockProps();
 	const [editMode, setEditMode] = useState(false);
-	const [showEmptyRsvpMessage, setShowEmptyRsvpMessage] = useState(false);
+	const [showEmptyRsvpBlock, setShowEmptyRsvpBlock] = useState(false);
 	const [defaultStatus, setDefaultStatus] = useState('attending');
 	const [responses, setResponses] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -67,27 +67,29 @@ const Edit = ({ attributes, setAttributes, context }) => {
 	const { rsvpLimitEnabled, rsvpLimit } = attributes;
 
 	useEffect(() => {
-		const emptyBlocks = document.querySelectorAll(
+		const emptyBlocks = global.document.querySelectorAll(
 			'.gatherpress--empty-rsvp'
 		);
-		const responseBlocks = document.querySelectorAll(
+		const responseBlocks = global.document.querySelectorAll(
 			'.gatherpress--rsvp-responses'
 		);
 
 		emptyBlocks.forEach((block) => {
-			block.classList.toggle(
-				'gatherpress--is-not-visible',
-				!showEmptyRsvpMessage
+			block.style.setProperty(
+				'display',
+				showEmptyRsvpBlock ? 'block' : 'none',
+				'important'
 			);
 		});
 
 		responseBlocks.forEach((block) => {
-			block.classList.toggle(
-				'gatherpress--is-not-visible',
-				showEmptyRsvpMessage
-			);
+			if (!showEmptyRsvpBlock) {
+				block.style.removeProperty('display');
+			} else {
+				block.style.setProperty('display', 'none', 'important');
+			}
 		});
-	}, [showEmptyRsvpMessage, responses]);
+	}, [showEmptyRsvpBlock, responses]);
 
 	// Fetch responses when postId changes.
 	useEffect(() => {
@@ -146,8 +148,8 @@ const Edit = ({ attributes, setAttributes, context }) => {
 					<PanelBody>
 						<ToggleControl
 							label={__('Show Empty RSVP Block', 'gatherpress')}
-							checked={showEmptyRsvpMessage}
-							onChange={(value) => setShowEmptyRsvpMessage(value)}
+							checked={showEmptyRsvpBlock}
+							onChange={(value) => setShowEmptyRsvpBlock(value)}
 							help={__(
 								'Toggle to show or hide the Empty RSVP block.',
 								'gatherpress'

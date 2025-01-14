@@ -13,12 +13,7 @@
 use GatherPress\Core\Rsvp;
 
 $gatherpress_enable_anonymous_rsvp = get_post_meta( get_the_ID(), 'gatherpress_enable_anonymous_rsvp', true );
-$gatherpress_input_id              = $block->attributes['inputId'] ?? null;
-
-// This should never be empty.
-if ( empty( $gatherpress_input_id ) ) {
-	return;
-}
+$gatherpress_input_id              = sprintf( 'gatherpress_%s', wp_rand() );
 
 // If enable anonymous rsvp is set to 0, displaying as anonymous are not permitted. Do not render the block.
 if ( empty( $gatherpress_enable_anonymous_rsvp ) ) {
