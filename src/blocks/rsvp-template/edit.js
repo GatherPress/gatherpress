@@ -149,8 +149,8 @@ const Edit = ({ clientId, context }) => {
 	// Prepare RSVP data.
 	let rsvps = [{ commentId: -1 }];
 
-	if (rsvpResponses?.attending?.responses?.length) {
-		rsvps = rsvpResponses.attending.responses;
+	if (rsvpResponses?.attending?.records?.length) {
+		rsvps = rsvpResponses.attending.records;
 
 		// Apply limit if enabled.
 		if (rsvpLimitEnabled) {
