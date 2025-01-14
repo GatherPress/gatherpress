@@ -128,16 +128,16 @@ class Rsvp_Template {
 			return $block_content;
 		}
 
-		$responses     = $event->rsvp->responses()['attending']['responses'];
+		$responses     = $event->rsvp->responses()['attending']['records'];
 		$block_content = '';
 		$args          = array(
 			'limit_enabled' => (bool) $instance->context['gatherpress/rsvpLimitEnabled'],
 			'limit'         => (int) $instance->context['gatherpress/rsvpLimit'],
 		);
 
-		foreach ( $responses as $key => $response ) {
+		foreach ( $responses as $key => $record ) {
 			$args['index']  = $key;
-			$response_id    = intval( $response['commentId'] );
+			$response_id    = intval( $record['commentId'] );
 			$block_content .= $this->get_block_content( $block, $response_id, $args );
 		}
 

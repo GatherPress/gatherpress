@@ -26,7 +26,7 @@ const Edit = ({ context }) => {
 	let guestCount = 1;
 
 	if (commentId && rsvpResponses) {
-		const matchedResponse = rsvpResponses.attending.responses.find(
+		const matchedResponse = rsvpResponses.attending.records.find(
 			(response) => response.commentId === commentId
 		);
 

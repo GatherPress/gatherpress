@@ -254,12 +254,12 @@ class Test_Rsvp extends Base {
 		$this->assertEquals( 2, $responses['all']['count'], 'Failed to assert that count is 2.' );
 		$this->assertEquals(
 			$user_id_1,
-			$responses['attending']['responses'][0]['id'],
+			$responses['attending']['records'][0]['id'],
 			'Failed to assert user ID matches.'
 		);
 		$this->assertEquals(
 			$user_id_2,
-			$responses['not_attending']['responses'][0]['id'],
+			$responses['not_attending']['records'][0]['id'],
 			'Failed to assert user ID matches.'
 		);
 
@@ -271,7 +271,7 @@ class Test_Rsvp extends Base {
 		$responses = $rsvp->responses();
 
 		$this->assertEmpty(
-			$responses['not_attending']['responses'],
+			$responses['not_attending']['records'],
 			'Failed not_attending responses are empty after $user_id_2 was deleted.'
 		);
 
@@ -283,7 +283,7 @@ class Test_Rsvp extends Base {
 		$rsvp      = new Rsvp( $post->ID );
 		$responses = $rsvp->responses();
 
-		$this->assertEmpty( $responses['all']['responses'], 'Failed to assert all responses empty with non-event post type.' );
+		$this->assertEmpty( $responses['all']['records'], 'Failed to assert all responses empty with non-event post type.' );
 		$this->assertEquals( 0, $responses['count'], 'Failed to assert count is 0 with non-event post type.' );
 
 		$this->mock->user( 'subscriber' );
@@ -302,30 +302,30 @@ class Test_Rsvp extends Base {
 
 		$this->assertEquals(
 			0,
-			$responses['all']['responses'][0]['id'],
+			$responses['all']['records'][0]['id'],
 			'Failed to assert user ID matches 0.'
 		);
 		$this->assertEquals(
 			0,
-			$responses['attending']['responses'][0]['id'],
+			$responses['attending']['records'][0]['id'],
 			'Failed to assert user ID matches 0.'
 		);
 		$this->assertEmpty(
-			$responses['all']['responses'][0]['profile'],
+			$responses['all']['records'][0]['profile'],
 			'Failed to assert profile is empty.'
 		);
 		$this->assertEmpty(
-			$responses['attending']['responses'][0]['profile'],
+			$responses['attending']['records'][0]['profile'],
 			'Failed to assert profile is empty.'
 		);
 		$this->assertSame(
 			'Anonymous',
-			$responses['all']['responses'][0]['name'],
+			$responses['all']['records'][0]['name'],
 			'Failed to assert user display name is Anonymous.'
 		);
 		$this->assertSame(
 			'Anonymous',
-			$responses['attending']['responses'][0]['name'],
+			$responses['attending']['records'][0]['name'],
 			'Failed to assert user display name is Anonymous.'
 		);
 	}

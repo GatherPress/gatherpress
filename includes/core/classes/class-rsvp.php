@@ -307,7 +307,7 @@ class Rsvp {
 			intval( $responses['attending']['count'] ) < $this->max_attendance_limit
 			&& intval( $responses['waiting_list']['count'] )
 		) {
-			$waiting_list = $responses['waiting_list']['responses'];
+			$waiting_list = $responses['waiting_list']['records'];
 
 			// People who are longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
@@ -362,14 +362,10 @@ class Rsvp {
 			$user_count = 0;
 		}
 
-		if (
+		return (
 			! empty( $responses['attending'] ) &&
 			intval( $responses['attending']['count'] ) + $user_count + $guests > $this->max_attendance_limit
-		) {
-			return true;
-		}
-
-		return false;
+		);
 	}
 
 	/**
@@ -398,8 +394,8 @@ class Rsvp {
 
 		$retval = array(
 			'all' => array(
-				'responses' => array(),
-				'count'     => 0,
+				'records' => array(),
+				'count'   => 0,
 			),
 		);
 
@@ -413,7 +409,7 @@ class Rsvp {
 			)
 		);
 
-		$responses  = array();
+		$records    = array();
 		$all_guests = 0;
 		$statuses   = $this->statuses;
 
@@ -424,21 +420,21 @@ class Rsvp {
 
 		foreach ( $statuses as $status ) {
 			$retval[ $status ] = array(
-				'responses' => array(),
-				'count'     => 0,
+				'records' => array(),
+				'count'   => 0,
 			);
 		}
 
-		foreach ( $data as $response ) {
-			$comment_id  = intval( $response->comment_ID );
-			$user_id     = intval( $response->user_id );
+		foreach ( $data as $record ) {
+			$comment_id  = intval( $record->comment_ID );
+			$user_id     = intval( $record->user_id );
 			$user_status = '';
-			$user_guests = intval( get_comment_meta( $response->comment_ID, 'gatherpress_rsvp_guests', true ) );
+			$user_guests = intval( get_comment_meta( $record->comment_ID, 'gatherpress_rsvp_guests', true ) );
 			$all_guests += $user_guests;
 			$user_info   = get_userdata( $user_id );
-			$anonymous   = intval( get_comment_meta( $response->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
+			$anonymous   = intval( get_comment_meta( $record->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
+			$terms       = wp_get_object_terms( $record->comment_ID, self::TAXONOMY );
 
-			$terms = wp_get_object_terms( $response->comment_ID, self::TAXONOMY );
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
 				$user_status = $terms[0]->slug;
 			}
@@ -463,14 +459,14 @@ class Rsvp {
 				$user_info->display_name = __( 'Anonymous', 'gatherpress' );
 			}
 
-			$responses[] = array(
+			$records[] = array(
 				'id'        => $user_id,
 				'commentId' => $comment_id,
 				'name'      => $user_info->display_name ?? __( 'Anonymous', 'gatherpress' ),
 				'photo'     => get_avatar_url( $user_id ),
 				'profile'   => $profile,
 				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
-				'timestamp' => sanitize_text_field( $response->comment_date ),
+				'timestamp' => sanitize_text_field( $record->comment_date ),
 				'status'    => $user_status,
 				'guests'    => $user_guests,
 				'anonymous' => $anonymous,
@@ -478,27 +474,27 @@ class Rsvp {
 		}
 
 		// Sort before breaking down statuses in return array.
-		usort( $responses, array( $this, 'sort_by_role' ) );
+		usort( $records, array( $this, 'sort_by_role' ) );
 
-		$retval['all']['responses'] = $responses;
-		$retval['all']['count']     = count( $retval['all']['responses'] ) + $all_guests;
+		$retval['all']['records'] = $records;
+		$retval['all']['count']   = count( $retval['all']['records'] ) + $all_guests;
 
 		foreach ( $statuses as $status ) {
-			$retval[ $status ]['responses'] = array_filter(
-				$responses,
-				static function ( $response ) use ( $status ) {
-					return ( $status === $response['status'] );
+			$retval[ $status ]['records'] = array_filter(
+				$records,
+				static function ( $record ) use ( $status ) {
+					return ( $status === $record['status'] );
 				}
 			);
 
 			$guests = 0;
 
-			foreach ( $retval[ $status ]['responses'] as $response ) {
-				$guests += intval( $response['guests'] );
+			foreach ( $retval[ $status ]['records'] as $record ) {
+				$guests += intval( $record['guests'] );
 			}
 
-			$retval[ $status ]['responses'] = array_values( $retval[ $status ]['responses'] );
-			$retval[ $status ]['count']     = count( $retval[ $status ]['responses'] ) + $guests;
+			$retval[ $status ]['records'] = array_values( $retval[ $status ]['records'] );
+			$retval[ $status ]['count']   = count( $retval[ $status ]['records'] ) + $guests;
 		}
 
 		wp_cache_set( $cache_key, $retval, GATHERPRESS_CACHE_GROUP, 15 * MINUTE_IN_SECONDS );

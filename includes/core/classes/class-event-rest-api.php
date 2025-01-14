@@ -417,7 +417,7 @@ class Event_Rest_Api {
 						static function ( $member ) {
 							return $member['id'];
 						},
-						$all_responses[ $status ]['responses']
+						$all_responses[ $status ]['records']
 					)
 				);
 			}
@@ -632,9 +632,9 @@ class Event_Rest_Api {
 		);
 
 		if ( ! empty( $responses[ $status ] ) ) {
-			foreach ( $responses[ $status ]['responses'] as $key => $response ) {
+			foreach ( $responses[ $status ]['records'] as $key => $record ) {
 				$args['index'] = $key;
-				$content      .= $rsvp_template->get_block_content( $block_data, $response['commentId'], $args );
+				$content      .= $rsvp_template->get_block_content( $block_data, $record['commentId'], $args );
 			}
 		}
 
