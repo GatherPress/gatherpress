@@ -128,7 +128,6 @@ export function sendRsvpApiRequest(
 							guests: res.guests,
 							anonymous: res.anonymous,
 						},
-						rsvpSelection: res.status,
 					};
 				}
 
