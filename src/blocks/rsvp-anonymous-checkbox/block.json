@@ -13,9 +13,6 @@
 		"label": {
 			"type": "string",
 			"default": "List me as anonymous."
-		},
-		"inputId": {
-			"type": "string"
 		}
 	},
 	"supports": {
