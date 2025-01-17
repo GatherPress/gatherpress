@@ -52,8 +52,9 @@ class Rsvp_Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
-		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
+
+		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
 	}
 
 	/**
