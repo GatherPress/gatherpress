@@ -300,19 +300,28 @@ class Rsvp {
 	 * @return int The number of responses from the waiting list that were moved to attending.
 	 */
 	public function check_waiting_list(): int {
-		$responses = $this->responses();
-		$i         = 0;
+		$responses          = $this->responses();
+		$attending_count    = intval( $responses['attending']['count'] );
+		$waiting_list_count = intval( $responses['waiting_list']['count'] );
+		$i                  = 0;
 
 		if (
-			intval( $responses['attending']['count'] ) < $this->max_attendance_limit
-			&& intval( $responses['waiting_list']['count'] )
+			$waiting_list_count &&
+			(
+				empty( $this->max_attendance_limit ) ||
+				$attending_count < $this->max_attendance_limit
+			)
 		) {
 			$waiting_list = $responses['waiting_list']['records'];
 
 			// People who are longest on the waiting_list should be added first.
 			usort( $waiting_list, array( $this, 'sort_by_timestamp' ) );
 
-			$total = $this->max_attendance_limit - intval( $responses['attending']['count'] );
+			if ( ! empty( $this->max_attendance_limit ) ) {
+				$total = $this->max_attendance_limit - intval( $responses['attending']['count'] );
+			} else {
+				$total = $waiting_list_count;
+			}
 
 			while ( $i < $total ) {
 				// Check that we have enough on the waiting_list to run this.
@@ -321,6 +330,7 @@ class Rsvp {
 				}
 
 				$response = $waiting_list[ $i ];
+
 				$this->save( $response['id'], 'attending', $response['anonymous'] );
 				++$i;
 			}
