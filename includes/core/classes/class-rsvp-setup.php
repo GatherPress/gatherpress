@@ -120,10 +120,6 @@ class Rsvp_Setup {
 			return;
 		}
 
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-			return;
-		}
-
 		$rsvp = new Rsvp( $post_id );
 
 		$rsvp->check_waiting_list();
