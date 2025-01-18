@@ -37,6 +37,12 @@ class Test_Rsvp_Setup extends Base {
 				'callback' => array( $instance, 'register_taxonomy' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'wp_after_insert_post',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_process_waiting_list' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'get_comments_number',
 				'priority' => 10,
