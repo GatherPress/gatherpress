@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { __, _x } from '@wordpress/i18n';
 
 const WAITING_LIST = [
 	[
@@ -20,14 +20,22 @@ const WAITING_LIST = [
 					align: 'center',
 					layout: { type: 'flex', justifyContent: 'center' },
 					metadata: {
-						name: __('RSVP Buttons', 'gatherpress'),
+						name: _x(
+							'RSVP Buttons',
+							'Section title in editor',
+							'gatherpress'
+						),
 					},
 				},
 				[
 					[
 						'core/button',
 						{
-							text: __('Edit RSVP', 'gatherpress'),
+							text: _x(
+								'Edit RSVP',
+								'Button label for editing RSVP',
+								'gatherpress'
+							),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
 						},
@@ -68,8 +76,9 @@ const WAITING_LIST = [
 									},
 								},
 							},
-							content: __(
+							content: _x(
 								'<strong>Waiting List</strong>',
+								'RSVP status indicator',
 								'gatherpress'
 							),
 						},
@@ -81,7 +90,11 @@ const WAITING_LIST = [
 				{
 					className: 'gatherpress--is-rsvp-modal',
 					metadata: {
-						name: __('RSVP Modal', 'gatherpress'),
+						name: _x(
+							'RSVP Modal',
+							'Modal title in editor',
+							'gatherpress'
+						),
 					},
 				},
 				[
@@ -102,8 +115,9 @@ const WAITING_LIST = [
 											},
 										},
 									},
-									content: __(
+									content: _x(
 										"<strong>You're Wait Listed</strong>",
+										'RSVP modal header',
 										'gatherpress'
 									),
 								},
@@ -141,8 +155,9 @@ const WAITING_LIST = [
 									[
 										'core/button',
 										{
-											text: __(
+											text: _x(
 												'Not Attending',
+												'RSVP button label for declining event attendance',
 												'gatherpress'
 											),
 											tagName: 'button',
@@ -153,7 +168,11 @@ const WAITING_LIST = [
 									[
 										'core/button',
 										{
-											text: __('Close', 'gatherpress'),
+											text: _x(
+												'Close',
+												'Button label for closing modal dialog',
+												'gatherpress'
+											),
 											tagName: 'button',
 											className:
 												'is-style-outline gatherpress--close-modal',

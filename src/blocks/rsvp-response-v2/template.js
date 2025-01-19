@@ -1,16 +1,28 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { __, _x } from '@wordpress/i18n';
 
 /* translators: %d is the count of attendees */
-const attending = __('Attending (%d)', 'gatherpress');
+const attending = _x(
+	'Attending (%d)',
+	'Filter option to view list of confirmed attendees',
+	'gatherpress'
+);
 
 /* translators: %d is the count of users on the waiting list */
-const waitingList = __('Waiting List (%d)', 'gatherpress');
+const waitingList = _x(
+	'Waiting List (%d)',
+	'Filter option to view list of waitlisted attendees',
+	'gatherpress'
+);
 
 /* translators: %d is the count of users not attending */
-const notAttending = __('Not Attending (%d)', 'gatherpress');
+const notAttending = _x(
+	'Not Attending (%d)',
+	'Filter option to view list of declined attendees',
+	'gatherpress'
+);
 
 const translations = {
 	attending,

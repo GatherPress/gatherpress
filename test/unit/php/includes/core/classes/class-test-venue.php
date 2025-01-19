@@ -126,10 +126,10 @@ class Test_Venue extends Base {
 		// Restore default locale for following tests.
 		switch_to_locale( 'en_US' );
 
-		// This also checks that the post type is still registered with the same 'Post Type Singular Name' label,
+		// This also checks that the post type is still registered with the same 'Admin menu and post type singular name' label,
 		// which is used by the method under test and the test itself.
 		$filter = static function ( string $translation, string $text, string $context ): string {
-			if ( 'Venue' !== $text || 'Post Type Singular Name' !== $context ) {
+			if ( 'Venue' !== $text || 'Admin menu and post type singular name' !== $context ) {
 				return $translation;
 			}
 			return 'Ünit Tést';
