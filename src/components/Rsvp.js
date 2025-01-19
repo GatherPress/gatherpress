@@ -372,7 +372,7 @@ const Rsvp = ({
 						>
 							{_x(
 								'Close',
-								'Button text for closing modal or popup',
+								'Button label for closing modal dialog',
 								'gatherpress'
 							)}
 						</a>
