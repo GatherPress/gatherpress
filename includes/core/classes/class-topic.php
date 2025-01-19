@@ -135,9 +135,11 @@ class Topic {
 		$switched_locale = switch_to_locale( get_locale() );
 		$slug            = _x( 'Topic', 'Admin menu and taxonomy singular name', 'gatherpress' );
 		$slug            = sanitize_title( $slug );
+
 		if ( $switched_locale ) {
 			restore_previous_locale();
 		}
+
 		return $slug;
 	}
 }
