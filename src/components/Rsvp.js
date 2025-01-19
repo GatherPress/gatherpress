@@ -197,7 +197,7 @@ const Rsvp = ({
 									'gatherpress'
 								),
 								`<a href=${getFromGlobal('urls.loginUrl')}>
-									${_x('Login', 'Context: You must ~ to RSVP to events.', 'gatherpress')}
+									${_x('Login', 'Link text for user authentication', 'gatherpress')}
 								</a>`
 							)
 						)}
@@ -212,7 +212,7 @@ const Rsvp = ({
 										'gatherpress'
 									),
 									`<a href=${getFromGlobal('urls.registrationUrl')}>
-										${_x('Register', 'Context: ~ if you do not have an account.', 'gatherpress')}
+										${_x('Register', 'Link text for new account creation', 'gatherpress')}
 									</a>`
 								)
 							)}
@@ -227,7 +227,11 @@ const Rsvp = ({
 							onClick={closeModal}
 							className="gatherpress-buttons__button wp-block-button__link"
 						>
-							{__('Close', 'gatherpress')}
+							{_x(
+								'Close',
+								'Button label for closing modal dialog',
+								'gatherpress'
+							)}
 						</a>
 					</div>
 				</ButtonGroup>
@@ -241,12 +245,16 @@ const Rsvp = ({
 
 		if ('not_attending' === status || 'no_status' === status) {
 			buttonStatus = 'attending';
-			buttonLabel = __('Attend', 'gatherpress');
+			buttonLabel = _x(
+				'Attend',
+				'RSVP button label for confirming event',
+				'gatherpress'
+			);
 		} else {
 			buttonStatus = 'not_attending';
 			buttonLabel = _x(
 				'Not Attending',
-				'action of not attending',
+				'RSVP button label for declining event',
 				'gatherpress'
 			);
 		}
@@ -362,7 +370,11 @@ const Rsvp = ({
 							onClick={closeModal}
 							className="gatherpress-buttons__button wp-block-button__link"
 						>
-							{__('Close', 'gatherpress')}
+							{_x(
+								'Close',
+								'Button label for closing modal dialog',
+								'gatherpress'
+							)}
 						</a>
 					</div>
 				</ButtonGroup>
@@ -381,7 +393,7 @@ const Rsvp = ({
 							>
 								{_x(
 									'Not Attending',
-									'Responded Status',
+									'RSVP status button text',
 									'gatherpress'
 								)}
 							</a>

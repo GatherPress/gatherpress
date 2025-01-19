@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _x, sprintf } from '@wordpress/i18n';
 
 /**
  * Internal dependencies.
@@ -19,14 +19,22 @@ const NO_STATUS = [
 					align: 'center',
 					layout: { type: 'flex', justifyContent: 'center' },
 					metadata: {
-						name: __('RSVP Buttons', 'gatherpress'),
+						name: _x(
+							'RSVP Buttons',
+							'Section title in editor',
+							'gatherpress'
+						),
 					},
 				},
 				[
 					[
 						'core/button',
 						{
-							text: __('RSVP', 'gatherpress'),
+							text: _x(
+								'RSVP',
+								'Button label for editing RSVP',
+								'gatherpress'
+							),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
 						},
@@ -38,7 +46,11 @@ const NO_STATUS = [
 				{
 					className: 'gatherpress--is-rsvp-modal',
 					metadata: {
-						name: __('RSVP Modal', 'gatherpress'),
+						name: _x(
+							'RSVP Modal',
+							'Modal title in editor',
+							'gatherpress'
+						),
 					},
 				},
 				[
@@ -59,8 +71,9 @@ const NO_STATUS = [
 											},
 										},
 									},
-									content: __(
+									content: _x(
 										'<strong>RSVP to this event</strong>',
+										'RSVP modal header',
 										'gatherpress'
 									),
 								},
@@ -98,8 +111,9 @@ const NO_STATUS = [
 									[
 										'core/button',
 										{
-											text: __(
+											text: _x(
 												'Attending',
+												'RSVP button label for confirming event attendance',
 												'gatherpress'
 											),
 											tagName: 'button',
@@ -110,7 +124,11 @@ const NO_STATUS = [
 									[
 										'core/button',
 										{
-											text: __('Close', 'gatherpress'),
+											text: _x(
+												'Close',
+												'Button label for closing modal dialog',
+												'gatherpress'
+											),
 											tagName: 'button',
 											className:
 												'is-style-outline gatherpress--close-modal',
@@ -127,7 +145,11 @@ const NO_STATUS = [
 				{
 					className: 'gatherpress--is-login-modal',
 					metadata: {
-						name: __('Login Modal', 'gatherpress'),
+						name: _x(
+							'Login Modal',
+							'Block title for the login modal',
+							'gatherpress'
+						),
 					},
 				},
 				[
@@ -148,8 +170,9 @@ const NO_STATUS = [
 											},
 										},
 									},
-									content: __(
+									content: _x(
 										'<strong>Login Required</strong>',
+										'Login modal header',
 										'gatherpress'
 									),
 								},
@@ -206,7 +229,11 @@ const NO_STATUS = [
 									[
 										'core/button',
 										{
-											text: __('Close', 'gatherpress'),
+											text: _x(
+												'Close',
+												'Button label for closing modal dialog',
+												'gatherpress'
+											),
 											tagName: 'button',
 											className:
 												'gatherpress--close-modal',

@@ -116,21 +116,33 @@ const RsvpResponseEdit = ({ defaultStatus, setDefaultStatus }) => {
 	return (
 		<div className="gatherpress-rsvp-response">
 			<SelectControl
-				label={__('Status', 'gatherpress')}
+				label={_x(
+					'Status',
+					'Label for RSVP status dropdown',
+					'gatherpress'
+				)}
 				value={defaultStatus}
 				options={[
 					{
-						label: _x('Attending', 'List Status', 'gatherpress'),
+						label: _x(
+							'Attending',
+							'RSVP status option in dropdown',
+							'gatherpress'
+						),
 						value: 'attending',
 					},
 					{
-						label: _x('Waiting List', 'List Status', 'gatherpress'),
+						label: _x(
+							'Waiting List',
+							'RSVP status option in dropdown',
+							'gatherpress'
+						),
 						value: 'waiting_list',
 					},
 					{
 						label: _x(
 							'Not Attending',
-							'List Status',
+							'RSVP status option in dropdown',
 							'gatherpress'
 						),
 						value: 'not_attending',

@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { _x } from '@wordpress/i18n';
 
 const PAST = [
 	[
@@ -10,14 +10,22 @@ const PAST = [
 			align: 'center',
 			layout: { type: 'flex', justifyContent: 'center' },
 			metadata: {
-				name: __('RSVP Buttons', 'gatherpress'),
+				name: _x(
+					'RSVP Buttons',
+					'Section title in editor',
+					'gatherpress'
+				),
 			},
 		},
 		[
 			[
 				'core/button',
 				{
-					text: __('Past Event', 'gatherpress'),
+					text: _x(
+						'Past Event',
+						'Button label for past RSVP',
+						'gatherpress'
+					),
 					tagName: 'button',
 					className: 'gatherpress--is-disabled',
 				},
