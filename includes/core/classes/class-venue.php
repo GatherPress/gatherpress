@@ -104,8 +104,8 @@ class Venue {
 			self::POST_TYPE,
 			array(
 				'labels'       => array(
-					'name'                     => _x( 'Venues', 'Post Type General Name', 'gatherpress' ),
-					'singular_name'            => _x( 'Venue', 'Post Type Singular Name', 'gatherpress' ),
+					'name'                     => _x( 'Venues', 'Admin menu and post type general name', 'gatherpress' ),
+					'singular_name'            => _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' ),
 					'add_new'                  => __( 'Add New', 'gatherpress' ),
 					'add_new_item'             => __( 'Add New Venue', 'gatherpress' ),
 					'edit_item'                => __( 'Edit Venue', 'gatherpress' ),
@@ -121,18 +121,19 @@ class Venue {
 					'attributes'               => __( 'Venue Attributes', 'gatherpress' ),
 					'insert_into_item'         => __( 'Insert into Venue', 'gatherpress' ),
 					'uploaded_to_this_item'    => __( 'Uploaded to this Venue', 'gatherpress' ),
+					'menu_name'                => _x( 'Venues', 'Admin menu label', 'gatherpress' ),
 					'filter_items_list'        => __( 'Filter Venue list', 'gatherpress' ),
 					'filter_by_date'           => __( 'Filter by date', 'gatherpress' ),
-					'update_item'              => __( 'Update Venue', 'gatherpress' ), // ??? Is not in the docs.
 					'items_list_navigation'    => __( 'Venues list navigation', 'gatherpress' ),
 					'items_list'               => __( 'Venues list', 'gatherpress' ),
 					'item_published'           => __( 'Venue published.', 'gatherpress' ),
 					'item_published_privately' => __( 'Venue published privately.', 'gatherpress' ),
 					'item_reverted_to_draft'   => __( 'Venue reverted to draft.', 'gatherpress' ),
+					'item_trashed'             => __( 'Venue trashed.', 'gatherpress' ),
 					'item_scheduled'           => __( 'Venue scheduled.', 'gatherpress' ),
 					'item_updated'             => __( 'Venue updated.', 'gatherpress' ),
-					'item_link'                => __( 'Venue Link', 'gatherpress' ),
-					'item_link_description'    => __( 'A link to a venue.', 'gatherpress' ),
+					'item_link'                => _x( 'Venue Link', 'Block editor link label', 'gatherpress' ),
+					'item_link_description'    => _x( 'A link to a venue.', 'Block editor link description', 'gatherpress' ),
 				),
 				'show_in_rest' => true,
 				'rest_base'    => 'gatherpress_venues',
@@ -174,7 +175,7 @@ class Venue {
 	 */
 	public static function get_localized_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'Venue', 'Post Type Singular Name', 'gatherpress' );
+		$slug            = _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' );
 		$slug            = sanitize_title( $slug );
 
 		if ( $switched_locale ) {
@@ -237,8 +238,8 @@ class Venue {
 			Event::POST_TYPE,
 			array(
 				'labels'             => array(
-					'name'          => _x( 'Venues', 'Taxonomy General Name', 'gatherpress' ),
-					'singular_name' => _x( 'Venue', 'Taxonomy Singular Name', 'gatherpress' ),
+					'name'          => _x( 'Venues', 'Admin menu and taxonomy general name', 'gatherpress' ),
+					'singular_name' => _x( 'Venue', 'Admin menu and taxonomy singular name', 'gatherpress' ),
 				),
 				'hierarchical'       => false,
 				'public'             => true,

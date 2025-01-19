@@ -255,13 +255,13 @@ class Settings {
 					if ( isset( $section_settings['options'] ) ) {
 						foreach ( (array) $section_settings['options'] as $option => $option_settings ) {
 							if (
-								$option_settings['field']['type']
-								&& method_exists( $this, $option_settings['field']['type'] )
+							$option_settings['field']['type']
+							&& method_exists( $this, $option_settings['field']['type'] )
 							) {
-								$option_settings['callback'] = function () use ( $sub_page, $section, $option, $option_settings ) {
-									$sub_page = Utility::prefix_key( $sub_page );
-									$this->{$option_settings['field']['type']}( $sub_page, $section, $option, $option_settings );
-								};
+									$option_settings['callback'] = function () use ( $sub_page, $section, $option, $option_settings ) {
+										$sub_page = Utility::prefix_key( $sub_page );
+										$this->{$option_settings['field']['type']}( $sub_page, $section, $option, $option_settings );
+									};
 							}
 							add_settings_field(
 								$option,
@@ -461,8 +461,8 @@ class Settings {
 		$default  = $this->get_default_value( $sub_page, $section, $option );
 
 		return (
-			isset( $options[ $section ][ $option ] )
-			&& '' !== $options[ $section ][ $option ]
+		isset( $options[ $section ][ $option ] )
+		&& '' !== $options[ $section ][ $option ]
 		) ? $options[ $section ][ $option ] : $default;
 	}
 
@@ -484,7 +484,7 @@ class Settings {
 		$sub_pages = $this->get_sub_pages();
 
 		return $sub_pages[ Utility::unprefix_key( $sub_page ) ]['sections'][ $section ]['options']
-			[ $option ]['field']['options']['default'] ?? '';
+		[ $option ]['field']['options']['default'] ?? '';
 	}
 
 	/**
@@ -680,8 +680,8 @@ class Settings {
 	 */
 	public function datetime_preview( string $name, string $value ): void {
 		if (
-			'gatherpress_general[formatting][date_format]' === $name ||
-			'gatherpress_general[formatting][time_format]' === $name
+		'gatherpress_general[formatting][date_format]' === $name ||
+		'gatherpress_general[formatting][time_format]' === $name
 		) {
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/datetime-preview.php', GATHERPRESS_CORE_PATH ),
@@ -708,23 +708,22 @@ class Settings {
 	 */
 	public function urlrewrite_preview( string $name, string $value ): void {
 		if (
-			'gatherpress_general[urls][events]' === $name ||
-			'gatherpress_general[urls][venues]' === $name ||
-			'gatherpress_general[urls][topics]' === $name
+		'gatherpress_general[urls][events]' === $name ||
+		'gatherpress_general[urls][venues]' === $name ||
+		'gatherpress_general[urls][topics]' === $name
 		) {
 			switch ( $name ) {
 				case 'gatherpress_general[urls][events]':
-					$suffix = _x( 'sample-event', 'sample event post slug', 'gatherpress' );
+					$suffix = _x( 'sample-event', 'URL permalink structure example for events', 'gatherpress' );
 					break;
-
 				case 'gatherpress_general[urls][venues]':
-					$suffix = _x( 'sample-venue', 'sample venue post slug', 'gatherpress' );
+					$suffix = _x( 'sample-venue', 'URL permalink structure example for venues', 'gatherpress' );
 					break;
-
 				case 'gatherpress_general[urls][topics]':
-					$suffix = _x( 'sample-topic-term', 'sample topic term slug', 'gatherpress' );
+					$suffix = _x( 'sample-topic-term', 'URL permalink structure example for topics', 'gatherpress' );
 					break;
 			}
+
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
 				array(
