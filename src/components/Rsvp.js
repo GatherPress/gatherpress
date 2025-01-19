@@ -197,8 +197,8 @@ const Rsvp = ({
 									'gatherpress'
 								),
 								`<a href=${getFromGlobal('urls.loginUrl')}>
-    ${_x('Login', 'Link text for user authentication', 'gatherpress')}
-</a>`
+									${_x('Login', 'Link text for user authentication', 'gatherpress')}
+								</a>`
 							)
 						)}
 					</div>
@@ -212,8 +212,8 @@ const Rsvp = ({
 										'gatherpress'
 									),
 									`<a href=${getFromGlobal('urls.registrationUrl')}>
-    ${_x('Register', 'Link text for new account creation', 'gatherpress')}
-</a>`
+										${_x('Register', 'Link text for new account creation', 'gatherpress')}
+									</a>`
 								)
 							)}
 						</div>
@@ -227,7 +227,11 @@ const Rsvp = ({
 							onClick={closeModal}
 							className="gatherpress-buttons__button wp-block-button__link"
 						>
-							{__('Close', 'gatherpress')}
+							{_x(
+								'Close',
+								'Button label for closing modal dialog',
+								'gatherpress'
+							)}
 						</a>
 					</div>
 				</ButtonGroup>
