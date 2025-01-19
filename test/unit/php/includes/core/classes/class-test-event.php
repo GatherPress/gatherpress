@@ -286,8 +286,14 @@ class Test_Event extends Base {
 		)->get();
 		$event    = new Event( $post->ID );
 		$timezone = new DateTimeZone( 'America/New_York' );
+
 		$this->assertEmpty(
 			Utility::invoke_hidden_method( $event, 'get_gmt_datetime', array( 'unit-test', $timezone ) ),
+			'Failed to assert that gmt datetime is empty.'
+		);
+
+		$this->assertEmpty(
+			Utility::invoke_hidden_method( $event, 'get_gmt_datetime', array( '', $timezone ) ),
 			'Failed to assert that gmt datetime is empty.'
 		);
 	}
