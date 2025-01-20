@@ -113,6 +113,10 @@ class Rsvp {
 			$serialized_inner_blocks = $attributes['serializedInnerBlocks'] ?? '';
 			$serialized_inner_blocks = json_decode( $serialized_inner_blocks, true );
 
+			if ( ! is_array( $serialized_inner_blocks ) ) {
+				$serialized_inner_blocks = array();
+			}
+
 			// Serialize the current inner blocks for the saved status.
 			$serialized_inner_blocks[ $saved_status ] = serialize_blocks( $inner_blocks );
 
@@ -128,8 +132,10 @@ class Rsvp {
 			if ( $event->has_event_past() ) {
 				$inner_blocks_markup = do_blocks( $serialized_inner_blocks['past'] ?? '' );
 			} else {
+				unset( $serialized_inner_blocks['past'] );
 				// Render inner blocks for all statuses.
 				$inner_blocks_markup = '';
+
 				foreach ( $serialized_inner_blocks as $status => $serialized_inner_block ) {
 					$class                = $status !== $filtered_status ? 'gatherpress--is-not-visible' : '';
 					$inner_blocks_markup .= sprintf(
