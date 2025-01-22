@@ -59,7 +59,7 @@ const WAITING_LIST = [
 					[
 						'gatherpress/icon',
 						{
-							icon: 'editor-help',
+							icon: 'clock',
 							iconSize: 24,
 						},
 					],
