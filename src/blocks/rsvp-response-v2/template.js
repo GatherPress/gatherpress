@@ -124,10 +124,30 @@ const TEMPLATE = [
 	[
 		'core/group',
 		{
-			metadata: { name: __('Empty RSVP', 'gatherpress') },
+			metadata: {
+				name: _x(
+					'Empty RSVP',
+					'Block name displayed in the editor',
+					'gatherpress'
+				),
+			},
 			className: 'gatherpress--empty-rsvp gatherpress--is-not-visible',
 		},
-		[['core/paragraph', { content: translations.noOne }]],
+		[
+			[
+				'core/paragraph',
+				{
+					content: translations.noOne,
+					metadata: {
+						name: _x(
+							'Empty RSVP Text',
+							'Block name displayed in the editor',
+							'gatherpress'
+						),
+					},
+				},
+			],
+		],
 	],
 ];
 

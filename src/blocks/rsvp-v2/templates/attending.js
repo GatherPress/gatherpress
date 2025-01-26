@@ -21,8 +21,8 @@ const ATTENDING = [
 					layout: { type: 'flex', justifyContent: 'center' },
 					metadata: {
 						name: _x(
-							'RSVP Buttons',
-							'Section title in editor',
+							'Call to Action',
+							'Block name displayed in the editor',
 							'gatherpress'
 						),
 					},
@@ -38,6 +38,13 @@ const ATTENDING = [
 							),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
+							metadata: {
+								name: _x(
+									'RSVP Button',
+									'Block name displayed in the editor',
+									'gatherpress'
+								),
+							},
 						},
 					],
 				],
@@ -91,6 +98,13 @@ const ATTENDING = [
 										'RSVP status indicator',
 										'gatherpress'
 									),
+									metadata: {
+										name: _x(
+											'RSVP Status',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 						],
@@ -133,6 +147,13 @@ const ATTENDING = [
 										'RSVP modal header',
 										'gatherpress'
 									),
+									metadata: {
+										name: _x(
+											'RSVP Heading',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							[
@@ -142,6 +163,13 @@ const ATTENDING = [
 										'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
 										'gatherpress'
 									),
+									metadata: {
+										name: _x(
+											'RSVP Info',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							['gatherpress/rsvp-guest-count-input', {}],
@@ -164,6 +192,13 @@ const ATTENDING = [
 											},
 										},
 									},
+									metadata: {
+										name: _x(
+											'Call to Action',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 								[
 									[
@@ -177,6 +212,13 @@ const ATTENDING = [
 											tagName: 'button',
 											className:
 												'gatherpress--update-rsvp',
+											metadata: {
+												name: _x(
+													'RSVP Button',
+													'Block name displayed in the editor',
+													'gatherpress'
+												),
+											},
 										},
 									],
 									[
@@ -190,6 +232,13 @@ const ATTENDING = [
 											tagName: 'button',
 											className:
 												'is-style-outline gatherpress--close-modal',
+											metadata: {
+												name: _x(
+													'Close Button',
+													'Block name displayed in the editor',
+													'gatherpress'
+												),
+											},
 										},
 									],
 								],

@@ -22,6 +22,7 @@ const Edit = ({ attributes, setAttributes }) => {
 	// Icon original source: https://github.com/WordPress/dashicons/tree/master/svg-min.
 	const ICON_OPTIONS = [
 		{ label: __('Calendar', 'gatherpress'), value: 'calendar' },
+		{ label: __('Clock', 'gatherpress'), value: 'clock' },
 		{ label: __('Dismiss', 'gatherpress'), value: 'dismiss' },
 		{ label: __('Editor Help', 'gatherpress'), value: 'editor-help' },
 		{ label: __('Groups', 'gatherpress'), value: 'groups' },
