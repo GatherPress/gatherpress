@@ -21,8 +21,8 @@ const WAITING_LIST = [
 					layout: { type: 'flex', justifyContent: 'center' },
 					metadata: {
 						name: _x(
-							'RSVP Buttons',
-							'Section title in editor',
+							'Call to Action',
+							'Block name displayed in the editor',
 							'gatherpress'
 						),
 					},
@@ -38,6 +38,13 @@ const WAITING_LIST = [
 							),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
+							metadata: {
+								name: _x(
+									'RSVP Button',
+									'Block name displayed in the editor',
+									'gatherpress'
+								),
+							},
 						},
 					],
 				],
@@ -59,7 +66,7 @@ const WAITING_LIST = [
 					[
 						'gatherpress/icon',
 						{
-							icon: 'editor-help',
+							icon: 'clock',
 							iconSize: 24,
 						},
 					],
@@ -81,6 +88,13 @@ const WAITING_LIST = [
 								'RSVP status indicator',
 								'gatherpress'
 							),
+							metadata: {
+								name: _x(
+									'RSVP Status',
+									'Block name displayed in the editor',
+									'gatherpress'
+								),
+							},
 						},
 					],
 				],
@@ -92,7 +106,7 @@ const WAITING_LIST = [
 					metadata: {
 						name: _x(
 							'RSVP Modal',
-							'Modal title in editor',
+							'Block name displayed in the editor',
 							'gatherpress'
 						),
 					},
@@ -120,6 +134,13 @@ const WAITING_LIST = [
 										'RSVP modal header',
 										'gatherpress'
 									),
+									metadata: {
+										name: _x(
+											'RSVP Heading',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							[
@@ -129,6 +150,13 @@ const WAITING_LIST = [
 										'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
 										'gatherpress'
 									),
+									metadata: {
+										name: _x(
+											'RSVP Info',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							['gatherpress/rsvp-anonymous-checkbox', {}],
@@ -150,6 +178,13 @@ const WAITING_LIST = [
 											},
 										},
 									},
+									metadata: {
+										name: _x(
+											'Call to Action',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 								[
 									[
@@ -163,6 +198,13 @@ const WAITING_LIST = [
 											tagName: 'button',
 											className:
 												'gatherpress--update-rsvp',
+											metadata: {
+												name: _x(
+													'RSVP Button',
+													'Block name displayed in the editor',
+													'gatherpress'
+												),
+											},
 										},
 									],
 									[
@@ -176,6 +218,13 @@ const WAITING_LIST = [
 											tagName: 'button',
 											className:
 												'is-style-outline gatherpress--close-modal',
+											metadata: {
+												name: _x(
+													'Close Button',
+													'Block name displayed in the editor',
+													'gatherpress'
+												),
+											},
 										},
 									],
 								],

@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { _x } from '@wordpress/i18n';
 
 const TEMPLATE = [
 	[
@@ -11,6 +11,13 @@ const TEMPLATE = [
 				spacing: {
 					blockGap: 0,
 				},
+			},
+			metadata: {
+				name: _x(
+					'RSVP User Info',
+					'Block name displayed in the editor',
+					'gatherpress'
+				),
 			},
 		},
 		[
@@ -25,7 +32,11 @@ const TEMPLATE = [
 				'core/comment-author-name',
 				{
 					metadata: {
-						name: __('Display Name', 'gatherpress'),
+						name: _x(
+							'Display Name',
+							'Block name displayed in the editor',
+							'gatherpress'
+						),
 					},
 					textAlign: 'center',
 					style: {

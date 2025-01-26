@@ -20,8 +20,8 @@ const NO_STATUS = [
 					layout: { type: 'flex', justifyContent: 'center' },
 					metadata: {
 						name: _x(
-							'RSVP Buttons',
-							'Section title in editor',
+							'Call to Action',
+							'Block name displayed in the editor',
 							'gatherpress'
 						),
 					},
@@ -37,6 +37,13 @@ const NO_STATUS = [
 							),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
+							metadata: {
+								name: _x(
+									'RSVP Button',
+									'Block name displayed in the editor',
+									'gatherpress'
+								),
+							},
 						},
 					],
 				],
@@ -76,6 +83,13 @@ const NO_STATUS = [
 										'RSVP modal header',
 										'gatherpress'
 									),
+									metadata: {
+										name: _x(
+											'RSVP Heading',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							[
@@ -85,6 +99,13 @@ const NO_STATUS = [
 										'To set or change your attending status, simply click the <strong>Attending</strong> button below.',
 										'gatherpress'
 									),
+									metadata: {
+										name: _x(
+											'RSVP Info',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							['gatherpress/rsvp-anonymous-checkbox', {}],
@@ -106,6 +127,13 @@ const NO_STATUS = [
 											},
 										},
 									},
+									metadata: {
+										name: _x(
+											'Call to Action',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 								[
 									[
@@ -119,6 +147,13 @@ const NO_STATUS = [
 											tagName: 'button',
 											className:
 												'gatherpress--update-rsvp',
+											metadata: {
+												name: _x(
+													'RSVP Button',
+													'Block name displayed in the editor',
+													'gatherpress'
+												),
+											},
 										},
 									],
 									[
@@ -132,6 +167,13 @@ const NO_STATUS = [
 											tagName: 'button',
 											className:
 												'is-style-outline gatherpress--close-modal',
+											metadata: {
+												name: _x(
+													'Close Button',
+													'Block name displayed in the editor',
+													'gatherpress'
+												),
+											},
 										},
 									],
 								],
@@ -175,6 +217,13 @@ const NO_STATUS = [
 										'Login modal header',
 										'gatherpress'
 									),
+									metadata: {
+										name: _x(
+											'Login Heading',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							[
@@ -189,6 +238,13 @@ const NO_STATUS = [
 										getFromGlobal('urls.loginUrl')
 									),
 									className: 'gatherpress--has-login-url',
+									metadata: {
+										name: _x(
+											'Login Info',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							[
@@ -204,6 +260,13 @@ const NO_STATUS = [
 									),
 									className:
 										'gatherpress--has-registration-url',
+									metadata: {
+										name: _x(
+											'Register Info',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 							],
 							[
@@ -224,6 +287,13 @@ const NO_STATUS = [
 											},
 										},
 									},
+									metadata: {
+										name: _x(
+											'Call to Action',
+											'Block name displayed in the editor',
+											'gatherpress'
+										),
+									},
 								},
 								[
 									[
@@ -237,6 +307,13 @@ const NO_STATUS = [
 											tagName: 'button',
 											className:
 												'gatherpress--close-modal',
+											metadata: {
+												name: _x(
+													'Close Button',
+													'Block name displayed in the editor',
+													'gatherpress'
+												),
+											},
 										},
 									],
 								],
