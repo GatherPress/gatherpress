@@ -11,8 +11,8 @@ const PAST = [
 			layout: { type: 'flex', justifyContent: 'center' },
 			metadata: {
 				name: _x(
-					'RSVP Buttons',
-					'Section title in editor',
+					'Call to Action',
+					'Block name displayed in the editor',
 					'gatherpress'
 				),
 			},
@@ -28,6 +28,13 @@ const PAST = [
 					),
 					tagName: 'button',
 					className: 'gatherpress--is-disabled',
+					metadata: {
+						name: _x(
+							'RSVP Button',
+							'Block name displayed in the editor',
+							'gatherpress'
+						),
+					},
 				},
 			],
 		],
