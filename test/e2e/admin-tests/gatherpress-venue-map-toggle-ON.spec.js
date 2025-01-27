@@ -12,11 +12,12 @@ test.describe('e2e test for venue map through admin side', () => {
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
+		const postName = 'venue map : toggle on';
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page.getByRole('link', { name: 'Venues' }).click();
 		await page.getByRole('link', { name: 'Add New Venue' }).click();
 
-		await page.getByLabel('Add title').fill('venue map display');
+		await page.getByLabel('Add title').fill(postName);
 
 		await page
 			.getByLabel('Block: Event Date')
@@ -25,10 +26,27 @@ test.describe('e2e test for venue map through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		await page.getByLabel('Settings', { exact: true }).click();
-		
-		await page.getByRole('button', { name: 'Venue settings' }).click();
+		const settingButton = await page.getByLabel('Settings', {
+			exact: true,
+		});
 
+		const settingExpand = await settingButton.getAttribute('aria-expanded');
+
+		if (settingExpand === 'false') {
+			await settingButton.click();
+		}
+		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
+
+		const venueButton = await page.getByRole('button', {
+			name: 'venue settings',
+		});
+		const venueExpand = await venueButton.getAttribute('aria-expanded');
+
+		if (venueExpand === 'false') {
+			await venueButton.click();
+		}
+
+		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
 		await page.getByLabel('Full Address').fill('Pune');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
@@ -59,6 +77,7 @@ test.describe('e2e test for venue map through admin side', () => {
 				page.locator('h1'),
 				page.locator('h3'),
 				page.locator('nav'),
+				page.locator('[rel="prev"]'),
 				page.locator('.wp-block-template-part'),
 				page.locator('.wp-block-gatherpress-event-date'),
 				page.locator('footer'),

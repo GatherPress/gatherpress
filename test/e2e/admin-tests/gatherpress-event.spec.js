@@ -1,5 +1,4 @@
-const { test } = require('@playwright/test');
-//const { login } = require('../reusable-user-steps/common.js');
+const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 
 test.describe('e2e test for publish event through admin side', () => {
@@ -7,22 +6,21 @@ test.describe('e2e test for publish event through admin side', () => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
-		//await login({ page, username: '' });
 	});
 
 	test('the user should be able to publish an online event', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
+
+		const postName = `online event test-${Math.floor(Math.random() * 1000)}`;
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New' })
 			.click();
-		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
-		const eventTitle = await page
-			.getByLabel('Add title')
-			.fill(`online T-Event: ${currentDate}`);
+
+		await page.getByLabel('Add title').fill(postName);
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
@@ -30,44 +28,69 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		await page.getByLabel('Settings', { exact: true }).click();
-		
-		await page.getByRole('button', { name: 'Event settings' }).isVisible();
+		const settingButton = await page.getByLabel('Settings', {
+			exact: true,
+		});
 
+		const settingExpand = await settingButton.getAttribute('aria-expanded');
+
+		if (settingExpand === 'false') {
+			await settingButton.click();
+		}
+
+		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
+
+		const eventButton = await page.getByRole('button', {
+			name: 'Event settings',
+		});
+		const eventExpand = await eventButton.getAttribute('aria-expanded');
+
+		if (eventExpand === 'false') {
+			await eventButton.click();
+		}
+
+		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
 		await page
 			.getByLabel('Venue Selector')
 			.selectOption('33:online-event', { timeout: 60000 });
-		await page.getByRole('button', { name: 'Event settings' }).click();
+
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
+
 		await page
 			.getByLabel('Editor publish')
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
 
 		await page
-			.getByText(`${eventTitle} is now live.`)
-			.isVisible({ timeout: 60000 }); // verified the event is live.
+			.getByLabel('Editor publish')
+			.getByRole('link', { name: 'View Event' })
+			.click();
+
 		await page
-			.locator('.post-publish-panel__postpublish-buttons')
-			.filter({ hasText: 'View Event' })
-			.isVisible({ timeout: 30000 }); // verified the view event button.
+			.locator('#wp--skip-link--target')
+			.getByRole('heading', { postName }).isVisible;
+		await expect(
+			page
+				.locator('div')
+				.filter({ hasText: /^Online event$/ })
+				.nth(1)
+		).toBeVisible();
 	});
 
 	test('the user should be able publish an offline event', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
+		const postName = `offline event test-${Math.floor(Math.random() * 1000)}`;
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New' })
 			.click();
-		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
-		const eventTitle = await page
-			.getByLabel('Add title')
-			.fill(`offline T-Event:${currentDate}`);
+
+		await page.getByLabel('Add title').fill(postName);
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
@@ -75,7 +98,28 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		await page.getByRole('button', { name: 'Event settings' }).click();
+		const settingButton = await page.getByLabel('Settings', {
+			exact: true,
+		});
+
+		const settingExpand = await settingButton.getAttribute('aria-expanded');
+
+		if (settingExpand === 'false') {
+			await settingButton.click();
+		}
+
+		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
+
+		const eventButton = await page.getByRole('button', {
+			name: 'Event settings',
+		});
+		const eventExpand = await eventButton.getAttribute('aria-expanded');
+
+		if (eventExpand === 'false') {
+			await eventButton.click();
+		}
+
+		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
 		await page
 			.getByLabel('Venue Selector')
 			.selectOption('73:test-offline-event');
@@ -89,11 +133,14 @@ test.describe('e2e test for publish event through admin side', () => {
 			.click();
 
 		await page
-			.getByText(`${eventTitle} is now live.`)
-			.isVisible({ timeout: 60000 }); // verified the event is live.
+			.getByLabel('Editor publish')
+			.getByRole('link', { name: 'View Event' })
+			.click();
+
 		await page
-			.locator('.post-publish-panel__postpublish-buttons')
-			.filter({ hasText: 'View Event' })
-			.isVisible({ timeout: 30000 }); // verified the view event button.
+			.locator('#wp--skip-link--target')
+			.getByRole('heading', { postName }).isVisible;
+
+		await expect(page.locator('#map')).toBeVisible();
 	});
 });

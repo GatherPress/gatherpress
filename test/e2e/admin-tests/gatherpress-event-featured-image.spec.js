@@ -12,6 +12,8 @@ test.describe('e2e test for publish event through admin side', () => {
 	test('The user should be able add featured image in post and verify the added featured image post', async ({
 		page,
 	}) => {
+		const postName = `featured image test-${Math.floor(Math.random() * 100)}`;
+
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
@@ -24,7 +26,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.first()
 			.isVisible();
 
-		await page.getByLabel('Add title').fill('Featured Image test');
+		await page.getByLabel('Add title').fill(postName);
 
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
@@ -51,9 +53,11 @@ test.describe('e2e test for publish event through admin side', () => {
 			.click();
 		await page.locator('#wp--skip-link--target img').isVisible();
 
+		await page.waitForLoadState('domcontentloaded');
 		// await expect(page).toHaveScreenshot('featured_image.png', {fullPage:true})
-		const FeaturedImage = await page.screenshot({ fullPage: true,
-			mask:[
+		const FeaturedImage = await page.screenshot({
+			fullPage: true,
+			mask: [
 				page.locator('header'),
 				page.locator('h1'),
 				page.locator('h3'),
@@ -61,8 +65,8 @@ test.describe('e2e test for publish event through admin side', () => {
 				page.locator('.wp-block-template-part'),
 				page.locator('.wp-block-gatherpress-event-date'),
 				page.locator('footer'),
-			]
-		 });
+			],
+		});
 		expect(FeaturedImage).toMatchSnapshot('featured_image.png');
 	});
 });

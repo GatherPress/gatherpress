@@ -11,12 +11,14 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
+
+		const postName = `event details-${Math.floor(Math.random() * 100)}`;
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New Event' })
 			.click();
-		await page.getByLabel('Add title').fill('event time details');
+		await page.getByLabel('Add title').fill(postName);
 
 		await page.getByLabel('Block: Event Date').isVisible();
 		await page
@@ -48,7 +50,6 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 				page.locator('nav'),
 				page.locator('.wp-block-template-part'),
 				page.locator('footer'),
-
 			],
 		});
 	});

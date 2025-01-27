@@ -13,15 +13,15 @@ test.describe('e2e test for event, the user should view the event map on event p
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
+		const postName = `event map test-${Math.floor(Math.random() * 100)}`;
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New Event' })
 			.click();
 
-		const eventTitle = await page
-			.getByLabel('Add title')
-			.fill('test: offline  event');
+		await page.getByLabel('Add title').fill(postName);
+
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
@@ -29,11 +29,28 @@ test.describe('e2e test for event, the user should view the event map on event p
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		//await page.getByLabel('Settings', { exact: true }).click();
-		// await page.getByLabel('Settings', { exact: true }).click();
+		const settingButton = await page.getByLabel('Settings', {
+			exact: true,
+		});
 
-		await page.getByRole('button', { name: 'Event settings' }).click();
+		const settingExpand = await settingButton.getAttribute('aria-expanded');
 
+		if (settingExpand === 'false') {
+			await settingButton.click();
+		}
+
+		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
+
+		const eventButton = await page.getByRole('button', {
+			name: 'Event settings',
+		});
+		const eventExpand = await eventButton.getAttribute('aria-expanded');
+
+		if (eventExpand === 'false') {
+			await eventButton.click();
+		}
+
+		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
 		await page
 			.getByLabel('Venue Selector')
 			.selectOption('76:test-venue-map');
@@ -47,10 +64,6 @@ test.describe('e2e test for event, the user should view the event map on event p
 			.getByLabel('Editor publish')
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
-
-		await page
-			.getByText(`${eventTitle} is now live.`)
-			.isVisible({ timeout: 60000 }); // verified the event is live.
 
 		await page
 			.getByLabel('Editor publish')

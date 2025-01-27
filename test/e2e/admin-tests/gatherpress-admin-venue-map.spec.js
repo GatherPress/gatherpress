@@ -4,15 +4,17 @@ const { login } = require('../reusable-user-steps/common.js');
 test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
+		//await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Verify the offline venue location map should not be visible on the venue post when the display map toggled button is disabled.', async ({
+	test('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
-		const postName = `offline event test for map:disable-${Math.floor(Math.random() * 1000)}`;
+		const postName = `venue map test-${Math.floor(Math.random() * 100)}`;
+
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page.getByRole('link', { name: 'Venues' }).click();
 		await page.getByRole('link', { name: 'Add New Venue' }).click();
@@ -47,17 +49,15 @@ test.describe('e2e test for venue map through admin side', () => {
 		}
 
 		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
+		//await page.getByRole('button', { name: 'Venue settings' });
 
 		await page.getByLabel('Full Address').fill('Pune');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
+		await page.locator('#map').isVisible({ timeout: 30000 });
 
-		await page.waitForSelector('#map');
-		await page.locator('#map').click();
-
-		await page.getByRole('tab', { name: 'Block' }).click();
-		await page.getByLabel('Display the map').uncheck();
-		await expect(page.getByLabel('Hide the map')).toBeVisible();
+		await page.waitForLoadState('domcontentloaded');
+		await expect(page.locator('#map')).toBeVisible({ timeout: 30000 });
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
@@ -66,19 +66,30 @@ test.describe('e2e test for venue map through admin side', () => {
 			.getByLabel('Editor publish')
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
+
+		await page
+			.getByText(`${postName} is now live.`)
+			.isVisible({ timeout: 60000 }); // verified the event is live.
+
 		await page
 			.getByLabel('Editor publish')
 			.getByRole('link', { name: 'View Venue' })
 			.click();
+		await page.locator('#map').isVisible({ timeout: 30000 });
 
-		await expect(
-			page
-				.locator('#wp--skip-link--target')
-				.getByRole('heading', { postName })
-		).toBeVisible();
-		await page.screenshot({
-			path: 'venue_post_no_map.png',
+		await page.waitForLoadState('domcontentloaded');
+		await expect(page).toHaveScreenshot('location_map.png', {
 			fullPage: true,
+			timeout: 30000,
+			mask: [
+				page.locator('header'),
+				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
+				page.locator('.wp-block-gatherpress-event-date'),
+				page.locator('footer'),
+			],
 		});
 	});
 });

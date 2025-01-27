@@ -13,14 +13,14 @@ test.describe('e2e test for venue map through admin side', () => {
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
+		const postName = `venue map-${Math.floor(Math.random() * 100)}`;
+
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page.getByRole('link', { name: 'Venues' }).click();
 		await page.getByRole('link', { name: 'Add New Venue' }).click();
 
-		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
-		const eventTitle = await page
-			.getByLabel('Add title')
-			.fill(`test: venue map:${currentDate}`);
+		await page.getByLabel('Add title').fill(postName);
+
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
@@ -28,15 +28,33 @@ test.describe('e2e test for venue map through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		//await page.getByLabel('Settings', { exact: true }).click();
+		const settingButton = await page.getByLabel('Settings', {
+			exact: true,
+		});
 
-		await page.getByRole('button', { name: 'Venue settings' }).click();
+		const settingExpand = await settingButton.getAttribute('aria-expanded');
+
+		if (settingExpand === 'false') {
+			await settingButton.click();
+		}
+		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
+
+		const venueButton = await page.getByRole('button', {
+			name: 'venue settings',
+		});
+		const venueExpand = await venueButton.getAttribute('aria-expanded');
+
+		if (venueExpand === 'false') {
+			await venueButton.click();
+		}
+
+		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
 
 		await page.getByLabel('Full Address').fill('Pune');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 		await page.locator('#map').isVisible({ timeout: 30000 });
-		await expect(page.locator('#map')).toBeVisible();
+		await expect(page.locator('#map')).toBeVisible({ timeout: 30000 });
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
@@ -45,10 +63,6 @@ test.describe('e2e test for venue map through admin side', () => {
 			.getByLabel('Editor publish')
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
-
-		await page
-			.getByText(`${eventTitle} is now live.`)
-			.isVisible({ timeout: 60000 }); // verified the event is live.
 
 		await page
 			.getByLabel('Editor publish')
@@ -60,14 +74,14 @@ test.describe('e2e test for venue map through admin side', () => {
 
 		await expect(page).toHaveScreenshot('location_map.png', {
 			fullPage: true,
-			mask:[
+			mask: [
 				page.locator('header'),
 				page.locator('h1'),
 				page.locator('h3'),
 				page.locator('nav'),
 				page.locator('.wp-block-template-part'),
 				page.locator('footer'),
-			]
+			],
 		});
 	});
 });
