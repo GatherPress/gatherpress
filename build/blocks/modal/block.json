@@ -12,14 +12,6 @@
   "example": {},
   "description": "Enables members to easily confirm their attendance for an event.",
   "attributes": {
-    "style": {
-      "type": "object",
-      "default": {
-        "color": {
-          "background": "rgba(0, 0, 0, 0.5)"
-        }
-      }
-    },
     "zIndex": {
       "type": "number",
       "default": 1000

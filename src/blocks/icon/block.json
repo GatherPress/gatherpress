@@ -28,9 +28,6 @@
 		"html": false,
 		"spacing": {
 			"margin": true
-		},
-		"shadow": {
-			"__experimentalSkipSerialization": true
 		}
 	},
 	"textdomain": "gatherpress",
