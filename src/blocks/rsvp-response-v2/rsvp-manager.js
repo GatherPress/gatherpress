@@ -32,7 +32,7 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 	const responses = getFromGlobal('eventDetails.responses');
 	const postId = getFromGlobal('eventDetails.postId');
 	const [rsvpResponse, setRsvpResponse] = useState(responses);
-	const attendees = rsvpResponse[defaultStatus].responses;
+	const attendees = rsvpResponse[defaultStatus].records;
 
 	/**
 	 * Fetches user records from the core store via getEntityRecords.
