@@ -24,6 +24,8 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {string} root0.defaultStatus The current default status for the RSVP response, defaults to 'attending'.
  * @since 1.0.0
  *
+ * @deprecated Component will be removed soon.
+ *
  * @return {JSX.Element} The rendered RSVP response component.
  */
 const RsvpResponse = ({ defaultStatus = 'attending' }) => {

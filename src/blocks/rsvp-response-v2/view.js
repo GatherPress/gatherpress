@@ -39,7 +39,7 @@ const { state, actions } = store('gatherpress', {
 
 			const element = getElement();
 			const rsvpResponseElement = element.ref.closest(
-				'.wp-block-gatherpress-rsvp-response-v2'
+				'.wp-block-gatherpress-rsvp-response'
 			);
 			const limitEnabled =
 				'1' === rsvpResponseElement.dataset.limitEnabled;
@@ -102,7 +102,7 @@ const { state, actions } = store('gatherpress', {
 			const postId = context?.postId || 0;
 			const element = getElement();
 			const rsvpResponseElement = element.ref.closest(
-				'.wp-block-gatherpress-rsvp-response-v2'
+				'.wp-block-gatherpress-rsvp-response'
 			);
 
 			initPostContext(state, postId);
@@ -219,7 +219,7 @@ const { state, actions } = store('gatherpress', {
 			const context = getContext();
 			const postId = context?.postId || 0;
 			const rsvpResponseElement = element.ref.closest(
-				'.wp-block-gatherpress-rsvp-response-v2'
+				'.wp-block-gatherpress-rsvp-response'
 			);
 			const limitEnabled =
 				'1' === rsvpResponseElement.dataset.limitEnabled;

@@ -6,7 +6,7 @@
 	"title": "RSVP Response Toggle",
 	"description": "Toggle between showing all RSVP responses or a limited set.",
 	"category": "gatherpress",
-	"ancestor": ["gatherpress/rsvp-response-v2"],
+	"ancestor": ["gatherpress/rsvp-response"],
 	"icon": "arrow-down",
 	"example": {},
 	"attributes": {

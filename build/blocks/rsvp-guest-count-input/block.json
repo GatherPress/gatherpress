@@ -7,7 +7,7 @@
   "description": "Allows members to specify the number of guests they are bringing.",
   "category": "gatherpress",
   "ancestor": [
-    "gatherpress/rsvp-v2"
+    "gatherpress/rsvp"
   ],
   "icon": "yes",
   "example": {},

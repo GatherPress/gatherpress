@@ -13,7 +13,7 @@
 	},
 	"usesContext": [ "gatherpress/rsvpResponses", "gatherpress/rsvpLimitEnabled", "gatherpress/rsvpLimit", "postId" ],
 	"parent": [ "core/group" ],
-	"ancestor": [ "core/rsvp-response-v2" ],
+	"ancestor": [ "core/rsvp-response" ],
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",

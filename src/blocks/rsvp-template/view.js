@@ -14,7 +14,7 @@ const { state } = store('gatherpress', {
 			const context = getContext();
 			const element = getElement();
 			const rsvpResponseElement = element.ref.closest(
-				'.wp-block-gatherpress-rsvp-response-v2'
+				'.wp-block-gatherpress-rsvp-response'
 			);
 			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-status-html', {
 				method: 'POST',

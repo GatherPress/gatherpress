@@ -40,7 +40,7 @@ class Rsvp_Response {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const BLOCK_NAME = 'gatherpress/rsvp-response-v2';
+	const BLOCK_NAME = 'gatherpress/rsvp-response';
 
 	/**
 	 * Class constructor.
@@ -263,7 +263,7 @@ class Rsvp_Response {
 	 * Adds the RSVP response block to the list of allowed ancestors for the comment author name block.
 	 *
 	 * This method modifies the `ancestor` property of the `core/comment-author-name` block's metadata
-	 * to include the `gatherpress/rsvp-response-v2` block. This allows the comment author name block
+	 * to include the `gatherpress/rsvp-response` block. This allows the comment author name block
 	 * to be used as a child of the RSVP response block.
 	 *
 	 * @since 1.0.0

@@ -93,7 +93,7 @@ const { state, actions } = store('gatherpress', {
 					const rsvpStatus =
 						parentWithRsvpStatus.getAttribute('data-rsvp-status');
 					const rsvpContainer = parentWithRsvpStatus.closest(
-						'.wp-block-gatherpress-rsvp-v2'
+						'.wp-block-gatherpress-rsvp'
 					);
 
 					if (['not_attending', 'no_status'].includes(rsvpStatus)) {

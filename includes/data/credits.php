@@ -4,7 +4,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.32.0-alpha.2',
+  'version' => '0.32.0-beta.1',
   'project-leaders' => 
   array (
     0 => 
@@ -46,19 +46,6 @@ return array (
         96 => '//www.gravatar.com/avatar/eff55f7591ee0908b90dd1724c290d0a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    3 => 
-    array (
-      'id' => 7673952,
-      'name' => 'Carsten Bach',
-      'link' => 'https://profiles.wordpress.org/author/carstenbach/',
-      'slug' => 'carstenbach',
-      'avatar_urls' => 
-      array (
-        24 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=24&#038;r=g&#038;d=mm',
-        48 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=48&#038;r=g&#038;d=mm',
-        96 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=96&#038;r=g&#038;d=mm',
-      ),
-    ),
   ),
   'gatherpress-team' => 
   array (
@@ -90,6 +77,19 @@ return array (
     ),
     2 => 
     array (
+      'id' => 7673952,
+      'name' => 'Carsten Bach',
+      'link' => 'https://profiles.wordpress.org/author/carstenbach/',
+      'slug' => 'carstenbach',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/98eb3a2530e8b074932f8e059d0dadc0?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    3 => 
+    array (
       'id' => 20244435,
       'name' => 'Caleb Matteis',
       'link' => 'https://profiles.wordpress.org/author/calebthedev/',
@@ -101,7 +101,7 @@ return array (
         96 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    3 => 
+    4 => 
     array (
       'id' => 16994801,
       'name' => 'Paul Barthmaier (pbrocks)',
@@ -114,7 +114,7 @@ return array (
         96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    4 => 
+    5 => 
     array (
       'id' => 14692152,
       'name' => 'Laura Byrne',
@@ -127,7 +127,7 @@ return array (
         96 => '//www.gravatar.com/avatar/9210ecea04529656ea99064634ac636b?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    5 => 
+    6 => 
     array (
       'id' => 21156948,
       'name' => 'Prayag Mankar',
@@ -140,7 +140,7 @@ return array (
         96 => '//www.gravatar.com/avatar/ddc43fb192c5a9c58e16c0ccab85b81f?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    6 => 
+    7 => 
     array (
       'id' => 20932248,
       'name' => 'prashantabellad',
