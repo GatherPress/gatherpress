@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "gatherpress/rsvp-response",
 	"version": "2.0.0",
-	"title": "RSVP Response V2",
+	"title": "RSVP Response",
 	"category": "gatherpress",
 	"icon": "groups",
 	"example": {},
