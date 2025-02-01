@@ -160,7 +160,7 @@ const ATTENDING = [
 								'core/paragraph',
 								{
 									content: __(
-										'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
+										'To change your attendance status, simply click the <strong>Not Attending</strong> button below.',
 										'gatherpress'
 									),
 									metadata: {
