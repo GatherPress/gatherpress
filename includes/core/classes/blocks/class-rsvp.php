@@ -35,7 +35,7 @@ class Rsvp {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const BLOCK_NAME = 'gatherpress/rsvp-v2';
+	const BLOCK_NAME = 'gatherpress/rsvp';
 
 	/**
 	 * Class constructor.

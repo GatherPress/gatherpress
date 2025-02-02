@@ -29,6 +29,8 @@ import { getFromGlobal } from '../helpers/globals';
  * a checkbox to permit anonymous RSVPs. The component communicates with the server through
  * REST API calls and broadcasts changes to other components.
  *
+ * @deprecated Component will be removed soon.
+ *
  * @since 1.0.0
  *
  * @param {Object}  props                      - Component props.

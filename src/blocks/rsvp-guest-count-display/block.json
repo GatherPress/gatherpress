@@ -6,7 +6,7 @@
 	"title": "RSVP Guest Count Display",
 	"description": "Displays the number of guests associated with a member's RSVP.",
 	"category": "gatherpress",
-	"ancestor": ["gatherpress/rsvp-v2", "gatherpress/rsvp-template"],
+	"ancestor": ["gatherpress/rsvp", "gatherpress/rsvp-template"],
 	"icon": "yes",
 	"example": {},
 	"attributes": {},

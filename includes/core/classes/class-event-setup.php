@@ -135,7 +135,7 @@ class Event_Setup {
 					array( 'gatherpress/event-date' ),
 					array( 'gatherpress/add-to-calendar' ),
 					array( 'gatherpress/venue' ),
-					array( 'gatherpress/rsvp-v2' ),
+					array( 'gatherpress/rsvp' ),
 					array(
 						'core/paragraph',
 						array(
@@ -145,7 +145,7 @@ class Event_Setup {
 							),
 						),
 					),
-					array( 'gatherpress/rsvp-response-v2' ),
+					array( 'gatherpress/rsvp-response' ),
 				),
 				// @todo continue to work on the event-template.
 				// 'template'      => array(

@@ -21,7 +21,7 @@
     "core/group"
   ],
   "ancestor": [
-    "core/rsvp-response-v2"
+    "core/rsvp-response"
   ],
   "textdomain": "gatherpress",
   "editorScript": "file:./index.js",

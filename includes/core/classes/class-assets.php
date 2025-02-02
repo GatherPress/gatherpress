@@ -427,16 +427,12 @@ class Assets {
 				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/online-event',
-					'gatherpress/rsvp', // will be removed when name changes.
-					'gatherpress/rsvp-response', // will be removed when name changes.
 				);
 				break;
 			default:
 				$blocks = array(
 					'gatherpress/add-to-calendar',
 					'gatherpress/online-event',
-					'gatherpress/rsvp', // will be removed when name changes.
-					'gatherpress/rsvp-response', // will be removed when name changes.
 					'gatherpress/venue',
 				);
 		}

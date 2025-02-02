@@ -131,8 +131,12 @@ class Rsvp_Template {
 		$responses     = $event->rsvp->responses()['attending']['records'];
 		$block_content = '';
 		$args          = array(
-			'limit_enabled' => (bool) $instance->context['gatherpress/rsvpLimitEnabled'],
-			'limit'         => (int) $instance->context['gatherpress/rsvpLimit'],
+			'limit_enabled' => isset( $instance->context['gatherpress/rsvpLimitEnabled'] )
+				? (bool) $instance->context['gatherpress/rsvpLimitEnabled']
+				: false,
+			'limit'         => isset( $instance->context['gatherpress/rsvpLimit'] )
+				? (int) $instance->context['gatherpress/rsvpLimit']
+				: 0,
 		);
 
 		foreach ( $responses as $key => $record ) {

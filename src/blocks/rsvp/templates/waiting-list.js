@@ -3,7 +3,7 @@
  */
 import { __, _x } from '@wordpress/i18n';
 
-const ATTENDING = [
+const WAITING_LIST = [
 	[
 		'gatherpress/modal-manager',
 		{
@@ -54,62 +54,49 @@ const ATTENDING = [
 				{
 					style: {
 						spacing: {
-							blockGap: '0',
+							blockGap: 'var:preset|spacing|20',
 						},
+					},
+					layout: {
+						type: 'flex',
+						flexWrap: 'nowrap',
 					},
 				},
 				[
 					[
-						'core/group',
+						'gatherpress/icon',
+						{
+							icon: 'clock',
+							iconSize: 24,
+						},
+					],
+					[
+						'core/paragraph',
 						{
 							style: {
 								spacing: {
-									blockGap: 'var:preset|spacing|20',
+									margin: {
+										top: '0',
+									},
+									padding: {
+										top: '0',
+									},
 								},
 							},
-							layout: {
-								type: 'flex',
-								flexWrap: 'nowrap',
+							content: _x(
+								'<strong>Waiting List</strong>',
+								'RSVP status indicator',
+								'gatherpress'
+							),
+							metadata: {
+								name: _x(
+									'RSVP Status',
+									'Block name displayed in the editor',
+									'gatherpress'
+								),
 							},
 						},
-						[
-							[
-								'gatherpress/icon',
-								{
-									icon: 'yes-alt',
-									iconSize: 24,
-								},
-							],
-							[
-								'core/paragraph',
-								{
-									style: {
-										spacing: {
-											margin: {
-												top: '0',
-											},
-											padding: {
-												top: '0',
-											},
-										},
-									},
-									content: _x(
-										'<strong>Attending</strong>',
-										'RSVP status indicator',
-										'gatherpress'
-									),
-									metadata: {
-										name: _x(
-											'RSVP Status',
-											'Block name displayed in the editor',
-											'gatherpress'
-										),
-									},
-								},
-							],
-						],
 					],
-					['gatherpress/rsvp-guest-count-display', {}],
 				],
 			],
 			[
@@ -119,7 +106,7 @@ const ATTENDING = [
 					metadata: {
 						name: _x(
 							'RSVP Modal',
-							'Modal title in editor',
+							'Block name displayed in the editor',
 							'gatherpress'
 						),
 					},
@@ -143,7 +130,7 @@ const ATTENDING = [
 										},
 									},
 									content: _x(
-										"<strong>You're Attending</strong>",
+										"<strong>You're Wait Listed</strong>",
 										'RSVP modal header',
 										'gatherpress'
 									),
@@ -160,7 +147,7 @@ const ATTENDING = [
 								'core/paragraph',
 								{
 									content: __(
-										'To set or change your attending status, simply click the <strong>Not Attending</strong> button below.',
+										'To change your attendance status, simply click the <strong>Not Attending</strong> button below.',
 										'gatherpress'
 									),
 									metadata: {
@@ -172,7 +159,6 @@ const ATTENDING = [
 									},
 								},
 							],
-							['gatherpress/rsvp-guest-count-input', {}],
 							['gatherpress/rsvp-anonymous-checkbox', {}],
 							[
 								'core/buttons',
@@ -251,4 +237,4 @@ const ATTENDING = [
 	],
 ];
 
-export default ATTENDING;
+export default WAITING_LIST;

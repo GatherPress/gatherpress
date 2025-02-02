@@ -6,7 +6,7 @@
 	"title": "RSVP Anonymous Checkbox",
 	"description": "Allows users to choose to remain anonymous in the RSVP response, preventing their name or photo from being displayed.",
 	"category": "gatherpress",
-	"ancestor": ["gatherpress/rsvp-v2"],
+	"ancestor": ["gatherpress/rsvp"],
 	"icon": "yes",
 	"example": {},
 	"attributes": {
