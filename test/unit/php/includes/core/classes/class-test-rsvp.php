@@ -182,6 +182,15 @@ class Test_Rsvp extends Base {
 		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to assert user 2 is attending.' );
 		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is attending.' );
 		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 4 is attending.' );
+
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 0 );
+
+		$this->assertEquals( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
+
+		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.' );
+		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to assert user 2 is attending.' );
+		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is attending.' );
+		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 4 is attending.' );
 	}
 
 	/**
@@ -221,6 +230,15 @@ class Test_Rsvp extends Base {
 			$rsvp->attending_limit_reached( $current_response, 1 ),
 			'Failed to assert that limit has been reached.'
 		);
+
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 0 );
+
+		$this->assertFalse(
+			$rsvp->attending_limit_reached( $current_response, 1 ),
+			'Failed to assert that limit has not been reached.'
+		);
+
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
 
 		$this->assertFalse(
 			$rsvp->attending_limit_reached( $current_response ),
