@@ -152,19 +152,19 @@ class Test_Dropdown extends Base {
 		$block         = array(
 			'blockName' => 'gatherpress/dropdown',
 			'attrs'     => array(
-				'dropdownId'            => 'custom-dropdown',
-				'itemPadding'           => array(
+				'dropdownId'           => 'custom-dropdown',
+				'itemPadding'          => array(
 					'top'    => 10,
 					'right'  => 20,
 					'bottom' => 10,
 					'left'   => 20,
 				),
-				'itemTextColor'         => '#FF0000',
-				'itemBgColor'           => '#CCCCCC',
-				'itemHoverTextColor'    => '#00FF00',
-				'itemHoverBgColor'      => '#333333',
-				'itemDividerColor'      => '#0000FF',
-				'itemDividerThickness'  => 2,
+				'itemTextColor'        => '#FF0000',
+				'itemBgColor'          => '#CCCCCC',
+				'itemHoverTextColor'   => '#00FF00',
+				'itemHoverBgColor'     => '#333333',
+				'itemDividerColor'     => '#0000FF',
+				'itemDividerThickness' => 2,
 			),
 		);
 		$block_content = '<div class="dropdown-content">Test</div>';
@@ -258,7 +258,7 @@ class Test_Dropdown extends Base {
 			'data-dropdown-mode="select"',
 			$result,
 			'Select mode attribute should not be added when actAsSelect is false.'
-		 );
+		);
 	}
 
 	/**
@@ -285,32 +285,32 @@ class Test_Dropdown extends Base {
 			'data-dropdown-mode="select"',
 			$result,
 			'Select mode attribute should be added when actAsSelect is true.'
-		 );
-		 $this->assertStringContainsString(
+		);
+		$this->assertStringContainsString(
 			'gatherpress--is-disabled',
 			$result,
 			'Disabled class should be added to selected item.'
-		 );
-		 $this->assertStringContainsString(
+		);
+		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
 			'Interactive attribute should be added for select mode items.'
-		 );
-		 $this->assertStringContainsString(
+		);
+		$this->assertStringContainsString(
 			'data-wp-on--click="actions.linkHandler"',
 			$result,
 			'Click handler attribute should be added for select mode items.'
-		 );
-		 $this->assertStringContainsString(
+		);
+		$this->assertStringContainsString(
 			'aria-disabled="true"',
 			$result,
 			'Aria-disabled attribute should be added to selected item.'
-		 );
-		 $this->assertStringContainsString(
+		);
+		$this->assertStringContainsString(
 			'tabindex="-1"',
 			$result,
 			'Tabindex should be set to -1 for selected item.'
-		 );
+		);
 	}
 
 	/**
@@ -337,22 +337,22 @@ class Test_Dropdown extends Base {
 			'data-dropdown-mode="select"',
 			$result,
 			'Select mode attribute should be added when actAsSelect is enabled.'
-		 );
-		 $this->assertStringContainsString(
+		);
+		$this->assertStringContainsString(
 			'gatherpress--is-disabled',
 			$result,
 			'Disabled class should be added to selected dropdown item.'
-		 );
-		 $this->assertStringNotContainsString(
+		);
+		$this->assertStringNotContainsString(
 			'<a href="#">Item 1</a>',
 			$result,
 			'Original link markup should be transformed for select mode items.'
-		 );
-		 $this->assertStringContainsString(
+		);
+		$this->assertStringContainsString(
 			'href="#"',
 			$result,
 			'Hash href should be added to select mode links.'
-		 );
+		);
 	}
 
 	/**
@@ -369,11 +369,11 @@ class Test_Dropdown extends Base {
 			'blockName' => 'gatherpress/dropdown',
 			'attrs'     => array(
 				'openOn'     => 'click',
-				'dropdownId' => 'test-dropdown'
-			)
+				'dropdownId' => 'test-dropdown',
+			),
 		);
 		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Click</a></div>';
-		$result        = $instance->apply_dropdown_attributes($block_content, $block);
+		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
 
 		$this->assertStringContainsString(
 			'aria-controls="test-dropdown"',
@@ -405,11 +405,11 @@ class Test_Dropdown extends Base {
 		$block         = array(
 			'blockName' => 'gatherpress/dropdown',
 			'attrs'     => array(
-				'openOn' => 'hover'
-			)
+				'openOn' => 'hover',
+			),
 		);
 		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Hover</a></div>';
-		$result        = $instance->apply_dropdown_attributes($block_content, $block);
+		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
 
 		$this->assertStringContainsString(
 			'data-wp-on--click="actions.preventDefault"',
@@ -441,8 +441,8 @@ class Test_Dropdown extends Base {
 				'dropdownBorderColor'     => '#0000FF',
 				'dropdownBorderRadius'    => 4,
 				'dropdownZIndex'          => 20,
-				'dropdownWidth'           => 300
-			)
+				'dropdownWidth'           => 300,
+			),
 		);
 		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Styled</a><div class="wp-block-gatherpress-dropdown__menu"></div></div>';
 		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
@@ -485,7 +485,7 @@ class Test_Dropdown extends Base {
 	public function test_apply_dropdown_attributes_defaults(): void {
 		$instance      = Dropdown::get_instance();
 		$block         = array(
-			'blockName' => 'gatherpress/dropdown'
+			'blockName' => 'gatherpress/dropdown',
 		);
 		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Default</a><div class="wp-block-gatherpress-dropdown__menu"></div></div>';
 		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
