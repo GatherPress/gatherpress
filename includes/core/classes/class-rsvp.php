@@ -232,8 +232,12 @@ class Rsvp {
 			'user_id'            => $user_id,
 		);
 
-		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) && rest_is_ip_address( $_SERVER['REMOTE_ADDR'] ) ) {
-			$args['comment_author_IP'] = $_SERVER['REMOTE_ADDR'];
+		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+
+			if ( rest_is_ip_address( $remote_ip ) ) {
+				$args['comment_author_IP'] = $remote_ip;
+			}
 		}
 
 		if ( empty( $rsvp ) ) {
