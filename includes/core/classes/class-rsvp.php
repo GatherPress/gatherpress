@@ -227,9 +227,18 @@ class Rsvp {
 		$args = array(
 			'comment_author_url' => get_author_posts_url( $user_id ),
 			'comment_post_ID'    => $post_id,
+			'comment_author_IP'  => '127.0.0.1',
 			'comment_type'       => self::COMMENT_TYPE,
 			'user_id'            => $user_id,
 		);
+
+		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+
+			if ( rest_is_ip_address( $remote_ip ) ) {
+				$args['comment_author_IP'] = $remote_ip;
+			}
+		}
 
 		if ( empty( $rsvp ) ) {
 			$comment_id = wp_insert_comment( $args );
