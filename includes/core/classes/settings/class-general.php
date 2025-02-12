@@ -178,6 +178,19 @@ class General extends Base {
 							),
 						),
 					),
+					'delete_data_on_uninstall' => array(
+						'labels'      => array(
+							'name' => __( 'Delete Data on Uninstall', 'gatherpress' ),
+						),
+						'description' => __( 'Check this box if you want all GatherPress data and settings to be removed when the plugin is uninstalled.', 'gatherpress' ),
+						'field'       => array(
+							'label'   => __( 'Delete all plugin data upon uninstall', 'gatherpress' ),
+							'type'    => 'checkbox',
+							'options' => array(
+								'default' => 0,
+							),
+						),
+					),
 				),
 			),
 			'formatting' => array(

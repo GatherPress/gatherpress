@@ -84,6 +84,7 @@ class Setup {
 	protected function setup_hooks(): void {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
+		register_uninstall_hook( GATHERPRESS_CORE_FILE, array( 'GatherPress\Core\Setup', 'uninstall_gatherpress_plugin' ) );
 
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
@@ -183,6 +184,83 @@ class Setup {
 	public function deactivate_gatherpress_plugin(): void {
 		flush_rewrite_rules();
 	}
+
+	/**
+	 * Uninstalls the GatherPress plugin.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @return void
+	 */
+	public static function uninstall_gatherpress_plugin() {
+		global $wpdb;
+	
+		// Ensure the uninstallation script is called from within WordPress.
+		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+			die;
+		}
+
+		// Check if the user opted to delete data on uninstall.
+		$settings    = Settings::get_instance();
+		$delete_data = $settings->get_value( 'general', 'general', 'delete_data_on_uninstall' );
+		
+		// If the option is not enabled, exit early to prevent data on uninstall.
+		if( intval( $delete_data )  !== 1 ) {
+			return;
+		}
+	
+		// GatherPress-specific options and transients to be deleted.
+		$option_names = array(
+			'gatherpress_flush_rewrite_rules_flag',
+			'gatherpress_general',
+			'gatherpress_suppress_site_notification'
+		);
+	
+		// Delete options in single-site or multisite setup.
+		foreach ( $option_names as $option ) {
+			delete_option( $option );
+			if ( is_multisite() ) {
+				delete_site_option( $option );
+			}
+		}
+	
+		// Drop custom tables for events and RSVPs.
+		$event_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		$rsvp_table  = sprintf( Rsvp::TABLE_FORMAT, $wpdb->prefix );
+		
+		// Drop the tables if they exist.
+		$wpdb->query( "DROP TABLE IF EXISTS {$event_table}" );
+		$wpdb->query( "DROP TABLE IF EXISTS {$rsvp_table}" );
+	
+		// Delete any custom taxonomies if required (like 'gatherpress_venue', 'gatherpress_event_category').
+		$taxonomies = array( 'gatherpress_venue', 'gatherpress_event_category' );
+
+		foreach ( $taxonomies as $taxonomy ) {
+			$terms = get_terms( array( 'taxonomy' => $taxonomy, 'hide_empty' => false ) );
+			if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+				foreach ( $terms as $term ) {
+					wp_delete_term( $term->term_id, $taxonomy );
+				}
+			}
+		}
+	
+		// Remove user meta related to GatherPress.
+		$meta_keys = array(
+			'gatherpress_event_meta',
+			'gatherpress_venue_meta',
+			'gatherpress_rsvp_meta',
+		);
+
+		$meta_query = implode( ', ', array_fill( 0, count( $meta_keys ), '%s' ) );
+		$wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->usermeta WHERE meta_key IN ( {$meta_query} )", $meta_keys ) );
+	
+		// Clear rewrite rules to remove any custom rewrites added by the plugin.
+		flush_rewrite_rules();
+	}
+	
+
 
 	/**
 	 * Flush GatherPress rewrite rules if the previously added flag exists and then remove the flag.
