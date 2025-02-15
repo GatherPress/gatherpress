@@ -63,15 +63,23 @@ const GuestLimit = () => {
 	}, [isNewEvent, defaultGuestLimit, updateGuestLimit]);
 
 	return (
-		<NumberControl
-			label={__('Maximum Number of Guests', 'gatherpress')}
-			value={guestLimit}
-			min={0}
-			max={5}
-			onChange={(value) => {
-				updateGuestLimit(value);
-			}}
-		/>
+		<>
+			<NumberControl
+				label={__('Maximum Number of Guests', 'gatherpress')}
+				value={guestLimit}
+				min={0}
+				max={5}
+				onChange={(value) => {
+					updateGuestLimit(value);
+				}}
+			/>
+			<p className="description">
+				{__(
+					'Maximum number of additional people each attendee can bring.',
+					'gatherpress'
+				)}
+			</p>
+		</>
 	);
 };
 
