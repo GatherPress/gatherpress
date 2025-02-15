@@ -126,7 +126,7 @@ class General extends Base {
 						'labels'      => array(
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
 						),
-						'description' => __( 'Set this as your default, but you can still override it for each event as you like. If you set it to 0, there will not be any limit.', 'gatherpress' ),
+						'description' => __( 'Set this as your default, but you can still override it for each event as you like. This is the total number of people allowed at an event. If you set it to 0, there will not be any limit.', 'gatherpress' ),
 						'field'       => array(
 							'label'   => __( 'The default maximum limit of attendees to an event.', 'gatherpress' ),
 							'type'    => 'number',
@@ -142,7 +142,7 @@ class General extends Base {
 						),
 						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
 						'field'       => array(
-							'label'   => __( 'The default maximum limit of guests an attendees can bring to an event.', 'gatherpress' ),
+							'label'   => __( 'The default maximum number of people each attendee can bring to an event.', 'gatherpress' ),
 							'type'    => 'number',
 							'size'    => 'small',
 							'options' => array(
