@@ -300,7 +300,7 @@ class Test_Validate extends Base {
 			array(
 				'blockName' => 'core/paragraph',
 				'attrs'     => array( 'align' => 'center' ),
-				// Missing innerBlocks
+				// Missing innerBlocks.
 			)
 		);
 
