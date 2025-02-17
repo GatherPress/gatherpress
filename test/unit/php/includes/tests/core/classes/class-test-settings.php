@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Settings;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
@@ -52,6 +52,24 @@ class Test_Settings extends Base {
 				'name'     => 'gatherpress_settings_section',
 				'priority' => 10,
 				'callback' => array( $instance, 'render_settings_form' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'gatherpress_text_after',
+				'priority' => 10,
+				'callback' => array( $instance, 'datetime_preview' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'gatherpress_text_after',
+				'priority' => 10,
+				'callback' => array( $instance, 'urlrewrite_preview' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'update_option_gatherpress_general',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
 			),
 			array(
 				'type'     => 'filter',

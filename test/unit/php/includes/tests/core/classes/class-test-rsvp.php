@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Rsvp;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Error;
 

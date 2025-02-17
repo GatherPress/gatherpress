@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Venue;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 
 /**
  * Class Test_Venue.

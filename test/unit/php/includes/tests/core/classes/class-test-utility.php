@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use ErrorException;
 use GatherPress\Core\Utility;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility as PMC_Utility;
 
 /**

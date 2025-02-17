@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Settings;
 
 use GatherPress\Core\Settings\General;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**

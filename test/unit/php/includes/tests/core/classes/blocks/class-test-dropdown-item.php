@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\Dropdown_Item;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 
 /**
  * Class Test_Dropdown_Item.

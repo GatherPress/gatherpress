@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Endpoints;
 
 use GatherPress\Core\Endpoints\Endpoint_Redirect;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**

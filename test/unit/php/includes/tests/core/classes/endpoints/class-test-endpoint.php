@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Endpoints;
 use GatherPress\Core\Endpoints\Endpoint;
 use GatherPress\Core\Endpoints\Endpoint_Redirect;
 use GatherPress\Core\Endpoints\Endpoint_Template;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**

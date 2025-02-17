@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core\Settings;
 
 use GatherPress\Core\Settings\Base;
-use PMC\Unit_Test\Base as Base_Unit_Test;
+use GatherPress\Tests\Base as Base_Unit_Test;
 use PMC\Unit_Test\Utility;
 
 /**
@@ -29,6 +29,12 @@ class Test_Base extends Base_Unit_Test {
 	public function test_setup_hooks(): void {
 		$instance = new Base();
 		$hooks    = array(
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_init',
+				'priority' => 10,
+				'callback' => array( $instance, 'init' ),
+			),
 			array(
 				'type'     => 'filter',
 				'name'     => 'gatherpress_sub_pages',

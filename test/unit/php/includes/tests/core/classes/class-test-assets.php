@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Assets;
 use GatherPress\Core\Event;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
@@ -77,6 +77,12 @@ class Test_Assets extends Base {
 				'name'     => 'admin_footer',
 				'priority' => 11,
 				'callback' => array( $instance, 'event_communication_modal' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_enqueue_styles' ),
 			),
 		);
 

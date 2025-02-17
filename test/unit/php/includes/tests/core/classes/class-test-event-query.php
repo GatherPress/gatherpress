@@ -13,7 +13,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event_Query;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**

@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Query;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use WP_Comment_Query;
 
 /**
@@ -32,7 +32,7 @@ class Test_Rsvp_Query extends Base {
 		$instance = Rsvp_Query::get_instance();
 		$hooks    = array(
 			array(
-				'type'     => 'filter',
+				'type'     => 'action',
 				'name'     => 'pre_get_comments',
 				'priority' => 10,
 				'callback' => array( $instance, 'exclude_rsvp_from_comment_query' ),

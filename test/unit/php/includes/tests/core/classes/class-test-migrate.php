@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Migrate;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 
 /**
  * Class Test_Migrate.

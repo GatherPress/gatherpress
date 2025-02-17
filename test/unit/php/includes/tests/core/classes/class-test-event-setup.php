@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Setup;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 
 /**
  * Class Test_Event_Query.
@@ -54,7 +54,13 @@ class Test_Event_Setup extends Base {
 				'callback' => array( $instance, 'set_datetimes' ),
 			),
 			array(
-				'type'     => 'filter',
+				'type'     => 'action',
+				'name'     => sprintf( 'save_post_%s', Event::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'check_waiting_list' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
 				'priority' => 10,
 				'callback' => array( $instance, 'custom_columns' ),

@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core\Blocks;
 use GatherPress\Core\Blocks\Rsvp;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Setup;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 
 /**
  * Class Test_Rsvp.

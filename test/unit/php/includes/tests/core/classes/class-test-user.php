@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\User;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
@@ -52,6 +52,24 @@ class Test_User extends Base {
 				'name'     => 'edit_user_profile_update',
 				'priority' => 10,
 				'callback' => array( $instance, 'save_profile_fields' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'gatherpress_date_format',
+				'priority' => 10,
+				'callback' => array( $instance, 'user_set_date_format' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'gatherpress_time_format',
+				'priority' => 10,
+				'callback' => array( $instance, 'user_set_time_format' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'gatherpress_timezone',
+				'priority' => 10,
+				'callback' => array( $instance, 'user_set_timezone' ),
 			),
 		);
 

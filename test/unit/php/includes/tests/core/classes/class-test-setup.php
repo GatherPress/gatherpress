@@ -11,7 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Assets;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Venue;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
@@ -46,9 +46,33 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'network_admin_notices',
+				'priority' => 10,
+				'callback' => array( $instance, 'check_users_can_register' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_notices',
+				'priority' => 10,
+				'callback' => array( $instance, 'check_gatherpress_alpha' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'network_admin_notices',
+				'priority' => 10,
+				'callback' => array( $instance, 'check_gatherpress_alpha' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_initialize_site',
 				'priority' => 10,
 				'callback' => array( $instance, 'on_site_create' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'send_headers',
+				'priority' => 10,
+				'callback' => array( $instance, 'smash_table' ),
 			),
 			array(
 				'type'     => 'filter',

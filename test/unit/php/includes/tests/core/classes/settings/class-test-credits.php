@@ -10,7 +10,7 @@ namespace GatherPress\Tests\Core\Settings;
 
 use GatherPress\Core\Settings;
 use GatherPress\Core\Settings\Credits;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
 /**
