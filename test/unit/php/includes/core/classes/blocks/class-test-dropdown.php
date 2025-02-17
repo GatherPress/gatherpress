@@ -12,7 +12,7 @@ use GatherPress\Core\Blocks\Dropdown;
 use PMC\Unit_Test\Base;
 
 /**
- * Class Test_Dropdown_Item.
+ * Class Test_Dropdown.
  *
  * @coversDefaultClass \GatherPress\Core\Blocks\Dropdown
  */
