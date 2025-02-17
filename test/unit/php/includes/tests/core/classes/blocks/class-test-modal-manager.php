@@ -15,7 +15,6 @@ use GatherPress\Tests\Base;
  * Class Test_Modal_Manager.
  *
  * @coversDefaultClass \GatherPress\Core\Blocks\Modal_Manager
- * @group foobar
  */
 class Test_Modal_Manager extends Base {
 	/**
