@@ -165,19 +165,6 @@ class General extends Base {
 							),
 						),
 					),
-					'enable_initial_decline' => array(
-						'labels'      => array(
-							'name' => __( 'Not Attending Users', 'gatherpress' ),
-						),
-						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
-						'field'       => array(
-							'label'   => __( 'Enable Immediate "Not Attending" Option for Attendees.', 'gatherpress' ),
-							'type'    => 'checkbox',
-							'options' => array(
-								'default' => 0,
-							),
-						),
-					),
 				),
 			),
 			'formatting' => array(

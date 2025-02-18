@@ -324,7 +324,6 @@ class Assets {
 				'currentUser'          => $event->rsvp->get( get_current_user_id() ),
 				'dateTime'             => $event->get_datetime(),
 				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
-				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'gatherpress_enable_initial_decline', true ),
 				'maxAttendanceLimit'   => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
 				'maxGuestLimit'        => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
 				'hasEventPast'         => $event->has_event_past(),
@@ -345,7 +344,6 @@ class Assets {
 			'settings'     => array(
 				'dateFormat'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
 				'enableAnonymousRsvp'  => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
-				'enableInitialDecline' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_initial_decline' ) ),
 				'mapPlatform'          => $settings->get_value( 'general', 'general', 'map_platform' ),
 				'maxAttendanceLimit'   => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
 				'maxGuestLimit'        => $settings->get_value( 'general', 'general', 'max_guest_limit' ),

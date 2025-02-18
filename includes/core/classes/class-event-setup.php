@@ -278,15 +278,6 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'boolean',
 			),
-			'gatherpress_enable_initial_decline' => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'boolean',
-			),
 			'gatherpress_online_event_link'      => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );

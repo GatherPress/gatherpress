@@ -37,7 +37,6 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {number}  props.postId               - The ID of the event.
  * @param {Object}  [props.currentUser='']     - Current user's RSVP information.
  * @param {boolean} props.enableAnonymousRsvp  - If true, shows a checkbox to allow anonymous RSVPs.
- * @param {boolean} props.enableInitialDecline - If true, shows an option to decline attendance initially.
  * @param {number}  props.maxGuestLimit        - The maximum number of guests allowed per RSVP.
  * @param {string}  props.type                 - Type of event ('upcoming' or 'past').
  *
@@ -48,7 +47,6 @@ const Rsvp = ({
 	currentUser = '',
 	type,
 	enableAnonymousRsvp,
-	enableInitialDecline,
 	maxGuestLimit,
 }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
@@ -380,8 +378,7 @@ const Rsvp = ({
 						</a>
 					</div>
 				</ButtonGroup>
-				{enableInitialDecline &&
-				'no_status' === rsvpStatus &&
+				{'no_status' === rsvpStatus &&
 				1 !== rsvpAnonymous ? (
 					<ButtonGroup className="gatherpress-buttons wp-block-buttons">
 						<div className="gatherpress-buttons__container wp-block-button">
