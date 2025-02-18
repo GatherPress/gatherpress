@@ -22,6 +22,7 @@ class Test_Settings extends Base {
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::__construct
+	 * @covers ::instantiate_classes
 	 * @covers ::setup_hooks
 	 *
 	 * @return void
