@@ -15,6 +15,7 @@ use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
+use WP_Query;
 
 /**
  * Class Test_Event_Query.
@@ -190,6 +191,179 @@ class Test_Event_Query extends Base {
 
 		$this->assertContains( $post_1->ID, $results->posts, 'Failed to assert that post ID was in array.' );
 		$this->assertNotContains( $post_2->ID, $results->posts, 'Failed to assert that post ID was not in array.' );
+	}
+
+	/**
+	 * Test query adjusted for upcoming events.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_for_upcoming_events(): void {
+		$instance = Event_Query::get_instance();
+		$query    = new WP_Query();
+
+		$query->set( 'gatherpress_events_query', 'upcoming' );
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertEquals(
+			10,
+			has_filter( 'posts_clauses', array( $instance, 'adjust_sorting_for_upcoming_events' ) ),
+			'Should add filter for upcoming events sorting'
+		);
+
+		$this->assertFalse(
+			has_filter( 'posts_clauses', array( $instance, 'adjust_sorting_for_past_events' ) ),
+			'Should remove filter for past events sorting'
+		);
+	}
+
+	/**
+	 * Test query adjusted for past events.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_for_past_events(): void {
+		$instance = Event_Query::get_instance();
+		$query    = new WP_Query();
+
+		$query->set( 'gatherpress_events_query', 'past' );
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertEquals(
+			10,
+			has_filter( 'posts_clauses', array( $instance, 'adjust_sorting_for_past_events' ) ),
+			'Should add filter for past events sorting'
+		);
+
+		$this->assertFalse(
+			has_filter( 'posts_clauses', array( $instance, 'adjust_sorting_for_upcoming_events' ) ),
+			'Should remove filter for upcoming events sorting'
+		);
+	}
+
+	/**
+	 * Test query adjusted for archive page.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_for_archive_page(): void {
+		$instance = Event_Query::get_instance();
+
+		// Mock WP_Query with necessary properties.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->is_main_query     = true;
+		$query->queried_object_id = 123;
+
+		// Mock main query check.
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				function ( $key ) {
+					return 'gatherpress_events_query' === $key ? 'past' : null;
+				}
+			);
+
+		$page_data = array(
+			'pages' => array(
+				'past_events' => wp_json_encode(
+					array(
+						(object) array( 'id' => 123 ),
+					)
+				),
+			),
+		);
+
+		add_option( 'gatherpress_general', $page_data );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertTrue(
+			$query->is_archive,
+			'Should set is_archive to true'
+		);
+
+		$this->assertTrue(
+			$query->is_post_type_archive,
+			'Should set is_post_type_archive to true'
+		);
+
+		$this->assertFalse(
+			$query->is_page,
+			'Should set is_page to false'
+		);
+
+		$this->assertFalse(
+			$query->is_singular,
+			'Should set is_singular to false'
+		);
+
+		delete_option( 'gatherpress_general' );
+	}
+
+	/**
+	 * Test query with invalid general options.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_with_invalid_general_options(): void {
+		$instance             = Event_Query::get_instance();
+		$query                = new WP_Query();
+		$query->is_main_query = true;
+
+		add_option( 'gatherpress_general', 'invalid' );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertEmpty(
+			$query->get( 'post_type' ),
+			'Should not modify query when general option is invalid'
+		);
+
+		delete_option( 'gatherpress_general' );
+	}
+
+	/**
+	 * Test query with no event type.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_with_no_event_type(): void {
+		$instance = Event_Query::get_instance();
+		$query    = new WP_Query();
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertFalse(
+			has_filter( 'posts_clauses', array( $instance, 'adjust_sorting_for_past_events' ) ),
+			'Should remove past events filter'
+		);
+
+		$this->assertFalse(
+			has_filter( 'posts_clauses', array( $instance, 'adjust_sorting_for_upcoming_events' ) ),
+			'Should remove upcoming events filter'
+		);
 	}
 
 	/**
