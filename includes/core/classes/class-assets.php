@@ -321,14 +321,14 @@ class Assets {
 
 		if ( ! empty( $event->event ) ) {
 			$event_details = array(
-				'currentUser'          => $event->rsvp->get( get_current_user_id() ),
-				'dateTime'             => $event->get_datetime(),
-				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
-				'maxAttendanceLimit'   => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
-				'maxGuestLimit'        => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
-				'hasEventPast'         => $event->has_event_past(),
-				'postId'               => $post_id,
-				'responses'            => $event->rsvp->responses(),
+				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
+				'dateTime'            => $event->get_datetime(),
+				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
+				'maxAttendanceLimit'  => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
+				'maxGuestLimit'       => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
+				'hasEventPast'        => $event->has_event_past(),
+				'postId'              => $post_id,
+				'responses'           => $event->rsvp->responses(),
 			);
 		}
 
@@ -342,13 +342,13 @@ class Assets {
 				'unregisterBlocks' => $this->unregister_blocks(),
 			),
 			'settings'     => array(
-				'dateFormat'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'enableAnonymousRsvp'  => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
-				'mapPlatform'          => $settings->get_value( 'general', 'general', 'map_platform' ),
-				'maxAttendanceLimit'   => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
-				'maxGuestLimit'        => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
-				'showTimezone'         => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
-				'timeFormat'           => $settings->get_value( 'general', 'formatting', 'time_format' ),
+				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
+				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'mapPlatform'         => $settings->get_value( 'general', 'general', 'map_platform' ),
+				'maxAttendanceLimit'  => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
+				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
+				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),
 			'urls'         => array(
 				'pluginUrl'       => GATHERPRESS_CORE_URL,
