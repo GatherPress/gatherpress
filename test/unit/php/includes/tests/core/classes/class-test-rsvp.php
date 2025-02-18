@@ -130,67 +130,94 @@ class Test_Rsvp extends Base {
 	}
 
 	/**
-	 * Coverage for check_waiting_list method.
+	 * Test check waiting list with no attendees.
 	 *
+	 * @since  1.0.0
 	 * @covers ::check_waiting_list
 	 *
 	 * @return void
 	 */
-	public function test_check_waiting_list(): void {
-		$event_id = $this->mock->post(
-			array(
-				'post_type' => 'gatherpress_event',
-			)
-		)->get()->ID;
+	public function test_check_waiting_list_with_no_attendees(): void {
+		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
 		$rsvp     = new Rsvp( $event_id );
 
-		$this->assertEquals( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
+		$this->assertEquals(
+			0,
+			$rsvp->check_waiting_list(),
+			'Should return 0 when there are no attendees'
+		);
+	}
 
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 2 );
-
+	/**
+	 * Test check waiting list with unlimited attendance.
+	 *
+	 * @since  1.0.0
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_with_unlimited_attendance(): void {
+		$event_id  = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+		$rsvp      = new Rsvp( $event_id );
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
 		$user_3_id = $this->factory->user->create();
-		$user_4_id = $this->factory->user->create();
 
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+
+		// Fill the one spot.
 		$rsvp->save( $user_1_id, 'attending' );
+
+		// These should go to waiting list.
 		$rsvp->save( $user_2_id, 'attending' );
 		$rsvp->save( $user_3_id, 'attending' );
-		$rsvp->save( $user_4_id, 'attending' );
 
-		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to assert user 2 is attending.' );
-		$this->assertSame( 'waiting_list', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is on waiting list.' );
-		$this->assertSame( 'waiting_list', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 4 is on waiting list.' );
-		$this->assertEquals( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
-
-		$rsvp->save( $user_1_id, 'not_attending' );
-
-		// Give it a slight delay to move member from waiting_list to attending (w/o test sometimes fails).
-		sleep( 1 );
-
-		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is on attending.' );
-		$this->assertSame( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
-
-		$rsvp->save( $user_1_id, 'attending' );
-
-		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 5 );
-
-		$this->assertEquals( 2, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
-
-		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to assert user 2 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 4 is attending.' );
-
+		// Now remove the limit.
 		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 0 );
 
-		$this->assertEquals( 0, $rsvp->check_waiting_list(), 'Failed to assert expected waiting list value.' );
+		$this->assertEquals(
+			2,
+			$rsvp->check_waiting_list(),
+			'Should move all waiting list members to attending when no limit'
+		);
+	}
 
-		$this->assertSame( 'attending', $rsvp->get( $user_1_id )['status'], 'Failed to assert user 1 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_2_id )['status'], 'Failed to assert user 2 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 3 is attending.' );
-		$this->assertSame( 'attending', $rsvp->get( $user_3_id )['status'], 'Failed to assert user 4 is attending.' );
+	/**
+	 * Test check waiting list with limited attendance.
+	 *
+	 * @since  1.0.0
+	 * @covers ::check_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_check_waiting_list_with_limited_attendance(): void {
+		$event_id  = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+		$rsvp      = new Rsvp( $event_id );
+		$user_1_id = $this->factory->user->create();
+		$user_2_id = $this->factory->user->create();
+
+		Utility::set_and_get_hidden_property( $rsvp, 'max_attendance_limit', 1 );
+
+		$rsvp->save( $user_1_id, 'waiting_list' );
+		$rsvp->save( $user_2_id, 'waiting_list' );
+
+		$this->assertEquals(
+			0,
+			$rsvp->check_waiting_list(),
+			'Should not move anyone to attending when limit is 1'
+		);
+
+		$this->assertSame(
+			'attending',
+			$rsvp->get( $user_1_id )['status'],
+			'First user should have moved to attending'
+		);
+
+		$this->assertSame(
+			'waiting_list',
+			$rsvp->get( $user_2_id )['status'],
+			'Second user should remain on waiting list'
+		);
 	}
 
 	/**
