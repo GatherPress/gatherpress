@@ -310,6 +310,444 @@ class Test_Settings extends Base {
 	}
 
 	/**
+	 * Test getting value with all parameters set.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_value
+	 *
+	 * @return void
+	 */
+	public function test_get_value_with_all_parameters(): void {
+		$instance = Settings::get_instance();
+		$expected = 'test_value';
+
+		add_option(
+			'gatherpress_test_page',
+			array(
+				'test_section' => array(
+					'test_option' => $expected,
+				),
+			)
+		);
+
+		$value = $instance->get_value( 'test_page', 'test_section', 'test_option' );
+
+		$this->assertEquals(
+			$expected,
+			$value,
+			'Should return the correct value when all parameters are set'
+		);
+
+		delete_option( 'gatherpress_test_page' );
+	}
+
+	/**
+	 * Test getting default value when option is empty.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_value
+	 *
+	 * @return void
+	 */
+	public function test_get_default_value_when_empty(): void {
+		$instance = Settings::get_instance();
+
+		add_option(
+			'gatherpress_test_page',
+			array(
+				'test_section' => array(
+					'test_option' => '',
+				),
+			)
+		);
+
+		$value = $instance->get_value( 'test_page', 'test_section', 'test_option' );
+
+		// The actual default value will come from get_default_value.
+		$default_value = $instance->get_default_value( 'test_page', 'test_section', 'test_option' );
+
+		$this->assertEquals(
+			$default_value,
+			$value,
+			'Should return default value when option is empty'
+		);
+
+		delete_option( 'gatherpress_test_page' );
+	}
+
+	/**
+	 * Test getting value with empty section and option.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_value
+	 *
+	 * @return void
+	 */
+	public function test_get_value_with_empty_section_option(): void {
+		$instance = Settings::get_instance();
+		$value    = $instance->get_value( 'test_page', '', '' );
+
+		$this->assertEquals(
+			$instance->get_default_value( 'test_page', '', '' ),
+			$value,
+			'Should handle empty section and option parameters'
+		);
+	}
+
+	/**
+	 * Test getting value with non-existent sub-page.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_value
+	 *
+	 * @return void
+	 */
+	public function test_get_value_with_non_existent_page(): void {
+		$instance = Settings::get_instance();
+		$value    = $instance->get_value( 'non_existent_page', 'test_section', 'test_option' );
+
+		$this->assertEquals(
+			$instance->get_default_value( 'non_existent_page', 'test_section', 'test_option' ),
+			$value,
+			'Should return default value for non-existent sub-page'
+		);
+	}
+
+	/**
+	 * Test getting default value with valid structure.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_default_value
+	 *
+	 * @return void
+	 */
+	public function test_get_default_value_with_valid_structure(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$expected = 'test_default';
+
+		$instance->method( 'get_sub_pages' )
+		->willReturn(
+			array(
+				'test_page' => array(
+					'sections' => array(
+						'test_section' => array(
+							'options' => array(
+								'test_option' => array(
+									'field' => array(
+										'options' => array(
+											'default' => $expected,
+										),
+									),
+								),
+							),
+						),
+					),
+				),
+			)
+		);
+
+		$value = $instance->get_default_value( 'gatherpress_test_page', 'test_section', 'test_option' );
+
+		$this->assertEquals(
+			$expected,
+			$value,
+			'Should return correct default value from sub_pages structure'
+		);
+	}
+
+	/**
+	 * Test getting default value with invalid page.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_default_value
+	 *
+	 * @return void
+	 */
+	public function test_get_default_value_with_invalid_page(): void {
+		$instance = Settings::get_instance();
+
+		$value = $instance->get_default_value( 'invalid_page', 'test_section', 'test_option' );
+
+		$this->assertEmpty(
+			$value,
+			'Should return empty string for invalid page'
+		);
+	}
+
+	/**
+	 * Test getting default value with empty parameters.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_default_value
+	 *
+	 * @return void
+	 */
+	public function test_get_default_value_with_empty_parameters(): void {
+		$instance = Settings::get_instance();
+
+		$value = $instance->get_default_value( '', '', '' );
+
+		$this->assertEmpty(
+			$value,
+			'Should return empty string when parameters are empty'
+		);
+	}
+
+	/**
+	 * Tests for the get_options method.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_options
+	 *
+	 * @return void
+	 */
+	public function test_get_options_with_existing_option(): void {
+		$instance    = Settings::get_instance();
+		$test_option = array( 'test' => 'value' );
+
+		add_option( 'gatherpress_test', $test_option );
+
+		$result = $instance->get_options( 'gatherpress_test' );
+
+		$this->assertEquals(
+			$test_option,
+			$result,
+			'Should return existing option when set and valid'
+		);
+
+		delete_option( 'gatherpress_test' );
+	}
+
+	/**
+	 * Test get_options returns defaults when option empty.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_options
+	 *
+	 * @return void
+	 */
+	public function test_get_options_returns_defaults_when_empty(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_option_defaults' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$default_options = array( 'default' => 'value' );
+
+		$instance->method( 'get_option_defaults' )
+			->willReturn( $default_options );
+
+		$result = $instance->get_options( 'gatherpress_test' );
+
+		$this->assertEquals(
+			$default_options,
+			$result,
+			'Should return defaults when option not set'
+		);
+	}
+
+	/**
+	 * Test get_options returns defaults when option not array.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_options
+	 *
+	 * @return void
+	 */
+	public function test_get_options_returns_defaults_when_not_array(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_option_defaults' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$default_options = array( 'default' => 'value' );
+
+		add_option( 'gatherpress_test', 'string_value' );
+
+		$instance->method( 'get_option_defaults' )
+			->willReturn( $default_options );
+
+		$result = $instance->get_options( 'gatherpress_test' );
+
+		$this->assertEquals(
+			$default_options,
+			$result,
+			'Should return defaults when option is not array'
+		);
+
+		delete_option( 'gatherpress_test' );
+	}
+
+	/**
+	 * Tests for the get_option_defaults method.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_option_defaults
+	 *
+	 * @return void
+	 */
+	public function test_get_option_defaults_with_valid_structure(): void {
+		$instance  = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+		$sub_pages = array(
+			'test_page' => array(
+				'sections' => array(
+					'section_one' => array(
+						'options' => array(
+							'option_one' => array(
+								'default' => 'default_one',
+							),
+							'option_two' => array(
+								'default' => 'default_two',
+							),
+						),
+					),
+					'section_two' => array(
+						'options' => array(
+							'option_three' => array(
+								'default' => 'default_three',
+							),
+						),
+					),
+				),
+			),
+		);
+
+		$instance->method( 'get_sub_pages' )
+			->willReturn( $sub_pages );
+
+		$expected = array(
+			'section_one' => array(
+				'option_one' => 'default_one',
+				'option_two' => 'default_two',
+			),
+			'section_two' => array(
+				'option_three' => 'default_three',
+			),
+		);
+
+		$result = $instance->get_option_defaults( 'gatherpress_test_page' );
+
+		$this->assertEquals(
+			$expected,
+			$result,
+			'Should return structured defaults from sub_pages configuration'
+		);
+	}
+
+	/**
+	 * Test getting defaults with invalid section options.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_option_defaults
+	 *
+	 * @return void
+	 */
+	public function test_get_option_defaults_with_invalid_section_options(): void {
+		$instance  = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+		$sub_pages = array(
+			'test_page' => array(
+				'sections' => array(
+					'section_one' => array(
+						'options' => 'invalid_options',
+					),
+				),
+			),
+		);
+
+		$instance->method( 'get_sub_pages' )
+			->willReturn( $sub_pages );
+
+		$result = $instance->get_option_defaults( 'gatherpress_test_page' );
+
+		$this->assertEmpty(
+			$result,
+			'Should return empty array when section options are invalid'
+		);
+	}
+
+
+	/**
+	 * Test getting defaults with non-existent page.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_option_defaults
+	 *
+	 * @return void
+	 */
+	public function test_get_option_defaults_with_nonexistent_page(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$instance->method( 'get_sub_pages' )
+			->willReturn( array() );
+
+		$result = $instance->get_option_defaults( 'gatherpress_nonexistent' );
+
+		$this->assertEmpty(
+			$result,
+			'Should return empty array for non-existent page'
+		);
+	}
+
+	/**
+	 * Test getting defaults with missing default values.
+	 *
+	 * @since  1.0.0
+	 * @covers ::get_option_defaults
+	 *
+	 * @return void
+	 */
+	public function test_get_option_defaults_with_missing_defaults(): void {
+		$instance  = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+		$sub_pages = array(
+			'test_page' => array(
+				'sections' => array(
+					'section_one' => array(
+						'options' => array(
+							'option_one' => array(),
+							'option_two' => array(
+								'default' => 'has_default',
+							),
+						),
+					),
+				),
+			),
+		);
+
+		$instance->method( 'get_sub_pages' )
+			->willReturn( $sub_pages );
+
+		$expected = array(
+			'section_one' => array(
+				'option_one' => '',
+				'option_two' => 'has_default',
+			),
+		);
+		$result   = $instance->get_option_defaults( 'gatherpress_test_page' );
+
+		$this->assertEquals(
+			$expected,
+			$result,
+			'Should handle missing default values correctly'
+		);
+	}
+
+	/**
 	 * Coverage for get_name_field method.
 	 *
 	 * @covers ::get_name_field
@@ -376,6 +814,122 @@ class Test_Settings extends Base {
 			0,
 			$instance->sort_sub_pages_by_priority( array( 'priority' => 42 ), array( 'priority' => 42 ) ),
 			'Failed to assert that it returns 0 while their priorities are equal.'
+		);
+	}
+
+	/**
+	 * Tests for the select_menu method.
+	 *
+	 * @since  1.0.0
+	 * @covers ::select_menu
+	 *
+	 * @return void
+	 */
+	public function test_select_menu_with_existing_submenu(): void {
+		$instance = Settings::get_instance();
+		$submenu  = 'existing_submenu';
+
+		$result = $instance->select_menu( $submenu );
+
+		$this->assertEquals(
+			'existing_submenu',
+			$result,
+			'Should return existing submenu when provided'
+		);
+	}
+
+	/**
+	 * Test select menu with empty submenu and existing page.
+	 *
+	 * @since  1.0.0
+	 * @covers ::select_menu
+	 *
+	 * @return void
+	 */
+	public function test_select_menu_with_empty_submenu_and_existing_page(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		Utility::set_and_get_hidden_property( $instance, 'current_page', 'gatherpress_test_page' );
+		Utility::set_and_get_hidden_property( $instance, 'main_sub_page', 'main_page' );
+
+		$sub_pages = array(
+			'test_page' => array(
+				'name' => 'Test Page',
+			),
+		);
+
+		$instance->method( 'get_sub_pages' )
+			->willReturn( $sub_pages );
+
+		$result = $instance->select_menu( '' );
+
+		$this->assertEquals(
+			'gatherpress_main_page',
+			$result,
+			'Should return prefixed main sub page when current page exists'
+		);
+	}
+
+	/**
+	 * Test select menu with empty submenu and non-existent page.
+	 *
+	 * @since  1.0.0
+	 * @covers ::select_menu
+	 *
+	 * @return void
+	 */
+	public function test_select_menu_with_empty_submenu_and_nonexistent_page(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		Utility::set_and_get_hidden_property( $instance, 'current_page', 'gatherpress_nonexistent' );
+
+		$sub_pages = array(
+			'test_page' => array(
+				'name' => 'Test Page',
+			),
+		);
+
+		$instance->method( 'get_sub_pages' )
+			->willReturn( $sub_pages );
+
+		$result = $instance->select_menu( '' );
+
+		$this->assertEquals(
+			'',
+			$result,
+			'Should return empty string when current page does not exist'
+		);
+	}
+
+	/**
+	 * Test select menu with empty submenu and empty sub pages.
+	 *
+	 * @since  1.0.0
+	 * @covers ::select_menu
+	 *
+	 * @return void
+	 */
+	public function test_select_menu_with_empty_submenu_and_empty_subpages(): void {
+		$instance = $this->getMockBuilder( Settings::class )
+			->setMethods( array( 'get_sub_pages' ) )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$instance->method( 'get_sub_pages' )
+			->willReturn( array() );
+
+		$result = $instance->select_menu( '' );
+
+		$this->assertEquals(
+			'',
+			$result,
+			'Should return empty string when sub pages are empty'
 		);
 	}
 }
