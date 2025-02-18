@@ -378,28 +378,6 @@ const Rsvp = ({
 						</a>
 					</div>
 				</ButtonGroup>
-				{'no_status' === rsvpStatus && 1 !== rsvpAnonymous ? (
-					<ButtonGroup className="gatherpress-buttons wp-block-buttons">
-						<div className="gatherpress-buttons__container wp-block-button">
-							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-							<a
-								href="#"
-								onClick={(e) =>
-									onAnchorClick(e, 'not_attending', null)
-								}
-								className="gatherpress-buttons__text-link"
-							>
-								{_x(
-									'Not Attending',
-									'RSVP status button text',
-									'gatherpress'
-								)}
-							</a>
-						</div>
-					</ButtonGroup>
-				) : (
-					<></>
-				)}
 			</div>
 		);
 	};
