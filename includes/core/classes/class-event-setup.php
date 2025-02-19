@@ -207,7 +207,7 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			'gatherpress_datetime'               => array(
+			'gatherpress_datetime'              => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
 				},
@@ -216,7 +216,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_start'         => array(
+			'gatherpress_datetime_start'        => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -224,16 +224,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
-			'gatherpress_datetime_start_gmt'     => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_end'           => array(
+			'gatherpress_datetime_start_gmt'    => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -242,7 +233,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_end_gmt'       => array(
+			'gatherpress_datetime_end'          => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -251,7 +242,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_timezone'               => array(
+			'gatherpress_datetime_end_gmt'      => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -260,7 +251,16 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_max_guest_limit'        => array(
+			'gatherpress_timezone'              => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_max_guest_limit'       => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -269,7 +269,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'integer',
 			),
-			'gatherpress_enable_anonymous_rsvp'  => array(
+			'gatherpress_enable_anonymous_rsvp' => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -278,16 +278,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'boolean',
 			),
-			'gatherpress_enable_initial_decline' => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'boolean',
-			),
-			'gatherpress_online_event_link'      => array(
+			'gatherpress_online_event_link'     => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -296,7 +287,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_max_attendance_limit'   => array(
+			'gatherpress_max_attendance_limit'  => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
