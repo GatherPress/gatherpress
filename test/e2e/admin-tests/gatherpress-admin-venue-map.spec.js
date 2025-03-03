@@ -15,10 +15,9 @@ test.describe('e2e test for venue map through admin side', () => {
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
-		const postName = 'venue map-pune';
+		const postName = 'venue test map-pune';
 
 		await addNewVenue({ page });
-
 		await page.getByLabel('Add title').fill(postName);
 
 		await page
@@ -54,6 +53,8 @@ test.describe('e2e test for venue map through admin side', () => {
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 		await page.locator('#map').isVisible({ timeout: 30000 });
+
+		await page.waitForLoadState('domcontentloaded');
 		await expect(page.locator('#map')).toBeVisible({ timeout: 30000 });
 
 		await page
@@ -65,21 +66,26 @@ test.describe('e2e test for venue map through admin side', () => {
 			.click();
 
 		await page
+			.getByText(`${postName} is now live.`)
+			.isVisible({ timeout: 60000 }); // verified the event is live.
+
+		await page
 			.getByLabel('Editor publish')
 			.getByRole('link', { name: 'View Venue' })
 			.click();
+		await page.locator('#map').isVisible({ timeout: 30000 });
 
-		await page.waitForSelector('#map');
-		//await page.locator('#map').isVisible({ timeout: 30000 });
-
+		await page.waitForLoadState('domcontentloaded');
 		await expect(page).toHaveScreenshot('location_map.png', {
 			fullPage: true,
+			timeout: 30000,
 			mask: [
 				page.locator('header'),
 				page.locator('h1'),
 				page.locator('h3'),
 				page.locator('nav'),
 				page.locator('.wp-block-template-part'),
+				page.locator('.wp-block-gatherpress-event-date'),
 				page.locator('footer'),
 			],
 		});
