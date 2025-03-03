@@ -1,6 +1,5 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-
 import { addNewVenue } from '../reusable-user-steps/common.js';
 
 test.describe('e2e test for venue map through admin side', () => {

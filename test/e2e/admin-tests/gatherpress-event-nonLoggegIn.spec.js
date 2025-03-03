@@ -85,7 +85,6 @@ test('02-verify the non-logged in user view RSVP button on home page and perform
 			page.getByText('Not Attending', { exact: true })
 		).toBeVisible();
 	}
-
 	await page.locator('.gatherpress-rsvp-response__items').first().isVisible(); // verified the attending users list.
 	await page
 		.locator('.gatherpress-rsvp-response__items')

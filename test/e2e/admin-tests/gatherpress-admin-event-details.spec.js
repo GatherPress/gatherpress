@@ -1,6 +1,5 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-
 import { addNewEvent } from '../reusable-user-steps/common.js';
 
 test.describe('e2e test for event post, verify the event time is visible on front end', () => {
