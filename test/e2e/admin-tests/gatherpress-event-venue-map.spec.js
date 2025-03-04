@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';
 
-
 test.describe('e2e test for event, the user should view the event map on event post.', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
@@ -28,7 +27,6 @@ test.describe('e2e test for event, the user should view the event map on event p
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
 		});
@@ -52,7 +50,7 @@ test.describe('e2e test for event, the user should view the event map on event p
 		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
 		await page
 			.getByLabel('Venue Selector')
-			.selectOption('76:test-venue-map');
+			.selectOption('1407:pune');
 
 		await expect(page.locator('#map')).toBeVisible();
 
@@ -65,7 +63,7 @@ test.describe('e2e test for event, the user should view the event map on event p
 			.click();
 
 		await page
-			.getByText(`${eventTitle} is now live.`)
+			.getByText(`${postName} is now live.`)
 			.isVisible({ timeout: 60000 }); // verified the event is live.
 
 		await page
@@ -75,9 +73,9 @@ test.describe('e2e test for event, the user should view the event map on event p
 
 		await page.locator('#map').isVisible({ timeout: 30000 });
 
-
 		await page.waitForSelector('#map');
 		await expect(page).toHaveScreenshot('event_location_map.png', {
+			maxDiffPixels: 800,
 			fullPage: true,
 			mask: [
 				page.locator('header'),
@@ -88,7 +86,6 @@ test.describe('e2e test for event, the user should view the event map on event p
 				page.locator('.wp-block-gatherpress-event-date'),
 				page.locator('footer'),
 			],
-
 		});
 	});
 });

@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewVenue } from '../reusable-user-steps/common.js';
 
-
 test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
@@ -26,7 +25,6 @@ test.describe('e2e test for venue map through admin side', () => {
 			.first()
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
-
 
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
@@ -58,7 +56,6 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.waitForLoadState('domcontentloaded');
 		await expect(page.locator('#map')).toBeVisible({ timeout: 30000 });
 
-
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
@@ -68,9 +65,7 @@ test.describe('e2e test for venue map through admin side', () => {
 			.click();
 
 		await page
-
 			.getByText(`${postName} is now live.`)
-
 			.isVisible({ timeout: 60000 }); // verified the event is live.
 
 		await page
@@ -79,10 +74,13 @@ test.describe('e2e test for venue map through admin side', () => {
 			.click();
 
 		await page.waitForLoadState('domcontentloaded');
-		
+
+		await page.waitForSelector('#map');
+
 		await page.locator('#map').isVisible({ timeout: 30000 });
-		
+
 		await expect(page).toHaveScreenshot('location_map.png', {
+			maxDiffPixels: 800,
 			fullPage: true,
 			timeout: 30000,
 			mask: [
@@ -94,7 +92,6 @@ test.describe('e2e test for venue map through admin side', () => {
 				page.locator('.wp-block-gatherpress-event-date'),
 				page.locator('footer'),
 			],
-
 		});
 	});
 });

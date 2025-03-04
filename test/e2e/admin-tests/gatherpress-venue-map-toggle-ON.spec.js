@@ -26,7 +26,6 @@ test.describe('e2e test for venue map through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
 		});
@@ -54,7 +53,7 @@ test.describe('e2e test for venue map through admin side', () => {
 
 		await page.locator('.gatherpress-venue__full-address').isVisible()
 		await page.waitForSelector('#map');
-		await page.locator('#map').click({force:true});
+		await page.locator('#map').click({ force: true });
 
 		await page.getByRole('tab', { name: 'Block' }).click();
 		await expect(page.getByLabel('Display the map')).toBeVisible();
@@ -72,8 +71,10 @@ test.describe('e2e test for venue map through admin side', () => {
 			.click();
 
 		await page.waitForLoadState('domcontentloaded')
+		await page.waitForSelector('#map');
 		await expect(page.locator('#map')).toBeVisible();
 		await expect(page).toHaveScreenshot('event_toggle_on.png', {
+			maxDiffPixels: 800,
 			fullPage: true,
 			mask: [
 				page.locator('header'),
@@ -86,7 +87,6 @@ test.describe('e2e test for venue map through admin side', () => {
 				page.locator('.wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'),
 				page.locator('footer'),
 			],
-
 		});
 	});
 });

@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';
 
-
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
@@ -34,9 +33,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.first()
 			.isVisible();
 
-
 		await page.getByLabel('Add title').fill(postName);
-
 
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
@@ -63,9 +60,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.click();
 		await page.locator('#wp--skip-link--target img').isVisible();
 
-
 		await page.waitForLoadState('domcontentloaded');
-		// await expect(page).toHaveScreenshot('featured_image.png', {fullPage:true})
 		const FeaturedImage = await page.screenshot({
 			fullPage: true,
 			mask: [

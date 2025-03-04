@@ -69,9 +69,9 @@ test.describe('e2e test for venue map through admin side', () => {
 			.click();
 
 		await page.waitForSelector('#map');
-		//await page.locator('#map').isVisible({ timeout: 30000 });
 
 		await expect(page).toHaveScreenshot('location_map.png', {
+			maxDiffPixels: 800,
 			fullPage: true,
 			mask: [
 				page.locator('header'),

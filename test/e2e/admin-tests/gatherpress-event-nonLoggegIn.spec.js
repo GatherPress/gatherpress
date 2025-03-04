@@ -10,7 +10,6 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 	});
 });
 
-
 test.skip('the user should be able publish an offline event', async ({
 	page,
 }) => {
