@@ -1,1 +1,1 @@
-"use strict";(globalThis.webpackChunkgatherpress=globalThis.webpackChunkgatherpress||[]).push([[980],{8980:(s,e,a)=>{s.exports=a.p+"images/marker-shadow.png"}}]);
+"use strict";(globalThis.webpackChunkgatherpress=globalThis.webpackChunkgatherpress||[]).push([[980],{8980:(s,a,e)=>{s.exports=e.p+"images/marker-shadow.a0c6cc14.png"}}]);

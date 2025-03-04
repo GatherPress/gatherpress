@@ -16,13 +16,13 @@ import { PluginDocumentSettingPanel } from '@wordpress/editor';
  */
 import { isEventPostType } from '../../helpers/event';
 import AnonymousRsvpPanel from './anonymous-rsvp';
-import InitialDeclinePanel from './initial-decline';
 import DateTimeRangePanel from './datetime-range';
 import GuestLimitPanel from './guest-limit';
 import MaxAttendanceLimitPanel from './max-attendance-limit';
 import NotifyMembersPanel from './notify-members';
 import OnlineEventLinkPanel from './online-link';
 import VenueSelectorPanel from './venue-selector';
+import { EventPluginDocumentSettings } from './slot';
 
 /**
  * A settings panel for event-specific settings in the block editor.
@@ -44,6 +44,9 @@ const EventSettings = () => {
 				title={__('Event settings', 'gatherpress')}
 				className="gatherpress-event-settings"
 			>
+				{/* Extendable entry point for "Event Settings" panel. */}
+				<EventPluginDocumentSettings.Slot />
+
 				<VStack spacing={4}>
 					<DateTimeRangePanel />
 					<VenueSelectorPanel />
@@ -51,7 +54,6 @@ const EventSettings = () => {
 					<GuestLimitPanel />
 					<MaxAttendanceLimitPanel />
 					<AnonymousRsvpPanel />
-					<InitialDeclinePanel />
 					<NotifyMembersPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>

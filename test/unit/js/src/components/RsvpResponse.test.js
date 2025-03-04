@@ -20,7 +20,7 @@ describe('RsvpResponse', () => {
 				responses: {
 					all: {
 						count: 1,
-						responses: [
+						records: [
 							{
 								guests: 0,
 								id: 1,
@@ -35,7 +35,7 @@ describe('RsvpResponse', () => {
 					},
 					attending: {
 						count: 1,
-						responses: [
+						records: [
 							{
 								guests: 0,
 								id: 1,
@@ -50,11 +50,11 @@ describe('RsvpResponse', () => {
 					},
 					not_attending: {
 						count: 0,
-						responses: [],
+						records: [],
 					},
 					waiting_list: {
 						count: 0,
-						responses: [],
+						records: [],
 					},
 				},
 			},

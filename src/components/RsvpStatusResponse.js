@@ -23,15 +23,27 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 		upcoming: {
 			attending: {
 				icon: 'dashicons dashicons-yes-alt',
-				text: _x('Attending', 'Responded Status', 'gatherpress'),
+				text: _x(
+					'Attending',
+					'RSVP status label for upcoming events',
+					'gatherpress'
+				),
 			},
 			waiting_list: {
 				icon: 'dashicons dashicons-editor-help',
-				text: _x('Waiting List', 'Responded Status', 'gatherpress'),
+				text: _x(
+					'Waiting List',
+					'RSVP status label for upcoming events',
+					'gatherpress'
+				),
 			},
 			not_attending: {
 				icon: 'dashicons dashicons-dismiss',
-				text: _x('Not Attending', 'Responded Status', 'gatherpress'),
+				text: _x(
+					'Not Attending',
+					'RSVP status label for upcoming events',
+					'gatherpress'
+				),
 			},
 			no_status: {
 				icon: '',
@@ -41,19 +53,35 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 		past: {
 			attending: {
 				icon: 'dashicons dashicons-yes-alt',
-				text: _x('Went', 'Responded Status', 'gatherpress'),
+				text: _x(
+					'Went',
+					'RSVP status label for past events',
+					'gatherpress'
+				),
 			},
 			waiting_list: {
 				icon: 'dashicons dashicons-dismiss',
-				text: _x("Didn't Go", 'Responded Status', 'gatherpress'),
+				text: _x(
+					"Didn't Go",
+					'RSVP status label for past events',
+					'gatherpress'
+				),
 			},
 			not_attending: {
 				icon: 'dashicons dashicons-dismiss',
-				text: _x("Didn't Go", 'Responded Status', 'gatherpress'),
+				text: _x(
+					"Didn't Go",
+					'RSVP status label for past events',
+					'gatherpress'
+				),
 			},
 			no_status: {
 				icon: 'dashicons dashicons-dismiss',
-				text: _x("Didn't Go", 'Responded Status', 'gatherpress'),
+				text: _x(
+					"Didn't Go",
+					'RSVP status label for past events',
+					'gatherpress'
+				),
 			},
 		},
 	};

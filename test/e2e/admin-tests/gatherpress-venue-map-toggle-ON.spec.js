@@ -26,6 +26,7 @@ test.describe('e2e test for venue map through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
+
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
 		});
@@ -85,6 +86,7 @@ test.describe('e2e test for venue map through admin side', () => {
 				page.locator('.wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'),
 				page.locator('footer'),
 			],
+
 		});
 	});
 });

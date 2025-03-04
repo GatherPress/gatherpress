@@ -461,8 +461,8 @@ class Settings {
 		$default  = $this->get_default_value( $sub_page, $section, $option );
 
 		return (
-			isset( $options[ $section ][ $option ] )
-			&& '' !== $options[ $section ][ $option ]
+			isset( $options[ $section ][ $option ] ) &&
+			'' !== $options[ $section ][ $option ]
 		) ? $options[ $section ][ $option ] : $default;
 	}
 
@@ -714,17 +714,16 @@ class Settings {
 		) {
 			switch ( $name ) {
 				case 'gatherpress_general[urls][events]':
-					$suffix = _x( 'sample-event', 'sample event post slug', 'gatherpress' );
+					$suffix = _x( 'sample-event', 'URL permalink structure example for events', 'gatherpress' );
 					break;
-
 				case 'gatherpress_general[urls][venues]':
-					$suffix = _x( 'sample-venue', 'sample venue post slug', 'gatherpress' );
+					$suffix = _x( 'sample-venue', 'URL permalink structure example for venues', 'gatherpress' );
 					break;
-
 				case 'gatherpress_general[urls][topics]':
-					$suffix = _x( 'sample-topic-term', 'sample topic term slug', 'gatherpress' );
+					$suffix = _x( 'sample-topic-term', 'URL permalink structure example for topics', 'gatherpress' );
 					break;
 			}
+
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
 				array(

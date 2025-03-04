@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';
 
+
 test.describe('e2e test for event post, verify the event time is visible on front end', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
@@ -19,6 +20,7 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 
 		await page.getByLabel('Add title').fill(postName);
 
+
 		await page.getByLabel('Block: Event Date').isVisible();
 		await page
 			.getByLabel('Block: Event Date')
@@ -34,6 +36,7 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 			.getByLabel('Editor publish')
 			.getByRole('link', { name: 'View Event' })
 			.click();
+
 
 		await page.waitForLoadState('domcontentloaded');
 		await page.locator('.wp-block-gatherpress-event-date').isVisible();

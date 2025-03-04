@@ -1,6 +1,8 @@
+
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';
+
 
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
@@ -19,12 +21,14 @@ test.describe('e2e test for publish event through admin side', () => {
 		await addNewEvent({ page });
 
 		await page.getByLabel('Add title').fill(postName);
+
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
 			.first()
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
+
 
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
@@ -80,7 +84,9 @@ test.describe('e2e test for publish event through admin side', () => {
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
+
 		const postName = 'offline event test';
+
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
 		await page
 			.locator('#wpbody-content')
@@ -94,6 +100,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.first()
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
+
 
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
@@ -117,6 +124,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		}
 
 		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
+
 		await page
 			.getByLabel('Venue Selector')
 			.selectOption('73:test-offline-event');

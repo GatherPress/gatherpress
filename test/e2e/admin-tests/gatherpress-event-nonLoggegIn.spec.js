@@ -10,9 +10,11 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 	});
 });
 
+
 test.skip('the user should be able publish an offline event', async ({
 	page,
 }) => {
+
 	await login({ page, username: 'prashantbellad' });
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
 	await page
@@ -69,6 +71,8 @@ test('02-verify the non-logged in user view RSVP button on home page and perform
 	await page.getByText('Login', { exact: true }).click();
 
 	await loginUser({ page, username: 'prashantbellad' });
+
+	await page.evaluate(() => window.scrollTo(0, 1000));
 
 	await page.evaluate(() => window.scrollTo(0, 1000));
 

@@ -52,6 +52,8 @@ class Rsvp_Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
+		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
+
 		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
 	}
 
@@ -89,6 +91,7 @@ class Rsvp_Setup {
 	 *
 	 * @param int $comments_number The original number of comments.
 	 * @param int $post_id         The ID of the post.
+	 *
 	 * @return int Adjusted number of comments.
 	 */
 	public function adjust_comments_number( int $comments_number, int $post_id ): int {
@@ -99,5 +102,26 @@ class Rsvp_Setup {
 		$comment_count = get_comment_count( $post_id );
 
 		return $comment_count['approved'];
+	}
+
+	/**
+	 * Process the waiting list for an event after it has been saved.
+	 *
+	 * Checks if the saved post is an event and not an autosave,
+	 * then processes any waiting list entries if applicable.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id The ID of the post being saved.
+	 * @return void
+	 */
+	public function maybe_process_waiting_list( int $post_id ): void {
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			return;
+		}
+
+		$rsvp = new Rsvp( $post_id );
+
+		$rsvp->check_waiting_list();
 	}
 }

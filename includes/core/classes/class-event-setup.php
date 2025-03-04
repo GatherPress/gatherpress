@@ -96,18 +96,36 @@ class Event_Setup {
 			Event::POST_TYPE,
 			array(
 				'labels'        => array(
-					'name'               => _x( 'Events', 'Post Type General Name', 'gatherpress' ),
-					'singular_name'      => _x( 'Event', 'Post Type Singular Name', 'gatherpress' ),
-					'menu_name'          => __( 'Events', 'gatherpress' ),
-					'all_items'          => __( 'All Events', 'gatherpress' ),
-					'view_item'          => __( 'View Event', 'gatherpress' ),
-					'add_new_item'       => __( 'Add New Event', 'gatherpress' ),
-					'add_new'            => __( 'Add New', 'gatherpress' ),
-					'edit_item'          => __( 'Edit Event', 'gatherpress' ),
-					'update_item'        => __( 'Update Event', 'gatherpress' ),
-					'search_items'       => __( 'Search Events', 'gatherpress' ),
-					'not_found'          => __( 'Not Found', 'gatherpress' ),
-					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+					'name'                     => _x( 'Events', 'Admin menu and post type general name', 'gatherpress' ),
+					'singular_name'            => _x( 'Event', 'Admin menu and post type singular name', 'gatherpress' ),
+					'add_new'                  => __( 'Add New', 'gatherpress' ),
+					'add_new_item'             => __( 'Add New Event', 'gatherpress' ),
+					'edit_item'                => __( 'Edit Event', 'gatherpress' ),
+					'new_item'                 => __( 'New Event', 'gatherpress' ),
+					'view_item'                => __( 'View Event', 'gatherpress' ),
+					'view_items'               => __( 'View Events', 'gatherpress' ),
+					'search_items'             => __( 'Search Events', 'gatherpress' ),
+					'not_found'                => __( 'No Events found.', 'gatherpress' ),
+					'not_found_in_trash'       => __( 'No Events found in Trash.', 'gatherpress' ),
+					'parent_item_colon'        => __( 'Parent Events:', 'gatherpress' ),
+					'all_items'                => __( 'All Events', 'gatherpress' ),
+					'archives'                 => __( 'Event Archives', 'gatherpress' ),
+					'attributes'               => __( 'Event Attributes', 'gatherpress' ),
+					'insert_into_item'         => __( 'Insert into Event', 'gatherpress' ),
+					'uploaded_to_this_item'    => __( 'Uploaded to this Event', 'gatherpress' ),
+					'menu_name'                => _x( 'Events', 'Admin menu label', 'gatherpress' ),
+					'filter_items_list'        => __( 'Filter Event list', 'gatherpress' ),
+					'filter_by_date'           => __( 'Filter by date', 'gatherpress' ),
+					'items_list_navigation'    => __( 'Events list navigation', 'gatherpress' ),
+					'items_list'               => __( 'Events list', 'gatherpress' ),
+					'item_published'           => __( 'Event published.', 'gatherpress' ),
+					'item_published_privately' => __( 'Event published privately.', 'gatherpress' ),
+					'item_reverted_to_draft'   => __( 'Event reverted to draft.', 'gatherpress' ),
+					'item_trashed'             => __( 'Event trashed.', 'gatherpress' ),
+					'item_scheduled'           => __( 'Event scheduled.', 'gatherpress' ),
+					'item_updated'             => __( 'Event updated.', 'gatherpress' ),
+					'item_link'                => _x( 'Event Link', 'Block editor link label', 'gatherpress' ),
+					'item_link_description'    => _x( 'A link to an event.', 'Block editor link description', 'gatherpress' ),
 				),
 				'show_in_rest'  => true,
 				'rest_base'     => 'gatherpress_events',
@@ -129,6 +147,10 @@ class Event_Setup {
 					),
 					array( 'gatherpress/rsvp-response' ),
 				),
+				// @todo continue to work on the event-template.
+				// 'template'      => array(
+				// array( 'core/pattern', array( 'slug' => 'gatherpress/event-template' ) ),
+				// ),
 				'menu_position' => 4,
 				'supports'      => array(
 					'title',
@@ -164,8 +186,8 @@ class Event_Setup {
 	 */
 	public static function get_localized_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'event', 'Post Type Slug', 'gatherpress' );
-		$slug            = sanitize_title( $slug, '', 'save' );
+		$slug            = _x( 'Event', 'Post Type Singular Name', 'gatherpress' );
+		$slug            = sanitize_title( $slug );
 		if ( $switched_locale ) {
 			restore_previous_locale();
 		}
@@ -185,7 +207,7 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			'gatherpress_datetime'               => array(
+			'gatherpress_datetime'              => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
 				},
@@ -194,7 +216,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_start'         => array(
+			'gatherpress_datetime_start'        => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -202,16 +224,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
-			'gatherpress_datetime_start_gmt'     => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_end'           => array(
+			'gatherpress_datetime_start_gmt'    => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -220,7 +233,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_end_gmt'       => array(
+			'gatherpress_datetime_end'          => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -229,7 +242,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_timezone'               => array(
+			'gatherpress_datetime_end_gmt'      => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -238,7 +251,16 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_max_guest_limit'        => array(
+			'gatherpress_timezone'              => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_max_guest_limit'       => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -247,7 +269,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'integer',
 			),
-			'gatherpress_enable_anonymous_rsvp'  => array(
+			'gatherpress_enable_anonymous_rsvp' => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -256,16 +278,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'boolean',
 			),
-			'gatherpress_enable_initial_decline' => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'boolean',
-			),
-			'gatherpress_online_event_link'      => array(
+			'gatherpress_online_event_link'     => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -274,7 +287,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_max_attendance_limit'   => array(
+			'gatherpress_max_attendance_limit'  => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},

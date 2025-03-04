@@ -121,8 +121,9 @@ class Base {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'gatherpress_sub_pages', array( $this, 'set_sub_page' ) );
 		add_action( 'admin_init', array( $this, 'init' ) );
+
+		add_filter( 'gatherpress_sub_pages', array( $this, 'set_sub_page' ) );
 	}
 
 	/**

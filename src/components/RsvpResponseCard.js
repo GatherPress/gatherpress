@@ -33,7 +33,7 @@ const RsvpResponseCard = ({ value, limit, responses = [] }) => {
 		'object' === typeof responses &&
 		'undefined' !== typeof responses[value]
 	) {
-		responses = [...responses[value].responses];
+		responses = [...responses[value].records];
 
 		if (limit) {
 			responses = responses.splice(0, limit);

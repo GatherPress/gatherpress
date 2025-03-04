@@ -15,10 +15,12 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WP_User;
 
 /**
  * Class Event_Rest_Api.
@@ -97,6 +99,8 @@ class Event_Rest_Api {
 		return array(
 			$this->email_route(),
 			$this->rsvp_route(),
+			$this->rsvp_status_html_route(),
+			$this->rsvp_responses_route(),
 			$this->events_list_route(),
 		);
 	}
@@ -163,6 +167,78 @@ class Event_Rest_Api {
 					'status'  => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Define the REST route for rendering RSVP block HTML.
+	 *
+	 * This method registers a REST API route for dynamically generating HTML markup
+	 * for RSVP blocks based on the provided block data and post ID.
+	 * The generated HTML reflects the current RSVP status and can be used
+	 * to re-render block content when status changes occur.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
+	protected function rsvp_status_html_route(): array {
+		return array(
+			'route' => 'rsvp-status-html',
+			'args'  => array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'rsvp_status_html' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'post_id'       => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
+					),
+					'status'        => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+					),
+					'block_data'    => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'block_data' ),
+					),
+					'limit_enabled' => array(
+						'required'          => false,
+						'validate_callback' => array( Validate::class, 'boolean' ),
+					),
+					'limit'         => array(
+						'required'          => false,
+						'validate_callback' => array( Validate::class, 'number' ),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Get route configuration for RSVP responses endpoint.
+	 *
+	 * Defines REST route configuration to fetch RSVP response data for an event post.
+	 * Endpoint requires post_id parameter which must validate as an event post type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Route configuration with path, methods, callback and arguments.
+	 */
+	protected function rsvp_responses_route(): array {
+		return array(
+			'route' => 'rsvp-responses',
+			'args'  => array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'rsvp_responses' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'post_id' => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
 				),
 			),
@@ -285,7 +361,7 @@ class Event_Rest_Api {
 				wp_set_current_user( $member->ID );
 
 				/* translators: %s: event title. */
-				$subject = sprintf( _x( '📅 %s', 'Email subject for event updates', 'gatherpress' ), get_the_title( $post_id ) );
+				$subject = sprintf( _x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ), get_the_title( $post_id ) );
 				$body    = Utility::render_template(
 					sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
 					array(
@@ -341,7 +417,7 @@ class Event_Rest_Api {
 						static function ( $member ) {
 							return $member['id'];
 						},
-						$all_responses[ $status ]['responses']
+						$all_responses[ $status ]['records']
 					)
 				);
 			}
@@ -413,7 +489,6 @@ class Event_Rest_Api {
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
 					'enable_anonymous_rsvp'    => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
-					'enable_initial_decline'   => (bool) get_post_meta( $post_id, 'gatherpress_enable_initial_decline', true ),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
 					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
 						? $event->rsvp->get( get_current_user_id() )
@@ -468,8 +543,8 @@ class Event_Rest_Api {
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
-		$guests          = intval( $params['guests'] );
-		$anonymous       = intval( $params['anonymous'] );
+		$guests          = intval( $params['guests'] ?? 0 );
+		$anonymous       = intval( $params['anonymous'] ?? 0 );
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
@@ -494,6 +569,10 @@ class Event_Rest_Api {
 			is_user_member_of_blog( $user_id ) &&
 			! $event->has_event_past()
 		) {
+			if ( 'attending' !== $status ) {
+				$guests = 0;
+			}
+
 			$user_record = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
@@ -511,6 +590,90 @@ class Event_Rest_Api {
 			'anonymous'   => $anonymous,
 			'responses'   => $event->rsvp->responses(),
 			'online_link' => $event->maybe_get_online_event_link(),
+		);
+
+		return new WP_REST_Response( $response );
+	}
+
+	/**
+	 * Handles rendering RSVP block HTML via a REST API endpoint.
+	 *
+	 * This method dynamically generates HTML markup for RSVP blocks based on the
+	 * provided block data and the responses for a given post ID. It processes the
+	 * RSVP responses and renders the corresponding content using the block template.
+	 * Each response is wrapped in its own container with data attributes to facilitate
+	 * interactivity and styling.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The REST API request object containing parameters:
+	 *                                 - post_id (int): The ID of the post associated with the RSVP.
+	 *                                 - block_data (string): JSON-encoded block data used to render the RSVP content.
+	 *
+	 * @return WP_REST_Response The REST API response containing:
+	 *                          - success (bool): Whether the content was successfully generated.
+	 *                          - content (string): The dynamically rendered HTML markup for the RSVP responses.
+	 */
+	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
+		$rsvp_template = Rsvp_Template::get_instance();
+		$params        = $request->get_params();
+		$post_id       = intval( $params['post_id'] );
+		$status        = $params['status'];
+		$block_data    = $params['block_data'];
+		$block_data    = json_decode( $block_data, true );
+		$rsvp          = new Rsvp( $post_id );
+		$responses     = $rsvp->responses();
+		$content       = '';
+		// @todo set this up...
+		$args = array(
+			'limit_enabled' => (bool) $params['limit_enabled'],
+			'limit'         => (int) $params['limit'],
+		);
+
+		if ( ! empty( $responses[ $status ] ) ) {
+			foreach ( $responses[ $status ]['records'] as $key => $record ) {
+				$args['index'] = $key;
+				$content      .= $rsvp_template->get_block_content( $block_data, $record['commentId'], $args );
+			}
+		}
+
+		$success = true;
+
+		$response = array(
+			'success'   => $success,
+			'content'   => $content,
+			'responses' => $responses,
+		);
+
+		return new WP_REST_Response( $response );
+	}
+
+	/**
+	 * Handle RSVP responses REST endpoint request.
+	 *
+	 * Retrieves RSVP response data for a given event post ID. Validates that the post
+	 * is an event type before returning response data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request REST API request object containing post_id parameter.
+	 * @return WP_REST_Response Response containing success status and RSVP data.
+	 */
+	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
+		$params    = $request->get_params();
+		$post_id   = intval( $params['post_id'] );
+		$success   = false;
+		$responses = array();
+
+		if ( Event::POST_TYPE === get_post_type( $post_id ) ) {
+			$success   = true;
+			$rsvp      = new Rsvp( $post_id );
+			$responses = $rsvp->responses();
+		}
+
+		$response = array(
+			'success' => $success,
+			'data'    => $responses,
 		);
 
 		return new WP_REST_Response( $response );
