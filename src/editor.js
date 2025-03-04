@@ -12,19 +12,27 @@ import {
 import { hasEventPastNotice, triggerEventCommunication } from './helpers/event';
 import { getBlockType, unregisterBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import { InspectorAdvancedControls } from '@wordpress/block-editor';
 import {
+	InspectorAdvancedControls,
+	InspectorControls,
+	useBlockProps,
+} from '@wordpress/block-editor';
+import {
+	PanelBody,
+	ToggleControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalNumberControl as NumberControl,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
+import { useState, useEffect } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
 import { getFromGlobal } from './helpers/globals';
 import './stores';
+import BlockGuard from './components/BlockGuard';
 
 /**
  * Ensure Panels are Open for Events
@@ -196,3 +204,283 @@ addFilter(
 	'gatherpress/with-post-id-override',
 	withPostIdOverride
 );
+
+/**
+ * Higher-Order Component to add BlockGuard functionality to supported GatherPress blocks.
+ *
+ * This HOC injects a toggle control into the Inspector Controls of blocks
+ * that support `blockGuard`, enabling users to toggle block protection.
+ * When enabled (default), an invisible overlay prevents interactions with inner blocks.
+ *
+ * @param {Function} BlockEdit - The original BlockEdit component.
+ * @return {Function} Enhanced BlockEdit component with BlockGuard functionality.
+ *
+ * @example
+ * // Usage:
+ * // In a block's `block.json`, add the following to enable this feature:
+ * {
+ *   "supports": {
+ *     "gatherpress": {
+ *       "blockGuard": true
+ *     }
+ *   }
+ * }
+ */
+const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
+	return (props) => {
+		const { name, clientId } = props;
+
+		// Check if the block supports `blockGuard`.
+		if (
+			!name.startsWith('gatherpress/') ||
+			!getBlockType(name)?.supports?.gatherpress?.blockGuard
+		) {
+			return <BlockEdit {...props} />;
+		}
+
+		// Use state to track if BlockGuard is enabled (default to enabled)
+		const [isBlockGuardEnabled, setIsBlockGuardEnabled] = useState(true);
+
+		// Get block props which we'll spread to our wrapper
+		const blockProps = useBlockProps();
+
+		// This effect runs after render to apply the guard to inner blocks container
+		useEffect(() => {
+			if (!clientId) {
+				return;
+			}
+
+			// Function to find and guard inner blocks
+			const applyGuardToInnerBlocks = () => {
+				// Try to find the inner blocks container within this block
+				const blockNode = document.querySelector(
+					`[data-block="${clientId}"]`
+				);
+				if (!blockNode) {
+					return;
+				}
+
+				// Look for inner blocks container
+				const innerBlocksContainer = blockNode.querySelector(
+					'.block-editor-inner-blocks'
+				);
+				if (!innerBlocksContainer) {
+					return;
+				}
+
+				// Set position relative on the container if not already
+				if (
+					getComputedStyle(innerBlocksContainer).position !==
+					'relative'
+				) {
+					innerBlocksContainer.style.position = 'relative';
+				}
+
+				// Look for existing guard
+				let guard =
+					innerBlocksContainer.querySelector('.gp-block-guard');
+
+				// If guard should be enabled
+				if (isBlockGuardEnabled) {
+					// Create guard if it doesn't exist
+					if (!guard) {
+						guard = document.createElement('div');
+						guard.className = 'gp-block-guard';
+						guard.style.position = 'absolute';
+						guard.style.top = '0';
+						guard.style.right = '0';
+						guard.style.bottom = '0';
+						guard.style.left = '0';
+						guard.style.zIndex = '99';
+						guard.style.cursor = 'pointer';
+						guard.style.background = 'transparent';
+
+						// Add click handler to select the parent block
+						guard.addEventListener('mousedown', (e) => {
+							// Always prevent default and stop propagation
+							e.preventDefault();
+							e.stopPropagation();
+
+							// Force selection of this block
+							dispatch('core/block-editor').selectBlock(clientId);
+						});
+
+						// Also prevent click events from propagating
+						guard.addEventListener('click', (e) => {
+							e.preventDefault();
+							e.stopPropagation();
+						});
+
+						// Add a tabindex to make the guard focusable
+						guard.setAttribute('tabindex', '0');
+
+						// Add global keyboard event handler for the entire block
+						const handleKeyDown = (e) => {
+							if (
+								(isBlockGuardEnabled &&
+									document.activeElement === blockNode) ||
+								blockNode.contains(document.activeElement)
+							) {
+								// Handle arrow keys to navigate between blocks
+								if (
+									[
+										'ArrowDown',
+										'ArrowUp',
+										'ArrowLeft',
+										'ArrowRight',
+									].includes(e.key)
+								) {
+									e.preventDefault();
+									e.stopPropagation();
+
+									const blockEditor =
+										select('core/block-editor');
+									// Get all root-level blocks (not inner blocks)
+									const rootBlocks = blockEditor.getBlocks();
+
+									// Find the root block that contains our current block
+									let rootClientId = clientId;
+									let rootBlock =
+										blockEditor.getBlock(clientId);
+
+									// If this is an inner block, find its root parent
+									while (
+										blockEditor.getBlockRootClientId(
+											rootClientId
+										)
+									) {
+										rootClientId =
+											blockEditor.getBlockRootClientId(
+												rootClientId
+											);
+										rootBlock =
+											blockEditor.getBlock(rootClientId);
+									}
+
+									// Get the index of the root block
+									const rootIndex = rootBlocks.findIndex(
+										(block) =>
+											block.clientId === rootClientId
+									);
+
+									// Determine which block to navigate to based on arrow key
+									if (
+										e.key === 'ArrowDown' ||
+										e.key === 'ArrowRight'
+									) {
+										// Navigate to next block if it exists
+										if (rootIndex < rootBlocks.length - 1) {
+											dispatch(
+												'core/block-editor'
+											).selectBlock(
+												rootBlocks[rootIndex + 1]
+													.clientId
+											);
+										}
+									} else if (
+										e.key === 'ArrowUp' ||
+										e.key === 'ArrowLeft'
+									) {
+										// Navigate to previous block if it exists
+										if (rootIndex > 0) {
+											dispatch(
+												'core/block-editor'
+											).selectBlock(
+												rootBlocks[rootIndex - 1]
+													.clientId
+											);
+										}
+									}
+								}
+							}
+						};
+
+						// Add the keydown handler to the document
+						document.addEventListener(
+							'keydown',
+							handleKeyDown,
+							true
+						);
+
+						// Store the handler reference to remove it later
+						blockNode._blockGuardKeyHandler = handleKeyDown;
+
+						innerBlocksContainer.appendChild(guard);
+					}
+				} else {
+					// Remove guard if it exists
+					if (guard) {
+						guard.remove();
+					}
+				}
+			};
+
+			// Apply initially
+			applyGuardToInnerBlocks();
+
+			// Set up mutation observer to watch for changes in the DOM
+			// This helps when blocks are initially rendered or updated
+			const observer = new MutationObserver(() => {
+				applyGuardToInnerBlocks();
+			});
+
+			// Start observing the document
+			observer.observe(document.body, {
+				childList: true,
+				subtree: true,
+			});
+
+			// Clean up
+			return () => {
+				observer.disconnect();
+
+				// Remove the keydown handler if it exists
+				if (document.body._blockGuardKeyHandler) {
+					document.removeEventListener(
+						'keydown',
+						document.body._blockGuardKeyHandler,
+						true
+					);
+					delete document.body._blockGuardKeyHandler;
+				}
+			};
+		}, [clientId, isBlockGuardEnabled]);
+
+		return (
+			<>
+				<div {...blockProps}>
+					<BlockEdit {...props} />
+				</div>
+
+				{/* Add Inspector Controls with the toggle */}
+				<InspectorControls>
+					<PanelBody>
+						<ToggleControl
+							label={__('Block Guard', 'gatherpress')}
+							checked={isBlockGuardEnabled}
+							onChange={setIsBlockGuardEnabled}
+							help={
+								isBlockGuardEnabled
+									? __(
+											'Block protection is enabled. Click to focus on parent block.',
+											'gatherpress'
+										)
+									: __(
+											'Block protection is disabled. Inner blocks can be freely edited.',
+											'gatherpress'
+										)
+							}
+						/>
+					</PanelBody>
+				</InspectorControls>
+			</>
+		);
+	};
+}, 'withBlockGuard');
+
+/**
+ * Register the HOC as a filter for the BlockEdit component.
+ *
+ * @see https://developer.wordpress.org/block-editor/reference-guides/filters/block-filters/
+ */
+addFilter('editor.BlockEdit', 'gatherpress/with-block-guard', withBlockGuard);
