@@ -72,9 +72,11 @@ test.describe('e2e test for venue map through admin side', () => {
 			.getByLabel('Editor publish')
 			.getByRole('link', { name: 'View Venue' })
 			.click();
-		await page.locator('#map').isVisible({ timeout: 30000 });
 
 		await page.waitForLoadState('domcontentloaded');
+		
+		await page.locator('#map').isVisible({ timeout: 30000 });
+		
 		await expect(page).toHaveScreenshot('location_map.png', {
 			fullPage: true,
 			timeout: 30000,

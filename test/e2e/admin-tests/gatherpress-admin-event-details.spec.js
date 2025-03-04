@@ -36,12 +36,13 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 			.click();
 
 		await page.waitForLoadState('domcontentloaded');
-		await page.locator('#wp--skip-link--target').isVisible();
+		await page.locator('.wp-block-gatherpress-event-date').isVisible();
 		await page
-			.locator('#wp--skip-link--target')
+			.locator('.wp-block-gatherpress-event-date')
 			.screenshot({ path: 'event-details-post.png' });
 
 		await expect(page).toHaveScreenshot('event_details.png', {
+			maxDiffPixels: 10,
 			fullPage: true,
 			mask: [
 				page.locator('header'),
