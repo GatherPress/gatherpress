@@ -1,4 +1,3 @@
-
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';

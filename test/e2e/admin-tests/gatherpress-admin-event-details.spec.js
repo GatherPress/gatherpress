@@ -47,7 +47,7 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 			.selectOption('76:test-venue-map');
 
 		await expect(page.locator('#map')).toBeVisible();
-		
+
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
@@ -62,7 +62,7 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 
 		await page.waitForLoadState('domcontentloaded');
 		await page.locator('.wp-block-gatherpress-event-date').isVisible();
-	
+
 		await expect(page).toHaveScreenshot('event_details.png', {
 			maxDiffPixels: 10,
 			fullPage: true,

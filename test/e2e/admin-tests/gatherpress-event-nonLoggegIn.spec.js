@@ -13,7 +13,6 @@ test.describe('e2e test for home page event on develop.gatherpress.org', () => {
 test.skip('the user should be able publish an offline event', async ({
 	page,
 }) => {
-
 	await login({ page, username: 'prashantbellad' });
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
 	await page

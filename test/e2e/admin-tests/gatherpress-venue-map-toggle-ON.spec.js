@@ -51,7 +51,7 @@ test.describe('e2e test for venue map through admin side', () => {
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 
-		await page.locator('.gatherpress-venue__full-address').isVisible()
+		await page.locator('.gatherpress-venue__full-address').isVisible();
 		await page.waitForSelector('#map');
 		await page.locator('#map').click({ force: true });
 
@@ -70,7 +70,7 @@ test.describe('e2e test for venue map through admin side', () => {
 			.getByRole('link', { name: 'View Venue' })
 			.click();
 
-		await page.waitForLoadState('domcontentloaded')
+		await page.waitForLoadState('domcontentloaded');
 		await page.waitForSelector('#map');
 		await expect(page.locator('#map')).toBeVisible();
 		await expect(page).toHaveScreenshot('event_toggle_on.png', {
@@ -84,7 +84,9 @@ test.describe('e2e test for venue map through admin side', () => {
 				page.locator('.wp-block-template-part'),
 				page.locator('.wp-block-gatherpress-event-date'),
 				page.locator('.post-navigation-link__title'),
-				page.locator('.wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'),
+				page.locator(
+					'.wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'
+				),
 				page.locator('footer'),
 			],
 		});
