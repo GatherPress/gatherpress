@@ -17,7 +17,6 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
-import BlockGuard from '../../components/BlockGuard';
 
 /**
  * Helper function to convert a template to blocks.
