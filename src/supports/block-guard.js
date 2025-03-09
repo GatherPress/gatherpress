@@ -131,7 +131,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					overlay.style.left = '0';
 					overlay.style.width = '100%';
 					overlay.style.height = '100%';
-					overlay.style.zIndex = '999999';
+					overlay.style.zIndex = '10';
 					overlay.style.background = 'transparent';
 
 					overlay.onclick = (e) => {
@@ -183,7 +183,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 				return;
 			}
 
-			// Store dragover handler reference for cleanup
+			// Store dragover handler reference for cleanup.
 			let dragoverHandler = null;
 
 			const handleListView = () => {
@@ -191,6 +191,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 				const listViewItem = global.document.querySelector(
 					`.block-editor-list-view-leaf[data-block="${clientId}"]`
 				);
+
 				if (!listViewItem) {
 					return;
 				}
@@ -199,12 +200,14 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 				const expander = listViewItem.querySelector(
 					'.block-editor-list-view__expander'
 				);
+
 				if (!expander) {
 					return;
 				}
 
 				// Find the SVG inside the expander.
 				const expanderSvg = expander.querySelector('svg');
+
 				if (!expanderSvg) {
 					return;
 				}
@@ -213,6 +216,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					// Store expanded state.
 					const isExpanded =
 						'true' === listViewItem.getAttribute('data-expanded');
+
 					// If expanded, collapse it.
 					if (isExpanded) {
 						expander.click();
@@ -236,21 +240,22 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 						}, 0);
 					}
 
-					// Add dragover prevention if not already added
+					// Add dragover prevention if not already added.
 					if (!dragoverHandler) {
 						dragoverHandler = (e) => {
 							if (
 								e.target.closest(`[data-block="${clientId}"]`)
 							) {
-								// If dragging over this block, prevent nesting
+								// If dragging over this block, prevent nesting.
 								const indicator = global.document.querySelector(
 									'.block-editor-list-view-drop-indicator'
 								);
+
 								if (indicator) {
 									indicator.style.display = 'none';
 								}
 
-								// Cancel the drag operation when trying to nest
+								// Cancel the drag operation when trying to nest.
 								const rect =
 									listViewItem.getBoundingClientRect();
 								const depth = parseInt(
@@ -258,7 +263,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 									10
 								);
 
-								// If mouse position suggests nesting (indented from edge)
+								// If mouse position suggests nesting (indented from edge).
 								if (e.clientX > rect.left + depth * 20) {
 									e.preventDefault();
 									e.stopPropagation();
@@ -267,7 +272,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 							}
 						};
 
-						// Add the event listener
+						// Add the event listener.
 						global.document.addEventListener(
 							'dragover',
 							dragoverHandler,
@@ -287,7 +292,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 						parentLink.style.pointerEvents = '';
 					}
 
-					// Remove dragover prevention
+					// Remove dragover prevention.
 					if (dragoverHandler) {
 						global.document.removeEventListener(
 							'dragover',
@@ -304,6 +309,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 			const observer = new MutationObserver(() =>
 				setTimeout(handleListView, 50)
 			);
+
 			observer.observe(global.document.body, {
 				childList: true,
 				subtree: true,
