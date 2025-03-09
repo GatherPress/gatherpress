@@ -230,6 +230,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					const parentLink = expander.closest(
 						'.block-editor-list-view-block-select-button'
 					);
+
 					if (parentLink) {
 						parentLink.setAttribute('aria-expanded', 'false');
 						parentLink.style.pointerEvents = 'none';
