@@ -53,7 +53,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 			}
 
 			const applyBlockGuard = () => {
-				const blockElement = document.getElementById(
+				const blockElement = global.document.getElementById(
 					`block-${clientId}`
 				);
 
@@ -123,7 +123,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 				);
 
 				if (!overlay) {
-					overlay = document.createElement('div');
+					overlay = global.document.createElement('div');
 					overlay.className = 'gatherpress-block-guard-overlay';
 
 					overlay.style.position = 'absolute';
@@ -153,13 +153,16 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 
 			// Set up observer for DOM changes.
 			const observer = new MutationObserver(applyBlockGuard);
-			observer.observe(document.body, { childList: true, subtree: true });
+			observer.observe(global.document.body, {
+				childList: true,
+				subtree: true,
+			});
 
 			return () => {
 				observer.disconnect();
 
 				// Clean up overlay on unmount.
-				const blockElement = document.getElementById(
+				const blockElement = global.document.getElementById(
 					`block-${clientId}`
 				);
 				const innerBlocks = blockElement?.querySelector(
@@ -180,9 +183,12 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 				return;
 			}
 
+			// Store dragover handler reference for cleanup
+			let dragoverHandler = null;
+
 			const handleListView = () => {
 				// Find the list view item.
-				const listViewItem = document.querySelector(
+				const listViewItem = global.document.querySelector(
 					`.block-editor-list-view-leaf[data-block="${clientId}"]`
 				);
 				if (!listViewItem) {
@@ -193,14 +199,12 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 				const expander = listViewItem.querySelector(
 					'.block-editor-list-view__expander'
 				);
-
 				if (!expander) {
 					return;
 				}
 
 				// Find the SVG inside the expander.
 				const expanderSvg = expander.querySelector('svg');
-
 				if (!expanderSvg) {
 					return;
 				}
@@ -209,7 +213,6 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					// Store expanded state.
 					const isExpanded =
 						'true' === listViewItem.getAttribute('data-expanded');
-
 					// If expanded, collapse it.
 					if (isExpanded) {
 						expander.click();
@@ -223,16 +226,53 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					const parentLink = expander.closest(
 						'.block-editor-list-view-block-select-button'
 					);
-
 					if (parentLink) {
 						parentLink.setAttribute('aria-expanded', 'false');
 						parentLink.style.pointerEvents = 'none';
-
 						// Re-enable just the link itself, but not the expander.
 						setTimeout(() => {
 							parentLink.style.pointerEvents = 'auto';
 							expander.style.pointerEvents = 'none';
 						}, 0);
+					}
+
+					// Add dragover prevention if not already added
+					if (!dragoverHandler) {
+						dragoverHandler = (e) => {
+							if (
+								e.target.closest(`[data-block="${clientId}"]`)
+							) {
+								// If dragging over this block, prevent nesting
+								const indicator = global.document.querySelector(
+									'.block-editor-list-view-drop-indicator'
+								);
+								if (indicator) {
+									indicator.style.display = 'none';
+								}
+
+								// Cancel the drag operation when trying to nest
+								const rect =
+									listViewItem.getBoundingClientRect();
+								const depth = parseInt(
+									listViewItem.getAttribute('aria-level'),
+									10
+								);
+
+								// If mouse position suggests nesting (indented from edge)
+								if (e.clientX > rect.left + depth * 20) {
+									e.preventDefault();
+									e.stopPropagation();
+									return false;
+								}
+							}
+						};
+
+						// Add the event listener
+						global.document.addEventListener(
+							'dragover',
+							dragoverHandler,
+							true
+						);
 					}
 				} else {
 					// Restore interactivity.
@@ -246,6 +286,16 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					if (parentLink) {
 						parentLink.style.pointerEvents = '';
 					}
+
+					// Remove dragover prevention
+					if (dragoverHandler) {
+						global.document.removeEventListener(
+							'dragover',
+							dragoverHandler,
+							true
+						);
+						dragoverHandler = null;
+					}
 				}
 			};
 
@@ -254,10 +304,23 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 			const observer = new MutationObserver(() =>
 				setTimeout(handleListView, 50)
 			);
+			observer.observe(global.document.body, {
+				childList: true,
+				subtree: true,
+			});
 
-			observer.observe(document.body, { childList: true, subtree: true });
+			return () => {
+				observer.disconnect();
 
-			return () => observer.disconnect();
+				// Clean up event listener
+				if (dragoverHandler) {
+					global.document.removeEventListener(
+						'dragover',
+						dragoverHandler,
+						true
+					);
+				}
+			};
 		}, [clientId, isBlockGuardEnabled]);
 
 		return (
