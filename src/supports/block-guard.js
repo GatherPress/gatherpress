@@ -234,9 +234,14 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					if (parentLink) {
 						parentLink.setAttribute('aria-expanded', 'false');
 						parentLink.style.pointerEvents = 'none';
+
 						// Re-enable just the link itself, but not the expander.
 						setTimeout(() => {
 							parentLink.style.pointerEvents = 'auto';
+							parentLink.classList.add(
+								'gatherpress-block-guard-enabled'
+							);
+
 							expander.style.pointerEvents = 'none';
 						}, 0);
 					}
@@ -244,32 +249,31 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					// Add dragover prevention if not already added.
 					if (!dragoverHandler) {
 						dragoverHandler = (e) => {
-							if (
-								e.target.closest(`[data-block="${clientId}"]`)
-							) {
-								// If dragging over this block, prevent nesting.
-								const indicator = global.document.querySelector(
-									'.block-editor-list-view-drop-indicator'
-								);
+							const targetBlock = e.target.closest(
+								`[data-block="${clientId}"]`
+							);
 
-								if (indicator) {
-									indicator.style.display = 'none';
-								}
+							if (!targetBlock) {
+								return;
+							}
 
-								// Cancel the drag operation when trying to nest.
-								const rect =
-									listViewItem.getBoundingClientRect();
-								const depth = parseInt(
-									listViewItem.getAttribute('aria-level'),
-									10
-								);
+							// Calculate position within block.
+							const rect = targetBlock.getBoundingClientRect();
+							const relativeY = e.clientY - rect.top;
 
-								// If mouse position suggests nesting (indented from edge).
-								if (e.clientX > rect.left + depth * 20) {
-									e.preventDefault();
-									e.stopPropagation();
-									return false;
-								}
+							// 15px or 15% of height.
+							const heightThreshold = Math.min(
+								15,
+								rect.height * 0.15
+							);
+
+							// Only prevent events in middle section (allow edges).
+							const isEdgeArea =
+								relativeY < heightThreshold ||
+								relativeY > rect.height - heightThreshold;
+
+							if (!isEdgeArea) {
+								e.stopPropagation();
 							}
 						};
 
@@ -291,6 +295,9 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					);
 					if (parentLink) {
 						parentLink.style.pointerEvents = '';
+						parentLink.classList.remove(
+							'gatherpress-block-guard-enabled'
+						);
 					}
 
 					// Remove dragover prevention.
