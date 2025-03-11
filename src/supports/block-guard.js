@@ -349,11 +349,11 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 							help={
 								isBlockGuardEnabled
 									? __(
-											'Block protection is enabled. Click to focus on parent block.',
+											'Inner blocks are locked. Turn off to edit them.',
 											'gatherpress'
 										)
 									: __(
-											'Block protection is disabled. Inner blocks can be freely edited.',
+											'Inner blocks are editable. Turn on to lock them.',
 											'gatherpress'
 										)
 							}
