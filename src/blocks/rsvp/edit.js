@@ -141,44 +141,38 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody>
+				<PanelBody title={__('RSVP Block Settings', 'gatherpress')}>
+					<p>
+						{__(
+							'Select an RSVP status to edit how this block appears for users with that status.',
+							'gatherpress'
+						)}
+					</p>
 					<SelectControl
-						label={__('RSVP Status', 'gatherpress')}
+						label={__('Edit Block Status', 'gatherpress')}
 						value={selectedStatus}
 						options={[
 							{
 								label: __(
-									'No Status (User has not responded)',
+									'No Response (Default)',
 									'gatherpress'
 								),
 								value: 'no_status',
 							},
 							{
-								label: __(
-									'Attending (User is confirmed)',
-									'gatherpress'
-								),
+								label: __('Attending', 'gatherpress'),
 								value: 'attending',
 							},
 							{
-								label: __(
-									'Waiting List (Pending confirmation)',
-									'gatherpress'
-								),
+								label: __('Waiting List', 'gatherpress'),
 								value: 'waiting_list',
 							},
 							{
-								label: __(
-									'Not Attending (User declined)',
-									'gatherpress'
-								),
+								label: __('Not Attending', 'gatherpress'),
 								value: 'not_attending',
 							},
 							{
-								label: __(
-									'Past Event (Event has already occurred)',
-									'gatherpress'
-								),
+								label: __('Past Event', 'gatherpress'),
 								value: 'past',
 							},
 						]}

@@ -21,6 +21,7 @@
 	},
 	"supports": {
 		"gatherpress": {
+			"blockGuard": true,
 			"postIdOverride": true
 		},
 		"align": [ "wide", "full" ],
