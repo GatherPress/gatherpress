@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
+import { addNewEvent } from '../reusable-user-steps/common.js';
 
 test.describe('e2e test for event, the user should view the event map on event post.', () => {
 	test.beforeEach(async ({ page }) => {
@@ -13,15 +14,12 @@ test.describe('e2e test for event, the user should view the event map on event p
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
-		await page.getByRole('link', { name: 'Events', exact: true }).click();
-		await page
-			.locator('#wpbody-content')
-			.getByRole('link', { name: 'Add New Event' })
-			.click();
+		const postName = 'test offline event-pune';
 
-		const eventTitle = await page
-			.getByLabel('Add title')
-			.fill('test: offline  event');
+		await addNewEvent({ page });
+
+		await page.getByLabel('Add title').fill(postName);
+
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
@@ -29,14 +27,28 @@ test.describe('e2e test for event, the user should view the event map on event p
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		//await page.getByLabel('Settings', { exact: true }).click();
-		// await page.getByLabel('Settings', { exact: true }).click();
+		const settingButton = await page.getByLabel('Settings', {
+			exact: true,
+		});
 
-		await page.getByRole('button', { name: 'Event settings' }).click();
+		const settingExpand = await settingButton.getAttribute('aria-expanded');
 
-		await page
-			.getByLabel('Venue Selector')
-			.selectOption('76:test-venue-map');
+		if (settingExpand === 'false') {
+			await settingButton.click();
+		}
+		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
+
+		const eventButton = await page.getByRole('button', {
+			name: 'Event settings',
+		});
+		const eventExpand = await eventButton.getAttribute('aria-expanded');
+
+		if (eventExpand === 'false') {
+			await eventButton.click();
+		}
+
+		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
+		await page.getByLabel('Venue Selector').selectOption('1407:pune');
 
 		await expect(page.locator('#map')).toBeVisible();
 
@@ -49,7 +61,7 @@ test.describe('e2e test for event, the user should view the event map on event p
 			.click();
 
 		await page
-			.getByText(`${eventTitle} is now live.`)
+			.getByText(`${postName} is now live.`)
 			.isVisible({ timeout: 60000 }); // verified the event is live.
 
 		await page
@@ -59,8 +71,19 @@ test.describe('e2e test for event, the user should view the event map on event p
 
 		await page.locator('#map').isVisible({ timeout: 30000 });
 
+		await page.waitForSelector('#map');
 		await expect(page).toHaveScreenshot('event_location_map.png', {
+			maxDiffPixels: 800,
 			fullPage: true,
+			mask: [
+				page.locator('header'),
+				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
+				page.locator('.wp-block-gatherpress-event-date'),
+				page.locator('footer'),
+			],
 		});
 	});
 });

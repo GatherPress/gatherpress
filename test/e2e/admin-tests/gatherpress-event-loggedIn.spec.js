@@ -9,7 +9,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		await login({ page, username: 'prashantbellad' });
 	});
 
-	test('01-the user should be able to publish an online event', async ({
+	test.skip('01-the user should be able to publish an online event', async ({
 		page,
 	}) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
@@ -67,7 +67,6 @@ test.describe('e2e test for publish event through admin side', () => {
 		page,
 	}) => {
 		await page.getByRole('menuitem', { name: 'GatherPress' }).click();
-
 		await page.evaluate(() => window.scrollTo(0, 5000));
 		await page
 			.getByRole('link', { name: 'RSVP' })

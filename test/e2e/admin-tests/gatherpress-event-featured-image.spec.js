@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const { login } = require('../reusable-user-steps/common');
+const { login } = require('../reusable-user-steps/common.js');
+import { addNewEvent } from '../reusable-user-steps/common.js';
 
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
@@ -12,11 +13,19 @@ test.describe('e2e test for publish event through admin side', () => {
 	test('The user should be able add featured image in post and verify the added featured image post', async ({
 		page,
 	}) => {
-		await page.getByRole('link', { name: 'Events', exact: true }).click();
-		await page
-			.locator('#wpbody-content')
-			.getByRole('link', { name: 'Add New' })
-			.click();
+		const postName = 'featured image test';
+
+		await addNewEvent({ page });
+		const settingButton = await page.getByLabel('Settings', {
+			exact: true,
+		});
+
+		const settingExpand = await settingButton.getAttribute('aria-expanded');
+
+		if (settingExpand === 'false') {
+			await settingButton.click();
+		}
+		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
 
 		await page
 			.getByLabel('Block: Event Date')
@@ -24,7 +33,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.first()
 			.isVisible();
 
-		await page.getByLabel('Add title').fill('Featured Image test');
+		await page.getByLabel('Add title').fill(postName);
 
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
@@ -51,8 +60,19 @@ test.describe('e2e test for publish event through admin side', () => {
 			.click();
 		await page.locator('#wp--skip-link--target img').isVisible();
 
-		// await expect(page).toHaveScreenshot('featured_image.png', {fullPage:true})
-		const FeaturedImage = await page.screenshot({ fullPage: true });
+		await page.waitForLoadState('domcontentloaded');
+		const FeaturedImage = await page.screenshot({
+			fullPage: true,
+			mask: [
+				page.locator('header'),
+				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
+				page.locator('.wp-block-gatherpress-event-date'),
+				page.locator('footer'),
+			],
+		});
 		expect(FeaturedImage).toMatchSnapshot('featured_image.png');
 	});
 });

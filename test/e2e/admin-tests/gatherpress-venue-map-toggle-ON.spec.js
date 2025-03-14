@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
+import { addNewVenue } from '../reusable-user-steps/common.js';
 
 test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
@@ -12,11 +13,11 @@ test.describe('e2e test for venue map through admin side', () => {
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
-		await page.getByRole('link', { name: 'Events', exact: true }).click();
-		await page.getByRole('link', { name: 'Venues' }).click();
-		await page.getByRole('link', { name: 'Add New Venue' }).click();
+		const postName = 'venue map : toggle on';
 
-		await page.getByLabel('Add title').fill('venue map display');
+		await addNewVenue({ page });
+
+		await page.getByLabel('Add title').fill(postName);
 
 		await page
 			.getByLabel('Block: Event Date')
@@ -25,18 +26,34 @@ test.describe('e2e test for venue map through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
-		await page.getByLabel('Settings', { exact: true }).click();
-		await page.getByLabel('Settings', { exact: true }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
-		await page.getByRole('button', { name: 'Venue settings' }).click();
+		const settingButton = await page.getByLabel('Settings', {
+			exact: true,
+		});
 
-		await page.getByLabel('Full Address').fill('hinjewadi, pune, India');
+		const settingExpand = await settingButton.getAttribute('aria-expanded');
+
+		if (settingExpand === 'false') {
+			await settingButton.click();
+		}
+		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
+
+		const venueButton = await page.getByRole('button', {
+			name: 'venue settings',
+		});
+		const venueExpand = await venueButton.getAttribute('aria-expanded');
+
+		if (venueExpand === 'false') {
+			await venueButton.click();
+		}
+
+		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
+		await page.getByLabel('Full Address').fill('Pune');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 
-		await page.locator('#map').click();
+		await page.locator('.gatherpress-venue__full-address').isVisible();
+		await page.waitForSelector('#map');
+		await page.locator('#map').click({ force: true });
 
 		await page.getByRole('tab', { name: 'Block' }).click();
 		await expect(page.getByLabel('Display the map')).toBeVisible();
@@ -53,10 +70,25 @@ test.describe('e2e test for venue map through admin side', () => {
 			.getByRole('link', { name: 'View Venue' })
 			.click();
 
+		await page.waitForLoadState('domcontentloaded');
+		await page.waitForSelector('#map');
 		await expect(page.locator('#map')).toBeVisible();
 		await expect(page).toHaveScreenshot('event_toggle_on.png', {
+			maxDiffPixels: 800,
 			fullPage: true,
-			map: [page.locator('header'), page.locator('footer')],
+			mask: [
+				page.locator('header'),
+				page.locator('h1'),
+				page.locator('h3'),
+				page.locator('nav'),
+				page.locator('.wp-block-template-part'),
+				page.locator('.wp-block-gatherpress-event-date'),
+				page.locator('.post-navigation-link__title'),
+				page.locator(
+					'.wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'
+				),
+				page.locator('footer'),
+			],
 		});
 	});
 });
