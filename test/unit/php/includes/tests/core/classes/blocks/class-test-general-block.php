@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\General_Block;
+use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
 
 /**
@@ -82,30 +83,38 @@ class Test_General_Block extends Base {
 	}
 
 	/**
-	 * Test block content remains when user is not logged in but block has login URL class.
+	 * Test login URL is dynamically set when user is not logged in and block has login URL class.
+	 *
+	 * This test verifies that when a user is not logged in, the block content is preserved
+	 * and the placeholder login URL is correctly replaced with the actual login URL.
 	 *
 	 * @since  1.0.0
 	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
-	public function test_block_remains_when_user_not_logged_in(): void {
+	public function test_login_url_is_set_when_user_not_logged_in(): void {
 		$general_block = General_Block::get_instance();
+		$post          = $this->mock->post()->get();
 
 		// Ensure no user is logged in.
 		wp_set_current_user( 0 );
 
-		$block_content = '<div>Test content</div>';
+		$block_content = '<p class="wp-block-example gatherpress--has-login-url">Please <a href="#gatherpress-login-url">Login to RSVP to this event.</p>';
 		$block         = array(
-			'attrs' => array(
+			'attrs'        => array(
 				'className' => 'wp-block-example gatherpress--has-login-url',
+			),
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+			'innerContent' => array(
+				'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
 			),
 		);
 
 		$result = $general_block->process_login_block( $block_content, $block );
 
-		$this->assertEquals(
-			$block_content,
+		$this->assertStringContainsString(
+			Utility::get_login_url( $post->ID ),
 			$result,
 			'Block content should remain unchanged when user is not logged in.'
 		);
