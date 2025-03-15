@@ -259,7 +259,7 @@ class Utility {
 	}
 
 	/**
-	 * Retrieve the login URL for the event.
+	 * Retrieve the login URL for an event.
 	 *
 	 * This method generates and returns the URL for logging in or accessing event-specific content.
 	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
@@ -276,7 +276,7 @@ class Utility {
 	}
 
 	/**
-	 * Retrieve the registration URL for the event.
+	 * Retrieve the registration URL for an event.
 	 *
 	 * This method generates and returns the URL for user registration or accessing event-specific registration.
 	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
