@@ -87,7 +87,7 @@ class General_Block {
 		) {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
-			while ( $tag->next_tag( array( 'tag_name'   => 'a' ) ) ) {
+			while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
 				if ( '#gatherpress-login-url' === $tag->get_attribute( 'href' ) ) {
 					$tag->set_attribute( 'href', Utility::get_login_url() );
 				}
