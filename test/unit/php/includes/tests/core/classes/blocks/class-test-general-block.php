@@ -135,10 +135,14 @@ class Test_General_Block extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
-		$block_content = '<div>Test content</div>';
+		$block_content = '<p class="wp-block-example">Please <a href="#gatherpress-login-url">Login to RSVP to this event.</p>';
 		$block         = array(
-			'attrs' => array(
+			'attrs'        => array(
 				'className' => 'wp-block-example',
+			),
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+			'innerContent' => array(
+				'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
 			),
 		);
 
@@ -168,9 +172,13 @@ class Test_General_Block extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
-		$block_content = '<div>Test content</div>';
+		$block_content = '<p>Please <a href="#gatherpress-login-url">Login to RSVP to this event.</p>';
 		$block         = array(
-			'attrs' => array(),
+			'attrs'        => array(),
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+			'innerContent' => array(
+				'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+			),
 		);
 
 		$result = $general_block->process_login_block( $block_content, $block );
