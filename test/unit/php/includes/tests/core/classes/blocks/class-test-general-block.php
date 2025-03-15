@@ -100,14 +100,14 @@ class Test_General_Block extends Base {
 		// Ensure no user is logged in.
 		wp_set_current_user( 0 );
 
-		$block_content = '<p class="wp-block-example gatherpress--has-login-url">Please <a href="#gatherpress-login-url">Login to RSVP to this event.</p>';
+		$block_content = '<p class="wp-block-example gatherpress--has-login-url">Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
 		$block         = array(
 			'attrs'        => array(
 				'className' => 'wp-block-example gatherpress--has-login-url',
 			),
-			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
 			'innerContent' => array(
-				'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+				'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
 			),
 		);
 
@@ -135,14 +135,14 @@ class Test_General_Block extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
-		$block_content = '<p class="wp-block-example">Please <a href="#gatherpress-login-url">Login to RSVP to this event.</p>';
+		$block_content = '<p class="wp-block-example">Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
 		$block         = array(
 			'attrs'        => array(
 				'className' => 'wp-block-example',
 			),
-			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
 			'innerContent' => array(
-				'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+				'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
 			),
 		);
 
@@ -172,12 +172,12 @@ class Test_General_Block extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
-		$block_content = '<p>Please <a href="#gatherpress-login-url">Login to RSVP to this event.</p>';
+		$block_content = '<p>Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
 		$block         = array(
 			'attrs'        => array(),
-			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
 			'innerContent' => array(
-				'Please <a href="#gatherpress-login-url">Login to RSVP to this event.',
+				'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
 			),
 		);
 
