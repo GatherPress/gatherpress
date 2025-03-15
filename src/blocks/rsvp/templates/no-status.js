@@ -1,12 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __, _x, sprintf } from '@wordpress/i18n';
-
-/**
- * Internal dependencies.
- */
-import { getFromGlobal } from '../../../helpers/globals';
+import { __, _x } from '@wordpress/i18n';
 
 const NO_STATUS = [
 	[
