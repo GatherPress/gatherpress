@@ -122,6 +122,16 @@ class General_Block {
 			return '';
 		}
 
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
+			if ( '#gatherpress-registration-url' === $tag->get_attribute( 'href' ) ) {
+				$tag->set_attribute( 'href', Utility::get_registration_url() );
+			}
+		}
+
+		$block_content = $tag->get_updated_html();
+
 		return $block_content;
 	}
 }
