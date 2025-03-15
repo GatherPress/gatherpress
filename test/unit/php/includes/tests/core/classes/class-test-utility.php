@@ -251,4 +251,56 @@ class Test_Utility extends Base {
 		remove_filter( 'option_gmt_offset', $gmt_offset_filter );
 		remove_filter( 'option_timezone_string', $timezone_string_filter );
 	}
+
+	/**
+	 * Coverage for get_login_url.
+	 *
+	 * @covers ::get_login_url
+	 *
+	 * @return void
+	 */
+	public function test_get_login_url(): void {
+		$this->assertSame( wp_login_url(), Utility::get_login_url() );
+
+		$post = $this->mock->post()->get();
+
+		$this->assertSame( wp_login_url( get_the_permalink( $post->ID ) ), Utility::get_login_url( $post->ID ) );
+
+		$this->mock->post()->reset();
+	}
+
+	/**
+	 * Coverage for get_registration_url.
+	 *
+	 * @covers ::get_registration_url
+	 *
+	 * @return void
+	 */
+	public function test_get_registration_url(): void {
+		$users_can_register_name    = 'users_can_register';
+		$users_can_register_default = get_option( $users_can_register_name );
+
+		update_option( $users_can_register_name, 0 );
+
+		$this->assertEmpty( Utility::get_registration_url() );
+
+		update_option( $users_can_register_name, 1 );
+
+		$this->assertSame( wp_registration_url(), Utility::get_registration_url() );
+
+		$post = $this->mock->post()->get();
+
+		$this->assertSame(
+			add_query_arg(
+				'redirect',
+				get_the_permalink( $post->ID ),
+				wp_registration_url()
+			),
+			Utility::get_registration_url( $post->ID )
+		);
+
+		$this->mock->post()->reset();
+
+		update_option( $users_can_register_name, $users_can_register_default );
+	}
 }

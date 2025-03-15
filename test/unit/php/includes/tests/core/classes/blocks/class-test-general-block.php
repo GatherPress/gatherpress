@@ -36,13 +36,13 @@ class Test_General_Block extends Base {
 				'type'     => 'filter',
 				'name'     => 'render_block',
 				'priority' => 10,
-				'callback' => array( $instance, 'remove_block_if_user_logged_in' ),
+				'callback' => array( $instance, 'process_login_block' ),
 			),
 			array(
 				'type'     => 'filter',
 				'name'     => 'render_block',
 				'priority' => 10,
-				'callback' => array( $instance, 'remove_block_if_registration_disabled' ),
+				'callback' => array( $instance, 'process_registration_block' ),
 			),
 		);
 
@@ -53,7 +53,7 @@ class Test_General_Block extends Base {
 	 * Test block content is removed when user is logged in and block has login URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_user_logged_in
+	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
@@ -71,7 +71,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_user_logged_in( $block_content, $block );
+		$result = $general_block->process_login_block( $block_content, $block );
 
 		$this->assertEmpty(
 			$result,
@@ -85,7 +85,7 @@ class Test_General_Block extends Base {
 	 * Test block content remains when user is not logged in but block has login URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_user_logged_in
+	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
@@ -102,7 +102,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_user_logged_in( $block_content, $block );
+		$result = $general_block->process_login_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
@@ -115,7 +115,7 @@ class Test_General_Block extends Base {
 	 * Test block content remains when user is logged in but block doesn't have login URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_user_logged_in
+	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
@@ -133,7 +133,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_user_logged_in( $block_content, $block );
+		$result = $general_block->process_login_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
@@ -148,7 +148,7 @@ class Test_General_Block extends Base {
 	 * Test block content remains when block has no className attribute.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_user_logged_in
+	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
@@ -164,7 +164,7 @@ class Test_General_Block extends Base {
 			'attrs' => array(),
 		);
 
-		$result = $general_block->remove_block_if_user_logged_in( $block_content, $block );
+		$result = $general_block->process_login_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
@@ -179,7 +179,7 @@ class Test_General_Block extends Base {
 	 * Test block content is removed when registration is disabled and block has registration URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_registration_disabled
+	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
@@ -196,7 +196,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_registration_disabled( $block_content, $block );
+		$result = $general_block->process_registration_block( $block_content, $block );
 
 		$this->assertEmpty(
 			$result,
@@ -209,7 +209,7 @@ class Test_General_Block extends Base {
 	 * Test block content remains when registration is enabled and block has registration URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_registration_disabled
+	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
@@ -226,7 +226,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_registration_disabled( $block_content, $block );
+		$result = $general_block->process_registration_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
@@ -240,7 +240,7 @@ class Test_General_Block extends Base {
 	 * Test block content remains when registration is disabled but block doesn't have registration URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_registration_disabled
+	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
@@ -257,7 +257,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_registration_disabled( $block_content, $block );
+		$result = $general_block->process_registration_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
@@ -271,7 +271,7 @@ class Test_General_Block extends Base {
 	 * Test block content remains when block has no className attribute.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_registration_disabled
+	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
@@ -286,7 +286,7 @@ class Test_General_Block extends Base {
 			'attrs' => array(),
 		);
 
-		$result = $general_block->remove_block_if_registration_disabled( $block_content, $block );
+		$result = $general_block->process_registration_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
