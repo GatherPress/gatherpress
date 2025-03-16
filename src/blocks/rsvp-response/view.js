@@ -200,12 +200,16 @@ const { state, actions } = store('gatherpress', {
 				'.wp-block-gatherpress-dropdown-item:not(.gatherpress--is-not-visible)'
 			);
 
-			// Check if "attending" is the only visible item.
+			// Disable the dropdown if "Attending" is both:
+			// 1. The only option available in the dropdown.
+			// 2. Currently selected (matching the trigger element's text).
 			if (
 				1 === visibleItems.length &&
 				visibleItems[0].classList.contains(
 					'gatherpress--rsvp-attending'
-				)
+				) &&
+				visibleItems[0].textContent === triggerElement.textContent
+
 			) {
 				triggerElement.classList.add('gatherpress--is-disabled');
 				triggerElement.setAttribute('tabindex', '-1');
