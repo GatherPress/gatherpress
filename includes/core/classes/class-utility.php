@@ -257,4 +257,43 @@ class Utility {
 
 		return $timezone_string;
 	}
+
+	/**
+	 * Retrieve the login URL for an event.
+	 *
+	 * This method generates and returns the URL for logging in or accessing event-specific content.
+	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
+	 * @return string The login URL for the event.
+	 */
+	public static function get_login_url( int $post_id = 0 ): string {
+		$permalink = get_the_permalink( $post_id );
+
+		return wp_login_url( $permalink );
+	}
+
+	/**
+	 * Retrieve the registration URL for an event.
+	 *
+	 * This method generates and returns the URL for user registration or accessing event-specific registration.
+	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
+	 * @return string The registration URL for the event, or an empty string if user registration is disabled.
+	 */
+	public static function get_registration_url( int $post_id = 0 ): string {
+		$permalink = get_the_permalink( $post_id );
+		$url       = '';
+
+		if ( get_option( 'users_can_register' ) ) {
+			$url = add_query_arg( 'redirect', $permalink, wp_registration_url() );
+		}
+
+		return $url;
+	}
 }

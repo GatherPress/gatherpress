@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\Blocks;
 
 use GatherPress\Core\Blocks\General_Block;
+use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
 
 /**
@@ -36,13 +37,13 @@ class Test_General_Block extends Base {
 				'type'     => 'filter',
 				'name'     => 'render_block',
 				'priority' => 10,
-				'callback' => array( $instance, 'remove_block_if_user_logged_in' ),
+				'callback' => array( $instance, 'process_login_block' ),
 			),
 			array(
 				'type'     => 'filter',
 				'name'     => 'render_block',
 				'priority' => 10,
-				'callback' => array( $instance, 'remove_block_if_registration_disabled' ),
+				'callback' => array( $instance, 'process_registration_block' ),
 			),
 		);
 
@@ -53,7 +54,7 @@ class Test_General_Block extends Base {
 	 * Test block content is removed when user is logged in and block has login URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_user_logged_in
+	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
@@ -71,7 +72,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_user_logged_in( $block_content, $block );
+		$result = $general_block->process_login_block( $block_content, $block );
 
 		$this->assertEmpty(
 			$result,
@@ -82,32 +83,40 @@ class Test_General_Block extends Base {
 	}
 
 	/**
-	 * Test block content remains when user is not logged in but block has login URL class.
+	 * Test login URL is dynamically set when user is not logged in and block has login URL class.
+	 *
+	 * This test verifies that when a user is not logged in, the block content is preserved
+	 * and the placeholder login URL is correctly replaced with the actual login URL.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_user_logged_in
+	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
-	public function test_block_remains_when_user_not_logged_in(): void {
+	public function test_login_url_is_set_when_user_not_logged_in(): void {
 		$general_block = General_Block::get_instance();
+		$post          = $this->mock->post()->get();
 
 		// Ensure no user is logged in.
 		wp_set_current_user( 0 );
 
-		$block_content = '<div>Test content</div>';
+		$block_content = '<p class="wp-block-example gatherpress--has-login-url">Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
 		$block         = array(
-			'attrs' => array(
+			'attrs'        => array(
 				'className' => 'wp-block-example gatherpress--has-login-url',
+			),
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
+			'innerContent' => array(
+				'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
 			),
 		);
 
-		$result = $general_block->remove_block_if_user_logged_in( $block_content, $block );
+		$result = $general_block->process_login_block( $block_content, $block );
 
-		$this->assertEquals(
-			$block_content,
+		$this->assertStringContainsString(
+			Utility::get_login_url( $post->ID ),
 			$result,
-			'Block content should remain unchanged when user is not logged in.'
+			'Block content should contain the correct login URL.'
 		);
 	}
 
@@ -115,7 +124,7 @@ class Test_General_Block extends Base {
 	 * Test block content remains when user is logged in but block doesn't have login URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_user_logged_in
+	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
@@ -126,14 +135,18 @@ class Test_General_Block extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
-		$block_content = '<div>Test content</div>';
+		$block_content = '<p class="wp-block-example">Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
 		$block         = array(
-			'attrs' => array(
+			'attrs'        => array(
 				'className' => 'wp-block-example',
+			),
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
+			'innerContent' => array(
+				'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
 			),
 		);
 
-		$result = $general_block->remove_block_if_user_logged_in( $block_content, $block );
+		$result = $general_block->process_login_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
@@ -148,7 +161,7 @@ class Test_General_Block extends Base {
 	 * Test block content remains when block has no className attribute.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_user_logged_in
+	 * @covers ::process_login_block
 	 *
 	 * @return void
 	 */
@@ -159,12 +172,16 @@ class Test_General_Block extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
-		$block_content = '<div>Test content</div>';
+		$block_content = '<p>Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
 		$block         = array(
-			'attrs' => array(),
+			'attrs'        => array(),
+			'innerHTML'    => 'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
+			'innerContent' => array(
+				'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.',
+			),
 		);
 
-		$result = $general_block->remove_block_if_user_logged_in( $block_content, $block );
+		$result = $general_block->process_login_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
@@ -179,7 +196,7 @@ class Test_General_Block extends Base {
 	 * Test block content is removed when registration is disabled and block has registration URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_registration_disabled
+	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
@@ -196,7 +213,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_registration_disabled( $block_content, $block );
+		$result = $general_block->process_registration_block( $block_content, $block );
 
 		$this->assertEmpty(
 			$result,
@@ -204,43 +221,52 @@ class Test_General_Block extends Base {
 		);
 	}
 
-
 	/**
-	 * Test block content remains when registration is enabled and block has registration URL class.
+	 * Test Registration URL is dynamically set when user is not logged in and block has login URL class.
+	 *
+	 * This test verifies that when a user is not logged in, the block content is preserved
+	 * and the placeholder registration URL is correctly replaced with the actual registration URL.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_registration_disabled
+	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
-	public function test_block_remains_when_registration_enabled(): void {
+	public function test_registration_url_is_set_when_user_not_logged_in(): void {
 		$general_block = General_Block::get_instance();
+		$post          = $this->mock->post()->get();
+
+		// Ensure no user is logged in.
+		wp_set_current_user( 0 );
 
 		// Enable user registration.
 		update_option( 'users_can_register', 1 );
 
-		$block_content = '<div>Test content</div>';
+		$block_content = '<p class="wp-block-example gatherpress--has-registration-url">Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.</p>';
 		$block         = array(
-			'attrs' => array(
+			'attrs'        => array(
 				'className' => 'wp-block-example gatherpress--has-registration-url',
+			),
+			'innerHTML'    => 'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
+			'innerContent' => array(
+				'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
 			),
 		);
 
-		$result = $general_block->remove_block_if_registration_disabled( $block_content, $block );
+		$result = $general_block->process_registration_block( $block_content, $block );
 
-		$this->assertEquals(
-			$block_content,
-			$result,
-			'Block content should remain unchanged when registration is enabled.'
+		$this->assertStringContainsString(
+			Utility::get_registration_url( $post->ID ),
+			html_entity_decode( $result ),
+			'Block content should contain the correct registration URL.'
 		);
 	}
-
 
 	/**
 	 * Test block content remains when registration is disabled but block doesn't have registration URL class.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_registration_disabled
+	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
@@ -257,7 +283,7 @@ class Test_General_Block extends Base {
 			),
 		);
 
-		$result = $general_block->remove_block_if_registration_disabled( $block_content, $block );
+		$result = $general_block->process_registration_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,
@@ -266,12 +292,11 @@ class Test_General_Block extends Base {
 		);
 	}
 
-
 	/**
 	 * Test block content remains when block has no className attribute.
 	 *
 	 * @since  1.0.0
-	 * @covers ::remove_block_if_registration_disabled
+	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
@@ -286,7 +311,7 @@ class Test_General_Block extends Base {
 			'attrs' => array(),
 		);
 
-		$result = $general_block->remove_block_if_registration_disabled( $block_content, $block );
+		$result = $general_block->process_registration_block( $block_content, $block );
 
 		$this->assertEquals(
 			$block_content,

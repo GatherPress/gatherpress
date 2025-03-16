@@ -1,12 +1,7 @@
 /**
  * WordPress dependencies.
  */
-import { __, _x, sprintf } from '@wordpress/i18n';
-
-/**
- * Internal dependencies.
- */
-import { getFromGlobal } from '../../../helpers/globals';
+import { __, _x } from '@wordpress/i18n';
 
 const NO_STATUS = [
 	[
@@ -229,13 +224,9 @@ const NO_STATUS = [
 							[
 								'core/paragraph',
 								{
-									content: sprintf(
-										/* translators: %s: Login URL. */
-										__(
-											'This action requires an account. Please <a href="%s">Login</a> to RSVP to this event.',
-											'gatherpress'
-										),
-										getFromGlobal('urls.loginUrl')
+									content: __(
+										'This action requires an account. Please <a href="#gatherpress-login-url">Login</a> to RSVP to this event.',
+										'gatherpress'
 									),
 									className: 'gatherpress--has-login-url',
 									metadata: {
@@ -250,13 +241,9 @@ const NO_STATUS = [
 							[
 								'core/paragraph',
 								{
-									content: sprintf(
-										/* translators: %s: Registration URL. */
-										__(
-											'Don\'t have an account? <a href="%s">Register here</a> to create one.',
-											'gatherpress'
-										),
-										getFromGlobal('urls.registrationUrl')
+									content: __(
+										'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
+										'gatherpress'
 									),
 									className:
 										'gatherpress--has-registration-url',

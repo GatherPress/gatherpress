@@ -15,8 +15,8 @@ namespace GatherPress\Core\Blocks;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -55,15 +55,17 @@ class General_Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_filter( 'render_block', array( $this, 'remove_block_if_user_logged_in' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'remove_block_if_registration_disabled' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'process_login_block' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'process_registration_block' ), 10, 2 );
 	}
 
 	/**
-	 * Removes blocks with the `gatherpress--has-login-url` class if the user is logged in.
+	 * Processes blocks with the `gatherpress--has-login-url` class.
 	 *
-	 * This method checks if the block contains the `gatherpress--has-login-url` class
-	 * and removes it from rendering if the user is currently logged in.
+	 * This method performs two functions:
+	 * 1. Removes the block entirely if the user is already logged in
+	 * 2. Dynamically replaces the placeholder login URL with the actual login URL
+	 *    for users who are not logged in
 	 *
 	 * @since 1.0.0
 	 *
@@ -72,7 +74,7 @@ class General_Block {
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
-	public function remove_block_if_user_logged_in( string $block_content, array $block ): string {
+	public function process_login_block( string $block_content, array $block ): string {
 		if (
 			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' ) &&
 			is_user_logged_in()
@@ -80,14 +82,30 @@ class General_Block {
 			return '';
 		}
 
+		if (
+			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' )
+		) {
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
+				if ( '#gatherpress-login-url' === $tag->get_attribute( 'href' ) ) {
+					$tag->set_attribute( 'href', Utility::get_login_url() );
+				}
+			}
+
+			$block_content = $tag->get_updated_html();
+		}
+
 		return $block_content;
 	}
 
 	/**
-	 * Removes blocks with the `gatherpress--has-registration-url` class if user registration is disabled.
+	 * Processes blocks with the `gatherpress--has-registration-url` class.
 	 *
-	 * This method checks if the block contains the `gatherpress--has-registration-url` class
-	 * and removes it from rendering if the WordPress `users_can_register` option is disabled.
+	 * This method performs two functions:
+	 * 1. Removes the block entirely if user registration is disabled in WordPress settings
+	 * 2. For enabled registration, dynamically replaces the placeholder registration URL with the actual
+	 *    registration URL
 	 *
 	 * @since 1.0.0
 	 *
@@ -96,13 +114,23 @@ class General_Block {
 	 *
 	 * @return string The modified block content or an empty string if the block should be removed.
 	 */
-	public function remove_block_if_registration_disabled( string $block_content, array $block ): string {
+	public function process_registration_block( string $block_content, array $block ): string {
 		if (
 			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-registration-url' ) &&
 			! get_option( 'users_can_register' )
 		) {
 			return '';
 		}
+
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
+			if ( '#gatherpress-registration-url' === $tag->get_attribute( 'href' ) ) {
+				$tag->set_attribute( 'href', Utility::get_registration_url() );
+			}
+		}
+
+		$block_content = $tag->get_updated_html();
 
 		return $block_content;
 	}

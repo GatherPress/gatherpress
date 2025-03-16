@@ -354,50 +354,11 @@ class Assets {
 				'pluginUrl'       => GATHERPRESS_CORE_URL,
 				'eventApiPath'    => '/' . $event_rest_api_slug,
 				'eventApiUrl'     => home_url( 'wp-json/' . $event_rest_api_slug ),
-				'loginUrl'        => $this->get_login_url( $post_id ),
-				'registrationUrl' => $this->get_registration_url( $post_id ),
+				'loginUrl'        => Utility::get_login_url( $post_id ),
+				'registrationUrl' => Utility::get_registration_url( $post_id ),
 				'homeUrl'         => get_home_url(),
 			),
 		);
-	}
-
-	/**
-	 * Retrieve the login URL for the event.
-	 *
-	 * This method generates and returns the URL for logging in or accessing event-specific content.
-	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
-	 * @return string The login URL for the event.
-	 */
-	public function get_login_url( int $post_id = 0 ): string {
-		$permalink = get_the_permalink( $post_id );
-
-		return wp_login_url( $permalink );
-	}
-
-	/**
-	 * Retrieve the registration URL for the event.
-	 *
-	 * This method generates and returns the URL for user registration or accessing event-specific registration.
-	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
-	 * @return string The registration URL for the event, or an empty string if user registration is disabled.
-	 */
-	public function get_registration_url( int $post_id = 0 ): string {
-		$permalink = get_the_permalink( $post_id );
-		$url       = '';
-
-		if ( get_option( 'users_can_register' ) ) {
-			$url = add_query_arg( 'redirect', $permalink, wp_registration_url() );
-		}
-
-		return $url;
 	}
 
 	/**
