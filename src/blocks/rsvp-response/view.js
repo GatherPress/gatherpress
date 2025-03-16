@@ -216,6 +216,16 @@ const { state, actions } = store('gatherpress', {
 				triggerElement.classList.remove('gatherpress--is-disabled');
 				triggerElement.setAttribute('tabindex', '0');
 			}
+
+			// Clean up any existing event handlers and focus traps
+			// before re-initializing the dropdown. This prevents memory leaks
+			// and duplicate event handlers when the dropdown state changes.
+			if ('function' === typeof triggerElement.cleanupFocusTrap) {
+				triggerElement.cleanupFocusTrap();
+			}
+			if ('function' === typeof triggerElement.cleanupCloseHandlers) {
+				triggerElement.cleanupCloseHandlers();
+			}
 		},
 		showHideToggle() {
 			const element = getElement();

@@ -123,23 +123,33 @@ const { actions } = store('gatherpress', {
 			];
 
 			if (isVisible) {
-				// Open dropdown: set focus trap and close handlers
+				// Open dropdown: set focus trap and close handlers.
 				trigger.focus();
 
-				// Set up focus trap
+				// Clean up any existing focus trap before creating a new one.
+				if ('function' === typeof element.ref.cleanupFocusTrap) {
+					element.ref.cleanupFocusTrap();
+				}
+
+				// Set up focus trap.
 				element.ref.cleanupFocusTrap =
 					manageFocusTrap(focusableElements);
 
-				// Set up close handlers
+				// Clean up any existing close handlers to prevent duplicates.
+				if ('function' === typeof element.ref.cleanupCloseHandlers) {
+					element.ref.cleanupCloseHandlers();
+				}
+
+				// Set up close handlers.
 				element.ref.cleanupCloseHandlers = setupCloseHandlers(
 					'.wp-block-gatherpress-dropdown__menu',
 					null,
 					(dropdown) => {
-						// Close the dropdown and clean up
+						// Close the dropdown and clean up.
 						dropdown.classList.remove('gatherpress--is-visible');
 						trigger.setAttribute('aria-expanded', 'false');
 
-						// Cleanup focus trap
+						// Cleanup focus trap.
 						if (
 							'function' === typeof element.ref.cleanupFocusTrap
 						) {
@@ -148,7 +158,7 @@ const { actions } = store('gatherpress', {
 					}
 				);
 			} else {
-				// Close dropdown: clean up focus trap and close handlers
+				// Close dropdown: clean up focus trap and close handlers.
 				if ('function' === typeof element.ref.cleanupFocusTrap) {
 					element.ref.cleanupFocusTrap();
 				}
