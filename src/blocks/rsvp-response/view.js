@@ -209,7 +209,6 @@ const { state, actions } = store('gatherpress', {
 					'gatherpress--rsvp-attending'
 				) &&
 				visibleItems[0].textContent === triggerElement.textContent
-
 			) {
 				triggerElement.classList.add('gatherpress--is-disabled');
 				triggerElement.setAttribute('tabindex', '-1');
