@@ -3,13 +3,7 @@
  */
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, RichText } from '@wordpress/block-editor';
-import { useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
-
-/**
- * External dependencies.
- */
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Edit component for the RSVP Guest Count Input Block.
