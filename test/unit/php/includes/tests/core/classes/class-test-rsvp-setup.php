@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Rsvp_Setup.
@@ -112,6 +113,32 @@ class Test_Rsvp_Setup extends Base {
 			1,
 			$instance->adjust_comments_number( 2, $event->ID ),
 			'Failed to assert the comments do not equal 1.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_process_waiting_list method.
+	 *
+	 * @covers ::maybe_process_waiting_list
+	 *
+	 * @return void
+	 */
+	public function test_maybe_process_waiting_list(): void {
+		$instance = Rsvp_Setup::get_instance();
+		$post_id  = $this->factory->post->create();
+
+		$this->assertEmpty(
+			Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $post_id ) ),
+			'Failed to assert method returns empty string.'
+		);
+
+		// Testing the logic of `check_waiting_list` happens in another test.
+		// This is more for coverage with and without valid ID.
+		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+
+		$this->assertEmpty(
+			Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $event_id ) ),
+			'Failed to assert method returns empty string.'
 		);
 	}
 }
