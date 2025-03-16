@@ -11,12 +11,7 @@
 use GatherPress\Core\Rsvp;
 
 $gatherpress_max_guest_limit = get_post_meta( get_the_ID(), 'gatherpress_max_guest_limit', true );
-$gatherpress_input_id        = $block->attributes['inputId'] ?? null;
-
-// This should never be empty.
-if ( empty( $gatherpress_input_id ) ) {
-	return;
-}
+$gatherpress_input_id        = sprintf( 'gatherpress_%s', wp_rand() );
 
 // If the maximum guest limit is set to 0, guests are not permitted. Do not render the block.
 if ( empty( $gatherpress_max_guest_limit ) ) {

@@ -115,6 +115,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					if (currentSerializedBlocks[templateKey]) {
 						updatedSerializedBlocks[templateKey] =
 							currentSerializedBlocks[templateKey];
+
 						return updatedSerializedBlocks;
 					}
 
@@ -135,7 +136,13 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			});
 		};
 
-		hydrateInnerBlocks();
+		// Adding a setTimeout with 0ms delay pushes execution to the end of the event queue,
+		// ensuring WordPress has properly initialized the post state before we attempt to
+		// hydrate inner blocks. This prevents false "new post" detection that could interfere
+		// with block initialization.
+		setTimeout(() => {
+			hydrateInnerBlocks();
+		}, 0);
 	}, [serializedInnerBlocks, setAttributes, selectedStatus]);
 
 	return (
