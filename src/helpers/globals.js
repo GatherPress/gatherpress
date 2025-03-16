@@ -104,7 +104,7 @@ export function safeHTML(html) {
  * console.log(camelCaseString); // Outputs: "notAttending"
  */
 export function toCamelCase(snakeCaseString) {
-	return snakeCaseString.replace(/_([a-z])/g, (_, letter) =>
+	return snakeCaseString.replace(/_+([a-zA-Z])/g, (_, letter) =>
 		letter.toUpperCase()
 	);
 }
