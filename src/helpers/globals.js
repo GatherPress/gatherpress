@@ -104,7 +104,11 @@ export function safeHTML(html) {
  * console.log(camelCaseString); // Outputs: "notAttending"
  */
 export function toCamelCase(snakeCaseString) {
-	return snakeCaseString.replace(/_+([a-zA-Z])/g, (_, letter) =>
+	// First replace consecutive underscores with a single one.
+	const normalized = snakeCaseString.replace(/__+/g, '_');
+
+	// Then do the camelCase conversion with a simpler regex.
+	return normalized.replace(/_([a-zA-Z])/g, (_, letter) =>
 		letter.toUpperCase()
 	);
 }
