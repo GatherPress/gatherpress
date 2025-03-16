@@ -169,6 +169,7 @@ export function manageFocusTrap(focusableElements) {
 	if (!focusableElements || focusableElements.length === 0) {
 		return () => {}; // Return an empty cleanup function if no elements.
 	}
+
 	const isElementVisible = (element) => {
 		return (
 			element.offsetParent !== null && // Excludes elements with `display: none`.
