@@ -15,9 +15,6 @@
     "label": {
       "type": "string",
       "default": "Number of guests?"
-    },
-    "inputId": {
-      "type": "string"
     }
   },
   "supports": {

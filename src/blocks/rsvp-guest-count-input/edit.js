@@ -27,14 +27,7 @@ import { v4 as uuidv4 } from 'uuid';
  * @return {JSX.Element} The rendered edit interface for the block.
  */
 const Edit = ({ attributes, setAttributes }) => {
-	const { label, inputId } = attributes;
-
-	// Generate UUID for input if not already set.
-	useEffect(() => {
-		if (!inputId) {
-			setAttributes({ inputId: 'input-' + uuidv4() });
-		}
-	}, [inputId, setAttributes]);
+	const { label } = attributes;
 
 	const maxAttendanceLimit = useSelect(
 		(select) =>
@@ -53,7 +46,6 @@ const Edit = ({ attributes, setAttributes }) => {
 		<p {...blockProps}>
 			<RichText
 				tagName="label"
-				htmlFor={inputId}
 				value={label}
 				onChange={(newLabel) => setAttributes({ label: newLabel })}
 				placeholder={__('Enter label…', 'gatherpress')}
@@ -66,7 +58,6 @@ const Edit = ({ attributes, setAttributes }) => {
 			/>
 			<input
 				type="number"
-				id={inputId}
 				placeholder="0"
 				aria-label={label || __('Guest Count Input', 'gatherpress')}
 				disabled={true}
