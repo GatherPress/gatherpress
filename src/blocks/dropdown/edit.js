@@ -1,4 +1,9 @@
 /**
+ * External dependencies.
+ */
+import { v4 as uuidv4 } from 'uuid';
+
+/**
  * WordPress dependencies.
  */
 import {
@@ -26,7 +31,6 @@ import {
 } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
-import { v4 as uuidv4 } from 'uuid';
 import { dispatch, select, useSelect } from '@wordpress/data';
 
 /**
