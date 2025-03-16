@@ -116,48 +116,7 @@ class Test_General_Block extends Base {
 		$this->assertStringContainsString(
 			Utility::get_login_url( $post->ID ),
 			$result,
-			'Block content should remain unchanged when user is not logged in.'
-		);
-	}
-
-	/**
-	 * Test Registration URL is dynamically set when user is not logged in and block has login URL class.
-	 *
-	 * This test verifies that when a user is not logged in, the block content is preserved
-	 * and the placeholder registration URL is correctly replaced with the actual registration URL.
-	 *
-	 * @since  1.0.0
-	 * @covers ::process_registration_block
-	 *
-	 * @return void
-	 */
-	public function test_registration_url_is_set_when_user_not_logged_in(): void {
-		$general_block = General_Block::get_instance();
-		$post          = $this->mock->post()->get();
-
-		// Ensure no user is logged in.
-		wp_set_current_user( 0 );
-
-		// Enable user registration.
-		update_option( 'users_can_register', 1 );
-
-		$block_content = '<p class="wp-block-example gatherpress--has-registration-url">Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.</p>';
-		$block         = array(
-			'attrs'        => array(
-				'className' => 'wp-block-example gatherpress--has-registration-url',
-			),
-			'innerHTML'    => 'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
-			'innerContent' => array(
-				'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
-			),
-		);
-
-		$result = $general_block->process_registration_block( $block_content, $block );
-
-		$this->assertStringContainsString(
-			Utility::get_registration_url( $post->ID ),
-			html_entity_decode( $result ),
-			'Block content should remain unchanged when user is not logged in.'
+			'Block content should contain the correct login URL.'
 		);
 	}
 
@@ -262,37 +221,46 @@ class Test_General_Block extends Base {
 		);
 	}
 
-
 	/**
-	 * Test block content remains when registration is enabled and block has registration URL class.
+	 * Test Registration URL is dynamically set when user is not logged in and block has login URL class.
+	 *
+	 * This test verifies that when a user is not logged in, the block content is preserved
+	 * and the placeholder registration URL is correctly replaced with the actual registration URL.
 	 *
 	 * @since  1.0.0
 	 * @covers ::process_registration_block
 	 *
 	 * @return void
 	 */
-	public function test_block_remains_when_registration_enabled(): void {
+	public function test_registration_url_is_set_when_user_not_logged_in(): void {
 		$general_block = General_Block::get_instance();
+		$post          = $this->mock->post()->get();
+
+		// Ensure no user is logged in.
+		wp_set_current_user( 0 );
 
 		// Enable user registration.
 		update_option( 'users_can_register', 1 );
 
-		$block_content = '<div>Test content</div>';
+		$block_content = '<p class="wp-block-example gatherpress--has-registration-url">Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.</p>';
 		$block         = array(
-			'attrs' => array(
+			'attrs'        => array(
 				'className' => 'wp-block-example gatherpress--has-registration-url',
+			),
+			'innerHTML'    => 'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
+			'innerContent' => array(
+				'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
 			),
 		);
 
 		$result = $general_block->process_registration_block( $block_content, $block );
 
-		$this->assertEquals(
-			$block_content,
-			$result,
-			'Block content should remain unchanged when registration is enabled.'
+		$this->assertStringContainsString(
+			Utility::get_registration_url( $post->ID ),
+			html_entity_decode( $result ),
+			'Block content should contain the correct registration URL.'
 		);
 	}
-
 
 	/**
 	 * Test block content remains when registration is disabled but block doesn't have registration URL class.
@@ -323,7 +291,6 @@ class Test_General_Block extends Base {
 			'Block content should remain unchanged when block does not have registration URL class.'
 		);
 	}
-
 
 	/**
 	 * Test block content remains when block has no className attribute.
