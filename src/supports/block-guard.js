@@ -69,11 +69,31 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					return;
 				}
 
-				// Handle tabindex elements
-				const elementsWithTabindex =
-					innerBlocksContainer.querySelectorAll('[tabindex]');
+				// Handle focusable elements.
+				const focusableElements =
+					innerBlocksContainer.querySelectorAll(`
+					a[href],
+					button,
+					input,
+					textarea,
+					select,
+					details,
+					iframe,
+					[tabindex],
+					[contentEditable="true"],
+					audio[controls],
+					video[controls],
+					[role="button"],
+					[role="link"],
+					[role="checkbox"],
+					[role="radio"],
+					[role="combobox"],
+					[role="menuitem"],
+					[role="textbox"],
+					[role="tab"]
+				`);
 
-				elementsWithTabindex.forEach((el) => {
+				focusableElements.forEach((el) => {
 					if (isBlockGuardEnabled) {
 						if (!el.dataset.originalTabIndex) {
 							el.dataset.originalTabIndex =
@@ -86,23 +106,6 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 							el.dataset.originalTabIndex
 						);
 						delete el.dataset.originalTabIndex;
-					}
-				});
-
-				// Handle contenteditable elements.
-				const editableElements = innerBlocksContainer.querySelectorAll(
-					'[contenteditable], [data-original-contenteditable]'
-				);
-
-				editableElements.forEach((el) => {
-					if (isBlockGuardEnabled) {
-						if ('true' === el.getAttribute('contenteditable')) {
-							el.dataset.originalContentEditable = 'true';
-							el.setAttribute('contenteditable', 'false');
-						}
-					} else if ('true' === el.dataset.originalContentEditable) {
-						el.setAttribute('contenteditable', 'true');
-						delete el.dataset.originalContentEditable;
 					}
 				});
 
