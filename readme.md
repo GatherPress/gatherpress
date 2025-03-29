@@ -1,9 +1,9 @@
 # GatherPress
 
-Stable tag: 0.32.0-beta.1  
-Tested up to: 6.7.2  
-License: GPL v2 or later  
-Tags: events, event, meetup, community  
+Stable tag: 0.32.0-beta.1
+Tested up to: 6.7.2
+License: GPL v2 or later
+Tags: events, event, meetup, community
 Contributors: mauteri, hrmervin, patricia70, jmarx75, stephenerdelyi, carstenbach, calebthedev, pbrocks, newyorkerlaura, prayagm, prashantabellad
 
 <!-- markdownlint-disable-next-line MD045 -->
@@ -21,65 +21,75 @@ GatherPress, powering our community's event management needs.
 
 ## Description
 
-GatherPress, a plugin created by and for the WordPress community, is a response to the community's desire for novel event management tools that meet the diverse needs of event organizers and members. Its agenda and roadmap align with that of the WordPress community, ensuring that it evolves in tandem with our collective wants and needs.
+**GatherPress** is an event management plugin for WordPress, built by and for communities. Born out of the WordPress ecosystem, it was created to meet the real needs of organizers — whether you're hosting a local meetup, a global conference, or something entirely your own.
+
+At its heart, GatherPress is about people coming together. It’s flexible, open, and powered by the same values that make WordPress great: freedom, collaboration, and the belief that tools should serve the people who use them. While its roots are in the WordPress community, GatherPress is for **anyone** who wants to organize events on their own terms.
 
 ## Pilot Program
 
-**We propose a pilot program to test GatherPress**, a community-developed plugin, within interested and active WordPress meetup groups. This initiative stems from our community’s need for an innovative event management tool tailored to the unique demands of WordPress event organizers and participants. Our proposal in January 2024 on [make.wordpress.org](https://make.wordpress.org/community/2024/01/22/proposal-pilot-program-to-test-gatherpress-on-the-wordpress-org-network-as-a-meetup-alternative/)
+**We're launching a pilot program to test GatherPress** with WordPress meetup groups that are active, engaged, and eager to try something new. This initiative was born from the community’s call for an event management tool that better reflects the needs of WordPress organizers and participants.
 
-## Community-built
+We shared our proposal in January 2024 on [make.wordpress.org](https://make.wordpress.org/community/2024/01/22/proposal-pilot-program-to-test-gatherpress-on-the-wordpress-org-network-as-a-meetup-alternative/), inviting feedback and collaboration from the broader community. The goal: to explore GatherPress as a potential alternative to existing tools, grounded in the values that make WordPress thrive — openness, flexibility, and community-led development.
 
-This project is the result of a collaborative effort to build a compelling event management application using open source tools such as _WordPress_ and _BuddyPress_ and with the grit, sweat, and love of **the community, for the community**. We encourage all interested, whether a user, community member, or developer, to follow our emerging presence on our [GatherPress Blog](https://gatherpress.org/blog/), our [GitHub repositories](https://github.com/GatherPress/), our [GatherPress Documentation](https://gatherpress.org/documentation/), or new features on our [GatherPress Playground](https://wordpress.org/plugins/gatherpress/?preview=1).
+## Community-Built
+
+GatherPress is the result of a collaborative effort to create a powerful, open-source event management tool using platforms like _WordPress_ and _BuddyPress_ — and fueled by the grit, passion, and generosity of the community itself. It’s a project built **by the community, for the community**.
+
+Whether you're a user, developer, organizer, or just curious, we invite you to be part of its growth. You can follow along and get involved through:
+
+- Our blog: [https://gatherpress.org/blog/](https://gatherpress.org/blog/)
+- Our GitHub repositories: [https://github.com/GatherPress/](https://github.com/GatherPress/)
+- Our documentation: [https://gatherpress.org/documentation/](https://gatherpress.org/documentation/)
+- Our developer docs: [https://github.com/GatherPress/gatherpress/tree/develop/docs/developer](https://github.com/GatherPress/gatherpress/tree/develop/docs/developer)
+- Our playground (plugin preview): [https://wordpress.org/plugins/gatherpress/?preview=1](https://wordpress.org/plugins/gatherpress/?preview=1)
 
 ## Playground Environment
 
-The GatherPress Playground allows you to test the current state of GatherPress with existing data in a fully-functional environment.
+The **GatherPress Playground** lets you explore the current state of GatherPress in a fully functional environment, preloaded with example data — no setup required.
 
 ![GatherPress Playground screenshot](./docs/media/playground-plugins-link.png)
 
-The playground is built on the WordPress Playground with customizable json data that you can customize as you like. To get started, click the [button above](https://wordpress.org/plugins/gatherpress/?preview=1), or delve deeper by:
+Built on [WordPress Playground](https://developer.wordpress.org/playground/), it uses customizable JSON data, giving you the flexibility to tailor your experience. To get started, simply click the [Live Preview](https://wordpress.org/plugins/gatherpress/?preview=1) button on the plugin page — or dive deeper with advanced use cases like:
 
-- Clicking the “Live Preview” button on WordPress.org GatherPress plugin page
-- Instantly previewing changes from a commented Playground-link on each PR
-- Automatically generating multilingual screenshots for WordPress.org plugins
-- Run end-to-end tests (still a PR)
-- Curating and maintaining your own set of demo-data, which is reusable in all WP Playgrounds.
+- Instantly previewing changes from Playground links on pull requests
+- Automatically generating multilingual screenshots for WordPress.org
+- Running end-to-end tests (in progress via PR)
+- Curating and maintaining reusable demo data for consistent testing
 
-For an introduction as to what we are creating and the specific features needed to host events and gather well, please view the [introductory video](https://gatherpress.org/demovideo).
+Want to see what we're building — and how GatherPress is designed to help you host events and build community? Check out our [introductory video](https://gatherpress.org/demovideo) or watch it on YouTube:
 
-<!-- markdownlint-disable-next-line MD034 -->
-https://www.youtube.com/watch?v=BnYS36C5d38&t=2s
+[https://www.youtube.com/watch?v=BnYS36C5d38&t=2s](https://www.youtube.com/watch?v=BnYS36C5d38&t=2s)
 
 ### Features
 
-- Event Scheduling: set dates, times, and provide event information details.
-- Attendee registration.
-- Allow attendees to add guests.
-- Ability for attendees to be listed anonymously (only administrators will see their names).
-- Emailing system: to send emails to all the group members, or a specific event attendees, non-attendees, and those on the waiting list.
-- In person events: add the venue, with an optional map (refer to point 4)
-- Online event management: add the video meeting URL.
-- Multi-event management: capability to handle multiple events simultaneously.
-- Multisite environment: This setup allows for centralized management while providing flexibility for each site to host its own unique events with its settings (language, timezone, date time format) and set of users.
-- Works with blocks.
-- Fully internationalized.
-- Freedom to add content besides the default event/venue blocks, to remove default blocks, and add synced patterns (useful for adding consistent information across all events).
+- **Event scheduling**: Set dates, times, and detailed event information.
+- **Attendee registration**: Let users RSVP to events.
+- **Guest support**: Allow attendees to include additional guests.
+- **Anonymous RSVPs**: Optionally list attendees as anonymous (only visible to admins).
+- **Email notifications**: Send emails to all members, event attendees, non-attendees, or those on the waitlist.
+- **In-person event support**: Add a venue and optional map.
+- **Online event support**: Include a video meeting link for virtual events.
+- **Multiple event management**: Handle multiple upcoming or past events simultaneously.
+- **Multisite-ready**: Centralized plugin support for networks, while allowing each site its own language, timezone, date/time format, and user base.
+- **Block editor compatible**: Create and customize events using WordPress blocks.
+- **Internationalized**: Fully translatable and ready for global use.
+- **Layout flexibility**: Add or remove blocks as needed, or include synced patterns for reusable content across events.
 
-### Upcoming features
+### Upcoming Features
 
-- Import events from meetup.com with an add-on plugin. ([#](https://github.com/GatherPress/gatherpress/issues/394))
-- Recurring events. ([#](https://github.com/GatherPress/gatherpress/issues/80))
-- Calendar block. ([#](https://github.com/GatherPress/gatherpress/issues/369))
-- Email notification when event starts. ([#](https://github.com/GatherPress/gatherpress/issues/429))
-- Event federation using ActivityPub ([#](https://github.com/GatherPress/gatherpress/issues/569))
+- Open RSVP support (non-logged-in users). ([#68](https://github.com/GatherPress/gatherpress/issues/68))
+- Recurring events. ([#80](https://github.com/GatherPress/gatherpress/issues/80))
+- Calendar block for displaying upcoming events. ([#369](https://github.com/GatherPress/gatherpress/issues/369))
+- Email reminders when an event starts. ([#429](https://github.com/GatherPress/gatherpress/issues/429))
+- Event federation using ActivityPub. ([#569](https://github.com/GatherPress/gatherpress/issues/569))
 
 ### Third-Party Libraries
 
-This plugin leverages the following third-party libraries for various functionalities:
+GatherPress uses a few third-party libraries to enhance specific parts of the user experience:
 
-- [React-Modal](https://github.com/reactjs/react-modal): Facilitates the creation of modal dialogs in React components.
-- [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips for React applications.
-- [Leaflet](https://leafletjs.com/): Provides global, open-source mapping functionality
+- [Leaflet](https://leafletjs.com/): Lightweight, open-source mapping library used to display event locations.
+- [React-Modal](https://github.com/reactjs/react-modal): Facilitates modal dialogs in React components. (Currently in use, but being phased out).
+- [React-Tooltip](https://github.com/wwayne/react-tooltip): Provides customizable tooltips. (Currently in use, but being phased out).
 
 ## Installation
 
