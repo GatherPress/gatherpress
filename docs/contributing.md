@@ -21,8 +21,8 @@ GatherPress is built by and for the community — and we’d love your help! Whe
 ## 🔐 Access & Roles
 
 - For GitHub write access, reach out to:
-  - [@mauteri](https://github.com/mauteri)
-  - [@MervinHernandez](https://github.com/MervinHernandez)
+    - [@mauteri](https://github.com/mauteri)
+    - [@MervinHernandez](https://github.com/MervinHernandez)
 
 - For access to infrastructure (SSH or WP Admin on gatherpress.org), contact [@MervinHernandez](https://github.com/MervinHernandez)
 

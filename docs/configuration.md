@@ -1,10 +1,3 @@
-Here you go!
-
----
-
-### 📄 `configuration.md`
-
-```markdown
 # Configuration
 
 Once activated, GatherPress can be configured from your WordPress dashboard under **Events > Settings**.
