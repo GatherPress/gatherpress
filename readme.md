@@ -47,6 +47,7 @@ Contributors: mauteri, hrmervin, patricia70, jmarx75, stephenerdelyi, carstenbac
 Download the latest `.zip` from the [Releases page](https://github.com/GatherPress/gatherpress/releases), then upload it to your WordPress dashboard under **Plugins > Add New > Upload Plugin**.
 
 📖 [View installation guide](https://github.com/GatherPress/gatherpress/blob/develop/docs/installation.md)
+🛠️ [View configuration guide](https://github.com/GatherPress/gatherpress/blob/develop/docs/configuration.md)
 
 ---
 
