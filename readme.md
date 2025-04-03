@@ -9,7 +9,7 @@ Contributors: mauteri, hrmervin, patricia70, jmarx75, stephenerdelyi, carstenbac
 <!-- markdownlint-disable-next-line MD045 -->
 ![](.wordpress-org/banner-1544x500.jpg)
 
-**GatherPress** is a flexible, community-powered event management plugin for WordPress. Whether you’re organizing a local meetup, global conference, or something entirely your own, GatherPress helps people come together — on your terms.
+**GatherPress** is a flexible, community-powered event management plugin for WordPress. Whether you’re organizing a local meetup, global conference, or something entirely your own, GatherPress helps people come together.
 
 ![GPLv2 License](https://img.shields.io/github/license/GatherPress/gatherpress) [![Coding Standards](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/coding-standards.yml) [![PHPUnit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/phpunit-tests.yml) [![JavaScript Unit Tests](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/jest-tests.yml) [![E2E Tests](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/e2e-tests.yml) [![SonarCloud](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/GatherPress/gatherpress/actions/workflows/sonarcloud.yml) [![Dependency Review](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml/badge.svg?event=pull_request)](https://github.com/GatherPress/gatherpress/actions/workflows/dependency-review.yml)
 
@@ -47,6 +47,7 @@ Contributors: mauteri, hrmervin, patricia70, jmarx75, stephenerdelyi, carstenbac
 Download the latest `.zip` from the [Releases page](https://github.com/GatherPress/gatherpress/releases), then upload it to your WordPress dashboard under **Plugins > Add New > Upload Plugin**.
 
 📖 [View installation guide](https://github.com/GatherPress/gatherpress/blob/develop/docs/installation.md)
+🛠️ [View configuration guide](https://github.com/GatherPress/gatherpress/blob/develop/docs/configuration.md)
 
 ---
 

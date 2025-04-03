@@ -24,7 +24,6 @@ Go to **Events > Add New**. The event editor uses WordPress blocks. You can add,
 - **RSVP** – Allow users to RSVP “yes” or “no”
 - **RSVP Response** – Display attendees/non-attendees
 - **Add to Calendar** – Let users export events to their calendar
-- **Event Description** – Use any standard content block here
 
 ## 📍 Creating a Venue
 
