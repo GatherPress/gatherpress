@@ -135,6 +135,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					overlay.style.width = '100%';
 					overlay.style.height = '100%';
 					overlay.style.background = 'transparent';
+					overlay.style.zIndex = '60';
 
 					overlay.onclick = (e) => {
 						e.stopPropagation();
