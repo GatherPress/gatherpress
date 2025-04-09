@@ -23,7 +23,7 @@ Contributors: mauteri, hrmervin, patricia70, jmarx75, stephenerdelyi, carstenbac
 
 - Event scheduling (date, time, location, description)
 - Attendee registration (with optional anonymous listing)
-- +1s / additional guest support
+- Attendees can bring guests
 - Email notifications for attendees and non-attendees
 - Online and in-person event support (with mapping)
 - Full block editor support
