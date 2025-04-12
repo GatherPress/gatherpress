@@ -93,7 +93,7 @@ class General extends Base {
 					'gatherpress'
 				),
 				'options'     => array(
-					'post_or_event_date'     => array(
+					'post_or_event_date'    => array(
 						'labels' => array(
 							'name' => __( 'Publish Date', 'gatherpress' ),
 						),
@@ -105,7 +105,7 @@ class General extends Base {
 							),
 						),
 					),
-					'map_platform'           => array(
+					'map_platform'          => array(
 						'labels'      => array(
 							'name' => __( 'Mapping Platform', 'gatherpress' ),
 						),
@@ -122,11 +122,11 @@ class General extends Base {
 							),
 						),
 					),
-					'max_attendance_limit'   => array(
+					'max_attendance_limit'  => array(
 						'labels'      => array(
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
 						),
-						'description' => __( 'Set this as your default, but you can still override it for each event as you like. If you set it to 0, there will not be any limit.', 'gatherpress' ),
+						'description' => __( 'Set this as your default, but you can still override it for each event as you like. This is the total number of people allowed at an event. If you set it to 0, there will not be any limit.', 'gatherpress' ),
 						'field'       => array(
 							'label'   => __( 'The default maximum limit of attendees to an event.', 'gatherpress' ),
 							'type'    => 'number',
@@ -136,13 +136,13 @@ class General extends Base {
 							),
 						),
 					),
-					'max_guest_limit'        => array(
+					'max_guest_limit'       => array(
 						'labels'      => array(
 							'name' => __( 'Maximum Number of Guests', 'gatherpress' ),
 						),
 						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
 						'field'       => array(
-							'label'   => __( 'The default maximum limit of guests an attendees can bring to an event.', 'gatherpress' ),
+							'label'   => __( 'The default maximum number of people each attendee can bring to an event.', 'gatherpress' ),
 							'type'    => 'number',
 							'size'    => 'small',
 							'options' => array(
@@ -152,26 +152,13 @@ class General extends Base {
 							),
 						),
 					),
-					'enable_anonymous_rsvp'  => array(
+					'enable_anonymous_rsvp' => array(
 						'labels'      => array(
 							'name' => __( 'Anonymous RSVP', 'gatherpress' ),
 						),
 						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
 						'field'       => array(
 							'label'   => __( 'Enable Anonymous RSVP for New Events.', 'gatherpress' ),
-							'type'    => 'checkbox',
-							'options' => array(
-								'default' => 0,
-							),
-						),
-					),
-					'enable_initial_decline' => array(
-						'labels'      => array(
-							'name' => __( 'Not Attending Users', 'gatherpress' ),
-						),
-						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
-						'field'       => array(
-							'label'   => __( 'Enable Immediate "Not Attending" Option for Attendees.', 'gatherpress' ),
 							'type'    => 'checkbox',
 							'options' => array(
 								'default' => 0,

@@ -360,10 +360,14 @@ class Event {
 	 * @return string The converted date in GMT (UTC) time zone in 'Y-m-d H:i:s' format.
 	 */
 	protected function get_gmt_datetime( string $date, DateTimeZone $timezone ): string {
+		if ( empty( $date ) ) {
+			return '';
+		}
+
 		$datetime = date_create( $date, $timezone );
 
 		if ( false === $datetime ) {
-			return '0000-00-00 00:00:00';
+			return '';
 		}
 
 		return $datetime->setTimezone( new DateTimeZone( 'UTC' ) )->format( self::DATETIME_FORMAT );
@@ -640,10 +644,18 @@ class Event {
 	public function save_datetimes( array $params ): bool {
 		global $wpdb;
 
-		$params['post_id'] = $this->event->ID;
-		$fields            = array_filter(
+		$params = array_merge(
+			array(
+				'post_id'        => $this->event->ID,
+				'datetime_start' => '',
+				'datetime_end'   => '',
+				'timezone'       => '',
+			),
+			$params
+		);
+		$fields = array_filter(
 			$params,
-			function ( $key ) {
+			static function ( $key ) {
 				return in_array(
 					$key,
 					array(
@@ -665,8 +677,8 @@ class Event {
 		$fields['timezone'] = ( ! empty( $fields['timezone'] ) ) ? $fields['timezone'] : wp_timezone_string();
 		$timezone           = new DateTimeZone( $fields['timezone'] );
 
-		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( $fields['datetime_start'], $timezone );
-		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( $fields['datetime_end'], $timezone );
+		$fields['datetime_start_gmt'] = $this->get_gmt_datetime( (string) $fields['datetime_start'], $timezone );
+		$fields['datetime_end_gmt']   = $this->get_gmt_datetime( (string) $fields['datetime_end'], $timezone );
 
 		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 

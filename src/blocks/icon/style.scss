@@ -1,0 +1,18 @@
+.wp-block-gatherpress-icon {
+	display: flex;
+	justify-content: flex-start;
+
+	&.aligncenter {
+		justify-content: center;
+	}
+
+	&.alignright {
+		justify-content: flex-end;
+		float: none !important;
+	}
+
+	&.alignleft {
+		justify-content: flex-start;
+		float: none !important;
+	}
+}

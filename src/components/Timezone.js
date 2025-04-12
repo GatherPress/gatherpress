@@ -9,7 +9,8 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { enableSave, getFromGlobal } from '../helpers/globals';
+import { getFromGlobal } from '../helpers/globals';
+import { enableSave } from '../helpers/editor';
 import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForSelect,

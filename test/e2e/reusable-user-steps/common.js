@@ -31,4 +31,18 @@ const login = async ({
 		.isVisible();
 };
 
-module.exports = { login };
+const addNewVenue = async ({ page }) => {
+	await page.getByRole('link', { name: 'Events', exact: true }).click();
+	await page.getByRole('link', { name: 'Venues' }).click();
+	await page.getByRole('link', { name: 'Add New Venue' }).click();
+};
+
+const addNewEvent = async ({ page }) => {
+	await page.getByRole('link', { name: 'Events', exact: true }).click();
+	await page
+		.locator('#wpbody-content')
+		.getByRole('link', { name: 'Add New Event' })
+		.click();
+};
+
+module.exports = { login, addNewVenue, addNewEvent };

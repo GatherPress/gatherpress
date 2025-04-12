@@ -77,7 +77,10 @@ const MaxAttendanceLimit = () => {
 				}}
 			/>
 			<p className="description">
-				{__('A value of 0 indicates no limit.', 'gatherpress')}
+				{__(
+					'Total number of people allowed at the event. A value of 0 indicates no limit.',
+					'gatherpress'
+				)}
 			</p>
 		</>
 	);
