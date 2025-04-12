@@ -1,6 +1,6 @@
 # GatherPress
 
-Stable tag: 0.32.0-beta.1  
+Stable tag: 0.32.0  
 Tested up to: 6.7.2  
 License: GPL v2 or later  
 Tags: events, event, meetup, community  
