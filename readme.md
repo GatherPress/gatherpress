@@ -29,8 +29,8 @@ Contributors: mauteri, hrmervin, patricia70, jmarx75, stephenerdelyi, carstenbac
 - Full block editor support
 - Multisite-ready and fully internationalized
 
-👉 See the [full feature list](https://github.com/GatherPress/gatherpress/blob/develop/docs/features.md)  
-👉 Explore [upcoming features](https://github.com/GatherPress/gatherpress/blob/develop/docs/roadmap.md)
+👉 See the [full feature list](https://github.com/GatherPress/gatherpress/blob/main/docs/features.md)  
+👉 Explore [upcoming features](https://github.com/GatherPress/gatherpress/blob/main/docs/roadmap.md)
 
 ---
 
@@ -46,8 +46,8 @@ Contributors: mauteri, hrmervin, patricia70, jmarx75, stephenerdelyi, carstenbac
 
 Download the latest `.zip` from the [Releases page](https://github.com/GatherPress/gatherpress/releases), then upload it to your WordPress dashboard under **Plugins > Add New > Upload Plugin**.
 
-📖 [View installation guide](https://github.com/GatherPress/gatherpress/blob/develop/docs/installation.md)  
-🛠️ [View configuration guide](https://github.com/GatherPress/gatherpress/blob/develop/docs/configuration.md)
+📖 [View installation guide](https://github.com/GatherPress/gatherpress/blob/main/docs/installation.md)  
+🛠️ [View configuration guide](https://github.com/GatherPress/gatherpress/blob/main/docs/configuration.md)
 
 ---
 
@@ -56,7 +56,7 @@ Download the latest `.zip` from the [Releases page](https://github.com/GatherPre
 Use our [Playground Environment](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/GatherPress/gatherpress/main/.wordpress-org/blueprints/blueprint.json) to test GatherPress with real data — no setup required!
 
 📺 [Watch the intro demo](https://gatherpress.org/demovideo)  
-🧪 [Learn more about Playground](https://github.com/GatherPress/gatherpress/blob/develop/docs/playground.md)
+🧪 [Learn more about Playground](https://github.com/GatherPress/gatherpress/blob/main/docs/playground.md)
 
 ---
 
@@ -68,7 +68,7 @@ GatherPress is built by and for the community — contributions are always welco
 - 🛠️ Check out [open issues](https://github.com/GatherPress/gatherpress/issues)
 - 💬 Join us on [WordPress Slack](https://make.wordpress.org/chat/) or [GatherPress.org](https://gatherpress.org/get-involved)
 
-📖 [Contributor Guide](https://github.com/GatherPress/gatherpress/blob/develop/docs/contributing.md)
+📖 [Contributor Guide](https://github.com/GatherPress/gatherpress/blob/main/docs/contributing.md)
 
 ---
 
@@ -94,7 +94,7 @@ GatherPress is built by and for the community — contributions are always welco
 ## ℹ️ More Information
 
 - [Changelog](https://github.com/GatherPress/gatherpress/releases)
-- [Frequently Asked Questions](https://github.com/GatherPress/gatherpress/blob/develop/docs/faq.md)
+- [Frequently Asked Questions](https://github.com/GatherPress/gatherpress/blob/main/docs/faq.md)
 - [Alpha plugin info](https://github.com/GatherPress/gatherpress-alpha)
 
 ---
