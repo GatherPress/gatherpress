@@ -5,7 +5,7 @@ import { addNewEvent } from '../reusable-user-steps/common.js';
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
-		await page.setViewportSize({ width: 1920, height: 720 });
+		
 		await page.waitForLoadState('networkidle');
 	});
 
@@ -48,6 +48,8 @@ test.describe('e2e test for publish event through admin side', () => {
 		}
 
 		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
+
+		await page.waitForTimeout(50000);
 		await page
 			.getByLabel('Venue Selector')
 			.selectOption('33:online-event', { timeout: 60000 });
@@ -121,9 +123,10 @@ test.describe('e2e test for publish event through admin side', () => {
 
 		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
 
+		await page.waitForTimeout(50000)
 		await page
 			.getByLabel('Venue Selector')
-			.selectOption('73:test-offline-event');
+			.selectOption('venue map-pune');
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })

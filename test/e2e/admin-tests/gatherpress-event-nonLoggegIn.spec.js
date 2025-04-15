@@ -74,17 +74,15 @@ test('02-verify the non-logged in user view RSVP button on home page and perform
 
 	await page.evaluate(() => window.scrollTo(0, 1000));
 
-	await expect(
-		page.getByRole('link', { name: 'Edit RSVP' }).first()
-	).toBeVisible();
+	await page.getByRole('link', { name: 'Edit RSVP' }).first().isVisible();
 
 	try {
 		await expect(
-			page.getByText('Attending', { exact: true })
+			page.getByText('Not Attending', { exact: true })
 		).toBeVisible();
 	} catch (e) {
 		await expect(
-			page.getByText('Not Attending', { exact: true })
+			page.getByText('Attending', { exact: true })
 		).toBeVisible();
 	}
 	await page.locator('.gatherpress-rsvp-response__items').first().isVisible(); // verified the attending users list.

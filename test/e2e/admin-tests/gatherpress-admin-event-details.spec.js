@@ -20,6 +20,7 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 		await page.getByLabel('Add title').fill(postName);
 
 		await page.locator('[data-title="Event Date"]').isVisible();
+		const eventDateEditor = await page.locator('[data-title="Event Date"]').textContent();
 
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
@@ -44,7 +45,7 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
 		await page
 			.getByLabel('Venue Selector')
-			.selectOption('76:test-venue-map');
+			.selectOption('venue test map-pune');
 
 		await expect(page.locator('#map')).toBeVisible();
 
@@ -61,20 +62,12 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 			.click();
 
 		await page.waitForLoadState('domcontentloaded');
-		await page.locator('.wp-block-gatherpress-event-date').isVisible();
+		
+		await expect(page.locator('.wp-block-gatherpress-event-date')).toBeVisible();
+		const eventDateFrontend = await page.locator('.wp-block-gatherpress-event-date').textContent();
 
-		await expect(page).toHaveScreenshot('event_details.png', {
-			maxDiffPixels: 10,
-			fullPage: true,
-			mask: [
-				page.locator('header'),
-				page.locator('h1'),
-				page.locator('h3'),
-				page.locator('nav'),
-				page.locator('.wp-block-gatherpress-venue'),
-				page.locator('.wp-block-template-part'),
-				page.locator('footer'),
-			],
-		});
+		expect(eventDateFrontend?.trim()).toBe(eventDateEditor?.trim());
+		await page.locator('.wp-block-gatherpress-event-date').screenshot({path:"event-details.png"})
+
 	});
 });

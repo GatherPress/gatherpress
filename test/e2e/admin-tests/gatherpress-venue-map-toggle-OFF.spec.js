@@ -13,7 +13,7 @@ test.describe('e2e test for venue map through admin side', () => {
 	}) => {
 		await login({ page, username: 'prashantbellad' });
 
-		const postName = 'offline test event';
+		const postName = 'offline test venue';
 
 		await addNewVenue({ page });
 
@@ -56,7 +56,7 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.locator('#map').click({ force: true });
 
 		await page.getByRole('tab', { name: 'Block' }).click();
-		await page.getByLabel('Display the map').uncheck();
+		await page.getByLabel('Display the map').uncheck(); //toggle off button.
 		await expect(page.getByLabel('Hide the map')).toBeVisible();
 
 		await page

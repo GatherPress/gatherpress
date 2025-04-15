@@ -48,7 +48,9 @@ test.describe('e2e test for event, the user should view the event map on event p
 		}
 
 		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
-		await page.getByLabel('Venue Selector').selectOption('1407:pune');
+
+		await page.waitForTimeout(50000)
+		await page.getByLabel('Venue Selector').selectOption('venue test map-pune');
 
 		await expect(page.locator('#map')).toBeVisible();
 
