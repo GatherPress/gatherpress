@@ -20,7 +20,9 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 		await page.getByLabel('Add title').fill(postName);
 
 		await page.locator('[data-title="Event Date"]').isVisible();
-		const eventDateEditor = await page.locator('[data-title="Event Date"]').textContent();
+		const eventDateEditor = await page
+			.locator('[data-title="Event Date"]')
+			.textContent();
 
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
@@ -62,12 +64,17 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 			.click();
 
 		await page.waitForLoadState('domcontentloaded');
-		
-		await expect(page.locator('.wp-block-gatherpress-event-date')).toBeVisible();
-		const eventDateFrontend = await page.locator('.wp-block-gatherpress-event-date').textContent();
+
+		await expect(
+			page.locator('.wp-block-gatherpress-event-date')
+		).toBeVisible();
+		const eventDateFrontend = await page
+			.locator('.wp-block-gatherpress-event-date')
+			.textContent();
 
 		expect(eventDateFrontend?.trim()).toBe(eventDateEditor?.trim());
-		await page.locator('.wp-block-gatherpress-event-date').screenshot({path:"event-details.png"})
-
+		await page
+			.locator('.wp-block-gatherpress-event-date')
+			.screenshot({ path: 'event-details.png' });
 	});
 });
