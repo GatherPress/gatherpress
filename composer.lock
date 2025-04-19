@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a0329d7079caf0254604e8149663aa90",
+    "content-hash": "5f9763d7b5bb50af1cedf49c06605765",
     "packages": [
         {
             "name": "hamcrest/hamcrest-php",
@@ -142,22 +142,21 @@
         },
         {
             "name": "pmc/unit-test",
-            "version": "dev-main",
+            "version": "dev-fix-mock-mailer",
             "source": {
                 "type": "git",
                 "url": "https://github.com/penske-media-corp/pmc-unit-test.git",
-                "reference": "994c41f193946405fc4ffe089b1bf77a12a0cff1"
+                "reference": "6cf1a07a5c3b28056129d83e9062ccef6d1a005d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/penske-media-corp/pmc-unit-test/zipball/994c41f193946405fc4ffe089b1bf77a12a0cff1",
-                "reference": "994c41f193946405fc4ffe089b1bf77a12a0cff1",
+                "url": "https://api.github.com/repos/penske-media-corp/pmc-unit-test/zipball/6cf1a07a5c3b28056129d83e9062ccef6d1a005d",
+                "reference": "6cf1a07a5c3b28056129d83e9062ccef6d1a005d",
                 "shasum": ""
             },
             "require": {
                 "mockery/mockery": "^1.6"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "files": [
@@ -169,10 +168,10 @@
             },
             "description": "PMC Unit Test",
             "support": {
-                "source": "https://github.com/penske-media-corp/pmc-unit-test/tree/main",
+                "source": "https://github.com/penske-media-corp/pmc-unit-test/tree/fix-mock-mailer",
                 "issues": "https://github.com/penske-media-corp/pmc-unit-test/issues"
             },
-            "time": "2024-01-25T01:43:34+00:00"
+            "time": "2025-04-19T13:23:37+00:00"
         }
     ],
     "packages-dev": [
