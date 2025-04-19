@@ -228,12 +228,16 @@ class Settings {
 	public function register_settings(): void {
 		$sub_pages = $this->get_sub_pages();
 
+		// @todo will need to add sanitization to setting.
+		// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingMissing
 		register_setting(
 			'gatherpress',
 			'gatherpress_settings'
 		);
 
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
+			// @todo will need to add sanitization to setting.
+			// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingMissing
 			register_setting(
 				Utility::prefix_key( $sub_page ),
 				Utility::prefix_key( $sub_page )
