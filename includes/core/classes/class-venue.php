@@ -142,6 +142,7 @@ class Venue {
 				'show_in_menu' => 'edit.php?post_type=gatherpress_event',
 				'supports'     => array(
 					'title',
+					'author',
 					'editor',
 					'thumbnail',
 					'revisions',
