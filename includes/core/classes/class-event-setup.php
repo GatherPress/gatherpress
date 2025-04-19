@@ -154,6 +154,7 @@ class Event_Setup {
 				'menu_position' => 4,
 				'supports'      => array(
 					'title',
+					'author',
 					'editor',
 					'excerpt',
 					'thumbnail',
