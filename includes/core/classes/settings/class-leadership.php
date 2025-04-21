@@ -45,17 +45,6 @@ class Leadership extends Base {
 	}
 
 	/**
-	 * Set the main sub-page identifier.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function set_main_sub_page(): void {
-		// Nothing to see here.
-	}
-
-	/**
 	 * Get the name for the leadership section.
 	 *
 	 * This method returns the localized name for the leadership section.
