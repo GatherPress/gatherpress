@@ -32,6 +32,12 @@ class Test_Settings extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'set_main_sub_page' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'admin_menu',
 				'priority' => 10,
 				'callback' => array( $instance, 'options_page' ),
