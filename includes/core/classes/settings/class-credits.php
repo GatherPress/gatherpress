@@ -53,8 +53,7 @@ class Credits extends Base {
 	 * @return void
 	 */
 	public function set_main_sub_page(): void {
-		// Implementation specific to Credits class, if needed
-		// Or just leave it empty if no specific implementation is required
+		// Nothing to see here.
 	}
 
 	/**
