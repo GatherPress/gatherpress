@@ -10,7 +10,7 @@
 		}
 	],
 	"require": {
-		"pmc/unit-test": "dev-fix-mock-mailer",
+		"pmc/unit-test": "dev-main",
 		"php": ">=7.4"
 	},
 	"require-dev": {
