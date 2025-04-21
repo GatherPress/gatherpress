@@ -146,12 +146,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/penske-media-corp/pmc-unit-test.git",
-                "reference": "6cf1a07a5c3b28056129d83e9062ccef6d1a005d"
+                "reference": "93e817e6cc686dbbae007e3468bedef1c1be359e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/penske-media-corp/pmc-unit-test/zipball/6cf1a07a5c3b28056129d83e9062ccef6d1a005d",
-                "reference": "6cf1a07a5c3b28056129d83e9062ccef6d1a005d",
+                "url": "https://api.github.com/repos/penske-media-corp/pmc-unit-test/zipball/93e817e6cc686dbbae007e3468bedef1c1be359e",
+                "reference": "93e817e6cc686dbbae007e3468bedef1c1be359e",
                 "shasum": ""
             },
             "require": {
@@ -171,7 +171,7 @@
                 "source": "https://github.com/penske-media-corp/pmc-unit-test/tree/fix-mock-mailer",
                 "issues": "https://github.com/penske-media-corp/pmc-unit-test/issues"
             },
-            "time": "2025-04-19T13:23:37+00:00"
+            "time": "2025-04-19T21:35:40+00:00"
         }
     ],
     "packages-dev": [
