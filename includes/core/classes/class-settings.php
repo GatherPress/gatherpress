@@ -61,7 +61,6 @@ class Settings {
 	protected function __construct() {
 		$this->instantiate_classes();
 		$this->set_current_page();
-		$this->set_main_sub_page();
 		$this->setup_hooks();
 	}
 
@@ -89,6 +88,7 @@ class Settings {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_action( 'init', array( $this, 'set_main_sub_page' ) );
 		add_action( 'admin_menu', array( $this, 'options_page' ) );
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -109,7 +109,7 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	protected function set_main_sub_page(): void {
+	public function set_main_sub_page(): void {
 		$sub_pages           = $this->get_sub_pages();
 		$this->main_sub_page = array_key_first( $sub_pages ) ?? '';
 	}
@@ -228,12 +228,16 @@ class Settings {
 	public function register_settings(): void {
 		$sub_pages = $this->get_sub_pages();
 
+		// @todo will need to add sanitization to setting.
+		// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingMissing
 		register_setting(
 			'gatherpress',
 			'gatherpress_settings'
 		);
 
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
+			// @todo will need to add sanitization to setting.
+			// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingMissing
 			register_setting(
 				Utility::prefix_key( $sub_page ),
 				Utility::prefix_key( $sub_page )
