@@ -94,7 +94,7 @@ export function durationOptions() {
 			label: __('Set an end time…', 'gatherpress'),
 			value: false,
 		},
-	]
+	];
 
 	return applyFilters('gatherpress.durationOptions', options);
 }
