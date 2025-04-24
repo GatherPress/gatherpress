@@ -35,11 +35,11 @@ const Duration = () => {
 		<SelectControl
 			label={__('Duration', 'gatherpress')}
 			value={
-				durationOptions.some((option) => option.value === duration)
+				durationOptions().some((option) => option.value === duration)
 					? duration
 					: false
 			}
-			options={durationOptions}
+			options={durationOptions()}
 			onChange={(value) => {
 				value = 'false' === value ? false : parseFloat(value);
 

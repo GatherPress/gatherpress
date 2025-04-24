@@ -8,6 +8,7 @@ import moment from 'moment';
  */
 import { __ } from '@wordpress/i18n';
 import { createRoot } from '@wordpress/element';
+import { applyFilters } from '@wordpress/hooks';
 
 /**
  * Internal dependencies.
@@ -67,32 +68,36 @@ export const defaultDateTimeEnd = moment
  *
  * @since 1.0.0
  *
- * @type {Array<Object>} durationOptions
  * @property {string}         label - The human-readable label for the duration option.
  * @property {number|boolean} value - The value representing the duration in hours, or `false` if a custom end time is to be set.
  */
-export const durationOptions = [
-	{
-		label: __('1 hour', 'gatherpress'),
-		value: 1,
-	},
-	{
-		label: __('1.5 hours', 'gatherpress'),
-		value: 1.5,
-	},
-	{
-		label: __('2 hours', 'gatherpress'),
-		value: 2,
-	},
-	{
-		label: __('3 hours', 'gatherpress'),
-		value: 3,
-	},
-	{
-		label: __('Set an end time…', 'gatherpress'),
-		value: false,
-	},
-];
+
+export function durationOptions() {
+	const options = [
+		{
+			label: __('1 hour', 'gatherpress'),
+			value: 1,
+		},
+		{
+			label: __('1.5 hours', 'gatherpress'),
+			value: 1.5,
+		},
+		{
+			label: __('2 hours', 'gatherpress'),
+			value: 2,
+		},
+		{
+			label: __('3 hours', 'gatherpress'),
+			value: 3,
+		},
+		{
+			label: __('Set an end time…', 'gatherpress'),
+			value: false,
+		},
+	];
+
+	return applyFilters('gatherpress.durationOptions', options);
+}
 
 /**
  * Calculates an offset in hours from the start date and time of an event.
@@ -127,7 +132,7 @@ export function dateTimeOffset(hours) {
  */
 export function getDateTimeOffset() {
 	return (
-		durationOptions.find(
+		durationOptions().find(
 			(option) => dateTimeOffset(option.value) === getDateTimeEnd()
 		)?.value || false
 	);
