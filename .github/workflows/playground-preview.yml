@@ -125,5 +125,5 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const createPreviewLinks = require('.github/scripts/create-preview-links');
+            const createPreviewLinks = require('.github/scripts/playground-preview');
             createPreviewLinks(github, context);

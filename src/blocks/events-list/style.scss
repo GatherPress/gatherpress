@@ -1,7 +1,8 @@
-@import "../mixins";
-@import "../rsvp-response/style";
-@import "../rsvp/style";
-@import "../tooltip";
+@use "../buttons";
+@use "../mixins";
+@use "../modal";
+@use "../status";
+@use "../tooltip";
 
 .gatherpress-events-list {
 	&__datetime {
@@ -26,14 +27,14 @@
 		margin-bottom: 2rem;
 		padding-bottom: 2rem;
 
-		@include for-core-mobile {
+		@include mixins.for-core-mobile {
 			line-height: 2.75rem;
 		}
 
 		.gatherpress-rsvp {
 			margin-bottom: 0;
 
-			@include for-core-mobile {
+			@include mixins.for-core-mobile {
 				flex-direction: column;
 			}
 		}
@@ -95,5 +96,129 @@
 		display: flex;
 		gap: 0.5rem;
 		margin-bottom: 1rem;
+	}
+
+	// Old RSVP Styles.
+	.gatherpress-modal__rsvp {
+		.gatherpress-modal {
+			&__header {
+				font-size: var(--wp--preset--font-size--medium);
+				font-weight: 600;
+			}
+
+			&__guests {
+				display: flex;
+				gap: 0.5rem;
+				margin-bottom: 0.5rem;
+			}
+
+			&__anonymous {
+				display: flex;
+				gap: 0.5rem;
+				margin-bottom: 0.5rem;
+			}
+		}
+	}
+
+	.gatherpress-rsvp {
+		align-items: center;
+		display: flex;
+		grid-column-gap: 1rem;
+		justify-content: center;
+		margin-bottom: 1rem;
+	}
+
+	// Old RSVP Response Styles.
+	.gatherpress-rsvp-response {
+		&__anchor {
+			color: #000;
+			display: block;
+			padding: 0.5rem;
+			white-space: nowrap;
+		}
+
+		&__header {
+			align-items: center;
+			display: flex;
+			gap: 0.75rem;
+			margin-bottom: 1rem;
+		}
+
+		&__items {
+			display: grid;
+			gap: 1rem;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+
+			@include mixins.for-core-mobile {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+		}
+
+		&__item {
+			background-color: #fff;
+			border-radius: 0.25rem;
+			box-shadow: 0 0 0.25rem 0 #ccc;
+			gap: 1rem;
+			padding: 1rem;
+			text-align: center;
+
+			& a {
+				display: block;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+		}
+
+		&__member-avatar {
+			margin: 0;
+
+			& img {
+				border-radius: 9999px;
+			}
+		}
+
+		&__member-role {
+			color: #646970;
+			font-size: var(--wp--preset--font-size--small);
+		}
+
+		&__navigation {
+			border: 1px solid #ccc;
+			border-radius: 0.4rem;
+			flex-direction: column;
+			overflow: hidden;
+			position: absolute;
+			width: 15rem;
+		}
+
+		&__navigation-item {
+			align-items: center;
+			background-color: #fff;
+			border-top: 1px solid #ccc;
+			display: flex;
+			margin-top: -1px;
+		}
+
+		&__no-responses {
+			grid-column: 1 / -1;
+		}
+
+		&__see-all {
+			margin-left: auto;
+		}
+
+		&__title {
+			font-size: var(--wp--preset--font-size--medium);
+			font-weight: 600;
+			margin-bottom: 1rem;
+		}
+
+		// UI fix in editor.
+		.edit-post-visual-editor & {
+			.components-button.has-icon {
+				padding: 0 2px;
+			}
+		}
 	}
 }

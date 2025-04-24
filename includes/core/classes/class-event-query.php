@@ -6,6 +6,8 @@
  * upcoming and past events, applying filters, and ordering events. It also handles adjustments
  * for event pages and admin queries.
  *
+ * @todo Reverted this PR, but needs to be investigated again to work with Query block https://github.com/GatherPress/gatherpress/pull/889
+ *
  * @package GatherPress\Core
  * @since 1.0.0
  */
@@ -193,17 +195,17 @@ class Event_Query {
 						$query->is_page              = false;
 						$query->is_singular          = false;
 						$query->is_archive           = true;
-						$query->is_post_type_archive = array( Event::POST_TYPE );
+						$query->is_post_type_archive = true;
 
 						// This will force a page to behave like an archive page. Use -1 as that is not a valid ID.
-						$query->queried_object_id = '-1';
+						$query->queried_object_id = -1;
 
 						// Option adjustments for page_for_posts and show_on_front to force archive page.
 						add_filter(
 							'pre_option',
 							static function ( $pre, $option ) {
 								if ( 'page_for_posts' === $option ) {
-									return '-1';
+									return -1;
 								}
 
 								if ( 'show_on_front' === $option ) {
@@ -265,7 +267,6 @@ class Event_Query {
 	 * for past events in the query. It ensures that events are ordered by their start datetime in the desired order.
 	 *
 	 * @param array $query_pieces An array containing pieces of the SQL query.
-	 *
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
 	public function adjust_sorting_for_past_events( array $query_pieces ): array {
@@ -309,6 +310,7 @@ class Event_Query {
 	 * @param array  $pieces An array of query pieces, including join, where, orderby, and more.
 	 * @param string $type   The type of events to query (options: 'all', 'upcoming', 'past').
 	 * @param string $order  The event order ('DESC' for descending or 'ASC' for ascending).
+	 *
 	 * @return array An array containing adjusted SQL clauses for the Event query.
 	 */
 	public function adjust_event_sql( array $pieces, string $type = 'all', string $order = 'DESC' ): array {
@@ -340,9 +342,9 @@ class Event_Query {
 		$current = gmdate( Event::DATETIME_FORMAT, time() );
 
 		if ( 'upcoming' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt >= %s', $table, $current );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt >= %s', $table, $current );
 		} elseif ( 'past' === $type ) {
-			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt < %s', $table, $current ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$pieces['where'] .= $wpdb->prepare( ' AND %i.datetime_end_gmt < %s', $table, $current );
 		}
 
 		return $pieces;

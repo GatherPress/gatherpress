@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 $gatherpress_activation = true;
 
 // Check the PHP version to ensure compatibility with the plugin.
-if ( version_compare( PHP_VERSION_ID, GATHERPRESS_REQUIRES_PHP, '<' ) ) {
+if ( version_compare( PHP_VERSION, GATHERPRESS_REQUIRES_PHP, '<' ) ) {
 	add_action(
 		'admin_notices',
 		static function () {

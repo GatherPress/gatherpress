@@ -5,11 +5,10 @@
  * Description:       Powering Communities with WordPress.
  * Author:            The GatherPress Community
  * Author URI:        https://gatherpress.org/
- * Version:           0.31.0-alpha
+ * Version:           0.33.0-alpha.1
  * Requires PHP:      7.4
- * Requires at least: 6.4
+ * Requires at least: 6.7
  * Text Domain:       gatherpress
- * Domain Path:       /languages
  * License:           GNU General Public License v2.0 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  *
@@ -23,6 +22,7 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 // Constants.
+define( 'GATHERPRESS_CACHE_GROUP', 'gatherpress_cache' );
 define( 'GATHERPRESS_CORE_FILE', __FILE__ );
 define( 'GATHERPRESS_CORE_PATH', __DIR__ );
 define( 'GATHERPRESS_CORE_URL', plugin_dir_url( __FILE__ ) );

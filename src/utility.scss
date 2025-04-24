@@ -1,0 +1,18 @@
+.gatherpress--is-visible {
+	display: block !important;
+}
+
+.gatherpress--is-not-visible {
+	display: none !important;
+}
+
+.gatherpress--open-modal,
+.gatherpress--close-modal {
+	cursor: pointer;
+}
+
+.gatherpress--is-disabled {
+	pointer-events: none;
+	cursor: not-allowed;
+	text-decoration: none;
+}

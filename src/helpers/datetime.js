@@ -13,7 +13,8 @@ import { applyFilters } from '@wordpress/hooks';
 /**
  * Internal dependencies.
  */
-import { enableSave, getFromGlobal, setToGlobal } from './globals';
+import { getFromGlobal, setToGlobal } from './globals';
+import { enableSave } from './editor';
 import DateTimePreview from '../components/DateTimePreview';
 
 /**

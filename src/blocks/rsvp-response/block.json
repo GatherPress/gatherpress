@@ -1,30 +1,41 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
-	"apiVersion": 2,
+	"apiVersion": 3,
 	"name": "gatherpress/rsvp-response",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"title": "RSVP Response",
 	"category": "gatherpress",
 	"icon": "groups",
 	"example": {},
 	"description": "Displays a list of members who have confirmed their attendance for an event.",
+	"usesContext": [ "postId", "queryId" ],
 	"attributes": {
-		"blockId": {
-			"type": "string"
+		"rsvpLimitEnabled": {
+			"type": "boolean",
+			"default": false
 		},
-		"content": {
-			"type": "string"
-		},
-		"color": {
-			"type": "string"
+		"rsvpLimit": {
+			"type": "number",
+			"default": 8
 		}
 	},
 	"supports": {
+		"gatherpress": {
+			"blockGuard": true,
+			"postIdOverride": true
+		},
+		"align": [ "wide", "full" ],
+		"interactivity": true,
 		"html": false
+	},
+	"providesContext": {
+		"commentId": "commentId",
+		"postId": "postId",
+		"gatherpress/rsvpLimitEnabled": "rsvpLimitEnabled",
+		"gatherpress/rsvpLimit": "rsvpLimit"
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"viewScript": "file:./rsvp-response.js",
-	"render": "file:./render.php"
+	"viewScriptModule": "file:./view.js"
 }

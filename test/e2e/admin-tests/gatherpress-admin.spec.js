@@ -11,11 +11,9 @@ test.describe('As admin login into gatherPress', () => {
 	test('The Event menu item should be preloaded after clicking Add New button', async ({
 		page,
 	}) => {
-		await login({ page, username: 'testuser1' });
+		await login({ page, username: 'prashantbellad' });
 
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
-		await page.screenshot({ path: 'event-page.png' });
-
 		await page
 			.locator('#wpbody-content')
 			.getByRole('link', { name: 'Add New' })

@@ -61,7 +61,6 @@ class Settings {
 	protected function __construct() {
 		$this->instantiate_classes();
 		$this->set_current_page();
-		$this->set_main_sub_page();
 		$this->setup_hooks();
 	}
 
@@ -89,6 +88,7 @@ class Settings {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_action( 'init', array( $this, 'set_main_sub_page' ) );
 		add_action( 'admin_menu', array( $this, 'options_page' ) );
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -109,7 +109,7 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	protected function set_main_sub_page(): void {
+	public function set_main_sub_page(): void {
 		$sub_pages           = $this->get_sub_pages();
 		$this->main_sub_page = array_key_first( $sub_pages ) ?? '';
 	}
@@ -228,12 +228,16 @@ class Settings {
 	public function register_settings(): void {
 		$sub_pages = $this->get_sub_pages();
 
+		// @todo will need to add sanitization to setting.
+		// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingMissing
 		register_setting(
 			'gatherpress',
 			'gatherpress_settings'
 		);
 
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
+			// @todo will need to add sanitization to setting.
+			// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingMissing
 			register_setting(
 				Utility::prefix_key( $sub_page ),
 				Utility::prefix_key( $sub_page )
@@ -461,8 +465,8 @@ class Settings {
 		$default  = $this->get_default_value( $sub_page, $section, $option );
 
 		return (
-			isset( $options[ $section ][ $option ] )
-			&& '' !== $options[ $section ][ $option ]
+			isset( $options[ $section ][ $option ] ) &&
+			'' !== $options[ $section ][ $option ]
 		) ? $options[ $section ][ $option ] : $default;
 	}
 
@@ -614,7 +618,7 @@ class Settings {
 		$first['priority']  = isset( $first['priority'] ) ? intval( $first['priority'] ) : 10;
 		$second['priority'] = isset( $second['priority'] ) ? intval( $second['priority'] ) : 10;
 
-		return ( $first['priority'] > $second['priority'] );
+		return $first['priority'] <=> $second['priority'];
 	}
 
 	/**
@@ -714,20 +718,16 @@ class Settings {
 		) {
 			switch ( $name ) {
 				case 'gatherpress_general[urls][events]':
-					$suffix = _x( 'sample-event', 'sample event post slug', 'gatherpress' );
+					$suffix = _x( 'sample-event', 'URL permalink structure example for events', 'gatherpress' );
 					break;
-
 				case 'gatherpress_general[urls][venues]':
-					$suffix = _x( 'sample-venue', 'sample venue post slug', 'gatherpress' );
+					$suffix = _x( 'sample-venue', 'URL permalink structure example for venues', 'gatherpress' );
 					break;
-
 				case 'gatherpress_general[urls][topics]':
-					$suffix = _x( 'sample-topic-term', 'sample topic term slug', 'gatherpress' );
-					break;
-
-				default:
+					$suffix = _x( 'sample-topic-term', 'URL permalink structure example for topics', 'gatherpress' );
 					break;
 			}
+
 			Utility::render_template(
 				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
 				array(
@@ -757,7 +757,7 @@ class Settings {
 			isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ||
 			$old_value['urls'] !== $new_value['urls']
 		) {
-			// Event_Setup->maybe_create_flush_rewrite_rules_flag // TODO maybe make this a public method ?!
+			// Event_Setup->maybe_create_flush_rewrite_rules_flag //@TODO https://github.com/GatherPress/gatherpress/issues/880 Maybe make this a public method ?!
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		}
 	}

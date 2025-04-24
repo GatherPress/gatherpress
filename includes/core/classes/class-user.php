@@ -59,6 +59,7 @@ class User {
 		add_action( 'edit_user_profile', array( $this, 'profile_fields' ) );
 		add_action( 'personal_options_update', array( $this, 'save_profile_fields' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'save_profile_fields' ) );
+
 		add_filter( 'gatherpress_date_format', array( $this, 'user_set_date_format' ) );
 		add_filter( 'gatherpress_time_format', array( $this, 'user_set_time_format' ) );
 		add_filter( 'gatherpress_timezone', array( $this, 'user_set_timezone' ) );
@@ -214,8 +215,8 @@ class User {
 		}
 
 		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( filter_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
-		update_user_meta( $user_id, 'gatherpress_date_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_date_format' ) ) );
-		update_user_meta( $user_id, 'gatherpress_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_time_format' ) ) );
+		update_user_meta( $user_id, 'gatherpress_date_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_date_format', FILTER_SANITIZE_ADD_SLASHES ) ) );
+		update_user_meta( $user_id, 'gatherpress_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_time_format', FILTER_SANITIZE_ADD_SLASHES ) ) );
 		update_user_meta( $user_id, 'gatherpress_timezone', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_timezone' ) ) );
 	}
 }

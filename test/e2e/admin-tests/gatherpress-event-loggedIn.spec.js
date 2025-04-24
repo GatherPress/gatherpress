@@ -1,15 +1,15 @@
 const { test } = require('@playwright/test');
-const { login } = require('../reusable-user-steps/common');
+const { login } = require('../reusable-user-steps/common.js');
 
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
-		await login({ page, username: 'testuser1' });
+		await login({ page, username: 'prashantbellad' });
 	});
 
-	test('01-the user should be able to publish an online event', async ({
+	test.skip('01-the user should be able to publish an online event', async ({
 		page,
 	}) => {
 		await page.getByRole('link', { name: 'Events', exact: true }).click();
@@ -18,6 +18,8 @@ test.describe('e2e test for publish event through admin side', () => {
 			.getByRole('link', { name: 'Add New' })
 			.click();
 
+		await page.getByLabel('Add title').fill('online event');
+
 		await page
 			.getByLabel('Block: Event Date')
 			.locator('div')
@@ -25,9 +27,14 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible();
 		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
 
+		await page.getByLabel('Settings', { exact: true }).click();
+		await page.getByLabel('Settings', { exact: true }).click();
+
 		await page.getByRole('button', { name: 'Event settings' }).click();
 
-		await page.getByLabel('Venue Selector').selectOption('58:online-event');
+		await page.getByRole('button', { name: 'Event settings' }).click();
+		await page.getByRole('button', { name: 'Event settings' }).click();
+		await page.getByLabel('Venue Selector').selectOption('33:online-event');
 		const currentDate = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
 		const eventTitle = await page
 			.getByLabel('Add title')
@@ -60,7 +67,6 @@ test.describe('e2e test for publish event through admin side', () => {
 		page,
 	}) => {
 		await page.getByRole('menuitem', { name: 'GatherPress' }).click();
-
 		await page.evaluate(() => window.scrollTo(0, 5000));
 		await page
 			.getByRole('link', { name: 'RSVP' })

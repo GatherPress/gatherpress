@@ -15,7 +15,6 @@
 	</testsuites>
 	<coverage>
 		<include>
-			<directory suffix=".php">./includes/buddypress/classes</directory>
 			<directory suffix=".php">./includes/core/classes</directory>
 		</include>
 	</coverage>

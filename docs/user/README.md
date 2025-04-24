@@ -1,7 +1,7 @@
 
-[Work in Progress]
+# Documentation for users
 
-Welcome to GatherPress documentation for users.
+Welcome to GatherPress (work in progress) documentation for users.
 
 You will find separate entries for the following topics:
 
