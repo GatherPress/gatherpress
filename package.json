@@ -77,7 +77,7 @@
 		"lint:php:fix": "vendor/bin/phpcbf --standard=phpcs.ruleset.xml -p -v .",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
-		"plugin-zip": "wp-scripts plugin-zip",
+		"plugin-zip": "npm run build && wp-scripts plugin-zip",
 		"start": "wp-scripts start --experimental-modules",
 		"screenshots:wporg": "WP_BASE_URL='http://127.0.0.1:9400/' wp-scripts test-playwright --config .github/scripts/wordpress-org-screenshots/playwright.config.ts",
 		"screenshots:wporg:debug": "npm run screenshots:wporg -- --debug",
