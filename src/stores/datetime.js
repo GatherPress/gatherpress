@@ -78,7 +78,8 @@ const store = createReduxStore('gatherpress/datetime', {
 	selectors: {
 		getDateTimeStart: (state) => state.dateTimeStart,
 		getDateTimeEnd: (state) => state.dateTimeEnd,
-		getDuration: (state) => false === state.duration ? false : getDateTimeOffset(),
+		getDuration: (state) =>
+			false === state.duration ? false : getDateTimeOffset(),
 		getTimezone: (state) => state.timezone,
 	},
 });
