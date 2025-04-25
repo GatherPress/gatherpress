@@ -375,6 +375,7 @@ class Event_Setup {
 				exit;
 			}
 
+
 			wp_die( esc_html__( 'Event not found.', 'gatherpress' ), '', array( 'response' => 404 ) );
 		}
 	}
