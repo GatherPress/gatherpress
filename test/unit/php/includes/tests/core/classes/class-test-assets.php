@@ -238,7 +238,6 @@ class Test_Assets extends Base {
 			array(
 				'post',
 				array(
-					'gatherpress/add-to-calendar',
 					'gatherpress/online-event',
 					'gatherpress/venue',
 				),
@@ -246,7 +245,6 @@ class Test_Assets extends Base {
 			array(
 				'page',
 				array(
-					'gatherpress/add-to-calendar',
 					'gatherpress/online-event',
 					'gatherpress/venue',
 				),
@@ -258,7 +256,6 @@ class Test_Assets extends Base {
 			array(
 				'gatherpress_venue',
 				array(
-					'gatherpress/add-to-calendar',
 					'gatherpress/online-event',
 				),
 			),
