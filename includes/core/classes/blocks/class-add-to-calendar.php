@@ -39,7 +39,7 @@ class Add_To_Calendar {
 	 * @since 1.0.0
 	 * @var string
 	 */
-	const BLOCK_NAME = 'gatherpress/add-to-calendar-v2';
+	const BLOCK_NAME = 'gatherpress/add-to-calendar';
 
 	/**
 	 * Class constructor.
