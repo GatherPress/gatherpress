@@ -131,6 +131,7 @@ class Block {
 				)
 			);
 		}
+
 		return array_filter( $this->block_variation_names );
 	}
 
@@ -286,7 +287,6 @@ class Block {
 	 * @return array|null                     The parsed block array for the given hooked block type, or null to suppress the block.
 	 */
 	public function modify_hooked_blocks_in_patterns( ?array $parsed_hooked_block, string $hooked_block_type, string $relative_position, array $parsed_anchor_block, $context ): ?array {
-
 		// Has the hooked block been suppressed by a previous filter?
 		if ( is_null( $parsed_hooked_block ) ) {
 			return $parsed_hooked_block;
