@@ -55,7 +55,7 @@ class Event_Setup {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
 		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
-		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ), 10, 2 );
+		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
@@ -66,7 +66,7 @@ class Event_Setup {
 			2
 		);
 
-		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ) );
+		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
 		add_filter(
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 			array( $this, 'set_custom_columns' )
