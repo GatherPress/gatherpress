@@ -1,10 +1,11 @@
 <?php
 /**
- * The "Add_To_Calendar" class handles the functionality of the Dropdown block,
- * ensuring proper behavior and rendering of individual dropdowns.
+ * The "Add_To_Calendar" class handles the functionality of the Add to Calendar block,
+ * ensuring proper rendering and behavior for calendar integration.
  *
- * This class is responsible for transforming block content to dynamically inject
- * styles and attributes specific to dropdown functionality.
+ * This class is responsible for transforming block content to replace calendar
+ * placeholder hrefs with fully-generated calendar URLs based on event metadata.
+ * It enables users to add events to services like Google, iCal, Outlook, and Yahoo.
  *
  * @package GatherPress\Core
  * @since 1.0.0
