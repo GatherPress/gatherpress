@@ -90,8 +90,8 @@ class Add_To_Calendar {
 		$calendar_links = $event->get_calendar_links();
 		$replacements   = array(
 			'#gatherpress-google-calendar'  => $calendar_links['google']['link'] ?? '',
-			'#gatherpress-ical-calendar'    => $calendar_links['ical']['download'] ?? '',
-			'#gatherpress-outlook-calendar' => $calendar_links['outlook']['download'] ?? '',
+			'#gatherpress-ical-calendar'    => $calendar_links['ical']['link'] ?? '',
+			'#gatherpress-outlook-calendar' => $calendar_links['outlook']['link'] ?? '',
 			'#gatherpress-yahoo-calendar'   => $calendar_links['yahoo']['link'] ?? '',
 		);
 

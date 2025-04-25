@@ -54,6 +54,8 @@ class Event_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
+		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
+		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ), 10, 2 );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
@@ -64,6 +66,7 @@ class Event_Setup {
 			2
 		);
 
+		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ) );
 		add_filter(
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 			array( $this, 'set_custom_columns' )
@@ -305,6 +308,74 @@ class Event_Setup {
 				$meta_key,
 				$args
 			);
+		}
+	}
+
+	/**
+	 * Register a rewrite rule and query var for serving .ics calendar downloads.
+	 *
+	 * This adds support for URLs like /event/my-event/my-event.ics that serve
+	 * dynamically generated ICS files for individual events.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_calendar_rewrite_rule(): void {
+		add_rewrite_rule(
+			'^event/([^/]+)\.ics$',
+			sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE ),
+			'top'
+		);
+
+		add_rewrite_tag( '%gatherpress_ics%', '1' );
+	}
+
+	/**
+	 * Prevent WordPress from redirecting .ics URLs with a trailing slash.
+	 *
+	 * This ensures calendar download URLs like /event/my-event.ics are treated
+	 * as file downloads and not rewritten with a trailing slash.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|false $redirect_url  The URL WordPress wants to redirect to.
+	 * @param string       $requested_url The original requested URL.
+	 * @return string|false The filtered redirect URL or false to cancel redirect.
+	 */
+	public function disable_ics_canonical_redirect( $redirect_url, $requested_url ) {
+		if ( false !== strpos( $requested_url, '.ics' ) ) {
+			return false; // prevent canonical redirect.
+		}
+
+		return $redirect_url;
+	}
+
+	/**
+	 * Handle calendar .ics file requests for single event pages.
+	 *
+	 * Checks if the current request is for an event's .ics file based on a custom
+	 * query var, and if so, outputs the ICS content for download and exits.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function handle_calendar_ics_request( $wp ): void {
+		if ( isset( $wp->query_vars['gatherpress_ics'] ) ) {
+			$slug = $wp->query_vars['name'] ?? null;
+			$post = get_page_by_path( $slug, OBJECT, Event::POST_TYPE );
+
+			if ( $post ) {
+				$event = new Event( $post->ID );
+
+				header( 'Content-Type: text/calendar; charset=utf-8' );
+				header( 'Content-Disposition: attachment; filename="' . get_post_field( 'post_name', $post->ID ) . '.ics"' );
+				echo $event->get_ics_calendar_string();
+				exit;
+			}
+
+			wp_die( 'Event not found', 404 );
 		}
 	}
 

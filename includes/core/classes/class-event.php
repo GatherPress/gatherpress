@@ -450,12 +450,12 @@ class Event {
 				'link' => $this->get_google_calendar_link(),
 			),
 			'ical'    => array(
-				'name'     => __( 'iCal', 'gatherpress' ),
-				'download' => $this->get_ics_calendar_download(),
+				'name' => __( 'iCal', 'gatherpress' ),
+				'link' => $this->get_ics_download_link(),
 			),
 			'outlook' => array(
-				'name'     => __( 'Outlook', 'gatherpress' ),
-				'download' => $this->get_ics_calendar_download(),
+				'name' => __( 'Outlook', 'gatherpress' ),
+				'link' => $this->get_ics_download_link(),
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
@@ -477,7 +477,7 @@ class Event {
 	 *
 	 * @throws Exception If there is an issue while generating the Google Calendar link.
 	 */
-	protected function get_google_calendar_link(): string {
+	public function get_google_calendar_link(): string {
 		$date_start  = $this->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start  = $this->get_formatted_datetime( 'His', 'start', false );
 		$date_end    = $this->get_formatted_datetime( 'Ymd', 'end', false );
@@ -518,7 +518,7 @@ class Event {
 	 *
 	 * @throws Exception If an error occurs while generating the Yahoo! Calendar link.
 	 */
-	protected function get_yahoo_calendar_link(): string {
+	public function get_yahoo_calendar_link(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
 		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
@@ -556,19 +556,41 @@ class Event {
 		);
 	}
 
+	public function get_ics_download_link(): string {
+		return home_url( '/event/' . get_post_field( 'post_name', $this->event->ID ) . '.ics' );
+	}
+
 	/**
-	 * Get the ICS download link for the event.
+	 * Escape special characters for ICS (iCalendar) text fields.
 	 *
-	 * This method generates and returns a URL that allows users to download the event in ICS (iCalendar) format.
-	 * The URL includes event details such as the event title, start time, end time, description, location, and more.
+	 * This method escapes characters that must be escaped in ICS files,
+	 * including commas, semicolons, and line breaks, to ensure compatibility
+	 * with calendar applications.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string The ICS download link for the event.
-	 *
-	 * @throws Exception If an error occurs while generating the ICS download link.
+	 * @param string $text The raw text to be escaped.
+	 * @return string The escaped text suitable for ICS content.
 	 */
-	protected function get_ics_calendar_download(): string {
+	protected function escape_ics_text( string $text ): string {
+		return addcslashes( $text, ",;\\n" );
+	}
+
+	/**
+	 * Generate the ICS (iCalendar) file content for the event.
+	 *
+	 * This method constructs and returns a properly formatted ICS string
+	 * containing event details such as title, start/end time, description,
+	 * location, and a unique identifier. The result can be used to serve
+	 * downloadable .ics calendar files compatible with most calendar applications.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The raw ICS calendar content for the event.
+	 *
+	 * @throws Exception If an error occurs while generating event data.
+	 */
+	public function get_ics_calendar_string(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
 		$date_end       = $this->get_formatted_datetime( 'Ymd', 'end', false );
@@ -578,7 +600,7 @@ class Event {
 		$modified_date  = strtotime( $this->event->post_modified );
 		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
 		$venue          = $this->get_venue_information();
-		$location       = $venue['name'];
+		$location       = $venue['name'] ?? '';
 		$description    = $this->get_calendar_description();
 
 		if ( ! empty( $venue['full_address'] ) ) {
@@ -594,15 +616,15 @@ class Event {
 			sprintf( 'DTSTART:%s', sanitize_text_field( $datetime_start ) ),
 			sprintf( 'DTEND:%s', sanitize_text_field( $datetime_end ) ),
 			sprintf( 'DTSTAMP:%s', sanitize_text_field( $datetime_stamp ) ),
-			sprintf( 'SUMMARY:%s', sanitize_text_field( $this->event->post_title ) ),
-			sprintf( 'DESCRIPTION:%s', sanitize_text_field( $description ) ),
-			sprintf( 'LOCATION:%s', sanitize_text_field( $location ) ),
-			'UID:gatherpress_' . intval( $this->event->ID ),
+			sprintf( 'SUMMARY:%s', $this->escape_ics_text( $this->event->post_title ) ),
+			sprintf( 'DESCRIPTION:%s', $this->escape_ics_text( $description ) ),
+			sprintf( 'LOCATION:%s', $this->escape_ics_text( $location ) ),
+			sprintf( 'UID:gatherpress_%d', intval( $this->event->ID ) ),
 			'END:VEVENT',
 			'END:VCALENDAR',
 		);
 
-		return 'data:text/calendar;charset=utf8,' . implode( '%0A', $args );
+		return implode( "\r\n", $args ) . "\r\n";
 	}
 
 	/**

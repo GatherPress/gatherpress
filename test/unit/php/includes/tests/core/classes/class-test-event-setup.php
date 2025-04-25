@@ -43,6 +43,18 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_calendar_rewrite_rule' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'parse_request',
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_calendar_ics_request' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'delete_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'delete_event' ),
@@ -64,6 +76,12 @@ class Test_Event_Setup extends Base {
 				'name'     => sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
 				'priority' => 10,
 				'callback' => array( $instance, 'custom_columns' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'redirect_canonical',
+				'priority' => 10,
+				'callback' => array( $instance, 'disable_ics_canonical_redirect' ),
 			),
 			array(
 				'type'     => 'filter',
