@@ -65,8 +65,6 @@ const TEMPLATE = [
 						'gatherpress/dropdown',
 						{
 							actAsSelect: true,
-							dropdownId:
-								'dropdown-7968ad05-cf12-41ae-8392-7fb01e166188',
 							label: translations.attending,
 							metadata: { name: translations.attending },
 						},

@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/add-to-calendar-v2",
+	"version": "2.0.0",
+	"title": "Add to Calendar V2",
+	"category": "gatherpress",
+	"icon": "calendar",
+	"example": {},
+	"description": "Allows a member to add an event to their preferred calendar.",
+	"supports": {
+		"gatherpress": {
+			"blockGuard": true,
+			"postIdOverride": true
+		},
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js"
+}
