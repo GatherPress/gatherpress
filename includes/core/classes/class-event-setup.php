@@ -355,11 +355,13 @@ class Event_Setup {
 	/**
 	 * Handle calendar .ics file requests for single event pages.
 	 *
-	 * Checks if the current request is for an event's .ics file based on a custom
-	 * query var, and if so, outputs the ICS content for download and exits.
+	 * This method intercepts requests for .ics files based on a custom query var
+	 * and serves dynamically generated ICS content for the specified event. It is
+	 * intended to be hooked into the `parse_request` action.
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param \WP $wp The current WP object containing query variables and request context.
 	 * @return void
 	 */
 	public function handle_calendar_ics_request( WP $wp ): void {
@@ -372,6 +374,8 @@ class Event_Setup {
 
 				header( 'Content-Type: text/calendar; charset=utf-8' );
 				header( 'Content-Disposition: attachment; filename="' . get_post_field( 'post_name', $post->ID ) . '.ics"' );
+
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ICS content is safely generated and must not be escaped.
 				echo $event->get_ics_calendar_string();
 				exit;
 			}
