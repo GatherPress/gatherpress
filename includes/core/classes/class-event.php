@@ -556,8 +556,28 @@ class Event {
 		);
 	}
 
+	/**
+	 * Get the ICS file download link for the event.
+	 *
+	 * This method returns the full URL to the dynamically generated .ics file
+	 * for the event, based on its post slug and the configured event base URL.
+	 * The URL points to a route handled by a custom rewrite rule and can be used
+	 * in "Add to Calendar" buttons or links.
+	 *
+	 * The base event path (e.g., "event") is pulled from settings and sanitized
+	 * to ensure safe and predictable output.
+	 *
+	 * Example: https://example.com/event/my-event.ics
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The public-facing ICS download URL for the event.
+	 */
 	public function get_ics_download_link(): string {
-		return home_url( '/event/' . get_post_field( 'post_name', $this->event->ID ) . '.ics' );
+		$settings     = Settings::get_instance();
+		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+
+		return home_url( '/' . sanitize_title( $rewrite_slug ) . '/' . get_post_field( 'post_name', $this->event->ID ) . '.ics' );
 	}
 
 	/**
