@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use WP;
 use WP_Post;
 
 /**
@@ -343,7 +344,7 @@ class Event_Setup {
 	 * @param string       $requested_url The original requested URL.
 	 * @return string|false The filtered redirect URL or false to cancel redirect.
 	 */
-	public function disable_ics_canonical_redirect( $redirect_url, $requested_url ) {
+	public function disable_ics_canonical_redirect( $redirect_url, string $requested_url ) {
 		if ( false !== strpos( $requested_url, '.ics' ) ) {
 			return false; // prevent canonical redirect.
 		}
@@ -361,7 +362,7 @@ class Event_Setup {
 	 *
 	 * @return void
 	 */
-	public function handle_calendar_ics_request( $wp ): void {
+	public function handle_calendar_ics_request( WP $wp ): void {
 		if ( isset( $wp->query_vars['gatherpress_ics'] ) ) {
 			$slug = $wp->query_vars['name'] ?? null;
 			$post = get_page_by_path( $slug, OBJECT, Event::POST_TYPE );
@@ -498,7 +499,7 @@ class Event_Setup {
 	 *
 	 * @throws Exception If initializing the Event object fails or event data cannot be retrieved.
 	 */
-	public function get_the_event_date( $the_date ): string {
+	public function get_the_event_date( string $the_date ): string {
 		$settings       = Settings::get_instance();
 		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
 
