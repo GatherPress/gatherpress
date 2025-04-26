@@ -70,7 +70,7 @@ class Test_Settings extends Base {
 				'type'     => 'action',
 				'name'     => 'gatherpress_text_after',
 				'priority' => 10,
-				'callback' => array( $instance, 'urlrewrite_preview' ),
+				'callback' => array( $instance, 'url_rewrite_preview' ),
 			),
 			array(
 				'type'     => 'action',

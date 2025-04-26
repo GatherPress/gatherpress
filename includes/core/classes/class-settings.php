@@ -94,7 +94,7 @@ class Settings {
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
 		add_action( 'gatherpress_text_after', array( $this, 'datetime_preview' ), 10, 2 );
-		add_action( 'gatherpress_text_after', array( $this, 'urlrewrite_preview' ), 10, 2 );
+		add_action( 'gatherpress_text_after', array( $this, 'url_rewrite_preview' ), 10, 2 );
 		add_action( 'update_option_gatherpress_general', array( $this, 'maybe_flush_rewrite_rules' ), 10, 2 );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
@@ -215,6 +215,54 @@ class Settings {
 	}
 
 	/**
+	 * Sanitizes JSON data from autocomplete fields.
+	 *
+	 * Takes a JSON string representation of autocomplete data and ensures all values
+	 * are properly sanitized. The function validates the JSON structure, sanitizes
+	 * each field with appropriate WordPress sanitization functions, and returns the
+	 * sanitized data as a JSON string.
+	 *
+	 * @param string $json_string The JSON string to sanitize.
+	 * @return string Sanitized JSON string or empty array '[]' if invalid.
+	 *
+	 * @since 1.0.0
+	 */
+	public function sanitize_autocomplete( string $json_string ): string {
+		// Decode.
+		$data = json_decode( $json_string, true );
+
+		// Check if valid JSON.
+		if ( ! is_array( $data ) ) {
+			return '[]';
+		}
+
+		// Sanitize each item.
+		$sanitized = array();
+
+		foreach ( $data as $item ) {
+			$clean_item = array();
+
+			// Sanitize each field appropriately.
+			if ( isset( $item['id'] ) ) {
+				$clean_item['id'] = absint( $item['id'] );
+			}
+
+			if ( isset( $item['slug'] ) ) {
+				$clean_item['slug'] = sanitize_key( $item['slug'] );
+			}
+
+			if ( isset( $item['value'] ) ) {
+				$clean_item['value'] = sanitize_text_field( $item['value'] );
+			}
+
+			$sanitized[] = $clean_item;
+		}
+
+		// Re-encode.
+		return wp_json_encode( $sanitized );
+	}
+
+	/**
 	 * Register the settings pages and fields.
 	 *
 	 * This method is responsible for registering the main plugin settings as well as any additional
@@ -228,19 +276,39 @@ class Settings {
 	public function register_settings(): void {
 		$sub_pages = $this->get_sub_pages();
 
-		// @todo will need to add sanitization to setting.
-		// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingMissing
-		register_setting(
-			'gatherpress',
-			'gatherpress_settings'
-		);
-
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
-			// @todo will need to add sanitization to setting.
-			// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingMissing
 			register_setting(
 				Utility::prefix_key( $sub_page ),
-				Utility::prefix_key( $sub_page )
+				Utility::prefix_key( $sub_page ),
+				array(
+					'sanitize_callback' => function ( $input ) use ( $sub_page_settings ) {
+						foreach ( $input as $key => $value ) {
+							foreach ( $value as $k => $v ) {
+								$type = $sub_page_settings['sections'][ $key ]['options'][ $k ]['field']['type'];
+								switch ( $type ) {
+									case 'text':
+									case 'select':
+										$input[ $key ][ $k ] = sanitize_text_field( $v );
+										break;
+									case 'checkbox':
+										$input[ $key ][ $k ] = (bool) $v;
+										break;
+									case 'number':
+										$input[ $key ][ $k ] = intval( $v );
+										break;
+									case 'autocomplete':
+										$input[ $key ][ $k ] = $this->sanitize_autocomplete( $v );
+										break;
+									default:
+										$input[ $key ][ $k ] = sanitize_text_field( $v );
+										break;
+								}
+							}
+						}
+
+						return $input;
+					},
+				)
 			);
 
 			if ( isset( $sub_page_settings['sections'] ) ) {
@@ -706,11 +774,11 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $name  The name of the urlrewrite format option.
-	 * @param string $value The value of the urlrewrite format option.
+	 * @param string $name  The name of the url rewrite format option.
+	 * @param string $value The value of the url rewrite format option.
 	 * @return void
 	 */
-	public function urlrewrite_preview( string $name, string $value ): void {
+	public function url_rewrite_preview( string $name, string $value ): void {
 		if (
 			'gatherpress_general[urls][events]' === $name ||
 			'gatherpress_general[urls][venues]' === $name ||
@@ -729,7 +797,7 @@ class Settings {
 			}
 
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
+				sprintf( '%s/includes/templates/admin/settings/partials/url-rewrite-preview.php', GATHERPRESS_CORE_PATH ),
 				array(
 					'name'   => $name,
 					'value'  => $value,
