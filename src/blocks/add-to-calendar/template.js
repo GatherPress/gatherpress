@@ -34,7 +34,7 @@ const TEMPLATE = [
 					[
 						'gatherpress/dropdown-item',
 						{
-							text: `<a href="#gatherpress-google-calendar">${__('Google Calendar', 'gatherpress')}</a>`,
+							text: `<a href="#gatherpress-google-calendar" rel="noreferrer noopener nofollow" target="_blank">${__('Google Calendar', 'gatherpress')}</a>`,
 							metadata: {
 								name: __('Google Calendar', 'gatherpress'),
 							},
@@ -43,7 +43,7 @@ const TEMPLATE = [
 					[
 						'gatherpress/dropdown-item',
 						{
-							text: `<a href="#gatherpress-ical-calendar">${__('iCal', 'gatherpress')}</a>`,
+							text: `<a href="#gatherpress-ical-calendar" rel="noreferrer noopener nofollow">${__('iCal', 'gatherpress')}</a>`,
 							metadata: {
 								name: __('iCal', 'gatherpress'),
 							},
@@ -52,7 +52,7 @@ const TEMPLATE = [
 					[
 						'gatherpress/dropdown-item',
 						{
-							text: `<a href="#gatherpress-outlook-calendar">${__('Outlook', 'gatherpress')}</a>`,
+							text: `<a href="#gatherpress-outlook-calendar" rel="noreferrer noopener nofollow">${__('Outlook', 'gatherpress')}</a>`,
 							metadata: {
 								name: __('Outlook', 'gatherpress'),
 							},
@@ -61,7 +61,7 @@ const TEMPLATE = [
 					[
 						'gatherpress/dropdown-item',
 						{
-							text: `<a href="#gatherpress-yahoo-calendar">${__('Yahoo Calendar', 'gatherpress')}</a>`,
+							text: `<a href="#gatherpress-yahoo-calendar" rel="noreferrer noopener nofollow" target="_blank">${__('Yahoo Calendar', 'gatherpress')}</a>`,
 							metadata: {
 								name: __('Yahoo Calendar', 'gatherpress'),
 							},
