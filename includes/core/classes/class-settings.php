@@ -215,54 +215,6 @@ class Settings {
 	}
 
 	/**
-	 * Sanitizes JSON data from autocomplete fields.
-	 *
-	 * Takes a JSON string representation of autocomplete data and ensures all values
-	 * are properly sanitized. The function validates the JSON structure, sanitizes
-	 * each field with appropriate WordPress sanitization functions, and returns the
-	 * sanitized data as a JSON string.
-	 *
-	 * @param string $json_string The JSON string to sanitize.
-	 * @return string Sanitized JSON string or empty array '[]' if invalid.
-	 *
-	 * @since 1.0.0
-	 */
-	public function sanitize_autocomplete( string $json_string ): string {
-		// Decode.
-		$data = json_decode( $json_string, true );
-
-		// Check if valid JSON.
-		if ( ! is_array( $data ) ) {
-			return '[]';
-		}
-
-		// Sanitize each item.
-		$sanitized = array();
-
-		foreach ( $data as $item ) {
-			$clean_item = array();
-
-			// Sanitize each field appropriately.
-			if ( isset( $item['id'] ) ) {
-				$clean_item['id'] = absint( $item['id'] );
-			}
-
-			if ( isset( $item['slug'] ) ) {
-				$clean_item['slug'] = sanitize_key( $item['slug'] );
-			}
-
-			if ( isset( $item['value'] ) ) {
-				$clean_item['value'] = sanitize_text_field( $item['value'] );
-			}
-
-			$sanitized[] = $clean_item;
-		}
-
-		// Re-encode.
-		return wp_json_encode( $sanitized );
-	}
-
-	/**
 	 * Register the settings pages and fields.
 	 *
 	 * This method is responsible for registering the main plugin settings as well as any additional
@@ -347,6 +299,54 @@ class Settings {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Sanitizes JSON data from autocomplete fields.
+	 *
+	 * Takes a JSON string representation of autocomplete data and ensures all values
+	 * are properly sanitized. The function validates the JSON structure, sanitizes
+	 * each field with appropriate WordPress sanitization functions, and returns the
+	 * sanitized data as a JSON string.
+	 *
+	 * @param string $json_string The JSON string to sanitize.
+	 * @return string Sanitized JSON string or empty array '[]' if invalid.
+	 *
+	 * @since 1.0.0
+	 */
+	public function sanitize_autocomplete( string $json_string ): string {
+		// Decode.
+		$data = json_decode( $json_string, true );
+
+		// Check if valid JSON.
+		if ( ! is_array( $data ) ) {
+			return '[]';
+		}
+
+		// Sanitize each item.
+		$sanitized = array();
+
+		foreach ( $data as $item ) {
+			$clean_item = array();
+
+			// Sanitize each field appropriately.
+			if ( isset( $item['id'] ) ) {
+				$clean_item['id'] = absint( $item['id'] );
+			}
+
+			if ( isset( $item['slug'] ) ) {
+				$clean_item['slug'] = sanitize_key( $item['slug'] );
+			}
+
+			if ( isset( $item['value'] ) ) {
+				$clean_item['value'] = sanitize_text_field( $item['value'] );
+			}
+
+			$sanitized[] = $clean_item;
+		}
+
+		// Re-encode.
+		return wp_json_encode( $sanitized );
 	}
 
 	/**
