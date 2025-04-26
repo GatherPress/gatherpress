@@ -238,10 +238,6 @@ class Settings {
 							foreach ( $value as $k => $v ) {
 								$type = $sub_page_settings['sections'][ $key ]['options'][ $k ]['field']['type'];
 								switch ( $type ) {
-									case 'text':
-									case 'select':
-										$input[ $key ][ $k ] = sanitize_text_field( $v );
-										break;
 									case 'checkbox':
 										$input[ $key ][ $k ] = (bool) $v;
 										break;
@@ -251,6 +247,8 @@ class Settings {
 									case 'autocomplete':
 										$input[ $key ][ $k ] = $this->sanitize_autocomplete( $v );
 										break;
+									case 'text':
+									case 'select':
 									default:
 										$input[ $key ][ $k ] = sanitize_text_field( $v );
 										break;
