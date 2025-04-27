@@ -145,6 +145,19 @@ return array (
     ),
     1 => 
     array (
+      'id' => 8521779,
+      'name' => 'Christoph Daum',
+      'link' => 'https://profiles.wordpress.org/author/apermo/',
+      'slug' => 'apermo',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/2e834e78e3b90c551711b90418650fd4?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
+    2 => 
+    array (
       'id' => 20244435,
       'name' => 'Caleb Matteis',
       'link' => 'https://profiles.wordpress.org/author/calebthedev/',
@@ -156,7 +169,7 @@ return array (
         96 => '//www.gravatar.com/avatar/9e7fee920b635110a2e6a160d323bdd5?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    2 => 
+    3 => 
     array (
       'id' => 14040242,
       'name' => 'Cameron Barrett',
@@ -169,7 +182,7 @@ return array (
         96 => '//www.gravatar.com/avatar/1e12bb14c1bf783f1560e082e55b0481?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    3 => 
+    4 => 
     array (
       'id' => 2451432,
       'name' => 'Courtney Robertson',
@@ -182,7 +195,7 @@ return array (
         96 => '//www.gravatar.com/avatar/03ff681abf60368b6ce5f5edcf9be310?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    4 => 
+    5 => 
     array (
       'id' => 5876920,
       'name' => 'Abhishek Deshpande',
@@ -195,7 +208,7 @@ return array (
         96 => '//www.gravatar.com/avatar/dd0f1b658cad711cdbcc1ffe4cfefd47?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    5 => 
+    6 => 
     array (
       'id' => 11704207,
       'name' => 'hauvong',
@@ -208,7 +221,7 @@ return array (
         96 => '//www.gravatar.com/avatar/b3bb6b6a8a28be5c130db072cd4b553e?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    6 => 
+    7 => 
     array (
       'id' => 9330583,
       'name' => 'Javier Casares',
@@ -221,7 +234,7 @@ return array (
         96 => '//www.gravatar.com/avatar/958902e8d0fda24dd28189b0508c661a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    7 => 
+    8 => 
     array (
       'id' => 5645739,
       'name' => 'Jeffrey Paul',
@@ -234,7 +247,7 @@ return array (
         96 => '//www.gravatar.com/avatar/8ac4ec4b1f9cb342e59ed5127f050d24?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    8 => 
+    9 => 
     array (
       'id' => 14671153,
       'name' => 'JordanPak',
@@ -247,7 +260,7 @@ return array (
         96 => '//www.gravatar.com/avatar/6a8ec9fee1e8bd1da62a7c8a6753b46f?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    9 => 
+    10 => 
     array (
       'id' => 21213947,
       'name' => 'Bill Van Pelt',
@@ -260,7 +273,7 @@ return array (
         96 => '//www.gravatar.com/avatar/66ad6f626fb27b53499b0a240f46a8bf?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    10 => 
+    11 => 
     array (
       'id' => 18639594,
       'name' => 'Steve Mosby',
@@ -273,7 +286,7 @@ return array (
         96 => '//www.gravatar.com/avatar/62a3f0c3953c7f0d04b0d54cf286c600?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    11 => 
+    12 => 
     array (
       'id' => 23135308,
       'name' => 'Matheus Zimmermann Galdino',
@@ -286,7 +299,7 @@ return array (
         96 => '//www.gravatar.com/avatar/0ae3d93c557b425bea6bffd6a53a77f6?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    12 => 
+    13 => 
     array (
       'id' => 11146216,
       'name' => 'meagan hanes',
@@ -299,7 +312,7 @@ return array (
         96 => '//www.gravatar.com/avatar/052d4e778920f20d9f6611bf5c027528?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    13 => 
+    14 => 
     array (
       'id' => 13234268,
       'name' => 'Michelle Frechette',
@@ -312,7 +325,7 @@ return array (
         96 => '//www.gravatar.com/avatar/c6711ad7886201b5e585c96535f2229d?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    14 => 
+    15 => 
     array (
       'id' => 13994457,
       'name' => 'Nilo Velez',
@@ -325,7 +338,7 @@ return array (
         96 => '//www.gravatar.com/avatar/82a67d2d011ae384612fe6441576cdf5?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    15 => 
+    16 => 
     array (
       'id' => 16994801,
       'name' => 'Paul Barthmaier (pbrocks)',
@@ -338,7 +351,7 @@ return array (
         96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    16 => 
+    17 => 
     array (
       'id' => 15490728,
       'name' => 'Jason Lawton',
@@ -351,7 +364,7 @@ return array (
         96 => '//www.gravatar.com/avatar/ec5ec8357fa89bb2671bf1ab61b2546b?s=96&#038;r=g&#038;d=mm',
       ),
     ),
-    17 => 
+    18 => 
     array (
       'id' => 368236,
       'name' => 'Pascal Birchler',
