@@ -107,6 +107,14 @@ const Edit = ({ attributes, setAttributes, context }) => {
 
 	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
 		(select) => {
+			if (!postId) {
+				return {
+					dateTimeStart: undefined,
+					dateTimeEnd: undefined,
+					timezone: undefined,
+				};
+			}
+
 			if (isEventPostType()) {
 				return {
 					dateTimeStart: select(
@@ -134,7 +142,7 @@ const Edit = ({ attributes, setAttributes, context }) => {
 		[postId]
 	);
 
-	if (!dateTimeStart || !dateTimeEnd || !timezone) {
+	if (postId && (!dateTimeStart || !dateTimeEnd || !timezone)) {
 		return (
 			<div {...blockProps}>
 				<Spinner />
