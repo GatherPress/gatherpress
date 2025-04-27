@@ -278,7 +278,7 @@ class Assets {
 
 		wp_add_inline_script(
 			'gatherpress-editor',
-			'GatherPress.misc.timezoneChoices = ' . json_encode( Utility::timezone_choices() ),
+			'GatherPress.misc.timezoneChoices = ' . wp_json_encode( Utility::timezone_choices() ),
 			'before'
 		);
 
