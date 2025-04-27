@@ -70,7 +70,7 @@ class Test_Settings extends Base {
 				'type'     => 'action',
 				'name'     => 'gatherpress_text_after',
 				'priority' => 10,
-				'callback' => array( $instance, 'urlrewrite_preview' ),
+				'callback' => array( $instance, 'url_rewrite_preview' ),
 			),
 			array(
 				'type'     => 'action',
@@ -191,6 +191,58 @@ class Test_Settings extends Base {
 			'<p class="description">unit test description</p>',
 			$text,
 			'Failed to assert that description matches.'
+		);
+	}
+
+	/**
+	 * Data provider for testing the sanitize_autocomplete method.
+	 *
+	 * Provides test cases with various input JSON strings and their expected
+	 * sanitized outputs for the sanitize_autocomplete method.
+	 *
+	 * @return array Array of test cases with input and expected output pairs.
+	 *               Each case contains:
+	 *               - string $input   JSON string to be sanitized
+	 *               - string $expects Expected output after sanitization
+	 */
+	public function data_sanitize_autocomplete(): array {
+		return array(
+			array(
+				'foobar',
+				'[]',
+			),
+			array(
+				'[{"id":"3"}]',
+				'[{"id":3}]',
+			),
+			array(
+				'[{"id":3,"slug":"unittest","value":"unittest"}]',
+				'[{"id":3,"slug":"unittest","value":"unittest"}]',
+			),
+			array(
+				'[{"id":3,"slug":"unittest","value":"unittest","bad":"data"}]',
+				'[{"id":3,"slug":"unittest","value":"unittest"}]',
+			),
+		);
+	}
+
+	/**
+	 * Tests the sanitize_autocomplete method.
+	 *
+	 * @covers ::sanitize_autocomplete
+	 * @dataProvider data_sanitize_autocomplete
+	 *
+	 * @param string $input   The JSON string input to sanitize.
+	 * @param string $expects The expected sanitized output.
+	 * @return void
+	 */
+	public function test_sanitize_autocomplete( $input, $expects ): void {
+		$instance = Settings::get_instance();
+
+		$this->assertSame(
+			$expects,
+			$instance->sanitize_autocomplete( $input ),
+			'Failed to assert that the input is the same as expects.'
 		);
 	}
 
