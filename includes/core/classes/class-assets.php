@@ -276,6 +276,12 @@ class Assets {
 
 		wp_enqueue_style( 'gatherpress-utility-style' );
 
+		wp_add_inline_script(
+			'gatherpress-editor',
+			'GatherPress.misc.timezoneChoices = ' . json_encode( Utility::timezone_choices() ),
+			'before'
+		);
+
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}
 
@@ -338,7 +344,6 @@ class Assets {
 				'isAdmin'          => is_admin(),
 				'isUserLoggedIn'   => is_user_logged_in(),
 				'nonce'            => wp_create_nonce( 'wp_rest' ),
-				'timezoneChoices'  => Utility::timezone_choices(),
 				'unregisterBlocks' => $this->unregister_blocks(),
 			),
 			'settings'     => array(
