@@ -392,7 +392,7 @@ class Test_Event extends Base {
 	 *
 	 * @covers ::get_calendar_links
 	 * @covers ::get_google_calendar_link
-	 * @covers ::get_ics_calendar_download
+	 * @covers ::get_ics_download_link
 	 * @covers ::get_yahoo_calendar_link
 	 * @covers ::get_calendar_description
 	 *
@@ -431,19 +431,19 @@ class Test_Event extends Base {
 
 		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit%20Test%20Event&dates=20200511T150000Z%2F20200511T170000Z&details=' . rawurlencode( $description ) . '&location=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042&sprop=name%3A';
 		$expected_yahoo_link  = 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200&desc=' . rawurlencode( $description ) . '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
-
-		$expects = array(
+		$expected_ics_link    = home_url( '/event/' . get_post_field( 'post_name', $post->ID ) . '.ics' );
+		$expects              = array(
 			'google'  => array(
 				'name' => 'Google Calendar',
 				'link' => $expected_google_link,
 			),
 			'ical'    => array(
-				'name'     => 'iCal',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gatherpress_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'name' => 'iCal',
+				'link' => $expected_ics_link,
 			),
 			'outlook' => array(
-				'name'     => 'Outlook',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gatherpress_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'name' => 'Outlook',
+				'link' => $expected_ics_link,
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',

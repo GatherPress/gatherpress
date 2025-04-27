@@ -384,13 +384,11 @@ class Assets {
 				break;
 			case Venue::POST_TYPE:
 				$blocks = array(
-					'gatherpress/add-to-calendar',
 					'gatherpress/online-event',
 				);
 				break;
 			default:
 				$blocks = array(
-					'gatherpress/add-to-calendar',
 					'gatherpress/online-event',
 					'gatherpress/venue',
 				);

@@ -43,6 +43,18 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'register_calendar_rewrite_rule' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'parse_request',
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_calendar_ics_request' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'delete_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'delete_event' ),
@@ -64,6 +76,12 @@ class Test_Event_Setup extends Base {
 				'name'     => sprintf( 'manage_%s_posts_custom_column', Event::POST_TYPE ),
 				'priority' => 10,
 				'callback' => array( $instance, 'custom_columns' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'redirect_canonical',
+				'priority' => 10,
+				'callback' => array( $instance, 'disable_ics_canonical_redirect' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -98,6 +116,84 @@ class Test_Event_Setup extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
+	}
+
+	/**
+	 * Test that the calendar rewrite rule is registered correctly.
+	 *
+	 * @covers ::register_calendar_rewrite_rule
+	 *
+	 * @return void
+	 */
+	public function test_register_calendar_rewrite_rule(): void {
+		$instance = Event_Setup::get_instance();
+
+		$instance->register_calendar_rewrite_rule();
+
+		// Test that add_rewrite_rule was called with correct arguments.
+		global $wp_rewrite;
+
+		// Flush rewrite rules to ensure they're generated.
+		$wp_rewrite->flush_rules();
+
+		// Get the current rewrite rules.
+		$rules = $wp_rewrite->rewrite_rules();
+
+		// Build the expected rule pattern.
+		$expected_rule_pattern     = '^event/([^/]+)\.ics$';
+		$expected_rule_replacement = sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE );
+
+		// Check that our specific rule pattern exists.
+		$this->assertArrayHasKey(
+			$expected_rule_pattern,
+			$rules,
+			"Expected rewrite rule pattern '^event/([^/]+)\\.ics$' was not found in WordPress rewrite rules"
+		);
+
+		// Check that the rule maps to the correct replacement.
+		$this->assertEquals(
+			$expected_rule_replacement,
+			$rules[ $expected_rule_pattern ],
+			'The rewrite rule replacement does not match the expected format - should map event .ics requests to the correct query vars'
+		);
+
+		// Verify that the gatherpress_ics parameter appears in the rules.
+		$this->assertStringContainsString(
+			'gatherpress_ics=1',
+			implode( '', $wp_rewrite->rules ),
+			"The 'gatherpress_ics' query parameter was not found in any rewrite rule"
+		);
+	}
+
+	/**
+	 * Tests for the ics canonical redirect prevention.
+	 *
+	 * @covers ::disable_ics_canonical_redirect
+	 *
+	 * @return void
+	 */
+	public function test_disable_ics_canonical_redirect(): void {
+		$instance     = Event_Setup::get_instance();
+		$ics_url      = 'https://example.org/event/test-event.ics';
+		$redirect_url = 'https://example.org/event/test-event.ics/';
+		$result       = $instance->disable_ics_canonical_redirect( $redirect_url, $ics_url );
+
+		$this->assertFalse(
+			$result,
+			"The method should return false to prevent redirects when the URL contains '.ics'"
+		);
+
+		// Test with a non-ics URL.
+		$regular_url  = 'https://example.org/event/test-event';
+		$redirect_url = 'https://example.org/event/test-event/';
+
+		$result = $instance->disable_ics_canonical_redirect( $redirect_url, $regular_url );
+
+		$this->assertEquals(
+			$redirect_url,
+			$result,
+			"The method should return the original redirect URL when the URL does not contain '.ics'"
+		);
 	}
 
 	/**
