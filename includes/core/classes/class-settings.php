@@ -233,31 +233,7 @@ class Settings {
 				Utility::prefix_key( $sub_page ),
 				Utility::prefix_key( $sub_page ),
 				array(
-					'sanitize_callback' => function ( $input ) use ( $sub_page_settings ) {
-						foreach ( $input as $key => $value ) {
-							foreach ( $value as $k => $v ) {
-								$type = $sub_page_settings['sections'][ $key ]['options'][ $k ]['field']['type'];
-								switch ( $type ) {
-									case 'checkbox':
-										$input[ $key ][ $k ] = (bool) $v;
-										break;
-									case 'number':
-										$input[ $key ][ $k ] = intval( $v );
-										break;
-									case 'autocomplete':
-										$input[ $key ][ $k ] = $this->sanitize_autocomplete( $v );
-										break;
-									case 'text':
-									case 'select':
-									default:
-										$input[ $key ][ $k ] = sanitize_text_field( $v );
-										break;
-								}
-							}
-						}
-
-						return $input;
-					},
+					'sanitize_callback' => $this->sanitize_page_settings( $sub_page_settings ),
 				)
 			);
 
@@ -297,6 +273,46 @@ class Settings {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Creates a sanitization callback function for page settings.
+	 *
+	 * Generates a closure that sanitizes input values based on their defined field types
+	 * in the sub-page settings. Handles various input types including checkboxes, numbers,
+	 * autocomplete fields, text fields, and select dropdowns.
+	 *
+	 * @param array $sub_page_settings The settings configuration for the sub-page,
+	 *                                 containing sections and field type definitions.
+	 * @return callable A callback function that sanitizes input based on field types.
+	 */
+	public function sanitize_page_settings( array $sub_page_settings ): callable {
+		return function ( $input ) use ( $sub_page_settings ): array {
+			foreach ( $input as $key => $value ) {
+				foreach ( $value as $k => $v ) {
+					$type = $sub_page_settings['sections'][ $key ]['options'][ $k ]['field']['type'];
+
+					switch ( $type ) {
+						case 'checkbox':
+							$input[ $key ][ $k ] = (bool) $v;
+							break;
+						case 'number':
+							$input[ $key ][ $k ] = intval( $v );
+							break;
+						case 'autocomplete':
+							$input[ $key ][ $k ] = $this->sanitize_autocomplete( $v );
+							break;
+						case 'text':
+						case 'select':
+						default:
+							$input[ $key ][ $k ] = sanitize_text_field( $v );
+							break;
+					}
+				}
+			}
+
+			return $input;
+		};
 	}
 
 	/**
