@@ -229,7 +229,7 @@ class Settings {
 		$sub_pages = $this->get_sub_pages();
 
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
-			// phpcs:ignore WordPress.CodeAnalysis.SettingSanitization.register_settingDynamic
+			// phpcs:ignore PluginCheck.CodeAnalysis.SettingSanitization.register_settingDynamic
 			register_setting(
 				Utility::prefix_key( $sub_page ),
 				Utility::prefix_key( $sub_page ),
