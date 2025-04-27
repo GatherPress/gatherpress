@@ -86,8 +86,6 @@ class Setup {
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
-		add_action( 'admin_notices', array( $this, 'check_users_can_register' ) );
-		add_action( 'network_admin_notices', array( $this, 'check_users_can_register' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'wp_initialize_site', array( $this, 'on_site_create' ) );
@@ -380,45 +378,6 @@ class Setup {
 	}
 
 	/**
-	 * Display a notification to recommend enabling user registration for GatherPress functionality.
-	 *
-	 * This method checks if user registration is enabled in WordPress settings and displays a
-	 * notification encouraging users to enable registration for optimal GatherPress functionality.
-	 * Users have the option to suppress this notification permanently.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function check_users_can_register(): void {
-		if (
-			filter_var( get_option( 'users_can_register' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( get_option( 'gatherpress_suppress_site_notification' ), FILTER_VALIDATE_BOOLEAN ) ||
-			filter_var( ! current_user_can( 'manage_options' ), FILTER_VALIDATE_BOOLEAN ) || (
-				false === strpos( get_current_screen()->id, 'gatherpress' ) &&
-				false === strpos( get_current_screen()->id, 'options-general' ) &&
-				false === strpos( get_current_screen()->id, 'settings-network' )
-			)
-		) {
-			return;
-		}
-
-		if (
-			'gatherpress_suppress_site_notification' === filter_input( INPUT_GET, 'action' ) &&
-			! empty( filter_input( INPUT_GET, '_wpnonce' ) ) &&
-			wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_GET, '_wpnonce' ) ) ), 'clear-notification' )
-		) {
-			update_option( 'gatherpress_suppress_site_notification', true );
-		} else {
-			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/setup/site-check.php', GATHERPRESS_CORE_PATH ),
-				array(),
-				true
-			);
-		}
-	}
-
-	/**
 	 * Checks if the GatherPress Alpha plugin is active and renders an admin notice if not.
 	 *
 	 * This method verifies whether the GatherPress Alpha plugin is currently active.
@@ -441,10 +400,15 @@ class Setup {
 			return;
 		}
 
-		Utility::render_template(
-			sprintf( '%s/includes/templates/admin/setup/gatherpress-alpha-check.php', GATHERPRESS_CORE_PATH ),
-			array(),
-			true
+		wp_admin_notice(
+			__(
+				'The GatherPress Alpha plugin is not installed or activated. This plugin is currently in heavy development and requires GatherPress Alpha to handle breaking changes. Please <a href="https://github.com/GatherPress/gatherpress-alpha" target="_blank">download and install GatherPress Alpha</a> to ensure compatibility and avoid issues.',
+				'gatherpress'
+			),
+			array(
+				'type'        => 'warning',
+				'dismissible' => true,
+			)
 		);
 	}
 

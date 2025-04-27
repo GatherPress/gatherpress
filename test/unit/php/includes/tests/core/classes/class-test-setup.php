@@ -42,18 +42,6 @@ class Test_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'admin_notices',
 				'priority' => 10,
-				'callback' => array( $instance, 'check_users_can_register' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'network_admin_notices',
-				'priority' => 10,
-				'callback' => array( $instance, 'check_users_can_register' ),
-			),
-			array(
-				'type'     => 'action',
-				'name'     => 'admin_notices',
-				'priority' => 10,
 				'callback' => array( $instance, 'check_gatherpress_alpha' ),
 			),
 			array(
@@ -107,73 +95,6 @@ class Test_Setup extends Base {
 		);
 
 		$this->assert_hooks( $hooks, $instance );
-	}
-
-	/**
-	 * Coverage for check_users_can_register method.
-	 *
-	 * @covers ::check_users_can_register
-	 *
-	 * @return void
-	 */
-	public function test_check_users_can_register(): void {
-		$instance                              = Setup::get_instance();
-		$users_can_register_name               = 'users_can_register';
-		$suppress_membership_notification_name = 'gatherpress_suppress_site_notification';
-
-		$this->mock->user( 'admin', 'gatherpress_general' );
-		$this->mock->wp(
-			array(
-				'is_admin' => true,
-			)
-		);
-
-		// Register/enqueue admin scripts and styles.
-		Assets::get_instance()->admin_enqueue_scripts( 'gatherpress_event_page_gatherpress_general' );
-
-		$this->assertSame(
-			get_option( $users_can_register_name ),
-			'0',
-			'Failed to assert user registration is disabled (default).'
-		);
-		$this->assertFalse(
-			get_option( $suppress_membership_notification_name ),
-			'Failed to assert suppression of membership notification is disabled (default).'
-		);
-
-		Utility::buffer_and_return( array( $instance, 'check_users_can_register' ) );
-
-		$this->assertTrue(
-			wp_style_is( 'gatherpress-admin-style' ),
-			'Failed to assert, that the styles for the membership notification aren\'t loaded yet.'
-		);
-
-		// Allow user-registration.
-		update_option( $users_can_register_name, '1' );
-
-		wp_dequeue_style( 'gatherpress-admin-style' );
-
-		Utility::buffer_and_return( array( $instance, 'check_users_can_register' ) );
-
-		$this->assertFalse(
-			wp_style_is( 'gatherpress-admin-style' ),
-			'Failed to assert, that the styles for the membership notification aren\'t loaded yet.'
-		);
-
-		// Allow user-registration.
-		update_option( $users_can_register_name, '0' );
-
-		// Option to "Dismiss [the notification] forever".
-		update_option( $suppress_membership_notification_name, '1' );
-
-		Utility::buffer_and_return( array( $instance, 'check_users_can_register' ) );
-
-		$this->assertFalse(
-			wp_style_is( 'gatherpress-admin-style' ),
-			'Failed to assert, that the styles for the membership notification are loaded.'
-		);
-
-		$this->mock->wp()->reset();
 	}
 
 	/**
