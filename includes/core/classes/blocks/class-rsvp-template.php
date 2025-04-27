@@ -86,7 +86,7 @@ class Rsvp_Template {
 		$block_instance = Block::get_instance();
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 
-		if ( $tag->next_tag() ) {
+		if ( $tag->next_tag() && ! empty( $tag->get_attribute( 'data-blocks' ) ) ) {
 			$inner_blocks = (array) json_decode( $tag->get_attribute( 'data-blocks' ), true );
 			$inner_blocks = $block_instance->get_block_names( $inner_blocks );
 
