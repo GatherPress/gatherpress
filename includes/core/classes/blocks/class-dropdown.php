@@ -240,7 +240,7 @@ class Dropdown {
 		$dropdown_border_thickness = $attributes['dropdownBorderThickness'] ?? 1;
 		$dropdown_border_color     = $attributes['dropdownBorderColor'] ?? '#000000';
 		$dropdown_border_radius    = $attributes['dropdownBorderRadius'] ?? 8;
-		$dropdown_z_index          = $attributes['dropdownZIndex'] ?? 10;
+		$dropdown_z_index          = $attributes['dropdownZIndex'] ?? 1001;
 		$dropdown_width            = $attributes['dropdownWidth'] ?? 240;
 
 		if (
