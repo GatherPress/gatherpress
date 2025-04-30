@@ -55,6 +55,7 @@ const { actions } = store('gatherpress', {
 								focusableSelectors.join(',')
 							)
 						);
+
 						// Focus the first focusable element, if available.
 						if (focusableElements[0]) {
 							setTimeout(() => {

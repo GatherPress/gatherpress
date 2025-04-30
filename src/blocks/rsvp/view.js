@@ -101,6 +101,7 @@ const { state, actions } = store('gatherpress', {
 							rsvpContainer.querySelector(
 								'[data-rsvp-status="attending"] .gatherpress--update-rsvp'
 							);
+
 						const closeButton = rsvpContainer.querySelector(
 							'[data-rsvp-status="attending"] .gatherpress--close-modal button'
 						);
