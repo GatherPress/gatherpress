@@ -101,14 +101,29 @@ const { state, actions } = store('gatherpress', {
 							rsvpContainer.querySelector(
 								'[data-rsvp-status="attending"] .gatherpress--update-rsvp'
 							);
+						const closeButton = rsvpContainer.querySelector(
+							'[data-rsvp-status="attending"] .gatherpress--close-modal button'
+						);
 
 						actions.openModal(null, attendingStatusButton);
-					}
 
-					// Close the current modal after a short delay to prevent flicker.
-					setTimeout(() => {
-						actions.closeModal(null, element.ref);
-					}, 1);
+						/**
+						 * When keeping a modal open after an action, use findActiveSibling=false
+						 * to prevent focus from moving to a different modal manager.
+						 */
+						setTimeout(() => {
+							actions.closeModal(null, element.ref, false);
+							closeButton.focus();
+						}, 1);
+					} else {
+						/**
+						 * When fully closing a modal, use findActiveSibling=true
+						 * to allow focus to move to any visible modal manager in sibling containers.
+						 */
+						setTimeout(() => {
+							actions.closeModal(null, element.ref, true);
+						}, 1);
+					}
 				}
 			);
 		},
