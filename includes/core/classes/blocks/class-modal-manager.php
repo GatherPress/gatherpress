@@ -154,6 +154,7 @@ class Modal_Manager {
 
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$tag->set_attribute( 'data-wp-on--click', 'actions.closeModal' );
+				$tag->set_attribute( 'data-close-modal', true );
 			}
 		}
 
