@@ -437,7 +437,6 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					backgroundColor: itemBgColor,
 					border: `${dropdownBorderThickness || 1}px solid ${dropdownBorderColor || '#000000'}`,
 					borderRadius: `${dropdownBorderRadius || 0}px`,
-					zIndex: dropdownZIndex,
 					width: dropdownWidth,
 				}}
 			>
