@@ -131,9 +131,11 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 			 * Having it here at the end -kinda- fixes the problem.
 			 * @see https://github.com/GatherPress/gatherpress/issues/950
 			 */
+			/*
 			{
 				step: 'enableMultisite',
 			},
+			*/
 		],
 	};
 
