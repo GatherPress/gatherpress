@@ -58,8 +58,27 @@ const Edit = ({ attributes, setAttributes, clientId, insertBlocksAfter }) => {
 					if (anchors.length > 0) {
 						// Extract the opening tag from the first anchor.
 						const firstAnchor = anchors[0];
+
+						// Capture attributes.
 						const href = firstAnchor.getAttribute('href') || '#';
-						openingTag = `<a href="${href}">`;
+						const rel = firstAnchor.getAttribute('rel');
+						const target = firstAnchor.getAttribute('target');
+
+						// Start building the opening tag.
+						openingTag = `<a href="${href}"`;
+
+						// Add rel attribute if it exits.
+						if (rel) {
+							openingTag += ` rel="${rel}"`;
+						}
+
+						// Add target attribute if it exists.
+						if (target) {
+							openingTag += ` target="${target}"`;
+						}
+
+						// Close the opening tag.
+						openingTag += '>';
 					}
 
 					// Remove all markup and clean text.

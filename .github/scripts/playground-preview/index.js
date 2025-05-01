@@ -121,7 +121,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 				step: 'importWxr',
 				file: {
 					resource: 'url',
-					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-2024.xml'
+					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.32.0.xml'
 				}
 			},
 			/**
@@ -131,9 +131,11 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 			 * Having it here at the end -kinda- fixes the problem.
 			 * @see https://github.com/GatherPress/gatherpress/issues/950
 			 */
+			/*
 			{
 				step: 'enableMultisite',
 			},
+			*/
 		],
 	};
 
@@ -186,7 +188,7 @@ async function createPreviewLinksComment(github, context) {
 		const versionLinks   = links.map(link => `- [${link.title}](${link.url})\n`).join('');
 		previewLinks        += `\n${versionHeading}\n${versionLinks}`;
 	}
-	
+
 	// The title of the comment and its content, including preview links for all PHP versions
 	const title       = '### Preview changes with Playground';
 	const commentBody = `
