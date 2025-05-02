@@ -42,13 +42,36 @@ const OpenStreetMap = (props) => {
 	useEffect(() => {
 		// Load Leaflet and its assets dynamically
 		const loadLeaflet = async () => {
-			const { default: L } = await import('leaflet');
+			try {
+				const { default: L } = await import('leaflet');
 
-			await import('leaflet/dist/leaflet.css');
-			await import('leaflet/dist/images/marker-icon-2x.png');
-			await import('leaflet/dist/images/marker-shadow.png');
+				// Import CSS files.
+				await import('leaflet/dist/leaflet.css');
+				// eslint-disable-next-line import/no-extraneous-dependencies
+				await import(
+					'leaflet-gesture-handling/dist/leaflet-gesture-handling.css'
+				);
 
-			setLeaflet(L);
+				// Import marker images.
+				await import('leaflet/dist/images/marker-icon-2x.png');
+				await import('leaflet/dist/images/marker-shadow.png');
+
+				// Import gesture handling
+				// eslint-disable-next-line import/no-extraneous-dependencies
+				await import('leaflet-gesture-handling');
+
+				// Add gesture handling to Leaflet
+				L.Map.addInitHook(
+					'addHandler',
+					'gestureHandling',
+					L.GestureHandling
+				);
+
+				setLeaflet(L);
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Error loading Leaflet or plugins:', error);
+			}
 		};
 
 		loadLeaflet();
@@ -59,7 +82,22 @@ const OpenStreetMap = (props) => {
 			return;
 		}
 
-		const map = Leaflet.map('map').setView([latitude, longitude], zoom);
+		const map = Leaflet.map('map', {
+			gestureHandling: true,
+			gestureHandlingOptions: {
+				text: {
+					touch: __('Use two fingers to move the map', 'gatherpress'),
+					scroll: __(
+						'Use ctrl + scroll to zoom the map',
+						'gatherpress'
+					),
+					scrollMac: __(
+						'Use ⌘ + scroll to zoom the map',
+						'gatherpress'
+					),
+				},
+			},
+		}).setView([latitude, longitude], zoom);
 
 		Leaflet.Icon.Default.imagePath =
 			getFromGlobal('urls.pluginUrl') + 'build/images/';
