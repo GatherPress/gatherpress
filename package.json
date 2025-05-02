@@ -52,6 +52,7 @@
 		"html-react-parser": "^5.2.2",
 		"jest-sonar-reporter": "^2.0.0",
 		"leaflet": "^1.9.4",
+		"leaflet-gesture-handling": "^1.2.2",
 		"lodash": "^4.17.21",
 		"moment": "^2.30.1",
 		"moment-timezone": "^0.5.47",
