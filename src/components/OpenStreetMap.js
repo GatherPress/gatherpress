@@ -42,36 +42,31 @@ const OpenStreetMap = (props) => {
 	useEffect(() => {
 		// Load Leaflet and its assets dynamically
 		const loadLeaflet = async () => {
-			try {
-				const { default: L } = await import('leaflet');
+			const { default: L } = await import('leaflet');
 
-				// Import CSS files.
-				await import('leaflet/dist/leaflet.css');
-				// eslint-disable-next-line import/no-extraneous-dependencies
-				await import(
-					'leaflet-gesture-handling/dist/leaflet-gesture-handling.css'
-				);
+			// Import CSS files.
+			await import('leaflet/dist/leaflet.css');
+			// eslint-disable-next-line import/no-extraneous-dependencies
+			await import(
+				'leaflet-gesture-handling/dist/leaflet-gesture-handling.css'
+			);
 
-				// Import marker images.
-				await import('leaflet/dist/images/marker-icon-2x.png');
-				await import('leaflet/dist/images/marker-shadow.png');
+			// Import marker images.
+			await import('leaflet/dist/images/marker-icon-2x.png');
+			await import('leaflet/dist/images/marker-shadow.png');
 
-				// Import gesture handling
-				// eslint-disable-next-line import/no-extraneous-dependencies
-				await import('leaflet-gesture-handling');
+			// Import gesture handling
+			// eslint-disable-next-line import/no-extraneous-dependencies
+			await import('leaflet-gesture-handling');
 
-				// Add gesture handling to Leaflet
-				L.Map.addInitHook(
-					'addHandler',
-					'gestureHandling',
-					L.GestureHandling
-				);
+			// Add gesture handling to Leaflet
+			L.Map.addInitHook(
+				'addHandler',
+				'gestureHandling',
+				L.GestureHandling
+			);
 
-				setLeaflet(L);
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Error loading Leaflet or plugins:', error);
-			}
+			setLeaflet(L);
 		};
 
 		loadLeaflet();
