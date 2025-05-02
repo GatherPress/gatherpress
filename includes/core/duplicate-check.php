@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 $gatherpress_activated = false;
 
-if (defined( 'GATHERPRESS_VERSION' )) {
+if ( defined( 'GATHERPRESS_VERSION' ) ) {
 	add_action(
 		'admin_notices',
 		static function (): void {
