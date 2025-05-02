@@ -80,6 +80,7 @@ const OpenStreetMap = (props) => {
 		const map = Leaflet.map('map', {
 			gestureHandling: true,
 			gestureHandlingOptions: {
+				duration: 1500,
 				text: {
 					touch: __('Use two fingers to move the map', 'gatherpress'),
 					scroll: __(
