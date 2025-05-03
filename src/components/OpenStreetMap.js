@@ -29,7 +29,6 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {number} [props.zoom=10]    - The zoom level of the map.
  * @param {number} [props.height=300] - The height of the map container.
  * @param {string} [props.className]  - Additional CSS class names for styling.
- * @param {string} [props.instanceId] - Unique identifier for this map instance.
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -44,7 +43,6 @@ const OpenStreetMap = (props) => {
 	} = props;
 
 	const [Leaflet, setLeaflet] = useState(null);
-	console.log();
 	const mapId = `map-${`dropdown-${uuidv4()}`}`;
 	const mapRef = useRef(null);
 	const mapInstanceRef = useRef(null);
