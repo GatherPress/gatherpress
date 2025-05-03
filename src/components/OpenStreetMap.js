@@ -79,7 +79,7 @@ const OpenStreetMap = (props) => {
 	}, []);
 
 	useEffect(() => {
-		if (!Leaflet || !latitude || !longitude) {
+		if (!Leaflet || !latitude || !longitude || !mapRef.current) {
 			return;
 		}
 
@@ -90,7 +90,7 @@ const OpenStreetMap = (props) => {
 		}
 
 		// Create new map instance
-		const map = Leaflet.map('map', {
+		const map = Leaflet.map(mapRef.current, {
 			gestureHandling: true,
 			gestureHandlingOptions: {
 				duration: 1500,
@@ -131,7 +131,7 @@ const OpenStreetMap = (props) => {
 				mapInstanceRef.current = null;
 			}
 		};
-	}, [Leaflet, latitude, location, longitude, zoom, mapId]);
+	}, [Leaflet, latitude, location, longitude, zoom]);
 
 	if (!Leaflet || !latitude || !longitude) {
 		return null;
