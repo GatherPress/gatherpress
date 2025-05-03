@@ -41,11 +41,11 @@ const OpenStreetMap = (props) => {
 		height = 300,
 		latitude,
 		longitude,
-		instanceId = '',
 	} = props;
 
 	const [Leaflet, setLeaflet] = useState(null);
-	const mapId = `map-${instanceId || `dropdown-${uuidv4()}`}`;
+	console.log();
+	const mapId = `map-${`dropdown-${uuidv4()}`}`;
 	const mapRef = useRef(null);
 	const mapInstanceRef = useRef(null);
 	const style = { height };
