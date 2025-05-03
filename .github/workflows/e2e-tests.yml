@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - e2e-playground-setup
 
 jobs:
   playwright:
@@ -12,32 +13,68 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log debug information
-        run: |
-          npm --version
-          node --version
-          git --version
-          php --version
-          composer --version
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: dom, curl, libxml, mbstring, zip, pdo, mysql, pdo_mysql
+          tools: composer:v2
 
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
-          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
-          # The actions/setup-node uses actions/cache under the hood.
-          # https://github.com/actions/setup-node#caching-global-packages-data
           cache: 'npm'
 
       - name: NPM install
-        run: npm ci --legacy-peer-deps
+        run: npm install
+
+      - name: Install @wordpress/env
+        run: npm install -g @wordpress/env
 
       - name: Playwright install
         run: npx playwright install --with-deps
 
+      - name: Start WordPress
+        run: |
+          # Create wp-env config if it doesn't exist
+          if [ ! -f ".wp-env.json" ]; then
+            echo '{
+              "core": "WordPress/WordPress",
+              "plugins": ["."],
+              "port": 8889,
+              "config": {
+                "WP_DEBUG": true,
+                "WP_DEBUG_LOG": true
+              }
+            }' > .wp-env.json
+          fi
+
+          # Start WordPress environment
+          wp-env start
+
+          # Wait for server to be ready
+          npx wait-on http://localhost:8889 -t 60000
+
+          # Create initial user (wp-env creates admin:password by default)
+          echo "WordPress is running at http://localhost:8889"
+
       - name: Run Playwright
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WP_ADMIN_PASSWORD: ${{ secrets.WP_ADMIN_PASSWORD }}
+          WP_ADMIN_PASSWORD: 'password'
+          WP_ADMIN_USERNAME: 'admin'
+          WP_BASE_URL: 'http://localhost:8889'
         run: npm run test:e2e
-        if: ${{ success() || failure() }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Stop WordPress
+        if: always()
+        run: wp-env stop
