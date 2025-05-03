@@ -2,7 +2,7 @@
  * WordPress dependencies.
  */
 import { sprintf, __ } from '@wordpress/i18n';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useState, useRef } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -24,6 +24,7 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {number} [props.zoom=10]    - The zoom level of the map.
  * @param {number} [props.height=300] - The height of the map container.
  * @param {string} [props.className]  - Additional CSS class names for styling.
+ * @param {string} [props.instanceId] - Unique identifier for this map instance.
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -35,8 +36,13 @@ const OpenStreetMap = (props) => {
 		height = 300,
 		latitude,
 		longitude,
+		instanceId = '',
 	} = props;
+	
 	const [Leaflet, setLeaflet] = useState(null);
+	const mapId = `map-${instanceId || Math.random().toString(36).substr(2, 9)}`;
+	const mapRef = useRef(null);
+	const mapInstanceRef = useRef(null);
 	const style = { height };
 
 	useEffect(() => {
@@ -77,6 +83,13 @@ const OpenStreetMap = (props) => {
 			return;
 		}
 
+		// Clean up previous map instance if it exists
+		if (mapInstanceRef.current) {
+			mapInstanceRef.current.remove();
+			mapInstanceRef.current = null;
+		}
+
+		// Create new map instance
 		const map = Leaflet.map('map', {
 			gestureHandling: true,
 			gestureHandlingOptions: {
@@ -94,6 +107,7 @@ const OpenStreetMap = (props) => {
 				},
 			},
 		}).setView([latitude, longitude], zoom);
+		mapInstanceRef.current = map;
 
 		Leaflet.Icon.Default.imagePath =
 			getFromGlobal('urls.pluginUrl') + 'build/images/';
@@ -112,15 +126,20 @@ const OpenStreetMap = (props) => {
 		Leaflet.marker([latitude, longitude]).addTo(map).bindPopup(location);
 
 		return () => {
-			map.remove();
+			if (mapInstanceRef.current) {
+				mapInstanceRef.current.remove();
+				mapInstanceRef.current = null;
+			}
 		};
-	}, [Leaflet, latitude, location, longitude, zoom]);
+	}, [Leaflet, latitude, location, longitude, zoom, mapId]);
 
 	if (!Leaflet || !latitude || !longitude) {
 		return null;
 	}
 
-	return <div className={className} id="map" style={style}></div>;
+	return (
+		<div className={className} id={mapId} ref={mapRef} style={style}></div>
+	);
 };
 
 export default OpenStreetMap;
