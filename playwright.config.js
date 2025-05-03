@@ -9,8 +9,7 @@ module.exports = defineConfig({
 	retries: process.env.CI ? 2 : 0,
 	workers: process.env.CI ? 1 : undefined,
 	timeout: 60000,
-	// @ts-ignore
-	reporter: ['html', ['list', { printSteps: true }]],
+	reporter: [['html'], ['list', { printSteps: true }]],
 	use: {
 		baseURL: process.env.WP_BASE_URL || 'http://localhost:8889',
 		trace: 'on-first-retry',
