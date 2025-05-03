@@ -5,7 +5,6 @@ on:
       - main
       - develop
       - e2e-playground-setup
-
 jobs:
   playwright:
     name: Playwright Tests
@@ -13,29 +12,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
           extensions: dom, curl, libxml, mbstring, zip, pdo, mysql, pdo_mysql
           tools: composer:v2
-
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-
       - name: NPM install
         run: npm install
-
       - name: Install @wordpress/env
         run: npm install -g @wordpress/env
-
       - name: Playwright install
         run: npx playwright install --with-deps
-
       - name: Start WordPress
         run: |
           # Create wp-env config if it doesn't exist
@@ -50,21 +43,25 @@ jobs:
               }
             }' > .wp-env.json
           fi
-
           # Start WordPress environment
           wp-env start
-
           # Wait for server to be ready
           npx wait-on http://localhost:8889 -t 60000
-
+          # Create directory for storageState
+          mkdir -p test/e2e
           # Create initial user (wp-env creates admin:password by default)
           echo "WordPress is running at http://localhost:8889"
 
-      - name: Run Playwright
+      - name: Run Setup Project First
+        env:
+          WP_BASE_URL: 'http://localhost:8889'
+        run: npx playwright test -c playwright.config.js --project=setup
+
+      - name: Run Playwright Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WP_BASE_URL: 'http://localhost:8889'
-        run: npm run test:e2e
+        run: npx playwright test -c playwright.config.js --project=chromium
 
       - name: Upload test results
         if: always()
