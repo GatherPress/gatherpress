@@ -38,7 +38,7 @@ const OpenStreetMap = (props) => {
 		longitude,
 		instanceId = '',
 	} = props;
-	
+
 	const [Leaflet, setLeaflet] = useState(null);
 	const mapId = `map-${instanceId || Math.random().toString(36).substr(2, 9)}`;
 	const mapRef = useRef(null);
