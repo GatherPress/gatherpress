@@ -31,20 +31,12 @@ jobs:
         run: npx playwright install --with-deps
       - name: Start WordPress
         run: |
-          # Start WordPress environment
           wp-env start
-          # Wait for server to be ready
           npx wait-on http://localhost:8889 -t 60000
-          echo "WordPress is running at http://localhost:8889"
-      - name: Run Setup Project First
-        env:
-          WP_BASE_URL: 'http://localhost:8889'
-        run: npx playwright test -c playwright.config.js --project=setup
       - name: Run Playwright Tests
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WP_BASE_URL: 'http://localhost:8889'
-        run: npx playwright test -c playwright.config.js --project=chromium
+        run: npx playwright test
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
