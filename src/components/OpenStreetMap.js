@@ -1,4 +1,9 @@
 /**
+ * External dependencies.
+ */
+import { v4 as uuidv4 } from 'uuid';
+
+/**
  * WordPress dependencies.
  */
 import { sprintf, __ } from '@wordpress/i18n';
@@ -40,7 +45,7 @@ const OpenStreetMap = (props) => {
 	} = props;
 
 	const [Leaflet, setLeaflet] = useState(null);
-	const mapId = `map-${instanceId || Math.random().toString(36).substr(2, 9)}`;
+	const mapId = `map-${instanceId || `dropdown-${uuidv4()}`}`;
 	const mapRef = useRef(null);
 	const mapInstanceRef = useRef(null);
 	const style = { height };
