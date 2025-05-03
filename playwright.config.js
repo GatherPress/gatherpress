@@ -20,7 +20,7 @@ module.exports = defineConfig({
 	projects: [
 		{
 			name: 'setup',
-			testMatch: /.*global-setup\.js/,
+			testMatch: '**/global-setup.js',
 		},
 		{
 			name: 'chromium',
