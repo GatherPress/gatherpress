@@ -1,4 +1,4 @@
-// @ts-check
+// playwright.config.js
 const { defineConfig, devices } = require('@playwright/test');
 require('dotenv').config();
 
@@ -10,6 +10,7 @@ module.exports = defineConfig({
 	workers: process.env.CI ? 1 : undefined,
 	timeout: 60000,
 	reporter: [['html'], ['list', { printSteps: true }]],
+	globalSetup: './test/e2e/global-setup.js',
 	use: {
 		baseURL: process.env.WP_BASE_URL || 'http://localhost:8889',
 		trace: 'on-first-retry',
@@ -19,17 +20,12 @@ module.exports = defineConfig({
 	},
 	projects: [
 		{
-			name: 'setup',
-			testMatch: '**/global-setup.js',
-		},
-		{
 			name: 'chromium',
 			use: {
 				...devices['Desktop Chrome'],
 				storageState: './test/e2e/storageState.json',
-			},
-			dependencies: ['setup'],
-		},
+			}
+		}
 	],
 	outputDir: './test-results/',
 });
