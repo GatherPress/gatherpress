@@ -41,7 +41,6 @@ const OpenStreetMap = (props) => {
 		latitude,
 		longitude,
 	} = props;
-
 	const [Leaflet, setLeaflet] = useState(null);
 	const mapId = `map-${`dropdown-${uuidv4()}`}`;
 	const mapRef = useRef(null);
