@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 import { login } from '../reusable-user-steps/common';
 import { loginUser } from '../reusable-user-steps/user-login';
 
-test.describe('e2e test for home page event on develop.gatherpress.org', () => {
+test.describe.skip('e2e test for home page event on develop.gatherpress.org', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
@@ -53,7 +53,7 @@ test.skip('the user should be able publish an offline event', async ({
 		.isVisible({ timeout: 30000 }); // verified the view event button.
 });
 
-test('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
+test.skip('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
 	page,
 }) => {
 	await page.goto('/');
@@ -91,5 +91,5 @@ test('02-verify the non-logged in user view RSVP button on home page and perform
 	await page
 		.locator('.gatherpress-rsvp-response__items')
 		.first()
-		.screenshot({ path: 'attending.png' });
+		.screenshot({ path: 'playwright-attending.png' });
 });

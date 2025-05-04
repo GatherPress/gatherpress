@@ -20,7 +20,7 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.getByLabel('Add title').fill(postName);
 
 		// Take a screenshot to see the page state
-		await page.screenshot({ path: 'before-publish.png' });
+		await page.screenshot({ path: 'playwright-before-publish.png' });
 
 		const publishButton = page.getByRole('button', {
 			name: 'Publish',

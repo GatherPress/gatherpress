@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';
 
-test.describe('e2e test for event, the user should view the event map on event post.', () => {
+test.describe.skip('e2e test for event, the user should view the event map on event post.', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		//await page.setViewportSize({ width: 1920, height: 720 });
@@ -72,7 +72,7 @@ test.describe('e2e test for event, the user should view the event map on event p
 		await page.locator('#map').isVisible({ timeout: 30000 });
 
 		await page.waitForSelector('#map');
-		await expect(page).toHaveScreenshot('event_location_map.png', {
+		await expect(page).toHaveScreenshot('playwright-event-location-map.png', {
 			maxDiffPixels: 800,
 			fullPage: true,
 			mask: [

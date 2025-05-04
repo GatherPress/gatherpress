@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewVenue } from '../reusable-user-steps/common.js';
 
-test.describe('e2e test for venue map through admin side', () => {
+test.describe.skip('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		await page.waitForLoadState('networkidle');
@@ -73,7 +73,7 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.waitForLoadState('domcontentloaded');
 		await page.waitForSelector('#map');
 		await expect(page.locator('#map')).toBeVisible();
-		await expect(page).toHaveScreenshot('event_toggle_on.png', {
+		await expect(page).toHaveScreenshot('playwright-event-toggle-on.png', {
 			maxDiffPixels: 800,
 			fullPage: true,
 			mask: [

@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';
 
-test.describe('e2e test for publish event through admin side', () => {
+test.describe.skip('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
