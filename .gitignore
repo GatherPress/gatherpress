@@ -52,6 +52,12 @@ add-new-event.png
 event-page.png
 new-venue.png
 vanue-page.png
+before-publish.png
+debug-confirm-publish-error.png
+debug-first-publish-error.png
+debug-login.png
+debug-post-login.png
+debug-venue-page.png
 storageState.json
 
 # Jest / SonarCloud #

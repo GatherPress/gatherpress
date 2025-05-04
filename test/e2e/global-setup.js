@@ -17,7 +17,6 @@ async function globalSetup() {
 		await page.click('#wp-submit');
 		await page.waitForSelector('#wpadminbar');
 
-		// Create storageState.json file
 		const storageStatePath = path.join(__dirname, 'storageState.json');
 		await page.context().storageState({ path: storageStatePath });
 		// eslint-disable-next-line no-console

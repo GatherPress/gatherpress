@@ -24,8 +24,8 @@ module.exports = defineConfig({
 			use: {
 				...devices['Desktop Chrome'],
 				storageState: './test/e2e/storageState.json',
-			}
-		}
+			},
+		},
 	],
 	outputDir: './test-results/',
 });

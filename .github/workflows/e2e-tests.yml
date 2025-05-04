@@ -31,6 +31,7 @@ jobs:
         run: npx playwright install --with-deps
       - name: Start WordPress
         run: |
+          # Start test environment
           wp-env start
           npx wait-on http://localhost:8889 -t 60000
       - name: Run Playwright Tests

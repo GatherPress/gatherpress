@@ -7,7 +7,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
-		await login({ page, username: 'prashantbellad' });
+		await login({ page, username: 'admin', password: 'password' });
 	});
 
 	test('The user should be able add featured image in post and verify the added featured image post', async ({
