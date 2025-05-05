@@ -17,7 +17,7 @@ function createBlueprintUrl(context, number) {
 	const artifact = 'gatherpress-pr'; // GitHub Actions artifact name
 	const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
 
-	return `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
+	return `${proxy}?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
 }
 
 /**
