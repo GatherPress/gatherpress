@@ -10,7 +10,7 @@ test.describe.skip(
 			await page.waitForLoadState('networkidle');
 		});
 
-		test('Verify the event post; event details and timezone should be visible on the front end', async ({
+		test.skip('Verify the event post; event details and timezone should be visible on the front end', async ({
 			page,
 		}) => {
 			await login({ page, username: 'prashantbellad' });

@@ -8,7 +8,7 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Verify the offline venue location map should be visible on the venue post when the display map toggled button is enabled.', async ({
+	test.skip('Verify the offline venue location map should be visible on the venue post when the display map toggled button is enabled.', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });

@@ -9,7 +9,7 @@ test.describe.skip('e2e test for publish event through admin side', () => {
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('the user should be able to publish an online event', async ({
+	test.skip('the user should be able to publish an online event', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
@@ -77,7 +77,7 @@ test.describe.skip('e2e test for publish event through admin side', () => {
 		).toBeVisible();
 	});
 
-	test('the user should be able publish an offline event', async ({
+	test.skip('the user should be able publish an offline event', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });

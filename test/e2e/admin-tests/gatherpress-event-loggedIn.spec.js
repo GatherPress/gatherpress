@@ -63,7 +63,7 @@ test.describe.skip('e2e test for publish event through admin side', () => {
 			.isVisible({ timeout: 30000 }); // verified the view event button.
 	});
 
-	test('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
+	test.skip('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
 		page,
 	}) => {
 		await page.getByRole('menuitem', { name: 'GatherPress' }).click();

@@ -10,7 +10,7 @@ test.describe.skip('e2e test for publish event through admin side', () => {
 		await login({ page, username: 'prashantbellad' });
 	});
 
-	test('The user should be able add featured image in post and verify the added featured image post', async ({
+	test.skip('The user should be able add featured image in post and verify the added featured image post', async ({
 		page,
 	}) => {
 		const postName = 'featured image test';
