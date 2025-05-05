@@ -42,7 +42,3 @@ GatherPress\Core\Autoloader::register();
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
-
-
-
-
