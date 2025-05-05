@@ -4,7 +4,7 @@ on:
     branches:
       - main
       - develop
-      - e2e-playground-setup
+  pull_request:
 jobs:
   playwright:
     name: Playwright Tests
