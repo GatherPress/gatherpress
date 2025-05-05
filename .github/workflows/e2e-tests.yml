@@ -5,6 +5,15 @@ on:
       - main
       - develop
   pull_request:
+    paths:
+    - '.github/workflows/e2e-tests.yml'
+    - 'package.*'
+    - 'composer.*'
+    - 'includes/**'
+    - 'src/**'
+    - 'test/e2e/**'
+    - '*.php'
+    - '*.js'
 jobs:
   playwright:
     name: Playwright Tests
