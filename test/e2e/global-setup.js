@@ -1,10 +1,16 @@
 // test/e2e/global-setup.js
 const { chromium } = require('@playwright/test');
 const path = require('path');
+const fs = require('fs');
 
 async function globalSetup() {
 	// eslint-disable-next-line no-console
 	console.log('Running global setup...');
+
+	// Create artifacts directory.
+	if (!fs.existsSync('artifacts')) {
+		fs.mkdirSync('artifacts');
+	}
 
 	// Create WordPress auth state
 	const browser = await chromium.launch();
