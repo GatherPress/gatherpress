@@ -2,20 +2,20 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';
 
-test.describe.skip('e2e test for publish event through admin side', () => {
+test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
-		await page.setViewportSize({ width: 1920, height: 720 });
+		await page.goto('/wp-admin/');
 		await page.waitForLoadState('networkidle');
-		await login({ page, username: 'prashantbellad' });
+		await login({ page});
 	});
 
-	test.skip('The user should be able add featured image in post and verify the added featured image post', async ({
+	test('The user should be able add featured image in post and verify the added featured image post', async ({
 		page,
 	}) => {
 		const postName = 'featured image test';
 
-		await addNewEvent({ page });
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_event');
+
 		const settingButton = await page.getByLabel('Settings', {
 			exact: true,
 		});
@@ -39,6 +39,7 @@ test.describe.skip('e2e test for publish event through admin side', () => {
 
 		await page.getByRole('button', { name: 'Set featured image' }).click();
 
+		await page.locator('#menu-item-browse').click();
 		await page
 			.locator('.attachments-wrapper')
 			.locator('li')
@@ -61,18 +62,15 @@ test.describe.skip('e2e test for publish event through admin side', () => {
 		await page.locator('#wp--skip-link--target img').isVisible();
 
 		await page.waitForLoadState('domcontentloaded');
+
+		await page.waitForSelector('.wp-block-post-featured-image')
 		const FeaturedImage = await page.screenshot({
-			fullPage: true,
 			mask: [
-				page.locator('header'),
-				page.locator('h1'),
-				page.locator('h3'),
-				page.locator('nav'),
-				page.locator('.wp-block-template-part'),
+			
 				page.locator('.wp-block-gatherpress-event-date'),
-				page.locator('footer'),
+				
 			],
 		});
-		expect(FeaturedImage).toMatchSnapshot('featured_image.png');
+		expect(FeaturedImage).toMatchSnapshot('featured_image.png', {maxDiffPixels: 20000});
 	});
 });

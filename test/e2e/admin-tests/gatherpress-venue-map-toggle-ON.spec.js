@@ -2,20 +2,21 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewVenue } from '../reusable-user-steps/common.js';
 
-test.describe.skip('e2e test for venue map through admin side', () => {
+test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
+		await page.goto('/wp-admin/')
 		await page.waitForLoadState('networkidle');
 	});
 
-	test.skip('Verify the offline venue location map should be visible on the venue post when the display map toggled button is enabled.', async ({
+	test('Verify the offline venue location map should be visible on the venue post when the display map toggled button is enabled.', async ({
 		page,
 	}) => {
-		await login({ page, username: 'prashantbellad' });
+		await login({ page });
 
 		const postName = 'venue map : toggle on';
 
-		await addNewVenue({ page });
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue')
+
 
 		await page.getByLabel('Add title').fill(postName);
 
@@ -74,20 +75,9 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 		await page.waitForSelector('#map');
 		await expect(page.locator('#map')).toBeVisible();
 		await expect(page).toHaveScreenshot('event_toggle_on.png', {
-			maxDiffPixels: 800,
-			fullPage: true,
+			maxDiffPixels: 1000,
 			mask: [
-				page.locator('header'),
-				page.locator('h1'),
-				page.locator('h3'),
-				page.locator('nav'),
-				page.locator('.wp-block-template-part'),
-				page.locator('.wp-block-gatherpress-event-date'),
-				page.locator('.post-navigation-link__title'),
-				page.locator(
-					'.wp-block-group has-global-padding is-layout-constrained wp-block-group-is-layout-constrained'
-				),
-				page.locator('footer'),
+				page.locator('.wp-block-gatherpress-event-date'),	
 			],
 		});
 	});

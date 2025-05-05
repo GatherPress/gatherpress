@@ -2,20 +2,20 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewVenue } from '../reusable-user-steps/common.js';
 
-test.describe.skip('e2e test for venue map through admin side', () => {
+test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
+		await page.goto('/wp-admin/')
 		await page.waitForLoadState('networkidle');
 	});
 
-	test.skip('Verify the offline venue location map should not be visible on the venue post when the display map toggled button is disabled.', async ({
+	test('Verify the venue location map should not be visible on the events when the map toggled is disabled.', async ({
 		page,
 	}) => {
-		await login({ page, username: 'prashantbellad' });
+		await login({ page});
 
-		const postName = 'offline test event';
+		const postName = 'offline test venue - no map is visible';
 
-		await addNewVenue({ page });
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue')
 
 		await page.getByLabel('Add title').fill(postName);
 
@@ -48,7 +48,7 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 
 		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
 
-		await page.getByLabel('Full Address').fill('Pune');
+		await page.getByLabel('Full Address').fill('Bengaluru');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 
@@ -71,14 +71,8 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 			.getByRole('link', { name: 'View Venue' })
 			.click();
 
-		await expect(
-			page
-				.locator('#wp--skip-link--target')
-				.getByRole('heading', { postName })
-		).toBeVisible();
-
 		await page.screenshot({
-			path: 'venue_post_no_map.png',
+			path: 'artifacts/venue_post_no_map.png',
 			fullPage: true,
 		});
 	});

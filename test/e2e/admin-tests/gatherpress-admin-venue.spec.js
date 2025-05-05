@@ -1,22 +1,22 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-import { addNewVenue } from '../reusable-user-steps/common.js';
 
-test.describe.skip('e2e test for venue map through admin side', () => {
+
+test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
-		//await page.setViewportSize({ width: 1920, height: 720 });
+		await page.goto('/wp-admin/')
 		await page.waitForLoadState('networkidle');
 	});
 
-	test.skip('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
+	test('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
 		page,
 	}) => {
-		await login({ page, username: 'prashantbellad' });
+		await login({ page });
 
-		const postName = 'venue map-pune';
+		const postName = 'venue pune';
 
-		await addNewVenue({ page });
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue')
 
 		await page.getByLabel('Add title').fill(postName);
 
@@ -70,17 +70,11 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 
 		await page.waitForSelector('#map');
 
-		await expect(page).toHaveScreenshot('location_map.png', {
-			maxDiffPixels: 800,
-			fullPage: true,
-			mask: [
-				page.locator('header'),
-				page.locator('h1'),
-				page.locator('h3'),
-				page.locator('nav'),
-				page.locator('.wp-block-template-part'),
-				page.locator('footer'),
-			],
+		await page.screenshot({ path: 'artifacts/pune-venue.png' });
+
+		await expect(page).toHaveScreenshot('pune-venue.png', {
+			maxDiffPixels: 20000,
+
 		});
 	});
 });

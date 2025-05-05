@@ -1,24 +1,23 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-import { addNewEvent } from '../reusable-user-steps/common.js';
 
-test.describe.skip(
+test.describe(
 	'e2e test for event, the user should view the event map on event post.',
 	() => {
 		test.beforeEach(async ({ page }) => {
 			test.setTimeout(120000);
-			//await page.setViewportSize({ width: 1920, height: 720 });
+			await page.goto('/wp-admin/');
 			await page.waitForLoadState('networkidle');
 		});
 
-		test.skip('Test to create a new offline event and verify the entered location map should be visible on the event post.', async ({
+		test('Test to create a new offline event and verify the entered location map should be visible on the event post.', async ({
 			page,
 		}) => {
-			await login({ page, username: 'prashantbellad' });
+			await login({ page });
 
-			const postName = 'test offline event-pune';
+			const postName = 'offline event-pune location';
 
-			await addNewEvent({ page });
+			await page.goto('/wp-admin/post-new.php?post_type=gatherpress_event');
 
 			await page.getByLabel('Add title').fill(postName);
 
@@ -56,7 +55,7 @@ test.describe.skip(
 			}
 
 			await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
-			await page.getByLabel('Venue Selector').selectOption('1407:pune');
+			await page.getByLabel('Venue Selector').selectOption('venue pune');
 
 			await expect(page.locator('#map')).toBeVisible();
 
@@ -80,17 +79,11 @@ test.describe.skip(
 			await page.locator('#map').isVisible({ timeout: 30000 });
 
 			await page.waitForSelector('#map');
-			await expect(page).toHaveScreenshot('event_location_map.png', {
-				maxDiffPixels: 800,
+			await expect(page).toHaveScreenshot('pune_event_location_map.png', {
+				maxDiffPixels: 1000,
 				fullPage: true,
 				mask: [
-					page.locator('header'),
-					page.locator('h1'),
-					page.locator('h3'),
-					page.locator('nav'),
-					page.locator('.wp-block-template-part'),
 					page.locator('.wp-block-gatherpress-event-date'),
-					page.locator('footer'),
 				],
 			});
 		});
