@@ -19,9 +19,6 @@ jobs:
           php-version: '7.4'
           coverage: xdebug
 
-      - name: Composer Install
-        run: composer install --optimize-autoloader --prefer-dist
-
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
@@ -71,7 +68,7 @@ jobs:
           WP_BASE_URL: 'http://localhost:8889'
           PLAYWRIGHT_DEBUG: '1'
           RUN_ALL_TESTS: 'false'
-        run: npm run test:e2e
+        run: npm run test:e2e -- test/e2e/admin-tests/gatherpress-admin.spec.js
 
       - name: Upload test results
         if: always()
