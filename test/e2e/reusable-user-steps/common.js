@@ -9,11 +9,7 @@
  * @param {*} root0.username
  * @param {*} root0.password
  */
-const login = async ({
-	page,
-	username,
-	password = process.env.WP_ADMIN_PASSWORD,
-}) => {
+const login = async ({ page, username = 'admin', password = 'password' }) => {
 	page.goto('/wp-login.php', {
 		timeout: 40000,
 	});

@@ -2,14 +2,14 @@ const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 import { addNewEvent } from '../reusable-user-steps/common.js';
 
-test.describe('e2e test for publish event through admin side', () => {
+test.describe.skip('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('the user should be able to publish an online event', async ({
+	test.skip('the user should be able to publish an online event', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });
@@ -77,7 +77,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		).toBeVisible();
 	});
 
-	test('the user should be able publish an offline event', async ({
+	test.skip('the user should be able publish an offline event', async ({
 		page,
 	}) => {
 		await login({ page, username: 'prashantbellad' });

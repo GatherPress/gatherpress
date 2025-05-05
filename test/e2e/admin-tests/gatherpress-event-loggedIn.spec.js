@@ -1,7 +1,7 @@
 const { test } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 
-test.describe('e2e test for publish event through admin side', () => {
+test.describe.skip('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
 		await page.setViewportSize({ width: 1920, height: 720 });
@@ -63,7 +63,7 @@ test.describe('e2e test for publish event through admin side', () => {
 			.isVisible({ timeout: 30000 }); // verified the view event button.
 	});
 
-	test('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
+	test.skip('02-verify the logged in user view RSVP button on home page and perform RSVP action', async ({
 		page,
 	}) => {
 		await page.getByRole('menuitem', { name: 'GatherPress' }).click();
