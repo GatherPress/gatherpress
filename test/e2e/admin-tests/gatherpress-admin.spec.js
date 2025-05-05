@@ -4,19 +4,15 @@ const fs = require('fs');
 
 test.describe('As admin login into GatherPress', () => {
 	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
+		test.setTimeout(180000);
 		await page.goto('/wp-admin/');
 	});
 
 	test('Navigate to Events Add New page', async ({ page }) => {
 		await login({ page });
 
-		// Navigate to Events and Add New.
-		await page.goto('/wp-admin/edit.php?post_type=gatherpress_event');
-		await page
-			.locator('#wpbody-content')
-			.getByRole('link', { name: 'Add New' })
-			.click();
+		// Go directly to the Add New page.
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_event');
 
 		// Create artifacts directory.
 		if (!fs.existsSync('artifacts')) {

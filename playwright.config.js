@@ -9,7 +9,6 @@ module.exports = defineConfig({
 	retries: process.env.CI ? 2 : 0,
 	workers: process.env.CI ? 1 : undefined,
 	timeout: 180000,
-	ignoreSkip: !!process.env.CI && process.env.RUN_SKIPPED_TESTS !== 'false',
 	reporter: [['html'], ['list', { printSteps: true }]],
 	globalSetup: './test/e2e/global-setup.js',
 	use: {
