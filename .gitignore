@@ -49,8 +49,6 @@ artifacts/
 playwright-report/
 test-results/
 storageState.json
-debug-*.png
-playwright-*.png
 
 # Jest / SonarCloud #
 ##########

@@ -94,5 +94,5 @@ test.skip('02-verify the non-logged in user view RSVP button on home page and pe
 	await page
 		.locator('.gatherpress-rsvp-response__items')
 		.first()
-		.screenshot({ path: 'playwright-attending.png' });
+		.screenshot({ path: 'attending.png' });
 });

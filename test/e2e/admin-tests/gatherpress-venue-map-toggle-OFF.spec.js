@@ -78,7 +78,7 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 		).toBeVisible();
 
 		await page.screenshot({
-			path: 'playwright-venue-post-no-map.png',
+			path: 'venue_post_no_map.png',
 			fullPage: true,
 		});
 	});

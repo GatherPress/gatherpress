@@ -11,7 +11,7 @@ test.describe.skip(
 			await page.waitForLoadState('networkidle');
 		});
 
-		test('Test to create a new offline event and verify the entered location map should be visible on the event post.', async ({
+		test.skip('Test to create a new offline event and verify the entered location map should be visible on the event post.', async ({
 			page,
 		}) => {
 			await login({ page, username: 'prashantbellad' });
@@ -80,22 +80,19 @@ test.describe.skip(
 			await page.locator('#map').isVisible({ timeout: 30000 });
 
 			await page.waitForSelector('#map');
-			await expect(page).toHaveScreenshot(
-				'playwright-event-location-map.png',
-				{
-					maxDiffPixels: 800,
-					fullPage: true,
-					mask: [
-						page.locator('header'),
-						page.locator('h1'),
-						page.locator('h3'),
-						page.locator('nav'),
-						page.locator('.wp-block-template-part'),
-						page.locator('.wp-block-gatherpress-event-date'),
-						page.locator('footer'),
-					],
-				}
-			);
+			await expect(page).toHaveScreenshot('event_location_map.png', {
+				maxDiffPixels: 800,
+				fullPage: true,
+				mask: [
+					page.locator('header'),
+					page.locator('h1'),
+					page.locator('h3'),
+					page.locator('nav'),
+					page.locator('.wp-block-template-part'),
+					page.locator('.wp-block-gatherpress-event-date'),
+					page.locator('footer'),
+				],
+			});
 		});
 	}
 );
