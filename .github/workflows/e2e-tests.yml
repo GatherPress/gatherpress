@@ -56,6 +56,9 @@ jobs:
       - name: Playwright install
         run: npx playwright install --with-deps
 
+      - name: Install @wordpress/env
+        run: npm install -g @wordpress/env
+
       - name: Start WordPress
         run: |
           # Start test environment
