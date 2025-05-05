@@ -2,13 +2,16 @@ const { test, expect } = require('@playwright/test');
 import { login } from '../reusable-user-steps/common';
 import { loginUser } from '../reusable-user-steps/user-login';
 
-test.describe.skip('e2e test for home page event on develop.gatherpress.org', () => {
-	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
-		await page.setViewportSize({ width: 1920, height: 720 });
-		await page.waitForLoadState('networkidle');
-	});
-});
+test.describe.skip(
+	'e2e test for home page event on develop.gatherpress.org',
+	() => {
+		test.beforeEach(async ({ page }) => {
+			test.setTimeout(120000);
+			await page.setViewportSize({ width: 1920, height: 720 });
+			await page.waitForLoadState('networkidle');
+		});
+	}
+);
 
 test.skip('the user should be able publish an offline event', async ({
 	page,

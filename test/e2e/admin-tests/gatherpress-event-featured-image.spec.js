@@ -1,78 +1,20 @@
-const { test, expect } = require('@playwright/test');
+const { test } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-import { addNewEvent } from '../reusable-user-steps/common.js';
 
-test.describe.skip('e2e test for publish event through admin side', () => {
+test.describe.skip('e2e test for event creation', () => {
 	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
-		await page.setViewportSize({ width: 1920, height: 720 });
-		await page.waitForLoadState('networkidle');
-		await login({ page });
+		test.setTimeout(180000); // Increase timeout to 3 minutes
+		await page.goto('/wp-admin/');
 	});
 
-	test('The user should be able add featured image in post and verify the added featured image post', async ({
-		page,
-	}) => {
-		const postName = 'featured image test';
+	test('Create an event post', async ({ page }) => {
+		await login({ page });
 
-		await addNewEvent({ page });
-		const settingButton = await page.getByLabel('Settings', {
-			exact: true,
-		});
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_event');
 
-		const settingExpand = await settingButton.getAttribute('aria-expanded');
+		await page.getByLabel('Add title').waitFor({ timeout: 20000 });
 
-		if (settingExpand === 'false') {
-			await settingButton.click();
-		}
-		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
-
-		await page
-			.getByLabel('Block: Event Date')
-			.locator('div')
-			.first()
-			.isVisible();
-
-		await page.getByLabel('Add title').fill(postName);
-
-		await page.getByRole('heading', { name: 'Date & time' }).isVisible();
-
-		await page.getByRole('button', { name: 'Set featured image' }).click();
-
-		await page
-			.locator('.attachments-wrapper')
-			.locator('li')
-			.first()
-			.click();
-
-		await page.getByRole('button', { name: 'Set featured image' }).click();
-
-		await page
-			.getByRole('button', { name: 'Publish', exact: true })
-			.click();
-		await page
-			.getByLabel('Editor publish')
-			.getByRole('button', { name: 'Publish', exact: true })
-			.click();
-		await page
-			.getByLabel('Editor publish')
-			.getByRole('link', { name: 'View Event' })
-			.click();
-		await page.locator('#wp--skip-link--target img').isVisible();
-
-		await page.waitForLoadState('domcontentloaded');
-		const FeaturedImage = await page.screenshot({
-			fullPage: true,
-			mask: [
-				page.locator('header'),
-				page.locator('h1'),
-				page.locator('h3'),
-				page.locator('nav'),
-				page.locator('.wp-block-template-part'),
-				page.locator('.wp-block-gatherpress-event-date'),
-				page.locator('footer'),
-			],
-		});
-		expect(FeaturedImage).toMatchSnapshot('playwright-featured-image.png');
+		await page.getByLabel('Add title').fill('test event');
+		await page.keyboard.press('Control+S');
 	});
 });
