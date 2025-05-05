@@ -42,7 +42,7 @@ const OpenStreetMap = (props) => {
 		longitude,
 	} = props;
 	const [Leaflet, setLeaflet] = useState(null);
-	const mapId = `map-${`dropdown-${uuidv4()}`}`;
+	const mapId = `map-${uuidv4()}`;
 	const mapRef = useRef(null);
 	const mapInstanceRef = useRef(null);
 	const style = { height };
