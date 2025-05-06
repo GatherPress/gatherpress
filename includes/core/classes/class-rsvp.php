@@ -462,12 +462,12 @@ class Rsvp {
 			// eg for BuddyPress bp_core_get_user_domain( $user_id )
 			$profile = get_author_posts_url( $user_id );
 
-			if (
-				empty( $user_info ) ||
-				! in_array( $user_status, $statuses, true )
-			) {
-				continue;
-			}
+			// if (
+			// 	empty( $user_info ) ||
+			// 	! in_array( $user_status, $statuses, true )
+			// ) {
+			// 	continue;
+			// }
 
 			if (
 				! current_user_can( 'edit_posts' ) && ! empty( $anonymous )
@@ -482,7 +482,7 @@ class Rsvp {
 				'id'        => $user_id,
 				'commentId' => $comment_id,
 				'name'      => $user_info->display_name ?? __( 'Anonymous', 'gatherpress' ),
-				'photo'     => get_avatar_url( $user_id ),
+				'photo'     => get_avatar_url( $record ),
 				'profile'   => $profile,
 				'role'      => Leadership::get_instance()->get_user_role( $user_id ),
 				'timestamp' => sanitize_text_field( $record->comment_date ),
