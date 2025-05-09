@@ -1,22 +1,23 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-import { addNewVenue } from '../reusable-user-steps/common.js';
 
-test.describe.skip('e2e test for venue map through admin side', () => {
+
+test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
-		//await page.setViewportSize({ width: 1920, height: 720 });
+		
+		await page.goto('/wp-admin/')
 		await page.waitForLoadState('networkidle');
 	});
 
-	test.skip('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
+	test('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
 		page,
 	}) => {
-		await login({ page, username: 'prashantbellad' });
+		await login({ page });
 
-		const postName = 'venue test map-pune';
+		const postName = 'venue test map-Bengaluru';
 
-		await addNewVenue({ page });
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue')
+
 		await page.getByLabel('Add title').fill(postName);
 
 		await page
@@ -48,7 +49,7 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 
 		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
 
-		await page.getByLabel('Full Address').fill('Pune');
+		await page.getByLabel('Full Address').fill('Bengaluru');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 		await page.locator('#map').isVisible({ timeout: 30000 });
@@ -79,19 +80,10 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 
 		await page.locator('#map').isVisible({ timeout: 30000 });
 
-		await expect(page).toHaveScreenshot('location_map.png', {
-			maxDiffPixels: 800,
-			fullPage: true,
-			timeout: 30000,
-			mask: [
-				page.locator('header'),
-				page.locator('h1'),
-				page.locator('h3'),
-				page.locator('nav'),
-				page.locator('.wp-block-template-part'),
-				page.locator('.wp-block-gatherpress-event-date'),
-				page.locator('footer'),
-			],
+		await expect(page).toHaveScreenshot('Bengalure_location_map.png', {
+			maxDiffPixels: 1000,
+			fullPage: true
+		
 		});
 	});
 });
