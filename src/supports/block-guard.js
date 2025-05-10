@@ -216,15 +216,6 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 				}
 
 				if (isBlockGuardEnabled) {
-					// Store expanded state.
-					const isExpanded =
-						'true' === listViewItem.getAttribute('data-expanded');
-
-					// If expanded, collapse it.
-					if (isExpanded) {
-						expander.click();
-					}
-
 					// Make expander non-interactive but preserve layout.
 					expander.style.pointerEvents = 'none';
 					expander.style.opacity = '0.3';
@@ -244,8 +235,6 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 							parentLink.classList.add(
 								'gatherpress-block-guard-enabled'
 							);
-
-							expander.style.pointerEvents = 'none';
 						}, 0);
 					}
 
@@ -348,7 +337,18 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 						<ToggleControl
 							label={__('Block Guard', 'gatherpress')}
 							checked={isBlockGuardEnabled}
-							onChange={setIsBlockGuardEnabled}
+							onChange={(value) => {
+								setIsBlockGuardEnabled(value);
+
+								const expander = global.document.querySelector(
+									`.block-editor-list-view-leaf[data-block="${clientId}"] .block-editor-list-view__expander`
+								);
+
+								if (value && expander) {
+									expander.click();
+									expander.style.pointerEvents = 'none';
+								}
+							}}
 							help={
 								isBlockGuardEnabled
 									? __(

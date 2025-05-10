@@ -26,6 +26,14 @@ use WP_Post;
  */
 class Rsvp {
 	/**
+	 * Capability required to manage RSVPs.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const CAPABILITY = 'moderate_comments';
+
+	/**
 	 * Constant representing the RSVP Taxonomy.
 	 *
 	 * This constant defines the status taxonomy for RSVP comment type.
@@ -463,10 +471,10 @@ class Rsvp {
 			$profile = get_author_posts_url( $user_id );
 
 			// if (
-			// 	empty( $user_info ) ||
-			// 	! in_array( $user_status, $statuses, true )
+			// empty( $user_info ) ||
+			// ! in_array( $user_status, $statuses, true )
 			// ) {
-			// 	continue;
+			// continue;
 			// }
 
 			if (

@@ -239,7 +239,7 @@ class Rsvp_Response {
 			is_a( $comment, 'WP_Comment' ) &&
 			'gatherpress_rsvp' === $comment->comment_type
 		) {
-			$email   = $comment->comment_author_email;
+			$email = $comment->comment_author_email;
 
 			if ( empty( $email ) ) {
 				$user_id = $comment->user_id;

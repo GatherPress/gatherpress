@@ -42,25 +42,3 @@ GatherPress\Core\Autoloader::register();
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
-
-
-add_filter( 'allow_empty_comment', '__return_true' );
-add_filter( 'comment_form_fields', function( $comment_fields ) {
-	unset($comment_fields['comment']);
-	unset($comment_fields['url']);
-	unset($comment_fields['cookies']);
-	return $comment_fields;
-});
-
-add_filter('preprocess_comment', function($data) {
-	$data['comment_type'] = 'gatherpress_rsvp';
-	return $data;
-});
-
-add_action('comment_post', function($comment_id) {
-	wp_set_object_terms( $comment_id, 'attending', GatherPress\Core\Rsvp::TAXONOMY );
-});
-
-add_filter('comment_duplicate_message', function() {
-	return __( "You've already RSVP’d to this event.", 'gatherpress' );
-});
