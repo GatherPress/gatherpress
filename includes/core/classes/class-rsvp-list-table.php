@@ -22,7 +22,6 @@ use WP_List_Table;
  * @since 1.0.0
  */
 class RSVP_List_Table extends WP_List_Table {
-
     /**
      * Constructor.
      */
@@ -44,7 +43,6 @@ class RSVP_List_Table extends WP_List_Table {
         return [
             'cb'       => '<input type="checkbox" />',
             'attendee'   => __('Attendee', 'gatherpress'),
-            // 'email'   => __('Email', 'gatherpress'),
             'response' => __('Response', 'gatherpress'),
             'event'    => __('Event', 'gatherpress'),
             'date'     => __('Date', 'gatherpress'),
@@ -92,7 +90,7 @@ public function prepare_items() {
 
     // Pagination setup
     $user = get_current_user_id();
-    $option = 'gatherpress_rsvps_per_page'; // Match the option name in add_screen_option
+    $option = sprintf( '%s_per_page', Rsvp::COMMENT_TYPE );
     $per_page = get_user_meta($user, $option, true);
 
     if (empty($per_page) || !is_numeric($per_page)) {
@@ -133,6 +131,18 @@ private function get_rsvps($per_page = 20, $page_number = 1) {
         WHERE c.comment_type = 'gatherpress_rsvp'
     ";
 
+    // Add search condition if search term is provided
+    if (isset($_REQUEST['s']) && !empty($_REQUEST['s'])) {
+        $search_term = '%' . $wpdb->esc_like($_REQUEST['s']) . '%';
+
+        $query .= $wpdb->prepare(
+            " AND (c.comment_author LIKE %s OR c.comment_author_email OR c.comment_author_IP LIKE %s OR p.post_title LIKE %s)",
+            $search_term,
+            $search_term,
+            $search_term
+        );
+    }
+
     // Check for post_id or event filter in request
     if (isset($_REQUEST['post_id']) && !empty($_REQUEST['post_id'])) {
         $post_id = intval($_REQUEST['post_id']);
@@ -150,6 +160,7 @@ private function get_rsvps($per_page = 20, $page_number = 1) {
 
     $query .= " ORDER BY $orderby $order LIMIT $per_page OFFSET $offset";
     $results = $wpdb->get_results($query, ARRAY_A);
+
     return $results;
 }
 
@@ -161,7 +172,21 @@ private function get_rsvps($per_page = 20, $page_number = 1) {
 private function get_rsvp_count() {
     global $wpdb;
 
-    $query = "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_type = 'gatherpress_rsvp'";
+    $query = "SELECT COUNT(*) FROM {$wpdb->comments} c
+              LEFT JOIN {$wpdb->posts} p ON c.comment_post_ID = p.ID
+              WHERE c.comment_type = 'gatherpress_rsvp'";
+
+    // Add search condition if search term is provided
+    if (isset($_REQUEST['s']) && !empty($_REQUEST['s'])) {
+        $search_term = '%' . $wpdb->esc_like($_REQUEST['s']) . '%';
+
+        $query .= $wpdb->prepare(
+            " AND (c.comment_author LIKE %s OR c.comment_author_email OR c.comment_author_IP LIKE %s OR p.post_title LIKE %s)",
+            $search_term,
+            $search_term,
+            $search_term
+        );
+    }
 
     // Check for post_id or event filter in request
     if (isset($_REQUEST['post_id']) && !empty($_REQUEST['post_id'])) {
@@ -191,9 +216,27 @@ private function get_rsvp_count() {
     public function column_default($item, $column_name) {
         switch ($column_name) {
             case 'response':
-                // Get RSVP response from term
                 $terms = wp_get_object_terms($item['comment_ID'], Rsvp::TAXONOMY);
-                return !empty($terms) ? ucfirst($terms[0]->name) : '-';
+				$name  = '--';
+
+				if ( empty( $terms ) ) {
+					return $name;
+				}
+
+				switch ( $terms[0]->slug ) {
+					case 'attending':
+						$name = __( 'Attending', 'gatherpress' );
+						break;
+					case 'not_attending':
+						$name = __( 'Not Attending', 'gatherpress' );
+						break;
+					case 'waiting_list':
+						$name = __( 'Waiting List', 'gatherpress' );
+						break;
+					default:
+						$name = '--';
+				}
+                return $name;
             case 'event':
                 return '<a href="' . get_permalink($item['comment_post_ID']) . '">' . $item['event_title'] . '</a>';
             case 'date':
@@ -228,7 +271,7 @@ private function get_rsvp_count() {
      * @param array $item Item data.
      * @return string
      */
-    public function column_attendee($item) {
+    public function column_attendee( $comment ) {
 		$base_url = admin_url('edit.php');
 		$current_url = add_query_arg(array(
 			'post_type' => Event::POST_TYPE,
@@ -243,7 +286,7 @@ private function get_rsvp_count() {
 				'<a href="%s">%s</a>',
 				add_query_arg(array(
 					'action' => 'approve',
-					'rsvp_id' => $item['comment_ID'],
+					'rsvp_id' => $comment['comment_ID'],
 					'_wpnonce' => $nonce
 				), $current_url),
 				__('Approve', 'gatherpress')
@@ -252,7 +295,7 @@ private function get_rsvp_count() {
 				'<a href="%s">%s</a>',
 				add_query_arg(array(
 					'action' => 'unapprove',
-					'rsvp_id' => $item['comment_ID'],
+					'rsvp_id' => $comment['comment_ID'],
 					'_wpnonce' => $nonce
 				), $current_url),
 				__('Unapprove', 'gatherpress')
@@ -261,37 +304,39 @@ private function get_rsvp_count() {
 				'<a href="%s">%s</a>',
 				add_query_arg(array(
 					'action' => 'delete',
-					'rsvp_id' => $item['comment_ID'],
+					'rsvp_id' => $comment['comment_ID'],
 					'_wpnonce' => $nonce
 				), $current_url),
 				__('Delete', 'gatherpress')
 			)
 		];
-		$username = $item['comment_author'];
-		$email    = $item['comment_author_email'];
-		echo get_avatar( get_comment( $item['comment_ID'] ), 60, 'mystery' );
-		if ( ! empty( $item['user_id'] ) ) {
-			$user     = get_userdata( $item['user_id'] );
-			$username = $user->display_name;
-			$email    = $user->user_email;
+		$username = $comment['comment_author'];
+		$email    = $comment['comment_author_email'];
+
+		if ( ! empty( $comment['user_id'] ) ) {
+			$user     = get_userdata( $comment['user_id'] );
+			$username = $user->display_name ?? __( 'Unknown', 'gatherpress' );
+			$email    = $user->user_email ?? '';
 		}
 
-        return sprintf(
-            '<strong>%s</strong>%s',
-            $username,
-            $this->row_actions( $actions )
-        );
-    }
+		$ip_search_url = add_query_arg([
+			'post_type' => Event::POST_TYPE,
+			'page' => Rsvp::COMMENT_TYPE,
+			's' => $comment['comment_author_IP'],
+		], admin_url( 'edit.php' ));
 
-	public function column_email($item) {
-		$email = $item['comment_author_email'];
+		$template = Utility::render_template(
+			sprintf( '%s/includes/templates/admin/rsvp/attendee.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'comment'       => $comment,
+				'username'      => $username,
+				'email'         => $email,
+				'ip_search_url' => $ip_search_url,
+			),
+			false
+		);
 
-		if ( ! empty( $item['user_id'] ) ) {
-			$user     = get_userdata( $item['user_id'] );
-			$email = $user->user_email;
-		}
-
-		return $email;
+		return $template . $this->row_actions( $actions );
 	}
 
     /**

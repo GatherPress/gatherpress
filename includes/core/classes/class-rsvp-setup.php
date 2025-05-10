@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_List_Table;
 
 require_once(ABSPATH . 'wp-admin/includes/class-wp-list-table.php');
@@ -200,6 +201,25 @@ class Rsvp_Setup {
 		echo '<div class="wrap">';
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'RSVPs', 'gatherpress' ) . '</h1>';
 		echo '<hr class="wp-header-end">';
+
+		// Add search form
+		echo '<form method="get">';
+		echo '<input type="hidden" name="post_type" value="' . esc_attr(Event::POST_TYPE) . '" />';
+		echo '<input type="hidden" name="page" value="' . esc_attr(Rsvp::COMMENT_TYPE) . '" />';
+		echo '<p class="search-box">';
+		echo '<label class="screen-reader-text" for="rsvp-search-input">' . esc_html__('Search RSVPs', 'gatherpress') . '</label>';
+		echo '<input type="search" id="rsvp-search-input" name="s" value="' . esc_attr(isset($_REQUEST['s']) ? $_REQUEST['s'] : '') . '" />';
+		echo '<input type="submit" id="search-submit" class="button" value="' . esc_attr__('Search RSVPs', 'gatherpress') . '" />';
+		echo '</p>';
+
+		// If we have status or event filters, preserve them in hidden fields
+		if (isset($_REQUEST['status']) && !empty($_REQUEST['status'])) {
+			echo '<input type="hidden" name="status" value="' . esc_attr($_REQUEST['status']) . '" />';
+		}
+
+		if (isset($_REQUEST['event']) && !empty($_REQUEST['event'])) {
+			echo '<input type="hidden" name="event" value="' . esc_attr($_REQUEST['event']) . '" />';
+		}
 
 		$rsvp_table->process_bulk_action();
 
