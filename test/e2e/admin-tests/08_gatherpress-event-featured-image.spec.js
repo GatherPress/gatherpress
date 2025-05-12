@@ -8,9 +8,7 @@ test.describe('e2e test for publish event through admin side', () => {
 		await login({ page });
 	});
 
-	test('The user should be able add featured image in post and verify the added featured image post', async ({
-		page,
-	}) => {
+	test('The user should be able add featured image in post and verify the added featured image post', async ({page}) => {
 		const postName = 'featured image test';
 
 		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_event');

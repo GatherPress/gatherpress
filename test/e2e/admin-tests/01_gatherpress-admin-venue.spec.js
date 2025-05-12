@@ -8,9 +8,7 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
-		page,
-	}) => {
+	test('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({page}) => {
 		await login({ page });
 
 		const postName = 'venue pune';

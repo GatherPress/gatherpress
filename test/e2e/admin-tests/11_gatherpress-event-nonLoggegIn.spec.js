@@ -13,9 +13,7 @@ test.describe.skip(
 	}
 );
 
-test.skip('the user should be able publish an offline event', async ({
-	page,
-}) => {
+test.skip('the user should be able publish an offline event', async ({page}) => {
 	await login({ page, username: 'prashantbellad' });
 	await page.getByRole('link', { name: 'Events', exact: true }).click();
 	await page
@@ -56,9 +54,7 @@ test.skip('the user should be able publish an offline event', async ({
 		.isVisible({ timeout: 30000 }); // verified the view event button.
 });
 
-test.skip('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({
-	page,
-}) => {
+test.skip('02-verify the non-logged in user view RSVP button on home page and perform RSVP action', async ({page}) => {
 	await page.goto('/');
 	await page.getByRole('heading', { name: 'Upcoming Events' }).isVisible();
 	await page

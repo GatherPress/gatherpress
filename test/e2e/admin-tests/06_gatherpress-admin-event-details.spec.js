@@ -7,9 +7,7 @@ test.describe('e2e test for event post, verify the event time is visible on fron
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Verify the event post; event details and timezone should be visible on the front end', async ({
-		page,
-	}) => {
+	test('Verify the event post; event details and timezone should be visible on the front end', async ({page}) => {
 		await login({ page });
 
 		const postName = 'event details test';
