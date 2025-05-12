@@ -27,5 +27,4 @@ const login = async ({ page, username = 'admin', password = 'password' }) => {
 		.isVisible();
 };
 
-
 module.exports = { login };
