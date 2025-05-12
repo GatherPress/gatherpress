@@ -67,6 +67,7 @@ class Rsvp_Setup {
 		add_filter( 'parent_file', array( $this, 'highlight_admin_menu' ) );
 		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
 		add_filter( 'admin_comment_types_dropdown', array( $this, 'register_rsvp_comment_type' ) );
+		add_filter( 'comment_text', array( $this, 'maybe_hide_rsvp_comment_content' ), 10, 2 );
 	}
 
 	/**
@@ -229,6 +230,31 @@ class Rsvp_Setup {
 
 		echo '</form>';
 		echo '</div>';
+	}
+
+	/**
+	 * Filters the comment content to hide private notes for non-moderators.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string          $comment_content Text of the comment.
+	 * @param WP_Comment|null $comment        The comment object.
+	 * @param array           $args           Arguments for displaying the comment.
+	 *
+	 * @return string Filtered comment text.
+	 */
+	public function maybe_hide_rsvp_comment_content( $comment_content, $comment ) {
+		// Only filter our RSVP comment type.
+		if ( 'gatherpress_rsvp' !== $comment->comment_type ) {
+			return $comment_content;
+		}
+
+		// If user can't moderate, show nothing.
+		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
+			return '';
+		}
+
+		return $comment_content;
 	}
 
 	/**

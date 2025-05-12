@@ -45,8 +45,8 @@ class RSVP_List_Table extends WP_List_Table {
             'attendee'   => __('Attendee', 'gatherpress'),
             'response' => __('Response', 'gatherpress'),
             'event'    => __('Event', 'gatherpress'),
+            'approved' => __('Status', 'gatherpress'),
             'date'     => __('Date', 'gatherpress'),
-            'approved' => __('Status', 'gatherpress')
         ];
     }
 
@@ -70,8 +70,8 @@ public function get_hidden_columns() {
         return [
             'author'   => ['author', false],
             'event'    => ['event', false],
+            'approved' => ['approved', false],
             'date'     => ['date', true],
-            'approved' => ['approved', false]
         ];
     }
 
@@ -239,8 +239,6 @@ private function get_rsvp_count() {
                 return $name;
             case 'event':
                 return '<a href="' . get_permalink($item['comment_post_ID']) . '">' . $item['event_title'] . '</a>';
-            case 'date':
-                return get_comment_date('F j, Y g:i a', $item['comment_ID']);
             case 'approved':
                 $statuses = [
                     '1' => __('Approved', 'gatherpress'),
@@ -248,6 +246,8 @@ private function get_rsvp_count() {
                     'spam' => __('Spam', 'gatherpress')
                 ];
                 return $statuses[$item['comment_approved']];
+            case 'date':
+                return get_comment_date('Y/m/d \a\t g:i a', $item['comment_ID']);
             default:
                 return isset($item[$column_name]) ? $item[$column_name] : '-';
         }
@@ -281,35 +281,69 @@ private function get_rsvp_count() {
 		// Create nonce for actions
 		$nonce = wp_create_nonce( Rsvp::COMMENT_TYPE );
 
-		$actions = [
-			'approve' => sprintf(
+		$actions = [];
+
+		// Determine the current approval status
+		$is_approved = ('1' === $comment['comment_approved']);
+		$is_spam = ('spam' === $comment['comment_approved']);
+
+		// Add appropriate approval action based on current status
+		if ($is_approved) {
+			$actions['unapprove'] = sprintf(
 				'<a href="%s">%s</a>',
-				add_query_arg(array(
-					'action' => 'approve',
-					'rsvp_id' => $comment['comment_ID'],
-					'_wpnonce' => $nonce
-				), $current_url),
-				__('Approve', 'gatherpress')
-			),
-			'unapprove' => sprintf(
-				'<a href="%s">%s</a>',
-				add_query_arg(array(
+				esc_url(add_query_arg([
 					'action' => 'unapprove',
 					'rsvp_id' => $comment['comment_ID'],
-					'_wpnonce' => $nonce
-				), $current_url),
+					'_wpnonce' => wp_create_nonce('gatherpress_rsvp_action')
+				], admin_url('edit.php?post_type=' . Event::POST_TYPE . '&page=' . Rsvp::COMMENT_TYPE))),
 				__('Unapprove', 'gatherpress')
-			),
-			'delete' => sprintf(
+			);
+		} else {
+			$actions['approve'] = sprintf(
 				'<a href="%s">%s</a>',
-				add_query_arg(array(
-					'action' => 'delete',
+				esc_url(add_query_arg([
+					'action' => 'approve',
 					'rsvp_id' => $comment['comment_ID'],
-					'_wpnonce' => $nonce
-				), $current_url),
-				__('Delete', 'gatherpress')
-			)
-		];
+					'_wpnonce' => wp_create_nonce('gatherpress_rsvp_action')
+				], admin_url('edit.php?post_type=' . Event::POST_TYPE . '&page=' . Rsvp::COMMENT_TYPE))),
+				__('Approve', 'gatherpress')
+			);
+		}
+
+		// Add spam/not spam actions based on status
+		if ($is_spam) {
+			$actions['not-spam'] = sprintf(
+				'<a href="%s">%s</a>',
+				esc_url(add_query_arg([
+					'action' => 'unspam',
+					'rsvp_id' => $comment['comment_ID'],
+					'_wpnonce' => wp_create_nonce('gatherpress_rsvp_action')
+				], admin_url('edit.php?post_type=' . Event::POST_TYPE . '&page=' . Rsvp::COMMENT_TYPE))),
+				__('Not Spam', 'gatherpress')
+			);
+		} else {
+			$actions['spam'] = sprintf(
+				'<a href="%s">%s</a>',
+				esc_url(add_query_arg([
+					'action' => 'spam',
+					'rsvp_id' => $comment['comment_ID'],
+					'_wpnonce' => wp_create_nonce('gatherpress_rsvp_action')
+				], admin_url('edit.php?post_type=' . Event::POST_TYPE . '&page=' . Rsvp::COMMENT_TYPE))),
+				__('Spam', 'gatherpress')
+			);
+		}
+
+		// Always add delete action
+		$actions['delete'] = sprintf(
+			'<a href="%s" class="submitdelete">%s</a>',
+			esc_url(add_query_arg([
+				'action' => 'delete',
+				'rsvp_id' => $comment['comment_ID'],
+				'_wpnonce' => wp_create_nonce('gatherpress_rsvp_action')
+			], admin_url('edit.php?post_type=' . Event::POST_TYPE . '&page=' . Rsvp::COMMENT_TYPE))),
+			__('Delete', 'gatherpress')
+		);
+
 		$username = $comment['comment_author'];
 		$email    = $comment['comment_author_email'];
 
@@ -351,6 +385,18 @@ private function get_rsvp_count() {
             'delete' => __('Delete', 'gatherpress'),
         ];
     }
+
+	public function single_row($comment) {
+		$status      = ( '1' === $comment['comment_approved'] ) ? 'approved' :
+			( ( 'spam' === $comment['comment_approved'] ) ? 'spam' : 'unapproved' );
+		$odd_or_even = 'odd';
+
+		echo '<tr id="' . esc_attr( 'rsvp-' . $comment['comment_ID'] ) . '" class="' . esc_attr( 'rsvp ' . $odd_or_even . ' ' . $status ) . '">';
+
+		$this->single_row_columns( $comment );
+
+		echo '</tr>';
+	}
 
 	public function process_bulk_action() {
 		// Get RSVP IDs
