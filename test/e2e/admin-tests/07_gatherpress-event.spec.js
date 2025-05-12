@@ -8,7 +8,9 @@ test.describe('e2e test for publish event through admin side', () => {
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('the user should be able to publish an online event', async ({page}) => {
+	test('the user should be able to publish an online event', async ({
+		page,
+	}) => {
 		await login({ page });
 
 		const postName = 'online event test';

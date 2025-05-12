@@ -7,7 +7,9 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Verify the offline venue location map should be visible on the venue post when the display map toggled button is enabled.', async ({page}) => {
+	test('Verify the offline venue location map should be visible on the venue post when the display map toggled button is enabled.', async ({
+		page,
+	}) => {
 		await login({ page });
 
 		const postName = 'venue map : toggle on';

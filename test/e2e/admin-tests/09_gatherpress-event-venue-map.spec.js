@@ -8,7 +8,9 @@ test.describe('e2e test for event, the user should view the event map on event p
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Test to create a new offline event and verify the entered location map should be visible on the event post.', async ({page}) => {
+	test('Test to create a new offline event and verify the entered location map should be visible on the event post.', async ({
+		page,
+	}) => {
 		await login({ page });
 
 		const postName = 'offline event-pune location';

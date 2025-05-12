@@ -7,7 +7,9 @@ test.describe('e2e test for venue map through admin side', () => {
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Verify the venue location map should not be visible on the events when the map toggled is disabled.', async ({page}) => {
+	test('Verify the venue location map should not be visible on the events when the map toggled is disabled.', async ({
+		page,
+	}) => {
 		await login({ page });
 
 		const postName = 'offline test venue - no map is visible';
