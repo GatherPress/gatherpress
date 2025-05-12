@@ -75,9 +75,15 @@ test.describe('e2e test for publish event through admin side', () => {
 				.nth(1)
 		).toBeVisible();
 
-		await page.locator('.wp-block-gatherpress-dropdown', 'Add to calendar').click({ timeout: 1200 });
+		await page
+			.locator('.wp-block-gatherpress-dropdown', 'Add to calendar')
+			.click({ timeout: 1200 });
 
-		await page.locator('.wp-block-gatherpress-dropdown-item').locator('div').filter({ hasText: /^Google Calendar$/ }).isVisible();
+		await page
+			.locator('.wp-block-gatherpress-dropdown-item')
+			.locator('div')
+			.filter({ hasText: /^Google Calendar$/ })
+			.isVisible();
 
 		await page.screenshot({ path: 'artifacts/new-online-event.png' });
 	});
@@ -122,9 +128,7 @@ test.describe('e2e test for publish event through admin side', () => {
 
 		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
 
-		await page
-			.getByLabel('Venue Selector')
-			.selectOption('venue pune');
+		await page.getByLabel('Venue Selector').selectOption('venue pune');
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
@@ -145,6 +149,9 @@ test.describe('e2e test for publish event through admin side', () => {
 
 		await expect(page.locator('#map')).toBeVisible();
 
-		await page.screenshot({ path: 'artifacts/new-offline-event.png', fullPage: true });
+		await page.screenshot({
+			path: 'artifacts/new-offline-event.png',
+			fullPage: true,
+		});
 	});
 });

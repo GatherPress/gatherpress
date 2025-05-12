@@ -1,12 +1,11 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-import { addNewEvent } from '../reusable-user-steps/common.js';
 
 test.describe('e2e test for publish event through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/wp-admin/');
 		await page.waitForLoadState('networkidle');
-		await login({ page});
+		await login({ page });
 	});
 
 	test('The user should be able add featured image in post and verify the added featured image post', async ({
@@ -63,14 +62,12 @@ test.describe('e2e test for publish event through admin side', () => {
 
 		await page.waitForLoadState('domcontentloaded');
 
-		await page.waitForSelector('.wp-block-post-featured-image')
+		await page.waitForSelector('.wp-block-post-featured-image');
 		const FeaturedImage = await page.screenshot({
-			mask: [
-			
-				page.locator('.wp-block-gatherpress-event-date'),
-				
-			],
+			mask: [page.locator('.wp-block-gatherpress-event-date')],
 		});
-		expect(FeaturedImage).toMatchSnapshot('featured_image.png', {maxDiffPixels: 20000});
+		expect(FeaturedImage).toMatchSnapshot('featured_image.png', {
+			maxDiffPixels: 20000,
+		});
 	});
 });

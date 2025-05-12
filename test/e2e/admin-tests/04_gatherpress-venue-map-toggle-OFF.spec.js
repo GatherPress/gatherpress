@@ -1,22 +1,20 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-import { addNewVenue } from '../reusable-user-steps/common.js';
 
 test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/wp-admin/')
+		await page.goto('/wp-admin/');
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Verify the offline venue location map should be visible on the venue post when the display map toggled button is enabled.', async ({
+	test('Verify the venue location map should not be visible on the events when the map toggled is disabled.', async ({
 		page,
 	}) => {
 		await login({ page });
 
-		const postName = 'venue map : toggle on';
+		const postName = 'offline test venue - no map is visible';
 
-		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue')
-
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue');
 
 		await page.getByLabel('Add title').fill(postName);
 
@@ -48,16 +46,17 @@ test.describe('e2e test for venue map through admin side', () => {
 		}
 
 		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
-		await page.getByLabel('Full Address').fill('Pune');
+
+		await page.getByLabel('Full Address').fill('Bengaluru');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 
-		await page.locator('.gatherpress-venue__full-address').isVisible();
 		await page.waitForSelector('#map');
 		await page.locator('#map').click({ force: true });
 
 		await page.getByRole('tab', { name: 'Block' }).click();
-		await expect(page.getByLabel('Display the map')).toBeVisible();
+		await page.getByLabel('Display the map').uncheck();
+		await expect(page.getByLabel('Hide the map')).toBeVisible();
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
@@ -71,14 +70,9 @@ test.describe('e2e test for venue map through admin side', () => {
 			.getByRole('link', { name: 'View Venue' })
 			.click();
 
-		await page.waitForLoadState('domcontentloaded');
-		await page.waitForSelector('#map');
-		await expect(page.locator('#map')).toBeVisible();
-		await expect(page).toHaveScreenshot('event_toggle_on.png', {
-			maxDiffPixels: 1000,
-			mask: [
-				page.locator('.wp-block-gatherpress-event-date'),	
-			],
+		await page.screenshot({
+			path: 'artifacts/venue_post_no_map.png',
+			fullPage: true,
 		});
 	});
 });

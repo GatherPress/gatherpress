@@ -1,22 +1,21 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 
-
-test.describe('e2e test for venue map through admin side', () => {
+test.describe('e2e test for event, the user should view the event map on event post.', () => {
 	test.beforeEach(async ({ page }) => {
-		
-		await page.goto('/wp-admin/')
+		test.setTimeout(120000);
+		await page.goto('/wp-admin/');
 		await page.waitForLoadState('networkidle');
 	});
 
-	test('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
+	test('Test to create a new offline event and verify the entered location map should be visible on the event post.', async ({
 		page,
 	}) => {
 		await login({ page });
 
-		const postName = 'venue test map-Bengaluru';
+		const postName = 'offline event-pune location';
 
-		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue')
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_event');
 
 		await page.getByLabel('Add title').fill(postName);
 
@@ -38,24 +37,19 @@ test.describe('e2e test for venue map through admin side', () => {
 		}
 		await expect(settingButton).toHaveAttribute('aria-expanded', 'true');
 
-		const venueButton = await page.getByRole('button', {
-			name: 'venue settings',
+		const eventButton = await page.getByRole('button', {
+			name: 'Event settings',
 		});
-		const venueExpand = await venueButton.getAttribute('aria-expanded');
+		const eventExpand = await eventButton.getAttribute('aria-expanded');
 
-		if (venueExpand === 'false') {
-			await venueButton.click();
+		if (eventExpand === 'false') {
+			await eventButton.click();
 		}
 
-		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
+		await expect(eventButton).toHaveAttribute('aria-expanded', 'true');
+		await page.getByLabel('Venue Selector').selectOption('venue pune');
 
-		await page.getByLabel('Full Address').fill('Bengaluru');
-
-		await page.locator('.gatherpress-venue__full-address').isVisible();
-		await page.locator('#map').isVisible({ timeout: 30000 });
-
-		await page.waitForLoadState('domcontentloaded');
-		await expect(page.locator('#map')).toBeVisible({ timeout: 30000 });
+		await expect(page.locator('#map')).toBeVisible();
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
@@ -71,19 +65,16 @@ test.describe('e2e test for venue map through admin side', () => {
 
 		await page
 			.getByLabel('Editor publish')
-			.getByRole('link', { name: 'View Venue' })
+			.getByRole('link', { name: 'View Event' })
 			.click();
-
-		await page.waitForLoadState('domcontentloaded');
-
-		await page.waitForSelector('#map');
 
 		await page.locator('#map').isVisible({ timeout: 30000 });
 
-		await expect(page).toHaveScreenshot('Bengalure_location_map.png', {
+		await page.waitForSelector('#map');
+		await expect(page).toHaveScreenshot('pune_event_location_map.png', {
 			maxDiffPixels: 1000,
-			fullPage: true
-		
+			fullPage: true,
+			mask: [page.locator('.wp-block-gatherpress-event-date')],
 		});
 	});
 });

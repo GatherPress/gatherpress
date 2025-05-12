@@ -1,11 +1,9 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
 
-
 test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
-		await page.goto('/wp-admin/')
+		await page.goto('/wp-admin/');
 		await page.waitForLoadState('networkidle');
 	});
 
@@ -14,9 +12,9 @@ test.describe('e2e test for venue map through admin side', () => {
 	}) => {
 		await login({ page });
 
-		const postName = 'venue pune';
+		const postName = 'venue test map-Bengaluru';
 
-		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue')
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue');
 
 		await page.getByLabel('Add title').fill(postName);
 
@@ -49,10 +47,12 @@ test.describe('e2e test for venue map through admin side', () => {
 
 		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
 
-		await page.getByLabel('Full Address').fill('Pune');
+		await page.getByLabel('Full Address').fill('Bengaluru');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
 		await page.locator('#map').isVisible({ timeout: 30000 });
+
+		await page.waitForLoadState('domcontentloaded');
 		await expect(page.locator('#map')).toBeVisible({ timeout: 30000 });
 
 		await page
@@ -64,17 +64,23 @@ test.describe('e2e test for venue map through admin side', () => {
 			.click();
 
 		await page
+			.getByText(`${postName} is now live.`)
+			.isVisible({ timeout: 60000 }); // verified the event is live.
+
+		await page
 			.getByLabel('Editor publish')
 			.getByRole('link', { name: 'View Venue' })
 			.click();
 
+		await page.waitForLoadState('domcontentloaded');
+
 		await page.waitForSelector('#map');
 
-		await page.screenshot({ path: 'artifacts/pune-venue.png' });
+		await page.locator('#map').isVisible({ timeout: 30000 });
 
-		await expect(page).toHaveScreenshot('pune-venue.png', {
-			maxDiffPixels: 20000,
-
+		await expect(page).toHaveScreenshot('Bengalure_location_map.png', {
+			maxDiffPixels: 1000,
+			fullPage: true,
 		});
 	});
 });
