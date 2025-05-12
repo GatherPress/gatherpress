@@ -28,5 +28,4 @@ const login = async ({ page, username = 'admin', password = 'password' }) => {
 };
 
 
-
 module.exports = { login };
