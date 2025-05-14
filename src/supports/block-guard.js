@@ -341,7 +341,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 								setIsBlockGuardEnabled(value);
 
 								const expander = global.document.querySelector(
-									`.block-editor-list-view-leaf[data-block="${clientId}"] .block-editor-list-view__expander`
+									`.block-editor-list-view-leaf[data-block="${clientId}"][data-expanded="true"] .block-editor-list-view__expander`
 								);
 
 								if (value && expander) {
