@@ -458,7 +458,7 @@ class Rsvp {
 			$user_status = '';
 			$user_guests = intval( get_comment_meta( $record->comment_ID, 'gatherpress_rsvp_guests', true ) );
 			$all_guests += $user_guests;
-			$user_info   = get_userdata( $user_id );
+			$user_info   = false;
 			$anonymous   = intval( get_comment_meta( $record->comment_ID, 'gatherpress_rsvp_anonymous', true ) );
 			$terms       = wp_get_object_terms( $record->comment_ID, self::TAXONOMY );
 
@@ -466,16 +466,17 @@ class Rsvp {
 				$user_status = $terms[0]->slug;
 			}
 
+			if ( ! empty( $user_id ) ) {
+				$user_info = get_userdata( $user_id );
+			}
+
 			// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
 			// eg for BuddyPress bp_core_get_user_domain( $user_id )
 			$profile = get_author_posts_url( $user_id );
 
-			// if (
-			// empty( $user_info ) ||
-			// ! in_array( $user_status, $statuses, true )
-			// ) {
-			// continue;
-			// }
+			if ( ! in_array( $user_status, $statuses, true ) ) {
+				continue;
+			}
 
 			if (
 				! current_user_can( 'edit_posts' ) && ! empty( $anonymous )

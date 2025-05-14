@@ -18,7 +18,7 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_List_Table;
 
-require_once(ABSPATH . 'wp-admin/includes/class-wp-list-table.php');
+require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 
 /**
  * Handles setup tasks related to RSVP functionality.
@@ -57,11 +57,7 @@ class Rsvp_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
-		add_action('admin_menu', array($this, 'add_rsvp_submenu_page'));
-		add_action(
-			sprintf( 'load-gp_event_page_%s', Rsvp::COMMENT_TYPE ),
-			array( $this, 'add_rsvp_screen_options' )
-		);
+		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
 
 		add_filter( 'set-screen-option', array( $this, 'set_rsvp_screen_options' ), 10, 3 );
 		add_filter( 'parent_file', array( $this, 'highlight_admin_menu' ) );
@@ -179,7 +175,7 @@ class Rsvp_Setup {
 			2
 		);
 
-		// Add these hooks to run only on our page
+		// Add these hooks to run only on our page.
 		add_action( "load-$hook", array( $this, 'add_rsvp_screen_options' ) );
 	}
 
@@ -194,42 +190,24 @@ class Rsvp_Setup {
 	 *
 	 * @return void
 	 */
-	function render_rsvp_admin_page(): void {
-		$rsvp_table = new RSVP_List_Table();
+	public function render_rsvp_admin_page(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$rsvp_table  = new RSVP_List_Table();
+		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
+		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
+		$event       = isset( $_REQUEST['event'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['event'] ) ) : '';
 
-		$rsvp_table->prepare_items();
-
-		echo '<div class="wrap">';
-		echo '<h1 class="wp-heading-inline">' . esc_html__( 'RSVPs', 'gatherpress' ) . '</h1>';
-		echo '<hr class="wp-header-end">';
-
-		// Add search form
-		echo '<form method="get">';
-		echo '<input type="hidden" name="post_type" value="' . esc_attr(Event::POST_TYPE) . '" />';
-		echo '<input type="hidden" name="page" value="' . esc_attr(Rsvp::COMMENT_TYPE) . '" />';
-		echo '<p class="search-box">';
-		echo '<label class="screen-reader-text" for="rsvp-search-input">' . esc_html__('Search RSVPs', 'gatherpress') . '</label>';
-		echo '<input type="search" id="rsvp-search-input" name="s" value="' . esc_attr(isset($_REQUEST['s']) ? $_REQUEST['s'] : '') . '" />';
-		echo '<input type="submit" id="search-submit" class="button" value="' . esc_attr__('Search RSVPs', 'gatherpress') . '" />';
-		echo '</p>';
-
-		// If we have status or event filters, preserve them in hidden fields
-		if (isset($_REQUEST['status']) && !empty($_REQUEST['status'])) {
-			echo '<input type="hidden" name="status" value="' . esc_attr($_REQUEST['status']) . '" />';
-		}
-
-		if (isset($_REQUEST['event']) && !empty($_REQUEST['event'])) {
-			echo '<input type="hidden" name="event" value="' . esc_attr($_REQUEST['event']) . '" />';
-		}
-
-		$rsvp_table->process_bulk_action();
-
-		echo '<form method="post">';
-
-		$rsvp_table->display();
-
-		echo '</form>';
-		echo '</div>';
+		Utility::render_template(
+			sprintf( '%s/includes/templates/admin/rsvp/list-table.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'rsvp_table'  => $rsvp_table,
+				'search_term' => $search_term,
+				'status'      => $status,
+				'event'       => $event,
+			),
+			true
+		);
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -239,17 +217,14 @@ class Rsvp_Setup {
 	 *
 	 * @param string          $comment_content Text of the comment.
 	 * @param WP_Comment|null $comment        The comment object.
-	 * @param array           $args           Arguments for displaying the comment.
 	 *
 	 * @return string Filtered comment text.
 	 */
 	public function maybe_hide_rsvp_comment_content( $comment_content, $comment ) {
-		// Only filter our RSVP comment type.
-		if ( 'gatherpress_rsvp' !== $comment->comment_type ) {
+		if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
 			return $comment_content;
 		}
 
-		// If user can't moderate, show nothing.
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
 			return '';
 		}
@@ -260,22 +235,23 @@ class Rsvp_Setup {
 	/**
 	 * Adds screen options for the RSVP admin page.
 	 *
-	 * @param WP_Screen $screen Current WP_Screen object.
 	 * @return void
 	 */
-	public function add_rsvp_screen_options( $screen ): void {
-		// The screen ID will be something like gp_event_page_gatherpress-rsvps
-		// But to be safer, let's check if the page parameter matches our page
+	public function add_rsvp_screen_options(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( ! isset( $_GET['page'] ) || Rsvp::COMMENT_TYPE !== $_GET['page'] ) {
 			return;
 		}
 
-		// Add per page screen option
-		add_screen_option( 'per_page', array(
-			'label'   => __( 'RSVPs per page', 'gatherpress' ),
-			'default' => 20,
-			'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE )
-		) );
+		add_screen_option(
+			'per_page',
+			array(
+				'label'   => __( 'RSVPs per page', 'gatherpress' ),
+				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
+				'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
+			)
+		);
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -301,13 +277,23 @@ class Rsvp_Setup {
 	 * @return string The modified parent file.
 	 */
 	public function highlight_admin_menu( string $parent_file ): string {
-		global $plugin_page, $submenu_file;
+		global $plugin_page;
 
 		if ( isset( $plugin_page ) && Rsvp::COMMENT_TYPE === $plugin_page ) {
-			$submenu_file = Rsvp::COMMENT_TYPE;
-			$parent_file  = sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
+			add_filter( 'submenu_file', array( $this, 'set_submenu_file' ) );
+
+			return sprintf( 'edit.php?post_type=%s', Event::POST_TYPE );
 		}
 
 		return $parent_file;
+	}
+
+	/**
+	 * Sets the correct submenu file for the RSVP admin page.
+	 *
+	 * @return string The modified submenu file.
+	 */
+	public function set_submenu_file(): string {
+		return Rsvp::COMMENT_TYPE;
 	}
 }

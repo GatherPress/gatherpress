@@ -4,20 +4,33 @@
  *
  * This file sets up filters to modify the standard comment processing
  * for RSVPs and then includes the WordPress comment processor.
+ *
+ * @package GatherPress\Core
+ * @since 1.0.0
  */
 
-$gatherpress_document_root = $_SERVER['DOCUMENT_ROOT'];
+$gatherpress_document_root = '';
+
+if ( isset( $_SERVER['DOCUMENT_ROOT'] ) ) {
+	// We can't use wp_unslash() yet because WordPress isn't loaded.
+	$gatherpress_document_root = preg_replace(
+		'/[^A-Za-z0-9\/\\\._-]/',
+		'',
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$_SERVER['DOCUMENT_ROOT']
+	);
+
+	// Prevent directory traversal.
+	$gatherpress_document_root = str_replace(
+		array( "\0", '..' ),
+		'',
+		$gatherpress_document_root
+	);
+}
 
 if ( ! file_exists( $gatherpress_document_root . '/wp-load.php' ) ) {
 	exit;
 }
-
-// add_filter( 'comment_form_fields', function( $comment_fields ) {
-// unset($comment_fields['comment']);
-// unset($comment_fields['url']);
-// unset($comment_fields['cookies']);
-// return $comment_fields;
-// });
 
 // Sets up the WordPress Environment.
 require_once $gatherpress_document_root . '/wp-load.php';
