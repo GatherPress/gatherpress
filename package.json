@@ -76,6 +76,7 @@
 		"lint:md:js": "wp-scripts lint-md-js",
 		"lint:php": "vendor/bin/phpcs --standard=phpcs.ruleset.xml --extensions=php --colors -s -p -v .",
 		"lint:php:fix": "vendor/bin/phpcbf --standard=phpcs.ruleset.xml -p -v .",
+		"lint:phpstan": "vendor/bin/phpstan analyze -vv --memory-limit=2G",
 		"lint:pkg-json": "wp-scripts lint-pkg-json",
 		"packages-update": "wp-scripts packages-update",
 		"plugin-zip": "npm run build && wp-scripts plugin-zip",
