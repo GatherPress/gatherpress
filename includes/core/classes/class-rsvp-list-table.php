@@ -42,6 +42,9 @@ class RSVP_List_Table extends WP_List_Table {
 	 * while customizing for RSVP management needs.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @param array $args Optional. Additional arguments to configure the list table.
+	 *                    Supports 'screen' to specify a particular screen context.
 	 */
 	public function __construct( $args = array() ) {
 		parent::__construct(
