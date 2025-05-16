@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
-use WP_List_Table;
+use WP_Comment;
 
 require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 
@@ -52,6 +52,7 @@ class Rsvp_Setup {
 	 * This method adds hooks for different purposes as needed.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
@@ -72,6 +73,7 @@ class Rsvp_Setup {
 	 * Registers a custom taxonomy 'gatherpress_rsvp' for managing RSVP related functionalities specifically for comments.
 	 *
 	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	public function register_taxonomy(): void {
@@ -122,6 +124,7 @@ class Rsvp_Setup {
 	 * @since 1.0.0
 	 *
 	 * @param int $post_id The ID of the post being saved.
+	 *
 	 * @return void
 	 */
 	public function maybe_process_waiting_list( int $post_id ): void {
@@ -175,8 +178,23 @@ class Rsvp_Setup {
 			2
 		);
 
-		// Add these hooks to run only on our page.
-		add_action( "load-$hook", array( $this, 'add_rsvp_screen_options' ) );
+		$list_table = new RSVP_List_Table();
+
+		add_action(
+			"load-$hook",
+			static function () use ( $list_table ) {
+				add_screen_option(
+					'per_page',
+					array(
+						'label'   => __( 'RSVPs per page', 'gatherpress' ),
+						'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
+						'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
+					)
+				);
+
+				$list_table->register_column_options();
+			}
+		);
 	}
 
 	/**
@@ -192,6 +210,10 @@ class Rsvp_Setup {
 	 */
 	public function render_rsvp_admin_page(): void {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
+			wp_die( esc_html__( 'Sorry, you are not allowed to manage RSVPs.', 'gatherpress' ), 403 );
+		}
+
 		$rsvp_table  = new RSVP_List_Table();
 		$search_term = isset( $_REQUEST['s'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['s'] ) ) : '';
 		$status      = isset( $_REQUEST['status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['status'] ) ) : '';
@@ -213,6 +235,10 @@ class Rsvp_Setup {
 	/**
 	 * Filters the comment content to hide private notes for non-moderators.
 	 *
+	 * Checks if the comment is a GatherPress RSVP comment and applies visibility
+	 * rules based on user permissions. Returns empty string for non-moderators
+	 * to protect private RSVP information.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param string          $comment_content Text of the comment.
@@ -220,8 +246,8 @@ class Rsvp_Setup {
 	 *
 	 * @return string Filtered comment text.
 	 */
-	public function maybe_hide_rsvp_comment_content( $comment_content, $comment ) {
-		if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+	public function maybe_hide_rsvp_comment_content( string $comment_content, ?WP_Comment $comment ): string {
+		if ( null === $comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
 			return $comment_content;
 		}
 
@@ -233,7 +259,13 @@ class Rsvp_Setup {
 	}
 
 	/**
-	 * Adds screen options for the RSVP admin page.
+	 * Registers screen options for the RSVP administration page.
+	 *
+	 * Adds options to control the number of RSVPs displayed per page and
+	 * which columns are visible in the table. These settings are accessible
+	 * via the Screen Options tab on the RSVP admin page.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
@@ -251,16 +283,29 @@ class Rsvp_Setup {
 				'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
 			)
 		);
+
+		$screen = get_current_screen();
+
+		if ( $screen ) {
+			$screen->add_option( 'columns', array() );
+		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
-	 * Saves screen options for the RSVP admin page.
+	 * Saves user preferences for per-page display options.
+	 *
+	 * Processes and saves the screen options for controlling how many RSVPs
+	 * display per page in the admin table. Only processes options relevant
+	 * to the RSVP listing page.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param mixed  $status Screen option value. Default false to skip.
 	 * @param string $option The option name.
 	 * @param mixed  $value  The option value.
-	 * @return mixed
+	 *
+	 * @return mixed The screen option value or false to use default.
 	 */
 	public function set_rsvp_screen_options( $status, $option, $value ) {
 		if ( sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ) === $option ) {
@@ -271,10 +316,17 @@ class Rsvp_Setup {
 	}
 
 	/**
-	 * Highlights the correct submenu item when on the RSVP admin page.
+	 * Ensures the correct parent menu item is highlighted for the RSVP admin page.
 	 *
-	 * @param string $parent_file The parent file.
-	 * @return string The modified parent file.
+	 * When viewing the RSVP admin page, this function sets the appropriate parent
+	 * menu item to be highlighted in the admin menu. It also adds a filter to
+	 * set the correct submenu item.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $parent_file The current parent file.
+	 *
+	 * @return string Modified parent file path to highlight the correct menu item.
 	 */
 	public function highlight_admin_menu( string $parent_file ): string {
 		global $plugin_page;
@@ -289,9 +341,15 @@ class Rsvp_Setup {
 	}
 
 	/**
-	 * Sets the correct submenu file for the RSVP admin page.
+	 * Sets the active submenu file for the RSVP admin page.
 	 *
-	 * @return string The modified submenu file.
+	 * Ensures the RSVP submenu item is correctly highlighted when viewing
+	 * the RSVP admin page. Works with WordPress admin menu highlighting
+	 * system to indicate the current active page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The submenu file slug to mark as active.
 	 */
 	public function set_submenu_file(): string {
 		return Rsvp::COMMENT_TYPE;
