@@ -61,7 +61,6 @@ class Rsvp_Setup {
 		add_filter( 'set-screen-option', array( $this, 'set_rsvp_screen_options' ), 10, 3 );
 		add_filter( 'parent_file', array( $this, 'highlight_admin_menu' ) );
 		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
-		add_filter( 'admin_comment_types_dropdown', array( $this, 'register_rsvp_comment_type' ) );
 		add_filter( 'comment_text', array( $this, 'maybe_hide_rsvp_comment_content' ), 10, 2 );
 	}
 
@@ -133,24 +132,6 @@ class Rsvp_Setup {
 		$rsvp = new Rsvp( $post_id );
 
 		$rsvp->check_waiting_list();
-	}
-
-	/**
-	 * Adds GatherPress RSVP to the comment types dropdown in the admin.
-	 *
-	 * This filter callback adds the 'gatherpress_rsvp' comment type to the dropdown
-	 * filter in the WordPress admin comments screen, allowing admins to filter and
-	 * view only RSVP responses.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array $comment_types Array of comment types.
-	 * @return array Modified array with RSVP comment type added.
-	 */
-	public function register_rsvp_comment_type( array $comment_types ): array {
-		$comment_types['gatherpress_rsvp'] = __( 'RSVPs', 'gatherpress' );
-
-		return $comment_types;
 	}
 
 	/**
