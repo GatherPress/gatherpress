@@ -18,8 +18,6 @@ use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;
 
-require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
-
 /**
  * Handles setup tasks related to RSVP functionality.
  *

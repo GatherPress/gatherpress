@@ -29,7 +29,7 @@ $rsvp_table->prepare_items();
 				<?php echo esc_html__( 'Search RSVPs', 'gatherpress' ); ?>
 			</label>
 			<input type="search" id="rsvp-search-input" name="s"
-					value="<?php echo esc_attr( isset( $search_term ) ? $search_term : '' ); ?>" />
+					value="<?php echo esc_attr( $search_term ); ?>" />
 			<input type="submit" id="search-submit" class="button"
 					value="<?php echo esc_attr__( 'Search RSVPs', 'gatherpress' ); ?>" />
 		</p>

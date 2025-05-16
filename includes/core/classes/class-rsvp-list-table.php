@@ -43,13 +43,13 @@ class RSVP_List_Table extends WP_List_Table {
 	 *
 	 * @since 1.0.0
 	 */
-	public function __construct() {
+	public function __construct( $args = array() ) {
 		parent::__construct(
 			array(
-				'singular' => __( 'RSVP', 'gatherpress' ),
 				'plural'   => __( 'RSVPs', 'gatherpress' ),
+				'singular' => __( 'RSVP', 'gatherpress' ),
 				'ajax'     => false,
-				'screen'   => get_current_screen(),
+				'screen'   => isset( $args['screen'] ) ? $args['screen'] : null,
 			)
 		);
 	}
@@ -219,7 +219,7 @@ class RSVP_List_Table extends WP_List_Table {
 			array(
 				'total_items' => $total_items,
 				'per_page'    => $per_page,
-				'total_pages' => ceil( $total_items / $per_page ),
+				'total_pages' => (int) ceil( $total_items / $per_page ),
 			)
 		);
 
@@ -309,7 +309,7 @@ class RSVP_List_Table extends WP_List_Table {
 
 		foreach ( $items as $item ) {
 			$item_array                = (array) $item;
-			$item_array['event_title'] = get_the_title( $item->comment_post_ID );
+			$item_array['event_title'] = get_the_title( (int) $item->comment_post_ID );
 			$results[]                 = $item_array;
 		}
 

@@ -63,4 +63,5 @@ add_filter(
 );
 
 // Include the WordPress comment processing file.
+// @phpstan-ignore-next-line
 require_once ABSPATH . 'wp-comments-post.php';
