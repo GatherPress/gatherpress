@@ -57,7 +57,7 @@ add_action(
 
 add_filter(
 	'comment_duplicate_message',
-	function (): string {
+	static function (): string {
 		return __( "You've already RSVP'd to this event.", 'gatherpress' );
 	}
 );
