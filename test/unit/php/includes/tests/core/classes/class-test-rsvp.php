@@ -116,12 +116,13 @@ class Test_Rsvp extends Base {
 
 		$result   = $rsvp->save( $user_1_id, 'attending' );
 		$expected = array(
-			'post_id'   => 0,
-			'user_id'   => 0,
-			'timestamp' => '0000-00-00 00:00:00',
-			'status'    => 'no_status',
-			'guests'    => 0,
-			'anonymous' => 0,
+			'comment_id' => 0,
+			'post_id'    => 0,
+			'user_id'    => 0,
+			'timestamp'  => '0000-00-00 00:00:00',
+			'status'     => 'no_status',
+			'guests'     => 0,
+			'anonymous'  => 0,
 		);
 
 		$this->assertEquals( $expected, $result );

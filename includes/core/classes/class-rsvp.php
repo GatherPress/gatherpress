@@ -117,37 +117,44 @@ class Rsvp {
 	 *
 	 * @return array An array containing RSVP information, including ID, post ID, user ID, timestamp, status, and guests.
 	 */
-	public function get( int $user_id ): array {
+	public function get( $user_identifier ): array {
 		$post_id    = $this->event->ID ?? 0;
 		$rsvp_query = Rsvp_Query::get_instance();
+		$user_id    = intval( $user_identifier );
+		$email      = '';
 
-		if ( 1 > $post_id || 1 > $user_id ) {
+		if ( is_email( $user_identifier ) ) {
+			$email = $user_identifier;
+		}
+
+		if ( 1 > $post_id || ( empty( $user_id ) && empty( $email ) ) ) {
 			return array();
 		}
 
 		$data = array(
-			'id'        => 0,
-			'post_id'   => $post_id,
-			'user_id'   => $user_id,
-			'timestamp' => null,
-			'status'    => 'no_status',
-			'guests'    => 0,
-			'anonymous' => 0,
+			'comment_id' => 0,
+			'post_id'    => $post_id,
+			'user_id'    => $user_id,
+			'timestamp'  => null,
+			'status'     => 'no_status',
+			'guests'     => 0,
+			'anonymous'  => 0,
 		);
 
-		$rsvp = $rsvp_query->get_rsvp(
-			array(
-				'post_id' => $post_id,
-				'user_id' => $user_id,
-			)
-		);
+		if ( ! empty( $user_id ) ) {
+			$args['user_id'] = $user_id;
+		} elseif ( ! empty( $email ) ) {
+			$args['comment_author_email'] = $email;
+		}
+
+		$rsvp = $rsvp_query->get_rsvp( $args );
 
 		if ( ! empty( $rsvp ) ) {
-			$data['id']        = $rsvp->user_id;
-			$data['timestamp'] = $rsvp->comment_date;
-			$data['anonymous'] = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_anonymous', true ) );
-			$data['guests']    = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_guests', true ) );
-			$terms             = wp_get_object_terms( intval( $rsvp->comment_ID ), self::TAXONOMY );
+			$data['comment_id'] = $rsvp->comment_ID;
+			$data['timestamp']  = $rsvp->comment_date;
+			$data['anonymous']  = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_anonymous', true ) );
+			$data['guests']     = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_guests', true ) );
+			$terms              = wp_get_object_terms( intval( $rsvp->comment_ID ), self::TAXONOMY );
 
 			if ( ! empty( $terms ) && is_array( $terms ) ) {
 				$data['status'] = $terms[0]->slug;
@@ -167,12 +174,12 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int    $user_id   The ID of the user whose RSVP status is being updated. Must be greater than 0.
-	 * @param string $status    The new RSVP status for the user. Acceptable values are 'attending', 'not_attending', or
-	 *                          'waiting_list'.
-	 * @param int    $anonymous Optional. Whether the RSVP is to be marked as anonymous. Accepts 1 for true (anonymous)
-	 *                          and 0 for false (not anonymous). Default 0.
-	 * @param int    $guests    Optional. The number of guests the user plans to bring along. Default 0.
+	 * @param int|string $user_identifier   The ID of the user whose RSVP status is being updated. Must be greater than 0.
+	 * @param string     $status    The new RSVP status for the user. Acceptable values are 'attending', 'not_attending', or
+	 *                              'waiting_list'.
+	 * @param int        $anonymous Optional. Whether the RSVP is to be marked as anonymous. Accepts 1 for true (anonymous)
+	 *                              and 0 for false (not anonymous). Default 0.
+	 * @param int        $guests    Optional. The number of guests the user plans to bring along. Default 0.
 	 *
 	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'), RSVP timestamp ('timestamp'),
 	 *               RSVP status ('status'), number of guests ('guests'), and anonymity flag ('anonymous'). Returns a default
@@ -181,37 +188,49 @@ class Rsvp {
 	 *               the acceptable values. If the attending limit is reached, 'status' may be automatically set to 'waiting_list',
 	 *               and 'guests' to 0, depending on the context.
 	 */
-	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
+	public function save( $user_identifier, string $status, int $anonymous = 0, int $guests = 0 ): array {
 		$rsvp_query      = Rsvp_Query::get_instance();
 		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
+		$user_id         = intval( $user_identifier );
+		$email           = '';
+
+		if ( is_email( $user_identifier ) ) {
+			$email = $user_identifier;
+		}
 
 		if ( $max_guest_limit < $guests ) {
 			$guests = $max_guest_limit;
 		}
 
 		$data = array(
-			'post_id'   => 0,
-			'user_id'   => 0,
-			'timestamp' => '0000-00-00 00:00:00',
-			'status'    => 'no_status',
-			'guests'    => 0,
-			'anonymous' => 0,
+			'comment_id' => 0,
+			'post_id'    => 0,
+			'user_id'    => 0,
+			'timestamp'  => '0000-00-00 00:00:00',
+			'status'     => 'no_status',
+			'guests'     => 0,
+			'anonymous'  => 0,
 		);
 
 		$post_id = $this->event->ID;
 
-		if ( 1 > $post_id || 1 > $user_id ) {
+		if ( 1 > $post_id || ( empty( $user_id ) && empty( $email ) ) ) {
 			return $data;
 		}
 
-		$rsvp = $rsvp_query->get_rsvp(
-			array(
-				'post_id' => $post_id,
-				'user_id' => $user_id,
-			)
+		$args = array(
+			'post_id' => $post_id,
 		);
 
-		$current_response = $this->get( $user_id );
+		if ( ! empty( $user_id ) ) {
+			$args['user_id'] = $user_id;
+		} elseif ( ! empty( $email ) ) {
+			$args['comment_author_email'] = $email;
+		}
+
+		$rsvp = $rsvp_query->get_rsvp( $args );
+
+		$current_response = $this->get( $user_identifier );
 		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
 		if ( 'attending' === $status && $limit_reached ) {
@@ -231,11 +250,11 @@ class Rsvp {
 		}
 
 		$args = array(
-			'comment_author_url' => get_author_posts_url( $user_id ),
+			'comment_author_url' => get_author_posts_url( intval( $user_identifier ) ),
 			'comment_post_ID'    => $post_id,
 			'comment_author_IP'  => '127.0.0.1',
 			'comment_type'       => self::COMMENT_TYPE,
-			'user_id'            => $user_id,
+			'user_id'            => intval( $user_identifier ),
 		);
 
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
@@ -260,7 +279,8 @@ class Rsvp {
 		}
 
 		// If not attending and anonymous or status is 'no_status', remove the record.
-		if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
+		if (
+			( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
 			wp_delete_comment( $comment_id, true );
 
 			wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
@@ -287,12 +307,13 @@ class Rsvp {
 		}
 
 		$data = array(
-			'post_id'   => intval( $post_id ),
-			'user_id'   => intval( $user_id ),
-			'timestamp' => gmdate( 'Y-m-d H:i:s' ),
-			'status'    => sanitize_key( $status ),
-			'guests'    => intval( $guests ),
-			'anonymous' => intval( $anonymous ),
+			'comment_id' => intval( $comment_id ),
+			'post_id'    => intval( $post_id ),
+			'user_id'    => intval( $user_id ),
+			'timestamp'  => gmdate( 'Y-m-d H:i:s' ),
+			'status'     => sanitize_key( $status ),
+			'guests'     => intval( $guests ),
+			'anonymous'  => intval( $anonymous ),
 		);
 
 		wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
