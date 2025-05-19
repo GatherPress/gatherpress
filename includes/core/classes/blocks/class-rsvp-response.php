@@ -241,14 +241,17 @@ class Rsvp_Response {
 		) {
 			$email = $comment->comment_author_email;
 
-			if ( empty( $email ) ) {
-				$user_id = $comment->user_id;
-				$user    = new WP_User( $user_id );
-				$email   = $user->user_email;
+			if ( intval( $comment->user_id ) && empty( $email ) ) {
+				$user = new WP_User( $comment->user_id );
+
+				if ( $user->exists() ) {
+					$email = $user->user_email;
+				}
 			}
 
 			if (
-				intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) )
+				intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
+				! current_user_can( Rsvp::CAPABILITY )
 			) {
 				// Set the email to empty if the RSVP is marked as anonymous and the current user
 				// does not have permission to edit posts. This ensures the avatar defaults

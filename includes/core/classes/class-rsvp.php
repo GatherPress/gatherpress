@@ -182,8 +182,6 @@ class Rsvp {
 	 *               and 'guests' to 0, depending on the context.
 	 */
 	public function save( int $user_id, string $status, int $anonymous = 0, int $guests = 0 ): array {
-		global $wpdb;
-
 		$rsvp_query      = Rsvp_Query::get_instance();
 		$max_guest_limit = intval( get_post_meta( $this->event->ID, 'gatherpress_max_guest_limit', true ) );
 

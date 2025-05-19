@@ -58,7 +58,12 @@ class Rsvp_Setup {
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
 
-		add_filter( 'set-screen-option', array( $this, 'set_rsvp_screen_options' ), 10, 3 );
+		add_filter(
+			sprintf( 'set_screen_option_%s_per_page', Rsvp::COMMENT_TYPE ),
+			array( $this, 'set_rsvp_screen_options' ),
+			10,
+			3
+		);
 		add_filter( 'parent_file', array( $this, 'highlight_admin_menu' ) );
 		add_filter( 'get_comments_number', array( $this, 'adjust_comments_number' ), 10, 2 );
 		add_filter( 'comment_text', array( $this, 'maybe_hide_rsvp_comment_content' ), 10, 2 );
