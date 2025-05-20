@@ -141,6 +141,10 @@ class Rsvp {
 			'anonymous'  => 0,
 		);
 
+		$args = array(
+			'post_id' => $post_id,
+		);
+
 		if ( ! empty( $user_id ) ) {
 			$args['user_id'] = $user_id;
 		} elseif ( ! empty( $email ) ) {
@@ -151,6 +155,7 @@ class Rsvp {
 
 		if ( ! empty( $rsvp ) ) {
 			$data['comment_id'] = $rsvp->comment_ID;
+			$data['user_id']    = $rsvp->user_id;
 			$data['timestamp']  = $rsvp->comment_date;
 			$data['anonymous']  = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_anonymous', true ) );
 			$data['guests']     = intval( get_comment_meta( intval( $rsvp->comment_ID ), 'gatherpress_rsvp_guests', true ) );
@@ -174,12 +179,12 @@ class Rsvp {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int|string $user_identifier   The ID of the user whose RSVP status is being updated. Must be greater than 0.
-	 * @param string     $status    The new RSVP status for the user. Acceptable values are 'attending', 'not_attending', or
-	 *                              'waiting_list'.
-	 * @param int        $anonymous Optional. Whether the RSVP is to be marked as anonymous. Accepts 1 for true (anonymous)
-	 *                              and 0 for false (not anonymous). Default 0.
-	 * @param int        $guests    Optional. The number of guests the user plans to bring along. Default 0.
+	 * @param int|string    $user_identifier   The ID of the user whose RSVP status is being updated. Must be greater than 0.
+	 * @param string $status    The new RSVP status for the user. Acceptable values are 'attending', 'not_attending', or
+	 *                          'waiting_list'.
+	 * @param int    $anonymous Optional. Whether the RSVP is to be marked as anonymous. Accepts 1 for true (anonymous)
+	 *                          and 0 for false (not anonymous). Default 0.
+	 * @param int    $guests    Optional. The number of guests the user plans to bring along. Default 0.
 	 *
 	 * @return array Associative array containing the event ID ('post_id'), user ID ('user_id'), RSVP timestamp ('timestamp'),
 	 *               RSVP status ('status'), number of guests ('guests'), and anonymity flag ('anonymous'). Returns a default
@@ -228,8 +233,7 @@ class Rsvp {
 			$args['comment_author_email'] = $email;
 		}
 
-		$rsvp = $rsvp_query->get_rsvp( $args );
-
+		$rsvp             = $rsvp_query->get_rsvp( $args );
 		$current_response = $this->get( $user_identifier );
 		$limit_reached    = $this->attending_limit_reached( $current_response, $guests );
 
@@ -250,12 +254,16 @@ class Rsvp {
 		}
 
 		$args = array(
-			'comment_author_url' => get_author_posts_url( intval( $user_identifier ) ),
+			'comment_author_url' => get_author_posts_url( $user_id ),
 			'comment_post_ID'    => $post_id,
 			'comment_author_IP'  => '127.0.0.1',
 			'comment_type'       => self::COMMENT_TYPE,
-			'user_id'            => intval( $user_identifier ),
+			'user_id'            => $user_id,
 		);
+
+		if ( ! empty( $email ) ) {
+			$args['comment_author_email'] = $email;
+		}
 
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
@@ -474,6 +482,7 @@ class Rsvp {
 		foreach ( $data as $record ) {
 			$comment_id  = intval( $record->comment_ID );
 			$user_id     = intval( $record->user_id );
+			$email       = $record->comment_author_email;
 			$user_status = '';
 			$user_guests = intval( get_comment_meta( $record->comment_ID, 'gatherpress_rsvp_guests', true ) );
 			$all_guests += $user_guests;
@@ -507,7 +516,7 @@ class Rsvp {
 			}
 
 			$records[] = array(
-				'id'        => $user_id,
+				'userId'    => $user_id,
 				'commentId' => $comment_id,
 				'name'      => $user_info->display_name ?? __( 'Anonymous', 'gatherpress' ),
 				'photo'     => get_avatar_url( $record ),

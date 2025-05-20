@@ -8,6 +8,7 @@
 
 namespace GatherPress\Tests\Core;
 
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
@@ -29,7 +30,7 @@ class Test_Rsvp extends Base {
 	public function test_get(): void {
 		$post    = $this->mock->post(
 			array(
-				'post_type' => 'gatherpress_event',
+				'post_type' => Event::POST_TYPE,
 			)
 		)->get();
 		$rsvp    = new Rsvp( $post->ID );
@@ -37,7 +38,7 @@ class Test_Rsvp extends Base {
 		$status  = 'attending';
 
 		$this->assertEmpty( $rsvp->get( 0 ) );
-		$this->assertEquals( 0, $rsvp->get( $user_id )['id'] );
+		$this->assertEquals( 0, $rsvp->get( $user_id )['comment_id'] );
 
 		$rsvp->save( $user_id, $status );
 
@@ -47,7 +48,7 @@ class Test_Rsvp extends Base {
 		$this->assertSame( $user_id, intval( $data['user_id'] ) );
 		$this->assertSame( $status, $data['status'] );
 		$this->assertIsInt( strtotime( $data['timestamp'] ) );
-		$this->assertNotEmpty( $data['id'] );
+		$this->assertNotEmpty( $data['comment_id'] );
 	}
 
 	/**
@@ -59,7 +60,7 @@ class Test_Rsvp extends Base {
 	public function test_save(): void {
 		$post    = $this->mock->post(
 			array(
-				'post_type' => 'gatherpress_event',
+				'post_type' => Event::POST_TYPE,
 			)
 		)->get();
 		$rsvp    = new Rsvp( $post->ID );
@@ -101,7 +102,7 @@ class Test_Rsvp extends Base {
 
 		$post      = $this->mock->post(
 			array(
-				'post_type' => 'gatherpress_event',
+				'post_type' => Event::POST_TYPE,
 				'post_meta' => array(
 					'gatherpress_max_guest_limit' => 2,
 				),
@@ -139,7 +140,7 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_check_waiting_list_with_no_attendees(): void {
-		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$rsvp     = new Rsvp( $event_id );
 
 		$this->assertEquals(
@@ -158,7 +159,7 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_check_waiting_list_with_unlimited_attendance(): void {
-		$event_id  = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+		$event_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$rsvp      = new Rsvp( $event_id );
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
@@ -192,7 +193,7 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_check_waiting_list_with_limited_attendance(): void {
-		$event_id  = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
+		$event_id  = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
 		$rsvp      = new Rsvp( $event_id );
 		$user_1_id = $this->factory->user->create();
 		$user_2_id = $this->factory->user->create();
@@ -231,7 +232,7 @@ class Test_Rsvp extends Base {
 	public function test_attending_limit_reached(): void {
 		$post = $this->mock->post(
 			array(
-				'post_type' => 'gatherpress_event',
+				'post_type' => Event::POST_TYPE,
 			)
 		)->get();
 		$rsvp = new Rsvp( $post->ID );
@@ -285,7 +286,7 @@ class Test_Rsvp extends Base {
 	public function test_responses(): void {
 		$post      = $this->mock->post(
 			array(
-				'post_type' => 'gatherpress_event',
+				'post_type' => Event::POST_TYPE,
 			)
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
@@ -300,12 +301,12 @@ class Test_Rsvp extends Base {
 		$this->assertEquals( 2, $responses['all']['count'], 'Failed to assert that count is 2.' );
 		$this->assertEquals(
 			$user_id_1,
-			$responses['attending']['records'][0]['id'],
+			$responses['attending']['records'][0]['userId'],
 			'Failed to assert user ID matches.'
 		);
 		$this->assertEquals(
 			$user_id_2,
-			$responses['not_attending']['records'][0]['id'],
+			$responses['not_attending']['records'][0]['userId'],
 			'Failed to assert user ID matches.'
 		);
 
@@ -336,7 +337,7 @@ class Test_Rsvp extends Base {
 
 		$post      = $this->mock->post(
 			array(
-				'post_type' => 'gatherpress_event',
+				'post_type' => Event::POST_TYPE,
 			)
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
@@ -386,7 +387,7 @@ class Test_Rsvp extends Base {
 	public function test_sort_by_timestamp(): void {
 		$post  = $this->mock->post(
 			array(
-				'post_type' => 'gatherpress_event',
+				'post_type' => Event::POST_TYPE,
 			)
 		)->get();
 		$rsvp  = new Rsvp( $post->ID );

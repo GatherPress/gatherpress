@@ -106,7 +106,7 @@ class Rsvp_Response {
 						return 'all' !== $key;
 					}
 				),
-				function ( $collected_counts, $key ) use ( $responses ) {
+				static function ( $collected_counts, $key ) use ( $responses ): array {
 					return array_merge( $collected_counts, array( $key => $responses[ $key ]['count'] ) );
 				},
 				array()
