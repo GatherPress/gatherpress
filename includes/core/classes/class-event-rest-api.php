@@ -415,7 +415,7 @@ class Event_Rest_Api {
 					$member_ids,
 					array_map(
 						static function ( $member ) {
-							return $member['id'];
+							return $member['userId'];
 						},
 						$all_responses[ $status ]['records']
 					)
