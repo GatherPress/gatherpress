@@ -287,8 +287,7 @@ class Rsvp {
 		}
 
 		// If not attending and anonymous or status is 'no_status', remove the record.
-		if (
-			( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
+		if ( ( 'not_attending' === $status && $anonymous ) || 'no_status' === $status ) {
 			wp_delete_comment( $comment_id, true );
 
 			wp_cache_delete( sprintf( self::CACHE_KEY, $post_id ), GATHERPRESS_CACHE_GROUP );
