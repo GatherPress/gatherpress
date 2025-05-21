@@ -123,13 +123,16 @@ class RSVP_List_Table extends WP_List_Table {
 	public function register_column_options(): void {
 		$screen = get_current_screen();
 
-		if ( ! $screen ) {
+		if ( empty( $screen ) ) {
 			return;
 		}
 
 		$screen->add_option( 'columns', array() );
 
-		add_filter( "manage_{$screen->id}_columns", array( $this, 'get_hideable_columns' ) );
+		add_filter(
+			sprintf( 'manage_%s_columns', sanitize_key( $screen->id ) ),
+			array( $this, 'get_hideable_columns' )
+		);
 	}
 
 	/**
@@ -146,13 +149,16 @@ class RSVP_List_Table extends WP_List_Table {
 	 */
 	public function get_hidden_columns(): array {
 		$screen = get_current_screen();
-		$hidden = array();
 
-		if ( ! empty( $screen ) ) {
-			$hidden = get_user_option( 'manage_' . $screen->id . '_columnshidden' );
+		if ( empty( $screen ) ) {
+			return array();
 		}
 
-		return ( ! empty( $hidden ) && is_array( $hidden ) ) ? $hidden : array();
+		$hidden = get_user_option(
+			sprintf( 'manage%scolumnshidden', sanitize_key( $screen->id ) )
+		);
+
+		return ( is_array( $hidden ) ) ? $hidden : array();
 	}
 
 	/**
@@ -273,7 +279,7 @@ class RSVP_List_Table extends WP_List_Table {
 			} else {
 				add_filter(
 					'comments_clauses',
-					function ( $clauses ) use ( $search ) {
+					static function ( $clauses ) use ( $search ): array {
 						global $wpdb;
 						$search_term = '%' . $wpdb->esc_like( $search ) . '%';
 
@@ -405,7 +411,7 @@ class RSVP_List_Table extends WP_List_Table {
 
 				return $name;
 			case 'event':
-				return '<a href="' . get_permalink( $item['comment_post_ID'] ) . '">' . $item['event_title'] . '</a>';
+				return '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' . wp_kses_post( $item['event_title'] ) . '</a>';
 			case 'approved':
 				$statuses = array(
 					'1'    => __( 'Approved', 'gatherpress' ),
