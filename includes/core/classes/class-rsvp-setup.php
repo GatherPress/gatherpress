@@ -55,6 +55,7 @@ class Rsvp_Setup {
 	 */
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
+		add_action( 'init', array( $this, 'initialize_rsvp_form_handling' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
 
@@ -92,6 +93,51 @@ class Rsvp_Setup {
 				'publicly_queryable' => false,
 				'show_in_rest'       => true,
 			)
+		);
+	}
+
+	/**
+	 * Initializes RSVP form handling.
+	 *
+	 * This method detects RSVP form submissions and configures the necessary WordPress
+	 * filters and actions to process them correctly as specialized comment objects.
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function initialize_rsvp_form_handling(): void {
+		// Only proceed if this is an RSVP form submission.
+		if (
+			'POST' !== $_SERVER['REQUEST_METHOD'] ||
+			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp' ) ) )
+		) {
+			return;
+		}
+
+		add_filter( 'allow_empty_comment', '__return_true' );
+		add_filter(
+			'preprocess_comment',
+			static function ( array $comment_data ): array {
+				$comment_data['comment_content']  = '';
+				$comment_data['comment_type']     = 'gatherpress_rsvp';
+				$comment_data['comment_approved'] = 0;
+
+				return $comment_data;
+			}
+		);
+
+		add_action(
+			'comment_post',
+			static function ( int $comment_id ): void {
+				wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+			}
+		);
+
+		add_filter(
+			'comment_duplicate_message',
+			static function (): string {
+				return __( "You've already RSVP'd to this event.", 'gatherpress' );
+			}
 		);
 	}
 
