@@ -40,6 +40,7 @@ yarn.lock
 
 # Dot Files and Directories
 .gatherpress-org
+.wordpress-org
 .git
 .github
 .wordpress-version-checker.json
