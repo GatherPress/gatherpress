@@ -108,6 +108,7 @@ class Rsvp_Setup {
 	public function initialize_rsvp_form_handling(): void {
 		// Only proceed if this is an RSVP form submission.
 		if (
+			! isset( $_SERVER['REQUEST_METHOD'] ) ||
 			'POST' !== $_SERVER['REQUEST_METHOD'] ||
 			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp' ) ) )
 		) {
