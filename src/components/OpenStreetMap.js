@@ -1,8 +1,13 @@
 /**
+ * External dependencies.
+ */
+import { v4 as uuidv4 } from 'uuid';
+
+/**
  * WordPress dependencies.
  */
 import { sprintf, __ } from '@wordpress/i18n';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useState, useRef } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -37,6 +42,9 @@ const OpenStreetMap = (props) => {
 		longitude,
 	} = props;
 	const [Leaflet, setLeaflet] = useState(null);
+	const mapId = `map-${uuidv4()}`;
+	const mapRef = useRef(null);
+	const mapInstanceRef = useRef(null);
 	const style = { height };
 
 	useEffect(() => {
@@ -73,11 +81,18 @@ const OpenStreetMap = (props) => {
 	}, []);
 
 	useEffect(() => {
-		if (!Leaflet || !latitude || !longitude) {
+		if (!Leaflet || !latitude || !longitude || !mapRef.current) {
 			return;
 		}
 
-		const map = Leaflet.map('map', {
+		// Clean up previous map instance if it exists
+		if (mapInstanceRef.current) {
+			mapInstanceRef.current.remove();
+			mapInstanceRef.current = null;
+		}
+
+		// Create new map instance
+		const map = Leaflet.map(mapRef.current, {
 			gestureHandling: true,
 			gestureHandlingOptions: {
 				duration: 1500,
@@ -94,6 +109,7 @@ const OpenStreetMap = (props) => {
 				},
 			},
 		}).setView([latitude, longitude], zoom);
+		mapInstanceRef.current = map;
 
 		Leaflet.Icon.Default.imagePath =
 			getFromGlobal('urls.pluginUrl') + 'build/images/';
@@ -112,7 +128,10 @@ const OpenStreetMap = (props) => {
 		Leaflet.marker([latitude, longitude]).addTo(map).bindPopup(location);
 
 		return () => {
-			map.remove();
+			if (mapInstanceRef.current) {
+				mapInstanceRef.current.remove();
+				mapInstanceRef.current = null;
+			}
 		};
 	}, [Leaflet, latitude, location, longitude, zoom]);
 
@@ -120,7 +139,9 @@ const OpenStreetMap = (props) => {
 		return null;
 	}
 
-	return <div className={className} id="map" style={style}></div>;
+	return (
+		<div className={className} id={mapId} ref={mapRef} style={style}></div>
+	);
 };
 
 export default OpenStreetMap;

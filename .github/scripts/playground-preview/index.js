@@ -15,10 +15,9 @@ function createBlueprintUrl(context, number) {
 	const { repo, owner } = context;
 	const workflow = encodeURI('Playground Preview');  // Encode the workflow name
 	const artifact = 'gatherpress-pr'; // GitHub Actions artifact name
-	// const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
-	const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php'; // RESTORED TO TEST // SHOULD BE REMOVED BEFORE #750 GETS MERGED //
+	const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
 
-	return `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
+	return `${proxy}?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
 }
 
 /**
