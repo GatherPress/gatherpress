@@ -21,6 +21,11 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+// Ensure no other versions of GatherPress are currently running.
+if ( require_once __DIR__ . '/includes/core/duplicate-check.php' ) {
+	return;
+}
+
 // Constants.
 define( 'GATHERPRESS_CACHE_GROUP', 'gatherpress_cache' );
 define( 'GATHERPRESS_CORE_FILE', __FILE__ );
