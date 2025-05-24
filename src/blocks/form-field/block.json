@@ -1,0 +1,60 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/form-field",
+	"version": "1.0.0",
+	"title": "Form Field",
+	"category": "gatherpress",
+	"icon": "text",
+	"example": {},
+	"description": "A flexible form field that can be configured as various input types.",
+	"attributes": {
+		"fieldType": {
+			"type": "string",
+			"default": "text"
+		},
+		"fieldName": {
+			"type": "string",
+			"default": ""
+		},
+		"label": {
+			"type": "string",
+			"default": ""
+		},
+		"placeholder": {
+			"type": "string",
+			"default": ""
+		},
+		"required": {
+			"type": "boolean",
+			"default": false
+		},
+		"helpText": {
+			"type": "string",
+			"default": ""
+		},
+		"options": {
+			"type": "string",
+			"default": ""
+		},
+		"defaultValue": {
+			"type": "string",
+			"default": ""
+		},
+		"minLength": {
+			"type": "number",
+			"default": null
+		},
+		"maxLength": {
+			"type": "number",
+			"default": null
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
