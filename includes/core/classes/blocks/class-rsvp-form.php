@@ -97,7 +97,7 @@ class Rsvp_Form {
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 
 		$tag->next_tag();
-		$tag->set_attribute( 'action', home_url( 'wp-comments-post.php' ) );
+		$tag->set_attribute( 'action', site_url( 'wp-comments-post.php' ) );
 		$tag->set_attribute( 'method', 'post' );
 
 		return $tag->get_updated_html();
