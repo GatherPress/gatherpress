@@ -115,20 +115,21 @@ class Rsvp_Setup {
 			return;
 		}
 
-		add_filter( 'allow_empty_comment', '__return_true' );
+		add_filter( 'allow_empty_comment', '__return_true', PHP_INT_MAX );
 
 		add_filter( 'comments_open', '__return_true', PHP_INT_MAX );
 
 		add_filter(
 			'preprocess_comment',
 			static function ( array $comment_data ): array {
-				$comment_data['comment_content']  = '';
-				$comment_data['comment_type']     = 'gatherpress_rsvp';
-				$comment_data['comment_approved'] = 0;
+				$comment_data['comment_content'] = '';
+				$comment_data['comment_type']    = 'gatherpress_rsvp';
 
 				return $comment_data;
 			}
 		);
+
+		add_filter( 'pre_comment_approved', '__return_zero' );
 
 		add_action(
 			'comment_post',
