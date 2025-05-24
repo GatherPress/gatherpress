@@ -41,6 +41,7 @@
 
 		.gatherpress-rsvp-response {
 			&__items {
+				margin-left: 1rem;
 				flex-grow: 2;
 				grid-template-columns: repeat(auto-fill, minmax(min(1rem, 100%), 1fr));
 			}
@@ -51,10 +52,6 @@
 				margin-bottom: 0;
 				margin-left: -1rem;
 				width: 3.125rem;
-
-				&:first-child {
-					margin-left: 0;
-				}
 
 				img {
 					width: 3.125rem;
