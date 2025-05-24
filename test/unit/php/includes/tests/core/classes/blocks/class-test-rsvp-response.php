@@ -389,6 +389,7 @@ class Test_Rsvp_Response extends Base {
 		$instance   = Rsvp_Response::get_instance();
 		$admin_id   = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		$user_id    = $this->factory()->user->create();
+		$user       = get_userdata( $user_id );
 		$comment_id = $this->factory()->comment->create(
 			array(
 				'user_id'      => $user_id,
@@ -401,11 +402,10 @@ class Test_Rsvp_Response extends Base {
 
 		$comment = get_comment( $comment_id );
 		$args    = array( 'url' => '' );
-
-		$result = $instance->modify_avatar_for_gatherpress_rsvp( $args, $comment );
+		$result  = $instance->modify_avatar_for_gatherpress_rsvp( $args, $comment );
 
 		$this->assertEquals(
-			get_avatar_url( $user_id, array( 'default' => 'mystery' ) ),
+			get_avatar_url( $user->user_email, array( 'default' => 'mystery' ) ),
 			$result['url'],
 			'Admin should see actual user avatar for anonymous RSVP'
 		);

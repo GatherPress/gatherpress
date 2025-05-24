@@ -441,7 +441,7 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertEquals( 0, $response->data['guests'] );
 		$this->assertSame(
 			$user_id,
-			$response->data['responses']['attending']['records'][0]['id'],
+			$response->data['responses']['attending']['records'][0]['userId'],
 			'Failed to assert that user ID matches.'
 		);
 		$this->assertSame(

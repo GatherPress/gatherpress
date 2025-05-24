@@ -13,10 +13,10 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
-use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
+use WP_User;
 
 /**
  * Class Rsvp_Response.
@@ -106,7 +106,7 @@ class Rsvp_Response {
 						return 'all' !== $key;
 					}
 				),
-				function ( $collected_counts, $key ) use ( $responses ) {
+				static function ( $collected_counts, $key ) use ( $responses ): array {
 					return array_merge( $collected_counts, array( $key => $responses[ $key ]['count'] ) );
 				},
 				array()
@@ -239,21 +239,27 @@ class Rsvp_Response {
 			is_a( $comment, 'WP_Comment' ) &&
 			'gatherpress_rsvp' === $comment->comment_type
 		) {
-			// Currently, the avatar URL is retrieved based on the user ID.
-			// In the future, when non-user RSVPs are supported, the email address can be used as well.
-			$user_id = $comment->user_id;
+			$email = $comment->comment_author_email;
+
+			if ( intval( $comment->user_id ) && empty( $email ) ) {
+				$user = new WP_User( $comment->user_id );
+
+				if ( $user->exists() ) {
+					$email = $user->user_email;
+				}
+			}
 
 			if (
 				intval( get_comment_meta( intval( $comment->comment_ID ), 'gatherpress_rsvp_anonymous', true ) ) &&
-				! current_user_can( 'edit_posts' )
+				! current_user_can( Rsvp::CAPABILITY )
 			) {
-				// Set the user ID to 0 if the RSVP is marked as anonymous and the current user
+				// Set the email to empty if the RSVP is marked as anonymous and the current user
 				// does not have permission to edit posts. This ensures the avatar defaults
 				// to a generic or placeholder image for anonymous responses.
-				$user_id = 0;
+				$email = '';
 			}
 
-			$args['url'] = get_avatar_url( $user_id, array( 'default' => 'mystery' ) );
+			$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
 		}
 
 		return $args;

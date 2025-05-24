@@ -21,7 +21,7 @@
 		}
 	}
 
-	&__footer {
+	.gatherpress-events-list__footer {
 		border-bottom: 1px solid #ccc;
 		display: flex;
 		margin-bottom: 2rem;
@@ -41,9 +41,8 @@
 
 		.gatherpress-rsvp-response {
 			&__items {
-				display: flex;
 				flex-grow: 2;
-				gap: 0;
+				grid-template-columns: repeat(auto-fill, minmax(min(1rem, 100%), 1fr));
 			}
 
 			&__member-avatar {

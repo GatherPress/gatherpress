@@ -1,12 +1,4 @@
-.gatherpress-admin {
-	&__site-check {
-		align-items: center;
-		display: flex;
-		gap: 1rem;
-		padding: 0.5rem;
-
-		> div:last-child {
-			margin-left: auto;
-		}
-	}
+.gatherpress-attendee-info {
+	display: flex;
+	gap: 0.5rem;
 }

@@ -39,15 +39,45 @@ class Test_Rsvp_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'initialize_rsvp_form_handling' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_process_waiting_list' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'admin_menu',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_rsvp_submenu_page' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => sprintf( 'set_screen_option_%s_per_page', Rsvp::COMMENT_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'set_rsvp_screen_options' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'parent_file',
+				'priority' => 10,
+				'callback' => array( $instance, 'highlight_admin_menu' ),
 			),
 			array(
 				'type'     => 'filter',
 				'name'     => 'get_comments_number',
 				'priority' => 10,
 				'callback' => array( $instance, 'adjust_comments_number' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'comment_text',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_hide_rsvp_comment_content' ),
 			),
 		);
 
