@@ -116,6 +116,9 @@ class Rsvp_Setup {
 		}
 
 		add_filter( 'allow_empty_comment', '__return_true' );
+
+		add_filter( 'comments_open', '__return_true', PHP_INT_MAX );
+
 		add_filter(
 			'preprocess_comment',
 			static function ( array $comment_data ): array {
