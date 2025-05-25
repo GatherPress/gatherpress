@@ -2,12 +2,17 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	InspectorControls,
+	RichText,
+} from '@wordpress/block-editor';
 import {
 	PanelBody,
 	SelectControl,
 	TextControl,
 	ToggleControl,
+	RangeControl,
 } from '@wordpress/components';
 
 /**
@@ -19,25 +24,58 @@ import {
  * @return {JSX.Element} The edit component.
  */
 export default function Edit({ attributes, setAttributes }) {
-	const { fieldType, fieldName, label, placeholder, required } = attributes;
+	const {
+		fieldType,
+		fieldName,
+		label,
+		placeholder,
+		required,
+		inputFontSize,
+		inputLineHeight,
+		inputBorderWidth,
+		inputBorderRadius,
+	} = attributes;
 
 	const blockProps = useBlockProps();
 
 	return (
 		<>
 			<div {...blockProps}>
-				{label && (
-					<div>
-						{label}
-						{required && <span className="required">*</span>}
-					</div>
-				)}
+				<RichText
+					tagName="label"
+					placeholder={__('Add label…', 'gatherpress')}
+					value={label}
+					onChange={(value) => setAttributes({ label: value })}
+					allowedFormats={[]}
+				/>
+				{required && <span className="required">*</span>}
 				<input
+					style={{
+						fontSize:
+							inputFontSize !== undefined
+								? `${inputFontSize}px`
+								: undefined,
+						lineHeight:
+							inputLineHeight !== undefined
+								? inputLineHeight
+								: undefined,
+						borderWidth:
+							inputBorderWidth !== undefined
+								? `${inputBorderWidth}px`
+								: undefined,
+						borderRadius:
+							inputBorderRadius !== undefined
+								? `${inputBorderRadius}px`
+								: undefined,
+					}}
 					type={fieldType}
 					name={fieldName}
-					placeholder={placeholder}
+					value={placeholder || ''}
+					onChange={(e) =>
+						setAttributes({ placeholder: e.target.value })
+					}
+					placeholder={__('Enter placeholder text…', 'gatherpress')}
 					required={required}
-					disabled // Disabled in editor
 				/>
 			</div>
 
@@ -97,6 +135,45 @@ export default function Edit({ attributes, setAttributes }) {
 						checked={required}
 						onChange={(value) => setAttributes({ required: value })}
 						help={__('Make this field required', 'gatherpress')}
+					/>
+				</PanelBody>
+				<PanelBody title={__('Input Field Styles', 'gatherpress')}>
+					<RangeControl
+						label={__('Font Size (px)', 'gatherpress')}
+						value={inputFontSize}
+						onChange={(value) =>
+							setAttributes({ inputFontSize: value })
+						}
+						min={10}
+						max={32}
+					/>
+					<RangeControl
+						label={__('Line Height', 'gatherpress')}
+						value={inputLineHeight}
+						onChange={(value) =>
+							setAttributes({ inputLineHeight: value })
+						}
+						min={1}
+						max={3}
+						step={0.1}
+					/>
+					<RangeControl
+						label={__('Border Width (px)', 'gatherpress')}
+						value={inputBorderWidth}
+						onChange={(value) =>
+							setAttributes({ inputBorderWidth: value })
+						}
+						min={0}
+						max={10}
+					/>
+					<RangeControl
+						label={__('Border Radius (px)', 'gatherpress')}
+						value={inputBorderRadius}
+						onChange={(value) =>
+							setAttributes({ inputBorderRadius: value })
+						}
+						min={0}
+						max={20}
 					/>
 				</PanelBody>
 			</InspectorControls>

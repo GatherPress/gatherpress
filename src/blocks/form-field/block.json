@@ -33,21 +33,20 @@
 			"type": "string",
 			"default": ""
 		},
-		"options": {
-			"type": "string",
-			"default": ""
+		"inputFontSize": {
+			"type": "number"
 		},
-		"defaultValue": {
-			"type": "string",
-			"default": ""
-		},
-		"minLength": {
+		"inputLineHeight": {
 			"type": "number",
-			"default": null
+			"default": 1.5
 		},
-		"maxLength": {
+		"inputBorderWidth": {
 			"type": "number",
-			"default": null
+			"default": 1
+		},
+		"inputBorderRadius": {
+			"type": "number",
+			"default": 0
 		}
 	},
 	"supports": {
