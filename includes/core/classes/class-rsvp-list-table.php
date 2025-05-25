@@ -622,7 +622,7 @@ class RSVP_List_Table extends WP_List_Table {
 	 * Processes bulk actions for multiple RSVPs.
 	 *
 	 * Handles security verification and processes bulk operations such as approval,
-	 * unapproval, or deletion of RSVPs. Requires appropriate nonce verification 
+	 * unapproval, or deletion of RSVPs. Requires appropriate nonce verification
 	 * and capability checks before processing any actions.
 	 *
 	 * @since 1.0.0
@@ -652,7 +652,7 @@ class RSVP_List_Table extends WP_List_Table {
 			return;
 		}
 
-		$current_action = $this->current_action();
+		$current_action    = $this->current_action();
 		$action_status_map = array(
 			'approve'   => 'approve',
 			'unapprove' => 'hold',
@@ -692,32 +692,32 @@ class RSVP_List_Table extends WP_List_Table {
 			admin_url( 'edit.php' )
 		);
 
-		// Get counts for each status
+		// Get counts for each status.
 		$all_count = $this->get_rsvp_count();
-		
-		$approved_args = array(
+
+		$approved_args  = array(
 			'type'   => Rsvp::COMMENT_TYPE,
 			'status' => 'approve',
 			'count'  => true,
 		);
 		$approved_count = get_comments( $approved_args );
-		
-		$pending_args = array(
+
+		$pending_args  = array(
 			'type'   => Rsvp::COMMENT_TYPE,
 			'status' => 'hold',
 			'count'  => true,
 		);
 		$pending_count = get_comments( $pending_args );
 
-		// Get count for current user's RSVPs
-		$mine_args = array(
+		// Get count for current user's RSVPs.
+		$mine_args  = array(
 			'type'    => Rsvp::COMMENT_TYPE,
 			'user_id' => get_current_user_id(),
 			'count'   => true,
 		);
 		$mine_count = get_comments( $mine_args );
 
-		// Build the links array
+		// Build the links array.
 		$status_links['all'] = sprintf(
 			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
 			esc_url( $base_url ),

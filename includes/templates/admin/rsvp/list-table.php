@@ -47,16 +47,16 @@ $rsvp_table->prepare_items();
 
 	<form method="post">
 		<?php
-		// Display the views
-		$views = $rsvp_table->get_views();
+		// Display the views.
+		$gatherpress_views = $rsvp_table->get_views();
 		echo '<ul class="subsubsub">';
-		foreach ( $views as $class => $view ) {
-			$views[ $class ] = "\t<li class='$class'>$view";
+		foreach ( $gatherpress_views as $gatherpress_class => $gatherpress_view ) {
+			$gatherpress_views[ $gatherpress_class ] = "\t<li class='$gatherpress_class'>$gatherpress_view";
 		}
-		echo implode( " |</li>\n", $views ) . "</li>\n";
+		echo wp_kses_post( implode( " |</li>\n", $gatherpress_views ) . "</li>\n" );
 		echo '</ul>';
 
-		$rsvp_table->display(); 
+		$rsvp_table->display();
 		?>
 	</form>
 </div>
