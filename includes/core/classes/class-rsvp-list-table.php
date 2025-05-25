@@ -676,7 +676,7 @@ class RSVP_List_Table extends WP_List_Table {
 
 	/**
 	 * Retrieves the list of views available on this table.
-	 * 
+	 *
 	 * Overrides parent method to add custom views for RSVP management.
 	 * Note: This method processes request parameters for view state only,
 	 * actual data operations are handled separately with nonce verification.
