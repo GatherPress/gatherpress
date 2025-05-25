@@ -624,8 +624,8 @@ class RSVP_List_Table extends WP_List_Table {
 	 * Processes bulk actions for multiple RSVPs.
 	 *
 	 * Handles security verification and processes bulk operations such as approval,
-	 * unapproval, or deletion of RSVPs. Requires appropriate nonce verification
-	 * and capability checks before processing any actions.
+	 * unapproval, marking as spam, or deletion of RSVPs. Requires appropriate nonce
+	 * verification and capability checks before processing any actions.
 	 *
 	 * @since 1.0.0
 	 *
