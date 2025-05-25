@@ -734,6 +734,7 @@ class RSVP_List_Table extends WP_List_Table {
 			number_format_i18n( $all_count )
 		);
 
+		$mine_count = is_array( $mine_count ) ? 0 : (int) $mine_count;
 		if ( $mine_count > 0 ) {
 			$status_links['mine'] = sprintf(
 				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
