@@ -20,11 +20,66 @@ use WP_Screen;
  * @coversDefaultClass \GatherPress\Core\RSVP_List_Table
  */
 class Test_RSVP_List_Table extends Base {
-    public function test_column_default(): void {
-        // Test event column
-        $event_col = $this->list_table->column_default( $rsvp, 'event' );
-        $this->assertStringContainsString( 'Test Event', $event_col );
+	/**
+	 * The RSVP list table instance.
+	 *
+	 * @var RSVP_List_Table
+	 */
+	private $list_table;
 
-        // Test approved column
-    }
+	/**
+	 * Test event ID.
+	 *
+	 * @var int
+	 */
+	private $event_id;
+
+	/**
+	 * Test RSVP data.
+	 *
+	 * @var array
+	 */
+	private $rsvp;
+
+	/**
+	 * Set up test environment.
+	 */
+	public function set_up(): void {
+		parent::set_up();
+		
+		$this->list_table = new RSVP_List_Table();
+
+		// Create a test event
+		$this->event_id = $this->factory->post->create([
+			'post_type'  => Event::POST_TYPE,
+			'post_title' => 'Test Event',
+			'post_name'  => 'test-event',
+			'post_status' => 'publish'
+		]);
+
+		// Ensure permalinks are set up
+		global $wp_rewrite;
+		$wp_rewrite->set_permalink_structure('/%postname%/');
+		$wp_rewrite->flush_rules();
+		
+		// Create a test RSVP
+		$rsvp = $this->factory->comment->create_and_get([
+			'comment_post_ID' => $this->event_id,
+			'comment_type'    => Rsvp::COMMENT_TYPE,
+		]);
+		
+		$this->rsvp = (array) $rsvp;
+		$this->rsvp['event_title'] = get_the_title($this->event_id);
+	}
+
+	/**
+	 * Test the column_default method.
+	 */
+	public function test_column_default(): void {
+		// Test event column.
+		$event_col = $this->list_table->column_default( $this->rsvp, 'event' );
+		$this->assertStringContainsString( 'Test Event', $event_col );
+
+		// Test approved column.
+	}
 } 
