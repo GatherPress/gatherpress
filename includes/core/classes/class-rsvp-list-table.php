@@ -306,9 +306,9 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['user_id'] = get_current_user_id();
 		}
 
-		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending' ), true ) ) {
+		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
 			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
-			$args['status'] = ( 'approved' === $status ) ? 'approve' : 'hold';
+			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
 		}
 
 		$orderby = isset( $_REQUEST['orderby'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) ) : 'comment_date';
@@ -364,9 +364,9 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['user_id'] = get_current_user_id();
 		}
 
-		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending' ), true ) ) {
+		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
 			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
-			$args['status'] = ( 'approved' === $status ) ? 'approve' : 'hold';
+			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
 		}
 
 		$count = get_comments( $args );
@@ -584,6 +584,8 @@ class RSVP_List_Table extends WP_List_Table {
 		return array(
 			'approve'   => __( 'Approve', 'gatherpress' ),
 			'unapprove' => __( 'Unapprove', 'gatherpress' ),
+			'spam'      => __( 'Mark as Spam', 'gatherpress' ),
+			'unspam'    => __( 'Not Spam', 'gatherpress' ),
 			'delete'    => __( 'Delete', 'gatherpress' ),
 		);
 	}
@@ -633,7 +635,14 @@ class RSVP_List_Table extends WP_List_Table {
 		$nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
 
 		if ( ! $nonce || ! wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
-			return;
+			// Check for delete action nonce separately.
+			if ( 'delete' === $this->current_action() ) {
+				if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'gatherpress_rsvp_action' ) ) {
+					return;
+				}
+			} else {
+				return;
+			}
 		}
 
 		if ( ! current_user_can( Rsvp::CAPABILITY ) ) {
@@ -656,6 +665,8 @@ class RSVP_List_Table extends WP_List_Table {
 		$action_status_map = array(
 			'approve'   => 'approve',
 			'unapprove' => 'hold',
+			'spam'      => 'spam',
+			'unspam'    => 'approve',
 		);
 
 		if ( 'delete' === $current_action ) {
@@ -717,6 +728,14 @@ class RSVP_List_Table extends WP_List_Table {
 		);
 		$pending_count = get_comments( $pending_args );
 
+		// Get spam count.
+		$spam_args  = array(
+			'type'   => Rsvp::COMMENT_TYPE,
+			'status' => 'spam',
+			'count'  => true,
+		);
+		$spam_count = get_comments( $spam_args );
+
 		// Get count for current user's RSVPs.
 		$mine_args  = array(
 			'type'    => Rsvp::COMMENT_TYPE,
@@ -761,6 +780,32 @@ class RSVP_List_Table extends WP_List_Table {
 			number_format_i18n( $pending_count )
 		);
 
+		$status_links['spam'] = sprintf(
+			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			esc_url( add_query_arg( array( 'status' => 'spam' ), $base_url ) ),
+			'spam' === $current ? ' class="current"' : '',
+			__( 'Spam', 'gatherpress' ),
+			number_format_i18n( $spam_count )
+		);
+
 		return $status_links;
+	}
+
+	/**
+	 * Displays the RSVP list table with nonce fields.
+	 *
+	 * Outputs the HTML for the RSVP list table, including necessary nonce fields
+	 * for security. This method extends the parent display() method to add
+	 * GatherPress-specific nonce fields for RSVP actions.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function display() {
+		wp_nonce_field( Rsvp::COMMENT_TYPE );
+		wp_nonce_field( 'gatherpress_rsvp_action', '_gatherpress_rsvp_action_nonce' );
+
+		parent::display();
 	}
 }
