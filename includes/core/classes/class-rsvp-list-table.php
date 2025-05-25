@@ -302,10 +302,6 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['post_id'] = intval( $_REQUEST['event'] );
 		}
 
-		if ( isset( $_REQUEST['user_id'] ) && get_current_user_id() === intval( $_REQUEST['user_id'] ) ) {
-			$args['user_id'] = get_current_user_id();
-		}
-
 		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
 			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
 			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
@@ -358,10 +354,6 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['post_id'] = intval( $_REQUEST['post_id'] );
 		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
 			$args['post_id'] = intval( $_REQUEST['event'] );
-		}
-
-		if ( isset( $_REQUEST['user_id'] ) && get_current_user_id() === intval( $_REQUEST['user_id'] ) ) {
-			$args['user_id'] = get_current_user_id();
 		}
 
 		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
@@ -696,11 +688,14 @@ class RSVP_List_Table extends WP_List_Table {
 		$status_links = array();
 		$current      = 'all';
 
-		if (
-			isset( $_REQUEST['_wpnonce'] ) &&
-			wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), Rsvp::COMMENT_TYPE )
-		) {
-			$current = isset( $_REQUEST['status'] ) ? sanitize_key( $_REQUEST['status'] ) : 'all';
+		// Determine current view based on URL parameters, with sanitization.
+		if ( isset( $_REQUEST['user_id'] ) ) {
+			$user_id = absint( $_REQUEST['user_id'] );
+			if ( get_current_user_id() === $user_id ) {
+				$current = 'mine';
+			}
+		} elseif ( isset( $_REQUEST['status'] ) ) {
+			$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
 		}
 
 		$base_url = add_query_arg(
@@ -711,38 +706,55 @@ class RSVP_List_Table extends WP_List_Table {
 			admin_url( 'edit.php' )
 		);
 
+		// Get the RSVP_Query instance.
+		$rsvp_query = Rsvp_Query::get_instance();
+
+		// Temporarily remove the exclusion filter.
+		remove_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
+
 		// Get counts for each status.
-		$all_count = $this->get_rsvp_count();
-
-		$approved_args  = array(
-			'type'   => Rsvp::COMMENT_TYPE,
-			'status' => 'approve',
-			'count'  => true,
+		$all_count = get_comments(
+			array(
+				'type'  => Rsvp::COMMENT_TYPE,
+				'count' => true,
+			)
 		);
-		$approved_count = get_comments( $approved_args );
 
-		$pending_args  = array(
-			'type'   => Rsvp::COMMENT_TYPE,
-			'status' => 'hold',
-			'count'  => true,
+		$approved_count = get_comments(
+			array(
+				'type'   => Rsvp::COMMENT_TYPE,
+				'status' => 'approve',
+				'count'  => true,
+			)
 		);
-		$pending_count = get_comments( $pending_args );
 
-		// Get spam count.
-		$spam_args  = array(
-			'type'   => Rsvp::COMMENT_TYPE,
-			'status' => 'spam',
-			'count'  => true,
+		$pending_count = get_comments(
+			array(
+				'type'   => Rsvp::COMMENT_TYPE,
+				'status' => 'hold',
+				'count'  => true,
+			)
 		);
-		$spam_count = get_comments( $spam_args );
+
+		$spam_count = get_comments(
+			array(
+				'type'   => Rsvp::COMMENT_TYPE,
+				'status' => 'spam',
+				'count'  => true,
+			)
+		);
 
 		// Get count for current user's RSVPs.
-		$mine_args  = array(
-			'type'    => Rsvp::COMMENT_TYPE,
-			'user_id' => get_current_user_id(),
-			'count'   => true,
+		$mine_count = get_comments(
+			array(
+				'type'    => Rsvp::COMMENT_TYPE,
+				'user_id' => get_current_user_id(),
+				'count'   => true,
+			)
 		);
-		$mine_count = get_comments( $mine_args );
+
+		// Re-add the exclusion filter.
+		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
 
 		// Build the links array.
 		$status_links['all'] = sprintf(
