@@ -683,13 +683,13 @@ class RSVP_List_Table extends WP_List_Table {
 	 */
 	public function get_views(): array {
 		$status_links = array();
-		$current = 'all';
+		$current      = 'all';
 
 		if (
-			isset($_REQUEST['_wpnonce']) &&
-			wp_verify_nonce(sanitize_text_field(wp_unslash($_REQUEST['_wpnonce'])), Rsvp::COMMENT_TYPE)
+			isset( $_REQUEST['_wpnonce'] ) &&
+			wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), Rsvp::COMMENT_TYPE )
 		) {
-			$current = isset($_REQUEST['status']) ? sanitize_key($_REQUEST['status']) : 'all';
+			$current = isset( $_REQUEST['status'] ) ? sanitize_key( $_REQUEST['status'] ) : 'all';
 		}
 
 		$base_url = add_query_arg(
@@ -697,7 +697,7 @@ class RSVP_List_Table extends WP_List_Table {
 				'post_type' => Event::POST_TYPE,
 				'page'      => Rsvp::COMMENT_TYPE,
 			),
-			admin_url('edit.php')
+			admin_url( 'edit.php' )
 		);
 
 		// Get counts for each status.
