@@ -675,33 +675,45 @@ class RSVP_List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Defines the available views for filtering RSVPs.
-	 *
-	 * Returns an array of view links for filtering RSVPs by their status (All, Mine, Pending, Approved).
-	 * Each view shows the count of RSVPs in that status and provides a link to filter the table.
+	 * Retrieves the list of views available on this table.
+	 * 
+	 * Overrides parent method to add custom views for RSVP management.
+	 * Note: This method processes request parameters for view state only,
+	 * actual data operations are handled separately with nonce verification.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return array Array of view links with counts.
+	 * @global string $post_type
+	 * @return array An array of HTML links for different views.
 	 */
 	public function get_views(): array {
 		$status_links = array();
 		$current      = 'all';
 
-		// Determine current view based on URL parameters, with sanitization.
-		if ( isset( $_REQUEST['user_id'] ) ) {
-			$user_id = absint( $_REQUEST['user_id'] );
-			if ( get_current_user_id() === $user_id ) {
-				$current = 'mine';
+		$nonce_verified = false;
+		if ( isset( $_REQUEST['_wpnonce'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
+			if ( wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
+				$nonce_verified = true;
 			}
-		} elseif ( isset( $_REQUEST['status'] ) ) {
-			$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
+		}
+
+		if ( $nonce_verified ) {
+			if ( isset( $_REQUEST['user_id'] ) ) {
+				$user_id = absint( $_REQUEST['user_id'] );
+				if ( get_current_user_id() === $user_id ) {
+					$current = 'mine';
+				}
+			} elseif ( isset( $_REQUEST['status'] ) ) {
+				$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
+			}
 		}
 
 		$base_url = add_query_arg(
 			array(
 				'post_type' => Event::POST_TYPE,
 				'page'      => Rsvp::COMMENT_TYPE,
+				'_wpnonce'  => wp_create_nonce( Rsvp::COMMENT_TYPE ),
 			),
 			admin_url( 'edit.php' )
 		);
@@ -756,7 +768,7 @@ class RSVP_List_Table extends WP_List_Table {
 		// Re-add the exclusion filter.
 		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
 
-		// Build the links array.
+		// Build the links array with nonce included in base URL.
 		$status_links['all'] = sprintf(
 			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
 			esc_url( $base_url ),
