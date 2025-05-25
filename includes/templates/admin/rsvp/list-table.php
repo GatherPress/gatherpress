@@ -46,6 +46,17 @@ $rsvp_table->prepare_items();
 	<?php $rsvp_table->process_bulk_action(); ?>
 
 	<form method="post">
-		<?php $rsvp_table->display(); ?>
+		<?php
+		// Display the views.
+		$gatherpress_views = $rsvp_table->get_views();
+		echo '<ul class="subsubsub">';
+		foreach ( $gatherpress_views as $gatherpress_class => $gatherpress_view ) {
+			$gatherpress_views[ $gatherpress_class ] = "\t<li class='$gatherpress_class'>$gatherpress_view";
+		}
+		echo wp_kses_post( implode( " |</li>\n", $gatherpress_views ) . "</li>\n" );
+		echo '</ul>';
+
+		$rsvp_table->display();
+		?>
 	</form>
 </div>
