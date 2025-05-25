@@ -89,6 +89,7 @@ class Test_Block extends Base {
 			'gatherpress/online-event',
 			'gatherpress/rsvp',
 			'gatherpress/rsvp-anonymous-checkbox',
+			'gatherpress/rsvp-form',
 			'gatherpress/rsvp-guest-count-display',
 			'gatherpress/rsvp-guest-count-input',
 			'gatherpress/rsvp-response',
