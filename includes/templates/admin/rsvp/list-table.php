@@ -46,6 +46,17 @@ $rsvp_table->prepare_items();
 	<?php $rsvp_table->process_bulk_action(); ?>
 
 	<form method="post">
-		<?php $rsvp_table->display(); ?>
+		<?php
+		// Display the views
+		$views = $rsvp_table->get_views();
+		echo '<ul class="subsubsub">';
+		foreach ( $views as $class => $view ) {
+			$views[ $class ] = "\t<li class='$class'>$view";
+		}
+		echo implode( " |</li>\n", $views ) . "</li>\n";
+		echo '</ul>';
+
+		$rsvp_table->display(); 
+		?>
 	</form>
 </div>
