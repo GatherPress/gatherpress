@@ -1,21 +1,21 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-import { addNewVenue } from '../reusable-user-steps/common.js';
 
-test.describe.skip('e2e test for venue map through admin side', () => {
+test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
 		test.setTimeout(120000);
+		await page.goto('/wp-admin/');
 		await page.waitForLoadState('networkidle');
 	});
 
-	test.skip('Verify the offline venue location map should not be visible on the venue post when the display map toggled button is disabled.', async ({
+	test('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
 		page,
 	}) => {
-		await login({ page, username: 'prashantbellad' });
+		await login({ page });
 
-		const postName = 'offline test event';
+		const postName = 'venue pune';
 
-		await addNewVenue({ page });
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue');
 
 		await page.getByLabel('Add title').fill(postName);
 
@@ -51,13 +51,8 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 		await page.getByLabel('Full Address').fill('Pune');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
-
-		await page.waitForSelector('#map');
-		await page.locator('#map').click({ force: true });
-
-		await page.getByRole('tab', { name: 'Block' }).click();
-		await page.getByLabel('Display the map').uncheck();
-		await expect(page.getByLabel('Hide the map')).toBeVisible();
+		await page.locator('#map').isVisible({ timeout: 30000 });
+		await expect(page.locator('#map')).toBeVisible({ timeout: 30000 });
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
@@ -66,20 +61,18 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 			.getByLabel('Editor publish')
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
+
 		await page
 			.getByLabel('Editor publish')
 			.getByRole('link', { name: 'View Venue' })
 			.click();
 
-		await expect(
-			page
-				.locator('#wp--skip-link--target')
-				.getByRole('heading', { postName })
-		).toBeVisible();
+		await page.waitForSelector('#map');
 
-		await page.screenshot({
-			path: 'venue_post_no_map.png',
-			fullPage: true,
+		await page.screenshot({ path: 'artifacts/pune-venue.png' });
+
+		await expect(page).toHaveScreenshot('pune-venue.png', {
+			maxDiffPixels: 20000,
 		});
 	});
 });
