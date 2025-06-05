@@ -30,6 +30,7 @@ export default function Edit({ attributes, setAttributes }) {
 		label,
 		placeholder,
 		required,
+		requiredText,
 		inputFontSize,
 		inputLineHeight,
 		inputBorderWidth,
@@ -38,36 +39,73 @@ export default function Edit({ attributes, setAttributes }) {
 
 	const blockProps = useBlockProps();
 
+	// Define which field types get which styles
+	const getInputStyles = (ft) => {
+		const styles = {};
+
+		// Text-based inputs get font and border styles
+		if (['text', 'email', 'url'].includes(ft)) {
+			if (inputFontSize !== undefined) {
+				styles.fontSize = `${inputFontSize}px`;
+			}
+			if (inputLineHeight !== undefined) {
+				styles.lineHeight = inputLineHeight;
+			}
+			if (inputBorderWidth !== undefined) {
+				styles.borderWidth = `${inputBorderWidth}px`;
+			}
+			if (inputBorderRadius !== undefined) {
+				styles.borderRadius = `${inputBorderRadius}px`;
+			}
+		}
+
+		// Checkbox gets limited styling (maybe just border)
+		if (ft === 'checkbox') {
+			if (inputBorderWidth !== undefined) {
+				styles.borderWidth = `${inputBorderWidth}px`;
+			}
+			if (inputBorderRadius !== undefined) {
+				styles.borderRadius = `${inputBorderRadius}px`;
+			}
+		}
+
+		// Radio gets minimal or no custom styling
+		if (ft === 'radio') {
+			// Maybe no custom styles, or very limited ones
+		}
+
+		return styles;
+	};
+
 	return (
 		<>
-			<div {...blockProps}>
-				<RichText
-					tagName="label"
-					placeholder={__('Add label…', 'gatherpress')}
-					value={label}
-					onChange={(value) => setAttributes({ label: value })}
-					allowedFormats={[]}
-				/>
-				{required && <span className="required">*</span>}
+			<div
+				{...blockProps}
+				className={`${blockProps.className || ''} gatherpress-field-type-${fieldType}`.trim()}
+			>
+				<div className="gatherpress-label-wrapper">
+					<RichText
+						tagName="label"
+						placeholder={__('Add label…', 'gatherpress')}
+						value={label}
+						onChange={(value) => setAttributes({ label: value })}
+						allowedFormats={[]}
+					/>
+					{required && (
+						<RichText
+							tagName="span"
+							className="gatherpress-label-required"
+							placeholder={__('(required)', 'gatherpress')}
+							value={requiredText}
+							onChange={(value) =>
+								setAttributes({ requiredText: value })
+							}
+							allowedFormats={[]}
+						/>
+					)}
+				</div>
 				<input
-					style={{
-						fontSize:
-							inputFontSize !== undefined
-								? `${inputFontSize}px`
-								: undefined,
-						lineHeight:
-							inputLineHeight !== undefined
-								? inputLineHeight
-								: undefined,
-						borderWidth:
-							inputBorderWidth !== undefined
-								? `${inputBorderWidth}px`
-								: undefined,
-						borderRadius:
-							inputBorderRadius !== undefined
-								? `${inputBorderRadius}px`
-								: undefined,
-					}}
+					style={getInputStyles(fieldType)}
 					type={fieldType}
 					name={fieldName}
 					value={placeholder || ''}
@@ -89,6 +127,18 @@ export default function Edit({ attributes, setAttributes }) {
 							{
 								label: __('Email', 'gatherpress'),
 								value: 'email',
+							},
+							{
+								label: __('URL', 'gatherpress'),
+								value: 'url',
+							},
+							{
+								label: __('Checkbox', 'gatherpress'),
+								value: 'checkbox',
+							},
+							{
+								label: __('Radio', 'gatherpress'),
+								value: 'radio',
 							},
 						]}
 						onChange={(value) =>

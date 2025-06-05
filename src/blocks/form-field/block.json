@@ -29,6 +29,10 @@
 			"type": "boolean",
 			"default": false
 		},
+		"requiredText": {
+			"type": "string",
+			"default": "(required)"
+		},
 		"helpText": {
 			"type": "string",
 			"default": ""

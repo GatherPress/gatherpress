@@ -1,0 +1,48 @@
+.wp-block-gatherpress-form-field {
+	display: flex;
+	flex-direction: column;
+
+	&.gatherpress-field-type-checkbox,
+	&.gatherpress-field-type-radio {
+		flex-direction: row-reverse;
+		justify-content: flex-end;
+		align-items: center;
+		gap: 0.75rem;
+
+		label {
+			font-weight: 400;
+			font-size: 85%;
+		}
+	}
+
+	&.gatherpress-field-type-radio:not(:first-child) {
+		margin-top: 0;
+	}
+
+	label {
+		font-weight: 500;
+	}
+
+	input {
+		margin: 0;
+	}
+
+	input[type="text"],
+	input[type="email"],
+	input[type="url"] {
+		padding: 1rem;
+		width: 100%;
+	}
+
+	.gatherpress-label-wrapper {
+		display: flex;
+		align-items: anchor-center;
+		gap: 0.25rem;
+	}
+
+	.gatherpress-label-required {
+		font-size: small;
+		opacity: 0.6;
+		font-weight: 400;
+	}
+}
