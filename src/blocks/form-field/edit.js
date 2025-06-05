@@ -6,8 +6,11 @@ import {
 	useBlockProps,
 	InspectorControls,
 	RichText,
+	LineHeightControl,
+	FontSizePicker,
 } from '@wordpress/block-editor';
 import {
+	BaseControl,
 	PanelBody,
 	SelectControl,
 	TextControl,
@@ -47,13 +50,14 @@ export default function Edit({ attributes, setAttributes }) {
 					value={label}
 					onChange={(value) => setAttributes({ label: value })}
 					allowedFormats={[]}
+					style={{ cursor: 'text' }}
 				/>
 				{required && <span className="required">*</span>}
 				<input
 					style={{
 						fontSize:
 							inputFontSize !== undefined
-								? `${inputFontSize}px`
+								? `${inputFontSize}`
 								: undefined,
 						lineHeight:
 							inputLineHeight !== undefined
@@ -138,25 +142,30 @@ export default function Edit({ attributes, setAttributes }) {
 					/>
 				</PanelBody>
 				<PanelBody title={__('Input Field Styles', 'gatherpress')}>
-					<RangeControl
-						label={__('Font Size (px)', 'gatherpress')}
-						value={inputFontSize}
-						onChange={(value) =>
-							setAttributes({ inputFontSize: value })
-						}
-						min={10}
-						max={32}
-					/>
-					<RangeControl
-						label={__('Line Height', 'gatherpress')}
-						value={inputLineHeight}
-						onChange={(value) =>
-							setAttributes({ inputLineHeight: value })
-						}
-						min={1}
-						max={3}
-						step={0.1}
-					/>
+					<BaseControl __nextHasNoMarginBottom={true}>
+						<FontSizePicker
+							withReset={ true }
+							size="__unstable-large"
+							__nextHasNoMarginBottom
+							value={inputFontSize}
+							onChange={(value) =>
+								setAttributes({ inputFontSize: value })
+							}
+						/>
+					</BaseControl>
+					<BaseControl __nextHasNoMarginBottom={true}>
+						<LineHeightControl
+							__nextHasNoMarginBottom={true}
+							__unstableInputWidth="100%"
+							value={inputLineHeight}
+							onChange={(value) =>
+								setAttributes({
+									inputLineHeight: parseFloat(value),
+								})
+							}
+							size="__unstable-large"
+						/>
+					</BaseControl>
 					<RangeControl
 						label={__('Border Width (px)', 'gatherpress')}
 						value={inputBorderWidth}
