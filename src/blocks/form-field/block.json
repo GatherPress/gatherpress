@@ -37,6 +37,58 @@
 			"type": "string",
 			"default": ""
 		},
+		"minValue": {
+			"type": "number"
+		},
+		"maxValue": {
+			"type": "number"
+		},
+		"radioOptions": {
+			"type": "array",
+			"default": [
+				{
+					"label": "",
+					"value": ""
+				}
+			]
+		},
+		"sideBySideLayout": {
+			"type": "boolean",
+			"default": false
+		},
+		"fieldWidth": {
+			"type": "number",
+			"default": 100
+		},
+		"labelTextColor": {
+			"type": "string"
+		},
+		"fieldTextColor": {
+			"type": "string"
+		},
+		"fieldBackgroundColor": {
+			"type": "string"
+		},
+		"borderColor": {
+			"type": "string"
+		},
+		"optionTextColor": {
+			"type": "string"
+		},
+		"labelFontSize": {
+			"type": "number"
+		},
+		"labelLineHeight": {
+			"type": "number",
+			"default": 1.5
+		},
+		"optionFontSize": {
+			"type": "number"
+		},
+		"optionLineHeight": {
+			"type": "number",
+			"default": 1.5
+		},
 		"inputFontSize": {
 			"type": "number"
 		},
