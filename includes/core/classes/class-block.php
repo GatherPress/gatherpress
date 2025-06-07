@@ -13,10 +13,8 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block_Template;
-use WP_HTML_Tag_Processor;
 use WP_Post;
 
 /**
@@ -105,6 +103,7 @@ class Block {
 		Blocks\Modal::get_instance();
 		Blocks\Modal_Manager::get_instance();
 		Blocks\Rsvp::get_instance();
+		Blocks\Rsvp_Form::get_instance();
 		Blocks\Rsvp_Response::get_instance();
 		Blocks\Rsvp_Template::get_instance();
 	}
