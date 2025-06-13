@@ -2,8 +2,9 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import { PanelColorSettings } from '@wordpress/block-editor';
+import { FontSizePicker, PanelColorSettings } from '@wordpress/block-editor';
 import {
+	BaseControl,
 	PanelBody,
 	RangeControl,
 	Button,
@@ -93,40 +94,18 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 				</Button>
 			</PanelBody>
 
-			<PanelColorSettings
-				title={__('Colors', 'gatherpress')}
-				colorSettings={[
-					{
-						value: labelTextColor,
-						onChange: (value) =>
-							setAttributes({ labelTextColor: value }),
-						label: __('Label Text', 'gatherpress'),
-					},
-					{
-						value: optionTextColor,
-						onChange: (value) =>
-							setAttributes({ optionTextColor: value }),
-						label: __('Option Text', 'gatherpress'),
-					},
-					{
-						value: borderColor,
-						onChange: (value) =>
-							setAttributes({ borderColor: value }),
-						label: __('Border', 'gatherpress'),
-					},
-				]}
-			/>
-
 			<PanelBody title={__('Label Styles', 'gatherpress')}>
-				<RangeControl
-					label={__('Font Size (px)', 'gatherpress')}
-					value={labelFontSize}
-					onChange={(value) =>
-						setAttributes({ labelFontSize: value })
-					}
-					min={10}
-					max={32}
-				/>
+				<BaseControl __nextHasNoMarginBottom={true}>
+					<FontSizePicker
+						withReset={true}
+						size="__unstable-large"
+						__nextHasNoMarginBottom
+						onChange={(value) =>
+							setAttributes({ labelFontSize: value })
+						}
+						value={labelFontSize}
+					/>
+				</BaseControl>
 				<RangeControl
 					label={__('Line Height', 'gatherpress')}
 					value={labelLineHeight}
@@ -140,15 +119,17 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 			</PanelBody>
 
 			<PanelBody title={__('Option Styles', 'gatherpress')}>
-				<RangeControl
-					label={__('Font Size (px)', 'gatherpress')}
-					value={optionFontSize}
-					onChange={(value) =>
-						setAttributes({ optionFontSize: value })
-					}
-					min={10}
-					max={32}
-				/>
+				<BaseControl __nextHasNoMarginBottom={true}>
+					<FontSizePicker
+						withReset={true}
+						size="__unstable-large"
+						__nextHasNoMarginBottom
+						onChange={(value) =>
+							setAttributes({ optionFontSize: value })
+						}
+						value={optionFontSize}
+					/>
+				</BaseControl>
 				<RangeControl
 					label={__('Line Height', 'gatherpress')}
 					value={optionLineHeight}
@@ -172,6 +153,30 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 					max={100}
 				/>
 			</PanelBody>
+
+			<PanelColorSettings
+				title={__('Colors', 'gatherpress')}
+				colorSettings={[
+					{
+						value: labelTextColor,
+						onChange: (value) =>
+							setAttributes({ labelTextColor: value }),
+						label: __('Label Text', 'gatherpress'),
+					},
+					{
+						value: optionTextColor,
+						onChange: (value) =>
+							setAttributes({ optionTextColor: value }),
+						label: __('Option Text', 'gatherpress'),
+					},
+					{
+						value: borderColor,
+						onChange: (value) =>
+							setAttributes({ borderColor: value }),
+						label: __('Border', 'gatherpress'),
+					},
+				]}
+			/>
 		</>
 	);
 }

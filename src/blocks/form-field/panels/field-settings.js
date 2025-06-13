@@ -4,6 +4,8 @@
 import { __ } from '@wordpress/i18n';
 import { InspectorControls } from '@wordpress/block-editor';
 import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalNumberControl as NumberControl,
 	PanelBody,
 	SelectControl,
 	TextControl,
@@ -14,11 +16,11 @@ import {
 import DefaultFieldPanels from './default-field-panels';
 import RadioFieldPanels from './radio-field-panels';
 import CheckboxFieldPanels from './checkbox-field-panels';
-import TextareaFieldPanels from './textarea-field-panels';
 import FieldValue from './field-value';
 
 export default function FieldSettingsPanel({ attributes, setAttributes }) {
-	const { fieldType, fieldName, required } = attributes;
+	const { fieldType, fieldName, minValue, maxValue, placeholder, required } =
+		attributes;
 
 	// Get field-specific panels
 	const getFieldPanels = () => {
@@ -29,8 +31,9 @@ export default function FieldSettingsPanel({ attributes, setAttributes }) {
 				return <RadioFieldPanels {...commonProps} />;
 			case 'checkbox':
 				return <CheckboxFieldPanels {...commonProps} />;
+			case 'hidden':
+				return <></>;
 			case 'textarea':
-				return <TextareaFieldPanels {...commonProps} />;
 			case 'text':
 			case 'email':
 			case 'url':
@@ -74,22 +77,86 @@ export default function FieldSettingsPanel({ attributes, setAttributes }) {
 					value={fieldName}
 					onChange={(value) => setAttributes({ fieldName: value })}
 					help={__(
-						'The name attribute for the form field',
+						'The name attribute for the form field.',
 						'gatherpress'
 					)}
 				/>
-				<FieldValue
-					fieldType={fieldType}
-					attributes={attributes}
-					setAttributes={setAttributes}
-				/>
+
 				{fieldType !== 'hidden' && (
 					<ToggleControl
 						label={__('Required', 'gatherpress')}
 						checked={required}
 						onChange={(value) => setAttributes({ required: value })}
-						help={__('Make this field required', 'gatherpress')}
+						help={__('Make this field required.', 'gatherpress')}
 					/>
+				)}
+
+				<FieldValue
+					fieldType={fieldType}
+					attributes={attributes}
+					setAttributes={setAttributes}
+				/>
+
+				{!['hidden', 'checkbox', 'radio'].includes(fieldType) && (
+					<>
+						<TextControl
+							label={__('Placeholder', 'gatherpress')}
+							value={placeholder}
+							onChange={(value) =>
+								setAttributes({ placeholder: value })
+							}
+							help={__(
+								'Placeholder text shown inside the field',
+								'gatherpress'
+							)}
+						/>
+						<NumberControl
+							label={
+								fieldType === 'number'
+									? __('Minimum Value', 'gatherpress')
+									: __('Minimum Length', 'gatherpress')
+							}
+							value={minValue}
+							onChange={(value) =>
+								setAttributes({ minValue: value })
+							}
+							min={0}
+							help={
+								fieldType === 'number'
+									? __(
+											'Minimum allowed value for this number field',
+											'gatherpress'
+										)
+									: __(
+											'Minimum number of characters required',
+											'gatherpress'
+										)
+							}
+						/>
+						<NumberControl
+							label={
+								fieldType === 'number'
+									? __('Maximum Value', 'gatherpress')
+									: __('Maximum Length', 'gatherpress')
+							}
+							value={maxValue}
+							onChange={(value) =>
+								setAttributes({ maxValue: value })
+							}
+							min={0}
+							help={
+								fieldType === 'number'
+									? __(
+											'Maximum allowed value for this number field',
+											'gatherpress'
+										)
+									: __(
+											'Maximum number of characters allowed',
+											'gatherpress'
+										)
+							}
+						/>
+					</>
 				)}
 			</PanelBody>
 			{getFieldPanels()}

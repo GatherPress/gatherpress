@@ -56,7 +56,7 @@
 				}
 			]
 		},
-		"sideBySideLayout": {
+		"inlineLayout": {
 			"type": "boolean",
 			"default": false
 		},

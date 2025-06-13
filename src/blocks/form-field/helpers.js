@@ -22,7 +22,7 @@ export const getInputStyles = (fieldType, attributes) => {
 	// Font and text styles (for text-based inputs)
 	if (['text', 'email', 'url', 'number', 'textarea'].includes(fieldType)) {
 		if (inputFontSize !== undefined) {
-			styles.fontSize = `${inputFontSize}px`;
+			styles.fontSize = `${inputFontSize}`;
 		}
 		if (inputLineHeight !== undefined) {
 			styles.lineHeight = inputLineHeight;
@@ -87,7 +87,7 @@ export const getLabelStyles = (attributes) => {
 	const styles = {};
 
 	if (labelFontSize !== undefined) {
-		styles.fontSize = `${labelFontSize}px`;
+		styles.fontSize = `${labelFontSize}`;
 	}
 	if (labelLineHeight !== undefined) {
 		styles.lineHeight = labelLineHeight;
@@ -110,7 +110,7 @@ export const getOptionStyles = (attributes) => {
 	const styles = {};
 
 	if (optionFontSize !== undefined) {
-		styles.fontSize = `${optionFontSize}px`;
+		styles.fontSize = `${optionFontSize}`;
 	}
 	if (optionLineHeight !== undefined) {
 		styles.lineHeight = optionLineHeight;
@@ -146,24 +146,24 @@ export const getInputContainerStyles = (fieldType, attributes) => {
 
 /**
  * Get wrapper classes for the field
- * @param {string}  fieldType        - The type of field
- * @param {Object}  blockProps       - Block props from useBlockProps
- * @param {boolean} sideBySideLayout - Whether to use side-by-side layout
+ * @param {string}  fieldType    - The type of field
+ * @param {Object}  blockProps   - Block props from useBlockProps
+ * @param {boolean} inlineLayout - Whether to use side-by-side layout
  * @return {string} CSS classes for the wrapper
  */
 export const getWrapperClasses = (
 	fieldType,
 	blockProps,
-	sideBySideLayout = false
+	inlineLayout = false
 ) => {
 	let classes = `${blockProps.className || ''} gatherpress-field-type-${fieldType}`;
 
 	// Add side-by-side class for text-based fields
 	if (
-		sideBySideLayout &&
+		inlineLayout &&
 		['text', 'email', 'url', 'number', 'textarea'].includes(fieldType)
 	) {
-		classes += ' gatherpress-side-by-side';
+		classes += ' gatherpress-inline-layout';
 	}
 
 	return classes.trim();

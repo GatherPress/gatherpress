@@ -2,8 +2,8 @@
  * WordPress dependencies.
  */
 import { __ } from '@wordpress/i18n';
-import { PanelColorSettings } from '@wordpress/block-editor';
-import { PanelBody, RangeControl } from '@wordpress/components';
+import { FontSizePicker, PanelColorSettings } from '@wordpress/block-editor';
+import { BaseControl, PanelBody, RangeControl } from '@wordpress/components';
 
 export default function CheckboxFieldPanels({ attributes, setAttributes }) {
 	const {
@@ -16,34 +16,18 @@ export default function CheckboxFieldPanels({ attributes, setAttributes }) {
 
 	return (
 		<>
-			<PanelColorSettings
-				title={__('Colors', 'gatherpress')}
-				colorSettings={[
-					{
-						value: labelTextColor,
-						onChange: (value) =>
-							setAttributes({ labelTextColor: value }),
-						label: __('Label Text', 'gatherpress'),
-					},
-					{
-						value: borderColor,
-						onChange: (value) =>
-							setAttributes({ borderColor: value }),
-						label: __('Border', 'gatherpress'),
-					},
-				]}
-			/>
-
 			<PanelBody title={__('Label Styles', 'gatherpress')}>
-				<RangeControl
-					label={__('Font Size (px)', 'gatherpress')}
-					value={labelFontSize}
-					onChange={(value) =>
-						setAttributes({ labelFontSize: value })
-					}
-					min={10}
-					max={32}
-				/>
+				<BaseControl __nextHasNoMarginBottom={true}>
+					<FontSizePicker
+						withReset={true}
+						size="__unstable-large"
+						__nextHasNoMarginBottom
+						onChange={(value) =>
+							setAttributes({ labelFontSize: value })
+						}
+						value={labelFontSize}
+					/>
+				</BaseControl>
 				<RangeControl
 					label={__('Line Height', 'gatherpress')}
 					value={labelLineHeight}
@@ -67,6 +51,24 @@ export default function CheckboxFieldPanels({ attributes, setAttributes }) {
 					max={100}
 				/>
 			</PanelBody>
+
+			<PanelColorSettings
+				title={__('Colors', 'gatherpress')}
+				colorSettings={[
+					{
+						value: labelTextColor,
+						onChange: (value) =>
+							setAttributes({ labelTextColor: value }),
+						label: __('Label Text', 'gatherpress'),
+					},
+					{
+						value: borderColor,
+						onChange: (value) =>
+							setAttributes({ borderColor: value }),
+						label: __('Border', 'gatherpress'),
+					},
+				]}
+			/>
 		</>
 	);
 }

@@ -29,7 +29,7 @@ export default function DefaultField({
 		requiredText,
 		minValue,
 		maxValue,
-		sideBySideLayout,
+		inlineLayout,
 	} = attributes;
 
 	// Handle label blur to auto-generate field name
@@ -45,11 +45,7 @@ export default function DefaultField({
 	return (
 		<div
 			{...blockProps}
-			className={getWrapperClasses(
-				fieldType,
-				blockProps,
-				sideBySideLayout
-			)}
+			className={getWrapperClasses(fieldType, blockProps, inlineLayout)}
 		>
 			<div className="gatherpress-label-wrapper">
 				<RichText
