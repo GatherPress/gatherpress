@@ -17,6 +17,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"fieldValue": {
+			"type": ["string", "boolean"],
+			"default": ""
+		},
 		"label": {
 			"type": "string",
 			"default": ""
