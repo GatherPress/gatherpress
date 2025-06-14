@@ -14,6 +14,7 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 	const {
 		inputFontSize,
 		inputLineHeight,
+		inputPadding,
 		inputBorderWidth,
 		inputBorderRadius,
 		labelFontSize,
@@ -96,6 +97,13 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 					min={1}
 					max={3}
 					step={0.1}
+				/>
+				<RangeControl
+					label={__('Padding (px)', 'gatherpress')}
+					value={inputPadding}
+					onChange={(value) => setAttributes({ inputPadding: value })}
+					min={0}
+					max={32}
 				/>
 				<RangeControl
 					label={__('Border Width (px)', 'gatherpress')}

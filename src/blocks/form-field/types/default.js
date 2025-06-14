@@ -3,15 +3,11 @@
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
+
 /**
  * Internal dependencies.
  */
-import {
-	getInputStyles,
-	getLabelStyles,
-	getInputContainerStyles,
-	getWrapperClasses,
-} from '../helpers';
+import { getInputStyles, getLabelStyles, getWrapperClasses } from '../helpers';
 
 export default function DefaultField({
 	attributes,
@@ -70,23 +66,19 @@ export default function DefaultField({
 					/>
 				)}
 			</div>
-			<div style={getInputContainerStyles(fieldType, attributes)}>
-				<input
-					style={getInputStyles(fieldType, attributes)}
-					type={fieldType}
-					name={fieldName}
-					defaultValue={fieldValue}
-					placeholder={placeholder}
-					required={required}
-					autoComplete="off"
-					readOnly={true}
-					tabIndex={-1}
-					{...(fieldType === 'number' &&
-						minValue !== undefined && { min: minValue })}
-					{...(fieldType === 'number' &&
-						maxValue !== undefined && { max: maxValue })}
-				/>
-			</div>
+			<input
+				style={getInputStyles(fieldType, attributes)}
+				type={fieldType}
+				name={fieldName}
+				defaultValue={fieldValue}
+				placeholder={placeholder}
+				required={required}
+				autoComplete="off"
+				readOnly={true}
+				tabIndex={-1}
+				{...(undefined !== minValue && { min: minValue })}
+				{...(undefined !== maxValue && { max: maxValue })}
+			/>
 		</div>
 	);
 }

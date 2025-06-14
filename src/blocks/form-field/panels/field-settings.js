@@ -75,7 +75,12 @@ export default function FieldSettingsPanel({ attributes, setAttributes }) {
 				<TextControl
 					label={__('Field Name', 'gatherpress')}
 					value={fieldName}
-					onChange={(value) => setAttributes({ fieldName: value })}
+					onChange={(value) => {
+						// Only allow alphanumeric, underscore, and hyphen.
+						const sanitized = value.replace(/[^a-zA-Z0-9_-]/g, '');
+
+						setAttributes({ fieldName: sanitized });
+					}}
 					help={__(
 						'The name attribute for the form field.',
 						'gatherpress'

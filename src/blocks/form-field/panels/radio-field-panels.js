@@ -11,11 +11,13 @@ import {
 	Flex,
 	FlexItem,
 	TextControl,
+	ToggleControl,
 } from '@wordpress/components';
 
 export default function RadioFieldPanels({ attributes, setAttributes }) {
 	const {
 		radioOptions = [{ label: '', value: '' }],
+		fieldValue,
 		inputBorderWidth,
 		labelFontSize,
 		labelLineHeight,
@@ -48,8 +50,16 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 	};
 
 	const removeRadioOption = (index) => {
+		const optionToRemove = radioOptions[index];
 		const newOptions = radioOptions.filter((_, i) => i !== index);
-		setAttributes({ radioOptions: newOptions });
+
+		// Clear fieldValue if removing the selected option.
+		const updates = { radioOptions: newOptions };
+		if (fieldValue === optionToRemove.value) {
+			updates.fieldValue = '';
+		}
+
+		setAttributes(updates);
 	};
 
 	return (
@@ -57,7 +67,11 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 			<PanelBody title={__('Radio Options', 'gatherpress')}>
 				{radioOptions.map((option, index) => (
 					<div key={index}>
-						<Flex justify="normal" gap="2">
+						<Flex
+							justify="normal"
+							gap="2"
+							style={{ position: 'relative' }}
+						>
 							<FlexItem>
 								<TextControl
 									label={`${__('Option', 'gatherpress')} ${index + 1}`}
@@ -66,7 +80,28 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 										updateRadioOption(index, 'label', value)
 									}
 									help={__(
-										'Label and value for this option',
+										'Label and value for this option.',
+										'gatherpress'
+									)}
+								/>
+								<ToggleControl
+									label={__(
+										'Default Selected',
+										'gatherpress'
+									)}
+									checked={
+										fieldValue === option.value &&
+										option.value !== ''
+									}
+									onChange={(checked) => {
+										setAttributes({
+											fieldValue: checked
+												? option.value
+												: '',
+										});
+									}}
+									help={__(
+										'Select this option by default.',
 										'gatherpress'
 									)}
 								/>
@@ -77,7 +112,13 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 										variant="secondary"
 										isDestructive
 										onClick={() => removeRadioOption(index)}
-										style={{ marginTop: '-1rem' }}
+										style={{
+											padding: 0,
+											position: 'absolute',
+											top: '1.45rem',
+											width: '2rem',
+											height: '2rem',
+										}}
 										icon="no-alt"
 										label={__(
 											'Remove option',

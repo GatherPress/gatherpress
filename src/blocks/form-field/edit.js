@@ -1,7 +1,6 @@
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
 
 // Import field type components
@@ -16,9 +15,11 @@ import FieldSettingsPanel from './panels/field-settings';
 
 /**
  * Edit component for the Form Field block.
- * @param root0
- * @param root0.attributes
- * @param root0.setAttributes
+ *
+ * @param {Object}   props               The block props.
+ * @param {Object}   props.attributes    The block attributes.
+ * @param {Function} props.setAttributes Function to set block attributes.
+ * @return {JSX.Element} The edit component.
  */
 export default function Edit({ attributes, setAttributes }) {
 	const { fieldType } = attributes;

@@ -3,15 +3,11 @@
  */
 import { __ } from '@wordpress/i18n';
 import { RichText } from '@wordpress/block-editor';
+
 /**
  * Internal dependencies.
  */
-import {
-	getInputStyles,
-	getLabelStyles,
-	getInputContainerStyles,
-	getWrapperClasses,
-} from '../helpers';
+import { getInputStyles, getLabelStyles, getWrapperClasses } from '../helpers';
 
 export default function TextareaField({
 	attributes,
@@ -32,7 +28,7 @@ export default function TextareaField({
 		sideBySideLayout,
 	} = attributes;
 
-	// Handle label blur to auto-generate field name
+	// Handle label blur to auto-generate field name.
 	const handleLabelBlur = (labelValue) => {
 		if (!fieldName && labelValue) {
 			const generatedFieldName = generateFieldName(labelValue);
@@ -74,21 +70,19 @@ export default function TextareaField({
 					/>
 				)}
 			</div>
-			<div style={getInputContainerStyles(fieldType, attributes)}>
-				<textarea
-					style={getInputStyles(fieldType, attributes)}
-					name={fieldName}
-					placeholder={placeholder}
-					defaultValue={fieldValue}
-					required={required}
-					readOnly={true}
-					autoComplete="off"
-					tabIndex={-1}
-					rows={4}
-					{...(minValue !== undefined && { minLength: minValue })}
-					{...(maxValue !== undefined && { maxLength: maxValue })}
-				/>
-			</div>
+			<textarea
+				style={getInputStyles(fieldType, attributes)}
+				name={fieldName}
+				placeholder={placeholder}
+				defaultValue={fieldValue}
+				required={required}
+				readOnly={true}
+				autoComplete="off"
+				tabIndex={-1}
+				rows={4}
+				{...(minValue !== undefined && { minLength: minValue })}
+				{...(maxValue !== undefined && { maxLength: maxValue })}
+			/>
 		</div>
 	);
 }

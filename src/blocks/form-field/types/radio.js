@@ -22,6 +22,7 @@ export default function RadioField({
 	const {
 		fieldType,
 		fieldName,
+		fieldValue,
 		label,
 		required,
 		requiredText,
@@ -113,6 +114,8 @@ export default function RadioField({
 							style={getInputStyles(fieldType, attributes)}
 							type="radio"
 							name={fieldName}
+							value={option.value}
+							checked={fieldValue === option.value}
 							disabled={true}
 							tabIndex={-1}
 						/>
