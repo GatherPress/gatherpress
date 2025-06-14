@@ -13,7 +13,7 @@ if ( ! isset( $gatherpress_attrs ) || ! is_array( $gatherpress_attrs ) ) {
 	return;
 }
 
-// Build input styles
+// Build input styles.
 $gatherpress_input_styles = array();
 if ( null !== $gatherpress_attrs['input_font_size'] ) {
 	$gatherpress_input_styles[] = sprintf( 'font-size:%dpx', intval( $gatherpress_attrs['input_font_size'] ) );
@@ -43,7 +43,7 @@ if ( null !== $gatherpress_attrs['field_width'] && 100 !== $gatherpress_attrs['f
 	$gatherpress_input_styles[] = sprintf( 'width:%d%%', intval( $gatherpress_attrs['field_width'] ) );
 }
 
-// Build label styles
+// Build label styles.
 $gatherpress_label_styles = array();
 if ( null !== $gatherpress_attrs['label_font_size'] ) {
 	$gatherpress_label_styles[] = sprintf( 'font-size:%dpx', intval( $gatherpress_attrs['label_font_size'] ) );
@@ -55,7 +55,7 @@ if ( null !== $gatherpress_attrs['label_text_color'] ) {
 	$gatherpress_label_styles[] = sprintf( 'color:%s', esc_attr( $gatherpress_attrs['label_text_color'] ) );
 }
 
-// Build wrapper classes
+// Build wrapper classes.
 $gatherpress_wrapper_classes = array( sprintf( 'gatherpress-field-type-%s', esc_attr( $gatherpress_attrs['field_type'] ) ) );
 if ( $gatherpress_attrs['inline_layout'] ) {
 	$gatherpress_wrapper_classes[] = 'gatherpress-inline-layout';
@@ -63,7 +63,7 @@ if ( $gatherpress_attrs['inline_layout'] ) {
 
 $gatherpress_wrapper_attributes = get_block_wrapper_attributes( array( 'class' => implode( ' ', $gatherpress_wrapper_classes ) ) );
 
-// Build input attributes
+// Build input attributes.
 $gatherpress_input_attributes = array(
 	'id'          => $gatherpress_attrs['input_id'],
 	'type'        => $gatherpress_attrs['field_type'],

@@ -43,17 +43,17 @@ $gatherpress_attrs = array(
 );
 
 // Build template path and render.
-$template_file = $gatherpress_attrs['field_type'] . '.php';
-$template_path = GATHERPRESS_CORE_PATH . '/includes/templates/blocks/form-field/' . $template_file;
+$gatherpress_template_file = $gatherpress_attrs['field_type'] . '.php';
+$gatherpress_template_path = GATHERPRESS_CORE_PATH . '/includes/templates/blocks/form-field/' . $gatherpress_template_file;
 
 
 // Use default.php if field-specific template doesn't exist.
-if ( ! file_exists( $template_path ) ) {
-	$template_path = GATHERPRESS_CORE_PATH . '/includes/templates/blocks/form-field/default.php';
+if ( ! file_exists( $gatherpress_template_path ) ) {
+	$gatherpress_template_path = GATHERPRESS_CORE_PATH . '/includes/templates/blocks/form-field/default.php';
 }
 
 Utility::render_template(
-	$template_path,
+	$gatherpress_template_path,
 	array(
 		'gatherpress_attrs' => $gatherpress_attrs,
 	),
