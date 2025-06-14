@@ -174,4 +174,57 @@ class Test_Rsvp_Query extends Base {
 			'Failed to assert 2 RSVPs to event.'
 		);
 	}
+
+	/**
+	 * Coverage for exclude_rsvp_from_comment_query method.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_from_comment_query(): void {
+		$instance = Rsvp_Query::get_instance();
+
+		// Test with type parameter
+		$query = new WP_Comment_Query();
+		$query->query_vars['type'] = array( 'comment', Rsvp::COMMENT_TYPE );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$this->assertEquals(
+			array( 'comment' ),
+			$query->query_vars['type'],
+			'Failed to assert that RSVP type is excluded from type array.'
+		);
+
+		// Test with single type parameter
+		$query = new WP_Comment_Query();
+		$query->query_vars['type'] = Rsvp::COMMENT_TYPE;
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$this->assertEquals(
+			'',
+			$query->query_vars['type'],
+			'Failed to assert that single RSVP type is set to empty string.'
+		);
+
+		// Test with type__in parameter
+		$query = new WP_Comment_Query();
+		$query->query_vars['type'] = '';
+		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$this->assertEquals(
+			array( 'comment' ),
+			$query->query_vars['type__in'],
+			'Failed to assert that RSVP type is excluded from type__in array.'
+		);
+
+		// Test with default types
+		$query = new WP_Comment_Query();
+		$query->query_vars['type'] = '';
+		$query->query_vars['type__in'] = '';
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$this->assertEquals(
+			array( 'comment', 'pingback', 'trackback' ),
+			$query->query_vars['type'],
+			'Failed to assert that default types are set correctly.'
+		);
+	}
 }

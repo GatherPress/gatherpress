@@ -157,8 +157,11 @@ class Rsvp_Query {
 	 * @return void
 	 */
 	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ) {
-
 		$current_comment_types = $query->query_vars['type'];
+
+		if ( empty( $query->query_vars['type'] ) && ! empty( $query->query_vars['type__in'] ) ) {
+			$current_comment_types = $query->query_vars['type__in'];
+		}
 
 		// Ensure comment type is not empty.
 		if ( ! empty( $current_comment_types ) ) {
@@ -175,7 +178,14 @@ class Rsvp_Query {
 			$current_comment_types = array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) );
 		}
 
-		// Update the query vars with the modified comment types.
-		$query->query_vars['type'] = $current_comment_types;
+		if ( ! empty( $query->query_vars['type'] ) && empty( $query->query_vars['type__in'] ) ) {
+			// Update the query vars with the modified comment types.
+			$query->query_vars['type'] = $current_comment_types;
+		}
+
+		if ( empty( $query->query_vars['type'] ) && ! empty( $query->query_vars['type__in'] ) ) {
+			// Update the query vars with the modified comment types.
+			$query->query_vars['type__in'] = $current_comment_types;
+		}
 	}
 }
