@@ -181,11 +181,12 @@ class Rsvp_Query {
 		if ( ! empty( $query->query_vars['type'] ) && empty( $query->query_vars['type__in'] ) ) {
 			// Update the query vars with the modified comment types.
 			$query->query_vars['type'] = $current_comment_types;
-		}
-
-		if ( empty( $query->query_vars['type'] ) && ! empty( $query->query_vars['type__in'] ) ) {
+		} elseif ( empty( $query->query_vars['type'] ) && ! empty( $query->query_vars['type__in'] ) ) {
 			// Update the query vars with the modified comment types.
 			$query->query_vars['type__in'] = $current_comment_types;
+		} else {
+			// If both type and type__in are empty, set type to default types
+			$query->query_vars['type'] = $current_comment_types;
 		}
 	}
 }
