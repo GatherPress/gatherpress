@@ -9,9 +9,12 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $gatherpress_attrs ) || ! is_array( $gatherpress_attrs ) ) {
+if ( ! isset(
+	$gatherpress_attrs,
+	$gatherpress_input_attributes
+) ) {
 	return;
 }
 ?>
 
-<input type="hidden" name="<?php echo esc_attr( $gatherpress_attrs['field_name'] ); ?>" value="<?php echo esc_attr( $gatherpress_attrs['field_value'] ); ?>" />
+<input<?php echo wp_kses_data( $gatherpress_input_attributes ); ?> />

@@ -9,100 +9,28 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $gatherpress_attrs ) || ! is_array( $gatherpress_attrs ) ) {
+if ( ! isset(
+	$gatherpress_wrapper_attributes,
+	$gatherpress_attrs,
+	$gatherpress_input_attributes,
+	$gatherpress_input_style_string,
+	$gatherpress_label_style_string,
+	$gatherpress_required_style_string
+) ) {
 	return;
 }
-
-// Build input styles.
-$gatherpress_input_styles = array();
-if ( null !== $gatherpress_attrs['input_font_size'] ) {
-	$gatherpress_input_styles[] = sprintf( 'font-size:%dpx', intval( $gatherpress_attrs['input_font_size'] ) );
-}
-if ( null !== $gatherpress_attrs['input_line_height'] ) {
-	$gatherpress_input_styles[] = sprintf( 'line-height:%s', esc_attr( $gatherpress_attrs['input_line_height'] ) );
-}
-if ( null !== $gatherpress_attrs['input_padding'] ) {
-	$gatherpress_input_styles[] = sprintf( 'padding:%dpx', intval( $gatherpress_attrs['input_padding'] ) );
-}
-if ( null !== $gatherpress_attrs['input_border_width'] ) {
-	$gatherpress_input_styles[] = sprintf( 'border-width:%dpx', intval( $gatherpress_attrs['input_border_width'] ) );
-}
-if ( null !== $gatherpress_attrs['input_border_radius'] ) {
-	$gatherpress_input_styles[] = sprintf( 'border-radius:%dpx', intval( $gatherpress_attrs['input_border_radius'] ) );
-}
-if ( null !== $gatherpress_attrs['field_text_color'] ) {
-	$gatherpress_input_styles[] = sprintf( 'color:%s', esc_attr( $gatherpress_attrs['field_text_color'] ) );
-}
-if ( null !== $gatherpress_attrs['field_bg_color'] ) {
-	$gatherpress_input_styles[] = sprintf( 'background-color:%s', esc_attr( $gatherpress_attrs['field_bg_color'] ) );
-}
-if ( null !== $gatherpress_attrs['border_color'] ) {
-	$gatherpress_input_styles[] = sprintf( 'border-color:%s', esc_attr( $gatherpress_attrs['border_color'] ) );
-}
-if ( null !== $gatherpress_attrs['field_width'] && 100 !== $gatherpress_attrs['field_width'] ) {
-	$gatherpress_input_styles[] = sprintf( 'width:%d%%', intval( $gatherpress_attrs['field_width'] ) );
-}
-
-// Build label styles.
-$gatherpress_label_styles = array();
-if ( null !== $gatherpress_attrs['label_font_size'] ) {
-	$gatherpress_label_styles[] = sprintf( 'font-size:%dpx', intval( $gatherpress_attrs['label_font_size'] ) );
-}
-if ( null !== $gatherpress_attrs['label_line_height'] ) {
-	$gatherpress_label_styles[] = sprintf( 'line-height:%s', esc_attr( $gatherpress_attrs['label_line_height'] ) );
-}
-if ( null !== $gatherpress_attrs['label_text_color'] ) {
-	$gatherpress_label_styles[] = sprintf( 'color:%s', esc_attr( $gatherpress_attrs['label_text_color'] ) );
-}
-
-// Build wrapper classes.
-$gatherpress_wrapper_classes = array( sprintf( 'gatherpress-field-type-%s', esc_attr( $gatherpress_attrs['field_type'] ) ) );
-if ( $gatherpress_attrs['inline_layout'] ) {
-	$gatherpress_wrapper_classes[] = 'gatherpress-inline-layout';
-}
-
-$gatherpress_wrapper_attributes = get_block_wrapper_attributes( array( 'class' => implode( ' ', $gatherpress_wrapper_classes ) ) );
-
-// Build input attributes.
-$gatherpress_input_attributes = array(
-	'id'          => $gatherpress_attrs['input_id'],
-	'type'        => $gatherpress_attrs['field_type'],
-	'name'        => $gatherpress_attrs['field_name'],
-	'placeholder' => $gatherpress_attrs['placeholder'],
-	'value'       => $gatherpress_attrs['field_value'],
-);
-
-if ( $gatherpress_attrs['required'] ) {
-	$gatherpress_input_attributes['required'] = 'required';
-}
-
-if ( null !== $gatherpress_attrs['min_value'] ) {
-	$gatherpress_min_attr                                  = ( 'number' === $gatherpress_attrs['field_type'] ) ? 'min' : 'minlength';
-	$gatherpress_input_attributes[ $gatherpress_min_attr ] = $gatherpress_attrs['min_value'];
-}
-
-if ( null !== $gatherpress_attrs['max_value'] ) {
-	$gatherpress_max_attr                                  = ( 'number' === $gatherpress_attrs['field_type'] ) ? 'max' : 'maxlength';
-	$gatherpress_input_attributes[ $gatherpress_max_attr ] = $gatherpress_attrs['max_value'];
-}
-
-$gatherpress_input_attrs_string = '';
-foreach ( $gatherpress_input_attributes as $gatherpress_attr => $gatherpress_value ) {
-	$gatherpress_input_attrs_string .= sprintf( ' %s="%s"', esc_attr( $gatherpress_attr ), esc_attr( $gatherpress_value ) );
-}
-
-$gatherpress_input_style_string = ! empty( $gatherpress_input_styles ) ? sprintf( ' style="%s"', esc_attr( implode( ';', $gatherpress_input_styles ) ) ) : '';
-$gatherpress_label_style_string = ! empty( $gatherpress_label_styles ) ? sprintf( ' style="%s"', esc_attr( implode( ';', $gatherpress_label_styles ) ) ) : '';
 ?>
 
 <div <?php echo wp_kses_data( $gatherpress_wrapper_attributes ); ?>>
 	<div class="gatherpress-label-wrapper">
 		<label for="<?php echo esc_attr( $gatherpress_attrs['input_id'] ); ?>"<?php echo wp_kses_data( $gatherpress_label_style_string ); ?>>
-		<?php echo wp_kses_post( $gatherpress_attrs['label'] ); ?>
+			<?php echo wp_kses_post( $gatherpress_attrs['label'] ); ?>
 		</label>
-	<?php if ( $gatherpress_attrs['required'] && ! empty( $gatherpress_attrs['required_text'] ) ) : ?>
-			<span class="gatherpress-label-required"><?php echo esc_html( $gatherpress_attrs['required_text'] ); ?></span>
-	<?php endif; ?>
+		<?php if ( $gatherpress_attrs['required'] && ! empty( $gatherpress_attrs['required_text'] ) ) : ?>
+			<span class="gatherpress-label-required"<?php echo wp_kses_data( $gatherpress_required_style_string ); ?>>
+				<?php echo esc_html( $gatherpress_attrs['required_text'] ); ?>
+			</span>
+		<?php endif; ?>
 	</div>
-	<input<?php echo wp_kses_data( $gatherpress_input_attrs_string . $gatherpress_input_style_string ); ?> />
+	<input<?php echo wp_kses_data( $gatherpress_input_attributes . $gatherpress_input_style_string ); ?> />
 </div>

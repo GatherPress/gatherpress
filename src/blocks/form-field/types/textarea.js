@@ -23,9 +23,11 @@ export default function TextareaField({
 		placeholder,
 		required,
 		requiredText,
+		requiredTextColor,
 		minValue,
 		maxValue,
-		sideBySideLayout,
+		inlineLayout,
+		textareaRows,
 	} = attributes;
 
 	// Handle label blur to auto-generate field name.
@@ -41,11 +43,7 @@ export default function TextareaField({
 	return (
 		<div
 			{...blockProps}
-			className={getWrapperClasses(
-				fieldType,
-				blockProps,
-				sideBySideLayout
-			)}
+			className={getWrapperClasses(fieldType, blockProps, inlineLayout)}
 		>
 			<div className="gatherpress-label-wrapper">
 				<RichText
@@ -67,6 +65,11 @@ export default function TextareaField({
 							setAttributes({ requiredText: value })
 						}
 						allowedFormats={[]}
+						style={{
+							...(requiredTextColor && {
+								color: requiredTextColor,
+							}),
+						}}
 					/>
 				)}
 			</div>
@@ -79,7 +82,7 @@ export default function TextareaField({
 				readOnly={true}
 				autoComplete="off"
 				tabIndex={-1}
-				rows={4}
+				rows={textareaRows}
 				{...(minValue !== undefined && { minLength: minValue })}
 				{...(maxValue !== undefined && { maxLength: maxValue })}
 			/>

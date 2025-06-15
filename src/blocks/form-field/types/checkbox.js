@@ -14,8 +14,15 @@ export default function CheckboxField({
 	blockProps,
 	generateFieldName,
 }) {
-	const { fieldType, fieldName, fieldValue, label, required, requiredText } =
-		attributes;
+	const {
+		fieldType,
+		fieldName,
+		fieldValue,
+		label,
+		required,
+		requiredText,
+		requiredTextColor,
+	} = attributes;
 
 	// Handle label blur to auto-generate field name
 	const handleLabelBlur = (labelValue) => {
@@ -61,6 +68,11 @@ export default function CheckboxField({
 							setAttributes({ requiredText: value })
 						}
 						allowedFormats={[]}
+						style={{
+							...(requiredTextColor && {
+								color: requiredTextColor,
+							}),
+						}}
 					/>
 				)}
 			</>

@@ -11,6 +11,7 @@ export default function CheckboxFieldPanels({ attributes, setAttributes }) {
 		labelFontSize,
 		labelLineHeight,
 		labelTextColor,
+		requiredTextColor,
 		borderColor,
 	} = attributes;
 
@@ -60,6 +61,12 @@ export default function CheckboxFieldPanels({ attributes, setAttributes }) {
 						onChange: (value) =>
 							setAttributes({ labelTextColor: value }),
 						label: __('Label Text', 'gatherpress'),
+					},
+					{
+						value: requiredTextColor,
+						onChange: (value) =>
+							setAttributes({ requiredTextColor: value }),
+						label: __('Required Text', 'gatherpress'),
 					},
 					{
 						value: borderColor,

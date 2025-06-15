@@ -23,6 +23,7 @@ export default function DefaultField({
 		placeholder,
 		required,
 		requiredText,
+		requiredTextColor,
 		minValue,
 		maxValue,
 		inlineLayout,
@@ -63,6 +64,11 @@ export default function DefaultField({
 							setAttributes({ requiredText: value })
 						}
 						allowedFormats={[]}
+						style={{
+							...(requiredTextColor && {
+								color: requiredTextColor,
+							}),
+						}}
 					/>
 				)}
 			</div>

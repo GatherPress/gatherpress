@@ -26,6 +26,7 @@ export default function RadioField({
 		label,
 		required,
 		requiredText,
+		requiredTextColor,
 		radioOptions = [{ label: '', value: '' }],
 	} = attributes;
 
@@ -103,6 +104,11 @@ export default function RadioField({
 							setAttributes({ requiredText: value })
 						}
 						allowedFormats={[]}
+						style={{
+							...(requiredTextColor && {
+								color: requiredTextColor,
+							}),
+						}}
 					/>
 				)}
 			</div>

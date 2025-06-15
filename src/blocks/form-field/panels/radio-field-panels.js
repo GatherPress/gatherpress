@@ -24,6 +24,7 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 		optionFontSize,
 		optionLineHeight,
 		labelTextColor,
+		requiredTextColor,
 		borderColor,
 		optionTextColor,
 	} = attributes;
@@ -203,6 +204,12 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 						onChange: (value) =>
 							setAttributes({ labelTextColor: value }),
 						label: __('Label Text', 'gatherpress'),
+					},
+					{
+						value: requiredTextColor,
+						onChange: (value) =>
+							setAttributes({ requiredTextColor: value }),
+						label: __('Required Text', 'gatherpress'),
 					},
 					{
 						value: optionTextColor,

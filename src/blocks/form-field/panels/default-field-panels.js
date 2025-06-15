@@ -12,6 +12,7 @@ import {
 
 export default function DefaultFieldPanels({ attributes, setAttributes }) {
 	const {
+		fieldType,
 		inputFontSize,
 		inputLineHeight,
 		inputPadding,
@@ -23,22 +24,28 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 		fieldWidth,
 		labelTextColor,
 		fieldTextColor,
+		requiredTextColor,
 		fieldBackgroundColor,
+		textareaRows,
 		borderColor,
 	} = attributes;
 
 	return (
 		<>
 			<PanelBody title={__('Layout Settings', 'gatherpress')}>
-				<ToggleControl
-					label={__('Inline Layout', 'gatherpress')}
-					checked={inlineLayout}
-					onChange={(value) => setAttributes({ inlineLayout: value })}
-					help={__(
-						'Display label and input on the same line.',
-						'gatherpress'
-					)}
-				/>
+				{fieldType !== 'textarea' && (
+					<ToggleControl
+						label={__('Inline Layout', 'gatherpress')}
+						checked={inlineLayout}
+						onChange={(value) =>
+							setAttributes({ inlineLayout: value })
+						}
+						help={__(
+							'Display label and input on the same line.',
+							'gatherpress'
+						)}
+					/>
+				)}
 				<RangeControl
 					label={__('Field Width (%)', 'gatherpress')}
 					value={fieldWidth}
@@ -105,6 +112,18 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 					min={0}
 					max={32}
 				/>
+				{fieldType === 'textarea' && (
+					<RangeControl
+						label={__('Rows', 'gatherpress')}
+						value={textareaRows}
+						onChange={(value) =>
+							setAttributes({ textareaRows: value })
+						}
+						min={1}
+						max={10}
+						help={__('Number of visible text lines', 'gatherpress')}
+					/>
+				)}
 				<RangeControl
 					label={__('Border Width (px)', 'gatherpress')}
 					value={inputBorderWidth}
@@ -139,6 +158,12 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 						onChange: (value) =>
 							setAttributes({ fieldTextColor: value }),
 						label: __('Field Text', 'gatherpress'),
+					},
+					{
+						value: requiredTextColor,
+						onChange: (value) =>
+							setAttributes({ requiredTextColor: value }),
+						label: __('Required Text', 'gatherpress'),
 					},
 					{
 						value: fieldBackgroundColor,
