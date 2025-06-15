@@ -281,7 +281,7 @@ class Test_Rsvp_Query extends Base {
 		$clauses = array(
 			'where' => "comment_type IN ('comment', 'gatherpress_rsvp')",
 		);
-		// Simulate WordPress building the query with the correct priority.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 		$this->assertStringContainsString(
 			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
@@ -298,6 +298,7 @@ class Test_Rsvp_Query extends Base {
 		$clauses = array(
 			'where' => '',
 		);
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 		$this->assertStringContainsString(
 			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
@@ -307,12 +308,13 @@ class Test_Rsvp_Query extends Base {
 		remove_all_filters( 'comments_clauses' );
 
 		// Test SQL modification for existing NOT IN clause.
-		$query                            = new WP_Comment_Query();
+		$query                             = new WP_Comment_Query();
 		$query->query_vars['type__not_in'] = array( 'pingback' );
 		$instance->exclude_rsvp_from_comment_query( $query );
 		$clauses = array(
 			'where' => "comment_type NOT IN ('pingback')",
 		);
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 		$this->assertStringContainsString(
 			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
@@ -328,6 +330,7 @@ class Test_Rsvp_Query extends Base {
 		$clauses = array(
 			'where' => "comment_type IN ('comment', '')",
 		);
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 		$this->assertStringContainsString(
 			"comment_type IN ('comment', 'pingback', 'trackback')",
@@ -337,13 +340,14 @@ class Test_Rsvp_Query extends Base {
 		remove_all_filters( 'comments_clauses' );
 
 		// Test SQL modification for both IN and NOT IN clauses.
-		$query                            = new WP_Comment_Query();
-		$query->query_vars['type']        = '';
+		$query                             = new WP_Comment_Query();
+		$query->query_vars['type']         = '';
 		$query->query_vars['type__not_in'] = array( 'pingback' );
 		$instance->exclude_rsvp_from_comment_query( $query );
 		$clauses = array(
 			'where' => "comment_type IN ('comment', '') AND comment_type NOT IN ('pingback')",
 		);
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 		$this->assertStringContainsString(
 			"comment_type IN ('comment', 'pingback', 'trackback')",
@@ -366,6 +370,7 @@ class Test_Rsvp_Query extends Base {
 		$instance->exclude_rsvp_from_comment_query( $query );
 
 		// Then apply the filter.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$modified_clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 
 		// Verify that RSVP types are excluded.
@@ -391,6 +396,7 @@ class Test_Rsvp_Query extends Base {
 		$instance->exclude_rsvp_from_comment_query( $query );
 
 		// Then apply the filter.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$modified_clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 
 		// Verify that RSVP types are excluded.
@@ -415,6 +421,7 @@ class Test_Rsvp_Query extends Base {
 		$instance->exclude_rsvp_from_comment_query( $query );
 
 		// Then apply the filter.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$modified_clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 
 		// Verify that RSVP types are added to the NOT IN clause.
@@ -440,6 +447,7 @@ class Test_Rsvp_Query extends Base {
 		$instance->exclude_rsvp_from_comment_query( $query );
 
 		// Then apply the filter.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$modified_clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
 
 		// Verify that empty string is replaced and RSVP types are excluded.
