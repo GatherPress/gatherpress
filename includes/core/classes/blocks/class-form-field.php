@@ -9,6 +9,7 @@
  * @package GatherPress\Core
  * @since 1.0.0
  */
+
 namespace GatherPress\Core\Blocks;
 
 use GatherPress\Core\Utility;
@@ -23,6 +24,13 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
  * @since 1.0.0
  */
 class Form_Field {
+	/**
+	 * Processed form field attributes with defaults applied.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var array
+	 */
 	private array $attributes;
 
 	/**
@@ -38,6 +46,20 @@ class Form_Field {
 		$this->attributes = $this->process_attributes( $attributes );
 	}
 
+	/**
+	 * Process raw block attributes into a standardized format.
+	 *
+	 * Transforms the raw block attributes from the block editor into a
+	 * consistent internal format with proper defaults, type casting,
+	 * and naming conventions. Generates a unique input ID and applies
+	 * fallback values for all attributes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $raw_attributes Raw attributes from the block editor.
+	 *
+	 * @return array Processed attributes with defaults and proper formatting.
+	 */
 	private function process_attributes( array $raw_attributes ): array {
 		return array(
 			'field_type'          => $raw_attributes['fieldType'] ?? 'text',
@@ -73,10 +95,36 @@ class Form_Field {
 		);
 	}
 
+	/**
+	 * Generate a unique input ID for the form field.
+	 *
+	 * Creates a unique identifier for the input element using
+	 * a random number to ensure uniqueness across multiple
+	 * form fields on the same page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Unique input ID (e.g., 'gatherpress_123456789').
+	 */
 	private function get_input_id(): string {
 		return sprintf( 'gatherpress_%s', wp_rand() );
 	}
 
+	/**
+	 * Add a CSS style to the styles array if the attribute exists.
+	 *
+	 * Checks if the specified attribute key exists and has a value,
+	 * then formats it using the provided format string and adds it
+	 * to the styles array. Handles both numeric and string values.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $styles   Reference to the styles array to modify.
+	 * @param string $attr_key The attribute key to check in the attributes array.
+	 * @param string $format   The sprintf format string for the CSS property (e.g., 'color:%s').
+	 *
+	 * @return void
+	 */
 	private function add_style( array &$styles, string $attr_key, string $format ): void {
 		if ( ! empty( $this->attributes[ $attr_key ] ) ) {
 			$value = is_numeric( $this->attributes[ $attr_key ] )
@@ -87,14 +135,48 @@ class Form_Field {
 		}
 	}
 
+	/**
+	 * Compile an array of CSS styles into a formatted style attribute string.
+	 *
+	 * Takes an array of CSS style declarations and formats them into
+	 * a properly escaped HTML style attribute string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $styles Array of CSS style declarations (e.g., ['color:red', 'font-size:16px']).
+	 *
+	 * @return string Formatted style attribute string or empty string if no styles.
+	 */
 	private function compile_styles( array $styles ): string {
 		return ! empty( $styles ) ? sprintf( ' style="%s"', esc_attr( implode( ';', $styles ) ) ) : '';
 	}
 
+	/**
+	 * Get the field type for the current form field.
+	 *
+	 * Returns the field type from the processed attributes with
+	 * a fallback to 'text' if not specified.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The field type (e.g., 'text', 'email', 'checkbox', 'radio').
+	 */
 	public function get_field_type(): string {
 		return $this->attributes['field_type'] ?? 'text';
 	}
 
+	/**
+	 * Get the CSS styles for input elements.
+	 *
+	 * Builds CSS styles for form input elements based on field type.
+	 * Text-based fields (text, email, url, number, textarea) receive
+	 * full styling including fonts, padding, and colors. All input
+	 * types receive border styling.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Formatted CSS style attribute string or empty string if no styles.
+	 */
 	public function get_input_styles(): string {
 		$field_type = $this->get_field_type();
 		$styles     = array();
@@ -122,6 +204,17 @@ class Form_Field {
 		return $this->compile_styles( $styles );
 	}
 
+	/**
+	 * Get the CSS styles for field labels.
+	 *
+	 * Builds CSS styles for field labels including font size,
+	 * line height, and text color. Applied to all field types
+	 * that display labels.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Formatted CSS style attribute string or empty string if no styles.
+	 */
 	public function get_label_styles(): string {
 		$styles = array();
 
@@ -132,6 +225,16 @@ class Form_Field {
 		return $this->compile_styles( $styles );
 	}
 
+	/**
+	 * Get the CSS styles for required field indicator text.
+	 *
+	 * Builds CSS styles for the required field indicator text,
+	 * typically displayed next to the field label.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Formatted CSS style attribute string or empty string if no styles.
+	 */
 	public function get_required_styles(): string {
 		$styles = array();
 
@@ -140,6 +243,16 @@ class Form_Field {
 		return $this->compile_styles( $styles );
 	}
 
+	/**
+	 * Get the CSS styles for radio button option labels.
+	 *
+	 * Builds CSS styles for radio button option labels including
+	 * font size, line height, and text color. Only used for radio field types.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Formatted CSS style attribute string or empty string if no styles.
+	 */
 	public function get_option_styles(): string {
 		$styles = array();
 
@@ -150,6 +263,17 @@ class Form_Field {
 		return $this->compile_styles( $styles );
 	}
 
+	/**
+	 * Get the CSS classes for the block wrapper element.
+	 *
+	 * Builds an array of CSS classes including the field type class and
+	 * conditional layout classes. Inline layout is only applied to
+	 * text-based field types.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Array of CSS class names for the wrapper element.
+	 */
 	public function get_wrapper_classes(): array {
 		$field_type = $this->get_field_type();
 		$classes    = array( sprintf( 'gatherpress-field-type-%s', esc_attr( $field_type ) ) );
@@ -165,12 +289,34 @@ class Form_Field {
 		return $classes;
 	}
 
+	/**
+	 * Get the wrapper attributes for the block container.
+	 *
+	 * Generates the HTML attributes for the main block wrapper element
+	 * using WordPress's get_block_wrapper_attributes() function with
+	 * field-specific CSS classes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Formatted HTML attributes string for the wrapper element.
+	 */
 	public function get_wrapper_attributes(): string {
 		$classes = $this->get_wrapper_classes();
 
 		return get_block_wrapper_attributes( array( 'class' => implode( ' ', $classes ) ) );
 	}
 
+	/**
+	 * Get the input attributes as a formatted string.
+	 *
+	 * Builds the appropriate HTML attributes for the input element based on
+	 * the field type. Includes common attributes like id, name, type, and
+	 * field-specific attributes like min/max values, placeholder, etc.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Formatted HTML attributes string (e.g., ' id="field_123" type="text" name="email"').
+	 */
 	public function get_input_attributes(): string {
 		$field_type = $this->get_field_type();
 		$attributes = array();
@@ -183,10 +329,6 @@ class Form_Field {
 					'name'  => $this->attributes['field_name'],
 					'value' => '1',
 				);
-
-				if ( ! empty( $this->attributes['field_value'] ) ) {
-					$attributes['checked'] = 'checked';
-				}
 
 				break;
 
@@ -256,6 +398,16 @@ class Form_Field {
 		return $attrs_string;
 	}
 
+	/**
+	 * Get the template path for the current field type.
+	 *
+	 * Determines the appropriate template file based on the field type.
+	 * Falls back to default.php if a field-specific template doesn't exist.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The full path to the template file.
+	 */
 	public function get_template_path(): string {
 		$field_type    = $this->get_field_type();
 		$template_file = $field_type . '.php';
@@ -282,13 +434,13 @@ class Form_Field {
 		Utility::render_template(
 			$template_path,
 			array(
-				'gatherpress_attrs'                 => $this->attributes,
-				'gatherpress_wrapper_attributes'    => $this->get_wrapper_attributes(),
-				'gatherpress_input_style_string'    => $this->get_input_styles(),
-				'gatherpress_label_style_string'    => $this->get_label_styles(),
-				'gatherpress_required_style_string' => $this->get_required_styles(),
-				'gatherpress_option_style_string'   => $this->get_option_styles(),
-				'gatherpress_input_attributes'      => $this->get_input_attributes(),
+				'attributes'            => $this->attributes,
+				'wrapper_attributes'    => $this->get_wrapper_attributes(),
+				'input_style_string'    => $this->get_input_styles(),
+				'label_style_string'    => $this->get_label_styles(),
+				'required_style_string' => $this->get_required_styles(),
+				'option_style_string'   => $this->get_option_styles(),
+				'input_attributes'      => $this->get_input_attributes(),
 			),
 			true
 		);

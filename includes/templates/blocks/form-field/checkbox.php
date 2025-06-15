@@ -10,25 +10,29 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 if ( ! isset(
-	$gatherpress_wrapper_attributes,
-	$gatherpress_attrs,
-	$gatherpress_input_attributes,
-	$gatherpress_input_style_string,
-	$gatherpress_label_style_string,
-	$gatherpress_required_style_string
+	$wrapper_attributes,
+	$attributes,
+	$input_attributes,
+	$input_style_string,
+	$label_style_string,
+	$required_style_string
 ) ) {
 	return;
 }
 ?>
 
-<div <?php echo wp_kses_data( $gatherpress_wrapper_attributes ); ?>>
-	<input<?php echo wp_kses_data( $gatherpress_input_attributes . $gatherpress_input_style_string ); ?> />
-	<label for="<?php echo esc_attr( $gatherpress_attrs['input_id'] ); ?>"<?php echo wp_kses_data( $gatherpress_label_style_string ); ?>>
-		<?php echo wp_kses_post( $gatherpress_attrs['label'] ); ?>
+<div <?php echo wp_kses_data( $wrapper_attributes ); ?>>
+	<input<?php echo wp_kses_data( $input_attributes . $input_style_string ); ?> <?php checked( ! empty( $attributes['field_value'] ) ); ?> />
+	<label for="<?php echo esc_attr( $attributes['input_id'] ); ?>"<?php echo wp_kses_data( $label_style_string ); ?>>
+		<?php echo wp_kses_post( $attributes['label'] ); ?>
 	</label>
-	<?php if ( $gatherpress_attrs['required'] && ! empty( $gatherpress_attrs['required_text'] ) ) : ?>
-		<span class="gatherpress-label-required"<?php echo wp_kses_data( $gatherpress_required_style_string ); ?>>
-			<?php echo esc_html( $gatherpress_attrs['required_text'] ); ?>
+	<?php
+	if ( $attributes['required'] && ! empty( $attributes['required_text'] ) ) {
+		?>
+		<span class="gatherpress-label-required"<?php echo wp_kses_data( $required_style_string ); ?>>
+			<?php echo esc_html( $attributes['required_text'] ); ?>
 		</span>
-	<?php endif; ?>
+		<?php
+	}
+	?>
 </div>

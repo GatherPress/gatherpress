@@ -10,44 +10,50 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 if ( ! isset(
-	$gatherpress_wrapper_attributes,
-	$gatherpress_attrs,
-	$gatherpress_input_style_string,
-	$gatherpress_label_style_string,
-	$gatherpress_required_style_string,
-	$gatherpress_option_style_string
+	$wrapper_attributes,
+	$attributes,
+	$input_style_string,
+	$label_style_string,
+	$required_style_string,
+	$option_style_string
 ) ) {
 	return;
 }
 ?>
 
-<div <?php echo wp_kses_data( $gatherpress_wrapper_attributes ); ?>>
+<div <?php echo wp_kses_data( $wrapper_attributes ); ?>>
 	<div class="gatherpress-label-wrapper">
-		<legend<?php echo wp_kses_data( $gatherpress_label_style_string ); ?>>
-		<?php echo wp_kses_post( $gatherpress_attrs['label'] ); ?>
+		<legend<?php echo wp_kses_data( $label_style_string ); ?>>
+			<?php echo wp_kses_post( $attributes['label'] ); ?>
 		</legend>
-	<?php if ( $gatherpress_attrs['required'] && ! empty( $gatherpress_attrs['required_text'] ) ) : ?>
-			<span class="gatherpress-label-required"<?php echo wp_kses_data( $gatherpress_required_style_string ); ?>>
-			<?php echo esc_html( $gatherpress_attrs['required_text'] ); ?>
+		<?php
+		if ( $attributes['required'] && ! empty( $attributes['required_text'] ) ) {
+			?>
+			<span class="gatherpress-label-required"<?php echo wp_kses_data( $required_style_string ); ?>>
+				<?php echo esc_html( $attributes['required_text'] ); ?>
 			</span>
-	<?php endif; ?>
+			<?php
+		}
+		?>
 	</div>
 	<div class="gatherpress-radio-group">
-	<?php if ( ! empty( $gatherpress_attrs['radio_options'] ) ) : ?>
-		<?php foreach ( $gatherpress_attrs['radio_options'] as $gatherpress_index => $gatherpress_option ) : ?>
-			<?php if ( ! empty( $gatherpress_option['label'] ) ) : ?>
-				<?php
-				$gatherpress_option_id    = sprintf( '%s-%d', $gatherpress_attrs['input_id'], $gatherpress_index );
-				$gatherpress_option_value = ! empty( $gatherpress_option['value'] ) ? $gatherpress_option['value'] : $gatherpress_option['label'];
-				?>
+		<?php
+		if ( ! empty( $attributes['radio_options'] ) ) {
+			foreach ( $attributes['radio_options'] as $gatherpress_index => $gatherpress_option ) {
+				if ( ! empty( $gatherpress_option['label'] ) ) {
+					$gatherpress_option_id    = sprintf( '%s-%d', $attributes['input_id'], $gatherpress_index );
+					$gatherpress_option_value = ! empty( $gatherpress_option['value'] ) ? $gatherpress_option['value'] : $gatherpress_option['label'];
+					?>
 					<div class="gatherpress-radio-option">
-						<input type="radio" name="<?php echo esc_attr( $gatherpress_attrs['field_name'] ); ?>" value="<?php echo esc_attr( $gatherpress_option_value ); ?>" id="<?php echo esc_attr( $gatherpress_option_id ); ?>"<?php echo wp_kses_data( $gatherpress_input_style_string ); ?><?php echo ( $gatherpress_attrs['field_value'] === $gatherpress_option_value ) ? ' checked="checked"' : ''; ?> />
-						<label for="<?php echo esc_attr( $gatherpress_option_id ); ?>"<?php echo wp_kses_data( $gatherpress_option_style_string ); ?>>
-						<?php echo esc_html( $gatherpress_option['label'] ); ?>
+						<input type="radio" name="<?php echo esc_attr( $attributes['field_name'] ); ?>" value="<?php echo esc_attr( $gatherpress_option_value ); ?>" id="<?php echo esc_attr( $gatherpress_option_id ); ?>"<?php echo wp_kses_data( $input_style_string ); ?> <?php checked( $attributes['field_value'], $gatherpress_option_value ); ?> />
+						<label for="<?php echo esc_attr( $gatherpress_option_id ); ?>"<?php echo wp_kses_data( $option_style_string ); ?>>
+							<?php echo esc_html( $gatherpress_option['label'] ); ?>
 						</label>
 					</div>
-			<?php endif; ?>
-		<?php endforeach; ?>
-	<?php endif; ?>
+					<?php
+				}
+			}
+		}
+		?>
 	</div>
 </div>

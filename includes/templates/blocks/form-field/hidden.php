@@ -9,12 +9,9 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset(
-	$gatherpress_attrs,
-	$gatherpress_input_attributes
-) ) {
+if ( ! isset( $gatherpress_input_attributes ) ) {
 	return;
 }
 ?>
 
-<input<?php echo wp_kses_data( $gatherpress_input_attributes ); ?> />
+<input<?php echo wp_kses_data( $input_attributes ); ?> />
