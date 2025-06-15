@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
+use GatherPress\Core\Rsvp_Query;
 use WP_Comment;
 
 /**
@@ -42,6 +43,7 @@ class Rsvp_Setup {
 	 */
 	protected function __construct() {
 		$this->setup_hooks();
+		Rsvp_Query::get_instance();
 	}
 
 	/**

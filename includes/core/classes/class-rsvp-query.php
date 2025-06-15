@@ -145,48 +145,76 @@ class Rsvp_Query {
 	}
 
 	/**
-	 * Exclude RSVP comments from a query.
+	 * Exclude RSVP comments from all comment queries.
 	 *
-	 * This method modifies the comment query to exclude comments of the RSVP type. It
-	 * ensures that RSVP comments are not included in the query results by adjusting the
-	 * comment types in the query variables.
+	 * This method always removes RSVP comments from the query, regardless of what is passed in.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param WP_Comment_Query $query Current instance of WP_Comment_Query (passed by reference).
 	 * @return void
 	 */
-	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ) {
-		$current_comment_types = $query->query_vars['type'];
+	public function exclude_rsvp_from_comment_query( $query ) {
+		$rsvp_type  = defined( 'GatherPress\\Core\\Rsvp::COMMENT_TYPE' ) ? \GatherPress\Core\Rsvp::COMMENT_TYPE : 'gatherpress_rsvp';
+		$rsvp_types = array( 'rsvp', $rsvp_type ); // Handle both possible RSVP types.
 
-		if ( empty( $query->query_vars['type'] ) && ! empty( $query->query_vars['type__in'] ) ) {
-			$current_comment_types = $query->query_vars['type__in'];
-		}
-
-		// Ensure comment type is not empty.
-		if ( ! empty( $current_comment_types ) ) {
-			if ( is_array( $current_comment_types ) ) {
-				// Remove the specific comment type from the array.
-				$current_comment_types = array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) );
-			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types ) {
-				// If the only type is the one to exclude, set it to empty.
-				$current_comment_types = '';
+		// If type__in is set, remove RSVP types.
+		if ( ! empty( $query->query_vars['type__in'] ) ) {
+			$query->query_vars['type__in'] = array_values( array_diff( (array) $query->query_vars['type__in'], $rsvp_types ) );
+			// If type__in becomes empty after removing RSVP types, set it to default types.
+			if ( empty( $query->query_vars['type__in'] ) ) {
+				$query->query_vars['type__in'] = array( 'comment', 'pingback', 'trackback' );
 			}
-		} else {
-			// If no specific type is set, make sure the one to exclude is not included.
-			$current_comment_types = array( 'comment', 'pingback', 'trackback' ); // Default types.
-			$current_comment_types = array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) );
 		}
 
-		if ( ! empty( $query->query_vars['type'] ) && empty( $query->query_vars['type__in'] ) ) {
-			// Update the query vars with the modified comment types.
-			$query->query_vars['type'] = $current_comment_types;
-		} elseif ( empty( $query->query_vars['type'] ) && ! empty( $query->query_vars['type__in'] ) ) {
-			// Update the query vars with the modified comment types.
-			$query->query_vars['type__in'] = $current_comment_types;
-		} else {
-			// If both type and type__in are empty, set type to default types
-			$query->query_vars['type'] = $current_comment_types;
+		// If type is set, handle both array and string cases.
+		if ( ! empty( $query->query_vars['type'] ) ) {
+			if ( is_array( $query->query_vars['type'] ) ) {
+				$query->query_vars['type'] = array_values( array_diff( $query->query_vars['type'], $rsvp_types ) );
+				// If type becomes empty after removing RSVP types, set it to default types.
+				if ( empty( $query->query_vars['type'] ) ) {
+					$query->query_vars['type'] = array( 'comment', 'pingback', 'trackback' );
+				}
+			} elseif ( in_array( $query->query_vars['type'], $rsvp_types, true ) ) {
+				$query->query_vars['type'] = ''; // Set to empty string for single RSVP type.
+			}
+		} elseif ( empty( $query->query_vars['type__in'] ) ) {
+			// Only set default types if both type and type__in are empty.
+			$query->query_vars['type'] = array( 'comment', 'pingback', 'trackback' );
 		}
+
+		// Always ensure RSVP types are in type__not_in.
+		if ( empty( $query->query_vars['type__not_in'] ) ) {
+			$query->query_vars['type__not_in'] = $rsvp_types;
+		} else {
+			$query->query_vars['type__not_in'] = array_unique( array_merge( (array) $query->query_vars['type__not_in'], $rsvp_types ) );
+		}
+
+		// Add filter to modify the SQL directly.
+		add_filter(
+			'comments_clauses',
+			function ( $clauses ) use ( $rsvp_types ) {
+				// Remove empty string from IN clause if it exists.
+				$clauses['where'] = preg_replace(
+					"/comment_type IN \([^)]*''[^)]*\)/",
+					"comment_type IN ('comment', 'pingback', 'trackback')",
+					$clauses['where']
+				);
+				// Ensure RSVP types are excluded.
+				$rsvp_not_in = "'" . implode( "','", $rsvp_types ) . "'";
+				if ( strpos( $clauses['where'], 'comment_type NOT IN' ) === false ) {
+					$clauses['where'] .= " AND comment_type NOT IN ($rsvp_not_in)";
+				} else {
+					// Replace existing NOT IN clause to include all RSVP types.
+					$clauses['where'] = preg_replace(
+						'/comment_type NOT IN \([^)]*\)/',
+						"comment_type NOT IN ($rsvp_not_in)",
+						$clauses['where']
+					);
+				}
+				return $clauses;
+			},
+			999
+		);
 	}
 }

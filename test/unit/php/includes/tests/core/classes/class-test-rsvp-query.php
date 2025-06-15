@@ -185,8 +185,8 @@ class Test_Rsvp_Query extends Base {
 	public function test_exclude_rsvp_from_comment_query(): void {
 		$instance = Rsvp_Query::get_instance();
 
-		// Test with type parameter
-		$query = new WP_Comment_Query();
+		// Test with type parameter.
+		$query                     = new WP_Comment_Query();
 		$query->query_vars['type'] = array( 'comment', Rsvp::COMMENT_TYPE );
 		$instance->exclude_rsvp_from_comment_query( $query );
 		$this->assertEquals(
@@ -194,9 +194,14 @@ class Test_Rsvp_Query extends Base {
 			$query->query_vars['type'],
 			'Failed to assert that RSVP type is excluded from type array.'
 		);
+		$this->assertContains(
+			Rsvp::COMMENT_TYPE,
+			$query->query_vars['type__not_in'],
+			'Failed to assert that RSVP type is added to type__not_in.'
+		);
 
-		// Test with single type parameter
-		$query = new WP_Comment_Query();
+		// Test with single type parameter.
+		$query                     = new WP_Comment_Query();
 		$query->query_vars['type'] = Rsvp::COMMENT_TYPE;
 		$instance->exclude_rsvp_from_comment_query( $query );
 		$this->assertEquals(
@@ -204,10 +209,15 @@ class Test_Rsvp_Query extends Base {
 			$query->query_vars['type'],
 			'Failed to assert that single RSVP type is set to empty string.'
 		);
+		$this->assertContains(
+			Rsvp::COMMENT_TYPE,
+			$query->query_vars['type__not_in'],
+			'Failed to assert that RSVP type is added to type__not_in.'
+		);
 
-		// Test with type__in parameter
-		$query = new WP_Comment_Query();
-		$query->query_vars['type'] = '';
+		// Test with type__in parameter.
+		$query                         = new WP_Comment_Query();
+		$query->query_vars['type']     = '';
 		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE );
 		$instance->exclude_rsvp_from_comment_query( $query );
 		$this->assertEquals(
@@ -215,10 +225,31 @@ class Test_Rsvp_Query extends Base {
 			$query->query_vars['type__in'],
 			'Failed to assert that RSVP type is excluded from type__in array.'
 		);
+		$this->assertContains(
+			Rsvp::COMMENT_TYPE,
+			$query->query_vars['type__not_in'],
+			'Failed to assert that RSVP type is added to type__not_in.'
+		);
 
-		// Test with default types
-		$query = new WP_Comment_Query();
-		$query->query_vars['type'] = '';
+		// Test with empty type__in after removal.
+		$query                         = new WP_Comment_Query();
+		$query->query_vars['type']     = '';
+		$query->query_vars['type__in'] = array( Rsvp::COMMENT_TYPE );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$this->assertEquals(
+			array( 'comment', 'pingback', 'trackback' ),
+			$query->query_vars['type__in'],
+			'Failed to assert that default types are set when type__in becomes empty.'
+		);
+		$this->assertContains(
+			Rsvp::COMMENT_TYPE,
+			$query->query_vars['type__not_in'],
+			'Failed to assert that RSVP type is added to type__not_in.'
+		);
+
+		// Test with default types.
+		$query                         = new WP_Comment_Query();
+		$query->query_vars['type']     = '';
 		$query->query_vars['type__in'] = '';
 		$instance->exclude_rsvp_from_comment_query( $query );
 		$this->assertEquals(
@@ -226,5 +257,202 @@ class Test_Rsvp_Query extends Base {
 			$query->query_vars['type'],
 			'Failed to assert that default types are set correctly.'
 		);
+		$this->assertContains(
+			Rsvp::COMMENT_TYPE,
+			$query->query_vars['type__not_in'],
+			'Failed to assert that RSVP type is added to type__not_in.'
+		);
+	}
+
+	/**
+	 * Test SQL query modification.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_sql_query_modification(): void {
+		$instance = Rsvp_Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		// Test SQL modification for type__in.
+		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$clauses = array(
+			'where' => "comment_type IN ('comment', 'gatherpress_rsvp')",
+		);
+		// Simulate WordPress building the query with the correct priority.
+		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+		$this->assertStringContainsString(
+			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
+			$clauses['where'],
+			'Failed to assert that SQL query excludes RSVP types.'
+		);
+		remove_all_filters( 'comments_clauses' );
+
+		// Test SQL modification for empty type.
+		$query                         = new WP_Comment_Query();
+		$query->query_vars['type']     = '';
+		$query->query_vars['type__in'] = '';
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$clauses = array(
+			'where' => '',
+		);
+		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+		$this->assertStringContainsString(
+			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
+			$clauses['where'],
+			'Failed to assert that SQL query excludes RSVP types with empty types.'
+		);
+		remove_all_filters( 'comments_clauses' );
+
+		// Test SQL modification for existing NOT IN clause.
+		$query                            = new WP_Comment_Query();
+		$query->query_vars['type__not_in'] = array( 'pingback' );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$clauses = array(
+			'where' => "comment_type NOT IN ('pingback')",
+		);
+		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+		$this->assertStringContainsString(
+			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
+			$clauses['where'],
+			'Failed to assert that SQL query excludes RSVP types with existing NOT IN clause.'
+		);
+		remove_all_filters( 'comments_clauses' );
+
+		// Test SQL modification for empty string in IN clause.
+		$query                     = new WP_Comment_Query();
+		$query->query_vars['type'] = '';
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$clauses = array(
+			'where' => "comment_type IN ('comment', '')",
+		);
+		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+		$this->assertStringContainsString(
+			"comment_type IN ('comment', 'pingback', 'trackback')",
+			$clauses['where'],
+			'Failed to assert that SQL query replaces empty string in IN clause.'
+		);
+		remove_all_filters( 'comments_clauses' );
+
+		// Test SQL modification for both IN and NOT IN clauses.
+		$query                            = new WP_Comment_Query();
+		$query->query_vars['type']        = '';
+		$query->query_vars['type__not_in'] = array( 'pingback' );
+		$instance->exclude_rsvp_from_comment_query( $query );
+		$clauses = array(
+			'where' => "comment_type IN ('comment', '') AND comment_type NOT IN ('pingback')",
+		);
+		$clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+		$this->assertStringContainsString(
+			"comment_type IN ('comment', 'pingback', 'trackback')",
+			$clauses['where'],
+			'Failed to assert that SQL query replaces empty string in IN clause with both clauses present.'
+		);
+		$this->assertStringContainsString(
+			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
+			$clauses['where'],
+			'Failed to assert that SQL query excludes RSVP types with both clauses present.'
+		);
+		remove_all_filters( 'comments_clauses' );
+
+		// Simulate WordPress building the query.
+		$clauses = array(
+			'where' => "comment_type IN ('comment', 'pingback', 'trackback')",
+		);
+
+		// First call exclude_rsvp_from_comment_query to add the filter.
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		// Then apply the filter.
+		$modified_clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+
+		// Verify that RSVP types are excluded.
+		$this->assertStringContainsString(
+			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
+			$modified_clauses['where'],
+			'SQL query should exclude RSVP types.'
+		);
+		remove_all_filters( 'comments_clauses' );
+
+		// Test SQL modification for empty type and type__in.
+		$query->query_vars = array(
+			'type'     => '',
+			'type__in' => array(),
+		);
+
+		// Simulate WordPress building the query.
+		$clauses = array(
+			'where' => "comment_type IN ('comment', 'pingback', 'trackback')",
+		);
+
+		// First call exclude_rsvp_from_comment_query to add the filter.
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		// Then apply the filter.
+		$modified_clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+
+		// Verify that RSVP types are excluded.
+		$this->assertStringContainsString(
+			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
+			$modified_clauses['where'],
+			'SQL query should exclude RSVP types when type and type__in are empty.'
+		);
+		remove_all_filters( 'comments_clauses' );
+
+		// Test SQL modification for existing NOT IN clause.
+		$query->query_vars = array(
+			'type__not_in' => array( 'custom_type' ),
+		);
+
+		// Simulate WordPress building the query.
+		$clauses = array(
+			'where' => "comment_type NOT IN ('custom_type')",
+		);
+
+		// First call exclude_rsvp_from_comment_query to add the filter.
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		// Then apply the filter.
+		$modified_clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+
+		// Verify that RSVP types are added to the NOT IN clause.
+		$this->assertStringContainsString(
+			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
+			$modified_clauses['where'],
+			'SQL query should include RSVP types in NOT IN clause.'
+		);
+		remove_all_filters( 'comments_clauses' );
+
+		// Test SQL modification for empty string in IN clause.
+		$query->query_vars = array(
+			'type'     => '',
+			'type__in' => array( '' ),
+		);
+
+		// Simulate WordPress building the query.
+		$clauses = array(
+			'where' => "comment_type IN ('comment', 'pingback', 'trackback', '')",
+		);
+
+		// First call exclude_rsvp_from_comment_query to add the filter.
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		// Then apply the filter.
+		$modified_clauses = apply_filters_ref_array( 'comments_clauses', array( $clauses, $query ) );
+
+		// Verify that empty string is replaced and RSVP types are excluded.
+		$this->assertStringContainsString(
+			"comment_type IN ('comment', 'pingback', 'trackback')",
+			$modified_clauses['where'],
+			'SQL query should replace empty string in IN clause.'
+		);
+		$this->assertStringContainsString(
+			"comment_type NOT IN ('rsvp','gatherpress_rsvp')",
+			$modified_clauses['where'],
+			'SQL query should exclude RSVP types.'
+		);
+		remove_all_filters( 'comments_clauses' );
 	}
 }
