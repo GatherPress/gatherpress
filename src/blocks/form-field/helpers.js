@@ -251,7 +251,7 @@ export default function FieldValue({ fieldType, attributes, setAttributes }) {
 			);
 
 		case 'radio':
-			// Radio buttons handle their values through radioOptions
+			// Radio buttons handle their values through radioOptions.
 			return null;
 
 		case 'hidden':

@@ -170,7 +170,7 @@ export default function Edit({ attributes, setAttributes }) {
 						)}
 					/>
 
-					{fieldType !== 'hidden' && (
+					{'hidden' !== fieldType && (
 						<ToggleControl
 							label={__('Required', 'gatherpress')}
 							checked={required}
@@ -205,7 +205,7 @@ export default function Edit({ attributes, setAttributes }) {
 							/>
 							<NumberControl
 								label={
-									fieldType === 'number'
+									'number' === fieldType
 										? __('Minimum Value', 'gatherpress')
 										: __('Minimum Length', 'gatherpress')
 								}
@@ -215,7 +215,7 @@ export default function Edit({ attributes, setAttributes }) {
 								}
 								min={0}
 								help={
-									fieldType === 'number'
+									'number' === fieldType
 										? __(
 												'Minimum allowed value for this number field',
 												'gatherpress'
@@ -228,7 +228,7 @@ export default function Edit({ attributes, setAttributes }) {
 							/>
 							<NumberControl
 								label={
-									fieldType === 'number'
+									'number' === fieldType
 										? __('Maximum Value', 'gatherpress')
 										: __('Maximum Length', 'gatherpress')
 								}
@@ -238,7 +238,7 @@ export default function Edit({ attributes, setAttributes }) {
 								}
 								min={0}
 								help={
-									fieldType === 'number'
+									'number' === fieldType
 										? __(
 												'Maximum allowed value for this number field',
 												'gatherpress'

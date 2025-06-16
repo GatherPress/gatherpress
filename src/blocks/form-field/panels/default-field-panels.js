@@ -33,7 +33,7 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 	return (
 		<>
 			<PanelBody title={__('Layout Settings', 'gatherpress')}>
-				{fieldType !== 'textarea' && (
+				{'textarea' !== fieldType && (
 					<ToggleControl
 						label={__('Inline Layout', 'gatherpress')}
 						checked={inlineLayout}
@@ -50,7 +50,7 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 					label={__('Field Width (%)', 'gatherpress')}
 					value={fieldWidth}
 					onChange={(value) => setAttributes({ fieldWidth: value })}
-					min={0}
+					min={1}
 					max={100}
 					help={__(
 						'Width of the input field as a percentage',

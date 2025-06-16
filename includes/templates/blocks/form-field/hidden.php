@@ -9,7 +9,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $gatherpress_input_attributes ) ) {
+if ( ! isset( $input_attributes ) ) {
 	return;
 }
 ?>

@@ -127,11 +127,7 @@ class Form_Field {
 	 */
 	private function add_style( array &$styles, string $attr_key, string $format ): void {
 		if ( ! empty( $this->attributes[ $attr_key ] ) ) {
-			$value = is_numeric( $this->attributes[ $attr_key ] )
-				? intval( $this->attributes[ $attr_key ] )
-				: $this->attributes[ $attr_key ];
-
-			$styles[] = sprintf( $format, esc_attr( $value ) );
+			$styles[] = sprintf( $format, esc_attr( $this->attributes[ $attr_key ] ) );
 		}
 	}
 

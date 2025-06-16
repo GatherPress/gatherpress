@@ -34,7 +34,7 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 		const newOptions = [...radioOptions];
 		newOptions[index] = { ...newOptions[index], [field]: value };
 
-		if (field === 'label') {
+		if ('label' === field) {
 			const cleanValue = value
 				.toLowerCase()
 				.replace(/[^a-z0-9]+/g, '-')
@@ -172,6 +172,7 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 						value={optionFontSize}
 					/>
 				</BaseControl>
+
 				<RangeControl
 					label={__('Line Height', 'gatherpress')}
 					value={optionLineHeight}
