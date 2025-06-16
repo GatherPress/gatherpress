@@ -57,6 +57,7 @@ class General_Block {
 	protected function setup_hooks(): void {
 		add_filter( 'render_block', array( $this, 'process_login_block' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'process_registration_block' ), 10, 2 );
+		add_filter( 'render_block_core/button', array( $this, 'convert_submit_button' ), 10, 2 );
 	}
 
 	/**
@@ -131,6 +132,55 @@ class General_Block {
 		}
 
 		$block_content = $tag->get_updated_html();
+
+		return $block_content;
+	}
+
+	/**
+	 * Converts button blocks with the `gatherpress-submit-button` class to submit buttons.
+	 *
+	 * This method performs two functions:
+	 * 1. Converts anchor tags (`<a>`) to button elements and removes href/role attributes
+	 * 2. Adds `type="submit"` attribute to both converted anchors and existing button elements
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The HTML content of the block.
+	 * @param array  $block         The parsed block data.
+	 *
+	 * @return string The modified block content with submit button functionality.
+	 */
+	public function convert_submit_button( string $block_content, array $block ): string {
+		// Check if the button has the gatherpress-submit-button class.
+		if ( ! isset( $block['attrs']['className'] ) ||
+			false === strpos( $block['attrs']['className'], 'gatherpress-submit-button' ) ) {
+			return $block_content;
+		}
+
+		$processor = new WP_HTML_Tag_Processor( $block_content );
+
+		while ( $processor->next_tag() ) {
+			$tag_name = $processor->get_tag();
+
+			if ( 'A' === $tag_name ) {
+				// Handle anchor tags - convert to button.
+				$processor->set_attribute( 'type', 'submit' );
+				$processor->remove_attribute( 'href' );
+				$processor->remove_attribute( 'role' );
+
+				// Replace tag names.
+				$content = $processor->get_updated_html();
+				$content = preg_replace( '/<a\b/', '<button', $content );
+				$content = preg_replace( '/<\/a>/', '</button>', $content );
+
+				return $content;
+			} elseif ( 'BUTTON' === $tag_name ) {
+				// Handle button tags - just add type="submit".
+				$processor->set_attribute( 'type', 'submit' );
+
+				return $processor->get_updated_html();
+			}
+		}
 
 		return $block_content;
 	}
