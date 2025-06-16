@@ -1,5 +1,16 @@
 /**
- * Get input styles based on field type and attributes
+ * WordPress dependencies.
+ */
+import { __ } from '@wordpress/i18n';
+import {
+	TextControl,
+	TextareaControl,
+	ToggleControl,
+} from '@wordpress/components';
+
+/**
+ * Get input styles based on field type and attributes.
+ *
  * @param {string} fieldType  - The type of field (text, checkbox, etc.)
  * @param {Object} attributes - Block attributes
  * @return {Object} Style object for the input
@@ -87,7 +98,8 @@ export const getInputStyles = (fieldType, attributes) => {
 };
 
 /**
- * Get label styles based on attributes
+ * Get label styles based on attributes.
+ *
  * @param {Object} attributes - Block attributes
  * @return {Object} Style object for the label
  */
@@ -110,7 +122,8 @@ export const getLabelStyles = (attributes) => {
 };
 
 /**
- * Get option styles (for radio buttons) based on attributes
+ * Get option styles (for radio buttons) based on attributes.
+ *
  * @param {Object} attributes - Block attributes
  * @return {Object} Style object for the options
  */
@@ -133,7 +146,8 @@ export const getOptionStyles = (attributes) => {
 };
 
 /**
- * Get wrapper classes for the field
+ * Get wrapper classes for the field.
+ *
  * @param {string}  fieldType    - The type of field
  * @param {Object}  blockProps   - Block props from useBlockProps
  * @param {boolean} inlineLayout - Whether to use side-by-side layout
@@ -146,7 +160,7 @@ export const getWrapperClasses = (
 ) => {
 	let classes = `${blockProps.className || ''} gatherpress-field-type-${fieldType}`;
 
-	// Add side-by-side class for text-based fields
+	// Add inline layout class for text-based fields.
 	if (
 		inlineLayout &&
 		['text', 'email', 'url', 'number', 'textarea'].includes(fieldType)
@@ -156,3 +170,109 @@ export const getWrapperClasses = (
 
 	return classes.trim();
 };
+
+/**
+ * Renders the appropriate field value control based on field type.
+ *
+ * @param {Object}   props               - Component props.
+ * @param {string}   props.fieldType     - The type of form field.
+ * @param {Object}   props.attributes    - Block attributes object.
+ * @param {Function} props.setAttributes - Function to update block attributes.
+ * @return {JSX.Element|null} The field value control component or null.
+ */
+export default function FieldValue({ fieldType, attributes, setAttributes }) {
+	const { fieldValue } = attributes;
+
+	switch (fieldType) {
+		case 'email':
+			return (
+				<TextControl
+					label={__('Default Value', 'gatherpress')}
+					type="email"
+					value={fieldValue}
+					onChange={(value) => setAttributes({ fieldValue: value })}
+					help={__(
+						'Default email address for this field',
+						'gatherpress'
+					)}
+				/>
+			);
+
+		case 'url':
+			return (
+				<TextControl
+					label={__('Default Value', 'gatherpress')}
+					type="url"
+					value={fieldValue}
+					onChange={(value) => setAttributes({ fieldValue: value })}
+					help={__('Default URL for this field', 'gatherpress')}
+				/>
+			);
+
+		case 'number':
+			return (
+				<TextControl
+					label={__('Default Value', 'gatherpress')}
+					type="number"
+					value={fieldValue}
+					onChange={(value) => setAttributes({ fieldValue: value })}
+					help={__(
+						'Default number value for this field',
+						'gatherpress'
+					)}
+				/>
+			);
+
+		case 'textarea':
+			return (
+				<TextareaControl
+					label={__('Default Value', 'gatherpress')}
+					value={fieldValue}
+					onChange={(value) => setAttributes({ fieldValue: value })}
+					help={__(
+						'Default content for this textarea',
+						'gatherpress'
+					)}
+					rows={3}
+				/>
+			);
+
+		case 'checkbox':
+			return (
+				<ToggleControl
+					label={__('Default Checked', 'gatherpress')}
+					checked={!!fieldValue}
+					onChange={(value) => setAttributes({ fieldValue: value })}
+					help={__(
+						'Whether this checkbox should be checked by default',
+						'gatherpress'
+					)}
+				/>
+			);
+
+		case 'radio':
+			// Radio buttons handle their values through radioOptions
+			return null;
+
+		case 'hidden':
+			return (
+				<TextControl
+					label={__('Value', 'gatherpress')}
+					value={fieldValue}
+					onChange={(value) => setAttributes({ fieldValue: value })}
+					help={__('The value for this hidden field', 'gatherpress')}
+				/>
+			);
+
+		case 'text':
+		default:
+			return (
+				<TextControl
+					label={__('Default Value', 'gatherpress')}
+					value={fieldValue}
+					onChange={(value) => setAttributes({ fieldValue: value })}
+					help={__('Default value for this field', 'gatherpress')}
+				/>
+			);
+	}
+}

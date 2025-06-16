@@ -152,6 +152,26 @@ class Form_Field {
 	}
 
 	/**
+	 * Get the appropriate autocomplete value based on field type.
+	 *
+	 * @param string $field_type The field type.
+	 *
+	 * @return string The autocomplete value.
+	 */
+	private function get_autocomplete_value( string $field_type ): string {
+		switch ( $field_type ) {
+			case 'email':
+				return 'email';
+			case 'url':
+				return 'url';
+			case 'text':
+			case 'number':
+			default:
+				return 'on';
+		}
+	}
+
+	/**
 	 * Get the field type for the current form field.
 	 *
 	 * Returns the field type from the processed attributes with
@@ -334,10 +354,11 @@ class Form_Field {
 
 			case 'textarea':
 				$attributes = array(
-					'id'          => $this->attributes['input_id'],
-					'name'        => $this->attributes['field_name'],
-					'placeholder' => $this->attributes['placeholder'],
-					'rows'        => $this->attributes['textarea_rows'],
+					'id'           => $this->attributes['input_id'],
+					'name'         => $this->attributes['field_name'],
+					'placeholder'  => $this->attributes['placeholder'],
+					'rows'         => $this->attributes['textarea_rows'],
+					'autocomplete' => 'on',
 				);
 
 				if (
@@ -365,11 +386,12 @@ class Form_Field {
 
 			default:
 				$attributes = array(
-					'id'          => $this->attributes['input_id'],
-					'type'        => $field_type,
-					'name'        => $this->attributes['field_name'],
-					'placeholder' => $this->attributes['placeholder'],
-					'value'       => $this->attributes['field_value'],
+					'id'           => $this->attributes['input_id'],
+					'type'         => $field_type,
+					'name'         => $this->attributes['field_name'],
+					'placeholder'  => $this->attributes['placeholder'],
+					'value'        => $this->attributes['field_value'],
+					'autocomplete' => $this->get_autocomplete_value( $field_type ),
 				);
 
 				if ( ! empty( $this->attributes['min_value'] ) ) {

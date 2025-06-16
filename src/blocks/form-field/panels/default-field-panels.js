@@ -112,7 +112,7 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 					min={0}
 					max={32}
 				/>
-				{fieldType === 'textarea' && (
+				{'textarea' === fieldType && (
 					<RangeControl
 						label={__('Rows', 'gatherpress')}
 						value={textareaRows}
@@ -120,7 +120,7 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 							setAttributes({ textareaRows: value })
 						}
 						min={1}
-						max={10}
+						max={20}
 						help={__('Number of visible text lines', 'gatherpress')}
 					/>
 				)}

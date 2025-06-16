@@ -12,12 +12,22 @@ import {
 	ToggleControl,
 } from '@wordpress/components';
 
-// Import specific panels
+/**
+ * Internal dependencies.
+ */
 import DefaultFieldPanels from './default-field-panels';
 import RadioFieldPanels from './radio-field-panels';
 import CheckboxFieldPanels from './checkbox-field-panels';
-import FieldValue from './field-value';
+import FieldValue from '../helpers';
 
+/**
+ * Renders the field settings panel in the block editor sidebar.
+ *
+ * @param {Object}   props               - Component props.
+ * @param {Object}   props.attributes    - Block attributes object.
+ * @param {Function} props.setAttributes - Function to update block attributes.
+ * @return {JSX.Element} The field settings inspector controls panel.
+ */
 export default function FieldSettingsPanel({ attributes, setAttributes }) {
 	const { fieldType, fieldName, minValue, maxValue, placeholder, required } =
 		attributes;
