@@ -8,6 +8,14 @@ import { __ } from '@wordpress/i18n';
  */
 import { getWrapperClasses } from '../helpers';
 
+/**
+ * Renders a hidden field component with visual indicator for the block editor.
+ *
+ * @param {Object} props            - Component props.
+ * @param {Object} props.attributes - Block attributes object.
+ * @param {Object} props.blockProps - WordPress block wrapper properties.
+ * @return {JSX.Element} The hidden field component with visual placeholder.
+ */
 export default function HiddenField({ attributes, blockProps }) {
 	const { fieldType, fieldName, fieldValue } = attributes;
 

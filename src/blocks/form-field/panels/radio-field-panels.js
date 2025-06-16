@@ -14,6 +14,14 @@ import {
 	ToggleControl,
 } from '@wordpress/components';
 
+/**
+ * Renders styling and configuration panels for radio button form fields.
+ *
+ * @param {Object}   props               - Component props.
+ * @param {Object}   props.attributes    - Block attributes object.
+ * @param {Function} props.setAttributes - Function to update block attributes.
+ * @return {JSX.Element} The radio field styling and options panels.
+ */
 export default function RadioFieldPanels({ attributes, setAttributes }) {
 	const {
 		radioOptions = [{ label: '', value: '' }],

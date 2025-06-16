@@ -5,6 +5,14 @@ import { __ } from '@wordpress/i18n';
 import { FontSizePicker, PanelColorSettings } from '@wordpress/block-editor';
 import { BaseControl, PanelBody, RangeControl } from '@wordpress/components';
 
+/**
+ * Renders styling panels for checkbox form fields.
+ *
+ * @param {Object}   props               - Component props.
+ * @param {Object}   props.attributes    - Block attributes object.
+ * @param {Function} props.setAttributes - Function to update block attributes.
+ * @return {JSX.Element} The checkbox field styling panels.
+ */
 export default function CheckboxFieldPanels({ attributes, setAttributes }) {
 	const {
 		inputBorderWidth,

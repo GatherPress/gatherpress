@@ -9,6 +9,16 @@ import { RichText } from '@wordpress/block-editor';
  */
 import { getInputStyles, getLabelStyles, getWrapperClasses } from '../helpers';
 
+/**
+ * Renders a default input field component for the block editor (text, email, url, number).
+ *
+ * @param {Object}   props                   - Component props.
+ * @param {Object}   props.attributes        - Block attributes object.
+ * @param {Function} props.setAttributes     - Function to update block attributes.
+ * @param {Object}   props.blockProps        - WordPress block wrapper properties.
+ * @param {Function} props.generateFieldName - Function to generate field name from label.
+ * @return {JSX.Element} The default input field component.
+ */
 export default function DefaultField({
 	attributes,
 	setAttributes,

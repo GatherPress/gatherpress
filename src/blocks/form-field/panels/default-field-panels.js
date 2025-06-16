@@ -10,6 +10,14 @@ import {
 	BaseControl,
 } from '@wordpress/components';
 
+/**
+ * Renders styling panels for default form fields (text, email, url, number, textarea).
+ *
+ * @param {Object}   props               - Component props.
+ * @param {Object}   props.attributes    - Block attributes object.
+ * @param {Function} props.setAttributes - Function to update block attributes.
+ * @return {JSX.Element} The default field styling panels.
+ */
 export default function DefaultFieldPanels({ attributes, setAttributes }) {
 	const {
 		fieldType,

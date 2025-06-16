@@ -13,6 +13,16 @@ import {
 	getWrapperClasses,
 } from '../helpers';
 
+/**
+ * Renders a radio button group field component for the block editor.
+ *
+ * @param {Object}   props                   - Component props.
+ * @param {Object}   props.attributes        - Block attributes object.
+ * @param {Function} props.setAttributes     - Function to update block attributes.
+ * @param {Object}   props.blockProps        - WordPress block wrapper properties.
+ * @param {Function} props.generateFieldName - Function to generate field name from label.
+ * @return {JSX.Element} The radio button group field component.
+ */
 export default function RadioField({
 	attributes,
 	setAttributes,
@@ -30,7 +40,7 @@ export default function RadioField({
 		radioOptions = [{ label: '', value: '' }],
 	} = attributes;
 
-	// Handle label blur to auto-generate field name
+	// Handle label blur to auto-generate field name.
 	const handleLabelBlur = (labelValue) => {
 		if (!fieldName && labelValue) {
 			const generatedFieldName = generateFieldName(labelValue);
@@ -40,7 +50,7 @@ export default function RadioField({
 		}
 	};
 
-	// Handle radio option changes
+	// Handle radio option changes.
 	const updateRadioOption = (index, field, value) => {
 		const newOptions = [...radioOptions];
 		newOptions[index] = { ...newOptions[index], [field]: value };
