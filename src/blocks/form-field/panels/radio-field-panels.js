@@ -55,6 +55,7 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 
 	const addRadioOption = () => {
 		const newOptions = [...radioOptions, { label: '', value: '' }];
+
 		setAttributes({ radioOptions: newOptions });
 	};
 
@@ -100,7 +101,7 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 									)}
 									checked={
 										fieldValue === option.value &&
-										option.value !== ''
+										'' !== option.value
 									}
 									onChange={(checked) => {
 										setAttributes({

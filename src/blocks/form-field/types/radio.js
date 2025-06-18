@@ -89,6 +89,54 @@ export default function RadioField({
 		}, 50);
 	};
 
+	const removeRadioOption = (index) => {
+		const optionToRemove = radioOptions[index];
+		const newOptions = radioOptions.filter((_, i) => i !== index);
+
+		// Clear fieldValue if removing the selected option.
+		const updates = { radioOptions: newOptions };
+		if (fieldValue === optionToRemove.value) {
+			updates.fieldValue = '';
+		}
+
+		setAttributes(updates);
+
+		// Focus the previous option after removal and set cursor to end.
+		setTimeout(() => {
+			const targetIndex = Math.max(0, index - 1);
+			const radioOptionElements = document.querySelectorAll(
+				'.gatherpress-radio-option .rich-text'
+			);
+			if (radioOptionElements[targetIndex]) {
+				const element = radioOptionElements[targetIndex];
+				element.focus();
+
+				// Move cursor to end of text.
+				const range = document.createRange();
+				const selection = getSelection();
+				range.selectNodeContents(element);
+				range.collapse(false);
+				selection.removeAllRanges();
+				selection.addRange(range);
+			}
+		}, 50);
+	};
+
+	const handleKeyDown = (event, index) => {
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			addRadioOption();
+		} else if (event.key === 'Backspace' || event.key === 'Delete') {
+			const currentOption = radioOptions[index];
+
+			// Only remove if the option is empty and it's not the last remaining option.
+			if (!currentOption.label && radioOptions.length > 1) {
+				event.preventDefault();
+				removeRadioOption(index);
+			}
+		}
+	};
+
 	return (
 		<div
 			{...blockProps}
@@ -131,7 +179,10 @@ export default function RadioField({
 							type="radio"
 							name={fieldName}
 							value={option.value}
-							checked={fieldValue === option.value}
+							checked={
+								fieldValue === option.value &&
+								'' !== option.value
+							}
 							disabled={true}
 							tabIndex={-1}
 						/>
@@ -142,12 +193,7 @@ export default function RadioField({
 							onChange={(value) =>
 								updateRadioOption(index, 'label', value)
 							}
-							onKeyDown={(event) => {
-								if (event.key === 'Enter') {
-									event.preventDefault();
-									addRadioOption();
-								}
-							}}
+							onKeyDown={(event) => handleKeyDown(event, index)}
 							allowedFormats={[]}
 							identifier={`radio-option-${index}`}
 							style={getOptionStyles(attributes)}
