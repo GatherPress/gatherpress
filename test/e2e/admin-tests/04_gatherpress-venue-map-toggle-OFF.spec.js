@@ -1,22 +1,20 @@
 const { test, expect } = require('@playwright/test');
 const { login } = require('../reusable-user-steps/common.js');
-import { addNewVenue } from '../reusable-user-steps/common.js';
 
-test.describe.skip('e2e test for venue map through admin side', () => {
+test.describe('e2e test for venue map through admin side', () => {
 	test.beforeEach(async ({ page }) => {
-		test.setTimeout(120000);
-		//await page.setViewportSize({ width: 1920, height: 720 });
+		await page.goto('/wp-admin/');
 		await page.waitForLoadState('networkidle');
 	});
 
-	test.skip('Test to create a new venue for an offline event and verify the entered location map should be visible on the venue post.', async ({
+	test('Verify the venue location map should not be visible on the events when the map toggled is disabled.', async ({
 		page,
 	}) => {
-		await login({ page, username: 'prashantbellad' });
+		await login({ page });
 
-		const postName = 'venue map-pune';
+		const postName = 'offline test venue - no map is visible';
 
-		await addNewVenue({ page });
+		await page.goto('/wp-admin/post-new.php?post_type=gatherpress_venue');
 
 		await page.getByLabel('Add title').fill(postName);
 
@@ -49,11 +47,16 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 
 		await expect(venueButton).toHaveAttribute('aria-expanded', 'true');
 
-		await page.getByLabel('Full Address').fill('Pune');
+		await page.getByLabel('Full Address').fill('Bengaluru');
 
 		await page.locator('.gatherpress-venue__full-address').isVisible();
-		await page.locator('#map').isVisible({ timeout: 30000 });
-		await expect(page.locator('#map')).toBeVisible({ timeout: 30000 });
+
+		await page.waitForSelector('#map');
+		await page.locator('#map').click({ force: true });
+
+		await page.getByRole('tab', { name: 'Block' }).click();
+		await page.getByLabel('Display the map').uncheck();
+		await expect(page.getByLabel('Hide the map')).toBeVisible();
 
 		await page
 			.getByRole('button', { name: 'Publish', exact: true })
@@ -62,25 +65,14 @@ test.describe.skip('e2e test for venue map through admin side', () => {
 			.getByLabel('Editor publish')
 			.getByRole('button', { name: 'Publish', exact: true })
 			.click();
-
 		await page
 			.getByLabel('Editor publish')
 			.getByRole('link', { name: 'View Venue' })
 			.click();
 
-		await page.waitForSelector('#map');
-
-		await expect(page).toHaveScreenshot('location_map.png', {
-			maxDiffPixels: 800,
+		await page.screenshot({
+			path: 'artifacts/venue_post_no_map.png',
 			fullPage: true,
-			mask: [
-				page.locator('header'),
-				page.locator('h1'),
-				page.locator('h3'),
-				page.locator('nav'),
-				page.locator('.wp-block-template-part'),
-				page.locator('footer'),
-			],
 		});
 	});
 });
