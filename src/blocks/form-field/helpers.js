@@ -111,6 +111,8 @@ export const getLabelStyles = (attributes) => {
 		styles.color = labelTextColor;
 	}
 
+	styles.cursor = 'text';
+
 	return styles;
 };
 
@@ -150,12 +152,16 @@ export const getOptionStyles = (attributes) => {
 	if (optionFontSize !== undefined) {
 		styles.fontSize = `${optionFontSize}`;
 	}
+
 	if (optionLineHeight !== undefined) {
 		styles.lineHeight = optionLineHeight;
 	}
+
 	if (optionTextColor) {
 		styles.color = optionTextColor;
 	}
+
+	styles.cursor = 'text';
 
 	return styles;
 };
