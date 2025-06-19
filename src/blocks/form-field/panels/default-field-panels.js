@@ -62,7 +62,7 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 					min={1}
 					max={100}
 					help={__(
-						'Width of the input field as a percentage',
+						'Width of the input field as a percentage.',
 						'gatherpress'
 					)}
 				/>
@@ -130,7 +130,10 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 						}
 						min={1}
 						max={20}
-						help={__('Number of visible text lines', 'gatherpress')}
+						help={__(
+							'Number of visible text lines.',
+							'gatherpress'
+						)}
 					/>
 				)}
 				<RangeControl

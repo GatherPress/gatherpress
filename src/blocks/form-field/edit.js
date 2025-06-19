@@ -221,7 +221,7 @@ export default function Edit({ attributes, setAttributes }) {
 									setAttributes({ placeholder: value })
 								}
 								help={__(
-									'Placeholder text shown inside the field',
+									'Placeholder text shown inside the field.',
 									'gatherpress'
 								)}
 							/>
@@ -244,11 +244,11 @@ export default function Edit({ attributes, setAttributes }) {
 								help={
 									'number' === fieldType
 										? __(
-												'Minimum allowed value for this number field',
+												'Minimum allowed value for this number field.',
 												'gatherpress'
 											)
 										: __(
-												'Minimum number of characters required',
+												'Minimum number of characters required.',
 												'gatherpress'
 											)
 								}
@@ -272,11 +272,11 @@ export default function Edit({ attributes, setAttributes }) {
 								help={
 									'number' === fieldType
 										? __(
-												'Maximum allowed value for this number field',
+												'Maximum allowed value for this number field.',
 												'gatherpress'
 											)
 										: __(
-												'Maximum number of characters allowed',
+												'Maximum number of characters allowed.',
 												'gatherpress'
 											)
 								}
@@ -284,35 +284,37 @@ export default function Edit({ attributes, setAttributes }) {
 						</>
 					)}
 
-					<TextControl
-						label={__('Autocomplete', 'gatherpress')}
-						value={autocomplete}
-						onChange={(value) => {
-							// Only allow alphanumeric, underscore, and hyphen.
-							const sanitized = value.replace(
-								/[^a-zA-Z0-9_-]/g,
-								''
-							);
+					{!['hidden'].includes(fieldType) && (
+						<TextControl
+							label={__('Autocomplete', 'gatherpress')}
+							value={autocomplete}
+							onChange={(value) => {
+								// Only allow lowercase alphanumeric, underscore, hyphen, space.
+								const sanitized = value.replace(
+									/[^a-zA0-9_\s-]/g,
+									''
+								);
 
-							setAttributes({ autocomplete: sanitized });
-						}}
-						help={
-							<>
-								{__(
-									'Controls browser autocomplete behavior. Use "on", "off", or specific values like "email", "name", etc.',
-									'gatherpress'
-								)}
-								<br />
-								<a
-									href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete"
-									target="_blank"
-									rel="noopener noreferrer"
-								>
-									{__('Learn more', 'gatherpress')}
-								</a>
-							</>
-						}
-					/>
+								setAttributes({ autocomplete: sanitized });
+							}}
+							help={
+								<>
+									{__(
+										'Controls browser autocomplete behavior. Use "on", "off", or specific values like "email", "name", etc.',
+										'gatherpress'
+									)}
+									<br />
+									<a
+										href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete"
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										{__('Learn more', 'gatherpress')}
+									</a>
+								</>
+							}
+						/>
+					)}
 				</PanelBody>
 				{getFieldPanels()}
 			</InspectorControls>
