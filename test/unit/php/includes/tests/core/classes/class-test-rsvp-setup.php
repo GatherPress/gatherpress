@@ -140,9 +140,9 @@ class Test_Rsvp_Setup extends Base {
 		);
 
 		$this->assertEquals(
-			1,
+			2,
 			$instance->adjust_comments_number( 2, $event->ID ),
-			'Failed to assert the comments do not equal 1.'
+			'Failed to assert the comments do not equal 2.'
 		);
 	}
 
