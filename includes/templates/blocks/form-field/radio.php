@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 if ( ! isset(
 	$wrapper_attributes,
 	$attributes,
+	$input_attributes,
 	$input_styles,
 	$label_styles,
 	$label_wrapper_styles,
