@@ -26,14 +26,13 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 	const {
 		radioOptions = [{ label: '', value: '' }],
 		fieldValue,
-		inputBorderWidth,
+		required,
 		labelFontSize,
 		labelLineHeight,
 		optionFontSize,
 		optionLineHeight,
 		labelTextColor,
 		requiredTextColor,
-		borderColor,
 		optionTextColor,
 	} = attributes;
 
@@ -194,18 +193,6 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 				/>
 			</PanelBody>
 
-			<PanelBody title={__('Input Field Styles', 'gatherpress')}>
-				<RangeControl
-					label={__('Border Width (px)', 'gatherpress')}
-					value={inputBorderWidth}
-					onChange={(value) =>
-						setAttributes({ inputBorderWidth: value })
-					}
-					min={0}
-					max={100}
-				/>
-			</PanelBody>
-
 			<PanelColorSettings
 				title={__('Colors', 'gatherpress')}
 				colorSettings={[
@@ -215,23 +202,23 @@ export default function RadioFieldPanels({ attributes, setAttributes }) {
 							setAttributes({ labelTextColor: value }),
 						label: __('Label Text', 'gatherpress'),
 					},
-					{
-						value: requiredTextColor,
-						onChange: (value) =>
-							setAttributes({ requiredTextColor: value }),
-						label: __('Required Text', 'gatherpress'),
-					},
+					...(required
+						? [
+								{
+									value: requiredTextColor,
+									onChange: (value) =>
+										setAttributes({
+											requiredTextColor: value,
+										}),
+									label: __('Required Text', 'gatherpress'),
+								},
+							]
+						: []),
 					{
 						value: optionTextColor,
 						onChange: (value) =>
 							setAttributes({ optionTextColor: value }),
 						label: __('Option Text', 'gatherpress'),
-					},
-					{
-						value: borderColor,
-						onChange: (value) =>
-							setAttributes({ borderColor: value }),
-						label: __('Border', 'gatherpress'),
 					},
 				]}
 			/>

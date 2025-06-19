@@ -218,7 +218,12 @@ export default function Edit({ attributes, setAttributes }) {
 								}
 								value={minValue}
 								onChange={(value) =>
-									setAttributes({ minValue: value })
+									setAttributes({
+										minValue:
+											'' === value
+												? undefined
+												: parseInt(value, 10),
+									})
 								}
 								min={0}
 								help={
@@ -241,7 +246,12 @@ export default function Edit({ attributes, setAttributes }) {
 								}
 								value={maxValue}
 								onChange={(value) =>
-									setAttributes({ maxValue: value })
+									setAttributes({
+										maxValue:
+											'' === value
+												? undefined
+												: parseInt(value, 10),
+									})
 								}
 								min={0}
 								help={

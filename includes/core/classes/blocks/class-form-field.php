@@ -62,37 +62,37 @@ class Form_Field {
 	 */
 	private function process_attributes( array $raw_attributes ): array {
 		return array(
-			'field_type'          => $raw_attributes['fieldType'] ?? 'text',
-			'field_name'          => $raw_attributes['fieldName'] ?? '',
-			'field_value'         => $raw_attributes['fieldValue'] ?? '',
-			'label'               => $raw_attributes['label'] ?? '',
-			'placeholder'         => $raw_attributes['placeholder'] ?? '',
-			'required'            => (bool) ( $raw_attributes['required'] ?? false ),
-			'required_text'       => $raw_attributes['requiredText'] ?? __( '(required)', 'gatherpress' ),
-			'help_text'           => $raw_attributes['helpText'] ?? '',
-			'min_value'           => $raw_attributes['minValue'] ?? null,
-			'max_value'           => $raw_attributes['maxValue'] ?? null,
-			'radio_options'       => $raw_attributes['radioOptions'] ?? array(),
-			'inline_layout'       => (bool) ( $raw_attributes['inlineLayout'] ?? false ),
-			'field_width'         => $raw_attributes['fieldWidth'] ?? 100,
-			'label_text_color'    => $raw_attributes['labelTextColor'] ?? null,
-			'field_text_color'    => $raw_attributes['fieldTextColor'] ?? null,
-			'field_bg_color'      => $raw_attributes['fieldBackgroundColor'] ?? null,
-			'border_color'        => $raw_attributes['borderColor'] ?? null,
-			'option_text_color'   => $raw_attributes['optionTextColor'] ?? null,
-			'required_text_color' => $raw_attributes['requiredTextColor'] ?? null,
-			'label_font_size'     => $raw_attributes['labelFontSize'] ?? null,
-			'label_line_height'   => $raw_attributes['labelLineHeight'] ?? 1.5,
-			'option_font_size'    => $raw_attributes['optionFontSize'] ?? null,
-			'option_line_height'  => $raw_attributes['optionLineHeight'] ?? 1.5,
-			'input_font_size'     => $raw_attributes['inputFontSize'] ?? null,
-			'input_line_height'   => $raw_attributes['inputLineHeight'] ?? 1.5,
-			'input_padding'       => $raw_attributes['inputPadding'] ?? 16,
-			'input_border_width'  => $raw_attributes['inputBorderWidth'] ?? 1,
-			'input_border_radius' => $raw_attributes['inputBorderRadius'] ?? 0,
-			'autocomplete'        => $raw_attributes['autocomplete'] ?? 'on',
-			'textarea_rows'       => $raw_attributes['textareaRows'] ?? 4,
-			'input_id'            => $this->get_input_id(),
+			'field_type'             => $raw_attributes['fieldType'] ?? 'text',
+			'field_name'             => $raw_attributes['fieldName'] ?? '',
+			'field_value'            => $raw_attributes['fieldValue'] ?? '',
+			'label'                  => $raw_attributes['label'] ?? '',
+			'placeholder'            => $raw_attributes['placeholder'] ?? '',
+			'required'               => (bool) ( $raw_attributes['required'] ?? false ),
+			'required_text'          => $raw_attributes['requiredText'] ?? __( '(required)', 'gatherpress' ),
+			'help_text'              => $raw_attributes['helpText'] ?? '',
+			'min_value'              => $raw_attributes['minValue'] ?? null,
+			'max_value'              => $raw_attributes['maxValue'] ?? null,
+			'radio_options'          => $raw_attributes['radioOptions'] ?? array(),
+			'inline_layout'          => (bool) ( $raw_attributes['inlineLayout'] ?? false ),
+			'field_width'            => $raw_attributes['fieldWidth'] ?? 100,
+			'label_text_color'       => $raw_attributes['labelTextColor'] ?? null,
+			'field_text_color'       => $raw_attributes['fieldTextColor'] ?? null,
+			'field_background_color' => $raw_attributes['fieldBackgroundColor'] ?? null,
+			'border_color'           => $raw_attributes['borderColor'] ?? null,
+			'option_text_color'      => $raw_attributes['optionTextColor'] ?? null,
+			'required_text_color'    => $raw_attributes['requiredTextColor'] ?? null,
+			'label_font_size'        => $raw_attributes['labelFontSize'] ?? null,
+			'label_line_height'      => $raw_attributes['labelLineHeight'] ?? 1.5,
+			'option_font_size'       => $raw_attributes['optionFontSize'] ?? null,
+			'option_line_height'     => $raw_attributes['optionLineHeight'] ?? 1.5,
+			'input_font_size'        => $raw_attributes['inputFontSize'] ?? null,
+			'input_line_height'      => $raw_attributes['inputLineHeight'] ?? 1.5,
+			'input_padding'          => $raw_attributes['inputPadding'] ?? 16,
+			'input_border_width'     => $raw_attributes['inputBorderWidth'] ?? 1,
+			'input_border_radius'    => $raw_attributes['inputBorderRadius'] ?? 0,
+			'autocomplete'           => $raw_attributes['autocomplete'] ?? 'on',
+			'textarea_rows'          => $raw_attributes['textareaRows'] ?? 4,
+			'input_id'               => $this->get_input_id(),
 		);
 	}
 
@@ -179,21 +179,16 @@ class Form_Field {
 		$styles     = array();
 
 		$text_based_fields = array( 'text', 'email', 'url', 'number', 'textarea' );
-		$border_fields     = array( 'text', 'email', 'url', 'number', 'textarea', 'checkbox', 'radio' );
 
 		// Text-based input styles.
 		if ( in_array( $field_type, $text_based_fields, true ) ) {
-			$this->add_style( $styles, 'input_font_size', 'font-size:%dpx' );
+			$this->add_style( $styles, 'input_font_size', 'font-size:%s' );
 			$this->add_style( $styles, 'input_line_height', 'line-height:%s' );
 			$this->add_style( $styles, 'input_padding', 'padding:%dpx' );
 			$this->add_style( $styles, 'input_border_radius', 'border-radius:%dpx' );
 			$this->add_style( $styles, 'field_text_color', 'color:%s' );
 			$this->add_style( $styles, 'field_background_color', 'background-color:%s' );
 			$this->add_style( $styles, 'field_width', 'width:%s%%' );
-		}
-
-		// Border styles for all input types.
-		if ( in_array( $field_type, $border_fields, true ) ) {
 			$this->add_style( $styles, 'input_border_width', 'border-width:%dpx' );
 			$this->add_style( $styles, 'border_color', 'border-color:%s' );
 		}
@@ -215,7 +210,7 @@ class Form_Field {
 	public function get_label_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'label_font_zize', 'font-size:%dpx' );
+		$this->add_style( $styles, 'label_font_size', 'font-size:%s' );
 		$this->add_style( $styles, 'label_line_height', 'line-height:%s' );
 		$this->add_style( $styles, 'label_text_color', 'color:%s' );
 
@@ -253,7 +248,7 @@ class Form_Field {
 	public function get_option_styles(): string {
 		$styles = array();
 
-		$this->add_style( $styles, 'option_font_size', 'font-size:%dpx' );
+		$this->add_style( $styles, 'option_font_size', 'font-size:%s' );
 		$this->add_style( $styles, 'option_line_height', 'line-height:%s' );
 		$this->add_style( $styles, 'option_text_color', 'color:%s' );
 
@@ -348,14 +343,14 @@ class Form_Field {
 				);
 
 				if (
-					! empty( $this->attributes['min_value'] ) &&
+					isset( $this->attributes['min_value'] ) &&
 					$this->attributes['min_value'] >= 0
 				) {
 					$attributes['minlength'] = $this->attributes['min_value'];
 				}
 
 				if (
-					! empty( $this->attributes['max_value'] ) &&
+					isset( $this->attributes['max_value'] ) &&
 					$this->attributes['max_value'] >= 0
 				) {
 					$attributes['maxlength'] = $this->attributes['max_value'];
@@ -380,12 +375,12 @@ class Form_Field {
 					'autocomplete' => $this->attributes['autocomplete'],
 				);
 
-				if ( ! empty( $this->attributes['min_value'] ) ) {
+				if ( isset( $this->attributes['min_value'] ) ) {
 					$min_attr                = ( 'number' === $field_type ) ? 'min' : 'minlength';
 					$attributes[ $min_attr ] = $this->attributes['min_value'];
 				}
 
-				if ( ! empty( $this->attributes['max_value'] ) ) {
+				if ( isset( $this->attributes['max_value'] ) ) {
 					$max_attr                = ( 'number' === $field_type ) ? 'max' : 'maxlength';
 					$attributes[ $max_attr ] = $this->attributes['max_value'];
 				}

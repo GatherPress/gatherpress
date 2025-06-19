@@ -37,10 +37,6 @@
 			"type": "string",
 			"default": "(required)"
 		},
-		"helpText": {
-			"type": "string",
-			"default": ""
-		},
 		"minValue": {
 			"type": "number"
 		},
@@ -83,21 +79,21 @@
 			"type": "string"
 		},
 		"labelFontSize": {
-			"type": "number"
+			"type": "string"
 		},
 		"labelLineHeight": {
 			"type": "number",
 			"default": 1.5
 		},
 		"optionFontSize": {
-			"type": "number"
+			"type": "string"
 		},
 		"optionLineHeight": {
 			"type": "number",
 			"default": 1.5
 		},
 		"inputFontSize": {
-			"type": "number"
+			"type": "string"
 		},
 		"inputLineHeight": {
 			"type": "number",

@@ -21,6 +21,7 @@ import {
 export default function DefaultFieldPanels({ attributes, setAttributes }) {
 	const {
 		fieldType,
+		required,
 		inputFontSize,
 		inputLineHeight,
 		inputPadding,
@@ -167,12 +168,18 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 							setAttributes({ fieldTextColor: value }),
 						label: __('Field Text', 'gatherpress'),
 					},
-					{
-						value: requiredTextColor,
-						onChange: (value) =>
-							setAttributes({ requiredTextColor: value }),
-						label: __('Required Text', 'gatherpress'),
-					},
+					...(required
+						? [
+								{
+									value: requiredTextColor,
+									onChange: (value) =>
+										setAttributes({
+											requiredTextColor: value,
+										}),
+									label: __('Required Text', 'gatherpress'),
+								},
+							]
+						: []),
 					{
 						value: fieldBackgroundColor,
 						onChange: (value) =>

@@ -37,11 +37,11 @@ export const getInputStyles = (fieldType, attributes) => {
 	if (['text', 'email', 'url', 'number', 'textarea'].includes(fieldType)) {
 		styles.cursor = 'text';
 
-		if (inputFontSize !== undefined) {
+		if (undefined !== inputFontSize) {
 			styles.fontSize = `${inputFontSize}`;
 		}
 
-		if (inputLineHeight !== undefined) {
+		if (undefined !== inputLineHeight) {
 			styles.lineHeight = inputLineHeight;
 		}
 
@@ -53,28 +53,27 @@ export const getInputStyles = (fieldType, attributes) => {
 			styles.backgroundColor = fieldBackgroundColor;
 		}
 
-		if (inputPadding !== undefined) {
+		if (undefined !== inputPadding) {
 			styles.padding = `${inputPadding}px`;
 		}
 
-		if (inputBorderRadius !== undefined) {
+		if (undefined !== inputBorderRadius) {
 			styles.borderRadius = `${inputBorderRadius}px`;
 		}
 
-		if (fieldWidth !== undefined) {
+		if (undefined !== fieldWidth) {
 			styles.width = `${fieldWidth}%`;
+		}
+
+		if (undefined !== inputBorderWidth) {
+			styles.borderWidth = `${inputBorderWidth}px`;
+		}
+
+		if (borderColor) {
+			styles.borderColor = borderColor;
 		}
 	} else {
 		styles.cursor = 'default';
-	}
-
-	// Border styles (for all input types).
-	if (inputBorderWidth !== undefined) {
-		styles.borderWidth = `${inputBorderWidth}px`;
-	}
-
-	if (borderColor) {
-		styles.borderColor = borderColor;
 	}
 
 	// Override any other disabled styling.
