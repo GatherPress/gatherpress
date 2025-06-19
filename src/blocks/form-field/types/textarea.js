@@ -101,8 +101,8 @@ export default function TextareaField({
 				tabIndex={-1}
 				autoComplete="off"
 				rows={textareaRows}
-				{...(minValue !== undefined && { minLength: minValue })}
-				{...(maxValue !== undefined && { maxLength: maxValue })}
+				{...(undefined !== minValue && { minLength: minValue })}
+				{...(undefined !== maxValue && { maxLength: maxValue })}
 			/>
 		</div>
 	);
