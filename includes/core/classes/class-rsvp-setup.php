@@ -124,6 +124,7 @@ class Rsvp_Setup {
 			static function ( array $comment_data ): array {
 				$comment_data['comment_content'] = '';
 				$comment_data['comment_type']    = 'gatherpress_rsvp';
+				$comment_data['comment_parent']  = 0;
 
 				return $comment_data;
 			}

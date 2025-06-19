@@ -45,6 +45,12 @@ class Test_General_Block extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'process_registration_block' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'render_block_core/button',
+				'priority' => 10,
+				'callback' => array( $instance, 'convert_submit_button' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
