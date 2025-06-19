@@ -140,7 +140,7 @@ export default function DefaultFieldPanels({ attributes, setAttributes }) {
 						setAttributes({ inputBorderWidth: value })
 					}
 					min={0}
-					max={100}
+					max={10}
 				/>
 				<RangeControl
 					label={__('Border Radius (px)', 'gatherpress')}
