@@ -34,8 +34,15 @@ import FieldValue from './helpers';
  * @return {JSX.Element} The edit component.
  */
 export default function Edit({ attributes, setAttributes }) {
-	const { fieldType, fieldName, minValue, maxValue, placeholder, required } =
-		attributes;
+	const {
+		fieldType,
+		fieldName,
+		minValue,
+		maxValue,
+		placeholder,
+		required,
+		autocomplete,
+	} = attributes;
 	const blockProps = useBlockProps();
 
 	/**
@@ -251,6 +258,36 @@ export default function Edit({ attributes, setAttributes }) {
 							/>
 						</>
 					)}
+
+					<TextControl
+						label={__('Autocomplete', 'gatherpress')}
+						value={autocomplete}
+						onChange={(value) => {
+							// Only allow alphanumeric, underscore, and hyphen.
+							const sanitized = value.replace(
+								/[^a-zA-Z0-9_-]/g,
+								''
+							);
+
+							setAttributes({ autocomplete: sanitized });
+						}}
+						help={
+							<>
+								{__(
+									'Controls browser autocomplete behavior. Use "on", "off", or specific values like "email", "name", etc.',
+									'gatherpress'
+								)}
+								<br />
+								<a
+									href="https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									{__('Learn more', 'gatherpress')}
+								</a>
+							</>
+						}
+					/>
 				</PanelBody>
 				{getFieldPanels()}
 			</InspectorControls>

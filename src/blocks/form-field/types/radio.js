@@ -185,6 +185,7 @@ export default function RadioField({
 							}
 							disabled={true}
 							tabIndex={-1}
+							autoComplete="off"
 						/>
 						<RichText
 							tagName="label"

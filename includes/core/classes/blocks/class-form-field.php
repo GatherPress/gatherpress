@@ -90,6 +90,7 @@ class Form_Field {
 			'input_padding'       => $raw_attributes['inputPadding'] ?? 16,
 			'input_border_width'  => $raw_attributes['inputBorderWidth'] ?? 1,
 			'input_border_radius' => $raw_attributes['inputBorderRadius'] ?? 0,
+			'autocomplete'        => $raw_attributes['autocomplete'] ?? 'on',
 			'textarea_rows'       => $raw_attributes['textareaRows'] ?? 4,
 			'input_id'            => $this->get_input_id(),
 		);
@@ -145,26 +146,6 @@ class Form_Field {
 	 */
 	private function compile_styles( array $styles ): string {
 		return ! empty( $styles ) ? sprintf( ' style="%s"', esc_attr( implode( ';', $styles ) ) ) : '';
-	}
-
-	/**
-	 * Get the appropriate autocomplete value based on field type.
-	 *
-	 * @param string $field_type The field type.
-	 *
-	 * @return string The autocomplete value.
-	 */
-	private function get_autocomplete_value( string $field_type ): string {
-		switch ( $field_type ) {
-			case 'email':
-				return 'email';
-			case 'url':
-				return 'url';
-			case 'text':
-			case 'number':
-			default:
-				return 'on';
-		}
 	}
 
 	/**
@@ -340,10 +321,19 @@ class Form_Field {
 		switch ( $field_type ) {
 			case 'checkbox':
 				$attributes = array(
-					'id'    => $this->attributes['input_id'],
-					'type'  => 'checkbox',
-					'name'  => $this->attributes['field_name'],
-					'value' => '1',
+					'id'           => $this->attributes['input_id'],
+					'type'         => 'checkbox',
+					'name'         => $this->attributes['field_name'],
+					'value'        => '1',
+					'autocomplete' => $this->attributes['autocomplete'],
+				);
+				break;
+
+			case 'radio':
+				$attributes = array(
+					'type'         => 'radio',
+					'name'         => $this->attributes['field_name'],
+					'autocomplete' => $this->attributes['autocomplete'],
 				);
 
 				break;
@@ -354,7 +344,7 @@ class Form_Field {
 					'name'         => $this->attributes['field_name'],
 					'placeholder'  => $this->attributes['placeholder'],
 					'rows'         => $this->attributes['textarea_rows'],
-					'autocomplete' => 'on',
+					'autocomplete' => $this->attributes['autocomplete'],
 				);
 
 				if (
@@ -387,7 +377,7 @@ class Form_Field {
 					'name'         => $this->attributes['field_name'],
 					'placeholder'  => $this->attributes['placeholder'],
 					'value'        => $this->attributes['field_value'],
-					'autocomplete' => $this->get_autocomplete_value( $field_type ),
+					'autocomplete' => $this->attributes['autocomplete'],
 				);
 
 				if ( ! empty( $this->attributes['min_value'] ) ) {

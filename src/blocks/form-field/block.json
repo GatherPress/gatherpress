@@ -118,6 +118,10 @@
 		"textareaRows": {
 			"type": "number",
 			"default": 4
+		},
+		"autocomplete": {
+			"type": "string",
+			"default": "on"
 		}
 	},
 	"supports": {

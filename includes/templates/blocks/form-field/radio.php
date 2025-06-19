@@ -45,7 +45,7 @@ if ( ! isset(
 					$gatherpress_option_value = ! empty( $gatherpress_option['value'] ) ? $gatherpress_option['value'] : $gatherpress_option['label'];
 					?>
 					<div class="gatherpress-radio-option">
-						<input type="radio" name="<?php echo esc_attr( $attributes['field_name'] ); ?>" value="<?php echo esc_attr( $gatherpress_option_value ); ?>" id="<?php echo esc_attr( $gatherpress_option_id ); ?>"<?php echo wp_kses_data( $input_style_string ); ?> <?php checked( $attributes['field_value'], $gatherpress_option_value ); ?> />
+						<input<?php echo wp_kses_data( $input_attributes . $input_style_string ); ?> id="<?php echo esc_attr( $gatherpress_option_id ); ?>" value="<?php echo esc_attr( $gatherpress_option_value ); ?>" <?php checked( $attributes['field_value'], $gatherpress_option_value ); ?> />
 						<label for="<?php echo esc_attr( $gatherpress_option_id ); ?>"<?php echo wp_kses_data( $option_style_string ); ?>>
 							<?php echo esc_html( $gatherpress_option['label'] ); ?>
 						</label>

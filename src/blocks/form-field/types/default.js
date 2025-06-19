@@ -89,9 +89,9 @@ export default function DefaultField({
 				defaultValue={fieldValue}
 				placeholder={placeholder}
 				required={required}
-				autoComplete="off"
 				readOnly={true}
 				tabIndex={-1}
+				autoComplete="off"
 				{...(undefined !== minValue && { min: minValue })}
 				{...(undefined !== maxValue && { max: maxValue })}
 			/>
