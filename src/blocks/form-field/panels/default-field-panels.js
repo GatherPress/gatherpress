@@ -11,7 +11,7 @@ import {
 } from '@wordpress/components';
 
 /**
- * Renders styling panels for default form fields (text, email, url, number, textarea).
+ * Renders styling panels for default form fields (text, email, tel, url, number, textarea).
  *
  * @param {Object}   props               - Component props.
  * @param {Object}   props.attributes    - Block attributes object.

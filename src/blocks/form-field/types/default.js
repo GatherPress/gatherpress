@@ -15,7 +15,7 @@ import {
 } from '../helpers';
 
 /**
- * Renders a default input field component for the block editor (text, email, url, number).
+ * Renders a default input field component for the block editor (text, email, tel, url, number).
  *
  * @param {Object}   props                   - Component props.
  * @param {Object}   props.attributes        - Block attributes object.

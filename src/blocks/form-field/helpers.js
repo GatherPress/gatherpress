@@ -34,7 +34,7 @@ export const getInputStyles = (fieldType, attributes) => {
 	styles.opacity = 1;
 
 	// Font and text styles (for text-based inputs).
-	if (['text', 'email', 'url', 'number', 'textarea'].includes(fieldType)) {
+	if (!['checkbox', 'radio', 'hidden'].includes(fieldType)) {
 		styles.cursor = 'text';
 
 		if (undefined !== inputFontSize) {
@@ -84,7 +84,7 @@ export const getInputStyles = (fieldType, attributes) => {
 	// Ensure consistent appearance for readonly inputs.
 	if (
 		!fieldBackgroundColor &&
-		['text', 'email', 'url', 'number', 'textarea'].includes(fieldType)
+		!['checkbox', 'radio', 'hidden'].includes(fieldType)
 	) {
 		styles.backgroundColor = 'transparent';
 	}
@@ -184,7 +184,7 @@ export const getWrapperClasses = (
 	// Add inline layout class for text-based fields.
 	if (
 		inlineLayout &&
-		['text', 'email', 'url', 'number', 'textarea'].includes(fieldType)
+		!['checkbox', 'radio', 'hidden', 'textarea'].includes(fieldType)
 	) {
 		classes += ' gatherpress-inline-layout';
 	}
@@ -213,7 +213,7 @@ export default function FieldValue({ fieldType, attributes, setAttributes }) {
 					value={fieldValue}
 					onChange={(value) => setAttributes({ fieldValue: value })}
 					help={__(
-						'Default email address for this field',
+						'Default email address for this field.',
 						'gatherpress'
 					)}
 				/>
@@ -226,7 +226,21 @@ export default function FieldValue({ fieldType, attributes, setAttributes }) {
 					type="url"
 					value={fieldValue}
 					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__('Default URL for this field', 'gatherpress')}
+					help={__('Default URL for this field.', 'gatherpress')}
+				/>
+			);
+
+		case 'tel':
+			return (
+				<TextControl
+					label={__('Default Value', 'gatherpress')}
+					type="tel"
+					value={fieldValue}
+					onChange={(value) => setAttributes({ fieldValue: value })}
+					help={__(
+						'Default telephone number for this field.',
+						'gatherpress'
+					)}
 				/>
 			);
 
@@ -238,7 +252,7 @@ export default function FieldValue({ fieldType, attributes, setAttributes }) {
 					value={fieldValue}
 					onChange={(value) => setAttributes({ fieldValue: value })}
 					help={__(
-						'Default number value for this field',
+						'Default number value for this field.',
 						'gatherpress'
 					)}
 				/>
@@ -251,7 +265,7 @@ export default function FieldValue({ fieldType, attributes, setAttributes }) {
 					value={fieldValue}
 					onChange={(value) => setAttributes({ fieldValue: value })}
 					help={__(
-						'Default content for this textarea',
+						'Default content for this textarea.',
 						'gatherpress'
 					)}
 					rows={3}
@@ -265,7 +279,7 @@ export default function FieldValue({ fieldType, attributes, setAttributes }) {
 					checked={!!fieldValue}
 					onChange={(value) => setAttributes({ fieldValue: value })}
 					help={__(
-						'Whether this checkbox should be checked by default',
+						'Whether this checkbox should be checked by default.',
 						'gatherpress'
 					)}
 				/>
@@ -281,18 +295,17 @@ export default function FieldValue({ fieldType, attributes, setAttributes }) {
 					label={__('Value', 'gatherpress')}
 					value={fieldValue}
 					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__('The value for this hidden field', 'gatherpress')}
+					help={__('The value for this hidden field.', 'gatherpress')}
 				/>
 			);
 
-		case 'text':
 		default:
 			return (
 				<TextControl
 					label={__('Default Value', 'gatherpress')}
 					value={fieldValue}
 					onChange={(value) => setAttributes({ fieldValue: value })}
-					help={__('Default value for this field', 'gatherpress')}
+					help={__('Default value for this field.', 'gatherpress')}
 				/>
 			);
 	}

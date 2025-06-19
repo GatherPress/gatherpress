@@ -115,6 +115,7 @@ export default function RadioField({
 				// Move cursor to end of text.
 				const range = document.createRange();
 				const selection = getSelection();
+
 				range.selectNodeContents(element);
 				range.collapse(false);
 				selection.removeAllRanges();

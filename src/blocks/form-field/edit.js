@@ -82,10 +82,6 @@ export default function Edit({ attributes, setAttributes }) {
 				return <TextareaField {...commonProps} />;
 			case 'hidden':
 				return <HiddenField {...commonProps} />;
-			case 'text':
-			case 'email':
-			case 'url':
-			case 'number':
 			default:
 				return <DefaultField {...commonProps} />;
 		}
@@ -106,11 +102,6 @@ export default function Edit({ attributes, setAttributes }) {
 				return <CheckboxFieldPanels {...commonProps} />;
 			case 'hidden':
 				return <></>;
-			case 'textarea':
-			case 'text':
-			case 'email':
-			case 'url':
-			case 'number':
 			default:
 				return <DefaultFieldPanels {...commonProps} />;
 		}
@@ -129,6 +120,10 @@ export default function Edit({ attributes, setAttributes }) {
 							{
 								label: __('Email', 'gatherpress'),
 								value: 'email',
+							},
+							{
+								label: __('Telephone', 'gatherpress'),
+								value: 'tel',
 							},
 							{ label: __('URL', 'gatherpress'), value: 'url' },
 							{

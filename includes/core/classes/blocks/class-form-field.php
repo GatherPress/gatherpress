@@ -166,7 +166,7 @@ class Form_Field {
 	 * Get the CSS styles for input elements.
 	 *
 	 * Builds CSS styles for form input elements based on field type.
-	 * Text-based fields (text, email, url, number, textarea) receive
+	 * Text-based fields (text, email, tel, url, number, textarea) receive
 	 * full styling including fonts, padding, and colors. All input
 	 * types receive border styling.
 	 *
@@ -178,10 +178,10 @@ class Form_Field {
 		$field_type = $this->get_field_type();
 		$styles     = array();
 
-		$text_based_fields = array( 'text', 'email', 'url', 'number', 'textarea' );
+		$non_text_based_fields = array( 'checkbox', 'radio', 'hidden' );
 
 		// Text-based input styles.
-		if ( in_array( $field_type, $text_based_fields, true ) ) {
+		if ( ! in_array( $field_type, $non_text_based_fields, true ) ) {
 			$this->add_style( $styles, 'input_font_size', 'font-size:%s' );
 			$this->add_style( $styles, 'input_line_height', 'line-height:%s' );
 			$this->add_style( $styles, 'input_padding', 'padding:%dpx' );
@@ -291,7 +291,7 @@ class Form_Field {
 		// Add inline layout class for text-based fields.
 		if (
 			! empty( $this->attributes['inline_layout'] ) &&
-			in_array( $field_type, array( 'text', 'email', 'url', 'number' ), true )
+			! in_array( $field_type, array( 'checkbox', 'radio', 'hidden', 'textarea' ), true )
 		) {
 			$classes[] = 'gatherpress-inline-layout';
 		}
