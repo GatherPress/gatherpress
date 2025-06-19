@@ -61,6 +61,25 @@ export default function Edit({ attributes, setAttributes }) {
 	};
 
 	/**
+	 * Get the default autocomplete value based on field type.
+	 *
+	 * @param {string} value - The field type.
+	 * @return {string} The default autocomplete value.
+	 */
+	const getDefaultAutocomplete = (value) => {
+		switch (value) {
+			case 'email':
+				return 'email';
+			case 'url':
+				return 'url';
+			case 'tel':
+				return 'tel';
+			default:
+				return 'on';
+		}
+	};
+
+	/**
 	 * Get the appropriate field component based on field type.
 	 *
 	 * @return {JSX.Element} The field component.
@@ -151,6 +170,7 @@ export default function Edit({ attributes, setAttributes }) {
 							setAttributes({
 								fieldType: value,
 								fieldValue: '', // Reset fieldValue when type changes.
+								autocomplete: getDefaultAutocomplete(value),
 							});
 						}}
 					/>
