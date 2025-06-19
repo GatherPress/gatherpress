@@ -7,7 +7,12 @@ import { RichText } from '@wordpress/block-editor';
 /**
  * Internal dependencies.
  */
-import { getInputStyles, getLabelStyles, getWrapperClasses } from '../helpers';
+import {
+	getInputStyles,
+	getLabelStyles,
+	getLabelWrapperStyles,
+	getWrapperClasses,
+} from '../helpers';
 
 /**
  * Renders a textarea field component for the block editor.
@@ -55,7 +60,10 @@ export default function TextareaField({
 			{...blockProps}
 			className={getWrapperClasses(fieldType, blockProps, inlineLayout)}
 		>
-			<div className="gatherpress-label-wrapper">
+			<div
+				className="gatherpress-label-wrapper"
+				style={getLabelWrapperStyles(attributes)}
+			>
 				<RichText
 					tagName="label"
 					placeholder={__('Add label…', 'gatherpress')}

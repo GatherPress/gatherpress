@@ -9,6 +9,7 @@ import { RichText } from '@wordpress/block-editor';
 import {
 	getInputStyles,
 	getLabelStyles,
+	getLabelWrapperStyles,
 	getOptionStyles,
 	getWrapperClasses,
 } from '../helpers';
@@ -142,7 +143,10 @@ export default function RadioField({
 			{...blockProps}
 			className={getWrapperClasses(fieldType, blockProps)}
 		>
-			<div className="gatherpress-label-wrapper">
+			<div
+				className="gatherpress-label-wrapper"
+				style={getLabelWrapperStyles(attributes)}
+			>
 				<RichText
 					tagName="legend"
 					placeholder={__('Radio group title…', 'gatherpress')}
@@ -171,7 +175,10 @@ export default function RadioField({
 				)}
 			</div>
 
-			<div className="gatherpress-radio-group">
+			<div
+				className="gatherpress-radio-group"
+				style={getLabelWrapperStyles(attributes)}
+			>
 				{radioOptions.map((option, index) => (
 					<div key={index} className="gatherpress-radio-option">
 						<input

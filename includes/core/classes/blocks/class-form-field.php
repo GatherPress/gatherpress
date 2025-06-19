@@ -210,9 +210,27 @@ class Form_Field {
 	public function get_label_styles(): string {
 		$styles = array();
 
+		$this->add_style( $styles, 'label_text_color', 'color:%s' );
+
+		return $this->compile_styles( $styles );
+	}
+
+	/**
+	 * Get the CSS styles for label wrapper elements.
+	 *
+	 * Builds CSS styles for label wrapper containers including font size
+	 * and line height. Applied to wrapper elements that contain both
+	 * the label and required text.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Formatted CSS style attribute string or empty string if no styles.
+	 */
+	public function get_label_wrapper_styles(): string {
+		$styles = array();
+
 		$this->add_style( $styles, 'label_font_size', 'font-size:%s' );
 		$this->add_style( $styles, 'label_line_height', 'line-height:%s' );
-		$this->add_style( $styles, 'label_text_color', 'color:%s' );
 
 		return $this->compile_styles( $styles );
 	}
@@ -437,13 +455,14 @@ class Form_Field {
 		Utility::render_template(
 			$template_path,
 			array(
-				'attributes'            => $this->attributes,
-				'wrapper_attributes'    => $this->get_wrapper_attributes(),
-				'input_style_string'    => $this->get_input_styles(),
-				'label_style_string'    => $this->get_label_styles(),
-				'required_style_string' => $this->get_required_styles(),
-				'option_style_string'   => $this->get_option_styles(),
-				'input_attributes'      => $this->get_input_attributes(),
+				'attributes'           => $this->attributes,
+				'wrapper_attributes'   => $this->get_wrapper_attributes(),
+				'input_styles'         => $this->get_input_styles(),
+				'label_styles'         => $this->get_label_styles(),
+				'label_wrapper_styles' => $this->get_label_wrapper_styles(),
+				'required_styles'      => $this->get_required_styles(),
+				'option_styles'        => $this->get_option_styles(),
+				'input_attributes'     => $this->get_input_attributes(),
 			),
 			true
 		);

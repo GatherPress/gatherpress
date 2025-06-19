@@ -7,7 +7,12 @@ import { RichText } from '@wordpress/block-editor';
 /**
  * Internal dependencies.
  */
-import { getInputStyles, getLabelStyles, getWrapperClasses } from '../helpers';
+import {
+	getInputStyles,
+	getLabelStyles,
+	getLabelWrapperStyles,
+	getWrapperClasses,
+} from '../helpers';
 
 /**
  * Renders a default input field component for the block editor (text, email, url, number).
@@ -54,7 +59,10 @@ export default function DefaultField({
 			{...blockProps}
 			className={getWrapperClasses(fieldType, blockProps, inlineLayout)}
 		>
-			<div className="gatherpress-label-wrapper">
+			<div
+				className="gatherpress-label-wrapper"
+				style={getLabelWrapperStyles(attributes)}
+			>
 				<RichText
 					tagName="label"
 					placeholder={__('Add label…', 'gatherpress')}

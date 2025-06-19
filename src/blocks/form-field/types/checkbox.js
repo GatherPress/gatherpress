@@ -7,7 +7,12 @@ import { RichText } from '@wordpress/block-editor';
 /**
  * Internal dependencies.
  */
-import { getInputStyles, getLabelStyles, getWrapperClasses } from '../helpers';
+import {
+	getInputStyles,
+	getLabelStyles,
+	getLabelWrapperStyles,
+	getWrapperClasses,
+} from '../helpers';
 
 /**
  * Renders a checkbox field component for the block editor.
@@ -61,32 +66,37 @@ export default function CheckboxField({
 					tabIndex={-1}
 					autoComplete="off"
 				/>
-				<RichText
-					tagName="label"
-					placeholder={__('Add checkbox label…', 'gatherpress')}
-					value={label}
-					onChange={(value) => setAttributes({ label: value })}
-					onBlur={() => handleLabelBlur(label)}
-					allowedFormats={[]}
-					style={getLabelStyles(attributes)}
-				/>
-				{required && (
+				<div
+					className="gatherpress-label-wrapper"
+					style={getLabelWrapperStyles(attributes)}
+				>
 					<RichText
-						tagName="span"
-						className="gatherpress-label-required"
-						placeholder={__('(required)', 'gatherpress')}
-						value={requiredText}
-						onChange={(value) =>
-							setAttributes({ requiredText: value })
-						}
+						tagName="label"
+						placeholder={__('Add checkbox label…', 'gatherpress')}
+						value={label}
+						onChange={(value) => setAttributes({ label: value })}
+						onBlur={() => handleLabelBlur(label)}
 						allowedFormats={[]}
-						style={{
-							...(requiredTextColor && {
-								color: requiredTextColor,
-							}),
-						}}
+						style={getLabelStyles(attributes)}
 					/>
-				)}
+					{required && (
+						<RichText
+							tagName="span"
+							className="gatherpress-label-required"
+							placeholder={__('(required)', 'gatherpress')}
+							value={requiredText}
+							onChange={(value) =>
+								setAttributes({ requiredText: value })
+							}
+							allowedFormats={[]}
+							style={{
+								...(requiredTextColor && {
+									color: requiredTextColor,
+								}),
+							}}
+						/>
+					)}
+				</div>
 			</>
 		</div>
 	);

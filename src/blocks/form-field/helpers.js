@@ -103,18 +103,34 @@ export const getInputStyles = (fieldType, attributes) => {
  * @return {Object} Style object for the label
  */
 export const getLabelStyles = (attributes) => {
-	const { labelFontSize, labelLineHeight, labelTextColor } = attributes;
+	const { labelTextColor } = attributes;
 
 	const styles = {};
 
-	if (labelFontSize !== undefined) {
-		styles.fontSize = `${labelFontSize}`;
-	}
-	if (labelLineHeight !== undefined) {
-		styles.lineHeight = labelLineHeight;
-	}
 	if (labelTextColor) {
 		styles.color = labelTextColor;
+	}
+
+	return styles;
+};
+
+/**
+ * Get label wrapper styles based on attributes.
+ *
+ * @param {Object} attributes - Block attributes
+ * @return {Object} Style object for the label wrapper
+ */
+export const getLabelWrapperStyles = (attributes) => {
+	const { labelFontSize, labelLineHeight } = attributes;
+
+	const styles = {};
+
+	if (undefined !== labelFontSize) {
+		styles.fontSize = `${labelFontSize}`;
+	}
+
+	if (undefined !== labelLineHeight) {
+		styles.lineHeight = labelLineHeight;
 	}
 
 	return styles;
