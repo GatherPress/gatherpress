@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;
+use WP_User;
 
 /**
  * Handles setup tasks related to RSVP functionality.
@@ -56,6 +57,7 @@ class Rsvp_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_taxonomy' ) );
 		add_action( 'init', array( $this, 'initialize_rsvp_form_handling' ) );
+		add_action( 'init', array( $this, 'handle_rsvp_token' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
 
@@ -122,15 +124,28 @@ class Rsvp_Setup {
 		add_filter(
 			'preprocess_comment',
 			static function ( array $comment_data ): array {
-				$comment_data['comment_content'] = '';
-				$comment_data['comment_type']    = 'gatherpress_rsvp';
-				$comment_data['comment_parent']  = 0;
+				$name  = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'name' ) ) );
+				$email = sanitize_email( wp_unslash( filter_input( INPUT_POST, 'email' ) ) );
+				$user  = get_user_by( 'ID', get_current_user_id() );
+
+				$comment_data['comment_content']      = '';
+				$comment_data['comment_type']         = 'gatherpress_rsvp';
+				$comment_data['comment_parent']       = 0;
+
+				if (
+					! $user instanceof WP_User ||
+					$user->user_email !== $email
+				) {
+					add_filter( 'pre_comment_approved', '__return_zero' );
+
+					$comment_data['user_id']              = 0;
+					$comment_data['comment_author']       = $name;
+					$comment_data['comment_author_email'] = $email;
+				}
 
 				return $comment_data;
 			}
 		);
-
-		add_filter( 'pre_comment_approved', '__return_zero' );
 
 		add_action(
 			'comment_post',
@@ -145,6 +160,95 @@ class Rsvp_Setup {
 				return __( "You've already RSVP'd to this event.", 'gatherpress' );
 			}
 		);
+
+		add_action(
+			'comment_post',
+			function ( int $comment_id ) {
+				if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
+					$rsvp_token = new Rsvp_Token( $comment_id );
+
+					$comment = get_comment( $comment_id );
+
+					// Skip if comment not found OR user is logged in.
+					if (
+						! $rsvp_token->get_comment() ||
+						intval( $rsvp_token->get_comment()->user_id )
+					) {
+						return;
+					}
+
+					$rsvp_token->generate_token();
+
+					// Send confirmation email with token link
+					// $this->send_rsvp_confirmation_email( $comment_ID, $token );
+				}
+			}
+		);
+	}
+
+	public function get_token_from_url(): array {
+		$token_param = sanitize_text_field(
+			wp_unslash(
+				filter_input( INPUT_GET, 'gatherpress_token' )
+			)
+		);
+
+		if ( empty( $token_param ) ) {
+			return array();
+		}
+
+		$token_parts = explode( '_', $token_param, 2 );
+
+		if ( 2 !== count( $token_parts ) ) {
+			return array(); // Invalid format.
+		}
+
+		$comment_id = intval( $token_parts[0] );
+		$token      = $token_parts[1];
+
+		if ( ! $comment_id || empty( $token ) ) {
+			return array(); // Invalid data.
+		}
+
+		return array(
+			'comment_id' => $comment_id,
+			'token'      => $token,
+		);
+	}
+
+	public function handle_rsvp_token(): void {
+		$token_data = $this->get_token_from_url();
+
+		if ( empty( $token_data ) ) {
+			return;
+		}
+
+		$rsvp_token = new Rsvp_Token( $token_data['comment_id'] );
+
+		if ( $rsvp_token->is_valid( $token_data['token'] ) ) {
+			$rsvp_token->approve();
+		}
+
+
+		// Verify this is an RSVP comment.
+		if ( Rsvp::COMMENT_TYPE !== get_comment_type( $comment_id ) ) {
+			return;
+		}
+
+		$stored_token = get_comment_meta( $comment_id, sprintf( '_%s_token', Rsvp::COMMENT_TYPE ), true );
+		$expires      = get_comment_meta( $comment_id, sprintf( '_%s_token_expires', Rsvp::COMMENT_TYPE ), true );
+
+		// Verify token matches and hasn't expired.
+		if ( $stored_token === $token ) {
+			if ( time() < intval( $expires ) ) {
+				// Delete the token expire meta.
+				delete_comment_meta( $comment_id, sprintf( '_%s_token_expires', Rsvp::COMMENT_TYPE ) );
+			}
+
+			// Approve the RSVP.
+			wp_set_comment_status( $comment_id, 'approve' );
+
+		}
 	}
 
 	/**

@@ -540,6 +540,8 @@ class Event_Rest_Api {
 		$success         = false;
 		$current_user_id = get_current_user_id();
 		$blog_id         = get_current_blog_id();
+		// @todo change user_id to user_identifier and should be a registered param that could be user_id or email address.
+		// Will use token along with this to validate.
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
