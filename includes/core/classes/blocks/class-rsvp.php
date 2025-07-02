@@ -122,6 +122,7 @@ class Rsvp {
 
 			$user_data = array();
 
+			// @todo add logic here for token to edit RSVP with the email address from the RSVP as identifier.
 			if ( $event->rsvp ) {
 				$user_data = $event->rsvp->get( get_current_user_id() );
 			}
