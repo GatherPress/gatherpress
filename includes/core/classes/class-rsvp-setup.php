@@ -112,7 +112,7 @@ class Rsvp_Setup {
 		if (
 			! isset( $_SERVER['REQUEST_METHOD'] ) ||
 			'POST' !== $_SERVER['REQUEST_METHOD'] ||
-			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp' ) ) )
+			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, RSVP::COMMENT_TYPE ) ) )
 		) {
 			return;
 		}
@@ -129,7 +129,7 @@ class Rsvp_Setup {
 				$user  = get_user_by( 'ID', get_current_user_id() );
 
 				$comment_data['comment_content']      = '';
-				$comment_data['comment_type']         = 'gatherpress_rsvp';
+				$comment_data['comment_type']         = RSVP::COMMENT_TYPE;
 				$comment_data['comment_parent']       = 0;
 
 				if (
@@ -167,8 +167,6 @@ class Rsvp_Setup {
 				if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
 					$rsvp_token = new Rsvp_Token( $comment_id );
 
-					$comment = get_comment( $comment_id );
-
 					// Skip if comment not found OR user is logged in.
 					if (
 						! $rsvp_token->get_comment() ||
@@ -189,7 +187,7 @@ class Rsvp_Setup {
 	public function get_token_from_url(): array {
 		$token_param = sanitize_text_field(
 			wp_unslash(
-				filter_input( INPUT_GET, 'gatherpress_token' )
+				filter_input( INPUT_GET, Rsvp_Token::NAME )
 			)
 		);
 
@@ -223,31 +221,13 @@ class Rsvp_Setup {
 			return;
 		}
 
-		$rsvp_token = new Rsvp_Token( $token_data['comment_id'] );
+		$comment_id = $token_data['comment_id'];
+		$token      = $token_data['token'];
 
-		if ( $rsvp_token->is_valid( $token_data['token'] ) ) {
-			$rsvp_token->approve();
-		}
+		$rsvp_token = new Rsvp_Token( $comment_id );
 
-
-		// Verify this is an RSVP comment.
-		if ( Rsvp::COMMENT_TYPE !== get_comment_type( $comment_id ) ) {
-			return;
-		}
-
-		$stored_token = get_comment_meta( $comment_id, sprintf( '_%s_token', Rsvp::COMMENT_TYPE ), true );
-		$expires      = get_comment_meta( $comment_id, sprintf( '_%s_token_expires', Rsvp::COMMENT_TYPE ), true );
-
-		// Verify token matches and hasn't expired.
-		if ( $stored_token === $token ) {
-			if ( time() < intval( $expires ) ) {
-				// Delete the token expire meta.
-				delete_comment_meta( $comment_id, sprintf( '_%s_token_expires', Rsvp::COMMENT_TYPE ) );
-			}
-
-			// Approve the RSVP.
-			wp_set_comment_status( $comment_id, 'approve' );
-
+		if ( $rsvp_token->is_valid( $token ) ) {
+			$rsvp_token->approve_comment();
 		}
 	}
 

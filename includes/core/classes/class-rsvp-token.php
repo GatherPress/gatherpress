@@ -18,42 +18,67 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 class Rsvp_Token {
 	private ?WP_Comment $comment = null;
-	private ?string $token;
+	private string $token = '';
+
+	const NAME = 'gatherpress_rsvp_token';
 
 	public function __construct( int $comment_id ) {
+		if ( Rsvp::COMMENT_TYPE !== get_comment_type( $comment_id ) ) {
+			return;
+		}
+
 		$this->comment = get_comment( $comment_id );
 	}
 
-	public function set_token( string $token ): self {
+	public function get_token(): string {
+		if ( $this->token ) {
+			return $this->token;
+		}
 
-		return $this;
-	}
+		if ( ! $this->comment ) {
+			return '';
+		}
 
-	public function get_token(): ?string {
+		$token = (string) get_comment_meta(
+			$this->comment->ID,
+			sprintf( '_%s', static::NAME ),
+			true
+		);
+
+		$this->token = $token;
+
 		return $this->token;
 	}
 
-	public function approve(): void {
+	public function approve_comment(): void {
+		if ( ! $this->comment ) {
+			return;
+		}
 
+		wp_set_comment_status( $this->comment->ID, 'approve' );
 	}
 
-	public function generate_token(): void {
-		$token = wp_generate_password( 32, false );
-
-		if ( $this->comment ) {
-			add_comment_meta(
-				$this->comment->ID,
-				sprintf( '_%s_token', Rsvp::COMMENT_TYPE ),
-				$token
-			);
+	public function generate_token(): self {
+		if ( ! $this->comment ) {
+			return $this;
 		}
+
+		$this->token = wp_generate_password( 32, false );
+
+		update_comment_meta(
+			$this->comment->ID,
+			sprintf( '_%s', static::NAME ),
+			$this->token
+		);
+
+		return $this;
 	}
 
 	public function get_comment(): ?WP_Comment {
 		return $this->comment;
 	}
 
-	public function is_valid(): bool {
-		return true;
+	public function is_valid( string $token ): bool {
+		return ! empty( $token ) && $this->get_token() === $token;
 	}
 }
