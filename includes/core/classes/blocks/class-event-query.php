@@ -116,7 +116,7 @@ class Event_Query {
 				 * @param array   $block_query The query attribute retrieved from the block.
 				 * @param boolean $inherited   Whether the query is being inherited.
 				 *
-				 * @param array $filtered_query_args Final arguments list.
+				 * @return array $filtered_query_args Final arguments list.
 				 */
 				$filtered_query_args = \apply_filters(
 					'gpql_query_vars',
@@ -142,8 +142,8 @@ class Event_Query {
 	/**
 	 * Returns an array with Post IDs that should be excluded from the Query.
 	 *
-	 * @param array
-	 * @return int[]
+	 * @param array $attributes Event Query block attributes.
+	 * @return int[] Array of post IDs to exclude.
 	 */
 	protected function get_exclude_ids( array $attributes ): array {
 		$exclude_ids = array();
@@ -170,15 +170,11 @@ class Event_Query {
 		// Generate a new custom query with all potential query vars.
 		$query_args = array();
 
-		if ( count( $query_args ) ) {
-			die( var_dump( $block_query, $query_args ) );
-		}
-
 		// Post Related.
 		$query_args['post_type'] = [ Event::POST_TYPE ];
 
 		// Type of event list: 'upcoming' or 'past'.
-		// /wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php
+		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php
 		$query_args['gatherpress_events_query'] = $block_query['gatherpress_events_query'];
 
 		// Exclude Posts.
@@ -251,13 +247,6 @@ class Event_Query {
 			false
 		);
 
-		// \error_log( '$block_query: ' . \var_export( [ $block_query, $query_args ], true ) );
-		// \error_log( 'queries: ' . \var_export( [ $query, $filtered_query_args ], true ) );
-		// \error_log( 'queries: ' . \var_export( array_merge(
-		// $query,
-		// $filtered_query_args
-		// ), true ) );
-
 		// Return the merged query.
 		return array_merge(
 			$query,
@@ -279,7 +268,7 @@ class Event_Query {
 		$custom_args = array();
 
 		// Type of event list: 'upcoming' or 'past'.
-		// /wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php
+		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php
 		$custom_args['gatherpress_events_query'] = $request->get_param( 'gatherpress_events_query' );
 
 		// Exclusion Related.
@@ -298,9 +287,6 @@ class Event_Query {
 		}
 
 		$custom_args['orderby'] = $request->get_param( 'orderby' );
-		// \error_log( '$args: ' . \var_export( $args, true ) );
-		// \error_log( '$orderby: ' . \var_export( $request->get_param( 'orderby' ), true ) );
-		// \error_log( '$custom_args: ' . \var_export( $custom_args, true ) );
 
 		/** This filter is documented in includes/query-loop.php */
 		$filtered_query_args = \apply_filters(
