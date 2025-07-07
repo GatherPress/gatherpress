@@ -8,6 +8,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * A component that lets you exclude the current event from the query
  *
+ * @param {*} props
  * @return {Element} EventExcludeControls
  */
 export const EventExcludeControls = ( { attributes, setAttributes } ) => {

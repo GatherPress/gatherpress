@@ -7,6 +7,7 @@ import { __, _x, sprintf } from '@wordpress/i18n';
 /**
  * A component that lets you include the current event from the query
  *
+ * @param {*} props
  * @return {Element} EventIncludeUnfinishedControls
  */
 export const EventIncludeUnfinishedControls = ( { attributes, setAttributes } ) => {

@@ -6,8 +6,9 @@ import { useSelect } from '@wordpress/data';
 import { __, _x, sprintf } from '@wordpress/i18n';
 
 /**
- * A component that lets you pick posts to be excluded from the query
+ * A component that lets you select whether to query for upcoming or past events.
  *
+ * @param {*} props
  * @return {Element} EventListTypeControls
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
