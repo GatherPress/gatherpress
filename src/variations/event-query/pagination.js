@@ -15,10 +15,7 @@ import { __ } from '@wordpress/i18n';
  */
 registerBlockVariation('core/query-pagination-previous', {
 	category: 'gatherpress',
-	keywords: [
-		__('Page numbers', 'default'),
-		__('Pagination', 'default'),
-	],
+	keywords: [__('Page numbers'), __('Pagination')],
 	// icon: GPQLIcon( queryPaginationPrevious ),
 	isActive: ['className'],
 	attributes: {
@@ -32,10 +29,7 @@ registerBlockVariation('core/query-pagination-previous', {
 });
 registerBlockVariation('core/query-pagination-next', {
 	category: 'gatherpress',
-	keywords: [
-		__('Page numbers', 'default'),
-		__('Pagination', 'default'),
-	],
+	keywords: [__('Page numbers'), __('Pagination')],
 	// icon: GPQLIcon( queryPaginationNext ),
 	isActive: ['className'],
 	attributes: {

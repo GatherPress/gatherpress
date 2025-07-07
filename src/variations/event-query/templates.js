@@ -1,4 +1,3 @@
-
 /**
  * WordPress dependencies
  */
@@ -41,25 +40,32 @@ const NO_RESULTS_TEMPLATE = [
 export const NO_RESULTS_BLOCK = [
 	'core/query-no-results',
 	{
-		metadata:{
-			name:__(
-				'No events',
-				'gatherpress'
-			)
-		}
+		metadata: {
+			name: __('No events', 'gatherpress'),
+		},
 	},
-	NO_RESULTS_TEMPLATE
+	NO_RESULTS_TEMPLATE,
 ];
 
-
-
 const QUERY_PAGINATION_TEMPLATE = [
-	[ 'core/query-pagination-previous', { label:__('Previous Events', 'gatherpress'), className: 'gatherpress-query-pagination-previous' } ],
-	[ 'core/query-pagination-numbers' ],
-	[ 'core/query-pagination-next', { label:__('Next Events', 'gatherpress'), className: 'gatherpress-query-pagination-next' } ],
+	[
+		'core/query-pagination-previous',
+		{
+			label: __('Previous Events', 'gatherpress'),
+			className: 'gatherpress-query-pagination-previous',
+		},
+	],
+	['core/query-pagination-numbers'],
+	[
+		'core/query-pagination-next',
+		{
+			label: __('Next Events', 'gatherpress'),
+			className: 'gatherpress-query-pagination-next',
+		},
+	],
 ];
 export const QUERY_PAGINATION_BLOCK = [
 	'core/query-pagination',
 	{},
-	QUERY_PAGINATION_TEMPLATE
+	QUERY_PAGINATION_TEMPLATE,
 ];

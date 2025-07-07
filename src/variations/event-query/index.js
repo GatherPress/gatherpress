@@ -18,11 +18,10 @@ import GPQLControlsInheritedQuery from './slots/gpql-controls-inherited-query';
 import {
 	// GPV_BLOCK,
 	NO_RESULTS_BLOCK,
-	QUERY_PAGINATION_BLOCK
+	QUERY_PAGINATION_BLOCK,
 } from './templates';
 
 // import GPQLIcon from '../components/icon';
-
 
 const NAME = 'gatherpress-event-query';
 
@@ -37,27 +36,23 @@ const QUERY_ATTRIBUTES = {
 		include_unfinished: 1,
 		order: 'asc',
 		orderBy: 'datetime',
-		inherit: false
-	}
+		inherit: false,
+	},
 };
 
 const VARIATION_ATTRIBUTES = {
 	category: 'gatherpress',
-	keywords: [
-		__('Events', 'gatherpress'),
-		__('Dates', 'gatherpress'),
-	],
+	keywords: [__('Events', 'gatherpress'), __('Dates', 'gatherpress')],
 	// icon: list-view,
 	// isActive: ['namespace', 'scope'],
 	// isActive: ['query.postType'], // Idea based on @patriciabt|s feedback in slack.
 	isActive: ['namespace', 'query.postType'],
 	attributes: {
-		...QUERY_ATTRIBUTES
+		...QUERY_ATTRIBUTES,
 	},
 	allowedControls: ['inherit', 'taxQuery'],
 	scope: ['block'],
-}
-
+};
 
 /**
  * Docs about the Query block.
@@ -71,9 +66,9 @@ const VARIATION_ATTRIBUTES = {
  */
 
 /**
- * This is the main query-block variation to list events exclusively. 
+ * This is the main query-block variation to list events exclusively.
  * A user can pick the block directly from the inserter or the left sidebar.
- * 
+ *
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-variations/
  */
 registerBlockVariation('core/query', {
@@ -107,7 +102,7 @@ registerBlockVariation('core/query', {
 
 	example: {
 		attributes: {
-			...QUERY_ATTRIBUTES
+			...QUERY_ATTRIBUTES,
 		},
 		innerBlocks: [
 			{
@@ -129,7 +124,6 @@ registerBlockVariation('core/query', {
 	},
 });
 
-
 /**
  * One of the 'Start blank' patterns for the gatherpress query loop variation.
  */
@@ -137,25 +131,22 @@ registerBlockVariation('core/query', {
 	...VARIATION_ATTRIBUTES,
 	name: 'gatherpress-event-query-map-date',
 	title: __('Map & Event-Date', 'gatherpress'),
-	description: __('Create gatherpress queries with Map & Date', 'gatherpress'),
+	description: __(
+		'Create gatherpress queries with Map & Date',
+		'gatherpress'
+	),
 	innerBlocks: [
 		[
 			'core/post-template',
 			{
-				metadata:{
-					name:__(
-						'Events Template',
-						'gatherpress'
-					)
-				}
+				metadata: {
+					name: __('Events Template', 'gatherpress'),
+				},
 			},
-			[
-				['gatherpress/venue'],
-				['gatherpress/event-date'],
-			],
+			[['gatherpress/venue'], ['gatherpress/event-date']],
 		],
 		QUERY_PAGINATION_BLOCK,
-		NO_RESULTS_BLOCK
+		NO_RESULTS_BLOCK,
 	],
 });
 
@@ -166,17 +157,17 @@ registerBlockVariation('core/query', {
 	...VARIATION_ATTRIBUTES,
 	name: 'gatherpress-event-query-date-title',
 	title: __('Event-Date, Title & Venue details', 'gatherpress'),
-	description: __('Create gatherpress queries with Event-Date & Title', 'gatherpress'),
+	description: __(
+		'Create gatherpress queries with Event-Date & Title',
+		'gatherpress'
+	),
 	innerBlocks: [
 		[
 			'core/post-template',
 			{
-				metadata:{
-					name:__(
-						'Events Template',
-						'gatherpress'
-					)
-				}
+				metadata: {
+					name: __('Events Template', 'gatherpress'),
+				},
 			},
 			[
 				{
@@ -191,7 +182,7 @@ registerBlockVariation('core/query', {
 			],
 		],
 		QUERY_PAGINATION_BLOCK,
-		NO_RESULTS_BLOCK
+		NO_RESULTS_BLOCK,
 	],
 });
 
@@ -202,21 +193,21 @@ registerBlockVariation('core/query', {
 	...VARIATION_ATTRIBUTES,
 	name: 'gatherpress-event-query-date-address',
 	title: __('Event-Date & Venue Details', 'gatherpress'),
-	description: __('Create gatherpress queries with Event-Date & Venue Details', 'gatherpress'),
+	description: __(
+		'Create gatherpress queries with Event-Date & Venue Details',
+		'gatherpress'
+	),
 	innerBlocks: [
 		[
 			'core/post-template',
 			{
-				metadata:{
-					name:__(
-						'Events Template',
-						'gatherpress'
-					)
-				}
+				metadata: {
+					name: __('Events Template', 'gatherpress'),
+				},
 			},
 			[
 				{
-					name:'gatherpress/event-date'
+					name: 'gatherpress/event-date',
 				},
 				// {
 				// 	...GPV_BLOCK,
@@ -224,11 +215,8 @@ registerBlockVariation('core/query', {
 			],
 		],
 		QUERY_PAGINATION_BLOCK,
-		NO_RESULTS_BLOCK
+		NO_RESULTS_BLOCK,
 	],
 });
-
-
-
 
 export { NAME, GPQLControls, GPQLControlsInheritedQuery };

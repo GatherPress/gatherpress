@@ -11,30 +11,30 @@ import { __ } from '@wordpress/i18n';
  * @param {*} props
  * @return {Element} EventExcludeControls
  */
-export const EventExcludeControls = ( { attributes, setAttributes } ) => {
+export const EventExcludeControls = ({ attributes, setAttributes }) => {
 	const { query: { exclude_current: excludeCurrent } = {} } = attributes;
 
-	const currentPost = useSelect( ( select ) => {
-		return select( 'core/editor' ).getCurrentPost();
-	}, [] );
+	const currentPost = useSelect((select) => {
+		return select('core/editor').getCurrentPost();
+	}, []);
 
-	if ( ! currentPost ) {
-		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
+	if (!currentPost) {
+		return <div>{__('Loading…', 'gatherpress')}</div>;
 	}
 
 	return (
 		<>
 			<ToggleControl
-				label={ __( 'Exclude Current Event', 'gatherpress' ) }
-				checked={ !! excludeCurrent }
-				onChange={ ( value ) => {
-					setAttributes( {
+				label={__('Exclude Current Event', 'gatherpress')}
+				checked={!!excludeCurrent}
+				onChange={(value) => {
+					setAttributes({
 						query: {
 							...attributes.query,
 							exclude_current: value ? currentPost.id : 0,
 						},
-					} );
-				} }
+					});
+				}}
 			/>
 		</>
 	);

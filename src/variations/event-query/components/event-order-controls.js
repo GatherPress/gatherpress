@@ -10,41 +10,41 @@ import { __ } from '@wordpress/i18n';
  * @param {*} param0
  * @return {Element} EventCountControls
  */
-export const EventOrderControls = ( { attributes, setAttributes } ) => {
+export const EventOrderControls = ({ attributes, setAttributes }) => {
 	const { query: { order, orderBy } = {} } = attributes;
-	const label = order === 'asc' ? __( 'Ascending Order', 'gatherpress' ) : __( 'Descending Order', 'gatherpress' );
+	const label =
+		order === 'asc'
+			? __('Ascending Order', 'gatherpress')
+			: __('Descending Order', 'gatherpress');
 	return (
 		<>
 			<SelectControl
-				label={ __( 'Order Events By', 'gatherpress' ) }
-				value={ orderBy }
+				label={__('Order Events By', 'gatherpress')}
+				value={orderBy}
 				help={
 					orderBy === 'meta_value' || orderBy === 'meta_value_num'
 						? __(
 								'Meta Value and Meta Value Num require that Meta Key is set in the Meta Query section.',
 								'gatherpress'
-						  )
+							)
 						: ''
 				}
-				options={ [
+				options={[
 					// The 'gatherpress_event' post_type does not support 'author'.
 					// {
 					// 	label: __( 'Author', 'gatherpress' ),
 					// 	value: 'author',
 					// },
 					{
-						label: __( 'Event Date', 'gatherpress' ),
+						label: __('Event Date', 'gatherpress'),
 						value: 'datetime', // This is GatherPress specific, a normal post would use 'date'.
 					},
 					{
-						label: __(
-							'Last Modified Date',
-							'gatherpress'
-						),
+						label: __('Last Modified Date', 'gatherpress'),
 						value: 'modified',
 					},
 					{
-						label: __( 'Title', 'gatherpress' ),
+						label: __('Title', 'gatherpress'),
 						value: 'title',
 					},
 					// {
@@ -56,7 +56,7 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 					// 	value: 'meta_value_num',
 					// },
 					{
-						label: __( 'Random', 'gatherpress' ),
+						label: __('Random', 'gatherpress'),
 						value: 'rand',
 					},
 					// The 'gatherpress_event' post_type does not support 'page_attributes'.
@@ -65,30 +65,30 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 					// 	value: 'menu_order',
 					// },
 					{
-						label: __( 'Post ID', 'gatherpress' ),
+						label: __('Post ID', 'gatherpress'),
 						value: 'id',
 					},
-				] }
-				onChange={ ( newOrderBy ) => {
-					setAttributes( {
+				]}
+				onChange={(newOrderBy) => {
+					setAttributes({
 						query: {
 							...attributes.query,
 							orderBy: newOrderBy,
 						},
-					} );
-				} }
+					});
+				}}
 			/>
 			<ToggleControl
-				label={ label }
-				checked={ order === 'asc' }
-				onChange={ () => {
-					setAttributes( {
+				label={label}
+				checked={order === 'asc'}
+				onChange={() => {
+					setAttributes({
 						query: {
 							...attributes.query,
 							order: order === 'asc' ? 'desc' : 'asc',
 						},
-					} );
-				} }
+					});
+				}}
 			/>
 		</>
 	);
