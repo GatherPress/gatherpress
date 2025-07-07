@@ -112,6 +112,27 @@ class Test_Block extends Base {
 	}
 
 	/**
+	 * Coverage for register_block_variations.
+	 *
+	 * @covers ::register_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_register_block_variations(): void {
+		$block_instance = Utility::get_hidden_static_property( 'GatherPress\Core\Blocks\Event_Query', 'instance' );
+
+		// Assert that it's still null (meaning the singleton is not instantiated).
+		$this->assertNull( $block_instance, 'Failed to assert, the block-variation singleton should not be instantiated yet.' );
+
+		$instance = Block::get_instance();
+		// Register our block variations.
+		$instance->register_block_variations();
+
+		// Assert that it's still null (meaning the singleton is not instantiated).
+		$this->assertNotNull($block_instance, 'Failed to assert, the block-variation singleton should be instantiated now.');
+	}
+
+	/**
 	 * Coverage for get_block_variations.
 	 *
 	 * @covers ::get_block_variations
@@ -122,7 +143,9 @@ class Test_Block extends Base {
 		$instance = Block::get_instance();
 
 		$this->assertSame(
-			array(),
+			array(
+				'event-query',
+			),
 			$instance->get_block_variations(),
 			'Failed to assert, to get all block variations from the "/src" directory.'
 		);
