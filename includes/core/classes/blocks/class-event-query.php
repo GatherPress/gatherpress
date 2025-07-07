@@ -180,7 +180,7 @@ class Event_Query {
 		// Exclude Posts.
 		$exclude_ids = $this->get_exclude_ids( $block_query );
 		if ( ! empty( $exclude_ids ) ) {
-			$query_args['post__not_in'] = $exclude_ids;
+			$query_args['post__not_in'] = $exclude_ids; // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 		}
 
 		if ( isset( $block_query['include_unfinished'] ) ) {
@@ -277,7 +277,7 @@ class Event_Query {
 			$attributes = array(
 				'exclude_current' => $exclude_current,
 			);
-			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes );
+			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 		}
 
 		// 
