@@ -48,34 +48,31 @@ const isGatherPressQueryLoop = ( props ) => {
  * By adding the relevant attributes,
  * the block is transformed into the "Event Query" block variation.
  *
- * @param {*} props 
- * @returns 
+ * @param {*} props
  */
-const QueryPosttypeObserver = ( props ) => {
-	const { postType } = props.attributes.query;
+const QueryPosttypeObserver = (props) => {
+	const { attributes, setAttributes } = props;
+	const { postType } = attributes.query;
 	useEffect(() => {
-		if ('gatherpress_event' === postType ) {
+		if ('gatherpress_event' === postType) {
 			const newAttributes = {
-				...props.attributes,
+				...attributes,
 				namespace: NAME,
 				query: {
-					...props.attributes.query,
+					...attributes.query,
 					gatherpress_events_query: 'upcoming',
 					include_unfinished: 1,
 					order: 'asc',
 					orderBy: 'datetime',
-					inherit: false
-				}
+					inherit: false,
+				},
 			};
-			props.setAttributes(newAttributes);
+			setAttributes(newAttributes);
 		}
 		// Dependency array, every time the postType is changed,
 		//  the useEffect callback will be called.
-	}, [ postType ]);
-	return;
-	
-}
-
+	}, [postType, attributes, setAttributes]);
+};
 
 /**
  * Custom controls
