@@ -11,7 +11,7 @@ import { __ } from '@wordpress/i18n';
 // 	name: 'core/group',
 // 	attributes: {
 // 		className: GPV_CLASS_NAME,
-// 		// is neccessary to make isActive work !!
+// 		// is necessary to make isActive work !!
 // 		// @see https://github.com/WordPress/gutenberg/issues/41303#issuecomment-1526193087
 // 		layout: { type: 'flex', orientation: 'nonsense' }, // works
 // 	},
