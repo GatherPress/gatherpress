@@ -9,7 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Block;
-use PMC\Unit_Test\Base;
+use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Block_Patterns_Registry;
 use WP_Block_Type_Registry;
@@ -35,8 +35,8 @@ class Test_Block extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
-				'priority' => 9,
-				'callback' => array( $instance, 'register_block_variations' ),
+				'priority' => 10,
+				'callback' => array( $instance, 'register_block_classes' ),
 			),
 			array(
 				'type'     => 'action',
@@ -78,11 +78,24 @@ class Test_Block extends Base {
 		$instance            = Block::get_instance();
 		$blocks              = array(
 			'gatherpress/add-to-calendar',
+			'gatherpress/dropdown',
+			'gatherpress/dropdown-item',
 			'gatherpress/event-date',
 			'gatherpress/events-list',
+			'gatherpress/form-field',
+			'gatherpress/icon',
+			'gatherpress/modal',
+			'gatherpress/modal-content',
+			'gatherpress/modal-manager',
 			'gatherpress/online-event',
 			'gatherpress/rsvp',
+			'gatherpress/rsvp-anonymous-checkbox',
+			'gatherpress/rsvp-form',
+			'gatherpress/rsvp-guest-count-display',
+			'gatherpress/rsvp-guest-count-input',
 			'gatherpress/rsvp-response',
+			'gatherpress/rsvp-response-toggle',
+			'gatherpress/rsvp-template',
 			'gatherpress/venue',
 		);
 		$block_type_registry = WP_Block_Type_Registry::get_instance();
@@ -99,27 +112,6 @@ class Test_Block extends Base {
 	}
 
 	/**
-	 * Coverage for register_block_variations.
-	 *
-	 * @covers ::register_block_variations
-	 *
-	 * @return void
-	 */
-	public function test_register_block_variations(): void {
-		$block_instance = Utility::get_hidden_static_property( 'GatherPress\Core\Blocks\Event_Query', 'instance' );
-
-		// Assert that it's still null (meaning the singleton is not instantiated).
-		$this->assertNull( $block_instance, 'Failed to assert, the block-variation singleton should not be instantiated yet.' );
-
-		$instance = Block::get_instance();
-		// Register our block variations.
-		$instance->register_block_variations();
-
-		// Assert that it's still null (meaning the singleton is not instantiated).
-		$this->assertNotNull($block_instance, 'Failed to assert, the block-variation singleton should be instantiated now.');
-	}
-
-	/**
 	 * Coverage for get_block_variations.
 	 *
 	 * @covers ::get_block_variations
@@ -130,9 +122,7 @@ class Test_Block extends Base {
 		$instance = Block::get_instance();
 
 		$this->assertSame(
-			array(
-				'event-query',
-			),
+			array(),
 			$instance->get_block_variations(),
 			'Failed to assert, to get all block variations from the "/src" directory.'
 		);
