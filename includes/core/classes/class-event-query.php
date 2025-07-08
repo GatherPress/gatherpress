@@ -291,7 +291,7 @@ class Event_Query {
 
 		global $wp_query;
 
-		// Sanity check, it's been reported that some admin screens may not have a $wp_query set.
+		// Sanity check, it's been reported that some admin screens may not have $wp_query set.
 		if ( ! $wp_query || ! method_exists( $wp_query, 'get' ) ) {
 			return $query_pieces;
 		}
