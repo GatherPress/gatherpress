@@ -291,6 +291,10 @@ class Event_Query {
 
 		global $wp_query;
 
+		if ( ! $wp_query || ! method_exists( $wp_query, 'get' ) ) {
+			return $query_pieces;
+		}
+
 		if ( 'datetime' === $wp_query->get( 'orderby' ) ) {
 			$query_pieces = $this->adjust_event_sql( $query_pieces, 'all', $wp_query->get( 'order' ) );
 		}
