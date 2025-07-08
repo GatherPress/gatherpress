@@ -148,7 +148,7 @@ class Assets {
 	 * @return string The block content.
 	 */
 	public function maybe_enqueue_styles( string $block_content, array $block ): string {
-		if ( 0 === strpos( $block['blockName'], 'gatherpress/' ) ) {
+		if ( isset( $block['blockName'] ) && str_contains( $block['blockName'], 'gatherpress/' ) ) {
 			$asset = $this->get_asset_data( 'utility_style' );
 
 			wp_enqueue_style( 'gatherpress-utility-style' );
