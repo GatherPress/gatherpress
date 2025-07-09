@@ -52,14 +52,21 @@ class Event_Query {
 		add_action( 'init', array( $this, 'init' ), PHP_INT_MAX );
 	}
 
+	/**
+	 * Setup filters to handle rendering & REST requests for the block.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
 	public function init(): void {
 
-				add_filter(
-					'pre_render_block',
-					array( $this, 'pre_render_block' ),
-					10,
-					2
-				);
+		add_filter(
+			'pre_render_block',
+			array( $this, 'pre_render_block' ),
+			10,
+			2
+		);
 
 		// Updates the query vars for the Query Loop block in the block editor.
 		add_filter(
