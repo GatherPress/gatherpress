@@ -125,7 +125,7 @@ class Event_Query {
 				 * @return array $filtered_query_args Final arguments list.
 				 */
 				$filtered_query_args = \apply_filters(
-					'gpql_query_vars',
+					'gatherpress_query_vars',
 					$query_args,
 					$parsed_block['attrs']['query'],
 					true,
@@ -247,7 +247,7 @@ class Event_Query {
 
 		/** This filter is documented in includes/query-loop.php */
 		$filtered_query_args = \apply_filters(
-			'gpql_query_vars',
+			'gatherpress_query_vars',
 			$query_args,
 			$block_query,
 			false
@@ -295,7 +295,7 @@ class Event_Query {
 
 		/** This filter is documented in includes/query-loop.php */
 		$filtered_query_args = \apply_filters(
-			'gpql_query_vars',
+			'gatherpress_query_vars',
 			$custom_args,
 			$request->get_params(),
 			false,
