@@ -49,23 +49,22 @@ class Event_Query {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action('init', array( $this, 'init'), PHP_INT_MAX );
+		add_action( 'init', array( $this, 'init' ), PHP_INT_MAX );
 	}
 
-	public function init() : void {
+	public function init(): void {
 
-		// 
-		add_filter(
-			'pre_render_block',
-			array( $this, 'pre_render_block'),
-			10,
-			2
-		);
+				add_filter(
+					'pre_render_block',
+					array( $this, 'pre_render_block' ),
+					10,
+					2
+				);
 
 		// Updates the query vars for the Query Loop block in the block editor.
 		add_filter(
 			sprintf( 'rest_%s_query', Event::POST_TYPE ),
-			array( $this, 'rest_query'),
+			array( $this, 'rest_query' ),
 			10,
 			2
 		);
@@ -73,7 +72,7 @@ class Event_Query {
 		// We need more sortBy options.
 		add_filter(
 			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
-			array( $this, 'rest_collection_params'),
+			array( $this, 'rest_collection_params' ),
 			10,
 			2
 		);
@@ -86,8 +85,8 @@ class Event_Query {
 	 *
 	 * Updates the query on the front end based on custom query attributes.
 	 *
-	 * @param string|null    $pre_render   The pre-rendered content. Default null.
-	 * @param array          $parsed_block The block being rendered.
+	 * @param string|null $pre_render   The pre-rendered content. Default null.
+	 * @param array       $parsed_block The block being rendered.
 	 * @return string|null The pre-rendered content. Default null.
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
@@ -129,7 +128,7 @@ class Event_Query {
 			} else {
 				add_filter(
 					'query_loop_block_query_vars',
-					array( $this, 'query_loop_block_query_vars'),
+					array( $this, 'query_loop_block_query_vars' ),
 					10,
 					2
 				);
@@ -171,7 +170,7 @@ class Event_Query {
 		$query_args = array();
 
 		// Post Related.
-		$query_args['post_type'] = [ Event::POST_TYPE ];
+		$query_args['post_type'] = array( Event::POST_TYPE );
 
 		// Type of event list: 'upcoming' or 'past'.
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php
@@ -233,7 +232,7 @@ class Event_Query {
 		}
 
 		// Order By
-		$query_args['orderby'] = [ $block_query['orderBy'] ];
+		$query_args['orderby'] = array( $block_query['orderBy'] );
 
 		// Order
 		// can be NULL, when ASC
@@ -263,7 +262,7 @@ class Event_Query {
 	 * @param \WP_REST_Request $request The REST API request object.
 	 * @return array Array of arguments for WP_Query.
 	 */
-	public function rest_query( array $args, \WP_REST_Request $request ) : array {
+	public function rest_query( array $args, \WP_REST_Request $request ): array {
 		// Generate a new custom query will all potential query vars.
 		$custom_args = array();
 
@@ -274,14 +273,13 @@ class Event_Query {
 		// Exclusion Related.
 		$exclude_current = $request->get_param( 'exclude_current' );
 		if ( $exclude_current ) {
-			$attributes = array(
+			$attributes                  = array(
 				'exclude_current' => $exclude_current,
 			);
 			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 		}
 
-		// 
-		$include_unfinished = $request->get_param( 'include_unfinished' );
+				$include_unfinished = $request->get_param( 'include_unfinished' );
 		if ( $include_unfinished ) {
 			$custom_args['include_unfinished'] = $include_unfinished;
 		}
@@ -314,7 +312,7 @@ class Event_Query {
 	 * @param \WP_Post_Type $post_type    Post type object.
 	 * @return array JSON Schema-formatted collection parameters.
 	 */
-	public function rest_collection_params( array $query_params, \WP_Post_Type $post_type ) : array {
+	public function rest_collection_params( array $query_params, \WP_Post_Type $post_type ): array {
 		$query_params['orderby']['enum'][] = 'rand';
 		$query_params['orderby']['enum'][] = 'datetime';
 		return $query_params;
