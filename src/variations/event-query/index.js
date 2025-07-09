@@ -109,9 +109,9 @@ registerBlockVariation('core/query', {
 				name: 'core/post-template',
 				attributes: {},
 				innerBlocks: [
-					{
-						name: 'gatherpress/event-date',
-					},
+					// {
+					// 	name: 'gatherpress/event-date',
+					// },
 					{
 						name: 'core/post-title',
 					},
@@ -143,7 +143,10 @@ registerBlockVariation('core/query', {
 					name: __('Events Template', 'gatherpress'),
 				},
 			},
-			[['gatherpress/venue'], ['gatherpress/event-date']],
+			[
+				// ['gatherpress/venue'],
+				// ['gatherpress/event-date']
+			],
 		],
 		QUERY_PAGINATION_BLOCK,
 		NO_RESULTS_BLOCK,
@@ -170,9 +173,9 @@ registerBlockVariation('core/query', {
 				},
 			},
 			[
-				{
-					name: 'gatherpress/event-date',
-				},
+				// {
+				// 	name: 'gatherpress/event-date',
+				// },
 				{
 					name: 'core/post-title',
 				},
@@ -206,9 +209,9 @@ registerBlockVariation('core/query', {
 				},
 			},
 			[
-				{
-					name: 'gatherpress/event-date',
-				},
+				// {
+				// 	name: 'gatherpress/event-date',
+				// },
 				// {
 				// 	...GPV_BLOCK,
 				// },
