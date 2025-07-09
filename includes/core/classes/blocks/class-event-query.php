@@ -79,9 +79,7 @@ class Event_Query {
 		// We need more sortBy options.
 		add_filter(
 			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
-			array( $this, 'rest_collection_params' ),
-			10,
-			2
+			array( $this, 'rest_collection_params' )
 		);
 	}
 
@@ -99,7 +97,7 @@ class Event_Query {
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
 		if ( isset( $parsed_block['attrs']['namespace'] ) && 'gatherpress-event-query' === $parsed_block['attrs']['namespace'] ) {
 
-			// Hijack the global query. It's a hack, but it works.
+			// "Hijack the global query. It's a hack, but it works." Ryan Welcher
 			if ( isset( $parsed_block['attrs']['query']['inherit'] ) && true === $parsed_block['attrs']['query']['inherit'] ) {
 				global $wp_query;
 				$query_args = array_merge(
@@ -130,8 +128,8 @@ class Event_Query {
 					$parsed_block['attrs']['query'],
 					true,
 				);
-
-				$wp_query = new \WP_Query( $filtered_query_args );
+				// "Hijack the global query. It's a hack, but it works." Ryan Welcher
+				$wp_query = new \WP_Query( $filtered_query_args ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 			} else {
 				add_filter(
 					'query_loop_block_query_vars',
@@ -179,8 +177,8 @@ class Event_Query {
 		// Post Related.
 		$query_args['post_type'] = array( Event::POST_TYPE );
 
-		// Type of event list: 'upcoming' or 'past'.
-		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php
+		// Type of event list: 'upcoming' or 'past',
+		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php .
 		$query_args['gatherpress_events_query'] = $block_query['gatherpress_events_query'];
 
 		// Exclude Posts.
@@ -238,11 +236,11 @@ class Event_Query {
 			$query_args['date_query'] = array_filter( $date_queries );
 		}
 
-		// Order By
+		// Order By.
 		$query_args['orderby'] = array( $block_query['orderBy'] );
 
 		// Order
-		// can be NULL, when ASC
+		// can be NULL, when ASC.
 		$query_args['order'] = \strtoupper( $block_query['order'] ?? 'ASC' );
 
 		/** This filter is documented in includes/query-loop.php */
@@ -273,8 +271,8 @@ class Event_Query {
 		// Generate a new custom query will all potential query vars.
 		$custom_args = array();
 
-		// Type of event list: 'upcoming' or 'past'.
-		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php
+		// Type of event list: 'upcoming' or 'past',
+		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php .
 		$custom_args['gatherpress_events_query'] = $request->get_param( 'gatherpress_events_query' );
 
 		// Exclusion Related.
@@ -315,11 +313,10 @@ class Event_Query {
 	 *
 	 * @see https://developer.wordpress.org/reference/classes/wp_rest_posts_controller/get_collection_params/
 	 *
-	 * @param array         $query_params JSON Schema-formatted collection parameters.
-	 * @param \WP_Post_Type $post_type    Post type object.
+	 * @param array $query_params JSON Schema-formatted collection parameters.
 	 * @return array JSON Schema-formatted collection parameters.
 	 */
-	public function rest_collection_params( array $query_params, \WP_Post_Type $post_type ): array {
+	public function rest_collection_params( array $query_params ): array {
 		$query_params['orderby']['enum'][] = 'rand';
 		$query_params['orderby']['enum'][] = 'datetime';
 		return $query_params;
