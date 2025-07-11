@@ -221,7 +221,7 @@ class Rsvp_Setup {
 				$rsvp_token->is_valid( $token_data['token'] ) &&
 				! empty( $rsvp_token->get_comment() )
 			) {
-				$user_identifier = $rsvp_token->get_comment()->comment_author_email;
+				$user_identifier = $rsvp_token->get_email();
 			}
 		}
 
