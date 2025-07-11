@@ -45,6 +45,12 @@ class Test_Rsvp_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'handle_rsvp_token' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'wp_after_insert_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'maybe_process_waiting_list' ),

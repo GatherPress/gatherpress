@@ -14,6 +14,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp_Setup;
+use GatherPress\Core\Rsvp_Token;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
@@ -122,9 +124,10 @@ class Rsvp {
 
 			$user_data = array();
 
-			// @todo add logic here for token to edit RSVP with the email address from the RSVP as identifier.
 			if ( $event->rsvp ) {
-				$user_data = $event->rsvp->get( get_current_user_id() );
+				$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+
+				$user_data = $event->rsvp->get( $user_identifier );
 			}
 
 			$filtered_data   = array_intersect_key( $user_data, array_flip( array( 'status', 'guests', 'anonymous' ) ) );
@@ -252,7 +255,9 @@ class Rsvp {
 	 */
 	public function apply_guest_count_watch( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
+
 		$tag->next_tag();
+
 		$user_details = ! empty( $tag->get_attribute( 'data-user-details' ) ) ?
 			json_decode( $tag->get_attribute( 'data-user-details' ), true ) :
 			array();

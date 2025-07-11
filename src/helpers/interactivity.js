@@ -112,6 +112,7 @@ export function sendRsvpApiRequest(
 			status: args.status,
 			guests: args.guests,
 			anonymous: args.anonymous,
+			rsvp_token: args.rsvpToken,
 		}),
 	})
 		.then((response) => response.json()) // Parse the JSON response.

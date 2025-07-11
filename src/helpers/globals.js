@@ -112,3 +112,9 @@ export function toCamelCase(snakeCaseString) {
 		letter.toUpperCase()
 	);
 }
+
+export function getUrlParam(name) {
+	const urlParams = new URLSearchParams(global.location.search);
+
+	return urlParams.get(name);
+}

@@ -156,15 +156,31 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => static function (): bool {
+				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
+					$unparsed_token = $request->get_param( 'rsvp_token' );
+
+					if ( ! empty( $unparsed_token ) ) {
+						$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
+
+						if ( ! empty( $token_parts ) ) {
+							$rsvp_token = new Rsvp_Token( $token_parts['comment_id'] );
+
+							return $rsvp_token->is_valid( $token_parts['token'] );
+						}
+					}
+
 					return is_user_logged_in();
 				},
 				'args'                => array(
-					'post_id' => array(
+					'post_id'    => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'status'  => array(
+					'rsvp_token' => array(
+						'required'          => false,
+						// 'validate_callback' => array( Validate::class, 'event_post_id' ),
+					),
+					'status'     => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
 					),
@@ -540,13 +556,12 @@ class Event_Rest_Api {
 		$success         = false;
 		$current_user_id = get_current_user_id();
 		$blog_id         = get_current_blog_id();
-		// @todo change user_id to user_identifier and should be a registered param that could be user_id or email address.
-		// Will use token along with this to validate.
 		$user_id         = isset( $params['user_id'] ) ? intval( $params['user_id'] ) : $current_user_id;
 		$post_id         = intval( $params['post_id'] );
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] ?? 0 );
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
+		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] );
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
@@ -566,16 +581,30 @@ class Event_Rest_Api {
 			add_user_to_blog( $blog_id, $user_id, 'subscriber' );
 		}
 
+		$user_identifier = $user_id;
+
+		if ( ! empty( $unparsed_token ) ) {
+			$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
+
+			if ( ! empty( $token_parts ) ) {
+				$rsvp_token = new Rsvp_Token( $token_parts['comment_id'] );
+
+				if ( $rsvp_token->is_valid( $token_parts['token'] ) ) {
+					$user_identifier = $rsvp_token->get_email();
+				}
+			}
+		}
+
 		if (
-			$user_id &&
-			is_user_member_of_blog( $user_id ) &&
+			$user_identifier &&
+			( is_user_member_of_blog( $user_identifier ) || is_email( $user_identifier ) ) &&
 			! $event->has_event_past()
 		) {
 			if ( 'attending' !== $status ) {
 				$guests = 0;
 			}
 
-			$user_record = $event->rsvp->save( $user_id, $status, $anonymous, $guests );
+			$user_record = $event->rsvp->save( $user_identifier, $status, $anonymous, $guests );
 			$status      = $user_record['status'];
 			$guests      = $user_record['guests'];
 

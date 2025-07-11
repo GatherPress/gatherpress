@@ -187,11 +187,16 @@ class Rsvp_Setup {
 			)
 		);
 
-		if ( empty( $token_param ) ) {
+		return $this->parse_rsvp_token( $token_param );
+
+	}
+
+	public function parse_rsvp_token( $unparsed_token ): array {
+		if ( empty( $unparsed_token ) ) {
 			return array();
 		}
 
-		$token_parts = explode( '_', $token_param, 2 );
+		$token_parts = explode( '_', $unparsed_token, 2 );
 
 		if ( 2 !== count( $token_parts ) ) {
 			return array(); // Invalid format.
@@ -208,6 +213,27 @@ class Rsvp_Setup {
 			'comment_id' => $comment_id,
 			'token'      => $token,
 		);
+	}
+
+	/**
+	 * returns string|int
+	 */
+	public function get_user_identifier() {
+		$user_identifier = get_current_user_id();
+		$token_data      = Rsvp_Setup::get_instance()->get_token_from_url();
+
+		if ( ! empty( $token_data ) ) {
+			$rsvp_token = new Rsvp_Token( $token_data['comment_id'] );
+
+			if (
+				$rsvp_token->is_valid( $token_data['token'] ) &&
+				! empty( $rsvp_token->get_comment() )
+			) {
+				$user_identifier = $rsvp_token->get_comment()->comment_author_email;
+			}
+		}
+
+		return $user_identifier;
 	}
 
 	public function handle_rsvp_token(): void {

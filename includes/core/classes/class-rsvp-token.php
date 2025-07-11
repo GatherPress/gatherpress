@@ -78,6 +78,14 @@ class Rsvp_Token {
 		return $this->comment;
 	}
 
+	public function get_email(): string {
+		if ( ! $this->comment ) {
+			return '';
+		}
+
+		return $this->comment->comment_author_email;
+	}
+
 	public function is_valid( string $token ): bool {
 		return ! empty( $token ) && $this->get_token() === $token;
 	}

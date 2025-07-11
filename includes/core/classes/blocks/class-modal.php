@@ -176,12 +176,13 @@ class Modal {
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
-		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-rsvp-modal' ) &&
-			! is_user_logged_in()
-		) {
-			return '';
-		}
+		// @todo commenting out for now.
+		// if (
+		// 	false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-rsvp-modal' ) &&
+		// 	! is_user_logged_in()
+		// ) {
+		// 	return '';
+		// }
 
 		return $block_content;
 	}
