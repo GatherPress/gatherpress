@@ -177,8 +177,10 @@ class Event_Rest_Api {
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
 					'rsvp_token' => array(
-						'required'          => false,
-						// 'validate_callback' => array( Validate::class, 'event_post_id' ),
+						'required' => false,
+						'validate_callback' => static function ( $param ): bool {
+							return ! empty( Rsvp_Setup::get_instance()->parse_rsvp_token( $param ) );
+						},
 					),
 					'status'     => array(
 						'required'          => true,

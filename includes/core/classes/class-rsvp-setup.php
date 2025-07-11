@@ -128,9 +128,9 @@ class Rsvp_Setup {
 				$email  = sanitize_email( wp_unslash( filter_input( INPUT_POST, 'email' ) ) );
 				$user   = get_user_by( 'ID', get_current_user_id() );
 
-				$comment_data['comment_content']      = '';
-				$comment_data['comment_type']         = RSVP::COMMENT_TYPE;
-				$comment_data['comment_parent']       = 0;
+				$comment_data['comment_content'] = '';
+				$comment_data['comment_type']    = RSVP::COMMENT_TYPE;
+				$comment_data['comment_parent']  = 0;
 
 				if (
 					! $user instanceof WP_User ||
@@ -158,7 +158,7 @@ class Rsvp_Setup {
 
 					$rsvp_token->generate_token();
 
-					// Send confirmation email with token link
+					// Send confirmation email with token link.
 					// $this->send_rsvp_confirmation_email( $comment_ID, $token );
 				}
 			}
@@ -180,7 +180,6 @@ class Rsvp_Setup {
 		);
 
 		return $this->parse_rsvp_token( $token_param );
-
 	}
 
 	public function parse_rsvp_token( $unparsed_token ): array {
@@ -212,7 +211,7 @@ class Rsvp_Setup {
 	 */
 	public function get_user_identifier() {
 		$user_identifier = get_current_user_id();
-		$token_data      = Rsvp_Setup::get_instance()->get_token_from_url();
+		$token_data      = self::get_instance()->get_token_from_url();
 
 		if ( ! empty( $token_data ) ) {
 			$rsvp_token = new Rsvp_Token( $token_data['comment_id'] );
