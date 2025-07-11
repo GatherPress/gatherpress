@@ -23,11 +23,13 @@ class Rsvp_Token {
 	const NAME = 'gatherpress_rsvp_token';
 
 	public function __construct( int $comment_id ) {
-		if ( Rsvp::COMMENT_TYPE !== get_comment_type( $comment_id ) ) {
+		$comment = get_comment( $comment_id );
+
+		if ( ! $comment || Rsvp::COMMENT_TYPE !== get_comment_type( $comment_id ) ) {
 			return;
 		}
 
-		$this->comment = get_comment( $comment_id );
+		$this->comment = $comment;
 	}
 
 	public function get_token(): string {

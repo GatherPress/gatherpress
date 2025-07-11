@@ -124,9 +124,9 @@ class Rsvp_Setup {
 		add_filter(
 			'preprocess_comment',
 			static function ( array $comment_data ): array {
-				$name  = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'name' ) ) );
-				$email = sanitize_email( wp_unslash( filter_input( INPUT_POST, 'email' ) ) );
-				$user  = get_user_by( 'ID', get_current_user_id() );
+				$author = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'author' ) ) );
+				$email  = sanitize_email( wp_unslash( filter_input( INPUT_POST, 'email' ) ) );
+				$user   = get_user_by( 'ID', get_current_user_id() );
 
 				$comment_data['comment_content']      = '';
 				$comment_data['comment_type']         = RSVP::COMMENT_TYPE;
@@ -140,7 +140,7 @@ class Rsvp_Setup {
 
 					$comment_data['user_id']              = 0;
 					$comment_data['comment_author_url']   = '';
-					$comment_data['comment_author']       = $name;
+					$comment_data['comment_author']       = $author;
 					$comment_data['comment_author_email'] = $email;
 				}
 
@@ -155,14 +155,6 @@ class Rsvp_Setup {
 					wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
 
 					$rsvp_token = new Rsvp_Token( $comment_id );
-
-					// Skip if comment not found OR user is logged in.
-					// if (
-					// 	! $rsvp_token->get_comment() ||
-					// 	intval( $rsvp_token->get_comment()->user_id )
-					// ) {
-					// 	return;
-					// }
 
 					$rsvp_token->generate_token();
 
