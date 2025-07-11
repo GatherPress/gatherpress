@@ -40,7 +40,7 @@ class Rsvp_Token {
 		}
 
 		$token = (string) get_comment_meta(
-			$this->comment->ID,
+			$this->comment->comment_ID,
 			sprintf( '_%s', static::NAME ),
 			true
 		);
@@ -55,7 +55,7 @@ class Rsvp_Token {
 			return;
 		}
 
-		wp_set_comment_status( $this->comment->ID, 'approve' );
+		wp_set_comment_status( $this->comment->comment_ID, 'approve' );
 	}
 
 	public function generate_token(): self {
@@ -66,7 +66,7 @@ class Rsvp_Token {
 		$this->token = wp_generate_password( 32, false );
 
 		update_comment_meta(
-			$this->comment->ID,
+			$this->comment->comment_ID,
 			sprintf( '_%s', static::NAME ),
 			$this->token
 		);

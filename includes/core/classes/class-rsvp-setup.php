@@ -139,6 +139,7 @@ class Rsvp_Setup {
 					add_filter( 'pre_comment_approved', '__return_zero' );
 
 					$comment_data['user_id']              = 0;
+					$comment_data['comment_author_url']   = '';
 					$comment_data['comment_author']       = $name;
 					$comment_data['comment_author_email'] = $email;
 				}
@@ -150,7 +151,24 @@ class Rsvp_Setup {
 		add_action(
 			'comment_post',
 			static function ( int $comment_id ): void {
-				wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+				if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
+					wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+					$rsvp_token = new Rsvp_Token( $comment_id );
+
+					// Skip if comment not found OR user is logged in.
+					// if (
+					// 	! $rsvp_token->get_comment() ||
+					// 	intval( $rsvp_token->get_comment()->user_id )
+					// ) {
+					// 	return;
+					// }
+
+					$rsvp_token->generate_token();
+
+					// Send confirmation email with token link
+					// $this->send_rsvp_confirmation_email( $comment_ID, $token );
+				}
 			}
 		);
 
@@ -158,28 +176,6 @@ class Rsvp_Setup {
 			'comment_duplicate_message',
 			static function (): string {
 				return __( "You've already RSVP'd to this event.", 'gatherpress' );
-			}
-		);
-
-		add_action(
-			'comment_post',
-			function ( int $comment_id ) {
-				if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
-					$rsvp_token = new Rsvp_Token( $comment_id );
-
-					// Skip if comment not found OR user is logged in.
-					if (
-						! $rsvp_token->get_comment() ||
-						intval( $rsvp_token->get_comment()->user_id )
-					) {
-						return;
-					}
-
-					$rsvp_token->generate_token();
-
-					// Send confirmation email with token link
-					// $this->send_rsvp_confirmation_email( $comment_ID, $token );
-				}
 			}
 		);
 	}
