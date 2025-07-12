@@ -258,12 +258,15 @@ class Rsvp {
 		}
 
 		$args = array(
-			'comment_author_url' => get_author_posts_url( $user_id ),
 			'comment_post_ID'    => $post_id,
 			'comment_author_IP'  => '127.0.0.1',
 			'comment_type'       => self::COMMENT_TYPE,
 			'user_id'            => $user_id,
 		);
+
+		if ( intval( $user_id ) ) {
+			$args['comment_author_url'] = get_author_posts_url( $user_id );
+		}
 
 		if ( ! empty( $email ) ) {
 			$args['comment_author_email'] = $email;
