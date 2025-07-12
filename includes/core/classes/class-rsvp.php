@@ -234,7 +234,7 @@ class Rsvp {
 		if ( ! empty( $user_id ) ) {
 			$args['user_id'] = $user_id;
 		} elseif ( ! empty( $email ) ) {
-			$args['comment_author_email'] = $email;
+			$args['author_email'] = $email;
 		}
 
 		$rsvp             = $rsvp_query->get_rsvp( $args );
