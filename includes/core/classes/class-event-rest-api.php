@@ -20,7 +20,6 @@ use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
-use WP_User;
 
 /**
  * Class Event_Rest_Api.
@@ -102,6 +101,7 @@ class Event_Rest_Api {
 			$this->rsvp_status_html_route(),
 			$this->rsvp_responses_route(),
 			$this->events_list_route(),
+			$this->nonce_route(),
 		);
 	}
 
@@ -137,6 +137,23 @@ class Event_Rest_Api {
 						'validate_callback' => array( Validate::class, 'send' ),
 					),
 				),
+			),
+		);
+	}
+
+	protected function nonce_route(): array {
+		return array(
+			'route' => 'nonce',
+			'args'  => array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => static function () {
+					$response = array(
+						'nonce' => wp_create_nonce( 'wp_rest' ),
+					);
+
+					return new WP_REST_Response( $response );
+				},
+				'permission_callback' => '__return_true',
 			),
 		);
 	}
@@ -177,7 +194,7 @@ class Event_Rest_Api {
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
 					'rsvp_token' => array(
-						'required' => false,
+						'required'          => false,
 						'validate_callback' => static function ( $param ): bool {
 							return ! empty( Rsvp_Setup::get_instance()->parse_rsvp_token( $param ) );
 						},

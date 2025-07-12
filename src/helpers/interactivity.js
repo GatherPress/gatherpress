@@ -60,6 +60,39 @@ export function initPostContext(state, postId) {
 	}
 }
 
+const getNonce = (() => {
+	let cachedNonce = null;
+	let noncePromise = null;
+
+	return async function () {
+		if (cachedNonce) {
+			return cachedNonce;
+		}
+
+		if (noncePromise) {
+			return noncePromise;
+		}
+
+		noncePromise = fetch(getFromGlobal('urls.eventApiUrl') + '/nonce', {
+			method: 'GET',
+			credentials: 'same-origin',
+		})
+			.then((response) => response.json())
+			.then((data) => {
+				cachedNonce = data.nonce;
+				noncePromise = null;
+
+				return data.nonce;
+			})
+			.catch(() => {
+				noncePromise = null;
+				return null;
+			});
+
+		return noncePromise;
+	};
+})();
+
 /**
  * Sends an RSVP API request to update the RSVP status for a given post.
  *
@@ -91,7 +124,7 @@ export function initPostContext(state, postId) {
  *     }
  * );
  */
-export function sendRsvpApiRequest(
+export async function sendRsvpApiRequest(
 	postId,
 	args,
 	state = null,
@@ -101,11 +134,17 @@ export function sendRsvpApiRequest(
 		return;
 	}
 
+	const nonce = await getNonce();
+
+	if (!nonce) {
+		return;
+	}
+
 	fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			'X-WP-Nonce': getFromGlobal('misc.nonce'),
+			'X-WP-Nonce': nonce,
 		},
 		body: JSON.stringify({
 			post_id: postId,
