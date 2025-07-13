@@ -111,6 +111,7 @@ class Event_Query {
 			'no_found_rows'            => true,
 			'posts_per_page'           => $number,
 			'gatherpress_events_query' => $event_list_type,
+			'order'                    => 'ASC',
 		);
 
 		$tax_query = array();
