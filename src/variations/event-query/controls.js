@@ -20,8 +20,6 @@ import { EventOffsetControls } from './components/event-offset-controls';
 import { EventOrderControls } from './components/event-order-controls';
 import { EventIncludeUnfinishedControls } from './components/event-include-unfinished-controls';
 
-// import { PostDateQueryControls } from './components/post-date-query-controls';
-
 import { isEventPostType } from '../../helpers/event';
 
 /**
@@ -111,7 +109,6 @@ const withGatherPressQueryControls = (BlockEdit) => (props) => {
 						<EventOffsetControls {...props} />
 						<EventOrderControls {...props} />
 
-						{/* <PostDateQueryControls { ...props } /> */}
 						<GPQLControls.Slot fillProps={{ ...props }} />
 					</PanelBody>
 				</InspectorControls>
