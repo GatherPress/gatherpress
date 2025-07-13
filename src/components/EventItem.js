@@ -110,9 +110,6 @@ const EventItem = (props) => {
 						enableAnonymousRsvp={
 							event.gatherpress_enable_anonymous_rsvp
 						}
-						enableInitialDecline={
-							event.gatherpress_enable_initial_decline
-						}
 					/>
 				)}
 

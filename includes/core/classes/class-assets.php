@@ -12,7 +12,6 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Block;
 use GatherPress\Core\Traits\Singleton;
 use Error;
 
@@ -87,13 +86,15 @@ class Assets {
 	protected function setup_hooks(): void {
 		add_action( 'admin_print_scripts', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-		add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts' ) );
+		add_action( 'enqueue_block_assets', array( $this, 'block_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'editor_enqueue_scripts' ) );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_variation_assets' ) );
 		add_action( 'init', array( $this, 'register_variation_assets' ) );
 		add_action( 'wp_head', array( $this, 'add_global_object' ), PHP_INT_MIN );
 		// Set priority to 11 to not conflict with media modal.
 		add_action( 'admin_footer', array( $this, 'event_communication_modal' ), 11 );
+
+		add_filter( 'render_block', array( $this, 'maybe_enqueue_styles' ), 10, 2 );
 	}
 
 	/**
@@ -123,8 +124,37 @@ class Assets {
 	 *
 	 * @return void
 	 */
-	public function enqueue_scripts(): void {
+	public function block_enqueue_scripts(): void {
+		// @todo remove once new blocks are completed.
 		wp_enqueue_style( 'dashicons' );
+
+		$asset = $this->get_asset_data( 'utility_style' );
+
+		wp_register_style(
+			'gatherpress-utility-style',
+			$this->build . 'utility_style.css',
+			$asset['dependencies'],
+			$asset['version']
+		);
+	}
+
+	/**
+	 * Conditionally enqueue utility styles if GatherPress blocks are rendered.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content.
+	 * @param array  $block         The block settings.
+	 * @return string The block content.
+	 */
+	public function maybe_enqueue_styles( string $block_content, array $block ): string {
+		if ( isset( $block['blockName'] ) && str_contains( $block['blockName'], 'gatherpress/' ) ) {
+			$asset = $this->get_asset_data( 'utility_style' );
+
+			wp_enqueue_style( 'gatherpress-utility-style' );
+		}
+
+		return $block_content;
 	}
 
 	/**
@@ -142,7 +172,7 @@ class Assets {
 	public function admin_enqueue_scripts( string $hook ): void {
 		$asset = $this->get_asset_data( 'admin_style' );
 
-		wp_register_style(
+		wp_enqueue_style(
 			'gatherpress-admin-style',
 			$this->build . 'admin_style.css',
 			$asset['dependencies'],
@@ -244,6 +274,14 @@ class Assets {
 			true
 		);
 
+		wp_enqueue_style( 'gatherpress-utility-style' );
+
+		wp_add_inline_script(
+			'gatherpress-editor',
+			'GatherPress.misc.timezoneChoices = ' . wp_json_encode( Utility::timezone_choices() ),
+			'before'
+		);
+
 		wp_set_script_translations( 'gatherpress-editor', 'gatherpress' );
 	}
 
@@ -289,15 +327,14 @@ class Assets {
 
 		if ( ! empty( $event->event ) ) {
 			$event_details = array(
-				'currentUser'          => $event->rsvp->get( get_current_user_id() ),
-				'dateTime'             => $event->get_datetime(),
-				'enableAnonymousRsvp'  => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
-				'enableInitialDecline' => (bool) get_post_meta( $post_id, 'gatherpress_enable_initial_decline', true ),
-				'maxAttendanceLimit'   => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
-				'maxGuestLimit'        => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
-				'hasEventPast'         => $event->has_event_past(),
-				'postId'               => $post_id,
-				'responses'            => $event->rsvp->responses(),
+				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
+				'dateTime'            => $event->get_datetime(),
+				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
+				'maxAttendanceLimit'  => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
+				'maxGuestLimit'       => (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ),
+				'hasEventPast'        => $event->has_event_past(),
+				'postId'              => $post_id,
+				'responses'           => $event->rsvp->responses(),
 			);
 		}
 
@@ -307,66 +344,26 @@ class Assets {
 				'isAdmin'          => is_admin(),
 				'isUserLoggedIn'   => is_user_logged_in(),
 				'nonce'            => wp_create_nonce( 'wp_rest' ),
-				'timezoneChoices'  => Utility::timezone_choices(),
 				'unregisterBlocks' => $this->unregister_blocks(),
 			),
 			'settings'     => array(
-				'dateFormat'           => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'enableAnonymousRsvp'  => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
-				'enableInitialDecline' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_initial_decline' ) ),
-				'mapPlatform'          => $settings->get_value( 'general', 'general', 'map_platform' ),
-				'maxAttendanceLimit'   => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
-				'maxGuestLimit'        => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
-				'showTimezone'         => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
-				'timeFormat'           => $settings->get_value( 'general', 'formatting', 'time_format' ),
+				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
+				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'mapPlatform'         => $settings->get_value( 'general', 'general', 'map_platform' ),
+				'maxAttendanceLimit'  => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
+				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
+				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),
 			'urls'         => array(
 				'pluginUrl'       => GATHERPRESS_CORE_URL,
-				'eventRestApi'    => $event_rest_api,
-				'loginUrl'        => $this->get_login_url( $post_id ),
-				'registrationUrl' => $this->get_registration_url( $post_id ),
+				'eventApiPath'    => '/' . $event_rest_api_slug,
+				'eventApiUrl'     => home_url( 'wp-json/' . $event_rest_api_slug ),
+				'loginUrl'        => Utility::get_login_url( $post_id ),
+				'registrationUrl' => Utility::get_registration_url( $post_id ),
 				'homeUrl'         => get_home_url(),
 			),
 		);
-	}
-
-	/**
-	 * Retrieve the login URL for the event.
-	 *
-	 * This method generates and returns the URL for logging in or accessing event-specific content.
-	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
-	 * @return string The login URL for the event.
-	 */
-	public function get_login_url( int $post_id = 0 ): string {
-		$permalink = get_the_permalink( $post_id );
-
-		return wp_login_url( $permalink );
-	}
-
-	/**
-	 * Retrieve the registration URL for the event.
-	 *
-	 * This method generates and returns the URL for user registration or accessing event-specific registration.
-	 * It takes the optional `$post_id` parameter to customize the URL based on the event's Post ID.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $post_id Optional. The Post ID of the event. Defaults to 0.
-	 * @return string The registration URL for the event, or an empty string if user registration is disabled.
-	 */
-	public function get_registration_url( int $post_id = 0 ): string {
-		$permalink = get_the_permalink( $post_id );
-		$url       = '';
-
-		if ( get_option( 'users_can_register' ) ) {
-			$url = add_query_arg( 'redirect', $permalink, wp_registration_url() );
-		}
-
-		return $url;
 	}
 
 	/**
@@ -392,20 +389,12 @@ class Assets {
 				break;
 			case Venue::POST_TYPE:
 				$blocks = array(
-					'gatherpress/add-to-calendar',
-					'gatherpress/event-date',
 					'gatherpress/online-event',
-					'gatherpress/rsvp',
-					'gatherpress/rsvp-response',
 				);
 				break;
 			default:
 				$blocks = array(
-					'gatherpress/add-to-calendar',
-					'gatherpress/event-date',
 					'gatherpress/online-event',
-					'gatherpress/rsvp',
-					'gatherpress/rsvp-response',
 					'gatherpress/venue',
 				);
 		}

@@ -1,27 +1,34 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
-	"apiVersion": 2,
+	"apiVersion": 3,
 	"name": "gatherpress/rsvp",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"title": "RSVP",
 	"category": "gatherpress",
 	"icon": "insert",
 	"example": {},
 	"description": "Enables members to easily confirm their attendance for an event.",
+	"usesContext": [ "postId", "queryId" ],
 	"attributes": {
-		"content": {
-			"type": "string"
+		"serializedInnerBlocks": {
+			"type": "string",
+			"default": "[]"
 		},
-		"color": {
-			"type": "string"
+		"selectedStatus": {
+			"type": "string",
+			"default": "no_status"
 		}
 	},
 	"supports": {
-		"html": false
+		"gatherpress": {
+			"blockGuard": true,
+			"postIdOverride": true
+		},
+		"html": false,
+		"interactivity": true
 	},
 	"textdomain": "gatherpress",
 	"editorScript": "file:./index.js",
 	"style": "file:./style-index.css",
-	"viewScript": "file:./rsvp.js",
-	"render": "file:./render.php"
+	"viewScriptModule": "file:./view.js"
 }

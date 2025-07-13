@@ -59,8 +59,7 @@ class Block {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// Priority 9 needed to allow the Block_Variation(s) to register their assets on init:10, without worries.
-		add_action( 'init', array( $this, 'register_block_variations' ), 9 );
+		add_action( 'init', array( $this, 'register_block_classes' ) );
 		add_action( 'init', array( $this, 'register_block_patterns' ) );
 		// Priority 11 needed for block.json translations of title and description.
 		add_action( 'init', array( $this, 'register_blocks' ), 11 );
@@ -83,34 +82,30 @@ class Block {
 		$blocks           = array_diff( scandir( $blocks_directory ), array( '..', '.' ) );
 
 		foreach ( $blocks as $block ) {
-			register_block_type(
-				sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block )
-			);
+			$block_metadata_path = sprintf( '%1$s/build/blocks/%2$s', GATHERPRESS_CORE_PATH, $block );
+
+			if ( is_dir( $block_metadata_path ) ) {
+				register_block_type( $block_metadata_path );
+			}
 		}
 	}
 
 	/**
-	 * Require files & instantiate block-variation classes.
+	 * Instantiate block classes.
 	 *
 	 * @return void
 	 */
-	public function register_block_variations(): void {
-		foreach ( $this->get_block_variations() as $block ) {
-			// Prepare namespaced class-name
-			// in the following shape: "GatherPress\Core\Blocks\Block_Variation"  (example).
-			$name = join(
-				'\\',
-				array(
-					__NAMESPACE__,
-					'Blocks',
-					$this->get_classname_from_foldername( $block ),
-				)
-			);
-
-			if ( class_exists( $name ) ) {
-				$name::get_instance();
-			}
-		}
+	public function register_block_classes(): void {
+		Blocks\Add_To_Calendar::get_instance();
+		Blocks\Dropdown::get_instance();
+		Blocks\Dropdown_Item::get_instance();
+		Blocks\General_Block::get_instance();
+		Blocks\Modal::get_instance();
+		Blocks\Modal_Manager::get_instance();
+		Blocks\Rsvp::get_instance();
+		Blocks\Rsvp_Form::get_instance();
+		Blocks\Rsvp_Response::get_instance();
+		Blocks\Rsvp_Template::get_instance();
 	}
 
 	/**
@@ -135,7 +130,23 @@ class Block {
 				)
 			);
 		}
+
 		return array_filter( $this->block_variation_names );
+	}
+
+	/**
+	 * Generate the default CSS class for a block.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_name The block name in the format 'namespace/blockname'.
+	 * @return string The default CSS class for the block.
+	 */
+	public function get_default_block_class( string $block_name ): string {
+		return sprintf(
+			'wp-block-%s',
+			sanitize_key( str_replace( '/', '-', $block_name ) )
+		);
 	}
 
 	/**
@@ -275,7 +286,6 @@ class Block {
 	 * @return array|null                     The parsed block array for the given hooked block type, or null to suppress the block.
 	 */
 	public function modify_hooked_blocks_in_patterns( ?array $parsed_hooked_block, string $hooked_block_type, string $relative_position, array $parsed_anchor_block, $context ): ?array {
-
 		// Has the hooked block been suppressed by a previous filter?
 		if ( is_null( $parsed_hooked_block ) ) {
 			return $parsed_hooked_block;
@@ -304,5 +314,48 @@ class Block {
 		}
 
 		return $parsed_hooked_block;
+	}
+
+	/**
+	 * Recursively retrieves all block names from a given array of blocks.
+	 *
+	 * This method traverses a nested block structure and collects the block names,
+	 * including those of any inner blocks, into a flat array.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $blocks An array of block data, typically including `blockName` and `innerBlocks`.
+	 *
+	 * @return array An array of block names found within the provided block structure.
+	 */
+	public function get_block_names( array $blocks ): array {
+		$block_names = array();
+
+		if ( isset( $blocks['blockName'] ) ) {
+			$block_names[] = $blocks['blockName'];
+		}
+
+		if ( ! empty( $blocks['innerBlocks'] ) ) {
+			foreach ( $blocks['innerBlocks'] as $inner_block ) {
+				$block_names = array_merge( $block_names, $this->get_block_names( $inner_block ) );
+			}
+		}
+
+		return $block_names;
+	}
+
+	/**
+	 * Get the post ID from block attributes or fallback to the current post ID.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $block The block data.
+	 *
+	 * @return int The resolved post ID.
+	 */
+	public function get_post_id( array $block ): int {
+		$post_id = isset( $block['attrs']['postId'] ) ? intval( $block['attrs']['postId'] ) : 0;
+
+		return $post_id > 0 ? $post_id : get_the_ID();
 	}
 }

@@ -68,6 +68,7 @@ module.exports = [
 				'src/profile',
 				'style.scss'
 			),
+			utility_style: path.resolve(process.cwd(), 'src', 'utility.scss'),
 			...getVariationEntries(),
 		},
 		module: {

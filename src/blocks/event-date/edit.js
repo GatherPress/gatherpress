@@ -18,6 +18,7 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
 	PanelBody,
+	Spinner,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
@@ -30,7 +31,8 @@ import {
 	getUtcOffset,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
-import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
+import { getFromGlobal } from '../../helpers/globals';
+import { isEventPostType } from '../../helpers/event';
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -82,10 +84,10 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  *
  * @since 1.0.0
  *
- * @param {Object}   root0                      The props passed to the Edit component.
- * @param {Object}   root0.attributes           The block attributes.
- * @param {string}   root0.attributes.textAlign The text alignment for the block.
- * @param {Function} root0.setAttributes        Function to set block attributes.
+ * @param {Object}   root0               The props passed to the Edit component.
+ * @param {Object}   root0.attributes    The block attributes.
+ * @param {Object}   root0.context       Block context data containing postId and event info.
+ * @param {Function} root0.setAttributes Function to set block attributes.
  *
  * @return {JSX.Element} The rendered Edit component for the GatherPress Event Date block.
  *
@@ -94,21 +96,59 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  * @see {@link useBlockProps} - Custom hook for block props.
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
-const Edit = ({ attributes: { textAlign }, setAttributes }) => {
+const Edit = ({ attributes, setAttributes, context }) => {
+	const { textAlign } = attributes;
 	const blockProps = useBlockProps({
 		className: clsx({
 			[`has-text-align-${textAlign}`]: textAlign,
 		}),
 	});
+	const postId = attributes?.postId ?? context?.postId ?? null;
 
 	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
-		(select) => ({
-			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
-			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
-			timezone: select('gatherpress/datetime').getTimezone(),
-		}),
-		[]
+		(select) => {
+			if (!postId) {
+				return {
+					dateTimeStart: undefined,
+					dateTimeEnd: undefined,
+					timezone: undefined,
+				};
+			}
+
+			if (isEventPostType()) {
+				return {
+					dateTimeStart: select(
+						'gatherpress/datetime'
+					).getDateTimeStart(),
+					dateTimeEnd: select(
+						'gatherpress/datetime'
+					).getDateTimeEnd(),
+					timezone: select('gatherpress/datetime').getTimezone(),
+				};
+			}
+
+			const meta = select('core').getEntityRecord(
+				'postType',
+				'gatherpress_event',
+				postId
+			)?.meta;
+
+			return {
+				dateTimeStart: meta?.gatherpress_datetime_start,
+				dateTimeEnd: meta?.gatherpress_datetime_end,
+				timezone: meta?.gatherpress_timezone,
+			};
+		},
+		[postId]
 	);
+
+	if (postId && (!dateTimeStart || !dateTimeEnd || !timezone)) {
+		return (
+			<div {...blockProps}>
+				<Spinner />
+			</div>
+		);
+	}
 
 	return (
 		<div {...blockProps}>
@@ -121,7 +161,7 @@ const Edit = ({ attributes: { textAlign }, setAttributes }) => {
 				/>
 			</BlockControls>
 			{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
-			{isGatherPressPostType() && (
+			{isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
 						<VStack spacing={4}>

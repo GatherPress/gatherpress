@@ -40,6 +40,7 @@ yarn.lock
 
 # Dot Files and Directories
 .gatherpress-org
+.wordpress-org
 .git
 .github
 .wordpress-version-checker.json
@@ -50,6 +51,7 @@ Thumbs.db
 node_modules
 vendor
 src
+docs
 
 # Miscellaneous and SQL Archives
 behat.yml

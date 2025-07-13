@@ -61,7 +61,6 @@ class Settings {
 	protected function __construct() {
 		$this->instantiate_classes();
 		$this->set_current_page();
-		$this->set_main_sub_page();
 		$this->setup_hooks();
 	}
 
@@ -89,12 +88,13 @@ class Settings {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		add_action( 'init', array( $this, 'set_main_sub_page' ) );
 		add_action( 'admin_menu', array( $this, 'options_page' ) );
 		add_action( 'admin_head', array( $this, 'remove_sub_options' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'gatherpress_settings_section', array( $this, 'render_settings_form' ) );
 		add_action( 'gatherpress_text_after', array( $this, 'datetime_preview' ), 10, 2 );
-		add_action( 'gatherpress_text_after', array( $this, 'urlrewrite_preview' ), 10, 2 );
+		add_action( 'gatherpress_text_after', array( $this, 'url_rewrite_preview' ), 10, 2 );
 		add_action( 'update_option_gatherpress_general', array( $this, 'maybe_flush_rewrite_rules' ), 10, 2 );
 
 		add_filter( 'submenu_file', array( $this, 'select_menu' ) );
@@ -109,7 +109,7 @@ class Settings {
 	 *
 	 * @return void
 	 */
-	protected function set_main_sub_page(): void {
+	public function set_main_sub_page(): void {
 		$sub_pages           = $this->get_sub_pages();
 		$this->main_sub_page = array_key_first( $sub_pages ) ?? '';
 	}
@@ -228,15 +228,14 @@ class Settings {
 	public function register_settings(): void {
 		$sub_pages = $this->get_sub_pages();
 
-		register_setting(
-			'gatherpress',
-			'gatherpress_settings'
-		);
-
 		foreach ( $sub_pages as $sub_page => $sub_page_settings ) {
+			// phpcs:ignore PluginCheck.CodeAnalysis.SettingSanitization.register_settingDynamic
 			register_setting(
 				Utility::prefix_key( $sub_page ),
-				Utility::prefix_key( $sub_page )
+				Utility::prefix_key( $sub_page ),
+				array(
+					'sanitize_callback' => $this->sanitize_page_settings( $sub_page_settings ),
+				)
 			);
 
 			if ( isset( $sub_page_settings['sections'] ) ) {
@@ -275,6 +274,94 @@ class Settings {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Creates a sanitization callback function for page settings.
+	 *
+	 * Generates a closure that sanitizes input values based on their defined field types
+	 * in the sub-page settings. Handles various input types including checkboxes, numbers,
+	 * autocomplete fields, text fields, and select dropdowns.
+	 *
+	 * @param array $sub_page_settings The settings configuration for the sub-page,
+	 *                                 containing sections and field type definitions.
+	 * @return callable A callback function that sanitizes input based on field types.
+	 */
+	public function sanitize_page_settings( array $sub_page_settings ): callable {
+		return function ( $input ) use ( $sub_page_settings ): array {
+			foreach ( $input as $key => $value ) {
+				foreach ( $value as $k => $v ) {
+					$type = $sub_page_settings['sections'][ $key ]['options'][ $k ]['field']['type'];
+
+					switch ( $type ) {
+						case 'checkbox':
+							$input[ $key ][ $k ] = (bool) $v;
+							break;
+						case 'number':
+							$input[ $key ][ $k ] = intval( $v );
+							break;
+						case 'autocomplete':
+							$input[ $key ][ $k ] = $this->sanitize_autocomplete( $v );
+							break;
+						case 'text':
+						case 'select':
+						default:
+							$input[ $key ][ $k ] = sanitize_text_field( $v );
+							break;
+					}
+				}
+			}
+
+			return $input;
+		};
+	}
+
+	/**
+	 * Sanitizes JSON data from autocomplete fields.
+	 *
+	 * Takes a JSON string representation of autocomplete data and ensures all values
+	 * are properly sanitized. The function validates the JSON structure, sanitizes
+	 * each field with appropriate WordPress sanitization functions, and returns the
+	 * sanitized data as a JSON string.
+	 *
+	 * @param string $json_string The JSON string to sanitize.
+	 * @return string Sanitized JSON string or empty array '[]' if invalid.
+	 *
+	 * @since 1.0.0
+	 */
+	public function sanitize_autocomplete( string $json_string ): string {
+		// Decode.
+		$data = json_decode( $json_string, true );
+
+		// Check if valid JSON.
+		if ( ! is_array( $data ) ) {
+			return '[]';
+		}
+
+		// Sanitize each item.
+		$sanitized = array();
+
+		foreach ( $data as $item ) {
+			$clean_item = array();
+
+			// Sanitize each field appropriately.
+			if ( isset( $item['id'] ) ) {
+				$clean_item['id'] = absint( $item['id'] );
+			}
+
+			if ( isset( $item['slug'] ) ) {
+				$clean_item['slug'] = sanitize_key( $item['slug'] );
+			}
+
+			if ( isset( $item['value'] ) ) {
+				$clean_item['value'] = sanitize_text_field( $item['value'] );
+			}
+
+			$sanitized[] = $clean_item;
+		}
+
+		// Re-encode.
+		return wp_json_encode( $sanitized );
 	}
 
 	/**
@@ -461,8 +548,8 @@ class Settings {
 		$default  = $this->get_default_value( $sub_page, $section, $option );
 
 		return (
-			isset( $options[ $section ][ $option ] )
-			&& '' !== $options[ $section ][ $option ]
+			isset( $options[ $section ][ $option ] ) &&
+			'' !== $options[ $section ][ $option ]
 		) ? $options[ $section ][ $option ] : $default;
 	}
 
@@ -702,11 +789,11 @@ class Settings {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $name  The name of the urlrewrite format option.
-	 * @param string $value The value of the urlrewrite format option.
+	 * @param string $name  The name of the url rewrite format option.
+	 * @param string $value The value of the url rewrite format option.
 	 * @return void
 	 */
-	public function urlrewrite_preview( string $name, string $value ): void {
+	public function url_rewrite_preview( string $name, string $value ): void {
 		if (
 			'gatherpress_general[urls][events]' === $name ||
 			'gatherpress_general[urls][venues]' === $name ||
@@ -714,19 +801,18 @@ class Settings {
 		) {
 			switch ( $name ) {
 				case 'gatherpress_general[urls][events]':
-					$suffix = _x( 'sample-event', 'sample event post slug', 'gatherpress' );
+					$suffix = _x( 'sample-event', 'URL permalink structure example for events', 'gatherpress' );
 					break;
-
 				case 'gatherpress_general[urls][venues]':
-					$suffix = _x( 'sample-venue', 'sample venue post slug', 'gatherpress' );
+					$suffix = _x( 'sample-venue', 'URL permalink structure example for venues', 'gatherpress' );
 					break;
-
 				case 'gatherpress_general[urls][topics]':
-					$suffix = _x( 'sample-topic-term', 'sample topic term slug', 'gatherpress' );
+					$suffix = _x( 'sample-topic-term', 'URL permalink structure example for topics', 'gatherpress' );
 					break;
 			}
+
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/settings/partials/urlrewrite-preview.php', GATHERPRESS_CORE_PATH ),
+				sprintf( '%s/includes/templates/admin/settings/partials/url-rewrite-preview.php', GATHERPRESS_CORE_PATH ),
 				array(
 					'name'   => $name,
 					'value'  => $value,

@@ -79,8 +79,8 @@ class Topic {
 			Event::POST_TYPE,
 			array(
 				'labels'            => array(
-					'name'                       => _x( 'Topics', 'Taxonomy General Name', 'gatherpress' ),
-					'singular_name'              => _x( 'Topic', 'Taxonomy Singular Name', 'gatherpress' ),
+					'name'                       => _x( 'Topics', 'Admin menu and taxonomy general name', 'gatherpress' ),
+					'singular_name'              => _x( 'Topic', 'Admin menu and taxonomy singular name', 'gatherpress' ),
 					'search_items'               => __( 'Search Topics', 'gatherpress' ),
 					'popular_items'              => __( 'Popular Topics', 'gatherpress' ),
 					'all_items'                  => __( 'All Topics', 'gatherpress' ),
@@ -100,10 +100,9 @@ class Topic {
 					'items_list_navigation'      => __( 'Topics list navigation', 'gatherpress' ),
 					'items_list'                 => __( 'Topics list', 'gatherpress' ),
 					'back_to_items'              => __( 'Back to Topics', 'gatherpress' ),
-					'item_link'                  => _x( 'Topic Link', 'navigation link block title', 'gatherpress' ),
-					'item_link_description'      => _x( 'A link to a topic.', 'navigation link block description', 'gatherpress' ),
+					'item_link'                  => _x( 'Topic Link', 'Navigation link block title', 'gatherpress' ),
+					'item_link_description'      => _x( 'A link to a topic.', 'Navigation link block description', 'gatherpress' ),
 					'menu_name'                  => __( 'Topics', 'gatherpress' ),
-
 				),
 				'hierarchical'      => true,
 				'public'            => true,
@@ -134,11 +133,13 @@ class Topic {
 	 */
 	public static function get_localized_taxonomy_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'Topic', 'Taxonomy Singular Name', 'gatherpress' );
+		$slug            = _x( 'Topic', 'Admin menu and taxonomy singular name', 'gatherpress' );
 		$slug            = sanitize_title( $slug );
+
 		if ( $switched_locale ) {
 			restore_previous_locale();
 		}
+
 		return $slug;
 	}
 }

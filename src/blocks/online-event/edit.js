@@ -11,7 +11,7 @@ import { useSelect } from '@wordpress/data';
 import OnlineEvent from '../../components/OnlineEvent';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import EditCover from '../../components/EditCover';
-import { isGatherPressPostType } from '../../helpers/globals';
+import { isGatherPressPostType } from '../../helpers/editor';
 
 /**
  * Edit component for the GatherPress Online Event block.

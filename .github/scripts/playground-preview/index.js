@@ -15,10 +15,9 @@ function createBlueprintUrl(context, number) {
 	const { repo, owner } = context;
 	const workflow = encodeURI('Playground Preview');  // Encode the workflow name
 	const artifact = 'gatherpress-pr'; // GitHub Actions artifact name
-	// const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
-	const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php'; // RESTORED TO TEST // SHOULD BE REMOVED BEFORE #750 GETS MERGED //
+	const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
 
-	return `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
+	return `${proxy}?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
 }
 
 /**
@@ -121,7 +120,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 				step: 'importWxr',
 				file: {
 					resource: 'url',
-					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-2024.xml'
+					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml'
 				}
 			},
 			/**
@@ -131,9 +130,11 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 			 * Having it here at the end -kinda- fixes the problem.
 			 * @see https://github.com/GatherPress/gatherpress/issues/950
 			 */
+			/*
 			{
 				step: 'enableMultisite',
 			},
+			*/
 		],
 	};
 
@@ -186,7 +187,7 @@ async function createPreviewLinksComment(github, context) {
 		const versionLinks   = links.map(link => `- [${link.title}](${link.url})\n`).join('');
 		previewLinks        += `\n${versionHeading}\n${versionLinks}`;
 	}
-	
+
 	// The title of the comment and its content, including preview links for all PHP versions
 	const title       = '### Preview changes with Playground';
 	const commentBody = `

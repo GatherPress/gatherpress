@@ -24,6 +24,8 @@ import { getFromGlobal } from '../helpers/globals';
  * @param {string} root0.defaultStatus The current default status for the RSVP response, defaults to 'attending'.
  * @since 1.0.0
  *
+ * @deprecated Component will be removed soon.
+ *
  * @return {JSX.Element} The rendered RSVP response component.
  */
 const RsvpResponse = ({ defaultStatus = 'attending' }) => {
@@ -33,22 +35,46 @@ const RsvpResponse = ({ defaultStatus = 'attending' }) => {
 		{
 			title:
 				false === hasEventPast
-					? _x('Attending', 'Responded Status', 'gatherpress')
-					: _x('Went', 'Responded Status', 'gatherpress'),
+					? _x(
+							'Attending',
+							'RSVP status option for upcoming events',
+							'gatherpress'
+						)
+					: _x(
+							'Went',
+							'RSVP status option for past events',
+							'gatherpress'
+						),
 			value: 'attending',
 		},
 		{
 			title:
 				false === hasEventPast
-					? _x('Waiting List', 'Responded Status', 'gatherpress')
-					: _x('Wait Listed', 'Responded Status', 'gatherpress'),
+					? _x(
+							'Waiting List',
+							'RSVP status option for upcoming events',
+							'gatherpress'
+						)
+					: _x(
+							'Wait Listed',
+							'RSVP status option for past events',
+							'gatherpress'
+						),
 			value: 'waiting_list',
 		},
 		{
 			title:
 				false === hasEventPast
-					? _x('Not Attending', 'Responded Status', 'gatherpress')
-					: _x("Didn't Go", 'Responded Status', 'gatherpress'),
+					? _x(
+							'Not Attending',
+							'RSVP status option for upcoming events',
+							'gatherpress'
+						)
+					: _x(
+							"Didn't Go",
+							'RSVP status option for past events',
+							'gatherpress'
+						),
 			value: 'not_attending',
 		},
 	];

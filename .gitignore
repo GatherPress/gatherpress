@@ -25,6 +25,7 @@ nbproject
 
 # Node #
 ##########
+build
 node_modules
 npm-debug.log
 typings
@@ -47,10 +48,7 @@ coverage.xml
 artifacts/
 playwright-report/
 test-results/
-add-new-event.png
-event-page.png
-new-venue.png
-vanue-page.png
+storageState.json
 
 # Jest / SonarCloud #
 ##########

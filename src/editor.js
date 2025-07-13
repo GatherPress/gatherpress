@@ -3,14 +3,16 @@
  */
 import domReady from '@wordpress/dom-ready';
 import { dispatch, select, subscribe } from '@wordpress/data';
-import { hasEventPastNotice, triggerEventCommunication } from './helpers/event';
 import { getBlockType, unregisterBlockType } from '@wordpress/blocks';
-import './stores';
 
 /**
  * Internal dependencies.
  */
 import { getFromGlobal } from './helpers/globals';
+import { hasEventPastNotice, triggerEventCommunication } from './helpers/event';
+import './stores';
+import './supports/post-id-override';
+import './supports/block-guard';
 
 /**
  * Ensure Panels are Open for Events

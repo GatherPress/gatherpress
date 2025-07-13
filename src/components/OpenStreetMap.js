@@ -1,8 +1,13 @@
 /**
+ * External dependencies.
+ */
+import { v4 as uuidv4 } from 'uuid';
+
+/**
  * WordPress dependencies.
  */
 import { sprintf, __ } from '@wordpress/i18n';
-import { useEffect, useState } from '@wordpress/element';
+import { useEffect, useState, useRef } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -37,6 +42,9 @@ const OpenStreetMap = (props) => {
 		longitude,
 	} = props;
 	const [Leaflet, setLeaflet] = useState(null);
+	const mapId = `map-${uuidv4()}`;
+	const mapRef = useRef(null);
+	const mapInstanceRef = useRef(null);
 	const style = { height };
 
 	useEffect(() => {
@@ -44,9 +52,27 @@ const OpenStreetMap = (props) => {
 		const loadLeaflet = async () => {
 			const { default: L } = await import('leaflet');
 
+			// Import CSS files.
 			await import('leaflet/dist/leaflet.css');
+			// eslint-disable-next-line import/no-extraneous-dependencies
+			await import(
+				'leaflet-gesture-handling/dist/leaflet-gesture-handling.css'
+			);
+
+			// Import marker images.
 			await import('leaflet/dist/images/marker-icon-2x.png');
 			await import('leaflet/dist/images/marker-shadow.png');
+
+			// Import gesture handling
+			// eslint-disable-next-line import/no-extraneous-dependencies
+			await import('leaflet-gesture-handling');
+
+			// Add gesture handling to Leaflet
+			L.Map.addInitHook(
+				'addHandler',
+				'gestureHandling',
+				L.GestureHandling
+			);
 
 			setLeaflet(L);
 		};
@@ -55,11 +81,35 @@ const OpenStreetMap = (props) => {
 	}, []);
 
 	useEffect(() => {
-		if (!Leaflet || !latitude || !longitude) {
+		if (!Leaflet || !latitude || !longitude || !mapRef.current) {
 			return;
 		}
 
-		const map = Leaflet.map('map').setView([latitude, longitude], zoom);
+		// Clean up previous map instance if it exists
+		if (mapInstanceRef.current) {
+			mapInstanceRef.current.remove();
+			mapInstanceRef.current = null;
+		}
+
+		// Create new map instance
+		const map = Leaflet.map(mapRef.current, {
+			gestureHandling: true,
+			gestureHandlingOptions: {
+				duration: 1500,
+				text: {
+					touch: __('Use two fingers to move the map', 'gatherpress'),
+					scroll: __(
+						'Use ctrl + scroll to zoom the map',
+						'gatherpress'
+					),
+					scrollMac: __(
+						'Use ⌘ + scroll to zoom the map',
+						'gatherpress'
+					),
+				},
+			},
+		}).setView([latitude, longitude], zoom);
+		mapInstanceRef.current = map;
 
 		Leaflet.Icon.Default.imagePath =
 			getFromGlobal('urls.pluginUrl') + 'build/images/';
@@ -78,7 +128,10 @@ const OpenStreetMap = (props) => {
 		Leaflet.marker([latitude, longitude]).addTo(map).bindPopup(location);
 
 		return () => {
-			map.remove();
+			if (mapInstanceRef.current) {
+				mapInstanceRef.current.remove();
+				mapInstanceRef.current = null;
+			}
 		};
 	}, [Leaflet, latitude, location, longitude, zoom]);
 
@@ -86,7 +139,9 @@ const OpenStreetMap = (props) => {
 		return null;
 	}
 
-	return <div className={className} id="map" style={style}></div>;
+	return (
+		<div className={className} id={mapId} ref={mapRef} style={style}></div>
+	);
 };
 
 export default OpenStreetMap;
