@@ -13,22 +13,16 @@ import { __ } from '@wordpress/i18n';
 export const EventOrderControls = ({ attributes, setAttributes }) => {
 	const { query: { order, orderBy } = {} } = attributes;
 	const label =
-		order === 'asc'
+		orderBy === 'rand'
+			? __('Random Order', 'gatherpress')
+			: order === 'asc'
 			? __('Ascending Order', 'gatherpress')
 			: __('Descending Order', 'gatherpress');
 	return (
 		<>
 			<SelectControl
-				label={__('Order Events By', 'gatherpress')}
+				label={__('Order Events by', 'gatherpress')}
 				value={orderBy}
-				help={
-					orderBy === 'meta_value' || orderBy === 'meta_value_num'
-						? __(
-								'Meta Value and Meta Value Num require that Meta Key is set in the Meta Query section.',
-								'gatherpress'
-							)
-						: ''
-				}
 				options={[
 					// The 'gatherpress_event' post_type does not support 'author'.
 					// {
