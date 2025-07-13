@@ -171,6 +171,10 @@ class Event_Query {
 		// Retrieve the query from the passed block context.
 		$block_query = $block->context['query'];
 
+		if ( ! is_array( $block_query ) || ! isset( $block_query['gatherpress_events_query'] ) ) {
+			return $query;
+		}
+
 		// Generate a new custom query with all potential query vars.
 		$query_args = array();
 
