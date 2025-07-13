@@ -243,7 +243,7 @@ class Event_Query {
 			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 		}
 
-				$include_unfinished = $request->get_param( 'include_unfinished' );
+		$include_unfinished = $request->get_param( 'include_unfinished' );
 		if ( $include_unfinished ) {
 			$custom_args['include_unfinished'] = $include_unfinished;
 		}
