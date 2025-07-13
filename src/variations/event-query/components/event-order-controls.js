@@ -47,23 +47,10 @@ export const EventOrderControls = ({ attributes, setAttributes }) => {
 						label: __('Title', 'gatherpress'),
 						value: 'title',
 					},
-					// {
-					// 	label: __( 'Meta Value', 'gatherpress' ),
-					// 	value: 'meta_value',
-					// },
-					// {
-					// 	label: __( 'Meta Value Num', 'gatherpress' ),
-					// 	value: 'meta_value_num',
-					// },
 					{
 						label: __('Random', 'gatherpress'),
 						value: 'rand',
 					},
-					// The 'gatherpress_event' post_type does not support 'page_attributes'.
-					// {
-					// 	label: __( 'Menu Order', 'gatherpress' ),
-					// 	value: 'menu_order',
-					// },
 					{
 						label: __('Post ID', 'gatherpress'),
 						value: 'id',
