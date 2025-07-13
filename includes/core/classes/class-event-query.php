@@ -296,15 +296,13 @@ class Event_Query {
 	 * @since 1.0.0
 	 *
 	 * @param array    $query_pieces An array containing pieces of the SQL query.
-	 * @param WP_Query $query        The WP_Query instance (passed by reference).
+	 * @param WP_Query $wp_query     The WP_Query instance (passed by reference).
 	 * @return array The modified SQL query pieces with adjusted sorting criteria.
 	 */
-	public function adjust_admin_event_sorting( array $query_pieces, WP_Query $query ): array {
+	public function adjust_admin_event_sorting( array $query_pieces, WP_Query $wp_query ): array {
 		if ( ! is_admin() ) {
 			return $query_pieces;
 		}
-
-		global $wp_query;
 
 		// Sanity check, it's been reported that some admin screens may not have $wp_query set.
 		if ( ! $wp_query || ! method_exists( $wp_query, 'get' ) ) {

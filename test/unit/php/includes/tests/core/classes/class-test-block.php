@@ -123,7 +123,7 @@ class Test_Block extends Base {
 
 		$this->assertSame(
 			array(
-				'event-query'
+				'event-query',
 			),
 			$instance->get_block_variations(),
 			'Failed to assert, to get all block variations from the "/src" directory.'
