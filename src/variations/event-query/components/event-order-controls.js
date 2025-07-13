@@ -81,6 +81,7 @@ export const EventOrderControls = ({ attributes, setAttributes }) => {
 			<ToggleControl
 				label={label}
 				checked={order === 'asc'}
+				disabled={orderBy === 'rand'}
 				onChange={() => {
 					setAttributes({
 						query: {
