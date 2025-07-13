@@ -50,7 +50,9 @@ const VARIATION_ATTRIBUTES = {
 	attributes: {
 		...QUERY_ATTRIBUTES,
 	},
-	allowedControls: ['inherit', 'taxQuery'],
+	// Disabling irrelevant or unsupported query controls
+	// @see https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/extending-the-query-loop-block/#disabling-irrelevant-or-unsupported-query-controls
+	allowedControls: ['inherit', 'taxQuery', 'author', 'search'],
 	scope: ['block'],
 };
 
