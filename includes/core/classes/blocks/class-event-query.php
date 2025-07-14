@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
+use WP_Query;
 
 /**
  * Class responsible for managing the "Event Query" block,
@@ -129,7 +130,7 @@ class Event_Query {
 					true,
 				);
 				// "Hijack the global query. It's a hack, but it works." Ryan Welcher
-				$wp_query = new \WP_Query( $filtered_query_args ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+				$wp_query = new WP_Query( $filtered_query_args ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 			} else {
 				add_filter(
 					'query_loop_block_query_vars',
