@@ -112,7 +112,7 @@ class Rsvp_Setup {
 		if (
 			! isset( $_SERVER['REQUEST_METHOD'] ) ||
 			'POST' !== $_SERVER['REQUEST_METHOD'] ||
-			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, RSVP::COMMENT_TYPE ) ) )
+			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, Rsvp::COMMENT_TYPE ) ) )
 		) {
 			return;
 		}
@@ -129,7 +129,7 @@ class Rsvp_Setup {
 				$user   = get_user_by( 'ID', get_current_user_id() );
 
 				$comment_data['comment_content'] = '';
-				$comment_data['comment_type']    = RSVP::COMMENT_TYPE;
+				$comment_data['comment_type']    = Rsvp::COMMENT_TYPE;
 				$comment_data['comment_parent']  = 0;
 
 				if (
