@@ -6,7 +6,7 @@ GatherPress includes a block-variation of the `core/query` block, called _Event 
 ![Screenshot of the Event Query block inside the WordPress post editor.](https://github.com/user-attachments/assets/6496e4eb-308d-4e8d-823e-83f06dce2fb2)
 
 
-1. Allows endless customisation in terms of layout & style, incl. the use of interactive blocks.
+1. Allows endless customization in terms of layout & style, incl. the use of interactive blocks.
 2. Allows editors to select from explicit compositions of block-patterns directly via the blocks **Choose (layout)** button and the **Replace** button in the top toolbar.
 3. Allows editors to choose starter-content via the blocks **Start blank** button and the underlying [Block Variation Picker](https://github.com/WordPress/gutenberg/tree/trunk/packages/block-editor/src/components/block-variation-picker).
 4. Allows to query either **past or upcoming events**.
