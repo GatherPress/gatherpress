@@ -120,9 +120,7 @@ const withGatherPressQueryControls = (BlockEdit) => (props) => {
 		<>
 			<BlockEdit {...props} />
 			<InspectorControls>
-				<PanelBody
-					title={__('Event Query Settings', 'gatherpress')}
-				>
+				<PanelBody title={__('Event Query Settings', 'gatherpress')}>
 					<EventOrderControls {...props} />
 					<GPQLControlsInheritedQuery.Slot fillProps={{ ...props }} />
 				</PanelBody>

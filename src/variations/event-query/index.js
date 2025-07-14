@@ -20,7 +20,6 @@ import {
 	QUERY_PAGINATION_BLOCK,
 } from './templates';
 
-
 const NAME = 'gatherpress-event-query';
 
 const QUERY_ATTRIBUTES = {

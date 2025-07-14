@@ -12,12 +12,14 @@ import { __ } from '@wordpress/i18n';
  */
 export const EventOrderControls = ({ attributes, setAttributes }) => {
 	const { query: { order, orderBy } = {} } = attributes;
-	const label =
-		orderBy === 'rand'
-			? __('Random Order', 'gatherpress')
-			: order === 'asc'
-			? __('Ascending Order', 'gatherpress')
-			: __('Descending Order', 'gatherpress');
+	let label;
+	if (orderBy === 'rand') {
+		label = __('Random Order', 'gatherpress');
+	} else if (order === 'asc') {
+		label = __('Ascending Order', 'gatherpress');
+	} else {
+		label = __('Descending Order', 'gatherpress');
+	}
 	return (
 		<>
 			<SelectControl
