@@ -89,7 +89,7 @@ class Rsvp_Token {
 		}
 
 		$token = (string) get_comment_meta(
-			$this->comment->comment_ID,
+			(int) $this->comment->comment_ID,
 			sprintf( '_%s', static::NAME ),
 			true
 		);
@@ -114,7 +114,7 @@ class Rsvp_Token {
 			return;
 		}
 
-		wp_set_comment_status( $this->comment->comment_ID, 'approve' );
+		wp_set_comment_status( (int) $this->comment->comment_ID, 'approve' );
 	}
 
 	/**
@@ -134,7 +134,7 @@ class Rsvp_Token {
 		$this->token = wp_generate_password( 32, false );
 
 		update_comment_meta(
-			$this->comment->comment_ID,
+			(int) $this->comment->comment_ID,
 			sprintf( '_%s', static::NAME ),
 			$this->token
 		);
