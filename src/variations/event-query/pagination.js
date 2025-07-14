@@ -3,12 +3,6 @@
  */
 import { registerBlockVariation } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
-// import { queryPaginationNext, queryPaginationPrevious } from '@wordpress/icons';
-
-/**
- * Internal dependencies
- */
-// import GPQLIcon from '../components/icon';
 
 /**
  * Update UI for pagination blocks to speak 'events', not 'posts'.
@@ -16,7 +10,6 @@ import { __ } from '@wordpress/i18n';
 registerBlockVariation('core/query-pagination-previous', {
 	category: 'gatherpress',
 	keywords: [__('Page numbers'), __('Pagination')],
-	// icon: GPQLIcon( queryPaginationPrevious ),
 	isActive: ['className'],
 	attributes: {
 		className: 'gatherpress-query-pagination-previous',
@@ -30,7 +23,6 @@ registerBlockVariation('core/query-pagination-previous', {
 registerBlockVariation('core/query-pagination-next', {
 	category: 'gatherpress',
 	keywords: [__('Page numbers'), __('Pagination')],
-	// icon: GPQLIcon( queryPaginationNext ),
 	isActive: ['className'],
 	attributes: {
 		className: 'gatherpress-query-pagination-next',

@@ -3,7 +3,6 @@
  */
 import { registerBlockVariation } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
-// import { list-view } from '@wordpress/icons';
 
 /**
  * Internal dependencies
@@ -21,7 +20,6 @@ import {
 	QUERY_PAGINATION_BLOCK,
 } from './templates';
 
-// import GPQLIcon from '../components/icon';
 
 const NAME = 'gatherpress-event-query';
 
@@ -43,9 +41,6 @@ const QUERY_ATTRIBUTES = {
 const VARIATION_ATTRIBUTES = {
 	category: 'gatherpress',
 	keywords: [__('Events', 'gatherpress'), __('Dates', 'gatherpress')],
-	// icon: list-view,
-	// isActive: ['namespace', 'scope'],
-	// isActive: ['query.postType'], // Idea based on @patriciabt|s feedback in slack.
 	isActive: ['namespace', 'query.postType'],
 	attributes: {
 		...QUERY_ATTRIBUTES,
