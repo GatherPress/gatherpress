@@ -147,6 +147,13 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => static function () {
+					// Force WordPress to authenticate the user.
+					$user_id = apply_filters( 'determine_current_user', false );
+
+					if ( $user_id ) {
+						wp_set_current_user( $user_id );
+					}
+
 					$response = array(
 						'nonce' => wp_create_nonce( 'wp_rest' ),
 					);
