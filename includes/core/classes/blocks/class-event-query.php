@@ -97,7 +97,6 @@ class Event_Query {
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
 		if ( isset( $parsed_block['attrs']['namespace'] ) && 'gatherpress-event-query' === $parsed_block['attrs']['namespace'] ) {
-
 			if ( isset( $parsed_block['attrs']['query']['inherit'] ) && true === $parsed_block['attrs']['query']['inherit'] ) {
 				global $wp_query;
 				$query_args = array_merge(
