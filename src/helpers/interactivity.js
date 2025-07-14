@@ -60,11 +60,37 @@ export function initPostContext(state, postId) {
 	}
 }
 
+/**
+ * Retrieves a WordPress REST API nonce, with caching to avoid duplicate requests.
+ *
+ * This function fetches a fresh nonce from the WordPress REST API endpoint and caches
+ * it for subsequent requests. It prevents multiple simultaneous requests and handles
+ * request failures gracefully. The nonce is required for authenticated AJAX requests
+ * to WordPress REST API endpoints.
+ *
+ * @since 1.0.0
+ *
+ * @return {Promise<string|null>} A promise that resolves to the nonce string on success,
+ *                                or null if the request fails.
+ *
+ * @example
+ * const nonce = await getNonce();
+ * if (nonce) {
+ *     // Use the nonce in API requests
+ *     fetch('/wp-json/api/endpoint', {
+ *         headers: { 'X-WP-Nonce': nonce }
+ *     });
+ * }
+ *
+ * // Clear cached nonce if it expires
+ * getNonce.clearCache();
+ * const freshNonce = await getNonce();
+ */
 const getNonce = (() => {
 	let cachedNonce = null;
 	let noncePromise = null;
 
-	return async function () {
+	const fetchNonce = async function () {
 		if (cachedNonce) {
 			return cachedNonce;
 		}
@@ -81,7 +107,6 @@ const getNonce = (() => {
 			.then((data) => {
 				cachedNonce = data.nonce;
 				noncePromise = null;
-
 				return data.nonce;
 			})
 			.catch(() => {
@@ -91,6 +116,14 @@ const getNonce = (() => {
 
 		return noncePromise;
 	};
+
+	// Expose clear function.
+	fetchNonce.clearCache = () => {
+		cachedNonce = null;
+		noncePromise = null;
+	};
+
+	return fetchNonce;
 })();
 
 /**
@@ -99,7 +132,8 @@ const getNonce = (() => {
  * This function sends a POST request to the RSVP API endpoint with the provided
  * RSVP details. If the API call is successful, it updates the provided state
  * object and executes an optional success callback. The function prevents requests
- * with invalid statuses (`no_status`, `waiting_list`).
+ * with invalid statuses (`no_status`, `waiting_list`). If the nonce expires during
+ * the request, it automatically retries once with a fresh nonce.
  *
  * @since 1.0.0
  *
@@ -108,14 +142,15 @@ const getNonce = (() => {
  * @param {string}   args.status            - The RSVP status (`attending`, `not_attending`, etc.).
  * @param {number}   [args.guests=0]        - The number of additional guests.
  * @param {boolean}  [args.anonymous=false] - Whether the RSVP is anonymous.
+ * @param {string}   [args.rsvpToken]       - Optional RSVP token for anonymous users.
  * @param {Object}   [state=null]           - A state object to update with the API response data.
  * @param {Function} [onSuccess=null]       - A callback function to execute on a successful API response.
  *                                          Receives the API response as its argument.
  *
- * @return {void}
+ * @return {Promise<void>} A promise that resolves when the request completes.
  *
  * @example
- * sendRsvpApiRequest(
+ * await sendRsvpApiRequest(
  *     123,
  *     { status: 'attending', guests: 2, anonymous: false },
  *     appState,
@@ -134,51 +169,65 @@ export async function sendRsvpApiRequest(
 		return;
 	}
 
-	const nonce = await getNonce();
+	const makeRequest = async (isRetry = false) => {
+		const nonce = await getNonce();
+		if (!nonce) {
+			return;
+		}
 
-	if (!nonce) {
-		return;
-	}
-
-	fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-WP-Nonce': nonce,
-		},
-		body: JSON.stringify({
-			post_id: postId,
-			status: args.status,
-			guests: args.guests,
-			anonymous: args.anonymous,
-			rsvp_token: args.rsvpToken,
-		}),
-	})
-		.then((response) => response.json()) // Parse the JSON response.
-		.then((res) => {
-			if (res.success) {
-				if (state) {
-					state.posts[postId] = {
-						...state.posts[postId],
-						eventResponses: {
-							attending: res.responses.attending.count,
-							waitingList: res.responses.waiting_list.count,
-							notAttending: res.responses.not_attending.count,
-						},
-						currentUser: {
-							status: res.status,
-							guests: res.guests,
-							anonymous: res.anonymous,
-						},
-					};
-				}
-
-				if ('function' === typeof onSuccess) {
-					onSuccess(res);
-				}
+		const response = await fetch(
+			getFromGlobal('urls.eventApiUrl') + '/rsvp',
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': nonce,
+				},
+				body: JSON.stringify({
+					post_id: postId,
+					status: args.status,
+					guests: args.guests,
+					anonymous: args.anonymous,
+					rsvp_token: args.rsvpToken,
+				}),
 			}
-		})
-		.catch(() => {});
+		);
+
+		// Check if nonce failed (403 Forbidden).
+		if (403 === response.status && !isRetry) {
+			// Clear cached nonce and retry once.
+			getNonce.clearCache();
+			return makeRequest(true);
+		}
+
+		return response.json();
+	};
+
+	try {
+		const res = await makeRequest();
+
+		if (res.success) {
+			if (state) {
+				state.posts[postId] = {
+					...state.posts[postId],
+					eventResponses: {
+						attending: res.responses.attending.count,
+						waitingList: res.responses.waiting_list.count,
+						notAttending: res.responses.not_attending.count,
+					},
+					currentUser: {
+						status: res.status,
+						guests: res.guests,
+						anonymous: res.anonymous,
+					},
+				};
+			}
+
+			if ('function' === typeof onSuccess) {
+				onSuccess(res);
+			}
+		}
+	} catch (error) {}
 }
 
 /**
