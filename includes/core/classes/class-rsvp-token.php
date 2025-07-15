@@ -180,4 +180,18 @@ class Rsvp_Token {
 	public function is_valid( string $token ): bool {
 		return ! empty( $token ) && $this->get_token() === $token;
 	}
+
+	/**
+	 * Send RSVP confirmation email with magic link.
+	 *
+	 * Sends an email containing a magic link that allows the user to confirm
+	 * their RSVP and change their response if needed.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function send_rsvp_confirmation_email(): void {
+		// @todo add email logic.
+	}
 }

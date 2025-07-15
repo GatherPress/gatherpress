@@ -141,6 +141,16 @@ class Event_Rest_Api {
 		);
 	}
 
+	/**
+	 * Define REST API route for generating nonce.
+	 *
+	 * Creates a publicly accessible endpoint that generates a fresh nonce
+	 * for authenticated REST API requests.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Route configuration array.
+	 */
 	protected function nonce_route(): array {
 		return array(
 			'route' => 'nonce',
@@ -148,6 +158,7 @@ class Event_Rest_Api {
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => static function () {
 					// Force WordPress to authenticate the user.
+					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 					$user_id = apply_filters( 'determine_current_user', false );
 
 					if ( $user_id ) {

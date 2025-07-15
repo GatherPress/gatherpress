@@ -156,10 +156,8 @@ class Rsvp_Setup {
 
 					$rsvp_token = new Rsvp_Token( $comment_id );
 
-					$rsvp_token->generate_token();
-
-					// Send confirmation email with token link.
-					// $this->send_rsvp_confirmation_email( $comment_ID, $token );
+					// Generate token and send confirmation email with token link.
+					$rsvp_token->generate_token()->send_rsvp_confirmation_email();
 				}
 			}
 		);
@@ -172,6 +170,13 @@ class Rsvp_Setup {
 		);
 	}
 
+	/**
+	 * Get and parse RSVP token from URL parameter.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Parsed token data containing user ID and event ID.
+	 */
 	public function get_token_from_url(): array {
 		$token_param = sanitize_text_field(
 			wp_unslash(
@@ -182,6 +187,14 @@ class Rsvp_Setup {
 		return $this->parse_rsvp_token( $token_param );
 	}
 
+	/**
+	 * Parse RSVP token string into component parts.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $unparsed_token Raw token string in format "comment_id_token".
+	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
+	 */
 	public function parse_rsvp_token( $unparsed_token ): array {
 		if ( empty( $unparsed_token ) ) {
 			return array();
@@ -207,11 +220,18 @@ class Rsvp_Setup {
 	}
 
 	/**
-	 * returns string|int
+	 * Get user identifier for RSVP operations.
+	 *
+	 * Returns the current user ID if logged in, or email address from
+	 * a valid RSVP token if accessing via magic link.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string|int User ID if logged in, email address if via token, or 0 if neither.
 	 */
 	public function get_user_identifier() {
 		$user_identifier = get_current_user_id();
-		$token_data      = self::get_instance()->get_token_from_url();
+		$token_data      = $this->get_token_from_url();
 
 		if ( ! empty( $token_data ) ) {
 			$rsvp_token = new Rsvp_Token( $token_data['comment_id'] );
@@ -227,6 +247,16 @@ class Rsvp_Setup {
 		return $user_identifier;
 	}
 
+	/**
+	 * Handle RSVP token from URL and approve associated comment.
+	 *
+	 * Validates the RSVP token from the URL parameter and automatically
+	 * approves the corresponding comment if the token is valid.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
 	public function handle_rsvp_token(): void {
 		$token_data = $this->get_token_from_url();
 
