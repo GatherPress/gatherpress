@@ -77,7 +77,6 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 				post_id: postId,
 				status,
 				user_id: userId,
-				_wpnonce: getFromGlobal('misc.nonce'),
 			},
 		}).then((res) => {
 			setRsvpResponse(res.responses);
@@ -106,8 +105,8 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 		} else {
 			// Removing attendees.
 			attendees.forEach((attendee) => {
-				if (false === tokens.some((item) => item.id === attendee.id)) {
-					updateRsvpStatus(attendee.id, 'no_status');
+				if (false === tokens.some((item) => item.id === attendee.userId)) {
+					updateRsvpStatus(attendee.userId, 'no_status');
 				}
 			});
 		}
@@ -152,7 +151,7 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 				value={
 					attendees &&
 					attendees.map((item) => ({
-						id: item.id,
+						id: item.userId,
 						value: item.name,
 					}))
 				}

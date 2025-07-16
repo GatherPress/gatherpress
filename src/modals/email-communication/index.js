@@ -58,7 +58,6 @@ const EventCommunicationModal = () => {
 						waiting_list: isWaitingListChecked,
 						not_attending: isNotAttendingChecked,
 					},
-					_wpnonce: getFromGlobal('misc.nonce'),
 				},
 			}).then((res) => {
 				if (res.success) {
@@ -198,7 +197,7 @@ const EventCommunicationModal = () => {
 };
 
 domReady(() => {
-	const modalWrapper = document.getElementById(
+	const modalWrapper = global.document.getElementById(
 		'gatherpress-event-communication-modal'
 	);
 	if (modalWrapper) {
