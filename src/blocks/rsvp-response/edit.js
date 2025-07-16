@@ -26,6 +26,7 @@ import { useState, useEffect } from '@wordpress/element';
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
 import { getFromGlobal } from '../../helpers/globals';
+import { isEventPostType } from '../../helpers/event';
 import { getEditorDocument } from '../../helpers/editor';
 
 /**
@@ -206,19 +207,21 @@ const Edit = ({ attributes, setAttributes, context }) => {
 						)}
 					</PanelBody>
 				</InspectorControls>
-				<BlockControls>
-					<ToolbarGroup>
-						<ToolbarButton
-							label={__('Edit', 'gatherpress')}
-							text={
-								editMode
-									? __('Preview', 'gatherpress')
-									: __('Edit', 'gatherpress')
-							}
-							onClick={onEditClick}
-						/>
-					</ToolbarGroup>
-				</BlockControls>
+				{isEventPostType() && (
+					<BlockControls>
+						<ToolbarGroup>
+							<ToolbarButton
+								label={__('Edit', 'gatherpress')}
+								text={
+									editMode
+										? __('Preview', 'gatherpress')
+										: __('Edit', 'gatherpress')
+								}
+								onClick={onEditClick}
+							/>
+						</ToolbarGroup>
+					</BlockControls>
+				)}
 				{editMode && (
 					<RsvpManager
 						defaultStatus={defaultStatus}
