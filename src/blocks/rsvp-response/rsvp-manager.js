@@ -105,7 +105,9 @@ const RsvpManager = ({ defaultStatus, setDefaultStatus }) => {
 		} else {
 			// Removing attendees.
 			attendees.forEach((attendee) => {
-				if (false === tokens.some((item) => item.id === attendee.userId)) {
+				if (
+					false === tokens.some((item) => item.id === attendee.userId)
+				) {
 					updateRsvpStatus(attendee.userId, 'no_status');
 				}
 			});
