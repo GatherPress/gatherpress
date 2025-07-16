@@ -26,6 +26,7 @@ import { useState, useEffect } from '@wordpress/element';
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
 import { getFromGlobal } from '../../helpers/globals';
+import { getEditorDocument } from '../../helpers/editor';
 
 /**
  * Fetch RSVP responses from the API.
@@ -67,28 +68,46 @@ const Edit = ({ attributes, setAttributes, context }) => {
 	const { rsvpLimitEnabled, rsvpLimit } = attributes;
 
 	useEffect(() => {
-		const emptyBlocks = global.document.querySelectorAll(
-			'.gatherpress--empty-rsvp'
-		);
-		const responseBlocks = global.document.querySelectorAll(
-			'.gatherpress--rsvp-responses'
-		);
+		const editorDoc = getEditorDocument();
 
-		emptyBlocks.forEach((block) => {
-			block.style.setProperty(
-				'display',
-				showEmptyRsvpBlock ? 'block' : 'none',
-				'important'
+		const updateBlockVisibility = () => {
+			const emptyBlocks = editorDoc.querySelectorAll(
+				'.gatherpress--empty-rsvp'
 			);
+			const responseBlocks = editorDoc.querySelectorAll(
+				'.gatherpress--rsvp-responses'
+			);
+
+			emptyBlocks.forEach((block) => {
+				block.style.setProperty(
+					'display',
+					showEmptyRsvpBlock ? 'block' : 'none',
+					'important'
+				);
+			});
+			responseBlocks.forEach((block) => {
+				if (!showEmptyRsvpBlock) {
+					block.style.removeProperty('display');
+				} else {
+					block.style.setProperty('display', 'none', 'important');
+				}
+			});
+		};
+
+		// Watch for DOM changes.
+		const observer = new MutationObserver(updateBlockVisibility);
+
+		observer.observe(editorDoc.body, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: ['class'],
 		});
 
-		responseBlocks.forEach((block) => {
-			if (!showEmptyRsvpBlock) {
-				block.style.removeProperty('display');
-			} else {
-				block.style.setProperty('display', 'none', 'important');
-			}
-		});
+		// Initial call.
+		updateBlockVisibility();
+
+		return () => observer.disconnect();
 	}, [showEmptyRsvpBlock, responses]);
 
 	// Fetch responses when postId changes.

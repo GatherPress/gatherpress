@@ -11,25 +11,9 @@ import { addFilter } from '@wordpress/hooks';
 import { useState, useEffect } from '@wordpress/element';
 
 /**
- * Get the appropriate document context for the block editor.
- *
- * In FSE (Full Site Editing) contexts, blocks are rendered within an iframe
- * with the name "editor-canvas". This function detects that iframe and returns
- * its document, otherwise falls back to the main document for regular editors.
- *
- * @return {Document} The document object containing the block editor content.
+ * Internal dependencies.
  */
-function getEditorDocument() {
-	const iframe = global.document.querySelector(
-		'iframe[name="editor-canvas"]'
-	);
-
-	if (iframe?.contentDocument) {
-		return iframe.contentDocument;
-	}
-
-	return global.document;
-}
+import { getEditorDocument } from '../helpers/editor';
 
 /**
  * Higher-Order Component to add BlockGuard functionality to supported GatherPress blocks.
