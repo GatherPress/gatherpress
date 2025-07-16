@@ -598,7 +598,7 @@ class Event_Rest_Api {
 		$status          = sanitize_key( $params['status'] );
 		$guests          = intval( $params['guests'] ?? 0 );
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
-		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] );
+		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
 		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.

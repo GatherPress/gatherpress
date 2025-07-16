@@ -20,7 +20,6 @@ const { state } = store('gatherpress', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
 				body: JSON.stringify({
 					status:

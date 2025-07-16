@@ -86,7 +86,7 @@ export function initPostContext(state, postId) {
  * getNonce.clearCache();
  * const freshNonce = await getNonce();
  */
-const getNonce = (() => {
+export const getNonce = (() => {
 	let cachedNonce = null;
 	let noncePromise = null;
 
