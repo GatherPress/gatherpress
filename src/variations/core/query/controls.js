@@ -20,7 +20,7 @@ import { EventOffsetControls } from './components/event-offset-controls';
 import { EventOrderControls } from './components/event-order-controls';
 import { EventIncludeUnfinishedControls } from './components/event-include-unfinished-controls';
 
-import { isEventPostType } from '../../helpers/event';
+import { isEventPostType } from '../../../helpers/event';
 
 /**
  * Determines if the active variation is this one

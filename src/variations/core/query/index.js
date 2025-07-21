@@ -7,18 +7,13 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies
  */
-// Load block-variations for pagination-blocks.
-import './pagination'; // @TODO: add as separate variations !
 import './controls';
 
 import GPQLControls from './slots/gpql-controls';
 import GPQLControlsInheritedQuery from './slots/gpql-controls-inherited-query';
 
-import {
-	// GPV_BLOCK,
-	NO_RESULTS_BLOCK,
-	QUERY_PAGINATION_BLOCK,
-} from './templates';
+import { QUERY_NO_RESULTS_VARIATION } from '../query-no-results';
+import { QUERY_PAGINATION_VARIATION } from '../query-pagination';
 
 const NAME = 'gatherpress-event-query';
 
@@ -112,7 +107,7 @@ registerBlockVariation('core/query', {
 						name: 'core/post-title',
 					},
 					// {
-					// 	...GPV_BLOCK,
+					// 	...GPV_VARIATION,
 					// }
 				],
 			},
@@ -144,8 +139,8 @@ registerBlockVariation('core/query', {
 				// ['gatherpress/event-date']
 			],
 		],
-		QUERY_PAGINATION_BLOCK,
-		NO_RESULTS_BLOCK,
+		QUERY_PAGINATION_VARIATION,
+		QUERY_NO_RESULTS_VARIATION,
 	],
 });
 
@@ -176,12 +171,12 @@ registerBlockVariation('core/query', {
 					name: 'core/post-title',
 				},
 				// {
-				// 	...GPV_BLOCK,
+				// 	...GPV_VARIATION,
 				// },
 			],
 		],
-		QUERY_PAGINATION_BLOCK,
-		NO_RESULTS_BLOCK,
+		QUERY_PAGINATION_VARIATION,
+		QUERY_NO_RESULTS_VARIATION,
 	],
 });
 
@@ -209,12 +204,12 @@ registerBlockVariation('core/query', {
 				// 	name: 'gatherpress/event-date',
 				// },
 				// {
-				// 	...GPV_BLOCK,
+				// 	...GPV_VARIATION,
 				// },
 			],
 		],
-		QUERY_PAGINATION_BLOCK,
-		NO_RESULTS_BLOCK,
+		QUERY_PAGINATION_VARIATION,
+		QUERY_NO_RESULTS_VARIATION,
 	],
 });
 
