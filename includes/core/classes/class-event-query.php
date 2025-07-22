@@ -305,8 +305,18 @@ class Event_Query {
 			return $query_pieces;
 		}
 
-		// Sanity check, it's been reported that some admin screens may not have $wp_query set.
-		if ( ! $wp_query || ! method_exists( $wp_query, 'get' ) ) {
+		/**
+		 * Run only for Event post listings.
+		 *
+		 * First checks whether the get_current_screen function exists,
+		 * because it is loaded only after the 'admin_init' hook.
+		 * 
+		 * @see https://developer.wordpress.org/reference/functions/get_current_screen/#comment-5424
+		 *
+		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
+		 * @see https://wordpress.org/support/topic/gatherpress-has-critical-error-when-i-access-wpforms-payment-settings/
+		 */
+		if ( ! function_exists( 'get_current_screen' ) || 'edit-gatherpress_event' !== get_current_screen()->id ) {
 			return $query_pieces;
 		}
 
