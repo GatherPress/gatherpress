@@ -310,7 +310,7 @@ class Event_Query {
 		 *
 		 * First checks whether the get_current_screen function exists,
 		 * because it is loaded only after the 'admin_init' hook.
-		 * 
+		 *
 		 * @see https://developer.wordpress.org/reference/functions/get_current_screen/#comment-5424
 		 *
 		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
