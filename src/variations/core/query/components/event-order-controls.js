@@ -26,11 +26,6 @@ export const EventOrderControls = ({ attributes, setAttributes }) => {
 				label={__('Order Events by', 'gatherpress')}
 				value={orderBy}
 				options={[
-					// The 'gatherpress_event' post_type does not support 'author'.
-					// {
-					// 	label: __( 'Author', 'gatherpress' ),
-					// 	value: 'author',
-					// },
 					{
 						label: __('Event Date', 'gatherpress'),
 						value: 'datetime', // This is GatherPress specific, a normal post would use 'date'.
