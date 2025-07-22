@@ -8,14 +8,10 @@ import { __ } from '@wordpress/i18n';
  * Internal dependencies
  */
 import './controls';
-
-import GPQLControls from './slots/gpql-controls';
-import GPQLControlsInheritedQuery from './slots/gpql-controls-inherited-query';
-
 import { QUERY_NO_RESULTS_VARIATION } from '../query-no-results';
 import { QUERY_PAGINATION_VARIATION } from '../query-pagination';
 
-const NAME = 'gatherpress-event-query';
+export const NAME = 'gatherpress-event-query';
 
 const QUERY_ATTRIBUTES = {
 	namespace: NAME,
@@ -118,5 +114,3 @@ registerBlockVariation('core/query', {
 		],
 	},
 });
-
-export { NAME, GPQLControls, GPQLControlsInheritedQuery };

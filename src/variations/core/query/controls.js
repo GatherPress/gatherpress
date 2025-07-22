@@ -5,23 +5,19 @@ import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-
 import { useEffect } from '@wordpress/element';
+import { registerPlugin } from '@wordpress/plugins';
+
 /**
  *  Internal dependencies
  */
 import { NAME } from '.';
-import GPQLControls from './slots/gpql-controls';
-import GPQLControlsInheritedQuery from './slots/gpql-controls-inherited-query';
+import GatherPressQueryControls from './slots/query-controls';
+import GatherPressInheritedQueryControls from './slots/inherited-query-controls';
 import {
-	EventCountControls,
-	EventExcludeControls,
-	EventIncludeUnfinishedControls,
-	EventListTypeControls,
-	EventOffsetControls,
-	EventOrderControls,
+	GatherPressQueryControlsSlotFill,
+	GatherPressInheritedQueryControlsSlotFill,
 } from './components';
-import { isEventPostType } from '../../../helpers/event';
 
 /**
  * Determines if the active variation is this one
@@ -89,41 +85,20 @@ const withGatherPressQueryControls = (BlockEdit) => (props) => {
 			</>
 		);
 	}
-	// If the is the correct variation, add the custom controls.
-	const isEventContext = isEventPostType();
-	// If the inherit prop is false, add all the controls.
-	const { attributes } = props;
-	if (attributes.query.inherit === false) {
-		return (
-			<>
-				<BlockEdit {...props} />
-				<InspectorControls>
-					<PanelBody
-						title={__('Event Query Settings', 'gatherpress')}
-					>
-						{/* Toggle between 'upcoming' & 'past' events. */}
-						<EventListTypeControls {...props} />
-						<EventIncludeUnfinishedControls {...props} />
-
-						{isEventContext && <EventExcludeControls {...props} />}
-						<EventCountControls {...props} />
-						<EventOffsetControls {...props} />
-						<EventOrderControls {...props} />
-
-						<GPQLControls.Slot fillProps={{ ...props }} />
-					</PanelBody>
-				</InspectorControls>
-			</>
-		);
-	}
-	// Add some controls if the inherit prop is true.
 	return (
 		<>
 			<BlockEdit {...props} />
 			<InspectorControls>
 				<PanelBody title={__('Event Query Settings', 'gatherpress')}>
-					<EventOrderControls {...props} />
-					<GPQLControlsInheritedQuery.Slot fillProps={{ ...props }} />
+					{props.attributes.query.inherit === false ? (
+						<GatherPressQueryControls.Slot
+							fillProps={{ ...props }}
+						/>
+					) : (
+						<GatherPressInheritedQueryControls.Slot
+							fillProps={{ ...props }}
+						/>
+					)}
 				</PanelBody>
 			</InspectorControls>
 		</>
@@ -131,3 +106,10 @@ const withGatherPressQueryControls = (BlockEdit) => (props) => {
 };
 
 addFilter('editor.BlockEdit', 'core/query', withGatherPressQueryControls);
+
+registerPlugin('gatherpress-query-controls-slotfill', {
+	render: GatherPressQueryControlsSlotFill,
+});
+registerPlugin('gatherpress-inherited-query-controls-slotfill', {
+	render: GatherPressInheritedQueryControlsSlotFill,
+});

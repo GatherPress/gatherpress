@@ -10,6 +10,13 @@ import { useSelect } from '@wordpress/data';
 import { __, _x, sprintf } from '@wordpress/i18n';
 
 /**
+ * Internal dependencies
+ */
+import GatherPressQueryControls from './slots/query-controls';
+import GatherPressInheritedQueryControls from './slots/inherited-query-controls';
+import { isEventPostType } from '../../../helpers/event';
+
+/**
  * EventCountControls component
  *
  * @param {*} param0
@@ -244,5 +251,39 @@ export const EventOrderControls = ({ attributes, setAttributes }) => {
 				}}
 			/>
 		</>
+	);
+};
+
+export const GatherPressQueryControlsSlotFill = () => {
+	// If the is the correct variation, add the custom controls.
+	const isEventContext = isEventPostType();
+	return (
+		<GatherPressQueryControls>
+			{(props) => (
+				<>
+					<EventListTypeControls {...props} />
+					<EventIncludeUnfinishedControls {...props} />
+
+					{isEventContext && <EventExcludeControls {...props} />}
+					<EventCountControls {...props} />
+					<EventOffsetControls {...props} />
+					<EventOrderControls {...props} />
+				</>
+			)}
+		</GatherPressQueryControls>
+	);
+};
+
+export const GatherPressInheritedQueryControlsSlotFill = () => {
+	return (
+		<GatherPressInheritedQueryControls>
+			{(props) => (
+				<>
+					<EventListTypeControls {...props} />
+					<EventIncludeUnfinishedControls {...props} />
+					<EventOrderControls {...props} />
+				</>
+			)}
+		</GatherPressInheritedQueryControls>
 	);
 };
