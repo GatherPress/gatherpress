@@ -13,13 +13,14 @@ import { useEffect } from '@wordpress/element';
 import { NAME } from '.';
 import GPQLControls from './slots/gpql-controls';
 import GPQLControlsInheritedQuery from './slots/gpql-controls-inherited-query';
-import { EventCountControls } from './components/event-count-controls';
-import { EventExcludeControls } from './components/event-exclude-controls';
-import { EventListTypeControls } from './components/event-list-type-controls';
-import { EventOffsetControls } from './components/event-offset-controls';
-import { EventOrderControls } from './components/event-order-controls';
-import { EventIncludeUnfinishedControls } from './components/event-include-unfinished-controls';
-
+import {
+	EventCountControls,
+	EventExcludeControls,
+	EventIncludeUnfinishedControls,
+	EventListTypeControls,
+	EventOffsetControls,
+	EventOrderControls,
+} from './components';
 import { isEventPostType } from '../../../helpers/event';
 
 /**
