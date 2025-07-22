@@ -382,6 +382,7 @@ class Test_Event_Query extends Base {
 		$this->assertEmpty( $response, 'Failed to assert the array, containing pieces of the SQL query, is empty' );
 
 		$this->mock->user( true, 'admin' );
+		\set_current_screen('edit-gatherpress_event');
 
 		// Set 'orderby' admin query to 'datetime'.
 		$wp_query->set( 'orderby', 'datetime' );
