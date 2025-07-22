@@ -375,7 +375,7 @@ class Test_Event_Query extends Base {
 	 */
 	public function test_adjust_admin_event_sorting(): void {
 		$instance = Event_Query::get_instance();
-		global $wp_query;
+		$wp_query = new WP_Query();
 
 		$this->mock->user( false, 'admin' );
 		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
