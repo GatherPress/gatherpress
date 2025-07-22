@@ -379,7 +379,7 @@ class Test_Event_Query extends Base {
 
 		$this->mock->user( false, 'admin' );
 		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
-		$this->assertEmpty( $response, 'Failed to assert array is not empty' );
+		$this->assertEmpty( $response, 'Failed to assert the array, containing pieces of the SQL query, is empty' );
 
 		$this->mock->user( true, 'admin' );
 
@@ -390,7 +390,7 @@ class Test_Event_Query extends Base {
 		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 
 		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
-		$this->assertNotEmpty( $response, 'Failed to assert array is empty' );
+		$this->assertNotEmpty( $response, 'Failed to assert the array, containing pieces of the SQL query, is not empty' );
 	}
 
 	/**
