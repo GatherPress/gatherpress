@@ -69,27 +69,37 @@ registerBlockVariation('core/query', {
 	description: __('Create event queries', 'gatherpress'),
 	scope: ['inserter', 'transform'],
 	/*
-	 * Having innerBlocks in THIS (visible) variation, essentially 
-	 * skips the setup phase of the Query Loop block with suggested patterns 
+	 * Having innerBlocks in THIS (visible) variation, essentially
+	 * skips the setup phase of the Query Loop block with suggested starter patterns
 	 * and the block is inserted with these inner blocks as its starting content.
-	 * 
-	 * This is not what I wanted, so I disabled it.
+	 *
+	 * This is not what GatherPress wanted, so it is disabled.
 	 *
 	 * @see https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/extending-the-query-loop-block/#customize-your-variation-layout
-
+	 *
+	 * As long as GatherPress does not have any valid Starter Patterns, this 'innerBlocks' section is temporarily re-enabled
+	 * to prevent the default 'core/query' block starter patterns to appear.
+	 * As soon as #1124 is done, this part should be disabled again.
+	 *
+	 * @todo Add 'Start blank' patterns for the gatherpress query loop variation. https://github.com/GatherPress/gatherpress/issues/1124
+	 */
 	innerBlocks: [
 		[
 			'core/post-template',
-			{},
+			{
+				metadata: {
+					name: __('Events Template', 'gatherpress'),
+				},
+			},
 			[
-				[ 'gatherpress/event-date' ],
-				[ 'core/post-title' ],
-				[ 'core/post-excerpt' ]
+				['core/post-title'],
+				['core/post-excerpt'],
+				['core/post-terms', { term: '_gatherpress_venue' }],
 			],
 		],
-		[ 'core/query-pagination' ],
-		[ 'core/query-no-results' ],
-	],	 */
+		QUERY_PAGINATION_VARIATION,
+		QUERY_NO_RESULTS_VARIATION,
+	],
 
 	example: {
 		attributes: {
@@ -100,117 +110,13 @@ registerBlockVariation('core/query', {
 				name: 'core/post-template',
 				attributes: {},
 				innerBlocks: [
-					// {
-					// 	name: 'gatherpress/event-date',
-					// },
 					{
 						name: 'core/post-title',
 					},
-					// {
-					// 	...GPV_VARIATION,
-					// }
 				],
 			},
 		],
 	},
-});
-
-/**
- * One of the 'Start blank' patterns for the gatherpress query loop variation.
- */
-registerBlockVariation('core/query', {
-	...VARIATION_ATTRIBUTES,
-	name: 'gatherpress-event-query-map-date',
-	title: __('Map & Event-Date', 'gatherpress'),
-	description: __(
-		'Create gatherpress queries with Map & Date',
-		'gatherpress'
-	),
-	innerBlocks: [
-		[
-			'core/post-template',
-			{
-				metadata: {
-					name: __('Events Template', 'gatherpress'),
-				},
-			},
-			[
-				// ['gatherpress/venue'],
-				// ['gatherpress/event-date']
-			],
-		],
-		QUERY_PAGINATION_VARIATION,
-		QUERY_NO_RESULTS_VARIATION,
-	],
-});
-
-/**
- * One of the 'Start blank' patterns for the gatherpress query loop variation.
- */
-registerBlockVariation('core/query', {
-	...VARIATION_ATTRIBUTES,
-	name: 'gatherpress-event-query-date-title',
-	title: __('Event-Date, Title & Venue details', 'gatherpress'),
-	description: __(
-		'Create gatherpress queries with Event-Date & Title',
-		'gatherpress'
-	),
-	innerBlocks: [
-		[
-			'core/post-template',
-			{
-				metadata: {
-					name: __('Events Template', 'gatherpress'),
-				},
-			},
-			[
-				// {
-				// 	name: 'gatherpress/event-date',
-				// },
-				{
-					name: 'core/post-title',
-				},
-				// {
-				// 	...GPV_VARIATION,
-				// },
-			],
-		],
-		QUERY_PAGINATION_VARIATION,
-		QUERY_NO_RESULTS_VARIATION,
-	],
-});
-
-/**
- * One of the 'Start blank' patterns for the gatherpress query loop variation.
- */
-registerBlockVariation('core/query', {
-	...VARIATION_ATTRIBUTES,
-	name: 'gatherpress-event-query-date-address',
-	title: __('Event-Date & Venue Details', 'gatherpress'),
-	description: __(
-		'Create gatherpress queries with Event-Date & Venue Details',
-		'gatherpress'
-	),
-	innerBlocks: [
-		[
-			'core/post-template',
-			{
-				metadata: {
-					name: __('Events Template', 'gatherpress'),
-				},
-			},
-			[
-				// {
-				// 	name: 'gatherpress/event-date',
-				// },
-				// {
-				// 	...GPV_VARIATION,
-				// },
-			],
-		],
-		QUERY_PAGINATION_VARIATION,
-		QUERY_NO_RESULTS_VARIATION,
-	],
 });
 
 export { NAME, GPQLControls, GPQLControlsInheritedQuery };
