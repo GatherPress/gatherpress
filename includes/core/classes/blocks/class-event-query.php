@@ -43,32 +43,19 @@ class Event_Query {
 	/**
 	 * Set up hooks for various purposes.
 	 *
-	 * This method adds hooks for different purposes as needed.
+	 * This method adds filters to handle rendering & REST requests for the block.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'init', array( $this, 'init' ), PHP_INT_MAX );
-	}
-
-	/**
-	 * Setup filters to handle rendering & REST requests for the block.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function init(): void {
-
 		add_filter(
 			'pre_render_block',
 			array( $this, 'pre_render_block' ),
 			10,
 			2
 		);
-
 		// Updates the query vars for the Query Loop block in the block editor.
 		add_filter(
 			sprintf( 'rest_%s_query', Event::POST_TYPE ),
@@ -76,15 +63,12 @@ class Event_Query {
 			10,
 			2
 		);
-
 		// We need more sortBy options.
 		add_filter(
 			sprintf( 'rest_%s_collection_params', Event::POST_TYPE ),
 			array( $this, 'rest_collection_params' )
 		);
 	}
-
-
 
 	/**
 	 * Allows render_block() to be short-circuited, by returning a non-null value.
