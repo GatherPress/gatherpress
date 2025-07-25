@@ -793,9 +793,6 @@ class Calendars {
 	}
 
 	/**
-	 * @author Stephen Harris (@stephenharris)
-	 * @source https://github.com/stephenharris/Event-Organiser/blob/develop/includes/event-organiser-utility-functions.php#L1663
-	 *
 	 * Fold text as per [iCal specifications](http://www.ietf.org/rfc/rfc2445.txt)
 	 *
 	 * Lines of text SHOULD NOT be longer than 75 octets, excluding the line
@@ -807,8 +804,9 @@ class Calendars {
 	 * of CRLF followed immediately by a single linear white space character
 	 * is ignored (i.e., removed) when processing the content type.
 	 *
-	 * @ignore
-	 * @since 2.7
+	 * @author Stephen Harris (@stephenharris)
+	 * @source https://github.com/stephenharris/Event-Organiser/blob/develop/includes/event-organiser-utility-functions.php#L1663
+	 *
 	 * @param string $text The string to be escaped.
 	 * @return string The escaped string.
 	 */
