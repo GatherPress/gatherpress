@@ -40,6 +40,12 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'action',
+				'name'     => 'admin_init',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_privacy_policy_content' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'admin_notices',
 				'priority' => 10,
 				'callback' => array( $instance, 'check_gatherpress_alpha' ),
