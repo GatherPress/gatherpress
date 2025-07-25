@@ -33,6 +33,12 @@ class Test_Settings extends Base {
 			array(
 				'type'     => 'action',
 				'name'     => 'init',
+				'priority' => PHP_INT_MIN,
+				'callback' => array( $instance, 'init_shared_options' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
 				'priority' => 10,
 				'callback' => array( $instance, 'set_main_sub_page' ),
 			),
