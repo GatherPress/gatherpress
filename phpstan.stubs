@@ -1,0 +1,25 @@
+<?php
+/**
+ * Constants, functions, etc. used by GatherPress
+ * should be understood by PHPStan.
+ */
+
+namespace {
+
+    define( 'GATHERPRESS_CACHE_GROUP', '');
+    define( 'GATHERPRESS_CORE_FILE', './gatherpress.php');
+    define( 'GATHERPRESS_CORE_PATH', '.');
+    define( 'GATHERPRESS_CORE_URL', '');
+    define( 'GATHERPRESS_REST_NAMESPACE', '');
+    define( 'GATHERPRESS_REQUIRES_PHP', '');
+
+    /**
+     * Used in includes/core/classes/class-export.php
+     *
+     * @see https://github.com/szepeviktor/phpstan-wordpress/issues/241
+     *
+     * @param string $str String to wrap in XML CDATA tag.
+     * @return string
+     */
+    function wxr_cdata( string $str ): string {}
+}

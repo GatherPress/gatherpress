@@ -65,7 +65,7 @@ cd gatherpress
 wp-env start
 ```
 
-You should then see that a development site has been configured for you on localhost port 2003
+You should then see that a development site has been configured for you on localhost port 8889
 
 ![Development Site Login](../media/wp-env.json-startup.png)
 
@@ -94,7 +94,8 @@ In fact, after the initial setup, you may notice that in your code editor, there
 2. Install [Composer](https://getcomposer.org/doc/00-intro.md)
 3. In your terminal window, `cd` to the `gatherpress` directory
 4. Run `npm install` to get node dependencies
-5. Run `composer install` to get PHPUnit dependencies
+5. Run `npm run build` to compile scripts and styles
+6. Run `composer install` to get PHPUnit dependencies
 
 ### To shut down your development session
 

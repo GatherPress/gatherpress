@@ -5,6 +5,8 @@
  * It is typically used to visually distinguish the selected and unselected states
  * of a block in the editor.
  *
+ * @deprecated Component will be removed soon.
+ *
  * @since 1.0.0
  *
  * @param {Object}  props            - Component properties.
@@ -17,7 +19,7 @@ const EditCover = (props) => {
 	const display = isSelected ? 'none' : 'block';
 
 	return (
-		<div style={{ position: 'relative' }}>
+		<div style={{ position: 'relative', zIndex: '0' }}>
 			{props.children}
 			<div
 				style={{

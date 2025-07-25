@@ -104,18 +104,36 @@ class Venue {
 			self::POST_TYPE,
 			array(
 				'labels'       => array(
-					'name'               => _x( 'Venues', 'Post Type General Name', 'gatherpress' ),
-					'singular_name'      => _x( 'Venue', 'Post Type Singular Name', 'gatherpress' ),
-					'menu_name'          => __( 'Venues', 'gatherpress' ),
-					'all_items'          => __( 'Venues', 'gatherpress' ),
-					'view_item'          => __( 'View Venue', 'gatherpress' ),
-					'add_new_item'       => __( 'Add New Venue', 'gatherpress' ),
-					'add_new'            => __( 'Add New', 'gatherpress' ),
-					'edit_item'          => __( 'Edit Venue', 'gatherpress' ),
-					'update_item'        => __( 'Update Venue', 'gatherpress' ),
-					'search_items'       => __( 'Search Venues', 'gatherpress' ),
-					'not_found'          => __( 'Not Found', 'gatherpress' ),
-					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+					'name'                     => _x( 'Venues', 'Admin menu and post type general name', 'gatherpress' ),
+					'singular_name'            => _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' ),
+					'add_new'                  => __( 'Add New', 'gatherpress' ),
+					'add_new_item'             => __( 'Add New Venue', 'gatherpress' ),
+					'edit_item'                => __( 'Edit Venue', 'gatherpress' ),
+					'new_item'                 => __( 'New Venue', 'gatherpress' ),
+					'view_item'                => __( 'View Venue', 'gatherpress' ),
+					'view_items'               => __( 'View Venues', 'gatherpress' ),
+					'search_items'             => __( 'Search Venues', 'gatherpress' ),
+					'not_found'                => __( 'No Venues found.', 'gatherpress' ),
+					'not_found_in_trash'       => __( 'No Venues found in Trash.', 'gatherpress' ),
+					'parent_item_colon'        => __( 'Parent Venues:', 'gatherpress' ),
+					'all_items'                => __( 'Venues', 'gatherpress' ),
+					'archives'                 => __( 'Venue Archives', 'gatherpress' ),
+					'attributes'               => __( 'Venue Attributes', 'gatherpress' ),
+					'insert_into_item'         => __( 'Insert into Venue', 'gatherpress' ),
+					'uploaded_to_this_item'    => __( 'Uploaded to this Venue', 'gatherpress' ),
+					'menu_name'                => _x( 'Venues', 'Admin menu label', 'gatherpress' ),
+					'filter_items_list'        => __( 'Filter Venue list', 'gatherpress' ),
+					'filter_by_date'           => __( 'Filter by date', 'gatherpress' ),
+					'items_list_navigation'    => __( 'Venues list navigation', 'gatherpress' ),
+					'items_list'               => __( 'Venues list', 'gatherpress' ),
+					'item_published'           => __( 'Venue published.', 'gatherpress' ),
+					'item_published_privately' => __( 'Venue published privately.', 'gatherpress' ),
+					'item_reverted_to_draft'   => __( 'Venue reverted to draft.', 'gatherpress' ),
+					'item_trashed'             => __( 'Venue trashed.', 'gatherpress' ),
+					'item_scheduled'           => __( 'Venue scheduled.', 'gatherpress' ),
+					'item_updated'             => __( 'Venue updated.', 'gatherpress' ),
+					'item_link'                => _x( 'Venue Link', 'Block editor link label', 'gatherpress' ),
+					'item_link_description'    => _x( 'A link to a venue.', 'Block editor link description', 'gatherpress' ),
 				),
 				'show_in_rest' => true,
 				'rest_base'    => 'gatherpress_venues',
@@ -124,6 +142,7 @@ class Venue {
 				'show_in_menu' => 'edit.php?post_type=gatherpress_event',
 				'supports'     => array(
 					'title',
+					'author',
 					'editor',
 					'thumbnail',
 					'revisions',
@@ -131,7 +150,7 @@ class Venue {
 				),
 				'menu_icon'    => 'dashicons-location',
 				'template'     => array(
-					array( 'gatherpress/venue' ),
+					array( 'core/pattern', array( 'slug' => 'gatherpress/venue-template' ) ),
 				),
 				'has_archive'  => true,
 				'rewrite'      => array(
@@ -157,7 +176,7 @@ class Venue {
 	 */
 	public static function get_localized_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'venue', 'Post Type Slug', 'gatherpress' );
+		$slug            = _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' );
 		$slug            = sanitize_title( $slug );
 
 		if ( $switched_locale ) {
@@ -220,8 +239,8 @@ class Venue {
 			Event::POST_TYPE,
 			array(
 				'labels'             => array(
-					'name'          => _x( 'Venues', 'Taxonomy General Name', 'gatherpress' ),
-					'singular_name' => _x( 'Venue', 'Taxonomy Singular Name', 'gatherpress' ),
+					'name'          => _x( 'Venues', 'Admin menu and taxonomy general name', 'gatherpress' ),
+					'singular_name' => _x( 'Venue', 'Admin menu and taxonomy singular name', 'gatherpress' ),
 				),
 				'hierarchical'       => false,
 				'public'             => true,
@@ -232,6 +251,8 @@ class Venue {
 				'show_in_rest'       => true,
 			)
 		);
+		// It is necessary to make this taxonomy visible on event posts, within REST responses.
+		register_taxonomy_for_object_type( self::TAXONOMY, Event::POST_TYPE );
 	}
 
 	/**
@@ -331,7 +352,7 @@ class Venue {
 			} else {
 				// Update the existing term with the new name and slug.
 				wp_update_term(
-					$term['term_id'],
+					intval( $term['term_id'] ),
 					self::TAXONOMY,
 					array(
 						'name' => $title,

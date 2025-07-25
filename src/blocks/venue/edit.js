@@ -4,13 +4,15 @@
 import { __ } from '@wordpress/i18n';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalNumberControl as NumberControl,
 	PanelBody,
 	PanelRow,
 	RadioControl,
 	RangeControl,
 	ToggleControl,
 } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect, useState } from '@wordpress/element';
 
 /**
@@ -25,7 +27,8 @@ import VenueInformation from '../../panels/venue-settings/venue-information';
 import OnlineEventLink from '../../components/OnlineEventLink';
 import { Listener } from '../../helpers/broadcasting';
 import { isEventPostType } from '../../helpers/event';
-import { getFromGlobal, isGatherPressPostType } from '../../helpers/globals';
+import { getFromGlobal } from '../../helpers/globals';
+import { isGatherPressPostType } from '../../helpers/editor';
 
 /**
  * Edit component for the GatherPress Venue block.
@@ -47,20 +50,53 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 	const { mapZoomLevel, mapType, mapHeight } = attributes;
 	const [name, setName] = useState('');
 	const [fullAddress, setFullAddress] = useState('');
-	const [latitude, setLatitude] = useState('');
-	const [longitude, setLongitude] = useState('');
 	const [phoneNumber, setPhoneNumber] = useState('');
 	const [website, setWebsite] = useState('');
 	const [isOnlineEventTerm, setIsOnlineEventTerm] = useState(false);
 	const blockProps = useBlockProps();
 	const mapPlatform = getFromGlobal('settings.mapPlatform');
+
+	const { latitude } = useSelect(
+		(select) => ({
+			latitude: select('gatherpress/venue').getVenueLatitude(),
+		}),
+		[]
+	);
+	const { longitude } = useSelect(
+		(select) => ({
+			longitude: select('gatherpress/venue').getVenueLongitude(),
+		}),
+		[]
+	);
+
+	const {
+		updateVenueLatitude,
+		updateVenueLongitude,
+		updateMapCustomLatLong,
+	} = useDispatch('gatherpress/venue');
+
 	const onlineEventLink = useSelect(
 		(select) =>
 			select('core/editor')?.getEditedPostAttribute('meta')
 				?.gatherpress_online_event_link
 	);
 
-	let { mapShow } = attributes;
+	let { mapShow, mapCustomLatLong } = attributes;
+
+	useEffect(() => {
+		updateMapCustomLatLong(mapCustomLatLong);
+	}, [mapCustomLatLong, updateMapCustomLatLong]);
+
+	const editPost = useDispatch('core/editor').editPost;
+	const updateVenueMeta = (metaData) => {
+		const payload = JSON.stringify({
+			...venueInformationMetaData,
+			...metaData,
+		});
+		const meta = { gatherpress_venue_information: payload };
+
+		editPost({ meta });
+	};
 
 	let venueInformationMetaData = useSelect(
 		(select) =>
@@ -88,8 +124,6 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		setPhoneNumber,
 		setWebsite,
 		setIsOnlineEventTerm,
-		setLatitude,
-		setLongitude,
 	});
 
 	useEffect(() => {
@@ -97,8 +131,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 			setFullAddress(venueInformationMetaData.fullAddress);
 			setPhoneNumber(venueInformationMetaData.phoneNumber);
 			setWebsite(venueInformationMetaData.website);
-			setLatitude(venueInformationMetaData.latitude);
-			setLongitude(venueInformationMetaData.longitude);
+			updateVenueLatitude(venueInformationMetaData.latitude);
+			updateVenueLongitude(venueInformationMetaData.longitude);
 
 			if (!fullAddress && !phoneNumber && !website) {
 				setName(__('Add venue information.', 'gatherpress'));
@@ -125,6 +159,8 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 		website,
 		latitude,
 		longitude,
+		updateVenueLongitude,
+		updateVenueLatitude,
 	]);
 
 	useEffect(() => {
@@ -212,6 +248,55 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 							min={100}
 							max={1000}
 						/>
+						{isVenuePostType() && (
+							<PanelRow>
+								{__('Latitude / Longitude', 'gatherpress')}
+							</PanelRow>
+						)}
+						{isVenuePostType() && (
+							<PanelRow>
+								<ToggleControl
+									label={
+										mapCustomLatLong
+											? __(
+													'Use custom values',
+													'gatherpress'
+												)
+											: __(
+													'Use default values',
+													'gatherpress'
+												)
+									}
+									checked={mapCustomLatLong}
+									onChange={(value) => {
+										setAttributes({
+											mapCustomLatLong: value,
+										});
+										updateMapCustomLatLong(value);
+									}}
+								/>
+							</PanelRow>
+						)}
+						{mapCustomLatLong && isVenuePostType() && (
+							<>
+								<NumberControl
+									label={__('Latitude', 'gatherpress')}
+									value={latitude}
+									onChange={(value) => {
+										updateVenueLatitude(value);
+										updateVenueMeta({ latitude: value });
+									}}
+								/>
+								<NumberControl
+									label={__('Longitude', 'gatherpress')}
+									value={longitude}
+									onChange={(value) => {
+										updateVenueLongitude(value);
+										updateVenueMeta({ longitude: value });
+									}}
+								/>
+							</>
+						)}
 					</PanelBody>
 				)}
 			</InspectorControls>
@@ -229,6 +314,7 @@ const Edit = ({ attributes, setAttributes, isSelected }) => {
 						/>
 						{mapShow && !isOnlineEventTerm && (
 							<MapEmbed
+								mapCustomLatLong={mapCustomLatLong}
 								location={fullAddress}
 								latitude={latitude}
 								longitude={longitude}

@@ -9,7 +9,8 @@ import { useDispatch, useSelect } from '@wordpress/data';
 /**
  * Internal dependencies.
  */
-import { enableSave, getFromGlobal } from '../helpers/globals';
+import { getFromGlobal } from '../helpers/globals';
+import { enableSave } from '../helpers/editor';
 import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForSelect,
@@ -53,19 +54,27 @@ const Timezone = () => {
 				}}
 				__nexthasnomarginbottom
 			>
-				{Object.keys(choices).map((group) => {
-					return (
-						<optgroup key={group} label={group}>
-							{Object.keys(choices[group]).map((item) => {
-								return (
-									<option key={item} value={item}>
-										{choices[group][item]}
-									</option>
-								);
-							})}
-						</optgroup>
-					);
-				})}
+				{choices &&
+				'object' === typeof choices &&
+				Object.keys(choices).length > 0 ? (
+					Object.keys(choices).map((group) => {
+						return (
+							<optgroup key={group} label={group}>
+								{Object.keys(choices[group]).map((item) => {
+									return (
+										<option key={item} value={item}>
+											{choices[group][item]}
+										</option>
+									);
+								})}
+							</optgroup>
+						);
+					})
+				) : (
+					<option value="">
+						{__('Error, no choices available', 'gatherpress')}
+					</option>
+				)}
 			</SelectControl>
 		</PanelRow>
 	);

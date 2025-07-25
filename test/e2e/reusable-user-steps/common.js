@@ -9,11 +9,7 @@
  * @param {*} root0.username
  * @param {*} root0.password
  */
-const login = async ({
-	page,
-	username,
-	password = process.env.WP_ADMIN_PASSWORD,
-}) => {
+const login = async ({ page, username = 'admin', password = 'password' }) => {
 	page.goto('/wp-login.php', {
 		timeout: 40000,
 	});
@@ -31,4 +27,18 @@ const login = async ({
 		.isVisible();
 };
 
-module.exports = { login };
+const addNewVenue = async ({ page }) => {
+	await page.getByRole('link', { name: 'Events', exact: true }).click();
+	await page.getByRole('link', { name: 'Venues' }).click();
+	await page.getByRole('link', { name: 'Add New Venue' }).click();
+};
+
+const addNewEvent = async ({ page }) => {
+	await page.getByRole('link', { name: 'Events', exact: true }).click();
+	await page
+		.locator('#wpbody-content')
+		.getByRole('link', { name: 'Add New Event' })
+		.click();
+};
+
+module.exports = { login, addNewVenue, addNewEvent };

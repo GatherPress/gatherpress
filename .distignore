@@ -27,6 +27,9 @@ package-lock.json
 phpcs.xml
 phpcs.xml.dist
 phpcs.ruleset.xml
+phpstan.neon
+phpstan.neon.dist
+phpstan.stubs
 phpunit.xml
 phpunit.xml.dist
 playwright.config.js
@@ -37,6 +40,7 @@ yarn.lock
 
 # Dot Files and Directories
 .gatherpress-org
+.wordpress-org
 .git
 .github
 .wordpress-version-checker.json
@@ -47,6 +51,7 @@ Thumbs.db
 node_modules
 vendor
 src
+docs
 
 # Miscellaneous and SQL Archives
 behat.yml

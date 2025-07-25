@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
 use GatherPress\Core\Traits\Singleton;
+use WP;
 use WP_Post;
 
 /**
@@ -54,6 +55,8 @@ class Event_Setup {
 	protected function setup_hooks(): void {
 		add_action( 'init', array( $this, 'register_post_type' ) );
 		add_action( 'init', array( $this, 'register_post_meta' ) );
+		add_action( 'init', array( $this, 'register_calendar_rewrite_rule' ) );
+		add_action( 'parse_request', array( $this, 'handle_calendar_ics_request' ) );
 		add_action( 'delete_post', array( $this, 'delete_event' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'set_datetimes' ) );
 		add_action( sprintf( 'save_post_%s', Event::POST_TYPE ), array( $this, 'check_waiting_list' ) );
@@ -64,6 +67,7 @@ class Event_Setup {
 			2
 		);
 
+		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
 		add_filter(
 			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
 			array( $this, 'set_custom_columns' )
@@ -96,18 +100,36 @@ class Event_Setup {
 			Event::POST_TYPE,
 			array(
 				'labels'        => array(
-					'name'               => _x( 'Events', 'Post Type General Name', 'gatherpress' ),
-					'singular_name'      => _x( 'Event', 'Post Type Singular Name', 'gatherpress' ),
-					'menu_name'          => __( 'Events', 'gatherpress' ),
-					'all_items'          => __( 'All Events', 'gatherpress' ),
-					'view_item'          => __( 'View Event', 'gatherpress' ),
-					'add_new_item'       => __( 'Add New Event', 'gatherpress' ),
-					'add_new'            => __( 'Add New', 'gatherpress' ),
-					'edit_item'          => __( 'Edit Event', 'gatherpress' ),
-					'update_item'        => __( 'Update Event', 'gatherpress' ),
-					'search_items'       => __( 'Search Events', 'gatherpress' ),
-					'not_found'          => __( 'Not Found', 'gatherpress' ),
-					'not_found_in_trash' => __( 'Not found in Trash', 'gatherpress' ),
+					'name'                     => _x( 'Events', 'Admin menu and post type general name', 'gatherpress' ),
+					'singular_name'            => _x( 'Event', 'Admin menu and post type singular name', 'gatherpress' ),
+					'add_new'                  => __( 'Add New', 'gatherpress' ),
+					'add_new_item'             => __( 'Add New Event', 'gatherpress' ),
+					'edit_item'                => __( 'Edit Event', 'gatherpress' ),
+					'new_item'                 => __( 'New Event', 'gatherpress' ),
+					'view_item'                => __( 'View Event', 'gatherpress' ),
+					'view_items'               => __( 'View Events', 'gatherpress' ),
+					'search_items'             => __( 'Search Events', 'gatherpress' ),
+					'not_found'                => __( 'No Events found.', 'gatherpress' ),
+					'not_found_in_trash'       => __( 'No Events found in Trash.', 'gatherpress' ),
+					'parent_item_colon'        => __( 'Parent Events:', 'gatherpress' ),
+					'all_items'                => __( 'All Events', 'gatherpress' ),
+					'archives'                 => __( 'Event Archives', 'gatherpress' ),
+					'attributes'               => __( 'Event Attributes', 'gatherpress' ),
+					'insert_into_item'         => __( 'Insert into Event', 'gatherpress' ),
+					'uploaded_to_this_item'    => __( 'Uploaded to this Event', 'gatherpress' ),
+					'menu_name'                => _x( 'Events', 'Admin menu label', 'gatherpress' ),
+					'filter_items_list'        => __( 'Filter Event list', 'gatherpress' ),
+					'filter_by_date'           => __( 'Filter by date', 'gatherpress' ),
+					'items_list_navigation'    => __( 'Events list navigation', 'gatherpress' ),
+					'items_list'               => __( 'Events list', 'gatherpress' ),
+					'item_published'           => __( 'Event published.', 'gatherpress' ),
+					'item_published_privately' => __( 'Event published privately.', 'gatherpress' ),
+					'item_reverted_to_draft'   => __( 'Event reverted to draft.', 'gatherpress' ),
+					'item_trashed'             => __( 'Event trashed.', 'gatherpress' ),
+					'item_scheduled'           => __( 'Event scheduled.', 'gatherpress' ),
+					'item_updated'             => __( 'Event updated.', 'gatherpress' ),
+					'item_link'                => _x( 'Event Link', 'Block editor link label', 'gatherpress' ),
+					'item_link_description'    => _x( 'A link to an event.', 'Block editor link description', 'gatherpress' ),
 				),
 				'show_in_rest'  => true,
 				'rest_base'     => 'gatherpress_events',
@@ -129,9 +151,14 @@ class Event_Setup {
 					),
 					array( 'gatherpress/rsvp-response' ),
 				),
+				// @todo continue to work on the event-template.
+				// 'template'      => array(
+				// array( 'core/pattern', array( 'slug' => 'gatherpress/event-template' ) ),
+				// ),
 				'menu_position' => 4,
 				'supports'      => array(
 					'title',
+					'author',
 					'editor',
 					'excerpt',
 					'thumbnail',
@@ -164,8 +191,8 @@ class Event_Setup {
 	 */
 	public static function get_localized_post_type_slug(): string {
 		$switched_locale = switch_to_locale( get_locale() );
-		$slug            = _x( 'event', 'Post Type Slug', 'gatherpress' );
-		$slug            = sanitize_title( $slug, '', 'save' );
+		$slug            = _x( 'Event', 'Post Type Singular Name', 'gatherpress' );
+		$slug            = sanitize_title( $slug );
 		if ( $switched_locale ) {
 			restore_previous_locale();
 		}
@@ -185,7 +212,7 @@ class Event_Setup {
 	 */
 	public function register_post_meta(): void {
 		$post_meta = array(
-			'gatherpress_datetime'               => array(
+			'gatherpress_datetime'              => array(
 				'auth_callback'     => static function () {
 					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
 				},
@@ -194,7 +221,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_start'         => array(
+			'gatherpress_datetime_start'        => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -202,16 +229,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
-			'gatherpress_datetime_start_gmt'     => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'string',
-			),
-			'gatherpress_datetime_end'           => array(
+			'gatherpress_datetime_start_gmt'    => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -220,7 +238,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_datetime_end_gmt'       => array(
+			'gatherpress_datetime_end'          => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -229,7 +247,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_timezone'               => array(
+			'gatherpress_datetime_end_gmt'      => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -238,7 +256,16 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_max_guest_limit'        => array(
+			'gatherpress_timezone'              => array(
+				'auth_callback'     => function () {
+					return current_user_can( 'edit_posts' );
+				},
+				'sanitize_callback' => 'sanitize_text_field',
+				'show_in_rest'      => true,
+				'single'            => true,
+				'type'              => 'string',
+			),
+			'gatherpress_max_guest_limit'       => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -247,7 +274,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'integer',
 			),
-			'gatherpress_enable_anonymous_rsvp'  => array(
+			'gatherpress_enable_anonymous_rsvp' => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -256,16 +283,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'boolean',
 			),
-			'gatherpress_enable_initial_decline' => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
-				'sanitize_callback' => 'rest_sanitize_boolean',
-				'show_in_rest'      => true,
-				'single'            => true,
-				'type'              => 'boolean',
-			),
-			'gatherpress_online_event_link'      => array(
+			'gatherpress_online_event_link'     => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -274,7 +292,7 @@ class Event_Setup {
 				'single'            => true,
 				'type'              => 'string',
 			),
-			'gatherpress_max_attendance_limit'   => array(
+			'gatherpress_max_attendance_limit'  => array(
 				'auth_callback'     => function () {
 					return current_user_can( 'edit_posts' );
 				},
@@ -291,6 +309,78 @@ class Event_Setup {
 				$meta_key,
 				$args
 			);
+		}
+	}
+
+	/**
+	 * Register a rewrite rule and query var for serving .ics calendar downloads.
+	 *
+	 * This adds support for URLs like /event/my-event/my-event.ics that serve
+	 * dynamically generated ICS files for individual events.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_calendar_rewrite_rule(): void {
+		add_rewrite_rule(
+			'^event/([^/]+)\.ics$',
+			sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE ),
+			'top'
+		);
+
+		add_rewrite_tag( '%gatherpress_ics%', '1' );
+	}
+
+	/**
+	 * Prevent WordPress from redirecting .ics URLs with a trailing slash.
+	 *
+	 * This ensures calendar download URLs like /event/my-event.ics are treated
+	 * as file downloads and not rewritten with a trailing slash.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|false $redirect_url  The URL WordPress wants to redirect to.
+	 * @param string       $requested_url The original requested URL.
+	 * @return string|false The filtered redirect URL or false to cancel redirect.
+	 */
+	public function disable_ics_canonical_redirect( $redirect_url, string $requested_url ) {
+		if ( false !== strpos( $requested_url, '.ics' ) ) {
+			return false; // prevent canonical redirect.
+		}
+
+		return $redirect_url;
+	}
+
+	/**
+	 * Handle calendar .ics file requests for single event pages.
+	 *
+	 * This method intercepts requests for .ics files based on a custom query var
+	 * and serves dynamically generated ICS content for the specified event. It is
+	 * intended to be hooked into the `parse_request` action.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param \WP $wp The current WP object containing query variables and request context.
+	 * @return void
+	 */
+	public function handle_calendar_ics_request( WP $wp ): void {
+		if ( isset( $wp->query_vars['gatherpress_ics'] ) ) {
+			$slug = $wp->query_vars['name'] ?? null;
+			$post = get_page_by_path( $slug, OBJECT, Event::POST_TYPE );
+
+			if ( $post ) {
+				$event = new Event( $post->ID );
+
+				header( 'Content-Type: text/calendar; charset=utf-8' );
+				header( 'Content-Disposition: attachment; filename="' . get_post_field( 'post_name', $post->ID ) . '.ics"' );
+
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ICS content is safely generated and must not be escaped.
+				echo $event->get_ics_calendar_string();
+				exit;
+			}
+
+			wp_die( esc_html__( 'Event not found.', 'gatherpress' ), '', array( 'response' => 404 ) );
 		}
 	}
 
@@ -329,7 +419,7 @@ class Event_Setup {
 			return;
 		}
 
-		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix, Event::POST_TYPE );
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
 		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$table,
@@ -413,7 +503,7 @@ class Event_Setup {
 	 *
 	 * @throws Exception If initializing the Event object fails or event data cannot be retrieved.
 	 */
-	public function get_the_event_date( $the_date ): string {
+	public function get_the_event_date( string $the_date ): string {
 		$settings       = Settings::get_instance();
 		$use_event_date = $settings->get_value( 'general', 'general', 'post_or_event_date' );
 

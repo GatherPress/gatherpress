@@ -29,15 +29,16 @@ import { getFromGlobal } from '../helpers/globals';
  * a checkbox to permit anonymous RSVPs. The component communicates with the server through
  * REST API calls and broadcasts changes to other components.
  *
+ * @deprecated Component will be removed soon.
+ *
  * @since 1.0.0
  *
- * @param {Object}  props                      - Component props.
- * @param {number}  props.postId               - The ID of the event.
- * @param {Object}  [props.currentUser='']     - Current user's RSVP information.
- * @param {boolean} props.enableAnonymousRsvp  - If true, shows a checkbox to allow anonymous RSVPs.
- * @param {boolean} props.enableInitialDecline - If true, shows an option to decline attendance initially.
- * @param {number}  props.maxGuestLimit        - The maximum number of guests allowed per RSVP.
- * @param {string}  props.type                 - Type of event ('upcoming' or 'past').
+ * @param {Object}  props                     - Component props.
+ * @param {number}  props.postId              - The ID of the event.
+ * @param {Object}  [props.currentUser='']    - Current user's RSVP information.
+ * @param {boolean} props.enableAnonymousRsvp - If true, shows a checkbox to allow anonymous RSVPs.
+ * @param {number}  props.maxGuestLimit       - The maximum number of guests allowed per RSVP.
+ * @param {string}  props.type                - Type of event ('upcoming' or 'past').
  *
  * @return {JSX.Element} The rendered React component.
  */
@@ -46,7 +47,6 @@ const Rsvp = ({
 	currentUser = '',
 	type,
 	enableAnonymousRsvp,
-	enableInitialDecline,
 	maxGuestLimit,
 }) => {
 	const [rsvpStatus, setRsvpStatus] = useState(currentUser.status);
@@ -106,7 +106,7 @@ const Rsvp = ({
 		}
 
 		apiFetch({
-			path: getFromGlobal('urls.eventRestApi') + '/rsvp',
+			path: getFromGlobal('urls.eventApiPath') + '/rsvp',
 			method: 'POST',
 			data: {
 				post_id: postId,
@@ -197,7 +197,7 @@ const Rsvp = ({
 									'gatherpress'
 								),
 								`<a href=${getFromGlobal('urls.loginUrl')}>
-									${_x('Login', 'Context: You must ~ to RSVP to events.', 'gatherpress')}
+									${_x('Login', 'Link text for user authentication', 'gatherpress')}
 								</a>`
 							)
 						)}
@@ -212,7 +212,7 @@ const Rsvp = ({
 										'gatherpress'
 									),
 									`<a href=${getFromGlobal('urls.registrationUrl')}>
-										${_x('Register', 'Context: ~ if you do not have an account.', 'gatherpress')}
+										${_x('Register', 'Link text for new account creation', 'gatherpress')}
 									</a>`
 								)
 							)}
@@ -227,7 +227,11 @@ const Rsvp = ({
 							onClick={closeModal}
 							className="gatherpress-buttons__button wp-block-button__link"
 						>
-							{__('Close', 'gatherpress')}
+							{_x(
+								'Close',
+								'Button label for closing modal dialog',
+								'gatherpress'
+							)}
 						</a>
 					</div>
 				</ButtonGroup>
@@ -241,12 +245,16 @@ const Rsvp = ({
 
 		if ('not_attending' === status || 'no_status' === status) {
 			buttonStatus = 'attending';
-			buttonLabel = __('Attend', 'gatherpress');
+			buttonLabel = _x(
+				'Attend',
+				'RSVP button label for confirming event',
+				'gatherpress'
+			);
 		} else {
 			buttonStatus = 'not_attending';
 			buttonLabel = _x(
 				'Not Attending',
-				'action of not attending',
+				'RSVP button label for declining event',
 				'gatherpress'
 			);
 		}
@@ -362,34 +370,14 @@ const Rsvp = ({
 							onClick={closeModal}
 							className="gatherpress-buttons__button wp-block-button__link"
 						>
-							{__('Close', 'gatherpress')}
+							{_x(
+								'Close',
+								'Button label for closing modal dialog',
+								'gatherpress'
+							)}
 						</a>
 					</div>
 				</ButtonGroup>
-				{enableInitialDecline &&
-				'no_status' === rsvpStatus &&
-				1 !== rsvpAnonymous ? (
-					<ButtonGroup className="gatherpress-buttons wp-block-buttons">
-						<div className="gatherpress-buttons__container wp-block-button">
-							{/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-							<a
-								href="#"
-								onClick={(e) =>
-									onAnchorClick(e, 'not_attending', null)
-								}
-								className="gatherpress-buttons__text-link"
-							>
-								{_x(
-									'Not Attending',
-									'Responded Status',
-									'gatherpress'
-								)}
-							</a>
-						</div>
-					</ButtonGroup>
-				) : (
-					<></>
-				)}
 			</div>
 		);
 	};

@@ -47,7 +47,7 @@ const EventCommunicationModal = () => {
 			global.confirm(__('Confirm you are ready to send?', 'gatherpress'))
 		) {
 			apiFetch({
-				path: getFromGlobal('urls.eventRestApi') + '/email',
+				path: getFromGlobal('urls.eventApiPath') + '/email',
 				method: 'POST',
 				data: {
 					post_id: getFromGlobal('eventDetails.postId'),
@@ -135,7 +135,7 @@ const EventCommunicationModal = () => {
 							<CheckboxControl
 								label={_x(
 									'All Members',
-									'List Status',
+									'Email recipient group option',
 									'gatherpress'
 								)}
 								checked={isAllChecked}
@@ -146,7 +146,7 @@ const EventCommunicationModal = () => {
 							<CheckboxControl
 								label={_x(
 									'Attending',
-									'List Status',
+									'Email recipient group option',
 									'gatherpress'
 								)}
 								checked={isAttendingChecked}
@@ -158,7 +158,7 @@ const EventCommunicationModal = () => {
 							<CheckboxControl
 								label={_x(
 									'Waiting List',
-									'List Status',
+									'Email recipient group option',
 									'gatherpress'
 								)}
 								checked={isWaitingListChecked}
@@ -170,7 +170,7 @@ const EventCommunicationModal = () => {
 							<CheckboxControl
 								label={_x(
 									'Not Attending',
-									'List Status',
+									'Email recipient group option',
 									'gatherpress'
 								)}
 								checked={isNotAttendingChecked}
@@ -185,7 +185,11 @@ const EventCommunicationModal = () => {
 						onClick={sendMessage}
 						disabled={buttonDisabled}
 					>
-						{__('Send Email', 'gatherpress')}
+						{_x(
+							'Send Email',
+							'Email submission button text',
+							'gatherpress'
+						)}
 					</Button>
 				</Modal>
 			)}
