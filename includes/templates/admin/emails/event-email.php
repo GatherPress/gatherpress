@@ -21,7 +21,7 @@ if ( ! isset( $event_id, $message ) ) {
 }
 
 $gatherpress_event       = new Event( $event_id );
-$gatherpress_event_image = get_the_post_thumbnail_id( $event_id );
+$gatherpress_event_image = get_post_thumbnail_id( $event_id );
 $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 
 ?>
@@ -39,7 +39,7 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 		<?php endif; ?>
 		<?php if ( $gatherpress_event_image ) : ?>
 			<!-- Feature Image -->
-			<img src="<?php echo esc_url( wp_get_attachment_image_src( $gatherpress_event_image, 'full' )); ?>" alt="<?php esc_attr_e( 'Event Image', 'gatherpress' ); ?>" style="max-width: 100%;">
+			<img src="<?php echo esc_url( wp_get_attachment_image_src( $gatherpress_event_image, 'full' )[0] ); ?>" alt="<?php esc_attr_e( 'Event Image', 'gatherpress' ); ?>" style="max-width: 100%;">
 		<?php endif; ?>
 
 		<!-- Event Title -->
