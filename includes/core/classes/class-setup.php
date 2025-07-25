@@ -471,10 +471,10 @@ class Setup {
 				'type' => 'info',
 			)
 		);
-  }
+	}
 
-  /**
- 	 * Smash tables and add a custom HTTP header to show undying love for the Buffalo Bills.
+	/**
+	 * Smash tables and add a custom HTTP header to show undying love for the Buffalo Bills.
 	 *
 	 * ♫ Let’s Go Buffalo! ♫
 	 *
