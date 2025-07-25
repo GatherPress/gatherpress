@@ -14,13 +14,16 @@ Shared options utilize the `site options` mechanism provided by WordPress to cen
 
 1. **Defining Shared Options**:
     - Use the `gatherpress_shared_options` site option to define the list of option-slugs to be shared across the network:
+        
         ```php
         update_site_option(
             'gatherpress_shared_options',
             array( 'gatherpress_general' )
         );
         ```
+        
     - Use the `pre_site_option_{key}` filter to programmatically modify the list of shared options if needed.
+        
         ```php
         add_filter(
             sprintf( 'pre_site_option_%s', 'gatherpress_shared_options' ),
@@ -29,11 +32,13 @@ Shared options utilize the `site options` mechanism provided by WordPress to cen
             }
         );
         ```
+        
 2. **Synchronizing Options**:
    - Updates to shared options on the main site automatically propagate to the network via `update_site_option`.
 
 3. **Read-Only UI**:
    - For non-main sites, UI elements for shared options are disabled to prevent local modifications.
 
+<!-- markdownlint-disable-next-line MD034 -->
 https://github.com/user-attachments/assets/3a5ef773-072d-465b-bf90-b42e299e044d
 
