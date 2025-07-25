@@ -39,7 +39,8 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 		<?php endif; ?>
 		<?php if ( $gatherpress_event_image ) : ?>
 			<!-- Featured Image -->
-			<?php echo wp_get_attachment_image(
+			<?php
+			echo wp_get_attachment_image(
 				$gatherpress_event_image,
 				'full',
 				false,
