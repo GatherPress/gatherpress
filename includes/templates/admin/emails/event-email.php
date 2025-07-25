@@ -39,15 +39,18 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 		<?php endif; ?>
 		<?php if ( $gatherpress_event_image ) : ?>
 			<!-- Featured Image -->
-			<img src="<?php echo wp_get_attachment_image (
+			<img src="
+			<?php
+			echo wp_get_attachment_image(
 				$gatherpress_event_image,
 				'full',
 				false,
 				array(
-					'alt'   => esc_attr( 'Event Image', 'gatherpress' ),
-					'style' => "max-width: 100%;",
+					'alt'   => esc_attr__( 'Event Image', 'gatherpress' ),
+					'style' => 'max-width: 100%;',
 				)
-				); ?>
+			);
+			?>
 		<?php endif; ?>
 
 		<!-- Event Title -->
