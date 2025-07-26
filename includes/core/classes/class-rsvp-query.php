@@ -84,28 +84,29 @@ class Rsvp_Query {
 	}
 
 	/**
-	 * Retrieve a list of RSVP comments based on specified arguments.
+	 * Retrieve RSVP comments or count based on specified arguments.
 	 *
 	 * This method fetches RSVP comments by merging the provided arguments with default
-	 * values specific to RSVPs. It ensures the count-only return is disabled and the
-	 * RSVP comments are properly filtered.
+	 * values specific to RSVPs. Can return either an array of comments or integer count
+	 * based on the 'count' parameter.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param array $args Arguments for retrieving RSVPs.
-	 * @return array List of RSVP comments.
+	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
-	public function get_rsvps( array $args ): array {
+	public function get_rsvps( array $args ) {
 		$args = array_merge(
 			array(
-				'type'   => Rsvp::COMMENT_TYPE,
 				'status' => 'approve',
 			),
 			$args
 		);
 
-		// Never allow count-only return, we always want array.
-		$args['count'] = false;
+		$args['type']         = Rsvp::COMMENT_TYPE;
+		$args['post_type']    = Event::POST_TYPE;
+		$args['type__in']     = array();
+		$args['type__not_in'] = array();
 
 		remove_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 
@@ -113,14 +114,18 @@ class Rsvp_Query {
 
 		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 
+		if ( ! empty( $args['count'] ) ) {
+			return (int) $rsvps;
+		}
+
 		return (array) $rsvps;
 	}
 
 	/**
 	 * Retrieve a single RSVP comment based on specified arguments.
 	 *
-	 * This method fetches a single RSVP comment by merging the provided arguments with default
-	 * values specific to RSVPs. It ensures only one comment is returned.
+	 * This method fetches a single RSVP comment by setting the number limit to 1
+	 * and calling get_rsvps(). Returns the first RSVP found or null if none exist.
 	 *
 	 * @since 1.0.0
 	 *
@@ -128,12 +133,8 @@ class Rsvp_Query {
 	 * @return WP_Comment|null The RSVP comment or null if not found.
 	 */
 	public function get_rsvp( array $args ): ?WP_Comment {
-		$args = array_merge(
-			array(
-				'number' => 1,
-			),
-			$args
-		);
+		$args['number'] = 1;
+		$args['count']  = false;
 
 		$rsvp = $this->get_rsvps( $args );
 

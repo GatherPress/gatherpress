@@ -266,11 +266,9 @@ class RSVP_List_Table extends WP_List_Table {
 		$offset = ( $page_number - 1 ) * $per_page;
 
 		$args = array(
-			'type'      => Rsvp::COMMENT_TYPE,
-			'number'    => $per_page,
-			'offset'    => $offset,
-			'status'    => 'all',
-			'post_type' => Event::POST_TYPE,
+			'number' => $per_page,
+			'offset' => $offset,
+			'status' => 'all',
 		);
 
 		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
@@ -319,16 +317,17 @@ class RSVP_List_Table extends WP_List_Table {
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
 
-		$items   = $rsvp_query->get_rsvps( $args );
-		$results = array();
+		$items = $rsvp_query->get_rsvps( $args );
 
-		foreach ( $items as $item ) {
-			$item_array                = (array) $item;
-			$item_array['event_title'] = get_the_title( (int) $item->comment_post_ID );
-			$results[]                 = $item_array;
-		}
+		return array_map(
+			static function ( $item ): array {
+				$item_array                = (array) $item;
+				$item_array['event_title'] = get_the_title( (int) $item->comment_post_ID );
 
-		return $results;
+				return $item_array;
+			},
+			$items
+		);
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -336,24 +335,19 @@ class RSVP_List_Table extends WP_List_Table {
 	 * Retrieves the total count of RSVP comments based on filter criteria.
 	 *
 	 * Counts RSVP comments with optional filtering by search term, post/event ID,
-	 * and approval status. Uses WordPress core get_comments() function with the 'count'
-	 * parameter to efficiently retrieve only the count value. Request parameters are
-	 * sanitized before use in the query.
+	 * and approval status. Uses the get_rsvps() method with the count parameter
+	 * to efficiently retrieve only the count value.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return int The total number of RSVP comments matching the current filters.
 	 */
 	private function get_rsvp_count(): int {
-		$rsvp_query = Rsvp_Query::get_instance();
-
-		// Temporarily remove the exclusion filter.
-		remove_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
-
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		$args = array(
-			'type'  => 'gatherpress_rsvp',
-			'count' => true,
+		$rsvp_query = Rsvp_Query::get_instance();
+		$args       = array(
+			'count'  => true,
+			'status' => 'all',
 		);
 
 		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
@@ -376,12 +370,7 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
 		}
 
-		$count = get_comments( $args );
-
-		// Re-add the exclusion filter.
-		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
-
-		return $count;
+		return $rsvp_query->get_rsvps( $args );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
