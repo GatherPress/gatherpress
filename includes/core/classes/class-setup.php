@@ -237,13 +237,14 @@ class Setup {
 		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
 			return;
 		}
-		$content = '<p class="privacy-policy-tutorial">' . __( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) . '</p>'
-				. '<strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'gatherpress' ) . '</strong> '
+		$content = '<h2>' . __( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) . '</h2>'
+				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:' ) . '</strong> '
 				. sprintf(
 					/* translators: %1$s: privacy policy URL of the OpenStreetMap foundation */
 					__( 'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. This data is processed according to their <a href="%1$s" target="_blank">privacy policy</a>. For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.', 'gatherpress' ),
 					'https://osmfoundation.org/wiki/Privacy_Policy'
-				);
+				)
+				. '</p>';
 		wp_add_privacy_policy_content( 'GatherPress', wp_kses_post( wpautop( $content, false ) ) );
 	}
 	/**
