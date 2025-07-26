@@ -157,25 +157,33 @@ class Rsvp_Query {
 	 * @return void
 	 */
 	public function exclude_rsvp_from_comment_query( WP_Comment_Query $query ) {
-
+		// Process 'type' query var.
 		$current_comment_types = $query->query_vars['type'];
 
-		// Ensure comment type is not empty.
 		if ( ! empty( $current_comment_types ) ) {
 			if ( is_array( $current_comment_types ) ) {
-				// Remove the specific comment type from the array.
-				$current_comment_types = array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) );
+				$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types ) {
-				// If the only type is the one to exclude, set it to empty.
 				$current_comment_types = '';
 			}
 		} else {
-			// If no specific type is set, make sure the one to exclude is not included.
-			$current_comment_types = array( 'comment', 'pingback', 'trackback' ); // Default types.
-			$current_comment_types = array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) );
+			$current_comment_types = array( 'comment', 'pingback', 'trackback' );
+			$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
 		}
 
-		// Update the query vars with the modified comment types.
 		$query->query_vars['type'] = $current_comment_types;
+
+		// Process 'type__in' query var.
+		$current_comment_types_in = $query->query_vars['type__in'];
+
+		if ( ! empty( $current_comment_types_in ) ) {
+			if ( is_array( $current_comment_types_in ) ) {
+				$current_comment_types_in = array_values( array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) ) );
+			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types_in ) {
+				$current_comment_types_in = '';
+			}
+
+			$query->query_vars['type__in'] = $current_comment_types_in;
+		}
 	}
 }
