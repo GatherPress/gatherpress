@@ -162,22 +162,23 @@ class Rsvp_Query {
 
 		if ( ! empty( $current_comment_types ) ) {
 			if ( is_array( $current_comment_types ) ) {
-				$current_comment_types = array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) );
+				$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types ) {
 				$current_comment_types = '';
 			}
 		} else {
 			$current_comment_types = array( 'comment', 'pingback', 'trackback' );
-			$current_comment_types = array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) );
+			$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
 		}
 
 		$query->query_vars['type'] = $current_comment_types;
 
 		// Process 'type__in' query var.
 		$current_comment_types_in = $query->query_vars['type__in'];
+
 		if ( ! empty( $current_comment_types_in ) ) {
 			if ( is_array( $current_comment_types_in ) ) {
-				$current_comment_types_in = array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) );
+				$current_comment_types_in = array_values( array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) ) );
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types_in ) {
 				$current_comment_types_in = '';
 			}

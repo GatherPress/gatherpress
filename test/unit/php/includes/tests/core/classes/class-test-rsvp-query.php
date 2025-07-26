@@ -174,4 +174,177 @@ class Test_Rsvp_Query extends Base {
 			'Failed to assert 2 RSVPs to event.'
 		);
 	}
+
+	/**
+	 * Test excluding RSVP from type array removes RSVP and reindexes array.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_from_type_array(): void {
+		$instance = Rsvp_Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type'] = array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' );
+		$query->query_vars['type__in'] = '';
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertEquals(
+			array( 'comment', 'pingback' ),
+			$query->query_vars['type'],
+			'RSVP comment type should be removed from type array and array should be reindexed'
+		);
+	}
+
+	/**
+	 * Test excluding RSVP when type is a single RSVP string sets type to empty.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_from_type_string(): void {
+		$instance = Rsvp_Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type'] = Rsvp::COMMENT_TYPE;
+		$query->query_vars['type__in'] = '';
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertEquals(
+			'',
+			$query->query_vars['type'],
+			'Type should be set to empty string when only RSVP comment type is present'
+		);
+	}
+
+	/**
+	 * Test excluding RSVP from empty type sets default comment types.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_from_empty_type(): void {
+		$instance = Rsvp_Query::get_instance();
+		$query    = new WP_Comment_Query();
+		$expected = array( 'comment', 'pingback', 'trackback' );
+
+		$query->query_vars['type'] = '';
+		$query->query_vars['type__in'] = '';
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertEquals(
+			$expected,
+			$query->query_vars['type'],
+			'Default comment types should be set when type is empty'
+		);
+	}
+
+
+	/**
+	 * Test excluding RSVP from type__in array removes RSVP and reindexes array.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_from_type_in_array(): void {
+		$instance = Rsvp_Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type'] = '';
+		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE, 'custom' );
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertEquals(
+			array( 'comment', 'custom' ),
+			$query->query_vars['type__in'],
+			'RSVP comment type should be removed from type__in array and array should be reindexed'
+		);
+	}
+
+	/**
+	 * Test excluding RSVP when type__in is a single RSVP string sets type__in to empty.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_from_type_in_string(): void {
+		$instance = Rsvp_Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type'] = '';
+		$query->query_vars['type__in'] = Rsvp::COMMENT_TYPE;
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertEquals(
+			'',
+			$query->query_vars['type__in'],
+			'Type__in should be set to empty string when only RSVP comment type is present'
+		);
+	}
+
+	/**
+	 * Test excluding RSVP from both type and type__in variables simultaneously.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_handles_both_type_vars(): void {
+		$instance = Rsvp_Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type'] = array( 'comment', Rsvp::COMMENT_TYPE );
+		$query->query_vars['type__in'] = array( 'pingback', Rsvp::COMMENT_TYPE );
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertEquals(
+			array( 'comment' ),
+			$query->query_vars['type'],
+			'RSVP should be removed from type array'
+		);
+		$this->assertEquals(
+			array( 'pingback' ),
+			$query->query_vars['type__in'],
+			'RSVP should be removed from type__in array'
+		);
+	}
+
+	/**
+	 * Test excluding RSVP makes no changes when RSVP is not present in arrays.
+	 *
+	 * @covers ::exclude_rsvp_from_comment_query
+	 *
+	 * @return void
+	 */
+	public function test_exclude_rsvp_no_change_when_not_present(): void {
+		$instance = Rsvp_Query::get_instance();
+		$query    = new WP_Comment_Query();
+
+		$query->query_vars['type'] = array( 'comment', 'pingback' );
+		$query->query_vars['type__in'] = array( 'custom', 'review' );
+
+		$instance->exclude_rsvp_from_comment_query( $query );
+
+		$this->assertEquals(
+			array( 'comment', 'pingback' ),
+			$query->query_vars['type'],
+			'Type array should remain unchanged when RSVP is not present'
+		);
+		$this->assertEquals(
+			array( 'custom', 'review' ),
+			$query->query_vars['type__in'],
+			'Type__in array should remain unchanged when RSVP is not present'
+		);
+	}
 }
