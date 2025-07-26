@@ -256,6 +256,11 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array Array of RSVP comment data prepared for display.
 	 */
 	private function get_rsvps( ?int $per_page = null, int $page_number = 1 ): array {
+		$rsvp_query = Rsvp_Query::get_instance();
+
+		// Temporarily remove the exclusion filter.
+		remove_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
+
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( null === $per_page ) {
 			$per_page = self::DEFAULT_PER_PAGE;
@@ -296,6 +301,10 @@ class RSVP_List_Table extends WP_List_Table {
 			}
 		}
 
+		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
+			$args['user_id'] = intval( $_REQUEST['user_id'] );
+		}
+
 		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
 			$args['post_id'] = intval( $_REQUEST['post_id'] );
 		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
@@ -322,6 +331,9 @@ class RSVP_List_Table extends WP_List_Table {
 			$results[]                 = $item_array;
 		}
 
+		// Re-add the exclusion filter.
+		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
+
 		return $results;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
@@ -339,11 +351,20 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return int The total number of RSVP comments matching the current filters.
 	 */
 	private function get_rsvp_count(): int {
+		$rsvp_query = Rsvp_Query::get_instance();
+
+		// Temporarily remove the exclusion filter.
+		remove_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
+
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		$args = array(
 			'type'  => 'gatherpress_rsvp',
 			'count' => true,
 		);
+
+		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
+			$args['user_id'] = intval( $_REQUEST['user_id'] );
+		}
 
 		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
 			$search_term    = sanitize_text_field( wp_unslash( $_REQUEST['s'] ) );
@@ -362,6 +383,9 @@ class RSVP_List_Table extends WP_List_Table {
 		}
 
 		$count = get_comments( $args );
+
+		// Re-add the exclusion filter.
+		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
 
 		return $count;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
@@ -687,6 +711,11 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array An array of HTML links for different views.
 	 */
 	public function get_views(): array {
+		$rsvp_query = Rsvp_Query::get_instance();
+
+		// Temporarily remove the exclusion filter.
+		remove_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
+
 		$status_links = array();
 		$current      = 'all';
 
@@ -717,12 +746,6 @@ class RSVP_List_Table extends WP_List_Table {
 			),
 			admin_url( 'edit.php' )
 		);
-
-		// Get the RSVP_Query instance.
-		$rsvp_query = Rsvp_Query::get_instance();
-
-		// Temporarily remove the exclusion filter.
-		remove_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
 
 		// Get counts for each status.
 		$all_count = get_comments(
@@ -764,9 +787,6 @@ class RSVP_List_Table extends WP_List_Table {
 				'count'   => true,
 			)
 		);
-
-		// Re-add the exclusion filter.
-		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
 
 		// Build the links array with nonce included in base URL.
 		$status_links['all'] = sprintf(
@@ -811,6 +831,9 @@ class RSVP_List_Table extends WP_List_Table {
 			__( 'Spam', 'gatherpress' ),
 			number_format_i18n( $spam_count )
 		);
+
+		// Re-add the exclusion filter.
+		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
 
 		return $status_links;
 	}
