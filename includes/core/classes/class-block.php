@@ -106,6 +106,7 @@ class Block {
 		Blocks\Rsvp_Form::get_instance();
 		Blocks\Rsvp_Response::get_instance();
 		Blocks\Rsvp_Template::get_instance();
+		Blocks\Venue_V2::get_instance();
 	}
 
 	/**

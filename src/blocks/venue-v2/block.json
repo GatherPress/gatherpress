@@ -1,0 +1,26 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "gatherpress/venue-v2",
+	"version": "0.1.0",
+	"title": "Venue v2",
+	"category": "gatherpress",
+	"icon": "location",
+	"example": {},
+	"description": "Provides information about an event venue.",
+	"usesContext": [ "postId", "postType", "queryId" ],
+	"attributes": {
+		"selectedPostId": {
+			"type": "integer"
+		},
+		"selectedPostType": {
+			"type": "string"
+		}
+	},
+	"supports": {
+		"align": [ "wide" ],
+		"html": false
+	},
+	"textdomain": "gatherpress",
+	"editorScript": "file:./index.js"
+}

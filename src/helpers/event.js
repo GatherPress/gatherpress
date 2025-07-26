@@ -15,6 +15,7 @@ import { __ } from '@wordpress/i18n';
 import { getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
 import { Broadcaster } from './broadcasting';
+import { PT_EVENT } from './namespace';
 
 /**
  * Checks if the current post type is an event in the GatherPress application.
@@ -25,10 +26,14 @@ import { Broadcaster } from './broadcasting';
  *
  * @since 1.0.0
  *
+ * @param {string|null} postType Post type slug to check against, instead of the current post type.
+ *
  * @return {boolean} True if the current post type is 'gatherpress_event', false otherwise.
  */
-export function isEventPostType() {
-	return 'gatherpress_event' === select('core/editor')?.getCurrentPostType();
+export function isEventPostType(postType = null) {
+	const postTypeToCheck =
+		postType || select('core/editor')?.getCurrentPostType();
+	return PT_EVENT === postTypeToCheck;
 }
 
 /**
@@ -46,7 +51,7 @@ export function hasEventPast() {
 	);
 
 	return (
-		'gatherpress_event' === select('core/editor')?.getCurrentPostType() &&
+		PT_EVENT === select('core/editor')?.getCurrentPostType() &&
 		moment.tz(getTimezone()).valueOf() > dateTimeEnd.valueOf()
 	);
 }

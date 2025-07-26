@@ -429,6 +429,27 @@ class Venue {
 	}
 
 	/**
+	 * Retrieves the Venue Custom Post Type (CPT) from a given Event post ID.
+	 *
+	 * This method fetches the terms attached to the Event post in the Venue taxonomy,
+	 * and returns the post associated with the first related Venue term.
+	 * Returns null if no Venue is found.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $post_id Event post ID to get the first venue from.
+	 * @return null|WP_Post The Venue post object if found; otherwise, null.
+	 */
+	public function get_venue_post_from_event_post_id( int $post_id ): ?WP_Post {
+		$venue_terms = get_the_terms( $post_id, self::TAXONOMY );
+		if ( ! is_array( $venue_terms ) || empty( $venue_terms ) ) {
+			return null;
+		}
+		// Assuming that we have only ONE venue related.
+		return $this->get_venue_post_from_term_slug( $venue_terms[0]->slug );
+	}
+
+	/**
 	 * Retrieve venue information from meta data.
 	 *
 	 * This method retrieves and assembles venue-related information from meta data

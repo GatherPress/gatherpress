@@ -12,6 +12,10 @@ import { isVenuePostType } from '../../../../../src/helpers/venue';
 jest.mock('@wordpress/data', () => ({
 	select: jest.fn(),
 }));
+// Mock the @wordpress/data module
+jest.mock('@wordpress/core-data', () => ({
+	coreStore: 'core',
+}));
 
 /**
  * Coverage for isVenuePostType.
