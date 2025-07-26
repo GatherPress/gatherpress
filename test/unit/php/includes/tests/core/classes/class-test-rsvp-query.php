@@ -186,7 +186,7 @@ class Test_Rsvp_Query extends Base {
 		$instance = Rsvp_Query::get_instance();
 		$query    = new WP_Comment_Query();
 
-		$query->query_vars['type'] = array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' );
+		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE, 'pingback' );
 		$query->query_vars['type__in'] = '';
 
 		$instance->exclude_rsvp_from_comment_query( $query );
@@ -209,7 +209,7 @@ class Test_Rsvp_Query extends Base {
 		$instance = Rsvp_Query::get_instance();
 		$query    = new WP_Comment_Query();
 
-		$query->query_vars['type'] = Rsvp::COMMENT_TYPE;
+		$query->query_vars['type']     = Rsvp::COMMENT_TYPE;
 		$query->query_vars['type__in'] = '';
 
 		$instance->exclude_rsvp_from_comment_query( $query );
@@ -233,7 +233,7 @@ class Test_Rsvp_Query extends Base {
 		$query    = new WP_Comment_Query();
 		$expected = array( 'comment', 'pingback', 'trackback' );
 
-		$query->query_vars['type'] = '';
+		$query->query_vars['type']     = '';
 		$query->query_vars['type__in'] = '';
 
 		$instance->exclude_rsvp_from_comment_query( $query );
@@ -257,7 +257,7 @@ class Test_Rsvp_Query extends Base {
 		$instance = Rsvp_Query::get_instance();
 		$query    = new WP_Comment_Query();
 
-		$query->query_vars['type'] = '';
+		$query->query_vars['type']     = '';
 		$query->query_vars['type__in'] = array( 'comment', Rsvp::COMMENT_TYPE, 'custom' );
 
 		$instance->exclude_rsvp_from_comment_query( $query );
@@ -280,7 +280,7 @@ class Test_Rsvp_Query extends Base {
 		$instance = Rsvp_Query::get_instance();
 		$query    = new WP_Comment_Query();
 
-		$query->query_vars['type'] = '';
+		$query->query_vars['type']     = '';
 		$query->query_vars['type__in'] = Rsvp::COMMENT_TYPE;
 
 		$instance->exclude_rsvp_from_comment_query( $query );
@@ -303,7 +303,7 @@ class Test_Rsvp_Query extends Base {
 		$instance = Rsvp_Query::get_instance();
 		$query    = new WP_Comment_Query();
 
-		$query->query_vars['type'] = array( 'comment', Rsvp::COMMENT_TYPE );
+		$query->query_vars['type']     = array( 'comment', Rsvp::COMMENT_TYPE );
 		$query->query_vars['type__in'] = array( 'pingback', Rsvp::COMMENT_TYPE );
 
 		$instance->exclude_rsvp_from_comment_query( $query );
@@ -331,7 +331,7 @@ class Test_Rsvp_Query extends Base {
 		$instance = Rsvp_Query::get_instance();
 		$query    = new WP_Comment_Query();
 
-		$query->query_vars['type'] = array( 'comment', 'pingback' );
+		$query->query_vars['type']     = array( 'comment', 'pingback' );
 		$query->query_vars['type__in'] = array( 'custom', 'review' );
 
 		$instance->exclude_rsvp_from_comment_query( $query );
