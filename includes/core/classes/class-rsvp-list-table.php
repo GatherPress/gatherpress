@@ -258,9 +258,6 @@ class RSVP_List_Table extends WP_List_Table {
 	private function get_rsvps( ?int $per_page = null, int $page_number = 1 ): array {
 		$rsvp_query = Rsvp_Query::get_instance();
 
-		// Temporarily remove the exclusion filter.
-		remove_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
-
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( null === $per_page ) {
 			$per_page = self::DEFAULT_PER_PAGE;
@@ -322,7 +319,7 @@ class RSVP_List_Table extends WP_List_Table {
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
 
-		$items   = get_comments( $args );
+		$items   = $rsvp_query->get_rsvps( $args );
 		$results = array();
 
 		foreach ( $items as $item ) {
@@ -330,9 +327,6 @@ class RSVP_List_Table extends WP_List_Table {
 			$item_array['event_title'] = get_the_title( (int) $item->comment_post_ID );
 			$results[]                 = $item_array;
 		}
-
-		// Re-add the exclusion filter.
-		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
 
 		return $results;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
