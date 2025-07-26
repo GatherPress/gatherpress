@@ -227,6 +227,11 @@ class Setup {
 	 * This is best done with wp_add_privacy_policy_content( $plugin_name, $policy_text ).
 	 * This will allow site administrators to pull that information into their site’s privacy policy.
 	 *
+	 * The HTML contents of the $content supports use of a specialized .privacy-policy-tutorial CSS class
+	 * which can be used to provide supplemental information.
+	 * Any content contained within HTML elements that have the .privacy-policy-tutorial CSS class applied
+	 * will be omitted from the clipboard when the section content is copied.
+	 *
 	 * @see https://developer.wordpress.org/plugins/privacy/suggesting-text-for-the-site-privacy-policy/
 	 *
 	 * @since 1.0.0
