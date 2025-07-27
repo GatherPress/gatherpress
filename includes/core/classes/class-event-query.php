@@ -163,7 +163,7 @@ class Event_Query {
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
-		if ( ! in_array( Event::POST_TYPE, (array) $query->get( 'post_type' ) )) {
+		if ( ! in_array( Event::POST_TYPE, (array) $query->get( 'post_type' ), true ) ) {
 			return;
 		}
 
@@ -295,7 +295,7 @@ class Event_Query {
 
 		global $wp_query;
 
-		if ( ! in_array( Event::POST_TYPE, (array) $wp_query->get( 'post_type' ) ) ) {
+		if ( ! in_array( Event::POST_TYPE, (array) $wp_query->get( 'post_type' ), true ) ) {
 			return $query_pieces;
 		}
 
