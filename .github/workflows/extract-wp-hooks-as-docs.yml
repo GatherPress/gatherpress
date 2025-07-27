@@ -1,6 +1,6 @@
 # This script is intended for WordPress plugins that provide hooks,
 # that can be used by other plugins.
-# By parsing its source code, it creates a documentation in a Github wiki (style).
+# By parsing its source code, it creates a documentation in a GitHub wiki (style).
 
 name: Extract WordPress Hooks into /docs
 
