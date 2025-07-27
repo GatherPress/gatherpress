@@ -20,10 +20,11 @@ import {
 } from './components';
 
 /**
- * Determines if the active variation is this one
+ * Determines if the current block instance is the GatherPress event query variation.
  *
- * @param {*} props
- * @return {boolean} Is this the correct variation?
+ * @param {Object} props            - Props passed to the block's edit component.
+ * @param {Object} props.attributes - Block attributes.
+ * @return {boolean} True if the block's namespace matches 'gatherpress-event-query', otherwise false.
  */
 const isGatherPressQueryLoop = (props) => {
 	const {
@@ -33,14 +34,14 @@ const isGatherPressQueryLoop = (props) => {
 };
 
 /**
- * UX helper for when using a regular query block
- * and "Event" gets selected as post type,
- * the UI changes to everything necessary for events.
+ * Watches the Query block's `postType` attribute and, if changed to "gatherpress_event",
+ * automatically transforms it into a GatherPress "Event Query" variation by updating
+ * relevant attributes.
  *
- * By adding the relevant attributes,
- * the block is transformed into the "Event Query" block variation.
- *
- * @param {*} props
+ * @param {Object}   props
+ * @param {Object}   props.attributes    - Block attributes.
+ * @param {Function} props.setAttributes - Function to update block attributes.
+ * @return {void}
  */
 const QueryPosttypeObserver = ({ attributes, setAttributes }) => {
 	const { postType } = attributes.query;
@@ -60,23 +61,27 @@ const QueryPosttypeObserver = ({ attributes, setAttributes }) => {
 			};
 			setAttributes(newAttributes);
 		}
-		// Dependency array, every time the postType is changed,
-		// the useEffect callback will be called.
+		// Dependency array ensures this runs
+		// whenever postType, attributes, or setAttributes changes.
 	}, [postType, attributes, setAttributes]);
 };
 
 /**
- * Custom controls
+ * Higher Order Component (HOC) to inject GatherPress-specific controls into core/query blocks.
  *
- * @param {*} BlockEdit
- * @return {Element} BlockEdit instance
+ * - If the block is not the designated event query or a query block, returns the block unchanged.
+ * - For standard query blocks, watches for post type selection to convert into an event query when needed.
+ * - For GatherPress event queries, provides the relevant controls in a PanelBody within InspectorControls.
+ *
+ * @param {Function} BlockEdit - The Query block's BlockEdit component.
+ * @return {Function} Enhanced BlockEdit component.
  */
 const withGatherPressQueryControls = (BlockEdit) => (props) => {
-	// If this is something totally different, return early.
+	// Early return if block is not a query or not a supported variation.
 	if (!isGatherPressQueryLoop(props) && 'core/query' !== props.name) {
 		return <BlockEdit {...props} />;
 	}
-	// Regular core/query blocks should become this addition.
+	/// If it's a generic core/query, observe for transformation to GatherPress event query.
 	if (!isGatherPressQueryLoop(props)) {
 		return (
 			<>
@@ -85,6 +90,7 @@ const withGatherPressQueryControls = (BlockEdit) => (props) => {
 			</>
 		);
 	}
+	// For a GatherPress event query, inject controls panel (will show full or inherited controls).
 	return (
 		<>
 			<BlockEdit {...props} />
@@ -105,8 +111,16 @@ const withGatherPressQueryControls = (BlockEdit) => (props) => {
 	);
 };
 
+/**
+ * Registers the withGatherPressQueryControls HOC as a filter to extend core/query blocks
+ * with custom InspectorControls for GatherPress event queries.
+ */
 addFilter('editor.BlockEdit', 'core/query', withGatherPressQueryControls);
 
+/**
+ * Registers the Query Controls SlotFills for the plugin interface, allowing
+ * the relevant GatherPress query controls and inherited controls to be displayed.
+ */
 registerPlugin('gatherpress-query-controls-slotfill', {
 	render: GatherPressQueryControlsSlotFill,
 });

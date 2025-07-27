@@ -19,8 +19,13 @@ import { isEventPostType } from '../../../helpers/event';
 /**
  * EventCountControls component
  *
- * @param {*} param0
- * @return {Element} EventCountControls
+ * Displays a RangeControl slider allowing the user to set
+ * how many events to show per page in the event list.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ * @return {Element}                     RangeControl for event "per page" count.
  */
 export const EventCountControls = ({ attributes, setAttributes }) => {
 	const { query: { perPage, offset = 0 } = {} } = attributes;
@@ -45,10 +50,18 @@ export const EventCountControls = ({ attributes, setAttributes }) => {
 };
 
 /**
- * A component that lets you exclude the current event from the query
+ * EventExcludeControls component
  *
- * @param {*} props
- * @return {Element} EventExcludeControls
+ * Renders a ToggleControl to allow the editor to exclude
+ * the current event from the query results.
+ *
+ * Looks up the current post's ID and updates the `exclude_current`
+ * query param accordingly.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ * @return {Element}                        ToggleControl to exclude current event.
  */
 export const EventExcludeControls = ({ attributes, setAttributes }) => {
 	const { query: { exclude_current: excludeCurrent } = {} } = attributes;
@@ -80,10 +93,16 @@ export const EventExcludeControls = ({ attributes, setAttributes }) => {
 };
 
 /**
- * A component that lets you include the current event from the query
+ * EventIncludeUnfinishedControls component
  *
- * @param {*} props
- * @return {Element} EventIncludeUnfinishedControls
+ * Shows a ToggleControl to let the editor include events
+ * that have started but not ended yet (unfinished events).
+ * Updates the `include_unfinished` query param in block attributes.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ * @return {Element}                        ToggleControl for unfinished events.
  */
 export const EventIncludeUnfinishedControls = ({
 	attributes,
@@ -122,10 +141,16 @@ export const EventIncludeUnfinishedControls = ({
 };
 
 /**
- * A component that lets you select whether to query for upcoming or past events.
+ * EventListTypeControls component
  *
- * @param {*} props
- * @return {Element} EventListTypeControls
+ * Lets the editor choose whether the query returns "upcoming" or "past" events.
+ * Toggled via a ToggleControl between upcoming (future) or past (archived) events,
+ * stored as `gatherpress_events_query` in attributes.
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ * @return {Element}                        ToggleControl for event list type.
  */
 export const EventListTypeControls = ({ attributes, setAttributes }) => {
 	const {
@@ -165,6 +190,17 @@ export const EventListTypeControls = ({ attributes, setAttributes }) => {
 	);
 };
 
+/**
+ * EventOffsetControls component
+ *
+ * Provides a RangeControl for defining the query's result offset,
+ * i.e., the amount of posts to skip (for pagination or similar).
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ * @return {Element}                        RangeControl for event query offset.
+ */
 export const EventOffsetControls = ({ attributes, setAttributes }) => {
 	const { query: { offset = 0 } = {} } = attributes;
 	return (
@@ -188,8 +224,14 @@ export const EventOffsetControls = ({ attributes, setAttributes }) => {
 /**
  * EventOrderControls component
  *
- * @param {*} param0
- * @return {Element} EventCountControls
+ * Allows user to select the order and ordering field for event query results.
+ * Provides a SelectControl for the orderBy (field to sort by) and a ToggleControl
+ * for the ordering direction (ascending/descending).
+ *
+ * @param {Object}   props
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to update block attributes.
+ * @return {Element}                        Controls for event sorting and order.
  */
 export const EventOrderControls = ({ attributes, setAttributes }) => {
 	const { query: { order, orderBy } = {} } = attributes;
@@ -254,6 +296,15 @@ export const EventOrderControls = ({ attributes, setAttributes }) => {
 	);
 };
 
+/**
+ * GatherPressQueryControlsSlotFill component
+ *
+ * Provides the main container for all GatherPress event query controls.
+ * Renders all controls depending on the current context (such as post type),
+ * wrapping them in the appropriate SlotFill for the Query Controls sidebar section.
+ *
+ * @return {Element} SlotFill with all event query controls for GatherPress.
+ */
 export const GatherPressQueryControlsSlotFill = () => {
 	// If the is the correct variation, add the custom controls.
 	const isEventContext = isEventPostType();
@@ -274,6 +325,15 @@ export const GatherPressQueryControlsSlotFill = () => {
 	);
 };
 
+/**
+ * GatherPressInheritedQueryControlsSlotFill component
+ *
+ * Provides a condensed container for controls used when
+ * a query is "inherited" (such as for nested queries), omitting
+ * some controls that are irrelevant in inherited context.
+ *
+ * @return {Element} SlotFill with inherited event query controls for GatherPress.
+ */
 export const GatherPressInheritedQueryControlsSlotFill = () => {
 	return (
 		<GatherPressInheritedQueryControls>
