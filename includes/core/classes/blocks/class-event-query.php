@@ -31,6 +31,16 @@ class Event_Query {
 	use Singleton;
 
 	/**
+	 * Constant representing the Block Name
+	 * 
+	 * This is not namespaced by purpose.
+	 * It's mainly used as a CSS class.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const BLOCK_NAME = 'gatherpress-event-query';
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -83,7 +93,7 @@ class Event_Query {
 	 * @return string|null The pre-rendered content. Default null.
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
-		if ( isset( $parsed_block['attrs']['namespace'] ) && 'gatherpress-event-query' === $parsed_block['attrs']['namespace'] ) {
+		if ( isset( $parsed_block['attrs']['namespace'] ) && self::BLOCK_NAME === $parsed_block['attrs']['namespace'] ) {
 			if ( isset( $parsed_block['attrs']['query']['inherit'] ) && true === $parsed_block['attrs']['query']['inherit'] ) {
 				global $wp_query;
 
