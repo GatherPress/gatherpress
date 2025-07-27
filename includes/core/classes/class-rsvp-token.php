@@ -168,7 +168,7 @@ class Rsvp_Token {
 			return null;
 		}
 
-		$post = get_post( $comment->comment_post_ID );
+		$post = get_post( (int) $comment->comment_post_ID );
 
 		if ( ! $post || Event::POST_TYPE !== $post->post_type ) {
 			return null;
