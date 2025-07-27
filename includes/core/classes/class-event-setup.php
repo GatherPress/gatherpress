@@ -76,6 +76,11 @@ class Event_Setup {
 			sprintf( 'manage_edit-%s_sortable_columns', Event::POST_TYPE ),
 			array( $this, 'sortable_columns' )
 		);
+		add_filter(
+			sprintf( 'views_edit-%s', Event::POST_TYPE ),
+			array( $this, 'views_edit' )
+		);
+		add_filter( 'query_vars', array( $this, 'query_vars' ) );
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
@@ -488,6 +493,68 @@ class Event_Setup {
 		$columns['datetime'] = 'datetime';
 
 		return $columns;
+	}
+
+	/**
+	 * Add 'Upcoming' & 'Past' to the available admin event list table views.
+	 *
+	 * This method adds links to filter the shown events in the admin list,
+	 * the filtering allows to show 'upcoming' or 'past' events.
+	 * Different to the regular view-links like 'Published' or 'Draft',
+	 * the new added view links do not contain any counts,
+	 * because adding those seemed to be not performance-effective for that type of feature.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $view_links An array of available list table views.
+	 *
+	 * @return array Updated list table views.
+	 */
+	public function views_edit( array $view_links ): array {
+		$nonce           = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
+		$is_events_query = isset( $_REQUEST['gatherpress_events_query'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['gatherpress_events_query'] ) ) : '';
+		$current_view    = ( $nonce && wp_verify_nonce( $nonce, 'gatherpress_events_views_query' ) && $is_events_query ) ? $is_events_query : '';
+		$placement       = 1;
+		$inserts         = array(
+			'upcoming' => __( 'Upcoming', 'gatherpress' ),
+			'past'     => __( 'Past', 'gatherpress' ),
+		);
+
+		foreach ( $inserts as $key => $value ) {
+			$inserts[ $key ] = sprintf(
+				'<a href="%s"%s>%s</a>',
+				wp_nonce_url(
+					add_query_arg(
+						array(
+							'gatherpress_events_query' => $key,
+							'post_type'                => Event::POST_TYPE,
+						),
+						admin_url( 'edit.php' )
+					),
+					'gatherpress_events_views_query'
+				),
+				$key === $current_view ? ' class="current" aria-current="page"' : '',
+				$value
+			);
+		}
+		return array_slice( $view_links, 0, $placement, true ) + $inserts + array_slice( $view_links, $placement, null, true );
+	}
+
+	/**
+	 * Allowlist for additional query parameters.
+	 *
+	 * Adds 'gatherpress_events_query' to the list of allowed query variables,
+	 * to be able to request 'upcoming' or 'past' events in the admin list view.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param  string[] $query_vars List of allowed query variables.
+	 *
+	 * @return string[] Updated list of allowed query variables.
+	 */
+	public function query_vars( array $query_vars ) {
+		$query_vars[] = 'gatherpress_events_query';
+		return $query_vars;
 	}
 
 	/**
