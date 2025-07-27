@@ -32,7 +32,7 @@ class Event_Query {
 
 	/**
 	 * Constant representing the Block Name
-	 * 
+	 *
 	 * This is not namespaced by purpose.
 	 * It's mainly used as a CSS class.
 	 *
@@ -164,7 +164,7 @@ class Event_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array     $query Array containing parameters for <code>WP_Query</code> as parsed by the block context.
+	 * @param array    $query Array containing parameters for <code>WP_Query</code> as parsed by the block context.
 	 * @param WP_Block $block Block instance.
 	 * @return array Array containing parameters for <code>WP_Query</code> as parsed by the block context.
 	 */
@@ -225,7 +225,7 @@ class Event_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array            $args    Array of arguments for WP_Query.
+	 * @param array           $args    Array of arguments for WP_Query.
 	 * @param WP_REST_Request $request The REST API request object.
 	 * @return array Array of arguments for WP_Query.
 	 */

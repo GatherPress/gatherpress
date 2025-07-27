@@ -406,7 +406,7 @@ class Event_Query {
 		// Appends a date-based condition to the WHERE clause of the SQL query,
 		// filtering events as either upcoming or past.
 		if ( 'upcoming' === $type ) {
-			 // Include only events starting on or after the current date/time (upcoming).
+			// Include only events starting on or after the current date/time (upcoming).
 			$pieces['where'] .= $wpdb->prepare( ' AND %i.%i >= %s', $table, $column, $current );
 		} elseif ( 'past' === $type ) {
 			// Include only events starting before the current date/time (past).
