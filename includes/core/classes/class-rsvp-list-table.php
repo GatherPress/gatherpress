@@ -256,6 +256,8 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array Array of RSVP comment data prepared for display.
 	 */
 	private function get_rsvps( ?int $per_page = null, int $page_number = 1 ): array {
+		$rsvp_query = Rsvp_Query::get_instance();
+
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if ( null === $per_page ) {
 			$per_page = self::DEFAULT_PER_PAGE;
@@ -264,11 +266,9 @@ class RSVP_List_Table extends WP_List_Table {
 		$offset = ( $page_number - 1 ) * $per_page;
 
 		$args = array(
-			'type'      => Rsvp::COMMENT_TYPE,
-			'number'    => $per_page,
-			'offset'    => $offset,
-			'status'    => 'all',
-			'post_type' => Event::POST_TYPE,
+			'number' => $per_page,
+			'offset' => $offset,
+			'status' => 'all',
 		);
 
 		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
@@ -296,6 +296,10 @@ class RSVP_List_Table extends WP_List_Table {
 			}
 		}
 
+		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
+			$args['user_id'] = intval( $_REQUEST['user_id'] );
+		}
+
 		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
 			$args['post_id'] = intval( $_REQUEST['post_id'] );
 		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
@@ -313,16 +317,17 @@ class RSVP_List_Table extends WP_List_Table {
 		$args['orderby'] = $orderby;
 		$args['order']   = $order;
 
-		$items   = get_comments( $args );
-		$results = array();
+		$items = $rsvp_query->get_rsvps( $args );
 
-		foreach ( $items as $item ) {
-			$item_array                = (array) $item;
-			$item_array['event_title'] = get_the_title( (int) $item->comment_post_ID );
-			$results[]                 = $item_array;
-		}
+		return array_map(
+			static function ( $item ): array {
+				$item_array                = (array) $item;
+				$item_array['event_title'] = get_the_title( (int) $item->comment_post_ID );
 
-		return $results;
+				return $item_array;
+			},
+			$items
+		);
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -330,9 +335,8 @@ class RSVP_List_Table extends WP_List_Table {
 	 * Retrieves the total count of RSVP comments based on filter criteria.
 	 *
 	 * Counts RSVP comments with optional filtering by search term, post/event ID,
-	 * and approval status. Uses WordPress core get_comments() function with the 'count'
-	 * parameter to efficiently retrieve only the count value. Request parameters are
-	 * sanitized before use in the query.
+	 * and approval status. Uses the get_rsvps() method with the count parameter
+	 * to efficiently retrieve only the count value.
 	 *
 	 * @since 1.0.0
 	 *
@@ -340,10 +344,15 @@ class RSVP_List_Table extends WP_List_Table {
 	 */
 	private function get_rsvp_count(): int {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		$args = array(
-			'type'  => 'gatherpress_rsvp',
-			'count' => true,
+		$rsvp_query = Rsvp_Query::get_instance();
+		$args       = array(
+			'count'  => true,
+			'status' => 'all',
 		);
+
+		if ( isset( $_REQUEST['user_id'] ) && ! empty( $_REQUEST['user_id'] ) ) {
+			$args['user_id'] = intval( $_REQUEST['user_id'] );
+		}
 
 		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
 			$search_term    = sanitize_text_field( wp_unslash( $_REQUEST['s'] ) );
@@ -361,9 +370,7 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
 		}
 
-		$count = get_comments( $args );
-
-		return $count;
+		return $rsvp_query->get_rsvps( $args );
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
@@ -687,12 +694,14 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array An array of HTML links for different views.
 	 */
 	public function get_views(): array {
-		$status_links = array();
-		$current      = 'all';
-
+		$rsvp_query     = Rsvp_Query::get_instance();
+		$status_links   = array();
+		$current        = 'all';
 		$nonce_verified = false;
+
 		if ( isset( $_REQUEST['_wpnonce'] ) ) {
 			$nonce = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
+
 			if ( wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
 				$nonce_verified = true;
 			}
@@ -701,6 +710,7 @@ class RSVP_List_Table extends WP_List_Table {
 		if ( $nonce_verified ) {
 			if ( isset( $_REQUEST['user_id'] ) ) {
 				$user_id = absint( $_REQUEST['user_id'] );
+
 				if ( get_current_user_id() === $user_id ) {
 					$current = 'mine';
 				}
@@ -718,55 +728,38 @@ class RSVP_List_Table extends WP_List_Table {
 			admin_url( 'edit.php' )
 		);
 
-		// Get the RSVP_Query instance.
-		$rsvp_query = Rsvp_Query::get_instance();
-
-		// Temporarily remove the exclusion filter.
-		remove_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
-
 		// Get counts for each status.
-		$all_count = get_comments(
+		$all_count      = $rsvp_query->get_rsvps(
 			array(
-				'type'  => Rsvp::COMMENT_TYPE,
-				'count' => true,
+				'status' => 'all',
+				'count'  => true,
 			)
 		);
-
-		$approved_count = get_comments(
+		$approved_count = $rsvp_query->get_rsvps(
 			array(
-				'type'   => Rsvp::COMMENT_TYPE,
 				'status' => 'approve',
 				'count'  => true,
 			)
 		);
-
-		$pending_count = get_comments(
+		$pending_count  = $rsvp_query->get_rsvps(
 			array(
-				'type'   => Rsvp::COMMENT_TYPE,
 				'status' => 'hold',
 				'count'  => true,
 			)
 		);
-
-		$spam_count = get_comments(
+		$spam_count     = $rsvp_query->get_rsvps(
 			array(
-				'type'   => Rsvp::COMMENT_TYPE,
 				'status' => 'spam',
 				'count'  => true,
 			)
 		);
-
-		// Get count for current user's RSVPs.
-		$mine_count = get_comments(
+		$mine_count     = $rsvp_query->get_rsvps(
 			array(
-				'type'    => Rsvp::COMMENT_TYPE,
+				'status'  => 'all',
 				'user_id' => get_current_user_id(),
 				'count'   => true,
 			)
 		);
-
-		// Re-add the exclusion filter.
-		add_action( 'pre_get_comments', array( $rsvp_query, 'exclude_rsvp_from_comment_query' ) );
 
 		// Build the links array with nonce included in base URL.
 		$status_links['all'] = sprintf(
@@ -777,7 +770,6 @@ class RSVP_List_Table extends WP_List_Table {
 			number_format_i18n( $all_count )
 		);
 
-		$mine_count = is_array( $mine_count ) ? 0 : (int) $mine_count;
 		if ( $mine_count > 0 ) {
 			$status_links['mine'] = sprintf(
 				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
