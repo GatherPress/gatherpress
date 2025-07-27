@@ -38,7 +38,6 @@ export const QUERY_NO_RESULTS_VARIATION = [
  */
 registerBlockVariation(CORE_BLOCK, {
 	category: 'gatherpress',
-	// keywords: [__('Page numbers'), __('Pagination')],
 	isActive: ['className'],
 	attributes: {
 		className: CLASS_NAME,

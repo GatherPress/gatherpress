@@ -86,6 +86,7 @@ class Event_Query {
 		if ( isset( $parsed_block['attrs']['namespace'] ) && 'gatherpress-event-query' === $parsed_block['attrs']['namespace'] ) {
 			if ( isset( $parsed_block['attrs']['query']['inherit'] ) && true === $parsed_block['attrs']['query']['inherit'] ) {
 				global $wp_query;
+
 				$query_args = array_merge(
 					$wp_query->query_vars,
 					array(
@@ -114,7 +115,7 @@ class Event_Query {
 					$parsed_block['attrs']['query'],
 					true,
 				);
-				// "Hijack the global query. It's a hack, but it works." Ryan Welcher
+				// "Hijack the global query. It's a hack, but it works." Ryan Welcher.
 				$wp_query = new WP_Query( $filtered_query_args ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 			} else {
 				add_filter(
@@ -172,7 +173,7 @@ class Event_Query {
 		$query_args['post_type'] = array( Event::POST_TYPE );
 
 		// Type of event list: 'upcoming' or 'past',
-		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php .
+		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
 		$query_args['gatherpress_events_query'] = $block_query['gatherpress_events_query'];
 
 		// Exclude Posts.

@@ -422,7 +422,7 @@ class Event_Query {
 	 *
 	 * @return string Name of the DB column, which content to compare against the current time.
 	 */
-	protected static function get_datetime_comparison_column( string $type, bool $inclusive ): string {
+	protected function get_datetime_comparison_column( string $type, bool $inclusive ): string {
 		if (
 			// Upcoming events, including ones that are running.
 			( $inclusive && 'upcoming' === $type ) ||
