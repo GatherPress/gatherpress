@@ -163,6 +163,10 @@ class Event_Query {
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
+		if ( ! in_array( Event::POST_TYPE, (array) $query->get( 'post_type' ) )) {
+			return;
+		}
+
 		$events_query = $query->get( 'gatherpress_events_query' );
 
 		if ( ! is_admin() && $query->is_main_query() ) {
@@ -290,6 +294,10 @@ class Event_Query {
 		}
 
 		global $wp_query;
+
+		if ( ! in_array( Event::POST_TYPE, (array) $wp_query->get( 'post_type' ) ) ) {
+			return $query_pieces;
+		}
 
 		// Sanity check, it's been reported that some admin screens may not have $wp_query set.
 		if ( ! $wp_query || ! method_exists( $wp_query, 'get' ) ) {
