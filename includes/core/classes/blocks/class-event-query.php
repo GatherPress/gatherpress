@@ -75,6 +75,8 @@ class Event_Query {
 	 *
 	 * Updates the query on the front end based on custom query attributes.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param string|null $pre_render   The pre-rendered content. Default null.
 	 * @param array       $parsed_block The block being rendered.
 	 * @return string|null The pre-rendered content. Default null.
@@ -97,7 +99,7 @@ class Event_Query {
 				 *
 				 * Allows filtering query params when the query is being inherited.
 				 *
-				 * @since 1.5
+				 * @since 1.0.0
 				 *
 				 * @param array   $query_args  Arguments to be passed to WP_Query.
 				 * @param array   $block_query The query attribute retrieved from the block.
@@ -129,6 +131,8 @@ class Event_Query {
 	/**
 	 * Returns an array with Post IDs that should be excluded from the Query.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array $attributes Event Query block attributes.
 	 * @return int[] Array of post IDs to exclude.
 	 */
@@ -145,6 +149,8 @@ class Event_Query {
 
 	/**
 	 * Filters the arguments which will be passed to `WP_Query` for the Query Loop Block.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @param array     $query Array containing parameters for <code>WP_Query</code> as parsed by the block context.
 	 * @param \WP_Block $block Block instance.
@@ -205,6 +211,8 @@ class Event_Query {
 	 *
 	 * Filters WP_Query arguments when querying posts via the REST API.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param array            $args    Array of arguments for WP_Query.
 	 * @param \WP_REST_Request $request The REST API request object.
 	 * @return array Array of arguments for WP_Query.
@@ -252,6 +260,8 @@ class Event_Query {
 	 * Filters collection parameters for the posts controller.
 	 *
 	 * Override the allowed items.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @see https://developer.wordpress.org/reference/classes/wp_rest_posts_controller/get_collection_params/
 	 *
