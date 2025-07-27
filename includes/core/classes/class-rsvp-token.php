@@ -13,6 +13,7 @@
 namespace GatherPress\Core;
 
 use WP_Comment;
+use WP_Post;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
@@ -154,6 +155,29 @@ class Rsvp_Token {
 	}
 
 	/**
+	 * Retrieves the event post object associated with this token.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return WP_Post|null The event post object, or null if not set.
+	 */
+	public function get_post(): ?WP_Post {
+		$comment = $this->get_comment();
+
+		if ( ! $comment ) {
+			return null;
+		}
+
+		$post = get_post( $comment->comment_post_ID );
+
+		if ( ! $post || Event::POST_TYPE !== $post->post_type ) {
+			return null;
+		}
+
+		return $post;
+	}
+
+	/**
 	 * Retrieves the email address from the RSVP comment.
 	 *
 	 * @since 1.0.0
@@ -182,6 +206,39 @@ class Rsvp_Token {
 	}
 
 	/**
+	 * Generates the confirmation URL with the event URL and token parameter.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The confirmation URL, or empty string if post not found.
+	 */
+	public function generate_url(): string {
+		$post    = $this->get_post();
+		$comment = $this->get_comment();
+
+		if ( ! $post || ! $comment ) {
+			return '';
+		}
+
+		$event_url = get_permalink( $post );
+
+		if ( ! $event_url ) {
+			return '';
+		}
+
+		$token = $this->get_token();
+
+		if ( ! $token ) {
+			return '';
+		}
+
+		// Format: commentID_token.
+		$token_value = sprintf( '%d_%s', $comment->comment_ID, $token );
+
+		return add_query_arg( static::NAME, $token_value, $event_url );
+	}
+
+	/**
 	 * Send RSVP confirmation email with magic link.
 	 *
 	 * Sends an email containing a magic link that allows the user to confirm
@@ -192,6 +249,21 @@ class Rsvp_Token {
 	 * @return void
 	 */
 	public function send_rsvp_confirmation_email(): void {
-		// @todo add email logic.
+		$to      = $this->get_email();
+		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+		$post    = $this->get_post();
+		$title   = $post ? get_the_title( $post ) : __( 'this event', 'gatherpress' );
+		$body    = Utility::render_template(
+			sprintf( '%s/includes/templates/admin/emails/rsvp-token-confirmation.php', GATHERPRESS_CORE_PATH ),
+			array(
+				'event_id'  => $post ? $post->ID : 0,
+				'token_url' => $this->generate_url(),
+			),
+		);
+
+		// translators: %s: Event title.
+		$subject = sprintf( __( 'Confirm your RSVP for %s', 'gatherpress' ), $title );
+
+		wp_mail( $to, $subject, $body, $headers );
 	}
 }
