@@ -16,6 +16,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
 use WP_Block;
 use WP_Query;
+use WP_REST_Request;
 
 /**
  * Class responsible for managing the "Event Query" block,
@@ -107,7 +108,7 @@ class Event_Query {
 				 *
 				 * @return array $filtered_query_args Final arguments list.
 				 */
-				$filtered_query_args = \apply_filters(
+				$filtered_query_args = apply_filters(
 					'gatherpress_query_vars',
 					$query_args,
 					$parsed_block['attrs']['query'],
@@ -153,10 +154,10 @@ class Event_Query {
 	 * @since 1.0.0
 	 *
 	 * @param array     $query Array containing parameters for <code>WP_Query</code> as parsed by the block context.
-	 * @param \WP_Block $block Block instance.
+	 * @param WP_Block $block Block instance.
 	 * @return array Array containing parameters for <code>WP_Query</code> as parsed by the block context.
 	 */
-	public function query_loop_block_query_vars( array $query, \WP_Block $block ): array {
+	public function query_loop_block_query_vars( array $query, WP_Block $block ): array {
 		// Retrieve the query from the passed block context.
 		$block_query = $block->context['query'];
 
@@ -189,10 +190,10 @@ class Event_Query {
 
 		// Order
 		// can be NULL, when ASC.
-		$query_args['order'] = \strtoupper( $block_query['order'] ?? 'ASC' );
+		$query_args['order'] = strtoupper( $block_query['order'] ?? 'ASC' );
 
 		/** This filter is documented in includes/query-loop.php */
-		$filtered_query_args = \apply_filters(
+		$filtered_query_args = apply_filters(
 			'gatherpress_query_vars',
 			$query_args,
 			$block_query,
@@ -214,10 +215,10 @@ class Event_Query {
 	 * @since 1.0.0
 	 *
 	 * @param array            $args    Array of arguments for WP_Query.
-	 * @param \WP_REST_Request $request The REST API request object.
+	 * @param WP_REST_Request $request The REST API request object.
 	 * @return array Array of arguments for WP_Query.
 	 */
-	public function rest_query( array $args, \WP_REST_Request $request ): array {
+	public function rest_query( array $args, WP_REST_Request $request ): array {
 		// Generate a new custom query will all potential query vars.
 		$custom_args = array();
 
@@ -242,7 +243,7 @@ class Event_Query {
 		$custom_args['orderby'] = $request->get_param( 'orderby' );
 
 		/** This filter is documented in includes/query-loop.php */
-		$filtered_query_args = \apply_filters(
+		$filtered_query_args = apply_filters(
 			'gatherpress_query_vars',
 			$custom_args,
 			$request->get_params(),
