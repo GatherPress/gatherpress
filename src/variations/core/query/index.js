@@ -16,7 +16,7 @@ export const NAME = 'gatherpress-event-query';
 const QUERY_ATTRIBUTES = {
 	namespace: NAME,
 	query: {
-		perPage: 3,
+		perPage: 5,
 		pages: 0,
 		offset: 0,
 		postType: 'gatherpress_event',
