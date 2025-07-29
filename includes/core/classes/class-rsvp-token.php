@@ -37,6 +37,22 @@ class Rsvp_Token {
 	const NAME = 'gatherpress_rsvp_token';
 
 	/**
+	 * The length of the generated token.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const TOKEN_LENGTH = 32;
+
+	/**
+	 * The meta key prefix for storing tokens.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const META_KEY_PREFIX = '_';
+
+	/**
 	 * The comment object associated with this token.
 	 *
 	 * @since 1.0.0
@@ -62,13 +78,31 @@ class Rsvp_Token {
 	 * @param int $comment_id The ID of the RSVP comment.
 	 */
 	public function __construct( int $comment_id ) {
+		if ( $comment_id <= 0 ) {
+			return;
+		}
+
 		$comment = get_comment( $comment_id );
 
-		if ( ! $comment || Rsvp::COMMENT_TYPE !== get_comment_type( $comment_id ) ) {
+		if ( ! $this->is_valid_rsvp_comment( $comment, $comment_id ) ) {
 			return;
 		}
 
 		$this->comment = $comment;
+	}
+
+	/**
+	 * Validates if a comment is a valid RSVP comment.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Comment|null $comment The comment object to validate.
+	 * @param int             $comment_id The comment ID for fallback validation.
+	 *
+	 * @return bool True if valid RSVP comment, false otherwise.
+	 */
+	private function is_valid_rsvp_comment( ?WP_Comment $comment, int $comment_id ): bool {
+		return $comment instanceof WP_Comment && Rsvp::COMMENT_TYPE === get_comment_type( $comment_id );
 	}
 
 	/**
@@ -91,7 +125,7 @@ class Rsvp_Token {
 
 		$token = (string) get_comment_meta(
 			(int) $this->comment->comment_ID,
-			sprintf( '_%s', static::NAME ),
+			$this->get_meta_key(),
 			true
 		);
 
@@ -119,9 +153,20 @@ class Rsvp_Token {
 	}
 
 	/**
+	 * Gets the meta key for storing the token.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The formatted meta key.
+	 */
+	private function get_meta_key(): string {
+		return sprintf( '%s%s', self::META_KEY_PREFIX, static::NAME );
+	}
+
+	/**
 	 * Generates a new secure token for this RSVP comment.
 	 *
-	 * Creates a 32-character random token and saves it to comment meta.
+	 * Creates a secure random token and saves it to comment meta.
 	 *
 	 * @since 1.0.0
 	 *
@@ -132,15 +177,36 @@ class Rsvp_Token {
 			return $this;
 		}
 
-		$this->token = wp_generate_password( 32, false );
-
-		update_comment_meta(
-			(int) $this->comment->comment_ID,
-			sprintf( '_%s', static::NAME ),
-			$this->token
-		);
+		$this->token = $this->create_secure_token();
+		$this->save_token_to_meta();
 
 		return $this;
+	}
+
+	/**
+	 * Creates a secure random token.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The generated token.
+	 */
+	private function create_secure_token(): string {
+		return wp_generate_password( self::TOKEN_LENGTH, false );
+	}
+
+	/**
+	 * Saves the current token to comment meta.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	private function save_token_to_meta(): void {
+		update_comment_meta(
+			(int) $this->comment->comment_ID,
+			$this->get_meta_key(),
+			$this->token
+		);
 	}
 
 	/**
@@ -170,7 +236,7 @@ class Rsvp_Token {
 
 		$post = get_post( (int) $comment->comment_post_ID );
 
-		if ( ! $post || Event::POST_TYPE !== $post->post_type ) {
+		if ( ! $post || Event::POST_TYPE !== get_post_type( $post ) ) {
 			return null;
 		}
 
@@ -215,8 +281,9 @@ class Rsvp_Token {
 	public function generate_url(): string {
 		$post    = $this->get_post();
 		$comment = $this->get_comment();
+		$token   = $this->get_token();
 
-		if ( ! $post || ! $comment ) {
+		if ( ! $this->has_required_url_components( $post, $comment, $token ) ) {
 			return '';
 		}
 
@@ -226,16 +293,38 @@ class Rsvp_Token {
 			return '';
 		}
 
-		$token = $this->get_token();
-
-		if ( ! $token ) {
-			return '';
-		}
-
-		// Format: commentID_token.
-		$token_value = sprintf( '%d_%s', $comment->comment_ID, $token );
+		$token_value = $this->format_token_value( (int) $comment->comment_ID, $token );
 
 		return add_query_arg( static::NAME, $token_value, $event_url );
+	}
+
+	/**
+	 * Checks if all required components for URL generation are available.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Post|null    $post The post object.
+	 * @param WP_Comment|null $comment The comment object.
+	 * @param string          $token The token string.
+	 *
+	 * @return bool True if all components are available, false otherwise.
+	 */
+	private function has_required_url_components( ?WP_Post $post, ?WP_Comment $comment, string $token ): bool {
+		return $post instanceof WP_Post && $comment instanceof WP_Comment && ! empty( $token );
+	}
+
+	/**
+	 * Formats the token value for URL inclusion.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int    $comment_id The comment ID.
+	 * @param string $token The token string.
+	 *
+	 * @return string The formatted token value.
+	 */
+	private function format_token_value( int $comment_id, string $token ): string {
+		return sprintf( '%d_%s', $comment_id, $token );
 	}
 
 	/**
@@ -246,24 +335,65 @@ class Rsvp_Token {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return void
+	 * @return bool True if email was sent successfully, false otherwise.
 	 */
-	public function send_rsvp_confirmation_email(): void {
-		$to      = $this->get_email();
-		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		$post    = $this->get_post();
-		$title   = $post ? get_the_title( $post ) : __( 'this event', 'gatherpress' );
-		$body    = Utility::render_template(
+	public function send_rsvp_confirmation_email(): bool {
+		$to = $this->get_email();
+
+		if ( empty( $to ) ) {
+			return false;
+		}
+
+		$post       = $this->get_post();
+		$email_data = $this->prepare_email_data( $post );
+
+		return wp_mail(
+			$to,
+			$email_data['subject'],
+			$email_data['body'],
+			$email_data['headers']
+		);
+	}
+
+	/**
+	 * Prepares email data for the confirmation email.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Post|null $post The event post object.
+	 *
+	 * @return array Email data with subject, body, and headers.
+	 */
+	private function prepare_email_data( ?WP_Post $post ): array {
+		$title = $post ? get_the_title( $post ) : __( 'this event', 'gatherpress' );
+
+		return array(
+			'subject' => sprintf(
+				/* translators: %s: Event title. */
+				__( 'Confirm your RSVP for %s', 'gatherpress' ),
+				$title
+			),
+			'body'    => $this->render_email_template( $post ),
+			'headers' => array( 'Content-Type: text/html; charset=UTF-8' ),
+		);
+	}
+
+	/**
+	 * Renders the email template for the confirmation email.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_Post|null $post The event post object.
+	 *
+	 * @return string The rendered email body.
+	 */
+	private function render_email_template( ?WP_Post $post ): string {
+		return Utility::render_template(
 			sprintf( '%s/includes/templates/admin/emails/rsvp-token-confirmation.php', GATHERPRESS_CORE_PATH ),
 			array(
 				'event_id'  => $post ? $post->ID : 0,
 				'token_url' => $this->generate_url(),
-			),
+			)
 		);
-
-		// translators: %s: Event title.
-		$subject = sprintf( __( 'Confirm your RSVP for %s', 'gatherpress' ), $title );
-
-		wp_mail( $to, $subject, $body, $headers );
 	}
 }
