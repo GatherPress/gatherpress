@@ -89,6 +89,7 @@ registerBlockVariation('core/query', {
 			},
 			[
 				['core/post-title'],
+				['gatherpress/event-date'],
 				['core/post-excerpt'],
 				['core/post-terms', { term: '_gatherpress_venue' }],
 			],
