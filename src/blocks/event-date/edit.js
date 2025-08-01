@@ -104,6 +104,7 @@ const Edit = ({ attributes, setAttributes, context }) => {
 		}),
 	});
 	const postId = attributes?.postId ?? context?.postId ?? null;
+	const queryId = context?.queryId ?? null;
 
 	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
 		(select) => {
@@ -115,7 +116,7 @@ const Edit = ({ attributes, setAttributes, context }) => {
 				};
 			}
 
-			if (isEventPostType()) {
+			if (isEventPostType() && queryId === null) {
 				return {
 					dateTimeStart: select(
 						'gatherpress/datetime'
