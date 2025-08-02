@@ -16,7 +16,6 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
-use WP;
 use WP_Query;
 
 /**
