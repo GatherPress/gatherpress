@@ -266,7 +266,6 @@ class Rsvp_Setup {
 
 		$comment_id = $token_data['comment_id'];
 		$token      = $token_data['token'];
-
 		$rsvp_token = new Rsvp_Token( $comment_id );
 
 		if ( $rsvp_token->is_valid( $token ) ) {
