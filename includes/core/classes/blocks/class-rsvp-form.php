@@ -73,7 +73,7 @@ class Rsvp_Form {
 	 * Converts the block's div container to a form element and adds necessary
 	 * hidden inputs for RSVP processing. Sets the form action to wp-comments-post.php
 	 * and method to POST to enable form submission handling through WordPress's
-	 * comment system.
+	 * comment system. Generates a unique form ID for redirect handling.
 	 *
 	 * @since 1.0.0
 	 *
@@ -85,12 +85,14 @@ class Rsvp_Form {
 	public function transform_block_content( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
+		$form_id        = $this->generate_form_id();
 		$block_content  = trim( $block_content );
 		$block_content  = preg_replace( '/^<div\b/', '<form', $block_content );
 		$block_content  = preg_replace(
 			'/(<\/div>)$/',
 			'<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
 			'<input type="hidden" name="' . esc_attr( Rsvp::COMMENT_TYPE ) . '" value="1">' .
+			'<input type="hidden" name="gatherpress_rsvp_form_id" value="' . esc_attr( $form_id ) . '">' .
 			'</form>',
 			$block_content
 		);
@@ -99,7 +101,22 @@ class Rsvp_Form {
 		$tag->next_tag();
 		$tag->set_attribute( 'action', site_url( 'wp-comments-post.php' ) );
 		$tag->set_attribute( 'method', 'post' );
+		$tag->set_attribute( 'id', $form_id );
 
 		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Generate a unique form ID for RSVP redirect handling.
+	 *
+	 * Creates a unique identifier that can be used to track form submissions
+	 * and handle redirects back to the correct page location.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string Unique form ID.
+	 */
+	private function generate_form_id(): string {
+		return uniqid( 'gatherpress_rsvp_' );
 	}
 }

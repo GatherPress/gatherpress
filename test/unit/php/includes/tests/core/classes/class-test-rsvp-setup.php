@@ -177,4 +177,226 @@ class Test_Rsvp_Setup extends Base {
 			'Failed to assert method returns empty string.'
 		);
 	}
+
+	/**
+	 * Tests that comment_post_redirect filter redirects to referer for RSVP comments.
+	 *
+	 * Verifies that when an RSVP comment is submitted, the user is redirected
+	 * back to the page they came from with success parameters.
+	 *
+	 * @since 1.0.0
+	 * @covers ::initialize_rsvp_form_handling
+	 *
+	 * @return void
+	 */
+	public function test_comment_post_redirect_for_rsvp_comment(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Mock filter_input for testing since it doesn't work with $_POST in test environment.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) {
+				if ( INPUT_POST === $type && 'gatherpress_rsvp' === $var_name ) {
+					return '1';
+				}
+				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_id' === $var_name ) {
+					return 'gatherpress_rsvp_12345';
+				}
+				return null;
+			}
+		);
+
+		// Mock wp_get_referer to return our test referer URL.
+		$GLOBALS['gatherpress_test_wp_get_referer_mock'] = function () {
+			return 'https://example.com/events/test-event/';
+		};
+
+		// Simulate RSVP form submission environment.
+		$_SERVER['REQUEST_METHOD']         = 'POST';
+		$_SERVER['HTTP_REFERER']           = 'https://example.com/events/test-event/';
+		$_SERVER['REQUEST_URI']            = '/wp-comments-post.php'; // Different from referer.
+		$_POST['gatherpress_rsvp']         = '1';
+		$_POST['gatherpress_rsvp_form_id'] = 'gatherpress_rsvp_12345';
+		$_POST['_wp_http_referer']         = 'https://example.com/events/test-event/';
+
+		// Trigger the form handling setup.
+		$instance = Rsvp_Setup::get_instance();
+		$instance->initialize_rsvp_form_handling();
+
+		$comment_data = array(
+			'comment_post_ID'      => $post_id,
+			'comment_content'      => '',
+			'comment_type'         => Rsvp::COMMENT_TYPE,
+			'comment_author'       => 'Test User',
+			'comment_author_email' => 'test@example.com',
+		);
+
+		$comment_id = wp_insert_comment( $comment_data );
+		$comment    = get_comment( $comment_id );
+
+		$original_location = 'https://example.com/wp-comments-post.php';
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$filtered_location = apply_filters( 'comment_post_redirect', $original_location, $comment );
+
+		$this->assertStringContainsString( 'gatherpress_rsvp_success=true', $filtered_location );
+		$this->assertStringContainsString( '#gatherpress_rsvp_12345', $filtered_location );
+		$this->assertStringStartsWith( 'https://example.com/events/test-event/', $filtered_location );
+
+		// Clean up.
+		$this->unset_fn_return( 'filter_input' );
+		unset( $GLOBALS['gatherpress_test_wp_get_referer_mock'] );
+		unset( $_SERVER['REQUEST_METHOD'] );
+		unset( $_SERVER['HTTP_REFERER'] );
+		unset( $_SERVER['REQUEST_URI'] );
+		unset( $_POST['gatherpress_rsvp'] );
+		unset( $_POST['gatherpress_rsvp_form_id'] );
+		unset( $_POST['_wp_http_referer'] );
+	}
+
+	/**
+	 * Tests that comment_post_redirect filter ignores non-RSVP comments.
+	 *
+	 * Verifies that regular comments are not affected by the RSVP redirect logic.
+	 *
+	 * @since 1.0.0
+	 * @covers ::initialize_rsvp_form_handling
+	 *
+	 * @return void
+	 */
+	public function test_comment_post_redirect_ignores_non_rsvp_comments(): void {
+		$post_id = $this->factory()->post->create();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+			'comment_content' => 'This is a regular comment',
+			'comment_type'    => '',
+		);
+
+		$comment_id = wp_insert_comment( $comment_data );
+		$comment    = get_comment( $comment_id );
+
+		$original_location = 'https://example.com/wp-comments-post.php';
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$filtered_location = apply_filters( 'comment_post_redirect', $original_location, $comment );
+
+		$this->assertEquals( $original_location, $filtered_location );
+	}
+
+	/**
+	 * Tests comment_post_redirect filter without referer.
+	 *
+	 * Verifies that when there's no HTTP_REFERER, the filter returns the original location.
+	 *
+	 * @since 1.0.0
+	 * @covers ::initialize_rsvp_form_handling
+	 *
+	 * @return void
+	 */
+	public function test_comment_post_redirect_without_referer(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		unset( $_SERVER['HTTP_REFERER'] );
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+			'comment_content' => '',
+			'comment_type'    => Rsvp::COMMENT_TYPE,
+		);
+
+		$comment_id = wp_insert_comment( $comment_data );
+		$comment    = get_comment( $comment_id );
+
+		$original_location = 'https://example.com/wp-comments-post.php';
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$filtered_location = apply_filters( 'comment_post_redirect', $original_location, $comment );
+
+		$this->assertEquals( $original_location, $filtered_location );
+	}
+
+	/**
+	 * Tests comment_post_redirect filter without form ID.
+	 *
+	 * Verifies that the redirect works without a form ID, just adding the success parameter.
+	 *
+	 * @since 1.0.0
+	 * @covers ::initialize_rsvp_form_handling
+	 *
+	 * @return void
+	 */
+	public function test_comment_post_redirect_without_form_id(): void {
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Mock filter_input for testing since it doesn't work with $_POST in test environment.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) {
+				if ( INPUT_POST === $type ) {
+					switch ( $var_name ) {
+						case 'gatherpress_rsvp':
+							return '1';
+						case 'gatherpress_rsvp_form_id':
+							return null; // No form ID for this test.
+						default:
+							return null;
+					}
+				}
+				return null;
+			}
+		);
+
+		// Mock wp_get_referer to return our test referer URL.
+		$GLOBALS['gatherpress_test_wp_get_referer_mock'] = function () {
+			return 'https://example.com/events/test-event/';
+		};
+
+		// Simulate RSVP form submission environment.
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_SERVER['HTTP_REFERER']   = 'https://example.com/events/test-event/';
+		$_SERVER['REQUEST_URI']    = '/wp-comments-post.php'; // Different from referer.
+		$_POST['gatherpress_rsvp'] = '1';
+		$_POST['_wp_http_referer'] = 'https://example.com/events/test-event/';
+		unset( $_POST['gatherpress_rsvp_form_id'] );
+
+		// Trigger the form handling setup.
+		$instance = Rsvp_Setup::get_instance();
+		$instance->initialize_rsvp_form_handling();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+			'comment_content' => '',
+			'comment_type'    => Rsvp::COMMENT_TYPE,
+		);
+
+		$comment_id = wp_insert_comment( $comment_data );
+		$comment    = get_comment( $comment_id );
+
+		$original_location = 'https://example.com/wp-comments-post.php';
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$filtered_location = apply_filters( 'comment_post_redirect', $original_location, $comment );
+
+		$this->assertStringContainsString( 'gatherpress_rsvp_success=true', $filtered_location );
+		$this->assertStringNotContainsString( '#gatherpress_rsvp_', $filtered_location );
+		$this->assertStringStartsWith( 'https://example.com/events/test-event/', $filtered_location );
+
+		// Clean up.
+		$this->unset_fn_return( 'filter_input' );
+		unset( $GLOBALS['gatherpress_test_wp_get_referer_mock'] );
+		unset( $_SERVER['REQUEST_METHOD'] );
+		unset( $_SERVER['HTTP_REFERER'] );
+		unset( $_SERVER['REQUEST_URI'] );
+		unset( $_POST['gatherpress_rsvp'] );
+		unset( $_POST['_wp_http_referer'] );
+	}
 }

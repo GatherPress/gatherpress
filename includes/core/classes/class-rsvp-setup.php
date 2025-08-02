@@ -175,6 +175,37 @@ class Rsvp_Setup {
 				return __( "You've already RSVP'd to this event.", 'gatherpress' );
 			}
 		);
+
+		add_filter(
+			'comment_post_redirect',
+			static function ( string $location, WP_Comment $comment ): string {
+				if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
+					return $location;
+				}
+
+				$form_id = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_form_id' ) ) );
+				$referer = wp_get_referer();
+
+				if ( ! $referer ) {
+					return $location;
+				}
+
+				$redirect_url = add_query_arg(
+					array(
+						'gatherpress_rsvp_success' => 'true',
+					),
+					$referer
+				);
+
+				if ( ! empty( $form_id ) ) {
+					$redirect_url .= '#' . esc_attr( $form_id );
+				}
+
+				return $redirect_url;
+			},
+			10,
+			2
+		);
 	}
 
 	/**
