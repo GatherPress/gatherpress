@@ -156,9 +156,9 @@ class Test_Feed_Improvements extends Base {
 			)
 		);
 
-		// Set up global post.
-		global $post;
+		// Set up global post data.
 		$post = get_post( $event_id );
+		setup_postdata( $post );
 
 		// Create a mock Event class that will be used when new Event() is called.
 		$event_mock = $this->getMockBuilder( Event::class )
@@ -195,6 +195,9 @@ class Test_Feed_Improvements extends Base {
 		// For now, just verify that the method returns something and doesn't error.
 		$this->assertIsString( $result );
 		$this->assertNotEmpty( $result );
+
+		// Clean up.
+		wp_reset_postdata();
 	}
 
 	/**
@@ -215,15 +218,18 @@ class Test_Feed_Improvements extends Base {
 			)
 		);
 
-		// Set up global post.
-		global $post;
+		// Set up global post data.
 		$post = get_post( $post_id );
+		setup_postdata( $post );
 
 		$excerpt = 'Original excerpt';
 		$result  = $this->instance->customize_event_excerpt( $excerpt );
 
 		// Should return original excerpt unchanged.
 		$this->assertEquals( $excerpt, $result );
+
+		// Clean up.
+		wp_reset_postdata();
 	}
 
 	/**
@@ -245,9 +251,9 @@ class Test_Feed_Improvements extends Base {
 			)
 		);
 
-		// Set up global post.
-		global $post;
+		// Set up global post data.
 		$post = get_post( $event_id );
+		setup_postdata( $post );
 
 		// Test the content customization.
 		$content = 'Original content';
@@ -256,6 +262,9 @@ class Test_Feed_Improvements extends Base {
 		// For now, just verify that the method returns something and doesn't error.
 		$this->assertIsString( $result );
 		$this->assertNotEmpty( $result );
+
+		// Clean up.
+		wp_reset_postdata();
 	}
 
 	/**
@@ -276,15 +285,18 @@ class Test_Feed_Improvements extends Base {
 			)
 		);
 
-		// Set up global post.
-		global $post;
+		// Set up global post data.
 		$post = get_post( $post_id );
+		setup_postdata( $post );
 
 		$content = 'Original content';
 		$result  = $this->instance->customize_event_content( $content );
 
 		// Should return original content unchanged.
 		$this->assertEquals( $content, $result );
+
+		// Clean up.
+		wp_reset_postdata();
 	}
 
 	/**
