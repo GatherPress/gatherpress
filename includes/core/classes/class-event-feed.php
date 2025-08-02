@@ -114,8 +114,8 @@ class Event_Feed {
 	 * @return array Array of event information strings.
 	 */
 	private function get_event_datetime_info( Event $event ): array {
-		$event_info        = array();
-		$display_datetime  = $event->get_display_datetime();
+		$event_info = array();
+		$display_datetime = $event->get_display_datetime();
 
 		if ( ! empty( $display_datetime ) && __( '—', 'gatherpress' ) !== $display_datetime ) {
 			$event_info[] = sprintf(
@@ -246,5 +246,4 @@ class Event_Feed {
 			'top'
 		);
 	}
-
 }
