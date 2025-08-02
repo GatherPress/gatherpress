@@ -300,6 +300,61 @@ class Feed_Improvements {
 	}
 
 	/**
+	 * Get formatted event datetime information for feeds.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param Event $event The event object.
+	 * @return array Array of event information strings.
+	 */
+	private function get_event_datetime_info( Event $event ): array {
+		$event_info = array();
+		$datetime_data = $event->get_datetime();
+		
+		if ( ! empty( $datetime_data['datetime_start'] ) ) {
+			$start_timestamp = strtotime( $datetime_data['datetime_start'] );
+			$end_timestamp = ! empty( $datetime_data['datetime_end'] ) ? strtotime( $datetime_data['datetime_end'] ) : null;
+			
+			$date_format = get_option( 'date_format' );
+			$time_format = get_option( 'time_format' );
+			$start_date = wp_date( $date_format, $start_timestamp );
+			$start_time = wp_date( $time_format, $start_timestamp );
+
+			if ( $end_timestamp && $end_timestamp !== $start_timestamp ) {
+				$end_date = wp_date( $date_format, $end_timestamp );
+				$end_time = wp_date( $time_format, $end_timestamp );
+				
+				// If same day, show time range
+				if ( $start_date === $end_date ) {
+					$event_info[] = sprintf(
+						/* translators: 1: Date, 2: Start time, 3: End time */
+						__( 'Date: %1$s from %2$s to %3$s', 'gatherpress' ),
+						$start_date,
+						$start_time,
+						$end_time
+					);
+				} else {
+					$event_info[] = sprintf(
+						/* translators: 1: Start date and time, 2: End date and time */
+						__( 'Date: %1$s to %2$s', 'gatherpress' ),
+						$start_date . ' ' . $start_time,
+						$end_date . ' ' . $end_time
+					);
+				}
+			} else {
+				$event_info[] = sprintf(
+					/* translators: 1: Date, 2: Time */
+					__( 'Date: %1$s at %2$s', 'gatherpress' ),
+					$start_date,
+					$start_time
+				);
+			}
+		}
+		
+		return $event_info;
+	}
+
+	/**
 	 * Customize RSS excerpts for events to include date and venue information.
 	 *
 	 * @since 1.0.0
@@ -318,36 +373,7 @@ class Feed_Improvements {
 		$event = new Event( $post->ID );
 		$venue = $event->get_venue_information();
 
-		$event_info = array();
-
-		// Add event date and time.
-		$datetime_start = $event->get_datetime_start();
-		$datetime_end   = $event->get_datetime_end();
-
-		if ( $datetime_start ) {
-			$date_format = get_option( 'date_format' );
-			$time_format = get_option( 'time_format' );
-			$start_date  = wp_date( $date_format, $datetime_start );
-			$start_time  = wp_date( $time_format, $datetime_start );
-
-			if ( $datetime_end && $datetime_end !== $datetime_start ) {
-				$end_time = wp_date( $time_format, $datetime_end );
-				$event_info[] = sprintf(
-					/* translators: 1: Start date, 2: Start time, 3: End time */
-					__( 'Date: %1$s from %2$s to %3$s', 'gatherpress' ),
-					$start_date,
-					$start_time,
-					$end_time
-				);
-			} else {
-				$event_info[] = sprintf(
-					/* translators: 1: Start date, 2: Start time */
-					__( 'Date: %1$s at %2$s', 'gatherpress' ),
-					$start_date,
-					$start_time
-				);
-			}
-		}
+		$event_info = $this->get_event_datetime_info( $event );
 
 		// Add venue information.
 		if ( $venue && ! empty( $venue['name'] ) ) {
@@ -367,7 +393,13 @@ class Feed_Improvements {
 
 		// Add the original excerpt if it exists and is different from the content.
 		if ( ! empty( $excerpt ) && $excerpt !== $post->post_content ) {
-			$custom_excerpt .= '<p>' . $excerpt . '</p>';
+			$clean_excerpt = wp_strip_all_tags( $excerpt );
+			$clean_excerpt = preg_replace( '/\s+/', ' ', $clean_excerpt ); // Normalize whitespace
+			$clean_excerpt = trim( $clean_excerpt );
+			
+			if ( ! empty( $clean_excerpt ) ) {
+				$custom_excerpt .= '<p>' . $clean_excerpt . '</p>';
+			}
 		}
 
 		return $custom_excerpt;
@@ -392,36 +424,7 @@ class Feed_Improvements {
 		$event = new Event( $post->ID );
 		$venue = $event->get_venue_information();
 
-		$event_info = array();
-
-		// Add event date and time.
-		$datetime_start = $event->get_datetime_start();
-		$datetime_end   = $event->get_datetime_end();
-
-		if ( $datetime_start ) {
-			$date_format = get_option( 'date_format' );
-			$time_format = get_option( 'time_format' );
-			$start_date  = wp_date( $date_format, $datetime_start );
-			$start_time  = wp_date( $time_format, $datetime_start );
-
-			if ( $datetime_end && $datetime_end !== $datetime_start ) {
-				$end_time = wp_date( $time_format, $datetime_end );
-				$event_info[] = sprintf(
-					/* translators: 1: Start date, 2: Start time, 3: End time */
-					__( 'Date: %1$s from %2$s to %3$s', 'gatherpress' ),
-					$start_date,
-					$start_time,
-					$end_time
-				);
-			} else {
-				$event_info[] = sprintf(
-					/* translators: 1: Start date, 2: Start time */
-					__( 'Date: %1$s at %2$s', 'gatherpress' ),
-					$start_date,
-					$start_time
-				);
-			}
-		}
+		$event_info = $this->get_event_datetime_info( $event );
 
 		// Add venue information.
 		if ( $venue && ! empty( $venue['name'] ) ) {
@@ -439,7 +442,15 @@ class Feed_Improvements {
 			$custom_content .= '<p><strong>' . implode( ' | ', $event_info ) . '</strong></p>';
 		}
 
-		$custom_content .= $content;
+		// For RSS feeds, provide a cleaner version of the content.
+		// Strip out complex HTML and keep only essential information.
+		$clean_content = wp_strip_all_tags( $content );
+		$clean_content = preg_replace( '/\s+/', ' ', $clean_content ); // Normalize whitespace
+		$clean_content = trim( $clean_content );
+
+		if ( ! empty( $clean_content ) ) {
+			$custom_content .= '<p>' . $clean_content . '</p>';
+		}
 
 		return $custom_content;
 	}
