@@ -177,7 +177,6 @@ class Modal {
 	 * @return string The modified block content. Returns an empty string if the block should be removed.
 	 */
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
-		// @todo commenting out for now.
 		if (
 			str_contains( $block['attrs']['className'] ?? '', 'gatherpress--is-rsvp-modal' ) &&
 			! Rsvp_Setup::get_instance()->get_user_identifier()
