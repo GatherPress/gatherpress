@@ -27,7 +27,7 @@ const defaultConfig = require('@wordpress/scripts/config/webpack.config.js');
  *                  'variations' directory does not exist.
  */
 function getVariationEntries() {
-	const variationsDir = path.resolve(process.cwd(), 'src', 'variations');
+	const variationsDir = path.resolve(process.cwd(), 'src/variations', 'core');
 	const entries = {};
 
 	if (!fs.existsSync(variationsDir)) {
@@ -38,7 +38,7 @@ function getVariationEntries() {
 
 	for (const variation of variationDirs) {
 		const variationPath = path.join(variationsDir, variation);
-		entries[`variations/${variation}/index`] = path.join(
+		entries[`variations/core/${variation}/index`] = path.join(
 			variationPath,
 			'index.js'
 		);
