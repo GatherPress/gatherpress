@@ -101,7 +101,7 @@ class Rsvp_Form {
 		$tag->next_tag();
 		$tag->set_attribute( 'action', site_url( 'wp-comments-post.php' ) );
 		$tag->set_attribute( 'method', 'post' );
-		
+
 		// Only set the form ID if there isn't already an existing ID attribute.
 		if ( ! $tag->get_attribute( 'id' ) ) {
 			$tag->set_attribute( 'id', $form_id );
