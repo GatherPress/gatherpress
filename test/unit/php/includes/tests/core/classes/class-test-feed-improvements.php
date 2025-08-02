@@ -69,7 +69,7 @@ class Test_Feed_Improvements extends Base {
 	 * @return void
 	 */
 	public function test_force_events_feed_query(): void {
-		// Mock $_SERVER['REQUEST_URI'].
+		// Mock the request URI.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
 
 		// Create a mock query for event feed.
@@ -122,7 +122,7 @@ class Test_Feed_Improvements extends Base {
 	 * @return void
 	 */
 	public function test_force_events_feed_query_non_feed(): void {
-		// Mock $_SERVER['REQUEST_URI'].
+		// Mock the request URI.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
 
 		// Create a mock query for non-feed.
