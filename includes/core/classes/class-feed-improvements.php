@@ -62,10 +62,6 @@ class Feed_Improvements {
 		// Hook into the main query before it's executed.
 		add_action( 'pre_get_posts', array( $this, 'force_events_feed_query' ), 5 );
 
-		// Hook into feed template loading to use default template.
-		add_filter( 'feed_template', array( $this, 'use_default_feed_template' ) );
-		add_filter( 'template_include', array( $this, 'force_default_feed_template_early' ), -999 );
-
 		// Add custom rewrite rules for events feed.
 		add_action( 'init', array( $this, 'add_events_feed_rewrite_rules' ) );
 	}
@@ -217,57 +213,7 @@ class Feed_Improvements {
 		}
 	}
 
-	/**
-	 * Use the default feed template for events feeds.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $template The feed template path.
-	 * @return string The feed template path.
-	 */
-	public function use_default_feed_template( string $template ): string {
-		// Check if this is an events feed request.
-		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
-			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
-			// Check if this is /events/feed/.
-			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
-				// Always use the default WordPress feed template.
-				$default_template = get_feed_template();
-				if ( $default_template ) {
-					return $default_template;
-				}
-			}
-		}
-
-		return $template;
-	}
-
-	/**
-	 * Force the default feed template for events feeds.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $template The template path.
-	 * @return string The template path.
-	 */
-	public function force_default_feed_template( string $template ): string {
-		// Check if this is an events feed request.
-		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
-			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-
-			// Check if this is /events/feed/.
-			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
-				// Force WordPress to use the default feed template.
-				$default_feed_template = get_feed_template();
-				if ( $default_feed_template && file_exists( $default_feed_template ) ) {
-					return $default_feed_template;
-				}
-			}
-		}
-
-		return $template;
-	}
 
 	/**
 	 * Get formatted event datetime information for feeds.
@@ -425,31 +371,7 @@ class Feed_Improvements {
 		return $custom_content;
 	}
 
-	/**
-	 * Force the default feed template for events feeds at the earliest possible point.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $template The template path.
-	 * @return string The template path.
-	 */
-	public function force_default_feed_template_early( string $template ): string {
-		// Check if this is an events feed request.
-		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
-			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
-			// Check if this is /events/feed/.
-			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
-				// Force WordPress to use the default feed template.
-				$default_feed_template = get_feed_template();
-				if ( $default_feed_template && file_exists( $default_feed_template ) ) {
-					return $default_feed_template;
-				}
-			}
-		}
-
-		return $template;
-	}
 
 	/**
 	 * Add custom rewrite rules for events feed.
@@ -472,4 +394,4 @@ class Feed_Improvements {
 			update_option( 'gatherpress_events_feed_rewrite_flushed', true );
 		}
 	}
-} 
+}

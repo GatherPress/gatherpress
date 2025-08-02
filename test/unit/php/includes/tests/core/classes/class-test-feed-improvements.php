@@ -150,8 +150,8 @@ class Test_Feed_Improvements extends Base {
 		// Create a test event.
 		$event_id = $this->factory->post->create(
 			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
+				'post_type'    => Event::POST_TYPE,
+				'post_title'   => 'Test Event',
 				'post_content' => 'Test event content',
 			)
 		);
@@ -210,8 +210,8 @@ class Test_Feed_Improvements extends Base {
 		// Create a test post (not an event).
 		$post_id = $this->factory->post->create(
 			array(
-				'post_type'   => 'post',
-				'post_title'  => 'Test Post',
+				'post_type'  => 'post',
+				'post_title' => 'Test Post',
 			)
 		);
 
@@ -239,8 +239,8 @@ class Test_Feed_Improvements extends Base {
 		// Create a test event.
 		$event_id = $this->factory->post->create(
 			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_title'  => 'Test Event',
+				'post_type'    => Event::POST_TYPE,
+				'post_title'   => 'Test Event',
 				'post_content' => 'Test event content',
 			)
 		);
@@ -271,8 +271,8 @@ class Test_Feed_Improvements extends Base {
 		// Create a test post (not an event).
 		$post_id = $this->factory->post->create(
 			array(
-				'post_type'   => 'post',
-				'post_title'  => 'Test Post',
+				'post_type'  => 'post',
+				'post_title' => 'Test Post',
 			)
 		);
 
@@ -355,4 +355,4 @@ class Test_Feed_Improvements extends Base {
 		$this->assertIsArray( $result );
 		$this->assertEmpty( $result );
 	}
-} 
+}
