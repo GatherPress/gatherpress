@@ -1,6 +1,6 @@
 <?php
 /**
- * Test class for Feed_Improvements.
+ * Test class for Event_Feed.
  *
  * @package GatherPress\Tests\Core
  * @since 1.0.0
@@ -9,27 +9,27 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Feed_Improvements;
+use GatherPress\Core\Event_Feed;
 use GatherPress\Tests\Base;
 use WP_Query;
 
 /**
- * Class Test_Feed_Improvements.
+ * Class Test_Event_Feed.
  *
  * @since 1.0.0
  *
- * @coversDefaultClass \GatherPress\Core\Feed_Improvements
+ * @coversDefaultClass \GatherPress\Core\Event_Feed
  */
-class Test_Feed_Improvements extends Base {
+class Test_Event_Feed extends Base {
 
 	/**
-	 * Test instance of Feed_Improvements.
+	 * Test instance of Event_Feed.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @var Feed_Improvements
+	 * @var Event_Feed
 	 */
-	protected Feed_Improvements $instance;
+	protected Event_Feed $instance;
 
 	/**
 	 * Set up test environment.
@@ -40,7 +40,7 @@ class Test_Feed_Improvements extends Base {
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		$this->instance = Feed_Improvements::get_instance();
+		$this->instance = Event_Feed::get_instance();
 	}
 
 	/**
@@ -53,8 +53,8 @@ class Test_Feed_Improvements extends Base {
 	 * @return void
 	 */
 	public function test_singleton_pattern(): void {
-		$instance1 = Feed_Improvements::get_instance();
-		$instance2 = Feed_Improvements::get_instance();
+		$instance1 = Event_Feed::get_instance();
+		$instance2 = Event_Feed::get_instance();
 
 		$this->assertSame( $instance1, $instance2 );
 	}
@@ -64,11 +64,11 @@ class Test_Feed_Improvements extends Base {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @covers ::force_events_feed_query
+	 * @covers ::handle_events_feed_query
 	 *
 	 * @return void
 	 */
-	public function test_force_events_feed_query(): void {
+	public function test_handle_events_feed_query(): void {
 		// Mock the request URI.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
 
@@ -78,7 +78,7 @@ class Test_Feed_Improvements extends Base {
 		$query->method( 'is_feed' )->willReturn( true );
 
 		// Test that the method doesn't error.
-		$this->instance->force_events_feed_query( $query );
+		$this->instance->handle_events_feed_query( $query );
 
 		// Verify the method completed without error.
 		$this->assertTrue( true );
@@ -88,15 +88,15 @@ class Test_Feed_Improvements extends Base {
 	}
 
 	/**
-	 * Test force_events_feed_query method with non-events feed.
+	 * Test handle_events_feed_query method with non-events feed.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @covers ::force_events_feed_query
+	 * @covers ::handle_events_feed_query
 	 *
 	 * @return void
 	 */
-	public function test_force_events_feed_query_non_events(): void {
+	public function test_handle_events_feed_query_non_events(): void {
 		// Mock $_SERVER['REQUEST_URI'] for non-events feed.
 		$_SERVER['REQUEST_URI'] = '/feed/';
 
@@ -106,22 +106,22 @@ class Test_Feed_Improvements extends Base {
 		$query->method( 'is_feed' )->willReturn( true );
 		$query->expects( $this->never() )->method( 'set' );
 
-		$this->instance->force_events_feed_query( $query );
+		$this->instance->handle_events_feed_query( $query );
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
 	}
 
 	/**
-	 * Test force_events_feed_query method with non-feed query.
+	 * Test handle_events_feed_query method with non-feed query.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @covers ::force_events_feed_query
+	 * @covers ::handle_events_feed_query
 	 *
 	 * @return void
 	 */
-	public function test_force_events_feed_query_non_feed(): void {
+	public function test_handle_events_feed_query_non_feed(): void {
 		// Mock the request URI.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
 
@@ -131,7 +131,7 @@ class Test_Feed_Improvements extends Base {
 		$query->method( 'is_feed' )->willReturn( false );
 		$query->expects( $this->never() )->method( 'set' );
 
-		$this->instance->force_events_feed_query( $query );
+		$this->instance->handle_events_feed_query( $query );
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );
@@ -311,15 +311,7 @@ class Test_Feed_Improvements extends Base {
 	public function test_get_event_datetime_info(): void {
 		// Create a mock Event object.
 		$event_mock = $this->createMock( Event::class );
-		$event_mock->method( 'get_datetime' )->willReturn(
-			array(
-				'datetime_start'     => '2024-01-15 14:00:00',
-				'datetime_end'       => '2024-01-15 16:00:00',
-				'datetime_start_gmt' => '2024-01-15 14:00:00',
-				'datetime_end_gmt'   => '2024-01-15 16:00:00',
-				'timezone'           => 'America/New_York',
-			)
-		);
+		$event_mock->method( 'get_display_datetime' )->willReturn( 'Mon, Jan 15, 2024, 2:00 pm to 4:00 pm' );
 
 		// Use reflection to access the private method.
 		$reflection = new \ReflectionClass( $this->instance );
@@ -346,15 +338,7 @@ class Test_Feed_Improvements extends Base {
 	public function test_get_event_datetime_info_empty_data(): void {
 		// Create a mock Event object with empty datetime data.
 		$event_mock = $this->createMock( Event::class );
-		$event_mock->method( 'get_datetime' )->willReturn(
-			array(
-				'datetime_start'     => '',
-				'datetime_end'       => '',
-				'datetime_start_gmt' => '',
-				'datetime_end_gmt'   => '',
-				'timezone'           => 'America/New_York',
-			)
-		);
+		$event_mock->method( 'get_display_datetime' )->willReturn( __( '—', 'gatherpress' ) );
 
 		// Use reflection to access the private method.
 		$reflection = new \ReflectionClass( $this->instance );

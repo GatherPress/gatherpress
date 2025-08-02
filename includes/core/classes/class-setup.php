@@ -63,7 +63,7 @@ class Setup {
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
 		Export::get_instance();
-		Feed_Improvements::get_instance();
+		Event_Feed::get_instance();
 		Import::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
