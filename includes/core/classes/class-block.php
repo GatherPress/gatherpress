@@ -99,6 +99,7 @@ class Block {
 		Blocks\Add_To_Calendar::get_instance();
 		Blocks\Dropdown::get_instance();
 		Blocks\Dropdown_Item::get_instance();
+		Blocks\Event_Query::get_instance();
 		Blocks\General_Block::get_instance();
 		Blocks\Modal::get_instance();
 		Blocks\Modal_Manager::get_instance();
@@ -109,14 +110,14 @@ class Block {
 	}
 
 	/**
-	 * Get a list of subfolder names from the /build/variations/ directory.
+	 * Get a list of subfolder names from the /build/variations/core/ directory.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return string[] List of block-variations foldernames.
 	 */
 	public function get_block_variations(): array {
-		$variations_directory = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
+		$variations_directory = sprintf( '%1$s/build/variations/core/', GATHERPRESS_CORE_PATH );
 
 		if ( ! file_exists( $variations_directory ) ) {
 			return array();
@@ -130,7 +131,6 @@ class Block {
 				)
 			);
 		}
-
 		return array_filter( $this->block_variation_names );
 	}
 
