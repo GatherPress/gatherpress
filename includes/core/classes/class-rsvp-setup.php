@@ -154,6 +154,13 @@ class Rsvp_Setup {
 				if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
 					wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
 
+					// Handle email updates checkbox if present in form submission.
+					$email_updates = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_event_email_updates' ) ) );
+
+					if ( ! empty( $email_updates ) ) {
+						update_comment_meta( $comment_id, 'gatherpress_event_email_updates', 1 );
+					}
+
 					$rsvp_token = new Rsvp_Token( $comment_id );
 
 					// Generate token and send confirmation email with token link.
