@@ -23,6 +23,10 @@
     },
     "textAlign": {
       "type": "string"
+    },
+    "displayType": {
+      "type": "string",
+      "default": "both"
     }
   },
   "supports": {

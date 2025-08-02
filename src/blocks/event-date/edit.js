@@ -18,6 +18,7 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
 	PanelBody,
+	RadioControl,
 	Spinner,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
@@ -56,20 +57,29 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
 
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timezoneFormat;
 
-	if (
-		moment.tz(dateTimeStart, timezone).format(dateFormat) ===
-		moment.tz(dateTimeEnd, timezone).format(dateFormat)
-	) {
-		endFormat = timeFormat + ' ' + timezoneFormat;
+	if (dateTimeStart && dateTimeEnd) {
+		// Don't show the same day twice.
+		if (
+			moment.tz(dateTimeStart, timezone).format(dateFormat) ===
+			moment.tz(dateTimeEnd, timezone).format(dateFormat)
+		) {
+			endFormat = timeFormat + ' ' + timezoneFormat;
+		}
+
+		return sprintf(
+			/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
+			__('%1$s to %2$s %3$s', 'gatherpress'),
+			moment.tz(dateTimeStart, timezone).format(startFormat),
+			moment.tz(dateTimeEnd, timezone).format(endFormat),
+			getUtcOffset(timezone)
+		);
+	} else if (dateTimeStart) {
+		return moment.tz(dateTimeStart, timezone).format(endFormat);
+	} else if (dateTimeEnd) {
+		return moment.tz(dateTimeEnd, timezone).format(endFormat);
 	}
 
-	return sprintf(
-		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
-		__('%1$s to %2$s %3$s', 'gatherpress'),
-		moment.tz(dateTimeStart, timezone).format(startFormat),
-		moment.tz(dateTimeEnd, timezone).format(endFormat),
-		getUtcOffset(timezone)
-	);
+	return '';
 };
 
 /**
@@ -97,7 +107,7 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
 const Edit = ({ attributes, setAttributes, context }) => {
-	const { textAlign } = attributes;
+	const { textAlign, displayType } = attributes;
 	const blockProps = useBlockProps({
 		className: clsx({
 			[`has-text-align-${textAlign}`]: textAlign,
@@ -152,12 +162,46 @@ const Edit = ({ attributes, setAttributes, context }) => {
 					}
 				/>
 			</BlockControls>
-			{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
+			{displayDateTime(
+				['start', 'both'].includes(displayType) ? dateTimeStart : null,
+				['end', 'both'].includes(displayType) ? dateTimeEnd : null,
+				timezone
+			)}
 			{isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
 						<VStack spacing={4}>
 							<DateTimeRange />
+							<RadioControl
+								label={__('Display', 'gatherpress')}
+								selected={displayType}
+								options={[
+									{
+										label: __(
+											'Start and end date',
+											'getherpress'
+										),
+										value: 'both',
+									},
+									{
+										label: __(
+											'Start date only',
+											'gatherpress'
+										),
+										value: 'start',
+									},
+									{
+										label: __(
+											'End date only',
+											'gatherpress'
+										),
+										value: 'end',
+									},
+								]}
+								onChange={(value) =>
+									setAttributes({ displayType: value })
+								}
+							/>
 						</VStack>
 					</PanelBody>
 				</InspectorControls>
