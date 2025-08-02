@@ -79,7 +79,6 @@ class Feed_Improvements {
 	 * @return void
 	 */
 	public function filter_events_feed( WP_Query $query ): void {
-        
 		// Only apply to event feeds.
 		if ( ! $query->is_feed ) {
 			return;
@@ -87,7 +86,7 @@ class Feed_Improvements {
 
 		// Check if this is an events feed by looking at the request URL or post type.
 		$is_events_feed = false;
-		
+
 		// Check if post type is set to events.
 		if ( Event::POST_TYPE === $query->get( 'post_type' ) ) {
 			$is_events_feed = true;
@@ -127,32 +126,35 @@ class Feed_Improvements {
 		// Check if this is an events feed request.
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-			
+
 			// Check if this is /events/feed/.
 			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
 				// Force this to be an events feed, not a comments feed.
 				$wp->query_vars['post_type'] = Event::POST_TYPE;
-				$wp->query_vars['feed'] = 'rss2';
-				
+				$wp->query_vars['feed']      = 'rss2';
+
 				// Remove any comment-related query vars.
 				unset( $wp->query_vars['comments'] );
 				unset( $wp->query_vars['comment_feed'] );
-				
+
 				// Also try to force the main query to be an events query.
-				add_action( 'wp', function() {
-					global $wp_query;
-					if ( $wp_query->is_feed ) {
-						$wp_query->set( 'post_type', Event::POST_TYPE );
-						$wp_query->set( 'gatherpress_events_query', 'upcoming' );
-						$wp_query->set( 'orderby', 'datetime_start_gmt' );
-						$wp_query->set( 'order', 'ASC' );
+				add_action(
+					'wp',
+					function () {
+						global $wp_query;
+						if ( $wp_query->is_feed ) {
+							$wp_query->set( 'post_type', Event::POST_TYPE );
+							$wp_query->set( 'gatherpress_events_query', 'upcoming' );
+							$wp_query->set( 'orderby', 'datetime_start_gmt' );
+							$wp_query->set( 'order', 'ASC' );
+						}
 					}
-				});
+				);
 			}
 		}
 	}
 
-		/**
+	/**
 	 * Force the feed to show events instead of comments.
 	 *
 	 * @since 1.0.0
@@ -163,7 +165,7 @@ class Feed_Improvements {
 		// Check if this is an events feed request.
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-			
+
 			// Check if this is /events/feed/.
 			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
 				// Force the query to be an events query.
@@ -172,41 +174,9 @@ class Feed_Improvements {
 				$wp_query->set( 'gatherpress_events_query', 'upcoming' );
 				$wp_query->set( 'orderby', 'datetime_start_gmt' );
 				$wp_query->set( 'order', 'ASC' );
-				
+
 				// Re-run the query to get events.
 				$wp_query->query( $wp_query->query_vars );
-			}
-		}
-	}
-
-	/**
-	 * Override the main query for events feeds.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function override_main_query(): void {
-		// Check if this is an events feed request.
-		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
-			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-			
-			// Check if this is /events/feed/.
-			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
-				global $wp_query;
-				
-				// Create a new query for events.
-				$events_query = new \WP_Query( array(
-					'post_type'      => Event::POST_TYPE,
-					'posts_per_page' => 10,
-					'feed'           => true,
-					'gatherpress_events_query' => 'upcoming',
-					'orderby'        => 'datetime_start_gmt',
-					'order'          => 'ASC',
-				) );
-				
-				// Replace the main query with our events query.
-				$wp_query = $events_query;
 			}
 		}
 	}
@@ -228,7 +198,7 @@ class Feed_Improvements {
 		// Check if this is an events feed request.
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-			
+
 			// Check if this is /events/feed/.
 			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
 				// Force this to be an events query.
@@ -236,11 +206,11 @@ class Feed_Improvements {
 				$query->set( 'gatherpress_events_query', 'upcoming' );
 				$query->set( 'orderby', 'datetime_start_gmt' );
 				$query->set( 'order', 'ASC' );
-				
+
 				// Remove any comment-related query vars.
 				$query->set( 'comments', false );
 				$query->set( 'comment_feed', false );
-				
+
 				// Force WordPress to use the default feed template.
 				$query->set( 'feed', 'rss2' );
 			}
@@ -259,7 +229,7 @@ class Feed_Improvements {
 		// Check if this is an events feed request.
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-			
+
 			// Check if this is /events/feed/.
 			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
 				// Always use the default WordPress feed template.
@@ -269,7 +239,7 @@ class Feed_Improvements {
 				}
 			}
 		}
-		
+
 		return $template;
 	}
 
@@ -285,7 +255,7 @@ class Feed_Improvements {
 		// Check if this is an events feed request.
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-			
+
 			// Check if this is /events/feed/.
 			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
 				// Force WordPress to use the default feed template.
@@ -295,7 +265,7 @@ class Feed_Improvements {
 				}
 			}
 		}
-		
+
 		return $template;
 	}
 
@@ -308,23 +278,23 @@ class Feed_Improvements {
 	 * @return array Array of event information strings.
 	 */
 	private function get_event_datetime_info( Event $event ): array {
-		$event_info = array();
+		$event_info    = array();
 		$datetime_data = $event->get_datetime();
-		
+
 		if ( ! empty( $datetime_data['datetime_start'] ) ) {
 			$start_timestamp = strtotime( $datetime_data['datetime_start'] );
-			$end_timestamp = ! empty( $datetime_data['datetime_end'] ) ? strtotime( $datetime_data['datetime_end'] ) : null;
-			
+			$end_timestamp   = ! empty( $datetime_data['datetime_end'] ) ? strtotime( $datetime_data['datetime_end'] ) : null;
+
 			$date_format = get_option( 'date_format' );
 			$time_format = get_option( 'time_format' );
-			$start_date = wp_date( $date_format, $start_timestamp );
-			$start_time = wp_date( $time_format, $start_timestamp );
+			$start_date  = wp_date( $date_format, $start_timestamp );
+			$start_time  = wp_date( $time_format, $start_timestamp );
 
 			if ( $end_timestamp && $end_timestamp !== $start_timestamp ) {
 				$end_date = wp_date( $date_format, $end_timestamp );
 				$end_time = wp_date( $time_format, $end_timestamp );
-				
-				// If same day, show time range
+
+				// If same day, show time range.
 				if ( $start_date === $end_date ) {
 					$event_info[] = sprintf(
 						/* translators: 1: Date, 2: Start time, 3: End time */
@@ -350,7 +320,7 @@ class Feed_Improvements {
 				);
 			}
 		}
-		
+
 		return $event_info;
 	}
 
@@ -394,9 +364,9 @@ class Feed_Improvements {
 		// Add the original excerpt if it exists and is different from the content.
 		if ( ! empty( $excerpt ) && $excerpt !== $post->post_content ) {
 			$clean_excerpt = wp_strip_all_tags( $excerpt );
-			$clean_excerpt = preg_replace( '/\s+/', ' ', $clean_excerpt ); // Normalize whitespace
+			$clean_excerpt = preg_replace( '/\s+/', ' ', $clean_excerpt ); // Normalize whitespace.
 			$clean_excerpt = trim( $clean_excerpt );
-			
+
 			if ( ! empty( $clean_excerpt ) ) {
 				$custom_excerpt .= '<p>' . $clean_excerpt . '</p>';
 			}
@@ -445,7 +415,7 @@ class Feed_Improvements {
 		// For RSS feeds, provide a cleaner version of the content.
 		// Strip out complex HTML and keep only essential information.
 		$clean_content = wp_strip_all_tags( $content );
-		$clean_content = preg_replace( '/\s+/', ' ', $clean_content ); // Normalize whitespace
+		$clean_content = preg_replace( '/\s+/', ' ', $clean_content ); // Normalize whitespace.
 		$clean_content = trim( $clean_content );
 
 		if ( ! empty( $clean_content ) ) {
@@ -467,7 +437,7 @@ class Feed_Improvements {
 		// Check if this is an events feed request.
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
-			
+
 			// Check if this is /events/feed/.
 			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
 				// Force WordPress to use the default feed template.
@@ -477,7 +447,7 @@ class Feed_Improvements {
 				}
 			}
 		}
-		
+
 		return $template;
 	}
 
@@ -495,13 +465,11 @@ class Feed_Improvements {
 			'index.php?post_type=' . Event::POST_TYPE . '&feed=rss2',
 			'top'
 		);
-		
+
 		// Flush rewrite rules only once.
 		if ( ! get_option( 'gatherpress_events_feed_rewrite_flushed' ) ) {
 			flush_rewrite_rules();
 			update_option( 'gatherpress_events_feed_rewrite_flushed', true );
 		}
 	}
-
-
 } 

@@ -148,11 +148,13 @@ class Test_Feed_Improvements extends Base {
 	 */
 	public function test_customize_event_excerpt(): void {
 		// Create a test event.
-		$event_id = $this->factory->post->create( array(
-			'post_type' => Event::POST_TYPE,
-			'post_title' => 'Test Event',
-			'post_content' => 'Test event content',
-		) );
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Test Event',
+				'post_content' => 'Test event content',
+			)
+		);
 
 		// Set up global post.
 		global $post;
@@ -164,27 +166,31 @@ class Test_Feed_Improvements extends Base {
 			->onlyMethods( array( 'get_datetime', 'get_venue_information' ) )
 			->getMock();
 
-		$event_mock->method( 'get_datetime' )->willReturn( array(
-			'datetime_start' => '2024-01-15 14:00:00',
-			'datetime_end' => '2024-01-15 16:00:00',
-			'datetime_start_gmt' => '2024-01-15 14:00:00',
-			'datetime_end_gmt' => '2024-01-15 16:00:00',
-			'timezone' => 'America/New_York',
-		) );
-		$event_mock->method( 'get_venue_information' )->willReturn( array(
-			'name' => 'Test Venue',
-		) );
+		$event_mock->method( 'get_datetime' )->willReturn(
+			array(
+				'datetime_start'     => '2024-01-15 14:00:00',
+				'datetime_end'       => '2024-01-15 16:00:00',
+				'datetime_start_gmt' => '2024-01-15 14:00:00',
+				'datetime_end_gmt'   => '2024-01-15 16:00:00',
+				'timezone'           => 'America/New_York',
+			)
+		);
+		$event_mock->method( 'get_venue_information' )->willReturn(
+			array(
+				'name' => 'Test Venue',
+			)
+		);
 
 		// Mock the Event class constructor globally.
 		$original_event_class = Event::class;
-		$mock_event_class = get_class( $event_mock );
-		
+		$mock_event_class     = get_class( $event_mock );
+
 		// Use runkit or similar to replace the class, but for now let's test with a simpler approach.
 		// Since we can't easily mock the constructor globally, let's test the actual behavior.
-		
+
 		// Test the excerpt customization.
 		$excerpt = 'Original excerpt';
-		$result = $this->instance->customize_event_excerpt( $excerpt );
+		$result  = $this->instance->customize_event_excerpt( $excerpt );
 
 		// For now, just verify that the method returns something and doesn't error.
 		$this->assertIsString( $result );
@@ -202,17 +208,19 @@ class Test_Feed_Improvements extends Base {
 	 */
 	public function test_customize_event_excerpt_non_event(): void {
 		// Create a test post (not an event).
-		$post_id = $this->factory->post->create( array(
-			'post_type' => 'post',
-			'post_title' => 'Test Post',
-		) );
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'post',
+				'post_title'  => 'Test Post',
+			)
+		);
 
 		// Set up global post.
 		global $post;
 		$post = get_post( $post_id );
 
 		$excerpt = 'Original excerpt';
-		$result = $this->instance->customize_event_excerpt( $excerpt );
+		$result  = $this->instance->customize_event_excerpt( $excerpt );
 
 		// Should return original excerpt unchanged.
 		$this->assertEquals( $excerpt, $result );
@@ -229,11 +237,13 @@ class Test_Feed_Improvements extends Base {
 	 */
 	public function test_customize_event_content(): void {
 		// Create a test event.
-		$event_id = $this->factory->post->create( array(
-			'post_type' => Event::POST_TYPE,
-			'post_title' => 'Test Event',
-			'post_content' => 'Test event content',
-		) );
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Test Event',
+				'post_content' => 'Test event content',
+			)
+		);
 
 		// Set up global post.
 		global $post;
@@ -241,7 +251,7 @@ class Test_Feed_Improvements extends Base {
 
 		// Test the content customization.
 		$content = 'Original content';
-		$result = $this->instance->customize_event_content( $content );
+		$result  = $this->instance->customize_event_content( $content );
 
 		// For now, just verify that the method returns something and doesn't error.
 		$this->assertIsString( $result );
@@ -259,17 +269,19 @@ class Test_Feed_Improvements extends Base {
 	 */
 	public function test_customize_event_content_non_event(): void {
 		// Create a test post (not an event).
-		$post_id = $this->factory->post->create( array(
-			'post_type' => 'post',
-			'post_title' => 'Test Post',
-		) );
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'post',
+				'post_title'  => 'Test Post',
+			)
+		);
 
 		// Set up global post.
 		global $post;
 		$post = get_post( $post_id );
 
 		$content = 'Original content';
-		$result = $this->instance->customize_event_content( $content );
+		$result  = $this->instance->customize_event_content( $content );
 
 		// Should return original content unchanged.
 		$this->assertEquals( $content, $result );
@@ -287,17 +299,19 @@ class Test_Feed_Improvements extends Base {
 	public function test_get_event_datetime_info(): void {
 		// Create a mock Event object.
 		$event_mock = $this->createMock( Event::class );
-		$event_mock->method( 'get_datetime' )->willReturn( array(
-			'datetime_start' => '2024-01-15 14:00:00',
-			'datetime_end' => '2024-01-15 16:00:00',
-			'datetime_start_gmt' => '2024-01-15 14:00:00',
-			'datetime_end_gmt' => '2024-01-15 16:00:00',
-			'timezone' => 'America/New_York',
-		) );
+		$event_mock->method( 'get_datetime' )->willReturn(
+			array(
+				'datetime_start'     => '2024-01-15 14:00:00',
+				'datetime_end'       => '2024-01-15 16:00:00',
+				'datetime_start_gmt' => '2024-01-15 14:00:00',
+				'datetime_end_gmt'   => '2024-01-15 16:00:00',
+				'timezone'           => 'America/New_York',
+			)
+		);
 
 		// Use reflection to access the private method.
 		$reflection = new \ReflectionClass( $this->instance );
-		$method = $reflection->getMethod( 'get_event_datetime_info' );
+		$method     = $reflection->getMethod( 'get_event_datetime_info' );
 		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->instance, $event_mock );
@@ -320,17 +334,19 @@ class Test_Feed_Improvements extends Base {
 	public function test_get_event_datetime_info_empty_data(): void {
 		// Create a mock Event object with empty datetime data.
 		$event_mock = $this->createMock( Event::class );
-		$event_mock->method( 'get_datetime' )->willReturn( array(
-			'datetime_start' => '',
-			'datetime_end' => '',
-			'datetime_start_gmt' => '',
-			'datetime_end_gmt' => '',
-			'timezone' => 'America/New_York',
-		) );
+		$event_mock->method( 'get_datetime' )->willReturn(
+			array(
+				'datetime_start'     => '',
+				'datetime_end'       => '',
+				'datetime_start_gmt' => '',
+				'datetime_end_gmt'   => '',
+				'timezone'           => 'America/New_York',
+			)
+		);
 
 		// Use reflection to access the private method.
 		$reflection = new \ReflectionClass( $this->instance );
-		$method = $reflection->getMethod( 'get_event_datetime_info' );
+		$method     = $reflection->getMethod( 'get_event_datetime_info' );
 		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->instance, $event_mock );
@@ -339,6 +355,4 @@ class Test_Feed_Improvements extends Base {
 		$this->assertIsArray( $result );
 		$this->assertEmpty( $result );
 	}
-
-
 } 
