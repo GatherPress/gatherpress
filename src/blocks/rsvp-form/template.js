@@ -42,6 +42,7 @@ const TEMPLATE = [
 				'core/button',
 				{
 					className: 'gatherpress-submit-button',
+					tagName: 'button',
 					text: __('Submit', 'gatherpress'),
 				},
 			],
