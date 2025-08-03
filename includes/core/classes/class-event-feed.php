@@ -66,9 +66,13 @@ class Event_Feed {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		// Customize RSS excerpts for events.
-		add_filter( 'the_excerpt_rss', array( $this, 'customize_event_excerpt' ) );
-		add_filter( 'the_content_feed', array( $this, 'customize_event_content' ) );
+		// Add hooks for flexible event feed customization.
+		add_filter( 'gatherpress_event_feed_excerpt', array( $this, 'get_default_event_excerpt' ) );
+		add_filter( 'gatherpress_event_feed_content', array( $this, 'get_default_event_content' ) );
+
+		// Apply feed customization only if no theme/editor overrides.
+		add_filter( 'the_excerpt_rss', array( $this, 'apply_event_excerpt' ) );
+		add_filter( 'the_content_feed', array( $this, 'apply_event_content' ) );
 
 		// Hook into the main query to handle events feeds.
 		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
@@ -138,14 +142,14 @@ class Event_Feed {
 	}
 
 	/**
-	 * Customize RSS excerpts for events to include date and venue information.
+	 * Get default event excerpt customization.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $excerpt The current excerpt.
 	 * @return string The customized excerpt.
 	 */
-	public function customize_event_excerpt( string $excerpt ): string {
+	public function get_default_event_excerpt( string $excerpt ): string {
 		global $post;
 
 		// Only apply to events.
@@ -189,14 +193,14 @@ class Event_Feed {
 	}
 
 	/**
-	 * Customize RSS content for events to include event details.
+	 * Get default event content customization.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $content The current content.
 	 * @return string The customized content.
 	 */
-	public function customize_event_content( string $content ): string {
+	public function get_default_event_content( string $content ): string {
 		global $post;
 
 		// Only apply to events.
@@ -253,6 +257,46 @@ class Event_Feed {
 		}
 
 		return $custom_content;
+	}
+
+	/**
+	 * Apply event excerpt customization with flexibility for themes/editors.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $excerpt The current excerpt.
+	 * @return string The customized excerpt.
+	 */
+	public function apply_event_excerpt( string $excerpt ): string {
+		global $post;
+
+		// Only apply to events.
+		if ( Event::POST_TYPE !== get_post_type( $post ) ) {
+			return $excerpt;
+		}
+
+		// Allow themes and editors to customize the excerpt.
+		return apply_filters( 'gatherpress_event_feed_excerpt', $excerpt );
+	}
+
+	/**
+	 * Apply event content customization with flexibility for themes/editors.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $content The current content.
+	 * @return string The customized content.
+	 */
+	public function apply_event_content( string $content ): string {
+		global $post;
+
+		// Only apply to events.
+		if ( Event::POST_TYPE !== get_post_type( $post ) ) {
+			return $content;
+		}
+
+		// Allow themes and editors to customize the content.
+		return apply_filters( 'gatherpress_event_feed_content', $content );
 	}
 
 	/**

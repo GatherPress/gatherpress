@@ -138,15 +138,15 @@ class Test_Event_Feed extends Base {
 	}
 
 	/**
-	 * Test customize_event_excerpt method.
+	 * Test get_default_event_excerpt method.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @covers ::customize_event_excerpt
+	 * @covers ::get_default_event_excerpt
 	 *
 	 * @return void
 	 */
-	public function test_customize_event_excerpt(): void {
+	public function test_get_default_event_excerpt(): void {
 		// Create a test event.
 		$event_id = $this->factory->post->create(
 			array(
@@ -190,7 +190,7 @@ class Test_Event_Feed extends Base {
 
 		// Test the excerpt customization.
 		$excerpt = 'Original excerpt';
-		$result  = $this->instance->customize_event_excerpt( $excerpt );
+		$result  = $this->instance->get_default_event_excerpt( $excerpt );
 
 		// For now, just verify that the method returns something and doesn't error.
 		$this->assertIsString( $result );
@@ -201,15 +201,15 @@ class Test_Event_Feed extends Base {
 	}
 
 	/**
-	 * Test customize_event_excerpt method with non-event post.
+	 * Test get_default_event_excerpt method with non-event post.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @covers ::customize_event_excerpt
+	 * @covers ::get_default_event_excerpt
 	 *
 	 * @return void
 	 */
-	public function test_customize_event_excerpt_non_event(): void {
+	public function test_get_default_event_excerpt_non_event(): void {
 		// Create a test post (not an event).
 		$post_id = $this->factory->post->create(
 			array(
@@ -223,7 +223,7 @@ class Test_Event_Feed extends Base {
 		setup_postdata( $post );
 
 		$excerpt = 'Original excerpt';
-		$result  = $this->instance->customize_event_excerpt( $excerpt );
+		$result  = $this->instance->get_default_event_excerpt( $excerpt );
 
 		// Should return original excerpt unchanged.
 		$this->assertEquals( $excerpt, $result );
@@ -233,15 +233,15 @@ class Test_Event_Feed extends Base {
 	}
 
 	/**
-	 * Test customize_event_content method.
+	 * Test get_default_event_content method.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @covers ::customize_event_content
+	 * @covers ::get_default_event_content
 	 *
 	 * @return void
 	 */
-	public function test_customize_event_content(): void {
+	public function test_get_default_event_content(): void {
 		// Create a test event.
 		$event_id = $this->factory->post->create(
 			array(
@@ -257,7 +257,7 @@ class Test_Event_Feed extends Base {
 
 		// Test the content customization.
 		$content = 'Original content';
-		$result  = $this->instance->customize_event_content( $content );
+		$result  = $this->instance->get_default_event_content( $content );
 
 		// For now, just verify that the method returns something and doesn't error.
 		$this->assertIsString( $result );
@@ -268,15 +268,15 @@ class Test_Event_Feed extends Base {
 	}
 
 	/**
-	 * Test customize_event_content method with non-event post.
+	 * Test get_default_event_content method with non-event post.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @covers ::customize_event_content
+	 * @covers ::get_default_event_content
 	 *
 	 * @return void
 	 */
-	public function test_customize_event_content_non_event(): void {
+	public function test_get_default_event_content_non_event(): void {
 		// Create a test post (not an event).
 		$post_id = $this->factory->post->create(
 			array(
@@ -290,7 +290,7 @@ class Test_Event_Feed extends Base {
 		setup_postdata( $post );
 
 		$content = 'Original content';
-		$result  = $this->instance->customize_event_content( $content );
+		$result  = $this->instance->get_default_event_content( $content );
 
 		// Should return original content unchanged.
 		$this->assertEquals( $content, $result );
