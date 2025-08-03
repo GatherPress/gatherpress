@@ -59,11 +59,11 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
+		Event_Feed::get_instance();
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
 		Export::get_instance();
-		Event_Feed::get_instance();
 		Import::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
