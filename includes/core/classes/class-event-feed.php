@@ -50,7 +50,7 @@ class Event_Feed {
 	 */
 	protected function __construct() {
 		// Initialize the rewrite slug from settings.
-		$settings        = Settings::get_instance();
+		$settings           = Settings::get_instance();
 		$this->rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
 
 		$this->setup_hooks();
