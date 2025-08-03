@@ -5,6 +5,37 @@ import { __ } from '@wordpress/i18n';
 
 const TEMPLATE = [
 	[
+		'core/group',
+		{
+			className: 'gatherpress-rsvp-form-message',
+			style: {
+				display: {
+					display: 'none',
+				},
+			},
+		},
+		[
+			[
+				'core/heading',
+				{
+					content: __(
+						'Thank you for your RSVP! Please check your email for a confirmation link to complete your registration.',
+						'gatherpress'
+					),
+					level: 3,
+					style: {
+						typography: {
+							fontWeight: '600',
+						},
+						color: {
+							text: '#16a085',
+						},
+					},
+				},
+			],
+		],
+	],
+	[
 		'gatherpress/form-field',
 		{
 			fieldName: 'author',

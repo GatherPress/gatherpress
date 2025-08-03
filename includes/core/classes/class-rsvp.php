@@ -468,6 +468,7 @@ class Rsvp {
 		$data = $rsvp_query->get_rsvps(
 			array(
 				'post_id' => $post_id,
+				'status'  => 'approve',
 			)
 		);
 

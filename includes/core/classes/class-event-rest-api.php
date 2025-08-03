@@ -20,6 +20,7 @@ use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
+use WP_User;
 
 /**
  * Class Event_Rest_Api.
@@ -98,6 +99,7 @@ class Event_Rest_Api {
 		return array(
 			$this->email_route(),
 			$this->rsvp_route(),
+			$this->rsvp_form_route(),
 			$this->rsvp_status_html_route(),
 			$this->rsvp_responses_route(),
 			$this->events_list_route(),
@@ -220,6 +222,56 @@ class Event_Rest_Api {
 					'status'     => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'rsvp_status' ),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Define the REST route for handling RSVP form submissions via Ajax.
+	 *
+	 * This method sets up the REST route for processing RSVP form submissions
+	 * dynamically via Ajax while maintaining the same functionality as the
+	 * traditional comment-based form submission system.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array The REST route configuration.
+	 */
+	protected function rsvp_form_route(): array {
+		return array(
+			'route' => 'rsvp-form',
+			'args'  => array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'handle_rsvp_form_submission' ),
+				'permission_callback' => '__return_true',
+				'args'                => array(
+					'comment_post_ID'                 => array(
+						'required'          => true,
+						'validate_callback' => array( Validate::class, 'event_post_id' ),
+					),
+					'author'                          => array(
+						'required'          => true,
+						'validate_callback' => function ( $param ) {
+							return ! empty( sanitize_text_field( $param ) );
+						},
+					),
+					'email'                           => array(
+						'required'          => true,
+						'validate_callback' => function ( $param ) {
+							return is_email( $param );
+						},
+					),
+					'gatherpress_event_email_updates' => array(
+						'required'          => false,
+						'validate_callback' => array( Validate::class, 'boolean' ),
+					),
+					'gatherpress_form_schema_id'      => array(
+						'required'          => false,
+						'validate_callback' => function ( $param ) {
+							return is_string( $param ) && preg_match( '/^form_\d+$/', $param );
+						},
 					),
 				),
 			),
@@ -717,6 +769,118 @@ class Event_Rest_Api {
 	}
 
 	/**
+	 * Handle RSVP form submission via Ajax.
+	 *
+	 * This method processes RSVP form submissions received via Ajax,
+	 * creating the appropriate comment entry and setting up the RSVP
+	 * while maintaining compatibility with the existing system.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request The REST API request object.
+	 * @return WP_REST_Response The response indicating success or failure.
+	 */
+	public function handle_rsvp_form_submission( WP_REST_Request $request ): WP_REST_Response {
+		$params        = $request->get_params();
+		$post_id       = intval( $params['comment_post_ID'] );
+		$author        = sanitize_text_field( $params['author'] );
+		$email         = sanitize_email( $params['email'] );
+		$email_updates = (bool) $params['gatherpress_event_email_updates'];
+		$user          = get_user_by( 'ID', get_current_user_id() );
+		$success       = false;
+		$message       = '';
+		$comment_id    = 0;
+
+		// Prepare comment data similar to the form submission processing.
+		$comment_data = array(
+			'comment_post_ID'   => $post_id,
+			'comment_author_IP' => '127.0.0.1',
+			'comment_type'      => Rsvp::COMMENT_TYPE,
+			'comment_content'   => '',
+			'comment_parent'    => 0,
+			'user_id'           => 0,
+			'comment_approved'  => 0,
+		);
+
+		// Set remote IP if available.
+		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+			if ( rest_is_ip_address( $remote_ip ) ) {
+				$comment_data['comment_author_IP'] = $remote_ip;
+			}
+		}
+
+		// Handle user authentication check.
+		if ( ! $user instanceof WP_User || $user->user_email !== $email ) {
+			$comment_data['user_id']              = 0;
+			$comment_data['comment_author_url']   = '';
+			$comment_data['comment_author']       = $author;
+			$comment_data['comment_author_email'] = $email;
+		} else {
+			$comment_data['user_id']              = $user->ID;
+			$comment_data['comment_author']       = $user->display_name;
+			$comment_data['comment_author_email'] = $user->user_email;
+			$comment_data['comment_author_url']   = get_author_posts_url( $user->ID );
+		}
+
+		// Check for duplicate RSVP.
+		$existing_rsvp = get_comments(
+			array(
+				'post_id'      => $post_id,
+				'type'         => Rsvp::COMMENT_TYPE,
+				'author_email' => $email,
+				'count'        => true,
+			)
+		);
+
+		if ( $existing_rsvp > 0 ) {
+			$response = array(
+				'success' => false,
+				'message' => __( "You've already RSVP'd to this event.", 'gatherpress' ),
+			);
+			return new WP_REST_Response( $response, 409 );
+		}
+
+		// Insert the comment.
+		$comment_id = wp_insert_comment( $comment_data );
+
+		if ( $comment_id && ! is_wp_error( $comment_id ) ) {
+			// Set RSVP status to attending.
+			wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+			// Handle email updates preference.
+			if ( $email_updates ) {
+				update_comment_meta( $comment_id, 'gatherpress_event_email_updates', 1 );
+			}
+
+			// Validate and save custom fields.
+			$this->save_custom_fields( $request, $post_id, $comment_id );
+
+			// Generate and send confirmation email.
+			$rsvp_token = new Rsvp_Token( $comment_id );
+			$rsvp_token->generate_token()->send_rsvp_confirmation_email();
+
+			$success = true;
+			$message = __( 'Your RSVP has been submitted successfully! Please check your email for a confirmation link.', 'gatherpress' );
+
+			// Get updated responses for the frontend.
+			$event     = new Event( $post_id );
+			$responses = $event->rsvp->responses();
+		} else {
+			$message = __( 'There was an error processing your RSVP. Please try again.', 'gatherpress' );
+		}
+
+		$response = array(
+			'success'    => $success,
+			'message'    => $message,
+			'comment_id' => $comment_id,
+			'responses'  => isset( $responses ) ? $responses : array(),
+		);
+
+		return new WP_REST_Response( $response );
+	}
+
+	/**
 	 * Handle RSVP responses REST endpoint request.
 	 *
 	 * Retrieves RSVP response data for a given event post ID. Validates that the post
@@ -745,6 +909,118 @@ class Event_Rest_Api {
 		);
 
 		return new WP_REST_Response( $response );
+	}
+
+	/**
+	 * Validate and save custom fields from form submission.
+	 *
+	 * This method validates custom form fields against the stored schema
+	 * and saves valid fields as comment meta to prevent field injection attacks.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_REST_Request $request    The REST API request object.
+	 * @param int             $post_id    The event post ID.
+	 * @param int             $comment_id The comment ID where fields will be saved.
+	 * @return void
+	 */
+	private function save_custom_fields( WP_REST_Request $request, int $post_id, int $comment_id ): void {
+		$form_schema_id = $request->get_param( 'gatherpress_form_schema_id' );
+
+		if ( empty( $form_schema_id ) ) {
+			return; // No schema ID provided.
+		}
+
+		// Get stored schemas for this post.
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		if ( empty( $schemas ) || ! isset( $schemas[ $form_schema_id ] ) ) {
+			return; // No schema found for this form.
+		}
+
+		$form_schema = $schemas[ $form_schema_id ];
+		$fields      = $form_schema['fields'] ?? array();
+
+		// Validate each field against the schema.
+		foreach ( $fields as $field_name => $field_config ) {
+			$submitted_value = $request->get_param( $field_config['name'] );
+
+			if ( null === $submitted_value ) {
+				continue; // Field not submitted.
+			}
+
+			// Validate and sanitize the field value using shared logic.
+			$validated_value = Rsvp_Setup::get_instance()->validate_custom_field_value( $submitted_value, $field_config );
+			if ( false !== $validated_value ) {
+				// Save as comment meta with prefix to avoid conflicts.
+				$meta_key = 'gatherpress_custom_' . sanitize_key( $field_config['name'] );
+				update_comment_meta( $comment_id, $meta_key, $validated_value );
+			}
+		}
+	}
+
+	/**
+	 * Validate a custom field value against its configuration.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $value  The submitted field value.
+	 * @param array $config The field configuration from schema.
+	 * @return bool True if valid, false otherwise.
+	 */
+	private function validate_custom_field_value( $value, array $config ): bool {
+		// Check required fields.
+		if ( $config['required'] && empty( $value ) ) {
+			return false;
+		}
+
+		// Type-specific validation.
+		switch ( $config['type'] ) {
+			case 'email':
+				return empty( $value ) || is_email( $value );
+
+			case 'select':
+			case 'radio':
+				$allowed_options = $config['options'] ?? array();
+				return empty( $value ) || in_array( $value, $allowed_options, true );
+
+			case 'textarea':
+				$max_length = $config['max_length'] ?? 1000;
+				return empty( $value ) || strlen( $value ) <= $max_length;
+
+			case 'checkbox':
+				return in_array( $value, array( true, false, 'on', '', '1', '0', 1, 0 ), true );
+
+			default:
+				return true; // Allow other field types.
+		}
+	}
+
+	/**
+	 * Sanitize a custom field value based on its type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param mixed $value  The field value to sanitize.
+	 * @param array $config The field configuration.
+	 * @return mixed The sanitized value.
+	 */
+	private function sanitize_custom_field_value( $value, array $config ) {
+		switch ( $config['type'] ) {
+			case 'email':
+				return sanitize_email( $value );
+
+			case 'textarea':
+				return sanitize_textarea_field( $value );
+
+			case 'checkbox':
+				return (bool) $value;
+
+			case 'select':
+			case 'radio':
+			default:
+				return sanitize_text_field( $value );
+		}
 	}
 
 	/**

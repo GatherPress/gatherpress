@@ -12,8 +12,10 @@
 		"gatherpress": {
 			"postIdOverride": true
 		},
+		"interactivity": true,
 		"html": false
 	},
 	"textdomain": "gatherpress",
-	"editorScript": "file:./index.js"
+	"editorScript": "file:./index.js",
+	"viewScriptModule": "file:./view.js"
 }
