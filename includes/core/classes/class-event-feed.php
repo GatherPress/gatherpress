@@ -102,8 +102,6 @@ class Event_Feed {
 		}
 	}
 
-
-
 	/**
 	 * Get formatted event datetime information for feeds.
 	 *
@@ -227,8 +225,6 @@ class Event_Feed {
 
 		return $custom_content;
 	}
-
-
 
 	/**
 	 * Add custom rewrite rules for events feed.
