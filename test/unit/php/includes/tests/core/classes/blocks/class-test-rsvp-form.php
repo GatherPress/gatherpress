@@ -133,7 +133,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		$block_content = '<div class="wp-block-gatherpress-rsvp-form custom-class" id="custom-id">RSVP Form Content</div>';
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form custom-class">RSVP Form Content</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-form',
 			'attrs'     => array(
@@ -143,6 +143,9 @@ class Test_Rsvp_Form extends Base {
 
 		$transformed_content = $instance->transform_block_content( $block_content, $block );
 
+		$this->assertStringContainsString( '<form', $transformed_content );
+		$this->assertStringContainsString( 'method="post"', $transformed_content );
+		$this->assertStringContainsString( 'action="', $transformed_content );
 		$this->assertStringContainsString( 'class="wp-block-gatherpress-rsvp-form custom-class"', $transformed_content );
 		$this->assertStringContainsString( 'id="gatherpress_rsvp_', $transformed_content );
 	}
