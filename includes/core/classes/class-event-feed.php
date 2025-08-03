@@ -63,8 +63,6 @@ class Event_Feed {
 		add_action( 'init', array( $this, 'add_events_feed_rewrite_rules' ) );
 	}
 
-
-
 	/**
 	 * Handle events feed queries by setting the appropriate parameters.
 	 *
