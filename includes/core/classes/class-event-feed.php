@@ -221,6 +221,21 @@ class Event_Feed {
 			$custom_content .= '<p>' . $clean_content . '</p>';
 		}
 
+		// Add comments section.
+		$comments = get_comments( array(
+			'post_id' => get_the_ID(),
+			'status'  => 'approve',
+			'number'  => 5, // Limit to 5 most recent comments
+		) );
+
+		if ( ! empty( $comments ) ) {
+			$custom_content .= '<h3>' . __( 'Comments:', 'gatherpress' ) . '</h3>';
+			foreach ( $comments as $comment ) {
+				$custom_content .= '<p><strong>' . esc_html( $comment->comment_author ) . ':</strong> ';
+				$custom_content .= esc_html( wp_strip_all_tags( $comment->comment_content ) ) . '</p>';
+			}
+		}
+
 		return $custom_content;
 	}
 
