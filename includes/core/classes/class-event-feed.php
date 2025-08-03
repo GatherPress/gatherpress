@@ -222,11 +222,13 @@ class Event_Feed {
 		}
 
 		// Add comments section.
-		$comments = get_comments( array(
-			'post_id' => get_the_ID(),
-			'status'  => 'approve',
-			'number'  => 5, // Limit to 5 most recent comments
-		) );
+		$comments = get_comments(
+			array(
+				'post_id' => get_the_ID(),
+				'status'  => 'approve',
+				'number'  => 5, // Limit to 5 most recent comments.
+			)
+		);
 
 		if ( ! empty( $comments ) ) {
 			$custom_content .= '<h3>' . __( 'Comments:', 'gatherpress' ) . '</h3>';
