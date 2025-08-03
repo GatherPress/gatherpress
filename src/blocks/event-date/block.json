@@ -24,6 +24,10 @@
 		"displayType": {
 			"type": "string",
 			"default": "both"
+		},
+		"displayFormat": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {

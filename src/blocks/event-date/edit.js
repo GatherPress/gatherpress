@@ -20,6 +20,7 @@ import {
 	PanelBody,
 	RadioControl,
 	Spinner,
+	TextControl,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
@@ -35,49 +36,98 @@ import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal } from '../../helpers/globals';
 import { isEventPostType } from '../../helpers/event';
 
+const globalDateFormat = getFromGlobal('settings.dateFormat');
+const globalTimeFormat = getFromGlobal('settings.timeFormat');
+// const defaultFormat = `${globalDateFormat} ${globalTimeFormat}`;
+
 /**
  * Similar to get_display_datetime method in class-event.php.
  *
  * @param {string} dateTimeStart
  * @param {string} dateTimeEnd
  * @param {string} timezone
+ * @param {string} format
  * @return {string} Displayed date.
  */
-const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
-	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.dateFormat')
-	);
-	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.timeFormat')
-	);
-	const timezoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
-	const startFormat = dateFormat + ' ' + timeFormat;
+const displayDateTime = (dateTimeStart, dateTimeEnd, timezone, format) => {
+	// let [dateFormat, timeFormat] = '';
 
-	timezone = getTimezone(timezone);
+	// // if (format) {
+	// // 	[dateFormat, timeFormat] = convertPHPToMomentFormat(format);
+	// // } else {
+	// // 	dateFormat = 
+	// // }
 
-	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timezoneFormat;
+	// dateFormat = convertPHPToMomentFormat(format ? format : globalDateFormat);
+	// timeFormat = convertPHPToMomentFormat(format ? format : globalTimeFormat);
+
+	// if (dateTimeStart && dateTimeEnd) {
+	// 	return sprintf(
+	// 		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
+	// 		__('%1$s to %2$s %3$s', 'gatherpress'),
+	// 		moment.tz(dateTimeStart, timezone).format(startFormat),
+	// 		moment.tz(dateTimeEnd, timezone).format(endFormat),
+	// 		getUtcOffset(timezone)
+	// 	)
+	// }
+
+	////////
+
+	// MAYBE DO TWO SEPARATE DATE BLOCKS BY DEFAULT SO IT'S EASIER TO HANDLE
+	// THE %date% "TO" %date" stuff with conditional timezone?
 
 	if (dateTimeStart && dateTimeEnd) {
-		// Don't show the same day twice.
-		if (
-			moment.tz(dateTimeStart, timezone).format(dateFormat) ===
-			moment.tz(dateTimeEnd, timezone).format(dateFormat)
-		) {
-			endFormat = timeFormat + ' ' + timezoneFormat;
-		}
+		format = convertPHPToMomentFormat(format);
 
-		return sprintf(
-			/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
-			__('%1$s to %2$s %3$s', 'gatherpress'),
-			moment.tz(dateTimeStart, timezone).format(startFormat),
-			moment.tz(dateTimeEnd, timezone).format(endFormat),
-			getUtcOffset(timezone)
-		);
-	} else if (dateTimeStart) {
-		return moment.tz(dateTimeStart, timezone).format(endFormat);
-	} else if (dateTimeEnd) {
-		return moment.tz(dateTimeEnd, timezone).format(endFormat);
+		return format
+			? sprintf(
+					/* translators: %1$s: datetime start, %2$s: datetime end.. */
+					__('%1$s to %2$s', 'gatherpress'),
+					moment.tz(dateTimeStart, timezone).format(format),
+					moment.tz(dateTimeEnd, timezone).format(format)
+				)
+			: sprintf(
+					/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
+					__('%1$s to %2$s %3$s', 'gatherpress'),
+					moment.tz(dateTimeStart, timezone).format(),
+					moment.tz(dateTimeEnd, timezone).format(endFormat),
+					getUtcOffset(timezone)
+				);
 	}
+
+	///////
+
+	// // We want to get the custom format before these!!
+	// const dateFormat = convertPHPToMomentFormat(globalDateFormat);
+	// const timeFormat = convertPHPToMomentFormat(globalTimeFormat);
+	// const timezoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
+	// const startFormat = dateFormat + ' ' + timeFormat;
+
+	// timezone = getTimezone(timezone);
+
+	// let endFormat = dateFormat + ' ' + timeFormat + ' ' + timezoneFormat;
+
+	// if (dateTimeStart && dateTimeEnd) {
+	// 	// Don't show the same day twice.
+	// 	if (
+	// 		moment.tz(dateTimeStart, timezone).format(dateFormat) ===
+	// 		moment.tz(dateTimeEnd, timezone).format(dateFormat)
+	// 	) {
+	// 		endFormat = timeFormat + ' ' + timezoneFormat;
+	// 	}
+
+	// 	return sprintf(
+	// 		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
+	// 		__('%1$s to %2$s %3$s', 'gatherpress'),
+	// 		moment.tz(dateTimeStart, timezone).format(startFormat),
+	// 		moment.tz(dateTimeEnd, timezone).format(endFormat),
+	// 		getUtcOffset(timezone)
+	// 	);
+	// } else if (dateTimeStart) {
+	// 	return moment.tz(dateTimeStart, timezone).format(endFormat);
+	// } else if (dateTimeEnd) {
+	// 	return moment.tz(dateTimeEnd, timezone).format(endFormat);
+	// }
 
 	return '';
 };
@@ -107,7 +157,7 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
 const Edit = ({ attributes, setAttributes, context }) => {
-	const { textAlign, displayType } = attributes;
+	const { textAlign, displayType, displayFormat } = attributes;
 	const blockProps = useBlockProps({
 		className: clsx({
 			[`has-text-align-${textAlign}`]: textAlign,
@@ -165,7 +215,8 @@ const Edit = ({ attributes, setAttributes, context }) => {
 			{displayDateTime(
 				['start', 'both'].includes(displayType) ? dateTimeStart : null,
 				['end', 'both'].includes(displayType) ? dateTimeEnd : null,
-				timezone
+				timezone,
+				displayFormat
 			)}
 			{isEventPostType() && (
 				<InspectorControls>
@@ -200,6 +251,26 @@ const Edit = ({ attributes, setAttributes, context }) => {
 								]}
 								onChange={(value) =>
 									setAttributes({ displayType: value })
+								}
+							/>
+							<TextControl
+								label={__('Format', 'gatherpress')}
+								value={displayFormat}
+								placeholder={`${globalDateFormat} ${globalTimeFormat}`}
+								help={
+									<a
+										href="https://wordpress.org/documentation/article/customize-date-and-time-format/"
+										target="_blank"
+										rel="noreferrer"
+									>
+										{__(
+											'Date/time formatting documentation',
+											'gatherpress'
+										)}
+									</a>
+								}
+								onChange={(value) =>
+									setAttributes({ displayFormat: value })
 								}
 							/>
 						</VStack>
