@@ -16,6 +16,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Settings;
 use WP_Query;
 
 /**
@@ -32,6 +33,15 @@ class Event_Feed {
 	use Singleton;
 
 	/**
+	 * The events rewrite slug from settings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @var string
+	 */
+	private $rewrite_slug;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -39,6 +49,10 @@ class Event_Feed {
 	 * @since 1.0.0
 	 */
 	protected function __construct() {
+		// Initialize the rewrite slug from settings.
+		$settings        = Settings::get_instance();
+		$this->rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+
 		$this->setup_hooks();
 	}
 
@@ -84,8 +98,8 @@ class Event_Feed {
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
-			// Check if this is /events/feed/.
-			if ( strpos( $request_uri, '/events/feed' ) !== false ) {
+			// Check if this is the events feed URL.
+			if ( strpos( $request_uri, '/' . $this->rewrite_slug . '/feed' ) !== false ) {
 				// Set the post type and let Event_Query handle the rest.
 				$query->set( 'post_type', Event::POST_TYPE );
 				$query->set( 'gatherpress_events_query', 'upcoming' );
@@ -249,9 +263,9 @@ class Event_Feed {
 	 * @return void
 	 */
 	public function add_events_feed_rewrite_rules(): void {
-		// Add a rewrite rule for /events/feed/ to be treated as an events feed.
+		// Add a rewrite rule for the custom events feed URL.
 		add_rewrite_rule(
-			'^events/feed/?$',
+			'^' . $this->rewrite_slug . '/feed/?$',
 			'index.php?post_type=' . Event::POST_TYPE . '&feed=rss2',
 			'top'
 		);
