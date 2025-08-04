@@ -61,7 +61,8 @@
 		"react-tooltip": "^5.29.1",
 		"rimraf": "^6.0.1",
 		"stylelint-config-standard": "^38.0.0",
-		"uuid": "^11.1.0"
+		"uuid": "^11.1.0",
+		"webpack-remove-empty-scripts": "^1.1.1"
 	},
 	"scripts": {
 		"build": "rimraf build && wp-scripts build --experimental-modules",

@@ -237,7 +237,7 @@ class Rsvp_Response {
 		if (
 			$comment &&
 			is_a( $comment, 'WP_Comment' ) &&
-			'gatherpress_rsvp' === $comment->comment_type
+			Rsvp::COMMENT_TYPE === $comment->comment_type
 		) {
 			$email = $comment->comment_author_email;
 
@@ -260,6 +260,9 @@ class Rsvp_Response {
 			}
 
 			$args['url'] = get_avatar_url( $email, array( 'default' => 'mystery' ) );
+
+			// Clear extra attributes to prevent JavaScript framework conflicts.
+			$args['extra_attr'] = '';
 		}
 
 		return $args;

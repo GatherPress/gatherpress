@@ -122,7 +122,14 @@ class Test_Block extends Base {
 		$instance = Block::get_instance();
 
 		$this->assertSame(
-			array(),
+			array(
+				'query',
+				'query-no-results',
+				'query-pagination',
+				'query-pagination-next',
+				'query-pagination-numbers',
+				'query-pagination-previous',
+			),
 			$instance->get_block_variations(),
 			'Failed to assert, to get all block variations from the "/src" directory.'
 		);
