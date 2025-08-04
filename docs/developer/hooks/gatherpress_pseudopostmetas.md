@@ -1,14 +1,11 @@
+# gatherpress_pseudopostmetas
+
 
 Filters the list of data-names and their respective export- and import-callbacks.
 
 The filter allows to hook into WordPress' native import & export processes,
 when post types of the GatherPress plugin are being migrated.
 That can be helpful, if you want to import event- or venue-data from another plugin.
-
-## Example
-
-The filter in use, to import data from the "Event Organiser" plugin.
-https://github.com/carstingaxion/gatherpress-export-import/blob/main/import-events-from--event-organiser.php
 
 ## Example
 
@@ -46,7 +43,7 @@ Example use of the filter to illustrate function signatures for the callbacks.
 
 ## Files
 
-- [includes/core/classes/class-migrate.php:88](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-migrate.php#L88)
+- [includes/core/classes/class-migrate.php:84](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-migrate.php#L84)
 ```php
 apply_filters( 'gatherpress_pseudopostmetas', $this->pseudopostmetas )
 ```

@@ -3,6 +3,10 @@
 
 - [`gatherpress_autoloader`](gatherpress_autoloader) Filters the registered autoloaders for GatherPress.
 
+## class-event-query.php
+
+- [`gatherpress_query_vars`](gatherpress_query_vars) This filter is documented in includes/query-loop.php
+
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format)

@@ -1,3 +1,5 @@
+# gatherpress_settings_section
+
 ## Auto-generated Example
 
 ```php
