@@ -1,5 +1,3 @@
-# gatherpress_autoloader
-
 
 Filters the registered autoloaders for GatherPress.
 

@@ -1,5 +1,3 @@
-# gatherpress_pseudopostmetas
-
 
 Filters the list of data-names and their respective export- and import-callbacks.
 

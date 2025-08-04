@@ -1,5 +1,3 @@
-# gatherpress_date_format
-
 ## Auto-generated Example
 
 ```php

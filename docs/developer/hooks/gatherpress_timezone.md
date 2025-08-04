@@ -1,5 +1,3 @@
-# gatherpress_timezone
-
 ## Auto-generated Example
 
 ```php

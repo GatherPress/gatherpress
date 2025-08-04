@@ -1,5 +1,3 @@
-# gatherpress_time_format
-
 ## Auto-generated Example
 
 ```php

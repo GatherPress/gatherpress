@@ -1,5 +1,3 @@
-# gatherpress_query_vars
-
 
 This filter is documented in includes/query-loop.php
 

@@ -1,5 +1,3 @@
-# gatherpress_sub_pages
-
 
 Filters the list of GatherPress sub pages.
 

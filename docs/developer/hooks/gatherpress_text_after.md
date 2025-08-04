@@ -1,5 +1,3 @@
-# gatherpress_text_after
-
 ## Auto-generated Example
 
 ```php

@@ -1,5 +1,3 @@
-# gatherpress_import
-
 
 Fires for every GatherPress data to be imported.
 
