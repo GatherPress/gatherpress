@@ -77,8 +77,6 @@ class Event_Feed {
 		// Hook into the main query to handle events feeds.
 		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
 
-		// Add custom rewrite rules for events feed.
-		add_action( 'init', array( $this, 'add_events_feed_rewrite_rules' ) );
 	}
 
 	/**
@@ -299,19 +297,5 @@ class Event_Feed {
 		return apply_filters( 'gatherpress_event_feed_content', $content );
 	}
 
-	/**
-	 * Add custom rewrite rules for events feed.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function add_events_feed_rewrite_rules(): void {
-		// Add a rewrite rule for the custom events feed URL.
-		add_rewrite_rule(
-			'^' . $this->rewrite_slug . '/feed/?$',
-			'index.php?post_type=' . Event::POST_TYPE . '&feed=rss2',
-			'top'
-		);
-	}
+
 }
