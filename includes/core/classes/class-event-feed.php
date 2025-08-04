@@ -76,7 +76,6 @@ class Event_Feed {
 
 		// Hook into the main query to handle events feeds.
 		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
-
 	}
 
 	/**
@@ -296,6 +295,4 @@ class Event_Feed {
 		// Allow themes and editors to customize the content.
 		return apply_filters( 'gatherpress_event_feed_content', $content );
 	}
-
-
 }
