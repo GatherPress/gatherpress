@@ -3,5 +3,6 @@
     "base_dir": ".",
     "wiki_directory": "docs/developer/hooks",
     "github_blob_url": "https://github.com/GatherPress/gatherpress/blob/develop/",
-    "exclude_dirs": ["vendor", "test"]
+    "exclude_dirs": ["vendor", "test"],
+    "top_headline": true
 }
