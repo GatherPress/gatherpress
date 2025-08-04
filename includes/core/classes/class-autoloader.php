@@ -44,14 +44,16 @@ class Autoloader {
 				 * @since 1.0.0
 				 *
 				 * @example
+				 * ```php
 				 * function gatherpress_awesome_autoloader( array $namespace ): array {
 				 *     $namespace['GatherPress_Awesome'] = __DIR__;
 				 *
 				 *     return $namespace;
 				 * }
 				 * add_filter( 'gatherpress_autoloader', 'gatherpress_awesome_autoloader' );
+				 * ```
 				 *
-				 * Example: The namespace 'GatherPress_Awesome\Setup' would map to 'gatherpress-awesome/includes/classes/class-setup.php'.
+				 * **Example:** The namespace `GatherPress_Awesome\Setup` would map to `gatherpress-awesome/includes/classes/class-setup.php`.
 				 */
 				$registered_autoloaders = apply_filters( 'gatherpress_autoloader', array() );
 

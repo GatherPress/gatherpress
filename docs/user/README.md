@@ -11,3 +11,4 @@ You will find separate entries for the following topics:
 - [3. Create or edit a venue](./3-create-or-edit-a-venue.md)
 - [4. GatherPress topics](./4-gatherpress-topics.md)
 - [5. Create or edit an event](./5-create-or-edit-an-event.md)
+- [6. Blocks](./blocks/README.md)
