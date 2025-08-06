@@ -182,12 +182,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/akirk/extract-wp-hooks.git",
-                "reference": "24409fbf99d02857c4509558e6dc920b69505961"
+                "reference": "7a764756fd155c6078d1d74b4f133d4d6e8d40be"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/akirk/extract-wp-hooks/zipball/24409fbf99d02857c4509558e6dc920b69505961",
-                "reference": "24409fbf99d02857c4509558e6dc920b69505961",
+                "url": "https://api.github.com/repos/akirk/extract-wp-hooks/zipball/7a764756fd155c6078d1d74b4f133d4d6e8d40be",
+                "reference": "7a764756fd155c6078d1d74b4f133d4d6e8d40be",
                 "shasum": ""
             },
             "require": {
@@ -226,7 +226,7 @@
                 "source": "https://github.com/akirk/extract-wp-hooks/tree/main",
                 "issues": "https://github.com/akirk/extract-wp-hooks/issues"
             },
-            "time": "2025-07-30T14:44:22+00:00"
+            "time": "2025-08-02T17:49:42+00:00"
         },
         {
             "name": "dealerdirect/phpcodesniffer-composer-installer",
