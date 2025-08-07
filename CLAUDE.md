@@ -122,9 +122,9 @@ When working with this codebase:
 ### PHP Coding Standards
 
 - **Use statements**: Always use `use` statements at the top of files for classes and functions instead of fully qualified namespace calls
-  - ✅ Good: `use GatherPress\Core\Event;` then `new Event()`
-  - ❌ Bad: `new \GatherPress\Core\Event()`
-  - For functions: `use function GatherPress\Core\filter_input;` then `filter_input()`
+    - ✅ Good: `use GatherPress\Core\Event;` then `new Event()`
+    - ❌ Bad: `new \GatherPress\Core\Event()`
+    - For functions: `use function GatherPress\Core\filter_input;` then `filter_input()`
 - **Namespace resolution**: When moving code between namespaces, ensure proper imports are updated
 - **Method organization**: Place related methods in logically grouped classes (e.g., form-related methods in `Rsvp_Form`)
 
@@ -133,18 +133,20 @@ When working with this codebase:
 Based on WordPress Coding Standards (WPCS), always ensure:
 
 - **Inline comments**: All inline comments must end with proper punctuation (periods)
-  - ✅ Good: `// Process the data and return results.`
-  - ❌ Bad: `// Process the data and return results`
+    - ✅ Good: `// Process the data and return results.`
+    - ❌ Bad: `// Process the data and return results`
 - **PHPDoc blocks**: Multi-line variable declarations require proper PHPDoc format with short descriptions
-  - ✅ Good: 
-    ```php
-    /**
-     * WordPress comment insertion result.
-     *
-     * @var int|false|\WP_Error $result WordPress may return WP_Error via filters.
-     */
-    ```
-  - ❌ Bad: `/** @var int|false|\WP_Error $result - WordPress may return WP_Error via filters. */`
+    - ✅ Good:
+
+        ```php
+        /**
+         * WordPress comment insertion result.
+         *
+         * @var int|false|\WP_Error $result WordPress may return WP_Error via filters.
+         */
+        ```
+
+    - ❌ Bad: `/** @var int|false|\WP_Error $result - WordPress may return WP_Error via filters. */`
 - **Type handling**: WordPress functions may return multiple types; handle all cases with proper type checking
-  - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
-  - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
+    - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
+    - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
