@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use WP_Comment;
@@ -162,7 +163,8 @@ class Rsvp_Setup {
 					}
 
 					// Process custom fields with schema validation.
-					$this->process_custom_fields_for_traditional_form( $comment_id );
+					$rsvp_form = Rsvp_Form::get_instance();
+					$rsvp_form->process_custom_fields_for_form( $comment_id );
 
 					$rsvp_token = new Rsvp_Token( $comment_id );
 
@@ -556,109 +558,5 @@ class Rsvp_Setup {
 	 */
 	public function set_submenu_file(): string {
 		return Rsvp::COMMENT_TYPE;
-	}
-
-	/**
-	 * Process custom fields for traditional form submissions.
-	 *
-	 * Validates and saves custom fields from traditional form submissions
-	 * using the same schema validation as the Ajax form handler.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param int $comment_id The comment ID of the RSVP.
-	 * @return void
-	 */
-	public function process_custom_fields_for_traditional_form( int $comment_id ): void {
-		$comment = get_comment( $comment_id );
-		if ( ! $comment || Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
-			return;
-		}
-
-		$post_id        = $comment->comment_post_ID;
-		$form_schema_id = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_form_schema_id' ) ) );
-
-		if ( empty( $form_schema_id ) ) {
-			return;
-		}
-
-		// Get the stored schemas for this post.
-		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
-		if ( empty( $schemas ) || ! isset( $schemas[ $form_schema_id ] ) ) {
-			return;
-		}
-
-		$schema = $schemas[ $form_schema_id ];
-		if ( empty( $schema['fields'] ) ) {
-			return;
-		}
-
-		// Process each custom field from the schema.
-		foreach ( $schema['fields'] as $field_name => $field_config ) {
-			// Skip built-in fields.
-			if ( in_array( $field_name, array( 'author', 'email', 'gatherpress_event_email_updates' ), true ) ) {
-				continue;
-			}
-
-			$field_value = filter_input( INPUT_POST, $field_name );
-			if ( null === $field_value ) {
-				continue;
-			}
-
-			// Validate and sanitize the field value using the same logic as the Ajax handler.
-			$validated_value = $this->validate_custom_field_value( $field_value, $field_config );
-			if ( false !== $validated_value ) {
-				update_comment_meta( $comment_id, 'gatherpress_custom_' . $field_name, $validated_value );
-			}
-		}
-	}
-
-	/**
-	 * Validate a custom field value against its configuration.
-	 *
-	 * Shared validation logic for both traditional and Ajax form submissions.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param mixed $value  The field value to validate.
-	 * @param array $config The field configuration from the schema.
-	 * @return mixed|false The validated value, or false if validation fails.
-	 */
-	public function validate_custom_field_value( $value, array $config ) {
-		// Handle required field validation.
-		if ( ! empty( $config['required'] ) && empty( $value ) ) {
-			return false;
-		}
-
-		// Handle type-specific validation.
-		switch ( $config['type'] ) {
-			case 'email':
-				$sanitized = sanitize_email( $value );
-				return is_email( $sanitized ) ? $sanitized : false;
-
-			case 'url':
-				$sanitized = esc_url_raw( $value );
-				return filter_var( $sanitized, FILTER_VALIDATE_URL ) ? $sanitized : false;
-
-			case 'number':
-				return is_numeric( $value ) ? floatval( $value ) : false;
-
-			case 'select':
-			case 'radio':
-				$sanitized = sanitize_text_field( $value );
-				return in_array( $sanitized, $config['options'] ?? array(), true ) ? $sanitized : false;
-
-			case 'checkbox':
-				return ! empty( $value ) ? 1 : 0;
-
-			case 'textarea':
-				$sanitized  = sanitize_textarea_field( $value );
-				$max_length = $config['max_length'] ?? 1000;
-				return strlen( $sanitized ) <= $max_length ? $sanitized : false;
-
-			case 'text':
-			default:
-				return sanitize_text_field( $value );
-		}
 	}
 }

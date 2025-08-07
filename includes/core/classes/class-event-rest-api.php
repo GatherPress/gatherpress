@@ -15,6 +15,7 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Traits\Singleton;
 use WP_REST_Request;
@@ -824,7 +825,7 @@ class Event_Rest_Api {
 		}
 
 		// Check for duplicate RSVP.
-		$existing_rsvp = get_comments(
+		$existing_rsvp_count = get_comments(
 			array(
 				'post_id'      => $post_id,
 				'type'         => Rsvp::COMMENT_TYPE,
@@ -833,7 +834,10 @@ class Event_Rest_Api {
 			)
 		);
 
-		if ( $existing_rsvp > 0 ) {
+		// Ensure we have a valid count.
+		$count = is_numeric( $existing_rsvp_count ) ? (int) $existing_rsvp_count : 0;
+
+		if ( $count > 0 ) {
 			$response = array(
 				'success' => false,
 				'message' => __( "You've already RSVP'd to this event.", 'gatherpress' ),
@@ -842,39 +846,65 @@ class Event_Rest_Api {
 		}
 
 		// Insert the comment.
-		$comment_id = wp_insert_comment( $comment_data );
+		/**
+		 * WordPress comment insertion result.
+		 *
+		 * @var int|false|\WP_Error $comment_id_result WordPress may return WP_Error via filters.
+		 */
+		$comment_id_result = wp_insert_comment( $comment_data );
 
-		if ( $comment_id && ! is_wp_error( $comment_id ) ) {
-			// Set RSVP status to attending.
-			wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
-
-			// Handle email updates preference.
-			if ( $email_updates ) {
-				update_comment_meta( $comment_id, 'gatherpress_event_email_updates', 1 );
-			}
-
-			// Validate and save custom fields.
-			$this->save_custom_fields( $request, $post_id, $comment_id );
-
-			// Generate and send confirmation email.
-			$rsvp_token = new Rsvp_Token( $comment_id );
-			$rsvp_token->generate_token()->send_rsvp_confirmation_email();
-
-			$success = true;
-			$message = __( 'Your RSVP has been submitted successfully! Please check your email for a confirmation link.', 'gatherpress' );
-
-			// Get updated responses for the frontend.
-			$event     = new Event( $post_id );
-			$responses = $event->rsvp->responses();
-		} else {
-			$message = __( 'There was an error processing your RSVP. Please try again.', 'gatherpress' );
+		// Handle WP_Error case (can happen with some filters/hooks).
+		if ( is_wp_error( $comment_id_result ) ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => $comment_id_result->get_error_message(),
+				),
+				500
+			);
 		}
+
+		// Handle false/failure case.
+		if ( ! $comment_id_result || $comment_id_result <= 0 ) {
+			return new WP_REST_Response(
+				array(
+					'success' => false,
+					'message' => __( 'Failed to create RSVP comment.', 'gatherpress' ),
+				),
+				500
+			);
+		}
+
+		// At this point, we have a valid comment ID.
+		$comment_id = (int) $comment_id_result;
+
+		// Set RSVP status to attending.
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		// Handle email updates preference.
+		if ( $email_updates ) {
+			update_comment_meta( $comment_id, 'gatherpress_event_email_updates', 1 );
+		}
+
+		// Validate and save custom fields.
+		$this->save_custom_fields( $request, $post_id, $comment_id );
+
+		// Generate and send confirmation email.
+		$rsvp_token = new Rsvp_Token( $comment_id );
+		$rsvp_token->generate_token()->send_rsvp_confirmation_email();
+
+		$success = true;
+		$message = __( 'Your RSVP has been submitted successfully! Please check your email for a confirmation link.', 'gatherpress' );
+
+		// Get updated responses for the frontend.
+		$event     = new Event( $post_id );
+		$responses = $event->rsvp->responses();
 
 		$response = array(
 			'success'    => $success,
 			'message'    => $message,
 			'comment_id' => $comment_id,
-			'responses'  => isset( $responses ) ? $responses : array(),
+			'responses'  => $responses,
 		);
 
 		return new WP_REST_Response( $response );
@@ -950,7 +980,8 @@ class Event_Rest_Api {
 			}
 
 			// Validate and sanitize the field value using shared logic.
-			$validated_value = Rsvp_Setup::get_instance()->validate_custom_field_value( $submitted_value, $field_config );
+			$rsvp_form       = Rsvp_Form::get_instance();
+			$validated_value = $rsvp_form->sanitize_custom_field_value( $submitted_value, $field_config );
 			if ( false !== $validated_value ) {
 				// Save as comment meta with prefix to avoid conflicts.
 				$meta_key = 'gatherpress_custom_' . sanitize_key( $field_config['name'] );
@@ -959,69 +990,6 @@ class Event_Rest_Api {
 		}
 	}
 
-	/**
-	 * Validate a custom field value against its configuration.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param mixed $value  The submitted field value.
-	 * @param array $config The field configuration from schema.
-	 * @return bool True if valid, false otherwise.
-	 */
-	private function validate_custom_field_value( $value, array $config ): bool {
-		// Check required fields.
-		if ( $config['required'] && empty( $value ) ) {
-			return false;
-		}
-
-		// Type-specific validation.
-		switch ( $config['type'] ) {
-			case 'email':
-				return empty( $value ) || is_email( $value );
-
-			case 'select':
-			case 'radio':
-				$allowed_options = $config['options'] ?? array();
-				return empty( $value ) || in_array( $value, $allowed_options, true );
-
-			case 'textarea':
-				$max_length = $config['max_length'] ?? 1000;
-				return empty( $value ) || strlen( $value ) <= $max_length;
-
-			case 'checkbox':
-				return in_array( $value, array( true, false, 'on', '', '1', '0', 1, 0 ), true );
-
-			default:
-				return true; // Allow other field types.
-		}
-	}
-
-	/**
-	 * Sanitize a custom field value based on its type.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param mixed $value  The field value to sanitize.
-	 * @param array $config The field configuration.
-	 * @return mixed The sanitized value.
-	 */
-	private function sanitize_custom_field_value( $value, array $config ) {
-		switch ( $config['type'] ) {
-			case 'email':
-				return sanitize_email( $value );
-
-			case 'textarea':
-				return sanitize_textarea_field( $value );
-
-			case 'checkbox':
-				return (bool) $value;
-
-			case 'select':
-			case 'radio':
-			default:
-				return sanitize_text_field( $value );
-		}
-	}
 
 	/**
 	 * Prepare event data for the response.

@@ -6,11 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### PHP Development
 
-- `composer lint` - Run PHP CodeSniffer linting
-- `composer format` - Auto-fix PHP coding standards issues  
-- `composer test` - Run PHP unit tests
-- `composer test:phpstan` - Run PHPStan static analysis
-- `composer compat` - Check PHP compatibility
+- `npm run lint:php` - Run PHP CodeSniffer linting
+- `npm run lint:php:fix` - Auto-fix PHP coding standards issues  
+- `npm run lint:phpstan` - Run PHPStan static analysis
 
 ### JavaScript Development
 
@@ -111,6 +109,8 @@ The RSVP block uses a sophisticated template system (`src/blocks/rsvp/templates/
 - PHPStan for static analysis
 - SonarCloud integration for code quality
 
+## Coding Guidelines
+
 When working with this codebase:
 
 1. Always run linting before committing
@@ -118,3 +118,33 @@ When working with this codebase:
 3. Follow WordPress coding standards
 4. Test both PHP and JavaScript components
 5. Consider block editor compatibility when making changes
+
+### PHP Coding Standards
+
+- **Use statements**: Always use `use` statements at the top of files for classes and functions instead of fully qualified namespace calls
+  - ✅ Good: `use GatherPress\Core\Event;` then `new Event()`
+  - ❌ Bad: `new \GatherPress\Core\Event()`
+  - For functions: `use function GatherPress\Core\filter_input;` then `filter_input()`
+- **Namespace resolution**: When moving code between namespaces, ensure proper imports are updated
+- **Method organization**: Place related methods in logically grouped classes (e.g., form-related methods in `Rsvp_Form`)
+
+### PHP Linting Requirements
+
+Based on WordPress Coding Standards (WPCS), always ensure:
+
+- **Inline comments**: All inline comments must end with proper punctuation (periods)
+  - ✅ Good: `// Process the data and return results.`
+  - ❌ Bad: `// Process the data and return results`
+- **PHPDoc blocks**: Multi-line variable declarations require proper PHPDoc format with short descriptions
+  - ✅ Good: 
+    ```php
+    /**
+     * WordPress comment insertion result.
+     *
+     * @var int|false|\WP_Error $result WordPress may return WP_Error via filters.
+     */
+    ```
+  - ❌ Bad: `/** @var int|false|\WP_Error $result - WordPress may return WP_Error via filters. */`
+- **Type handling**: WordPress functions may return multiple types; handle all cases with proper type checking
+  - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
+  - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
