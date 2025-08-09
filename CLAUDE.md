@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### PHP Development
 
 - `npm run lint:php` - Run PHP CodeSniffer linting
-- `npm run lint:php:fix` - Auto-fix PHP coding standards issues  
+- `npm run lint:php:fix` - Auto-fix PHP coding standards issues
 - `npm run lint:phpstan` - Run PHPStan static analysis
 
 ### JavaScript Development
@@ -24,13 +24,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `npm run test:e2e` - Run Playwright end-to-end tests
 - `npm run test:unit:php` - Run PHP unit tests with coverage (requires wp-env)
-- `npm run wp-env start --xdebug` - Start WordPress environment with debugging
+- `npm run test:unit:js` - Run JavaScript unit tests with coverage
 
 ### WordPress Environment
 
 - `npm run wp-env` - Manage local WordPress environment
 - `npm run playground` - Start WordPress Playground server
+- `npm run playground:mount` - Start WordPress Playground with plugin mounted
 - `npm run plugin-zip` - Create distributable plugin zip
+
+### Documentation & Linting
+
+- `npm run lint:md:docs` - Lint markdown documentation files
+- `npm run lint:md:js` - Lint markdown in JavaScript files
+- `npm run lint:pkg-json` - Lint package.json format
+- `npm run format` - Format code using wp-scripts formatter
+
+### Utilities
+
+- `npm run check-engines` - Check Node.js and npm version compatibility
+- `npm run check-licenses` - Check package licenses
+- `npm run packages-update` - Update WordPress packages
 
 ## Architecture Overview
 
