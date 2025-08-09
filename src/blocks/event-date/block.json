@@ -20,6 +20,27 @@
 		},
 		"textAlign": {
 			"type": "string"
+		},
+		"displayType": {
+			"type": "string",
+			"default": "both"
+		},
+		"startDateFormat": {
+			"type": "string",
+			"default": ""
+		},
+		"endDateFormat": {
+			"type": "string",
+			"default": ""
+		},
+		"separator": {
+			"//": "@todo Add this to plugin settings",
+			"type": "string",
+			"default": "to"
+		},
+		"showTimezone": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {
