@@ -18,5 +18,15 @@ $gatherpress_post_id        = $gatherpress_block_instance->get_post_id( $block->
 $gatherpress_event          = new Event( $gatherpress_post_id );
 ?>
 <div <?php echo wp_kses_data( get_block_wrapper_attributes() ); ?>>
-	<?php echo esc_html( $gatherpress_event->get_display_datetime() ); ?>
+	<?php
+	echo esc_html(
+		$gatherpress_event->get_display_datetime(
+			$attributes['displayType'] ?? '',
+			$attributes['startDateFormat'] ?? '',
+			$attributes['endDateFormat'] ?? '',
+			$attributes['separator'] ?? '',
+			$attributes['showTimezone'] ?? ''
+		)
+	);
+	?>
 </div>
