@@ -290,6 +290,27 @@ class Event {
 	}
 
 	/**
+	 * Get the end time of an event.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $format PHP DateTime format (defaults to g:ia).
+	 *
+	 * @return string The formatting end time of the event.
+	 */
+	public function get_time_end( string $format = '' ): string {
+		return $this->get_datetime_end(
+			trim(
+				str_replace(
+					static::PHP_NON_TIME_FORMAT_CHARS,
+					'',
+					$format ? $format : 'g:i a'
+				)
+			)
+		);
+	}
+
+	/**
 	 * Format a datetime value for display.
 	 *
 	 * This method takes a datetime value from the event table, formats it according to the specified PHP date format,
