@@ -392,7 +392,7 @@ class Event {
 			$date = wp_date( $format, $ts, $tz );
 		}
 
-		return (string) $date;
+		return (string) trim( $date );
 	}
 
 	/**
