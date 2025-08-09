@@ -342,12 +342,10 @@ class Event {
 	 */
 	public function get_time_end( string $format = '' ): string {
 		return $this->get_datetime_end(
-			trim(
-				str_replace(
-					static::PHP_NON_TIME_FORMAT_CHARS,
-					'',
-					$format ? $format : 'g:i a'
-				)
+			str_replace(
+				static::PHP_NON_TIME_FORMAT_CHARS,
+				'',
+				$format ? $format : 'g:i a'
 			)
 		);
 	}
