@@ -7,7 +7,7 @@ import clsx from 'clsx';
 /**
  * WordPress dependencies.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __ } from '@wordpress/i18n';
 import {
 	AlignmentToolbar,
 	BlockControls,
@@ -18,7 +18,10 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
 	__experimentalVStack as VStack,
 	PanelBody,
+	RadioControl,
+	SelectControl,
 	Spinner,
+	TextControl,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
@@ -29,10 +32,16 @@ import {
 	convertPHPToMomentFormat,
 	getTimezone,
 	getUtcOffset,
+	removeNonTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal } from '../../helpers/globals';
 import { isEventPostType } from '../../helpers/event';
+
+const globalDateFormat = getFromGlobal('settings.dateFormat');
+const globalTimeFormat = getFromGlobal('settings.timeFormat');
+const globalShowTimezone = getFromGlobal('settings.showTimezone');
+const defaultFormat = `${globalDateFormat} ${globalTimeFormat}`;
 
 /**
  * Similar to get_display_datetime method in class-event.php.
@@ -40,36 +49,75 @@ import { isEventPostType } from '../../helpers/event';
  * @param {string} dateTimeStart
  * @param {string} dateTimeEnd
  * @param {string} timezone
+ * @param {string} startFormat
+ * @param {string} endFormat
+ * @param {string} separator
+ * @param {string} showTimezone
  * @return {string} Displayed date.
  */
-const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
-	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.dateFormat')
-	);
-	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.timeFormat')
-	);
-	const timezoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
-	const startFormat = dateFormat + ' ' + timeFormat;
-
+const displayDateTime = (
+	dateTimeStart,
+	dateTimeEnd,
+	timezone,
+	startFormat,
+	endFormat,
+	separator,
+	showTimezone
+) => {
 	timezone = getTimezone(timezone);
+	let sameStartEndDay = false;
 
-	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timezoneFormat;
-
-	if (
-		moment.tz(dateTimeStart, timezone).format(dateFormat) ===
-		moment.tz(dateTimeEnd, timezone).format(dateFormat)
-	) {
-		endFormat = timeFormat + ' ' + timezoneFormat;
+	// Check for default formatting with same event day before applying
+	// attribute-specific formats.
+	if (dateTimeStart && dateTimeEnd) {
+		const sameDayFormat = convertPHPToMomentFormat(globalDateFormat);
+		sameStartEndDay =
+			moment.tz(dateTimeStart, timezone).format(sameDayFormat) ===
+			moment.tz(dateTimeEnd, timezone).format(sameDayFormat);
 	}
 
-	return sprintf(
-		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
-		__('%1$s to %2$s %3$s', 'gatherpress'),
-		moment.tz(dateTimeStart, timezone).format(startFormat),
-		moment.tz(dateTimeEnd, timezone).format(endFormat),
-		getUtcOffset(timezone)
-	);
+	const parts = [];
+
+	// Add start date/time.
+	if (dateTimeStart) {
+		startFormat = convertPHPToMomentFormat(
+			startFormat ? startFormat : defaultFormat
+		);
+		parts.push(moment.tz(dateTimeStart, timezone).format(startFormat));
+	}
+
+	// Add separator if start + end date/time(s).
+	if (dateTimeStart && dateTimeEnd) {
+		parts.push(separator);
+	}
+
+	// Add end date/time.
+	if (dateTimeEnd) {
+		// Fall formatting back to default.
+		endFormat = endFormat ? endFormat : defaultFormat;
+
+		endFormat = convertPHPToMomentFormat(
+			// Remove non-time characters from PHP date format if start and end
+			// are on the same day.
+			sameStartEndDay ? removeNonTimePHPFormatChars(endFormat) : endFormat
+		);
+		parts.push(moment.tz(dateTimeEnd, timezone).format(endFormat));
+	}
+
+	// Add timezone.
+	if (showTimezone ? 'yes' === showTimezone : globalShowTimezone) {
+		parts.push(
+			moment
+				.tz(dateTimeEnd ? dateTimeEnd : dateTimeStart, timezone)
+				.format('z')
+		);
+	}
+
+	// Add UTC offset if GMT (invalid site timezone).
+	parts.push(getUtcOffset(timezone));
+
+	// The filter removes empty values.
+	return parts.filter((part) => part).join(' ');
 };
 
 /**
@@ -97,7 +145,14 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
 const Edit = ({ attributes, setAttributes, context }) => {
-	const { textAlign } = attributes;
+	const {
+		textAlign,
+		displayType,
+		startDateFormat,
+		endDateFormat,
+		separator,
+		showTimezone,
+	} = attributes;
 	const blockProps = useBlockProps({
 		className: clsx({
 			[`has-text-align-${textAlign}`]: textAlign,
@@ -150,6 +205,9 @@ const Edit = ({ attributes, setAttributes, context }) => {
 		);
 	}
 
+	const showStartTime = ['start', 'both'].includes(displayType);
+	const showEndTime = ['end', 'both'].includes(displayType);
+
 	return (
 		<div {...blockProps}>
 			<BlockControls>
@@ -160,13 +218,112 @@ const Edit = ({ attributes, setAttributes, context }) => {
 					}
 				/>
 			</BlockControls>
-			{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
+			{displayDateTime(
+				showStartTime ? dateTimeStart : null,
+				showEndTime ? dateTimeEnd : null,
+				timezone,
+				startDateFormat,
+				endDateFormat,
+				separator,
+				showTimezone
+			)}
 			{isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
 						<VStack spacing={4}>
 							<DateTimeRange />
 						</VStack>
+						<div style={{ height: '1rem' }} />
+						<RadioControl
+							label={__('Display', 'gatherpress')}
+							selected={displayType}
+							options={[
+								{
+									label: __(
+										'Start and end date',
+										'getherpress'
+									),
+									value: 'both',
+								},
+								{
+									label: __('Start date only', 'gatherpress'),
+									value: 'start',
+								},
+								{
+									label: __('End date only', 'gatherpress'),
+									value: 'end',
+								},
+							]}
+							onChange={(value) =>
+								setAttributes({ displayType: value })
+							}
+						/>
+						{'both' === displayType && (
+							<TextControl
+								label={__('Separator', 'gatherpress')}
+								value={separator}
+								placeholder={__('to', 'gatherpress')}
+								onChange={(value) =>
+									setAttributes({ separator: value })
+								}
+							/>
+						)}
+						{showStartTime && (
+							<TextControl
+								label={__('Start date format', 'gatherpress')}
+								value={startDateFormat}
+								placeholder={`${globalDateFormat} ${globalTimeFormat}`}
+								onChange={(value) =>
+									setAttributes({ startDateFormat: value })
+								}
+							/>
+						)}
+						{showEndTime && (
+							<TextControl
+								label={__('End date format', 'gatherpress')}
+								value={endDateFormat}
+								placeholder={`${globalDateFormat} ${globalTimeFormat}`}
+								onChange={(value) =>
+									setAttributes({ endDateFormat: value })
+								}
+							/>
+						)}
+						<p className="components-base-control__help">
+							<a
+								href="https://wordpress.org/documentation/article/customize-date-and-time-format/"
+								target="_blank"
+								rel="noreferrer"
+							>
+								{__(
+									'Date/time formatting documentation',
+									'gatherpress'
+								)}
+							</a>
+						</p>
+						<SelectControl
+							label={__('Show time zone', 'gatherpress')}
+							value={showTimezone}
+							options={[
+								{
+									label: __(
+										'Default (plugin setting)',
+										'gatherpress'
+									),
+									value: '',
+								},
+								{
+									label: __('Yes', 'gatherpress'),
+									value: 'yes',
+								},
+								{
+									label: __('No', 'gatherpress'),
+									value: 'no',
+								},
+							]}
+							onChange={(value) =>
+								setAttributes({ showTimezone: value })
+							}
+						/>
 					</PanelBody>
 				</InspectorControls>
 			)}
