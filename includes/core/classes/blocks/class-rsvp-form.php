@@ -17,6 +17,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
+use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
@@ -40,6 +41,20 @@ class Rsvp_Form {
 	 * @var string
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp-form';
+
+	/**
+	 * Built-in field names that should not be processed as custom fields.
+	 *
+	 * These fields are handled by WordPress core or other parts of the RSVP system.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	const BUILT_IN_FIELDS = array(
+		'author',
+		'email',
+		'gatherpress_event_email_updates',
+	);
 
 	/**
 	 * Class constructor.
@@ -252,7 +267,7 @@ class Rsvp_Form {
 
 		foreach ( $inner_blocks as $inner_block ) {
 			// Check for GatherPress form field blocks.
-			if ( 'gatherpress/form-field' === $inner_block['blockName'] ) {
+			if ( Form_Field::BLOCK_NAME === $inner_block['blockName'] ) {
 				$attrs = $inner_block['attrs'] ?? array();
 
 				if ( ! empty( $attrs['fieldName'] ) ) {
@@ -426,7 +441,7 @@ class Rsvp_Form {
 		// Process each custom field from the schema.
 		foreach ( $schema['fields'] as $field_name => $field_config ) {
 			// Skip built-in fields.
-			if ( in_array( $field_name, array( 'author', 'email', 'gatherpress_event_email_updates' ), true ) ) {
+			if ( in_array( $field_name, self::BUILT_IN_FIELDS, true ) ) {
 				continue;
 			}
 

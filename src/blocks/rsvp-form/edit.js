@@ -19,7 +19,7 @@ const Edit = () => {
 	const blockProps = useBlockProps();
 	const [showMessage, setShowMessage] = useState(false);
 
-	// Toggle visibility of success message blocks for preview
+	// Toggle visibility of success message blocks for preview.
 	useEffect(() => {
 		const messageElements = document.querySelectorAll(
 			'.gatherpress-rsvp-form-message'
@@ -29,7 +29,7 @@ const Edit = () => {
 		});
 	}, [showMessage]);
 
-	// Hide message blocks immediately on mount
+	// Hide message blocks immediately on mount.
 	useEffect(() => {
 		const messageElements = document.querySelectorAll(
 			'.gatherpress-rsvp-form-message'

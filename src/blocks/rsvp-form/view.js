@@ -25,14 +25,14 @@ const { state } = store('gatherpress', {
 			const context = getContext();
 			const postId = context?.postId || 0;
 
-			// Prevent multiple submissions
+			// Prevent multiple submissions.
 			if (state.rsvpForm.isSubmitting) {
 				return;
 			}
 
 			state.rsvpForm.isSubmitting = true;
 
-			// Get form data
+			// Get form data.
 			const formData = new FormData(form);
 			const data = {
 				comment_post_ID: postId,
@@ -47,7 +47,7 @@ const { state } = store('gatherpress', {
 			const makeRequest = async (isRetry = false) => {
 				const nonce = await getNonce();
 				if (!nonce) {
-					// If we can't get a nonce, fall back to regular form submission
+					// If we can't get a nonce, fall back to regular form submission.
 					state.rsvpForm.isSubmitting = false;
 					form.submit();
 					return;
@@ -79,7 +79,7 @@ const { state } = store('gatherpress', {
 				const result = await makeRequest();
 
 				if (result && result.success) {
-					// Success - show message block and disable form
+					// Success - show message block and disable form.
 					const messageContainer = form.querySelector(
 						'.gatherpress-rsvp-form-message'
 					);
@@ -87,7 +87,7 @@ const { state } = store('gatherpress', {
 						messageContainer.style.display = 'block';
 					}
 
-					// Disable all form inputs
+					// Disable all form inputs.
 					const inputs = form.querySelectorAll(
 						'input, textarea, button, select'
 					);
@@ -95,7 +95,7 @@ const { state } = store('gatherpress', {
 						input.disabled = true;
 					});
 
-					// Update the responses data if available
+					// Update the responses data if available.
 					if (result.responses) {
 						initPostContext(state, postId);
 						if (state.posts[postId]) {
@@ -110,7 +110,7 @@ const { state } = store('gatherpress', {
 						}
 					}
 				} else {
-					// Error from the server - show alert with server-provided message
+					// Error from the server - show alert with server-provided message.
 					// eslint-disable-next-line no-alert
 					alert(
 						result?.message ||
@@ -118,14 +118,14 @@ const { state } = store('gatherpress', {
 					);
 				}
 			} catch (error) {
-				// Network or other errors - fall back to regular form submission
+				// Network or other errors - fall back to regular form submission.
 				// eslint-disable-next-line no-console
 				console.warn(
 					'Ajax RSVP submission failed, falling back to regular form submission:',
 					error
 				);
 
-				// Let the form submit normally as a fallback
+				// Let the form submit normally as a fallback.
 				state.rsvpForm.isSubmitting = false;
 				form.submit();
 				return;
@@ -139,10 +139,10 @@ const { state } = store('gatherpress', {
 			const context = getContext();
 			const postId = context?.postId || 0;
 
-			// Initialize post context
+			// Initialize post context.
 			initPostContext(state, postId);
 
-			// Reset submission state
+			// Reset submission state.
 			state.rsvpForm.isSubmitting = false;
 		},
 	},

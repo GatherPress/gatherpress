@@ -55,4 +55,8 @@ storageState.json
 coverage
 test-report.xml
 
+# Claude Code #
+##########
+.claude
+
 *.zip
