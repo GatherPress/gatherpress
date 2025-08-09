@@ -7,7 +7,7 @@ import clsx from 'clsx';
 /**
  * WordPress dependencies.
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	AlignmentToolbar,
 	BlockControls,
@@ -305,9 +305,15 @@ const Edit = ({ attributes, setAttributes, context }) => {
 							value={showTimezone}
 							options={[
 								{
-									label: __(
-										'Default (plugin setting)',
-										'gatherpress'
+									label: sprintf(
+										/* translators: %s: Plugin "show timezone" setting */
+										__(
+											'%s (plugin setting)',
+											'gatherpress'
+										),
+										globalShowTimezone
+											? __('Yes', 'gatherpress')
+											: __('No', 'gatherpress')
 									),
 									value: '',
 								},
