@@ -139,6 +139,12 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $type           Display type: 'start', 'end', or 'both'.
+	 * @param string $start_format   PHP display format for start date/time.
+	 * @param string $end_format     PHP display format for end date/time.
+	 * @param string $separator      Separator "word" between start and end dates (if both are being displayed).
+	 * @param string $show_timezone  Show timezone.
+	 *
 	 * @return string A string representing the formatted start and end dates/times of the event, or an
 	 * em dash if data is unavailable.
 	 *
