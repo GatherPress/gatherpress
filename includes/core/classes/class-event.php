@@ -144,26 +144,61 @@ class Event {
 	 *
 	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
 	 */
-	public function get_display_datetime(): string {
+	public function get_display_datetime(
+		string $type = '',
+		string $start_format = '',
+		string $end_format = '',
+		string $separator = '',
+		string $show_timezone = ''
+	): string {
+		// d( $type, $start_format, $end_format, $separator, $show_timezone );
+
+		// // KILL THIS
+		// $type = '';
+		// $separator = '---';
+		// $start_format = 'Y';
+		// $end_format = 'Y';
+
 		$settings    = Settings::get_instance();
 		$date_format = apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
 		$time_format = apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
 
-		if ( $this->is_same_date() ) {
-			$start = $this->get_datetime_start( $date_format . ' ' . $time_format );
-			$end   = $this->get_datetime_end( $time_format . $timezone );
-		} else {
-			$start = $this->get_datetime_start( $date_format . ', ' . $time_format );
-			$end   = $this->get_datetime_end( $date_format . ', ' . $time_format . $timezone );
+		$show_start = $type
+			? in_array( $type, array( 'start', 'both' ), true )
+			: true;
+
+		$show_end = $type
+			? in_array( $type, array( 'end', 'both' ), true )
+			: true;
+
+		$parts = array();
+
+		if ( $show_start ) {
+			$parts[] = $this->get_datetime_start( $start_format ? $start_format : "{$date_format} {$time_format}" );
 		}
 
-		if ( ! empty( $start ) && ! empty( $end ) ) {
-			/* translators: %1$s: start datetime, %2$s: end datetime. */
-			return sprintf( __( '%1$s to %2$s', 'gatherpress' ), $start, $end );
+		if ( $show_start && $show_end ) {
+			$parts[] = $separator;
 		}
 
-		return __( '—', 'gatherpress' );
+		if ( $show_end ) {
+			$parts[] = $show_start && $this->is_same_date()
+				? $this->get_time_end( $end_format )
+				: $this->get_datetime_end( $end_format ? $end_format : "{$date_format} {$time_format}" );
+		}
+
+		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
+			$parts[] = $this->get_datetime_start( $timezone );
+		}
+
+		// d( $parts );
+
+		// Remove empty parts.
+		$parts = array_filter( $parts );
+
+		// Stick the parts back together.
+		return $parts ? implode( ' ', $parts ) : __( '—', 'gatherpress' );
 	}
 
 	/**
