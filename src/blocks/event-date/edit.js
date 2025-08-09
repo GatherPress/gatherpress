@@ -32,6 +32,7 @@ import {
 	convertPHPToMomentFormat,
 	getTimezone,
 	getUtcOffset,
+	removeNonTimePHPFormatChars,
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal } from '../../helpers/globals';
@@ -68,9 +69,7 @@ const displayDateTime = (
 
 	// Check for default formatting with same event day before applying
 	// attribute-specific formats.
-	// INSTEAD OF CHECKING !startFormat and !endFormat, WHAT IF WE ALWAYS JUST
-	// STRIPPED THE NON-TIME CHARS OUT OF THE PHP FORMAT FIRST???
-	if (dateTimeStart && dateTimeEnd && !startFormat && !endFormat) {
+	if (dateTimeStart && dateTimeEnd) {
 		const sameDayFormat = convertPHPToMomentFormat(globalDateFormat);
 		sameStartEndDay =
 			moment.tz(dateTimeStart, timezone).format(sameDayFormat) ===
@@ -79,6 +78,7 @@ const displayDateTime = (
 
 	const parts = [];
 
+	// Add start date/time.
 	if (dateTimeStart) {
 		startFormat = convertPHPToMomentFormat(
 			startFormat ? startFormat : defaultFormat
@@ -86,17 +86,25 @@ const displayDateTime = (
 		parts.push(moment.tz(dateTimeStart, timezone).format(startFormat));
 	}
 
+	// Add separator if start + end date/time(s).
 	if (dateTimeStart && dateTimeEnd) {
 		parts.push(separator);
 	}
 
+	// Add end date/time.
 	if (dateTimeEnd) {
-		endFormat = sameStartEndDay
-			? convertPHPToMomentFormat(globalTimeFormat)
-			: convertPHPToMomentFormat(endFormat ? endFormat : defaultFormat);
+		// Fall formatting back to default.
+		endFormat = endFormat ? endFormat : defaultFormat;
+
+		endFormat = convertPHPToMomentFormat(
+			// Remove non-time characters from PHP date format if start and end
+			// are on the same day.
+			sameStartEndDay ? removeNonTimePHPFormatChars(endFormat) : endFormat
+		);
 		parts.push(moment.tz(dateTimeEnd, timezone).format(endFormat));
 	}
 
+	// Add timezone.
 	if (showTimezone ? 'yes' === showTimezone : globalShowTimezone) {
 		parts.push(
 			moment
