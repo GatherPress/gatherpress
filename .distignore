@@ -9,8 +9,10 @@
 .eslintignore
 .eslintrc
 .eslintrc.js
+.extract-wp-hooks.json
 .gitignore
 .gitlab-ci.yml
+.markdownlintignore
 .nvmrc
 .stylelintignore
 .stylelintrc.js
