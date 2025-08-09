@@ -59,6 +59,46 @@ class Event {
 	const TABLE_FORMAT = '%sgatherpress_events';
 
 	/**
+	 * Non-time PHP DateTime formatting characters
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	const PHP_NON_TIME_FORMAT_CHARS = array(
+		'd',
+		'D',
+		'j',
+		'l',
+		'N',
+		'S',
+		'w',
+		'z',
+		'W',
+		'F',
+		'm',
+		'M',
+		'n',
+		't',
+		'L',
+		'o',
+		'X',
+		'x',
+		'Y',
+		'y',
+		'e',
+		'I',
+		'O',
+		'P',
+		'p',
+		'T',
+		'Z',
+		'c',
+		'r',
+		'U',
+		',',
+	);
+
+	/**
 	 * Event post object.
 	 *
 	 * @since 1.0.0
