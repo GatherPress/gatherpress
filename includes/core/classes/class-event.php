@@ -157,14 +157,6 @@ class Event {
 		string $separator = '',
 		string $show_timezone = ''
 	): string {
-		// d( $type, $start_format, $end_format, $separator, $show_timezone );
-
-		// // KILL THIS
-		// $type = '';
-		// $separator = '---';
-		// $start_format = 'Y';
-		// $end_format = 'Y';
-
 		$settings    = Settings::get_instance();
 		$date_format = apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
 		$time_format = apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
@@ -178,30 +170,39 @@ class Event {
 			? in_array( $type, array( 'end', 'both' ), true )
 			: true;
 
-		$parts = array();
+		// Set start date/time.
+		$start = $show_start
+			? $this->get_datetime_start(
+				$start_format ? $start_format : "{$date_format} {$time_format}"
+			)
+			: false;
 
-		if ( $show_start ) {
-			$parts[] = $this->get_datetime_start( $start_format ? $start_format : "{$date_format} {$time_format}" );
-		}
-
-		if ( $show_start && $show_end ) {
-			$parts[] = $separator;
-		}
-
+		// Set end date/time.
 		if ( $show_end ) {
-			$parts[] = $show_start && $this->is_same_date()
+			$end = $show_start && $this->is_same_date()
 				? $this->get_time_end( $end_format )
-				: $this->get_datetime_end( $end_format ? $end_format : "{$date_format} {$time_format}" );
+				: $this->get_datetime_end(
+					$end_format ? $end_format : "{$date_format} {$time_format}"
+				);
+		} else {
+			$end = false;
 		}
 
+		// Add separator if there's both start and end date/time.
+		$separator = $start && $end
+			? ( $separator ? $separator : __( 'to', 'gatherpress' ) )
+			: false;
+
+		// Add timezone.
 		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
-			$parts[] = $this->get_datetime_start( $timezone );
+			$timezone = $this->get_datetime_start( $timezone );
+		} else {
+			$timezone = false;
 		}
 
-		// d( $parts );
-
-		// Remove empty parts.
-		$parts = array_filter( $parts );
+		$parts = array_filter(
+			array( $start, $separator, $end, $timezone )
+		);
 
 		// Stick the parts back together.
 		return $parts ? implode( ' ', $parts ) : __( '—', 'gatherpress' );
