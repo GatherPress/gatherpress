@@ -100,17 +100,11 @@ class Event_Feed {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
 			// Check if this is the events feed URL.
-			if ( strpos( $request_uri, '/' . $this->rewrite_slug . '/feed' ) !== false ) {
+			if ( str_contains( $request_uri, '/' . $this->rewrite_slug . '/feed' ) ) {
 				// Set the post type and let Event_Query handle the rest.
 				$query->set( 'post_type', Event::POST_TYPE );
 				$query->set( 'gatherpress_events_query', 'upcoming' );
 
-				// Remove any comment-related query vars.
-				$query->set( 'comments', false );
-				$query->set( 'comment_feed', false );
-
-				// Force WordPress to use the default feed template.
-				$query->set( 'feed', 'rss2' );
 			}
 		}
 	}
@@ -234,23 +228,6 @@ class Event_Feed {
 
 		if ( ! empty( $clean_content ) ) {
 			$custom_content .= '<p>' . $clean_content . '</p>';
-		}
-
-		// Add comments section.
-		$comments = get_comments(
-			array(
-				'post_id' => get_the_ID(),
-				'status'  => 'approve',
-				'number'  => 5, // Limit to 5 most recent comments.
-			)
-		);
-
-		if ( ! empty( $comments ) ) {
-			$custom_content .= '<h3>' . __( 'Comments:', 'gatherpress' ) . '</h3>';
-			foreach ( $comments as $comment ) {
-				$custom_content .= '<p><strong>' . esc_html( $comment->comment_author ) . ':</strong> ';
-				$custom_content .= esc_html( wp_strip_all_tags( $comment->comment_content ) ) . '</p>';
-			}
 		}
 
 		return $custom_content;
