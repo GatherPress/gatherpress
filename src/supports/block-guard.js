@@ -25,9 +25,9 @@ const blockGuardListeners = new Map();
  * @return {Array} Array containing [isEnabled, setIsEnabled] similar to useState.
  */
 function useSharedBlockGuardState(blockName) {
-	// Initialize state if it doesn't exist
+	// Initialize state if it doesn't exist.
 	if (!blockGuardStates.has(blockName)) {
-		blockGuardStates.set(blockName, true); // Default to enabled
+		blockGuardStates.set(blockName, true); // Default to enabled.
 	}
 
 	const [localState, setLocalState] = useState(
@@ -35,29 +35,29 @@ function useSharedBlockGuardState(blockName) {
 	);
 
 	useEffect(() => {
-		// Initialize listeners array for this block type if it doesn't exist
+		// Initialize listeners array for this block type if it doesn't exist.
 		if (!blockGuardListeners.has(blockName)) {
 			blockGuardListeners.set(blockName, new Set());
 		}
 
-		// Add this component's state setter to the listeners
+		// Add this component's state setter to the listeners.
 		const listeners = blockGuardListeners.get(blockName);
 		listeners.add(setLocalState);
 
-		// Sync with current shared state
+		// Sync with current shared state.
 		setLocalState(blockGuardStates.get(blockName));
 
-		// Cleanup: remove listener on unmount
+		// Cleanup: remove listener on unmount.
 		return () => {
 			listeners.delete(setLocalState);
 		};
 	}, [blockName]);
 
 	const setSharedState = (value) => {
-		// Update the shared state
+		// Update the shared state.
 		blockGuardStates.set(blockName, value);
 
-		// Notify all listeners (components using this block type)
+		// Notify all listeners (components using this block type).
 		const listeners = blockGuardListeners.get(blockName);
 		if (listeners) {
 			listeners.forEach((listener) => listener(value));
@@ -292,7 +292,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 						overlay.style.background = 'transparent';
 						overlay.style.zIndex = '1';
 
-						// Get the actual clientId of this specific block instance
+						// Get the actual clientId of this specific block instance.
 						const blockClientId =
 							blockElement.id?.replace('block-', '') || clientId;
 						overlay.onclick = (e) => {
