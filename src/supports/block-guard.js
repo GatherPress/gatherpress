@@ -556,3 +556,6 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
  * @see https://developer.wordpress.org/block-editor/reference-guides/filters/block-filters/
  */
 addFilter('editor.BlockEdit', 'gatherpress/with-block-guard', withBlockGuard);
+
+// Export functions for testing.
+export { useSharedBlockGuardState, generateBlockGuardStateKey, withBlockGuard };
