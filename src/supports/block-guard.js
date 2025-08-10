@@ -92,44 +92,50 @@ function getEditorDocument() {
  * Generate a unique state key for block guard state management.
  * This creates the right level of sharing vs independence:
  * - Individual blocks outside query loops: each gets unique state
- * - Individual blocks inside query loops: each gets unique state  
+ * - Individual blocks inside query loops: each gets unique state
  * - Repeated instances in query loops: same position shares state across posts
  *
- * @param {string} name - The block type name.
+ * @param {string} name     - The block type name.
  * @param {string} clientId - The current block's client ID.
  * @return {string} Unique state key for this block's context.
  */
 function generateBlockGuardStateKey(name, clientId) {
 	const editorDoc = getEditorDocument();
 	const currentBlockElement = editorDoc.getElementById(`block-${clientId}`);
-	
+
 	if (!currentBlockElement) {
-		// Fallback: each block gets its own state
+		// Fallback: each block gets its own state.
 		return `${name}-${clientId}`;
 	}
-	
-	// Check if this block is in a query loop
-	const queryLoopContainer = currentBlockElement.closest('[data-type="core/post-template"]');
-	
+
+	// Check if this block is in a query loop.
+	const queryLoopContainer = currentBlockElement.closest(
+		'[data-type="core/post-template"]'
+	);
+
 	if (queryLoopContainer) {
-		// Find all blocks of the same type within this query loop template
+		// Find all blocks of the same type within this query loop template.
 		const sameTypeBlocks = Array.from(
 			queryLoopContainer.querySelectorAll(`[data-type="${name}"]`)
 		);
-		
-		// Find the index of the current block within blocks of the same type
-		const blockIndex = sameTypeBlocks.findIndex(block => block.id === `block-${clientId}`);
-		
+
+		// Find the index of the current block within blocks of the same type.
+		const blockIndex = sameTypeBlocks.findIndex(
+			(block) => block.id === `block-${clientId}`
+		);
+
 		if (blockIndex !== -1) {
-			// Create a unique key for this block position within query loops
+			// Create a unique key for this block position within query loops.
 			// This ensures the 1st RSVP block across all posts shares state,
-			// but is independent from the 2nd RSVP block
-			const queryLoopId = queryLoopContainer.closest('[data-type="core/query"]')?.id || 'unknown-query-loop';
+			// but is independent from the 2nd RSVP block.
+			const queryLoopId =
+				queryLoopContainer.closest('[data-type="core/query"]')?.id ||
+				'unknown-query-loop';
 			return `${name}-queryloop-${queryLoopId}-position-${blockIndex}`;
 		}
 	}
-	
-	// For blocks outside query loops, each gets its own unique state
+
+	// For blocks outside query loops, each gets its own unique state.
 	return `${name}-${clientId}`;
 }
 
@@ -167,9 +173,9 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 			return <BlockEdit {...props} />;
 		}
 
-		// Generate unique state key for appropriate sharing/independence
+		// Generate unique state key for appropriate sharing/independence.
 		const stateKey = generateBlockGuardStateKey(name, clientId);
-		
+
 		// Use shared state to track if BlockGuard is enabled (default to enabled).
 		const [isBlockGuardEnabled, setIsBlockGuardEnabled] =
 			useSharedBlockGuardState(stateKey);
@@ -189,15 +195,20 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					return;
 				}
 
-				// Find all blocks on the page that should share the same state as this block
-				const allBlocks = Array.from(editorDoc.querySelectorAll(`[data-type="${name}"]`));
+				// Find all blocks on the page that should share the same state as this block.
+				const allBlocks = Array.from(
+					editorDoc.querySelectorAll(`[data-type="${name}"]`)
+				);
 				const targetElements = [];
-				
-				// Filter blocks to only include those with the same state key
+
+				// Filter blocks to only include those with the same state key.
 				allBlocks.forEach((blockElement) => {
 					const blockId = blockElement.id?.replace('block-', '');
 					if (blockId) {
-						const blockStateKey = generateBlockGuardStateKey(name, blockId);
+						const blockStateKey = generateBlockGuardStateKey(
+							name,
+							blockId
+						);
 						if (blockStateKey === stateKey) {
 							targetElements.push(blockElement);
 						}
@@ -316,16 +327,21 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 			return () => {
 				observer.disconnect();
 
-				// Clean up overlays using the same state key targeting logic
+				// Clean up overlays using the same state key targeting logic.
 				const editorDoc = getEditorDocument();
-				const allBlocks = Array.from(editorDoc.querySelectorAll(`[data-type="${name}"]`));
+				const allBlocks = Array.from(
+					editorDoc.querySelectorAll(`[data-type="${name}"]`)
+				);
 				const targetElements = [];
-				
-				// Filter blocks to only include those with the same state key
+
+				// Filter blocks to only include those with the same state key.
 				allBlocks.forEach((blockElement) => {
 					const blockId = blockElement.id?.replace('block-', '');
 					if (blockId) {
-						const blockStateKey = generateBlockGuardStateKey(name, blockId);
+						const blockStateKey = generateBlockGuardStateKey(
+							name,
+							blockId
+						);
 						if (blockStateKey === stateKey) {
 							targetElements.push(blockElement);
 						}
@@ -344,7 +360,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 					}
 				});
 			};
-		}, [clientId, isBlockGuardEnabled]);
+		}, [clientId, isBlockGuardEnabled, name, stateKey]);
 
 		// Handle List View behavior.
 		useEffect(() => {
