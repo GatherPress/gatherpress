@@ -104,7 +104,6 @@ class Event_Feed {
 				// Set the post type and let Event_Query handle the rest.
 				$query->set( 'post_type', Event::POST_TYPE );
 				$query->set( 'gatherpress_events_query', 'upcoming' );
-
 			}
 		}
 	}
