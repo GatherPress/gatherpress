@@ -338,7 +338,7 @@ class Test_Event_Feed extends Base {
 	public function test_get_event_datetime_info_empty_data(): void {
 		// Create a mock Event object with empty datetime data.
 		$event_mock = $this->createMock( Event::class );
-		$event_mock->method( 'get_display_datetime' )->willReturn( __( '—', 'gatherpress' ) );
+		$event_mock->method( 'get_display_datetime' )->willReturn( '—' );
 
 		// Use reflection to access the private method.
 		$reflection = new \ReflectionClass( $this->instance );

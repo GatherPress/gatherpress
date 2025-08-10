@@ -91,7 +91,7 @@ class Event_Feed {
 	 */
 	public function handle_events_feed_query( WP_Query $query ): void {
 		// Only run on the main query and if it's a feed.
-		if ( ! $query->is_main_query() || ! $query->is_feed ) {
+		if ( ! $query->is_main_query() || ! is_feed() ) {
 			return;
 		}
 

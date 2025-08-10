@@ -36,6 +36,12 @@ class Test_Setup extends Base {
 				'type'     => 'action',
 				'name'     => 'init',
 				'priority' => 10,
+				'callback' => array( $instance, 'instantiate_event_feed' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
 				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
 			),
 			array(

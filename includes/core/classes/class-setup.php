@@ -59,7 +59,6 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
-		Event_Feed::get_instance();
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
@@ -71,6 +70,17 @@ class Setup {
 		Topic::get_instance();
 		User::get_instance();
 		Venue::get_instance();
+	}
+
+	/**
+	 * Instantiate Event_Feed class after init to avoid textdomain loading issues.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function instantiate_event_feed(): void {
+		Event_Feed::get_instance();
 	}
 
 	/**
@@ -86,6 +96,7 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
+		add_action( 'init', array( $this, 'instantiate_event_feed' ) );
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
