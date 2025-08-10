@@ -11,6 +11,63 @@ import { addFilter } from '@wordpress/hooks';
 import { useState, useEffect } from '@wordpress/element';
 
 /**
+ * Shared state store for block guard settings across all block instances.
+ * This ensures that blocks of the same type (especially in query loops)
+ * maintain consistent guard states.
+ */
+const blockGuardStates = new Map();
+const blockGuardListeners = new Map();
+
+/**
+ * Custom hook to manage shared block guard state.
+ *
+ * @param {string} blockName - The name of the block type.
+ * @return {Array} Array containing [isEnabled, setIsEnabled] similar to useState.
+ */
+function useSharedBlockGuardState(blockName) {
+	// Initialize state if it doesn't exist
+	if (!blockGuardStates.has(blockName)) {
+		blockGuardStates.set(blockName, true); // Default to enabled
+	}
+
+	const [localState, setLocalState] = useState(
+		blockGuardStates.get(blockName)
+	);
+
+	useEffect(() => {
+		// Initialize listeners array for this block type if it doesn't exist
+		if (!blockGuardListeners.has(blockName)) {
+			blockGuardListeners.set(blockName, new Set());
+		}
+
+		// Add this component's state setter to the listeners
+		const listeners = blockGuardListeners.get(blockName);
+		listeners.add(setLocalState);
+
+		// Sync with current shared state
+		setLocalState(blockGuardStates.get(blockName));
+
+		// Cleanup: remove listener on unmount
+		return () => {
+			listeners.delete(setLocalState);
+		};
+	}, [blockName]);
+
+	const setSharedState = (value) => {
+		// Update the shared state
+		blockGuardStates.set(blockName, value);
+
+		// Notify all listeners (components using this block type)
+		const listeners = blockGuardListeners.get(blockName);
+		if (listeners) {
+			listeners.forEach((listener) => listener(value));
+		}
+	};
+
+	return [localState, setSharedState];
+}
+
+/**
  * Get the appropriate document context for the block editor.
  *
  * In FSE (Full Site Editing) contexts, blocks are rendered within an iframe
@@ -65,8 +122,10 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 			return <BlockEdit {...props} />;
 		}
 
-		// Use state to track if BlockGuard is enabled (default to enabled).
-		const [isBlockGuardEnabled, setIsBlockGuardEnabled] = useState(true);
+		// Use shared state to track if BlockGuard is enabled (default to enabled).
+		// This ensures all instances of the same block type share the same guard state.
+		const [isBlockGuardEnabled, setIsBlockGuardEnabled] =
+			useSharedBlockGuardState(name);
 
 		useEffect(() => {
 			if (!clientId) {
@@ -75,102 +134,135 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 
 			const applyBlockGuard = () => {
 				const editorDoc = getEditorDocument();
-				const blockElement = editorDoc.getElementById(
+				const currentBlockElement = editorDoc.getElementById(
 					`block-${clientId}`
 				);
 
-				if (!blockElement) {
+				if (!currentBlockElement) {
 					return;
 				}
 
-				const innerBlocksContainer = blockElement.querySelector(
-					'.block-editor-inner-blocks'
+				// Check if this block is in a query loop
+				const queryLoopContainer = currentBlockElement.closest(
+					'[data-type="core/post-template"]'
 				);
+				let targetElements = [];
 
-				if (!innerBlocksContainer) {
-					return;
-				}
-
-				// Handle focusable elements.
-				const focusableElements =
-					innerBlocksContainer.querySelectorAll(`
-					a[href],
-					button,
-					input,
-					textarea,
-					select,
-					details,
-					iframe,
-					[tabindex],
-					[contentEditable="true"],
-					audio[controls],
-					video[controls],
-					[role="button"],
-					[role="link"],
-					[role="checkbox"],
-					[role="radio"],
-					[role="combobox"],
-					[role="menuitem"],
-					[role="textbox"],
-					[role="tab"]
-				`);
-
-				focusableElements.forEach((el) => {
-					if (isBlockGuardEnabled) {
-						if (!el.dataset.originalTabIndex) {
-							el.dataset.originalTabIndex =
-								el.getAttribute('tabindex');
-						}
-						el.setAttribute('tabindex', '-1');
-					} else if (el.dataset.originalTabIndex) {
-						el.setAttribute(
-							'tabindex',
-							el.dataset.originalTabIndex
+				if (queryLoopContainer) {
+					// If in a query loop, find the parent query loop block
+					const queryLoopBlock = queryLoopContainer.closest(
+						'[data-type="core/query"]'
+					);
+					if (queryLoopBlock) {
+						// Target all blocks of this type within this specific query loop
+						targetElements = Array.from(
+							queryLoopBlock.querySelectorAll(
+								`[data-type="${name}"]`
+							)
 						);
-						delete el.dataset.originalTabIndex;
 					}
+				} else {
+					// If not in a query loop, only target this specific block
+					targetElements = [currentBlockElement];
+				}
+
+				targetElements.forEach((blockElement) => {
+					const innerBlocksContainer = blockElement.querySelector(
+						'.block-editor-inner-blocks'
+					);
+
+					if (!innerBlocksContainer) {
+						return;
+					}
+
+					// Handle focusable elements.
+					const focusableElements =
+						innerBlocksContainer.querySelectorAll(`
+						a[href],
+						button,
+						input,
+						textarea,
+						select,
+						details,
+						iframe,
+						[tabindex],
+						[contentEditable="true"],
+						audio[controls],
+						video[controls],
+						[role="button"],
+						[role="link"],
+						[role="checkbox"],
+						[role="radio"],
+						[role="combobox"],
+						[role="menuitem"],
+						[role="textbox"],
+						[role="tab"]
+					`);
+
+					focusableElements.forEach((el) => {
+						if (isBlockGuardEnabled) {
+							if (!el.dataset.originalTabIndex) {
+								el.dataset.originalTabIndex =
+									el.getAttribute('tabindex');
+							}
+							el.setAttribute('tabindex', '-1');
+						} else if (el.dataset.originalTabIndex) {
+							el.setAttribute(
+								'tabindex',
+								el.dataset.originalTabIndex
+							);
+							delete el.dataset.originalTabIndex;
+						}
+					});
+
+					// Handle block appender visibility.
+					const blockAppender = innerBlocksContainer.querySelector(
+						'.block-list-appender'
+					);
+
+					if (blockAppender) {
+						blockAppender.style.display = isBlockGuardEnabled
+							? 'none'
+							: '';
+					}
+
+					// Handle overlay.
+					let overlay = innerBlocksContainer.querySelector(
+						'.gatherpress-block-guard-overlay'
+					);
+
+					if (!overlay) {
+						overlay = global.document.createElement('div');
+						overlay.className = 'gatherpress-block-guard-overlay';
+
+						overlay.style.position = 'absolute';
+						overlay.style.top = '0';
+						overlay.style.left = '0';
+						overlay.style.width = '100%';
+						overlay.style.height = '100%';
+						overlay.style.background = 'transparent';
+						overlay.style.zIndex = '1';
+
+						// Get the actual clientId of this specific block instance
+						const blockClientId =
+							blockElement.id?.replace('block-', '') || clientId;
+						overlay.onclick = (e) => {
+							e.stopPropagation();
+							dispatch('core/block-editor').selectBlock(
+								blockClientId
+							);
+						};
+
+						// Ensure position relative on container.
+						innerBlocksContainer.style.position = 'relative';
+						innerBlocksContainer.appendChild(overlay);
+					}
+
+					// Toggle overlay visibility.
+					overlay.style.display = isBlockGuardEnabled
+						? 'block'
+						: 'none';
 				});
-
-				// Handle block appender visibility.
-				const blockAppender = innerBlocksContainer.querySelector(
-					'.block-list-appender'
-				);
-
-				if (blockAppender) {
-					blockAppender.style.display = isBlockGuardEnabled
-						? 'none'
-						: '';
-				}
-
-				// Handle overlay.
-				let overlay = innerBlocksContainer.querySelector(
-					'.gatherpress-block-guard-overlay'
-				);
-
-				if (!overlay) {
-					overlay = global.document.createElement('div');
-					overlay.className = 'gatherpress-block-guard-overlay';
-
-					overlay.style.position = 'absolute';
-					overlay.style.top = '0';
-					overlay.style.left = '0';
-					overlay.style.width = '100%';
-					overlay.style.height = '100%';
-					overlay.style.background = 'transparent';
-					overlay.style.zIndex = '1';
-
-					overlay.onclick = (e) => {
-						e.stopPropagation();
-						dispatch('core/block-editor').selectBlock(clientId);
-					};
-
-					// Ensure position relative on container.
-					innerBlocksContainer.style.position = 'relative';
-					innerBlocksContainer.appendChild(overlay);
-				}
-
-				// Toggle overlay visibility.
-				overlay.style.display = isBlockGuardEnabled ? 'block' : 'none';
 			};
 
 			// Apply initially.
@@ -186,19 +278,51 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 			return () => {
 				observer.disconnect();
 
-				// Clean up overlay on unmount.
-				const blockElement = global.document.getElementById(
+				// Clean up overlays using the same targeting logic
+				const editorDoc = getEditorDocument();
+				const currentBlockElement = editorDoc.getElementById(
 					`block-${clientId}`
 				);
-				const innerBlocks = blockElement?.querySelector(
-					'.block-editor-inner-blocks'
-				);
-				const overlay = innerBlocks?.querySelector(
-					'.gatherpress-block-guard-overlay'
-				);
-				if (overlay && overlay.parentNode) {
-					overlay.parentNode.removeChild(overlay);
+
+				if (!currentBlockElement) {
+					return;
 				}
+
+				// Check if this block is in a query loop
+				const queryLoopContainer = currentBlockElement.closest(
+					'[data-type="core/post-template"]'
+				);
+				let targetElements = [];
+
+				if (queryLoopContainer) {
+					// If in a query loop, find the parent query loop block
+					const queryLoopBlock = queryLoopContainer.closest(
+						'[data-type="core/query"]'
+					);
+					if (queryLoopBlock) {
+						// Target all blocks of this type within this specific query loop
+						targetElements = Array.from(
+							queryLoopBlock.querySelectorAll(
+								`[data-type="${name}"]`
+							)
+						);
+					}
+				} else {
+					// If not in a query loop, only target this specific block
+					targetElements = [currentBlockElement];
+				}
+
+				targetElements.forEach((blockElement) => {
+					const innerBlocks = blockElement?.querySelector(
+						'.block-editor-inner-blocks'
+					);
+					const overlay = innerBlocks?.querySelector(
+						'.gatherpress-block-guard-overlay'
+					);
+					if (overlay && overlay.parentNode) {
+						overlay.parentNode.removeChild(overlay);
+					}
+				});
 			};
 		}, [clientId, isBlockGuardEnabled]);
 
@@ -340,7 +464,7 @@ const withBlockGuard = createHigherOrderComponent((BlockEdit) => {
 			return () => {
 				observer.disconnect();
 
-				// Clean up event listener
+				// Clean up event listener.
 				if (dragoverHandler) {
 					global.document.removeEventListener(
 						'dragover',
