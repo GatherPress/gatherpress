@@ -30,5 +30,6 @@ Clicking the "Add new Venue" Button next to the venue select field will reveal a
 A title & the full address of a new venue are saved by the block and the new venue will be pre-selected automatically.
 
 The "Add new Venue" Button is not available
+
 - to users without the capability to create Venues in general
 - inside a query block
