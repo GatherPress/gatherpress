@@ -97,6 +97,7 @@ class Test_Block extends Base {
 			'gatherpress/rsvp-response-toggle',
 			'gatherpress/rsvp-template',
 			'gatherpress/venue',
+			'gatherpress/venue-v2',
 		);
 		$block_type_registry = WP_Block_Type_Registry::get_instance();
 
