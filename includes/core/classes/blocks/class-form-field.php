@@ -34,6 +34,14 @@ class Form_Field {
 	private array $attributes;
 
 	/**
+	 * Constant representing the Block Name.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const BLOCK_NAME = 'gatherpress/form-field';
+
+	/**
 	 * FormField constructor.
 	 *
 	 * Initializes a FormField object with the provided block attributes.

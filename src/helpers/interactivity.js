@@ -61,12 +61,79 @@ export function initPostContext(state, postId) {
 }
 
 /**
+ * Retrieves a WordPress REST API nonce, with caching to avoid duplicate requests.
+ *
+ * This function fetches a fresh nonce from the WordPress REST API endpoint and caches
+ * it for subsequent requests. It prevents multiple simultaneous requests and handles
+ * request failures gracefully. The nonce is required for authenticated AJAX requests
+ * to WordPress REST API endpoints.
+ *
+ * @since 1.0.0
+ *
+ * @return {Promise<string|null>} A promise that resolves to the nonce string on success,
+ *                                or null if the request fails.
+ *
+ * @example
+ * const nonce = await getNonce();
+ * if (nonce) {
+ *     // Use the nonce in API requests
+ *     fetch('/wp-json/api/endpoint', {
+ *         headers: { 'X-WP-Nonce': nonce }
+ *     });
+ * }
+ *
+ * // Clear cached nonce if it expires
+ * getNonce.clearCache();
+ * const freshNonce = await getNonce();
+ */
+export const getNonce = (() => {
+	let cachedNonce = null;
+	let noncePromise = null;
+
+	const fetchNonce = async function () {
+		if (cachedNonce) {
+			return cachedNonce;
+		}
+
+		if (noncePromise) {
+			return noncePromise;
+		}
+
+		noncePromise = fetch(getFromGlobal('urls.eventApiUrl') + '/nonce', {
+			method: 'GET',
+			credentials: 'same-origin',
+		})
+			.then((response) => response.json())
+			.then((data) => {
+				cachedNonce = data.nonce;
+				noncePromise = null;
+				return data.nonce;
+			})
+			.catch(() => {
+				noncePromise = null;
+				return null;
+			});
+
+		return noncePromise;
+	};
+
+	// Expose clear function.
+	fetchNonce.clearCache = () => {
+		cachedNonce = null;
+		noncePromise = null;
+	};
+
+	return fetchNonce;
+})();
+
+/**
  * Sends an RSVP API request to update the RSVP status for a given post.
  *
  * This function sends a POST request to the RSVP API endpoint with the provided
  * RSVP details. If the API call is successful, it updates the provided state
  * object and executes an optional success callback. The function prevents requests
- * with invalid statuses (`no_status`, `waiting_list`).
+ * with invalid statuses (`no_status`, `waiting_list`). If the nonce expires during
+ * the request, it automatically retries once with a fresh nonce.
  *
  * @since 1.0.0
  *
@@ -75,14 +142,15 @@ export function initPostContext(state, postId) {
  * @param {string}   args.status            - The RSVP status (`attending`, `not_attending`, etc.).
  * @param {number}   [args.guests=0]        - The number of additional guests.
  * @param {boolean}  [args.anonymous=false] - Whether the RSVP is anonymous.
+ * @param {string}   [args.rsvpToken]       - Optional RSVP token for anonymous users.
  * @param {Object}   [state=null]           - A state object to update with the API response data.
  * @param {Function} [onSuccess=null]       - A callback function to execute on a successful API response.
  *                                          Receives the API response as its argument.
  *
- * @return {void}
+ * @return {Promise<void>} A promise that resolves when the request completes.
  *
  * @example
- * sendRsvpApiRequest(
+ * await sendRsvpApiRequest(
  *     123,
  *     { status: 'attending', guests: 2, anonymous: false },
  *     appState,
@@ -91,7 +159,7 @@ export function initPostContext(state, postId) {
  *     }
  * );
  */
-export function sendRsvpApiRequest(
+export async function sendRsvpApiRequest(
 	postId,
 	args,
 	state = null,
@@ -101,44 +169,65 @@ export function sendRsvpApiRequest(
 		return;
 	}
 
-	fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-			'X-WP-Nonce': getFromGlobal('misc.nonce'),
-		},
-		body: JSON.stringify({
-			post_id: postId,
-			status: args.status,
-			guests: args.guests,
-			anonymous: args.anonymous,
-		}),
-	})
-		.then((response) => response.json()) // Parse the JSON response.
-		.then((res) => {
-			if (res.success) {
-				if (state) {
-					state.posts[postId] = {
-						...state.posts[postId],
-						eventResponses: {
-							attending: res.responses.attending.count,
-							waitingList: res.responses.waiting_list.count,
-							notAttending: res.responses.not_attending.count,
-						},
-						currentUser: {
-							status: res.status,
-							guests: res.guests,
-							anonymous: res.anonymous,
-						},
-					};
-				}
+	const makeRequest = async (isRetry = false) => {
+		const nonce = await getNonce();
+		if (!nonce) {
+			return;
+		}
 
-				if ('function' === typeof onSuccess) {
-					onSuccess(res);
-				}
+		const response = await fetch(
+			getFromGlobal('urls.eventApiUrl') + '/rsvp',
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': nonce,
+				},
+				body: JSON.stringify({
+					post_id: postId,
+					status: args.status,
+					guests: args.guests,
+					anonymous: args.anonymous,
+					rsvp_token: args.rsvpToken,
+				}),
 			}
-		})
-		.catch(() => {});
+		);
+
+		// Check if nonce failed (403 Forbidden).
+		if (403 === response.status && !isRetry) {
+			// Clear cached nonce and retry once.
+			getNonce.clearCache();
+			return makeRequest(true);
+		}
+
+		return response.json();
+	};
+
+	try {
+		const res = await makeRequest();
+
+		if (res.success) {
+			if (state) {
+				state.posts[postId] = {
+					...state.posts[postId],
+					eventResponses: {
+						attending: res.responses.attending.count,
+						waitingList: res.responses.waiting_list.count,
+						notAttending: res.responses.not_attending.count,
+					},
+					currentUser: {
+						status: res.status,
+						guests: res.guests,
+						anonymous: res.anonymous,
+					},
+				};
+			}
+
+			if ('function' === typeof onSuccess) {
+				onSuccess(res);
+			}
+		}
+	} catch (error) {}
 }
 
 /**
@@ -167,22 +256,22 @@ export function sendRsvpApiRequest(
  */
 export function manageFocusTrap(focusableElements) {
 	if (!focusableElements || focusableElements.length === 0) {
-		return () => {}; // Return an empty cleanup function if no elements.
+		return () => {}; // Return an empty cleanup function if no elements..
 	}
 
 	const isElementVisible = (element) => {
 		return (
 			element.offsetParent !== null && // Excludes elements with `display: none`.
 			global.window.getComputedStyle(element).visibility !== 'hidden' && // Excludes elements with `visibility: hidden`.
-			global.window.getComputedStyle(element).opacity !== '0' // Excludes fully transparent elements.
+			global.window.getComputedStyle(element).opacity !== '0' // Excludes fully transparent elements..
 		);
 	};
 
-	// Filter out hidden elements.
+	// Filter out hidden elements..
 	const visibleFocusableElements = focusableElements.filter(isElementVisible);
 
 	if (visibleFocusableElements.length === 0) {
-		return () => {}; // No visible elements, no trap needed.
+		return () => {}; // No visible elements, no trap needed..
 	}
 
 	const firstFocusableElement = visibleFocusableElements[0];
@@ -192,13 +281,13 @@ export function manageFocusTrap(focusableElements) {
 	const handleFocusTrap = (e) => {
 		if ('Tab' === e.key) {
 			if (
-				e.shiftKey && // Shift + Tab.
+				e.shiftKey && // Shift + Tab..
 				global.document.activeElement === firstFocusableElement
 			) {
 				e.preventDefault();
 				lastFocusableElement.focus();
 			} else if (
-				!e.shiftKey && // Tab.
+				!e.shiftKey && // Tab..
 				global.document.activeElement === lastFocusableElement
 			) {
 				e.preventDefault();
@@ -209,7 +298,7 @@ export function manageFocusTrap(focusableElements) {
 
 	const handleEscapeKey = (e) => {
 		if ('Escape' === e.key) {
-			cleanup(); // Trigger cleanup on Escape key.
+			cleanup(); // Trigger cleanup on Escape key..
 		}
 	};
 
@@ -218,11 +307,11 @@ export function manageFocusTrap(focusableElements) {
 		global.document.removeEventListener('keydown', handleEscapeKey);
 	};
 
-	// Attach the event listeners for focus trap.
+	// Attach the event listeners for focus trap..
 	global.document.addEventListener('keydown', handleFocusTrap);
 	global.document.addEventListener('keydown', handleEscapeKey);
 
-	// Return a cleanup function for the caller.
+	// Return a cleanup function for the caller..
 	return cleanup;
 }
 
@@ -235,10 +324,10 @@ export function manageFocusTrap(focusableElements) {
  */
 export function setupCloseHandlers(elementSelector, contentSelector, onClose) {
 	const handleClose = (element) => {
-		// Remove the visible class.
+		// Remove the visible class..
 		element.classList.remove('gatherpress--is-visible');
 
-		// Execute the custom close callback.
+		// Execute the custom close callback..
 		if ('function' === typeof onClose) {
 			onClose(element);
 		}
@@ -275,11 +364,11 @@ export function setupCloseHandlers(elementSelector, contentSelector, onClose) {
 		});
 	};
 
-	// Attach event listeners.
+	// Attach event listeners..
 	global.document.addEventListener('keydown', handleEscapeKey);
 	global.document.addEventListener('click', handleOutsideClick);
 
-	// Return a cleanup function to remove event listeners if needed.
+	// Return a cleanup function to remove event listeners if needed..
 	return () => {
 		global.document.removeEventListener('keydown', handleEscapeKey);
 		global.document.removeEventListener('click', handleOutsideClick);

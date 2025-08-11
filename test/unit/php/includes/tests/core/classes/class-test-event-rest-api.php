@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Rest_Api;
+use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_REST_Request;
@@ -121,22 +122,28 @@ class Test_Event_Rest_Api extends Base {
 			$routes[1]['args']['methods'],
 			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'rsvp-status-html', $routes[2]['route'], 'Failed to assert route is rsvp-status-html.' );
+		$this->assertSame( 'rsvp-form', $routes[2]['route'], 'Failed to assert route is rsvp-form.' );
 		$this->assertSame(
 			WP_REST_Server::EDITABLE,
 			$routes[2]['args']['methods'],
 			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'rsvp-responses', $routes[3]['route'], 'Failed to assert route is rsvp-responses.' );
+		$this->assertSame( 'rsvp-status-html', $routes[3]['route'], 'Failed to assert route is rsvp-status-html.' );
 		$this->assertSame(
-			WP_REST_Server::READABLE,
+			WP_REST_Server::EDITABLE,
 			$routes[3]['args']['methods'],
-			'Failed to assert methods is GET.'
+			'Failed to assert methods is POST, PUT, PATCH.'
 		);
-		$this->assertSame( 'events-list', $routes[4]['route'], 'Failed to assert route is events-list.' );
+		$this->assertSame( 'rsvp-responses', $routes[4]['route'], 'Failed to assert route is rsvp-responses.' );
 		$this->assertSame(
 			WP_REST_Server::READABLE,
 			$routes[4]['args']['methods'],
+			'Failed to assert methods is GET.'
+		);
+		$this->assertSame( 'events-list', $routes[5]['route'], 'Failed to assert route is events-list.' );
+		$this->assertSame(
+			WP_REST_Server::READABLE,
+			$routes[5]['args']['methods'],
 			'Failed to assert methods is GET.'
 		);
 	}
@@ -449,5 +456,223 @@ class Test_Event_Rest_Api extends Base {
 			$response->data['event_id'],
 			'Failed to assert that event ID matches.'
 		);
+	}
+
+	/**
+	 * Tests the rsvp_form_route method.
+	 *
+	 * Verifies that the RSVP form route is properly configured
+	 * with correct methods and callback.
+	 *
+	 * @since 1.0.0
+	 * @covers ::rsvp_form_route
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_form_route(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'rsvp_form_route' );
+
+		$this->assertEquals( 'rsvp-form', $route['route'] );
+		$this->assertEquals( WP_REST_Server::EDITABLE, $route['args']['methods'] );
+		$this->assertEquals( array( $instance, 'handle_rsvp_form_submission' ), $route['args']['callback'] );
+		$this->assertEquals( '__return_true', $route['args']['permission_callback'] );
+
+		// Check required arguments.
+		$this->assertArrayHasKey( 'comment_post_ID', $route['args']['args'] );
+		$this->assertArrayHasKey( 'author', $route['args']['args'] );
+		$this->assertArrayHasKey( 'email', $route['args']['args'] );
+		$this->assertArrayHasKey( 'gatherpress_event_email_updates', $route['args']['args'] );
+
+		$this->assertTrue( $route['args']['args']['comment_post_ID']['required'] );
+		$this->assertTrue( $route['args']['args']['author']['required'] );
+		$this->assertTrue( $route['args']['args']['email']['required'] );
+		$this->assertFalse( $route['args']['args']['gatherpress_event_email_updates']['required'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission with valid data.
+	 *
+	 * Verifies that the Ajax RSVP form submission creates an
+	 * unapproved comment with proper RSVP data.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_submission
+	 * @covers ::save_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_success(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set up form schema.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'custom_field' => array(
+						'name'     => 'custom_field',
+						'type'     => 'text',
+						'required' => false,
+					),
+				),
+				'hash'   => 'test_hash',
+			),
+		);
+		update_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+		$request->set_param( 'gatherpress_event_email_updates', true );
+		$request->set_param( 'gatherpress_form_schema_id', 'form_0' );
+		$request->set_param( 'custom_field', 'Test value' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertInstanceOf( 'WP_REST_Response', $response );
+		$this->assertEquals( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertTrue( $data['success'] );
+		$this->assertStringContainsString( 'successfully', $data['message'] );
+		$this->assertGreaterThan( 0, $data['comment_id'] );
+
+		$event     = new Event( $post_id );
+		$rsvp_data = $event->rsvp->get( 'test@example.com' );
+
+		$this->assertNotEmpty( $rsvp_data['comment_id'] );
+
+		// Check email updates meta.
+		$comment_id    = $data['comment_id'];
+		$email_updates = get_comment_meta( $comment_id, 'gatherpress_event_email_updates', true );
+		$this->assertEquals( '1', $email_updates );
+
+		// Check custom field was saved.
+		$custom_field = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true );
+		$this->assertEquals( 'Test value', $custom_field );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission with duplicate email.
+	 *
+	 * Verifies that duplicate RSVP submissions are properly rejected
+	 * with appropriate error message.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_duplicate(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create existing RSVP.
+		$this->factory()->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => 'gatherpress_rsvp',
+				'comment_author'       => 'Existing Author',
+				'comment_author_email' => 'test@example.com',
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 409, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertStringContainsString( "You've already RSVP'd", $data['message'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_form_submission with logged-in user.
+	 *
+	 * Verifies that logged-in users with matching email addresses
+	 * have their user ID associated with the RSVP comment.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_logged_in_user(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create and set current user.
+		$user_id = $this->factory()->user->create(
+			array(
+				'user_email' => 'user@example.com',
+				'user_login' => 'testuser',
+			)
+		);
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'user@example.com' ); // Matches user email.
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertTrue( $data['success'] );
+		$this->assertGreaterThan( 0, $data['comment_id'] );
+
+		$event     = new Event( $post_id );
+		$rsvp_data = $event->rsvp->get( $user_id );
+		$this->assertNotEmpty( $rsvp_data['comment_id'] );
+		$this->assertEquals( $user_id, $rsvp_data['user_id'] );
+	}
+
+	/**
+	 * Tests save_custom_fields with missing schema.
+	 *
+	 * Verifies that custom field processing is skipped when
+	 * no valid schema is found.
+	 *
+	 * @since 1.0.0
+	 * @covers ::save_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_save_custom_fields_missing_schema(): void {
+		$instance   = Event_Rest_Api::get_instance();
+		$post_id    = $this->factory()->post->create();
+		$comment_id = $this->factory()->comment->create();
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'gatherpress_form_schema_id', 'nonexistent_form' );
+		$request->set_param( 'custom_field', 'Test value' );
+
+		// Use Utility to call private method.
+		Utility::invoke_hidden_method( $instance, 'save_custom_fields', array( $request, $post_id, $comment_id ) );
+
+		// Verify no custom fields were saved.
+		$custom_meta = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true );
+		$this->assertEmpty( $custom_meta );
 	}
 }

@@ -18,6 +18,7 @@
 	},
 	"main": "index.js",
 	"devDependencies": {
+		"@anthropic-ai/claude-code": "^1.0.67",
 		"@jest/globals": "^30.0.2",
 		"@playwright/test": "^1.53.1",
 		"@testing-library/jest-dom": "^6.6.3",
@@ -91,6 +92,7 @@
 		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report",
 		"wp-env": "wp-env",
 		"playground": "./node_modules/@wp-playground/cli/wp-playground.js server",
-		"playground:mount": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress"
+		"playground:mount": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress",
+		"claude": "npx @anthropic-ai/claude-code"
 	}
 }

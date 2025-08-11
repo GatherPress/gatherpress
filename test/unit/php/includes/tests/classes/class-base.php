@@ -175,4 +175,32 @@ abstract class Base extends PMC_Base {
 			'filters' => $filter_count,
 		);
 	}
+
+	/**
+	 * Mock a function's return value for testing.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string   $function_name The name of the function to mock.
+	 * @param callable $callback      The callback to use as the mock.
+	 *
+	 * @return void
+	 */
+	public function set_fn_return( string $function_name, callable $callback ): void {
+		// Store the mock callback in a global variable for the namespaced function to use.
+		$GLOBALS[ 'gatherpress_test_' . $function_name . '_mock' ] = $callback;
+	}
+
+	/**
+	 * Remove function mock.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $function_name The name of the function to unmock.
+	 *
+	 * @return void
+	 */
+	public function unset_fn_return( string $function_name ): void {
+		unset( $GLOBALS[ 'gatherpress_test_' . $function_name . '_mock' ] );
+	}
 }

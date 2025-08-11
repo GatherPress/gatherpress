@@ -10,6 +10,7 @@ import {
 	initPostContext,
 	sendRsvpApiRequest,
 } from '../../helpers/interactivity';
+import { getUrlParam } from '../../helpers/globals';
 
 const { state, actions } = store('gatherpress', {
 	actions: {
@@ -20,6 +21,7 @@ const { state, actions } = store('gatherpress', {
 			const currentUser = state.posts[postId].currentUser;
 
 			currentUser.guests = parseInt(element.ref.value, 10);
+			currentUser.rsvpToken = getUrlParam('gatherpress_rsvp_token');
 
 			initPostContext(state, postId);
 
@@ -37,6 +39,7 @@ const { state, actions } = store('gatherpress', {
 			const currentUser = state.posts[postId].currentUser;
 
 			currentUser.anonymous = element.ref.checked ? 1 : 0;
+			currentUser.rsvpToken = getUrlParam('gatherpress_rsvp_token');
 
 			initPostContext(state, postId);
 
@@ -78,6 +81,7 @@ const { state, actions } = store('gatherpress', {
 
 			const guests = state.posts[postId].currentUser.guests;
 			const anonymous = state.posts[postId].currentUser.anonymous;
+			const rsvpToken = getUrlParam('gatherpress_rsvp_token');
 
 			sendRsvpApiRequest(
 				postId,
@@ -85,6 +89,7 @@ const { state, actions } = store('gatherpress', {
 					status,
 					guests,
 					anonymous,
+					rsvpToken,
 				},
 				state,
 				() => {

@@ -95,6 +95,8 @@ export function safeHTML(html) {
  * This function transforms a string in snake_case format into camelCase format by
  * removing underscores and capitalizing the first letter of each subsequent word.
  *
+ * @since 1.0.0
+ *
  * @param {string} snakeCaseString The snake_case string to be converted.
  * @return {string} The converted string in camelCase format.
  *
@@ -111,4 +113,18 @@ export function toCamelCase(snakeCaseString) {
 	return normalized.replace(/_([a-zA-Z])/g, (_, letter) =>
 		letter.toUpperCase()
 	);
+}
+
+/**
+ * Get a URL parameter value by name.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} name The parameter name to retrieve.
+ * @return {string|null} The parameter value or null if not found.
+ */
+export function getUrlParam(name) {
+	const urlParams = new URLSearchParams(global.location.search);
+
+	return urlParams.get(name);
 }

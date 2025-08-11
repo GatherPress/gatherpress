@@ -416,7 +416,7 @@ class Assets {
 	 *                       or null to use the path based on the default naming scheme.
 	 * @return array An array containing asset-related data.
 	 */
-	protected function get_asset_data( string $asset, string $path = null ): array {
+	protected function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
 			$this->asset_data[ $asset ] = require_once $path;

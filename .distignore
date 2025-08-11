@@ -2,6 +2,7 @@
 
 # Configuration and Build Files
 .babelrc
+.claude
 .deployignore
 .distignore
 .editorconfig
@@ -18,6 +19,7 @@
 .stylelintrc.js
 .travis.yml
 .typos.toml
+CLAUDE.md
 CODE_OF_CONDUCT.md
 composer.json
 composer.lock
