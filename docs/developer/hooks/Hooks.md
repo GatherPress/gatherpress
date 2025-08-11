@@ -7,6 +7,10 @@
 
 - [`gatherpress_query_vars`](gatherpress_query_vars) This filter is documented in includes/query-loop.php
 
+## class-event-rest-api.php
+
+- [`determine_current_user`](determine_current_user)
+
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format)
