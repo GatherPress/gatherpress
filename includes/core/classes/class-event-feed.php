@@ -100,7 +100,7 @@ class Event_Feed {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
 			// Check if this is the events feed URL.
-			if ( str_contains( $request_uri, '/' . $this->rewrite_slug . '/feed' ) ) {
+			if ( str_contains( $request_uri, '/' . $this->rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
 				// Set the post type and let Event_Query handle the rest.
 				$query->set( 'post_type', Event::POST_TYPE );
 				$query->set( 'gatherpress_events_query', 'upcoming' );
@@ -120,7 +120,7 @@ class Event_Feed {
 		$event_info       = array();
 		$display_datetime = $event->get_display_datetime();
 
-		if ( ! empty( $display_datetime ) && __( '—', 'gatherpress' ) !== $display_datetime ) {
+		if ( ! empty( $display_datetime ) && '—' !== $display_datetime ) {
 			$event_info[] = sprintf(
 				/* translators: %s: Formatted date and time */
 				__( 'Date: %s', 'gatherpress' ),
@@ -249,6 +249,30 @@ class Event_Feed {
 		}
 
 		// Allow themes and editors to customize the excerpt.
+		/**
+		 * Filters the event excerpt in feeds.
+		 *
+		 * Allows themes and plugins to modify the event excerpt before it is included in feeds.
+		 * This can be used to add custom formatting, additional event information, or modify
+		 * how event excerpts appear in RSS and other feeds.
+		 *
+		 * Example usage:
+		 * ```php
+		 * add_filter( 'gatherpress_event_feed_excerpt', function( $excerpt ) {
+		 *     // Add event location to feed excerpt
+		 *     $event = new \GatherPress\Core\Event( get_the_ID() );
+		 *     $venue = $event->get_venue();
+		 *     if ( $venue ) {
+		 *         $excerpt .= "\n\nLocation: " . $venue;
+		 *     }
+		 *     return $excerpt;
+		 * } );
+		 * ```
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $excerpt The event post excerpt.
+		 */
 		return apply_filters( 'gatherpress_event_feed_excerpt', $excerpt );
 	}
 
@@ -261,14 +285,37 @@ class Event_Feed {
 	 * @return string The customized content.
 	 */
 	public function apply_event_content( string $content ): string {
-		global $post;
 
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type( $post ) ) {
+		if ( Event::POST_TYPE !== get_post_type( get_the_ID() ) ) {
 			return $content;
 		}
 
 		// Allow themes and editors to customize the content.
+		/**
+		 * Filters the event content in feeds.
+		 *
+		 * Allows themes and plugins to modify the event content before it is included in feeds.
+		 * This can be used to add custom formatting, additional event information, or modify
+		 * how event content appears in RSS and other feeds.
+		 *
+		 * Example usage:
+		 * ```php
+		 * add_filter( 'gatherpress_event_feed_content', function( $content ) {
+		 *     // Add event location to feed content
+		 *     $event = new \GatherPress\Core\Event( get_the_ID() );
+		 *     $venue = $event->get_venue();
+		 *     if ( $venue ) {
+		 *         $content .= "\n\nLocation: " . $venue;
+		 *     }
+		 *     return $content;
+		 * } );
+		 * ```
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $content The event post content.
+		 */
 		return apply_filters( 'gatherpress_event_feed_content', $content );
 	}
 }
