@@ -270,6 +270,15 @@ class Block {
 			$hooked_block_types[] = 'gatherpress/venue';
 		}
 
+		// Hook blocks into the "gatherpress/venue-details" pattern.
+		if (
+			'gatherpress/venue-details' === $context['name'] &&
+			'core/post-title' === $anchor_block_type &&
+			'after' === $relative_position
+		) {
+			$hooked_block_types[] = 'core/paragraph';
+		}
+
 		return $hooked_block_types;
 	}
 

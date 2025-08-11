@@ -1,10 +1,8 @@
 /**
- * @todo Use the hookable pattern designed for this purpose,
- *       which didn't work in the first hand using
- *       [['core/pattern', {slug:'gatherpress/event-details'}]]
+ * Uses the hookable block pattern designed for this purpose and template.
+ *
  * @see https://github.com/GatherPress/gatherpress/tree/develop/docs/developer/blocks/hookable-patterns
- * @see https://github.com/GatherPress/gatherpress/issues/1136
  */
-const TEMPLATE = [['core/post-title', {}]];
+const TEMPLATE = [['core/pattern', {slug:'gatherpress/venue-details'}]]
 
 export default TEMPLATE;
