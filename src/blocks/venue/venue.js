@@ -21,46 +21,46 @@ import VenueOrOnlineEvent from '../../components/VenueOrOnlineEvent';
  *
  * @return {void}
  */
-domReady(() => {
+domReady( () => {
 	let containers = document.querySelectorAll(
-		`[data-gatherpress_block_name="venue"]`
+		`[data-gatherpress_block_name="venue"]`,
 	);
 
-	for (let i = 0; i < containers.length; i++) {
-		const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
+	for ( let i = 0; i < containers.length; i++ ) {
+		const attrs = JSON.parse( containers[ i ].dataset.gatherpress_block_attrs );
 
-		createRoot(containers[i]).render(
+		createRoot( containers[ i ] ).render(
 			<VenueOrOnlineEvent
-				name={attrs.name ?? ''}
-				fullAddress={attrs.fullAddress ?? ''}
-				phoneNumber={attrs.phoneNumber ?? ''}
-				website={attrs.website ?? ''}
-				isOnlineEventTerm={attrs.isOnlineEventTerm ?? false}
-				onlineEventLink={attrs.onlineEventLink ?? ''}
-			/>
+				name={ attrs.name ?? '' }
+				fullAddress={ attrs.fullAddress ?? '' }
+				phoneNumber={ attrs.phoneNumber ?? '' }
+				website={ attrs.website ?? '' }
+				isOnlineEventTerm={ attrs.isOnlineEventTerm ?? false }
+				onlineEventLink={ attrs.onlineEventLink ?? '' }
+			/>,
 		);
 	}
 
 	containers = document.querySelectorAll(
-		`[data-gatherpress_block_name="map-embed"]`
+		`[data-gatherpress_block_name="map-embed"]`,
 	);
 
-	for (let i = 0; i < containers.length; i++) {
-		const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
+	for ( let i = 0; i < containers.length; i++ ) {
+		const attrs = JSON.parse( containers[ i ].dataset.gatherpress_block_attrs );
 
-		if (attrs.isOnlineEventTerm) {
+		if ( attrs.isOnlineEventTerm ) {
 			continue;
 		}
 
-		createRoot(containers[i]).render(
+		createRoot( containers[ i ] ).render(
 			<MapEmbed
-				location={attrs.fullAddress}
-				latitude={attrs.latitude}
-				longitude={attrs.longitude}
-				zoom={attrs.mapZoomLevel}
-				type={attrs.mapType}
-				height={attrs.mapHeight}
-			/>
+				location={ attrs.fullAddress }
+				latitude={ attrs.latitude }
+				longitude={ attrs.longitude }
+				zoom={ attrs.mapZoomLevel }
+				type={ attrs.mapType }
+				height={ attrs.mapHeight }
+			/>,
 		);
 	}
-});
+} );

@@ -20,41 +20,41 @@ import { useSelect } from '@wordpress/data';
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
-const Edit = ({ attributes, setAttributes }) => {
+const Edit = ( { attributes, setAttributes } ) => {
 	const { label } = attributes;
 
 	const maxAttendanceLimit = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
+		( select ) =>
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 				?.gatherpress_max_guest_limit,
-		[]
+		[],
 	);
 
 	// Add the `gatherpress--is-not-visible` class conditionally via `useBlockProps`.
-	const blockProps = useBlockProps({
+	const blockProps = useBlockProps( {
 		className:
 			0 === maxAttendanceLimit ? 'gatherpress--is-not-visible' : '',
-	});
+	} );
 
 	return (
-		<p {...blockProps}>
+		<p { ...blockProps }>
 			<RichText
 				tagName="label"
-				value={label}
-				onChange={(newLabel) => setAttributes({ label: newLabel })}
-				placeholder={__('Enter label…', 'gatherpress')}
-				aria-label={__(
+				value={ label }
+				onChange={ ( newLabel ) => setAttributes( { label: newLabel } ) }
+				placeholder={ __( 'Enter label…', 'gatherpress' ) }
+				aria-label={ __(
 					'Editable label for guest count input',
-					'gatherpress'
-				)}
-				allowedFormats={['core/bold', 'core/italic']}
-				multiline={false}
+					'gatherpress',
+				) }
+				allowedFormats={ [ 'core/bold', 'core/italic' ] }
+				multiline={ false }
 			/>
 			<input
 				type="number"
 				placeholder="0"
-				aria-label={label || __('Guest Count Input', 'gatherpress')}
-				disabled={true}
+				aria-label={ label || __( 'Guest Count Input', 'gatherpress' ) }
+				disabled={ true }
 				min="0"
 				max="0"
 			/>

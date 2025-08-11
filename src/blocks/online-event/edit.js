@@ -27,17 +27,17 @@ import { isGatherPressPostType } from '../../helpers/editor';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const Edit = ({ isSelected }) => {
+const Edit = ( { isSelected } ) => {
 	const blockProps = useBlockProps();
 	const onlineEventLink = useSelect(
-		(select) =>
-			select('core/editor')?.getEditedPostAttribute('meta')
-				?.gatherpress_online_event_link
+		( select ) =>
+			select( 'core/editor' )?.getEditedPostAttribute( 'meta' )
+				?.gatherpress_online_event_link,
 	);
 
 	return (
 		<>
-			{isGatherPressPostType() && (
+			{ isGatherPressPostType() && (
 				<InspectorControls>
 					<PanelBody>
 						<PanelRow>
@@ -45,10 +45,10 @@ const Edit = ({ isSelected }) => {
 						</PanelRow>
 					</PanelBody>
 				</InspectorControls>
-			)}
-			<div {...blockProps}>
-				<EditCover isSelected={isSelected}>
-					<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
+			) }
+			<div { ...blockProps }>
+				<EditCover isSelected={ isSelected }>
+					<OnlineEvent onlineEventLinkDefault={ onlineEventLink } />
 				</EditCover>
 			</div>
 		</>

@@ -7,28 +7,28 @@ import { __, _x } from '@wordpress/i18n';
 const attending = _x(
 	'Attending (%d)',
 	'Filter option to view list of confirmed attendees',
-	'gatherpress'
+	'gatherpress',
 );
 
 /* translators: %d is the count of users on the waiting list */
 const waitingList = _x(
 	'Waiting List (%d)',
 	'Filter option to view list of waitlisted attendees',
-	'gatherpress'
+	'gatherpress',
 );
 
 /* translators: %d is the count of users not attending */
 const notAttending = _x(
 	'Not Attending (%d)',
 	'Filter option to view list of declined attendees',
-	'gatherpress'
+	'gatherpress',
 );
 
 const translations = {
 	attending,
 	waitingList,
 	notAttending,
-	noOne: __('No one is attending this event yet.', 'gatherpress'),
+	noOne: __( 'No one is attending this event yet.', 'gatherpress' ),
 };
 
 const TEMPLATE = [
@@ -60,7 +60,7 @@ const TEMPLATE = [
 					layout: { type: 'flex', flexWrap: 'nowrap' },
 				},
 				[
-					['gatherpress/icon', { icon: 'groups' }],
+					[ 'gatherpress/icon', { icon: 'groups' } ],
 					[
 						'gatherpress/dropdown',
 						{
@@ -72,7 +72,7 @@ const TEMPLATE = [
 							[
 								'gatherpress/dropdown-item',
 								{
-									text: `<a href="#">${translations.attending}</a>`,
+									text: `<a href="#">${ translations.attending }</a>`,
 									metadata: { name: translations.attending },
 									className: 'gatherpress--rsvp-attending',
 								},
@@ -80,7 +80,7 @@ const TEMPLATE = [
 							[
 								'gatherpress/dropdown-item',
 								{
-									text: `<a href="#">${translations.waitingList}</a>`,
+									text: `<a href="#">${ translations.waitingList }</a>`,
 									metadata: {
 										name: translations.waitingList,
 									},
@@ -90,7 +90,7 @@ const TEMPLATE = [
 							[
 								'gatherpress/dropdown-item',
 								{
-									text: `<a href="#">${translations.notAttending}</a>`,
+									text: `<a href="#">${ translations.notAttending }</a>`,
 									metadata: {
 										name: translations.notAttending,
 									},
@@ -102,7 +102,7 @@ const TEMPLATE = [
 					],
 				],
 			],
-			['gatherpress/rsvp-response-toggle'],
+			[ 'gatherpress/rsvp-response-toggle' ],
 		],
 	],
 	[
@@ -117,7 +117,7 @@ const TEMPLATE = [
 			},
 			className: 'gatherpress--rsvp-responses',
 		},
-		[['gatherpress/rsvp-template', {}]],
+		[ [ 'gatherpress/rsvp-template', {} ] ],
 	],
 	[
 		'core/group',
@@ -126,7 +126,7 @@ const TEMPLATE = [
 				name: _x(
 					'Empty RSVP',
 					'Block name displayed in the editor',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 			className: 'gatherpress--empty-rsvp gatherpress--is-not-visible',
@@ -140,7 +140,7 @@ const TEMPLATE = [
 						name: _x(
 							'Empty RSVP Text',
 							'Block name displayed in the editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},

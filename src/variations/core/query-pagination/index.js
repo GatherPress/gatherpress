@@ -35,20 +35,20 @@ export const QUERY_PAGINATION_VARIATION = [
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-variations/
  */
-registerBlockVariation(CORE_BLOCK, {
+registerBlockVariation( CORE_BLOCK, {
 	category: 'gatherpress',
-	keywords: [__('Page numbers'), __('Pagination')],
-	isActive: ['className'],
+	keywords: [ __( 'Page numbers', 'gatherpress' ), __( 'Pagination', 'gatherpress' ) ],
+	isActive: [ 'className' ],
 	attributes: {
 		className: CLASS_NAME,
 	},
-	scope: ['block', 'inserter', 'transform'],
+	scope: [ 'block', 'inserter', 'transform' ],
 	name: CLASS_NAME,
-	title: __('Event Pagination', 'gatherpress'),
+	title: __( 'Event Pagination', 'gatherpress' ),
 	description: __(
 		'Displays a paginated navigation to next/previous set of events, when applicable.',
-		'gatherpress'
+		'gatherpress',
 	),
 
-	innerBlocks: [...QUERY_PAGINATION_TEMPLATE],
-});
+	innerBlocks: [ ...QUERY_PAGINATION_TEMPLATE ],
+} );

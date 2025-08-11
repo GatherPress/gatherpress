@@ -20,7 +20,7 @@ const TEMPLATE = [
 				{
 					content: __(
 						'Thank you for your RSVP! Please check your email for a confirmation link to complete your registration.',
-						'gatherpress'
+						'gatherpress',
 					),
 					level: 3,
 					style: {
@@ -39,8 +39,8 @@ const TEMPLATE = [
 		'gatherpress/form-field',
 		{
 			fieldName: 'author',
-			label: __('Name', 'gatherpress'),
-			placeholder: __("Name as you'd like it to appear", 'gatherpress'),
+			label: __( 'Name', 'gatherpress' ),
+			placeholder: __( "Name as you'd like it to appear", 'gatherpress' ),
 			required: true,
 			autocomplete: 'name',
 		},
@@ -50,8 +50,8 @@ const TEMPLATE = [
 		{
 			fieldType: 'email',
 			fieldName: 'email',
-			label: __('Email', 'gatherpress'),
-			placeholder: __('your@email.com', 'gatherpress'),
+			label: __( 'Email', 'gatherpress' ),
+			placeholder: __( 'your@email.com', 'gatherpress' ),
 			required: true,
 			autocomplete: 'email',
 		},
@@ -62,7 +62,7 @@ const TEMPLATE = [
 			fieldType: 'checkbox',
 			fieldName: 'gatherpress_event_email_updates',
 			fieldValue: false,
-			label: __('Send me email updates about this event', 'gatherpress'),
+			label: __( 'Send me email updates about this event', 'gatherpress' ),
 		},
 	],
 	[
@@ -74,7 +74,7 @@ const TEMPLATE = [
 				{
 					className: 'gatherpress-submit-button',
 					tagName: 'button',
-					text: __('Submit', 'gatherpress'),
+					text: __( 'Submit', 'gatherpress' ),
 				},
 			],
 		],

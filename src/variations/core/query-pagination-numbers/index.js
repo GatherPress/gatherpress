@@ -17,18 +17,18 @@ export const QUERY_PAGINATION_NUMBERS_VARIATION = [
 	},
 ];
 
-registerBlockVariation(CORE_BLOCK, {
+registerBlockVariation( CORE_BLOCK, {
 	category: 'gatherpress',
-	keywords: [__('Page numbers'), __('Pagination')],
-	isActive: ['className'],
+	keywords: [ __( 'Page numbers', 'gatherpress' ), __( 'Pagination', 'gatherpress' ) ],
+	isActive: [ 'className' ],
 	attributes: {
 		className: CLASS_NAME,
 	},
-	scope: ['block', 'inserter', 'transform'],
+	scope: [ 'block', 'inserter', 'transform' ],
 	name: CLASS_NAME,
-	title: __('Event Numbers', 'gatherpress'),
+	title: __( 'Event Numbers', 'gatherpress' ),
 	description: __(
 		'Displays a list of event numbers for pagination.',
-		'gatherpress'
+		'gatherpress',
 	),
-});
+} );
