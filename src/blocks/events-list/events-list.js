@@ -24,15 +24,15 @@ import EventsList from '../../components/EventsList';
  *
  * @return {void}
  */
-domReady(() => {
+domReady( () => {
 	const containers = document.querySelectorAll(
-		`[data-gatherpress_block_name="events-list"]`
+		`[data-gatherpress_block_name="events-list"]`,
 	);
 
-	for (let i = 0; i < containers.length; i++) {
-		const attrs = JSON.parse(containers[i].dataset.gatherpress_block_attrs);
+	for ( let i = 0; i < containers.length; i++ ) {
+		const attrs = JSON.parse( containers[ i ].dataset.gatherpress_block_attrs );
 
-		createRoot(containers[i]).render(
+		createRoot( containers[ i ] ).render(
 			<EventsList
 				eventOptions={
 					attrs.eventOptions ?? {
@@ -45,11 +45,11 @@ domReady(() => {
 						showVenue: true,
 					}
 				}
-				type={attrs.type ?? 'upcoming'}
-				maxNumberOfEvents={attrs.maxNumberOfEvents ?? 5}
-				datetimeFormat={attrs.datetimeFormat ?? 'D, M j, Y, g:i a T'}
-				topics={attrs.topics ?? []}
-			/>
+				type={ attrs.type ?? 'upcoming' }
+				maxNumberOfEvents={ attrs.maxNumberOfEvents ?? 5 }
+				datetimeFormat={ attrs.datetimeFormat ?? 'D, M j, Y, g:i a T' }
+				topics={ attrs.topics ?? [] }
+			/>,
 		);
 	}
-});
+} );

@@ -9,7 +9,7 @@ import { store, getElement, getContext } from '@wordpress/interactivity';
 import { initPostContext, getNonce } from '../../helpers/interactivity';
 import { getFromGlobal } from '../../helpers/globals';
 
-const { state } = store('gatherpress', {
+const { state } = store( 'gatherpress', {
 	state: {
 		posts: {},
 		rsvpForm: {
@@ -17,7 +17,7 @@ const { state } = store('gatherpress', {
 		},
 	},
 	actions: {
-		async handleRsvpFormSubmit(event) {
+		async handleRsvpFormSubmit( event ) {
 			event.preventDefault();
 
 			const element = getElement();
@@ -26,27 +26,27 @@ const { state } = store('gatherpress', {
 			const postId = context?.postId || 0;
 
 			// Prevent multiple submissions.
-			if (state.rsvpForm.isSubmitting) {
+			if ( state.rsvpForm.isSubmitting ) {
 				return;
 			}
 
 			state.rsvpForm.isSubmitting = true;
 
 			// Get form data.
-			const formData = new FormData(form);
+			const formData = new FormData( form );
 			const data = {
 				comment_post_ID: postId,
-				author: formData.get('author'),
-				email: formData.get('email'),
+				author: formData.get( 'author' ),
+				email: formData.get( 'email' ),
 				gatherpress_event_email_updates:
-					formData.get('gatherpress_event_email_updates') === 'on'
+					formData.get( 'gatherpress_event_email_updates' ) === 'on'
 						? true
 						: false,
 			};
 
-			const makeRequest = async (isRetry = false) => {
+			const makeRequest = async ( isRetry = false ) => {
 				const nonce = await getNonce();
-				if (!nonce) {
+				if ( ! nonce ) {
 					// If we can't get a nonce, fall back to regular form submission.
 					state.rsvpForm.isSubmitting = false;
 					form.submit();
@@ -54,22 +54,22 @@ const { state } = store('gatherpress', {
 				}
 
 				const response = await fetch(
-					getFromGlobal('urls.eventApiUrl') + '/rsvp-form',
+					getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp-form',
 					{
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',
 							'X-WP-Nonce': nonce,
 						},
-						body: JSON.stringify(data),
-					}
+						body: JSON.stringify( data ),
+					},
 				);
 
 				// Check if nonce failed (403 Forbidden).
-				if (403 === response.status && !isRetry) {
+				if ( 403 === response.status && ! isRetry ) {
 					// Clear cached nonce and retry once.
 					getNonce.clearCache();
-					return makeRequest(true);
+					return makeRequest( true );
 				}
 
 				return response.json();
@@ -78,28 +78,28 @@ const { state } = store('gatherpress', {
 			try {
 				const result = await makeRequest();
 
-				if (result && result.success) {
+				if ( result && result.success ) {
 					// Success - show message block and disable form.
 					const messageContainer = form.querySelector(
-						'.gatherpress-rsvp-form-message'
+						'.gatherpress-rsvp-form-message',
 					);
-					if (messageContainer) {
+					if ( messageContainer ) {
 						messageContainer.style.display = 'block';
 					}
 
 					// Disable all form inputs.
 					const inputs = form.querySelectorAll(
-						'input, textarea, button, select'
+						'input, textarea, button, select',
 					);
-					inputs.forEach((input) => {
+					inputs.forEach( ( input ) => {
 						input.disabled = true;
-					});
+					} );
 
 					// Update the responses data if available.
-					if (result.responses) {
-						initPostContext(state, postId);
-						if (state.posts[postId]) {
-							state.posts[postId].eventResponses = {
+					if ( result.responses ) {
+						initPostContext( state, postId );
+						if ( state.posts[ postId ] ) {
+							state.posts[ postId ].eventResponses = {
 								attending:
 									result.responses?.attending?.count || 0,
 								waitingList:
@@ -114,15 +114,15 @@ const { state } = store('gatherpress', {
 					// eslint-disable-next-line no-alert
 					alert(
 						result?.message ||
-							'Sorry, there was an issue processing your RSVP. Please try again.'
+							'Sorry, there was an issue processing your RSVP. Please try again.',
 					);
 				}
-			} catch (error) {
+			} catch ( error ) {
 				// Network or other errors - fall back to regular form submission.
 				// eslint-disable-next-line no-console
 				console.warn(
 					'Ajax RSVP submission failed, falling back to regular form submission:',
-					error
+					error,
 				);
 
 				// Let the form submit normally as a fallback.
@@ -140,10 +140,10 @@ const { state } = store('gatherpress', {
 			const postId = context?.postId || 0;
 
 			// Initialize post context.
-			initPostContext(state, postId);
+			initPostContext( state, postId );
 
 			// Reset submission state.
 			state.rsvpForm.isSubmitting = false;
 		},
 	},
-});
+} );

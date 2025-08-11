@@ -24,28 +24,28 @@ import Venue from './Venue';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const VenueOrOnlineEvent = ({
+const VenueOrOnlineEvent = ( {
 	name = '',
 	fullAddress,
 	phoneNumber,
 	website,
 	isOnlineEventTerm = false,
 	onlineEventLink = '',
-}) => {
+} ) => {
 	return (
 		<>
-			{!isOnlineEventTerm && (
+			{ ! isOnlineEventTerm && (
 				<Venue
-					name={name}
-					fullAddress={fullAddress}
-					phoneNumber={phoneNumber}
-					website={website}
+					name={ name }
+					fullAddress={ fullAddress }
+					phoneNumber={ phoneNumber }
+					website={ website }
 				/>
-			)}
+			) }
 
-			{isOnlineEventTerm && (
-				<OnlineEvent onlineEventLinkDefault={onlineEventLink} />
-			)}
+			{ isOnlineEventTerm && (
+				<OnlineEvent onlineEventLinkDefault={ onlineEventLink } />
+			) }
 		</>
 	);
 };

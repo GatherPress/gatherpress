@@ -11,32 +11,32 @@ import {
 	setupCloseHandlers,
 } from '../../helpers/interactivity';
 
-const { actions } = store('gatherpress', {
+const { actions } = store( 'gatherpress', {
 	actions: {
-		openModal(event = null, element = null) {
-			if (event) {
+		openModal( event = null, element = null ) {
+			if ( event ) {
 				event.preventDefault();
 			}
 
 			element = element ?? event.target;
 
 			const modalManager = element.closest(
-				'.wp-block-gatherpress-modal-manager'
+				'.wp-block-gatherpress-modal-manager',
 			);
 
-			if (modalManager) {
+			if ( modalManager ) {
 				const modal = modalManager.querySelector(
-					'.wp-block-gatherpress-modal'
+					'.wp-block-gatherpress-modal',
 				);
 
-				if (modal) {
-					modal.classList.add('gatherpress--is-visible');
+				if ( modal ) {
+					modal.classList.add( 'gatherpress--is-visible' );
 
 					const modalContent = modal.querySelector(
-						'.wp-block-gatherpress-modal-content'
+						'.wp-block-gatherpress-modal-content',
 					);
 
-					if (modalContent) {
+					if ( modalContent ) {
 						// Define focusable elements inside the modal.
 						const focusableSelectors = [
 							'a[href]',
@@ -52,49 +52,49 @@ const { actions } = store('gatherpress', {
 
 						const focusableElements = Array.from(
 							modalContent.querySelectorAll(
-								focusableSelectors.join(',')
-							)
+								focusableSelectors.join( ',' ),
+							),
 						);
 
 						// Focus the first focusable element, if available.
-						if (focusableElements[0]) {
-							setTimeout(() => {
-								modal.setAttribute('aria-hidden', 'false');
-								focusableElements[0].focus();
-							}, 1);
+						if ( focusableElements[ 0 ] ) {
+							setTimeout( () => {
+								modal.setAttribute( 'aria-hidden', 'false' );
+								focusableElements[ 0 ].focus();
+							}, 1 );
 						}
 
 						// Set up focus trap using the helper function and store cleanup.
 						modalContent.cleanupFocusTrap =
-							manageFocusTrap(focusableElements);
+							manageFocusTrap( focusableElements );
 
 						// Set up close handlers and store cleanup function.
 						modalContent.cleanupCloseHandlers = setupCloseHandlers(
 							'.wp-block-gatherpress-modal',
 							'.wp-block-gatherpress-modal-content',
-							(e) => {
-								actions.closeModal(null, e);
-							}
+							( e ) => {
+								actions.closeModal( null, e );
+							},
 						);
 					}
 				}
 			}
 		},
-		closeModal(event = null, element = null, findActiveSibling = true) {
-			if (event) {
+		closeModal( event = null, element = null, findActiveSibling = true ) {
+			if ( event ) {
 				event.preventDefault();
 			}
 
 			// Determine the element to work with.
 			element = element ?? event?.target;
 
-			if (!element) {
+			if ( ! element ) {
 				return;
 			}
 
 			// Find the modal manager and modal.
 			let modalManager = element.closest(
-				'.wp-block-gatherpress-modal-manager'
+				'.wp-block-gatherpress-modal-manager',
 			);
 
 			/**
@@ -105,27 +105,27 @@ const { actions } = store('gatherpress', {
 			 */
 			if (
 				findActiveSibling &&
-				modalManager.closest('.gatherpress--is-not-visible')
+				modalManager.closest( '.gatherpress--is-not-visible' )
 			) {
 				const hiddenContainer = modalManager.closest(
-					'.gatherpress--is-not-visible'
+					'.gatherpress--is-not-visible',
 				);
 				const parent = hiddenContainer.parentElement;
 
 				// Look for visible siblings (both previous and next).
-				if (parent) {
+				if ( parent ) {
 					// Try siblings.
-					for (const sibling of parent.children) {
+					for ( const sibling of parent.children ) {
 						if (
 							sibling !== hiddenContainer &&
-							!sibling.classList.contains(
-								'gatherpress--is-not-visible'
+							! sibling.classList.contains(
+								'gatherpress--is-not-visible',
 							)
 						) {
 							const visibleModalManager = sibling.querySelector(
-								'.wp-block-gatherpress-modal-manager'
+								'.wp-block-gatherpress-modal-manager',
 							);
-							if (visibleModalManager) {
+							if ( visibleModalManager ) {
 								modalManager = visibleModalManager;
 								break;
 							}
@@ -134,24 +134,24 @@ const { actions } = store('gatherpress', {
 				}
 			}
 
-			if (!modalManager) {
+			if ( ! modalManager ) {
 				return;
 			}
 
 			const modal = modalManager.querySelector(
-				'.wp-block-gatherpress-modal'
+				'.wp-block-gatherpress-modal',
 			);
 
-			if (!modal) {
+			if ( ! modal ) {
 				return;
 			}
 
 			// Handle modal closing.
-			modal.classList.remove('gatherpress--is-visible');
-			modal.setAttribute('aria-hidden', 'true');
+			modal.classList.remove( 'gatherpress--is-visible' );
+			modal.setAttribute( 'aria-hidden', 'true' );
 
 			// Clean up focus trap if applicable.
-			const modalContent = modal.querySelector('.modal-content');
+			const modalContent = modal.querySelector( '.modal-content' );
 
 			if (
 				modalContent &&
@@ -170,12 +170,12 @@ const { actions } = store('gatherpress', {
 
 			// Return focus to the open modal button.
 			const openButton = modalManager.querySelector(
-				'.gatherpress--open-modal button'
+				'.gatherpress--open-modal button',
 			);
 
-			if (openButton) {
+			if ( openButton ) {
 				openButton.focus();
 			}
 		},
 	},
-});
+} );

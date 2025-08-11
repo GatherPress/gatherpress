@@ -24,14 +24,14 @@ import TEMPLATES from './templates';
  * @param {Array} template The block template structure.
  * @return {Array} Array of blocks created from the template.
  */
-function templateToBlocks(template) {
-	return template.map(([name, attributes, innerBlocks]) => {
+function templateToBlocks( template ) {
+	return template.map( ( [ name, attributes, innerBlocks ] ) => {
 		return createBlock(
 			name,
 			attributes,
-			templateToBlocks(innerBlocks || [])
+			templateToBlocks( innerBlocks || [] ),
 		);
-	});
+	} );
 }
 
 /**
@@ -46,149 +46,149 @@ function templateToBlocks(template) {
  *
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
-const Edit = ({ attributes, setAttributes, clientId }) => {
+const Edit = ( { attributes, setAttributes, clientId } ) => {
 	const { serializedInnerBlocks = '{}', selectedStatus } = attributes;
 	const blockProps = useBlockProps();
-	const { replaceInnerBlocks } = useDispatch(blockEditorStore);
+	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
 
 	// Get the current inner blocks
 	const innerBlocks = useSelect(
-		(select) => select(blockEditorStore).getBlocks(clientId),
-		[clientId]
+		( select ) => select( blockEditorStore ).getBlocks( clientId ),
+		[ clientId ],
 	);
 
 	// Save the provided inner blocks to the serializedInnerBlocks attribute
 	const saveInnerBlocks = useCallback(
-		(state, newState, blocks) => {
+		( state, newState, blocks ) => {
 			const currentSerializedBlocks = JSON.parse(
-				serializedInnerBlocks || '{}'
+				serializedInnerBlocks || '{}',
 			);
 
 			// Encode the serialized content for safe use in HTML attributes
-			const sanitizedSerialized = serialize(blocks);
+			const sanitizedSerialized = serialize( blocks );
 
 			const updatedBlocks = {
 				...currentSerializedBlocks,
-				[state]: sanitizedSerialized,
+				[ state ]: sanitizedSerialized,
 			};
 
-			delete updatedBlocks[newState];
+			delete updatedBlocks[ newState ];
 
-			setAttributes({
-				serializedInnerBlocks: JSON.stringify(updatedBlocks),
-			});
+			setAttributes( {
+				serializedInnerBlocks: JSON.stringify( updatedBlocks ),
+			} );
 		},
-		[serializedInnerBlocks, setAttributes]
+		[ serializedInnerBlocks, setAttributes ],
 	);
 
 	// Load inner blocks for a given state
 	const loadInnerBlocksForState = useCallback(
-		(state) => {
-			const savedBlocks = JSON.parse(serializedInnerBlocks || '{}')[
+		( state ) => {
+			const savedBlocks = JSON.parse( serializedInnerBlocks || '{}' )[
 				state
 			];
-			if (savedBlocks && savedBlocks.length > 0) {
-				replaceInnerBlocks(clientId, parse(savedBlocks, {}));
+			if ( savedBlocks && savedBlocks.length > 0 ) {
+				replaceInnerBlocks( clientId, parse( savedBlocks, {} ) );
 			}
 		},
-		[clientId, replaceInnerBlocks, serializedInnerBlocks]
+		[ clientId, replaceInnerBlocks, serializedInnerBlocks ],
 	);
 
 	// Handle status change: save current inner blocks and load new ones
-	const handleStatusChange = (newStatus) => {
-		loadInnerBlocksForState(newStatus); // Load blocks for the new state
-		setAttributes({
+	const handleStatusChange = ( newStatus ) => {
+		loadInnerBlocksForState( newStatus ); // Load blocks for the new state
+		setAttributes( {
 			selectedStatus: newStatus,
-		}); // Update the state
-		saveInnerBlocks(selectedStatus, newStatus, innerBlocks); // Save current inner blocks before switching state
+		} ); // Update the state
+		saveInnerBlocks( selectedStatus, newStatus, innerBlocks ); // Save current inner blocks before switching state
 	};
 
 	// Hydrate inner blocks for all statuses if not set
-	useEffect(() => {
+	useEffect( () => {
 		const hydrateInnerBlocks = () => {
 			const currentSerializedBlocks = JSON.parse(
-				serializedInnerBlocks || '{}'
+				serializedInnerBlocks || '{}',
 			);
 
-			const updatedBlocks = Object.keys(TEMPLATES).reduce(
-				(updatedSerializedBlocks, templateKey) => {
-					if (currentSerializedBlocks[templateKey]) {
-						updatedSerializedBlocks[templateKey] =
-							currentSerializedBlocks[templateKey];
+			const updatedBlocks = Object.keys( TEMPLATES ).reduce(
+				( updatedSerializedBlocks, templateKey ) => {
+					if ( currentSerializedBlocks[ templateKey ] ) {
+						updatedSerializedBlocks[ templateKey ] =
+							currentSerializedBlocks[ templateKey ];
 
 						return updatedSerializedBlocks;
 					}
 
-					if (templateKey !== selectedStatus) {
-						const blocks = templateToBlocks(TEMPLATES[templateKey]);
+					if ( templateKey !== selectedStatus ) {
+						const blocks = templateToBlocks( TEMPLATES[ templateKey ] );
 
-						updatedSerializedBlocks[templateKey] =
-							serialize(blocks);
+						updatedSerializedBlocks[ templateKey ] =
+							serialize( blocks );
 					}
 
 					return updatedSerializedBlocks;
 				},
-				{ ...currentSerializedBlocks }
+				{ ...currentSerializedBlocks },
 			);
 
-			setAttributes({
-				serializedInnerBlocks: JSON.stringify(updatedBlocks),
-			});
+			setAttributes( {
+				serializedInnerBlocks: JSON.stringify( updatedBlocks ),
+			} );
 		};
 
 		// Adding a setTimeout with 0ms delay pushes execution to the end of the event queue,
 		// ensuring WordPress has properly initialized the post state before we attempt to
 		// hydrate inner blocks. This prevents false "new post" detection that could interfere
 		// with block initialization.
-		setTimeout(() => {
+		setTimeout( () => {
 			hydrateInnerBlocks();
-		}, 0);
-	}, [serializedInnerBlocks, setAttributes, selectedStatus]);
+		}, 0 );
+	}, [ serializedInnerBlocks, setAttributes, selectedStatus ] );
 
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={__('RSVP Block Settings', 'gatherpress')}>
+				<PanelBody title={ __( 'RSVP Block Settings', 'gatherpress' ) }>
 					<p>
-						{__(
+						{ __(
 							'Select an RSVP status to edit how this block appears for users with that status.',
-							'gatherpress'
-						)}
+							'gatherpress',
+						) }
 					</p>
 					<SelectControl
-						label={__('Edit Block Status', 'gatherpress')}
-						value={selectedStatus}
-						options={[
+						label={ __( 'Edit Block Status', 'gatherpress' ) }
+						value={ selectedStatus }
+						options={ [
 							{
 								label: __(
 									'No Response (Default)',
-									'gatherpress'
+									'gatherpress',
 								),
 								value: 'no_status',
 							},
 							{
-								label: __('Attending', 'gatherpress'),
+								label: __( 'Attending', 'gatherpress' ),
 								value: 'attending',
 							},
 							{
-								label: __('Waiting List', 'gatherpress'),
+								label: __( 'Waiting List', 'gatherpress' ),
 								value: 'waiting_list',
 							},
 							{
-								label: __('Not Attending', 'gatherpress'),
+								label: __( 'Not Attending', 'gatherpress' ),
 								value: 'not_attending',
 							},
 							{
-								label: __('Past Event', 'gatherpress'),
+								label: __( 'Past Event', 'gatherpress' ),
 								value: 'past',
 							},
-						]}
-						onChange={handleStatusChange}
+						] }
+						onChange={ handleStatusChange }
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div {...blockProps}>
-				<InnerBlocks template={TEMPLATES[selectedStatus]} />
+			<div { ...blockProps }>
+				<InnerBlocks template={ TEMPLATES[ selectedStatus ] } />
 			</div>
 		</>
 	);

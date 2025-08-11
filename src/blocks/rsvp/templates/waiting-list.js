@@ -23,7 +23,7 @@ const WAITING_LIST = [
 						name: _x(
 							'Call to Action',
 							'Block name displayed in the editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
@@ -34,7 +34,7 @@ const WAITING_LIST = [
 							text: _x(
 								'Edit RSVP',
 								'Button label for editing RSVP',
-								'gatherpress'
+								'gatherpress',
 							),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
@@ -42,7 +42,7 @@ const WAITING_LIST = [
 								name: _x(
 									'RSVP Button',
 									'Block name displayed in the editor',
-									'gatherpress'
+									'gatherpress',
 								),
 							},
 						},
@@ -86,13 +86,13 @@ const WAITING_LIST = [
 							content: _x(
 								'<strong>Waiting List</strong>',
 								'RSVP status indicator',
-								'gatherpress'
+								'gatherpress',
 							),
 							metadata: {
 								name: _x(
 									'RSVP Status',
 									'Block name displayed in the editor',
-									'gatherpress'
+									'gatherpress',
 								),
 							},
 						},
@@ -107,7 +107,7 @@ const WAITING_LIST = [
 						name: _x(
 							'RSVP Modal',
 							'Block name displayed in the editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
@@ -132,13 +132,13 @@ const WAITING_LIST = [
 									content: _x(
 										"<strong>You're Wait Listed</strong>",
 										'RSVP modal header',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Heading',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -148,18 +148,18 @@ const WAITING_LIST = [
 								{
 									content: __(
 										'To change your attendance status, simply click the <strong>Not Attending</strong> button below.',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Info',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
 							],
-							['gatherpress/rsvp-anonymous-checkbox', {}],
+							[ 'gatherpress/rsvp-anonymous-checkbox', {} ],
 							[
 								'core/buttons',
 								{
@@ -182,7 +182,7 @@ const WAITING_LIST = [
 										name: _x(
 											'Call to Action',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -193,7 +193,7 @@ const WAITING_LIST = [
 											text: _x(
 												'Not Attending',
 												'RSVP button label for declining event attendance',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
@@ -202,7 +202,7 @@ const WAITING_LIST = [
 												name: _x(
 													'RSVP Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},
@@ -213,7 +213,7 @@ const WAITING_LIST = [
 											text: _x(
 												'Close',
 												'Button label for closing modal dialog',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
@@ -222,7 +222,7 @@ const WAITING_LIST = [
 												name: _x(
 													'Close Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},

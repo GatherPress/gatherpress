@@ -24,37 +24,37 @@ import { getFromGlobal } from '../helpers/globals';
  * @return {JSX.Element} The rendered React component.
  */
 const OnlineEventLink = () => {
-	const { editPost, unlockPostSaving } = useDispatch('core/editor');
+	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
 	const onlineEventLinkMetaData = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
-				.gatherpress_online_event_link
+		( select ) =>
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+				.gatherpress_online_event_link,
 	);
-	const [onlineEventLink, setOnlineEventLink] = useState(
-		onlineEventLinkMetaData
+	const [ onlineEventLink, setOnlineEventLink ] = useState(
+		onlineEventLinkMetaData,
 	);
-	const updateEventLink = (value) => {
+	const updateEventLink = ( value ) => {
 		const meta = { gatherpress_online_event_link: value };
 
-		editPost({ meta });
-		setOnlineEventLink(value);
+		editPost( { meta } );
+		setOnlineEventLink( value );
 		Broadcaster(
 			{ setOnlineEventLink: value },
-			getFromGlobal('eventDetails.postId')
+			getFromGlobal( 'eventDetails.postId' ),
 		);
 		unlockPostSaving();
 	};
 
-	Listener({ setOnlineEventLink }, getFromGlobal('eventDetails.postId'));
+	Listener( { setOnlineEventLink }, getFromGlobal( 'eventDetails.postId' ) );
 
 	return (
 		<TextControl
-			label={__('Online event link', 'gatherpress')}
-			value={onlineEventLink}
-			placeholder={__('Add link to online event', 'gatherpress')}
-			onChange={(value) => {
-				updateEventLink(value);
-			}}
+			label={ __( 'Online event link', 'gatherpress' ) }
+			value={ onlineEventLink }
+			placeholder={ __( 'Add link to online event', 'gatherpress' ) }
+			onChange={ ( value ) => {
+				updateEventLink( value );
+			} }
 		/>
 	);
 };

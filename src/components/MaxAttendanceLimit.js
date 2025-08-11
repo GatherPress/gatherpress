@@ -25,62 +25,62 @@ import { getFromGlobal } from '../helpers/globals';
  * @return {JSX.Element} A number control for setting the maximum attendance limit.
  */
 const MaxAttendanceLimit = () => {
-	const { editPost, unlockPostSaving } = useDispatch('core/editor');
-	const isNewEvent = useSelect((select) => {
-		return select('core/editor').isCleanNewPost();
-	}, []);
+	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
+	const isNewEvent = useSelect( ( select ) => {
+		return select( 'core/editor' ).isCleanNewPost();
+	}, [] );
 
-	let defaultMaxAttendanceLimit = useSelect((select) => {
-		return select('core/editor').getEditedPostAttribute('meta')
+	let defaultMaxAttendanceLimit = useSelect( ( select ) => {
+		return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 			.gatherpress_max_attendance_limit;
-	}, []);
+	}, [] );
 
-	if (isNewEvent) {
+	if ( isNewEvent ) {
 		defaultMaxAttendanceLimit = getFromGlobal(
-			'settings.maxAttendanceLimit'
+			'settings.maxAttendanceLimit',
 		);
 	}
 
-	if (false === defaultMaxAttendanceLimit) {
+	if ( false === defaultMaxAttendanceLimit ) {
 		defaultMaxAttendanceLimit = 0;
 	}
 
-	const [maxAttendanceLimit, setMaxAttendanceLimit] = useState(
-		defaultMaxAttendanceLimit
+	const [ maxAttendanceLimit, setMaxAttendanceLimit ] = useState(
+		defaultMaxAttendanceLimit,
 	);
 
 	const updateMaxAttendanceLimit = useCallback(
-		(value) => {
-			const meta = { gatherpress_max_attendance_limit: Number(value) };
+		( value ) => {
+			const meta = { gatherpress_max_attendance_limit: Number( value ) };
 
-			setMaxAttendanceLimit(value);
-			editPost({ meta });
+			setMaxAttendanceLimit( value );
+			editPost( { meta } );
 			unlockPostSaving();
 		},
-		[editPost, unlockPostSaving]
+		[ editPost, unlockPostSaving ],
 	);
 
-	useEffect(() => {
-		if (isNewEvent && 0 !== defaultMaxAttendanceLimit) {
-			updateMaxAttendanceLimit(defaultMaxAttendanceLimit);
+	useEffect( () => {
+		if ( isNewEvent && 0 !== defaultMaxAttendanceLimit ) {
+			updateMaxAttendanceLimit( defaultMaxAttendanceLimit );
 		}
-	}, [isNewEvent, defaultMaxAttendanceLimit, updateMaxAttendanceLimit]);
+	}, [ isNewEvent, defaultMaxAttendanceLimit, updateMaxAttendanceLimit ] );
 
 	return (
 		<>
 			<NumberControl
-				label={__('Maximum Attendance Limit', 'gatherpress')}
-				value={maxAttendanceLimit}
-				min={0}
-				onChange={(value) => {
-					updateMaxAttendanceLimit(value);
-				}}
+				label={ __( 'Maximum Attendance Limit', 'gatherpress' ) }
+				value={ maxAttendanceLimit }
+				min={ 0 }
+				onChange={ ( value ) => {
+					updateMaxAttendanceLimit( value );
+				} }
 			/>
 			<p className="description">
-				{__(
+				{ __(
 					'Total number of people allowed at the event. A value of 0 indicates no limit.',
-					'gatherpress'
-				)}
+					'gatherpress',
+				) }
 			</p>
 		</>
 	);

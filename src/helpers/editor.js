@@ -17,7 +17,7 @@ import { dispatch, select } from '@wordpress/data';
  *       Monitor the issue for any updates or changes in the Gutenberg behavior.
  */
 export function enableSave() {
-	dispatch('core/editor')?.editPost({ meta: { _non_existing_meta: true } });
+	dispatch( 'core/editor' )?.editPost( { meta: { _non_existing_meta: true } } );
 }
 
 /**
@@ -33,7 +33,7 @@ export function enableSave() {
  * @return {boolean} True if the current post type is 'gatherpress_event' or 'gatherpress_venue', false otherwise.
  */
 export function isGatherPressPostType() {
-	const postType = select('core/editor')?.getCurrentPostType();
+	const postType = select( 'core/editor' )?.getCurrentPostType();
 
 	return 'gatherpress_event' === postType || 'gatherpress_venue' === postType;
 }
@@ -49,10 +49,10 @@ export function isGatherPressPostType() {
  */
 export function getEditorDocument() {
 	const iframe = global.document.querySelector(
-		'iframe[name="editor-canvas"]'
+		'iframe[name="editor-canvas"]',
 	);
 
-	if (iframe?.contentDocument) {
+	if ( iframe?.contentDocument ) {
 		return iframe.contentDocument;
 	}
 

@@ -27,24 +27,24 @@ import { isEventPostType } from '../../../helpers/event';
  * @param {Function} props.setAttributes Function to update block attributes.
  * @return {Element}                     RangeControl for event "per page" count.
  */
-export const EventCountControls = ({ attributes, setAttributes }) => {
+export const EventCountControls = ( { attributes, setAttributes } ) => {
 	const { query: { perPage, offset = 0 } = {} } = attributes;
 
 	return (
 		<RangeControl
-			label={__('Events Per Page', 'gatherpress')}
-			min={1}
-			max={50}
-			onChange={(newCount) => {
-				setAttributes({
+			label={ __( 'Events Per Page', 'gatherpress' ) }
+			min={ 1 }
+			max={ 50 }
+			onChange={ ( newCount ) => {
+				setAttributes( {
 					query: {
 						...attributes.query,
 						perPage: newCount,
 						offset,
 					},
-				});
-			}}
-			value={perPage}
+				} );
+			} }
+			value={ perPage }
 		/>
 	);
 };
@@ -63,30 +63,30 @@ export const EventCountControls = ({ attributes, setAttributes }) => {
  * @param {Function} props.setAttributes Function to update block attributes.
  * @return {Element}                        ToggleControl to exclude current event.
  */
-export const EventExcludeControls = ({ attributes, setAttributes }) => {
+export const EventExcludeControls = ( { attributes, setAttributes } ) => {
 	const { query: { exclude_current: excludeCurrent } = {} } = attributes;
 
-	const currentPost = useSelect((select) => {
-		return select('core/editor').getCurrentPost();
-	}, []);
+	const currentPost = useSelect( ( select ) => {
+		return select( 'core/editor' ).getCurrentPost();
+	}, [] );
 
-	if (!currentPost) {
-		return <div>{__('Loading…', 'gatherpress')}</div>;
+	if ( ! currentPost ) {
+		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
 	}
 
 	return (
 		<>
 			<ToggleControl
-				label={__('Exclude Current Event', 'gatherpress')}
-				checked={!!excludeCurrent}
-				onChange={(value) => {
-					setAttributes({
+				label={ __( 'Exclude Current Event', 'gatherpress' ) }
+				checked={ !! excludeCurrent }
+				onChange={ ( value ) => {
+					setAttributes( {
 						query: {
 							...attributes.query,
 							exclude_current: value ? currentPost.id : 0,
 						},
-					});
-				}}
+					} );
+				} }
 			/>
 		</>
 	);
@@ -104,37 +104,37 @@ export const EventExcludeControls = ({ attributes, setAttributes }) => {
  * @param {Function} props.setAttributes Function to update block attributes.
  * @return {Element}                        ToggleControl for unfinished events.
  */
-export const EventIncludeUnfinishedControls = ({
+export const EventIncludeUnfinishedControls = ( {
 	attributes,
 	setAttributes,
-}) => {
+} ) => {
 	const { query: { include_unfinished: includeUnfinished } = {} } =
 		attributes;
 
 	return (
 		<>
 			<ToggleControl
-				label={__('Include unfinished Events', 'gatherpress')}
-				help={sprintf(
+				label={ __( 'Include unfinished Events', 'gatherpress' ) }
+				help={ sprintf(
 					/* translators: %s: 'upcoming' or 'past' */
 					_x(
 						'%s events that have started but are not yet finished.',
 						"'Shows' or 'Hides'",
-						'gatherpress'
+						'gatherpress',
 					),
 					includeUnfinished
-						? __('Shows', 'gatherpress')
-						: __('Hides', 'gatherpress')
-				)}
-				checked={includeUnfinished}
-				onChange={(value) => {
-					setAttributes({
+						? __( 'Shows', 'gatherpress' )
+						: __( 'Hides', 'gatherpress' ),
+				) }
+				checked={ includeUnfinished }
+				onChange={ ( value ) => {
+					setAttributes( {
 						query: {
 							...attributes.query,
 							include_unfinished: value ? 1 : 0,
 						},
-					});
-				}}
+					} );
+				} }
 			/>
 		</>
 	);
@@ -152,40 +152,40 @@ export const EventIncludeUnfinishedControls = ({
  * @param {Function} props.setAttributes Function to update block attributes.
  * @return {Element}                        ToggleControl for event list type.
  */
-export const EventListTypeControls = ({ attributes, setAttributes }) => {
+export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
 		query: { gatherpress_events_query: eventListType = 'upcoming' } = {},
 	} = attributes;
 
-	const currentPost = useSelect((select) => {
-		return select('core/editor').getCurrentPost();
-	}, []);
+	const currentPost = useSelect( ( select ) => {
+		return select( 'core/editor' ).getCurrentPost();
+	}, [] );
 
-	if (!currentPost) {
-		return <div>{__('Loading…', 'gatherpress')}</div>;
+	if ( ! currentPost ) {
+		return <div>{ __( 'Loading…', 'gatherpress' ) }</div>;
 	}
 
 	return (
 		<ToggleControl
-			label={__('Upcoming or past events.', 'gatherpress')}
-			help={sprintf(
+			label={ __( 'Upcoming or past events.', 'gatherpress' ) }
+			help={ sprintf(
 				/* translators: %s: 'upcoming' or 'past' */
 				_x(
 					'Currently shows %s events.',
 					"'upcoming' or 'past'",
-					'gatherpress'
+					'gatherpress',
 				),
-				eventListType
-			)}
-			checked={'upcoming' === eventListType}
-			onChange={(value) => {
-				setAttributes({
+				eventListType,
+			) }
+			checked={ 'upcoming' === eventListType }
+			onChange={ ( value ) => {
+				setAttributes( {
 					query: {
 						...attributes.query,
 						gatherpress_events_query: value ? 'upcoming' : 'past',
 					},
-				});
-			}}
+				} );
+			} }
 		/>
 	);
 };
@@ -201,22 +201,22 @@ export const EventListTypeControls = ({ attributes, setAttributes }) => {
  * @param {Function} props.setAttributes Function to update block attributes.
  * @return {Element}                        RangeControl for event query offset.
  */
-export const EventOffsetControls = ({ attributes, setAttributes }) => {
+export const EventOffsetControls = ( { attributes, setAttributes } ) => {
 	const { query: { offset = 0 } = {} } = attributes;
 	return (
 		<RangeControl
-			label={__('Event Offset', 'gatherpress')}
-			min={0}
-			max={50}
-			value={offset}
-			onChange={(newOffset) => {
-				setAttributes({
+			label={ __( 'Event Offset', 'gatherpress' ) }
+			min={ 0 }
+			max={ 50 }
+			value={ offset }
+			onChange={ ( newOffset ) => {
+				setAttributes( {
 					query: {
 						...attributes.query,
 						offset: newOffset,
 					},
-				});
-			}}
+				} );
+			} }
 		/>
 	);
 };
@@ -233,64 +233,64 @@ export const EventOffsetControls = ({ attributes, setAttributes }) => {
  * @param {Function} props.setAttributes Function to update block attributes.
  * @return {Element}                        Controls for event sorting and order.
  */
-export const EventOrderControls = ({ attributes, setAttributes }) => {
+export const EventOrderControls = ( { attributes, setAttributes } ) => {
 	const { query: { order, orderBy } = {} } = attributes;
 	let label;
-	if (orderBy === 'rand') {
-		label = __('Random Order', 'gatherpress');
-	} else if (order === 'asc') {
-		label = __('Ascending Order', 'gatherpress');
+	if ( orderBy === 'rand' ) {
+		label = __( 'Random Order', 'gatherpress' );
+	} else if ( order === 'asc' ) {
+		label = __( 'Ascending Order', 'gatherpress' );
 	} else {
-		label = __('Descending Order', 'gatherpress');
+		label = __( 'Descending Order', 'gatherpress' );
 	}
 	return (
 		<>
 			<SelectControl
-				label={__('Order Events by', 'gatherpress')}
-				value={orderBy}
-				options={[
+				label={ __( 'Order Events by', 'gatherpress' ) }
+				value={ orderBy }
+				options={ [
 					{
-						label: __('Event Date', 'gatherpress'),
+						label: __( 'Event Date', 'gatherpress' ),
 						value: 'datetime', // This is GatherPress specific, a normal post would use 'date'.
 					},
 					{
-						label: __('Last Modified Date', 'gatherpress'),
+						label: __( 'Last Modified Date', 'gatherpress' ),
 						value: 'modified',
 					},
 					{
-						label: __('Title', 'gatherpress'),
+						label: __( 'Title', 'gatherpress' ),
 						value: 'title',
 					},
 					{
-						label: __('Random', 'gatherpress'),
+						label: __( 'Random', 'gatherpress' ),
 						value: 'rand',
 					},
 					{
-						label: __('Post ID', 'gatherpress'),
+						label: __( 'Post ID', 'gatherpress' ),
 						value: 'id',
 					},
-				]}
-				onChange={(newOrderBy) => {
-					setAttributes({
+				] }
+				onChange={ ( newOrderBy ) => {
+					setAttributes( {
 						query: {
 							...attributes.query,
 							orderBy: newOrderBy,
 						},
-					});
-				}}
+					} );
+				} }
 			/>
 			<ToggleControl
-				label={label}
-				checked={order === 'asc'}
-				disabled={orderBy === 'rand'}
-				onChange={() => {
-					setAttributes({
+				label={ label }
+				checked={ order === 'asc' }
+				disabled={ orderBy === 'rand' }
+				onChange={ () => {
+					setAttributes( {
 						query: {
 							...attributes.query,
 							order: order === 'asc' ? 'desc' : 'asc',
 						},
-					});
-				}}
+					} );
+				} }
 			/>
 		</>
 	);
@@ -310,17 +310,17 @@ export const GatherPressQueryControlsSlotFill = () => {
 	const isEventContext = isEventPostType();
 	return (
 		<GatherPressQueryControls>
-			{(props) => (
+			{ ( props ) => (
 				<>
-					<EventListTypeControls {...props} />
-					<EventIncludeUnfinishedControls {...props} />
+					<EventListTypeControls { ...props } />
+					<EventIncludeUnfinishedControls { ...props } />
 
-					{isEventContext && <EventExcludeControls {...props} />}
-					<EventCountControls {...props} />
-					<EventOffsetControls {...props} />
-					<EventOrderControls {...props} />
+					{ isEventContext && <EventExcludeControls { ...props } /> }
+					<EventCountControls { ...props } />
+					<EventOffsetControls { ...props } />
+					<EventOrderControls { ...props } />
 				</>
-			)}
+			) }
 		</GatherPressQueryControls>
 	);
 };
@@ -337,13 +337,13 @@ export const GatherPressQueryControlsSlotFill = () => {
 export const GatherPressInheritedQueryControlsSlotFill = () => {
 	return (
 		<GatherPressInheritedQueryControls>
-			{(props) => (
+			{ ( props ) => (
 				<>
-					<EventListTypeControls {...props} />
-					<EventIncludeUnfinishedControls {...props} />
-					<EventOrderControls {...props} />
+					<EventListTypeControls { ...props } />
+					<EventIncludeUnfinishedControls { ...props } />
+					<EventOrderControls { ...props } />
 				</>
-			)}
+			) }
 		</GatherPressInheritedQueryControls>
 	);
 };

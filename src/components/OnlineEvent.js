@@ -28,13 +28,13 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
-	const text = __('Online event', 'gatherpress');
-	const [onlineEventLink, setOnlineEventLink] = useState(
-		onlineEventLinkDefault
+const OnlineEvent = ( { onlineEventLinkDefault = '' } ) => {
+	const text = __( 'Online event', 'gatherpress' );
+	const [ onlineEventLink, setOnlineEventLink ] = useState(
+		onlineEventLinkDefault,
 	);
 
-	Listener({ setOnlineEventLink }, getFromGlobal('eventDetails.postId'));
+	Listener( { setOnlineEventLink }, getFromGlobal( 'eventDetails.postId' ) );
 
 	return (
 		<Flex justify="normal" gap="3">
@@ -42,27 +42,27 @@ const OnlineEvent = ({ onlineEventLinkDefault = '' }) => {
 				<Icon icon="video-alt2" />
 			</FlexItem>
 			<FlexItem>
-				{!onlineEventLink && (
+				{ ! onlineEventLink && (
 					<>
 						<span
 							tabIndex="0"
 							className="gatherpress-tooltip"
 							data-tooltip-id="gatherpress-online-event-tooltip"
-							data-tooltip-content={__(
+							data-tooltip-content={ __(
 								'Link available for attendees only.',
-								'gatherpress'
-							)}
+								'gatherpress',
+							) }
 						>
-							{text}
+							{ text }
 						</span>
 						<Tooltip id="gatherpress-online-event-tooltip" />
 					</>
-				)}
-				{onlineEventLink && (
-					<a href={onlineEventLink} rel="noreferrer" target="_blank">
-						{text}
+				) }
+				{ onlineEventLink && (
+					<a href={ onlineEventLink } rel="noreferrer" target="_blank">
+						{ text }
 					</a>
-				)}
+				) }
 			</FlexItem>
 		</Flex>
 	);

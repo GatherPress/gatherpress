@@ -40,11 +40,11 @@ import { getFromGlobal } from './globals';
  * //   rsvpSelection: 'attending',
  * // }
  */
-export function initPostContext(state, postId) {
+export function initPostContext( state, postId ) {
 	state.posts = state.posts ?? [];
 
-	if (postId && !state.posts[postId]) {
-		state.posts[postId] = {
+	if ( postId && ! state.posts[ postId ] ) {
+		state.posts[ postId ] = {
 			eventResponses: {
 				attending: 0,
 				waitingList: 0,
@@ -86,33 +86,33 @@ export function initPostContext(state, postId) {
  * getNonce.clearCache();
  * const freshNonce = await getNonce();
  */
-export const getNonce = (() => {
+export const getNonce = ( () => {
 	let cachedNonce = null;
 	let noncePromise = null;
 
-	const fetchNonce = async function () {
-		if (cachedNonce) {
+	const fetchNonce = async function() {
+		if ( cachedNonce ) {
 			return cachedNonce;
 		}
 
-		if (noncePromise) {
+		if ( noncePromise ) {
 			return noncePromise;
 		}
 
-		noncePromise = fetch(getFromGlobal('urls.eventApiUrl') + '/nonce', {
+		noncePromise = fetch( getFromGlobal( 'urls.eventApiUrl' ) + '/nonce', {
 			method: 'GET',
 			credentials: 'same-origin',
-		})
-			.then((response) => response.json())
-			.then((data) => {
+		} )
+			.then( ( response ) => response.json() )
+			.then( ( data ) => {
 				cachedNonce = data.nonce;
 				noncePromise = null;
 				return data.nonce;
-			})
-			.catch(() => {
+			} )
+			.catch( () => {
 				noncePromise = null;
 				return null;
-			});
+			} );
 
 		return noncePromise;
 	};
@@ -124,7 +124,7 @@ export const getNonce = (() => {
 	};
 
 	return fetchNonce;
-})();
+} )();
 
 /**
  * Sends an RSVP API request to update the RSVP status for a given post.
@@ -163,41 +163,41 @@ export async function sendRsvpApiRequest(
 	postId,
 	args,
 	state = null,
-	onSuccess = null
+	onSuccess = null,
 ) {
-	if (['no_status', 'waiting_list'].includes(args.status)) {
+	if ( [ 'no_status', 'waiting_list' ].includes( args.status ) ) {
 		return;
 	}
 
-	const makeRequest = async (isRetry = false) => {
+	const makeRequest = async ( isRetry = false ) => {
 		const nonce = await getNonce();
-		if (!nonce) {
+		if ( ! nonce ) {
 			return;
 		}
 
 		const response = await fetch(
-			getFromGlobal('urls.eventApiUrl') + '/rsvp',
+			getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp',
 			{
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 					'X-WP-Nonce': nonce,
 				},
-				body: JSON.stringify({
+				body: JSON.stringify( {
 					post_id: postId,
 					status: args.status,
 					guests: args.guests,
 					anonymous: args.anonymous,
 					rsvp_token: args.rsvpToken,
-				}),
-			}
+				} ),
+			},
 		);
 
 		// Check if nonce failed (403 Forbidden).
-		if (403 === response.status && !isRetry) {
+		if ( 403 === response.status && ! isRetry ) {
 			// Clear cached nonce and retry once.
 			getNonce.clearCache();
-			return makeRequest(true);
+			return makeRequest( true );
 		}
 
 		return response.json();
@@ -206,10 +206,10 @@ export async function sendRsvpApiRequest(
 	try {
 		const res = await makeRequest();
 
-		if (res.success) {
-			if (state) {
-				state.posts[postId] = {
-					...state.posts[postId],
+		if ( res.success ) {
+			if ( state ) {
+				state.posts[ postId ] = {
+					...state.posts[ postId ],
 					eventResponses: {
 						attending: res.responses.attending.count,
 						waitingList: res.responses.waiting_list.count,
@@ -223,11 +223,11 @@ export async function sendRsvpApiRequest(
 				};
 			}
 
-			if ('function' === typeof onSuccess) {
-				onSuccess(res);
+			if ( 'function' === typeof onSuccess ) {
+				onSuccess( res );
 			}
 		}
-	} catch (error) {}
+	} catch ( error ) {}
 }
 
 /**
@@ -254,32 +254,32 @@ export async function sendRsvpApiRequest(
  * // Call the cleanup function when focus trapping is no longer needed.
  * cleanup();
  */
-export function manageFocusTrap(focusableElements) {
-	if (!focusableElements || focusableElements.length === 0) {
+export function manageFocusTrap( focusableElements ) {
+	if ( ! focusableElements || focusableElements.length === 0 ) {
 		return () => {}; // Return an empty cleanup function if no elements..
 	}
 
-	const isElementVisible = (element) => {
+	const isElementVisible = ( element ) => {
 		return (
 			element.offsetParent !== null && // Excludes elements with `display: none`.
-			global.window.getComputedStyle(element).visibility !== 'hidden' && // Excludes elements with `visibility: hidden`.
-			global.window.getComputedStyle(element).opacity !== '0' // Excludes fully transparent elements..
+			global.window.getComputedStyle( element ).visibility !== 'hidden' && // Excludes elements with `visibility: hidden`.
+			global.window.getComputedStyle( element ).opacity !== '0' // Excludes fully transparent elements..
 		);
 	};
 
 	// Filter out hidden elements..
-	const visibleFocusableElements = focusableElements.filter(isElementVisible);
+	const visibleFocusableElements = focusableElements.filter( isElementVisible );
 
-	if (visibleFocusableElements.length === 0) {
+	if ( visibleFocusableElements.length === 0 ) {
 		return () => {}; // No visible elements, no trap needed..
 	}
 
-	const firstFocusableElement = visibleFocusableElements[0];
+	const firstFocusableElement = visibleFocusableElements[ 0 ];
 	const lastFocusableElement =
-		visibleFocusableElements[visibleFocusableElements.length - 1];
+		visibleFocusableElements[ visibleFocusableElements.length - 1 ];
 
-	const handleFocusTrap = (e) => {
-		if ('Tab' === e.key) {
+	const handleFocusTrap = ( e ) => {
+		if ( 'Tab' === e.key ) {
 			if (
 				e.shiftKey && // Shift + Tab..
 				global.document.activeElement === firstFocusableElement
@@ -287,7 +287,7 @@ export function manageFocusTrap(focusableElements) {
 				e.preventDefault();
 				lastFocusableElement.focus();
 			} else if (
-				!e.shiftKey && // Tab..
+				! e.shiftKey && // Tab..
 				global.document.activeElement === lastFocusableElement
 			) {
 				e.preventDefault();
@@ -296,20 +296,20 @@ export function manageFocusTrap(focusableElements) {
 		}
 	};
 
-	const handleEscapeKey = (e) => {
-		if ('Escape' === e.key) {
+	const handleEscapeKey = ( e ) => {
+		if ( 'Escape' === e.key ) {
 			cleanup(); // Trigger cleanup on Escape key..
 		}
 	};
 
 	const cleanup = () => {
-		global.document.removeEventListener('keydown', handleFocusTrap);
-		global.document.removeEventListener('keydown', handleEscapeKey);
+		global.document.removeEventListener( 'keydown', handleFocusTrap );
+		global.document.removeEventListener( 'keydown', handleEscapeKey );
 	};
 
 	// Attach the event listeners for focus trap..
-	global.document.addEventListener('keydown', handleFocusTrap);
-	global.document.addEventListener('keydown', handleEscapeKey);
+	global.document.addEventListener( 'keydown', handleFocusTrap );
+	global.document.addEventListener( 'keydown', handleEscapeKey );
 
 	// Return a cleanup function for the caller..
 	return cleanup;
@@ -322,55 +322,55 @@ export function manageFocusTrap(focusableElements) {
  * @param {string}   contentSelector - Selector for the inner content element.
  * @param {Function} onClose         - Callback to execute when the element is closed.
  */
-export function setupCloseHandlers(elementSelector, contentSelector, onClose) {
-	const handleClose = (element) => {
+export function setupCloseHandlers( elementSelector, contentSelector, onClose ) {
+	const handleClose = ( element ) => {
 		// Remove the visible class..
-		element.classList.remove('gatherpress--is-visible');
+		element.classList.remove( 'gatherpress--is-visible' );
 
 		// Execute the custom close callback..
-		if ('function' === typeof onClose) {
-			onClose(element);
+		if ( 'function' === typeof onClose ) {
+			onClose( element );
 		}
 	};
 
-	const handleEscapeKey = (event) => {
-		if ('Escape' === event.key) {
+	const handleEscapeKey = ( event ) => {
+		if ( 'Escape' === event.key ) {
 			const openElements = global.document.querySelectorAll(
-				`${elementSelector}.gatherpress--is-visible`
+				`${ elementSelector }.gatherpress--is-visible`,
 			);
-			openElements.forEach((element) => handleClose(element));
+			openElements.forEach( ( element ) => handleClose( element ) );
 		}
 	};
 
-	const handleOutsideClick = (event) => {
+	const handleOutsideClick = ( event ) => {
 		const openElements = global.document.querySelectorAll(
-			`${elementSelector}.gatherpress--is-visible`
+			`${ elementSelector }.gatherpress--is-visible`,
 		);
-		openElements.forEach((element) => {
-			if (contentSelector) {
-				const content = element.querySelector(contentSelector);
+		openElements.forEach( ( element ) => {
+			if ( contentSelector ) {
+				const content = element.querySelector( contentSelector );
 				if (
-					element.contains(event.target) &&
-					!content.contains(event.target)
+					element.contains( event.target ) &&
+					! content.contains( event.target )
 				) {
-					handleClose(element);
+					handleClose( element );
 				}
 			} else {
 				const parentContainer = element.parentElement;
-				if (!parentContainer.contains(event.target)) {
-					handleClose(element);
+				if ( ! parentContainer.contains( event.target ) ) {
+					handleClose( element );
 				}
 			}
-		});
+		} );
 	};
 
 	// Attach event listeners..
-	global.document.addEventListener('keydown', handleEscapeKey);
-	global.document.addEventListener('click', handleOutsideClick);
+	global.document.addEventListener( 'keydown', handleEscapeKey );
+	global.document.addEventListener( 'click', handleOutsideClick );
 
 	// Return a cleanup function to remove event listeners if needed..
 	return () => {
-		global.document.removeEventListener('keydown', handleEscapeKey);
-		global.document.removeEventListener('click', handleOutsideClick);
+		global.document.removeEventListener( 'keydown', handleEscapeKey );
+		global.document.removeEventListener( 'click', handleOutsideClick );
 	};
 }

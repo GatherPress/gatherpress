@@ -12,8 +12,8 @@ const Edit = () => {
 	const blockProps = useBlockProps();
 
 	return (
-		<div {...blockProps}>
-			<InnerBlocks template={TEMPLATE} />
+		<div { ...blockProps }>
+			<InnerBlocks template={ TEMPLATE } />
 		</div>
 	);
 };

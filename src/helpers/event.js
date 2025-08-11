@@ -28,7 +28,7 @@ import { Broadcaster } from './broadcasting';
  * @return {boolean} True if the current post type is 'gatherpress_event', false otherwise.
  */
 export function isEventPostType() {
-	return 'gatherpress_event' === select('core/editor')?.getCurrentPostType();
+	return 'gatherpress_event' === select( 'core/editor' )?.getCurrentPostType();
 }
 
 /**
@@ -41,13 +41,13 @@ export function isEventPostType() {
  */
 export function hasEventPast() {
 	const dateTimeEnd = moment.tz(
-		getFromGlobal('eventDetails.dateTime.datetime_end'),
-		getTimezone()
+		getFromGlobal( 'eventDetails.dateTime.datetime_end' ),
+		getTimezone(),
 	);
 
 	return (
-		'gatherpress_event' === select('core/editor')?.getCurrentPostType() &&
-		moment.tz(getTimezone()).valueOf() > dateTimeEnd.valueOf()
+		'gatherpress_event' === select( 'core/editor' )?.getCurrentPostType() &&
+		moment.tz( getTimezone() ).valueOf() > dateTimeEnd.valueOf()
 	);
 }
 
@@ -64,18 +64,18 @@ export function hasEventPast() {
  */
 export function hasEventPastNotice() {
 	const id = 'gatherpress_event_past';
-	const notices = dispatch('core/notices');
+	const notices = dispatch( 'core/notices' );
 
-	notices.removeNotice(id);
+	notices.removeNotice( id );
 
-	if (hasEventPast()) {
+	if ( hasEventPast() ) {
 		notices.createNotice(
 			'warning',
-			__('This event has already passed.', 'gatherpress'),
+			__( 'This event has already passed.', 'gatherpress' ),
 			{
 				id,
 				isDismissible: false,
-			}
+			},
 		);
 	}
 }
@@ -100,48 +100,48 @@ let isEventCommunicationNoticeCreated = false;
  */
 export function triggerEventCommunication() {
 	const id = 'gatherpress_event_communication';
-	const notices = dispatch('core/notices');
-	const isSavingPost = select('core/editor').isSavingPost();
-	const isAutosavingPost = select('core/editor').isAutosavingPost();
+	const notices = dispatch( 'core/notices' );
+	const isSavingPost = select( 'core/editor' ).isSavingPost();
+	const isAutosavingPost = select( 'core/editor' ).isAutosavingPost();
 
 	// Only proceed if a save is in progress and it's not an autosave.
 	if (
-		'publish' === select('core/editor').getEditedPostAttribute('status') &&
+		'publish' === select( 'core/editor' ).getEditedPostAttribute( 'status' ) &&
 		isEventPostType() &&
 		isSavingPost &&
-		!isAutosavingPost &&
-		!hasEventPast() &&
-		!isEventCommunicationNoticeCreated
+		! isAutosavingPost &&
+		! hasEventPast() &&
+		! isEventCommunicationNoticeCreated
 	) {
 		// Mark notice as created.
 		isEventCommunicationNoticeCreated = true;
 
 		// Remove any previous notices with the same ID.
-		notices.removeNotice(id);
+		notices.removeNotice( id );
 
 		// Create a new notice with an action.
 		notices.createNotice(
 			'success',
-			__('Send an event update to members via email?', 'gatherpress'),
+			__( 'Send an event update to members via email?', 'gatherpress' ),
 			{
 				id,
 				isDismissible: true,
 				actions: [
 					{
 						onClick: () => {
-							Broadcaster({
+							Broadcaster( {
 								setOpen: true,
-							});
+							} );
 						},
-						label: __('Compose Message', 'gatherpress'),
+						label: __( 'Compose Message', 'gatherpress' ),
 					},
 				],
-			}
+			},
 		);
 	}
 
 	// Reset the flag after the save operation completes.
-	if (!isSavingPost) {
+	if ( ! isSavingPost ) {
 		isEventCommunicationNoticeCreated = false;
 	}
 }

@@ -13,8 +13,8 @@ import RsvpResponse from '../../../../../src/components/RsvpResponse';
 /**
  * Coverage for RsvpResponse.
  */
-describe('RsvpResponse', () => {
-	it('renders component correctly', () => {
+describe( 'RsvpResponse', () => {
+	it( 'renders component correctly', () => {
 		global.GatherPress = {
 			eventDetails: {
 				responses: {
@@ -60,9 +60,9 @@ describe('RsvpResponse', () => {
 			},
 		};
 
-		const { container } = render(<RsvpResponse />);
+		const { container } = render( <RsvpResponse /> );
 
-		expect(container.children[0]).toHaveClass('gatherpress-rsvp-response');
-		expect(container.children[0]).toHaveTextContent('John Doe');
-	});
-});
+		expect( container.children[ 0 ] ).toHaveClass( 'gatherpress-rsvp-response' );
+		expect( container.children[ 0 ] ).toHaveTextContent( 'John Doe' );
+	} );
+} );
