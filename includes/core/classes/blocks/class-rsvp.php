@@ -328,14 +328,14 @@ class Rsvp {
 		// Apply interactivity attributes and max limit.
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		while ( $tag->next_tag( 'input' ) ) {
+		while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
 			$name_attr = $tag->get_attribute( 'name' );
 
 			if ( 'gatherpress_rsvp_guest_count' === $name_attr ) {
 				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
 				$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
-				$tag->set_attribute( 'max', intval( $max_guest_limit ) );
+				$tag->set_attribute( 'max', (string) $max_guest_limit );
 			}
 		}
 
