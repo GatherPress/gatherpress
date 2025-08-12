@@ -30,7 +30,7 @@ const AnonymousRsvp = () => {
 	let defaultAnonymousRsvp = useSelect( ( select ) => {
 		const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
 		const rawValue = meta?.gatherpress_enable_anonymous_rsvp;
-		console.log( 'Reading anonymous RSVP meta:', rawValue, typeof rawValue );
+
 		// Convert meta value to boolean.
 		return Boolean( rawValue );
 	}, [] );
