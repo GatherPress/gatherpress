@@ -186,7 +186,15 @@ const ATTENDING = [
 									autocomplete: 'off',
 								},
 							],
-							[ 'gatherpress/rsvp-anonymous-checkbox', {} ],
+							[
+								'gatherpress/form-field',
+								{
+									fieldType: 'checkbox',
+									fieldName: 'gatherpress_rsvp_anonymous',
+									label: 'List me as anonymous.',
+									autocomplete: 'off',
+								},
+							],
 							[
 								'core/buttons',
 								{

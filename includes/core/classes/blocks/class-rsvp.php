@@ -292,16 +292,16 @@ class Rsvp {
 		// Apply form field callback for any form-field blocks within this RSVP block.
 		$form_field_hook = sprintf( 'render_block_%s', Form_Field::BLOCK_NAME );
 
-		add_filter( $form_field_hook, array( $this, 'handle_guest_count_form_field' ), 10, 2 );
+		add_filter( $form_field_hook, array( $this, 'handle_rsvp_form_fields' ), 10, 2 );
 
 		return $block_content;
 	}
 
 	/**
-	 * Handle guest count form field rendering.
+	 * Handle RSVP-related form field rendering.
 	 *
-	 * Processes form-field blocks with fieldName="gatherpress_rsvp_guest_count" to either
-	 * remove the field (if guests not permitted) or apply interactivity attributes.
+	 * Processes form-field blocks with RSVP-specific field names to either
+	 * remove the field (if not permitted) or apply interactivity attributes.
 	 *
 	 * @since 1.0.0
 	 *
@@ -309,36 +309,67 @@ class Rsvp {
 	 * @param array  $block         The block data including attributes.
 	 * @return string The modified block content or empty string if field should be hidden.
 	 */
-	public static function handle_guest_count_form_field( string $block_content, array $block ): string {
+	public static function handle_rsvp_form_fields( string $block_content, array $block ): string {
 		$attributes = $block['attrs'] ?? array();
 		$field_name = $attributes['fieldName'] ?? '';
 
-		// Only process guest count form fields.
-		if ( 'gatherpress_rsvp_guest_count' !== $field_name ) {
+		// Only process RSVP-related form fields.
+		if ( ! in_array( $field_name, array( 'gatherpress_rsvp_guest_count', 'gatherpress_rsvp_anonymous' ), true ) ) {
 			return $block_content;
 		}
 
-		$max_guest_limit = get_post_meta( get_the_ID(), 'gatherpress_max_guest_limit', true );
+		// Handle guest count field.
+		if ( 'gatherpress_rsvp_guest_count' === $field_name ) {
+			$max_guest_limit = get_post_meta( get_the_ID(), 'gatherpress_max_guest_limit', true );
 
-		// If the maximum guest limit is set to 0, guests are not permitted. Return empty content.
-		if ( empty( $max_guest_limit ) ) {
-			return '';
-		}
-
-		// Apply interactivity attributes and max limit.
-		$tag = new WP_HTML_Tag_Processor( $block_content );
-
-		while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
-			$name_attr = $tag->get_attribute( 'name' );
-
-			if ( 'gatherpress_rsvp_guest_count' === $name_attr ) {
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
-				$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
-				$tag->set_attribute( 'max', (string) $max_guest_limit );
+			// If the maximum guest limit is set to 0, guests are not permitted. Return empty content.
+			if ( empty( $max_guest_limit ) ) {
+				return '';
 			}
+
+			// Apply interactivity attributes and max limit for guest count.
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
+				$name_attr = $tag->get_attribute( 'name' );
+
+				if ( 'gatherpress_rsvp_guest_count' === $name_attr ) {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
+					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
+					$tag->set_attribute( 'max', (string) $max_guest_limit );
+				}
+			}
+
+			return $tag->get_updated_html();
 		}
 
-		return $tag->get_updated_html();
+		// Handle anonymous checkbox field.
+		if ( 'gatherpress_rsvp_anonymous' === $field_name ) {
+			$enable_anonymous_rsvp = get_post_meta( get_the_ID(), 'gatherpress_enable_anonymous_rsvp', true );
+
+			// Meta is stored as boolean. Return empty content if not enabled.
+			if ( ! $enable_anonymous_rsvp ) {
+				return '';
+			}
+
+			// Apply interactivity attributes for anonymous checkbox.
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
+				$name_attr = $tag->get_attribute( 'name' );
+
+				if ( 'gatherpress_rsvp_anonymous' === $name_attr ) {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--change', 'actions.updateAnonymous' );
+					$tag->set_attribute( 'data-wp-watch', 'callbacks.monitorAnonymousStatus' );
+				}
+			}
+
+			return $tag->get_updated_html();
+		}
+
+		// Fallback - should not reach here based on the field name check above.
+		return $block_content;
 	}
 }

@@ -28,8 +28,11 @@ const AnonymousRsvp = () => {
 	}, [] );
 
 	let defaultAnonymousRsvp = useSelect( ( select ) => {
-		return select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-			.gatherpress_enable_anonymous_rsvp;
+		const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+		const rawValue = meta?.gatherpress_enable_anonymous_rsvp;
+		console.log( 'Reading anonymous RSVP meta:', rawValue, typeof rawValue );
+		// Convert meta value to boolean.
+		return Boolean( rawValue );
 	}, [] );
 
 	if ( isNewEvent ) {
@@ -40,7 +43,9 @@ const AnonymousRsvp = () => {
 
 	const updateAnonymousRsvp = useCallback(
 		( value ) => {
-			const meta = { gatherpress_enable_anonymous_rsvp: Number( value ) };
+			console.log( 'Updating anonymous RSVP:', value, typeof value );
+			// Save as boolean to match meta registration.
+			const meta = { gatherpress_enable_anonymous_rsvp: Boolean( value ) };
 
 			setAnonymousRsvp( value );
 			editPost( { meta } );
@@ -50,7 +55,7 @@ const AnonymousRsvp = () => {
 	);
 
 	useEffect( () => {
-		if ( isNewEvent && defaultAnonymousRsvp !== 0 ) {
+		if ( isNewEvent && defaultAnonymousRsvp ) {
 			updateAnonymousRsvp( defaultAnonymousRsvp );
 		}
 	}, [ isNewEvent, defaultAnonymousRsvp, updateAnonymousRsvp ] );

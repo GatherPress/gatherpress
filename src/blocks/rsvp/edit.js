@@ -59,61 +59,79 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 
 	// Get max attendance limit from post meta to control guest count field visibility.
 	const maxAttendanceLimit = useSelect(
-		( select ) =>
-			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
-				?.gatherpress_max_guest_limit,
-		[],
+		( select ) => {
+			const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+			return meta?.gatherpress_max_guest_limit;
+		},
+	);
+
+	// Get anonymous RSVP setting from post meta to control anonymous checkbox visibility.
+	const enableAnonymousRsvp = useSelect(
+		( select ) => {
+			const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+			// Convert meta value to boolean.
+			return Boolean( meta?.gatherpress_enable_anonymous_rsvp );
+		},
 	);
 
 	/**
-	 * Apply conditional visibility class to guest count form fields.
+	 * Apply conditional visibility class to form fields based on event settings.
 	 *
 	 * @param {Array} blocks Array of blocks to process.
 	 * @return {Array} Processed blocks with conditional classes applied.
 	 */
-	const applyGuestCountVisibility = useCallback( ( blocks ) => {
+	const applyFormFieldVisibility = useCallback( ( blocks ) => {
 		return blocks.map( ( block ) => {
-			// Check if this is a form-field block with guest count field name.
-			if (
-				block.name === 'gatherpress/form-field' &&
-				block.attributes?.fieldName === 'gatherpress_rsvp_guest_count'
-			) {
-				// Apply or remove the visibility class based on max attendance limit.
-				const shouldHide = 0 === maxAttendanceLimit;
-				const currentClassName = block.attributes?.className || '';
-				const hasHiddenClass = currentClassName.includes( 'gatherpress--is-not-visible' );
+			// Check if this is a form-field block that needs conditional visibility.
+			if ( block.name === 'gatherpress/form-field' ) {
+				const fieldName = block.attributes?.fieldName;
+				let shouldHide = false;
 
-				let newClassName = currentClassName;
-				if ( shouldHide && ! hasHiddenClass ) {
-					newClassName = currentClassName
-						? `${ currentClassName } gatherpress--is-not-visible`
-						: 'gatherpress--is-not-visible';
-				} else if ( ! shouldHide && hasHiddenClass ) {
-					newClassName = currentClassName
-						.replace( /\s*gatherpress--is-not-visible\s*/g, ' ' )
-						.trim();
+				// Determine if the field should be hidden based on its field name.
+				if ( fieldName === 'gatherpress_rsvp_guest_count' ) {
+					shouldHide = 0 === parseInt( maxAttendanceLimit, 10 );
+				} else if ( fieldName === 'gatherpress_rsvp_anonymous' ) {
+					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
+					shouldHide = ! enableAnonymousRsvp;
 				}
 
-				return {
-					...block,
-					attributes: {
-						...block.attributes,
-						className: newClassName,
-					},
-				};
+				// Only process fields that have conditional visibility.
+				if ( fieldName === 'gatherpress_rsvp_guest_count' || fieldName === 'gatherpress_rsvp_anonymous' ) {
+					const currentClassName = block.attributes?.className || '';
+					const hasHiddenClass = currentClassName.includes( 'gatherpress--is-not-visible' );
+
+					let newClassName = currentClassName;
+					if ( shouldHide && ! hasHiddenClass ) {
+						newClassName = currentClassName
+							? `${ currentClassName } gatherpress--is-not-visible`
+							: 'gatherpress--is-not-visible';
+					} else if ( ! shouldHide && hasHiddenClass ) {
+						newClassName = currentClassName
+							.replace( /\s*gatherpress--is-not-visible\s*/g, ' ' )
+							.trim();
+					}
+
+					return {
+						...block,
+						attributes: {
+							...block.attributes,
+							className: newClassName,
+						},
+					};
+				}
 			}
 
 			// Recursively process inner blocks.
 			if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
 				return {
 					...block,
-					innerBlocks: applyGuestCountVisibility( block.innerBlocks ),
+					innerBlocks: applyFormFieldVisibility( block.innerBlocks ),
 				};
 			}
 
 			return block;
 		} );
-	}, [ maxAttendanceLimit ] );
+	}, [ maxAttendanceLimit, enableAnonymousRsvp ] );
 
 	// Save the provided inner blocks to the serializedInnerBlocks attribute
 	const saveInnerBlocks = useCallback(
@@ -203,10 +221,10 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		}, 0 );
 	}, [ serializedInnerBlocks, setAttributes, selectedStatus ] );
 
-	// Apply guest count visibility when max attendance limit changes.
+	// Apply form field visibility when event settings change.
 	useEffect( () => {
 		if ( innerBlocks && innerBlocks.length > 0 ) {
-			const updatedBlocks = applyGuestCountVisibility( innerBlocks );
+			const updatedBlocks = applyFormFieldVisibility( innerBlocks );
 
 			// Only update if there are actual changes.
 			const hasChanges = JSON.stringify( updatedBlocks ) !== JSON.stringify( innerBlocks );
@@ -214,7 +232,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				replaceInnerBlocks( clientId, updatedBlocks );
 			}
 		}
-	}, [ maxAttendanceLimit, clientId, replaceInnerBlocks, applyGuestCountVisibility, innerBlocks ] );
+	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId, replaceInnerBlocks, applyFormFieldVisibility, innerBlocks ] );
 
 	return (
 		<>
