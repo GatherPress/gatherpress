@@ -53,6 +53,12 @@ class Test_Rsvp extends Base {
 				'priority' => 11,
 				'callback' => array( $instance, 'apply_guest_count_watch' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $instance, 'apply_guest_count_input_interactivity' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );

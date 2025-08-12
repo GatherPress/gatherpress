@@ -13,9 +13,9 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
+use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp_Setup;
-use GatherPress\Core\Rsvp_Token;
 use GatherPress\Core\Traits\Singleton;
 use WP_HTML_Tag_Processor;
 
@@ -66,6 +66,7 @@ class Rsvp {
 		add_filter( $render_block_hook, array( $this, 'apply_rsvp_button_interactivity' ) );
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
+		add_filter( $render_block_hook, array( $this, 'apply_guest_count_input_interactivity' ) );
 	}
 
 	/**
@@ -271,6 +272,70 @@ class Rsvp {
 				if ( empty( $user_details['guests'] ) ) {
 					$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-not-visible' );
 				}
+			}
+		}
+
+		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Apply interactivity attributes to guest count form field.
+	 *
+	 * Processes form-field blocks within RSVP blocks, applying the guest count form field callback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content to modify.
+	 * @return string The modified block content with form field callbacks applied.
+	 */
+	public function apply_guest_count_input_interactivity( string $block_content ): string {
+		// Apply form field callback for any form-field blocks within this RSVP block.
+		$form_field_hook = sprintf( 'render_block_%s', Form_Field::BLOCK_NAME );
+
+		add_filter( $form_field_hook, array( $this, 'handle_guest_count_form_field' ), 10, 2 );
+
+		return $block_content;
+	}
+
+	/**
+	 * Handle guest count form field rendering.
+	 *
+	 * Processes form-field blocks with fieldName="gatherpress_rsvp_guest_count" to either
+	 * remove the field (if guests not permitted) or apply interactivity attributes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The form field block content.
+	 * @param array  $block         The block data including attributes.
+	 * @return string The modified block content or empty string if field should be hidden.
+	 */
+	public static function handle_guest_count_form_field( string $block_content, array $block ): string {
+		$attributes = $block['attrs'] ?? array();
+		$field_name = $attributes['fieldName'] ?? '';
+
+		// Only process guest count form fields.
+		if ( 'gatherpress_rsvp_guest_count' !== $field_name ) {
+			return $block_content;
+		}
+
+		$max_guest_limit = get_post_meta( get_the_ID(), 'gatherpress_max_guest_limit', true );
+
+		// If the maximum guest limit is set to 0, guests are not permitted. Return empty content.
+		if ( empty( $max_guest_limit ) ) {
+			return '';
+		}
+
+		// Apply interactivity attributes and max limit.
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		while ( $tag->next_tag( 'input' ) ) {
+			$name_attr = $tag->get_attribute( 'name' );
+
+			if ( 'gatherpress_rsvp_guest_count' === $name_attr ) {
+				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+				$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
+				$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
+				$tag->set_attribute( 'max', intval( $max_guest_limit ) );
 			}
 		}
 
