@@ -43,7 +43,6 @@ const AnonymousRsvp = () => {
 
 	const updateAnonymousRsvp = useCallback(
 		( value ) => {
-			console.log( 'Updating anonymous RSVP:', value, typeof value );
 			// Save as boolean to match meta registration.
 			const meta = { gatherpress_enable_anonymous_rsvp: Boolean( value ) };
 

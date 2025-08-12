@@ -313,11 +313,6 @@ class Rsvp {
 		$attributes = $block['attrs'] ?? array();
 		$field_name = $attributes['fieldName'] ?? '';
 
-		// Only process RSVP-related form fields.
-		if ( ! in_array( $field_name, array( 'gatherpress_rsvp_guest_count', 'gatherpress_rsvp_anonymous' ), true ) ) {
-			return $block_content;
-		}
-
 		// Handle guest count field.
 		if ( 'gatherpress_rsvp_guest_count' === $field_name ) {
 			$max_guest_limit = get_post_meta( get_the_ID(), 'gatherpress_max_guest_limit', true );
@@ -369,7 +364,7 @@ class Rsvp {
 			return $tag->get_updated_html();
 		}
 
-		// Fallback - should not reach here based on the field name check above.
+		// Return unmodified content for non-RSVP form fields.
 		return $block_content;
 	}
 }
