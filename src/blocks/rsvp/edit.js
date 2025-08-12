@@ -57,6 +57,64 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		[ clientId ],
 	);
 
+	// Get max attendance limit from post meta to control guest count field visibility.
+	const maxAttendanceLimit = useSelect(
+		( select ) =>
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+				?.gatherpress_max_guest_limit,
+		[],
+	);
+
+	/**
+	 * Apply conditional visibility class to guest count form fields.
+	 *
+	 * @param {Array} blocks Array of blocks to process.
+	 * @return {Array} Processed blocks with conditional classes applied.
+	 */
+	const applyGuestCountVisibility = useCallback( ( blocks ) => {
+		return blocks.map( ( block ) => {
+			// Check if this is a form-field block with guest count field name.
+			if (
+				block.name === 'gatherpress/form-field' &&
+				block.attributes?.fieldName === 'gatherpress_rsvp_guest_count'
+			) {
+				// Apply or remove the visibility class based on max attendance limit.
+				const shouldHide = 0 === maxAttendanceLimit;
+				const currentClassName = block.attributes?.className || '';
+				const hasHiddenClass = currentClassName.includes( 'gatherpress--is-not-visible' );
+
+				let newClassName = currentClassName;
+				if ( shouldHide && ! hasHiddenClass ) {
+					newClassName = currentClassName
+						? `${ currentClassName } gatherpress--is-not-visible`
+						: 'gatherpress--is-not-visible';
+				} else if ( ! shouldHide && hasHiddenClass ) {
+					newClassName = currentClassName
+						.replace( /\s*gatherpress--is-not-visible\s*/g, ' ' )
+						.trim();
+				}
+
+				return {
+					...block,
+					attributes: {
+						...block.attributes,
+						className: newClassName,
+					},
+				};
+			}
+
+			// Recursively process inner blocks.
+			if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
+				return {
+					...block,
+					innerBlocks: applyGuestCountVisibility( block.innerBlocks ),
+				};
+			}
+
+			return block;
+		} );
+	}, [ maxAttendanceLimit ] );
+
 	// Save the provided inner blocks to the serializedInnerBlocks attribute
 	const saveInnerBlocks = useCallback(
 		( state, newState, blocks ) => {
@@ -144,6 +202,19 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			hydrateInnerBlocks();
 		}, 0 );
 	}, [ serializedInnerBlocks, setAttributes, selectedStatus ] );
+
+	// Apply guest count visibility when max attendance limit changes.
+	useEffect( () => {
+		if ( innerBlocks && innerBlocks.length > 0 ) {
+			const updatedBlocks = applyGuestCountVisibility( innerBlocks );
+
+			// Only update if there are actual changes.
+			const hasChanges = JSON.stringify( updatedBlocks ) !== JSON.stringify( innerBlocks );
+			if ( hasChanges ) {
+				replaceInnerBlocks( clientId, updatedBlocks );
+			}
+		}
+	}, [ maxAttendanceLimit, clientId, replaceInnerBlocks, applyGuestCountVisibility, innerBlocks ] );
 
 	return (
 		<>

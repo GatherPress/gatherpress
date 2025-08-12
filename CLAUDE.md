@@ -164,3 +164,13 @@ Based on WordPress Coding Standards (WPCS), always ensure:
 - **Type handling**: WordPress functions may return multiple types; handle all cases with proper type checking
     - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
     - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
+
+### JavaScript Coding Standards
+
+When working with JavaScript code:
+
+- **Inline comments**: All inline comments must end with proper punctuation (periods)
+    - ✅ Good: `// Check if this is a form-field block with guest count field name.`
+    - ❌ Bad: `// Check if this is a form-field block with guest count field name`
+- **Comment consistency**: Apply the same punctuation standards across PHP and JavaScript for consistency
+- **Block comments**: Multi-line JSDoc comments should follow proper formatting with periods in descriptions
