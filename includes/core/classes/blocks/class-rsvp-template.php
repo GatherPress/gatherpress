@@ -122,7 +122,6 @@ class Rsvp_Template {
 	public function generate_rsvp_template_block( string $block_content, array $block, WP_Block $instance ): string {
 		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
-		$tag     = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( ! $event->rsvp ) {
 			return $block_content;

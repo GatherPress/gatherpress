@@ -14,5 +14,5 @@ import { select } from '@wordpress/data';
  * @return {boolean} True if the current post type is a venue; false otherwise.
  */
 export function isVenuePostType() {
-	return 'gatherpress_venue' === select('core/editor')?.getCurrentPostType();
+	return 'gatherpress_venue' === select( 'core/editor' )?.getCurrentPostType();
 }

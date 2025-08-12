@@ -26,38 +26,38 @@ import { Listener } from '../helpers/broadcasting';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpResponseCard = ({ postId, value, limit, responses = [] }) => {
-	const [rsvpResponse, setRsvpResponse] = useState(responses);
+const RsvpResponseCard = ( { postId, value, limit, responses = [] } ) => {
+	const [ rsvpResponse, setRsvpResponse ] = useState( responses );
 
-	Listener({ setRsvpResponse }, postId);
+	Listener( { setRsvpResponse }, postId );
 
 	let renderedItems = '';
 
 	if (
 		'object' === typeof rsvpResponse &&
-		'undefined' !== typeof rsvpResponse[value]
+		'undefined' !== typeof rsvpResponse[ value ]
 	) {
-		responses = [...rsvpResponse[value].records];
+		responses = [ ...rsvpResponse[ value ].records ];
 
-		if (limit) {
-			responses = responses.splice(0, limit);
+		if ( limit ) {
+			responses = responses.splice( 0, limit );
 		}
 
-		renderedItems = responses.map((response, index) => {
+		renderedItems = responses.map( ( response, index ) => {
 			const { name, photo } = response;
 
 			return (
 				<figure
-					key={index}
+					key={ index }
 					className="gatherpress-rsvp-response__member-avatar"
 				>
-					<img alt={name} title={name} src={photo} />
+					<img alt={ name } title={ name } src={ photo } />
 				</figure>
 			);
-		});
+		} );
 	}
 
-	return <>{renderedItems}</>;
+	return <>{ renderedItems }</>;
 };
 
 export default RsvpResponseCard;

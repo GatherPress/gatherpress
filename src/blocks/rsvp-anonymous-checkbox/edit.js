@@ -20,40 +20,40 @@ import { useSelect } from '@wordpress/data';
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
-const Edit = ({ attributes, setAttributes }) => {
+const Edit = ( { attributes, setAttributes } ) => {
 	const { label } = attributes;
 
 	const enableAnonymousRsvp = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
+		( select ) =>
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 				?.gatherpress_enable_anonymous_rsvp,
-		[]
+		[],
 	);
 
 	// Add the `gatherpress--is-not-visible` class conditionally via `useBlockProps`.
-	const blockProps = useBlockProps({
+	const blockProps = useBlockProps( {
 		className:
 			1 !== enableAnonymousRsvp ? 'gatherpress--is-not-visible' : '',
-	});
+	} );
 
 	return (
-		<p {...blockProps}>
+		<p { ...blockProps }>
 			<input
 				type="checkbox"
-				aria-label={label || __('Anonymous Checkbox', 'gatherpress')}
-				disabled={true}
+				aria-label={ label || __( 'Anonymous Checkbox', 'gatherpress' ) }
+				disabled={ true }
 			/>
 			<RichText
 				tagName="label"
-				value={label}
-				onChange={(newLabel) => setAttributes({ label: newLabel })}
-				placeholder={__('Enter label…', 'gatherpress')}
-				aria-label={__(
+				value={ label }
+				onChange={ ( newLabel ) => setAttributes( { label: newLabel } ) }
+				placeholder={ __( 'Enter label…', 'gatherpress' ) }
+				aria-label={ __(
 					'Editable label for anonymous checkbox',
-					'gatherpress'
-				)}
-				allowedFormats={['core/bold', 'core/italic']}
-				multiline={false}
+					'gatherpress',
+				) }
+				allowedFormats={ [ 'core/bold', 'core/italic' ] }
+				multiline={ false }
 			/>
 		</p>
 	);

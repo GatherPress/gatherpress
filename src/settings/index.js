@@ -23,19 +23,19 @@ import { urlRewritePreview } from '../helpers/urlrewrite';
 
 // Select all elements with the attribute 'data-gatherpress_component_name' set to 'autocomplete'.
 const autocompleteContainers = document.querySelectorAll(
-	`[data-gatherpress_component_name="autocomplete"]`
+	`[data-gatherpress_component_name="autocomplete"]`,
 );
 
 // Iterate through each matched element and initialize Autocomplete component.
-for (let i = 0; i < autocompleteContainers.length; i++) {
+for ( let i = 0; i < autocompleteContainers.length; i++ ) {
 	// Parse attributes from the 'data-gatherpress_component_attrs' attribute.
 	const attrs = JSON.parse(
-		autocompleteContainers[i].dataset.gatherpress_component_attrs
+		autocompleteContainers[ i ].dataset.gatherpress_component_attrs,
 	);
 
 	// Create a root element and render the Autocomplete component with the parsed attributes.
-	createRoot(autocompleteContainers[i]).render(
-		<Autocomplete attrs={attrs} />
+	createRoot( autocompleteContainers[ i ] ).render(
+		<Autocomplete attrs={ attrs } />,
 	);
 }
 

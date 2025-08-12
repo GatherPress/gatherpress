@@ -34,13 +34,13 @@ const VenueSettings = () => {
 		isVenuePostType() && (
 			<PluginDocumentSettingPanel
 				name="gatherpress-venue-settings"
-				title={__('Venue settings', 'gatherpress')}
+				title={ __( 'Venue settings', 'gatherpress' ) }
 				className="gatherpress-venue-settings"
 			>
-				{/* Extendable entry point for "Venue Settings" panel. */}
+				{ /* Extendable entry point for "Venue Settings" panel. */ }
 				<VenuePluginDocumentSettings.Slot />
 
-				<VStack spacing={6}>
+				<VStack spacing={ 6 }>
 					<VenueInformationPanel />
 				</VStack>
 			</PluginDocumentSettingPanel>
@@ -57,13 +57,13 @@ const VenueSettings = () => {
  *
  * @return {void}
  */
-registerPlugin('gatherpress-venue-settings', {
+registerPlugin( 'gatherpress-venue-settings', {
 	render: VenueSettings,
-});
+} );
 
-registerPlugin('gatherpress-venue-settings-at-events', {
+registerPlugin( 'gatherpress-venue-settings-at-events', {
 	render: VenuePluginFill,
-});
+} );
 
 /**
  * Toggle Venue Settings Panel
@@ -77,21 +77,21 @@ registerPlugin('gatherpress-venue-settings-at-events', {
  *
  * @return {void}
  */
-domReady(() => {
-	const selectEditPost = select('core/edit-post');
-	const dispatchEditor = dispatch('core/editor');
+domReady( () => {
+	const selectEditPost = select( 'core/edit-post' );
+	const dispatchEditor = dispatch( 'core/editor' );
 
-	if (!selectEditPost || !dispatchEditor) {
+	if ( ! selectEditPost || ! dispatchEditor ) {
 		return;
 	}
 
 	const isVenuePanelOpened = selectEditPost.isEditorPanelOpened(
-		'gatherpress-venue-settings/gatherpress-venue-settings'
+		'gatherpress-venue-settings/gatherpress-venue-settings',
 	);
 
-	if (!isVenuePanelOpened) {
+	if ( ! isVenuePanelOpened ) {
 		dispatchEditor.toggleEditorPanelOpened(
-			'gatherpress-venue-settings/gatherpress-venue-settings'
+			'gatherpress-venue-settings/gatherpress-venue-settings',
 		);
 	}
-});
+} );

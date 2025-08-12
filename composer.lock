@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a0329d7079caf0254604e8149663aa90",
+    "content-hash": "409c24a6fd3efc83a3c63a8422833903",
     "packages": [
         {
             "name": "hamcrest/hamcrest-php",
@@ -176,6 +176,58 @@
         }
     ],
     "packages-dev": [
+        {
+            "name": "akirk/extract-wp-hooks",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/akirk/extract-wp-hooks.git",
+                "reference": "7a764756fd155c6078d1d74b4f133d4d6e8d40be"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/akirk/extract-wp-hooks/zipball/7a764756fd155c6078d1d74b4f133d4d6e8d40be",
+                "reference": "7a764756fd155c6078d1d74b4f133d4d6e8d40be",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.0|^10.0|^11.0",
+                "wp-coding-standards/wpcs": "^3.0"
+            },
+            "default-branch": true,
+            "bin": [
+                "extract-wp-hooks.php"
+            ],
+            "type": "library",
+            "scripts": {
+                "test": [
+                    "phpunit tests/"
+                ],
+                "phpcs": [
+                    "phpcs"
+                ],
+                "phpcbf": [
+                    "phpcbf"
+                ]
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Alex Kirk"
+                }
+            ],
+            "description": "Extract available WordPress hooks for a Github Wiki",
+            "support": {
+                "source": "https://github.com/akirk/extract-wp-hooks/tree/main",
+                "issues": "https://github.com/akirk/extract-wp-hooks/issues"
+            },
+            "time": "2025-08-02T17:49:42+00:00"
+        },
         {
             "name": "dealerdirect/phpcodesniffer-composer-installer",
             "version": "v1.0.0",
@@ -2783,7 +2835,8 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "pmc/unit-test": 20
+        "pmc/unit-test": 20,
+        "akirk/extract-wp-hooks": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

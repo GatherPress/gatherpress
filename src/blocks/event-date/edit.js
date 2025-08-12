@@ -42,33 +42,33 @@ import { isEventPostType } from '../../helpers/event';
  * @param {string} timezone
  * @return {string} Displayed date.
  */
-const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
+const displayDateTime = ( dateTimeStart, dateTimeEnd, timezone ) => {
 	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.dateFormat')
+		getFromGlobal( 'settings.dateFormat' ),
 	);
 	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.timeFormat')
+		getFromGlobal( 'settings.timeFormat' ),
 	);
-	const timezoneFormat = getFromGlobal('settings.showTimezone') ? 'z' : '';
+	const timezoneFormat = getFromGlobal( 'settings.showTimezone' ) ? 'z' : '';
 	const startFormat = dateFormat + ' ' + timeFormat;
 
-	timezone = getTimezone(timezone);
+	timezone = getTimezone( timezone );
 
 	let endFormat = dateFormat + ' ' + timeFormat + ' ' + timezoneFormat;
 
 	if (
-		moment.tz(dateTimeStart, timezone).format(dateFormat) ===
-		moment.tz(dateTimeEnd, timezone).format(dateFormat)
+		moment.tz( dateTimeStart, timezone ).format( dateFormat ) ===
+		moment.tz( dateTimeEnd, timezone ).format( dateFormat )
 	) {
 		endFormat = timeFormat + ' ' + timezoneFormat;
 	}
 
 	return sprintf(
 		/* translators: %1$s: datetime start, %2$s: datetime end, %3$s timezone. */
-		__('%1$s to %2$s %3$s', 'gatherpress'),
-		moment.tz(dateTimeStart, timezone).format(startFormat),
-		moment.tz(dateTimeEnd, timezone).format(endFormat),
-		getUtcOffset(timezone)
+		__( '%1$s to %2$s %3$s', 'gatherpress' ),
+		moment.tz( dateTimeStart, timezone ).format( startFormat ),
+		moment.tz( dateTimeEnd, timezone ).format( endFormat ),
+		getUtcOffset( timezone ),
 	);
 };
 
@@ -96,18 +96,18 @@ const displayDateTime = (dateTimeStart, dateTimeEnd, timezone) => {
  * @see {@link useBlockProps} - Custom hook for block props.
  * @see {@link displayDateTime} - Function for formatting and displaying date and time.
  */
-const Edit = ({ attributes, setAttributes, context }) => {
+const Edit = ( { attributes, setAttributes, context } ) => {
 	const { textAlign } = attributes;
-	const blockProps = useBlockProps({
-		className: clsx({
-			[`has-text-align-${textAlign}`]: textAlign,
-		}),
-	});
+	const blockProps = useBlockProps( {
+		className: clsx( {
+			[ `has-text-align-${ textAlign }` ]: textAlign,
+		} ),
+	} );
 	const postId = attributes?.postId ?? context?.postId ?? null;
 
 	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
-		(select) => {
-			if (!postId) {
+		( select ) => {
+			if ( ! postId ) {
 				return {
 					dateTimeStart: undefined,
 					dateTimeEnd: undefined,
@@ -115,22 +115,22 @@ const Edit = ({ attributes, setAttributes, context }) => {
 				};
 			}
 
-			if (isEventPostType()) {
+			if ( isEventPostType() ) {
 				return {
 					dateTimeStart: select(
-						'gatherpress/datetime'
+						'gatherpress/datetime',
 					).getDateTimeStart(),
 					dateTimeEnd: select(
-						'gatherpress/datetime'
+						'gatherpress/datetime',
 					).getDateTimeEnd(),
-					timezone: select('gatherpress/datetime').getTimezone(),
+					timezone: select( 'gatherpress/datetime' ).getTimezone(),
 				};
 			}
 
-			const meta = select('core').getEntityRecord(
+			const meta = select( 'core' ).getEntityRecord(
 				'postType',
 				'gatherpress_event',
-				postId
+				postId,
 			)?.meta;
 
 			return {
@@ -139,37 +139,37 @@ const Edit = ({ attributes, setAttributes, context }) => {
 				timezone: meta?.gatherpress_timezone,
 			};
 		},
-		[postId]
+		[ postId ],
 	);
 
-	if (postId && (!dateTimeStart || !dateTimeEnd || !timezone)) {
+	if ( postId && ( ! dateTimeStart || ! dateTimeEnd || ! timezone ) ) {
 		return (
-			<div {...blockProps}>
+			<div { ...blockProps }>
 				<Spinner />
 			</div>
 		);
 	}
 
 	return (
-		<div {...blockProps}>
+		<div { ...blockProps }>
 			<BlockControls>
 				<AlignmentToolbar
-					value={textAlign}
-					onChange={(newAlign) =>
-						setAttributes({ textAlign: newAlign })
+					value={ textAlign }
+					onChange={ ( newAlign ) =>
+						setAttributes( { textAlign: newAlign } )
 					}
 				/>
 			</BlockControls>
-			{displayDateTime(dateTimeStart, dateTimeEnd, timezone)}
-			{isEventPostType() && (
+			{ displayDateTime( dateTimeStart, dateTimeEnd, timezone ) }
+			{ isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
-						<VStack spacing={4}>
+						<VStack spacing={ 4 }>
 							<DateTimeRange />
 						</VStack>
 					</PanelBody>
 				</InspectorControls>
-			)}
+			) }
 		</div>
 	);
 };

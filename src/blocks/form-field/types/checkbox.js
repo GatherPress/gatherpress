@@ -24,12 +24,12 @@ import {
  * @param {Function} props.generateFieldName - Function to generate field name from label.
  * @return {JSX.Element} The checkbox field component.
  */
-export default function CheckboxField({
+export default function CheckboxField( {
 	attributes,
 	setAttributes,
 	blockProps,
 	generateFieldName,
-}) {
+} ) {
 	const {
 		fieldType,
 		fieldName,
@@ -41,61 +41,61 @@ export default function CheckboxField({
 	} = attributes;
 
 	// Handle label blur to auto-generate field name.
-	const handleLabelBlur = (labelValue) => {
-		if (!fieldName && labelValue) {
-			const generatedFieldName = generateFieldName(labelValue);
-			if (generatedFieldName) {
-				setAttributes({ fieldName: generatedFieldName });
+	const handleLabelBlur = ( labelValue ) => {
+		if ( ! fieldName && labelValue ) {
+			const generatedFieldName = generateFieldName( labelValue );
+			if ( generatedFieldName ) {
+				setAttributes( { fieldName: generatedFieldName } );
 			}
 		}
 	};
 
 	return (
 		<div
-			{...blockProps}
-			className={getWrapperClasses(fieldType, blockProps)}
+			{ ...blockProps }
+			className={ getWrapperClasses( fieldType, blockProps ) }
 		>
 			<>
 				<input
-					style={getInputStyles(fieldType, attributes)}
+					style={ getInputStyles( fieldType, attributes ) }
 					type="checkbox"
-					name={fieldName}
-					required={required}
-					checked={!!fieldValue}
-					disabled={true}
-					tabIndex={-1}
+					name={ fieldName }
+					required={ required }
+					checked={ !! fieldValue }
+					disabled={ true }
+					tabIndex={ -1 }
 					autoComplete="off"
 				/>
 				<div
 					className="gatherpress-label-wrapper"
-					style={getLabelWrapperStyles(attributes)}
+					style={ getLabelWrapperStyles( attributes ) }
 				>
 					<RichText
 						tagName="label"
-						placeholder={__('Add checkbox label…', 'gatherpress')}
-						value={label}
-						onChange={(value) => setAttributes({ label: value })}
-						onBlur={() => handleLabelBlur(label)}
-						allowedFormats={[]}
-						style={getLabelStyles(attributes)}
+						placeholder={ __( 'Add checkbox label…', 'gatherpress' ) }
+						value={ label }
+						onChange={ ( value ) => setAttributes( { label: value } ) }
+						onBlur={ () => handleLabelBlur( label ) }
+						allowedFormats={ [] }
+						style={ getLabelStyles( attributes ) }
 					/>
-					{required && (
+					{ required && (
 						<RichText
 							tagName="span"
 							className="gatherpress-label-required"
-							placeholder={__('(required)', 'gatherpress')}
-							value={requiredText}
-							onChange={(value) =>
-								setAttributes({ requiredText: value })
+							placeholder={ __( '(required)', 'gatherpress' ) }
+							value={ requiredText }
+							onChange={ ( value ) =>
+								setAttributes( { requiredText: value } )
 							}
-							allowedFormats={[]}
-							style={{
-								...(requiredTextColor && {
+							allowedFormats={ [] }
+							style={ {
+								...( requiredTextColor && {
 									color: requiredTextColor,
-								}),
-							}}
+								} ),
+							} }
 						/>
-					)}
+					) }
 				</div>
 			</>
 		</div>

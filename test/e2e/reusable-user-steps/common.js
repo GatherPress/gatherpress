@@ -9,35 +9,35 @@
  * @param {*} root0.username
  * @param {*} root0.password
  */
-const login = async ({ page, username = 'admin', password = 'password' }) => {
-	page.goto('/wp-login.php', {
+const login = async ( { page, username = 'admin', password = 'password' } ) => {
+	page.goto( '/wp-login.php', {
 		timeout: 40000,
-	});
+	} );
 
-	await page.getByLabel('Username or Email Address').isVisible();
-	await page.getByLabel('Username or Email Address').fill(username);
+	await page.getByLabel( 'Username or Email Address' ).isVisible();
+	await page.getByLabel( 'Username or Email Address' ).fill( username );
 
-	await page.getByLabel('Password', { exact: true }).isVisible();
-	await page.getByLabel('Password', { exact: true }).fill(password);
+	await page.getByLabel( 'Password', { exact: true } ).isVisible();
+	await page.getByLabel( 'Password', { exact: true } ).fill( password );
 
-	await page.getByRole('button', { name: 'Log In' }).click();
+	await page.getByRole( 'button', { name: 'Log In' } ).click();
 
 	await page
-		.getByRole('heading', { name: 'Dashboard', level: 1 })
+		.getByRole( 'heading', { name: 'Dashboard', level: 1 } )
 		.isVisible();
 };
 
-const addNewVenue = async ({ page }) => {
-	await page.getByRole('link', { name: 'Events', exact: true }).click();
-	await page.getByRole('link', { name: 'Venues' }).click();
-	await page.getByRole('link', { name: 'Add New Venue' }).click();
+const addNewVenue = async ( { page } ) => {
+	await page.getByRole( 'link', { name: 'Events', exact: true } ).click();
+	await page.getByRole( 'link', { name: 'Venues' } ).click();
+	await page.getByRole( 'link', { name: 'Add New Venue' } ).click();
 };
 
-const addNewEvent = async ({ page }) => {
-	await page.getByRole('link', { name: 'Events', exact: true }).click();
+const addNewEvent = async ( { page } ) => {
+	await page.getByRole( 'link', { name: 'Events', exact: true } ).click();
 	await page
-		.locator('#wpbody-content')
-		.getByRole('link', { name: 'Add New Event' })
+		.locator( '#wpbody-content' )
+		.getByRole( 'link', { name: 'Add New Event' } )
 		.click();
 };
 

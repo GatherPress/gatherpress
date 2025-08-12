@@ -21,7 +21,7 @@ import './style.scss';
  *
  * @return {void}
  */
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit,
 	save: () => null,
-});
+} );

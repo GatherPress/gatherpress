@@ -9,18 +9,18 @@
  * @param {*} root0.username
  * @param {*} root0.password
  */
-const loginUser = async ({
+const loginUser = async ( {
 	page,
 	username,
 	password = process.env.WP_ADMIN_PASSWORD,
-}) => {
-	await page.getByLabel('Username or Email Address').isVisible();
-	await page.getByLabel('Username or Email Address').fill(username);
+} ) => {
+	await page.getByLabel( 'Username or Email Address' ).isVisible();
+	await page.getByLabel( 'Username or Email Address' ).fill( username );
 
-	await page.getByLabel('Password', { exact: true }).isVisible();
-	await page.getByLabel('Password', { exact: true }).fill(password);
+	await page.getByLabel( 'Password', { exact: true } ).isVisible();
+	await page.getByLabel( 'Password', { exact: true } ).fill( password );
 
-	await page.getByRole('button', { name: 'Log In' }).click();
+	await page.getByRole( 'button', { name: 'Log In' } ).click();
 };
 
 module.exports = { loginUser };
