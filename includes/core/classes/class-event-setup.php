@@ -66,6 +66,7 @@ class Event_Setup {
 			10,
 			2
 		);
+		add_action( 'load-edit.php', array( $this, 'default_sort' ) );
 
 		add_filter( 'redirect_canonical', array( $this, 'disable_ics_canonical_redirect' ), 10, 2 );
 		add_filter(
@@ -470,6 +471,32 @@ class Event_Setup {
 		);
 
 		return array_slice( $columns, 0, $placement, true ) + $insert + array_slice( $columns, $placement, null, true );
+	}
+
+	/**
+	 * Sets the default sort field and sort order on the event post type admin screen, to order by event date.
+	 *
+	 * @author John Blackbourn @johnbillion
+	 * @source https://github.com/johnbillion/extended-cpts/blob/20b7e9773b60f7301cd59ee520affa0ff63f90e6/src/PostTypeAdmin.php#L160-L178
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function default_sort(): void {
+		$screen_id = sprintf( 'edit-%s', Event::POST_TYPE );
+		if ( ! function_exists( 'get_current_screen' ) || get_current_screen()->id !== $screen_id ) {
+			return;
+		}
+
+		// If the screen is already ordered, bail out.
+		if ( isset( $_GET['orderby'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		// Define the event date as default ORDERBY and ORDER ascending.
+		$_GET['orderby'] = 'datetime';
+		$_GET['order']   = 'asc';
 	}
 
 	/**
