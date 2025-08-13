@@ -78,6 +78,12 @@ class Test_Event_Setup extends Base {
 				'callback' => array( $instance, 'custom_columns' ),
 			),
 			array(
+				'type'     => 'action',
+				'name'     => 'load-edit.php',
+				'priority' => 10,
+				'callback' => array( $instance, 'default_sort' ),
+			),
+			array(
 				'type'     => 'filter',
 				'name'     => 'redirect_canonical',
 				'priority' => 10,
