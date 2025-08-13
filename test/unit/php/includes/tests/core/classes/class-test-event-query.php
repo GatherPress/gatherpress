@@ -205,6 +205,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
+		$query->set( 'post_type', 'gatherpress_event' );
 		$query->set( 'gatherpress_events_query', 'upcoming' );
 		$instance->prepare_event_query_before_execution( $query );
 
@@ -232,6 +233,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
+		$query->set( 'post_type', 'gatherpress_event' );
 		$query->set( 'gatherpress_events_query', 'past' );
 		$instance->prepare_event_query_before_execution( $query );
 
