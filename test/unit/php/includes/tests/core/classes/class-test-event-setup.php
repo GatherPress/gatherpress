@@ -97,6 +97,18 @@ class Test_Event_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => sprintf( 'views_edit-%s', Event::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'views_edit' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'query_vars',
+				'priority' => 10,
+				'callback' => array( $instance, 'query_vars' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => 'get_the_date',
 				'priority' => 10,
 				'callback' => array( $instance, 'get_the_event_date' ),
