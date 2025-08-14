@@ -530,7 +530,7 @@ class Event_Setup {
 						'gatherpress_events_query' => $key,
 						'post_type'                => Event::POST_TYPE,
 					),
-					$nounce_url
+					$nonce_url
 				),
 				$key === $current_view ? ' class="current" aria-current="page"' : '',
 				$value
