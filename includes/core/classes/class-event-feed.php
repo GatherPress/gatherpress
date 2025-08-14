@@ -191,10 +191,8 @@ class Event_Feed {
 	 * @return string The customized content.
 	 */
 	public function get_default_event_content( string $content ): string {
-		global $post;
-
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type( $post ) ) {
+		if ( Event::POST_TYPE !== get_post_type() ) {
 			return $content;
 		}
 
@@ -241,10 +239,8 @@ class Event_Feed {
 	 * @return string The customized excerpt.
 	 */
 	public function apply_event_excerpt( string $excerpt ): string {
-		global $post;
-
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type( $post ) ) {
+		if ( Event::POST_TYPE !== get_post_type() ) {
 			return $excerpt;
 		}
 
@@ -287,7 +283,7 @@ class Event_Feed {
 	public function apply_event_content( string $content ): string {
 
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type( get_the_ID() ) ) {
+		if ( Event::POST_TYPE !== get_post_type() ) {
 			return $content;
 		}
 
