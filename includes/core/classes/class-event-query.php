@@ -320,7 +320,8 @@ class Event_Query {
 		 * This sanity check was added after it's been reported that some admin screens may not have $wp_query set.
 		 * @see https://wordpress.org/support/topic/gatherpress-has-critical-error-when-i-access-wpforms-payment-settings/
 		 */
-		if ( ! function_exists( 'get_current_screen' ) || 'edit-gatherpress_event' !== get_current_screen()->id ) {
+		$screen_id = sprintf( 'edit-%s', Event::POST_TYPE );
+		if ( ! function_exists( 'get_current_screen' ) || get_current_screen()->id !== $screen_id ) {
 			return $query_pieces;
 		}
 
