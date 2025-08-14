@@ -513,14 +513,14 @@ class Event_Setup {
 	public function views_edit( array $view_links ): array {
 		$nonce           = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
 		$is_events_query = isset( $_REQUEST['gatherpress_events_query'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['gatherpress_events_query'] ) ) : '';
-		$nonce_action    = sprintf('%ss_views_query', Event::POST_TYPE );
+		$nonce_action    = sprintf( '%ss_views_query', Event::POST_TYPE );
 		$current_view    = ( $nonce && wp_verify_nonce( $nonce, $nonce_action ) && $is_events_query ) ? $is_events_query : '';
 		$placement       = 1;
 		$inserts         = array(
 			'upcoming' => __( 'Upcoming', 'gatherpress' ),
 			'past'     => __( 'Past', 'gatherpress' ),
 		);
-		$nonce_url      = wp_nonce_url( admin_url( 'edit.php' ), $nonce_action );
+		$nonce_url       = wp_nonce_url( admin_url( 'edit.php' ), $nonce_action );
 
 		foreach ( $inserts as $key => $value ) {
 			$inserts[ $key ] = sprintf(
