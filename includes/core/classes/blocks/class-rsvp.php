@@ -66,7 +66,8 @@ class Rsvp {
 		add_filter( $render_block_hook, array( $this, 'apply_rsvp_button_interactivity' ) );
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
-		add_filter( $render_block_hook, array( $this, 'apply_guest_count_input_interactivity' ) );
+		// Priority 9 ensures this runs before transform_block_content to properly register form field hooks.
+		add_filter( $render_block_hook, array( $this, 'apply_guest_count_input_interactivity' ), 9 );
 	}
 
 	/**

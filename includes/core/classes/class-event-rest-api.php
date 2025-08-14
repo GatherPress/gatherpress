@@ -160,13 +160,8 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => static function () {
-					// Force WordPress to authenticate the user.
-					// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-					$user_id = apply_filters( 'determine_current_user', false );
-
-					if ( $user_id ) {
-						wp_set_current_user( $user_id );
-					}
+					// Ensure proper user authentication for nonce generation.
+					Utility::ensure_user_authentication();
 
 					$response = array(
 						'nonce' => wp_create_nonce( 'wp_rest' ),

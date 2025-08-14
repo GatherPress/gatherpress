@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_Block;
 use WP_Block_Type_Registry;
 use WP_HTML_Tag_Processor;
@@ -176,6 +177,11 @@ class Rsvp_Template {
 		// Remove the filter to prevent an infinite loop caused by the filter being called within WP_Block.
 		remove_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ) );
 
+		// Ensure proper user authentication for anonymity checks.
+		Utility::ensure_user_authentication();
+
+		// Apply anonymization if the RSVP is marked as anonymous AND the current user
+		// doesn't have edit_posts capability. Users with edit_posts can see all real names.
 		if (
 			intval( get_comment_meta( $response_id, 'gatherpress_rsvp_anonymous', true ) ) &&
 			! current_user_can( 'edit_posts' )

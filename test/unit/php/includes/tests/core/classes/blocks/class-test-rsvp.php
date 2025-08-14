@@ -56,7 +56,7 @@ class Test_Rsvp extends Base {
 			array(
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
-				'priority' => 10,
+				'priority' => 9,
 				'callback' => array( $instance, 'apply_guest_count_input_interactivity' ),
 			),
 		);

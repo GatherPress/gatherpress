@@ -296,4 +296,32 @@ class Utility {
 
 		return $url;
 	}
+
+	/**
+	 * Ensures proper user authentication for AJAX/REST API contexts.
+	 *
+	 * When WordPress processes AJAX or REST API requests, the user context may not
+	 * be properly established, causing functions like current_user_can() to behave
+	 * incorrectly. This method forces WordPress to determine and set the current user,
+	 * ensuring consistent authentication behavior between server-side rendering and
+	 * dynamic requests.
+	 *
+	 * This is particularly important after the introduction of dynamic nonce generation,
+	 * which changed how user authentication flows through the application.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return int|false The user ID if authentication was successful, false otherwise.
+	 */
+	public static function ensure_user_authentication() {
+		// Force WordPress to authenticate the user.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$user_id = apply_filters( 'determine_current_user', false );
+
+		if ( $user_id ) {
+			wp_set_current_user( $user_id );
+		}
+
+		return $user_id;
+	}
 }
