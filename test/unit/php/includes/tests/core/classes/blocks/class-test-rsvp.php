@@ -527,8 +527,7 @@ class Test_Rsvp extends Base {
 		// Add post meta.
 		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
 
-		// Set the global post context.
-		$GLOBALS['post'] = get_post( $post_id );
+		// Set the WordPress global query context by visiting the post.
 		$this->go_to( get_permalink( $post_id ) );
 
 		$block = array(
@@ -583,8 +582,7 @@ class Test_Rsvp extends Base {
 		// Add post meta.
 		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 0 );
 
-		// Set the global post context.
-		$GLOBALS['post'] = get_post( $post_id );
+		// Set the WordPress global query context by visiting the post.
 		$this->go_to( get_permalink( $post_id ) );
 
 		$block = array(
@@ -624,8 +622,7 @@ class Test_Rsvp extends Base {
 		// Add post meta.
 		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
 
-		// Set the global post context.
-		$GLOBALS['post'] = get_post( $post_id );
+		// Set the WordPress global query context by visiting the post.
 		$this->go_to( get_permalink( $post_id ) );
 
 		$block = array(
@@ -675,8 +672,7 @@ class Test_Rsvp extends Base {
 		// Add post meta.
 		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', false );
 
-		// Set the global post context.
-		$GLOBALS['post'] = get_post( $post_id );
+		// Set the WordPress global query context by visiting the post.
 		$this->go_to( get_permalink( $post_id ) );
 
 		$block = array(
@@ -770,8 +766,7 @@ class Test_Rsvp extends Base {
 		// Add post meta.
 		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 3 );
 
-		// Set the global post context.
-		$GLOBALS['post'] = get_post( $post_id );
+		// Set the WordPress global query context by visiting the post.
 		$this->go_to( get_permalink( $post_id ) );
 
 		$block = array(

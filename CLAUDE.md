@@ -165,6 +165,20 @@ Based on WordPress Coding Standards (WPCS), always ensure:
     - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
     - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
 
+### PHP Testing Guidelines
+
+When writing PHPUnit tests that need WordPress post context:
+
+- **Global variable override**: Never directly assign to `$GLOBALS['post']` - WordPress Coding Standards prohibit this
+    - ❌ Bad: `$GLOBALS['post'] = get_post( $post_id );`
+    - ✅ Good: `$this->go_to( get_permalink( $post_id ) );` (sets up proper WordPress query context)
+- **Post context setup**: Use `$this->go_to()` method to set up WordPress global query and post context
+    - This properly initializes `get_the_ID()`, `get_queried_object()`, and other WordPress globals
+    - Example: `$this->go_to( get_permalink( $post_id ) );` before calling methods that use `get_the_ID()`
+- **Meta data setup**: Use `add_post_meta()` instead of factory meta parameter for better test clarity
+    - ✅ Good: `add_post_meta( $post_id, 'meta_key', 'value' );`
+    - Works better with WordPress testing framework than factory meta arrays
+
 ### JavaScript Coding Standards
 
 When working with JavaScript code:
