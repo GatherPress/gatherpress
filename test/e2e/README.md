@@ -5,16 +5,19 @@ This directory contains end-to-end tests for GatherPress using Playwright. These
 ## Architecture
 
 ### Page Object Model (POM)
+
 - **pages/BasePage.js**: Common WordPress admin functionality
 - **pages/EventPage.js**: Event-specific page interactions
 - **pages/VenuePage.js**: Venue-specific page interactions (future)
 
 ### Test Data Management
+
 - **fixtures/TestDataFactory.js**: Consistent test data creation and cleanup
 - Automatic cleanup after each test
 - Unique identifiers to avoid conflicts
 
 ### Test Structure
+
 - **admin-tests/**: Tests for WordPress admin functionality
 - **frontend-tests/**: Tests for frontend user interactions
 - **api-tests/**: Tests for REST API endpoints (future)
@@ -22,6 +25,7 @@ This directory contains end-to-end tests for GatherPress using Playwright. These
 ## Best Practices Implemented
 
 ### ✅ Reliable Selectors
+
 ```javascript
 // Good: Semantic, stable selectors
 this.selectors = {
@@ -35,6 +39,7 @@ this.selectors = {
 ```
 
 ### ✅ Proper Error Handling
+
 ```javascript
 // Good: Clear error messages with context
 if (actualTitle !== title) {
@@ -46,6 +51,7 @@ throw new Error('Something went wrong');
 ```
 
 ### ✅ Robust Waiting Strategies
+
 ```javascript
 // Good: Wait for specific conditions
 await element.waitFor({ state: 'visible', timeout: 10000 });
@@ -55,6 +61,7 @@ await page.waitForTimeout(5000);
 ```
 
 ### ✅ Test Data Isolation
+
 ```javascript
 // Good: Unique test data
 const eventData = testData.createEventData({
@@ -66,6 +73,7 @@ const title = 'Test Event';  // Causes conflicts
 ```
 
 ### ✅ Comprehensive Cleanup
+
 ```javascript
 test.afterEach(async () => {
     // Cleanup all created test data
@@ -76,6 +84,7 @@ test.afterEach(async () => {
 ## Running Tests
 
 ### Local Development
+
 ```bash
 # Run all E2E tests
 npm run test:e2e
@@ -91,6 +100,7 @@ npm run test:e2e -- --debug
 ```
 
 ### With wp-env
+
 ```bash
 # Start WordPress environment
 npm run wp-env start
@@ -103,7 +113,9 @@ npm run wp-env stop
 ```
 
 ### CI/GitHub Actions
+
 Tests run automatically on:
+
 - Push to main/develop branches
 - Pull requests affecting E2E code
 - Uses single worker to avoid conflicts
@@ -112,6 +124,7 @@ Tests run automatically on:
 ## Debugging Test Failures
 
 ### 1. View Test Reports
+
 ```bash
 # Open HTML report
 npx playwright show-report
@@ -121,12 +134,15 @@ npx playwright show-trace test-results/.../trace.zip
 ```
 
 ### 2. Debug Screenshots
+
 Failed tests automatically capture:
+
 - Screenshots on failure
 - Video recordings on retry
 - Debug screenshots via `takeDebugScreenshot()`
 
 ### 3. Verbose Logging
+
 ```bash
 # Enable debug logging
 DEBUG=pw:api npm run test:e2e
@@ -148,6 +164,7 @@ PWDEBUG=1 npm run test:e2e
 ## Writing New Tests
 
 ### 1. Follow the Pattern
+
 ```javascript
 const { test, expect } = require('@playwright/test');
 const EventPage = require('../pages/EventPage');
@@ -181,9 +198,11 @@ test.describe('Feature Name', () => {
 ```
 
 ### 2. Add Selectors to Page Objects
+
 Never use raw selectors in tests. Add them to the appropriate Page Object.
 
 ### 3. Use Test Steps for Complex Tests
+
 ```javascript
 test('complex workflow', async () => {
     await test.step('Setup test data', async () => {
@@ -201,6 +220,7 @@ test('complex workflow', async () => {
 ```
 
 ### 4. Add Meaningful Test Names
+
 ```javascript
 // Good: Describes what and why
 test('should create online event when venue selector has online option');
@@ -212,6 +232,7 @@ test('test event creation');
 ## Migration from Old Tests
 
 ### Before (Problematic)
+
 ```javascript
 test.skip('the user should be able to publish an online event', async ({ page }) => {
     await login({ page, username: 'prashantbellad' });
@@ -221,6 +242,7 @@ test.skip('the user should be able to publish an online event', async ({ page })
 ```
 
 ### After (Robust)
+
 ```javascript
 test('should create and publish an online event', async () => {
     const eventData = testData.createEventData({ venueType: 'online' });
