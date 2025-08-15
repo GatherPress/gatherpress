@@ -133,7 +133,6 @@ class Event_Feed {
 	 * @return string The customized excerpt.
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
-
 		// Only apply to events.
 		if ( Event::POST_TYPE !== get_post_type() ) {
 			return $excerpt;
