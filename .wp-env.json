@@ -9,5 +9,8 @@
 	"config": {
 		"WP_DEBUG": true,
 		"WP_DEBUG_LOG": true
+	},
+	"mappings": {
+		"wp-content/plugins/gatherpress": "."
 	}
 }

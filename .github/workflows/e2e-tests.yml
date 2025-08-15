@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - develop
+      - fix-e2e-test-setup
   pull_request:
     paths:
     - '.github/workflows/e2e-tests.yml'

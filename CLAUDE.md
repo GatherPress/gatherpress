@@ -133,6 +133,11 @@ When working with this codebase:
 4. Test both PHP and JavaScript components
 5. Consider block editor compatibility when making changes
 
+### JavaScript/TypeScript Guidelines
+
+- **No console.log statements**: JavaScript linting will fail if `console.log()` statements are present in the code. For debugging purposes, use proper debugging tools or remove all console statements before committing.
+- **E2E Tests**: E2E tests should focus on testing GatherPress functionality rather than WordPress UI implementation details. Tests should be resilient to development environment JavaScript errors.
+
 ### PHP Coding Standards
 
 - **Use statements**: Always use `use` statements at the top of files for classes and functions instead of fully qualified namespace calls
