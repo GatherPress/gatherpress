@@ -518,7 +518,8 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_fields_guest_count_allowed(): void {
-		$post_id = $this->factory()->post->create(
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
@@ -537,7 +538,7 @@ class Test_Rsvp extends Base {
 		);
 
 		$block_content = '<input type="number" name="gatherpress_rsvp_guest_count" value="0" />';
-		$result        = Rsvp::handle_rsvp_form_fields( $block_content, $block );
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
@@ -573,7 +574,8 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_fields_guest_count_not_allowed(): void {
-		$post_id = $this->factory()->post->create(
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
@@ -592,7 +594,7 @@ class Test_Rsvp extends Base {
 		);
 
 		$block_content = '<input type="number" name="gatherpress_rsvp_guest_count" value="0" />';
-		$result        = Rsvp::handle_rsvp_form_fields( $block_content, $block );
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertSame(
 			'',
@@ -613,7 +615,8 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_fields_anonymous_enabled(): void {
-		$post_id = $this->factory()->post->create(
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
@@ -632,7 +635,7 @@ class Test_Rsvp extends Base {
 		);
 
 		$block_content = '<input type="checkbox" name="gatherpress_rsvp_anonymous" value="1" />';
-		$result        = Rsvp::handle_rsvp_form_fields( $block_content, $block );
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
@@ -663,7 +666,8 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_fields_anonymous_disabled(): void {
-		$post_id = $this->factory()->post->create(
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
@@ -682,7 +686,7 @@ class Test_Rsvp extends Base {
 		);
 
 		$block_content = '<input type="checkbox" name="gatherpress_rsvp_anonymous" value="1" />';
-		$result        = Rsvp::handle_rsvp_form_fields( $block_content, $block );
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertSame(
 			'',
@@ -703,14 +707,15 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_fields_non_rsvp_field(): void {
-		$block = array(
+		$instance = Rsvp::get_instance();
+		$block    = array(
 			'attrs' => array(
 				'fieldName' => 'some_other_field',
 			),
 		);
 
 		$block_content = '<input type="text" name="some_other_field" value="" />';
-		$result        = Rsvp::handle_rsvp_form_fields( $block_content, $block );
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertSame(
 			$block_content,
@@ -731,12 +736,13 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_fields_missing_field_name(): void {
-		$block = array(
+		$instance = Rsvp::get_instance();
+		$block    = array(
 			'attrs' => array(),
 		);
 
 		$block_content = '<input type="text" name="test_field" value="" />';
-		$result        = Rsvp::handle_rsvp_form_fields( $block_content, $block );
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertSame(
 			$block_content,
@@ -757,7 +763,8 @@ class Test_Rsvp extends Base {
 	 * @return void
 	 */
 	public function test_handle_rsvp_form_fields_guest_count_multiple_inputs(): void {
-		$post_id = $this->factory()->post->create(
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
@@ -776,7 +783,7 @@ class Test_Rsvp extends Base {
 		);
 
 		$block_content = '<div><input type="text" name="other_field" value="" /><input type="number" name="gatherpress_rsvp_guest_count" value="0" /></div>';
-		$result        = Rsvp::handle_rsvp_form_fields( $block_content, $block );
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		// Check that only the guest count input gets the attributes.
 		$this->assertStringContainsString(

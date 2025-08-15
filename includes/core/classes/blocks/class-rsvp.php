@@ -310,7 +310,7 @@ class Rsvp {
 	 * @param array  $block         The block data including attributes.
 	 * @return string The modified block content or empty string if field should be hidden.
 	 */
-	public static function handle_rsvp_form_fields( string $block_content, array $block ): string {
+	public function handle_rsvp_form_fields( string $block_content, array $block ): string {
 		$attributes = $block['attrs'] ?? array();
 		$field_name = $attributes['fieldName'] ?? '';
 

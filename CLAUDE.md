@@ -136,11 +136,20 @@ When working with this codebase:
 ### PHP Coding Standards
 
 - **Use statements**: Always use `use` statements at the top of files for classes and functions instead of fully qualified namespace calls
-    - ✅ Good: `use GatherPress\Core\Event;` then `new Event()`
-    - ❌ Bad: `new \GatherPress\Core\Event()`
-    - For functions: `use function GatherPress\Core\filter_input;` then `filter_input()`
+    - ✅ Good: `use GatherPress\Core\Event;` then `new Event( $post_id )`
+    - ❌ Bad: `new \GatherPress\Core\Event( $post_id )`
+    - For functions: `use function GatherPress\Core\filter_input;` then `filter_input( $value )`
 - **Namespace resolution**: When moving code between namespaces, ensure proper imports are updated
 - **Method organization**: Place related methods in logically grouped classes (e.g., form-related methods in `Rsvp_Form`)
+- **Singleton pattern**: Many GatherPress classes use the Singleton trait - check if a class has `use Singleton;`
+    - **Singleton classes** (Blocks, Settings, Setup classes): Use `ClassName::get_instance()`
+        - ✅ Good: `$instance = Blocks\Rsvp::get_instance(); $instance->method();`
+        - ❌ Bad: `new Blocks\Rsvp()` (will fail - constructor is protected)
+    - **Regular classes** (Event, Rsvp, Venue): Use normal instantiation with parameters
+        - ✅ Good: `$event = new Event( $post_id ); $event->method();`
+        - ❌ Bad: `Event::get_instance()` (doesn't exist for these classes)
+    - In tests, always check the class structure before deciding instantiation method
+    - Look for `use Singleton;` trait to determine if `::get_instance()` should be used
 
 ### PHP Linting Requirements
 
