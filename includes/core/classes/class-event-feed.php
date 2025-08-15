@@ -32,14 +32,7 @@ class Event_Feed {
 	 */
 	use Singleton;
 
-	/**
-	 * The events rewrite slug from settings.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @var string
-	 */
-	private $rewrite_slug;
+
 
 	/**
 	 * Class constructor.
@@ -49,10 +42,6 @@ class Event_Feed {
 	 * @since 1.0.0
 	 */
 	protected function __construct() {
-		// Initialize the rewrite slug from settings.
-		$settings           = Settings::get_instance();
-		$this->rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
-
 		$this->setup_hooks();
 	}
 
@@ -99,8 +88,12 @@ class Event_Feed {
 		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 
+			// Get the rewrite slug from settings.
+			$settings     = Settings::get_instance();
+			$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
+
 			// Check if this is the events feed URL.
-			if ( str_contains( $request_uri, '/' . $this->rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
+			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
 				// Set the post type and let Event_Query handle the rest.
 				$query->set( 'post_type', Event::POST_TYPE );
 				$query->set( 'gatherpress_events_query', 'upcoming' );
@@ -140,10 +133,9 @@ class Event_Feed {
 	 * @return string The customized excerpt.
 	 */
 	public function get_default_event_excerpt( string $excerpt ): string {
-		global $post;
 
 		// Only apply to events.
-		if ( Event::POST_TYPE !== get_post_type( $post ) ) {
+		if ( Event::POST_TYPE !== get_post_type() ) {
 			return $excerpt;
 		}
 

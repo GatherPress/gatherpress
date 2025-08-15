@@ -21,7 +21,6 @@ use WP_Query;
  * @coversDefaultClass \GatherPress\Core\Event_Feed
  */
 class Test_Event_Feed extends Base {
-
 	/**
 	 * Test instance of Event_Feed.
 	 *
