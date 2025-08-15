@@ -98,17 +98,17 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				// Only process fields that have conditional visibility.
 				if ( fieldName === 'gatherpress_rsvp_guest_count' || fieldName === 'gatherpress_rsvp_anonymous' ) {
 					const currentClassName = block.attributes?.className || '';
-					const hasHiddenClass = currentClassName.includes( 'gatherpress--is-not-visible' );
+					const classNames = currentClassName.split( ' ' ).filter( Boolean );
+					const hiddenClass = 'gatherpress--is-not-visible';
+					const hasHiddenClass = classNames.includes( hiddenClass );
 
 					let newClassName = currentClassName;
 					if ( shouldHide && ! hasHiddenClass ) {
-						newClassName = currentClassName
-							? `${ currentClassName } gatherpress--is-not-visible`
-							: 'gatherpress--is-not-visible';
+						classNames.push( hiddenClass );
+						newClassName = classNames.join( ' ' );
 					} else if ( ! shouldHide && hasHiddenClass ) {
-						newClassName = currentClassName
-							.replace( /\s*gatherpress--is-not-visible\s*/g, ' ' )
-							.trim();
+						const filteredClasses = classNames.filter( ( name ) => name !== hiddenClass );
+						newClassName = filteredClasses.join( ' ' );
 					}
 
 					return {
