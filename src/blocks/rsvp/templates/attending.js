@@ -172,8 +172,29 @@ const ATTENDING = [
 									},
 								},
 							],
-							[ 'gatherpress/rsvp-guest-count-input', {} ],
-							[ 'gatherpress/rsvp-anonymous-checkbox', {} ],
+							[
+								'gatherpress/form-field',
+								{
+									fieldType: 'number',
+									fieldName: 'gatherpress_rsvp_guest_count',
+									label: 'Number of guests?',
+									placeholder: '0',
+									minValue: 0,
+									inlineLayout: true,
+									fieldWidth: 10,
+									inputPadding: 5,
+									autocomplete: 'off',
+								},
+							],
+							[
+								'gatherpress/form-field',
+								{
+									fieldType: 'checkbox',
+									fieldName: 'gatherpress_rsvp_anonymous',
+									label: 'List me as anonymous.',
+									autocomplete: 'off',
+								},
+							],
 							[
 								'core/buttons',
 								{
