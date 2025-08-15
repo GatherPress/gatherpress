@@ -11,9 +11,13 @@ module.exports = async () => {
 	const browser = await chromium.launch();
 	const page = await browser.newPage();
 
+	// Use environment variable for base URL, fallback to localhost
+	const baseUrl = process.env.WP_BASE_URL || 'http://localhost:8889';
+
 	try {
-		await page.goto( 'http://localhost:8889/wp-login.php' );
-		await page.waitForSelector( '#user_login', { timeout: 15000 } );
+		// Navigate to login page with retry for CI environments
+		await page.goto( `${ baseUrl }/wp-login.php`, { waitUntil: 'networkidle' } );
+		await page.waitForSelector( '#user_login', { timeout: 30000 } );
 
 		await page.fill( '#user_login', 'admin' );
 		await page.fill( '#user_pass', 'password' );
@@ -23,11 +27,11 @@ module.exports = async () => {
 		await Promise.race( [
 			page.waitForSelector( '#wpadminbar', { timeout: 15000 } ),
 			page.waitForSelector( '.wp-admin', { timeout: 15000 } ),
-			page.waitForURL( '**/wp-admin/**', { timeout: 15000 } ),
+			page.waitForURL( `${ baseUrl }/wp-admin/**`, { timeout: 15000 } ),
 		] );
 
 		// Verify we're actually logged in by checking the dashboard
-		await page.goto( 'http://localhost:8889/wp-admin/' );
+		await page.goto( `${ baseUrl }/wp-admin/` );
 		await page.waitForSelector( '#wpbody', { timeout: 10000 } );
 
 		// Ensure GatherPress plugin is activated
@@ -53,9 +57,11 @@ module.exports = async () => {
 };
 
 async function setupTestData( page ) {
+	const baseUrl = process.env.WP_BASE_URL || 'http://localhost:8889';
+
 	try {
 		// Check if GatherPress plugin is active first
-		await page.goto( 'http://localhost:8889/wp-admin/plugins.php' );
+		await page.goto( `${ baseUrl }/wp-admin/plugins.php` );
 		await page.waitForSelector( '#wpbody', { timeout: 10000 } );
 
 		const gatherPressActive = await page.locator( 'tr[data-slug="gatherpress"] .deactivate' ).count() > 0;
@@ -64,7 +70,7 @@ async function setupTestData( page ) {
 		}
 
 		// Check if venue post type exists
-		await page.goto( 'http://localhost:8889/wp-admin/edit.php?post_type=gatherpress_venue' );
+		await page.goto( `${ baseUrl }/wp-admin/edit.php?post_type=gatherpress_venue` );
 
 		// Wait for either the list table or an error/not found message to verify venue system works
 		await Promise.race( [
@@ -85,8 +91,10 @@ async function setupTestData( page ) {
 }
 
 async function ensurePluginActivated( page ) {
+	const baseUrl = process.env.WP_BASE_URL || 'http://localhost:8889';
+
 	try {
-		await page.goto( 'http://localhost:8889/wp-admin/plugins.php' );
+		await page.goto( `${ baseUrl }/wp-admin/plugins.php` );
 		await page.waitForSelector( '#wpbody', { timeout: 10000 } );
 
 		// Check if GatherPress plugin exists and is active
