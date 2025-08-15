@@ -59,6 +59,7 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
+		Event_Feed::get_instance();
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
@@ -70,7 +71,6 @@ class Setup {
 		Topic::get_instance();
 		User::get_instance();
 		Venue::get_instance();
-		Event_Feed::get_instance();
 	}
 
 	/**

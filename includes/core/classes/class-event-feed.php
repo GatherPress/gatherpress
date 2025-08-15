@@ -273,7 +273,6 @@ class Event_Feed {
 	 * @return string The customized content.
 	 */
 	public function apply_event_content( string $content ): string {
-
 		// Only apply to events.
 		if ( Event::POST_TYPE !== get_post_type() ) {
 			return $content;
