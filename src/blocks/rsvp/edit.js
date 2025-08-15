@@ -83,20 +83,20 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 	const applyFormFieldVisibility = useCallback( ( blocks ) => {
 		return blocks.map( ( block ) => {
 			// Check if this is a form-field block that needs conditional visibility.
-			if ( block.name === 'gatherpress/form-field' ) {
+			if ( 'gatherpress/form-field' === block.name ) {
 				const fieldName = block.attributes?.fieldName;
 				let shouldHide = false;
 
 				// Determine if the field should be hidden based on its field name.
-				if ( fieldName === 'gatherpress_rsvp_guest_count' ) {
+				if ( 'gatherpress_rsvp_guest_count' === fieldName ) {
 					shouldHide = 0 === parseInt( maxAttendanceLimit, 10 );
-				} else if ( fieldName === 'gatherpress_rsvp_anonymous' ) {
+				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
 					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
 					shouldHide = ! enableAnonymousRsvp;
 				}
 
 				// Only process fields that have conditional visibility.
-				if ( fieldName === 'gatherpress_rsvp_guest_count' || fieldName === 'gatherpress_rsvp_anonymous' ) {
+				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
 					const currentClassName = block.attributes?.className || '';
 					const classNames = currentClassName.split( ' ' ).filter( Boolean );
 					const hiddenClass = 'gatherpress--is-not-visible';
