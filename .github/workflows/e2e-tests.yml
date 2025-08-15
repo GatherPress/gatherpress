@@ -71,12 +71,6 @@ jobs:
           wp-env start
           npx wait-on http://localhost:8889 -t 60000
 
-      - name: Ensure GatherPress plugin is activated
-        run: |
-          # Ensure GatherPress plugin is activated (backup for CI)
-          wp-env run cli wp plugin activate gatherpress || true
-          wp-env run cli wp plugin list --status=active
-
       - name: Run Playwright Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
