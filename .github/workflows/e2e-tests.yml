@@ -130,6 +130,32 @@ jobs:
           echo "=== DEBUG: Installing Composer dependencies ==="
           wp-env run cli bash -c "cd /var/www/html/wp-content/plugins/gatherpress && composer install --no-dev --no-interaction || echo 'Composer failed'"
 
+          echo "=== DEBUG: Testing autoloader directly ==="
+          wp-env run cli wp eval "
+            echo 'GATHERPRESS_CORE_PATH: ' . GATHERPRESS_CORE_PATH . PHP_EOL;
+            echo 'Autoloader path: ' . GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php' . PHP_EOL;
+            if (file_exists(GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php')) {
+              echo 'Autoloader file exists' . PHP_EOL;
+            } else {
+              echo 'Autoloader file does NOT exist' . PHP_EOL;
+            }
+            
+            echo 'Expected Setup class path: ' . GATHERPRESS_CORE_PATH . '/includes/core/classes/class-setup.php' . PHP_EOL;
+            if (file_exists(GATHERPRESS_CORE_PATH . '/includes/core/classes/class-setup.php')) {
+              echo 'Setup class file exists' . PHP_EOL;
+            } else {
+              echo 'Setup class file does NOT exist' . PHP_EOL;
+            }
+            
+            echo 'Testing manual require...' . PHP_EOL;
+            require_once(GATHERPRESS_CORE_PATH . '/includes/core/classes/class-setup.php');
+            if (class_exists('GatherPress\Core\Setup')) {
+              echo 'SUCCESS: Setup class found after manual require' . PHP_EOL;
+            } else {
+              echo 'FAILED: Setup class still not found after manual require' . PHP_EOL;
+            }
+          "
+          
           echo "=== DEBUG: Re-testing after composer ==="
           wp-env run cli wp plugin deactivate gatherpress
           wp-env run cli wp plugin activate gatherpress
