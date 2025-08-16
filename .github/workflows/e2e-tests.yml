@@ -62,55 +62,79 @@ jobs:
       - name: Playwright install
         run: npx playwright install --with-deps
 
-      - name: Install @wordpress/env
-        run: npm install -g @wordpress/env
+      - name: Install dependencies
+        run: |
+          # Install WordPress environment
+          npm install -g @wordpress/env
+
+          # Install Composer dependencies that might be needed for the plugin
+          composer install --no-dev --no-interaction || echo "Composer install failed or not needed"
 
       - name: Start WordPress and wait for full initialization
         run: |
           # Start test environment
           wp-env start
-          
+
           # Wait for HTTP server to be available
           npx wait-on http://localhost:8889 -t 60000
-          
+
           # Wait for WordPress to fully initialize (crucial step!)
           echo "Waiting for WordPress to fully initialize..."
           sleep 10
-          
+
           # Wait for WordPress admin to be responsive
           timeout 60 bash -c 'until wp-env run cli wp core is-installed; do echo "Waiting for WordPress..."; sleep 2; done'
-          
+
           # Wait for plugins to be loaded and post types registered
           echo "Waiting for plugins to initialize..."
           timeout 60 bash -c 'until wp-env run cli wp plugin list --status=active | grep gatherpress; do echo "Waiting for GatherPress..."; sleep 2; done'
-          
+
           # Give extra time for post type registration
           echo "Allowing time for post type registration..."
           sleep 5
-          
+
           # Flush rewrite rules to ensure post types are available
           wp-env run cli wp rewrite flush
-          
+
           # Debug plugin loading
           echo "=== DEBUG: Plugin loading status ==="
           wp-env run cli wp plugin list --status=active
-          
+
           echo "=== DEBUG: Checking for PHP errors ==="
           wp-env run cli wp eval "error_reporting(E_ALL); ini_set('display_errors', 1);"
-          
+
           echo "=== DEBUG: Forcing plugin deactivate/activate ==="
           wp-env run cli wp plugin deactivate gatherpress || true
           wp-env run cli wp plugin activate gatherpress
-          
+
           echo "=== DEBUG: Manually loading plugin ==="
           wp-env run cli wp eval "require_once(ABSPATH . 'wp-content/plugins/gatherpress/gatherpress.php');"
-          
+
           echo "=== DEBUG: Checking if main class exists ==="
           wp-env run cli wp eval "if (class_exists('GatherPress\Core\Setup')) { echo 'GatherPress Setup class found'; } else { echo 'GatherPress Setup class NOT found'; }"
-          
+
           echo "=== DEBUG: Manually running init hooks ==="
           wp-env run cli wp eval "do_action('plugins_loaded'); do_action('init'); do_action('wp_loaded');"
-          
+
+          echo "=== DEBUG: Checking autoloader and dependencies ==="
+          wp-env run cli wp eval "
+            echo 'Checking if autoloader file exists: ';
+            if (file_exists(ABSPATH . 'wp-content/plugins/gatherpress/includes/core/classes/class-autoloader.php')) {
+              echo 'YES';
+            } else {
+              echo 'NO';
+            }
+            echo PHP_EOL;
+          "
+
+          echo "=== DEBUG: Installing Composer dependencies ==="
+          wp-env run cli bash -c "cd /var/www/html/wp-content/plugins/gatherpress && composer install --no-dev --no-interaction || echo 'Composer failed'"
+
+          echo "=== DEBUG: Re-testing after composer ==="
+          wp-env run cli wp plugin deactivate gatherpress
+          wp-env run cli wp plugin activate gatherpress
+          wp-env run cli wp eval "if (class_exists('GatherPress\Core\Setup')) { echo 'SUCCESS: GatherPress Setup class now found'; } else { echo 'FAILED: GatherPress Setup class still NOT found'; }"
+
           echo "=== DEBUG: Final post type check ==="
           wp-env run cli wp post-type list | grep gatherpress || echo "Still no GatherPress post types found"
 
