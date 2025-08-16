@@ -229,20 +229,22 @@ jobs:
             echo 'Error logging enabled: ' . (ini_get('log_errors') ? 'YES' : 'NO') . PHP_EOL;
             echo 'Error log file: ' . ini_get('error_log') . PHP_EOL;
             
-            // Enable error logging to ensure we capture debug messages
-            ini_set('log_errors', 1);
-            ini_set('error_log', '/tmp/php_errors.log');
-            
             // Force plugin to load again to generate debug logs
             echo 'Forcing plugin to reload...' . PHP_EOL;
             require_once(ABSPATH . 'wp-content/plugins/gatherpress/gatherpress.php');
             
-            // Check if debug logs were generated
-            if (file_exists('/tmp/php_errors.log')) {
-              echo 'Error log contents:' . PHP_EOL;
-              echo file_get_contents('/tmp/php_errors.log');
+            // Check the WordPress debug log
+            if (file_exists('/var/www/html/wp-content/debug.log')) {
+              echo 'WordPress debug log contents:' . PHP_EOL;
+              echo file_get_contents('/var/www/html/wp-content/debug.log');
             } else {
-              echo 'No error log file found' . PHP_EOL;
+              echo 'No WordPress debug log found' . PHP_EOL;
+            }
+            
+            // Also check if there are any PHP error logs
+            if (file_exists('/tmp/php_errors.log')) {
+              echo 'PHP error log contents:' . PHP_EOL;
+              echo file_get_contents('/tmp/php_errors.log');
             }
           "
 
