@@ -70,6 +70,9 @@ jobs:
           # Start test environment
           wp-env start
           npx wait-on http://localhost:8889 -t 60000
+          
+          # Flush rewrite rules to ensure post types are properly registered
+          wp-env run cli wp rewrite flush
 
       - name: Run Playwright Tests
         env:
