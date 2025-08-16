@@ -223,6 +223,29 @@ jobs:
             }
           "
 
+          echo "=== DEBUG: Check error logs for plugin loading ==="
+          wp-env run cli wp eval "
+            // Check if error logging is enabled
+            echo 'Error logging enabled: ' . (ini_get('log_errors') ? 'YES' : 'NO') . PHP_EOL;
+            echo 'Error log file: ' . ini_get('error_log') . PHP_EOL;
+            
+            // Enable error logging to ensure we capture debug messages
+            ini_set('log_errors', 1);
+            ini_set('error_log', '/tmp/php_errors.log');
+            
+            // Force plugin to load again to generate debug logs
+            echo 'Forcing plugin to reload...' . PHP_EOL;
+            require_once(ABSPATH . 'wp-content/plugins/gatherpress/gatherpress.php');
+            
+            // Check if debug logs were generated
+            if (file_exists('/tmp/php_errors.log')) {
+              echo 'Error log contents:' . PHP_EOL;
+              echo file_get_contents('/tmp/php_errors.log');
+            } else {
+              echo 'No error log file found' . PHP_EOL;
+            }
+          "
+
           echo "=== DEBUG: Final post type check ==="
           wp-env run cli wp post-type list | grep gatherpress || echo "Still no GatherPress post types found"
 

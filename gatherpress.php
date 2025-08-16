@@ -21,6 +21,9 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+// Debug: Log that the main plugin file is being loaded.
+error_log( 'GatherPress: Main plugin file loaded - gatherpress.php' );
+
 // Ensure no other versions of GatherPress are currently running.
 if ( require_once __DIR__ . '/includes/core/duplicate-check.php' ) {
 	return;
@@ -50,5 +53,11 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 	require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php';
 }
 
+// Debug: Log before Setup initialization.
+error_log( 'GatherPress: About to initialize Setup class' );
+
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+// Debug: Log after Setup initialization.
+error_log( 'GatherPress: Setup class initialized successfully' );
