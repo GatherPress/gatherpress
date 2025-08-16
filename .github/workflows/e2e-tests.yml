@@ -65,14 +65,35 @@ jobs:
       - name: Install @wordpress/env
         run: npm install -g @wordpress/env
 
-      - name: Start WordPress
+      - name: Start WordPress and wait for full initialization
         run: |
           # Start test environment
           wp-env start
+          
+          # Wait for HTTP server to be available
           npx wait-on http://localhost:8889 -t 60000
           
-          # Flush rewrite rules to ensure post types are properly registered
+          # Wait for WordPress to fully initialize (crucial step!)
+          echo "Waiting for WordPress to fully initialize..."
+          sleep 10
+          
+          # Wait for WordPress admin to be responsive
+          timeout 60 bash -c 'until wp-env run cli wp core is-installed; do echo "Waiting for WordPress..."; sleep 2; done'
+          
+          # Wait for plugins to be loaded and post types registered
+          echo "Waiting for plugins to initialize..."
+          timeout 60 bash -c 'until wp-env run cli wp plugin list --status=active | grep gatherpress; do echo "Waiting for GatherPress..."; sleep 2; done'
+          
+          # Give extra time for post type registration
+          echo "Allowing time for post type registration..."
+          sleep 5
+          
+          # Flush rewrite rules to ensure post types are available
           wp-env run cli wp rewrite flush
+          
+          # Final verification
+          echo "Verifying GatherPress post types are available..."
+          wp-env run cli wp post-type list | grep gatherpress || echo "Post types not found yet"
 
       - name: Run Playwright Tests
         env:
