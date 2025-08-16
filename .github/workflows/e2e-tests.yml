@@ -91,9 +91,28 @@ jobs:
           # Flush rewrite rules to ensure post types are available
           wp-env run cli wp rewrite flush
           
-          # Final verification
-          echo "Verifying GatherPress post types are available..."
-          wp-env run cli wp post-type list | grep gatherpress || echo "Post types not found yet"
+          # Debug plugin loading
+          echo "=== DEBUG: Plugin loading status ==="
+          wp-env run cli wp plugin list --status=active
+          
+          echo "=== DEBUG: Checking for PHP errors ==="
+          wp-env run cli wp eval "error_reporting(E_ALL); ini_set('display_errors', 1);"
+          
+          echo "=== DEBUG: Forcing plugin deactivate/activate ==="
+          wp-env run cli wp plugin deactivate gatherpress || true
+          wp-env run cli wp plugin activate gatherpress
+          
+          echo "=== DEBUG: Manually loading plugin ==="
+          wp-env run cli wp eval "require_once(ABSPATH . 'wp-content/plugins/gatherpress/gatherpress.php');"
+          
+          echo "=== DEBUG: Checking if main class exists ==="
+          wp-env run cli wp eval "if (class_exists('GatherPress\Core\Setup')) { echo 'GatherPress Setup class found'; } else { echo 'GatherPress Setup class NOT found'; }"
+          
+          echo "=== DEBUG: Manually running init hooks ==="
+          wp-env run cli wp eval "do_action('plugins_loaded'); do_action('init'); do_action('wp_loaded');"
+          
+          echo "=== DEBUG: Final post type check ==="
+          wp-env run cli wp post-type list | grep gatherpress || echo "Still no GatherPress post types found"
 
       - name: Run Playwright Tests
         env:
