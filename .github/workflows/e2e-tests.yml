@@ -147,12 +147,36 @@ jobs:
               echo 'Setup class file does NOT exist' . PHP_EOL;
             }
             
-            echo 'Testing manual require...' . PHP_EOL;
-            require_once(GATHERPRESS_CORE_PATH . '/includes/core/classes/class-setup.php');
-            if (class_exists('GatherPress\Core\Setup')) {
-              echo 'SUCCESS: Setup class found after manual require' . PHP_EOL;
+            echo 'Expected Singleton trait path: ' . GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php' . PHP_EOL;
+            if (file_exists(GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php')) {
+              echo 'Singleton trait file exists' . PHP_EOL;
             } else {
-              echo 'FAILED: Setup class still not found after manual require' . PHP_EOL;
+              echo 'Singleton trait file does NOT exist' . PHP_EOL;
+            }
+            
+            echo 'Testing trait loading first...' . PHP_EOL;
+            try {
+              require_once(GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php');
+              echo 'Singleton trait loaded successfully' . PHP_EOL;
+              if (trait_exists('GatherPress\Core\Traits\Singleton')) {
+                echo 'Singleton trait exists' . PHP_EOL;
+              } else {
+                echo 'Singleton trait NOT found' . PHP_EOL;
+              }
+            } catch (Exception \$e) {
+              echo 'ERROR loading Singleton trait: ' . \$e->getMessage() . PHP_EOL;
+            }
+            
+            echo 'Testing manual require of Setup class...' . PHP_EOL;
+            try {
+              require_once(GATHERPRESS_CORE_PATH . '/includes/core/classes/class-setup.php');
+              if (class_exists('GatherPress\Core\Setup')) {
+                echo 'SUCCESS: Setup class found after manual require' . PHP_EOL;
+              } else {
+                echo 'FAILED: Setup class still not found after manual require' . PHP_EOL;
+              }
+            } catch (Exception \$e) {
+              echo 'ERROR loading Setup class: ' . \$e->getMessage() . PHP_EOL;
             }
           "
           

@@ -45,5 +45,10 @@ if ( ! require_once GATHERPRESS_CORE_PATH . '/includes/core/requirements-check.p
 require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php';
 GatherPress\Core\Autoloader::register();
 
+// Ensure the Singleton trait is loaded before initializing Setup class.
+if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
+	require_once GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php';
+}
+
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
