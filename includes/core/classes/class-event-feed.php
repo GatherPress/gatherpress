@@ -32,8 +32,6 @@ class Event_Feed {
 	 */
 	use Singleton;
 
-
-
 	/**
 	 * Class constructor.
 	 *
