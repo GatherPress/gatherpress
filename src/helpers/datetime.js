@@ -602,10 +602,10 @@ export const phpNonTimeFormatChars = [
  * @param {string} format - The PHP datetime format.
  * @return {string} The PHP time-only format.
  */
-export function removeNonTimePHPFormatChars(format) {
+export function removeNonTimePHPFormatChars( format ) {
 	return format
-		.split('')
-		.filter((char) => !phpNonTimeFormatChars.includes(char))
-		.join('')
+		.split( '' )
+		.filter( ( char ) => ! phpNonTimeFormatChars.includes( char ) )
+		.join( '' )
 		.trim();
 }
