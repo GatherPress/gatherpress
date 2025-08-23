@@ -22,6 +22,8 @@ import {
 	SelectControl,
 	Spinner,
 	TextControl,
+	ToolbarButton,
+	ToolbarGroup,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
@@ -217,6 +219,34 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						setAttributes( { textAlign: newAlign } )
 					}
 				/>
+				<ToolbarGroup>
+					<ToolbarButton
+						label={ __( 'Start date', 'gatherpress' ) }
+						text={ __( 'Start date', 'gatherpress' ) }
+						isPressed={ showStartTime }
+						onClick={ () => {
+							setAttributes( {
+								// eslint-disable-next-line no-nested-ternary
+								displayType: showEndTime
+									? ( showStartTime ? 'end' : 'both' )
+									: 'start',
+							} );
+						} }
+					/>
+					<ToolbarButton
+						label={ __( 'End date', 'gatherpress' ) }
+						text={ __( 'End date', 'gatherpress' ) }
+						isPressed={ showEndTime }
+						onClick={ () => {
+							setAttributes( {
+								// eslint-disable-next-line no-nested-ternary
+								displayType: showStartTime
+									? ( showEndTime ? 'start' : 'both' )
+									: 'end',
+							} );
+						} }
+					/>
+				</ToolbarGroup>
 			</BlockControls>
 			{ displayDateTime(
 				showStartTime ? dateTimeStart : null,
