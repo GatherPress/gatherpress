@@ -264,6 +264,36 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 							<DateTimeRange />
 						</VStack>
 						<div style={ { height: '1rem' } } />
+						<SelectControl
+							label={ __( 'Show time zone', 'gatherpress' ) }
+							value={ showTimezone }
+							options={ [
+								{
+									label: sprintf(
+										/* translators: %s: Plugin "show timezone" setting */
+										__(
+											'%s (plugin setting)',
+											'gatherpress'
+										),
+										globalShowTimezone
+											? __( 'Yes', 'gatherpress' )
+											: __( 'No', 'gatherpress' )
+									),
+									value: '',
+								},
+								{
+									label: __( 'Yes', 'gatherpress' ),
+									value: 'yes',
+								},
+								{
+									label: __( 'No', 'gatherpress' ),
+									value: 'no',
+								},
+							] }
+							onChange={ ( value ) =>
+								setAttributes( { showTimezone: value } )
+							}
+						/>
 						<RadioControl
 							label={ __( 'Display', 'gatherpress' ) }
 							selected={ displayType }
@@ -330,36 +360,6 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 								) }
 							</a>
 						</p>
-						<SelectControl
-							label={ __( 'Show time zone', 'gatherpress' ) }
-							value={ showTimezone }
-							options={ [
-								{
-									label: sprintf(
-										/* translators: %s: Plugin "show timezone" setting */
-										__(
-											'%s (plugin setting)',
-											'gatherpress'
-										),
-										globalShowTimezone
-											? __( 'Yes', 'gatherpress' )
-											: __( 'No', 'gatherpress' )
-									),
-									value: '',
-								},
-								{
-									label: __( 'Yes', 'gatherpress' ),
-									value: 'yes',
-								},
-								{
-									label: __( 'No', 'gatherpress' ),
-									value: 'no',
-								},
-							] }
-							onChange={ ( value ) =>
-								setAttributes( { showTimezone: value } )
-							}
-						/>
 					</PanelBody>
 				</InspectorControls>
 			) }
