@@ -22,13 +22,13 @@ import metadata from './block.json';
  *
  * @return {JSX.Element} The rendered React component for editing the block.
  */
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit,
 	save: () => {
 		return (
-			<div {...useBlockProps.save()}>
+			<div { ...useBlockProps.save() }>
 				<InnerBlocks.Content />
 			</div>
 		);
 	},
-});
+} );

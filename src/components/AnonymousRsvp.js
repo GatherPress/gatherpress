@@ -22,46 +22,50 @@ import { getFromGlobal } from '../helpers/globals';
  * @return {JSX.Element} A checkbox control for enabling or disabling anonymous RSVPs.
  */
 const AnonymousRsvp = () => {
-	const { editPost, unlockPostSaving } = useDispatch('core/editor');
-	const isNewEvent = useSelect((select) => {
-		return select('core/editor').isCleanNewPost();
-	}, []);
+	const { editPost, unlockPostSaving } = useDispatch( 'core/editor' );
+	const isNewEvent = useSelect( ( select ) => {
+		return select( 'core/editor' ).isCleanNewPost();
+	}, [] );
 
-	let defaultAnonymousRsvp = useSelect((select) => {
-		return select('core/editor').getEditedPostAttribute('meta')
-			.gatherpress_enable_anonymous_rsvp;
-	}, []);
+	let defaultAnonymousRsvp = useSelect( ( select ) => {
+		const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+		const rawValue = meta?.gatherpress_enable_anonymous_rsvp;
 
-	if (isNewEvent) {
-		defaultAnonymousRsvp = getFromGlobal('settings.enableAnonymousRsvp');
+		// Convert meta value to boolean.
+		return Boolean( rawValue );
+	}, [] );
+
+	if ( isNewEvent ) {
+		defaultAnonymousRsvp = getFromGlobal( 'settings.enableAnonymousRsvp' );
 	}
 
-	const [anonymousRsvp, setAnonymousRsvp] = useState(defaultAnonymousRsvp);
+	const [ anonymousRsvp, setAnonymousRsvp ] = useState( defaultAnonymousRsvp );
 
 	const updateAnonymousRsvp = useCallback(
-		(value) => {
-			const meta = { gatherpress_enable_anonymous_rsvp: Number(value) };
+		( value ) => {
+			// Save as boolean to match meta registration.
+			const meta = { gatherpress_enable_anonymous_rsvp: Boolean( value ) };
 
-			setAnonymousRsvp(value);
-			editPost({ meta });
+			setAnonymousRsvp( value );
+			editPost( { meta } );
 			unlockPostSaving();
 		},
-		[editPost, unlockPostSaving]
+		[ editPost, unlockPostSaving ],
 	);
 
-	useEffect(() => {
-		if (isNewEvent && defaultAnonymousRsvp !== 0) {
-			updateAnonymousRsvp(defaultAnonymousRsvp);
+	useEffect( () => {
+		if ( isNewEvent && defaultAnonymousRsvp ) {
+			updateAnonymousRsvp( defaultAnonymousRsvp );
 		}
-	}, [isNewEvent, defaultAnonymousRsvp, updateAnonymousRsvp]);
+	}, [ isNewEvent, defaultAnonymousRsvp, updateAnonymousRsvp ] );
 
 	return (
 		<CheckboxControl
-			label={__('Enable Anonymous RSVP', 'gatherpress')}
-			checked={anonymousRsvp}
-			onChange={(value) => {
-				updateAnonymousRsvp(value);
-			}}
+			label={ __( 'Enable Anonymous RSVP', 'gatherpress' ) }
+			checked={ anonymousRsvp }
+			onChange={ ( value ) => {
+				updateAnonymousRsvp( value );
+			} }
 		/>
 	);
 };

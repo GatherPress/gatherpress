@@ -16,7 +16,7 @@ const QUERY_NO_RESULTS_TEMPLATE = [
 		{
 			placeholder: __(
 				'Add text or blocks that will display when a query returns no events.',
-				'gatherpress'
+				'gatherpress',
 			),
 		},
 	],
@@ -36,19 +36,19 @@ export const QUERY_NO_RESULTS_VARIATION = [
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-variations/
  */
-registerBlockVariation(CORE_BLOCK, {
+registerBlockVariation( CORE_BLOCK, {
 	category: 'gatherpress',
-	isActive: ['className'],
+	isActive: [ 'className' ],
 	attributes: {
 		className: CLASS_NAME,
 	},
-	scope: ['block', 'inserter', 'transform'],
+	scope: [ 'block', 'inserter', 'transform' ],
 	name: CLASS_NAME,
-	title: __('No Event Results', 'gatherpress'),
+	title: __( 'No Event Results', 'gatherpress' ),
 	description: __(
 		'Contains the block elements used to render content when no event query results are found.',
-		'gatherpress'
+		'gatherpress',
 	),
 
-	innerBlocks: [...QUERY_NO_RESULTS_TEMPLATE],
-});
+	innerBlocks: [ ...QUERY_NO_RESULTS_TEMPLATE ],
+} );

@@ -282,6 +282,7 @@ class Event_Setup {
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'boolean',
+				'default'           => false,
 			),
 			'gatherpress_online_event_link'     => array(
 				'auth_callback'     => function () {

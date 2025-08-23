@@ -10,65 +10,68 @@ import {
 	initPostContext,
 	sendRsvpApiRequest,
 } from '../../helpers/interactivity';
+import { getUrlParam } from '../../helpers/globals';
 
-const { state, actions } = store('gatherpress', {
+const { state, actions } = store( 'gatherpress', {
 	actions: {
 		updateGuestCount() {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
-			const currentUser = state.posts[postId].currentUser;
+			const currentUser = state.posts[ postId ].currentUser;
 
-			currentUser.guests = parseInt(element.ref.value, 10);
+			currentUser.guests = parseInt( element.ref.value, 10 );
+			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
-			initPostContext(state, postId);
+			initPostContext( state, postId );
 
-			sendRsvpApiRequest(postId, currentUser, state, () => {
+			sendRsvpApiRequest( postId, currentUser, state, () => {
 				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
-				setTimeout(() => {
+				setTimeout( () => {
 					element.ref.focus();
-				}, 1);
-			});
+				}, 1 );
+			} );
 		},
 		updateAnonymous() {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
-			const currentUser = state.posts[postId].currentUser;
+			const currentUser = state.posts[ postId ].currentUser;
 
 			currentUser.anonymous = element.ref.checked ? 1 : 0;
+			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
-			initPostContext(state, postId);
+			initPostContext( state, postId );
 
-			sendRsvpApiRequest(postId, currentUser, state, () => {
+			sendRsvpApiRequest( postId, currentUser, state, () => {
 				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
-				setTimeout(() => {
+				setTimeout( () => {
 					element.ref.focus();
-				}, 1);
-			});
+				}, 1 );
+			} );
 		},
-		updateRsvp(event = null) {
-			if (event) {
+		updateRsvp( event = null ) {
+			if ( event ) {
 				event.preventDefault();
 			}
 
 			const element = getElement();
 			const context = getContext();
 			const postId = context?.postId || 0;
-			const setStatus = element.ref.getAttribute('data-set-status') ?? '';
-			const currentUserStatus = state.posts[postId].currentUser.status;
+			const setStatus = element.ref.getAttribute( 'data-set-status' ) ?? '';
+			const currentUserStatus = state.posts[ postId ].currentUser.status;
 
 			let status = 'not_attending';
 
-			if (event) {
+			if ( event ) {
 				if (
-					['attending', 'waiting_list', 'not_attending'].includes(
-						setStatus
+					[ 'attending', 'waiting_list', 'not_attending' ].includes(
+						setStatus,
 					)
 				) {
 					status = setStatus;
 				} else if (
-					['not_attending', 'no_status'].includes(currentUserStatus)
+					[ 'not_attending', 'no_status' ].includes( currentUserStatus )
 				) {
 					status = 'attending';
 				}
@@ -76,8 +79,9 @@ const { state, actions } = store('gatherpress', {
 				status = currentUserStatus;
 			}
 
-			const guests = state.posts[postId].currentUser.guests;
-			const anonymous = state.posts[postId].currentUser.anonymous;
+			const guests = state.posts[ postId ].currentUser.guests;
+			const anonymous = state.posts[ postId ].currentUser.anonymous;
+			const rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
 			sendRsvpApiRequest(
 				postId,
@@ -85,47 +89,48 @@ const { state, actions } = store('gatherpress', {
 					status,
 					guests,
 					anonymous,
+					rsvpToken,
 				},
 				state,
 				() => {
 					const parentWithRsvpStatus =
-						element.ref.closest('[data-rsvp-status]');
+						element.ref.closest( '[data-rsvp-status]' );
 					const rsvpStatus =
-						parentWithRsvpStatus.getAttribute('data-rsvp-status');
+						parentWithRsvpStatus.getAttribute( 'data-rsvp-status' );
 					const rsvpContainer = parentWithRsvpStatus.closest(
-						'.wp-block-gatherpress-rsvp'
+						'.wp-block-gatherpress-rsvp',
 					);
 
-					if (['not_attending', 'no_status'].includes(rsvpStatus)) {
+					if ( [ 'not_attending', 'no_status' ].includes( rsvpStatus ) ) {
 						const attendingStatusButton =
 							rsvpContainer.querySelector(
-								'[data-rsvp-status="attending"] .gatherpress--update-rsvp'
+								'[data-rsvp-status="attending"] .gatherpress--update-rsvp',
 							);
 
 						const closeButton = rsvpContainer.querySelector(
-							'[data-rsvp-status="attending"] .gatherpress--close-modal button'
+							'[data-rsvp-status="attending"] .gatherpress--close-modal button',
 						);
 
-						actions.openModal(null, attendingStatusButton);
+						actions.openModal( null, attendingStatusButton );
 
 						/**
 						 * When keeping a modal open after an action, use findActiveSibling=false
 						 * to prevent focus from moving to a different modal manager.
 						 */
-						setTimeout(() => {
-							actions.closeModal(null, element.ref, false);
+						setTimeout( () => {
+							actions.closeModal( null, element.ref, false );
 							closeButton.focus();
-						}, 1);
+						}, 1 );
 					} else {
 						/**
 						 * When fully closing a modal, use findActiveSibling=true
 						 * to allow focus to move to any visible modal manager in sibling containers.
 						 */
-						setTimeout(() => {
-							actions.closeModal(null, element.ref, true);
-						}, 1);
+						setTimeout( () => {
+							actions.closeModal( null, element.ref, true );
+						}, 1 );
 					}
-				}
+				},
 			);
 		},
 	},
@@ -135,35 +140,35 @@ const { state, actions } = store('gatherpress', {
 			const context = getContext();
 			const postId = context.postId || 0;
 
-			initPostContext(state, postId);
+			initPostContext( state, postId );
 
-			element.ref.checked = state.posts[postId].currentUser.anonymous;
+			element.ref.checked = state.posts[ postId ].currentUser.anonymous;
 		},
 		setGuestCount() {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
 
-			initPostContext(state, postId);
+			initPostContext( state, postId );
 
-			element.ref.value = state.posts[postId].currentUser.guests;
+			element.ref.value = state.posts[ postId ].currentUser.guests;
 		},
 		renderRsvpBlock() {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
 
-			initPostContext(state, postId);
+			initPostContext( state, postId );
 
 			const userDetails = JSON.parse(
-				element.ref.getAttribute('data-user-details')
+				element.ref.getAttribute( 'data-user-details' ),
 			);
 			// Delete attribute after setting variable. This is just to kick things off...
-			element.ref.removeAttribute('data-user-details');
+			element.ref.removeAttribute( 'data-user-details' );
 
-			if (userDetails) {
-				state.posts[postId] = {
-					...state.posts[postId],
+			if ( userDetails ) {
+				state.posts[ postId ] = {
+					...state.posts[ postId ],
 					currentUser: {
 						status: userDetails?.status || 'no_status',
 						guests: userDetails?.guests || 0,
@@ -173,33 +178,33 @@ const { state, actions } = store('gatherpress', {
 			}
 
 			const innerBlocks =
-				element.ref.querySelectorAll('[data-rsvp-status]');
+				element.ref.querySelectorAll( '[data-rsvp-status]' );
 
-			innerBlocks.forEach((innerBlock) => {
+			innerBlocks.forEach( ( innerBlock ) => {
 				const parent = innerBlock.parentNode;
 				if (
-					innerBlock.getAttribute('data-rsvp-status') ===
-					state.posts[postId].currentUser.status
+					innerBlock.getAttribute( 'data-rsvp-status' ) ===
+					state.posts[ postId ].currentUser.status
 				) {
-					innerBlock.classList.remove('gatherpress--is-not-visible');
+					innerBlock.classList.remove( 'gatherpress--is-not-visible' );
 					// Move the visible block to the start of its parent.
-					parent.insertBefore(innerBlock, parent.firstChild);
+					parent.insertBefore( innerBlock, parent.firstChild );
 				} else {
-					innerBlock.classList.add('gatherpress--is-not-visible');
+					innerBlock.classList.add( 'gatherpress--is-not-visible' );
 				}
-			});
+			} );
 		},
 		updateGuestCountDisplay() {
 			const context = getContext();
 			const postId = context?.postId || 0;
 
 			// Ensure the state is initialized.
-			initPostContext(state, context);
+			initPostContext( state, context );
 
 			// Retrieve the current guest count from the state.
 			const guestCount = parseInt(
-				state.posts[postId]?.currentUser?.guests || 0,
-				10
+				state.posts[ postId ]?.currentUser?.guests || 0,
+				10,
 			);
 
 			// Get the current element.
@@ -207,28 +212,28 @@ const { state, actions } = store('gatherpress', {
 
 			// Get the singular and plural labels from the data attributes.
 			const singularLabel = element.ref.getAttribute(
-				'data-guest-singular'
+				'data-guest-singular',
 			);
-			const pluralLabel = element.ref.getAttribute('data-guest-plural');
+			const pluralLabel = element.ref.getAttribute( 'data-guest-plural' );
 
 			// Determine the text to display based on the guest count.
 			let text = '';
 
-			if (0 < guestCount) {
+			if ( 0 < guestCount ) {
 				text =
 					1 === guestCount
-						? singularLabel.replace('%d', guestCount)
-						: pluralLabel.replace('%d', guestCount);
+						? singularLabel.replace( '%d', guestCount )
+						: pluralLabel.replace( '%d', guestCount );
 			}
 
 			// Update the element's text content.
 			element.ref.textContent = text;
 
-			if (0 < guestCount) {
-				element.ref.classList.remove('gatherpress--is-not-visible');
+			if ( 0 < guestCount ) {
+				element.ref.classList.remove( 'gatherpress--is-not-visible' );
 			} else {
-				element.ref.classList.add('gatherpress--is-not-visible');
+				element.ref.classList.add( 'gatherpress--is-not-visible' );
 			}
 		},
 	},
-});
+} );

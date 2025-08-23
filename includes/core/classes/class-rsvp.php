@@ -150,7 +150,7 @@ class Rsvp {
 		if ( ! empty( $user_id ) ) {
 			$args['user_id'] = $user_id;
 		} elseif ( ! empty( $email ) ) {
-			$args['comment_author_email'] = $email;
+			$args['author_email'] = $email;
 		}
 
 		$rsvp = $rsvp_query->get_rsvp( $args );
@@ -234,7 +234,7 @@ class Rsvp {
 		if ( ! empty( $user_id ) ) {
 			$args['user_id'] = $user_id;
 		} elseif ( ! empty( $email ) ) {
-			$args['comment_author_email'] = $email;
+			$args['author_email'] = $email;
 		}
 
 		$rsvp             = $rsvp_query->get_rsvp( $args );
@@ -258,12 +258,15 @@ class Rsvp {
 		}
 
 		$args = array(
-			'comment_author_url' => get_author_posts_url( $user_id ),
-			'comment_post_ID'    => $post_id,
-			'comment_author_IP'  => '127.0.0.1',
-			'comment_type'       => self::COMMENT_TYPE,
-			'user_id'            => $user_id,
+			'comment_post_ID'   => $post_id,
+			'comment_author_IP' => '127.0.0.1',
+			'comment_type'      => self::COMMENT_TYPE,
+			'user_id'           => $user_id,
 		);
+
+		if ( intval( $user_id ) ) {
+			$args['comment_author_url'] = get_author_posts_url( $user_id );
+		}
 
 		if ( ! empty( $email ) ) {
 			$args['comment_author_email'] = $email;
@@ -465,6 +468,7 @@ class Rsvp {
 		$data = $rsvp_query->get_rsvps(
 			array(
 				'post_id' => $post_id,
+				'status'  => 'approve',
 			)
 		);
 

@@ -38,12 +38,12 @@ export const dateTimeDatabaseFormat = 'YYYY-MM-DD HH:mm:ss';
  * @type {string} Formatted default start date and time in the application's timezone.
  */
 export const defaultDateTimeStart = moment
-	.tz(getTimezone())
-	.add(1, 'day')
-	.set('hour', 18)
-	.set('minute', 0)
-	.set('second', 0)
-	.format(dateTimeDatabaseFormat);
+	.tz( getTimezone() )
+	.add( 1, 'day' )
+	.set( 'hour', 18 )
+	.set( 'minute', 0 )
+	.set( 'second', 0 )
+	.format( dateTimeDatabaseFormat );
 
 /**
  * The default end date and time for an event.
@@ -54,9 +54,9 @@ export const defaultDateTimeStart = moment
  * @type {string} Formatted default end date and time in the application's timezone.
  */
 export const defaultDateTimeEnd = moment
-	.tz(defaultDateTimeStart, getTimezone())
-	.add(2, 'hours')
-	.format(dateTimeDatabaseFormat);
+	.tz( defaultDateTimeStart, getTimezone() )
+	.add( 2, 'hours' )
+	.format( dateTimeDatabaseFormat );
 
 /**
  * Predefined duration options for event scheduling.
@@ -75,28 +75,28 @@ export const defaultDateTimeEnd = moment
 export function durationOptions() {
 	const options = [
 		{
-			label: __('1 hour', 'gatherpress'),
+			label: __( '1 hour', 'gatherpress' ),
 			value: 1,
 		},
 		{
-			label: __('1.5 hours', 'gatherpress'),
+			label: __( '1.5 hours', 'gatherpress' ),
 			value: 1.5,
 		},
 		{
-			label: __('2 hours', 'gatherpress'),
+			label: __( '2 hours', 'gatherpress' ),
 			value: 2,
 		},
 		{
-			label: __('3 hours', 'gatherpress'),
+			label: __( '3 hours', 'gatherpress' ),
 			value: 3,
 		},
 		{
-			label: __('Set an end time…', 'gatherpress'),
+			label: __( 'Set an end time…', 'gatherpress' ),
 			value: false,
 		},
 	];
 
-	return applyFilters('gatherpress.durationOptions', options);
+	return applyFilters( 'gatherpress.durationOptions', options );
 }
 
 /**
@@ -111,11 +111,11 @@ export function durationOptions() {
  *
  * @return {string} The adjusted date and time formatted in a database-compatible format.
  */
-export function dateTimeOffset(hours) {
+export function dateTimeOffset( hours ) {
 	return moment
-		.tz(getDateTimeStart(), getTimezone())
-		.add(hours, 'hours')
-		.format(dateTimeDatabaseFormat);
+		.tz( getDateTimeStart(), getTimezone() )
+		.add( hours, 'hours' )
+		.format( dateTimeDatabaseFormat );
 }
 
 /**
@@ -133,7 +133,7 @@ export function dateTimeOffset(hours) {
 export function getDateTimeOffset() {
 	return (
 		durationOptions().find(
-			(option) => dateTimeOffset(option.value) === getDateTimeEnd()
+			( option ) => dateTimeOffset( option.value ) === getDateTimeEnd(),
 		)?.value || false
 	);
 }
@@ -150,10 +150,10 @@ export function getDateTimeOffset() {
  */
 export function dateTimeLabelFormat() {
 	const dateFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.dateFormat')
+		getFromGlobal( 'settings.dateFormat' ),
 	);
 	const timeFormat = convertPHPToMomentFormat(
-		getFromGlobal('settings.timeFormat')
+		getFromGlobal( 'settings.timeFormat' ),
 	);
 
 	return dateFormat + ' ' + timeFormat;
@@ -170,13 +170,13 @@ export function dateTimeLabelFormat() {
  * @return {string} The retrieved timezone, or 'GMT' if the provided timezone is invalid.
  */
 export function getTimezone(
-	timezone = getFromGlobal('eventDetails.dateTime.timezone')
+	timezone = getFromGlobal( 'eventDetails.dateTime.timezone' ),
 ) {
-	if (!!moment.tz.zone(timezone)) {
+	if ( !! moment.tz.zone( timezone ) ) {
 		return timezone;
 	}
 
-	return __('GMT', 'gatherpress');
+	return __( 'GMT', 'gatherpress' );
 }
 
 /**
@@ -189,16 +189,16 @@ export function getTimezone(
  *
  * @return {string} UTC offset without the colon if the timezone is set to 'GMT', otherwise an empty string.
  */
-export function getUtcOffset(timezone) {
-	timezone = getTimezone(timezone);
+export function getUtcOffset( timezone ) {
+	timezone = getTimezone( timezone );
 
-	if (__('GMT', 'gatherpress') !== timezone) {
+	if ( __( 'GMT', 'gatherpress' ) !== timezone ) {
 		return '';
 	}
 
-	const offset = getFromGlobal('eventDetails.dateTime.timezone');
+	const offset = getFromGlobal( 'eventDetails.dateTime.timezone' );
 
-	return maybeConvertUtcOffsetForDisplay(offset);
+	return maybeConvertUtcOffsetForDisplay( offset );
 }
 
 /**
@@ -211,8 +211,8 @@ export function getUtcOffset(timezone) {
  *
  * @return {string} Converted UTC offset without the colon, suitable for display.
  */
-export function maybeConvertUtcOffsetForDisplay(offset = '') {
-	return offset.replace(':', '');
+export function maybeConvertUtcOffsetForDisplay( offset = '' ) {
+	return offset.replace( ':', '' );
 }
 
 /**
@@ -226,23 +226,23 @@ export function maybeConvertUtcOffsetForDisplay(offset = '') {
  *
  * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
  */
-export function maybeConvertUtcOffsetForDatabase(offset = '') {
+export function maybeConvertUtcOffsetForDatabase( offset = '' ) {
 	// Regex: https://regex101.com/r/9bMgJd/2.
 	const pattern = /^UTC([+-])(\d+)(.\d+)?$/;
-	const sign = offset.replace(pattern, '$1');
+	const sign = offset.replace( pattern, '$1' );
 
-	if (sign !== offset) {
-		const hour = offset.replace(pattern, '$2').padStart(2, '0');
-		let minute = offset.replace(pattern, '$3');
+	if ( sign !== offset ) {
+		const hour = offset.replace( pattern, '$2' ).padStart( 2, '0' );
+		let minute = offset.replace( pattern, '$3' );
 
-		if ('' === minute) {
+		if ( '' === minute ) {
 			minute = ':00';
 		}
 
 		minute = minute
-			.replace('.25', ':15')
-			.replace('.5', ':30')
-			.replace('.75', ':45');
+			.replace( '.25', ':15' )
+			.replace( '.5', ':30' )
+			.replace( '.75', ':45' );
 
 		return sign + hour + minute;
 	}
@@ -260,19 +260,19 @@ export function maybeConvertUtcOffsetForDatabase(offset = '') {
  *
  * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
  */
-export function maybeConvertUtcOffsetForSelect(offset = '') {
+export function maybeConvertUtcOffsetForSelect( offset = '' ) {
 	// Regex: https://regex101.com/r/nOXCPo/2.
 	const pattern = /^([+-])(\d{2}):(00|15|30|45)$/;
-	const sign = offset.replace(pattern, '$1');
+	const sign = offset.replace( pattern, '$1' );
 
-	if (sign !== offset) {
-		const hour = parseInt(offset.replace(pattern, '$2')).toString();
+	if ( sign !== offset ) {
+		const hour = parseInt( offset.replace( pattern, '$2' ) ).toString();
 		const minute = offset
-			.replace(pattern, '$3')
-			.replace('00', '')
-			.replace('15', '.25')
-			.replace('30', '.5')
-			.replace('45', '.75');
+			.replace( pattern, '$3' )
+			.replace( '00', '' )
+			.replace( '15', '.25' )
+			.replace( '30', '.5' )
+			.replace( '45', '.75' );
 
 		return 'UTC' + sign + hour + minute;
 	}
@@ -290,14 +290,14 @@ export function maybeConvertUtcOffsetForSelect(offset = '') {
  * @return {string} The formatted start date and time for the event.
  */
 export function getDateTimeStart() {
-	let dateTime = getFromGlobal('eventDetails.dateTime.datetime_start');
+	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_start' );
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, getTimezone()).format(dateTimeDatabaseFormat)
+			? moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat )
 			: defaultDateTimeStart;
 
-	setToGlobal('eventDetails.dateTime.datetime_start', dateTime);
+	setToGlobal( 'eventDetails.dateTime.datetime_start', dateTime );
 
 	return dateTime;
 }
@@ -312,14 +312,14 @@ export function getDateTimeStart() {
  * @return {string} The formatted end date and time for the event.
  */
 export function getDateTimeEnd() {
-	let dateTime = getFromGlobal('eventDetails.dateTime.datetime_end');
+	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_end' );
 
 	dateTime =
 		'' !== dateTime
-			? moment.tz(dateTime, getTimezone()).format(dateTimeDatabaseFormat)
+			? moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat )
 			: defaultDateTimeEnd;
 
-	setToGlobal('eventDetails.dateTime.datetime_end', dateTime);
+	setToGlobal( 'eventDetails.dateTime.datetime_end', dateTime );
 
 	return dateTime;
 }
@@ -343,14 +343,14 @@ export function getDateTimeEnd() {
 export function updateDateTimeStart(
 	date,
 	setDateTimeStart = null,
-	setDateTimeEnd = null
+	setDateTimeEnd = null,
 ) {
-	validateDateTimeStart(date, setDateTimeEnd);
+	validateDateTimeStart( date, setDateTimeEnd );
 
-	setToGlobal('eventDetails.dateTime.datetime_start', date);
+	setToGlobal( 'eventDetails.dateTime.datetime_start', date );
 
-	if ('function' === typeof setDateTimeStart) {
-		setDateTimeStart(date);
+	if ( 'function' === typeof setDateTimeStart ) {
+		setDateTimeStart( date );
 	}
 
 	enableSave();
@@ -376,14 +376,14 @@ export function updateDateTimeStart(
 export function updateDateTimeEnd(
 	date,
 	setDateTimeEnd = null,
-	setDateTimeStart = null
+	setDateTimeStart = null,
 ) {
-	validateDateTimeEnd(date, setDateTimeStart);
+	validateDateTimeEnd( date, setDateTimeStart );
 
-	setToGlobal('eventDetails.dateTime.datetime_end', date);
+	setToGlobal( 'eventDetails.dateTime.datetime_end', date );
 
-	if (null !== setDateTimeEnd) {
-		setDateTimeEnd(date);
+	if ( null !== setDateTimeEnd ) {
+		setDateTimeEnd( date );
 	}
 
 	enableSave();
@@ -404,21 +404,21 @@ export function updateDateTimeEnd(
  *
  * @return {void}
  */
-export function validateDateTimeStart(dateTimeStart, setDateTimeEnd = null) {
+export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null ) {
 	const dateTimeEndNumeric = moment
-		.tz(getFromGlobal('eventDetails.dateTime.datetime_end'), getTimezone())
+		.tz( getFromGlobal( 'eventDetails.dateTime.datetime_end' ), getTimezone() )
 		.valueOf();
 	const dateTimeStartNumeric = moment
-		.tz(dateTimeStart, getTimezone())
+		.tz( dateTimeStart, getTimezone() )
 		.valueOf();
 
-	if (dateTimeStartNumeric >= dateTimeEndNumeric) {
+	if ( dateTimeStartNumeric >= dateTimeEndNumeric ) {
 		const dateTimeEnd = moment
-			.tz(dateTimeStartNumeric, getTimezone())
-			.add(2, 'hours')
-			.format(dateTimeDatabaseFormat);
+			.tz( dateTimeStartNumeric, getTimezone() )
+			.add( 2, 'hours' )
+			.format( dateTimeDatabaseFormat );
 
-		updateDateTimeEnd(dateTimeEnd, setDateTimeEnd);
+		updateDateTimeEnd( dateTimeEnd, setDateTimeEnd );
 	}
 }
 
@@ -437,21 +437,21 @@ export function validateDateTimeStart(dateTimeStart, setDateTimeEnd = null) {
  *
  * @return {void}
  */
-export function validateDateTimeEnd(dateTimeEnd, setDateTimeStart = null) {
+export function validateDateTimeEnd( dateTimeEnd, setDateTimeStart = null ) {
 	const dateTimeStartNumeric = moment
 		.tz(
-			getFromGlobal('eventDetails.dateTime.datetime_start'),
-			getTimezone()
+			getFromGlobal( 'eventDetails.dateTime.datetime_start' ),
+			getTimezone(),
 		)
 		.valueOf();
-	const dateTimeEndNumeric = moment.tz(dateTimeEnd, getTimezone()).valueOf();
+	const dateTimeEndNumeric = moment.tz( dateTimeEnd, getTimezone() ).valueOf();
 
-	if (dateTimeEndNumeric <= dateTimeStartNumeric) {
+	if ( dateTimeEndNumeric <= dateTimeStartNumeric ) {
 		const dateTimeStart = moment
-			.tz(dateTimeEndNumeric, getTimezone())
-			.subtract(2, 'hours')
-			.format(dateTimeDatabaseFormat);
-		updateDateTimeStart(dateTimeStart, setDateTimeStart);
+			.tz( dateTimeEndNumeric, getTimezone() )
+			.subtract( 2, 'hours' )
+			.format( dateTimeDatabaseFormat );
+		updateDateTimeStart( dateTimeStart, setDateTimeStart );
 	}
 }
 
@@ -468,7 +468,7 @@ export function validateDateTimeEnd(dateTimeEnd, setDateTimeStart = null) {
  * @param {string} format - The PHP date format to be converted.
  * @return {string} The equivalent Moment.js date format.
  */
-export function convertPHPToMomentFormat(format) {
+export function convertPHPToMomentFormat( format ) {
 	const replacements = {
 		d: 'DD',
 		D: 'ddd',
@@ -508,17 +508,17 @@ export function convertPHPToMomentFormat(format) {
 		r: '', // no equivalent
 		U: 'X',
 	};
-	return String(format)
-		.split('')
-		.map((chr, index, elements) => {
+	return String( format )
+		.split( '' )
+		.map( ( chr, index, elements ) => {
 			// Allow the format string to contain escaped chars, like ES or DE needs
-			const last = elements[index - 1];
-			if (chr in replacements && last !== '\\') {
-				return replacements[chr];
+			const last = elements[ index - 1 ];
+			if ( chr in replacements && last !== '\\' ) {
+				return replacements[ chr ];
 			}
 			return chr;
-		})
-		.join('');
+		} )
+		.join( '' );
 }
 
 /**
@@ -534,19 +534,19 @@ export function convertPHPToMomentFormat(format) {
 export function dateTimePreview() {
 	// Select all elements with the attribute 'data-gatherpress_component_name' set to 'datetime-preview'.
 	const dateTimePreviewContainers = document.querySelectorAll(
-		`[data-gatherpress_component_name="datetime-preview"]`
+		`[data-gatherpress_component_name="datetime-preview"]`,
 	);
 
 	// Iterate through each matched element and initialize DateTimePreview component.
-	for (let i = 0; i < dateTimePreviewContainers.length; i++) {
+	for ( let i = 0; i < dateTimePreviewContainers.length; i++ ) {
 		// Parse attributes from the 'data-gatherpress_component_attrs' attribute.
 		const attrs = JSON.parse(
-			dateTimePreviewContainers[i].dataset.gatherpress_component_attrs
+			dateTimePreviewContainers[ i ].dataset.gatherpress_component_attrs,
 		);
 
 		// Create a root element and render the DateTimePreview component with the parsed attributes.
-		createRoot(dateTimePreviewContainers[i]).render(
-			<DateTimePreview attrs={attrs} />
+		createRoot( dateTimePreviewContainers[ i ] ).render(
+			<DateTimePreview attrs={ attrs } />,
 		);
 	}
 }

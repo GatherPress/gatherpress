@@ -23,7 +23,7 @@ const NOT_ATTENDING = [
 						name: _x(
 							'Call to Action',
 							'Block name displayed in the editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
@@ -34,7 +34,7 @@ const NOT_ATTENDING = [
 							text: _x(
 								'Edit RSVP',
 								'Button label for editing RSVP',
-								'gatherpress'
+								'gatherpress',
 							),
 							tagName: 'button',
 							className: 'gatherpress--open-modal',
@@ -42,7 +42,7 @@ const NOT_ATTENDING = [
 								name: _x(
 									'RSVP Button',
 									'Block name displayed in the editor',
-									'gatherpress'
+									'gatherpress',
 								),
 							},
 						},
@@ -86,13 +86,13 @@ const NOT_ATTENDING = [
 							content: _x(
 								'<strong>Not Attending</strong>',
 								'RSVP status indicator',
-								'gatherpress'
+								'gatherpress',
 							),
 							metadata: {
 								name: _x(
 									'RSVP Status',
 									'Block name displayed in the editor',
-									'gatherpress'
+									'gatherpress',
 								),
 							},
 						},
@@ -107,7 +107,7 @@ const NOT_ATTENDING = [
 						name: _x(
 							'RSVP Modal',
 							'Modal title in editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
@@ -132,13 +132,13 @@ const NOT_ATTENDING = [
 									content: _x(
 										"<strong>You're Not Attending</strong>",
 										'RSVP modal header',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Heading',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -148,18 +148,26 @@ const NOT_ATTENDING = [
 								{
 									content: __(
 										'To change your attendance status, simply click the <strong>Attending</strong> button below.',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Info',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
 							],
-							['gatherpress/rsvp-anonymous-checkbox', {}],
+							[
+								'gatherpress/form-field',
+								{
+									fieldType: 'checkbox',
+									fieldName: 'gatherpress_rsvp_anonymous',
+									label: 'List me as anonymous.',
+									autocomplete: 'off',
+								},
+							],
 							[
 								'core/buttons',
 								{
@@ -182,7 +190,7 @@ const NOT_ATTENDING = [
 										name: _x(
 											'Call to Action',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -193,7 +201,7 @@ const NOT_ATTENDING = [
 											text: _x(
 												'Attending',
 												'RSVP button label for confirming event attendance',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
@@ -202,7 +210,7 @@ const NOT_ATTENDING = [
 												name: _x(
 													'RSVP Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},
@@ -213,7 +221,7 @@ const NOT_ATTENDING = [
 											text: _x(
 												'Close',
 												'Button label for closing modal dialog',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
@@ -222,7 +230,7 @@ const NOT_ATTENDING = [
 												name: _x(
 													'Close Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},

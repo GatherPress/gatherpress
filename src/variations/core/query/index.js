@@ -30,15 +30,15 @@ const QUERY_ATTRIBUTES = {
 
 const VARIATION_ATTRIBUTES = {
 	category: 'gatherpress',
-	keywords: [__('Events', 'gatherpress'), __('Dates', 'gatherpress')],
-	isActive: ['namespace', 'query.postType'],
+	keywords: [ __( 'Events', 'gatherpress' ), __( 'Dates', 'gatherpress' ) ],
+	isActive: [ 'namespace', 'query.postType' ],
 	attributes: {
 		...QUERY_ATTRIBUTES,
 	},
 	// Disabling irrelevant or unsupported query controls
 	// @see https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/extending-the-query-loop-block/#disabling-irrelevant-or-unsupported-query-controls
-	allowedControls: ['inherit', 'taxQuery', 'author', 'search'],
-	scope: ['block'],
+	allowedControls: [ 'inherit', 'taxQuery', 'author', 'search' ],
+	scope: [ 'block' ],
 };
 
 /**
@@ -58,12 +58,12 @@ const VARIATION_ATTRIBUTES = {
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-variations/
  */
-registerBlockVariation('core/query', {
+registerBlockVariation( 'core/query', {
 	...VARIATION_ATTRIBUTES,
 	name: NAME,
-	title: __('Event Query', 'gatherpress'),
-	description: __('Create event queries', 'gatherpress'),
-	scope: ['inserter', 'transform'],
+	title: __( 'Event Query', 'gatherpress' ),
+	description: __( 'Create event queries', 'gatherpress' ),
+	scope: [ 'inserter', 'transform' ],
 	/*
 	 * Having innerBlocks in THIS (visible) variation, essentially
 	 * skips the setup phase of the Query Loop block with suggested starter patterns
@@ -84,14 +84,14 @@ registerBlockVariation('core/query', {
 			'core/post-template',
 			{
 				metadata: {
-					name: __('Events Template', 'gatherpress'),
+					name: __( 'Events Template', 'gatherpress' ),
 				},
 			},
 			[
-				['core/post-title'],
-				['gatherpress/event-date'],
-				['core/post-excerpt'],
-				['core/post-terms', { term: '_gatherpress_venue' }],
+				[ 'core/post-title' ],
+				[ 'gatherpress/event-date' ],
+				[ 'core/post-excerpt' ],
+				[ 'core/post-terms', { term: '_gatherpress_venue' } ],
 			],
 		],
 		QUERY_PAGINATION_VARIATION,
@@ -114,4 +114,4 @@ registerBlockVariation('core/query', {
 			},
 		],
 	},
-});
+} );

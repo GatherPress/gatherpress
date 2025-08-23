@@ -303,4 +303,40 @@ class Test_Utility extends Base {
 
 		update_option( $users_can_register_name, $users_can_register_default );
 	}
+
+	/**
+	 * Coverage for ensure_user_authentication method.
+	 *
+	 * @covers ::ensure_user_authentication
+	 *
+	 * @return void
+	 */
+	public function test_ensure_user_authentication(): void {
+		// Test when no user is determined (anonymous context).
+		$user_id = Utility::ensure_user_authentication();
+
+		$this->assertFalse( $user_id, 'Should return false when no user can be determined' );
+		$this->assertSame( 0, get_current_user_id(), 'Current user ID should remain 0 for anonymous context' );
+
+		// Test with a logged-in user context.
+		$test_user_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $test_user_id );
+
+		// Mock the determine_current_user filter to return our test user.
+		add_filter(
+			'determine_current_user',
+			static function () use ( $test_user_id ) {
+				return $test_user_id;
+			}
+		);
+
+		$authenticated_user_id = Utility::ensure_user_authentication();
+
+		$this->assertSame( $test_user_id, $authenticated_user_id, 'Should return the authenticated user ID' );
+		$this->assertSame( $test_user_id, get_current_user_id(), 'Current user should be set to the authenticated user' );
+
+		// Clean up.
+		wp_set_current_user( 0 );
+		remove_all_filters( 'determine_current_user' );
+	}
 }

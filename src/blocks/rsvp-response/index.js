@@ -11,13 +11,13 @@ import edit from './edit';
 import metadata from './block.json';
 import './style.scss';
 
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit,
 	save: () => {
 		return (
-			<div {...useBlockProps.save()}>
+			<div { ...useBlockProps.save() }>
 				<InnerBlocks.Content />
 			</div>
 		);
 	},
-});
+} );

@@ -161,8 +161,8 @@ const Edit = ({ attributes, setAttributes, context }) => {
 	const postId = attributes?.postId ?? context?.postId ?? null;
 
 	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
-		(select) => {
-			if (!postId) {
+		( select ) => {
+			if ( ! postId ) {
 				return {
 					dateTimeStart: undefined,
 					dateTimeEnd: undefined,
@@ -170,22 +170,22 @@ const Edit = ({ attributes, setAttributes, context }) => {
 				};
 			}
 
-			if (isEventPostType()) {
+			if ( isEventPostType() ) {
 				return {
 					dateTimeStart: select(
-						'gatherpress/datetime'
+						'gatherpress/datetime',
 					).getDateTimeStart(),
 					dateTimeEnd: select(
-						'gatherpress/datetime'
+						'gatherpress/datetime',
 					).getDateTimeEnd(),
-					timezone: select('gatherpress/datetime').getTimezone(),
+					timezone: select( 'gatherpress/datetime' ).getTimezone(),
 				};
 			}
 
-			const meta = select('core').getEntityRecord(
+			const meta = select( 'core' ).getEntityRecord(
 				'postType',
 				'gatherpress_event',
-				postId
+				postId,
 			)?.meta;
 
 			return {
@@ -194,12 +194,12 @@ const Edit = ({ attributes, setAttributes, context }) => {
 				timezone: meta?.gatherpress_timezone,
 			};
 		},
-		[postId]
+		[ postId ],
 	);
 
-	if (postId && (!dateTimeStart || !dateTimeEnd || !timezone)) {
+	if ( postId && ( ! dateTimeStart || ! dateTimeEnd || ! timezone ) ) {
 		return (
-			<div {...blockProps}>
+			<div { ...blockProps }>
 				<Spinner />
 			</div>
 		);
@@ -209,12 +209,12 @@ const Edit = ({ attributes, setAttributes, context }) => {
 	const showEndTime = ['end', 'both'].includes(displayType);
 
 	return (
-		<div {...blockProps}>
+		<div { ...blockProps }>
 			<BlockControls>
 				<AlignmentToolbar
-					value={textAlign}
-					onChange={(newAlign) =>
-						setAttributes({ textAlign: newAlign })
+					value={ textAlign }
+					onChange={ ( newAlign ) =>
+						setAttributes( { textAlign: newAlign } )
 					}
 				/>
 			</BlockControls>
@@ -230,7 +230,7 @@ const Edit = ({ attributes, setAttributes, context }) => {
 			{isEventPostType() && (
 				<InspectorControls>
 					<PanelBody>
-						<VStack spacing={4}>
+						<VStack spacing={ 4 }>
 							<DateTimeRange />
 						</VStack>
 						<div style={{ height: '1rem' }} />
@@ -332,7 +332,7 @@ const Edit = ({ attributes, setAttributes, context }) => {
 						/>
 					</PanelBody>
 				</InspectorControls>
-			)}
+			) }
 		</div>
 	);
 };

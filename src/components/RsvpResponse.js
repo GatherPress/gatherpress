@@ -28,86 +28,86 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered RSVP response component.
  */
-const RsvpResponse = ({ defaultStatus = 'attending' }) => {
+const RsvpResponse = ( { defaultStatus = 'attending' } ) => {
 	const defaultLimit = 8;
-	const hasEventPast = getFromGlobal('eventDetails.hasEventPast');
+	const hasEventPast = getFromGlobal( 'eventDetails.hasEventPast' );
 	const items = [
 		{
 			title:
 				false === hasEventPast
 					? _x(
-							'Attending',
-							'RSVP status option for upcoming events',
-							'gatherpress'
-						)
+						'Attending',
+						'RSVP status option for upcoming events',
+						'gatherpress',
+					)
 					: _x(
-							'Went',
-							'RSVP status option for past events',
-							'gatherpress'
-						),
+						'Went',
+						'RSVP status option for past events',
+						'gatherpress',
+					),
 			value: 'attending',
 		},
 		{
 			title:
 				false === hasEventPast
 					? _x(
-							'Waiting List',
-							'RSVP status option for upcoming events',
-							'gatherpress'
-						)
+						'Waiting List',
+						'RSVP status option for upcoming events',
+						'gatherpress',
+					)
 					: _x(
-							'Wait Listed',
-							'RSVP status option for past events',
-							'gatherpress'
-						),
+						'Wait Listed',
+						'RSVP status option for past events',
+						'gatherpress',
+					),
 			value: 'waiting_list',
 		},
 		{
 			title:
 				false === hasEventPast
 					? _x(
-							'Not Attending',
-							'RSVP status option for upcoming events',
-							'gatherpress'
-						)
+						'Not Attending',
+						'RSVP status option for upcoming events',
+						'gatherpress',
+					)
 					: _x(
-							"Didn't Go",
-							'RSVP status option for past events',
-							'gatherpress'
-						),
+						"Didn't Go",
+						'RSVP status option for past events',
+						'gatherpress',
+					),
 			value: 'not_attending',
 		},
 	];
 
-	const [rsvpStatus, setRsvpStatus] = useState(defaultStatus);
-	const [rsvpLimit, setRsvpLimit] = useState(defaultLimit);
+	const [ rsvpStatus, setRsvpStatus ] = useState( defaultStatus );
+	const [ rsvpLimit, setRsvpLimit ] = useState( defaultLimit );
 
-	const onTitleClick = (e, value) => {
+	const onTitleClick = ( e, value ) => {
 		e.preventDefault();
-		setRsvpStatus(value);
+		setRsvpStatus( value );
 	};
 
-	Listener({ setRsvpStatus }, getFromGlobal('eventDetails.postId'));
+	Listener( { setRsvpStatus }, getFromGlobal( 'eventDetails.postId' ) );
 
 	// Make sure rsvpStatus is a valid status, if not, set to default.
-	if (!items.some((item) => item.value === rsvpStatus)) {
-		setRsvpStatus(defaultStatus);
+	if ( ! items.some( ( item ) => item.value === rsvpStatus ) ) {
+		setRsvpStatus( defaultStatus );
 	}
 
 	return (
 		<div className="gatherpress-rsvp-response">
 			<RsvpResponseHeader
-				items={items}
-				activeValue={rsvpStatus}
-				onTitleClick={onTitleClick}
-				rsvpLimit={rsvpLimit}
-				setRsvpLimit={setRsvpLimit}
-				defaultLimit={defaultLimit}
+				items={ items }
+				activeValue={ rsvpStatus }
+				onTitleClick={ onTitleClick }
+				rsvpLimit={ rsvpLimit }
+				setRsvpLimit={ setRsvpLimit }
+				defaultLimit={ defaultLimit }
 			/>
 			<RsvpResponseContent
-				items={items}
-				activeValue={rsvpStatus}
-				limit={rsvpLimit}
+				items={ items }
+				activeValue={ rsvpStatus }
+				limit={ rsvpLimit }
 			/>
 		</div>
 	);

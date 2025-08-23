@@ -24,12 +24,12 @@ import {
  * @param {Function} props.generateFieldName - Function to generate field name from label.
  * @return {JSX.Element} The textarea field component.
  */
-export default function TextareaField({
+export default function TextareaField( {
 	attributes,
 	setAttributes,
 	blockProps,
 	generateFieldName,
-}) {
+} ) {
 	const {
 		fieldType,
 		fieldName,
@@ -46,63 +46,63 @@ export default function TextareaField({
 	} = attributes;
 
 	// Handle label blur to auto-generate field name.
-	const handleLabelBlur = (labelValue) => {
-		if (!fieldName && labelValue) {
-			const generatedFieldName = generateFieldName(labelValue);
-			if (generatedFieldName) {
-				setAttributes({ fieldName: generatedFieldName });
+	const handleLabelBlur = ( labelValue ) => {
+		if ( ! fieldName && labelValue ) {
+			const generatedFieldName = generateFieldName( labelValue );
+			if ( generatedFieldName ) {
+				setAttributes( { fieldName: generatedFieldName } );
 			}
 		}
 	};
 
 	return (
 		<div
-			{...blockProps}
-			className={getWrapperClasses(fieldType, blockProps, inlineLayout)}
+			{ ...blockProps }
+			className={ getWrapperClasses( fieldType, blockProps, inlineLayout ) }
 		>
 			<div
 				className="gatherpress-label-wrapper"
-				style={getLabelWrapperStyles(attributes)}
+				style={ getLabelWrapperStyles( attributes ) }
 			>
 				<RichText
 					tagName="label"
-					placeholder={__('Add label…', 'gatherpress')}
-					value={label}
-					onChange={(value) => setAttributes({ label: value })}
-					onBlur={() => handleLabelBlur(label)}
-					allowedFormats={[]}
-					style={getLabelStyles(attributes)}
+					placeholder={ __( 'Add label…', 'gatherpress' ) }
+					value={ label }
+					onChange={ ( value ) => setAttributes( { label: value } ) }
+					onBlur={ () => handleLabelBlur( label ) }
+					allowedFormats={ [] }
+					style={ getLabelStyles( attributes ) }
 				/>
-				{required && (
+				{ required && (
 					<RichText
 						tagName="span"
 						className="gatherpress-label-required"
-						placeholder={__('(required)', 'gatherpress')}
-						value={requiredText}
-						onChange={(value) =>
-							setAttributes({ requiredText: value })
+						placeholder={ __( '(required)', 'gatherpress' ) }
+						value={ requiredText }
+						onChange={ ( value ) =>
+							setAttributes( { requiredText: value } )
 						}
-						allowedFormats={[]}
-						style={{
-							...(requiredTextColor && {
+						allowedFormats={ [] }
+						style={ {
+							...( requiredTextColor && {
 								color: requiredTextColor,
-							}),
-						}}
+							} ),
+						} }
 					/>
-				)}
+				) }
 			</div>
 			<textarea
-				style={getInputStyles(fieldType, attributes)}
-				name={fieldName}
-				placeholder={placeholder}
-				defaultValue={fieldValue}
-				required={required}
-				readOnly={true}
-				tabIndex={-1}
+				style={ getInputStyles( fieldType, attributes ) }
+				name={ fieldName }
+				placeholder={ placeholder }
+				defaultValue={ fieldValue }
+				required={ required }
+				readOnly={ true }
+				tabIndex={ -1 }
 				autoComplete="off"
-				rows={textareaRows}
-				{...(undefined !== minValue && { minLength: minValue })}
-				{...(undefined !== maxValue && { maxLength: maxValue })}
+				rows={ textareaRows }
+				{ ...( undefined !== minValue && { minLength: minValue } ) }
+				{ ...( undefined !== maxValue && { maxLength: maxValue } ) }
 			/>
 		</div>
 	);

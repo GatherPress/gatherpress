@@ -17,7 +17,7 @@ import { dispatch, select } from '@wordpress/data';
  *       Monitor the issue for any updates or changes in the Gutenberg behavior.
  */
 export function enableSave() {
-	dispatch('core/editor')?.editPost({ meta: { _non_existing_meta: true } });
+	dispatch( 'core/editor' )?.editPost( { meta: { _non_existing_meta: true } } );
 }
 
 /**
@@ -33,7 +33,28 @@ export function enableSave() {
  * @return {boolean} True if the current post type is 'gatherpress_event' or 'gatherpress_venue', false otherwise.
  */
 export function isGatherPressPostType() {
-	const postType = select('core/editor')?.getCurrentPostType();
+	const postType = select( 'core/editor' )?.getCurrentPostType();
 
 	return 'gatherpress_event' === postType || 'gatherpress_venue' === postType;
+}
+
+/**
+ * Get the appropriate document context for the block editor.
+ *
+ * In FSE (Full Site Editing) contexts, blocks are rendered within an iframe
+ * with the name "editor-canvas". This function detects that iframe and returns
+ * its document, otherwise falls back to the main document for regular editors.
+ *
+ * @return {Document} The document object containing the block editor content.
+ */
+export function getEditorDocument() {
+	const iframe = global.document.querySelector(
+		'iframe[name="editor-canvas"]',
+	);
+
+	if ( iframe?.contentDocument ) {
+		return iframe.contentDocument;
+	}
+
+	return global.document;
 }

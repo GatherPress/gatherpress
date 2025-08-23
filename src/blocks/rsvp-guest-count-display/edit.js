@@ -18,51 +18,51 @@ import { useSelect } from '@wordpress/data';
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
-const Edit = ({ context }) => {
+const Edit = ( { context } ) => {
 	const { commentId } = context;
-	const rsvpResponses = context?.['gatherpress/rsvpResponses'] ?? null;
+	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
 
 	// Example guest count.
 	let guestCount = 1;
 
-	if (commentId && rsvpResponses) {
+	if ( commentId && rsvpResponses ) {
 		const matchedResponse = rsvpResponses.attending.records.find(
-			(response) => response.commentId === commentId
+			( response ) => response.commentId === commentId,
 		);
 
-		if (matchedResponse) {
+		if ( matchedResponse ) {
 			guestCount = matchedResponse.guests;
 		}
 	}
 
 	// Get max attendance limit from meta.
 	const maxAttendanceLimit = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
+		( select ) =>
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
 				?.gatherpress_max_guest_limit,
-		[]
+		[],
 	);
 
 	// Add the `gatherpress--is-not-visible` class conditionally via `useBlockProps`.
-	const blockProps = useBlockProps({
+	const blockProps = useBlockProps( {
 		className:
-			0 === maxAttendanceLimit && !commentId
+			0 === maxAttendanceLimit && ! commentId
 				? 'gatherpress--is-not-visible'
 				: '',
-	});
+	} );
 
 	// If the guest count is 0, return nothing.
-	if (0 === guestCount) {
-		return <div {...blockProps}></div>;
+	if ( 0 === guestCount ) {
+		return <div { ...blockProps }></div>;
 	}
 
 	const guestText = sprintf(
 		/* translators: %d: Number of guests. Singular and plural forms are used for 1 guest and multiple guests, respectively. */
-		_n('+%d guest', '+%d guests', guestCount, 'gatherpress'),
-		guestCount
+		_n( '+%d guest', '+%d guests', guestCount, 'gatherpress' ),
+		guestCount,
 	);
 
-	return <div {...blockProps}>{guestText}</div>;
+	return <div { ...blockProps }>{ guestText }</div>;
 };
 
 export default Edit;

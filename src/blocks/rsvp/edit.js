@@ -24,14 +24,14 @@ import TEMPLATES from './templates';
  * @param {Array} template The block template structure.
  * @return {Array} Array of blocks created from the template.
  */
-function templateToBlocks(template) {
-	return template.map(([name, attributes, innerBlocks]) => {
+function templateToBlocks( template ) {
+	return template.map( ( [ name, attributes, innerBlocks ] ) => {
 		return createBlock(
 			name,
 			attributes,
-			templateToBlocks(innerBlocks || [])
+			templateToBlocks( innerBlocks || [] ),
 		);
-	});
+	} );
 }
 
 /**
@@ -46,149 +46,238 @@ function templateToBlocks(template) {
  *
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
-const Edit = ({ attributes, setAttributes, clientId }) => {
+const Edit = ( { attributes, setAttributes, clientId } ) => {
 	const { serializedInnerBlocks = '{}', selectedStatus } = attributes;
 	const blockProps = useBlockProps();
-	const { replaceInnerBlocks } = useDispatch(blockEditorStore);
+	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
 
 	// Get the current inner blocks
 	const innerBlocks = useSelect(
-		(select) => select(blockEditorStore).getBlocks(clientId),
-		[clientId]
+		( select ) => select( blockEditorStore ).getBlocks( clientId ),
+		[ clientId ],
 	);
+
+	// Get max attendance limit from post meta to control guest count field visibility.
+	const maxAttendanceLimit = useSelect(
+		( select ) => {
+			const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+			return meta?.gatherpress_max_guest_limit;
+		},
+	);
+
+	// Get anonymous RSVP setting from post meta to control anonymous checkbox visibility.
+	const enableAnonymousRsvp = useSelect(
+		( select ) => {
+			const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+			// Convert meta value to boolean.
+			return Boolean( meta?.gatherpress_enable_anonymous_rsvp );
+		},
+	);
+
+	/**
+	 * Apply conditional visibility class to form fields based on event settings.
+	 *
+	 * @param {Array} blocks Array of blocks to process.
+	 * @return {Array} Processed blocks with conditional classes applied.
+	 */
+	const applyFormFieldVisibility = useCallback( ( blocks ) => {
+		return blocks.map( ( block ) => {
+			// Check if this is a form-field block that needs conditional visibility.
+			if ( 'gatherpress/form-field' === block.name ) {
+				const fieldName = block.attributes?.fieldName;
+				let shouldHide = false;
+
+				// Determine if the field should be hidden based on its field name.
+				if ( 'gatherpress_rsvp_guest_count' === fieldName ) {
+					shouldHide = 0 === parseInt( maxAttendanceLimit, 10 );
+				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
+					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
+					shouldHide = ! enableAnonymousRsvp;
+				}
+
+				// Only process fields that have conditional visibility.
+				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
+					const currentClassName = block.attributes?.className || '';
+					const classNames = currentClassName.split( ' ' ).filter( Boolean );
+					const hiddenClass = 'gatherpress--is-not-visible';
+					const hasHiddenClass = classNames.includes( hiddenClass );
+
+					let newClassName = currentClassName;
+					if ( shouldHide && ! hasHiddenClass ) {
+						classNames.push( hiddenClass );
+						newClassName = classNames.join( ' ' );
+					} else if ( ! shouldHide && hasHiddenClass ) {
+						const filteredClasses = classNames.filter( ( name ) => name !== hiddenClass );
+						newClassName = filteredClasses.join( ' ' );
+					}
+
+					return {
+						...block,
+						attributes: {
+							...block.attributes,
+							className: newClassName,
+						},
+					};
+				}
+			}
+
+			// Recursively process inner blocks.
+			if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
+				return {
+					...block,
+					innerBlocks: applyFormFieldVisibility( block.innerBlocks ),
+				};
+			}
+
+			return block;
+		} );
+	}, [ maxAttendanceLimit, enableAnonymousRsvp ] );
 
 	// Save the provided inner blocks to the serializedInnerBlocks attribute
 	const saveInnerBlocks = useCallback(
-		(state, newState, blocks) => {
+		( state, newState, blocks ) => {
 			const currentSerializedBlocks = JSON.parse(
-				serializedInnerBlocks || '{}'
+				serializedInnerBlocks || '{}',
 			);
 
 			// Encode the serialized content for safe use in HTML attributes
-			const sanitizedSerialized = serialize(blocks);
+			const sanitizedSerialized = serialize( blocks );
 
 			const updatedBlocks = {
 				...currentSerializedBlocks,
-				[state]: sanitizedSerialized,
+				[ state ]: sanitizedSerialized,
 			};
 
-			delete updatedBlocks[newState];
+			delete updatedBlocks[ newState ];
 
-			setAttributes({
-				serializedInnerBlocks: JSON.stringify(updatedBlocks),
-			});
+			setAttributes( {
+				serializedInnerBlocks: JSON.stringify( updatedBlocks ),
+			} );
 		},
-		[serializedInnerBlocks, setAttributes]
+		[ serializedInnerBlocks, setAttributes ],
 	);
 
 	// Load inner blocks for a given state
 	const loadInnerBlocksForState = useCallback(
-		(state) => {
-			const savedBlocks = JSON.parse(serializedInnerBlocks || '{}')[
+		( state ) => {
+			const savedBlocks = JSON.parse( serializedInnerBlocks || '{}' )[
 				state
 			];
-			if (savedBlocks && savedBlocks.length > 0) {
-				replaceInnerBlocks(clientId, parse(savedBlocks, {}));
+			if ( savedBlocks && savedBlocks.length > 0 ) {
+				replaceInnerBlocks( clientId, parse( savedBlocks, {} ) );
 			}
 		},
-		[clientId, replaceInnerBlocks, serializedInnerBlocks]
+		[ clientId, replaceInnerBlocks, serializedInnerBlocks ],
 	);
 
 	// Handle status change: save current inner blocks and load new ones
-	const handleStatusChange = (newStatus) => {
-		loadInnerBlocksForState(newStatus); // Load blocks for the new state
-		setAttributes({
+	const handleStatusChange = ( newStatus ) => {
+		loadInnerBlocksForState( newStatus ); // Load blocks for the new state
+		setAttributes( {
 			selectedStatus: newStatus,
-		}); // Update the state
-		saveInnerBlocks(selectedStatus, newStatus, innerBlocks); // Save current inner blocks before switching state
+		} ); // Update the state
+		saveInnerBlocks( selectedStatus, newStatus, innerBlocks ); // Save current inner blocks before switching state
 	};
 
 	// Hydrate inner blocks for all statuses if not set
-	useEffect(() => {
+	useEffect( () => {
 		const hydrateInnerBlocks = () => {
 			const currentSerializedBlocks = JSON.parse(
-				serializedInnerBlocks || '{}'
+				serializedInnerBlocks || '{}',
 			);
 
-			const updatedBlocks = Object.keys(TEMPLATES).reduce(
-				(updatedSerializedBlocks, templateKey) => {
-					if (currentSerializedBlocks[templateKey]) {
-						updatedSerializedBlocks[templateKey] =
-							currentSerializedBlocks[templateKey];
+			const updatedBlocks = Object.keys( TEMPLATES ).reduce(
+				( updatedSerializedBlocks, templateKey ) => {
+					if ( currentSerializedBlocks[ templateKey ] ) {
+						updatedSerializedBlocks[ templateKey ] =
+							currentSerializedBlocks[ templateKey ];
 
 						return updatedSerializedBlocks;
 					}
 
-					if (templateKey !== selectedStatus) {
-						const blocks = templateToBlocks(TEMPLATES[templateKey]);
+					if ( templateKey !== selectedStatus ) {
+						const blocks = templateToBlocks( TEMPLATES[ templateKey ] );
 
-						updatedSerializedBlocks[templateKey] =
-							serialize(blocks);
+						updatedSerializedBlocks[ templateKey ] =
+							serialize( blocks );
 					}
 
 					return updatedSerializedBlocks;
 				},
-				{ ...currentSerializedBlocks }
+				{ ...currentSerializedBlocks },
 			);
 
-			setAttributes({
-				serializedInnerBlocks: JSON.stringify(updatedBlocks),
-			});
+			setAttributes( {
+				serializedInnerBlocks: JSON.stringify( updatedBlocks ),
+			} );
 		};
 
 		// Adding a setTimeout with 0ms delay pushes execution to the end of the event queue,
 		// ensuring WordPress has properly initialized the post state before we attempt to
 		// hydrate inner blocks. This prevents false "new post" detection that could interfere
 		// with block initialization.
-		setTimeout(() => {
+		setTimeout( () => {
 			hydrateInnerBlocks();
-		}, 0);
-	}, [serializedInnerBlocks, setAttributes, selectedStatus]);
+		}, 0 );
+	}, [ serializedInnerBlocks, setAttributes, selectedStatus ] );
+
+	// Apply form field visibility when event settings change.
+	useEffect( () => {
+		if ( innerBlocks && innerBlocks.length > 0 ) {
+			const updatedBlocks = applyFormFieldVisibility( innerBlocks );
+
+			// Only update if there are actual changes.
+			const hasChanges = JSON.stringify( updatedBlocks ) !== JSON.stringify( innerBlocks );
+			if ( hasChanges ) {
+				replaceInnerBlocks( clientId, updatedBlocks );
+			}
+		}
+	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId, replaceInnerBlocks, applyFormFieldVisibility, innerBlocks ] );
 
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={__('RSVP Block Settings', 'gatherpress')}>
+				<PanelBody title={ __( 'RSVP Block Settings', 'gatherpress' ) }>
 					<p>
-						{__(
+						{ __(
 							'Select an RSVP status to edit how this block appears for users with that status.',
-							'gatherpress'
-						)}
+							'gatherpress',
+						) }
 					</p>
 					<SelectControl
-						label={__('Edit Block Status', 'gatherpress')}
-						value={selectedStatus}
-						options={[
+						label={ __( 'Edit Block Status', 'gatherpress' ) }
+						value={ selectedStatus }
+						options={ [
 							{
 								label: __(
 									'No Response (Default)',
-									'gatherpress'
+									'gatherpress',
 								),
 								value: 'no_status',
 							},
 							{
-								label: __('Attending', 'gatherpress'),
+								label: __( 'Attending', 'gatherpress' ),
 								value: 'attending',
 							},
 							{
-								label: __('Waiting List', 'gatherpress'),
+								label: __( 'Waiting List', 'gatherpress' ),
 								value: 'waiting_list',
 							},
 							{
-								label: __('Not Attending', 'gatherpress'),
+								label: __( 'Not Attending', 'gatherpress' ),
 								value: 'not_attending',
 							},
 							{
-								label: __('Past Event', 'gatherpress'),
+								label: __( 'Past Event', 'gatherpress' ),
 								value: 'past',
 							},
-						]}
-						onChange={handleStatusChange}
+						] }
+						onChange={ handleStatusChange }
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div {...blockProps}>
-				<InnerBlocks template={TEMPLATES[selectedStatus]} />
+			<div { ...blockProps }>
+				<InnerBlocks template={ TEMPLATES[ selectedStatus ] } />
 			</div>
 		</>
 	);
