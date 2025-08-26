@@ -61,7 +61,7 @@ const Autocomplete = ( props ) => {
 
 	const selectContent = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			( token ) => typeof token === 'string' && ! contentSuggestions[ token ],
+			( token ) => 'string' === typeof token && ! contentSuggestions[ token ],
 		);
 
 		if ( hasNoSuggestion ) {
@@ -69,7 +69,7 @@ const Autocomplete = ( props ) => {
 		}
 
 		const allContent = tokens.map( ( token ) => {
-			return typeof token === 'string'
+			return 'string' === typeof token
 				? contentSuggestions[ token ]
 				: token;
 		} );

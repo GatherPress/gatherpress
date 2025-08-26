@@ -32,7 +32,7 @@ test.describe.skip( 'e2e test for venue map through admin side', () => {
 
 		const settingExpand = await settingButton.getAttribute( 'aria-expanded' );
 
-		if ( settingExpand === 'false' ) {
+		if ( 'false' === settingExpand ) {
 			await settingButton.click();
 		}
 		await expect( settingButton ).toHaveAttribute( 'aria-expanded', 'true' );
@@ -42,7 +42,7 @@ test.describe.skip( 'e2e test for venue map through admin side', () => {
 		} );
 		const venueExpand = await venueButton.getAttribute( 'aria-expanded' );
 
-		if ( venueExpand === 'false' ) {
+		if ( 'false' === venueExpand ) {
 			await venueButton.click();
 		}
 

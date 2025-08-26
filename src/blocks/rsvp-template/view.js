@@ -28,7 +28,7 @@ const { state } = store( 'gatherpress', {
 					post_id: context.postId,
 					block_data: element.ref.textContent,
 					limit_enabled:
-						rsvpResponseElement.dataset.limitEnabled === '1',
+						'1' === rsvpResponseElement.dataset.limitEnabled,
 					limit: parseInt( rsvpResponseElement.dataset.limit, 10 ),
 				} ),
 			} )
