@@ -22,7 +22,7 @@ test.describe.skip( 'e2e test for publish event through admin side', () => {
 
 		const settingExpand = await settingButton.getAttribute( 'aria-expanded' );
 
-		if ( settingExpand === 'false' ) {
+		if ( 'false' === settingExpand ) {
 			await settingButton.click();
 		}
 		await expect( settingButton ).toHaveAttribute( 'aria-expanded', 'true' );

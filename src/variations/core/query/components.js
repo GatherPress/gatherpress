@@ -236,9 +236,9 @@ export const EventOffsetControls = ( { attributes, setAttributes } ) => {
 export const EventOrderControls = ( { attributes, setAttributes } ) => {
 	const { query: { order, orderBy } = {} } = attributes;
 	let label;
-	if ( orderBy === 'rand' ) {
+	if ( 'rand' === orderBy ) {
 		label = __( 'Random Order', 'gatherpress' );
-	} else if ( order === 'asc' ) {
+	} else if ( 'asc' === order ) {
 		label = __( 'Ascending Order', 'gatherpress' );
 	} else {
 		label = __( 'Descending Order', 'gatherpress' );
@@ -281,13 +281,13 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 			/>
 			<ToggleControl
 				label={ label }
-				checked={ order === 'asc' }
-				disabled={ orderBy === 'rand' }
+				checked={ 'asc' === order }
+				disabled={ 'rand' === orderBy }
 				onChange={ () => {
 					setAttributes( {
 						query: {
 							...attributes.query,
-							order: order === 'asc' ? 'desc' : 'asc',
+							order: 'asc' === order ? 'desc' : 'asc',
 						},
 					} );
 				} }

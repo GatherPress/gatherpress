@@ -102,7 +102,7 @@ const List = ( {
 						key={ forcedCommentId || index }
 						value={ {
 							commentId:
-								forcedCommentId < 0 ? null : forcedCommentId,
+								0 > forcedCommentId ? null : forcedCommentId,
 						} }
 					>
 						<TemplateInnerBlocks

@@ -96,7 +96,7 @@ const withGatherPressQueryControls = ( BlockEdit ) => ( props ) => {
 			<BlockEdit { ...props } />
 			<InspectorControls>
 				<PanelBody title={ __( 'Event Query Settings', 'gatherpress' ) }>
-					{ props.attributes.query.inherit === false ? (
+					{ false === props.attributes.query.inherit ? (
 						<GatherPressQueryControls.Slot
 							fillProps={ { ...props } }
 						/>
