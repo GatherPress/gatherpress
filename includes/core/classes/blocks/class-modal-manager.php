@@ -91,21 +91,28 @@ class Modal_Manager {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--open-modal' ) ) {
-				if (
+			if ( $class_attr && str_contains( $class_attr, 'gatherpress--open-modal' ) ) {
+				$target_found = false;
+
+				// Check if current element is an anchor or button.
+				if ( in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true ) ) {
+					$target_found = true;
+				} elseif (
 					// @phpstan-ignore-next-line
 					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A' ), true )
+					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
 				) {
-					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-				} else {
+					$target_found = true;
+				}
+
+				// Apply modal attributes if target was found.
+				if ( $target_found ) {
 					$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
 					$tag->set_attribute( 'tabindex', '0' );
 					$tag->set_attribute( 'role', 'button' );
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
 				}
-
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
 			}
 		}
 
