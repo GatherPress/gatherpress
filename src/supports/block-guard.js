@@ -124,7 +124,7 @@ function generateBlockGuardStateKey( name, clientId ) {
 			( block ) => block.id === `block-${ clientId }`,
 		);
 
-		if ( blockIndex !== -1 ) {
+		if ( -1 !== blockIndex ) {
 			// Create a unique key for this block position within query loops.
 			// This ensures the 1st RSVP block across all posts shares state,
 			// but is independent from the 2nd RSVP block.

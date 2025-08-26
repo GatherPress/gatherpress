@@ -255,22 +255,22 @@ export async function sendRsvpApiRequest(
  * cleanup();
  */
 export function manageFocusTrap( focusableElements ) {
-	if ( ! focusableElements || focusableElements.length === 0 ) {
+	if ( ! focusableElements || 0 === focusableElements.length ) {
 		return () => {}; // Return an empty cleanup function if no elements..
 	}
 
 	const isElementVisible = ( element ) => {
 		return (
-			element.offsetParent !== null && // Excludes elements with `display: none`.
-			global.window.getComputedStyle( element ).visibility !== 'hidden' && // Excludes elements with `visibility: hidden`.
-			global.window.getComputedStyle( element ).opacity !== '0' // Excludes fully transparent elements..
+			null !== element.offsetParent && // Excludes elements with `display: none`.
+			'hidden' !== global.window.getComputedStyle( element ).visibility && // Excludes elements with `visibility: hidden`.
+			'0' !== global.window.getComputedStyle( element ).opacity // Excludes fully transparent elements..
 		);
 	};
 
 	// Filter out hidden elements..
 	const visibleFocusableElements = focusableElements.filter( isElementVisible );
 
-	if ( visibleFocusableElements.length === 0 ) {
+	if ( 0 === visibleFocusableElements.length ) {
 		return () => {}; // No visible elements, no trap needed..
 	}
 

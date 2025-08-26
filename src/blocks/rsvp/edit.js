@@ -122,7 +122,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			}
 
 			// Recursively process inner blocks.
-			if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
+			if ( block.innerBlocks && 0 < block.innerBlocks.length ) {
 				return {
 					...block,
 					innerBlocks: applyFormFieldVisibility( block.innerBlocks ),
@@ -163,7 +163,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			const savedBlocks = JSON.parse( serializedInnerBlocks || '{}' )[
 				state
 			];
-			if ( savedBlocks && savedBlocks.length > 0 ) {
+			if ( savedBlocks && 0 < savedBlocks.length ) {
 				replaceInnerBlocks( clientId, parse( savedBlocks, {} ) );
 			}
 		},
@@ -223,7 +223,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 
 	// Apply form field visibility when event settings change.
 	useEffect( () => {
-		if ( innerBlocks && innerBlocks.length > 0 ) {
+		if ( innerBlocks && 0 < innerBlocks.length ) {
 			const updatedBlocks = applyFormFieldVisibility( innerBlocks );
 
 			// Only update if there are actual changes.

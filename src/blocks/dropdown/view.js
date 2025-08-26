@@ -33,7 +33,7 @@ const { actions } = store( 'gatherpress', {
 			// If the dropdown is in select mode
 			if (
 				dropdownParent &&
-				dropdownParent.dataset.dropdownMode === 'select'
+				'select' === dropdownParent.dataset.dropdownMode
 			) {
 				// Get the dropdown menu and trigger
 				const dropdownMenu = dropdownParent.querySelector(

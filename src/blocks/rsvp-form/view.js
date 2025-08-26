@@ -39,7 +39,7 @@ const { state } = store( 'gatherpress', {
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
 				gatherpress_event_email_updates:
-					formData.get( 'gatherpress_event_email_updates' ) === 'on'
+					'on' === formData.get( 'gatherpress_event_email_updates' )
 						? true
 						: false,
 			};

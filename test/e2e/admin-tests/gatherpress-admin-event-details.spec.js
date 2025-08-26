@@ -30,7 +30,7 @@ test.describe.skip(
 			const settingExpand =
 				await settingButton.getAttribute( 'aria-expanded' );
 
-			if ( settingExpand === 'false' ) {
+			if ( 'false' === settingExpand ) {
 				await settingButton.click();
 			}
 			await expect( settingButton ).toHaveAttribute(
@@ -43,7 +43,7 @@ test.describe.skip(
 			} );
 			const eventExpand = await eventButton.getAttribute( 'aria-expanded' );
 
-			if ( eventExpand === 'false' ) {
+			if ( 'false' === eventExpand ) {
 				await eventButton.click();
 			}
 
