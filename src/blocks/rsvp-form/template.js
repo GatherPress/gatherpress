@@ -7,12 +7,7 @@ const TEMPLATE = [
 	[
 		'core/group',
 		{
-			className: 'gatherpress-rsvp-form-message',
-			style: {
-				display: {
-					display: 'none',
-				},
-			},
+			className: 'gatherpress--rsvp-form-message',
 		},
 		[
 			[

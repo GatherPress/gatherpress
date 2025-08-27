@@ -81,7 +81,7 @@ const { state } = store( 'gatherpress', {
 				if ( result && result.success ) {
 					// Success - show message block and disable form.
 					const messageContainer = form.querySelector(
-						'.gatherpress-rsvp-form-message',
+						'.gatherpress--rsvp-form-message',
 					);
 					if ( messageContainer ) {
 						messageContainer.style.display = 'block';
