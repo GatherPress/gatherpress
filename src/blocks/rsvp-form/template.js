@@ -62,7 +62,7 @@ const TEMPLATE = [
 			fieldType: 'checkbox',
 			fieldName: 'gatherpress_event_email_updates',
 			fieldValue: false,
-			label: __( 'Send me email updates about this event', 'gatherpress' ),
+			label: __( 'Email me updates about this event', 'gatherpress' ),
 		},
 	],
 	[

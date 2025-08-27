@@ -277,16 +277,23 @@ const NO_STATUS = [
 										'core/paragraph',
 										{
 											content: __(
-												'Don\'t have an account? <a href="#">RSVP here</a> as a guest.',
+												'Prefer not to register? <a href="#" class="gatherpress--open-modal">RSVP without an account</a>.',
 												'gatherpress',
 											),
-											className: 'gatherpress--open-modal',
+											className: 'gatherpress--has-rsvp-form',
 										},
 									],
 									[
 										'gatherpress/modal',
 										{
-											className: 'gatherpress--is-open-rsvp-modal',
+											className: 'gatherpress--is-rsvp-form-modal',
+											metadata: {
+												name: _x(
+													'RSVP Form Modal',
+													'Modal title in editor',
+													'gatherpress',
+												),
+											},
 										},
 										[
 											[
