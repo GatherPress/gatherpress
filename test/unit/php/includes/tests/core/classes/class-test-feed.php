@@ -1,6 +1,6 @@
 <?php
 /**
- * Test class for Event_Feed.
+ * Test class for Feed.
  *
  * @package GatherPress\Tests\Core
  * @since 1.0.0
@@ -9,26 +9,26 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
-use GatherPress\Core\Event_Feed;
+use GatherPress\Core\Feed;
 use GatherPress\Tests\Base;
 use WP_Query;
 
 /**
- * Class Test_Event_Feed.
+ * Class Test_Feed.
  *
  * @since 1.0.0
  *
- * @coversDefaultClass \GatherPress\Core\Event_Feed
+ * @coversDefaultClass \GatherPress\Core\Feed
  */
-class Test_Event_Feed extends Base {
+class Test_Feed extends Base {
 	/**
-	 * Test instance of Event_Feed.
+	 * Test instance of Feed.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @var Event_Feed
+	 * @var Feed
 	 */
-	protected Event_Feed $instance;
+	protected Feed $instance;
 
 	/**
 	 * Set up test environment.
@@ -39,7 +39,7 @@ class Test_Event_Feed extends Base {
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		$this->instance = Event_Feed::get_instance();
+		$this->instance = Feed::get_instance();
 	}
 
 	/**
@@ -52,8 +52,8 @@ class Test_Event_Feed extends Base {
 	 * @return void
 	 */
 	public function test_singleton_pattern(): void {
-		$instance1 = Event_Feed::get_instance();
-		$instance2 = Event_Feed::get_instance();
+		$instance1 = Feed::get_instance();
+		$instance2 = Feed::get_instance();
 
 		$this->assertSame( $instance1, $instance2 );
 	}

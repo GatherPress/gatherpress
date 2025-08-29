@@ -1,6 +1,6 @@
 <?php
 /**
- * Handles event feeds for GatherPress.
+ * Handles feeds for GatherPress.
  *
  * This class is responsible for improving the default RSS feeds for events,
  * including filtering to show only upcoming events, ordering by start date,
@@ -20,13 +20,13 @@ use GatherPress\Core\Settings;
 use WP_Query;
 
 /**
- * Class Event_Feed.
+ * Class Feed.
  *
- * Manages event feeds for GatherPress.
+ * Manages feeds for GatherPress.
  *
  * @since 1.0.0
  */
-class Event_Feed {
+class Feed {
 	/**
 	 * Enforces a single instance of this class.
 	 */
