@@ -85,6 +85,9 @@ const { state } = store( 'gatherpress', {
 					);
 					if ( messageContainer ) {
 						messageContainer.style.display = 'block';
+						messageContainer.setAttribute( 'aria-hidden', 'false' );
+						messageContainer.setAttribute( 'aria-live', 'polite' );
+						messageContainer.setAttribute( 'role', 'status' );
 					}
 
 					// Disable all form inputs.

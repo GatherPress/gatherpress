@@ -8,6 +8,13 @@ const TEMPLATE = [
 		'core/group',
 		{
 			className: 'gatherpress--rsvp-form-message',
+			style: {
+				spacing: {
+					margin: {
+						bottom: '1rem',
+					},
+				},
+			},
 		},
 		[
 			[

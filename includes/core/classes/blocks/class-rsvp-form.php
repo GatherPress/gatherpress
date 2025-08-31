@@ -162,6 +162,9 @@ class Rsvp_Form {
 				$updated_styles        = trim( $existing_styles_clean . ' display: none;' );
 
 				$tag->set_attribute( 'style', $updated_styles );
+				$tag->set_attribute( 'aria-hidden', 'true' );
+				$tag->set_attribute( 'aria-live', 'polite' );
+				$tag->set_attribute( 'role', 'status' );
 			}
 		}
 

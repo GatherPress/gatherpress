@@ -37,6 +37,9 @@ const Edit = () => {
 					showMessage ? 'block' : 'none',
 					'important',
 				);
+				element.setAttribute( 'aria-hidden', showMessage ? 'false' : 'true' );
+				element.setAttribute( 'aria-live', 'polite' );
+				element.setAttribute( 'role', 'status' );
 			} );
 		};
 
