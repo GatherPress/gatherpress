@@ -81,10 +81,13 @@ const { state } = store( 'gatherpress', {
 				if ( result && result.success ) {
 					// Success - show message block and disable form.
 					const messageContainer = form.querySelector(
-						'.gatherpress-rsvp-form-message',
+						'.gatherpress--rsvp-form-message',
 					);
 					if ( messageContainer ) {
 						messageContainer.style.display = 'block';
+						messageContainer.setAttribute( 'aria-hidden', 'false' );
+						messageContainer.setAttribute( 'aria-live', 'polite' );
+						messageContainer.setAttribute( 'role', 'status' );
 					}
 
 					// Disable all form inputs.

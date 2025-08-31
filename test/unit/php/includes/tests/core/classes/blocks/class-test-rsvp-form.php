@@ -196,7 +196,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests that transform_block_content hides success message blocks.
 	 *
-	 * Verifies that elements with gatherpress-rsvp-form-message class
+	 * Verifies that elements with gatherpress--rsvp-form-message class
 	 * are hidden by adding display:none style.
 	 *
 	 * @since 1.0.0
@@ -214,7 +214,7 @@ class Test_Rsvp_Form extends Base {
 		);
 
 		$block_content = '<div class="wp-block-gatherpress-rsvp-form">
-			<div class="gatherpress-rsvp-form-message">Success message</div>
+			<div class="gatherpress--rsvp-form-message">Success message</div>
 			<div class="form-field">Form field</div>
 		</div>';
 		$block         = array(
@@ -226,7 +226,7 @@ class Test_Rsvp_Form extends Base {
 
 		$transformed_content = $instance->transform_block_content( $block_content, $block );
 
-		$this->assertStringContainsString( 'gatherpress-rsvp-form-message', $transformed_content );
+		$this->assertStringContainsString( 'gatherpress--rsvp-form-message', $transformed_content );
 		$this->assertStringContainsString( 'display: none;', $transformed_content );
 	}
 
