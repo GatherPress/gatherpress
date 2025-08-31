@@ -37,7 +37,7 @@ const WAITING_LIST = [
 								'gatherpress',
 							),
 							tagName: 'button',
-							className: 'gatherpress--open-modal',
+							className: 'gatherpress--has-modal-trigger',
 							metadata: {
 								name: _x(
 									'RSVP Button',
@@ -102,7 +102,7 @@ const WAITING_LIST = [
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress--is-rsvp-modal',
+					className: 'gatherpress-modal--rsvp',
 					metadata: {
 						name: _x(
 							'RSVP Modal',
@@ -205,7 +205,7 @@ const WAITING_LIST = [
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--update-rsvp',
+												'gatherpress--has-rsvp-update',
 											metadata: {
 												name: _x(
 													'RSVP Button',
@@ -225,7 +225,7 @@ const WAITING_LIST = [
 											),
 											tagName: 'button',
 											className:
-												'is-style-outline gatherpress--close-modal',
+												'is-style-outline gatherpress--has-modal-trigger',
 											metadata: {
 												name: _x(
 													'Close Button',

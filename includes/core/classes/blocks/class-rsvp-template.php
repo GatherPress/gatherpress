@@ -205,7 +205,7 @@ class Rsvp_Template {
 			if ( isset( $args['limit'], $args['index'] ) ) {
 				// Check if the RSVP limit has been reached.
 				if ( $args['index'] >= $args['limit'] ) {
-					$class_name = 'gatherpress--is-not-visible';
+					$class_name = 'gatherpress--is-hidden';
 				}
 			}
 		}

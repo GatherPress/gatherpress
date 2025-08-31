@@ -104,11 +104,11 @@ const { state, actions } = store( 'gatherpress', {
 					if ( [ 'not_attending', 'no_status' ].includes( rsvpStatus ) ) {
 						const attendingStatusButton =
 							rsvpContainer.querySelector(
-								'[data-rsvp-status="attending"] .gatherpress--update-rsvp',
+								'[data-rsvp-status="attending"] .gatherpress--has-rsvp-update',
 							);
 
 						const closeButton = rsvpContainer.querySelector(
-							'[data-rsvp-status="attending"] .gatherpress--close-modal button',
+							'[data-rsvp-status="attending"] .gatherpress--has-modal-trigger button',
 						);
 
 						actions.openModal( null, attendingStatusButton );
@@ -186,11 +186,11 @@ const { state, actions } = store( 'gatherpress', {
 					innerBlock.getAttribute( 'data-rsvp-status' ) ===
 					state.posts[ postId ].currentUser.status
 				) {
-					innerBlock.classList.remove( 'gatherpress--is-not-visible' );
+					innerBlock.classList.remove( 'gatherpress--is-hidden' );
 					// Move the visible block to the start of its parent.
 					parent.insertBefore( innerBlock, parent.firstChild );
 				} else {
-					innerBlock.classList.add( 'gatherpress--is-not-visible' );
+					innerBlock.classList.add( 'gatherpress--is-hidden' );
 				}
 			} );
 		},
@@ -230,9 +230,9 @@ const { state, actions } = store( 'gatherpress', {
 			element.ref.textContent = text;
 
 			if ( 0 < guestCount ) {
-				element.ref.classList.remove( 'gatherpress--is-not-visible' );
+				element.ref.classList.remove( 'gatherpress--is-hidden' );
 			} else {
-				element.ref.classList.add( 'gatherpress--is-not-visible' );
+				element.ref.classList.add( 'gatherpress--is-hidden' );
 			}
 		},
 	},

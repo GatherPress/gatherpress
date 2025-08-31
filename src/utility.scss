@@ -2,12 +2,11 @@
 	display: block !important;
 }
 
-.gatherpress--is-not-visible {
+.gatherpress--is-hidden {
 	display: none !important;
 }
 
-.gatherpress--open-modal,
-.gatherpress--close-modal {
+.gatherpress--has-modal-trigger {
 	cursor: pointer;
 }
 

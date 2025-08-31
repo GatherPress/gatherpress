@@ -73,7 +73,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 
 		const updateBlockVisibility = () => {
 			const emptyBlocks = editorDoc.querySelectorAll(
-				'.gatherpress--empty-rsvp',
+				'.gatherpress--is-empty',
 			);
 			const responseBlocks = editorDoc.querySelectorAll(
 				'.gatherpress--rsvp-responses',

@@ -294,7 +294,7 @@ class Form_Field {
 	 */
 	public function get_wrapper_classes(): array {
 		$field_type = $this->get_field_type();
-		$classes    = array( sprintf( 'gatherpress-field-type-%s', esc_attr( $field_type ) ) );
+		$classes    = array( sprintf( 'gatherpress-field--%s', esc_attr( $field_type ) ) );
 
 		// Add inline layout class for text-based fields.
 		if (

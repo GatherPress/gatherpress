@@ -140,17 +140,17 @@ class Test_Rsvp extends Base {
 			'The transform_block_content method should display content for the attending status without a visibility class.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-not-visible" data-rsvp-status="no_status"><p>No status content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status"><p>No status content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the no_status status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-not-visible" data-rsvp-status="waiting_list"><p>Waiting List content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="waiting_list"><p>Waiting List content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the waiting_list status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-not-visible" data-rsvp-status="not_attending"><p>Not Attending content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="not_attending"><p>Not Attending content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the not_attending status as not visible.'
 		);
@@ -340,7 +340,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_for_button(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--update-rsvp"><button>RSVP</button></div>';
+		$input    = '<div class="gatherpress--has-rsvp-update"><button>RSVP</button></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
@@ -384,7 +384,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_for_link(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--update-rsvp"><a href="#">RSVP</a></div>';
+		$input    = '<div class="gatherpress--has-rsvp-update"><a href="#">RSVP</a></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
@@ -408,7 +408,7 @@ class Test_Rsvp extends Base {
 	 * Tests the apply_rsvp_button_interactivity method with a status-specific class.
 	 *
 	 * Ensures that when the RSVP element includes a status-specific class
-	 * (e.g., gatherpress--update-rsvp__attending), the correct data-set-status
+	 * (e.g., gatherpress--has-rsvp-update__attending), the correct data-set-status
 	 * attribute is added to reflect the status.
 	 *
 	 * Specifically checks for:
@@ -421,7 +421,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_with_status(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--update-rsvp__attending"><button>Attending</button></div>';
+		$input    = '<div class="gatherpress--has-rsvp-update__attending"><button>Attending</button></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
@@ -446,7 +446,7 @@ class Test_Rsvp extends Base {
 	public function test_apply_guest_count_watch_with_no_guests(): void {
 		$instance = Rsvp::get_instance();
 		$input    = '<div data-user-details=\'{"guests":0}\'><div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
-		$expected = '<div data-user-details=\'{"guests":0}\'><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-not-visible">Guest Count</div></div>';
+		$expected = '<div data-user-details=\'{"guests":0}\'><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-hidden">Guest Count</div></div>';
 		$result   = $instance->apply_guest_count_watch( $input );
 
 		$this->assertSame(
@@ -477,7 +477,7 @@ class Test_Rsvp extends Base {
 		$this->assertSame(
 			$expected,
 			$result,
-			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute without adding the gatherpress--is-not-visible class when the guest count is greater than zero.'
+			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute without adding the gatherpress--is-hidden class when the guest count is greater than zero.'
 		);
 	}
 
@@ -496,13 +496,13 @@ class Test_Rsvp extends Base {
 	public function test_apply_guest_count_watch_no_user_details(): void {
 		$instance = Rsvp::get_instance();
 		$input    = '<div><div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
-		$expected = '<div><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-not-visible">Guest Count</div></div>';
+		$expected = '<div><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-hidden">Guest Count</div></div>';
 		$result   = $instance->apply_guest_count_watch( $input );
 
 		$this->assertSame(
 			$expected,
 			$result,
-			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute and the gatherpress--is-not-visible class when no user details are present.'
+			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute and the gatherpress--is-hidden class when no user details are present.'
 		);
 	}
 

@@ -143,7 +143,7 @@ class Rsvp {
 				$inner_blocks_markup = '';
 
 				foreach ( $serialized_inner_blocks as $status => $serialized_inner_block ) {
-					$class                = $status !== $filtered_status ? 'gatherpress--is-not-visible' : '';
+					$class                = $status !== $filtered_status ? 'gatherpress--is-hidden' : '';
 					$inner_blocks_markup .= sprintf(
 						'<div class="%s" data-rsvp-status="%s">%s</div>',
 						esc_attr( $class ),
@@ -183,7 +183,7 @@ class Rsvp {
 	 * Adds interactivity to RSVP buttons within the block content.
 	 *
 	 * This method scans the block content for elements with the class
-	 * `gatherpress--update-rsvp`. If such an element is found, it checks for a
+	 * `gatherpress--has-rsvp-update`. If such an element is found, it checks for a
 	 * nested `<a>` or `<button>` tag. The appropriate attributes for interactivity
 	 * are added to either the nested tag or the containing element if no nested tag
 	 * exists.
@@ -197,8 +197,8 @@ class Rsvp {
 	public function apply_rsvp_button_interactivity( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		// Process only tags with the specific class 'gatherpress--update-rsvp'.
-		$rsvp_class = 'gatherpress--update-rsvp';
+		// Process only tags with the specific class 'gatherpress--has-rsvp-update'.
+		$rsvp_class = 'gatherpress--has-rsvp-update';
 
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
@@ -271,7 +271,7 @@ class Rsvp {
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.updateGuestCountDisplay' );
 
 				if ( empty( $user_details['guests'] ) ) {
-					$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-not-visible' );
+					$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-hidden' );
 				}
 			}
 		}

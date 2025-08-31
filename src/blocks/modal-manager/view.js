@@ -105,10 +105,10 @@ const { actions } = store( 'gatherpress', {
 			 */
 			if (
 				findActiveSibling &&
-				modalManager.closest( '.gatherpress--is-not-visible' )
+				modalManager.closest( '.gatherpress--is-hidden' )
 			) {
 				const hiddenContainer = modalManager.closest(
-					'.gatherpress--is-not-visible',
+					'.gatherpress--is-hidden',
 				);
 				const parent = hiddenContainer.parentElement;
 
@@ -119,7 +119,7 @@ const { actions } = store( 'gatherpress', {
 						if (
 							sibling !== hiddenContainer &&
 							! sibling.classList.contains(
-								'gatherpress--is-not-visible',
+								'gatherpress--is-hidden',
 							)
 						) {
 							const visibleModalManager = sibling.querySelector(
@@ -170,7 +170,7 @@ const { actions } = store( 'gatherpress', {
 
 			// Return focus to the open modal button.
 			const openButton = modalManager.querySelector(
-				'.gatherpress--open-modal button',
+				'.gatherpress--has-modal-trigger button',
 			);
 
 			if ( openButton ) {
