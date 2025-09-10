@@ -14,6 +14,11 @@
 - [`gatherpress_time_format`](gatherpress_time_format)
 - [`gatherpress_timezone`](gatherpress_timezone)
 
+## class-feed.php
+
+- [`gatherpress_event_feed_content`](gatherpress_event_feed_content) Filters the event content in feeds.
+- [`gatherpress_event_feed_excerpt`](gatherpress_event_feed_excerpt) Filters the event excerpt in feeds.
+
 ## class-import.php
 
 - [`gatherpress_import`](gatherpress_import) Fires for every GatherPress data to be imported.
