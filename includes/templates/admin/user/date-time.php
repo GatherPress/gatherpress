@@ -9,7 +9,7 @@
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-if ( ! isset( $date_format, $time_format, $timezone, $date_attrs, $time_attrs, $tz_choices ) ) {
+if ( ! isset( $time_format, $timezone, $tz_choices ) ) {
 	return;
 }
 ?>
@@ -32,29 +32,21 @@ if ( ! isset( $date_format, $time_format, $timezone, $date_attrs, $time_attrs, $
 	</div>
 	<table class="form-table" aria-describedby="gatherpress-user-date-time">
 		<tr>
-			<th scope="row"><label for="gatherpress_date_format"><?php esc_html_e( 'Date Format', 'gatherpress' ); ?></label></th>
+			<th><label for="gatherpress_time_format"><?php esc_html_e( 'Time Format', 'gatherpress' ) ?></label></th>
 			<td>
 				<div class="form-wrap">
-					<label for="gatherpress_date_format"><?php esc_html_e( 'Format of date for scheduled events.', 'gatherpress' ); ?></label>
-					<input type="text" name="gatherpress_date_format" id="gatherpress_date_format" value="<?php echo esc_attr( $date_format ); ?>" />
-					<p>
-						<strong><?php esc_html_e( 'Preview', 'gatherpress' ); ?>:</strong>
-						<span data-gatherpress_component_name="datetime-preview" data-gatherpress_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $date_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
-					</p>
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<th>
-				<label for="gatherpress_time_format"><?php esc_html_e( 'Time Format', 'gatherpress' ); ?></label></th>
-			<td>
-				<div class="form-wrap">
-					<label for="gatherpress_date_format"><?php esc_html_e( 'Format of time for scheduled events.', 'gatherpress' ); ?></label>
-					<input type="text" name="gatherpress_time_format" id="gatherpress_time_format" value="<?php echo esc_attr( $time_format ); ?>" />
-					<p>
-						<strong><?php esc_html_e( 'Preview', 'gatherpress' ); ?>:</strong>
-						<span data-gatherpress_component_name="datetime-preview" data-gatherpress_component_attrs="<?php echo esc_attr( htmlspecialchars( wp_json_encode( $time_attrs ), ENT_QUOTES, 'UTF-8' ) ); ?>"></span>
-					</p>
+					<label for="gatherpress_time_format"><?php esc_html_e( 'Format of time for scheduled events.', 'gatherpress' ); ?></label>
+					<select name="gatherpress_time_format" id="gatherpress_time_format">
+						<option value="">
+							<?php esc_html_e( 'Default', 'gatherpress' ); ?>
+						</option>
+						<option value="12-hour" <?php selected( '12-hour', $time_format ); ?>>
+							<?php esc_html_e( '12-hour', 'gatherpress' ); ?>
+						</option>
+						<option value="24-hour" <?php selected( '24-hour', $time_format ); ?>>
+							<?php esc_html_e( '24-hour', 'gatherpress' ); ?>
+						</option>
+					</select>
 				</div>
 			</td>
 		</tr>
