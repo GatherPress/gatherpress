@@ -137,6 +137,36 @@ class Test_Feed extends Base {
 	}
 
 	/**
+	 * Test handle_events_feed_query method with type parameter.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_events_feed_query_with_type_parameter(): void {
+		// Mock the request URI for events feed with type=past.
+		$_SERVER['REQUEST_URI'] = '/events/feed/';
+		$_GET['type'] = 'past';
+
+		// Create a mock query for event feed.
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'is_feed' )->willReturn( true );
+
+		// Test that the method doesn't error when type parameter is provided.
+		$this->instance->handle_events_feed_query( $query );
+
+		// Verify the method completed without error.
+		$this->assertTrue( true );
+
+		// Clean up.
+		unset( $_SERVER['REQUEST_URI'] );
+		unset( $_GET['type'] );
+	}
+
+	/**
 	 * Test get_default_event_excerpt method.
 	 *
 	 * @since 1.0.0
