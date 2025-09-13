@@ -180,7 +180,7 @@ class Event {
 		// Set end date/time.
 		if ( $show_end ) {
 			$end = $show_start && $this->is_same_date()
-				? $this->get_time_end( $end_format )
+				? $this->get_time_end( $end_format ? $end_format : $time_format )
 				: $this->get_datetime_end(
 					$end_format ? $end_format : "{$date_format} {$time_format}"
 				);
