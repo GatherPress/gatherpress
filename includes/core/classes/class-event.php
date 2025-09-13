@@ -205,7 +205,7 @@ class Event {
 		);
 
 		// Stick the parts back together.
-		return $parts ? implode( ' ', $parts ) : __( '—', 'gatherpress' );
+		return $parts ? implode( ' ', $parts ) : '-';
 	}
 
 	/**

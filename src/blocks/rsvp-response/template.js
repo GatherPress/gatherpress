@@ -129,7 +129,7 @@ const TEMPLATE = [
 					'gatherpress',
 				),
 			},
-			className: 'gatherpress--empty-rsvp gatherpress--is-not-visible',
+			className: 'gatherpress--empty-rsvp',
 		},
 		[
 			[

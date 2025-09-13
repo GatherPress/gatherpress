@@ -39,7 +39,7 @@ const { state } = store( 'gatherpress', {
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
 				gatherpress_event_email_updates:
-					formData.get( 'gatherpress_event_email_updates' ) === 'on'
+					'on' === formData.get( 'gatherpress_event_email_updates' )
 						? true
 						: false,
 			};
@@ -81,10 +81,13 @@ const { state } = store( 'gatherpress', {
 				if ( result && result.success ) {
 					// Success - show message block and disable form.
 					const messageContainer = form.querySelector(
-						'.gatherpress-rsvp-form-message',
+						'.gatherpress--rsvp-form-message',
 					);
 					if ( messageContainer ) {
 						messageContainer.style.display = 'block';
+						messageContainer.setAttribute( 'aria-hidden', 'false' );
+						messageContainer.setAttribute( 'aria-live', 'polite' );
+						messageContainer.setAttribute( 'role', 'status' );
 					}
 
 					// Disable all form inputs.

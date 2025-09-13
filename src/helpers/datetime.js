@@ -513,7 +513,7 @@ export function convertPHPToMomentFormat( format ) {
 		.map( ( chr, index, elements ) => {
 			// Allow the format string to contain escaped chars, like ES or DE needs
 			const last = elements[ index - 1 ];
-			if ( chr in replacements && last !== '\\' ) {
+			if ( chr in replacements && '\\' !== last ) {
 				return replacements[ chr ];
 			}
 			return chr;
