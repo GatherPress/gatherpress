@@ -35,6 +35,20 @@ class User {
 	use Singleton;
 
 	/**
+	 * 12-hour time preference value
+	 * 
+	 * @var string
+	 */
+	const HOUR_12 = '12-hour';
+
+	/**
+	 * 24-hour time preference value
+	 * 
+	 * @var string
+	 */
+	const HOUR_24 = '24-hour';
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -81,14 +95,14 @@ class User {
 		if ( $user_id ) {
 			$user_time_format = get_user_meta( $user_id, 'gatherpress_time_format', true );
 
-			if ( '12-hour' === $user_time_format ) {
+			if ( static::HOUR_12 === $user_time_format ) {
 				$time_format = str_replace( 'G', 'g', $time_format );
 
 				if ( false === strpos( $time_format, 'a' ) ) {
 					$time_format = str_replace( 'i', 'ia', $time_format );
 				}
 
-			} else if ( '24-hour' === $user_time_format ) {
+			} else if ( static::HOUR_24 === $user_time_format ) {
 				$time_format = str_replace(
 					[
 						'g',

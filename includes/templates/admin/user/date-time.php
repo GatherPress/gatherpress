@@ -6,6 +6,8 @@
  * @since 1.0.0
  */
 
+use GatherPress\Core\User;
+
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
@@ -40,10 +42,10 @@ if ( ! isset( $time_format, $timezone, $tz_choices ) ) {
 						<option value="">
 							<?php esc_html_e( 'Default', 'gatherpress' ); ?>
 						</option>
-						<option value="12-hour" <?php selected( '12-hour', $time_format ); ?>>
+						<option value="<?php echo esc_attr( User::HOUR_12 ); ?>" <?php selected( User::HOUR_12, $time_format ); ?>>
 							<?php esc_html_e( '12-hour', 'gatherpress' ); ?>
 						</option>
-						<option value="24-hour" <?php selected( '24-hour', $time_format ); ?>>
+						<option value="<?php echo esc_attr( User::HOUR_24 ); ?>" <?php selected( User::HOUR_24, $time_format ); ?>>
 							<?php esc_html_e( '24-hour', 'gatherpress' ); ?>
 						</option>
 					</select>
