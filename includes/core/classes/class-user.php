@@ -60,7 +60,7 @@ class User {
 		add_action( 'personal_options_update', array( $this, 'save_profile_fields' ) );
 		add_action( 'edit_user_profile_update', array( $this, 'save_profile_fields' ) );
 
-		add_filter( 'gatherpress_time_format', array( $this, 'user_set_time_format' ) );
+		add_filter( 'gatherpress_datetime_format', array( $this, 'user_set_time_format' ) );
 		add_filter( 'gatherpress_timezone', array( $this, 'user_set_timezone' ) );
 	}
 
@@ -80,7 +80,29 @@ class User {
 
 		if ( $user_id ) {
 			$user_time_format = get_user_meta( $user_id, 'gatherpress_time_format', true );
-			$time_format      = ! empty( $user_time_format ) ? $user_time_format : $time_format;
+
+			if ( '12-hour' === $user_time_format ) {
+				$time_format = str_replace( 'G', 'g', $time_format );
+
+				if ( false === strpos( $time_format, 'a' ) ) {
+					$time_format = str_replace( 'i', 'ia', $time_format );
+				}
+
+			} else if ( '24-hour' === $user_time_format ) {
+				$time_format = str_replace(
+					[
+						'g',
+						'a',
+						'A'
+					],
+					[
+						'G',
+						'',
+						'',
+					],
+					$time_format
+				);
+			}
 		}
 
 		return $time_format;
