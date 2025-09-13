@@ -386,8 +386,12 @@ class Event {
 		}
 
 		if ( ! empty( $date ) ) {
-			$ts   = strtotime( $date );
-			$date = wp_date( $format, $ts, $tz );
+			$ts   = strtotime( $date ); 
+			$date = wp_date(
+				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
+				$ts,
+				$tz
+			);
 		}
 
 		return (string) trim( $date );
