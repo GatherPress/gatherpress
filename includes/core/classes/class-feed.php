@@ -65,7 +65,7 @@ class Feed {
 		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
 
 		// Modify feed link for past events page.
-		add_filter( 'post_type_archive_feed_link', array( $this, 'modify_feed_link_for_past_events' ), 10, 2 );
+		add_filter( 'post_type_archive_feed_link', array( $this, 'modify_feed_link_for_past_events' ), 10, 1 );
 	}
 
 	/**
