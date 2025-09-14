@@ -63,6 +63,9 @@ class Feed {
 
 		// Hook into the main query to handle events feeds.
 		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
+
+		// Modify feed link for past events page.
+		add_filter( 'post_type_archive_feed_link', array( $this, 'modify_feed_link_for_past_events' ), 10, 2 );
 	}
 
 	/**
@@ -310,4 +313,24 @@ class Feed {
 		 */
 		return apply_filters( 'gatherpress_event_feed_content', $content );
 	}
+
+	/**
+	 * Modify feed link for past events page.
+	 *
+	 * @param string $feed_link The feed link URL.
+	 * @param string $feed The feed type.
+	 * @return string The modified feed link URL.
+	 */
+	public function modify_feed_link_for_past_events( $feed_link, $feed ): string {
+		global $wp_query;
+		
+		// Check if we're on the past events page by looking for the gatherpress_events_query var.
+		if ( isset( $wp_query->query_vars['gatherpress_events_query'] ) && $wp_query->query_vars['gatherpress_events_query'] === 'past' ) {
+			// Add type=past parameter.
+			return add_query_arg( 'type', 'past', $feed_link );
+		}
+		
+		return $feed_link;
+	}
+
 }
