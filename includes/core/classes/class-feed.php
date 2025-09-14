@@ -98,13 +98,13 @@ class Feed {
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
 				// Set the post type and let Event_Query handle the rest.
 				$query->set( 'post_type', Event::POST_TYPE );
-				
+
 				// Check for type parameter to determine if we want past or upcoming events.
 				$event_type = 'upcoming'; // Default to upcoming events.
 				if ( isset( $_GET['type'] ) && 'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) ) ) {
 					$event_type = 'past';
 				}
-				
+
 				$query->set( 'gatherpress_events_query', $event_type );
 			}
 		}
@@ -323,14 +323,13 @@ class Feed {
 	 */
 	public function modify_feed_link_for_past_events( $feed_link, $feed ): string {
 		global $wp_query;
-		
+
 		// Check if we're on the past events page by looking for the gatherpress_events_query var.
 		if ( isset( $wp_query->query_vars['gatherpress_events_query'] ) && $wp_query->query_vars['gatherpress_events_query'] === 'past' ) {
 			// Add type=past parameter.
 			return add_query_arg( 'type', 'past', $feed_link );
 		}
-		
+
 		return $feed_link;
 	}
-
 }

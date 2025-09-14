@@ -189,8 +189,8 @@ class Event_Query {
 					if ( $page->id === $query->queried_object_id ) {
 						$query->set( 'post_type', 'gatherpress_event' );
 
-						$page_id                     = $query->queried_object_id;
-						$events_query                = $key;
+						$page_id      = $query->queried_object_id;
+						$events_query = $key;
 						$query->set( 'gatherpress_events_query', $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;

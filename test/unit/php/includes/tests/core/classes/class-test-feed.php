@@ -148,7 +148,7 @@ class Test_Feed extends Base {
 	public function test_handle_events_feed_query_with_type_parameter(): void {
 		// Mock the request URI for events feed with type=past.
 		$_SERVER['REQUEST_URI'] = '/events/feed/';
-		$_GET['type'] = 'past';
+		$_GET['type']           = 'past';
 
 		// Create a mock query for event feed.
 		$query = $this->createMock( WP_Query::class );
@@ -195,12 +195,12 @@ class Test_Feed extends Base {
 	public function test_modify_feed_link_for_past_events_adds_type_parameter(): void {
 		// Mock the global wp_query with gatherpress_events_query set to 'past'.
 		global $wp_query;
-		$wp_query = $this->createMock( WP_Query::class );
+		$wp_query             = $this->createMock( WP_Query::class );
 		$wp_query->query_vars = array( 'gatherpress_events_query' => 'past' );
 
 		// Test the method with a feed link.
 		$feed_link = 'http://example.com/event/feed/';
-		$result = $this->instance->modify_feed_link_for_past_events( $feed_link, 'gatherpress_event' );
+		$result    = $this->instance->modify_feed_link_for_past_events( $feed_link, 'gatherpress_event' );
 
 		// Verify the result contains the type=past parameter.
 		$this->assertStringContainsString( 'type=past', $result );
