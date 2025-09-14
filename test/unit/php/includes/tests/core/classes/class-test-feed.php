@@ -177,7 +177,7 @@ class Test_Feed extends Base {
 	 */
 	public function test_modify_feed_link_for_past_events(): void {
 		// Test that the method doesn't error when called.
-		$result = $this->instance->modify_feed_link_for_past_events( 'http://example.com/event/feed/', 'gatherpress_event' );
+		$result = $this->instance->modify_feed_link_for_past_events( 'http://example.com/event/feed/' );
 
 		// Verify the method completed without error.
 		$this->assertTrue( true );
@@ -193,20 +193,29 @@ class Test_Feed extends Base {
 	 * @return void
 	 */
 	public function test_modify_feed_link_for_past_events_adds_type_parameter(): void {
-		// Mock the global wp_query with gatherpress_events_query set to 'past'.
+		// Store original global state.
 		global $wp_query;
-		$wp_query             = $this->createMock( WP_Query::class );
-		$wp_query->query_vars = array( 'gatherpress_events_query' => 'past' );
+		$original_wp_query = $wp_query;
+
+		// Create a mock WP_Query object with the required query_vars.
+		$mock_query             = $this->createMock( WP_Query::class );
+		$mock_query->query_vars = array( 'gatherpress_events_query' => 'past' );
+
+		// Temporarily replace the global wp_query.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Testing requires global manipulation.
+		$wp_query = $mock_query;
 
 		// Test the method with a feed link.
 		$feed_link = 'http://example.com/event/feed/';
-		$result    = $this->instance->modify_feed_link_for_past_events( $feed_link, 'gatherpress_event' );
+		$result    = $this->instance->modify_feed_link_for_past_events( $feed_link );
 
 		// Verify the result contains the type=past parameter.
 		$this->assertStringContainsString( 'type=past', $result );
+		$this->assertStringContainsString( 'http://example.com/event/feed/', $result );
 
-		// Clean up.
-		$wp_query = null;
+		// Restore original global state.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Testing requires global manipulation.
+		$wp_query = $original_wp_query;
 	}
 
 	/**

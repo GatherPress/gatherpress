@@ -101,7 +101,8 @@ class Feed {
 
 				// Check for type parameter to determine if we want past or upcoming events.
 				$event_type = 'upcoming'; // Default to upcoming events.
-				if ( isset( $_GET['type'] ) && 'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) ) ) {
+				if ( isset( $_GET['type'] ) && 'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter, nonce not required.
+					// Nonce verification not required for public feed URLs.
 					$event_type = 'past';
 				}
 
@@ -318,14 +319,13 @@ class Feed {
 	 * Modify feed link for past events page.
 	 *
 	 * @param string $feed_link The feed link URL.
-	 * @param string $feed The feed type.
 	 * @return string The modified feed link URL.
 	 */
-	public function modify_feed_link_for_past_events( $feed_link, $feed ): string {
+	public function modify_feed_link_for_past_events( $feed_link ): string {
 		global $wp_query;
 
 		// Check if we're on the past events page by looking for the gatherpress_events_query var.
-		if ( isset( $wp_query->query_vars['gatherpress_events_query'] ) && $wp_query->query_vars['gatherpress_events_query'] === 'past' ) {
+		if ( isset( $wp_query->query_vars['gatherpress_events_query'] ) && 'past' === $wp_query->query_vars['gatherpress_events_query'] ) {
 			// Add type=past parameter.
 			return add_query_arg( 'type', 'past', $feed_link );
 		}
