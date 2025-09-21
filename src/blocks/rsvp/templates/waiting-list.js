@@ -102,7 +102,7 @@ const WAITING_LIST = [
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress-modal--rsvp',
+					className: 'gatherpress-modal--type-rsvp',
 					metadata: {
 						name: _x(
 							'RSVP Modal',
