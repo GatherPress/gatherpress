@@ -153,7 +153,7 @@ class Modal {
 	 */
 	public function filter_login_modal( string $block_content, array $block ): string {
 		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress-modal--login' ) &&
+			str_contains( $block['attrs']['className'] ?? '', 'gatherpress-modal--login' ) &&
 			is_user_logged_in()
 		) {
 			return '';

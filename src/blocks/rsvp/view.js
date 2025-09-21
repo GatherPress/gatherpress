@@ -108,7 +108,7 @@ const { state, actions } = store( 'gatherpress', {
 							);
 
 						const closeButton = rsvpContainer.querySelector(
-							'[data-rsvp-status="attending"] .gatherpress--has-modal-trigger button',
+							'[data-rsvp-status="attending"] .gatherpress-modal--trigger-close button',
 						);
 
 						actions.openModal( null, attendingStatusButton );

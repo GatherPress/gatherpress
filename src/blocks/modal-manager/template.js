@@ -15,7 +15,7 @@ const TEMPLATE = [
 				'core/button',
 				{
 					text: __( 'Click Me!', 'gatherpress' ),
-					className: 'gatherpress--has-modal-trigger',
+					className: 'gatherpress-modal--trigger-open',
 					tagName: 'button',
 				},
 			],
@@ -52,7 +52,7 @@ const TEMPLATE = [
 								'core/button',
 								{
 									text: __( 'Close', 'gatherpress' ),
-									className: 'gatherpress--has-modal-trigger',
+									className: 'gatherpress-modal--trigger-close',
 									tagName: 'button',
 								},
 							],

@@ -203,13 +203,13 @@ class Rsvp {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, $rsvp_class ) ) {
+			if ( $class_attr && str_contains( $class_attr, $rsvp_class ) ) {
 				$classes        = explode( ' ', $class_attr );
 				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );
 				$matched_status = null;
 
 				foreach ( $classes as $class ) {
-					if ( false !== strpos( $class, $rsvp_class ) ) {
+					if ( str_contains( $class, $rsvp_class ) ) {
 						foreach ( $statuses as $status ) {
 							if ( sprintf( '%s__%s', $rsvp_class, $status ) === $class ) {
 								$matched_status = $status;
@@ -267,7 +267,7 @@ class Rsvp {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
+			if ( $class_attr && str_contains( $class_attr, 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.updateGuestCountDisplay' );
 
 				if ( empty( $user_details['guests'] ) ) {

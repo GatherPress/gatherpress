@@ -6,7 +6,8 @@
 	display: none !important;
 }
 
-.gatherpress--has-modal-trigger {
+.gatherpress-modal--trigger-open,
+.gatherpress-modal--trigger-close {
 	cursor: pointer;
 }
 

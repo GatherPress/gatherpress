@@ -170,7 +170,7 @@ const { actions } = store( 'gatherpress', {
 
 			// Return focus to the open modal button.
 			const openButton = modalManager.querySelector(
-				'.gatherpress--has-modal-trigger button',
+				'.gatherpress-modal--trigger-open button',
 			);
 
 			if ( openButton ) {
