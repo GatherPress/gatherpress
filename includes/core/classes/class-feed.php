@@ -110,7 +110,7 @@ class Feed {
 					$event_type = 'past';
 				}
 
-				$query->set( 'gatherpress_event_query', $event_type );
+				$query->set( 'gatherpress_events_query', $event_type );
 			}
 		}
 	}
@@ -330,10 +330,10 @@ class Feed {
 	public function modify_feed_link_for_past_events( $feed_link ): string {
 		global $wp_query;
 
-		// Check if we're on the past events page by looking for the gatherpress_event_query var.
+		// Check if we're on the past events page by looking for the gatherpress_events_query var.
 		if (
-			isset( $wp_query->query_vars['gatherpress_event_query'] ) &&
-			'past' === $wp_query->query_vars['gatherpress_event_query']
+			isset( $wp_query->query_vars['gatherpress_events_query'] ) &&
+			'past' === $wp_query->query_vars['gatherpress_events_query']
 		) {
 			// Add type=past parameter.
 			return add_query_arg( 'type', 'past', $feed_link );

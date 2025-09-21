@@ -199,7 +199,7 @@ class Test_Feed extends Base {
 
 		// Create a mock WP_Query object with the required query_vars.
 		$mock_query             = $this->createMock( WP_Query::class );
-		$mock_query->query_vars = array( 'gatherpress_event_query' => 'past' );
+		$mock_query->query_vars = array( 'gatherpress_events_query' => 'past' );
 
 		// Temporarily replace the global wp_query.
 		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Testing requires global manipulation.

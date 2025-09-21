@@ -83,7 +83,7 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'upcoming', $response->query['gatherpress_event_query'], 'Failed to assert query is upcoming.' );
+		$this->assertSame( 'upcoming', $response->query['gatherpress_events_query'], 'Failed to assert query is upcoming.' );
 		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
 	}
 
@@ -119,7 +119,7 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'past', $response->query['gatherpress_event_query'], 'Failed to assert query is past.' );
+		$this->assertSame( 'past', $response->query['gatherpress_events_query'], 'Failed to assert query is past.' );
 		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
 	}
 
@@ -205,7 +205,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
-		$query->set( 'gatherpress_event_query', 'upcoming' );
+		$query->set( 'gatherpress_events_query', 'upcoming' );
 		$instance->prepare_event_query_before_execution( $query );
 
 		$this->assertEquals(
@@ -232,7 +232,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
-		$query->set( 'gatherpress_event_query', 'past' );
+		$query->set( 'gatherpress_events_query', 'past' );
 		$instance->prepare_event_query_before_execution( $query );
 
 		$this->assertEquals(
@@ -275,7 +275,7 @@ class Test_Event_Query extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				function ( $key ) {
-					return 'gatherpress_event_query' === $key ? 'past' : null;
+					return 'gatherpress_events_query' === $key ? 'past' : null;
 				}
 			);
 

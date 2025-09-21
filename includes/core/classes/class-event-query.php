@@ -106,12 +106,12 @@ class Event_Query {
 		array $venues = array()
 	): WP_Query {
 		$args = array(
-			'post_type'               => Event::POST_TYPE,
-			'fields'                  => 'ids',
-			'no_found_rows'           => true,
-			'posts_per_page'          => $number,
-			'gatherpress_event_query' => $event_list_type,
-			'order'                   => 'ASC',
+			'post_type'                => Event::POST_TYPE,
+			'fields'                   => 'ids',
+			'no_found_rows'            => true,
+			'posts_per_page'           => $number,
+			'gatherpress_events_query' => $event_list_type,
+			'order'                    => 'ASC',
 		);
 
 		$tax_query = array();
@@ -162,7 +162,7 @@ class Event_Query {
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
-		$events_query = $query->get( 'gatherpress_event_query' );
+		$events_query = $query->get( 'gatherpress_events_query' );
 
 		if ( ! is_admin() && $query->is_main_query() ) {
 			$general = get_option( Utility::prefix_key( 'general' ) );
@@ -191,7 +191,7 @@ class Event_Query {
 						$events_query = $key;
 
 						$query->set( 'post_type', 'gatherpress_event' );
-						$query->set( 'gatherpress_event_query', $key );
+						$query->set( 'gatherpress_events_query', $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;
 						$query->is_archive           = true;
