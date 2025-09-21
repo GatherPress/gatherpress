@@ -49,7 +49,7 @@ const { state } = store( 'gatherpress', {
 						const grandParent = parent.parentElement;
 						const emptyRsvpMessageElement =
 							grandParent.querySelector(
-								'.gatherpress--is-empty',
+								'.gatherpress-rsvp-response--no-responses',
 							);
 
 						if ( emptyRsvpMessageElement ) {

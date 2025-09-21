@@ -129,7 +129,7 @@ const TEMPLATE = [
 					'gatherpress',
 				),
 			},
-			className: 'gatherpress--is-empty',
+			className: 'gatherpress-rsvp-response--no-responses',
 		},
 		[
 			[

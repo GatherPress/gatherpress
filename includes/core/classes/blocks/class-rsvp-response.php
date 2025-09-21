@@ -118,7 +118,7 @@ class Rsvp_Response {
 
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
-				if ( $class_attr && str_contains( $class_attr, 'gatherpress--is-empty' ) ) {
+				if ( $class_attr && str_contains( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
 					if ( ! empty( $counts['attending'] ) ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',

@@ -141,7 +141,7 @@ class Modal {
 	 * Filters the output of login modals for logged-in users.
 	 *
 	 * This method checks if the block is a `gatherpress/modal` block with the
-	 * `gatherpress-modal--login` class. If the user is logged in, it removes
+	 * `gatherpress-modal--type-login` class. If the user is logged in, it removes
 	 * the block's output.
 	 *
 	 * @since 1.0.0

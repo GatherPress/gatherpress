@@ -119,7 +119,7 @@ class Test_Rsvp_Response extends Base {
 				'postId' => $post_id,
 			),
 		);
-		$block_content = '<div><div class="gatherpress--is-empty">No RSVPs</div></div>';
+		$block_content = '<div><div class="gatherpress-rsvp-response--no-responses">No RSVPs</div></div>';
 		$result        = $instance->transform_block_content( $block_content, $block );
 
 		$this->assertStringContainsString(
