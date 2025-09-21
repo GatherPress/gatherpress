@@ -104,7 +104,7 @@ const { state, actions } = store( 'gatherpress', {
 					if ( [ 'not_attending', 'no_status' ].includes( rsvpStatus ) ) {
 						const attendingStatusButton =
 							rsvpContainer.querySelector(
-								'[data-rsvp-status="attending"] .gatherpress--has-rsvp-update',
+								'[data-rsvp-status="attending"] .gatherpress-rsvp--trigger-update',
 							);
 
 						const closeButton = rsvpContainer.querySelector(

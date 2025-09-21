@@ -183,7 +183,7 @@ class Rsvp {
 	 * Adds interactivity to RSVP buttons within the block content.
 	 *
 	 * This method scans the block content for elements with the class
-	 * `gatherpress--has-rsvp-update`. If such an element is found, it checks for a
+	 * `gatherpress-rsvp--trigger-update`. If such an element is found, it checks for a
 	 * nested `<a>` or `<button>` tag. The appropriate attributes for interactivity
 	 * are added to either the nested tag or the containing element if no nested tag
 	 * exists.
@@ -197,8 +197,8 @@ class Rsvp {
 	public function apply_rsvp_button_interactivity( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		// Process only tags with the specific class 'gatherpress--has-rsvp-update'.
-		$rsvp_class = 'gatherpress--has-rsvp-update';
+		// Process only tags with the specific class 'gatherpress-rsvp--trigger-update'.
+		$rsvp_class = 'gatherpress-rsvp--trigger-update';
 
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );

@@ -205,7 +205,7 @@ const NOT_ATTENDING = [
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--has-rsvp-update',
+												'gatherpress-rsvp--trigger-update',
 											metadata: {
 												name: _x(
 													'RSVP Button',

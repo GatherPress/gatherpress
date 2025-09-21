@@ -340,7 +340,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_for_button(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--has-rsvp-update"><button>RSVP</button></div>';
+		$input    = '<div class="gatherpress-rsvp--trigger-update"><button>RSVP</button></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
@@ -384,7 +384,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_for_link(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--has-rsvp-update"><a href="#">RSVP</a></div>';
+		$input    = '<div class="gatherpress-rsvp--trigger-update"><a href="#">RSVP</a></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
@@ -408,7 +408,7 @@ class Test_Rsvp extends Base {
 	 * Tests the apply_rsvp_button_interactivity method with a status-specific class.
 	 *
 	 * Ensures that when the RSVP element includes a status-specific class
-	 * (e.g., gatherpress--has-rsvp-update__attending), the correct data-set-status
+	 * (e.g., gatherpress-rsvp--trigger-update__attending), the correct data-set-status
 	 * attribute is added to reflect the status.
 	 *
 	 * Specifically checks for:
@@ -421,7 +421,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_with_status(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--has-rsvp-update__attending"><button>Attending</button></div>';
+		$input    = '<div class="gatherpress-rsvp--trigger-update__attending"><button>Attending</button></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
