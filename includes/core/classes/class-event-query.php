@@ -3,7 +3,7 @@
  * Manages event-related queries and filtering.
  *
  * This class is responsible for handling all queries related to events, including retrieving
- * upcoming and past events, applying filters, and ordering events. It also handles adjustments
+ * upcoming and past events, applying filters and ordering events. It also handles adjustments
  * for event pages and admin queries.
  *
  * @package GatherPress\Core
