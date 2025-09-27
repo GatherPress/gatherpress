@@ -43,11 +43,11 @@ const Edit = ( { context } ) => {
 		[],
 	);
 
-	// Add the `gatherpress--is-not-visible` class conditionally via `useBlockProps`.
+	// Add the `gatherpress--is-hidden` class conditionally via `useBlockProps`.
 	const blockProps = useBlockProps( {
 		className:
 			0 === maxAttendanceLimit && ! commentId
-				? 'gatherpress--is-not-visible'
+				? 'gatherpress--is-hidden'
 				: '',
 	} );
 

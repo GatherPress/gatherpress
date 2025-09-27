@@ -59,6 +59,7 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
+		Feed::get_instance();
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
@@ -67,8 +68,8 @@ class Setup {
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
 		Settings::get_instance();
-		User::get_instance();
 		Topic::get_instance();
+		User::get_instance();
 		Venue::get_instance();
 	}
 
@@ -428,9 +429,9 @@ class Setup {
 		if (
 			defined( 'GATHERPRESS_ALPHA_VERSION' ) ||
 			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
-				false === strpos( get_current_screen()->id, 'plugins' ) &&
-				false === strpos( get_current_screen()->id, 'plugin-install' ) &&
-				false === strpos( get_current_screen()->id, 'gatherpress' )
+				! str_contains( get_current_screen()->id, 'plugins' ) &&
+				! str_contains( get_current_screen()->id, 'plugin-install' ) &&
+				! str_contains( get_current_screen()->id, 'gatherpress' )
 			)
 		) {
 			return;

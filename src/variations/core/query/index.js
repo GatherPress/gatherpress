@@ -20,7 +20,7 @@ const QUERY_ATTRIBUTES = {
 		pages: 0,
 		offset: 0,
 		postType: 'gatherpress_event',
-		gatherpress_events_query: 'upcoming',
+		gatherpress_event_query: 'upcoming',
 		include_unfinished: 1,
 		order: 'asc',
 		orderBy: 'datetime',

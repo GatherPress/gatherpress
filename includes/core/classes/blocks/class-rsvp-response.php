@@ -118,17 +118,17 @@ class Rsvp_Response {
 
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
-				if ( $class_attr && false !== strpos( $class_attr, 'gatherpress--empty-rsvp' ) ) {
+				if ( $class_attr && str_contains( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
 					if ( ! empty( $counts['attending'] ) ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',
 							'',
 							$class_attr
 						);
-						$updated_class .= ' gatherpress--is-not-visible';
+						$updated_class .= ' gatherpress--is-hidden';
 					} else {
 						$updated_class  = str_replace(
-							'gatherpress--is-not-visible',
+							'gatherpress--is-hidden',
 							'',
 							$class_attr
 						);
@@ -200,7 +200,7 @@ class Rsvp_Response {
 
 				if (
 					$current_class &&
-					preg_match( '/gatherpress--rsvp-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
+					preg_match( '/gatherpress--is-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
 					$tag->next_tag( array( 'tag_name' => 'a' ) )
 				) {
 					// Change for needed format.

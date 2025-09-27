@@ -8,7 +8,7 @@ import {
 } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -16,28 +16,50 @@ import { useState, useEffect } from '@wordpress/element';
 import TEMPLATE from './template';
 
 const Edit = () => {
-	const blockProps = useBlockProps();
+	const blockRef = useRef( null );
+	const blockProps = useBlockProps( { ref: blockRef } );
 	const [ showMessage, setShowMessage ] = useState( false );
 
 	// Toggle visibility of success message blocks for preview.
 	useEffect( () => {
-		const messageElements = document.querySelectorAll(
-			'.gatherpress-rsvp-form-message',
-		);
-		messageElements.forEach( ( element ) => {
-			element.style.display = showMessage ? 'block' : 'none';
-		} );
-	}, [ showMessage ] );
+		const updateMessageVisibility = () => {
+			if ( ! blockRef.current ) {
+				return;
+			}
 
-	// Hide message blocks immediately on mount.
-	useEffect( () => {
-		const messageElements = document.querySelectorAll(
-			'.gatherpress-rsvp-form-message',
-		);
-		messageElements.forEach( ( element ) => {
-			element.style.display = 'none';
-		} );
-	}, [] );
+			const messageElements = blockRef.current.querySelectorAll(
+				'.gatherpress--rsvp-form-message',
+			);
+
+			messageElements.forEach( ( element ) => {
+				element.style.setProperty(
+					'display',
+					showMessage ? 'block' : 'none',
+					'important',
+				);
+				element.setAttribute( 'aria-hidden', showMessage ? 'false' : 'true' );
+				element.setAttribute( 'aria-live', 'polite' );
+				element.setAttribute( 'role', 'status' );
+			} );
+		};
+
+		// Watch for DOM changes.
+		const observer = new MutationObserver( updateMessageVisibility );
+
+		if ( blockRef.current ) {
+			observer.observe( blockRef.current, {
+				childList: true,
+				subtree: true,
+				attributes: true,
+				attributeFilter: [ 'class' ],
+			} );
+		}
+
+		// Initial call.
+		updateMessageVisibility();
+
+		return () => observer.disconnect();
+	}, [ showMessage ] );
 
 	return (
 		<>

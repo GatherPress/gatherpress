@@ -99,7 +99,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
 					const currentClassName = block.attributes?.className || '';
 					const classNames = currentClassName.split( ' ' ).filter( Boolean );
-					const hiddenClass = 'gatherpress--is-not-visible';
+					const hiddenClass = 'gatherpress--is-hidden';
 					const hasHiddenClass = classNames.includes( hiddenClass );
 
 					let newClassName = currentClassName;

@@ -36,7 +36,7 @@ const NO_STATUS = [
 								'gatherpress',
 							),
 							tagName: 'button',
-							className: 'gatherpress--open-modal',
+							className: 'gatherpress-modal--trigger-open',
 							metadata: {
 								name: _x(
 									'RSVP Button',
@@ -51,7 +51,7 @@ const NO_STATUS = [
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress--is-rsvp-modal',
+					className: 'gatherpress-modal--type-rsvp',
 					metadata: {
 						name: _x(
 							'RSVP Modal',
@@ -154,7 +154,7 @@ const NO_STATUS = [
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--update-rsvp',
+												'gatherpress-rsvp--trigger-update',
 											metadata: {
 												name: _x(
 													'RSVP Button',
@@ -174,7 +174,7 @@ const NO_STATUS = [
 											),
 											tagName: 'button',
 											className:
-												'is-style-outline gatherpress--close-modal',
+												'is-style-outline gatherpress-modal--trigger-close',
 											metadata: {
 												name: _x(
 													'Close Button',
@@ -193,7 +193,7 @@ const NO_STATUS = [
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress--is-login-modal',
+					className: 'gatherpress-modal--login',
 					metadata: {
 						name: _x(
 							'Login Modal',
@@ -277,7 +277,7 @@ const NO_STATUS = [
 										'core/paragraph',
 										{
 											content: __(
-												'Prefer not to register? <a href="#" class="gatherpress--open-modal">RSVP without an account</a>.',
+												'Prefer not to register? <a href="#" class="gatherpress-modal--trigger-open">RSVP without an account</a>.',
 												'gatherpress',
 											),
 											className: 'gatherpress--has-rsvp-form',
@@ -286,7 +286,7 @@ const NO_STATUS = [
 									[
 										'gatherpress/modal',
 										{
-											className: 'gatherpress--is-rsvp-form-modal',
+											className: 'gatherpress-modal--type-rsvp-form',
 											metadata: {
 												name: _x(
 													'RSVP Form Modal',
@@ -340,7 +340,7 @@ const NO_STATUS = [
 																			),
 																			tagName: 'button',
 																			className:
-																				'is-style-outline gatherpress--close-modal',
+																				'is-style-outline gatherpress-modal--trigger-close',
 																		},
 																	],
 																],
@@ -390,7 +390,7 @@ const NO_STATUS = [
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--close-modal',
+												'gatherpress-modal--trigger-close',
 											metadata: {
 												name: _x(
 													'Close Button',

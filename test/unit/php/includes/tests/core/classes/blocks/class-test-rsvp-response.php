@@ -119,7 +119,7 @@ class Test_Rsvp_Response extends Base {
 				'postId' => $post_id,
 			),
 		);
-		$block_content = '<div><div class="gatherpress--empty-rsvp">No RSVPs</div></div>';
+		$block_content = '<div><div class="gatherpress-rsvp-response--no-responses">No RSVPs</div></div>';
 		$result        = $instance->transform_block_content( $block_content, $block );
 
 		$this->assertStringContainsString(
@@ -235,9 +235,9 @@ class Test_Rsvp_Response extends Base {
 		$block_content = '<div>
 			<a class="wp-block-gatherpress-dropdown__trigger">Attending</a>
 			<div class="wp-block-gatherpress-dropdown__menu">
-				<div class="wp-block-gatherpress-dropdown-item gatherpress--rsvp-attending"><a href="#">Attending</a></div>
-				<div class="wp-block-gatherpress-dropdown-item gatherpress--rsvp-waiting-list"><a href="#">Waiting List</a></div>
-				<div class="wp-block-gatherpress-dropdown-item gatherpress--rsvp-not-attending"><a href="#">Not Attending</a></div>
+				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-attending"><a href="#">Attending</a></div>
+				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-waiting-list"><a href="#">Waiting List</a></div>
+				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-not-attending"><a href="#">Not Attending</a></div>
 			</div>
 		</div>';
 		$result        = $instance->attach_dropdown_interactivity( $block_content );

@@ -154,7 +154,7 @@ class Rsvp_Form {
 		while ( $tag->next_tag() ) {
 			$class_attribute = $tag->get_attribute( 'class' );
 
-			if ( $class_attribute && str_contains( $class_attribute, 'gatherpress-rsvp-form-message' ) ) {
+			if ( $class_attribute && str_contains( $class_attribute, 'gatherpress--rsvp-form-message' ) ) {
 				// Get existing styles and add display:none.
 				$existing_styles       = $tag->get_attribute( 'style' ) ?? '';
 				$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );
@@ -162,6 +162,9 @@ class Rsvp_Form {
 				$updated_styles        = trim( $existing_styles_clean . ' display: none;' );
 
 				$tag->set_attribute( 'style', $updated_styles );
+				$tag->set_attribute( 'aria-hidden', 'true' );
+				$tag->set_attribute( 'aria-live', 'polite' );
+				$tag->set_attribute( 'role', 'status' );
 			}
 		}
 
