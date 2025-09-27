@@ -4,11 +4,11 @@ GatherPress registers multiple invisible block-patterns, that are used as templa
 
 Patterns allow to be filtered by the (upgraded since WordPress 6.5) Block Hooks API. Making use of this API brings some advantages, which are at least:
 
-- GatherPress' blocks can be easily moved, modified or removed by extenders via standardized core code
+- GatherPress' blocks can be easily moved, modified, or removed by extenders via standardized core code
 - GatherPress provides central entry points for plugin developers to hook-in own blocks, to extend GatherPress
 - GatherPress' blocks will provide their hooking code themself, which keeps concerns separate and code clean
 
-For example when you create a new event post, it gets pre-poulated with a set of blocks, curated within a block-pattern named `gatherpress/event-template`.
+For example, when you create a new event post, it gets pre-populated with a set of blocks, curated within a block-pattern named `gatherpress/event-template`.
 
 ## Overview of hookable patterns
 

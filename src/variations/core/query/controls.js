@@ -52,7 +52,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 				namespace: NAME,
 				query: {
 					...attributes.query,
-					gatherpress_events_query: 'upcoming',
+					gatherpress_event_query: 'upcoming',
 					include_unfinished: 1,
 					order: 'asc',
 					orderBy: 'datetime',

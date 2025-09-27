@@ -172,7 +172,7 @@ class Event_Query {
 		// Retrieve the query from the passed block context.
 		$block_query = $block->context['query'];
 
-		if ( ! is_array( $block_query ) || ! isset( $block_query['gatherpress_events_query'] ) ) {
+		if ( ! is_array( $block_query ) || ! isset( $block_query['gatherpress_event_query'] ) ) {
 			return $query;
 		}
 
@@ -184,7 +184,7 @@ class Event_Query {
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php.
-		$query_args['gatherpress_events_query'] = $block_query['gatherpress_events_query'];
+		$query_args['gatherpress_event_query'] = $block_query['gatherpress_event_query'];
 
 		// Exclude Posts.
 		$exclude_ids = $this->get_exclude_ids( $block_query );
@@ -235,7 +235,7 @@ class Event_Query {
 
 		// Type of event list: 'upcoming' or 'past',
 		// @see wp-content/plugins/gatherpress/includes/core/classes/class-event-query.php .
-		$custom_args['gatherpress_events_query'] = $request->get_param( 'gatherpress_events_query' );
+		$custom_args['gatherpress_event_query'] = $request->get_param( 'gatherpress_event_query' );
 
 		// Exclusion Related.
 		$exclude_current = $request->get_param( 'exclude_current' );
