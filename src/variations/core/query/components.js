@@ -145,7 +145,7 @@ export const EventIncludeUnfinishedControls = ( {
  *
  * Lets the editor choose whether the query returns "upcoming" or "past" events.
  * Toggled via a ToggleControl between upcoming (future) or past (archived) events,
- * stored as `gatherpress_events_query` in attributes.
+ * stored as `gatherpress_event_query` in attributes.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
@@ -154,7 +154,7 @@ export const EventIncludeUnfinishedControls = ( {
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
-		query: { gatherpress_events_query: eventListType = 'upcoming' } = {},
+		query: { gatherpress_event_query: eventListType = 'upcoming' } = {},
 	} = attributes;
 
 	const currentPost = useSelect( ( select ) => {
@@ -182,7 +182,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 				setAttributes( {
 					query: {
 						...attributes.query,
-						gatherpress_events_query: value ? 'upcoming' : 'past',
+						gatherpress_event_query: value ? 'upcoming' : 'past',
 					},
 				} );
 			} }

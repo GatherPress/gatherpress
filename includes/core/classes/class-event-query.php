@@ -3,7 +3,7 @@
  * Manages event-related queries and filtering.
  *
  * This class is responsible for handling all queries related to events, including retrieving
- * upcoming and past events, applying filters, and ordering events. It also handles adjustments
+ * upcoming and past events, applying filters and ordering events. It also handles adjustments
  * for event pages and admin queries.
  *
  * @package GatherPress\Core
@@ -30,6 +30,14 @@ class Event_Query {
 	 * Enforces a single instance of this class.
 	 */
 	use Singleton;
+
+	/**
+	 * Query parameter name for event type filtering.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const EVENT_QUERY_PARAM = 'gatherpress_event_query';
 
 	/**
 	 * Class constructor.
@@ -106,12 +114,12 @@ class Event_Query {
 		array $venues = array()
 	): WP_Query {
 		$args = array(
-			'post_type'                => Event::POST_TYPE,
-			'fields'                   => 'ids',
-			'no_found_rows'            => true,
-			'posts_per_page'           => $number,
-			'gatherpress_events_query' => $event_list_type,
-			'order'                    => 'ASC',
+			'post_type'             => Event::POST_TYPE,
+			'fields'                => 'ids',
+			'no_found_rows'         => true,
+			'posts_per_page'        => $number,
+			self::EVENT_QUERY_PARAM => $event_list_type,
+			'order'                 => 'ASC',
 		);
 
 		$tax_query = array();
@@ -162,7 +170,7 @@ class Event_Query {
 	 * @return void
 	 */
 	public function prepare_event_query_before_execution( WP_Query $query ): void {
-		$events_query = $query->get( 'gatherpress_events_query' );
+		$events_query = $query->get( self::EVENT_QUERY_PARAM );
 
 		if ( ! is_admin() && $query->is_main_query() ) {
 			$general = get_option( Utility::prefix_key( 'general' ) );
@@ -187,10 +195,11 @@ class Event_Query {
 					$page = $value[0];
 
 					if ( $page->id === $query->queried_object_id ) {
-						$query->set( 'post_type', 'gatherpress_event' );
+						$page_id      = $query->queried_object_id;
+						$events_query = $key;
 
-						$page_id                     = $query->queried_object_id;
-						$events_query                = $key;
+						$query->set( 'post_type', 'gatherpress_event' );
+						$query->set( self::EVENT_QUERY_PARAM, $key );
 						$query->is_page              = false;
 						$query->is_singular          = false;
 						$query->is_archive           = true;
