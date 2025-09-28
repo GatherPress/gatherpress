@@ -324,12 +324,12 @@ const NO_STATUS = [
 														'gatherpress/rsvp-form',
 														{},
 														[
-															...RSVP_FORM_TEMPLATE.slice(0, -1), // All items except the last buttons block
+															...RSVP_FORM_TEMPLATE.slice( 0, -1 ), // All items except the last buttons block
 															[
 																'core/buttons',
 																{},
 																[
-																	...RSVP_FORM_TEMPLATE[RSVP_FORM_TEMPLATE.length - 1][2], // Get the Submit button from the original
+																	...RSVP_FORM_TEMPLATE[ RSVP_FORM_TEMPLATE.length - 1 ][ 2 ], // Get the Submit button from the original
 																	[
 																		'core/button',
 																		{
