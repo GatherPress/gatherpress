@@ -17,6 +17,7 @@ use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -204,26 +205,20 @@ class Rsvp {
 			$class_attr = $tag->get_attribute( 'class' );
 
 			if ( $class_attr && str_contains( $class_attr, $rsvp_class ) ) {
-				$classes        = explode( ' ', $class_attr );
+				$classes        = preg_split( '/\s+/', trim( $class_attr ?? '' ) );
 				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );
 				$matched_status = null;
 
-				foreach ( $classes as $class ) {
-					if ( str_contains( $class, $rsvp_class ) ) {
-						foreach ( $statuses as $status ) {
-							if ( sprintf( '%s__%s', $rsvp_class, $status ) === $class ) {
-								$matched_status = $status;
-								break 2;
-							}
-						}
+				foreach ( $statuses as $status ) {
+					$target_class = sprintf( '%s__%s', $rsvp_class, $status );
+					if ( in_array( $target_class, $classes, true ) ) {
+						$matched_status = $status;
+						break;
 					}
 				}
 
-				if (
-					// @phpstan-ignore-next-line
-					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A' ), true )
-				) {
+				// Check if current element is an anchor.
+				if ( 'A' === $tag->get_tag() ) {
 					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
 				} else {
 					$tag->set_attribute( 'tabindex', '0' );
@@ -267,7 +262,7 @@ class Rsvp {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && str_contains( $class_attr, 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
+			if ( Utility::has_css_class( $class_attr ?? '', 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.updateGuestCountDisplay' );
 
 				if ( empty( $user_details['guests'] ) ) {

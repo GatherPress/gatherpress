@@ -339,4 +339,130 @@ class Test_Utility extends Base {
 		wp_set_current_user( 0 );
 		remove_all_filters( 'determine_current_user' );
 	}
+
+	/**
+	 * Data provider for has_css_class test.
+	 *
+	 * @return array
+	 */
+	public function data_has_css_class(): array {
+		return array(
+			// Basic positive cases.
+			array(
+				'button primary',
+				'button',
+				true,
+				'Should find exact class match',
+			),
+			array(
+				'button primary',
+				'primary',
+				true,
+				'Should find second class',
+			),
+			array(
+				'single-class',
+				'single-class',
+				true,
+				'Should find single class',
+			),
+			// BEM naming cases that caused the original issue.
+			array(
+				'gatherpress-modal--type-rsvp-form',
+				'gatherpress-modal--type-rsvp-form',
+				true,
+				'Should find exact BEM class match',
+			),
+			array(
+				'gatherpress-modal--type-rsvp-form other-class',
+				'gatherpress-modal--type-rsvp-form',
+				true,
+				'Should find BEM class in multiple classes',
+			),
+			array(
+				'gatherpress-modal--type-rsvp-form',
+				'gatherpress-modal--type-rsvp',
+				false,
+				'Should NOT match substring of BEM class (original bug)',
+			),
+			array(
+				'gatherpress-modal--type-rsvp other-class',
+				'gatherpress-modal--type-rsvp',
+				true,
+				'Should find exact BEM base class',
+			),
+			// Negative cases.
+			array(
+				'button primary',
+				'secondary',
+				false,
+				'Should not find non-existent class',
+			),
+			array(
+				'button-primary',
+				'button',
+				false,
+				'Should not match partial class names',
+			),
+			array(
+				'my-button',
+				'button',
+				false,
+				'Should not match substring',
+			),
+			// Edge cases.
+			array(
+				'',
+				'button',
+				false,
+				'Should handle empty class string',
+			),
+			array(
+				'button primary',
+				'',
+				false,
+				'Should handle empty target class',
+			),
+			array(
+				'   button   primary   ',
+				'button',
+				true,
+				'Should handle extra whitespace',
+			),
+			array(
+				"button\tprimary\ntertiary",
+				'primary',
+				true,
+				'Should handle different whitespace characters',
+			),
+			array(
+				'button  primary',
+				'primary',
+				true,
+				'Should handle multiple spaces',
+			),
+		);
+	}
+
+	/**
+	 * Coverage for has_css_class method.
+	 *
+	 * @dataProvider data_has_css_class
+	 *
+	 * @covers ::has_css_class
+	 *
+	 * @param string $class_string The CSS class string to search in.
+	 * @param string $target_class The specific class to search for.
+	 * @param bool   $expected     Expected result.
+	 * @param string $message      Test assertion message.
+	 *
+	 * @return void
+	 */
+	public function test_has_css_class( string $class_string, string $target_class, bool $expected, string $message ): void {
+		$this->assertSame(
+			$expected,
+			Utility::has_css_class( $class_string, $target_class ),
+			$message
+		);
+	}
 }

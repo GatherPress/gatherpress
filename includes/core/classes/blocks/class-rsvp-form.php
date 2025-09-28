@@ -20,6 +20,7 @@ use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -154,7 +155,7 @@ class Rsvp_Form {
 		while ( $tag->next_tag() ) {
 			$class_attribute = $tag->get_attribute( 'class' );
 
-			if ( $class_attribute && str_contains( $class_attribute, 'gatherpress--rsvp-form-message' ) ) {
+			if ( Utility::has_css_class( $class_attribute ?? '', 'gatherpress--rsvp-form-message' ) ) {
 				// Get existing styles and add display:none.
 				$existing_styles       = $tag->get_attribute( 'style' ) ?? '';
 				$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );

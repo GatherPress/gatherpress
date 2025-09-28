@@ -324,4 +324,27 @@ class Utility {
 
 		return $user_id;
 	}
+
+	/**
+	 * Check if a CSS class string contains a specific class.
+	 *
+	 * This method properly handles space-separated CSS class strings and checks for
+	 * exact class matches, preventing false positives from substring matches.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $class_string The CSS class string to search in.
+	 * @param string $target_class The specific class to search for.
+	 *
+	 * @return bool True if the target class is found, false otherwise.
+	 */
+	public static function has_css_class( string $class_string, string $target_class ): bool {
+		if ( empty( $class_string ) || empty( $target_class ) ) {
+			return false;
+		}
+
+		$classes = preg_split( '/\s+/', trim( $class_string ) );
+
+		return in_array( $target_class, $classes, true );
+	}
 }

@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Block;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -153,7 +154,7 @@ class Modal {
 	 */
 	public function filter_login_modal( string $block_content, array $block ): string {
 		if (
-			str_contains( $block['attrs']['className'] ?? '', 'gatherpress-modal--type-login' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress-modal--type-login' ) &&
 			is_user_logged_in()
 		) {
 			return '';
@@ -178,7 +179,7 @@ class Modal {
 	 */
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
 		if (
-			str_contains( $block['attrs']['className'] ?? '', 'gatherpress-modal--type-rsvp' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress-modal--type-rsvp' ) &&
 			! Rsvp_Setup::get_instance()->get_user_identifier()
 		) {
 			return '';

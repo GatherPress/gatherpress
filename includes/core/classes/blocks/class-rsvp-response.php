@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Block;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 use WP_User;
 
@@ -118,7 +119,7 @@ class Rsvp_Response {
 
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
-				if ( $class_attr && str_contains( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
+				if ( Utility::has_css_class( $class_attr ?? '', 'gatherpress-rsvp-response--no-responses' ) ) {
 					if ( ! empty( $counts['attending'] ) ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',
