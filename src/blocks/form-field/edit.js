@@ -291,7 +291,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							onChange={ ( value ) => {
 								// Only allow lowercase alphanumeric, underscore, hyphen, space.
 								const sanitized = value.replace(
-									/[^a-zA0-9_\s-]/g,
+									/[^a-zA-Z0-9_\s-]/g,
 									'',
 								);
 
