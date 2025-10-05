@@ -54,7 +54,9 @@ class Rsvp_Form {
 	const BUILT_IN_FIELDS = array(
 		'author',
 		'email',
-		'gatherpress_event_email_updates',
+		'gatherpress_rsvp_form_guest_count',
+		'gatherpress_rsvp_form_anonymous',
+		'gatherpress_rsvp_form_email_updates',
 	);
 
 	/**

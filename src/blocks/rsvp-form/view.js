@@ -38,8 +38,13 @@ const { state } = store( 'gatherpress', {
 				comment_post_ID: postId,
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
-				gatherpress_event_email_updates:
-					'on' === formData.get( 'gatherpress_event_email_updates' )
+				gatherpress_rsvp_form_guest_count: formData.get( 'gatherpress_rsvp_form_guest_count' ) || 0,
+				gatherpress_rsvp_form_anonymous:
+					'on' === formData.get( 'gatherpress_rsvp_form_anonymous' )
+						? true
+						: false,
+				gatherpress_rsvp_form_email_updates:
+					'on' === formData.get( 'gatherpress_rsvp_form_email_updates' )
 						? true
 						: false,
 			};

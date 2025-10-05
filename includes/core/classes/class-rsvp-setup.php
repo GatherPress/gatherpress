@@ -156,10 +156,10 @@ class Rsvp_Setup {
 					wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
 
 					// Handle email updates checkbox if present in form submission.
-					$email_updates = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_event_email_updates' ) ) );
+					$email_updates = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_form_email_updates' ) ) );
 
 					if ( ! empty( $email_updates ) ) {
-						update_comment_meta( $comment_id, 'gatherpress_event_email_updates', 1 );
+						update_comment_meta( $comment_id, 'gatherpress_rsvp_form_email_updates', 1 );
 					}
 
 					// Process custom fields with schema validation.

@@ -21,7 +21,7 @@ const TEMPLATE = [
 				'core/heading',
 				{
 					content: __(
-						'Thank you for your RSVP! Please check your email for a confirmation link to complete your registration.',
+						'Thank you for your RSVP!',
 						'gatherpress',
 					),
 					level: 3,
@@ -33,6 +33,15 @@ const TEMPLATE = [
 							text: '#16a085',
 						},
 					},
+				},
+			],
+			[
+				'core/paragraph',
+				{
+					content: __(
+						'Please check your email for a confirmation link to complete your registration.',
+						'gatherpress',
+					),
 				},
 			],
 		],
@@ -61,8 +70,31 @@ const TEMPLATE = [
 	[
 		'gatherpress/form-field',
 		{
+			fieldType: 'number',
+			fieldName: 'gatherpress_rsvp_form_guest_count',
+			label: __( 'Number of guests?', 'gatherpress' ),
+			placeholder: __( '0', 'gatherpress' ),
+			minValue: 0,
+			inlineLayout: true,
+			fieldWidth: 10,
+			inputPadding: 5,
+			autocomplete: 'off',
+		},
+	],
+	[
+		'gatherpress/form-field',
+		{
 			fieldType: 'checkbox',
-			fieldName: 'gatherpress_event_email_updates',
+			fieldName: 'gatherpress_rsvp_form_anonymous',
+			fieldValue: false,
+			label: __( 'List me as anonymous', 'gatherpress' ),
+		},
+	],
+	[
+		'gatherpress/form-field',
+		{
+			fieldType: 'checkbox',
+			fieldName: 'gatherpress_rsvp_form_email_updates',
 			fieldValue: false,
 			label: __( 'Email me updates about this event', 'gatherpress' ),
 		},
