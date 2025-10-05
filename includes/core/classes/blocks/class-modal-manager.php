@@ -99,7 +99,6 @@ class Modal_Manager {
 				if ( in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true ) ) {
 					$target_found = true;
 				} elseif (
-					// @phpstan-ignore-next-line
 					$tag->next_tag() &&
 					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
 				) {

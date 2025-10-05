@@ -205,7 +205,7 @@ class Rsvp {
 			$class_attr = $tag->get_attribute( 'class' );
 
 			if ( $class_attr && str_contains( $class_attr, $rsvp_class ) ) {
-				$classes        = preg_split( '/\s+/', trim( $class_attr ?? '' ) );
+				$classes        = preg_split( '/\s+/', trim( $class_attr ) );
 				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );
 				$matched_status = null;
 
