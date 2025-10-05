@@ -3,11 +3,6 @@
  */
 import { __, _x } from '@wordpress/i18n';
 
-/**
- * Internal dependencies.
- */
-import RSVP_FORM_TEMPLATE from '../../rsvp-form/template';
-
 const NO_STATUS = [
 	[
 		'gatherpress/modal-manager',
@@ -268,90 +263,6 @@ const NO_STATUS = [
 										),
 									},
 								},
-							],
-							[
-								'gatherpress/modal-manager',
-								{},
-								[
-									[
-										'core/paragraph',
-										{
-											content: __(
-												'Prefer not to register? <a href="#" class="gatherpress-modal--trigger-open">RSVP without an account</a>.',
-												'gatherpress',
-											),
-											className: 'gatherpress--has-rsvp-form',
-										},
-									],
-									[
-										'gatherpress/modal',
-										{
-											className: 'gatherpress-modal--type-rsvp-form',
-											metadata: {
-												name: _x(
-													'RSVP Form Modal',
-													'Modal title in editor',
-													'gatherpress',
-												),
-											},
-										},
-										[
-											[
-												'gatherpress/modal-content',
-												{},
-												[
-													[
-														'core/paragraph',
-														{
-															style: {
-																spacing: {
-																	margin: {
-																		top: '0',
-																	},
-																	padding: {
-																		top: '0',
-																	},
-																},
-															},
-															content: _x(
-																'<strong>Open RSVP</strong>',
-																'Open RSVP modal header',
-																'gatherpress',
-															),
-														},
-													],
-													[
-														'gatherpress/rsvp-form',
-														{},
-														[
-															...RSVP_FORM_TEMPLATE.slice( 0, -1 ), // All items except the last buttons block
-															[
-																'core/buttons',
-																{},
-																[
-																	...RSVP_FORM_TEMPLATE[ RSVP_FORM_TEMPLATE.length - 1 ][ 2 ], // Get the Submit button from the original
-																	[
-																		'core/button',
-																		{
-																			text: _x(
-																				'Close',
-																				'Button label for closing modal dialog',
-																				'gatherpress',
-																			),
-																			tagName: 'button',
-																			className:
-																				'is-style-outline gatherpress-modal--trigger-close',
-																		},
-																	],
-																],
-															],
-														],
-													],
-												],
-											],
-										],
-									],
-								],
 							],
 							[
 								'core/buttons',
