@@ -58,6 +58,7 @@ class Setup {
 	protected function instantiate_classes(): void {
 		Assets::get_instance();
 		Block::get_instance();
+		Calendars::get_instance();
 		Cli::get_instance();
 		Feed::get_instance();
 		Event_Query::get_instance();

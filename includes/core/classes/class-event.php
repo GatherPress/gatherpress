@@ -14,6 +14,7 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\Calendars;
 use DateTimeZone;
 use Exception;
 use WP_Post;
@@ -447,19 +448,19 @@ class Event {
 		return array(
 			'google'  => array(
 				'name' => __( 'Google Calendar', 'gatherpress' ),
-				'link' => $this->get_google_calendar_link(),
+				'link' => Calendars::get_url( 'google-calendar', $this->event->ID ),
 			),
 			'ical'    => array(
-				'name' => __( 'iCal', 'gatherpress' ),
-				'link' => $this->get_ics_download_link(),
+				'name'     => __( 'iCal', 'gatherpress' ),
+				'download' => Calendars::get_url( 'ical', $this->event->ID ),
 			),
 			'outlook' => array(
-				'name' => __( 'Outlook', 'gatherpress' ),
-				'link' => $this->get_ics_download_link(),
+				'name'     => __( 'Outlook', 'gatherpress' ),
+				'download' => Calendars::get_url( 'outlook', $this->event->ID ),
 			),
 			'yahoo'   => array(
 				'name' => __( 'Yahoo Calendar', 'gatherpress' ),
-				'link' => $this->get_yahoo_calendar_link(),
+				'link' => Calendars::get_url( 'yahoo-calendar', $this->event->ID ),
 			),
 		);
 	}
