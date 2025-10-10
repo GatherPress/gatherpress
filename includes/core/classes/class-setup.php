@@ -56,6 +56,7 @@ class Setup {
 	 * @throws Exception If there are issues instantiating singleton classes.
 	 */
 	protected function instantiate_classes(): void {
+		Abilities_Integration::get_instance();
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
