@@ -103,8 +103,9 @@ class Test_Abilities_Integration extends Base {
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
-		$this->assertEmpty( $result['data'], 'Failed to assert data is empty.' );
-		$this->assertStringContainsString( 'Found 0 upcoming event', $result['message'], 'Failed to assert message contains count.' );
+		$this->assertIsArray( $result['data']['events'], 'Failed to assert data events is an array.' );
+		$this->assertEmpty( $result['data']['events'], 'Failed to assert data events is empty.' );
+		$this->assertStringContainsString( 'Found 0 event', $result['message'], 'Failed to assert message contains count.' );
 	}
 
 	/**
@@ -140,7 +141,7 @@ class Test_Abilities_Integration extends Base {
 		$result   = $instance->execute_list_events( array( 'max_number' => 3 ) );
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
-		$this->assertCount( 3, $result['data'], 'Failed to assert data has 3 events.' );
+		$this->assertCount( 3, $result['data']['events'], 'Failed to assert data has 3 events.' );
 	}
 
 	/**
@@ -607,3 +608,4 @@ class Test_Abilities_Integration extends Base {
 		$this->assertSame( 'publish', $event_post->post_status, 'Failed to assert event is published.' );
 	}
 }
+
