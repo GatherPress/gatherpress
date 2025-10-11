@@ -10,6 +10,7 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Abilities_Integration;
 use GatherPress\Core\Event;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 
@@ -606,6 +607,161 @@ class Test_Abilities_Integration extends Base {
 		// Verify status was updated.
 		$event_post = get_post( $event_id );
 		$this->assertSame( 'publish', $event_post->post_status, 'Failed to assert event is published.' );
+	}
+
+	/**
+	 * Coverage for execute_list_topics method with no topics.
+	 *
+	 * @covers ::execute_list_topics
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_topics_with_no_topics(): void {
+		$instance = Abilities_Integration::get_instance();
+		$result   = $instance->execute_list_topics();
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
+		$this->assertEmpty( $result['data'], 'Failed to assert data is empty.' );
+	}
+
+	/**
+	 * Coverage for execute_list_topics method with topics.
+	 *
+	 * @covers ::execute_list_topics
+	 *
+	 * @return void
+	 */
+	public function test_execute_list_topics_with_topics(): void {
+		// Create test topics.
+		wp_insert_term( 'Workshop', 'gatherpress_topic' );
+		wp_insert_term( 'Social', 'gatherpress_topic' );
+
+		$instance = Abilities_Integration::get_instance();
+		$result   = $instance->execute_list_topics();
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
+		$this->assertCount( 2, $result['data'], 'Failed to assert data has 2 topics.' );
+
+		// Find the Workshop topic in the results.
+		$workshop = null;
+		foreach ( $result['data'] as $topic ) {
+			if ( 'Workshop' === $topic['name'] ) {
+				$workshop = $topic;
+				break;
+			}
+		}
+
+		$this->assertNotNull( $workshop, 'Failed to find Workshop topic.' );
+		$this->assertArrayHasKey( 'id', $workshop, 'Failed to assert topic has id.' );
+		$this->assertSame( 'Workshop', $workshop['name'], 'Failed to assert topic name.' );
+	}
+
+	/**
+	 * Coverage for execute_create_topic method with valid parameters.
+	 *
+	 * @covers ::execute_create_topic
+	 *
+	 * @return void
+	 */
+	public function test_execute_create_topic_with_valid_params(): void {
+		$instance = Abilities_Integration::get_instance();
+		$params   = array(
+			'name'        => 'Book Club',
+			'description' => 'Events for book club meetings',
+		);
+		$result   = $instance->execute_create_topic( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertArrayHasKey( 'topic_id', $result, 'Failed to assert topic_id exists.' );
+		$this->assertSame( 'Book Club', $result['name'], 'Failed to assert topic name.' );
+
+		// Verify topic was created.
+		$topic = get_term( $result['topic_id'], 'gatherpress_topic' );
+		$this->assertNotNull( $topic, 'Failed to assert topic exists.' );
+		$this->assertSame( 'Book Club', $topic->name, 'Failed to assert topic name matches.' );
+	}
+
+	/**
+	 * Coverage for execute_create_topic method without name.
+	 *
+	 * @covers ::execute_create_topic
+	 *
+	 * @return void
+	 */
+	public function test_execute_create_topic_without_name(): void {
+		$instance = Abilities_Integration::get_instance();
+		$result   = $instance->execute_create_topic( array() );
+
+		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
+		$this->assertStringContainsString( 'required', $result['message'], 'Failed to assert error message.' );
+	}
+
+	/**
+	 * Coverage for execute_create_event with topic_ids.
+	 *
+	 * @covers ::execute_create_event
+	 *
+	 * @return void
+	 */
+	public function test_execute_create_event_with_topics(): void {
+		// Create a test topic.
+		$topic_result = wp_insert_term( 'Meetup', 'gatherpress_topic' );
+		$topic_id     = $topic_result['term_id'];
+
+		$instance = Abilities_Integration::get_instance();
+		$params   = array(
+			'title'          => 'Test Event with Topic',
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ),
+			'topic_ids'      => array( $topic_id ),
+		);
+		$result   = $instance->execute_create_event( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+		$this->assertArrayHasKey( 'event_id', $result, 'Failed to assert event_id exists.' );
+
+		// Verify topics were assigned.
+		$event_topics = wp_get_post_terms( $result['event_id'], 'gatherpress_topic', array( 'fields' => 'ids' ) );
+		$this->assertContains( $topic_id, $event_topics, 'Failed to assert topic was assigned to event.' );
+	}
+
+	/**
+	 * Coverage for execute_update_event with topic_ids.
+	 *
+	 * @covers ::execute_update_event
+	 *
+	 * @return void
+	 */
+	public function test_execute_update_event_with_topics(): void {
+		// Create test event.
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_title'  => 'Test Event',
+				'post_status' => 'publish',
+			)
+		);
+
+		// Create test topics.
+		$topic1_result = wp_insert_term( 'Workshop', 'gatherpress_topic' );
+		$topic2_result = wp_insert_term( 'Social', 'gatherpress_topic' );
+		$topic1_id     = $topic1_result['term_id'];
+		$topic2_id     = $topic2_result['term_id'];
+
+		$instance = Abilities_Integration::get_instance();
+		$params   = array(
+			'event_id'  => $event_id,
+			'topic_ids' => array( $topic1_id, $topic2_id ),
+		);
+		$result   = $instance->execute_update_event( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+
+		// Verify topics were assigned.
+		$event_topics = wp_get_post_terms( $event_id, 'gatherpress_topic', array( 'fields' => 'ids' ) );
+		$this->assertContains( $topic1_id, $event_topics, 'Failed to assert topic1 was assigned.' );
+		$this->assertContains( $topic2_id, $event_topics, 'Failed to assert topic2 was assigned.' );
 	}
 }
 

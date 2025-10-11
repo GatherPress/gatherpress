@@ -67,9 +67,11 @@ class Abilities_Integration {
 	public function register_abilities(): void {
 		$this->register_list_venues_ability();
 		$this->register_list_events_ability();
+		$this->register_list_topics_ability();
 		$this->register_search_events_ability();
 		$this->register_calculate_dates_ability();
 		$this->register_create_venue_ability();
+		$this->register_create_topic_ability();
 		$this->register_create_event_ability();
 		$this->register_update_venue_ability();
 		$this->register_update_event_ability();
@@ -149,6 +151,36 @@ class Abilities_Integration {
 	}
 
 	/**
+	 * Register the list-topics ability.
+	 *
+	 * Allows retrieving all published topics.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function register_list_topics_ability(): void {
+		wp_register_ability(
+			'gatherpress/list-topics',
+			array(
+				'label'               => __( 'List Topics', 'gatherpress' ),
+				'description'         => __( 'Retrieve a list of all available event topics.', 'gatherpress' ),
+				'execute_callback'    => array( $this, 'execute_list_topics' ),
+				'permission_callback' => static function (): bool {
+					return current_user_can( 'read' );
+				},
+				'meta'                => array(
+					'show_in_rest' => true,
+					'annotations'  => array(
+						'category' => 'event',
+						'safe'     => true,
+					),
+				),
+			)
+		);
+	}
+
+	/**
 	 * Register the create-venue ability.
 	 *
 	 * Allows creating a new venue from an address.
@@ -193,6 +225,53 @@ class Abilities_Integration {
 					'show_in_rest' => true,
 					'annotations'  => array(
 						'category' => 'venue',
+						'safe'     => false,
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Register the create-topic ability.
+	 *
+	 * Allows creating a new event topic.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	protected function register_create_topic_ability(): void {
+		wp_register_ability(
+			'gatherpress/create-topic',
+			array(
+				'label'               => __( 'Create Topic', 'gatherpress' ),
+				'description'         => __( 'Create a new event topic for categorizing events.', 'gatherpress' ),
+				'execute_callback'    => array( $this, 'execute_create_topic' ),
+				'permission_callback' => static function (): bool {
+					return current_user_can( 'manage_categories' );
+				},
+				'parameters'          => array(
+					'name'        => array(
+						'type'        => 'string',
+						'description' => __( 'Name of the topic', 'gatherpress' ),
+						'required'    => true,
+					),
+					'description' => array(
+						'type'        => 'string',
+						'description' => __( 'Description of the topic', 'gatherpress' ),
+						'required'    => false,
+					),
+					'parent_id'   => array(
+						'type'        => 'integer',
+						'description' => __( 'Parent topic ID for hierarchical topics', 'gatherpress' ),
+						'required'    => false,
+					),
+				),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'annotations'  => array(
+						'category' => 'event',
 						'safe'     => false,
 					),
 				),
@@ -250,6 +329,11 @@ class Abilities_Integration {
 						'description' => __( 'Post status (draft or publish)', 'gatherpress' ),
 						'default'     => 'draft',
 						'enum'        => array( 'draft', 'publish' ),
+					),
+					'topic_ids'      => array(
+						'type'        => 'array',
+						'description' => __( 'Array of topic IDs to assign to this event', 'gatherpress' ),
+						'required'    => false,
 					),
 				),
 				'meta'                => array(
@@ -422,6 +506,11 @@ class Abilities_Integration {
 						'description' => __( 'Post status (draft or publish)', 'gatherpress' ),
 						'required'    => false,
 						'enum'        => array( 'draft', 'publish' ),
+					),
+					'topic_ids'      => array(
+						'type'        => 'array',
+						'description' => __( 'Array of topic IDs to assign to this event', 'gatherpress' ),
+						'required'    => false,
 					),
 				),
 				'meta'                => array(
@@ -781,6 +870,12 @@ class Abilities_Integration {
 			}
 		}
 
+		// Associate topics if provided.
+		if ( ! empty( $params['topic_ids'] ) && is_array( $params['topic_ids'] ) ) {
+			$topic_ids = array_map( 'intval', $params['topic_ids'] );
+			wp_set_object_terms( $event_id, $topic_ids, Topic::TAXONOMY );
+		}
+
 		return array(
 			'success'     => true,
 			'event_id'    => $event_id,
@@ -962,6 +1057,12 @@ class Abilities_Integration {
 				$venue_slug = '_' . $venue->post_name;
 				wp_set_object_terms( $event_id, $venue_slug, Venue::TAXONOMY );
 			}
+		}
+
+		// Update topics if provided.
+		if ( isset( $params['topic_ids'] ) && is_array( $params['topic_ids'] ) ) {
+			$topic_ids = array_map( 'intval', $params['topic_ids'] );
+			wp_set_object_terms( $event_id, $topic_ids, Topic::TAXONOMY );
 		}
 
 		return array(
@@ -1522,6 +1623,111 @@ class Abilities_Integration {
 		);
 
 		return $days[ strtolower( $weekday ) ] ?? 1;
+	}
+
+	/**
+	 * Execute the list-topics ability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array List of topics with their IDs and names.
+	 */
+	public function execute_list_topics(): array {
+		$topics = get_terms(
+			array(
+				'taxonomy'   => Topic::TAXONOMY,
+				'hide_empty' => false,
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+			)
+		);
+
+		if ( is_wp_error( $topics ) ) {
+			return array(
+				'success' => false,
+				'message' => $topics->get_error_message(),
+			);
+		}
+
+		$topic_list = array();
+		foreach ( $topics as $topic ) {
+			$topic_list[] = array(
+				'id'          => $topic->term_id,
+				'name'        => $topic->name,
+				'slug'        => $topic->slug,
+				'description' => $topic->description,
+				'parent'      => $topic->parent,
+			);
+		}
+
+		return array(
+			'success' => true,
+			'data'    => $topic_list,
+			'message' => sprintf(
+				/* translators: %d: number of topics */
+				_n(
+					'Found %d topic',
+					'Found %d topics',
+					count( $topic_list ),
+					'gatherpress'
+				),
+				count( $topic_list )
+			),
+		);
+	}
+
+	/**
+	 * Execute the create-topic ability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $params Parameters including name, description, and parent_id.
+	 * @return array Result with topic ID or error.
+	 */
+	public function execute_create_topic( array $params = array() ): array {
+		// Validate required parameters.
+		if ( empty( $params['name'] ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Topic name is required.', 'gatherpress' ),
+			);
+		}
+
+		$args = array(
+			'description' => ! empty( $params['description'] ) ? sanitize_textarea_field( $params['description'] ) : '',
+		);
+
+		if ( ! empty( $params['parent_id'] ) ) {
+			$args['parent'] = intval( $params['parent_id'] );
+		}
+
+		$result = wp_insert_term(
+			sanitize_text_field( $params['name'] ),
+			Topic::TAXONOMY,
+			$args
+		);
+
+		if ( is_wp_error( $result ) ) {
+			return array(
+				'success' => false,
+				'message' => $result->get_error_message(),
+			);
+		}
+
+		$topic    = get_term( $result['term_id'], Topic::TAXONOMY );
+		$edit_url = get_edit_term_link( $result['term_id'], Topic::TAXONOMY );
+
+		return array(
+			'success'  => true,
+			'topic_id' => $result['term_id'],
+			'name'     => $topic->name,
+			'edit_url' => $edit_url,
+			'message'  => sprintf(
+				/* translators: %s: topic name */
+				__( 'Topic "%s" created successfully.', 'gatherpress' ),
+				$topic->name
+			),
+		);
 	}
 
 }
