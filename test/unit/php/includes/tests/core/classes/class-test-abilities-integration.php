@@ -170,6 +170,7 @@ class Test_Abilities_Integration extends Base {
 		$venue_post = get_post( $result['venue_id'] );
 		$this->assertSame( Venue::POST_TYPE, $venue_post->post_type, 'Failed to assert post type is venue.' );
 		$this->assertSame( 'Test Venue', $venue_post->post_title, 'Failed to assert venue title.' );
+		$this->assertStringContainsString( 'gatherpress/venue-template', $venue_post->post_content, 'Failed to assert venue template pattern.' );
 
 		// Verify venue information.
 		$venue_info = json_decode( get_post_meta( $result['venue_id'], 'gatherpress_venue_information', true ), true );

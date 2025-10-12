@@ -734,12 +734,13 @@ class Abilities_Integration {
 			);
 		}
 
-		// Create the venue post.
+		// Create the venue post with default block template.
 		$venue_id = wp_insert_post(
 			array(
-				'post_type'   => Venue::POST_TYPE,
-				'post_title'  => sanitize_text_field( $params['name'] ),
-				'post_status' => 'publish',
+				'post_type'    => Venue::POST_TYPE,
+				'post_title'   => sanitize_text_field( $params['name'] ),
+				'post_content' => '<!-- wp:pattern {"slug":"gatherpress/venue-template"} /-->',
+				'post_status'  => 'publish',
 			)
 		);
 
@@ -1729,5 +1730,6 @@ class Abilities_Integration {
 			),
 		);
 	}
+
 
 }
