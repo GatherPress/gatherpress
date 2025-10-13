@@ -243,23 +243,23 @@ class Event_Rest_Api {
 				'callback'            => array( $this, 'handle_rsvp_form_submission' ),
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'comment_post_ID'                 => array(
+					'comment_post_ID'                  => array(
 						'required'          => true,
 						'validate_callback' => array( Validate::class, 'event_post_id' ),
 					),
-					'author'                          => array(
+					'author'                           => array(
 						'required'          => true,
 						'validate_callback' => function ( $param ) {
 							return ! empty( sanitize_text_field( $param ) );
 						},
 					),
-					'email'                           => array(
+					'email'                            => array(
 						'required'          => true,
 						'validate_callback' => function ( $param ) {
 							return is_email( $param );
 						},
 					),
-					'gatherpress_form_schema_id'      => array(
+					'gatherpress_form_schema_id'       => array(
 						'required'          => false,
 						'validate_callback' => function ( $param ) {
 							return is_string( $param ) && preg_match( '/^form_\d+$/', $param );
@@ -269,11 +269,11 @@ class Event_Rest_Api {
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
-					'gatherpress_rsvp_guests' => array(
+					'gatherpress_rsvp_guests'          => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'number' ),
 					),
-					'gatherpress_rsvp_anonymous' => array(
+					'gatherpress_rsvp_anonymous'       => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
@@ -785,14 +785,14 @@ class Event_Rest_Api {
 	 * @return WP_REST_Response The response indicating success or failure.
 	 */
 	public function handle_rsvp_form_submission( WP_REST_Request $request ): WP_REST_Response {
-		$params        = $request->get_params();
-		$post_id       = intval( $params['comment_post_ID'] );
-		$author        = sanitize_text_field( $params['author'] );
-		$email         = sanitize_email( $params['email'] );
-		$user          = get_user_by( 'ID', get_current_user_id() );
-		$success       = false;
-		$message       = '';
-		$comment_id    = 0;
+		$params     = $request->get_params();
+		$post_id    = intval( $params['comment_post_ID'] );
+		$author     = sanitize_text_field( $params['author'] );
+		$email      = sanitize_email( $params['email'] );
+		$user       = get_user_by( 'ID', get_current_user_id() );
+		$success    = false;
+		$message    = '';
+		$comment_id = 0;
 
 		// Prepare comment data similar to the form submission processing.
 		$comment_data = array(
