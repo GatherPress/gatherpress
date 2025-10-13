@@ -482,12 +482,12 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertArrayHasKey( 'comment_post_ID', $route['args']['args'] );
 		$this->assertArrayHasKey( 'author', $route['args']['args'] );
 		$this->assertArrayHasKey( 'email', $route['args']['args'] );
-		$this->assertArrayHasKey( 'gatherpress_rsvp_form_email_updates', $route['args']['args'] );
+		$this->assertArrayHasKey( 'gatherpress_event_updates_opt_in', $route['args']['args'] );
 
 		$this->assertTrue( $route['args']['args']['comment_post_ID']['required'] );
 		$this->assertTrue( $route['args']['args']['author']['required'] );
 		$this->assertTrue( $route['args']['args']['email']['required'] );
-		$this->assertFalse( $route['args']['args']['gatherpress_rsvp_form_email_updates']['required'] );
+		$this->assertFalse( $route['args']['args']['gatherpress_event_updates_opt_in']['required'] );
 	}
 
 	/**
@@ -529,7 +529,7 @@ class Test_Event_Rest_Api extends Base {
 		$request->set_param( 'comment_post_ID', $post_id );
 		$request->set_param( 'author', 'Test Author' );
 		$request->set_param( 'email', 'test@example.com' );
-		$request->set_param( 'gatherpress_rsvp_form_email_updates', true );
+		$request->set_param( 'gatherpress_event_updates_opt_in', true );
 		$request->set_param( 'gatherpress_form_schema_id', 'form_0' );
 		$request->set_param( 'custom_field', 'Test value' );
 
@@ -550,7 +550,7 @@ class Test_Event_Rest_Api extends Base {
 
 		// Check email updates meta.
 		$comment_id    = $data['comment_id'];
-		$email_updates = get_comment_meta( $comment_id, 'gatherpress_rsvp_form_email_updates', true );
+		$email_updates = get_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', true );
 		$this->assertEquals( '1', $email_updates );
 
 		// Check custom field was saved.
