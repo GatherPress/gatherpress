@@ -259,15 +259,23 @@ class Event_Rest_Api {
 							return is_email( $param );
 						},
 					),
-					'gatherpress_rsvp_form_email_updates' => array(
-						'required'          => false,
-						'validate_callback' => array( Validate::class, 'boolean' ),
-					),
 					'gatherpress_form_schema_id'      => array(
 						'required'          => false,
 						'validate_callback' => function ( $param ) {
 							return is_string( $param ) && preg_match( '/^form_\d+$/', $param );
 						},
+					),
+					'gatherpress_event_updates_opt_in' => array(
+						'required'          => false,
+						'validate_callback' => array( Validate::class, 'boolean' ),
+					),
+					'gatherpress_rsvp_guests' => array(
+						'required'          => false,
+						'validate_callback' => array( Validate::class, 'number' ),
+					),
+					'gatherpress_rsvp_anonymous' => array(
+						'required'          => false,
+						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
 				),
 			),
@@ -781,7 +789,6 @@ class Event_Rest_Api {
 		$post_id       = intval( $params['comment_post_ID'] );
 		$author        = sanitize_text_field( $params['author'] );
 		$email         = sanitize_email( $params['email'] );
-		$email_updates = (bool) $params['gatherpress_rsvp_form_email_updates'];
 		$user          = get_user_by( 'ID', get_current_user_id() );
 		$success       = false;
 		$message       = '';
@@ -877,8 +884,21 @@ class Event_Rest_Api {
 		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
 
 		// Handle email updates preference.
-		if ( $email_updates ) {
-			update_comment_meta( $comment_id, 'gatherpress_rsvp_form_email_updates', 1 );
+		$email_updates = $request->get_param( 'gatherpress_event_updates_opt_in' );
+		if ( ! is_null( $email_updates ) ) {
+			update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', (bool) $email_updates ? 1 : 0 );
+		}
+
+		// Handle guest count field.
+		$guest_count = $request->get_param( 'gatherpress_rsvp_guests' );
+		if ( ! is_null( $guest_count ) && is_numeric( $guest_count ) ) {
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', intval( $guest_count ) );
+		}
+
+		// Handle anonymous field.
+		$anonymous = $request->get_param( 'gatherpress_rsvp_anonymous' );
+		if ( ! is_null( $anonymous ) ) {
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', (bool) $anonymous ? 1 : 0 );
 		}
 
 		// Validate and save custom fields.

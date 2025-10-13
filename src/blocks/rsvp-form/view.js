@@ -38,16 +38,31 @@ const { state } = store( 'gatherpress', {
 				comment_post_ID: postId,
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
-				gatherpress_rsvp_form_guest_count: formData.get( 'gatherpress_rsvp_form_guest_count' ) || 0,
-				gatherpress_rsvp_form_anonymous:
-					'on' === formData.get( 'gatherpress_rsvp_form_anonymous' )
-						? true
-						: false,
-				gatherpress_rsvp_form_email_updates:
-					'on' === formData.get( 'gatherpress_rsvp_form_email_updates' )
-						? true
-						: false,
+				gatherpress_rsvp_guests: formData.get( 'gatherpress_rsvp_guests' ) || 0,
 			};
+
+			// Handle checkbox fields - they only appear in FormData when checked.
+			// When checked, they typically have value 'on' or a custom value.
+			// When unchecked, formData.get() returns null.
+			data.gatherpress_rsvp_anonymous = formData.get( 'gatherpress_rsvp_anonymous' ) ? '1' : '0';
+			data.gatherpress_event_updates_opt_in = formData.get( 'gatherpress_event_updates_opt_in' ) ? '1' : '0';
+
+			// Add any custom fields and schema ID from the form.
+			for ( const [ key, value ] of formData.entries() ) {
+				// Skip fields we've already explicitly handled above.
+				const skipFields = [
+					'comment_post_ID',
+					'author',
+					'email',
+					'gatherpress_rsvp_guests',
+					'gatherpress_rsvp_anonymous',
+					'gatherpress_event_updates_opt_in'
+				];
+
+				if ( ! skipFields.includes( key ) ) {
+					data[ key ] = value;
+				}
+			}
 
 			const makeRequest = async ( isRetry = false ) => {
 				const nonce = await getNonce();
@@ -84,7 +99,7 @@ const { state } = store( 'gatherpress', {
 				const result = await makeRequest();
 
 				if ( result && result.success ) {
-					// Success - show message block and disable form.
+					// Success - show message block and hide form elements.
 					const messageContainer = form.querySelector(
 						'.gatherpress--rsvp-form-message',
 					);
@@ -95,12 +110,28 @@ const { state } = store( 'gatherpress', {
 						messageContainer.setAttribute( 'role', 'status' );
 					}
 
-					// Disable all form inputs.
-					const inputs = form.querySelectorAll(
-						'input, textarea, button, select',
+					// Hide all form field blocks.
+					const formFieldBlocks = form.querySelectorAll(
+						'.wp-block-gatherpress-form-field',
 					);
-					inputs.forEach( ( input ) => {
-						input.disabled = true;
+					formFieldBlocks.forEach( ( block ) => {
+						block.style.display = 'none';
+					} );
+
+					// Hide buttons within .wp-block-buttons, except those with gatherpress-modal--trigger-close class.
+					// Look for all button containers first.
+					const buttonContainers = form.querySelectorAll( '.wp-block-button' );
+					buttonContainers.forEach( ( container ) => {
+						// Check if the container or its button has the modal close class.
+						const button = container.querySelector( 'button, .wp-block-button__link, input[type="submit"], input[type="button"], a' );
+						if ( button ) {
+							const hasCloseClass = container.classList.contains( 'gatherpress-modal--trigger-close' ) ||
+								button.classList.contains( 'gatherpress-modal--trigger-close' );
+
+							if ( ! hasCloseClass ) {
+								container.style.display = 'none';
+							}
+						}
 					} );
 
 					// Update the responses data if available.

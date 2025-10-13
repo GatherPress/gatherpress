@@ -71,7 +71,7 @@ const TEMPLATE = [
 		'gatherpress/form-field',
 		{
 			fieldType: 'number',
-			fieldName: 'gatherpress_rsvp_form_guest_count',
+			fieldName: 'gatherpress_rsvp_guests',
 			label: __( 'Number of guests?', 'gatherpress' ),
 			placeholder: __( '0', 'gatherpress' ),
 			minValue: 0,
@@ -85,7 +85,7 @@ const TEMPLATE = [
 		'gatherpress/form-field',
 		{
 			fieldType: 'checkbox',
-			fieldName: 'gatherpress_rsvp_form_anonymous',
+			fieldName: 'gatherpress_rsvp_anonymous',
 			fieldValue: false,
 			label: __( 'List me as anonymous', 'gatherpress' ),
 		},
@@ -94,7 +94,7 @@ const TEMPLATE = [
 		'gatherpress/form-field',
 		{
 			fieldType: 'checkbox',
-			fieldName: 'gatherpress_rsvp_form_email_updates',
+			fieldName: 'gatherpress_event_updates_opt_in',
 			fieldValue: false,
 			label: __( 'Email me updates about this event', 'gatherpress' ),
 		},

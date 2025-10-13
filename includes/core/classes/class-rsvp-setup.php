@@ -156,10 +156,21 @@ class Rsvp_Setup {
 					wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
 
 					// Handle email updates checkbox if present in form submission.
-					$email_updates = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_form_email_updates' ) ) );
-
+					$email_updates = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
 					if ( ! empty( $email_updates ) ) {
-						update_comment_meta( $comment_id, 'gatherpress_rsvp_form_email_updates', 1 );
+						update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 1 );
+					}
+
+					// Handle guest count field if present in form submission.
+					$guest_count = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_guests' ) ) );
+					if ( is_numeric( $guest_count ) ) {
+						update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', intval( $guest_count ) );
+					}
+
+					// Handle anonymous checkbox if present in form submission.
+					$anonymous = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_anonymous' ) ) );
+					if ( ! empty( $anonymous ) ) {
+						update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', 1 );
 					}
 
 					// Process custom fields with schema validation.
