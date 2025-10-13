@@ -259,7 +259,7 @@ class Event_Rest_Api {
 							return is_email( $param );
 						},
 					),
-					'gatherpress_event_email_updates' => array(
+					'gatherpress_rsvp_form_email_updates' => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
@@ -781,7 +781,7 @@ class Event_Rest_Api {
 		$post_id       = intval( $params['comment_post_ID'] );
 		$author        = sanitize_text_field( $params['author'] );
 		$email         = sanitize_email( $params['email'] );
-		$email_updates = (bool) $params['gatherpress_event_email_updates'];
+		$email_updates = (bool) $params['gatherpress_rsvp_form_email_updates'];
 		$user          = get_user_by( 'ID', get_current_user_id() );
 		$success       = false;
 		$message       = '';
@@ -878,7 +878,7 @@ class Event_Rest_Api {
 
 		// Handle email updates preference.
 		if ( $email_updates ) {
-			update_comment_meta( $comment_id, 'gatherpress_event_email_updates', 1 );
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_form_email_updates', 1 );
 		}
 
 		// Validate and save custom fields.
