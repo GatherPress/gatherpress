@@ -22,6 +22,7 @@
 		"wp-coding-standards/wpcs": "*",
 		"phpcompatibility/phpcompatibility-wp": "*",
 		"phpunit/phpunit": "^9.0",
+		"doctrine/instantiator": "^1.5",
 		"yoast/phpunit-polyfills": "*",
 		"szepeviktor/phpstan-wordpress": "^1.3",
 		"akirk/extract-wp-hooks": "dev-main"
