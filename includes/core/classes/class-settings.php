@@ -836,9 +836,10 @@ class Settings {
 	 * @return void
 	 */
 	public function maybe_flush_rewrite_rules( $old_value, $new_value ): void {
-		if ( ! isset( $old_value['urls'] ) && isset( $new_value['urls'] ) ||
-			isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ||
-			$old_value['urls'] !== $new_value['urls']
+		if (
+			( ! isset( $old_value['urls'] ) && isset( $new_value['urls'] ) ) ||
+			( isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ) ||
+			( $old_value['urls'] !== $new_value['urls'] )
 		) {
 			// Event_Setup->maybe_create_flush_rewrite_rules_flag //@TODO https://github.com/GatherPress/gatherpress/issues/880 Maybe make this a public method ?!
 			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
