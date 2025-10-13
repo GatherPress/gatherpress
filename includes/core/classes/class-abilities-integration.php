@@ -133,7 +133,7 @@ class Abilities_Integration {
 						'description' => __( 'Maximum number of events to return (default: 10)', 'gatherpress' ),
 						'default'     => 10,
 					),
-					'search' => array(
+					'search'     => array(
 						'type'        => 'string',
 						'description' => __( 'Search term to find specific events by title or content', 'gatherpress' ),
 						'required'    => false,
@@ -583,8 +583,8 @@ class Abilities_Integration {
 	public function execute_list_events( array $params = array() ): array {
 		$max_number = isset( $params['max_number'] ) ? intval( $params['max_number'] ) : 10;
 		$max_number = min( $max_number, 50 ); // Cap at 50 for performance.
-		
-		// If search term is provided, search all events instead of just upcoming
+
+		// If search term is provided, search all events instead of just upcoming.
 		if ( ! empty( $params['search'] ) ) {
 			$events = get_posts(
 				array(
@@ -596,10 +596,10 @@ class Abilities_Integration {
 					'order'          => 'DESC',
 				)
 			);
-			
+
 			$event_list = array();
 			foreach ( $events as $event ) {
-				$event_obj = new Event( $event->ID );
+				$event_obj         = new Event( $event->ID );
 				$venue_information = $event_obj->get_venue_information();
 
 				$event_list[] = array(
@@ -612,7 +612,7 @@ class Abilities_Integration {
 					'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
 				);
 			}
-			
+
 			return array(
 				'success' => true,
 				'data'    => array(
@@ -620,10 +620,10 @@ class Abilities_Integration {
 					'count'  => count( $event_list ),
 				),
 				'message' => sprintf(
-					/* translators: %d: number of events, %s: search term */
+					/* translators: %1$d: number of events, %2$s: search term */
 					_n(
-						'Found %d event matching "%s".',
-						'Found %d events matching "%s".',
+						'Found %1$d event matching "%2$s".',
+						'Found %1$d events matching "%2$s".',
 						count( $event_list ),
 						'gatherpress'
 					),
@@ -633,7 +633,7 @@ class Abilities_Integration {
 			);
 		}
 
-		// Default to searching all events instead of just upcoming
+		// Default to searching all events instead of just upcoming.
 		$events = get_posts(
 			array(
 				'post_type'      => Event::POST_TYPE,
@@ -643,10 +643,10 @@ class Abilities_Integration {
 				'order'          => 'DESC',
 			)
 		);
-		
+
 		$event_list = array();
 		foreach ( $events as $event ) {
-			$event_obj = new Event( $event->ID );
+			$event_obj         = new Event( $event->ID );
 			$venue_information = $event_obj->get_venue_information();
 
 			$event_list[] = array(
@@ -659,7 +659,7 @@ class Abilities_Integration {
 				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
 			);
 		}
-		
+
 		return array(
 			'success' => true,
 			'data'    => array(
@@ -674,37 +674,6 @@ class Abilities_Integration {
 					count( $event_list ),
 					'gatherpress'
 				),
-				count( $event_list )
-			),
-		);
-
-		$event_list = array();
-
-		if ( $query->have_posts() ) {
-			foreach ( $query->posts as $post_id ) {
-				$event             = new Event( $post_id );
-				$venue_information = $event->get_venue_information();
-
-				$event_list[] = array(
-					'id'             => $post_id,
-					'title'          => get_the_title( $post_id ),
-					'datetime_start' => $event->get_datetime_start( 'Y-m-d H:i:s' ),
-					'datetime_end'   => $event->get_datetime_end( 'Y-m-d H:i:s' ),
-					'venue'          => $venue_information['name'] ?? null,
-					'permalink'      => get_permalink( $post_id ),
-					'edit_url'       => get_edit_post_link( $post_id, 'raw' ),
-				);
-			}
-		}
-
-		wp_reset_postdata();
-
-		return array(
-			'success' => true,
-			'data'    => $event_list,
-			'message' => sprintf(
-				/* translators: %d: number of events */
-				__( 'Found %d upcoming event(s)', 'gatherpress' ),
 				count( $event_list )
 			),
 		);
@@ -751,13 +720,16 @@ class Abilities_Integration {
 			);
 		}
 
+		// Geocode the address to get latitude and longitude.
+		$coordinates = $this->geocode_address( $params['address'] );
+
 		// Prepare venue information.
 		$venue_info = array(
 			'fullAddress' => sanitize_text_field( $params['address'] ),
 			'phoneNumber' => isset( $params['phone'] ) ? sanitize_text_field( $params['phone'] ) : '',
 			'website'     => isset( $params['website'] ) ? esc_url_raw( $params['website'] ) : '',
-			'latitude'    => '0',
-			'longitude'   => '0',
+			'latitude'    => $coordinates['latitude'],
+			'longitude'   => $coordinates['longitude'],
 		);
 
 		// Save venue information as post meta.
@@ -816,7 +788,7 @@ class Abilities_Integration {
 
 		// Create the event post with the proper template content.
 		$post_content = $this->get_default_event_content( $params['description'] ?? '' );
-		
+
 		$event_id = wp_insert_post(
 			array(
 				'post_type'    => Event::POST_TYPE,
@@ -1089,13 +1061,13 @@ class Abilities_Integration {
 	 */
 	private function get_default_event_content( $description = '' ) {
 		// Build the default event template matching the exact format from manual creation.
-		$content = '<!-- wp:gatherpress/event-date /-->' . "\n\n";
+		$content  = '<!-- wp:gatherpress/event-date /-->' . "\n\n";
 		$content .= '<!-- wp:gatherpress/add-to-calendar -->' . "\n";
 		$content .= '<div class="wp-block-gatherpress-add-to-calendar"></div>' . "\n";
 		$content .= '<!-- /wp:gatherpress/add-to-calendar -->' . "\n\n";
-		
+
 		$content .= '<!-- wp:gatherpress/venue /-->' . "\n\n";
-		
+
 		$content .= '<!-- wp:gatherpress/rsvp -->' . "\n";
 		$content .= '<div class="wp-block-gatherpress-rsvp"></div>' . "\n";
 		$content .= '<!-- /wp:gatherpress/rsvp -->' . "\n\n";
@@ -1103,17 +1075,17 @@ class Abilities_Integration {
 		// Add description paragraph.
 		if ( ! empty( $description ) ) {
 			$description_content = wp_kses_post( $description );
-			$content .= '<!-- wp:paragraph -->' . "\n";
-			$content .= '<p>' . $description_content . '</p>' . "\n";
-			$content .= '<!-- /wp:paragraph -->' . "\n\n";
+			$content            .= '<!-- wp:paragraph -->' . "\n";
+			$content            .= '<p>' . $description_content . '</p>' . "\n";
+			$content            .= '<!-- /wp:paragraph -->' . "\n\n";
 		} else {
 			$description_placeholder = __(
 				'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
 				'gatherpress'
 			);
-			$content .= '<!-- wp:paragraph {"placeholder":"' . esc_attr( $description_placeholder ) . '"} -->' . "\n";
-			$content .= '<p></p>' . "\n";
-			$content .= '<!-- /wp:paragraph -->' . "\n\n";
+			$content                .= '<!-- wp:paragraph {"placeholder":"' . esc_attr( $description_placeholder ) . '"} -->' . "\n";
+			$content                .= '<p></p>' . "\n";
+			$content                .= '<!-- /wp:paragraph -->' . "\n\n";
 		}
 
 		$content .= '<!-- wp:gatherpress/rsvp-response -->' . "\n";
@@ -1145,7 +1117,7 @@ class Abilities_Integration {
 						'description' => __( 'Search term to find events by title or content.', 'gatherpress' ),
 						'required'    => true,
 					),
-					'max_number' => array(
+					'max_number'  => array(
 						'type'        => 'integer',
 						'description' => __( 'Maximum number of events to return (default: 10).', 'gatherpress' ),
 						'required'    => false,
@@ -1172,7 +1144,7 @@ class Abilities_Integration {
 				'description' => __( 'Update multiple events at once based on search criteria. IMPORTANT: When user says "change events from X to Y", this means CHANGE the start time from X to Y. Do NOT search for events currently at X - instead, find all matching events and change their start time to Y. For time ranges "from X to Y", set start time to X and end time to Y.', 'gatherpress' ),
 				'execute'     => array( $this, 'execute_update_events_batch' ),
 				'parameters'  => array(
-					'search_term' => array(
+					'search_term'    => array(
 						'type'        => 'string',
 						'description' => __( 'Search term to find events to update (searches title and content).', 'gatherpress' ),
 						'required'    => true,
@@ -1182,12 +1154,12 @@ class Abilities_Integration {
 						'description' => __( 'New start datetime in Y-m-d H:i:s format. For "change from X to Y", this should be the NEW start time (Y). For time ranges "from X to Y", this should be X.', 'gatherpress' ),
 						'required'    => false,
 					),
-					'datetime_end' => array(
+					'datetime_end'   => array(
 						'type'        => 'string',
 						'description' => __( 'New end datetime in Y-m-d H:i:s format. For time ranges "from X to Y", this should be Y.', 'gatherpress' ),
 						'required'    => false,
 					),
-					'venue_id' => array(
+					'venue_id'       => array(
 						'type'        => 'integer',
 						'description' => __( 'New venue ID to assign to all matching events.', 'gatherpress' ),
 						'required'    => false,
@@ -1249,14 +1221,14 @@ class Abilities_Integration {
 			$datetime  = $event_obj->get_datetime();
 
 			$event_data[] = array(
-				'id'            => $event->ID,
-				'title'         => get_the_title( $event->ID ),
-				'status'        => $event->post_status,
+				'id'             => $event->ID,
+				'title'          => get_the_title( $event->ID ),
+				'status'         => $event->post_status,
 				'datetime_start' => $datetime['start'] ?? '',
-				'datetime_end'  => $datetime['end'] ?? '',
-				'timezone'      => $datetime['timezone'] ?? '',
-				'venue_id'      => get_post_meta( $event->ID, 'gatherpress_venue', true ),
-				'edit_url'      => get_edit_post_link( $event->ID, 'raw' ),
+				'datetime_end'   => $datetime['end'] ?? '',
+				'timezone'       => $datetime['timezone'] ?? '',
+				'venue_id'       => get_post_meta( $event->ID, 'gatherpress_venue', true ),
+				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
 			);
 		}
 
@@ -1267,10 +1239,10 @@ class Abilities_Integration {
 				'count'  => count( $event_data ),
 			),
 			'message' => sprintf(
-				/* translators: %d: number of events, %s: search term */
+				/* translators: %1$d: number of events, %2$s: search term */
 				_n(
-					'Found %d event matching "%s".',
-					'Found %d events matching "%s".',
+					'Found %1$d event matching "%2$s".',
+					'Found %1$d events matching "%2$s".',
 					count( $event_data ),
 					'gatherpress'
 				),
@@ -1298,9 +1270,9 @@ class Abilities_Integration {
 		}
 
 		// Check if at least one update parameter is provided.
-		$has_updates = ! empty( $params['datetime_start'] ) || 
-					   ! empty( $params['datetime_end'] ) || 
-					   ! empty( $params['venue_id'] );
+		$has_updates = ! empty( $params['datetime_start'] )
+			|| ! empty( $params['datetime_end'] )
+			|| ! empty( $params['venue_id'] );
 
 		if ( ! $has_updates ) {
 			return array(
@@ -1336,15 +1308,15 @@ class Abilities_Integration {
 		}
 
 		$updated_count = 0;
-		$errors = array();
+		$errors        = array();
 
 		foreach ( $events as $event ) {
 			$event_obj = new Event( $event->ID );
-			$datetime = $event_obj->get_datetime();
+			$datetime  = $event_obj->get_datetime();
 
 			// Prepare datetime updates.
 			$new_datetime_start = ! empty( $params['datetime_start'] ) ? $params['datetime_start'] : $datetime['start'];
-			$new_datetime_end = ! empty( $params['datetime_end'] ) ? $params['datetime_end'] : $datetime['end'];
+			$new_datetime_end   = ! empty( $params['datetime_end'] ) ? $params['datetime_end'] : $datetime['end'];
 
 			// Validate datetime format.
 			if ( ! empty( $params['datetime_start'] ) ) {
@@ -1395,14 +1367,14 @@ class Abilities_Integration {
 				}
 			}
 
-			$updated_count++;
+			++$updated_count;
 		}
 
 		$message = sprintf(
-			/* translators: %d: number of updated events, %s: search term */
+			/* translators: %1$d: number of updated events, %2$s: search term */
 			_n(
-				'Updated %d event matching "%s".',
-				'Updated %d events matching "%s".',
+				'Updated %1$d event matching "%2$s".',
+				'Updated %1$d events matching "%2$s".',
 				$updated_count,
 				'gatherpress'
 			),
@@ -1511,7 +1483,7 @@ class Abilities_Integration {
 		$dates       = array();
 		$pattern_low = strtolower( trim( $pattern ) );
 
-		// Parse pattern for "Nth weekday" (e.g., "3rd Tuesday", "first Friday", "last Wednesday").
+		// Parse pattern for Nth weekday.
 		if ( preg_match( '/^(first|second|third|fourth|last|1st|2nd|3rd|4th|5th)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
 			$ordinal = strtolower( $matches[1] );
 			$weekday = strtolower( $matches[2] );
@@ -1556,7 +1528,7 @@ class Abilities_Integration {
 			$current = clone $start_datetime;
 
 			// Find the next occurrence of this weekday.
-			$day_num    = $this->get_weekday_number( $weekday );
+			$day_num     = $this->get_weekday_number( $weekday );
 			$current_day = (int) $current->format( 'N' );
 
 			if ( $current_day <= $day_num ) {
@@ -1596,7 +1568,13 @@ class Abilities_Integration {
 			$date = new \DateTime( "last {$weekday} of {$year}-{$month}" );
 		} else {
 			// Nth occurrence.
-			$ordinal_text = array( 1 => 'first', 2 => 'second', 3 => 'third', 4 => 'fourth', 5 => 'fifth' );
+			$ordinal_text = array(
+				1 => 'first',
+				2 => 'second',
+				3 => 'third',
+				4 => 'fourth',
+				5 => 'fifth',
+			);
 			$ordinal      = $ordinal_text[ $nth ] ?? 'first';
 			$date         = new \DateTime( "{$ordinal} {$weekday} of {$year}-{$month}" );
 		}
@@ -1731,5 +1709,54 @@ class Abilities_Integration {
 		);
 	}
 
+	/**
+	 * Geocode an address using OpenStreetMap Nominatim API.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $address The address to geocode.
+	 * @return array Array with 'latitude' and 'longitude' keys.
+	 */
+	private function geocode_address( string $address ): array {
+		// URL encode the address for the API request.
+		$encoded_address = rawurlencode( $address );
+		$api_url         = "https://nominatim.openstreetmap.org/search?q={$encoded_address}&format=json&limit=1";
 
+		// Make the API request.
+		$response = wp_remote_get(
+			$api_url,
+			array(
+				'headers' => array(
+					'User-Agent' => 'GatherPress/' . GATHERPRESS_VERSION . ' (WordPress Plugin)',
+				),
+				'timeout' => 10,
+			)
+		);
+
+		// Check for errors.
+		if ( is_wp_error( $response ) ) {
+			return array(
+				'latitude'  => '0',
+				'longitude' => '0',
+			);
+		}
+
+		// Parse the response.
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		// Check if we got valid coordinates.
+		if ( ! empty( $data ) && isset( $data[0]['lat'] ) && isset( $data[0]['lon'] ) ) {
+			return array(
+				'latitude'  => $data[0]['lat'],
+				'longitude' => $data[0]['lon'],
+			);
+		}
+
+		// Fallback if geocoding fails.
+		return array(
+			'latitude'  => '0',
+			'longitude' => '0',
+		);
+	}
 }

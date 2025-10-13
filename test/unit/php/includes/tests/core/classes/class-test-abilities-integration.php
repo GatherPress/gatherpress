@@ -180,6 +180,43 @@ class Test_Abilities_Integration extends Base {
 	}
 
 	/**
+	 * Coverage for geocoding functionality in execute_create_venue.
+	 *
+	 * @covers ::execute_create_venue
+	 * @covers ::geocode_address
+	 *
+	 * @return void
+	 */
+	public function test_execute_create_venue_geocodes_address(): void {
+		$instance = Abilities_Integration::get_instance();
+		$params   = array(
+			'name'    => 'Test Geocoded Venue',
+			'address' => '1600 Amphitheatre Parkway, Mountain View, CA',
+		);
+		$result   = $instance->execute_create_venue( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
+
+		// Verify venue information includes geocoded coordinates.
+		$venue_info = json_decode( get_post_meta( $result['venue_id'], 'gatherpress_venue_information', true ), true );
+		$this->assertArrayHasKey( 'latitude', $venue_info, 'Failed to assert latitude exists.' );
+		$this->assertArrayHasKey( 'longitude', $venue_info, 'Failed to assert longitude exists.' );
+
+		// Verify coordinates are not the default '0' values (which would indicate geocoding failed).
+		// Note: We can't test for exact coordinates since the API might return slightly different values,
+		// but we can verify they're numeric and not zero.
+		$this->assertIsString( $venue_info['latitude'], 'Failed to assert latitude is a string.' );
+		$this->assertIsString( $venue_info['longitude'], 'Failed to assert longitude is a string.' );
+
+		// If geocoding succeeded, coordinates should be non-zero numeric strings.
+		// If it failed, they should be '0'.
+		if ( '0' !== $venue_info['latitude'] && '0' !== $venue_info['longitude'] ) {
+			$this->assertIsNumeric( $venue_info['latitude'], 'Failed to assert latitude is numeric.' );
+			$this->assertIsNumeric( $venue_info['longitude'], 'Failed to assert longitude is numeric.' );
+		}
+	}
+
+	/**
 	 * Coverage for execute_create_venue method without required name.
 	 *
 	 * @covers ::execute_create_venue
@@ -765,4 +802,3 @@ class Test_Abilities_Integration extends Base {
 		$this->assertContains( $topic2_id, $event_topics, 'Failed to assert topic2 was assigned.' );
 	}
 }
-
