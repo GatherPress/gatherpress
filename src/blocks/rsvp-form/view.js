@@ -56,7 +56,7 @@ const { state } = store( 'gatherpress', {
 					'email',
 					'gatherpress_rsvp_guests',
 					'gatherpress_rsvp_anonymous',
-					'gatherpress_event_updates_opt_in'
+					'gatherpress_event_updates_opt_in',
 				];
 
 				if ( ! skipFields.includes( key ) ) {
