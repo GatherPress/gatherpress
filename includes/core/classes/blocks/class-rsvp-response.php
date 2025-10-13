@@ -178,8 +178,6 @@ class Rsvp_Response {
 			$tag->next_token();
 			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
 
-			// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
-			// @phpstan-ignore-next-line
 			$tag->set_modifiable_text( $trigger_text );
 		}
 
