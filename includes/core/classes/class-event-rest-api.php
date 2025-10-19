@@ -160,6 +160,12 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::READABLE,
 				'callback'            => static function () {
+					// Short-term caching (30 seconds) to prevent endpoint hammering while maintaining security.
+					// WordPress nonces are valid for ~12 hours, so 30 seconds of caching has no UX impact
+					// but protects against rapid successive requests that could overwhelm the server.
+					header( 'Cache-Control: private, max-age=30' );
+					header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 30 ) . ' GMT' );
+
 					// Ensure proper user authentication for nonce generation.
 					Utility::ensure_user_authentication();
 
@@ -190,7 +196,7 @@ class Event_Rest_Api {
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
 				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
-					$unparsed_token = $request->get_param( 'rsvp_token' );
+					$unparsed_token = $request->get_param( Rsvp_Token::NAME );
 
 					if ( ! empty( $unparsed_token ) ) {
 						$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
@@ -706,6 +712,9 @@ class Event_Rest_Api {
 	 * @return WP_REST_Response An instance of WP_REST_Response containing the response data.
 	 */
 	public function update_rsvp( WP_REST_Request $request ): WP_REST_Response {
+		// Prevent caching of RSVP updates.
+		nocache_headers();
+
 		$params          = $request->get_params();
 		$success         = false;
 		$current_user_id = get_current_user_id();
@@ -800,6 +809,24 @@ class Event_Rest_Api {
 	 *                          - content (string): The dynamically rendered HTML markup for the RSVP responses.
 	 */
 	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
+		// @todo Create helper method to validate RSVP token from URL parameter to reduce code duplication.
+		// Prevent caching for logged-in users or users with valid RSVP tokens.
+		$unparsed_token  = $request->get_param( Rsvp_Token::NAME );
+		$has_valid_token = false;
+
+		if ( ! empty( $unparsed_token ) ) {
+			$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
+
+			if ( ! empty( $token_parts ) ) {
+				$rsvp_token      = new Rsvp_Token( $token_parts['comment_id'] );
+				$has_valid_token = $rsvp_token->is_valid( $token_parts['token'] );
+			}
+		}
+
+		if ( is_user_logged_in() || $has_valid_token ) {
+			nocache_headers();
+		}
+
 		$rsvp_template = Rsvp_Template::get_instance();
 		$params        = $request->get_params();
 		$post_id       = intval( $params['post_id'] );
@@ -1001,6 +1028,23 @@ class Event_Rest_Api {
 	 * @return WP_REST_Response Response containing success status and RSVP data.
 	 */
 	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
+		// @todo Create helper method to validate RSVP token from URL parameter to reduce code duplication.
+		// Prevent caching for logged-in users or users with valid RSVP tokens.
+		$unparsed_token  = $request->get_param( Rsvp_Token::NAME );
+		$has_valid_token = false;
+
+		if ( ! empty( $unparsed_token ) ) {
+			$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
+			if ( ! empty( $token_parts ) ) {
+				$rsvp_token      = new Rsvp_Token( $token_parts['comment_id'] );
+				$has_valid_token = $rsvp_token->is_valid( $token_parts['token'] );
+			}
+		}
+
+		if ( is_user_logged_in() || $has_valid_token ) {
+			nocache_headers();
+		}
+
 		$params    = $request->get_params();
 		$post_id   = intval( $params['post_id'] );
 		$success   = false;
