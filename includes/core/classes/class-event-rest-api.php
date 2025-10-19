@@ -846,6 +846,9 @@ class Event_Rest_Api {
 	 * @return WP_REST_Response The response indicating success or failure.
 	 */
 	public function handle_rsvp_form_submission( WP_REST_Request $request ): WP_REST_Response {
+		// Prevent caching of RSVP form submission responses.
+		nocache_headers();
+
 		$params     = $request->get_params();
 		$post_id    = intval( $params['comment_post_ID'] );
 		$author     = sanitize_text_field( $params['author'] );
