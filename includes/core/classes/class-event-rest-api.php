@@ -572,35 +572,31 @@ class Event_Rest_Api {
 
 		foreach ( $comments as $comment ) {
 			$user_id = intval( $comment->user_id );
+			$user    = false;
 			$email   = $comment->comment_author_email;
+			$name    = $comment->comment_author;
+
+			if ( $user_id ) {
+				$user = get_userdata( $user_id );
+
+				if ( $user ) {
+					$email = $user->user_email;
+					$name  = $user->display_name;
+				}
+			}
 
 			// Skip if no email address.
 			if ( empty( $email ) ) {
 				continue;
 			}
 
-			if ( $user_id > 0 ) {
-				// WordPress user RSVP.
-				$user = get_userdata( $user_id );
-				if ( $user ) {
-					$recipients[] = array(
-						'is_user'    => true,
-						'user_id'    => $user_id,
-						'comment_id' => $comment->comment_ID,
-						'email'      => $user->user_email,
-						'name'       => $user->display_name,
-					);
-				}
-			} else {
-				// Non-user RSVP.
-				$recipients[] = array(
-					'is_user'    => false,
-					'user_id'    => 0,
-					'comment_id' => $comment->comment_ID,
-					'email'      => $email,
-					'name'       => $comment->comment_author,
-				);
-			}
+			$recipients[] = array(
+				'is_user'    => (bool) $user_id,
+				'user_id'    => $user_id,
+				'comment_id' => $comment->comment_ID,
+				'email'      => $email,
+				'name'       => $name,
+			);
 		}
 
 		return $recipients;

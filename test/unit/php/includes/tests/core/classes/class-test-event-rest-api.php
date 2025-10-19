@@ -222,93 +222,250 @@ class Test_Event_Rest_Api extends Base {
 	}
 
 	/**
-	 * Coverage for get_members method.
+	 * Coverage for get_recipients method with no send options selected.
 	 *
-	 * @covers ::get_members
+	 * @covers ::get_recipients
 	 *
 	 * @return void
 	 */
-	public function test_get_members(): void {
+	public function test_get_recipients_with_no_send_options(): void {
 		$instance = Event_Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$send     = array(
+
+		$send = array(
 			'all'           => false,
 			'attending'     => false,
 			'waiting_list'  => false,
 			'not_attending' => false,
 		);
-		$event    = new Event( $event_id );
-		$members  = $instance->get_members( $send, $event_id );
 
-		Utility::set_and_get_hidden_property( $event->rsvp, 'max_attendance_limit', 2 );
+		$recipients = $instance->get_recipients( $send, $event_id );
 
-		$this->assertEmpty( $members );
-
-		$user_1_id = $this->factory->user->create();
-		$user_2_id = $this->factory->user->create();
-		$user_3_id = $this->factory->user->create();
-		$user_4_id = $this->factory->user->create();
-
-		$event->rsvp->save( $user_1_id, 'attending' );
-		$event->rsvp->save( $user_2_id, 'not_attending' );
-		$event->rsvp->save( $user_3_id, 'attending' );
-		$event->rsvp->save( $user_4_id, 'waiting_list' );
-
-		$send['all'] = true;
-		$members     = $instance->get_members( $send, $event_id );
-		$member_ids  = $this->get_member_ids( $members );
-
-		$this->assertContains( $user_1_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertContains( $user_2_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertContains( $user_3_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
-
-		$send['all']       = false;
-		$send['attending'] = true;
-		$members           = $instance->get_members( $send, $event_id );
-		$member_ids        = $this->get_member_ids( $members );
-
-		$this->assertContains( $user_1_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertNotContains( $user_2_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertContains( $user_3_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertNotContains( $user_4_id, $member_ids, 'Failed to assert user ID is not in array.' );
-
-		$send['attending']    = false;
-		$send['waiting_list'] = true;
-		$members              = $instance->get_members( $send, $event_id );
-		$member_ids           = $this->get_member_ids( $members );
-
-		$this->assertNotContains( $user_1_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertNotContains( $user_2_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertNotContains( $user_3_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
-
-		$send['not_attending'] = true;
-		$send['waiting_list']  = true;
-		$members               = $instance->get_members( $send, $event_id );
-		$member_ids            = $this->get_member_ids( $members );
-
-		$this->assertNotContains( $user_1_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertContains( $user_2_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertNotContains( $user_3_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
+		$this->assertEmpty( $recipients, 'Failed to assert empty recipients when no send options are selected.' );
 	}
 
 	/**
-	 * Helper to get members IDs for test.
+	 * Coverage for get_recipients method with 'all' option for users only.
 	 *
-	 * @param array $members Array of user objects.
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_with_all_users_only(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		// Create WordPress users - 'all' gets ALL site users, not just those who RSVP'd.
+		$user_1_id = $this->factory->user->create();
+		$user_2_id = $this->factory->user->create();
+		$user_3_id = $this->factory->user->create();
+
+		$send = array(
+			'all'           => true,
+			'attending'     => false,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+
+		$recipients    = $instance->get_recipients( $send, $event_id );
+		$recipient_ids = $this->get_recipient_user_ids( $recipients );
+
+		// Should include all site users (including the 3 we created plus any existing users).
+		$this->assertContains( $user_1_id, $recipient_ids, 'Failed to assert user 1 is included in all recipients.' );
+		$this->assertContains( $user_2_id, $recipient_ids, 'Failed to assert user 2 is included in all recipients.' );
+		$this->assertContains( $user_3_id, $recipient_ids, 'Failed to assert user 3 is included in all recipients.' );
+		$this->assertGreaterThanOrEqual( 3, count( $recipients ), 'Failed to assert minimum recipient count for all users.' );
+	}
+
+	/**
+	 * Coverage for get_recipients method with 'attending' status filter.
+	 *
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_with_attending_filter(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		// Create users and save RSVPs using the RSVP system.
+		$attending_user_id     = $this->factory->user->create();
+		$not_attending_user_id = $this->factory->user->create();
+
+		$event->rsvp->save( $attending_user_id, 'attending' );
+		$event->rsvp->save( $not_attending_user_id, 'not_attending' );
+
+		// Create anonymous attending RSVP using wp_insert_comment for better control.
+		wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anonymous Attendee',
+				'comment_author_email' => 'attendee@example.com',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		$event->rsvp->save( 'attendee@example.com', 'attending' );
+
+		$send = array(
+			'all'           => false,
+			'attending'     => true,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+
+		$recipients = $instance->get_recipients( $send, $event_id );
+
+		$this->assertCount( 2, $recipients, 'Failed to assert correct count for attending recipients.' );
+
+		// Check that we have both user and anonymous attending.
+		$user_recipients = array_filter(
+			$recipients,
+			static function ( $recipient ) {
+				return $recipient['is_user'];
+			}
+		);
+		$anonymous_recipients = array_filter(
+			$recipients,
+			static function ( $recipient ) {
+				return ! $recipient['is_user'];
+			}
+		);
+
+		$this->assertCount( 1, $user_recipients, 'Failed to assert one attending user recipient.' );
+		$this->assertCount( 1, $anonymous_recipients, 'Failed to assert one attending anonymous recipient.' );
+
+		$user_recipient = reset( $user_recipients );
+		$anonymous_recipient = reset( $anonymous_recipients );
+
+		$this->assertEquals( $attending_user_id, $user_recipient['user_id'], 'Failed to assert correct attending user ID.' );
+		$this->assertEquals( 'attendee@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous attendee email.' );
+	}
+
+	/**
+	 * Coverage for get_recipients method with mixed user and non-user RSVPs.
+	 *
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_with_mixed_recipients(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		// Force no attendance so responses remain on waiting list.
+		Utility::set_and_get_hidden_property( $event->rsvp, 'max_attendance_limit', -1 );
+
+		// Create user RSVP.
+		$user_id = $this->factory->user->create(
+			array(
+				'user_email'   => 'user@example.com',
+				'display_name' => 'User Name',
+			)
+		);
+		$event->rsvp->save( $user_id, 'waiting_list' );
+
+		// Create anonymous RSVP using wp_insert_comment for better control.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anonymous Person',
+				'comment_author_email' => 'anonymous@example.com',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		$event->rsvp->save( 'anonymous@example.com', 'waiting_list' );
+
+		$send = array(
+			'all'           => false,
+			'attending'     => false,
+			'waiting_list'  => true,
+			'not_attending' => false,
+		);
+
+		$recipients = $instance->get_recipients( $send, $event_id );
+
+		$this->assertCount( 2, $recipients, 'Failed to assert correct count for mixed recipients.' );
+
+		// Verify recipient structure for user.
+		$user_recipient = array_filter(
+			$recipients,
+			static function ( $recipient ) {
+				return $recipient['is_user'];
+			}
+		);
+		$user_recipient = reset( $user_recipient );
+
+		$this->assertTrue( $user_recipient['is_user'], 'Failed to assert user recipient is marked as user.' );
+		$this->assertEquals( $user_id, $user_recipient['user_id'], 'Failed to assert correct user ID.' );
+		$this->assertEquals( 'user@example.com', $user_recipient['email'], 'Failed to assert correct user email.' );
+		$this->assertEquals( 'User Name', $user_recipient['name'], 'Failed to assert correct user name.' );
+
+		// Verify recipient structure for anonymous.
+		$anonymous_recipient = array_filter(
+			$recipients,
+			static function ( $recipient ) {
+				return ! $recipient['is_user'];
+			}
+		);
+		$anonymous_recipient = reset( $anonymous_recipient );
+
+		$this->assertFalse( $anonymous_recipient['is_user'], 'Failed to assert anonymous recipient is not marked as user.' );
+		$this->assertEquals( 0, $anonymous_recipient['user_id'], 'Failed to assert anonymous recipient has zero user ID.' );
+		$this->assertEquals( $comment_id, $anonymous_recipient['comment_id'], 'Failed to assert correct comment ID.' );
+		$this->assertEquals( 'anonymous@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous email.' );
+		$this->assertEquals( 'Anonymous Person', $anonymous_recipient['name'], 'Failed to assert correct anonymous name.' );
+	}
+
+	/**
+	 * Helper to get user IDs from recipients array for users only.
+	 *
+	 * @param array $recipients Array of recipient objects.
 	 *
 	 * @return array
 	 */
-	protected function get_member_ids( array $members ): array {
+	protected function get_recipient_user_ids( array $recipients ): array {
 		return array_map(
-			static function ( $member ): int {
-				return $member->ID;
+			static function ( $recipient ): int {
+				return $recipient['user_id'];
 			},
-			$members
+			array_filter(
+				$recipients,
+				static function ( $recipient ) {
+					return $recipient['is_user'];
+				}
+			)
+		);
+	}
+
+	/**
+	 * Helper to get all email addresses from recipients array.
+	 *
+	 * @param array $recipients Array of recipient objects.
+	 *
+	 * @return array
+	 */
+	protected function get_recipient_emails( array $recipients ): array {
+		return array_map(
+			static function ( $recipient ): string {
+				return $recipient['email'];
+			},
+			$recipients
 		);
 	}
 
