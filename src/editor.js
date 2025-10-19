@@ -2,14 +2,15 @@
  * WordPress dependencies.
  */
 import domReady from '@wordpress/dom-ready';
-import { dispatch, select, subscribe } from '@wordpress/data';
+import { dispatch, select } from '@wordpress/data';
 import { getBlockType, unregisterBlockType } from '@wordpress/blocks';
 
 /**
  * Internal dependencies.
  */
 import { getFromGlobal } from './helpers/globals';
-import { hasEventPastNotice, triggerEventCommunication } from './helpers/event';
+import { hasEventPastNotice } from './helpers/event';
+import EmailNotificationManager from './components/EmailNotificationManager';
 import './stores';
 import './supports/post-id-override';
 import './supports/block-guard';
@@ -41,7 +42,17 @@ domReady( () => {
 		dispatchEditPost.openGeneralSidebar( 'edit-post/document' );
 	}
 
-	subscribe( triggerEventCommunication );
+	// Initialize email notification manager as a React component.
+	if ( null === document.getElementById( 'gatherpress-email-notification-manager' ) ) {
+		const container = document.createElement( 'div' );
+		container.id = 'gatherpress-email-notification-manager';
+		container.style.display = 'none';
+		document.body.appendChild( container );
+
+		const { createRoot } = wp.element;
+		const root = createRoot( container );
+		root.render( wp.element.createElement( EmailNotificationManager ) );
+	}
 
 	hasEventPastNotice();
 } );

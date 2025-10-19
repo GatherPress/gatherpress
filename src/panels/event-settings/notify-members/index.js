@@ -3,12 +3,12 @@
  */
 import { __ } from '@wordpress/i18n';
 import { Button } from '@wordpress/components';
-import { select } from '@wordpress/data';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { useState, useEffect } from '@wordpress/element';
 
 /**
  * Internal dependencies.
  */
-import { Broadcaster } from '../../../helpers/broadcasting';
 import { hasEventPast } from '../../../helpers/event';
 
 /**
@@ -22,16 +22,36 @@ import { hasEventPast } from '../../../helpers/event';
  * @return {JSX.Element | null} The JSX element for the NotifyMembersPanel or null if conditions are not met.
  */
 const NotifyMembersPanel = () => {
+	const [ showNotifyPanel, setShowNotifyPanel ] = useState( false );
+	const { openModal } = useDispatch( 'gatherpress/email-modal' );
+	const isEmailSaving = useSelect( ( select ) => select( 'gatherpress/email-modal' ).isSaving(), [] );
+
+	const { currentStatus, isSaving, isDirty } = useSelect( ( select ) => {
+		const editorSelect = select( 'core/editor' );
+
+		return {
+			currentStatus: editorSelect.getEditedPostAttribute( 'status' ),
+			isSaving: editorSelect.isSavingPost(),
+			isDirty: editorSelect.isEditedPostDirty(),
+		};
+	}, [] );
+
+	useEffect( () => {
+		const isPostPublished = 'publish' === currentStatus && ! hasEventPast();
+
+		setShowNotifyPanel( isPostPublished );
+	}, [ currentStatus ] );
+
 	return (
-		'publish' === select( 'core/editor' ).getEditedPostAttribute( 'status' ) &&
-		! hasEventPast() && (
+		showNotifyPanel && (
 			<section>
 				<h3 style={ { marginBottom: '0.5rem' } }>
-					{ __( 'Send an event update', 'gatherpress' ) }
+					{ __( 'Send an event update via email', 'gatherpress' ) }
 				</h3>
 				<Button
 					variant="secondary"
-					onClick={ () => Broadcaster( { setOpen: true } ) }
+					onClick={ openModal }
+					disabled={ isEmailSaving || isSaving || isDirty }
 				>
 					{ __( 'Compose Message', 'gatherpress' ) }
 				</Button>

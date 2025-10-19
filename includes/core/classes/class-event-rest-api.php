@@ -453,21 +453,32 @@ class Event_Rest_Api {
 
 		// Keep the currently logged-in user.
 		$current_user = wp_get_current_user();
-		$members      = $this->get_members( $send, $post_id );
+		$recipients   = $this->get_recipients( $send, $post_id );
 
-		foreach ( $members as $member ) {
-			if ( '0' === get_user_meta( $member->ID, 'gatherpress_event_updates_opt_in', true ) ) {
+		foreach ( $recipients as $recipient ) {
+			// Check opt-in preference based on recipient type.
+			if ( $recipient['is_user'] ) {
+				// For WordPress users, check user meta.
+				if ( '0' === get_user_meta( $recipient['user_id'], 'gatherpress_event_updates_opt_in', true ) ) {
+					continue;
+				}
+			} elseif ( '0' === get_comment_meta( $recipient['comment_id'], 'gatherpress_event_updates_opt_in', true ) ) {
+				// For non-user RSVPs, check comment meta.
 				continue;
 			}
 
-			if ( $member->user_email ) {
-				$to              = $member->user_email;
-				$switched_locale = switch_to_user_locale( $member->ID );
+			if ( $recipient['email'] ) {
+				$to              = $recipient['email'];
+				$switched_locale = false;
 
-				// Set the current user to the actual member to mail to,
-				// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
-				// are recognized by the functions inside render_template().
-				wp_set_current_user( $member->ID );
+				// Set the current user context for templating.
+				if ( $recipient['is_user'] ) {
+					$switched_locale = switch_to_user_locale( $recipient['user_id'] );
+					// Set the current user to the actual member to mail to,
+					// to make sure the GatherPress filters for date- and time- format, as well as the users timezone,
+					// are recognized by the functions inside render_template().
+					wp_set_current_user( $recipient['user_id'] );
+				}
 
 				/* translators: %s: event title. */
 				$subject = sprintf( _x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ), get_the_title( $post_id ) );
@@ -496,47 +507,97 @@ class Event_Rest_Api {
 	}
 
 	/**
-	 * Get the list of members to send event-related emails to.
+	 * Get the list of recipients to send event-related emails to.
 	 *
-	 * This method retrieves the list of members to whom event-related emails should be sent based on the given `$send`
+	 * This method retrieves the list of recipients to whom event-related emails should be sent based on the given `$send`
 	 * parameter and the specified event `$post_id`. It checks the `$send` array for specific email recipient categories,
-	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a list of corresponding member IDs.
-	 * If no matching categories are found, an empty array is returned.
+	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a unified list of recipients that
+	 * includes both WordPress users and non-user RSVPs with their email addresses and metadata.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param array $send    An array specifying who to send emails to.
 	 * @param int   $post_id The Event Post ID.
-	 * @return array An array containing the member data of recipients.
+	 * @return array An array containing unified recipient data for both users and non-users.
 	 */
-	public function get_members( array $send, int $post_id ): array {
-		$member_ids    = array();
+	public function get_recipients( array $send, int $post_id ): array {
+		$recipients    = array();
 		$rsvp          = new Rsvp( $post_id );
 		$all_responses = $rsvp->responses();
+		$rsvp_query    = Rsvp_Query::get_instance();
 
+		// Handle 'all' members (WordPress users only).
 		if ( ! empty( $send['all'] ) ) {
-			return get_users();
-		}
+			$users = get_users();
 
-		foreach ( array( 'attending', 'waiting_list', 'not_attending' ) as $status ) {
-			if ( ! empty( $send[ $status ] ) ) {
-				$member_ids = array_merge(
-					$member_ids,
-					array_map(
-						static function ( $member ) {
-							return $member['userId'];
-						},
-						$all_responses[ $status ]['records']
-					)
+			foreach ( $users as $user ) {
+				$recipients[] = array(
+					'is_user'    => true,
+					'user_id'    => $user->ID,
+					'comment_id' => 0,
+					'email'      => $user->user_email,
+					'name'       => $user->display_name,
 				);
 			}
 		}
 
-		if ( ! empty( $member_ids ) ) {
-			return get_users( array( 'include' => $member_ids ) );
+		// Collect comment IDs for RSVP statuses.
+		$comment_ids = array();
+		foreach ( array( 'attending', 'waiting_list', 'not_attending' ) as $status ) {
+			if ( ! empty( $send[ $status ] ) ) {
+				foreach ( $all_responses[ $status ]['records'] as $record ) {
+					$comment_ids[] = $record['commentId'];
+				}
+			}
 		}
 
-		return array();
+		if ( empty( $comment_ids ) ) {
+			return $recipients;
+		}
+
+		// Get full comment data for the RSVPs.
+		$comments = $rsvp_query->get_rsvps(
+			array(
+				'post_id'     => $post_id,
+				'status'      => 'approve',
+				'comment__in' => $comment_ids,
+			)
+		);
+
+		foreach ( $comments as $comment ) {
+			$user_id = intval( $comment->user_id );
+			$email   = $comment->comment_author_email;
+
+			// Skip if no email address.
+			if ( empty( $email ) ) {
+				continue;
+			}
+
+			if ( $user_id > 0 ) {
+				// WordPress user RSVP.
+				$user = get_userdata( $user_id );
+				if ( $user ) {
+					$recipients[] = array(
+						'is_user'    => true,
+						'user_id'    => $user_id,
+						'comment_id' => $comment->comment_ID,
+						'email'      => $user->user_email,
+						'name'       => $user->display_name,
+					);
+				}
+			} else {
+				// Non-user RSVP.
+				$recipients[] = array(
+					'is_user'    => false,
+					'user_id'    => 0,
+					'comment_id' => $comment->comment_ID,
+					'email'      => $email,
+					'name'       => $comment->comment_author,
+				);
+			}
+		}
+
+		return $recipients;
 	}
 
 	/**
