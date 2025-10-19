@@ -328,7 +328,7 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertCount( 2, $recipients, 'Failed to assert correct count for attending recipients.' );
 
 		// Check that we have both user and anonymous attending.
-		$user_recipients = array_filter(
+		$user_recipients      = array_filter(
 			$recipients,
 			static function ( $recipient ) {
 				return $recipient['is_user'];
@@ -344,7 +344,7 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertCount( 1, $user_recipients, 'Failed to assert one attending user recipient.' );
 		$this->assertCount( 1, $anonymous_recipients, 'Failed to assert one attending anonymous recipient.' );
 
-		$user_recipient = reset( $user_recipients );
+		$user_recipient      = reset( $user_recipients );
 		$anonymous_recipient = reset( $anonymous_recipients );
 
 		$this->assertEquals( $attending_user_id, $user_recipient['user_id'], 'Failed to assert correct attending user ID.' );
