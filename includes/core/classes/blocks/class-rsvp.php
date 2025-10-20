@@ -262,7 +262,7 @@ class Rsvp {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( Utility::has_css_class( $class_attr ?? '', 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
+			if ( Utility::has_css_class( $class_attr, 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.updateGuestCountDisplay' );
 
 				if ( empty( $user_details['guests'] ) ) {

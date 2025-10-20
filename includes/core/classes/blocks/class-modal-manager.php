@@ -92,7 +92,7 @@ class Modal_Manager {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( Utility::has_css_class( $class_attr ?? '', 'gatherpress-modal--trigger-open' ) ) {
+			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-open' ) ) {
 				$target_found = false;
 
 				// Check if current element is an anchor or button.
@@ -151,7 +151,7 @@ class Modal_Manager {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( Utility::has_css_class( $class_attr ?? '', 'gatherpress-modal--trigger-close' ) ) {
+			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-close' ) ) {
 				if (
 					// @phpstan-ignore-next-line
 					$tag->next_tag() &&

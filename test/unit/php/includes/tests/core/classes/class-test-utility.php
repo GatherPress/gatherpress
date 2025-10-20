@@ -441,6 +441,13 @@ class Test_Utility extends Base {
 				true,
 				'Should handle multiple spaces',
 			),
+			// Null handling cases.
+			array(
+				null,
+				'button',
+				false,
+				'Should handle null class string gracefully',
+			),
 		);
 	}
 
@@ -451,14 +458,14 @@ class Test_Utility extends Base {
 	 *
 	 * @covers ::has_css_class
 	 *
-	 * @param string $class_string The CSS class string to search in.
-	 * @param string $target_class The specific class to search for.
-	 * @param bool   $expected     Expected result.
-	 * @param string $message      Test assertion message.
+	 * @param string|null $class_string The CSS class string to search in.
+	 * @param string      $target_class The specific class to search for.
+	 * @param bool        $expected     Expected result.
+	 * @param string      $message      Test assertion message.
 	 *
 	 * @return void
 	 */
-	public function test_has_css_class( string $class_string, string $target_class, bool $expected, string $message ): void {
+	public function test_has_css_class( ?string $class_string, string $target_class, bool $expected, string $message ): void {
 		$this->assertSame(
 			$expected,
 			Utility::has_css_class( $class_string, $target_class ),

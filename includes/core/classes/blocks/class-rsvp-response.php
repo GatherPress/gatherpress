@@ -119,7 +119,7 @@ class Rsvp_Response {
 
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
-				if ( Utility::has_css_class( $class_attr ?? '', 'gatherpress-rsvp-response--no-responses' ) ) {
+				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
 					if ( ! empty( $counts['attending'] ) ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',

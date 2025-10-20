@@ -333,12 +333,12 @@ class Utility {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $class_string The CSS class string to search in.
-	 * @param string $target_class The specific class to search for.
+	 * @param string|null $class_string The CSS class string to search in.
+	 * @param string      $target_class The specific class to search for.
 	 *
 	 * @return bool True if the target class is found, false otherwise.
 	 */
-	public static function has_css_class( string $class_string, string $target_class ): bool {
+	public static function has_css_class( ?string $class_string, string $target_class ): bool {
 		if ( empty( $class_string ) || empty( $target_class ) ) {
 			return false;
 		}

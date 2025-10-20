@@ -154,7 +154,7 @@ class Modal {
 	 */
 	public function filter_login_modal( string $block_content, array $block ): string {
 		if (
-			Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress-modal--type-login' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-login' ) &&
 			is_user_logged_in()
 		) {
 			return '';
@@ -179,7 +179,7 @@ class Modal {
 	 */
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
 		if (
-			Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress-modal--type-rsvp' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-rsvp' ) &&
 			! Rsvp_Setup::get_instance()->get_user_identifier()
 		) {
 			return '';
