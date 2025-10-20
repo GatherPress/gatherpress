@@ -11,6 +11,7 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Setup;
+use GatherPress\Core\Rsvp_Token;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 
@@ -399,5 +400,246 @@ class Test_Rsvp_Setup extends Base {
 		unset( $_SERVER['REQUEST_URI'] );
 		unset( $_POST['gatherpress_rsvp'] );
 		unset( $_POST['_wp_http_referer'] );
+	}
+
+	/**
+	 * Coverage for get_user_identifier method.
+	 *
+	 * @covers ::get_user_identifier
+	 *
+	 * @return void
+	 */
+	public function test_get_user_identifier(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Test with logged-in user.
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( $user_id, $identifier );
+
+		// Test with no logged-in user and no token.
+		wp_set_current_user( 0 );
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( 0, $identifier );
+
+		// Test with valid RSVP token in URL.
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post->ID,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'token-user@example.com',
+			)
+		);
+
+		// Generate token.
+		$rsvp_token = new Rsvp_Token( $comment_id );
+		$rsvp_token->generate_token();
+		$token_string = sprintf( '%d_%s', $comment_id, $rsvp_token->get_token() );
+
+		// Mock filter_input to return token.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) use ( $token_string ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return $token_string;
+				}
+				return null;
+			}
+		);
+
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( 'token-user@example.com', $identifier );
+
+		// Test with invalid token in URL.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return 'invalid_token';
+				}
+				return null;
+			}
+		);
+
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( 0, $identifier );
+
+		// Clean up.
+		$this->unset_fn_return( 'filter_input' );
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Coverage for handle_rsvp_token method.
+	 *
+	 * @covers ::handle_rsvp_token
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_token(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Test with no token in URL.
+		$this->set_fn_return(
+			'filter_input',
+			function () {
+				return null;
+			}
+		);
+
+		// Should not throw error.
+		$instance->handle_rsvp_token();
+		$this->assertTrue( true );
+
+		// Test with valid token in URL.
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post->ID,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'approve-test@example.com',
+				'comment_approved'     => '0', // Pending approval.
+			)
+		);
+
+		// Generate token.
+		$rsvp_token = new Rsvp_Token( $comment_id );
+		$rsvp_token->generate_token();
+		$token_string = sprintf( '%d_%s', $comment_id, $rsvp_token->get_token() );
+
+		// Mock filter_input to return valid token.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) use ( $token_string ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return $token_string;
+				}
+				return null;
+			}
+		);
+
+		// Verify comment is not approved before.
+		$comment = get_comment( $comment_id );
+		$this->assertEquals( '0', $comment->comment_approved );
+
+		// Call handle_rsvp_token which should approve the comment.
+		$instance->handle_rsvp_token();
+
+		// Verify comment is now approved.
+		$comment = get_comment( $comment_id );
+		$this->assertEquals( '1', $comment->comment_approved );
+
+		// Test with invalid token in URL.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return sprintf( '%d_invalid_token', $comment_id );
+				}
+				return null;
+			}
+		);
+
+		// Create another pending comment.
+		$comment_id_2 = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post->ID,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'no-approve@example.com',
+				'comment_approved'     => '0',
+			)
+		);
+
+		$instance->handle_rsvp_token();
+
+		// Verify comment is still not approved.
+		$comment_2 = get_comment( $comment_id_2 );
+		$this->assertEquals( '0', $comment_2->comment_approved );
+
+		// Clean up.
+		$this->unset_fn_return( 'filter_input' );
+	}
+
+	/**
+	 * Coverage for get_user_identifier with logged-in user and valid token.
+	 *
+	 * Tests that token takes precedence over logged-in user when present.
+	 *
+	 * @covers ::get_user_identifier
+	 *
+	 * @return void
+	 */
+	public function test_get_user_identifier_with_user_and_token(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Set up logged-in user.
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		// Set up valid token.
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post->ID,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'token-email@example.com',
+			)
+		);
+
+		$rsvp_token = new Rsvp_Token( $comment_id );
+		$rsvp_token->generate_token();
+		$token_string = sprintf( '%d_%s', $comment_id, $rsvp_token->get_token() );
+
+		// Mock filter_input to return token.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) use ( $token_string ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return $token_string;
+				}
+				return null;
+			}
+		);
+
+		// With valid token, token email should be used even if user is logged in.
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( 'token-email@example.com', $identifier );
+
+		// Without token, logged-in user should be used.
+		$this->set_fn_return(
+			'filter_input',
+			static function () {
+				return null;
+			}
+		);
+
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( $user_id, $identifier );
+
+		// Without logged-in user and no token, should return 0.
+		wp_set_current_user( 0 );
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( 0, $identifier );
+
+		// Clean up.
+		$this->unset_fn_return( 'filter_input' );
 	}
 }

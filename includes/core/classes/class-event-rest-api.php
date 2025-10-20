@@ -197,15 +197,10 @@ class Event_Rest_Api {
 				'callback'            => array( $this, 'update_rsvp' ),
 				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
 					$unparsed_token = $request->get_param( Rsvp_Token::NAME );
+					$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
 
-					if ( ! empty( $unparsed_token ) ) {
-						$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
-
-						if ( ! empty( $token_parts ) ) {
-							$rsvp_token = new Rsvp_Token( $token_parts['comment_id'] );
-
-							return $rsvp_token->is_valid( $token_parts['token'] );
-						}
+					if ( $rsvp_token ) {
+						return true;
 					}
 
 					return is_user_logged_in();
@@ -218,7 +213,7 @@ class Event_Rest_Api {
 					'rsvp_token' => array(
 						'required'          => false,
 						'validate_callback' => static function ( $param ): bool {
-							return ! empty( Rsvp_Setup::get_instance()->parse_rsvp_token( $param ) );
+							return ! empty( Rsvp_Token::parse_token_string( $param ) );
 						},
 					),
 					'status'     => array(
@@ -743,14 +738,10 @@ class Event_Rest_Api {
 		$user_identifier = $user_id;
 
 		if ( ! empty( $unparsed_token ) ) {
-			$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
+			$rsvp_token = Rsvp_Token::from_token_string( $unparsed_token );
 
-			if ( ! empty( $token_parts ) ) {
-				$rsvp_token = new Rsvp_Token( $token_parts['comment_id'] );
-
-				if ( $rsvp_token->is_valid( $token_parts['token'] ) ) {
-					$user_identifier = $rsvp_token->get_email();
-				}
+			if ( $rsvp_token ) {
+				$user_identifier = $rsvp_token->get_email();
 			}
 		}
 
@@ -805,21 +796,11 @@ class Event_Rest_Api {
 	 *                          - content (string): The dynamically rendered HTML markup for the RSVP responses.
 	 */
 	public function rsvp_status_html( WP_REST_Request $request ): WP_REST_Response {
-		// @todo Create helper method to validate RSVP token from URL parameter to reduce code duplication.
 		// Prevent caching for logged-in users or users with valid RSVP tokens.
-		$unparsed_token  = $request->get_param( Rsvp_Token::NAME );
-		$has_valid_token = false;
+		$unparsed_token = $request->get_param( Rsvp_Token::NAME );
+		$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
 
-		if ( ! empty( $unparsed_token ) ) {
-			$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
-
-			if ( ! empty( $token_parts ) ) {
-				$rsvp_token      = new Rsvp_Token( $token_parts['comment_id'] );
-				$has_valid_token = $rsvp_token->is_valid( $token_parts['token'] );
-			}
-		}
-
-		if ( is_user_logged_in() || $has_valid_token ) {
+		if ( is_user_logged_in() || $rsvp_token ) {
 			nocache_headers();
 		}
 
@@ -1024,20 +1005,11 @@ class Event_Rest_Api {
 	 * @return WP_REST_Response Response containing success status and RSVP data.
 	 */
 	public function rsvp_responses( WP_REST_Request $request ): WP_REST_Response {
-		// @todo Create helper method to validate RSVP token from URL parameter to reduce code duplication.
 		// Prevent caching for logged-in users or users with valid RSVP tokens.
-		$unparsed_token  = $request->get_param( Rsvp_Token::NAME );
-		$has_valid_token = false;
+		$unparsed_token = $request->get_param( Rsvp_Token::NAME );
+		$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
 
-		if ( ! empty( $unparsed_token ) ) {
-			$token_parts = Rsvp_Setup::get_instance()->parse_rsvp_token( $unparsed_token );
-			if ( ! empty( $token_parts ) ) {
-				$rsvp_token      = new Rsvp_Token( $token_parts['comment_id'] );
-				$has_valid_token = $rsvp_token->is_valid( $token_parts['token'] );
-			}
-		}
-
-		if ( is_user_logged_in() || $has_valid_token ) {
+		if ( is_user_logged_in() || $rsvp_token ) {
 			nocache_headers();
 		}
 

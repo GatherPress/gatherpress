@@ -224,54 +224,6 @@ class Rsvp_Setup {
 		);
 	}
 
-	/**
-	 * Get and parse RSVP token from URL parameter.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array Parsed token data containing user ID and event ID.
-	 */
-	public function get_token_from_url(): array {
-		$token_param = sanitize_text_field(
-			wp_unslash(
-				filter_input( INPUT_GET, Rsvp_Token::NAME )
-			)
-		);
-
-		return $this->parse_rsvp_token( $token_param );
-	}
-
-	/**
-	 * Parse RSVP token string into component parts.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $unparsed_token Raw token string in format "comment_id_token".
-	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
-	 */
-	public function parse_rsvp_token( $unparsed_token ): array {
-		if ( empty( $unparsed_token ) ) {
-			return array();
-		}
-
-		$token_parts = explode( '_', $unparsed_token, 2 );
-
-		if ( 2 !== count( $token_parts ) ) {
-			return array(); // Invalid format.
-		}
-
-		$comment_id = intval( $token_parts[0] );
-		$token      = $token_parts[1];
-
-		if ( ! $comment_id || empty( $token ) ) {
-			return array(); // Invalid data.
-		}
-
-		return array(
-			'comment_id' => $comment_id,
-			'token'      => $token,
-		);
-	}
 
 	/**
 	 * Get user identifier for RSVP operations.
@@ -285,17 +237,10 @@ class Rsvp_Setup {
 	 */
 	public function get_user_identifier() {
 		$user_identifier = get_current_user_id();
-		$token_data      = $this->get_token_from_url();
+		$rsvp_token      = Rsvp_Token::from_url_parameter();
 
-		if ( ! empty( $token_data ) ) {
-			$rsvp_token = new Rsvp_Token( $token_data['comment_id'] );
-
-			if (
-				$rsvp_token->is_valid( $token_data['token'] ) &&
-				! empty( $rsvp_token->get_comment() )
-			) {
-				$user_identifier = $rsvp_token->get_email();
-			}
+		if ( $rsvp_token && ! empty( $rsvp_token->get_comment() ) ) {
+			$user_identifier = $rsvp_token->get_email();
 		}
 
 		return $user_identifier;
@@ -312,17 +257,9 @@ class Rsvp_Setup {
 	 * @return void
 	 */
 	public function handle_rsvp_token(): void {
-		$token_data = $this->get_token_from_url();
+		$rsvp_token = Rsvp_Token::from_url_parameter();
 
-		if ( empty( $token_data ) ) {
-			return;
-		}
-
-		$comment_id = $token_data['comment_id'];
-		$token      = $token_data['token'];
-		$rsvp_token = new Rsvp_Token( $comment_id );
-
-		if ( $rsvp_token->is_valid( $token ) ) {
+		if ( $rsvp_token ) {
 			$rsvp_token->approve_comment();
 		}
 	}
