@@ -117,7 +117,7 @@ const EventCommunicationModal = () => {
 					/>
 					<p className="description">
 						{ __(
-							'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs who provided email addresses.',
+							'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
 							'gatherpress',
 						) }
 					</p>
