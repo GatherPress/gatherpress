@@ -12,8 +12,7 @@ use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
-use ReflectionClass;
-use ReflectionException;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Rsvp_Form.
@@ -63,16 +62,12 @@ class Test_Rsvp_Form extends Base {
 	 * @covers ::generate_form_id
 	 *
 	 * @return void
-	 * @throws ReflectionException When method reflection fails.
 	 */
 	public function test_generate_form_id(): void {
-		$instance   = Rsvp_Form::get_instance();
-		$reflection = new ReflectionClass( $instance );
-		$method     = $reflection->getMethod( 'generate_form_id' );
-		$method->setAccessible( true );
+		$instance = Rsvp_Form::get_instance();
 
-		$form_id_1 = $method->invoke( $instance );
-		$form_id_2 = $method->invoke( $instance );
+		$form_id_1 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
+		$form_id_2 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
 
 		$this->assertIsString( $form_id_1 );
 		$this->assertIsString( $form_id_2 );
@@ -194,14 +189,14 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests that transform_block_content hides success message blocks.
+	 * Tests that transform_block_content hides success message blocks by default.
 	 *
 	 * Verifies that elements with gatherpress--rsvp-form-message class
-	 * are hidden by adding display:none style.
+	 * are hidden by adding display:none style when no success parameter is present.
 	 *
 	 * @since 1.0.0
 	 * @covers ::transform_block_content
-	 * @covers ::hide_success_message_blocks
+	 * @covers ::handle_form_visibility
 	 *
 	 * @return void
 	 */
@@ -228,6 +223,7 @@ class Test_Rsvp_Form extends Base {
 
 		$this->assertStringContainsString( 'gatherpress--rsvp-form-message', $transformed_content );
 		$this->assertStringContainsString( 'display: none;', $transformed_content );
+		$this->assertStringContainsString( 'aria-hidden="true"', $transformed_content );
 	}
 
 	/**
@@ -874,5 +870,174 @@ class Test_Rsvp_Form extends Base {
 
 		// Clean up mocked function.
 		$this->unset_fn_return( 'filter_input' );
+	}
+
+	/**
+	 * Tests that transform_block_content shows success message when success parameter is present.
+	 *
+	 * Verifies that when gatherpress_rsvp_success=true is in the URL, the success message
+	 * is shown and form fields are hidden, mimicking the JavaScript behavior for non-JS users.
+	 *
+	 * @since 1.0.0
+	 * @covers ::transform_block_content
+	 * @covers ::handle_form_visibility
+	 * @covers ::get_input_value
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_shows_success_state(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Use PMC Utility to capture noisy database output during post creation.
+		$post_id = 0;
+		Utility::buffer_and_return(
+			function () use ( &$post_id ) {
+				$post_id = $this->factory()->post->create(
+					array(
+						'post_type' => Event::POST_TYPE,
+					)
+				);
+			}
+		);
+
+		// Mock the filter_input function to simulate GET parameter.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_success' === $var_name ) {
+					return 'true';
+				}
+				return null;
+			}
+		);
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">
+			<div class="gatherpress--rsvp-form-message">Success! You have RSVPed.</div>
+			<div class="wp-block-gatherpress-form-field">Name field</div>
+			<div class="wp-block-button">Submit Button</div>
+			<div class="wp-block-button gatherpress-modal--trigger-close">Close Button</div>
+		</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$transformed_content = $instance->transform_block_content( $block_content, $block );
+
+		// Success message should be visible.
+		$this->assertStringContainsString( 'gatherpress--rsvp-form-message', $transformed_content );
+		$this->assertStringContainsString( 'display: block;', $transformed_content );
+		$this->assertStringContainsString( 'aria-hidden="false"', $transformed_content );
+
+		// Form fields should be hidden.
+		$this->assertStringContainsString( 'class="wp-block-gatherpress-form-field">Name field</div>', $transformed_content );
+		$this->assertMatchesRegularExpression( '/class="wp-block-gatherpress-form-field"[^>]*>/', $transformed_content );
+		// Check that the form field div that comes after has display:none in its style.
+		preg_match( '/<div[^>]*class="wp-block-gatherpress-form-field"[^>]*>/', $transformed_content, $matches );
+		if ( ! empty( $matches[0] ) ) {
+			$this->assertStringContainsString( 'style="display: none;"', $matches[0] );
+		}
+
+		// Submit button should be hidden but close button should remain visible.
+		// Check that there's at least one button with display:none (the submit button).
+		$this->assertStringContainsString( '<div style="display: none;" class="wp-block-button">Submit Button</div>', $transformed_content );
+
+		// Clean up mocked function.
+		$this->unset_fn_return( 'filter_input' );
+	}
+
+	/**
+	 * Tests the get_input_value method with different input types.
+	 *
+	 * Verifies that the method correctly retrieves values from GET and POST
+	 * inputs and handles test environment compatibility.
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_input_value
+	 *
+	 * @return void
+	 */
+	public function test_get_input_value(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Mock the filter_input function.
+		$this->set_fn_return(
+			'filter_input',
+			function ( $type, $var_name ) {
+				$data = array(
+					INPUT_GET  => array(
+						'test_get' => 'get_value',
+					),
+					INPUT_POST => array(
+						'test_post' => 'post_value',
+					),
+				);
+				if ( isset( $data[ $type ][ $var_name ] ) ) {
+					return $data[ $type ][ $var_name ];
+				}
+				return null;
+			}
+		);
+
+		// Test GET input.
+		$get_value = Utility::invoke_hidden_method( $instance, 'get_input_value', array( 'test_get', INPUT_GET ) );
+		$this->assertEquals( 'get_value', $get_value );
+
+		// Test POST input (default).
+		$post_value = Utility::invoke_hidden_method( $instance, 'get_input_value', array( 'test_post' ) );
+		$this->assertEquals( 'post_value', $post_value );
+
+		// Test POST input explicitly.
+		$post_value_explicit = Utility::invoke_hidden_method( $instance, 'get_input_value', array( 'test_post', INPUT_POST ) );
+		$this->assertEquals( 'post_value', $post_value_explicit );
+
+		// Test non-existent field.
+		$null_value = Utility::invoke_hidden_method( $instance, 'get_input_value', array( 'non_existent', INPUT_GET ) );
+		$this->assertNull( $null_value );
+
+		// Clean up mocked function.
+		$this->unset_fn_return( 'filter_input' );
+	}
+
+	/**
+	 * Tests the handle_form_visibility method directly.
+	 *
+	 * Verifies that the method correctly shows/hides elements based on
+	 * the success state parameter.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_form_visibility
+	 *
+	 * @return void
+	 */
+	public function test_handle_form_visibility(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$html = '<form>
+			<div class="gatherpress--rsvp-form-message">Success message</div>
+			<div class="wp-block-gatherpress-form-field">Name field</div>
+			<div class="wp-block-button">Submit Button</div>
+			<div class="wp-block-button gatherpress-modal--trigger-close">Close Button</div>
+		</form>';
+
+		// Test with success = false (default state).
+		$result_false = Utility::invoke_hidden_method( $instance, 'handle_form_visibility', array( $html, false ) );
+		$this->assertStringContainsString( 'gatherpress--rsvp-form-message', $result_false );
+		$this->assertStringContainsString( 'display: none;', $result_false );
+		$this->assertStringContainsString( 'aria-hidden="true"', $result_false );
+		// Form fields should remain visible.
+		$this->assertStringNotContainsString( 'wp-block-gatherpress-form-field" style', $result_false );
+
+		// Test with success = true (successful submission).
+		$result_true = Utility::invoke_hidden_method( $instance, 'handle_form_visibility', array( $html, true ) );
+		$this->assertStringContainsString( 'gatherpress--rsvp-form-message', $result_true );
+		$this->assertStringContainsString( 'display: block;', $result_true );
+		$this->assertStringContainsString( 'aria-hidden="false"', $result_true );
+		// Form fields should be hidden.
+		$this->assertStringContainsString( '<div style="display: none;" class="wp-block-gatherpress-form-field">Name field</div>', $result_true );
+		// Submit button should be hidden.
+		$this->assertStringContainsString( '<div style="display: none;" class="wp-block-button">Submit Button</div>', $result_true );
 	}
 }

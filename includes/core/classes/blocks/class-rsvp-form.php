@@ -132,42 +132,77 @@ class Rsvp_Form {
 
 		$updated_html = $tag->get_updated_html();
 
-		// Force hide success message blocks on frontend.
-		$updated_html = $this->hide_success_message_blocks( $updated_html );
+		// Check if this is a successful form submission redirect.
+		$success_param = sanitize_text_field( wp_unslash( $this->get_input_value( 'gatherpress_rsvp_success', INPUT_GET ) ) );
+		$is_success    = 'true' === $success_param;
+
+		// Handle visibility of form elements based on success state.
+		$updated_html = $this->handle_form_visibility( $updated_html, $is_success );
 
 		return $updated_html;
 	}
 
 	/**
-	 * Hide success message blocks in the form HTML.
+	 * Handle visibility of form elements based on success state.
 	 *
-	 * Forces all elements with the gatherpress-rsvp-form-message class
-	 * to be hidden on the frontend. They will be shown via JavaScript
-	 * when the form is successfully submitted.
+	 * When success is true (form was successfully submitted), shows success message
+	 * and hides form fields. When false, hides success message (for JavaScript to show later).
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $html The form HTML content.
-	 * @return string The modified HTML with hidden message blocks.
+	 * @param string $html       The form HTML content.
+	 * @param bool   $is_success Whether the form was successfully submitted.
+	 * @return string The modified HTML with appropriate visibility.
 	 */
-	private function hide_success_message_blocks( string $html ): string {
+	private function handle_form_visibility( string $html, bool $is_success ): string {
 		$tag = new WP_HTML_Tag_Processor( $html );
 
-		// Loop through all tags to find elements with the message class.
+		// Loop through all tags to find elements we need to show/hide.
 		while ( $tag->next_tag() ) {
 			$class_attribute = $tag->get_attribute( 'class' );
 
+			// Handle success message blocks.
 			if ( Utility::has_css_class( $class_attribute, 'gatherpress--rsvp-form-message' ) ) {
-				// Get existing styles and add display:none.
-				$existing_styles       = $tag->get_attribute( 'style' ) ?? '';
-				$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );
-				$existing_styles_clean = implode( ';', array_filter( $existing_styles_array ) ) . ';';
-				$updated_styles        = trim( $existing_styles_clean . ' display: none;' );
+				if ( $is_success ) {
+					// Show the success message.
+					$existing_styles = $tag->get_attribute( 'style' ) ?? '';
+					// Remove any display:none from existing styles.
+					$existing_styles = preg_replace( '/display\s*:\s*none\s*;?/i', '', $existing_styles );
+					$updated_styles  = trim( $existing_styles . ' display: block;' );
 
-				$tag->set_attribute( 'style', $updated_styles );
-				$tag->set_attribute( 'aria-hidden', 'true' );
+					$tag->set_attribute( 'style', $updated_styles );
+					$tag->set_attribute( 'aria-hidden', 'false' );
+				} else {
+					// Hide the success message (default state for JavaScript to handle).
+					$existing_styles       = $tag->get_attribute( 'style' ) ?? '';
+					$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );
+					$existing_styles_clean = implode( ';', array_filter( $existing_styles_array ) ) . ';';
+					$updated_styles        = trim( $existing_styles_clean . ' display: none;' );
+
+					$tag->set_attribute( 'style', $updated_styles );
+					$tag->set_attribute( 'aria-hidden', 'true' );
+				}
 				$tag->set_attribute( 'aria-live', 'polite' );
 				$tag->set_attribute( 'role', 'status' );
+			}
+
+			// Hide form field blocks when success is true.
+			if ( $is_success && Utility::has_css_class( $class_attribute, 'wp-block-gatherpress-form-field' ) ) {
+				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
+				$updated_styles  = trim( $existing_styles . ' display: none;' );
+				$tag->set_attribute( 'style', $updated_styles );
+			}
+
+			// Hide button containers when success is true (except modal close buttons).
+			if ( $is_success && Utility::has_css_class( $class_attribute, 'wp-block-button' ) ) {
+				// Check if this is a modal close button.
+				$has_close_class = Utility::has_css_class( $class_attribute, 'gatherpress-modal--trigger-close' );
+
+				if ( ! $has_close_class ) {
+					$existing_styles = $tag->get_attribute( 'style' ) ?? '';
+					$updated_styles  = trim( $existing_styles . ' display: none;' );
+					$tag->set_attribute( 'style', $updated_styles );
+				}
 			}
 		}
 
@@ -521,16 +556,17 @@ class Rsvp_Form {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $field_name The field name to get from POST input.
+	 * @param string $field_name The field name to get from input.
+	 * @param int    $input_type The input type (INPUT_GET, INPUT_POST, etc.). Defaults to INPUT_POST.
 	 * @return mixed The field value or null if not found.
 	 */
-	private function get_input_value( string $field_name ) {
+	private function get_input_value( string $field_name, int $input_type = INPUT_POST ) {
 		// In test environment, use the namespaced function if it exists.
 		if ( function_exists( 'GatherPress\Core\filter_input' ) ) {
-			return \GatherPress\Core\filter_input( INPUT_POST, $field_name );
+			return \GatherPress\Core\filter_input( $input_type, $field_name );
 		}
 
 		// In production environment, use the global function.
-		return \filter_input( INPUT_POST, $field_name );
+		return \filter_input( $input_type, $field_name );
 	}
 }
