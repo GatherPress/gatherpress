@@ -108,8 +108,35 @@ class Date_Calculator {
 		$dates       = array();
 		$pattern_low = strtolower( trim( $pattern ) );
 
-		// Parse pattern for Nth weekday.
-		if ( preg_match( '/^(first|second|third|fourth|last|1st|2nd|3rd|4th|5th)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+		// Handle relative patterns first (next, last, this, tomorrow, yesterday).
+		if ( preg_match( '/^(next|last|this)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+			$relative = strtolower( $matches[1] );
+			$weekday  = strtolower( $matches[2] );
+			$dates    = $this->calculate_relative_weekday_dates( $relative, $weekday, $occurrences, $start_datetime );
+		} elseif ( preg_match( '/^(tomorrow|yesterday)$/i', $pattern_low, $matches ) ) {
+			$relative = strtolower( $matches[1] );
+			$dates    = $this->calculate_relative_day_dates( $relative, $occurrences, $start_datetime );
+		} elseif ( preg_match( '/^(next|last)\s+(week|month)$/i', $pattern_low, $matches ) ) {
+			$relative = strtolower( $matches[1] );
+			$period   = strtolower( $matches[2] );
+			$dates    = $this->calculate_relative_period_dates( $relative, $period, $occurrences, $start_datetime );
+		} elseif ( preg_match( '/^(in|after)\s+(\d+)\s+(day|days)$/i', $pattern_low, $matches ) ) {
+			$days  = intval( $matches[2] );
+			$dates = $this->calculate_future_day_dates( $days, $occurrences, $start_datetime );
+		} elseif ( preg_match( '/^(\d+)\s+(day|days)\s+(ago|before)$/i', $pattern_low, $matches ) ) {
+			$days  = intval( $matches[1] );
+			$dates = $this->calculate_past_day_dates( $days, $occurrences, $start_datetime );
+		} elseif ( preg_match( '/^every\s+other\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+			// Bi-weekly pattern.
+			$weekday = strtolower( $matches[1] );
+			$dates   = $this->calculate_biweekly_dates( $weekday, $occurrences, $start_datetime );
+		} elseif ( preg_match( '/^every\s+(\d+)\s+(week|weeks|month|months)$/i', $pattern_low, $matches ) ) {
+			// Interval-based pattern.
+			$interval = intval( $matches[1] );
+			$period   = strtolower( $matches[2] );
+			$dates    = $this->calculate_interval_dates( $interval, $period, $occurrences, $start_datetime );
+		} elseif ( preg_match( '/^(first|second|third|fourth|last|1st|2nd|3rd|4th|5th)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+			// Original Nth weekday pattern.
 			$ordinal = strtolower( $matches[1] );
 			$weekday = strtolower( $matches[2] );
 
@@ -148,7 +175,7 @@ class Date_Calculator {
 				$current->modify( '+1 month' );
 			}
 		} elseif ( preg_match( '/^every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
-			// Pattern: "every Monday".
+			// Original weekly pattern.
 			$weekday = strtolower( $matches[1] );
 			$current = clone $start_datetime;
 
@@ -227,5 +254,243 @@ class Date_Calculator {
 		);
 
 		return $days[ strtolower( $weekday ) ] ?? 1;
+	}
+
+	/**
+	 * Calculate dates for relative weekday patterns (next, last, this).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string    $relative      The relative term (next, last, this).
+	 * @param string    $weekday       The weekday name.
+	 * @param int       $occurrences   Number of occurrences.
+	 * @param \DateTime $start_datetime Starting date.
+	 * @return array Array of date strings in Y-m-d format.
+	 */
+	private function calculate_relative_weekday_dates( string $relative, string $weekday, int $occurrences, \DateTime $start_datetime ): array {
+		$dates       = array();
+		$current     = clone $start_datetime;
+		$day_num     = $this->get_weekday_number( $weekday );
+		$current_day = (int) $current->format( 'N' );
+
+		for ( $i = 0; $i < $occurrences; $i++ ) {
+			$target_date = clone $current;
+
+			switch ( $relative ) {
+				case 'next':
+					// Find next occurrence of weekday.
+					if ( $current_day <= $day_num ) {
+						$days_ahead = $day_num - $current_day;
+					} else {
+						$days_ahead = 7 - $current_day + $day_num;
+					}
+					$target_date->modify( "+{$days_ahead} days" );
+					break;
+
+				case 'last':
+					// Find previous occurrence of weekday.
+					if ( $current_day >= $day_num ) {
+						$days_back = $current_day - $day_num;
+					} else {
+						$days_back = $current_day + 7 - $day_num;
+					}
+					$target_date->modify( "-{$days_back} days" );
+					break;
+
+				case 'this':
+					// Find this week's occurrence of weekday.
+					if ( $current_day <= $day_num ) {
+						$days_ahead = $day_num - $current_day;
+					} else {
+						$days_ahead = 7 - $current_day + $day_num;
+					}
+					$target_date->modify( "+{$days_ahead} days" );
+					break;
+			}
+
+			$dates[] = $target_date->format( 'Y-m-d' );
+
+			// Move to next week for subsequent occurrences.
+			$current->modify( '+7 days' );
+			$current_day = (int) $current->format( 'N' );
+		}
+
+		return $dates;
+	}
+
+	/**
+	 * Calculate dates for relative day patterns (tomorrow, yesterday).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string    $relative      The relative term (tomorrow, yesterday).
+	 * @param int       $occurrences   Number of occurrences.
+	 * @param \DateTime $start_datetime Starting date.
+	 * @return array Array of date strings in Y-m-d format.
+	 */
+	private function calculate_relative_day_dates( string $relative, int $occurrences, \DateTime $start_datetime ): array {
+		$dates   = array();
+		$current = clone $start_datetime;
+
+		for ( $i = 0; $i < $occurrences; $i++ ) {
+			switch ( $relative ) {
+				case 'tomorrow':
+					$current->modify( '+1 day' );
+					break;
+				case 'yesterday':
+					$current->modify( '-1 day' );
+					break;
+			}
+
+			$dates[] = $current->format( 'Y-m-d' );
+		}
+
+		return $dates;
+	}
+
+	/**
+	 * Calculate dates for relative period patterns (next week, last month).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string    $relative      The relative term (next, last).
+	 * @param string    $period        The period (week, month).
+	 * @param int       $occurrences   Number of occurrences.
+	 * @param \DateTime $start_datetime Starting date.
+	 * @return array Array of date strings in Y-m-d format.
+	 */
+	private function calculate_relative_period_dates( string $relative, string $period, int $occurrences, \DateTime $start_datetime ): array {
+		$dates   = array();
+		$current = clone $start_datetime;
+
+		for ( $i = 0; $i < $occurrences; $i++ ) {
+			switch ( $relative ) {
+				case 'next':
+					if ( 'week' === $period ) {
+						$current->modify( '+1 week' );
+					} elseif ( 'month' === $period ) {
+						$current->modify( '+1 month' );
+					}
+					break;
+				case 'last':
+					if ( 'week' === $period ) {
+						$current->modify( '-1 week' );
+					} elseif ( 'month' === $period ) {
+						$current->modify( '-1 month' );
+					}
+					break;
+			}
+
+			$dates[] = $current->format( 'Y-m-d' );
+		}
+
+		return $dates;
+	}
+
+	/**
+	 * Calculate dates for future day patterns (in 3 days, after 5 days).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int       $days          Number of days ahead.
+	 * @param int       $occurrences   Number of occurrences.
+	 * @param \DateTime $start_datetime Starting date.
+	 * @return array Array of date strings in Y-m-d format.
+	 */
+	private function calculate_future_day_dates( int $days, int $occurrences, \DateTime $start_datetime ): array {
+		$dates   = array();
+		$current = clone $start_datetime;
+
+		for ( $i = 0; $i < $occurrences; $i++ ) {
+			$current->modify( "+{$days} days" );
+			$dates[] = $current->format( 'Y-m-d' );
+		}
+
+		return $dates;
+	}
+
+	/**
+	 * Calculate dates for past day patterns (3 days ago, 5 days before).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int       $days          Number of days back.
+	 * @param int       $occurrences   Number of occurrences.
+	 * @param \DateTime $start_datetime Starting date.
+	 * @return array Array of date strings in Y-m-d format.
+	 */
+	private function calculate_past_day_dates( int $days, int $occurrences, \DateTime $start_datetime ): array {
+		$dates   = array();
+		$current = clone $start_datetime;
+
+		for ( $i = 0; $i < $occurrences; $i++ ) {
+			$current->modify( "-{$days} days" );
+			$dates[] = $current->format( 'Y-m-d' );
+		}
+
+		return $dates;
+	}
+
+	/**
+	 * Calculate dates for bi-weekly patterns (every other Monday).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string    $weekday       The weekday name.
+	 * @param int       $occurrences   Number of occurrences.
+	 * @param \DateTime $start_datetime Starting date.
+	 * @return array Array of date strings in Y-m-d format.
+	 */
+	private function calculate_biweekly_dates( string $weekday, int $occurrences, \DateTime $start_datetime ): array {
+		$dates   = array();
+		$current = clone $start_datetime;
+
+		// Find the next occurrence of this weekday.
+		$day_num     = $this->get_weekday_number( $weekday );
+		$current_day = (int) $current->format( 'N' );
+
+		if ( $current_day <= $day_num ) {
+			$days_ahead = $day_num - $current_day;
+		} else {
+			$days_ahead = 7 - $current_day + $day_num;
+		}
+
+		$current->modify( "+{$days_ahead} days" );
+
+		for ( $i = 0; $i < $occurrences; $i++ ) {
+			$dates[] = $current->format( 'Y-m-d' );
+			$current->modify( '+14 days' ); // Every other week.
+		}
+
+		return $dates;
+	}
+
+	/**
+	 * Calculate dates for interval-based patterns (every 2 weeks, every 3 months).
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int       $interval      The interval number.
+	 * @param string    $period        The period (week, weeks, month, months).
+	 * @param int       $occurrences   Number of occurrences.
+	 * @param \DateTime $start_datetime Starting date.
+	 * @return array Array of date strings in Y-m-d format.
+	 */
+	private function calculate_interval_dates( int $interval, string $period, int $occurrences, \DateTime $start_datetime ): array {
+		$dates   = array();
+		$current = clone $start_datetime;
+
+		for ( $i = 0; $i < $occurrences; $i++ ) {
+			$dates[] = $current->format( 'Y-m-d' );
+
+			// Apply the interval.
+			if ( 'week' === $period || 'weeks' === $period ) {
+				$current->modify( "+{$interval} weeks" );
+			} elseif ( 'month' === $period || 'months' === $period ) {
+				$current->modify( "+{$interval} months" );
+			}
+		}
+
+		return $dates;
 	}
 }

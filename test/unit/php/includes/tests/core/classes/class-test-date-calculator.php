@@ -250,4 +250,256 @@ class Test_Date_Calculator extends Base {
 			$this->assertCount( 1, $result['data']['dates'], "Failed to assert 1 date for weekday: {$weekday}" );
 		}
 	}
+
+	/**
+	 * Coverage for calculate_dates method with "next weekday" patterns.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_next_weekday(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'next Tuesday',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-01', // Wednesday.
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for next Tuesday.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+		$this->assertSame( 'next Tuesday', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "last weekday" patterns.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_last_weekday_pattern(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'last Friday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-01', // Wednesday.
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for last Friday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( 'last Friday', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "this weekday" patterns.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_this_weekday(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'this Monday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-01', // Wednesday.
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for this Monday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( 'this Monday', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "tomorrow" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_tomorrow(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'tomorrow',
+			'occurrences' => 3,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for tomorrow.' );
+		$this->assertCount( 3, $result['data']['dates'], 'Failed to assert 3 dates returned.' );
+		$this->assertSame( 'tomorrow', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "yesterday" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_yesterday(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'yesterday',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for yesterday.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+		$this->assertSame( 'yesterday', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "next week" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_next_week(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'next week',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for next week.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+		$this->assertSame( 'next week', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "last month" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_last_month(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'last month',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for last month.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( 'last month', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "in X days" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_in_days(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'in 5 days',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for in 5 days.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+		$this->assertSame( 'in 5 days', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "X days ago" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_days_ago(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => '3 days ago',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for 3 days ago.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( '3 days ago', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "every other weekday" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_every_other_weekday(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'every other Wednesday',
+			'occurrences' => 3,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for every other Wednesday.' );
+		$this->assertCount( 3, $result['data']['dates'], 'Failed to assert 3 dates returned.' );
+		$this->assertSame( 'every other Wednesday', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "every X weeks" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_every_weeks(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'every 2 weeks',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for every 2 weeks.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+		$this->assertSame( 'every 2 weeks', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
+
+	/**
+	 * Coverage for calculate_dates method with "every X months" pattern.
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_every_months(): void {
+		$calculator = new Date_Calculator();
+		$params     = array(
+			'pattern'     => 'every 3 months',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-01',
+		);
+		$result     = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for every 3 months.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+		$this->assertSame( 'every 3 months', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
 }
