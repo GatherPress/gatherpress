@@ -372,27 +372,33 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'Calculate Recurring Dates', 'gatherpress' ),
 				'description'         => __( 'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. 2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. 3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. 4) "Relative dates" (e.g., "next Tuesday", "tomorrow") - calculates relative dates. 5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.', 'gatherpress' ),
+				'parameters'          => array(
+					'type'       => 'object',
+					'properties' => array(
+						'pattern'     => array(
+							'type'        => 'string',
+							'description' => __( 'The date pattern to calculate (e.g., "3rd Tuesday", "every Monday", "next Thursday", "3 weeks from Friday")', 'gatherpress' ),
+							'required'    => true,
+						),
+						'occurrences' => array(
+							'type'        => 'integer',
+							'description' => __( 'Number of dates to calculate (minimum 1)', 'gatherpress' ),
+							'minimum'     => 1,
+							'required'    => true,
+						),
+						'start_date'  => array(
+							'type'        => 'string',
+							'format'      => 'date',
+							'description' => __( 'Start date in Y-m-d format (defaults to today)', 'gatherpress' ),
+							'required'    => false,
+						),
+					),
+					'required'   => array( 'pattern', 'occurrences' ),
+				),
 				'execute_callback'    => array( $this, 'execute_calculate_dates' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
 				},
-				'parameters'          => array(
-					'pattern'     => array(
-						'type'        => 'string',
-						'description' => __( 'The recurrence pattern. Examples: "3rd Tuesday", "every Monday", "first Friday", "last Wednesday", "next Thursday", "3 weeks from Thursday", "tomorrow", "every 2 weeks". Note: "X weeks from weekday" patterns calculate a single specific date.', 'gatherpress' ),
-						'required'    => true,
-					),
-					'occurrences' => array(
-						'type'        => 'integer',
-						'description' => __( 'Number of occurrences to calculate. For "X weeks from weekday" patterns, always use 1 as they calculate a single specific date.', 'gatherpress' ),
-						'required'    => true,
-					),
-					'start_date'  => array(
-						'type'        => 'string',
-						'description' => __( 'Starting date for calculations in Y-m-d format. Defaults to today if not provided.', 'gatherpress' ),
-						'required'    => false,
-					),
-				),
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
@@ -1409,15 +1415,33 @@ class Abilities_Integration {
 	/**
 	 * Execute the calculate-dates ability.
 	 *
-	 * Calculates recurring dates based on a pattern.
-	 *
 	 * @since 1.0.0
 	 *
-	 * @param array $params Parameters including pattern, occurrences, and optional start_date.
-	 * @return array Result with calculated dates or error.
+	 * @param array $params Parameters for date calculation.
+	 * @return array Response with calculated dates or error message.
 	 */
 	public function execute_calculate_dates( array $params = array() ): array {
-		return $this->date_calculator->calculate_dates( $params );
+		// Check if AI plugin's calculate-dates ability is available.
+		if ( function_exists( 'wp_execute_ability' ) ) {
+			$ai_ability = wp_get_ability( 'ai/calculate-dates' );
+			if ( $ai_ability ) {
+				// Use AI plugin's ability if available.
+				$result = wp_execute_ability( 'ai/calculate-dates', $params );
+				// Add debug message to show we're using AI plugin.
+				if ( isset( $result['message'] ) ) {
+					$result['message'] .= ' [Using AI Plugin]';
+				}
+				return $result;
+			}
+		}
+
+		// Fall back to local Date_Calculator.
+		$result = $this->date_calculator->calculate_dates( $params );
+		// Add debug message to show we're using local implementation.
+		if ( isset( $result['message'] ) ) {
+			$result['message'] .= ' [Using GatherPress Local]';
+		}
+		return $result;
 	}
 
 	/**
