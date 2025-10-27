@@ -371,7 +371,7 @@ class Abilities_Integration {
 			'gatherpress/calculate-dates',
 			array(
 				'label'               => __( 'Calculate Recurring Dates', 'gatherpress' ),
-				'description'         => __( 'Calculate a list of recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. Examples: "3rd Tuesday of each month for 6 months", "every Monday for 4 weeks", "first Friday for 3 months".', 'gatherpress' ),
+				'description'         => __( 'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. 2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. 3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. 4) "Relative dates" (e.g., "next Tuesday", "tomorrow") - calculates relative dates. 5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.', 'gatherpress' ),
 				'execute_callback'    => array( $this, 'execute_calculate_dates' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
@@ -379,12 +379,12 @@ class Abilities_Integration {
 				'parameters'          => array(
 					'pattern'     => array(
 						'type'        => 'string',
-						'description' => __( 'The recurrence pattern. Examples: "3rd Tuesday", "every Monday", "first Friday", "last Wednesday"', 'gatherpress' ),
+						'description' => __( 'The recurrence pattern. Examples: "3rd Tuesday", "every Monday", "first Friday", "last Wednesday", "next Thursday", "3 weeks from Thursday", "tomorrow", "every 2 weeks". Note: "X weeks from weekday" patterns calculate a single specific date.', 'gatherpress' ),
 						'required'    => true,
 					),
 					'occurrences' => array(
 						'type'        => 'integer',
-						'description' => __( 'Number of occurrences to calculate', 'gatherpress' ),
+						'description' => __( 'Number of occurrences to calculate. For "X weeks from weekday" patterns, always use 1 as they calculate a single specific date.', 'gatherpress' ),
 						'required'    => true,
 					),
 					'start_date'  => array(

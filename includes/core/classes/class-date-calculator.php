@@ -135,6 +135,11 @@ class Date_Calculator {
 			$interval = intval( $matches[1] );
 			$period   = strtolower( $matches[2] );
 			$dates    = $this->calculate_interval_dates( $interval, $period, $occurrences, $start_datetime );
+		} elseif ( preg_match( '/^(\d+)\s+weeks?\s+from\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+			// X weeks from weekday pattern (2 weeks from Thursday).
+			$weeks   = intval( $matches[1] );
+			$weekday = strtolower( $matches[2] );
+			$dates   = $this->calculate_weeks_from_weekday( $weeks, $weekday, $occurrences, $start_datetime );
 		} elseif ( preg_match( '/^(first|second|third|fourth|last|1st|2nd|3rd|4th|5th)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
 			// Original Nth weekday pattern.
 			$ordinal = strtolower( $matches[1] );
@@ -490,6 +495,44 @@ class Date_Calculator {
 				$current->modify( "+{$interval} months" );
 			}
 		}
+
+		return $dates;
+	}
+
+	/**
+	 * Calculate dates for "X weeks from weekday" patterns.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int       $weeks         Number of weeks to add.
+	 * @param string    $weekday       The weekday name.
+	 * @param int       $occurrences   Number of occurrences.
+	 * @param \DateTime $start_datetime Starting date.
+	 * @return array Array of date strings in Y-m-d format.
+	 */
+	private function calculate_weeks_from_weekday( int $weeks, string $weekday, int $occurrences, \DateTime $start_datetime ): array {
+		$dates   = array();
+		$current = clone $start_datetime;
+
+		// Find the target weekday.
+		$day_num     = $this->get_weekday_number( $weekday );
+		$current_day = (int) $current->format( 'N' );
+
+		// Calculate days to the target weekday.
+		if ( $current_day <= $day_num ) {
+			$days_ahead = $day_num - $current_day;
+		} else {
+			$days_ahead = 7 - $current_day + $day_num;
+		}
+
+		// Move to the target weekday.
+		$current->modify( "+{$days_ahead} days" );
+
+		// Add the specified number of weeks.
+		$current->modify( "+{$weeks} weeks" );
+
+		// Return the single target date.
+		$dates[] = $current->format( 'Y-m-d' );
 
 		return $dates;
 	}

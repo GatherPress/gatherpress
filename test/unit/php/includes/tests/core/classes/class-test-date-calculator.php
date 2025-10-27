@@ -502,4 +502,45 @@ class Test_Date_Calculator extends Base {
 		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
 		$this->assertSame( 'every 3 months', $result['data']['pattern'], 'Failed to assert pattern matches.' );
 	}
+
+	/**
+	 * Test calculate_dates with "X weeks from weekday" pattern.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_weeks_from_weekday(): void {
+		$calculator = new Date_Calculator();
+
+		// Test "2 weeks from Thursday" starting from Monday, October 27, 2025.
+		$params = array(
+			'pattern'     => '2 weeks from Thursday',
+			'occurrences' => 1,
+			'start_date'  => '2025-10-27',
+		);
+
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for 2 weeks from Thursday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( '2025-11-13', $result['data']['dates'][0], 'Failed to assert correct date for 2 weeks from Thursday.' );
+		$this->assertSame( '2 weeks from Thursday', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+
+		// Test "3 weeks from Thursday" starting from Monday, October 27, 2025.
+		$params = array(
+			'pattern'     => '3 weeks from Thursday',
+			'occurrences' => 1,
+			'start_date'  => '2025-10-27',
+		);
+
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for 3 weeks from Thursday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( '2025-11-20', $result['data']['dates'][0], 'Failed to assert correct date for 3 weeks from Thursday.' );
+		$this->assertSame( '3 weeks from Thursday', $result['data']['pattern'], 'Failed to assert pattern matches.' );
+	}
 }
