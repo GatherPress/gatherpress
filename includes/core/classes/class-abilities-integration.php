@@ -1426,22 +1426,12 @@ class Abilities_Integration {
 			$ai_ability = wp_get_ability( 'ai/calculate-dates' );
 			if ( $ai_ability ) {
 				// Use AI plugin's ability if available.
-				$result = wp_execute_ability( 'ai/calculate-dates', $params );
-				// Add debug message to show we're using AI plugin.
-				if ( isset( $result['message'] ) ) {
-					$result['message'] .= ' [Using AI Plugin]';
-				}
-				return $result;
+				return wp_execute_ability( 'ai/calculate-dates', $params );
 			}
 		}
 
 		// Fall back to local Date_Calculator.
-		$result = $this->date_calculator->calculate_dates( $params );
-		// Add debug message to show we're using local implementation.
-		if ( isset( $result['message'] ) ) {
-			$result['message'] .= ' [Using GatherPress Local]';
-		}
-		return $result;
+		return $this->date_calculator->calculate_dates( $params );
 	}
 
 	/**
