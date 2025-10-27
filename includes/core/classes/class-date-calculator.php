@@ -283,12 +283,8 @@ class Date_Calculator {
 
 			switch ( $relative ) {
 				case 'next':
-					// Find next occurrence of weekday.
-					if ( $current_day <= $day_num ) {
-						$days_ahead = $day_num - $current_day;
-					} else {
-						$days_ahead = 7 - $current_day + $day_num;
-					}
+					// Always go to next week's occurrence, never this week's.
+					$days_ahead = 7 - $current_day + $day_num;
 					$target_date->modify( "+{$days_ahead} days" );
 					break;
 
