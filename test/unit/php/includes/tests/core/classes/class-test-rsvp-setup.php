@@ -271,6 +271,4 @@ class Test_Rsvp_Setup extends Base {
 		// Clean up.
 		wp_set_current_user( 0 );
 	}
-
-
 }
