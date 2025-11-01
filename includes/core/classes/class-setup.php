@@ -15,6 +15,8 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
+use GatherPress\Core\AI\Abilities_Integration;
+use GatherPress\Core\AI\Admin_Page;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -57,6 +59,7 @@ class Setup {
 	 */
 	protected function instantiate_classes(): void {
 		Abilities_Integration::get_instance();
+		Admin_Page::get_instance();
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();

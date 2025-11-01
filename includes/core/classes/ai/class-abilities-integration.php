@@ -6,17 +6,22 @@
  * AI assistants and other tools to discover and execute GatherPress functionality.
  * The integration is optional and only activates when the Abilities API is available.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\AI
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\AI;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
+use GatherPress\Core\AI\Date_Calculator;
+use GatherPress\Core\Event;
+use GatherPress\Core\Rsvp;
+use GatherPress\Core\Topic;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Date_Calculator;
+use GatherPress\Core\Venue;
+use WP_Error;
 
 /**
  * Class Abilities_Integration.
@@ -720,6 +725,7 @@ class Abilities_Integration {
 		}
 
 		// Create the venue post with default block template.
+		/** @var int|WP_Error $venue_id */
 		$venue_id = wp_insert_post(
 			array(
 				'post_type'    => Venue::POST_TYPE,
@@ -805,6 +811,7 @@ class Abilities_Integration {
 		// Create the event post with the proper template content.
 		$post_content = $this->get_default_event_content( $params['description'] ?? '' );
 
+		/** @var int|WP_Error $event_id */
 		$event_id = wp_insert_post(
 			array(
 				'post_type'    => Event::POST_TYPE,
@@ -995,6 +1002,7 @@ class Abilities_Integration {
 
 		// Update post if there are changes.
 		if ( count( $post_update ) > 1 ) {
+			/** @var int|WP_Error $result */
 			$result = wp_update_post( $post_update );
 			if ( is_wp_error( $result ) ) {
 				return array(
@@ -1362,9 +1370,11 @@ class Abilities_Integration {
 			// Update datetime if changed.
 			if ( $new_datetime_start !== $datetime['start'] || $new_datetime_end !== $datetime['end'] ) {
 				$event_obj->save_datetimes(
-					$new_datetime_start,
-					$new_datetime_end,
-					$datetime['timezone'] ?? 'UTC'
+					array(
+						'datetime_start' => $new_datetime_start,
+						'datetime_end'   => $new_datetime_end,
+						'timezone'       => $datetime['timezone'] ?? 'UTC',
+					)
 				);
 			}
 
@@ -1553,11 +1563,12 @@ class Abilities_Integration {
 		$api_url         = "https://nominatim.openstreetmap.org/search?q={$encoded_address}&format=json&limit=1";
 
 		// Make the API request.
+		$version = defined( 'GATHERPRESS_VERSION' ) ? GATHERPRESS_VERSION : '1.0.0';
 		$response = wp_remote_get(
 			$api_url,
 			array(
 				'headers' => array(
-					'User-Agent' => 'GatherPress/' . GATHERPRESS_VERSION . ' (WordPress Plugin)',
+					'User-Agent' => 'GatherPress/' . $version . ' (WordPress Plugin)',
 				),
 				'timeout' => 10,
 			)

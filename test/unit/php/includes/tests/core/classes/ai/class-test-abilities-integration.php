@@ -1,14 +1,14 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Abilities_Integration.
+ * Class handles unit tests for GatherPress\Core\AI\Abilities_Integration.
  *
  * @package GatherPress\Core
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\AI;
 
-use GatherPress\Core\Abilities_Integration;
+use GatherPress\Core\AI\Abilities_Integration;
 use GatherPress\Core\Event;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
@@ -17,7 +17,7 @@ use GatherPress\Tests\Base;
 /**
  * Class Test_Abilities_Integration.
  *
- * @coversDefaultClass \GatherPress\Core\Abilities_Integration
+ * @coversDefaultClass \GatherPress\Core\AI\Abilities_Integration
  */
 class Test_Abilities_Integration extends Base {
 	/**

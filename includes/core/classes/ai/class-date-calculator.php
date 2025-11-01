@@ -2,11 +2,11 @@
 /**
  * Date Calculator class.
  *
- * @package GatherPress\Core
+ * @package GatherPress\Core\AI
  * @since 1.0.0
  */
 
-namespace GatherPress\Core;
+namespace GatherPress\Core\AI;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,7 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Date Calculator class for handling recurring date calculations.
  *
  * This class provides functionality to calculate recurring dates based on
- * various patterns like "3rd Tuesday", "every Monday", etc.
+ * various patterns like "3rd Tuesday", "every Monday", etc. Used primarily
+ * for AI-powered date calculations via the Abilities API.
  *
  * @since 1.0.0
  */
@@ -166,12 +167,12 @@ class Date_Calculator {
 			$current = clone $start_datetime;
 
 			for ( $i = 0; $i < $occurrences; $i++ ) {
-				$date = $this->get_nth_weekday_of_month( $current->format( 'Y' ), $current->format( 'm' ), $weekday, $nth );
+				$date = $this->get_nth_weekday_of_month( (int) $current->format( 'Y' ), (int) $current->format( 'm' ), $weekday, $nth );
 
 				// If the calculated date is before start_date, move to next month.
 				if ( $date < $start_datetime->format( 'Y-m-d' ) ) {
 					$current->modify( '+1 month' );
-					$date = $this->get_nth_weekday_of_month( $current->format( 'Y' ), $current->format( 'm' ), $weekday, $nth );
+					$date = $this->get_nth_weekday_of_month( (int) $current->format( 'Y' ), (int) $current->format( 'm' ), $weekday, $nth );
 				}
 
 				$dates[] = $date;

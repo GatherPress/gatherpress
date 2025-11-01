@@ -1,20 +1,20 @@
 <?php
 /**
- * Class handles unit tests for GatherPress\Core\Date_Calculator.
+ * Class handles unit tests for GatherPress\Core\AI\Date_Calculator.
  *
  * @package GatherPress\Core
  * @since 1.0.0
  */
 
-namespace GatherPress\Tests\Core;
+namespace GatherPress\Tests\Core\AI;
 
-use GatherPress\Core\Date_Calculator;
+use GatherPress\Core\AI\Date_Calculator;
 use GatherPress\Tests\Base;
 
 /**
  * Class Test_Date_Calculator.
  *
- * @coversDefaultClass \GatherPress\Core\Date_Calculator
+ * @coversDefaultClass \GatherPress\Core\AI\Date_Calculator
  */
 class Test_Date_Calculator extends Base {
 

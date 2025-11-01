@@ -70,6 +70,8 @@ module.exports = [
 				'style.scss',
 			),
 			utility_style: path.resolve( process.cwd(), 'src', 'utility.scss' ),
+			'ai-assistant': path.resolve( process.cwd(), 'src/ai', 'index.js' ),
+			'ai-assistant-style': path.resolve( process.cwd(), 'src/ai', 'style.scss' ),
 			...getVariationEntries(),
 		},
 		module: {
