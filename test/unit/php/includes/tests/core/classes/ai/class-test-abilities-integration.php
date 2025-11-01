@@ -191,7 +191,7 @@ class Test_Abilities_Integration extends Base {
 		$instance = Abilities_Integration::get_instance();
 		$params   = array(
 			'name'    => 'Test Geocoded Venue',
-            'address' => '1600 Amphitheater Parkway, Mountain View, CA',
+			'address' => '1600 Amphitheater Parkway, Mountain View, CA',
 		);
 		$result   = $instance->execute_create_venue( $params );
 
