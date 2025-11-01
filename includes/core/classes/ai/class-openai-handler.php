@@ -45,7 +45,13 @@ class OpenAI_Handler {
 		// Build messages for OpenAI.
 		$current_date   = gmdate( 'Y-m-d' );
 		$system_content = sprintf(
-			'You are an AI assistant helping manage GatherPress events. Today is %s. WORKFLOW FOR RECURRING EVENTS: Step 1) When user asks for recurring events (like "3rd Tuesday for 3 months"), immediately call calculate-dates with the pattern and number of occurrences. Step 2) Use the exact dates returned by calculate-dates to create events - do NOT calculate dates yourself. Step 3) Create events with those dates. IMPORTANT: When a user mentions a venue by name, call list-venues to get the correct venue ID. Always create events as drafts by default for safety. All event dates MUST be in the future (after %s).',
+			'You are an AI assistant for GatherPress events. Today is %s.
+
+Rules:
+- For recurring events: Call calculate-dates first, then use those exact dates. Do NOT calculate dates yourself.
+- When user mentions a venue by name, call list-venues to get the venue ID.
+- Always create events as drafts. Event dates must be after %s.
+- If success=true: Display the data (even if empty - say "No X found", don\'t say "error"). Only say "error" if success=false.',
 			$current_date,
 			$current_date
 		);
@@ -90,20 +96,22 @@ class OpenAI_Handler {
 	 * @return array Array of function definitions for OpenAI.
 	 */
 	private function get_gatherpress_functions() {
-		// Check if AI plugin's calculate-dates ability is available.
-		$ai_ability              = function_exists( 'wp_get_ability' ) ? wp_get_ability( 'ai/calculate-dates' ) : null;
-		$calculate_dates_ability = $ai_ability ? 'ai/calculate-dates' : 'gatherpress/calculate-dates';
+		// Check if external AI plugin's calculate-dates ability is available.
+		// If so, use it instead of GatherPress's own implementation.
+		$calculate_dates_ability = Abilities_Integration::get_calculate_dates_ability();
 
 		$abilities = array(
 			'gatherpress/list-venues',
 			'gatherpress/list-events',
 			'gatherpress/list-topics',
+			'gatherpress/search-events',
 			$calculate_dates_ability,
 			'gatherpress/create-venue',
 			'gatherpress/create-topic',
 			'gatherpress/create-event',
 			'gatherpress/update-venue',
 			'gatherpress/update-event',
+			'gatherpress/update-events-batch',
 		);
 
 		$functions = array();
@@ -119,10 +127,14 @@ class OpenAI_Handler {
 				continue;
 			}
 
+			$input_schema = $ability->get_input_schema();
+			// Convert input_schema to OpenAI format if needed.
+			$parameters = $this->convert_input_schema_to_openai( $input_schema, $ability_name );
+
 			$functions[] = array(
 				'name'        => str_replace( '/', '_', $ability_name ),
 				'description' => $ability->get_description(),
-				'parameters'  => $this->convert_parameters_to_schema( $ability_name ),
+				'parameters'  => $parameters,
 			);
 		}
 
@@ -130,8 +142,73 @@ class OpenAI_Handler {
 	}
 
 	/**
+	 * Convert ability input_schema to OpenAI function schema format.
+	 *
+	 * In v0.4.0, all abilities use JSON Schema format in input_schema.
+	 * We just need to clean it up (remove invalid 'required' from properties,
+	 * ensure empty properties is {}, etc.).
+	 *
+	 * @param array  $input_schema The ability's input_schema (JSON Schema format).
+	 * @param string $ability_name Unused, kept for compatibility.
+	 * @return array OpenAI-compatible JSON Schema format.
+	 */
+	private function convert_input_schema_to_openai( array $input_schema, string $ability_name ): array {
+		// Empty schema? Return minimal valid schema.
+		if ( empty( $input_schema ) ) {
+			return array(
+				'type'                 => 'object',
+				'properties'           => new \stdClass(),
+				'additionalProperties' => false,
+			);
+		}
+
+		// Should already be in JSON Schema format in v0.4.0 - just clean it up.
+		return $this->clean_json_schema( $input_schema );
+	}
+
+	/**
+	 * Clean JSON Schema: remove 'required' from properties (only valid at top level),
+	 * and ensure empty properties is {} (not []).
+	 *
+	 * @param array $input_schema JSON Schema format.
+	 * @return array Cleaned schema compatible with OpenAI.
+	 */
+	private function clean_json_schema( array $input_schema ): array {
+		// Handle properties - convert object to array, ensure empty is {}
+		$properties = array();
+		if ( isset( $input_schema['properties'] ) ) {
+			if ( is_object( $input_schema['properties'] ) ) {
+				$properties = (array) $input_schema['properties'];
+			} elseif ( is_array( $input_schema['properties'] ) ) {
+				$properties = $input_schema['properties'];
+			}
+		}
+
+		// Clean each property: remove 'required' (invalid in property definitions).
+		$cleaned = array();
+		foreach ( $properties as $name => $def ) {
+			if ( is_array( $def ) ) {
+				unset( $def['required'] ); // Invalid in property definitions.
+			}
+			$cleaned[ $name ] = $def;
+		}
+
+		// Ensure empty properties is {} (stdClass) not [] (array) for JSON encoding.
+		$properties_value = empty( $cleaned ) ? new \stdClass() : $cleaned;
+
+		return array(
+			'type'                 => 'object',
+			'properties'           => $properties_value,
+			'additionalProperties' => $input_schema['additionalProperties'] ?? false,
+			'required'             => $input_schema['required'] ?? array(),
+		);
+	}
+
+
+	/**
 	 * Convert ability parameters to OpenAI function schema.
 	 *
+	 * @deprecated Use convert_input_schema_to_openai instead.
 	 * @param string $ability_name Ability name.
 	 * @return array OpenAI-compatible parameter schema.
 	 */
@@ -432,52 +509,31 @@ class OpenAI_Handler {
 				$function_name = $tool_call['function']['name'] ?? '';
 				$arguments     = json_decode( $tool_call['function']['arguments'] ?? '{}', true );
 
-				// Convert function name back to ability name.
-				$ability_name = str_replace( '_', '/', $function_name );
-
-				if ( ! function_exists( 'wp_get_ability' ) ) {
-					$messages[] = array(
-						'tool_call_id' => $tool_call['id'],
-						'role'         => 'tool',
-						'content'      => 'Error: Abilities API not available',
-					);
-					continue;
-				}
-
-				$ability = wp_get_ability( $ability_name );
+				// Convert function name to ability name and get the ability.
+				$ability_name = $this->convert_function_name_to_ability( $function_name );
+				$ability      = $this->get_ability( $ability_name, $function_name );
 
 				if ( ! $ability ) {
-					$messages[] = array(
-						'tool_call_id' => $tool_call['id'],
-						'role'         => 'tool',
-						'content'      => 'Error: Ability not found',
-					);
+					$messages[] = $this->create_error_message( $tool_call['id'], $ability_name, $function_name );
 					continue;
 				}
 
-				// Execute the ability.
-				$result = $ability->execute( $arguments );
+				// Execute the ability and handle the result.
+				$result = $this->execute_ability( $ability, $arguments, $ability_name );
+				$result = $this->normalize_result( $result );
 
-				if ( is_wp_error( $result ) ) {
-					$messages[] = array(
-						'tool_call_id' => $tool_call['id'],
-						'role'         => 'tool',
-						'content'      => 'Error: ' . $result->get_error_message(),
-					);
-				} else {
-					$messages[] = array(
-						'tool_call_id' => $tool_call['id'],
-						'role'         => 'tool',
-						'content'      => wp_json_encode( $result ),
-					);
+				$messages[] = array(
+					'tool_call_id' => $tool_call['id'],
+					'role'         => 'tool',
+					'content'      => $this->encode_result( $result ),
+				);
 
-					// Track what was done.
-					$actions_taken[] = array(
-						'ability' => $ability_name,
-						'args'    => $arguments,
-						'result'  => $result,
-					);
-				}
+				// Track what was done.
+				$actions_taken[] = array(
+					'ability' => $ability_name,
+					'args'    => $arguments,
+					'result'  => $result,
+				);
 			}
 
 			// Get next response from OpenAI (might have more function calls).
@@ -493,5 +549,209 @@ class OpenAI_Handler {
 			'response' => 'Task partially completed. Maximum iterations reached.',
 			'actions'  => $actions_taken,
 		);
+	}
+
+	/**
+	 * Convert OpenAI function name to ability name.
+	 *
+	 * OpenAI normalizes function names, replacing slashes and hyphens with underscores.
+	 * This method restores the original ability name format.
+	 *
+	 * @param string $function_name OpenAI function name (e.g., "gatherpress_list_venues").
+	 * @return string Ability name (e.g., "gatherpress/list-venues").
+	 */
+	private function convert_function_name_to_ability( string $function_name ): string {
+		$pos = strpos( $function_name, '_' );
+		if ( $pos === false ) {
+			return $function_name;
+		}
+
+		// Replace first underscore with slash.
+		$ability_name = substr_replace( $function_name, '/', $pos, 1 );
+		// Replace remaining underscores with hyphens.
+		$ability_name = substr_replace(
+			$ability_name,
+			str_replace( '_', '-', substr( $ability_name, $pos + 1 ) ),
+			$pos + 1
+		);
+
+		$this->log_debug( sprintf( 'Converting function "%s" to ability "%s"', $function_name, $ability_name ) );
+
+		return $ability_name;
+	}
+
+	/**
+	 * Get ability by name, trying multiple conversion strategies.
+	 *
+	 * @param string $ability_name   Primary ability name to try.
+	 * @param string $function_name  Original function name for fallback.
+	 * @return object|null WP_Ability object or null if not found.
+	 */
+	private function get_ability( string $ability_name, string $function_name ): ?object {
+		if ( ! function_exists( 'wp_get_ability' ) ) {
+			return null;
+		}
+
+		$ability = wp_get_ability( $ability_name );
+		if ( $ability ) {
+			return $ability;
+		}
+
+		// Try alternative conversions.
+		$alt_ability_name = str_replace( '-', '/', str_replace( '_', '/', $function_name ) );
+		if ( $alt_ability_name !== $ability_name ) {
+			$ability = wp_get_ability( $alt_ability_name );
+			if ( $ability ) {
+				return $ability;
+			}
+		}
+
+		// Try with gatherpress namespace prefix.
+		if ( strpos( $alt_ability_name, 'gatherpress' ) === false ) {
+			$ability = wp_get_ability( 'gatherpress/' . $alt_ability_name );
+			if ( $ability ) {
+				return $ability;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Create error message for missing ability.
+	 *
+	 * @param string $tool_call_id   Tool call ID.
+	 * @param string $ability_name    Ability name that was tried.
+	 * @param string $function_name   Original function name.
+	 * @return array Error message array.
+	 */
+	private function create_error_message( string $tool_call_id, string $ability_name, string $function_name ): array {
+		if ( ! function_exists( 'wp_get_ability' ) ) {
+			return array(
+				'tool_call_id' => $tool_call_id,
+				'role'         => 'tool',
+				'content'      => wp_json_encode(
+					array(
+						'success' => false,
+						'message' => __( 'Abilities API not available', 'gatherpress' ),
+					)
+				),
+			);
+		}
+
+		return array(
+			'tool_call_id' => $tool_call_id,
+			'role'         => 'tool',
+			'content'      => wp_json_encode(
+				array(
+					'success' => false,
+					'message' => sprintf(
+						/* translators: 1: ability name, 2: function name */
+						__( 'Ability not found: %1$s (original function: %2$s)', 'gatherpress' ),
+						$ability_name,
+						$function_name
+					),
+				)
+			),
+		);
+	}
+
+	/**
+	 * Execute an ability and handle exceptions.
+	 *
+	 * @param object $ability      WP_Ability object.
+	 * @param array  $arguments    Arguments to pass to ability.
+	 * @param string $ability_name Ability name for logging.
+	 * @return array|WP_Error Result from ability execution.
+	 */
+	private function execute_ability( object $ability, array $arguments, string $ability_name ) {
+		try {
+			$result = $ability->execute( $arguments );
+			$this->log_debug(
+				sprintf(
+					'Executed ability "%s", result: %s',
+					$ability_name,
+					is_array( $result ) && isset( $result['success'] )
+						? sprintf( 'success=%s, message=%s', $result['success'] ? 'true' : 'false', $result['message'] ?? 'none' )
+						: 'non-array result'
+				)
+			);
+			return $result;
+		} catch ( \Exception $e ) {
+			$this->log_debug( sprintf( 'Exception executing ability "%s": %s', $ability_name, $e->getMessage() ) );
+			return array(
+				'success' => false,
+				'message' => sprintf(
+					/* translators: %s: error message */
+					__( 'Exception during ability execution: %s', 'gatherpress' ),
+					$e->getMessage()
+				),
+			);
+		}
+	}
+
+	/**
+	 * Normalize ability result to consistent format.
+	 *
+	 * @param array|WP_Error|mixed $result Raw result from ability.
+	 * @return array Normalized result with success, message, and data fields.
+	 */
+	private function normalize_result( $result ): array {
+		if ( is_wp_error( $result ) ) {
+			return array(
+				'success' => false,
+				'message' => $result->get_error_message(),
+			);
+		}
+
+		if ( ! is_array( $result ) ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Invalid result format from ability', 'gatherpress' ),
+				'data'    => $result,
+			);
+		}
+
+		if ( ! isset( $result['success'] ) ) {
+			return array(
+				'success' => true,
+				'message' => __( 'Operation completed', 'gatherpress' ),
+				'data'    => $result,
+			);
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Encode result as JSON with error handling.
+	 *
+	 * @param array $result Result to encode.
+	 * @return string JSON-encoded result.
+	 */
+	private function encode_result( array $result ): string {
+		$json_result = wp_json_encode( $result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		if ( false === $json_result ) {
+			$json_result = wp_json_encode(
+				array(
+					'success' => false,
+					'message' => __( 'Error: Unable to encode result as JSON', 'gatherpress' ),
+				)
+			);
+		}
+		return $json_result;
+	}
+
+	/**
+	 * Log debug message if debugging is enabled.
+	 *
+	 * @param string $message Message to log.
+	 * @return void
+	 */
+	private function log_debug( string $message ): void {
+		// Only log debug messages when WP_DEBUG is enabled.
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+			error_log( sprintf( '[GatherPress AI Debug] %s', $message ) );
+		}
 	}
 }

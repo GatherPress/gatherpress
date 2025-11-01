@@ -69,7 +69,46 @@ class Abilities_Integration {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
-		add_action( 'abilities_api_init', array( $this, 'register_abilities' ) );
+		add_action( 'wp_abilities_api_categories_init', array( $this, 'register_categories' ) );
+		add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
+	}
+
+	/**
+	 * Get the calculate-dates ability name.
+	 *
+	 * Returns GatherPress's calculate-dates ability name.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The ability name ('gatherpress/calculate-dates').
+	 */
+	public static function get_calculate_dates_ability(): string {
+		return 'gatherpress/calculate-dates';
+	}
+
+	/**
+	 * Register ability categories.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_categories(): void {
+		wp_register_ability_category(
+			'venue',
+			array(
+				'label'       => __( 'Venues', 'gatherpress' ),
+				'description' => __( 'Abilities related to event venues.', 'gatherpress' ),
+			)
+		);
+
+		wp_register_ability_category(
+			'event',
+			array(
+				'label'       => __( 'Events', 'gatherpress' ),
+				'description' => __( 'Abilities related to events.', 'gatherpress' ),
+			)
+		);
 	}
 
 	/**
@@ -108,6 +147,12 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'List Venues', 'gatherpress' ),
 				'description'         => __( 'Retrieve a list of all available event venues with their addresses and details.', 'gatherpress' ),
+				'category'            => 'venue',
+				'input_schema'        => array(
+					'type'                 => 'object',
+					'properties'           => array(),
+					'additionalProperties' => false,
+				),
 				'execute_callback'    => array( $this, 'execute_list_venues' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
@@ -115,8 +160,7 @@ class Abilities_Integration {
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
-						'category' => 'venue',
-						'safe'     => true,
+						'safe' => true,
 					),
 				),
 			)
@@ -138,27 +182,30 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'List Events', 'gatherpress' ),
 				'description'         => __( 'Retrieve a list of events with their dates, venues, and details. IMPORTANT: When searching for events by name, use the search parameter to find all events (not just upcoming).', 'gatherpress' ),
+				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_list_events' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
 				},
-				'parameters'          => array(
-					'max_number' => array(
-						'type'        => 'integer',
-						'description' => __( 'Maximum number of events to return (default: 10)', 'gatherpress' ),
-						'default'     => 10,
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'max_number' => array(
+							'type'        => 'integer',
+							'description' => __( 'Maximum number of events to return (default: 50, maximum: 100). Use -1 or a large number to get more events.', 'gatherpress' ),
+							'default'     => 50,
+						),
+						'search'     => array(
+							'type'        => 'string',
+							'description' => __( 'Search term to find specific events by title or content', 'gatherpress' ),
+						),
 					),
-					'search'     => array(
-						'type'        => 'string',
-						'description' => __( 'Search term to find specific events by title or content', 'gatherpress' ),
-						'required'    => false,
-					),
+					'required'   => array(),
 				),
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
-						'category' => 'event',
-						'safe'     => true,
+						'safe' => true,
 					),
 				),
 			)
@@ -180,15 +227,20 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'List Topics', 'gatherpress' ),
 				'description'         => __( 'Retrieve a list of all available event topics.', 'gatherpress' ),
+				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_list_topics' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'read' );
 				},
+				'input_schema'        => array(
+					'type'                 => 'object',
+					'properties'           => array(),
+					'additionalProperties' => false,
+				),
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
-						'category' => 'event',
-						'safe'     => true,
+						'safe' => true,
 					),
 				),
 			)
@@ -210,37 +262,37 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'Create Venue', 'gatherpress' ),
 				'description'         => __( 'Create a new event venue with an address and details.', 'gatherpress' ),
+				'category'            => 'venue',
 				'execute_callback'    => array( $this, 'execute_create_venue' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
-				'parameters'          => array(
-					'name'    => array(
-						'type'        => 'string',
-						'description' => __( 'Name of the venue', 'gatherpress' ),
-						'required'    => true,
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'name'    => array(
+							'type'        => 'string',
+							'description' => __( 'Name of the venue', 'gatherpress' ),
+						),
+						'address' => array(
+							'type'        => 'string',
+							'description' => __( 'Full address of the venue', 'gatherpress' ),
+						),
+						'phone'   => array(
+							'type'        => 'string',
+							'description' => __( 'Phone number for the venue', 'gatherpress' ),
+						),
+						'website' => array(
+							'type'        => 'string',
+							'description' => __( 'Website URL for the venue', 'gatherpress' ),
+						),
 					),
-					'address' => array(
-						'type'        => 'string',
-						'description' => __( 'Full address of the venue', 'gatherpress' ),
-						'required'    => true,
-					),
-					'phone'   => array(
-						'type'        => 'string',
-						'description' => __( 'Phone number for the venue', 'gatherpress' ),
-						'required'    => false,
-					),
-					'website' => array(
-						'type'        => 'string',
-						'description' => __( 'Website URL for the venue', 'gatherpress' ),
-						'required'    => false,
-					),
+					'required'   => array( 'name', 'address' ),
 				),
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
-						'category' => 'venue',
-						'safe'     => false,
+						'safe' => false,
 					),
 				),
 			)
@@ -262,32 +314,33 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'Create Topic', 'gatherpress' ),
 				'description'         => __( 'Create a new event topic for categorizing events.', 'gatherpress' ),
+				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_create_topic' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'manage_categories' );
 				},
-				'parameters'          => array(
-					'name'        => array(
-						'type'        => 'string',
-						'description' => __( 'Name of the topic', 'gatherpress' ),
-						'required'    => true,
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'name'        => array(
+							'type'        => 'string',
+							'description' => __( 'Name of the topic', 'gatherpress' ),
+						),
+						'description' => array(
+							'type'        => 'string',
+							'description' => __( 'Description of the topic', 'gatherpress' ),
+						),
+						'parent_id'   => array(
+							'type'        => 'integer',
+							'description' => __( 'Parent topic ID for hierarchical topics', 'gatherpress' ),
+						),
 					),
-					'description' => array(
-						'type'        => 'string',
-						'description' => __( 'Description of the topic', 'gatherpress' ),
-						'required'    => false,
-					),
-					'parent_id'   => array(
-						'type'        => 'integer',
-						'description' => __( 'Parent topic ID for hierarchical topics', 'gatherpress' ),
-						'required'    => false,
-					),
+					'required'   => array( 'name' ),
 				),
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
-						'category' => 'event',
-						'safe'     => false,
+						'safe' => false,
 					),
 				),
 			)
@@ -309,53 +362,52 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'Create Event', 'gatherpress' ),
 				'description'         => __( 'Create a new event with a title, date/time, and optional venue. Events are created as drafts by default for review before publishing.', 'gatherpress' ),
+				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_create_event' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
-				'parameters'          => array(
-					'title'          => array(
-						'type'        => 'string',
-						'description' => __( 'Title of the event', 'gatherpress' ),
-						'required'    => true,
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'title'          => array(
+							'type'        => 'string',
+							'description' => __( 'Title of the event', 'gatherpress' ),
+						),
+						'datetime_start' => array(
+							'type'        => 'string',
+							'description' => __( 'Event start date and time in Y-m-d H:i:s format', 'gatherpress' ),
+						),
+						'datetime_end'   => array(
+							'type'        => 'string',
+							'description' => __( 'Event end date and time in Y-m-d H:i:s format', 'gatherpress' ),
+						),
+						'venue_id'       => array(
+							'type'        => 'integer',
+							'description' => __( 'ID of the venue for this event', 'gatherpress' ),
+						),
+						'description'    => array(
+							'type'        => 'string',
+							'description' => __( 'Event description/content', 'gatherpress' ),
+						),
+						'post_status'    => array(
+							'type'        => 'string',
+							'description' => __( 'Post status (draft or publish)', 'gatherpress' ),
+							'default'     => 'draft',
+							'enum'        => array( 'draft', 'publish' ),
+						),
+						'topic_ids'      => array(
+							'type'        => 'array',
+							'items'       => array( 'type' => 'integer' ),
+							'description' => __( 'Array of topic IDs to assign to this event', 'gatherpress' ),
+						),
 					),
-					'datetime_start' => array(
-						'type'        => 'string',
-						'description' => __( 'Event start date and time in Y-m-d H:i:s format', 'gatherpress' ),
-						'required'    => true,
-					),
-					'datetime_end'   => array(
-						'type'        => 'string',
-						'description' => __( 'Event end date and time in Y-m-d H:i:s format', 'gatherpress' ),
-						'required'    => false,
-					),
-					'venue_id'       => array(
-						'type'        => 'integer',
-						'description' => __( 'ID of the venue for this event', 'gatherpress' ),
-						'required'    => false,
-					),
-					'description'    => array(
-						'type'        => 'string',
-						'description' => __( 'Event description/content', 'gatherpress' ),
-						'required'    => false,
-					),
-					'post_status'    => array(
-						'type'        => 'string',
-						'description' => __( 'Post status (draft or publish)', 'gatherpress' ),
-						'default'     => 'draft',
-						'enum'        => array( 'draft', 'publish' ),
-					),
-					'topic_ids'      => array(
-						'type'        => 'array',
-						'description' => __( 'Array of topic IDs to assign to this event', 'gatherpress' ),
-						'required'    => false,
-					),
+					'required'   => array( 'title', 'datetime_start' ),
 				),
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
-						'category' => 'event',
-						'safe'     => false,
+						'safe' => false,
 					),
 				),
 			)
@@ -377,25 +429,23 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'Calculate Recurring Dates', 'gatherpress' ),
 				'description'         => __( 'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. 2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. 3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. 4) "Relative dates" (e.g., "next Tuesday", "tomorrow") - calculates relative dates. 5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.', 'gatherpress' ),
-				'parameters'          => array(
+				'category'            => 'event',
+				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
 						'pattern'     => array(
 							'type'        => 'string',
 							'description' => __( 'The date pattern to calculate (e.g., "3rd Tuesday", "every Monday", "next Thursday", "3 weeks from Friday")', 'gatherpress' ),
-							'required'    => true,
 						),
 						'occurrences' => array(
 							'type'        => 'integer',
 							'description' => __( 'Number of dates to calculate (minimum 1)', 'gatherpress' ),
 							'minimum'     => 1,
-							'required'    => true,
 						),
 						'start_date'  => array(
 							'type'        => 'string',
 							'format'      => 'date',
 							'description' => __( 'Start date in Y-m-d format (defaults to today)', 'gatherpress' ),
-							'required'    => false,
 						),
 					),
 					'required'   => array( 'pattern', 'occurrences' ),
@@ -407,8 +457,7 @@ class Abilities_Integration {
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
-						'category' => 'event',
-						'safe'     => true,
+						'safe' => true,
 					),
 				),
 			)
@@ -430,42 +479,41 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'Update Venue', 'gatherpress' ),
 				'description'         => __( 'Update an existing venue\'s information including name, address, and contact details.', 'gatherpress' ),
+				'category'            => 'venue',
 				'execute_callback'    => array( $this, 'execute_update_venue' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
-				'parameters'          => array(
-					'venue_id' => array(
-						'type'        => 'integer',
-						'description' => __( 'ID of the venue to update', 'gatherpress' ),
-						'required'    => true,
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'venue_id' => array(
+							'type'        => 'integer',
+							'description' => __( 'ID of the venue to update', 'gatherpress' ),
+						),
+						'name'     => array(
+							'type'        => 'string',
+							'description' => __( 'Name of the venue', 'gatherpress' ),
+						),
+						'address'  => array(
+							'type'        => 'string',
+							'description' => __( 'Full address of the venue', 'gatherpress' ),
+						),
+						'phone'    => array(
+							'type'        => 'string',
+							'description' => __( 'Phone number for the venue', 'gatherpress' ),
+						),
+						'website'  => array(
+							'type'        => 'string',
+							'description' => __( 'Website URL for the venue', 'gatherpress' ),
+						),
 					),
-					'name'     => array(
-						'type'        => 'string',
-						'description' => __( 'Name of the venue', 'gatherpress' ),
-						'required'    => false,
-					),
-					'address'  => array(
-						'type'        => 'string',
-						'description' => __( 'Full address of the venue', 'gatherpress' ),
-						'required'    => false,
-					),
-					'phone'    => array(
-						'type'        => 'string',
-						'description' => __( 'Phone number for the venue', 'gatherpress' ),
-						'required'    => false,
-					),
-					'website'  => array(
-						'type'        => 'string',
-						'description' => __( 'Website URL for the venue', 'gatherpress' ),
-						'required'    => false,
-					),
+					'required'   => array( 'venue_id' ),
 				),
 				'meta'                => array(
 					'show_in_rest' => true,
 					'annotations'  => array(
-						'category' => 'venue',
-						'safe'     => false,
+						'safe' => false,
 					),
 				),
 			)
@@ -487,52 +535,50 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'Update Event', 'gatherpress' ),
 				'description'         => __( 'Update an existing event\'s details including title, date/time, venue, and description.', 'gatherpress' ),
+				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_update_event' ),
 				'permission_callback' => static function (): bool {
 					return current_user_can( 'edit_posts' );
 				},
-				'parameters'          => array(
-					'event_id'       => array(
-						'type'        => 'integer',
-						'description' => __( 'ID of the event to update', 'gatherpress' ),
-						'required'    => true,
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'event_id'       => array(
+							'type'        => 'integer',
+							'description' => __( 'ID of the event to update', 'gatherpress' ),
+						),
+						'title'          => array(
+							'type'        => 'string',
+							'description' => __( 'Title of the event', 'gatherpress' ),
+						),
+						'datetime_start' => array(
+							'type'        => 'string',
+							'description' => __( 'Event start date and time in Y-m-d H:i:s format', 'gatherpress' ),
+						),
+						'datetime_end'   => array(
+							'type'        => 'string',
+							'description' => __( 'Event end date and time in Y-m-d H:i:s format', 'gatherpress' ),
+						),
+						'venue_id'       => array(
+							'type'        => 'integer',
+							'description' => __( 'ID of the venue for this event', 'gatherpress' ),
+						),
+						'description'    => array(
+							'type'        => 'string',
+							'description' => __( 'Event description/content', 'gatherpress' ),
+						),
+						'post_status'    => array(
+							'type'        => 'string',
+							'description' => __( 'Post status (draft or publish)', 'gatherpress' ),
+							'enum'        => array( 'draft', 'publish' ),
+						),
+						'topic_ids'      => array(
+							'type'        => 'array',
+							'items'       => array( 'type' => 'integer' ),
+							'description' => __( 'Array of topic IDs to assign to this event', 'gatherpress' ),
+						),
 					),
-					'title'          => array(
-						'type'        => 'string',
-						'description' => __( 'Title of the event', 'gatherpress' ),
-						'required'    => false,
-					),
-					'datetime_start' => array(
-						'type'        => 'string',
-						'description' => __( 'Event start date and time in Y-m-d H:i:s format', 'gatherpress' ),
-						'required'    => false,
-					),
-					'datetime_end'   => array(
-						'type'        => 'string',
-						'description' => __( 'Event end date and time in Y-m-d H:i:s format', 'gatherpress' ),
-						'required'    => false,
-					),
-					'venue_id'       => array(
-						'type'        => 'integer',
-						'description' => __( 'ID of the venue for this event', 'gatherpress' ),
-						'required'    => false,
-					),
-					'description'    => array(
-						'type'        => 'string',
-						'description' => __( 'Event description/content', 'gatherpress' ),
-						'required'    => false,
-					),
-					'post_status'    => array(
-						'type'        => 'string',
-						'description' => __( 'Post status (draft or publish)', 'gatherpress' ),
-						'required'    => false,
-						'enum'        => array( 'draft', 'publish' ),
-					),
-					'topic_ids'      => array(
-						'type'        => 'array',
-						'description' => __( 'Array of topic IDs to assign to this event', 'gatherpress' ),
-						'required'    => false,
-					),
+					'required'   => array( 'event_id' ),
 				),
 				'meta'                => array(
 					'show_in_rest' => true,
@@ -550,47 +596,66 @@ class Abilities_Integration {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param array $params Optional parameters (currently unused).
 	 * @return array Response with venue list or error.
 	 */
-	public function execute_list_venues(): array {
-		$venues = get_posts(
-			array(
-				'post_type'      => Venue::POST_TYPE,
-				'posts_per_page' => -1,
-				'post_status'    => 'publish',
-				'orderby'        => 'title',
-				'order'          => 'ASC',
-			)
-		);
+	public function execute_list_venues( array $params = array() ): array {
+		try {
+			$venues = get_posts(
+				array(
+					'post_type'      => Venue::POST_TYPE,
+					'posts_per_page' => -1,
+					'post_status'    => 'publish',
+					'orderby'        => 'title',
+					'order'          => 'ASC',
+				)
+			);
 
-		$venue_list = array();
+			$venue_list = array();
 
-		foreach ( $venues as $venue_post ) {
-			$venue_info_json = get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true );
-			$venue_info      = json_decode( $venue_info_json, true );
+			foreach ( $venues as $venue_post ) {
+				$venue_info_json = get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true );
+				$venue_info      = json_decode( $venue_info_json, true );
 
-			$venue_list[] = array(
-				'id'        => $venue_post->ID,
-				'name'      => $venue_post->post_title,
-				'address'   => $venue_info['fullAddress'] ?? '',
-				'phone'     => $venue_info['phoneNumber'] ?? '',
-				'website'   => $venue_info['website'] ?? '',
-				'latitude'  => $venue_info['latitude'] ?? '',
-				'longitude' => $venue_info['longitude'] ?? '',
-				'edit_url'  => get_edit_post_link( $venue_post->ID, 'raw' ),
-				'permalink' => get_permalink( $venue_post->ID ),
+				$edit_url  = get_edit_post_link( $venue_post->ID, 'raw' );
+				$permalink = get_permalink( $venue_post->ID );
+
+				$venue_list[] = array(
+					'id'        => (int) $venue_post->ID,
+					'name'      => ! empty( $venue_post->post_title ) ? $venue_post->post_title : '',
+					'address'   => $venue_info['fullAddress'] ?? '',
+					'phone'     => $venue_info['phoneNumber'] ?? '',
+					'website'   => $venue_info['website'] ?? '',
+					'latitude'  => $venue_info['latitude'] ?? '',
+					'longitude' => $venue_info['longitude'] ?? '',
+					'edit_url'  => ! empty( $edit_url ) ? $edit_url : '',
+					'permalink' => ! empty( $permalink ) ? $permalink : '',
+				);
+			}
+
+			$venue_count = count( $venue_list );
+
+			return array(
+				'success' => true,
+				'data'    => $venue_list,
+				'count'   => $venue_count,
+				'message' => sprintf(
+					/* translators: %d: number of venues */
+					__( 'Found %d venue(s)', 'gatherpress' ),
+					$venue_count
+				),
+			);
+		} catch ( \Exception $e ) {
+			return array(
+				'success' => false,
+				'data'    => array(),
+				'message' => sprintf(
+					/* translators: %s: error message */
+					__( 'Error retrieving venues: %s', 'gatherpress' ),
+					$e->getMessage()
+				),
 			);
 		}
-
-		return array(
-			'success' => true,
-			'data'    => $venue_list,
-			'message' => sprintf(
-				/* translators: %d: number of venues */
-				__( 'Found %d venue(s)', 'gatherpress' ),
-				count( $venue_list )
-			),
-		);
 	}
 
 	/**
@@ -602,8 +667,11 @@ class Abilities_Integration {
 	 * @return array Response with event list or error.
 	 */
 	public function execute_list_events( array $params = array() ): array {
-		$max_number = isset( $params['max_number'] ) ? intval( $params['max_number'] ) : 10;
-		$max_number = min( $max_number, 50 ); // Cap at 50 for performance.
+		$max_number = isset( $params['max_number'] ) ? intval( $params['max_number'] ) : 50;
+		// If max_number is -1 or very large, get all events (but cap at 100 for performance).
+		if ( $max_number <= 0 || $max_number > 100 ) {
+			$max_number = 100;
+		}
 
 		// If search term is provided, search all events instead of just upcoming.
 		if ( ! empty( $params['search'] ) ) {
@@ -1144,19 +1212,31 @@ class Abilities_Integration {
 		wp_register_ability(
 			'gatherpress/search-events',
 			array(
-				'title'       => __( 'Search Events', 'gatherpress' ),
-				'description' => __( 'Search for events by title or content.', 'gatherpress' ),
-				'execute'     => array( $this, 'execute_search_events' ),
-				'parameters'  => array(
-					'search_term' => array(
-						'type'        => 'string',
-						'description' => __( 'Search term to find events by title or content.', 'gatherpress' ),
-						'required'    => true,
+				'label'               => __( 'Search Events', 'gatherpress' ),
+				'description'         => __( 'Search for events by title or content.', 'gatherpress' ),
+				'category'            => 'event',
+				'execute_callback'    => array( $this, 'execute_search_events' ),
+				'permission_callback' => static function (): bool {
+					return current_user_can( 'read' );
+				},
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'search_term' => array(
+							'type'        => 'string',
+							'description' => __( 'Search term to find events by title or content.', 'gatherpress' ),
+						),
+						'max_number'  => array(
+							'type'        => 'integer',
+							'description' => __( 'Maximum number of events to return (default: 10).', 'gatherpress' ),
+						),
 					),
-					'max_number'  => array(
-						'type'        => 'integer',
-						'description' => __( 'Maximum number of events to return (default: 10).', 'gatherpress' ),
-						'required'    => false,
+					'required'   => array( 'search_term' ),
+				),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'annotations'  => array(
+						'safe' => true,
 					),
 				),
 			)
@@ -1176,29 +1256,39 @@ class Abilities_Integration {
 		wp_register_ability(
 			'gatherpress/update-events-batch',
 			array(
-				'title'       => __( 'Update Multiple Events', 'gatherpress' ),
-				'description' => __( 'Update multiple events at once based on search criteria. IMPORTANT: When user says "change events from X to Y", this means CHANGE the start time from X to Y. Do NOT search for events currently at X - instead, find all matching events and change their start time to Y. For time ranges "from X to Y", set start time to X and end time to Y.', 'gatherpress' ),
-				'execute'     => array( $this, 'execute_update_events_batch' ),
-				'parameters'  => array(
-					'search_term'    => array(
-						'type'        => 'string',
-						'description' => __( 'Search term to find events to update (searches title and content).', 'gatherpress' ),
-						'required'    => true,
+				'label'               => __( 'Update Multiple Events', 'gatherpress' ),
+				'description'         => __( 'Update multiple events at once based on search criteria. IMPORTANT: When user says "change events from X to Y", this means CHANGE the start time from X to Y. Do NOT search for events currently at X - instead, find all matching events and change their start time to Y. For time ranges "from X to Y", set start time to X and end time to Y.', 'gatherpress' ),
+				'category'            => 'event',
+				'execute_callback'    => array( $this, 'execute_update_events_batch' ),
+				'permission_callback' => static function (): bool {
+					return current_user_can( 'edit_posts' );
+				},
+				'input_schema'        => array(
+					'type'       => 'object',
+					'properties' => array(
+						'search_term'    => array(
+							'type'        => 'string',
+							'description' => __( 'Search term to find events to update (searches title and content).', 'gatherpress' ),
+						),
+						'datetime_start' => array(
+							'type'        => 'string',
+							'description' => __( 'New start datetime in Y-m-d H:i:s format. For "change from X to Y", this should be the NEW start time (Y). For time ranges "from X to Y", this should be X.', 'gatherpress' ),
+						),
+						'datetime_end'   => array(
+							'type'        => 'string',
+							'description' => __( 'New end datetime in Y-m-d H:i:s format. For time ranges "from X to Y", this should be Y.', 'gatherpress' ),
+						),
+						'venue_id'       => array(
+							'type'        => 'integer',
+							'description' => __( 'New venue ID to assign to all matching events.', 'gatherpress' ),
+						),
 					),
-					'datetime_start' => array(
-						'type'        => 'string',
-						'description' => __( 'New start datetime in Y-m-d H:i:s format. For "change from X to Y", this should be the NEW start time (Y). For time ranges "from X to Y", this should be X.', 'gatherpress' ),
-						'required'    => false,
-					),
-					'datetime_end'   => array(
-						'type'        => 'string',
-						'description' => __( 'New end datetime in Y-m-d H:i:s format. For time ranges "from X to Y", this should be Y.', 'gatherpress' ),
-						'required'    => false,
-					),
-					'venue_id'       => array(
-						'type'        => 'integer',
-						'description' => __( 'New venue ID to assign to all matching events.', 'gatherpress' ),
-						'required'    => false,
+					'required'   => array( 'search_term' ),
+				),
+				'meta'                => array(
+					'show_in_rest' => true,
+					'annotations'  => array(
+						'safe' => false,
 					),
 				),
 			)
@@ -1461,9 +1551,10 @@ class Abilities_Integration {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param array $params Optional parameters (currently unused).
 	 * @return array List of topics with their IDs and names.
 	 */
-	public function execute_list_topics(): array {
+	public function execute_list_topics( array $params = array() ): array {
 		$topics = get_terms(
 			array(
 				'taxonomy'   => Topic::TAXONOMY,
