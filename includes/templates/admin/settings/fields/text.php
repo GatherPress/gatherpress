@@ -24,12 +24,12 @@ if ( ! isset( $name, $label, $option, $value, $description, $size ) ) {
 	return;
 }
 
-$input_type = $type ?? 'text';
+$gatherpress_input_type = $type ?? 'text';
 
 ?>
 <div class="form-wrap">
 	<label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $label ); ?></label>
-	<input id="<?php echo esc_attr( $option ); ?>" type="<?php echo esc_attr( $input_type ); ?>" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>" />
+	<input id="<?php echo esc_attr( $option ); ?>" type="<?php echo esc_attr( $gatherpress_input_type ); ?>" name="<?php echo esc_attr( $name ); ?>" class="<?php echo esc_attr( $size . '-text' ); ?>" value="<?php echo esc_attr( $value ); ?>" />
 	<?php
 	if ( ! empty( $description ) ) {
 		?>

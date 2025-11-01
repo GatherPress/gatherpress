@@ -725,7 +725,11 @@ class Abilities_Integration {
 		}
 
 		// Create the venue post with default block template.
-		/** @var int|WP_Error $venue_id */
+		/**
+		 * Venue post ID or WP_Error on failure.
+		 *
+		 * @var int|WP_Error $venue_id
+		 */
 		$venue_id = wp_insert_post(
 			array(
 				'post_type'    => Venue::POST_TYPE,
@@ -811,7 +815,11 @@ class Abilities_Integration {
 		// Create the event post with the proper template content.
 		$post_content = $this->get_default_event_content( $params['description'] ?? '' );
 
-		/** @var int|WP_Error $event_id */
+		/**
+		 * Event post ID or WP_Error on failure.
+		 *
+		 * @var int|WP_Error $event_id
+		 */
 		$event_id = wp_insert_post(
 			array(
 				'post_type'    => Event::POST_TYPE,
@@ -1002,7 +1010,11 @@ class Abilities_Integration {
 
 		// Update post if there are changes.
 		if ( count( $post_update ) > 1 ) {
-			/** @var int|WP_Error $result */
+			/**
+			 * Post update result ID or WP_Error on failure.
+			 *
+			 * @var int|WP_Error $result
+			 */
 			$result = wp_update_post( $post_update );
 			if ( is_wp_error( $result ) ) {
 				return array(
@@ -1563,7 +1575,7 @@ class Abilities_Integration {
 		$api_url         = "https://nominatim.openstreetmap.org/search?q={$encoded_address}&format=json&limit=1";
 
 		// Make the API request.
-		$version = defined( 'GATHERPRESS_VERSION' ) ? GATHERPRESS_VERSION : '1.0.0';
+		$version  = defined( 'GATHERPRESS_VERSION' ) ? GATHERPRESS_VERSION : '1.0.0';
 		$response = wp_remote_get(
 			$api_url,
 			array(

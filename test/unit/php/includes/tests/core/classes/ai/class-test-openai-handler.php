@@ -32,4 +32,3 @@ class Test_OpenAI_Handler extends Base {
 		);
 	}
 }
-

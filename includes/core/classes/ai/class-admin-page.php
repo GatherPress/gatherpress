@@ -69,7 +69,7 @@ class Admin_Page {
 			return;
 		}
 
-		$style_asset = $this->get_asset_data( 'ai-assistant-style' );
+		$style_asset  = $this->get_asset_data( 'ai-assistant-style' );
 		$script_asset = $this->get_asset_data( 'ai-assistant' );
 
 		wp_enqueue_style(
