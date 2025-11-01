@@ -133,7 +133,7 @@ class Rsvp_Form {
 		$updated_html = $tag->get_updated_html();
 
 		// Check if this is a successful form submission redirect.
-		$success_param = $this->get_get_field( 'gatherpress_rsvp_success' );
+		$success_param = $this->get_input_field( 'gatherpress_rsvp_success', INPUT_GET );
 		$is_success    = 'true' === $success_param;
 
 		// Handle visibility of form elements based on success state and data attributes.
@@ -191,7 +191,7 @@ class Rsvp_Form {
 		}
 
 		// Check if this is a successful form submission redirect.
-		$success_param = $this->get_get_field( 'gatherpress_rsvp_success' );
+		$success_param = $this->get_input_field( 'gatherpress_rsvp_success', INPUT_GET );
 		$is_success    = 'true' === $success_param;
 
 		// Use WP_HTML_Tag_Processor to add the data attribute and handle initial visibility.
@@ -511,7 +511,7 @@ class Rsvp_Form {
 		}
 
 		$post_id        = (int) $comment->comment_post_ID;
-		$form_schema_id = sanitize_text_field( wp_unslash( $this->get_post_field( 'gatherpress_form_schema_id' ) ) );
+		$form_schema_id = sanitize_text_field( wp_unslash( $this->get_input_field( 'gatherpress_form_schema_id', INPUT_POST, 'raw' ) ) );
 
 		if ( empty( $form_schema_id ) ) {
 			return;
@@ -535,7 +535,7 @@ class Rsvp_Form {
 				continue;
 			}
 
-			$field_value = $this->get_post_field( $field_name );
+			$field_value = $this->get_input_field( $field_name, INPUT_POST, 'raw' );
 			if ( null === $field_value ) {
 				continue;
 			}
@@ -598,33 +598,36 @@ class Rsvp_Form {
 	}
 
 	/**
-	 * Get a field from GET data.
+	 * Get a field from input data.
 	 *
-	 * Extracted for testability - allows mocking of GET data.
+	 * Extracted for testability - allows mocking of input data.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $field_name The field name to retrieve.
+	 * @param string $field_name  The field name to retrieve.
+	 * @param int    $input_type  The input type (INPUT_POST, INPUT_GET, etc).
+	 * @param string $sanitizer   The sanitization method ('text', 'raw'). Defaults to 'text'.
 	 *
-	 * @return string The sanitized field value or empty string if not set.
+	 * @return string|null The sanitized field value, null if not set, or raw value for 'raw' sanitizer.
 	 */
-	protected function get_get_field( string $field_name ): string {
-		$value = filter_input( INPUT_GET, $field_name );
-		return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
-	}
+	protected function get_input_field( string $field_name, int $input_type, string $sanitizer = 'text' ) {
+		/**
+		 * Raw input value from filter_input.
+		 *
+		 * @var string|false|null $value
+		 */
+		$value = filter_input( $input_type, $field_name ); // @phpstan-ignore-line
 
-	/**
-	 * Get a field from POST data.
-	 *
-	 * Extracted for testability - allows mocking of POST data.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $field_name The field name to retrieve.
-	 *
-	 * @return string|null The field value or null if not set.
-	 */
-	protected function get_post_field( string $field_name ) {
-		return filter_input( INPUT_POST, $field_name );
+		if ( null === $value ) {
+			return null;
+		}
+
+		switch ( $sanitizer ) {
+			case 'raw':
+				return $value;
+			case 'text':
+			default:
+				return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
+		}
 	}
 }

@@ -203,7 +203,7 @@ class User {
 	 * @return void
 	 */
 	public function save_profile_fields( int $user_id ): void {
-		$nonce = $this->get_post_field( '_wpnonce' );
+		$nonce = $this->get_input_field( '_wpnonce', INPUT_POST );
 
 		if (
 			empty( $nonce ) ||
@@ -216,41 +216,52 @@ class User {
 			return;
 		}
 
-		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( $this->get_post_field( 'gatherpress_event_updates_opt_in' ) ) );
-		update_user_meta( $user_id, 'gatherpress_date_format', $this->get_post_field_with_slashes( 'gatherpress_date_format' ) );
-		update_user_meta( $user_id, 'gatherpress_time_format', $this->get_post_field_with_slashes( 'gatherpress_time_format' ) );
-		update_user_meta( $user_id, 'gatherpress_timezone', $this->get_post_field( 'gatherpress_timezone' ) );
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( $this->get_input_field( 'gatherpress_event_updates_opt_in', INPUT_POST ) ) );
+		update_user_meta( $user_id, 'gatherpress_date_format', $this->get_input_field( 'gatherpress_date_format', INPUT_POST, 'slashes' ) );
+		update_user_meta( $user_id, 'gatherpress_time_format', $this->get_input_field( 'gatherpress_time_format', INPUT_POST, 'slashes' ) );
+		update_user_meta( $user_id, 'gatherpress_timezone', $this->get_input_field( 'gatherpress_timezone', INPUT_POST ) );
 	}
 
 	/**
-	 * Get a field from POST data.
+	 * Get a field from input data.
 	 *
-	 * Extracted for testability - allows mocking of POST data.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $field_name The field name to retrieve.
-	 *
-	 * @return string The sanitized field value or empty string if not set.
-	 */
-	protected function get_post_field( string $field_name ): string {
-		$value = filter_input( INPUT_POST, $field_name );
-		return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
-	}
-
-	/**
-	 * Get a field from POST data with slashes preservation.
-	 *
-	 * Extracted for testability - allows mocking of POST data with slashes sanitization.
+	 * Extracted for testability - allows mocking of input data.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $field_name The field name to retrieve.
+	 * @param string $field_name  The field name to retrieve.
+	 * @param int    $input_type  The input type (INPUT_POST, INPUT_GET, etc).
+	 * @param string $sanitizer   The sanitization method ('text', 'email', 'slashes'). Defaults to 'text'.
 	 *
 	 * @return string The sanitized field value or empty string if not set.
 	 */
-	protected function get_post_field_with_slashes( string $field_name ): string {
-		$value = filter_input( INPUT_POST, $field_name, FILTER_SANITIZE_ADD_SLASHES );
-		return $value ? sanitize_text_field( $value ) : '';
+	protected function get_input_field( string $field_name, int $input_type, string $sanitizer = 'text' ): string {
+		switch ( $sanitizer ) {
+			case 'slashes':
+				/**
+				 * Raw input value with slashes sanitization.
+				 *
+				 * @var string|false|null $value
+				 */
+				$value = filter_input( $input_type, $field_name, FILTER_SANITIZE_ADD_SLASHES ); // @phpstan-ignore-line
+				return $value ? sanitize_text_field( $value ) : '';
+			case 'email':
+				/**
+				 * Raw input value for email sanitization.
+				 *
+				 * @var string|false|null $value
+				 */
+				$value = filter_input( $input_type, $field_name ); // @phpstan-ignore-line
+				return $value ? sanitize_email( wp_unslash( $value ) ) : '';
+			case 'text':
+			default:
+				/**
+				 * Raw input value for text sanitization.
+				 *
+				 * @var string|false|null $value
+				 */
+				$value = filter_input( $input_type, $field_name ); // @phpstan-ignore-line
+				return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
+		}
 	}
 }
