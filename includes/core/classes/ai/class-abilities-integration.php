@@ -94,6 +94,10 @@ class Abilities_Integration {
 	 * @return void
 	 */
 	public function register_categories(): void {
+		if ( ! function_exists( 'wp_register_ability_category' ) ) {
+			return;
+		}
+
 		wp_register_ability_category(
 			'venue',
 			array(
@@ -599,7 +603,7 @@ class Abilities_Integration {
 	 * @param array $params Optional parameters (currently unused).
 	 * @return array Response with venue list or error.
 	 */
-	public function execute_list_venues( array $params = array() ): array {
+	public function execute_list_venues( array $params = array() ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 		try {
 			$venues = get_posts(
 				array(
@@ -1554,7 +1558,7 @@ class Abilities_Integration {
 	 * @param array $params Optional parameters (currently unused).
 	 * @return array List of topics with their IDs and names.
 	 */
-	public function execute_list_topics( array $params = array() ): array {
+	public function execute_list_topics( array $params = array() ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 		$topics = get_terms(
 			array(
 				'taxonomy'   => Topic::TAXONOMY,

@@ -149,10 +149,10 @@ Rules:
 	 * ensure empty properties is {}, etc.).
 	 *
 	 * @param array  $input_schema The ability's input_schema (JSON Schema format).
-	 * @param string $ability_name Unused, kept for compatibility.
+	 * @param string $ability_name Ability name (currently unused).
 	 * @return array OpenAI-compatible JSON Schema format.
 	 */
-	private function convert_input_schema_to_openai( array $input_schema, string $ability_name ): array {
+	private function convert_input_schema_to_openai( array $input_schema, string $ability_name ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 		// Empty schema? Return minimal valid schema.
 		if ( empty( $input_schema ) ) {
 			return array(
@@ -174,7 +174,7 @@ Rules:
 	 * @return array Cleaned schema compatible with OpenAI.
 	 */
 	private function clean_json_schema( array $input_schema ): array {
-		// Handle properties - convert object to array, ensure empty is {}
+		// Handle properties - convert object to array, ensure empty is {}.
 		$properties = array();
 		if ( isset( $input_schema['properties'] ) ) {
 			if ( is_object( $input_schema['properties'] ) ) {
@@ -201,222 +201,6 @@ Rules:
 			'properties'           => $properties_value,
 			'additionalProperties' => $input_schema['additionalProperties'] ?? false,
 			'required'             => $input_schema['required'] ?? array(),
-		);
-	}
-
-
-	/**
-	 * Convert ability parameters to OpenAI function schema.
-	 *
-	 * @deprecated Use convert_input_schema_to_openai instead.
-	 * @param string $ability_name Ability name.
-	 * @return array OpenAI-compatible parameter schema.
-	 */
-	private function convert_parameters_to_schema( $ability_name ) {
-		// Define schemas for each ability.
-		$schemas = array(
-			'gatherpress/list-venues'     => array(
-				'type'                 => 'object',
-				'properties'           => new \stdClass(),
-				'additionalProperties' => false,
-			),
-			'gatherpress/list-events'     => array(
-				'type'       => 'object',
-				'properties' => array(
-					'max_number' => array(
-						'type'        => 'integer',
-						'description' => 'Maximum number of events to return',
-					),
-				),
-			),
-			'gatherpress/list-topics'     => array(
-				'type'                 => 'object',
-				'properties'           => new \stdClass(),
-				'additionalProperties' => false,
-			),
-			'gatherpress/calculate-dates' => array(
-				'type'       => 'object',
-				'properties' => array(
-					'pattern'     => array(
-						'type'        => 'string',
-						'description' => 'The recurrence pattern (e.g., "3rd Tuesday", "every Monday", "first Friday")',
-					),
-					'occurrences' => array(
-						'type'        => 'integer',
-						'description' => 'Number of occurrences to calculate',
-					),
-					'start_date'  => array(
-						'type'        => 'string',
-						'description' => 'Optional starting date in Y-m-d format (defaults to today)',
-					),
-				),
-				'required'   => array( 'pattern', 'occurrences' ),
-			),
-			'ai/calculate-dates'          => array(
-				'type'       => 'object',
-				'properties' => array(
-					'pattern'     => array(
-						'type'        => 'string',
-						'description' => 'The recurrence pattern (e.g., "3rd Tuesday", "every Monday", "first Friday")',
-					),
-					'occurrences' => array(
-						'type'        => 'integer',
-						'description' => 'Number of occurrences to calculate',
-					),
-					'start_date'  => array(
-						'type'        => 'string',
-						'description' => 'Optional starting date in Y-m-d format (defaults to today)',
-					),
-				),
-				'required'   => array( 'pattern', 'occurrences' ),
-			),
-			'gatherpress/create-venue'    => array(
-				'type'       => 'object',
-				'properties' => array(
-					'name'    => array(
-						'type'        => 'string',
-						'description' => 'Name of the venue',
-					),
-					'address' => array(
-						'type'        => 'string',
-						'description' => 'Full address of the venue',
-					),
-					'phone'   => array(
-						'type'        => 'string',
-						'description' => 'Phone number',
-					),
-					'website' => array(
-						'type'        => 'string',
-						'description' => 'Website URL',
-					),
-				),
-				'required'   => array( 'name', 'address' ),
-			),
-			'gatherpress/create-topic'    => array(
-				'type'       => 'object',
-				'properties' => array(
-					'name'        => array(
-						'type'        => 'string',
-						'description' => 'Name of the topic',
-					),
-					'description' => array(
-						'type'        => 'string',
-						'description' => 'Description of the topic',
-					),
-					'parent_id'   => array(
-						'type'        => 'integer',
-						'description' => 'Parent topic ID for hierarchical topics',
-					),
-				),
-				'required'   => array( 'name' ),
-			),
-			'gatherpress/create-event'    => array(
-				'type'       => 'object',
-				'properties' => array(
-					'title'          => array(
-						'type'        => 'string',
-						'description' => 'Event title',
-					),
-					'datetime_start' => array(
-						'type'        => 'string',
-						'description' => 'Start date/time in Y-m-d H:i:s format (e.g., 2025-01-21 19:00:00)',
-					),
-					'datetime_end'   => array(
-						'type'        => 'string',
-						'description' => 'End date/time in Y-m-d H:i:s format',
-					),
-					'venue_id'       => array(
-						'type'        => 'integer',
-						'description' => 'ID of the venue',
-					),
-					'description'    => array(
-						'type'        => 'string',
-						'description' => 'Event description',
-					),
-					'post_status'    => array(
-						'type'        => 'string',
-						'description' => 'Post status (draft or publish)',
-						'enum'        => array( 'draft', 'publish' ),
-					),
-					'topic_ids'      => array(
-						'type'        => 'array',
-						'items'       => array( 'type' => 'integer' ),
-						'description' => 'Array of topic IDs to assign to this event',
-					),
-				),
-				'required'   => array( 'title', 'datetime_start' ),
-			),
-			'gatherpress/update-venue'    => array(
-				'type'       => 'object',
-				'properties' => array(
-					'venue_id' => array(
-						'type'        => 'integer',
-						'description' => 'ID of venue to update',
-					),
-					'name'     => array(
-						'type'        => 'string',
-						'description' => 'New name',
-					),
-					'address'  => array(
-						'type'        => 'string',
-						'description' => 'New address',
-					),
-					'phone'    => array(
-						'type'        => 'string',
-						'description' => 'New phone',
-					),
-					'website'  => array(
-						'type'        => 'string',
-						'description' => 'New website',
-					),
-				),
-				'required'   => array( 'venue_id' ),
-			),
-			'gatherpress/update-event'    => array(
-				'type'       => 'object',
-				'properties' => array(
-					'event_id'       => array(
-						'type'        => 'integer',
-						'description' => 'ID of event to update',
-					),
-					'title'          => array(
-						'type'        => 'string',
-						'description' => 'New title',
-					),
-					'datetime_start' => array(
-						'type'        => 'string',
-						'description' => 'New start date/time in Y-m-d H:i:s format',
-					),
-					'datetime_end'   => array(
-						'type'        => 'string',
-						'description' => 'New end date/time',
-					),
-					'venue_id'       => array(
-						'type'        => 'integer',
-						'description' => 'New venue ID',
-					),
-					'description'    => array(
-						'type'        => 'string',
-						'description' => 'New description',
-					),
-					'post_status'    => array(
-						'type'        => 'string',
-						'description' => 'New status',
-					),
-					'topic_ids'      => array(
-						'type'        => 'array',
-						'items'       => array( 'type' => 'integer' ),
-						'description' => 'Array of topic IDs to assign to this event',
-					),
-				),
-				'required'   => array( 'event_id' ),
-			),
-		);
-
-		return $schemas[ $ability_name ] ?? array(
-			'type'                 => 'object',
-			'properties'           => new \stdClass(),
-			'additionalProperties' => false,
 		);
 	}
 
@@ -562,7 +346,7 @@ Rules:
 	 */
 	private function convert_function_name_to_ability( string $function_name ): string {
 		$pos = strpos( $function_name, '_' );
-		if ( $pos === false ) {
+		if ( false === $pos ) {
 			return $function_name;
 		}
 
@@ -749,9 +533,6 @@ Rules:
 	 * @return void
 	 */
 	private function log_debug( string $message ): void {
-		// Only log debug messages when WP_DEBUG is enabled.
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-			error_log( sprintf( '[GatherPress AI Debug] %s', $message ) );
-		}
+		// Debug logging removed for production.
 	}
 }
