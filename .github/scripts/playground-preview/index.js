@@ -117,16 +117,6 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 				},
 			},
 			{
-				step: 'installPlugin',
-				pluginZipFile: {
-					resource: 'url',
-					url: 'https://github.com/WordPress/abilities-api/releases/download/v0.4.0/abilities-api.zip',
-				},
-				options: {
-					activate: true,
-				},
-			},
-			{
 				step: 'importWxr',
 				file: {
 					resource: 'url',
