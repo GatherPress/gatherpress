@@ -91,7 +91,7 @@ class OpenAI_Handler {
 	 */
 	private function get_gatherpress_functions() {
 		// Check if AI plugin's calculate-dates ability is available.
-		$ai_ability              = wp_get_ability( 'ai/calculate-dates' );
+		$ai_ability              = function_exists( 'wp_get_ability' ) ? wp_get_ability( 'ai/calculate-dates' ) : null;
 		$calculate_dates_ability = $ai_ability ? 'ai/calculate-dates' : 'gatherpress/calculate-dates';
 
 		$abilities = array(
@@ -107,6 +107,11 @@ class OpenAI_Handler {
 		);
 
 		$functions = array();
+
+		// Only get abilities if Abilities API is available.
+		if ( ! function_exists( 'wp_get_ability' ) ) {
+			return array();
+		}
 
 		foreach ( $abilities as $ability_name ) {
 			$ability = wp_get_ability( $ability_name );
@@ -429,7 +434,17 @@ class OpenAI_Handler {
 
 				// Convert function name back to ability name.
 				$ability_name = str_replace( '_', '/', $function_name );
-				$ability      = wp_get_ability( $ability_name );
+
+				if ( ! function_exists( 'wp_get_ability' ) ) {
+					$messages[] = array(
+						'tool_call_id' => $tool_call['id'],
+						'role'         => 'tool',
+						'content'      => 'Error: Abilities API not available',
+					);
+					continue;
+				}
+
+				$ability = wp_get_ability( $ability_name );
 
 				if ( ! $ability ) {
 					$messages[] = array(

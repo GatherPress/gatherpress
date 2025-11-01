@@ -45,9 +45,16 @@ class Admin_Page {
 	/**
 	 * Add admin page to WordPress menu.
 	 *
+	 * Only adds the AI Assistant page if the Abilities API is available.
+	 *
 	 * @return void
 	 */
 	public function add_admin_page(): void {
+		// Only show AI Assistant if Abilities API is available.
+		if ( ! function_exists( 'wp_register_ability' ) ) {
+			return;
+		}
+
 		add_submenu_page(
 			'edit.php?post_type=gatherpress_event',
 			__( 'AI Assistant', 'gatherpress' ),

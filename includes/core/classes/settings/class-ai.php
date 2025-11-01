@@ -72,6 +72,25 @@ class AI extends Base {
 	}
 
 	/**
+	 * Callback function to set the sub-page for GatherPress.
+	 *
+	 * Only adds the AI settings page if the Abilities API is available.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $sub_pages An array of sub-pages for GatherPress.
+	 * @return array Modified array with the sub-page added, or unchanged if Abilities API not available.
+	 */
+	public function set_sub_page( array $sub_pages ): array {
+		// Only show AI settings if Abilities API is available.
+		if ( ! function_exists( 'wp_register_ability' ) ) {
+			return $sub_pages;
+		}
+
+		return parent::set_sub_page( $sub_pages );
+	}
+
+	/**
 	 * Get an array of sections and options for the AI settings page.
 	 *
 	 * This method defines the sections and their respective options for the "AI" settings page
