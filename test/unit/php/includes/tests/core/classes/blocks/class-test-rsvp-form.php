@@ -695,11 +695,6 @@ class Test_Rsvp_Form extends Base {
 		$this->assertFalse( $result );
 	}
 
-
-
-
-
-
 	/**
 	 * Tests the handle_form_visibility method with block attributes.
 	 *
@@ -810,5 +805,100 @@ class Test_Rsvp_Form extends Base {
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
 		$this->assertEquals( $block_content, $result );
 		$this->assertStringNotContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
+	}
+
+	/**
+	 * Tests add_form_visibility_data_attribute with success state.
+	 *
+	 * Verifies that blocks with formVisibility attribute respond correctly to success state.
+	 *
+	 * @since 1.0.0
+	 * @covers ::add_form_visibility_data_attribute
+	 *
+	 * @return void
+	 */
+	public function test_add_form_visibility_data_attribute_with_success(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Mock GET parameter for success state using pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_success' === $var_name ) {
+					return 'true';
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		// Test showOnSuccess block.
+		$block_content = '<div class="wp-block-group">Success message</div>';
+		$block         = array(
+			'attrs' => array( 'formVisibility' => 'showOnSuccess' ),
+		);
+
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $result );
+		$this->assertStringNotContainsString( 'display: none;', $result );
+
+		// Test hideOnSuccess block.
+		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
+		$block         = array(
+			'attrs' => array( 'formVisibility' => 'hideOnSuccess' ),
+		);
+
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="hideOnSuccess"', $result );
+		$this->assertStringContainsString( 'display: none;', $result );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests add_form_visibility_data_attribute without success state.
+	 *
+	 * Verifies that blocks with formVisibility attribute respond correctly to default state.
+	 *
+	 * @since 1.0.0
+	 * @covers ::add_form_visibility_data_attribute
+	 *
+	 * @return void
+	 */
+	public function test_add_form_visibility_data_attribute_without_success(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Mock no success parameter using pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function () {
+				return null;
+			}
+		);
+
+		// Test showOnSuccess block (should be hidden).
+		$block_content = '<div class="wp-block-group">Success message</div>';
+		$block         = array(
+			'attrs' => array( 'formVisibility' => 'showOnSuccess' ),
+		);
+
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $result );
+		$this->assertStringContainsString( 'display: none;', $result );
+
+		// Test hideOnSuccess block (should be visible).
+		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
+		$block         = array(
+			'attrs' => array( 'formVisibility' => 'hideOnSuccess' ),
+		);
+
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="hideOnSuccess"', $result );
+		$this->assertStringNotContainsString( 'display: none;', $result );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 }

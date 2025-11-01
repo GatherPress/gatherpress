@@ -338,43 +338,9 @@ class Rsvp_Token {
 	 * @return self|null Instance if valid token found, null otherwise.
 	 */
 	public static function from_url_parameter(): ?self {
-		$token_param = self::get_input_field( self::NAME, INPUT_GET );
+		$token_param = Utility::get_http_input( INPUT_GET, self::NAME );
 
 		return self::from_token_string( $token_param );
-	}
-
-	/**
-	 * Get a field from input data.
-	 *
-	 * Extracted for testability - allows mocking of input data.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $field_name  The field name to retrieve.
-	 * @param int    $input_type  The input type (INPUT_POST, INPUT_GET, etc).
-	 * @param string $sanitizer   The sanitization method ('text', 'email'). Defaults to 'text'.
-	 *
-	 * @return string The sanitized field value or empty string if not set.
-	 */
-	protected static function get_input_field( string $field_name, int $input_type, string $sanitizer = 'text' ): string {
-		/**
-		 * Raw input value from filter_input.
-		 *
-		 * @var string|false|null $value
-		 */
-		$value = filter_input( $input_type, $field_name ); // @phpstan-ignore-line
-
-		if ( ! $value ) {
-			return '';
-		}
-
-		switch ( $sanitizer ) {
-			case 'email':
-				return sanitize_email( wp_unslash( $value ) );
-			case 'text':
-			default:
-				return sanitize_text_field( wp_unslash( $value ) );
-		}
 	}
 
 	/**

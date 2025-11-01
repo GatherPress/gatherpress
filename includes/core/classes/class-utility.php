@@ -347,4 +347,69 @@ class Utility {
 
 		return in_array( $target_class, $classes, true );
 	}
+
+	/**
+	 * Get HTTP input with optional mocking for testing.
+	 *
+	 * Wrapper around filter_input() that can be easily mocked for testing.
+	 * In production, uses real filter_input(). In tests, can use filters to mock data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int           $type      Input type (INPUT_GET, INPUT_POST, etc.).
+	 * @param string        $var_name  Variable name to retrieve.
+	 * @param callable|null $sanitizer Sanitization function to apply. Defaults to sanitize_text_field.
+	 *
+	 * @return string Sanitized input value or empty string if not found.
+	 */
+	public static function get_http_input( int $type, string $var_name, ?callable $sanitizer = null ): string {
+		$value = null;
+
+		// Only allow pre-filtering during unit tests for security.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			/**
+			 * Short-circuit filter for HTTP input retrieval during testing.
+			 *
+			 * Allows tests to completely bypass filter_input() and provide
+			 * their own values. Only available during unit tests for security.
+			 * Return a non-null value to short-circuit.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param string|null $pre_value Pre-value to return instead of using filter_input.
+			 * @param int         $type      Input type (INPUT_GET, INPUT_POST, etc.).
+			 * @param string      $var_name  Variable name being requested.
+			 */
+			$pre_value = apply_filters( 'gatherpress_pre_get_http_input', null, $type, $var_name );
+
+			if ( null !== $pre_value ) {
+				$value = $pre_value;
+			}
+		}
+
+		if ( null === $value ) {
+			/**
+			 * Raw input value from HTTP request.
+			 *
+			 * @var string|false|null $value
+			 */
+			$value = filter_input( $type, $var_name ); // @phpstan-ignore-line
+		}
+
+		if ( null === $value || false === $value ) {
+			return '';
+		}
+
+		// Apply sanitizer function.
+		if ( null === $sanitizer ) {
+			$sanitizer = 'sanitize_text_field';
+		}
+
+		// For WordPress sanitizers, unslash first.
+		if ( in_array( $sanitizer, array( 'sanitize_text_field', 'sanitize_email' ), true ) ) {
+			$value = wp_unslash( $value );
+		}
+
+		return (string) call_user_func( $sanitizer, $value );
+	}
 }

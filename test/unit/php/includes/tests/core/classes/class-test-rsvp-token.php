@@ -896,7 +896,6 @@ class Test_Rsvp_Token extends Base {
 		$this->assertNull( $result );
 	}
 
-
 	/**
 	 * Test that from_token_string returns null for zero comment ID.
 	 *
@@ -953,5 +952,62 @@ class Test_Rsvp_Token extends Base {
 		$new_instance = Rsvp_Token::from_token_string( $token_string );
 		$this->assertInstanceOf( Rsvp_Token::class, $new_instance );
 		$this->assertEquals( $comment_id, $new_instance->get_comment()->comment_ID );
+	}
+
+	/**
+	 * Tests from_url_parameter static factory method.
+	 *
+	 * Verifies that the method correctly creates an instance from mocked GET parameters.
+	 *
+	 * @since 1.0.0
+	 * @covers ::from_url_parameter
+	 *
+	 * @return void
+	 */
+	public function test_from_url_parameter(): void {
+		$comment_id = $this->factory()->comment->create(
+			array(
+				'comment_post_ID' => $this->factory()->post->create( array( 'post_type' => Event::POST_TYPE ) ),
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$instance = new Rsvp_Token( $comment_id );
+		$instance->generate_token();
+		$token        = $instance->get_token();
+		$token_string = sprintf( '%d_%s', $comment_id, $token );
+
+		// Set up mock data using pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) use ( $token_string ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return $token_string;
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		// Test successful creation from URL parameter.
+		$result = Rsvp_Token::from_url_parameter();
+		$this->assertInstanceOf( Rsvp_Token::class, $result );
+		$this->assertEquals( $comment_id, $result->get_comment()->comment_ID );
+
+		// Test with no token parameter.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function () {
+				return null;
+			}
+		);
+
+		$result = Rsvp_Token::from_url_parameter();
+		$this->assertNull( $result );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 }

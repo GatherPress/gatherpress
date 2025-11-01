@@ -12,8 +12,9 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
-use PMC\Unit_Test\Utility;
+use PMC\Unit_Test\Utility as PMC_Utility;
 
 /**
  * Class Test_Rsvp_Setup.
@@ -166,7 +167,7 @@ class Test_Rsvp_Setup extends Base {
 		$post_id  = $this->factory->post->create();
 
 		$this->assertEmpty(
-			Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $post_id ) ),
+			PMC_Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $post_id ) ),
 			'Failed to assert method returns empty string.'
 		);
 
@@ -175,7 +176,7 @@ class Test_Rsvp_Setup extends Base {
 		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
 
 		$this->assertEmpty(
-			Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $event_id ) ),
+			PMC_Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $event_id ) ),
 			'Failed to assert method returns empty string.'
 		);
 	}
@@ -270,5 +271,56 @@ class Test_Rsvp_Setup extends Base {
 
 		// Clean up.
 		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Tests Utility::get_http_input method with mocked data.
+	 *
+	 * Verifies that the wrapper correctly retrieves and sanitizes HTTP input.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function test_http_input_wrapper(): void {
+		// Set up mock data using pre_ filter.
+		$mock_data = array(
+			INPUT_POST => array(
+				'test_field'  => 'test_value',
+				'email_field' => 'test@example.com',
+			),
+			INPUT_GET  => array(
+				'success' => 'true',
+			),
+		);
+
+		// Enable mocking via pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) use ( $mock_data ) {
+				return $mock_data[ $type ][ $var_name ] ?? null;
+			},
+			10,
+			3
+		);
+
+		// Test text sanitization (default).
+		$result = Utility::get_http_input( INPUT_POST, 'test_field' );
+		$this->assertEquals( 'test_value', $result );
+
+		// Test email sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'email_field', 'sanitize_email' );
+		$this->assertEquals( 'test@example.com', $result );
+
+		// Test GET parameter.
+		$result = Utility::get_http_input( INPUT_GET, 'success' );
+		$this->assertEquals( 'true', $result );
+
+		// Test non-existent field.
+		$result = Utility::get_http_input( INPUT_POST, 'nonexistent' );
+		$this->assertEquals( '', $result );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 }
