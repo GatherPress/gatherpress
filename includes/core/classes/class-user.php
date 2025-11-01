@@ -203,9 +203,11 @@ class User {
 	 * @return void
 	 */
 	public function save_profile_fields( int $user_id ): void {
+		$nonce = $this->get_post_field( '_wpnonce' );
+
 		if (
-			empty( filter_input( INPUT_POST, '_wpnonce' ) ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_POST, '_wpnonce' ) ) ), 'update-user_' . $user_id )
+			empty( $nonce ) ||
+			! wp_verify_nonce( $nonce, 'update-user_' . $user_id )
 		) {
 			return;
 		}
@@ -214,9 +216,41 @@ class User {
 			return;
 		}
 
-		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( filter_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
-		update_user_meta( $user_id, 'gatherpress_date_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_date_format', FILTER_SANITIZE_ADD_SLASHES ) ) );
-		update_user_meta( $user_id, 'gatherpress_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_time_format', FILTER_SANITIZE_ADD_SLASHES ) ) );
-		update_user_meta( $user_id, 'gatherpress_timezone', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_timezone' ) ) );
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( $this->get_post_field( 'gatherpress_event_updates_opt_in' ) ) );
+		update_user_meta( $user_id, 'gatherpress_date_format', $this->get_post_field_with_slashes( 'gatherpress_date_format' ) );
+		update_user_meta( $user_id, 'gatherpress_time_format', $this->get_post_field_with_slashes( 'gatherpress_time_format' ) );
+		update_user_meta( $user_id, 'gatherpress_timezone', $this->get_post_field( 'gatherpress_timezone' ) );
+	}
+
+	/**
+	 * Get a field from POST data.
+	 *
+	 * Extracted for testability - allows mocking of POST data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $field_name The field name to retrieve.
+	 *
+	 * @return string The sanitized field value or empty string if not set.
+	 */
+	protected function get_post_field( string $field_name ): string {
+		$value = filter_input( INPUT_POST, $field_name );
+		return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
+	}
+
+	/**
+	 * Get a field from POST data with slashes preservation.
+	 *
+	 * Extracted for testability - allows mocking of POST data with slashes sanitization.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $field_name The field name to retrieve.
+	 *
+	 * @return string The sanitized field value or empty string if not set.
+	 */
+	protected function get_post_field_with_slashes( string $field_name ): string {
+		$value = filter_input( INPUT_POST, $field_name, FILTER_SANITIZE_ADD_SLASHES );
+		return $value ? sanitize_text_field( $value ) : '';
 	}
 }

@@ -20,7 +20,6 @@ use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
-use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -83,6 +82,7 @@ class Rsvp_Form {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
 		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'add_form_visibility_data_attribute' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
 	}
 
@@ -133,20 +133,21 @@ class Rsvp_Form {
 		$updated_html = $tag->get_updated_html();
 
 		// Check if this is a successful form submission redirect.
-		$success_param = sanitize_text_field( wp_unslash( $this->get_input_value( 'gatherpress_rsvp_success', INPUT_GET ) ) );
+		$success_param = $this->get_get_field( 'gatherpress_rsvp_success' );
 		$is_success    = 'true' === $success_param;
 
-		// Handle visibility of form elements based on success state.
+		// Handle visibility of form elements based on success state and data attributes.
 		$updated_html = $this->handle_form_visibility( $updated_html, $is_success );
 
 		return $updated_html;
 	}
 
 	/**
-	 * Handle visibility of form elements based on success state.
+	 * Handle visibility of form elements based on success state and block attributes.
 	 *
-	 * When success is true (form was successfully submitted), shows success message
-	 * and hides form fields. When false, hides success message (for JavaScript to show later).
+	 * Uses the formVisibility attribute to determine which blocks should
+	 * be shown or hidden based on form success state. This provides flexible control
+	 * over any inner blocks within the RSVP form.
 	 *
 	 * @since 1.0.0
 	 *
@@ -157,57 +158,105 @@ class Rsvp_Form {
 	private function handle_form_visibility( string $html, bool $is_success ): string {
 		$tag = new WP_HTML_Tag_Processor( $html );
 
-		// Loop through all tags to find elements we need to show/hide.
+		// Loop through all HTML elements and check for form visibility data attributes.
 		while ( $tag->next_tag() ) {
-			$class_attribute = $tag->get_attribute( 'class' );
+			$visibility_attr = $tag->get_attribute( 'data-gatherpress-rsvp-form-visibility' );
 
-			// Handle success message blocks.
-			if ( Utility::has_css_class( $class_attribute, 'gatherpress--rsvp-form-message' ) ) {
-				if ( $is_success ) {
-					// Show the success message.
-					$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-					// Remove any display:none from existing styles.
-					$existing_styles = preg_replace( '/display\s*:\s*none\s*;?/i', '', $existing_styles );
-					$updated_styles  = trim( $existing_styles . ' display: block;' );
-
-					$tag->set_attribute( 'style', $updated_styles );
-					$tag->set_attribute( 'aria-hidden', 'false' );
-				} else {
-					// Hide the success message (default state for JavaScript to handle).
-					$existing_styles       = $tag->get_attribute( 'style' ) ?? '';
-					$existing_styles_array = explode( ';', rtrim( $existing_styles, ';' ) );
-					$existing_styles_clean = implode( ';', array_filter( $existing_styles_array ) ) . ';';
-					$updated_styles        = trim( $existing_styles_clean . ' display: none;' );
-
-					$tag->set_attribute( 'style', $updated_styles );
-					$tag->set_attribute( 'aria-hidden', 'true' );
-				}
-				$tag->set_attribute( 'aria-live', 'polite' );
-				$tag->set_attribute( 'role', 'status' );
-			}
-
-			// Hide form field blocks when success is true.
-			if ( $is_success && Utility::has_css_class( $class_attribute, 'wp-block-gatherpress-form-field' ) ) {
-				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-				$updated_styles  = trim( $existing_styles . ' display: none;' );
-				$tag->set_attribute( 'style', $updated_styles );
-			}
-
-			// Hide button containers when success is true (except modal close buttons).
-			if ( $is_success && Utility::has_css_class( $class_attribute, 'wp-block-button' ) ) {
-				// Check if this is a modal close button.
-				$has_close_class = Utility::has_css_class( $class_attribute, 'gatherpress-modal--trigger-close' );
-
-				if ( ! $has_close_class ) {
-					$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-					$updated_styles  = trim( $existing_styles . ' display: none;' );
-					$tag->set_attribute( 'style', $updated_styles );
-				}
+			if ( $visibility_attr ) {
+				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success );
 			}
 		}
 
 		return $tag->get_updated_html();
 	}
+
+	/**
+	 * Add form visibility data attribute to blocks with formVisibility attribute.
+	 *
+	 * This filter runs for all blocks and adds the data-gatherpress-rsvp-form-visibility
+	 * attribute to any block that has a formVisibility attribute set.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content.
+	 * @param array  $block         The full block, including name and attributes.
+	 * @return string The potentially modified block content.
+	 */
+	public function add_form_visibility_data_attribute( string $block_content, array $block ): string {
+		// Check if this block has a formVisibility attribute.
+		$form_visibility = $block['attrs']['formVisibility'] ?? null;
+
+		if ( empty( $form_visibility ) || 'default' === $form_visibility ) {
+			return $block_content;
+		}
+
+		// Check if this is a successful form submission redirect.
+		$success_param = $this->get_get_field( 'gatherpress_rsvp_success' );
+		$is_success    = 'true' === $success_param;
+
+		// Use WP_HTML_Tag_Processor to add the data attribute and handle initial visibility.
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		if ( $tag->next_tag() ) {
+			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $form_visibility );
+
+			// Apply initial visibility rules for non-JS scenarios.
+			if ( 'showOnSuccess' === $form_visibility && ! $is_success ) {
+				// Hide blocks that should only show on success when not in success state.
+				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
+				$updated_styles  = trim( $existing_styles . ' display: none;' );
+				$tag->set_attribute( 'style', $updated_styles );
+			} elseif ( 'hideOnSuccess' === $form_visibility && $is_success ) {
+				// Hide blocks that should hide on success when in success state.
+				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
+				$updated_styles  = trim( $existing_styles . ' display: none;' );
+				$tag->set_attribute( 'style', $updated_styles );
+			}
+
+			return $tag->get_updated_html();
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Apply visibility rule to a specific HTML element.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param WP_HTML_Tag_Processor $tag           The HTML tag processor.
+	 * @param string                $visibility_rule The visibility rule (showOnSuccess, hideOnSuccess, or null).
+	 * @param bool                  $is_success    Whether the form was successfully submitted.
+	 * @return void
+	 */
+	private function apply_visibility_rule( WP_HTML_Tag_Processor $tag, ?string $visibility_rule, bool $is_success ): void {
+		if ( ! $visibility_rule ) {
+			return;
+		}
+
+		$should_show = true;
+
+		if ( 'showOnSuccess' === $visibility_rule ) {
+			$should_show = $is_success;
+		} elseif ( 'hideOnSuccess' === $visibility_rule ) {
+			$should_show = ! $is_success;
+		}
+
+		if ( ! $should_show ) {
+			// Hide the element with display: none.
+			$existing_styles = $tag->get_attribute( 'style' ) ?? '';
+			$updated_styles  = trim( $existing_styles . ' display: none;' );
+			$tag->set_attribute( 'style', $updated_styles );
+		}
+
+		// Add accessibility attributes for success messages.
+		if ( 'showOnSuccess' === $visibility_rule ) {
+			$tag->set_attribute( 'aria-hidden', $should_show ? 'false' : 'true' );
+			$tag->set_attribute( 'aria-live', 'polite' );
+			$tag->set_attribute( 'role', 'status' );
+		}
+	}
+
 
 	/**
 	 * Save the form schema when a post is saved.
@@ -462,7 +511,7 @@ class Rsvp_Form {
 		}
 
 		$post_id        = (int) $comment->comment_post_ID;
-		$form_schema_id = sanitize_text_field( wp_unslash( $this->get_input_value( 'gatherpress_form_schema_id' ) ) );
+		$form_schema_id = sanitize_text_field( wp_unslash( $this->get_post_field( 'gatherpress_form_schema_id' ) ) );
 
 		if ( empty( $form_schema_id ) ) {
 			return;
@@ -486,7 +535,7 @@ class Rsvp_Form {
 				continue;
 			}
 
-			$field_value = $this->get_input_value( $field_name );
+			$field_value = $this->get_post_field( $field_name );
 			if ( null === $field_value ) {
 				continue;
 			}
@@ -549,24 +598,33 @@ class Rsvp_Form {
 	}
 
 	/**
-	 * Get input value with test environment compatibility.
+	 * Get a field from GET data.
 	 *
-	 * This method handles both production and test environments by checking
-	 * for the namespaced filter_input function that exists in tests.
+	 * Extracted for testability - allows mocking of GET data.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $field_name The field name to get from input.
-	 * @param int    $input_type The input type (INPUT_GET, INPUT_POST, etc.). Defaults to INPUT_POST.
-	 * @return mixed The field value or null if not found.
+	 * @param string $field_name The field name to retrieve.
+	 *
+	 * @return string The sanitized field value or empty string if not set.
 	 */
-	private function get_input_value( string $field_name, int $input_type = INPUT_POST ) {
-		// In test environment, use the namespaced function if it exists.
-		if ( function_exists( 'GatherPress\Core\filter_input' ) ) {
-			return \GatherPress\Core\filter_input( $input_type, $field_name );
-		}
+	protected function get_get_field( string $field_name ): string {
+		$value = filter_input( INPUT_GET, $field_name );
+		return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
+	}
 
-		// In production environment, use the global function.
-		return \filter_input( $input_type, $field_name );
+	/**
+	 * Get a field from POST data.
+	 *
+	 * Extracted for testability - allows mocking of POST data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $field_name The field name to retrieve.
+	 *
+	 * @return string|null The field value or null if not set.
+	 */
+	protected function get_post_field( string $field_name ) {
+		return filter_input( INPUT_POST, $field_name );
 	}
 }

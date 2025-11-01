@@ -338,13 +338,23 @@ class Rsvp_Token {
 	 * @return self|null Instance if valid token found, null otherwise.
 	 */
 	public static function from_url_parameter(): ?self {
-		$token_param = sanitize_text_field(
-			wp_unslash(
-				filter_input( INPUT_GET, self::NAME )
-			)
-		);
+		$token_param = self::get_token_from_request();
 
 		return self::from_token_string( $token_param );
+	}
+
+	/**
+	 * Get token parameter from request.
+	 *
+	 * Extracted for testability - allows mocking of GET data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The sanitized token value or empty string if not set.
+	 */
+	protected static function get_token_from_request(): string {
+		$value = filter_input( INPUT_GET, self::NAME );
+		return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
 	}
 
 	/**

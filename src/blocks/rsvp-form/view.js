@@ -99,38 +99,21 @@ const { state } = store( 'gatherpress', {
 				const result = await makeRequest();
 
 				if ( result && result.success ) {
-					// Success - show message block and hide form elements.
-					const messageContainer = form.querySelector(
-						'.gatherpress--rsvp-form-message',
-					);
-					if ( messageContainer ) {
-						messageContainer.style.display = 'block';
-						messageContainer.setAttribute( 'aria-hidden', 'false' );
-						messageContainer.setAttribute( 'aria-live', 'polite' );
-						messageContainer.setAttribute( 'role', 'status' );
-					}
+					// Handle blocks with form visibility attributes.
+					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
+					blocksWithVisibility.forEach( ( block ) => {
+						const visibilityRule = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
 
-					// Hide all form field blocks.
-					const formFieldBlocks = form.querySelectorAll(
-						'.wp-block-gatherpress-form-field',
-					);
-					formFieldBlocks.forEach( ( block ) => {
-						block.style.display = 'none';
-					} );
-
-					// Hide buttons within .wp-block-buttons, except those with gatherpress-modal--trigger-close class.
-					// Look for all button containers first.
-					const buttonContainers = form.querySelectorAll( '.wp-block-button' );
-					buttonContainers.forEach( ( container ) => {
-						// Check if the container or its button has the modal close class.
-						const button = container.querySelector( 'button, .wp-block-button__link, input[type="submit"], input[type="button"], a' );
-						if ( button ) {
-							const hasCloseClass = container.classList.contains( 'gatherpress-modal--trigger-close' ) ||
-								button.classList.contains( 'gatherpress-modal--trigger-close' );
-
-							if ( ! hasCloseClass ) {
-								container.style.display = 'none';
-							}
+						if ( 'showOnSuccess' === visibilityRule ) {
+							// Show this block on success.
+							block.style.removeProperty( 'display' );
+							block.setAttribute( 'aria-hidden', 'false' );
+							block.setAttribute( 'aria-live', 'polite' );
+							block.setAttribute( 'role', 'status' );
+						} else if ( 'hideOnSuccess' === visibilityRule ) {
+							// Hide this block on success.
+							block.style.display = 'none';
+							block.setAttribute( 'aria-hidden', 'true' );
 						}
 					} );
 
@@ -175,6 +158,8 @@ const { state } = store( 'gatherpress', {
 	},
 	callbacks: {
 		initRsvpForm() {
+			const element = getElement();
+			const form = element.ref;
 			const context = getContext();
 			const postId = context?.postId || 0;
 
@@ -183,6 +168,40 @@ const { state } = store( 'gatherpress', {
 
 			// Reset submission state.
 			state.rsvpForm.isSubmitting = false;
+
+			// Check if this is a success page (form was just submitted).
+			const urlParams = new URLSearchParams( window.location.search );
+			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
+
+			// Set initial visibility for blocks based on their attributes and current state.
+			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
+			blocksWithVisibility.forEach( ( block ) => {
+				const visibilityRule = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+
+				if ( 'showOnSuccess' === visibilityRule ) {
+					if ( isSuccess ) {
+						// Show blocks that should show on success.
+						block.style.removeProperty( 'display' );
+						block.setAttribute( 'aria-hidden', 'false' );
+						block.setAttribute( 'aria-live', 'polite' );
+						block.setAttribute( 'role', 'status' );
+					} else {
+						// Hide blocks that should only show on success.
+						block.style.display = 'none';
+						block.setAttribute( 'aria-hidden', 'true' );
+					}
+				} else if ( 'hideOnSuccess' === visibilityRule ) {
+					if ( isSuccess ) {
+						// Hide blocks that should hide on success.
+						block.style.display = 'none';
+						block.setAttribute( 'aria-hidden', 'true' );
+					} else {
+						// Show blocks that should hide on success (visible by default).
+						block.style.removeProperty( 'display' );
+						block.setAttribute( 'aria-hidden', 'false' );
+					}
+				}
+			} );
 		},
 	},
 } );

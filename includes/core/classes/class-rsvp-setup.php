@@ -110,11 +110,7 @@ class Rsvp_Setup {
 	 */
 	public function initialize_rsvp_form_handling(): void {
 		// Only proceed if this is an RSVP form submission.
-		if (
-			! isset( $_SERVER['REQUEST_METHOD'] ) ||
-			'POST' !== $_SERVER['REQUEST_METHOD'] ||
-			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, Rsvp::COMMENT_TYPE ) ) )
-		) {
+		if ( ! $this->is_rsvp_form_submission() ) {
 			return;
 		}
 
@@ -124,9 +120,9 @@ class Rsvp_Setup {
 
 		add_filter(
 			'preprocess_comment',
-			static function ( array $comment_data ): array {
-				$author = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'author' ) ) );
-				$email  = sanitize_email( wp_unslash( filter_input( INPUT_POST, 'email' ) ) );
+			function ( array $comment_data ): array {
+				$author = $this->get_post_field( 'author' );
+				$email  = $this->get_post_email_field( 'email' );
 				$user   = get_user_by( 'ID', get_current_user_id() );
 
 				$comment_data['comment_content'] = '';
@@ -156,19 +152,19 @@ class Rsvp_Setup {
 					wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
 
 					// Handle email updates checkbox if present in form submission.
-					$email_updates = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
+					$email_updates = $this->get_post_field( 'gatherpress_event_updates_opt_in' );
 					if ( ! empty( $email_updates ) ) {
 						update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 1 );
 					}
 
 					// Handle guest count field if present in form submission.
-					$guest_count = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_guests' ) ) );
+					$guest_count = $this->get_post_field( 'gatherpress_rsvp_guests' );
 					if ( is_numeric( $guest_count ) ) {
 						update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', intval( $guest_count ) );
 					}
 
 					// Handle anonymous checkbox if present in form submission.
-					$anonymous = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_anonymous' ) ) );
+					$anonymous = $this->get_post_field( 'gatherpress_rsvp_anonymous' );
 					if ( ! empty( $anonymous ) ) {
 						update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', 1 );
 					}
@@ -194,12 +190,12 @@ class Rsvp_Setup {
 
 		add_filter(
 			'comment_post_redirect',
-			static function ( string $location, WP_Comment $comment ): string {
+			function ( string $location, WP_Comment $comment ): string {
 				if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
 					return $location;
 				}
 
-				$form_id = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_form_id' ) ) );
+				$form_id = $this->get_post_field( 'gatherpress_rsvp_form_id' );
 				$referer = wp_get_referer();
 
 				if ( ! $referer ) {
@@ -506,5 +502,70 @@ class Rsvp_Setup {
 	 */
 	public function set_submenu_file(): string {
 		return Rsvp::COMMENT_TYPE;
+	}
+
+	/**
+	 * Check if current request is an RSVP form submission.
+	 *
+	 * Extracted for testability - allows mocking of HTTP request data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if this is an RSVP form submission, false otherwise.
+	 */
+	protected function is_rsvp_form_submission(): bool {
+		return (
+			isset( $_SERVER['REQUEST_METHOD'] ) &&
+			'POST' === $_SERVER['REQUEST_METHOD'] &&
+			'1' === $this->get_post_field( Rsvp::COMMENT_TYPE )
+		);
+	}
+
+	/**
+	 * Get a field from POST data.
+	 *
+	 * Extracted for testability - allows mocking of POST data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $field_name The field name to retrieve.
+	 *
+	 * @return string The sanitized field value or empty string if not set.
+	 */
+	protected function get_post_field( string $field_name ): string {
+		$value = filter_input( INPUT_POST, $field_name );
+		return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
+	}
+
+	/**
+	 * Get a field from GET data.
+	 *
+	 * Extracted for testability - allows mocking of GET data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $field_name The field name to retrieve.
+	 *
+	 * @return string The sanitized field value or empty string if not set.
+	 */
+	protected function get_get_field( string $field_name ): string {
+		$value = filter_input( INPUT_GET, $field_name );
+		return $value ? sanitize_text_field( wp_unslash( $value ) ) : '';
+	}
+
+	/**
+	 * Get an email field from POST data.
+	 *
+	 * Extracted for testability - allows mocking of POST data with email sanitization.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $field_name The field name to retrieve.
+	 *
+	 * @return string The sanitized email value or empty string if not set.
+	 */
+	protected function get_post_email_field( string $field_name ): string {
+		$value = filter_input( INPUT_POST, $field_name );
+		return $value ? sanitize_email( wp_unslash( $value ) ) : '';
 	}
 }

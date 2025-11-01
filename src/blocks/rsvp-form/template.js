@@ -7,7 +7,7 @@ const TEMPLATE = [
 	[
 		'core/group',
 		{
-			className: 'gatherpress--rsvp-form-message',
+			formVisibility: 'showOnSuccess',
 			style: {
 				spacing: {
 					margin: {
@@ -54,6 +54,7 @@ const TEMPLATE = [
 			placeholder: __( "Name as you'd like it to appear", 'gatherpress' ),
 			required: true,
 			autocomplete: 'name',
+			formVisibility: 'hideOnSuccess',
 		},
 	],
 	[
@@ -65,6 +66,7 @@ const TEMPLATE = [
 			placeholder: __( 'your@email.com', 'gatherpress' ),
 			required: true,
 			autocomplete: 'email',
+			formVisibility: 'hideOnSuccess',
 		},
 	],
 	[
@@ -79,6 +81,7 @@ const TEMPLATE = [
 			fieldWidth: 10,
 			inputPadding: 5,
 			autocomplete: 'off',
+			formVisibility: 'hideOnSuccess',
 		},
 	],
 	[
@@ -88,6 +91,7 @@ const TEMPLATE = [
 			fieldName: 'gatherpress_rsvp_anonymous',
 			fieldValue: false,
 			label: __( 'List me as anonymous', 'gatherpress' ),
+			formVisibility: 'hideOnSuccess',
 		},
 	],
 	[
@@ -97,11 +101,14 @@ const TEMPLATE = [
 			fieldName: 'gatherpress_event_updates_opt_in',
 			fieldValue: false,
 			label: __( 'Email me updates about this event', 'gatherpress' ),
+			formVisibility: 'hideOnSuccess',
 		},
 	],
 	[
 		'core/buttons',
-		{},
+		{
+			formVisibility: 'hideOnSuccess',
+		},
 		[
 			[
 				'core/button',
