@@ -74,7 +74,10 @@ class Settings {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
-		AI::get_instance();
+		// Only instantiate AI settings if Abilities API is available.
+		if ( function_exists( 'wp_register_ability' ) ) {
+			AI::get_instance();
+		}
 		Credits::get_instance();
 		General::get_instance();
 		Leadership::get_instance();

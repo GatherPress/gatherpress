@@ -58,7 +58,10 @@ class Setup {
 	 * @throws Exception If there are issues instantiating singleton classes.
 	 */
 	protected function instantiate_classes(): void {
-		Abilities_Integration::get_instance();
+		// Only instantiate Abilities Integration if Abilities API is available.
+		if ( function_exists( 'wp_register_ability' ) ) {
+			Abilities_Integration::get_instance();
+		}
 		Admin_Page::get_instance();
 		Assets::get_instance();
 		Block::get_instance();
