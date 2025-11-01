@@ -896,18 +896,6 @@ class Test_Rsvp_Token extends Base {
 		$this->assertNull( $result );
 	}
 
-	/**
-	 * Coverage for from_url_parameter static factory method.
-	 *
-	 * @covers ::from_url_parameter
-	 * @covers ::from_token_string
-	 *
-	 * @return void
-	 */
-	public function test_from_url_parameter(): void {
-		// This is an integration test that requires actual HTTP request data.
-		$this->markTestSkipped( 'Integration test: requires actual HTTP request to test filter_input() for URL parameter handling' );
-	}
 
 	/**
 	 * Test that from_token_string returns null for zero comment ID.

@@ -180,27 +180,6 @@ class Test_Rsvp_Setup extends Base {
 		);
 	}
 
-	/**
-	 * Tests that comment_post_redirect filter redirects to referer for RSVP comments.
-	 *
-	 * Verifies that when an RSVP comment is submitted, the user is redirected
-	 * back to the page they came from with success parameters.
-	 *
-	 * @since 1.0.0
-	 * @covers ::initialize_rsvp_form_handling
-	 *
-	 * @return void
-	 */
-	public function test_comment_post_redirect_for_rsvp_comment(): void {
-		$post_id = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-
-		// This is an integration test that requires actual HTTP request data.
-		$this->markTestSkipped( 'Integration test: requires actual HTTP request to test filter_input() and wp_get_referer()' );
-	}
 
 	/**
 	 * Tests that comment_post_redirect filter ignores non-RSVP comments.
@@ -266,20 +245,6 @@ class Test_Rsvp_Setup extends Base {
 		$this->assertEquals( $original_location, $filtered_location );
 	}
 
-	/**
-	 * Tests comment_post_redirect filter without form ID.
-	 *
-	 * Verifies that the redirect works without a form ID, just adding the success parameter.
-	 *
-	 * @since 1.0.0
-	 * @covers ::initialize_rsvp_form_handling
-	 *
-	 * @return void
-	 */
-	public function test_comment_post_redirect_without_form_id(): void {
-		// This is an integration test that requires actual HTTP request data.
-		$this->markTestSkipped( 'Integration test: requires actual HTTP request to test filter_input() and wp_get_referer()' );
-	}
 
 	/**
 	 * Coverage for get_user_identifier method.
@@ -303,36 +268,9 @@ class Test_Rsvp_Setup extends Base {
 		$identifier = $instance->get_user_identifier();
 		$this->assertEquals( 0, $identifier );
 
-		// Token-based testing requires actual HTTP request data.
-		$this->markTestIncomplete( 'Token-based user identification requires actual HTTP GET data with filter_input()' );
-
 		// Clean up.
 		wp_set_current_user( 0 );
 	}
 
-	/**
-	 * Coverage for handle_rsvp_token method.
-	 *
-	 * @covers ::handle_rsvp_token
-	 *
-	 * @return void
-	 */
-	public function test_handle_rsvp_token(): void {
-		// This is an integration test that requires actual HTTP request data.
-		$this->markTestSkipped( 'Integration test: requires actual HTTP request to test filter_input() for token handling' );
-	}
 
-	/**
-	 * Coverage for get_user_identifier with logged-in user and valid token.
-	 *
-	 * Tests that token takes precedence over logged-in user when present.
-	 *
-	 * @covers ::get_user_identifier
-	 *
-	 * @return void
-	 */
-	public function test_get_user_identifier_with_user_and_token(): void {
-		// This is an integration test that requires actual HTTP request data.
-		$this->markTestSkipped( 'Integration test: requires actual HTTP request to test filter_input() for token handling' );
-	}
 }
