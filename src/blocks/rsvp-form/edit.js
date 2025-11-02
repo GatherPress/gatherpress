@@ -19,11 +19,32 @@ import TEMPLATE from './template';
 const Edit = ( { clientId } ) => {
 	const [ formState, setFormState ] = useState( 'default' );
 
-	// Get all inner blocks and their attributes to generate CSS.
-	const innerBlocks = useSelect( ( select ) => {
+	// Get all inner blocks and track their visibility attributes specifically.
+	const { innerBlocks, visibilityAttributes } = useSelect( ( select ) => {
 		const { getBlock } = select( 'core/block-editor' );
 		const block = getBlock( clientId );
-		return block ? block.innerBlocks : [];
+
+		if ( ! block ) {
+			return { innerBlocks: [], visibilityAttributes: {} };
+		}
+
+		// Recursively collect all visibility attributes to trigger updates.
+		const collectVisibilityAttributes = ( blocks, attrs = {} ) => {
+			blocks.forEach( ( childBlock ) => {
+				if ( childBlock.attributes?.gatherpressRsvpFormVisibility ) {
+					attrs[ childBlock.clientId ] = childBlock.attributes.gatherpressRsvpFormVisibility;
+				}
+				if ( childBlock.innerBlocks?.length ) {
+					collectVisibilityAttributes( childBlock.innerBlocks, attrs );
+				}
+			} );
+			return attrs;
+		};
+
+		return {
+			innerBlocks: block.innerBlocks,
+			visibilityAttributes: collectVisibilityAttributes( block.innerBlocks ),
+		};
 	}, [ clientId ] );
 
 	// Generate CSS for visibility based on form state.
@@ -70,7 +91,7 @@ const Edit = ( { clientId } ) => {
 				styleElement.parentNode.removeChild( styleElement );
 			}
 		};
-	}, [ formState, innerBlocks, clientId ] );
+	}, [ formState, innerBlocks, visibilityAttributes, clientId ] );
 
 	const blockProps = useBlockProps();
 
