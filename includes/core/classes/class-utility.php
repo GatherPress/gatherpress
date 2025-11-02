@@ -356,7 +356,7 @@ class Utility {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param int           $type      Input type (INPUT_GET, INPUT_POST, etc.).
+	 * @param int           $type      Input type (INPUT_GET, INPUT_POST, INPUT_COOKIE, INPUT_SERVER, INPUT_ENV).
 	 * @param string        $var_name  Variable name to retrieve.
 	 * @param callable|null $sanitizer Sanitization function to apply. Defaults to sanitize_text_field.
 	 *
@@ -392,8 +392,9 @@ class Utility {
 			 * Raw input value from HTTP request.
 			 *
 			 * @var string|false|null $value
+			 * @phpstan-var 0|1|2|4|5 $type
 			 */
-			$value = filter_input( $type, $var_name ); // @phpstan-ignore-line
+			$value = filter_input( $type, $var_name );
 		}
 
 		if ( null === $value || false === $value ) {
