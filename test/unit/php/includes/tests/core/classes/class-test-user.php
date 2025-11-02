@@ -55,13 +55,7 @@ class Test_User extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => 'gatherpress_date_format',
-				'priority' => 10,
-				'callback' => array( $instance, 'user_set_date_format' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'gatherpress_time_format',
+				'name'     => 'gatherpress_datetime_format',
 				'priority' => 10,
 				'callback' => array( $instance, 'user_set_time_format' ),
 			),

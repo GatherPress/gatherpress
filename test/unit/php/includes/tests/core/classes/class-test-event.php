@@ -72,11 +72,11 @@ class Test_Event extends Base {
 					'datetime_end'   => '2020-05-12 17:00:00',
 					'timezone'       => 'America/New_York',
 				),
-				'expects' => 'Monday, May 11, 2020, 3:00 PM to Tuesday, May 12, 2020, 5:00 PM EDT',
+				'expects' => 'Monday, May 11, 2020 3:00 PM to Tuesday, May 12, 2020 5:00 PM EDT',
 			),
 			array(
 				'params'  => array(),
-				'expects' => '—',
+				'expects' => '-',
 			),
 		);
 	}
