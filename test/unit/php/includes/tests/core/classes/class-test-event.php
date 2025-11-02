@@ -78,6 +78,40 @@ class Test_Event extends Base {
 				'params'  => array(),
 				'expects' => '-',
 			),
+			array(
+				'params'  => array(
+					'datetime_start' => '2020-05-11 15:00:00',
+					'datetime_end'   => '2020-05-11 17:00:00',
+					'timezone'       => 'America/New_York',
+					'type'           => 'both',
+					'start_format'   => 'F j, Y g:ia',
+					'end_format'     => 'F j, Y g:ia',
+					'separator'      => 'UNTIL',
+				),
+				'expects' => 'May 11, 2020 3:00pm UNTIL 5:00pm EDT',
+			),
+			array(
+				'params'  => array(
+					'datetime_start' => '2020-05-11 15:00:00',
+					'datetime_end'   => '2020-05-11 17:00:00',
+					'timezone'       => 'America/New_York',
+					'type'           => 'start',
+					'start_format'   => 'F j, Y',
+				),
+				'expects' => 'May 11, 2020 EDT',
+			),
+			array(
+				'params'  => array(
+					'datetime_start' => '2020-05-11 15:00:00',
+					'datetime_end'   => '2020-05-12 17:00:00',
+					'timezone'       => 'America/New_York',
+					'type'           => 'end',
+					'start_format'   => 'F j, Y g:ia',
+					'end_format'     => 'F j, Y g:ia',
+					'show_timezone'  => 'no',
+				),
+				'expects' => 'May 12, 2020 5:00pm',
+			),
 		);
 	}
 
@@ -90,6 +124,7 @@ class Test_Event extends Base {
 	 * @dataProvider data_get_display_datetime
 	 *
 	 * @covers ::get_display_datetime
+	 * @covers ::get_time_end
 	 * @covers ::save_datetimes
 	 * @covers ::is_same_date
 	 * @covers ::get_gmt_datetime
@@ -134,7 +169,13 @@ class Test_Event extends Base {
 
 		$this->assertSame(
 			$expects,
-			$event->get_display_datetime(),
+			$event->get_display_datetime(
+				$params['type'] ?? '',
+				$params['start_format'] ?? '',
+				$params['end_format'] ?? '',
+				$params['separator'] ?? '',
+				$params['show_timezone'] ?? ''
+			),
 			'Failed to assert display date times match.'
 		);
 	}
