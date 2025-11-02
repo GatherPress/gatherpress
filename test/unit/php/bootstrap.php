@@ -28,7 +28,4 @@ tests_add_filter(
 	}
 );
 
-// Load test helper functions.
-require_once __DIR__ . '/includes/functions.php';
-
 $gatherpress_bootstrap_instance->start();

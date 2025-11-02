@@ -146,7 +146,7 @@ class Rsvp_Form {
 	/**
 	 * Handle visibility of form elements based on success state and block attributes.
 	 *
-	 * Uses the formVisibility attribute to determine which blocks should
+	 * Uses the gatherpressRsvpFormVisibility attribute to determine which blocks should
 	 * be shown or hidden based on form success state. This provides flexible control
 	 * over any inner blocks within the RSVP form.
 	 *
@@ -172,10 +172,10 @@ class Rsvp_Form {
 	}
 
 	/**
-	 * Add form visibility data attribute to blocks with formVisibility attribute.
+	 * Add form visibility data attribute to blocks with gatherpressRsvpFormVisibility attribute.
 	 *
 	 * This filter runs for all blocks and adds the data-gatherpress-rsvp-form-visibility
-	 * attribute to any block that has a formVisibility attribute set.
+	 * attribute to any block that has a gatherpressRsvpFormVisibility attribute set.
 	 *
 	 * @since 1.0.0
 	 *
@@ -184,8 +184,8 @@ class Rsvp_Form {
 	 * @return string The potentially modified block content.
 	 */
 	public function add_form_visibility_data_attribute( string $block_content, array $block ): string {
-		// Check if this block has a formVisibility attribute.
-		$form_visibility = $block['attrs']['formVisibility'] ?? null;
+		// Check if this block has a gatherpressRsvpFormVisibility attribute.
+		$form_visibility = $block['attrs']['gatherpressRsvpFormVisibility'] ?? null;
 
 		if ( empty( $form_visibility ) || 'default' === $form_visibility ) {
 			return $block_content;
@@ -537,7 +537,7 @@ class Rsvp_Form {
 			}
 
 			$field_value = Utility::get_http_input( INPUT_POST, $field_name, null );
-			if ( '' === $field_value ) {
+			if ( empty( $field_value ) ) {
 				continue;
 			}
 

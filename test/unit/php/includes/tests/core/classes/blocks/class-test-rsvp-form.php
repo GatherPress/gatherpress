@@ -699,7 +699,7 @@ class Test_Rsvp_Form extends Base {
 	 * Tests the handle_form_visibility method with block attributes.
 	 *
 	 * Verifies that the method correctly shows/hides elements based on
-	 * the success state parameter and formVisibility attributes.
+	 * the success state parameter and gatherpressRsvpFormVisibility attributes.
 	 *
 	 * @since 1.0.0
 	 * @covers ::handle_form_visibility
@@ -739,7 +739,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests the handle_form_visibility method with no attributes.
 	 *
-	 * Verifies that forms without formVisibility attributes
+	 * Verifies that forms without gatherpressRsvpFormVisibility attributes
 	 * remain unchanged.
 	 *
 	 * @since 1.0.0
@@ -764,9 +764,9 @@ class Test_Rsvp_Form extends Base {
 
 
 	/**
-	 * Tests the add_form_visibility_data_attribute method with no formVisibility attribute.
+	 * Tests the add_form_visibility_data_attribute method with no gatherpressRsvpFormVisibility attribute.
 	 *
-	 * Verifies that blocks without formVisibility attribute are unchanged.
+	 * Verifies that blocks without gatherpressRsvpFormVisibility attribute are unchanged.
 	 *
 	 * @since 1.0.0
 	 * @covers ::add_form_visibility_data_attribute
@@ -785,9 +785,9 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests the add_form_visibility_data_attribute method with default formVisibility.
+	 * Tests the add_form_visibility_data_attribute method with default gatherpressRsvpFormVisibility.
 	 *
-	 * Verifies that blocks with formVisibility set to 'default' are unchanged.
+	 * Verifies that blocks with gatherpressRsvpFormVisibility set to 'default' are unchanged.
 	 *
 	 * @since 1.0.0
 	 * @covers ::add_form_visibility_data_attribute
@@ -799,7 +799,7 @@ class Test_Rsvp_Form extends Base {
 
 		$block_content = '<div class="wp-block-paragraph">Normal content</div>';
 		$block         = array(
-			'attrs' => array( 'formVisibility' => 'default' ),
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'default' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
@@ -810,7 +810,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests add_form_visibility_data_attribute with success state.
 	 *
-	 * Verifies that blocks with formVisibility attribute respond correctly to success state.
+	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to success state.
 	 *
 	 * @since 1.0.0
 	 * @covers ::add_form_visibility_data_attribute
@@ -836,7 +836,7 @@ class Test_Rsvp_Form extends Base {
 		// Test showOnSuccess block.
 		$block_content = '<div class="wp-block-group">Success message</div>';
 		$block         = array(
-			'attrs' => array( 'formVisibility' => 'showOnSuccess' ),
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
@@ -846,7 +846,7 @@ class Test_Rsvp_Form extends Base {
 		// Test hideOnSuccess block.
 		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
 		$block         = array(
-			'attrs' => array( 'formVisibility' => 'hideOnSuccess' ),
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
@@ -860,7 +860,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests add_form_visibility_data_attribute without success state.
 	 *
-	 * Verifies that blocks with formVisibility attribute respond correctly to default state.
+	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to default state.
 	 *
 	 * @since 1.0.0
 	 * @covers ::add_form_visibility_data_attribute
@@ -881,7 +881,7 @@ class Test_Rsvp_Form extends Base {
 		// Test showOnSuccess block (should be hidden).
 		$block_content = '<div class="wp-block-group">Success message</div>';
 		$block         = array(
-			'attrs' => array( 'formVisibility' => 'showOnSuccess' ),
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
@@ -891,7 +891,7 @@ class Test_Rsvp_Form extends Base {
 		// Test hideOnSuccess block (should be visible).
 		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
 		$block         = array(
-			'attrs' => array( 'formVisibility' => 'hideOnSuccess' ),
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );

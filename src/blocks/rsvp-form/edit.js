@@ -31,8 +31,8 @@ const Edit = ( { clientId } ) => {
 		const styles = [];
 		const collectVisibilityStyles = ( blocks, depth = 0 ) => {
 			blocks.forEach( ( block ) => {
-				if ( block.attributes?.formVisibility ) {
-					const visibility = block.attributes.formVisibility;
+				if ( block.attributes?.gatherpressRsvpFormVisibility ) {
+					const visibility = block.attributes.gatherpressRsvpFormVisibility;
 					const selector = `#block-${ block.clientId }`;
 
 					if ( 'showOnSuccess' === visibility ) {

@@ -16,14 +16,14 @@ import edit from './edit';
 import metadata from './block.json';
 
 /**
- * Add formVisibility attribute to all blocks.
+ * Add gatherpressRsvpFormVisibility attribute to all blocks.
  *
  * @param {Object} settings Block settings.
  * @return {Object} Modified settings.
  */
 function addFormVisibilityAttribute( settings ) {
 	// Only add to blocks that don't already have this attribute.
-	if ( settings?.attributes?.formVisibility ) {
+	if ( settings?.attributes?.gatherpressRsvpFormVisibility ) {
 		return settings;
 	}
 
@@ -31,7 +31,7 @@ function addFormVisibilityAttribute( settings ) {
 		...settings,
 		attributes: {
 			...( settings.attributes || {} ),
-			formVisibility: {
+			gatherpressRsvpFormVisibility: {
 				type: 'string',
 				enum: [ 'default', 'showOnSuccess', 'hideOnSuccess' ],
 				default: 'default',
@@ -49,7 +49,7 @@ function addFormVisibilityAttribute( settings ) {
 const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => {
 	return ( props ) => {
 		const { attributes, setAttributes, clientId } = props;
-		const { formVisibility } = attributes;
+		const { gatherpressRsvpFormVisibility } = attributes;
 
 		// Check if this block is inside an RSVP Form (but not the RSVP Form itself).
 		const { getBlockParents, getBlock } = wp.data.select( 'core/block-editor' );
@@ -102,7 +102,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 							'Control when this block is visible based on RSVP form state.',
 							'gatherpress'
 						) }
-						value={ formVisibility || 'default' }
+						value={ gatherpressRsvpFormVisibility || 'default' }
 						options={ [
 							{
 								label: __( 'Always visible (default)', 'gatherpress' ),
@@ -118,7 +118,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 							},
 						] }
 						onChange={ ( value ) =>
-							setAttributes( { formVisibility: value } )
+							setAttributes( { gatherpressRsvpFormVisibility: value } )
 						}
 					/>
 				</InspectorAdvancedControls>
@@ -136,12 +136,12 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
  * @return {Object} Modified props.
  */
 function addFormVisibilityDataAttribute( props, blockType, attributes ) {
-	const { formVisibility } = attributes;
+	const { gatherpressRsvpFormVisibility } = attributes;
 
-	if ( formVisibility && 'default' !== formVisibility ) {
+	if ( gatherpressRsvpFormVisibility && 'default' !== gatherpressRsvpFormVisibility ) {
 		return {
 			...props,
-			'data-gatherpress-rsvp-form-visibility': formVisibility,
+			'data-gatherpress-rsvp-form-visibility': gatherpressRsvpFormVisibility,
 		};
 	}
 

@@ -190,7 +190,7 @@ class Rsvp_Setup {
 
 		add_filter(
 			'comment_post_redirect',
-			function ( string $location, WP_Comment $comment ): string {
+			static function ( string $location, WP_Comment $comment ): string {
 				if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
 					return $location;
 				}
