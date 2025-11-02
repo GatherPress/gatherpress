@@ -88,21 +88,29 @@ const displayDateTime = (
 		parts.push( moment.tz( dateTimeStart, timezone ).format( startFormat ) );
 	}
 
+	// Determine end date/time.
+	if ( dateTimeEnd ) {
+		// Fall formatting back to default.
+		endFormat = endFormat ? endFormat : defaultFormat;
+
+		// Remove non-time characters from PHP date format if start and end
+		// are on the same day.
+		endFormat = sameStartEndDay ? removeNonTimePHPFormatChars( endFormat ) : endFormat;
+
+		// There may be no valid PHP date/time chars left after the removal.
+		if ( ! endFormat ) {
+			dateTimeEnd = false;
+		}
+	}
+
 	// Add separator if start + end date/time(s).
 	if ( dateTimeStart && dateTimeEnd ) {
 		parts.push( separator );
 	}
 
 	// Add end date/time.
-	if ( dateTimeEnd ) {
-		// Fall formatting back to default.
-		endFormat = endFormat ? endFormat : defaultFormat;
-
-		endFormat = convertPHPToMomentFormat(
-			// Remove non-time characters from PHP date format if start and end
-			// are on the same day.
-			sameStartEndDay ? removeNonTimePHPFormatChars( endFormat ) : endFormat
-		);
+	if ( endFormat ) {
+		endFormat = convertPHPToMomentFormat( endFormat );
 		parts.push( moment.tz( dateTimeEnd, timezone ).format( endFormat ) );
 	}
 
