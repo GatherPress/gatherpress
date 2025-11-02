@@ -101,7 +101,7 @@ class User {
 				if ( false === strpos( $time_format, 'a' ) ) {
 					$time_format = str_replace( 'i', 'ia', $time_format );
 				}
-			} else if ( static::HOUR_24 === $user_time_format ) {
+			} elseif ( static::HOUR_24 === $user_time_format ) {
 				$time_format = str_replace(
 					array(
 						'g',
