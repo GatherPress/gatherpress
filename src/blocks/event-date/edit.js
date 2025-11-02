@@ -222,7 +222,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				<ToolbarGroup>
 					<ToolbarButton
 						label={ __( 'Start date', 'gatherpress' ) }
-						text={ __( 'Start date', 'gatherpress' ) }
+						text={ __( 'Start', 'gatherpress' ) }
 						isPressed={ showStartTime }
 						onClick={ () => {
 							setAttributes( {
@@ -235,7 +235,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 					/>
 					<ToolbarButton
 						label={ __( 'End date', 'gatherpress' ) }
-						text={ __( 'End date', 'gatherpress' ) }
+						text={ __( 'End', 'gatherpress' ) }
 						isPressed={ showEndTime }
 						onClick={ () => {
 							setAttributes( {
