@@ -109,7 +109,7 @@ const displayDateTime = (
 	}
 
 	// Add end date/time.
-	if ( endFormat ) {
+	if ( dateTimeEnd && endFormat ) {
 		endFormat = convertPHPToMomentFormat( endFormat );
 		parts.push( moment.tz( dateTimeEnd, timezone ).format( endFormat ) );
 	}
@@ -229,7 +229,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				/>
 				<ToolbarGroup>
 					<ToolbarButton
-						label={ __( 'Start date', 'gatherpress' ) }
+						label={ __( 'Toggle start date', 'gatherpress' ) }
 						text={ __( 'Start', 'gatherpress' ) }
 						isPressed={ showStartTime }
 						onClick={ () => {
@@ -242,7 +242,7 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						} }
 					/>
 					<ToolbarButton
-						label={ __( 'End date', 'gatherpress' ) }
+						label={ __( 'Toggle end date', 'gatherpress' ) }
 						text={ __( 'End', 'gatherpress' ) }
 						isPressed={ showEndTime }
 						onClick={ () => {
