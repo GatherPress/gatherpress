@@ -196,7 +196,7 @@ class Rsvp_Setup {
 				}
 
 				$form_id = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_id' );
-				$referer = wp_get_referer();
+				$referer = Utility::get_wp_referer();
 
 				if ( ! $referer ) {
 					return $location;

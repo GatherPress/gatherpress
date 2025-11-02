@@ -472,4 +472,156 @@ class Test_Utility extends Base {
 			$message
 		);
 	}
+
+	/**
+	 * Tests get_http_input method with various sanitizers.
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_http_input
+	 *
+	 * @return void
+	 */
+	public function test_get_http_input_with_sanitizers(): void {
+		// Set up mock data using pre_ filter.
+		$mock_data = array(
+			INPUT_POST => array(
+				'text_field'     => '  Test Value  ',
+				'email_field'    => 'test@example.com',
+				'url_field'      => 'https://example.com',
+				'textarea_field' => "Line 1\nLine 2",
+				'key_field'      => 'some-key_123',
+				'title_field'    => 'Test Title 123',
+				'user_field'     => 'testuser',
+				'file_field'     => '/path/to/file.txt',
+				'html_field'     => '<script>alert("XSS")</script>Hello',
+			),
+			INPUT_GET  => array(
+				'page'    => '5',
+				'search'  => 'test query',
+				'success' => '1',
+			),
+		);
+
+		// Enable mocking via pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $mock_data ) {
+				return $mock_data[ $type ][ $var_name ] ?? null;
+			},
+			10,
+			3
+		);
+
+		// Test default sanitization (sanitize_text_field).
+		$result = Utility::get_http_input( INPUT_POST, 'text_field' );
+		$this->assertEquals( 'Test Value', $result, 'Default sanitization should trim whitespace.' );
+
+		// Test email sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'email_field', 'sanitize_email' );
+		$this->assertEquals( 'test@example.com', $result, 'Email should be sanitized.' );
+
+		// Test URL sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'url_field', 'sanitize_url' );
+		$this->assertEquals( 'https://example.com', $result, 'URL should be sanitized.' );
+
+		// Test textarea sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'textarea_field', 'sanitize_textarea_field' );
+		$this->assertEquals( "Line 1\nLine 2", $result, 'Textarea should preserve line breaks.' );
+
+		// Test key sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'key_field', 'sanitize_key' );
+		$this->assertEquals( 'some-key_123', $result, 'Key should be sanitized.' );
+
+		// Test title sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'title_field', 'sanitize_title' );
+		$this->assertEquals( 'test-title-123', $result, 'Title should be sanitized to slug format.' );
+
+		// Test user sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'user_field', 'sanitize_user' );
+		$this->assertEquals( 'testuser', $result, 'Username should be sanitized.' );
+
+		// Test file name sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'file_field', 'sanitize_file_name' );
+		$this->assertEquals( 'pathtofile.txt', $result, 'File name should be sanitized.' );
+
+		// Test HTML sanitization with wp_kses_post.
+		$result = Utility::get_http_input( INPUT_POST, 'html_field', 'wp_kses_post' );
+		$this->assertEquals( 'alert("XSS")Hello', $result, 'Script tags should be removed by wp_kses_post, content preserved.' );
+
+		// Test custom sanitization function.
+		$result = Utility::get_http_input(
+			INPUT_POST,
+			'text_field',
+			static function ( $value ) {
+				return strtoupper( trim( $value ) );
+			}
+		);
+		$this->assertEquals( 'TEST VALUE', $result, 'Custom sanitizer should be applied.' );
+
+		// Test GET parameters.
+		$result = Utility::get_http_input( INPUT_GET, 'page', 'absint' );
+		$this->assertEquals( '5', $result, 'Page number should be sanitized as absolute integer.' );
+
+		$result = Utility::get_http_input( INPUT_GET, 'search' );
+		$this->assertEquals( 'test query', $result, 'Search query should be sanitized with default sanitizer.' );
+
+		// Test non-existent field.
+		$result = Utility::get_http_input( INPUT_POST, 'nonexistent' );
+		$this->assertEquals( '', $result, 'Non-existent field should return empty string.' );
+
+		// Test with null sanitizer (should use default).
+		$result = Utility::get_http_input( INPUT_POST, 'text_field', null );
+		$this->assertEquals( 'Test Value', $result, 'Null sanitizer should use default sanitize_text_field.' );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests get_http_input method with special characters and encoding.
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_http_input
+	 *
+	 * @return void
+	 */
+	public function test_get_http_input_special_characters(): void {
+		// Set up mock data with special characters.
+		$mock_data = array(
+			INPUT_POST => array(
+				'quoted_field'  => 'Test with "quotes" and \'apostrophes\'',
+				'slashed_field' => 'Test with \\backslashes\\ and /forward/',
+				'unicode_field' => 'Test with émojis 🎉 and ünicode',
+				'entity_field'  => 'Test &amp; entities &lt;html&gt;',
+			),
+		);
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $mock_data ) {
+				return $mock_data[ $type ][ $var_name ] ?? null;
+			},
+			10,
+			3
+		);
+
+		// Test handling of quotes.
+		$result = Utility::get_http_input( INPUT_POST, 'quoted_field' );
+		$this->assertEquals( 'Test with "quotes" and \'apostrophes\'', $result );
+
+		// Test handling of slashes.
+		$result = Utility::get_http_input( INPUT_POST, 'slashed_field' );
+		$this->assertEquals( 'Test with backslashes and /forward/', $result );
+
+		// Test handling of unicode.
+		$result = Utility::get_http_input( INPUT_POST, 'unicode_field' );
+		$this->assertEquals( 'Test with émojis 🎉 and ünicode', $result );
+
+		// Test handling of HTML entities.
+		$result = Utility::get_http_input( INPUT_POST, 'entity_field' );
+		$this->assertEquals( 'Test &amp; entities &lt;html&gt;', $result );
+
+		// Clean up.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
 }

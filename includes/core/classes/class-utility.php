@@ -412,4 +412,34 @@ class Utility {
 
 		return (string) call_user_func( $sanitizer, $value );
 	}
+
+	/**
+	 * Wrapper for wp_get_referer() with testable fallback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string|false The referer URL on success, false on failure.
+	 */
+	public static function get_wp_referer() {
+		// Only allow pre-filtering during unit tests for security.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			/**
+			 * Short-circuit filter for wp_get_referer() during testing.
+			 *
+			 * Allows tests to completely bypass wp_get_referer() and provide
+			 * their own referer values. Only available during unit tests for security.
+			 * Return a non-null value to short-circuit.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param string|false|null $pre_value Pre-value to return instead of using wp_get_referer().
+			 */
+			$pre_value = apply_filters( 'gatherpress_pre_get_wp_referer', null );
+			if ( null !== $pre_value ) {
+				return $pre_value;
+			}
+		}
+
+		return wp_get_referer();
+	}
 }
