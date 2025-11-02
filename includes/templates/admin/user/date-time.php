@@ -34,7 +34,7 @@ if ( ! isset( $time_format, $timezone, $tz_choices ) ) {
 	</div>
 	<table class="form-table" aria-describedby="gatherpress-user-date-time">
 		<tr>
-			<th><label for="gatherpress_time_format"><?php esc_html_e( 'Time Format', 'gatherpress' ) ?></label></th>
+			<th><label for="gatherpress_time_format"><?php esc_html_e( 'Time Format', 'gatherpress' ); ?></label></th>
 			<td>
 				<div class="form-wrap">
 					<label for="gatherpress_time_format"><?php esc_html_e( 'Format of time for scheduled events.', 'gatherpress' ); ?></label>

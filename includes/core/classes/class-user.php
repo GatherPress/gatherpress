@@ -36,14 +36,14 @@ class User {
 
 	/**
 	 * 12-hour time preference value
-	 * 
+	 *
 	 * @var string
 	 */
 	const HOUR_12 = '12-hour';
 
 	/**
 	 * 24-hour time preference value
-	 * 
+	 *
 	 * @var string
 	 */
 	const HOUR_24 = '24-hour';
@@ -101,19 +101,18 @@ class User {
 				if ( false === strpos( $time_format, 'a' ) ) {
 					$time_format = str_replace( 'i', 'ia', $time_format );
 				}
-
 			} else if ( static::HOUR_24 === $user_time_format ) {
 				$time_format = str_replace(
-					[
+					array(
 						'g',
 						'a',
-						'A'
-					],
-					[
+						'A',
+					),
+					array(
 						'G',
 						'',
 						'',
-					],
+					),
 					$time_format
 				);
 			}
