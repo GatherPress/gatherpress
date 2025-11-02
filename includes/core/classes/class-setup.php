@@ -429,9 +429,9 @@ class Setup {
 		if (
 			defined( 'GATHERPRESS_ALPHA_VERSION' ) ||
 			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
-				false === strpos( get_current_screen()->id, 'plugins' ) &&
-				false === strpos( get_current_screen()->id, 'plugin-install' ) &&
-				false === strpos( get_current_screen()->id, 'gatherpress' )
+				! str_contains( get_current_screen()->id, 'plugins' ) &&
+				! str_contains( get_current_screen()->id, 'plugin-install' ) &&
+				! str_contains( get_current_screen()->id, 'gatherpress' )
 			)
 		) {
 			return;

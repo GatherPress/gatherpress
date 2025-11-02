@@ -162,7 +162,7 @@ class Test_Export extends Base {
 			'Failed to assert the method returns true, even with false given, because the "meta_key" matches.'
 		);
 		$this->assertFalse(
-			get_post_meta( $post_id, $meta_key ),
+			get_post_meta( $post_id, $meta_key, true ),
 			'Failed to assert the temporary marker was deleted from post meta.'
 		);
 	}

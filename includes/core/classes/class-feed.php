@@ -63,13 +63,17 @@ class Feed {
 
 		// Hook into the main query to handle events feeds.
 		add_action( 'pre_get_posts', array( $this, 'handle_events_feed_query' ) );
+
+		// Modify feed link for past events page.
+		add_filter( 'post_type_archive_feed_link', array( $this, 'modify_feed_link_for_past_events' ) );
 	}
 
 	/**
 	 * Handle events feed queries by setting the appropriate parameters.
 	 *
 	 * This method works in conjunction with Event_Query::prepare_event_query_before_execution()
-	 * to ensure feeds show upcoming events with proper sorting.
+	 * to ensure feeds show upcoming events with proper sorting. Supports ?type=past parameter
+	 * to show past events instead of upcoming events.
 	 *
 	 * @since 1.0.0
 	 *
@@ -94,7 +98,19 @@ class Feed {
 			if ( str_contains( $request_uri, '/' . $rewrite_slug . '/' . $GLOBALS['wp_rewrite']->feed_base ) ) {
 				// Set the post type and let Event_Query handle the rest.
 				$query->set( 'post_type', Event::POST_TYPE );
-				$query->set( 'gatherpress_events_query', 'upcoming' );
+
+				// Check for type parameter to determine if we want past or upcoming events.
+				$event_type = 'upcoming';
+				// Default to upcoming events.
+				if (
+					isset( $_GET['type'] ) && // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter, nonce not required.
+					'past' === sanitize_text_field( wp_unslash( $_GET['type'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public feed URL parameter, nonce not required.
+				) {
+					// Nonce verification not required for public feed URLs.
+					$event_type = 'past';
+				}
+
+				$query->set( 'gatherpress_event_query', $event_type );
 			}
 		}
 	}
@@ -301,5 +317,28 @@ class Feed {
 		 * @param string $content The event post content.
 		 */
 		return apply_filters( 'gatherpress_event_feed_content', $content );
+	}
+
+	/**
+	 * Modify feed link for past events page.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $feed_link The feed link URL.
+	 * @return string The modified feed link URL.
+	 */
+	public function modify_feed_link_for_past_events( $feed_link ): string {
+		global $wp_query;
+
+		// Check if we're on the past events page by looking for the gatherpress_event_query var.
+		if (
+			isset( $wp_query->query_vars['gatherpress_event_query'] ) &&
+			'past' === $wp_query->query_vars['gatherpress_event_query']
+		) {
+			// Add type=past parameter.
+			return add_query_arg( 'type', 'past', $feed_link );
+		}
+
+		return $feed_link;
 	}
 }

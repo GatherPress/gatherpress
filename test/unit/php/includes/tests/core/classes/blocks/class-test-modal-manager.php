@@ -61,7 +61,7 @@ class Test_Modal_Manager extends Base {
 	public function test_open_behavior_with_button(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="gatherpress--open-modal"><button>Button</button></div>';
+		$input_html  = '<div class="gatherpress-modal--trigger-open"><button>Button</button></div>';
 		$output_html = $instance->attach_modal_open_behavior( $input_html );
 
 		$this->assertStringContainsString(
@@ -102,7 +102,7 @@ class Test_Modal_Manager extends Base {
 	public function test_open_behavior_with_link(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="gatherpress--open-modal"><a href="#">Open Modal</a></div>';
+		$input_html  = '<div class="gatherpress-modal--trigger-open"><a href="#">Open Modal</a></div>';
 		$output_html = $instance->attach_modal_open_behavior( $input_html );
 
 		$this->assertStringContainsString(
@@ -166,9 +166,9 @@ class Test_Modal_Manager extends Base {
 
 		$input_html  = '
 			<div>
-				<div class="gatherpress--open-modal"><button>Button</button></div>
+				<div class="gatherpress-modal--trigger-open"><button>Button</button></div>
 				<p>Regular content</p>
-				<div class="gatherpress--open-modal"><button>Button</button></div>
+				<div class="gatherpress-modal--trigger-open"><button>Button</button></div>
 			</div>
 		';
 		$output_html = $instance->attach_modal_open_behavior( $input_html );
@@ -201,7 +201,7 @@ class Test_Modal_Manager extends Base {
 	public function test_open_behavior_with_mixed_classes(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="custom-class gatherpress--open-modal another-class"><button>Button</button></div>';
+		$input_html  = '<div class="custom-class gatherpress-modal--trigger-open another-class"><button>Button</button></div>';
 		$output_html = $instance->attach_modal_open_behavior( $input_html );
 
 		$this->assertStringContainsString(
@@ -232,7 +232,7 @@ class Test_Modal_Manager extends Base {
 	public function test_close_behavior_with_button(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="gatherpress--close-modal"><button type="button">Close Modal</button></div>';
+		$input_html  = '<div class="gatherpress-modal--trigger-close" data-close-modal="true"><button type="button">Close Modal</button></div>';
 		$output_html = $instance->attach_modal_close_behavior( $input_html );
 
 		$this->assertStringContainsString(
@@ -273,7 +273,7 @@ class Test_Modal_Manager extends Base {
 	public function test_close_behavior_with_link(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="gatherpress--close-modal"><a href="#">Close Modal</a></div>';
+		$input_html  = '<div class="gatherpress-modal--trigger-close" data-close-modal="true"><a href="#">Close Modal</a></div>';
 		$output_html = $instance->attach_modal_close_behavior( $input_html );
 
 		$this->assertStringContainsString(
@@ -337,9 +337,9 @@ class Test_Modal_Manager extends Base {
 
 		$input_html  = '
 			<div>
-				<div class="gatherpress--close-modal"><button type="button">Close First Modal</button></div>
+				<div class="gatherpress-modal--trigger-close" data-close-modal="true"><button type="button">Close First Modal</button></div>
 				<p>Regular content</p>
-				<div class="gatherpress--close-modal"><a href="#">Close Second Modal</a></div>
+				<div class="gatherpress-modal--trigger-close" data-close-modal="true"><a href="#">Close Second Modal</a></div>
 			</div>
 		';
 		$output_html = $instance->attach_modal_close_behavior( $input_html );
@@ -372,7 +372,7 @@ class Test_Modal_Manager extends Base {
 	public function test_close_behavior_with_mixed_classes(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="custom-class gatherpress--close-modal another-class"><button type="button">Close Modal</button></div>';
+		$input_html  = '<div class="custom-class gatherpress-modal--trigger-close another-class" data-close-modal="true"><button type="button">Close Modal</button></div>';
 		$output_html = $instance->attach_modal_close_behavior( $input_html );
 
 		$this->assertStringContainsString(

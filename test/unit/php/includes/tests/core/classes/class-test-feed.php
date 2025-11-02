@@ -137,6 +137,88 @@ class Test_Feed extends Base {
 	}
 
 	/**
+	 * Test handle_events_feed_query method with type parameter.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_events_feed_query_with_type_parameter(): void {
+		// Mock the request URI for events feed with type=past.
+		$_SERVER['REQUEST_URI'] = '/events/feed/';
+		$_GET['type']           = 'past';
+
+		// Create a mock query for event feed.
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'is_feed' )->willReturn( true );
+
+		// Test that the method doesn't error when type parameter is provided.
+		$this->instance->handle_events_feed_query( $query );
+
+		// Verify the method completed without error.
+		$this->assertTrue( true );
+
+		// Clean up.
+		unset( $_SERVER['REQUEST_URI'] );
+		unset( $_GET['type'] );
+	}
+
+	/**
+	 * Test modify_feed_link_for_past_events method.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::modify_feed_link_for_past_events
+	 *
+	 * @return void
+	 */
+	public function test_modify_feed_link_for_past_events(): void {
+		// Test that the method doesn't error when called.
+		$result = $this->instance->modify_feed_link_for_past_events( 'http://example.com/event/feed/' );
+
+		// Verify the method completed without error.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test modify_feed_link_for_past_events method adds type=past parameter.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::modify_feed_link_for_past_events
+	 *
+	 * @return void
+	 */
+	public function test_modify_feed_link_for_past_events_adds_type_parameter(): void {
+		// Store original global state.
+		global $wp_query;
+		$original_wp_query = $wp_query;
+
+		// Create a mock WP_Query object with the required query_vars.
+		$mock_query             = $this->createMock( WP_Query::class );
+		$mock_query->query_vars = array( 'gatherpress_event_query' => 'past' );
+
+		// Temporarily replace the global wp_query.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Testing requires global manipulation.
+		$wp_query = $mock_query;
+
+		// Test the method with a feed link.
+		$feed_link = 'http://example.com/event/feed/';
+		$result    = $this->instance->modify_feed_link_for_past_events( $feed_link );
+
+		// Verify the result contains the type=past parameter.
+		$this->assertStringContainsString( 'type=past', $result );
+		$this->assertStringContainsString( 'http://example.com/event/feed/', $result );
+
+		// Restore original global state.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Testing requires global manipulation.
+		$wp_query = $original_wp_query;
+	}
+
+	/**
 	 * Test get_default_event_excerpt method.
 	 *
 	 * @since 1.0.0

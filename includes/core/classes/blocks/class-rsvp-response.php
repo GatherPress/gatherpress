@@ -118,17 +118,17 @@ class Rsvp_Response {
 
 			do {
 				$class_attr = $tag->get_attribute( 'class' );
-				if ( $class_attr && str_contains( $class_attr, 'gatherpress--empty-rsvp' ) ) {
+				if ( $class_attr && str_contains( $class_attr, 'gatherpress-rsvp-response--no-responses' ) ) {
 					if ( ! empty( $counts['attending'] ) ) {
 						$updated_class  = str_replace(
 							'gatherpress--is-visible',
 							'',
 							$class_attr
 						);
-						$updated_class .= ' gatherpress--is-not-visible';
+						$updated_class .= ' gatherpress--is-hidden';
 					} else {
 						$updated_class  = str_replace(
-							'gatherpress--is-not-visible',
+							'gatherpress--is-hidden',
 							'',
 							$class_attr
 						);
@@ -178,8 +178,6 @@ class Rsvp_Response {
 			$tag->next_token();
 			$trigger_text = sprintf( $tag->get_modifiable_text(), intval( $counts['attending'] ?? 0 ) );
 
-			// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
-			// @phpstan-ignore-next-line
 			$tag->set_modifiable_text( $trigger_text );
 		}
 
@@ -200,7 +198,7 @@ class Rsvp_Response {
 
 				if (
 					$current_class &&
-					preg_match( '/gatherpress--rsvp-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
+					preg_match( '/gatherpress--is-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
 					$tag->next_tag( array( 'tag_name' => 'a' ) )
 				) {
 					// Change for needed format.
