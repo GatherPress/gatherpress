@@ -96,4 +96,33 @@ class Test_User extends Base {
 
 		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked.' );
 	}
+
+	/**
+	 * Coverage for user time formatting option
+	 *
+	 * @covers ::user_set_time_format
+	 *
+	 * @return void
+	 */
+	public function test_user_set_time_format(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		// Sanity check.
+		$this->assertEquals( 'g:ia', $instance->user_set_time_format( 'g:ia' ) );
+
+		// Override 24-hour site to 12 hour (adds am/pm).
+		update_user_meta( $user->ID, 'gatherpress_time_format', User::HOUR_12 );
+		$this->assertEquals(
+			'g:ia',
+			$instance->user_set_time_format( 'G:i' )
+		);
+
+		// Override 12-hour site to 24 hour (removes am/pm).
+		update_user_meta( $user->ID, 'gatherpress_time_format', User::HOUR_24 );
+		$this->assertEquals(
+			'G:i',
+			$instance->user_set_time_format( 'g:ia' )
+		);
+	}
 }
