@@ -95,6 +95,20 @@ class Test_User extends Base {
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
 
 		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked.' );
+
+		// Check 12 vs 24 hour preference.
+		update_user_meta( $user->ID, 'gatherpress_time_format', User::HOUR_12 );
+
+		$markup = Utility::buffer_and_return(
+			array( $instance, 'profile_fields' ),
+			array( $user )
+		);
+
+		$this->assertStringContainsString(
+			'<option value="12-hour"  selected=\'selected\'>',
+			$markup,
+			"12-hour option was expected to be selected but wasn't"
+		);
 	}
 
 	/**
