@@ -35,6 +35,11 @@
 
 - [`gatherpress_sub_pages`](gatherpress_sub_pages) Filters the list of GatherPress sub pages.
 
+## class-utility.php
+
+- [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input) Short-circuit filter for HTTP input retrieval during testing.
+- [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer) Short-circuit filter for wp_get_referer() during testing.
+
 ## index.php
 
 - [`gatherpress_settings_section`](gatherpress_settings_section)
