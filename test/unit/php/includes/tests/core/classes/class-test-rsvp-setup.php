@@ -11,8 +11,10 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Setup;
+use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Utility;
 use GatherPress\Tests\Base;
-use PMC\Unit_Test\Utility;
+use PMC\Unit_Test\Utility as PMC_Utility;
 
 /**
  * Class Test_Rsvp_Setup.
@@ -165,7 +167,7 @@ class Test_Rsvp_Setup extends Base {
 		$post_id  = $this->factory->post->create();
 
 		$this->assertEmpty(
-			Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $post_id ) ),
+			PMC_Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $post_id ) ),
 			'Failed to assert method returns empty string.'
 		);
 
@@ -174,89 +176,11 @@ class Test_Rsvp_Setup extends Base {
 		$event_id = $this->factory->post->create( array( 'post_type' => 'gatherpress_event' ) );
 
 		$this->assertEmpty(
-			Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $event_id ) ),
+			PMC_Utility::buffer_and_return( array( $instance, 'maybe_process_waiting_list' ), array( $event_id ) ),
 			'Failed to assert method returns empty string.'
 		);
 	}
 
-	/**
-	 * Tests that comment_post_redirect filter redirects to referer for RSVP comments.
-	 *
-	 * Verifies that when an RSVP comment is submitted, the user is redirected
-	 * back to the page they came from with success parameters.
-	 *
-	 * @since 1.0.0
-	 * @covers ::initialize_rsvp_form_handling
-	 *
-	 * @return void
-	 */
-	public function test_comment_post_redirect_for_rsvp_comment(): void {
-		$post_id = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-
-		// Mock filter_input for testing since it doesn't work with $_POST in test environment.
-		$this->set_fn_return(
-			'filter_input',
-			function ( $type, $var_name ) {
-				if ( INPUT_POST === $type && 'gatherpress_rsvp' === $var_name ) {
-					return '1';
-				}
-				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_id' === $var_name ) {
-					return 'gatherpress_rsvp_12345';
-				}
-				return null;
-			}
-		);
-
-		// Mock wp_get_referer to return our test referer URL.
-		$GLOBALS['gatherpress_test_wp_get_referer_mock'] = function () {
-			return 'https://example.com/events/test-event/';
-		};
-
-		// Simulate RSVP form submission environment.
-		$_SERVER['REQUEST_METHOD']         = 'POST';
-		$_SERVER['HTTP_REFERER']           = 'https://example.com/events/test-event/';
-		$_SERVER['REQUEST_URI']            = '/wp-comments-post.php'; // Different from referer.
-		$_POST['gatherpress_rsvp']         = '1';
-		$_POST['gatherpress_rsvp_form_id'] = 'gatherpress_rsvp_12345';
-		$_POST['_wp_http_referer']         = 'https://example.com/events/test-event/';
-
-		// Trigger the form handling setup.
-		$instance = Rsvp_Setup::get_instance();
-		$instance->initialize_rsvp_form_handling();
-
-		$comment_data = array(
-			'comment_post_ID'      => $post_id,
-			'comment_content'      => '',
-			'comment_type'         => Rsvp::COMMENT_TYPE,
-			'comment_author'       => 'Test User',
-			'comment_author_email' => 'test@example.com',
-		);
-
-		$comment_id = wp_insert_comment( $comment_data );
-		$comment    = get_comment( $comment_id );
-
-		$original_location = 'https://example.com/wp-comments-post.php';
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-		$filtered_location = apply_filters( 'comment_post_redirect', $original_location, $comment );
-
-		$this->assertStringContainsString( 'gatherpress_rsvp_success=true', $filtered_location );
-		$this->assertStringContainsString( '#gatherpress_rsvp_12345', $filtered_location );
-		$this->assertStringStartsWith( 'https://example.com/events/test-event/', $filtered_location );
-
-		// Clean up.
-		$this->unset_fn_return( 'filter_input' );
-		unset( $GLOBALS['gatherpress_test_wp_get_referer_mock'] );
-		unset( $_SERVER['REQUEST_METHOD'] );
-		unset( $_SERVER['HTTP_REFERER'] );
-		unset( $_SERVER['REQUEST_URI'] );
-		unset( $_POST['gatherpress_rsvp'] );
-		unset( $_POST['gatherpress_rsvp_form_id'] );
-		unset( $_POST['_wp_http_referer'] );
-	}
 
 	/**
 	 * Tests that comment_post_redirect filter ignores non-RSVP comments.
@@ -322,6 +246,112 @@ class Test_Rsvp_Setup extends Base {
 		$this->assertEquals( $original_location, $filtered_location );
 	}
 
+
+	/**
+	 * Coverage for get_user_identifier method.
+	 *
+	 * @covers ::get_user_identifier
+	 *
+	 * @return void
+	 */
+	public function test_get_user_identifier(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Test with logged-in user.
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( $user_id, $identifier );
+
+		// Test with no logged-in user and no token.
+		wp_set_current_user( 0 );
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( 0, $identifier );
+
+		// Clean up.
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Tests that comment_post_redirect filter redirects to referer for RSVP comments.
+	 *
+	 * Verifies that when an RSVP comment is submitted, the user is redirected
+	 * back to the page they came from with success parameters.
+	 *
+	 * @since 1.0.0
+	 * @covers ::initialize_rsvp_form_handling
+	 *
+	 * @return void
+	 */
+	public function test_comment_post_redirect_for_rsvp_comment(): void {
+		// Set up environment to simulate RSVP form submission.
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+
+		// Initialize the class and specifically set up the form handling.
+		$instance = Rsvp_Setup::get_instance();
+
+		$post_id = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+			'comment_content' => '',
+			'comment_type'    => Rsvp::COMMENT_TYPE,
+		);
+
+		$comment_id = wp_insert_comment( $comment_data );
+		$comment    = get_comment( $comment_id );
+
+		// Mock HTTP_REFERER and form schema ID.
+		$original_referer        = 'https://example.com/event-page/';
+		$_SERVER['HTTP_REFERER'] = $original_referer;
+
+		// Mock wp_get_referer() to return our test referer.
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () use ( $original_referer ) {
+				return $original_referer;
+			}
+		);
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( INPUT_POST === $type && Rsvp::COMMENT_TYPE === $var_name ) {
+					return '1'; // Required for is_rsvp_form_submission().
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		// Now initialize the form handling (after setting up mocks).
+		$instance->initialize_rsvp_form_handling();
+
+		$original_location = 'https://example.com/wp-comments-post.php';
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		$filtered_location = apply_filters( 'comment_post_redirect', $original_location, $comment );
+
+		// Should redirect to referer with success parameter and form fragment.
+		$expected_url = add_query_arg( 'gatherpress_rsvp_success', 'true', $original_referer ) . '#form_0';
+
+		$this->assertEquals( $expected_url, $filtered_location );
+
+		// Clean up.
+		unset( $_SERVER['HTTP_REFERER'] );
+		unset( $_SERVER['REQUEST_METHOD'] );
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		remove_all_filters( 'gatherpress_pre_get_wp_referer' );
+	}
+
 	/**
 	 * Tests comment_post_redirect filter without form ID.
 	 *
@@ -333,46 +363,17 @@ class Test_Rsvp_Setup extends Base {
 	 * @return void
 	 */
 	public function test_comment_post_redirect_without_form_id(): void {
+		// Set up environment to simulate RSVP form submission.
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+
+		// Initialize the class and specifically set up the form handling.
+		$instance = Rsvp_Setup::get_instance();
+
 		$post_id = $this->factory()->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
 		);
-
-		// Mock filter_input for testing since it doesn't work with $_POST in test environment.
-		$this->set_fn_return(
-			'filter_input',
-			function ( $type, $var_name ) {
-				if ( INPUT_POST === $type ) {
-					switch ( $var_name ) {
-						case 'gatherpress_rsvp':
-							return '1';
-						case 'gatherpress_rsvp_form_id':
-							return null; // No form ID for this test.
-						default:
-							return null;
-					}
-				}
-				return null;
-			}
-		);
-
-		// Mock wp_get_referer to return our test referer URL.
-		$GLOBALS['gatherpress_test_wp_get_referer_mock'] = function () {
-			return 'https://example.com/events/test-event/';
-		};
-
-		// Simulate RSVP form submission environment.
-		$_SERVER['REQUEST_METHOD'] = 'POST';
-		$_SERVER['HTTP_REFERER']   = 'https://example.com/events/test-event/';
-		$_SERVER['REQUEST_URI']    = '/wp-comments-post.php'; // Different from referer.
-		$_POST['gatherpress_rsvp'] = '1';
-		$_POST['_wp_http_referer'] = 'https://example.com/events/test-event/';
-		unset( $_POST['gatherpress_rsvp_form_id'] );
-
-		// Trigger the form handling setup.
-		$instance = Rsvp_Setup::get_instance();
-		$instance->initialize_rsvp_form_handling();
 
 		$comment_data = array(
 			'comment_post_ID' => $post_id,
@@ -383,21 +384,223 @@ class Test_Rsvp_Setup extends Base {
 		$comment_id = wp_insert_comment( $comment_data );
 		$comment    = get_comment( $comment_id );
 
+		// Mock HTTP_REFERER without form schema ID.
+		$original_referer        = 'https://example.com/event-page/';
+		$_SERVER['HTTP_REFERER'] = $original_referer;
+
+		// Mock wp_get_referer() to return our test referer.
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () use ( $original_referer ) {
+				return $original_referer;
+			}
+		);
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && Rsvp::COMMENT_TYPE === $var_name ) {
+					return '1'; // Required for is_rsvp_form_submission().
+				}
+				return null; // No form schema ID.
+			},
+			10,
+			3
+		);
+
+		// Now initialize the form handling (after setting up mocks).
+		$instance->initialize_rsvp_form_handling();
+
 		$original_location = 'https://example.com/wp-comments-post.php';
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$filtered_location = apply_filters( 'comment_post_redirect', $original_location, $comment );
 
-		$this->assertStringContainsString( 'gatherpress_rsvp_success=true', $filtered_location );
-		$this->assertStringNotContainsString( '#gatherpress_rsvp_', $filtered_location );
-		$this->assertStringStartsWith( 'https://example.com/events/test-event/', $filtered_location );
+		// Should redirect to referer with only success parameter.
+		$expected_url = add_query_arg( 'gatherpress_rsvp_success', 'true', $original_referer );
+		$this->assertEquals( $expected_url, $filtered_location );
 
 		// Clean up.
-		$this->unset_fn_return( 'filter_input' );
-		unset( $GLOBALS['gatherpress_test_wp_get_referer_mock'] );
-		unset( $_SERVER['REQUEST_METHOD'] );
 		unset( $_SERVER['HTTP_REFERER'] );
-		unset( $_SERVER['REQUEST_URI'] );
-		unset( $_POST['gatherpress_rsvp'] );
-		unset( $_POST['_wp_http_referer'] );
+		unset( $_SERVER['REQUEST_METHOD'] );
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+		remove_all_filters( 'gatherpress_pre_get_wp_referer' );
+	}
+
+	/**
+	 * Coverage for handle_rsvp_token method.
+	 *
+	 * @covers ::handle_rsvp_token
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_token(): void {
+		$user_id = $this->factory->user->create();
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create an RSVP comment that's initially unapproved.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'  => $post_id,
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'user_id'          => $user_id,
+				'comment_approved' => '0',
+			)
+		);
+
+		// Generate a token.
+		$token_instance = new Rsvp_Token( $comment_id );
+		$token_instance->generate_token();
+		$token        = $token_instance->get_token();
+		$token_string = sprintf( '%d_%s', $comment_id, $token );
+
+		// Mock the token parameter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $token_string ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return $token_string;
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Setup::get_instance();
+
+		// Verify comment is initially unapproved.
+		$comment = get_comment( $comment_id );
+		$this->assertEquals( '0', $comment->comment_approved );
+
+		// Call the method (it should process the token and approve the comment).
+		$instance->handle_rsvp_token();
+
+		// Verify that the comment was approved based on the token.
+		$comment = get_comment( $comment_id );
+		$this->assertEquals( '1', $comment->comment_approved );
+
+		// Clean up.
+		wp_set_current_user( 0 );
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Coverage for get_user_identifier with logged-in user and valid token.
+	 *
+	 * Tests that token takes precedence over logged-in user when present.
+	 *
+	 * @covers ::get_user_identifier
+	 *
+	 * @return void
+	 */
+	public function test_get_user_identifier_with_user_and_token(): void {
+		$logged_in_user_id = $this->factory->user->create();
+		$token_user_id     = $this->factory->user->create();
+		$post_id           = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set a logged-in user.
+		wp_set_current_user( $logged_in_user_id );
+
+		// Get the token user's email for comparison.
+		$token_user       = get_user_by( 'id', $token_user_id );
+		$token_user_email = $token_user->user_email;
+
+		// Create an RSVP comment for a different user.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'user_id'              => $token_user_id,
+				'comment_author_email' => $token_user_email,
+			)
+		);
+
+		// Generate a token.
+		$token_instance = new Rsvp_Token( $comment_id );
+		$token_instance->generate_token();
+		$token        = $token_instance->get_token();
+		$token_string = sprintf( '%d_%s', $comment_id, $token );
+
+		// Mock the token parameter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) use ( $token_string ) {
+				if ( INPUT_GET === $type && Rsvp_Token::NAME === $var_name ) {
+					return $token_string;
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Setup::get_instance();
+
+		// The identifier should return the token user's email, not the logged-in user ID.
+		$identifier = $instance->get_user_identifier();
+		$this->assertEquals( $token_user_email, $identifier );
+
+		// Clean up.
+		wp_set_current_user( 0 );
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests Utility::get_http_input method with mocked data.
+	 *
+	 * Verifies that the wrapper correctly retrieves and sanitizes HTTP input.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function test_http_input_wrapper(): void {
+		// Set up mock data using pre_ filter.
+		$mock_data = array(
+			INPUT_POST => array(
+				'test_field'  => 'test_value',
+				'email_field' => 'test@example.com',
+			),
+			INPUT_GET  => array(
+				'success' => 'true',
+			),
+		);
+
+		// Enable mocking via pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) use ( $mock_data ) {
+				return $mock_data[ $type ][ $var_name ] ?? null;
+			},
+			10,
+			3
+		);
+
+		// Test text sanitization (default).
+		$result = Utility::get_http_input( INPUT_POST, 'test_field' );
+		$this->assertEquals( 'test_value', $result );
+
+		// Test email sanitization.
+		$result = Utility::get_http_input( INPUT_POST, 'email_field', 'sanitize_email' );
+		$this->assertEquals( 'test@example.com', $result );
+
+		// Test GET parameter.
+		$result = Utility::get_http_input( INPUT_GET, 'success' );
+		$this->assertEquals( 'true', $result );
+
+		// Test non-existent field.
+		$result = Utility::get_http_input( INPUT_POST, 'nonexistent' );
+		$this->assertEquals( '', $result );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 }

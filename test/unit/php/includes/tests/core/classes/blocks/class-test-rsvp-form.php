@@ -12,8 +12,7 @@ use GatherPress\Core\Blocks\Rsvp_Form;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
-use ReflectionClass;
-use ReflectionException;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Rsvp_Form.
@@ -44,6 +43,12 @@ class Test_Rsvp_Form extends Base {
 				'callback' => array( $instance, 'transform_block_content' ),
 			),
 			array(
+				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'add_form_visibility_data_attribute' ),
+			),
+			array(
 				'type'     => 'action',
 				'name'     => 'save_post',
 				'priority' => 10,
@@ -63,16 +68,12 @@ class Test_Rsvp_Form extends Base {
 	 * @covers ::generate_form_id
 	 *
 	 * @return void
-	 * @throws ReflectionException When method reflection fails.
 	 */
 	public function test_generate_form_id(): void {
-		$instance   = Rsvp_Form::get_instance();
-		$reflection = new ReflectionClass( $instance );
-		$method     = $reflection->getMethod( 'generate_form_id' );
-		$method->setAccessible( true );
+		$instance = Rsvp_Form::get_instance();
 
-		$form_id_1 = $method->invoke( $instance );
-		$form_id_2 = $method->invoke( $instance );
+		$form_id_1 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
+		$form_id_2 = Utility::invoke_hidden_method( $instance, 'generate_form_id' );
 
 		$this->assertIsString( $form_id_1 );
 		$this->assertIsString( $form_id_2 );
@@ -194,14 +195,14 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests that transform_block_content hides success message blocks.
+	 * Tests that transform_block_content hides success message blocks by default.
 	 *
 	 * Verifies that elements with gatherpress--rsvp-form-message class
-	 * are hidden by adding display:none style.
+	 * are hidden by adding display:none style when no success parameter is present.
 	 *
 	 * @since 1.0.0
 	 * @covers ::transform_block_content
-	 * @covers ::hide_success_message_blocks
+	 * @covers ::handle_form_visibility
 	 *
 	 * @return void
 	 */
@@ -214,8 +215,8 @@ class Test_Rsvp_Form extends Base {
 		);
 
 		$block_content = '<div class="wp-block-gatherpress-rsvp-form">
-			<div class="gatherpress--rsvp-form-message">Success message</div>
-			<div class="form-field">Form field</div>
+			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="showOnSuccess">Success message</div>
+			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Form field</div>
 		</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-form',
@@ -226,8 +227,9 @@ class Test_Rsvp_Form extends Base {
 
 		$transformed_content = $instance->transform_block_content( $block_content, $block );
 
-		$this->assertStringContainsString( 'gatherpress--rsvp-form-message', $transformed_content );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $transformed_content );
 		$this->assertStringContainsString( 'display: none;', $transformed_content );
+		$this->assertStringContainsString( 'aria-hidden="true"', $transformed_content );
 	}
 
 	/**
@@ -694,185 +696,209 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests the process_custom_fields_for_form method.
+	 * Tests the handle_form_visibility method with block attributes.
 	 *
-	 * Verifies that custom fields are properly processed and saved
-	 * for form submissions.
+	 * Verifies that the method correctly shows/hides elements based on
+	 * the success state parameter and gatherpressRsvpFormVisibility attributes.
 	 *
 	 * @since 1.0.0
-	 * @covers ::process_custom_fields_for_form
+	 * @covers ::handle_form_visibility
 	 *
 	 * @return void
 	 */
-	public function test_process_custom_fields_for_form(): void {
+	public function test_handle_form_visibility(): void {
 		$instance = Rsvp_Form::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
 
-		// Create a comment.
-		$comment_id = $this->factory()->comment->create(
-			array(
-				'comment_post_ID' => $post_id,
-				'comment_type'    => Rsvp::COMMENT_TYPE,
-			)
-		);
+		$html = '<form>
+			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="showOnSuccess">Success message</div>
+			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Name field</div>
+			<div class="wp-block-buttons" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Submit Button</div>
+		</form>';
 
-		// Set up form schema.
-		$schemas = array(
-			'form_0' => array(
-				'fields' => array(
-					'custom_text'  => array(
-						'name'     => 'custom_text',
-						'type'     => 'text',
-						'required' => true,
-					),
-					'custom_email' => array(
-						'name'     => 'custom_email',
-						'type'     => 'email',
-						'required' => false,
-					),
-				),
-				'hash'   => 'test_hash',
-			),
-		);
-		update_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+		// Test with success = false (default state).
+		$result_false = Utility::invoke_hidden_method( $instance, 'handle_form_visibility', array( $html, false ) );
+		$this->assertStringContainsString( 'wp-block-group', $result_false );
+		$this->assertStringContainsString( 'display: none;', $result_false );
+		$this->assertStringContainsString( 'aria-hidden="true"', $result_false );
 
-		// Mock filter_input for testing since it doesn't work with $_POST in test environment.
-		$this->set_fn_return(
-			'filter_input',
-			function ( $type, $var_name ) {
-				$post_data = array(
-					'gatherpress_form_schema_id' => 'form_0',
-					'custom_text'                => 'Test text value',
-					'custom_email'               => 'test@example.com',
-					'author'                     => 'Test Author',
-				);
-				if ( INPUT_POST === $type && isset( $post_data[ $var_name ] ) ) {
-					return $post_data[ $var_name ];
-				}
-				return null;
-			}
-		);
+		// Test with success = true (successful submission).
+		$result_true = Utility::invoke_hidden_method( $instance, 'handle_form_visibility', array( $html, true ) );
+		$this->assertStringContainsString( 'wp-block-group', $result_true );
 
-		$instance->process_custom_fields_for_form( $comment_id );
+		// Check that the showOnSuccess group block does NOT have display: none.
+		preg_match( '/<div[^>]*class="wp-block-group"[^>]*>/', $result_true, $group_matches );
+		if ( ! empty( $group_matches[0] ) ) {
+			$this->assertStringNotContainsString( 'display: none;', $group_matches[0], 'Success message should be visible' );
+		}
 
-		// Check that custom fields were saved.
-		$text_meta   = get_comment_meta( $comment_id, 'gatherpress_custom_custom_text', true );
-		$email_meta  = get_comment_meta( $comment_id, 'gatherpress_custom_custom_email', true );
-		$author_meta = get_comment_meta( $comment_id, 'gatherpress_custom_author', true );
-
-		$this->assertEquals( 'Test text value', $text_meta );
-		$this->assertEquals( 'test@example.com', $email_meta );
-		$this->assertEmpty( $author_meta ); // Built-in field should not be saved as custom.
-
-		// Clean up mocked function.
-		$this->unset_fn_return( 'filter_input' );
+		// Check that hideOnSuccess blocks DO have display: none.
+		$this->assertStringContainsString( 'style="display: none;" class="wp-block-gatherpress-form-field"', $result_true );
+		$this->assertStringContainsString( 'aria-hidden="false"', $result_true );
 	}
 
 	/**
-	 * Tests process_custom_fields_for_form with invalid schema.
+	 * Tests the handle_form_visibility method with no attributes.
 	 *
-	 * Verifies that the method handles cases where no valid schema
-	 * is found for the form.
+	 * Verifies that forms without gatherpressRsvpFormVisibility attributes
+	 * remain unchanged.
 	 *
 	 * @since 1.0.0
-	 * @covers ::process_custom_fields_for_form
+	 * @covers ::handle_form_visibility
 	 *
 	 * @return void
 	 */
-	public function test_process_custom_fields_for_form_invalid_schema(): void {
+	public function test_handle_form_visibility_no_attributes(): void {
 		$instance = Rsvp_Form::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
 
-		// Create a comment.
-		$comment_id = $this->factory()->comment->create(
-			array(
-				'comment_post_ID' => $post_id,
-				'comment_type'    => Rsvp::COMMENT_TYPE,
-			)
-		);
+		$html = '<form>
+			<div class="wp-block-group">Success message</div>
+			<div class="wp-block-gatherpress-form-field">Name field</div>
+			<div class="wp-block-button">Submit Button</div>
+		</form>';
 
-		// Mock filter_input for testing since it doesn't work with $_POST in test environment.
-		$this->set_fn_return(
-			'filter_input',
-			function ( $type, $var_name ) {
-				$post_data = array(
-					'gatherpress_form_schema_id' => 'invalid_form_id',
-					'custom_field'               => 'Test value',
-				);
-				if ( INPUT_POST === $type && isset( $post_data[ $var_name ] ) ) {
-					return $post_data[ $var_name ];
-				}
-				return null;
-			}
-		);
+		// Test that HTML is returned unchanged when no visibility data attributes.
+		$result = Utility::invoke_hidden_method( $instance, 'handle_form_visibility', array( $html, true ) );
+		$this->assertEquals( $html, $result );
+	}
 
-		$instance->process_custom_fields_for_form( $comment_id );
 
-		// Check that no custom fields were saved.
-		$custom_meta = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true );
-		$this->assertEmpty( $custom_meta );
 
-		// Clean up mocked function.
-		$this->unset_fn_return( 'filter_input' );
+	/**
+	 * Tests the add_form_visibility_data_attribute method with no gatherpressRsvpFormVisibility attribute.
+	 *
+	 * Verifies that blocks without gatherpressRsvpFormVisibility attribute are unchanged.
+	 *
+	 * @since 1.0.0
+	 * @covers ::add_form_visibility_data_attribute
+	 *
+	 * @return void
+	 */
+	public function test_add_form_visibility_data_attribute_no_attribute(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$block_content = '<div class="wp-block-paragraph">Normal content</div>';
+		$block         = array( 'attrs' => array() );
+
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertEquals( $block_content, $result );
+		$this->assertStringNotContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
 	}
 
 	/**
-	 * Tests process_custom_fields_for_form with non-RSVP comment.
+	 * Tests the add_form_visibility_data_attribute method with default gatherpressRsvpFormVisibility.
 	 *
-	 * Verifies that the method properly handles non-RSVP comments
-	 * and exits early.
+	 * Verifies that blocks with gatherpressRsvpFormVisibility set to 'default' are unchanged.
 	 *
 	 * @since 1.0.0
-	 * @covers ::process_custom_fields_for_form
+	 * @covers ::add_form_visibility_data_attribute
 	 *
 	 * @return void
 	 */
-	public function test_process_custom_fields_for_form_non_rsvp_comment(): void {
+	public function test_add_form_visibility_data_attribute_default_value(): void {
 		$instance = Rsvp_Form::get_instance();
-		$post_id  = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
+
+		$block_content = '<div class="wp-block-paragraph">Normal content</div>';
+		$block         = array(
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'default' ),
 		);
 
-		// Create a regular comment (not RSVP).
-		$comment_id = $this->factory()->comment->create(
-			array(
-				'comment_post_ID' => $post_id,
-				'comment_type'    => '',
-			)
-		);
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertEquals( $block_content, $result );
+		$this->assertStringNotContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
+	}
 
-		// Mock filter_input for testing since it doesn't work with $_POST in test environment.
-		$this->set_fn_return(
-			'filter_input',
-			function ( $type, $var_name ) {
-				$post_data = array(
-					'gatherpress_form_schema_id' => 'form_0',
-					'custom_field'               => 'Test value',
-				);
-				if ( INPUT_POST === $type && isset( $post_data[ $var_name ] ) ) {
-					return $post_data[ $var_name ];
+	/**
+	 * Tests add_form_visibility_data_attribute with success state.
+	 *
+	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to success state.
+	 *
+	 * @since 1.0.0
+	 * @covers ::add_form_visibility_data_attribute
+	 *
+	 * @return void
+	 */
+	public function test_add_form_visibility_data_attribute_with_success(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Mock GET parameter for success state using pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_GET === $type && 'gatherpress_rsvp_success' === $var_name ) {
+					return 'true';
 				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		// Test showOnSuccess block.
+		$block_content = '<div class="wp-block-group">Success message</div>';
+		$block         = array(
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
+		);
+
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $result );
+		$this->assertStringNotContainsString( 'display: none;', $result );
+
+		// Test hideOnSuccess block.
+		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
+		$block         = array(
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
+		);
+
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="hideOnSuccess"', $result );
+		$this->assertStringContainsString( 'display: none;', $result );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests add_form_visibility_data_attribute without success state.
+	 *
+	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to default state.
+	 *
+	 * @since 1.0.0
+	 * @covers ::add_form_visibility_data_attribute
+	 *
+	 * @return void
+	 */
+	public function test_add_form_visibility_data_attribute_without_success(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Mock no success parameter using pre_ filter.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function () {
 				return null;
 			}
 		);
 
-		$instance->process_custom_fields_for_form( $comment_id );
+		// Test showOnSuccess block (should be hidden).
+		$block_content = '<div class="wp-block-group">Success message</div>';
+		$block         = array(
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
+		);
 
-		// Check that no custom fields were saved.
-		$custom_meta = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true );
-		$this->assertEmpty( $custom_meta );
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $result );
+		$this->assertStringContainsString( 'display: none;', $result );
 
-		// Clean up mocked function.
-		$this->unset_fn_return( 'filter_input' );
+		// Test hideOnSuccess block (should be visible).
+		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
+		$block         = array(
+			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
+		);
+
+		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="hideOnSuccess"', $result );
+		$this->assertStringNotContainsString( 'display: none;', $result );
+
+		// Clean up filters.
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 }

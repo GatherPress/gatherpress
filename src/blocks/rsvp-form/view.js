@@ -38,11 +38,31 @@ const { state } = store( 'gatherpress', {
 				comment_post_ID: postId,
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
-				gatherpress_event_email_updates:
-					'on' === formData.get( 'gatherpress_event_email_updates' )
-						? true
-						: false,
+				gatherpress_rsvp_guests: formData.get( 'gatherpress_rsvp_guests' ) || 0,
 			};
+
+			// Handle checkbox fields - they only appear in FormData when checked.
+			// When checked, they typically have value 'on' or a custom value.
+			// When unchecked, formData.get() returns null.
+			data.gatherpress_rsvp_anonymous = formData.get( 'gatherpress_rsvp_anonymous' ) ? '1' : '0';
+			data.gatherpress_event_updates_opt_in = formData.get( 'gatherpress_event_updates_opt_in' ) ? '1' : '0';
+
+			// Add any custom fields and schema ID from the form.
+			for ( const [ key, value ] of formData.entries() ) {
+				// Skip fields we've already explicitly handled above.
+				const skipFields = [
+					'comment_post_ID',
+					'author',
+					'email',
+					'gatherpress_rsvp_guests',
+					'gatherpress_rsvp_anonymous',
+					'gatherpress_event_updates_opt_in',
+				];
+
+				if ( ! skipFields.includes( key ) ) {
+					data[ key ] = value;
+				}
+			}
 
 			const makeRequest = async ( isRetry = false ) => {
 				const nonce = await getNonce();
@@ -79,23 +99,22 @@ const { state } = store( 'gatherpress', {
 				const result = await makeRequest();
 
 				if ( result && result.success ) {
-					// Success - show message block and disable form.
-					const messageContainer = form.querySelector(
-						'.gatherpress--rsvp-form-message',
-					);
-					if ( messageContainer ) {
-						messageContainer.style.display = 'block';
-						messageContainer.setAttribute( 'aria-hidden', 'false' );
-						messageContainer.setAttribute( 'aria-live', 'polite' );
-						messageContainer.setAttribute( 'role', 'status' );
-					}
+					// Handle blocks with form visibility attributes.
+					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
+					blocksWithVisibility.forEach( ( block ) => {
+						const visibilityRule = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
 
-					// Disable all form inputs.
-					const inputs = form.querySelectorAll(
-						'input, textarea, button, select',
-					);
-					inputs.forEach( ( input ) => {
-						input.disabled = true;
+						if ( 'showOnSuccess' === visibilityRule ) {
+							// Show this block on success.
+							block.style.removeProperty( 'display' );
+							block.setAttribute( 'aria-hidden', 'false' );
+							block.setAttribute( 'aria-live', 'polite' );
+							block.setAttribute( 'role', 'status' );
+						} else if ( 'hideOnSuccess' === visibilityRule ) {
+							// Hide this block on success.
+							block.style.display = 'none';
+							block.setAttribute( 'aria-hidden', 'true' );
+						}
 					} );
 
 					// Update the responses data if available.
@@ -139,6 +158,8 @@ const { state } = store( 'gatherpress', {
 	},
 	callbacks: {
 		initRsvpForm() {
+			const element = getElement();
+			const form = element.ref;
 			const context = getContext();
 			const postId = context?.postId || 0;
 
@@ -147,6 +168,40 @@ const { state } = store( 'gatherpress', {
 
 			// Reset submission state.
 			state.rsvpForm.isSubmitting = false;
+
+			// Check if this is a success page (form was just submitted).
+			const urlParams = new URLSearchParams( window.location.search );
+			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
+
+			// Set initial visibility for blocks based on their attributes and current state.
+			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
+			blocksWithVisibility.forEach( ( block ) => {
+				const visibilityRule = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+
+				if ( 'showOnSuccess' === visibilityRule ) {
+					if ( isSuccess ) {
+						// Show blocks that should show on success.
+						block.style.removeProperty( 'display' );
+						block.setAttribute( 'aria-hidden', 'false' );
+						block.setAttribute( 'aria-live', 'polite' );
+						block.setAttribute( 'role', 'status' );
+					} else {
+						// Hide blocks that should only show on success.
+						block.style.display = 'none';
+						block.setAttribute( 'aria-hidden', 'true' );
+					}
+				} else if ( 'hideOnSuccess' === visibilityRule ) {
+					if ( isSuccess ) {
+						// Hide blocks that should hide on success.
+						block.style.display = 'none';
+						block.setAttribute( 'aria-hidden', 'true' );
+					} else {
+						// Show blocks that should hide on success (visible by default).
+						block.style.removeProperty( 'display' );
+						block.setAttribute( 'aria-hidden', 'false' );
+					}
+				}
+			} );
 		},
 	},
 } );
