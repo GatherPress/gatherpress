@@ -34,7 +34,6 @@
 			"default": ""
 		},
 		"separator": {
-			"//": "@todo Add this to plugin settings",
 			"type": "string",
 			"default": "to"
 		},
