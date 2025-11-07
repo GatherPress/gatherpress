@@ -20,6 +20,26 @@
 		},
 		"textAlign": {
 			"type": "string"
+		},
+		"displayType": {
+			"type": "string",
+			"default": "both"
+		},
+		"startDateFormat": {
+			"type": "string",
+			"default": ""
+		},
+		"endDateFormat": {
+			"type": "string",
+			"default": ""
+		},
+		"separator": {
+			"type": "string",
+			"default": "to"
+		},
+		"showTimezone": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {

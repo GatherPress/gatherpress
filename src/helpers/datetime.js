@@ -550,3 +550,62 @@ export function dateTimePreview() {
 		);
 	}
 }
+
+/**
+ * Non-time PHP Date format characters
+ *
+ * @since 1.0.0
+ *
+ * @see https://www.php.net/manual/en/datetime.format.php
+ *
+ * @type {Array}
+ */
+export const phpNonTimeFormatChars = [
+	'd',
+	'D',
+	'j',
+	'l',
+	'N',
+	'S',
+	'w',
+	'z',
+	'W',
+	'F',
+	'm',
+	'M',
+	'n',
+	't',
+	'L',
+	'o',
+	'X',
+	'x',
+	'Y',
+	'y',
+	'e',
+	'I',
+	'O',
+	'P',
+	'p',
+	'T',
+	'Z',
+	'c',
+	'r',
+	'U',
+	',',
+];
+
+/**
+ * Remove non-time characters from PHP format string
+ *
+ * @since 1.0.0
+ *
+ * @param {string} format - The PHP datetime format.
+ * @return {string} The PHP time-only format.
+ */
+export function removeNonTimePHPFormatChars( format ) {
+	return format
+		.split( '' )
+		.filter( ( char ) => ! phpNonTimeFormatChars.includes( char ) )
+		.join( '' )
+		.trim();
+}

@@ -55,13 +55,7 @@ class Test_User extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => 'gatherpress_date_format',
-				'priority' => 10,
-				'callback' => array( $instance, 'user_set_date_format' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'gatherpress_time_format',
+				'name'     => 'gatherpress_datetime_format',
 				'priority' => 10,
 				'callback' => array( $instance, 'user_set_time_format' ),
 			),
@@ -101,5 +95,70 @@ class Test_User extends Base {
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
 
 		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked.' );
+
+		// Check 12 vs 24 hour preference.
+		update_user_meta( $user->ID, 'gatherpress_time_format', User::HOUR_12 );
+
+		$markup = Utility::buffer_and_return(
+			array( $instance, 'profile_fields' ),
+			array( $user )
+		);
+
+		$this->assertStringContainsString(
+			'<option value="12-hour"  selected=\'selected\'>',
+			$markup,
+			"12-hour option was expected to be selected but wasn't"
+		);
+	}
+
+	/**
+	 * Coverage for user time formatting option
+	 *
+	 * @covers ::user_set_time_format
+	 *
+	 * @return void
+	 */
+	public function test_user_set_time_format(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		// Sanity check.
+		$this->assertEquals( 'g:ia', $instance->user_set_time_format( 'g:ia' ) );
+
+		// Override 24-hour site to 12 hour (adds am/pm).
+		update_user_meta( $user->ID, 'gatherpress_time_format', User::HOUR_12 );
+		$this->assertEquals(
+			'g:ia',
+			$instance->user_set_time_format( 'G:i' )
+		);
+
+		// Override 12-hour site to 24 hour (removes am/pm).
+		update_user_meta( $user->ID, 'gatherpress_time_format', User::HOUR_24 );
+		$this->assertEquals(
+			'G:i',
+			$instance->user_set_time_format( 'g:ia' )
+		);
+	}
+
+	/**
+	 * Coverage for timezone getter
+	 *
+	 * @covers ::user_set_timezone
+	 *
+	 * @return void
+	 */
+	public function test_user_set_timezone(): void {
+		$instance = User::get_instance();
+		$user     = $this->mock->user( true )->get();
+
+		// Sanity check.
+		$this->assertEquals( 'my-dawg', $instance->user_set_timezone( 'my-dawg' ) );
+
+		// Check override.
+		update_user_meta( $user->ID, 'gatherpress_timezone', 'Hammer Time' );
+		$this->assertEquals(
+			'Hammer Time',
+			$instance->user_set_timezone( 'ET-or-whatever' )
+		);
 	}
 }
