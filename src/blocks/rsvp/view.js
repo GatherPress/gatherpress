@@ -25,12 +25,15 @@ const { state, actions } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
+			// Find the closest trigger element for loading state.
+			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
+
 			sendRsvpApiRequest( postId, currentUser, state, () => {
 				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
 				setTimeout( () => {
 					element.ref.focus();
 				}, 1 );
-			} );
+			}, triggerElement );
 		},
 		updateAnonymous() {
 			const element = getElement();
@@ -43,12 +46,15 @@ const { state, actions } = store( 'gatherpress', {
 
 			initPostContext( state, postId );
 
+			// Find the closest trigger element for loading state.
+			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
+
 			sendRsvpApiRequest( postId, currentUser, state, () => {
 				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
 				setTimeout( () => {
 					element.ref.focus();
 				}, 1 );
-			} );
+			}, triggerElement );
 		},
 		updateRsvp( event = null ) {
 			if ( event ) {
@@ -82,6 +88,9 @@ const { state, actions } = store( 'gatherpress', {
 			const guests = state.posts[ postId ].currentUser.guests;
 			const anonymous = state.posts[ postId ].currentUser.anonymous;
 			const rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
+
+			// Find the closest trigger element for loading state.
+			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
 
 			sendRsvpApiRequest(
 				postId,
@@ -131,6 +140,7 @@ const { state, actions } = store( 'gatherpress', {
 						}, 1 );
 					}
 				},
+				triggerElement,
 			);
 		},
 	},

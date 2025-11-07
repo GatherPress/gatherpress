@@ -198,9 +198,11 @@ class User {
 	 * @return void
 	 */
 	public function save_profile_fields( int $user_id ): void {
+		$nonce = Utility::get_http_input( INPUT_POST, '_wpnonce' );
+
 		if (
-			empty( filter_input( INPUT_POST, '_wpnonce' ) ) ||
-			! wp_verify_nonce( sanitize_text_field( wp_unslash( filter_input( INPUT_POST, '_wpnonce' ) ) ), 'update-user_' . $user_id )
+			empty( $nonce ) ||
+			! wp_verify_nonce( $nonce, 'update-user_' . $user_id )
 		) {
 			return;
 		}
@@ -209,8 +211,8 @@ class User {
 			return;
 		}
 
-		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( filter_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
-		update_user_meta( $user_id, 'gatherpress_time_format', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_time_format' ) ) );
-		update_user_meta( $user_id, 'gatherpress_timezone', sanitize_text_field( filter_input( INPUT_POST, 'gatherpress_timezone' ) ) );
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
+		update_user_meta( $user_id, 'gatherpress_time_format', Utility::get_http_input( INPUT_POST, 'gatherpress_time_format' ) );
+		update_user_meta( $user_id, 'gatherpress_timezone', Utility::get_http_input( INPUT_POST, 'gatherpress_timezone' ) );
 	}
 }

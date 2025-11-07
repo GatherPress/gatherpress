@@ -137,15 +137,16 @@ export const getNonce = ( () => {
  *
  * @since 1.0.0
  *
- * @param {number}   postId                 - The ID of the post for which the RSVP is being updated.
- * @param {Object}   args                   - An object containing the RSVP details.
- * @param {string}   args.status            - The RSVP status (`attending`, `not_attending`, etc.).
- * @param {number}   [args.guests=0]        - The number of additional guests.
- * @param {boolean}  [args.anonymous=false] - Whether the RSVP is anonymous.
- * @param {string}   [args.rsvpToken]       - Optional RSVP token for anonymous users.
- * @param {Object}   [state=null]           - A state object to update with the API response data.
- * @param {Function} [onSuccess=null]       - A callback function to execute on a successful API response.
- *                                          Receives the API response as its argument.
+ * @param {number}      postId                 - The ID of the post for which the RSVP is being updated.
+ * @param {Object}      args                   - An object containing the RSVP details.
+ * @param {string}      args.status            - The RSVP status (`attending`, `not_attending`, etc.).
+ * @param {number}      [args.guests=0]        - The number of additional guests.
+ * @param {boolean}     [args.anonymous=false] - Whether the RSVP is anonymous.
+ * @param {string}      [args.rsvpToken]       - Optional RSVP token for anonymous users.
+ * @param {Object}      [state=null]           - A state object to update with the API response data.
+ * @param {Function}    [onSuccess=null]       - A callback function to execute on a successful API response.
+ *                                             Receives the API response as its argument.
+ * @param {HTMLElement} [loadingElement=null]  - Optional element to show loading state on during the request.
  *
  * @return {Promise<void>} A promise that resolves when the request completes.
  *
@@ -156,7 +157,8 @@ export const getNonce = ( () => {
  *     appState,
  *     (response) => {
  *         console.log('RSVP updated successfully:', response);
- *     }
+ *     },
+ *     buttonElement
  * );
  */
 export async function sendRsvpApiRequest(
@@ -164,9 +166,15 @@ export async function sendRsvpApiRequest(
 	args,
 	state = null,
 	onSuccess = null,
+	loadingElement = null,
 ) {
 	if ( [ 'no_status', 'waiting_list' ].includes( args.status ) ) {
 		return;
+	}
+
+	// Add loading class to element if provided.
+	if ( loadingElement ) {
+		loadingElement.classList.add( 'gatherpress--loading' );
 	}
 
 	const makeRequest = async ( isRetry = false ) => {
@@ -227,7 +235,14 @@ export async function sendRsvpApiRequest(
 				onSuccess( res );
 			}
 		}
-	} catch ( error ) {}
+	} catch ( error ) {
+		// Handle error silently.
+	} finally {
+		// Always remove loading class when request completes.
+		if ( loadingElement ) {
+			loadingElement.classList.remove( 'gatherpress--loading' );
+		}
+	}
 }
 
 /**

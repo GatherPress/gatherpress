@@ -6,73 +6,117 @@ import {
 	InnerBlocks,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl } from '@wordpress/components';
+import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { useState, useEffect, useRef } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
+import { useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
 import TEMPLATE from './template';
 
-const Edit = () => {
-	const blockRef = useRef( null );
-	const blockProps = useBlockProps( { ref: blockRef } );
-	const [ showMessage, setShowMessage ] = useState( false );
+const Edit = ( { clientId } ) => {
+	const [ formState, setFormState ] = useState( 'default' );
 
-	// Toggle visibility of success message blocks for preview.
-	useEffect( () => {
-		const updateMessageVisibility = () => {
-			if ( ! blockRef.current ) {
-				return;
-			}
+	// Get all inner blocks and track their visibility attributes specifically.
+	const { innerBlocks, visibilityAttributes } = useSelect( ( select ) => {
+		const { getBlock } = select( 'core/block-editor' );
+		const block = getBlock( clientId );
 
-			const messageElements = blockRef.current.querySelectorAll(
-				'.gatherpress--rsvp-form-message',
-			);
-
-			messageElements.forEach( ( element ) => {
-				element.style.setProperty(
-					'display',
-					showMessage ? 'block' : 'none',
-					'important',
-				);
-				element.setAttribute( 'aria-hidden', showMessage ? 'false' : 'true' );
-				element.setAttribute( 'aria-live', 'polite' );
-				element.setAttribute( 'role', 'status' );
-			} );
-		};
-
-		// Watch for DOM changes.
-		const observer = new MutationObserver( updateMessageVisibility );
-
-		if ( blockRef.current ) {
-			observer.observe( blockRef.current, {
-				childList: true,
-				subtree: true,
-				attributes: true,
-				attributeFilter: [ 'class' ],
-			} );
+		if ( ! block ) {
+			return { innerBlocks: [], visibilityAttributes: {} };
 		}
 
-		// Initial call.
-		updateMessageVisibility();
+		// Recursively collect all visibility attributes to trigger updates.
+		const collectVisibilityAttributes = ( blocks, attrs = {} ) => {
+			blocks.forEach( ( childBlock ) => {
+				if ( childBlock.attributes?.gatherpressRsvpFormVisibility ) {
+					attrs[ childBlock.clientId ] = childBlock.attributes.gatherpressRsvpFormVisibility;
+				}
+				if ( childBlock.innerBlocks?.length ) {
+					collectVisibilityAttributes( childBlock.innerBlocks, attrs );
+				}
+			} );
+			return attrs;
+		};
 
-		return () => observer.disconnect();
-	}, [ showMessage ] );
+		return {
+			innerBlocks: block.innerBlocks,
+			visibilityAttributes: collectVisibilityAttributes( block.innerBlocks ),
+		};
+	}, [ clientId ] );
+
+	// Generate CSS for visibility based on form state.
+	useEffect( () => {
+		const styles = [];
+		const collectVisibilityStyles = ( blocks, depth = 0 ) => {
+			blocks.forEach( ( block ) => {
+				if ( block.attributes?.gatherpressRsvpFormVisibility ) {
+					const visibility = block.attributes.gatherpressRsvpFormVisibility;
+					const selector = `#block-${ block.clientId }`;
+
+					if ( 'showOnSuccess' === visibility ) {
+						if ( 'success' !== formState ) {
+							styles.push( `${ selector } { display: none !important; }` );
+						}
+					} else if ( 'hideOnSuccess' === visibility ) {
+						if ( 'success' === formState ) {
+							styles.push( `${ selector } { display: none !important; }` );
+						}
+					}
+				}
+				if ( 0 < block.innerBlocks?.length ) {
+					collectVisibilityStyles( block.innerBlocks, depth + 1 );
+				}
+			} );
+		};
+		collectVisibilityStyles( innerBlocks );
+
+		// Inject styles into the page.
+		const styleId = `gatherpress-form-visibility-${ clientId }`;
+		let styleElement = document.getElementById( styleId );
+
+		if ( ! styleElement ) {
+			styleElement = document.createElement( 'style' );
+			styleElement.id = styleId;
+			document.head.appendChild( styleElement );
+		}
+
+		styleElement.textContent = styles.join( '\n' );
+
+		// Cleanup on unmount.
+		return () => {
+			if ( styleElement && styleElement.parentNode ) {
+				styleElement.parentNode.removeChild( styleElement );
+			}
+		};
+	}, [ formState, innerBlocks, visibilityAttributes, clientId ] );
+
+	const blockProps = useBlockProps();
 
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Preview Settings', 'gatherpress' ) }>
-					<ToggleControl
-						label={ __( 'Show success message', 'gatherpress' ) }
+					<SelectControl
+						label={ __( 'Form State Preview', 'gatherpress' ) }
 						help={ __(
-							'Toggle to preview the success message that appears after form submission. This setting is not saved.',
+							'Preview how blocks appear in different form states. This setting is not saved.',
 							'gatherpress',
 						) }
-						checked={ showMessage }
-						onChange={ setShowMessage }
+						value={ formState }
+						options={ [
+							{
+								label: __( 'Default (before submission)', 'gatherpress' ),
+								value: 'default',
+							},
+							{
+								label: __( 'Success (after submission)', 'gatherpress' ),
+								value: 'success',
+							},
+						] }
+						onChange={ setFormState }
 					/>
 				</PanelBody>
 			</InspectorControls>

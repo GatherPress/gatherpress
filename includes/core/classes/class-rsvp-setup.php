@@ -110,11 +110,7 @@ class Rsvp_Setup {
 	 */
 	public function initialize_rsvp_form_handling(): void {
 		// Only proceed if this is an RSVP form submission.
-		if (
-			! isset( $_SERVER['REQUEST_METHOD'] ) ||
-			'POST' !== $_SERVER['REQUEST_METHOD'] ||
-			'1' !== sanitize_text_field( wp_unslash( filter_input( INPUT_POST, Rsvp::COMMENT_TYPE ) ) )
-		) {
+		if ( ! $this->is_rsvp_form_submission() ) {
 			return;
 		}
 
@@ -124,9 +120,9 @@ class Rsvp_Setup {
 
 		add_filter(
 			'preprocess_comment',
-			static function ( array $comment_data ): array {
-				$author = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'author' ) ) );
-				$email  = sanitize_email( wp_unslash( filter_input( INPUT_POST, 'email' ) ) );
+			function ( array $comment_data ): array {
+				$author = Utility::get_http_input( INPUT_POST, 'author' );
+				$email  = Utility::get_http_input( INPUT_POST, 'email', 'sanitize_email' );
 				$user   = get_user_by( 'ID', get_current_user_id() );
 
 				$comment_data['comment_content'] = '';
@@ -156,10 +152,21 @@ class Rsvp_Setup {
 					wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
 
 					// Handle email updates checkbox if present in form submission.
-					$email_updates = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_event_email_updates' ) ) );
-
+					$email_updates = Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' );
 					if ( ! empty( $email_updates ) ) {
-						update_comment_meta( $comment_id, 'gatherpress_event_email_updates', 1 );
+						update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 1 );
+					}
+
+					// Handle guest count field if present in form submission.
+					$guest_count = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_guests' );
+					if ( is_numeric( $guest_count ) ) {
+						update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', intval( $guest_count ) );
+					}
+
+					// Handle anonymous checkbox if present in form submission.
+					$anonymous = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_anonymous' );
+					if ( ! empty( $anonymous ) ) {
+						update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', 1 );
 					}
 
 					// Process custom fields with schema validation.
@@ -188,8 +195,8 @@ class Rsvp_Setup {
 					return $location;
 				}
 
-				$form_id = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, 'gatherpress_rsvp_form_id' ) ) );
-				$referer = wp_get_referer();
+				$form_id = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_id' );
+				$referer = Utility::get_wp_referer();
 
 				if ( ! $referer ) {
 					return $location;
@@ -213,54 +220,6 @@ class Rsvp_Setup {
 		);
 	}
 
-	/**
-	 * Get and parse RSVP token from URL parameter.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array Parsed token data containing user ID and event ID.
-	 */
-	public function get_token_from_url(): array {
-		$token_param = sanitize_text_field(
-			wp_unslash(
-				filter_input( INPUT_GET, Rsvp_Token::NAME )
-			)
-		);
-
-		return $this->parse_rsvp_token( $token_param );
-	}
-
-	/**
-	 * Parse RSVP token string into component parts.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $unparsed_token Raw token string in format "comment_id_token".
-	 * @return array Array with 'comment_id' and 'token' keys, or empty array if invalid.
-	 */
-	public function parse_rsvp_token( $unparsed_token ): array {
-		if ( empty( $unparsed_token ) ) {
-			return array();
-		}
-
-		$token_parts = explode( '_', $unparsed_token, 2 );
-
-		if ( 2 !== count( $token_parts ) ) {
-			return array(); // Invalid format.
-		}
-
-		$comment_id = intval( $token_parts[0] );
-		$token      = $token_parts[1];
-
-		if ( ! $comment_id || empty( $token ) ) {
-			return array(); // Invalid data.
-		}
-
-		return array(
-			'comment_id' => $comment_id,
-			'token'      => $token,
-		);
-	}
 
 	/**
 	 * Get user identifier for RSVP operations.
@@ -274,17 +233,10 @@ class Rsvp_Setup {
 	 */
 	public function get_user_identifier() {
 		$user_identifier = get_current_user_id();
-		$token_data      = $this->get_token_from_url();
+		$rsvp_token      = Rsvp_Token::from_url_parameter();
 
-		if ( ! empty( $token_data ) ) {
-			$rsvp_token = new Rsvp_Token( $token_data['comment_id'] );
-
-			if (
-				$rsvp_token->is_valid( $token_data['token'] ) &&
-				! empty( $rsvp_token->get_comment() )
-			) {
-				$user_identifier = $rsvp_token->get_email();
-			}
+		if ( $rsvp_token && ! empty( $rsvp_token->get_comment() ) ) {
+			$user_identifier = $rsvp_token->get_email();
 		}
 
 		return $user_identifier;
@@ -301,17 +253,9 @@ class Rsvp_Setup {
 	 * @return void
 	 */
 	public function handle_rsvp_token(): void {
-		$token_data = $this->get_token_from_url();
+		$rsvp_token = Rsvp_Token::from_url_parameter();
 
-		if ( empty( $token_data ) ) {
-			return;
-		}
-
-		$comment_id = $token_data['comment_id'];
-		$token      = $token_data['token'];
-		$rsvp_token = new Rsvp_Token( $comment_id );
-
-		if ( $rsvp_token->is_valid( $token ) ) {
+		if ( $rsvp_token ) {
 			$rsvp_token->approve_comment();
 		}
 	}
@@ -558,5 +502,22 @@ class Rsvp_Setup {
 	 */
 	public function set_submenu_file(): string {
 		return Rsvp::COMMENT_TYPE;
+	}
+
+	/**
+	 * Check if current request is an RSVP form submission.
+	 *
+	 * Extracted for testability - allows mocking of HTTP request data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if this is an RSVP form submission, false otherwise.
+	 */
+	protected function is_rsvp_form_submission(): bool {
+		return (
+			isset( $_SERVER['REQUEST_METHOD'] ) &&
+			'POST' === $_SERVER['REQUEST_METHOD'] &&
+			'1' === Utility::get_http_input( INPUT_POST, Rsvp::COMMENT_TYPE )
+		);
 	}
 }

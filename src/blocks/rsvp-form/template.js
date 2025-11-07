@@ -7,7 +7,7 @@ const TEMPLATE = [
 	[
 		'core/group',
 		{
-			className: 'gatherpress--rsvp-form-message',
+			gatherpressRsvpFormVisibility: 'showOnSuccess',
 			style: {
 				spacing: {
 					margin: {
@@ -21,7 +21,7 @@ const TEMPLATE = [
 				'core/heading',
 				{
 					content: __(
-						'Thank you for your RSVP! Please check your email for a confirmation link to complete your registration.',
+						'Thank you for your RSVP!',
 						'gatherpress',
 					),
 					level: 3,
@@ -35,6 +35,15 @@ const TEMPLATE = [
 					},
 				},
 			],
+			[
+				'core/paragraph',
+				{
+					content: __(
+						'Please check your email for a confirmation link to complete your registration.',
+						'gatherpress',
+					),
+				},
+			],
 		],
 	],
 	[
@@ -45,6 +54,7 @@ const TEMPLATE = [
 			placeholder: __( "Name as you'd like it to appear", 'gatherpress' ),
 			required: true,
 			autocomplete: 'name',
+			gatherpressRsvpFormVisibility: 'hideOnSuccess',
 		},
 	],
 	[
@@ -56,20 +66,49 @@ const TEMPLATE = [
 			placeholder: __( 'your@email.com', 'gatherpress' ),
 			required: true,
 			autocomplete: 'email',
+			gatherpressRsvpFormVisibility: 'hideOnSuccess',
+		},
+	],
+	[
+		'gatherpress/form-field',
+		{
+			fieldType: 'number',
+			fieldName: 'gatherpress_rsvp_guests',
+			label: __( 'Number of guests?', 'gatherpress' ),
+			placeholder: __( '0', 'gatherpress' ),
+			minValue: 0,
+			inlineLayout: true,
+			fieldWidth: 10,
+			inputPadding: 5,
+			autocomplete: 'off',
+			gatherpressRsvpFormVisibility: 'hideOnSuccess',
 		},
 	],
 	[
 		'gatherpress/form-field',
 		{
 			fieldType: 'checkbox',
-			fieldName: 'gatherpress_event_email_updates',
+			fieldName: 'gatherpress_rsvp_anonymous',
 			fieldValue: false,
-			label: __( 'Send me email updates about this event', 'gatherpress' ),
+			label: __( 'List me as anonymous', 'gatherpress' ),
+			gatherpressRsvpFormVisibility: 'hideOnSuccess',
+		},
+	],
+	[
+		'gatherpress/form-field',
+		{
+			fieldType: 'checkbox',
+			fieldName: 'gatherpress_event_updates_opt_in',
+			fieldValue: false,
+			label: __( 'Email me updates about this event', 'gatherpress' ),
+			gatherpressRsvpFormVisibility: 'hideOnSuccess',
 		},
 	],
 	[
 		'core/buttons',
-		{},
+		{
+			gatherpressRsvpFormVisibility: 'hideOnSuccess',
+		},
 		[
 			[
 				'core/button',
