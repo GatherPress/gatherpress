@@ -182,7 +182,7 @@ export async function sendRsvpApiRequest(
 			'Content-Type': 'application/json',
 		};
 
-		// Only require nonce for non-token requests.
+		// Only get nonce for non-token requests.
 		if ( ! args.rsvpToken ) {
 			const nonce = await getNonce();
 			if ( ! nonce ) {

@@ -62,7 +62,6 @@ class Event_Rest_Api {
 		add_action( 'rest_api_init', array( $this, 'register_endpoints' ) );
 		add_action( 'gatherpress_send_emails', array( $this, 'handle_email_send_action' ), 10, 3 );
 		add_filter( sprintf( 'rest_prepare_%s', Event::POST_TYPE ), array( $this, 'prepare_event_data' ) );
-		add_filter( 'rest_authentication_errors', array( $this, 'authenticate_rsvp_token' ) );
 	}
 
 	/**
@@ -196,18 +195,7 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
-					$unparsed_token = $request->get_param( Rsvp_Token::NAME );
-					$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
-
-					// Token-based authentication doesn't require user login.
-					if ( $rsvp_token ) {
-						return true;
-					}
-
-					// Standard authentication for logged-in users (requires nonce).
-					return is_user_logged_in();
-				},
+				'permission_callback' => '__return_true',
 				'args'                => array(
 					'post_id'    => array(
 						'required'          => true,
@@ -719,7 +707,17 @@ class Event_Rest_Api {
 		$guests          = intval( $params['guests'] ?? 0 );
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
 		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
-		$event           = new Event( $post_id );
+
+		// Check authentication: either valid token or logged-in user.
+		if ( ! $unparsed_token && ! is_user_logged_in() ) {
+			return new WP_REST_Response( array( 'success' => false ), 401 );
+		}
+
+		if ( $unparsed_token && ! Rsvp_Token::from_token_string( $unparsed_token ) ) {
+			return new WP_REST_Response( array( 'success' => false ), 401 );
+		}
+
+		$event = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
 		if (
@@ -1085,50 +1083,6 @@ class Event_Rest_Api {
 	}
 
 
-	/**
-	 * Authenticate RSVP token for REST API requests.
-	 *
-	 * This method handles authentication for token-based RSVP requests,
-	 * allowing anonymous users with valid tokens to bypass nonce verification.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param mixed $result The current authentication result.
-	 * @return mixed Returns null for successful token auth, or passes through existing result.
-	 */
-	public function authenticate_rsvp_token( $result ) {
-		// Only handle authentication for our RSVP endpoint.
-		if ( ! $this->is_rsvp_endpoint() ) {
-			return $result;
-		}
-
-		// Get the token from the request.
-		$unparsed_token = Utility::get_http_input( INPUT_POST, Rsvp_Token::NAME );
-		if ( empty( $unparsed_token ) ) {
-			return $result;
-		}
-
-		// Validate the token.
-		$rsvp_token = Rsvp_Token::from_token_string( $unparsed_token );
-		if ( ! $rsvp_token ) {
-			return $result;
-		}
-
-		// Token is valid - return null to indicate successful authentication.
-		return null;
-	}
-
-	/**
-	 * Check if the current request is for the RSVP endpoint.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return bool True if this is an RSVP endpoint request, false otherwise.
-	 */
-	private function is_rsvp_endpoint(): bool {
-		$request_uri = Utility::get_http_input( INPUT_SERVER, 'REQUEST_URI' );
-		return str_contains( $request_uri, '/gatherpress/v1/event/rsvp' );
-	}
 
 	/**
 	 * Prepare event data for the response.
