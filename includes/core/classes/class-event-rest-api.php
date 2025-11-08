@@ -199,10 +199,15 @@ class Event_Rest_Api {
 					$unparsed_token = $request->get_param( Rsvp_Token::NAME );
 					$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
 
+					// Token-based authentication doesn't require nonce verification
+					// The token itself provides authentication and CSRF protection.
 					if ( $rsvp_token ) {
+						// Remove nonce verification for token-based requests.
+						remove_filter( 'rest_authentication_errors', 'rest_cookie_check_errors', 100 );
 						return true;
 					}
 
+					// Standard authentication for logged-in users (requires nonce).
 					return is_user_logged_in();
 				},
 				'args'                => array(
