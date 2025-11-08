@@ -10,6 +10,7 @@
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format)
+- [`gatherpress_datetime_format`](gatherpress_datetime_format)
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format)
 - [`gatherpress_timezone`](gatherpress_timezone)
