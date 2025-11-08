@@ -718,17 +718,7 @@ class Event_Rest_Api {
 		$guests          = intval( $params['guests'] ?? 0 );
 		$anonymous       = intval( $params['anonymous'] ?? 0 );
 		$unparsed_token  = sanitize_text_field( $params['rsvp_token'] ?? '' );
-
-		// Check authentication: either valid token or logged-in user.
-		if ( ! $unparsed_token && ! is_user_logged_in() ) {
-			return new WP_REST_Response( array( 'success' => false ), 401 );
-		}
-
-		if ( $unparsed_token && ! Rsvp_Token::from_token_string( $unparsed_token ) ) {
-			return new WP_REST_Response( array( 'success' => false ), 401 );
-		}
-
-		$event = new Event( $post_id );
+		$event           = new Event( $post_id );
 
 		// If managing user is adding someone to an event.
 		if (
