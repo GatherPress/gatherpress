@@ -1083,8 +1083,6 @@ class Event_Rest_Api {
 		}
 	}
 
-
-
 	/**
 	 * Prepare event data for the response.
 	 *
