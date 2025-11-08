@@ -274,7 +274,7 @@ class Event_Rest_Api {
 					),
 					'gatherpress_rsvp_guests'          => array(
 						'required'          => false,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'non_negative_number' ),
 					),
 					'gatherpress_rsvp_anonymous'       => array(
 						'required'          => false,
@@ -323,7 +323,7 @@ class Event_Rest_Api {
 					),
 					'limit'         => array(
 						'required'          => false,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'positive_number' ),
 					),
 				),
 			),
@@ -380,7 +380,7 @@ class Event_Rest_Api {
 					),
 					'max_number'      => array(
 						'required'          => true,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'positive_number' ),
 					),
 					'datetime_format' => array(
 						'required' => false,
@@ -878,6 +878,7 @@ class Event_Rest_Api {
 		// Set remote IP if available.
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+
 			if ( rest_is_ip_address( $remote_ip ) ) {
 				$comment_data['comment_author_IP'] = $remote_ip;
 			}
