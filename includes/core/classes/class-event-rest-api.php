@@ -195,7 +195,18 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
+					$unparsed_token = $request->get_param(
+						Utility::unprefix_key( Rsvp_Token::NAME )
+					);
+					$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
+
+					if ( $rsvp_token ) {
+						return true;
+					}
+
+					return is_user_logged_in();
+				},
 				'args'                => array(
 					'post_id'    => array(
 						'required'          => true,
