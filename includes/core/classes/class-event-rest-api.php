@@ -195,7 +195,18 @@ class Event_Rest_Api {
 			'args'  => array(
 				'methods'             => WP_REST_Server::EDITABLE,
 				'callback'            => array( $this, 'update_rsvp' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => static function ( WP_Rest_Request $request ): bool {
+					$unparsed_token = $request->get_param(
+						Utility::unprefix_key( Rsvp_Token::NAME )
+					);
+					$rsvp_token     = Rsvp_Token::from_token_string( $unparsed_token );
+
+					if ( $rsvp_token ) {
+						return true;
+					}
+
+					return is_user_logged_in();
+				},
 				'args'                => array(
 					'post_id'    => array(
 						'required'          => true,
@@ -263,7 +274,7 @@ class Event_Rest_Api {
 					),
 					'gatherpress_rsvp_guests'          => array(
 						'required'          => false,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'non_negative_number' ),
 					),
 					'gatherpress_rsvp_anonymous'       => array(
 						'required'          => false,
@@ -312,7 +323,7 @@ class Event_Rest_Api {
 					),
 					'limit'         => array(
 						'required'          => false,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'positive_number' ),
 					),
 				),
 			),
@@ -369,7 +380,7 @@ class Event_Rest_Api {
 					),
 					'max_number'      => array(
 						'required'          => true,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'positive_number' ),
 					),
 					'datetime_format' => array(
 						'required' => false,
@@ -877,6 +888,7 @@ class Event_Rest_Api {
 		// Set remote IP if available.
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+
 			if ( rest_is_ip_address( $remote_ip ) ) {
 				$comment_data['comment_author_IP'] = $remote_ip;
 			}
@@ -1081,9 +1093,6 @@ class Event_Rest_Api {
 			}
 		}
 	}
-
-
-
 
 	/**
 	 * Prepare event data for the response.

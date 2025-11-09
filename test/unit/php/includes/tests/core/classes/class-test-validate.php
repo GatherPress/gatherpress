@@ -114,7 +114,7 @@ class Test_Validate extends Base {
 	 *
 	 * @since 1.0.0
 	 * @covers ::event_post_id
-	 * @covers ::number
+	 * @covers ::positive_number
 	 *
 	 * @return void
 	 */
