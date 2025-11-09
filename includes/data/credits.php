@@ -4,14 +4,14 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 return array (
-  'version' => '0.33.0-alpha.1',
+  'version' => '0.33.0-alpha.2',
   'project-leaders' => 
   array (
     0 => 
     array (
       'id' => 10384448,
       'name' => 'Mike Auteri',
-      'link' => 'https://profiles.wordpress.org/author/mauteri/',
+      'link' => 'https://profiles.wordpress.org/mauteri/',
       'slug' => 'mauteri',
       'avatar_urls' => 
       array (
@@ -24,7 +24,7 @@ return array (
     array (
       'id' => 7586875,
       'name' => 'Patricia BT',
-      'link' => 'https://profiles.wordpress.org/author/patricia70/',
+      'link' => 'https://profiles.wordpress.org/patricia70/',
       'slug' => 'patricia70',
       'avatar_urls' => 
       array (
@@ -40,7 +40,7 @@ return array (
     array (
       'id' => 13988112,
       'name' => 'Mervin Hernandez',
-      'link' => 'https://profiles.wordpress.org/author/hrmervin/',
+      'link' => 'https://profiles.wordpress.org/hrmervin/',
       'slug' => 'hrmervin',
       'avatar_urls' => 
       array (
@@ -53,7 +53,7 @@ return array (
     array (
       'id' => 130224,
       'name' => 'jmarx75',
-      'link' => 'https://profiles.wordpress.org/author/jmarx75/',
+      'link' => 'https://profiles.wordpress.org/jmarx75/',
       'slug' => 'jmarx75',
       'avatar_urls' => 
       array (
@@ -66,7 +66,7 @@ return array (
     array (
       'id' => 7268075,
       'name' => 'Steve Erdelyi',
-      'link' => 'https://profiles.wordpress.org/author/stephenerdelyi/',
+      'link' => 'https://profiles.wordpress.org/stephenerdelyi/',
       'slug' => 'stephenerdelyi',
       'avatar_urls' => 
       array (
@@ -79,7 +79,7 @@ return array (
     array (
       'id' => 7673952,
       'name' => 'Carsten Bach',
-      'link' => 'https://profiles.wordpress.org/author/carstenbach/',
+      'link' => 'https://profiles.wordpress.org/carstenbach/',
       'slug' => 'carstenbach',
       'avatar_urls' => 
       array (
@@ -92,7 +92,7 @@ return array (
     array (
       'id' => 14671153,
       'name' => 'JordanPak',
-      'link' => 'https://profiles.wordpress.org/author/jordanpak/',
+      'link' => 'https://profiles.wordpress.org/jordanpak/',
       'slug' => 'jordanpak',
       'avatar_urls' => 
       array (
@@ -108,7 +108,7 @@ return array (
     array (
       'id' => 8521779,
       'name' => 'Christoph Daum',
-      'link' => 'https://profiles.wordpress.org/author/apermo/',
+      'link' => 'https://profiles.wordpress.org/apermo/',
       'slug' => 'apermo',
       'avatar_urls' => 
       array (
@@ -121,7 +121,7 @@ return array (
     array (
       'id' => 148148,
       'name' => 'Dion Hulse',
-      'link' => 'https://profiles.wordpress.org/author/dd32/',
+      'link' => 'https://profiles.wordpress.org/dd32/',
       'slug' => 'dd32',
       'avatar_urls' => 
       array (
@@ -134,7 +134,7 @@ return array (
     array (
       'id' => 17578268,
       'name' => 'Arslan Kalwar',
-      'link' => 'https://profiles.wordpress.org/author/passoniate/',
+      'link' => 'https://profiles.wordpress.org/passoniate/',
       'slug' => 'passoniate',
       'avatar_urls' => 
       array (
