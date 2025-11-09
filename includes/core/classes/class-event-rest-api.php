@@ -895,16 +895,29 @@ class Event_Rest_Api {
 		}
 
 		// Handle user authentication check.
-		if ( ! $user instanceof WP_User || $user->user_email !== $email ) {
-			$comment_data['user_id']              = 0;
-			$comment_data['comment_author_url']   = '';
-			$comment_data['comment_author']       = $author;
-			$comment_data['comment_author_email'] = $email;
-		} else {
+		// First check if current logged-in user matches the email.
+		if ( $user instanceof WP_User && $user->user_email === $email ) {
 			$comment_data['user_id']              = $user->ID;
 			$comment_data['comment_author']       = $user->display_name;
 			$comment_data['comment_author_email'] = $user->user_email;
 			$comment_data['comment_author_url']   = get_author_posts_url( $user->ID );
+		} else {
+			// If not logged in or email doesn't match, check if any user exists with this email.
+			$existing_user = get_user_by( 'email', $email );
+
+			if ( $existing_user instanceof WP_User ) {
+				// Associate with existing user account.
+				$comment_data['user_id']              = $existing_user->ID;
+				$comment_data['comment_author']       = $existing_user->display_name;
+				$comment_data['comment_author_email'] = $existing_user->user_email;
+				$comment_data['comment_author_url']   = get_author_posts_url( $existing_user->ID );
+			} else {
+				// No user found, create anonymous RSVP.
+				$comment_data['user_id']              = 0;
+				$comment_data['comment_author_url']   = '';
+				$comment_data['comment_author']       = $author;
+				$comment_data['comment_author_email'] = $email;
+			}
 		}
 
 		// Check for duplicate RSVP.

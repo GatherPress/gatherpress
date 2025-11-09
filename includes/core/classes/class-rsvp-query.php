@@ -96,7 +96,6 @@ class Rsvp_Query {
 	 * @return mixed Array of RSVP comments or integer count when count parameter is true.
 	 */
 	public function get_rsvps( array $args ) {
-
 		$args['type']         = Rsvp::COMMENT_TYPE;
 		$args['post_type']    = Event::POST_TYPE;
 		$args['type__in']     = array();
