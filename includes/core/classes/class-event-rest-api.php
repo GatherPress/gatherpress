@@ -647,6 +647,8 @@ class Event_Rest_Api {
 			foreach ( $query->posts as $post_id ) {
 				$event             = new Event( $post_id );
 				$venue_information = $event->get_venue_information();
+				$user_identifier   = Rsvp_Setup::get_instance()->get_user_identifier();
+				$current_user_rsvp = ( $event->rsvp ) ? $event->rsvp->get( $user_identifier ) : '';
 				$posts[]           = array(
 					'ID'                       => $post_id,
 					'datetime_start'           => $event->get_datetime_start( $datetime_format ),
@@ -659,9 +661,7 @@ class Event_Rest_Api {
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
 					'enable_anonymous_rsvp'    => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
-						? $event->rsvp->get( get_current_user_id() )
-						: '',
+					'current_user'             => ( $current_user_rsvp ) ? $current_user_rsvp : '',
 					'venue'                    => ( $venue_information['name'] ? $event->get_venue_information() : null ),
 				);
 			}
