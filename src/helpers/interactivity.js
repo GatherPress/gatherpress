@@ -178,19 +178,24 @@ export async function sendRsvpApiRequest(
 	}
 
 	const makeRequest = async ( isRetry = false ) => {
-		const nonce = await getNonce();
-		if ( ! nonce ) {
-			return;
+		const headers = {
+			'Content-Type': 'application/json',
+		};
+
+		// Only get nonce for non-token requests.
+		if ( ! args.rsvpToken ) {
+			const nonce = await getNonce();
+			if ( ! nonce ) {
+				return;
+			}
+			headers[ 'X-WP-Nonce' ] = nonce;
 		}
 
 		const response = await fetch(
 			getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp',
 			{
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': nonce,
-				},
+				headers,
 				body: JSON.stringify( {
 					post_id: postId,
 					status: args.status,
@@ -201,8 +206,8 @@ export async function sendRsvpApiRequest(
 			},
 		);
 
-		// Check if nonce failed (403 Forbidden).
-		if ( 403 === response.status && ! isRetry ) {
+		// Check if nonce failed (403 Forbidden) for non-token requests.
+		if ( 403 === response.status && ! isRetry && ! args.rsvpToken ) {
 			// Clear cached nonce and retry once.
 			getNonce.clearCache();
 			return makeRequest( true );
