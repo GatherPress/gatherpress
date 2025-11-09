@@ -145,6 +145,7 @@ class Rsvp {
 
 		$args = array(
 			'post_id' => $post_id,
+			'status'  => 'approve',
 		);
 
 		if ( ! empty( $user_id ) ) {
@@ -283,8 +284,9 @@ class Rsvp {
 		if ( empty( $rsvp ) ) {
 			$comment_id = wp_insert_comment( $args );
 		} else {
-			$comment_id         = $rsvp->comment_ID;
-			$args['comment_ID'] = $comment_id;
+			$comment_id               = $rsvp->comment_ID;
+			$args['comment_ID']       = $comment_id;
+			$args['comment_approved'] = 1;
 
 			wp_update_comment( $args );
 		}

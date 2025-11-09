@@ -899,7 +899,8 @@ class Event {
 				return '';
 			}
 
-			$response = $this->rsvp->get( get_current_user_id() );
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$response        = $this->rsvp->get( $user_identifier );
 
 			if (
 				! isset( $response['status'] ) ||
