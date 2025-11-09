@@ -318,16 +318,11 @@ class Assets {
 		$settings            = Settings::get_instance();
 		$event_details       = array();
 		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
-
-		if ( is_user_logged_in() ) {
-			$event_rest_api = '/' . $event_rest_api_slug;
-		} else {
-			$event_rest_api = home_url( 'wp-json/' . $event_rest_api_slug );
-		}
+		$user_identifier     = Rsvp_Setup::get_instance()->get_user_identifier();
 
 		if ( ! empty( $event->event ) ) {
 			$event_details = array(
-				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
+				'currentUser'         => $event->rsvp->get( $user_identifier ),
 				'dateTime'            => $event->get_datetime(),
 				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
 				'maxAttendanceLimit'  => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),

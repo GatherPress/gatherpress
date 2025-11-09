@@ -272,7 +272,7 @@ class Event_Rest_Api {
 					),
 					'gatherpress_rsvp_guests'          => array(
 						'required'          => false,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'non_negative_number' ),
 					),
 					'gatherpress_rsvp_anonymous'       => array(
 						'required'          => false,
@@ -321,7 +321,7 @@ class Event_Rest_Api {
 					),
 					'limit'         => array(
 						'required'          => false,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'positive_number' ),
 					),
 				),
 			),
@@ -378,7 +378,7 @@ class Event_Rest_Api {
 					),
 					'max_number'      => array(
 						'required'          => true,
-						'validate_callback' => array( Validate::class, 'number' ),
+						'validate_callback' => array( Validate::class, 'positive_number' ),
 					),
 					'datetime_format' => array(
 						'required' => false,
@@ -645,6 +645,8 @@ class Event_Rest_Api {
 			foreach ( $query->posts as $post_id ) {
 				$event             = new Event( $post_id );
 				$venue_information = $event->get_venue_information();
+				$user_identifier   = Rsvp_Setup::get_instance()->get_user_identifier();
+				$current_user_rsvp = ( $event->rsvp ) ? $event->rsvp->get( $user_identifier ) : '';
 				$posts[]           = array(
 					'ID'                       => $post_id,
 					'datetime_start'           => $event->get_datetime_start( $datetime_format ),
@@ -657,9 +659,7 @@ class Event_Rest_Api {
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
 					'enable_anonymous_rsvp'    => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
-					'current_user'             => ( $event->rsvp && $event->rsvp->get( get_current_user_id() ) )
-						? $event->rsvp->get( get_current_user_id() )
-						: '',
+					'current_user'             => ( $current_user_rsvp ) ? $current_user_rsvp : '',
 					'venue'                    => ( $venue_information['name'] ? $event->get_venue_information() : null ),
 				);
 			}
@@ -876,22 +876,36 @@ class Event_Rest_Api {
 		// Set remote IP if available.
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+
 			if ( rest_is_ip_address( $remote_ip ) ) {
 				$comment_data['comment_author_IP'] = $remote_ip;
 			}
 		}
 
 		// Handle user authentication check.
-		if ( ! $user instanceof WP_User || $user->user_email !== $email ) {
-			$comment_data['user_id']              = 0;
-			$comment_data['comment_author_url']   = '';
-			$comment_data['comment_author']       = $author;
-			$comment_data['comment_author_email'] = $email;
-		} else {
+		// First check if current logged-in user matches the email.
+		if ( $user instanceof WP_User && $user->user_email === $email ) {
 			$comment_data['user_id']              = $user->ID;
 			$comment_data['comment_author']       = $user->display_name;
 			$comment_data['comment_author_email'] = $user->user_email;
 			$comment_data['comment_author_url']   = get_author_posts_url( $user->ID );
+		} else {
+			// If not logged in or email doesn't match, check if any user exists with this email.
+			$existing_user = get_user_by( 'email', $email );
+
+			if ( $existing_user instanceof WP_User ) {
+				// Associate with existing user account.
+				$comment_data['user_id']              = $existing_user->ID;
+				$comment_data['comment_author']       = $existing_user->display_name;
+				$comment_data['comment_author_email'] = $existing_user->user_email;
+				$comment_data['comment_author_url']   = get_author_posts_url( $existing_user->ID );
+			} else {
+				// No user found, create anonymous RSVP.
+				$comment_data['user_id']              = 0;
+				$comment_data['comment_author_url']   = '';
+				$comment_data['comment_author']       = $author;
+				$comment_data['comment_author_email'] = $email;
+			}
 		}
 
 		// Check for duplicate RSVP.
@@ -1080,7 +1094,6 @@ class Event_Rest_Api {
 			}
 		}
 	}
-
 
 	/**
 	 * Prepare event data for the response.

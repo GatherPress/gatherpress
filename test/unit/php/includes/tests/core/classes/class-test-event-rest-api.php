@@ -700,6 +700,9 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertStringContainsString( 'successfully', $data['message'] );
 		$this->assertGreaterThan( 0, $data['comment_id'] );
 
+		// Approve the comment since rsvp->get() now only finds approved comments.
+		wp_set_comment_status( $data['comment_id'], 'approve' );
+
 		$event     = new Event( $post_id );
 		$rsvp_data = $event->rsvp->get( 'test@example.com' );
 
@@ -798,6 +801,9 @@ class Test_Event_Rest_Api extends Base {
 		$data = $response->get_data();
 		$this->assertTrue( $data['success'] );
 		$this->assertGreaterThan( 0, $data['comment_id'] );
+
+		// Approve the comment since rsvp->get() now only finds approved comments.
+		wp_set_comment_status( $data['comment_id'], 'approve' );
 
 		$event     = new Event( $post_id );
 		$rsvp_data = $event->rsvp->get( $user_id );

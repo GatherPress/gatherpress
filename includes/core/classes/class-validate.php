@@ -61,24 +61,41 @@ class Validate {
 	 */
 	public static function event_post_id( $param ): bool {
 		return (
-			static::number( $param ) &&
+			static::positive_number( $param ) &&
 			Event::POST_TYPE === get_post_type( $param )
 		);
 	}
 
 	/**
-	 * Validate a numeric value.
+	 * Validate a positive numeric value.
 	 *
 	 * Validates whether the given parameter is a valid numeric value greater than zero.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param int|string $param The value to validate.
-	 * @return bool True if the parameter is a valid numeric value greater than zero, false otherwise.
+	 * @return bool True if the parameter is a valid positive numeric value, false otherwise.
 	 */
-	public static function number( $param ): bool {
+	public static function positive_number( $param ): bool {
 		return (
 			0 < intval( $param ) &&
+			is_numeric( $param )
+		);
+	}
+
+	/**
+	 * Validate a non-negative numeric value.
+	 *
+	 * Validates whether the given parameter is a valid numeric value greater than or equal to zero.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int|string $param The value to validate.
+	 * @return bool True if the parameter is a valid non-negative numeric value, false otherwise.
+	 */
+	public static function non_negative_number( $param ): bool {
+		return (
+			0 <= intval( $param ) &&
 			is_numeric( $param )
 		);
 	}
