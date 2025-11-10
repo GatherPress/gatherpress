@@ -61,6 +61,7 @@ class Rsvp_Setup {
 		add_action( 'init', array( $this, 'handle_rsvp_token' ) );
 		add_action( 'wp_after_insert_post', array( $this, 'maybe_process_waiting_list' ) );
 		add_action( 'admin_menu', array( $this, 'add_rsvp_submenu_page' ) );
+		add_filter( 'comment_notification_recipients', array( $this, 'remove_rsvp_notification_emails' ), 10, 2 );
 
 		add_filter(
 			sprintf( 'set_screen_option_%s_per_page', Rsvp::COMMENT_TYPE ),
@@ -502,6 +503,32 @@ class Rsvp_Setup {
 	 */
 	public function set_submenu_file(): string {
 		return Rsvp::COMMENT_TYPE;
+	}
+
+	/**
+	 * Removes email notifications for RSVP comments.
+	 *
+	 * Prevents WordPress from sending standard comment notification emails for RSVP submissions.
+	 * RSVPs should not trigger the same notifications as regular comments since they are
+	 * specialized interactions with events rather than commentary. This avoids confusing
+	 * event authors with irrelevant comment notifications.
+	 *
+	 * @todo Implement custom RSVP notification emails for event organizers with relevant
+	 *       information about new RSVPs and changes to existing RSVPs.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $emails     Array of email addresses to notify.
+	 * @param string $comment_id The comment ID.
+	 *
+	 * @return array Empty array for RSVP comments, original array otherwise.
+	 */
+	public function remove_rsvp_notification_emails( array $emails, string $comment_id ): array {
+		if ( get_comment_type( (int) $comment_id ) !== Rsvp::COMMENT_TYPE ) {
+			return $emails;
+		}
+
+		return array();
 	}
 
 	/**

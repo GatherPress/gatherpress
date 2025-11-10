@@ -65,6 +65,12 @@ class Test_Rsvp_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
+				'name'     => 'comment_notification_recipients',
+				'priority' => 10,
+				'callback' => array( $instance, 'remove_rsvp_notification_emails' ),
+			),
+			array(
+				'type'     => 'filter',
 				'name'     => sprintf( 'set_screen_option_%s_per_page', Rsvp::COMMENT_TYPE ),
 				'priority' => 10,
 				'callback' => array( $instance, 'set_rsvp_screen_options' ),
@@ -152,6 +158,85 @@ class Test_Rsvp_Setup extends Base {
 			1,
 			$instance->adjust_comments_number( 2, $event->ID ),
 			'Failed to assert the comments do not equal 1.'
+		);
+	}
+
+	/**
+	 * Tests remove_rsvp_notification_emails method.
+	 *
+	 * Verifies that RSVP comments don't send notification emails
+	 * while regular comments pass through unchanged.
+	 *
+	 * @since 1.0.0
+	 * @covers ::remove_rsvp_notification_emails
+	 *
+	 * @return void
+	 */
+	public function test_remove_rsvp_notification_emails(): void {
+		$instance = Rsvp_Setup::get_instance();
+		$event_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Test with regular comment - should return emails unchanged.
+		$regular_comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID' => $event_id,
+				'comment_content' => 'This is a regular comment',
+				'comment_type'    => '',
+			)
+		);
+
+		$test_emails = array( 'test@example.com', 'admin@example.com' );
+		$result      = $instance->remove_rsvp_notification_emails( $test_emails, (string) $regular_comment_id );
+
+		$this->assertEquals(
+			$test_emails,
+			$result,
+			'Failed to assert that regular comment emails are preserved.'
+		);
+
+		// Test with RSVP comment - should return empty array.
+		$rsvp_comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID' => $event_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+				'comment_content' => '',
+			)
+		);
+
+		$result = $instance->remove_rsvp_notification_emails( $test_emails, (string) $rsvp_comment_id );
+
+		$this->assertEmpty(
+			$result,
+			'Failed to assert that RSVP comment emails are removed.'
+		);
+
+		// Test with another custom comment type - should return emails unchanged.
+		$custom_comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID' => $event_id,
+				'comment_type'    => 'custom_type',
+				'comment_content' => '',
+			)
+		);
+
+		$result = $instance->remove_rsvp_notification_emails( $test_emails, (string) $custom_comment_id );
+
+		$this->assertEquals(
+			$test_emails,
+			$result,
+			'Failed to assert that custom comment type emails are preserved.'
+		);
+
+		// Test with empty emails array for RSVP - should still return empty.
+		$result = $instance->remove_rsvp_notification_emails( array(), (string) $rsvp_comment_id );
+
+		$this->assertEmpty(
+			$result,
+			'Failed to assert that empty array stays empty for RSVP comments.'
 		);
 	}
 
