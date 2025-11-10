@@ -524,7 +524,7 @@ class Rsvp_Setup {
 	 * @return array Empty array for RSVP comments, original array otherwise.
 	 */
 	public function remove_rsvp_notification_emails( array $emails, string $comment_id ): array {
-		if ( get_comment_type( $comment_id ) !== Rsvp::COMMENT_TYPE ) {
+		if ( get_comment_type( (int) $comment_id ) !== Rsvp::COMMENT_TYPE ) {
 			return $emails;
 		}
 
