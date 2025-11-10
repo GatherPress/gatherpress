@@ -113,6 +113,12 @@ class Test_Event_Setup extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'set_event_archive_labels' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
+				'priority' => 10,
+				'callback' => array( $instance, 'remove_comments_column' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -397,6 +403,70 @@ class Test_Event_Setup extends Base {
 			'America/New_York',
 			get_post_meta( $post_id, 'gatherpress_timezone', true ),
 			'Failed to assert that timezone is expected value.'
+		);
+	}
+
+	/**
+	 * Coverage for remove_comments_column method.
+	 *
+	 * @covers ::remove_comments_column
+	 *
+	 * @return void
+	 */
+	public function test_remove_comments_column(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Test with columns that include comments.
+		$columns_with_comments = array(
+			'cb'       => '<input type="checkbox" />',
+			'title'    => 'Title',
+			'comments' => 'Comments',
+			'date'     => 'Date',
+		);
+
+		$result = $instance->remove_comments_column( $columns_with_comments );
+
+		$expected = array(
+			'cb'    => '<input type="checkbox" />',
+			'title' => 'Title',
+			'date'  => 'Date',
+		);
+
+		$this->assertEquals(
+			$expected,
+			$result,
+			'Failed to assert that comments column is removed from the columns array.'
+		);
+
+		$this->assertArrayNotHasKey(
+			'comments',
+			$result,
+			'Failed to assert that comments key does not exist in result.'
+		);
+
+		// Test with columns that do not include comments.
+		$columns_without_comments = array(
+			'cb'    => '<input type="checkbox" />',
+			'title' => 'Title',
+			'date'  => 'Date',
+		);
+
+		$result = $instance->remove_comments_column( $columns_without_comments );
+
+		$this->assertEquals(
+			$columns_without_comments,
+			$result,
+			'Failed to assert that columns without comments remain unchanged.'
+		);
+
+		// Test with empty array.
+		$empty_columns = array();
+		$result        = $instance->remove_comments_column( $empty_columns );
+
+		$this->assertEquals(
+			$empty_columns,
+			$result,
+			'Failed to assert that empty array remains unchanged.'
 		);
 	}
 }

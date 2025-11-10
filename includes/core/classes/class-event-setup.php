@@ -79,6 +79,10 @@ class Event_Setup {
 		add_filter( 'get_the_date', array( $this, 'get_the_event_date' ) );
 		add_filter( 'the_time', array( $this, 'get_the_event_date' ) );
 		add_filter( 'display_post_states', array( $this, 'set_event_archive_labels' ), 10, 2 );
+		add_filter(
+			sprintf( 'manage_%s_posts_columns', Event::POST_TYPE ),
+			array( $this, 'remove_comments_column' )
+		);
 	}
 
 	/**
@@ -596,5 +600,28 @@ class Event_Setup {
 		);
 
 		$event->save_datetimes( $params );
+	}
+
+	/**
+	 * Remove the comments column from the events list table.
+	 *
+	 * This method removes the comments column from the events list table in the WordPress admin
+	 * to avoid confusion between regular comments and RSVP submissions. The comment count
+	 * bubble can be misleading as it combines unapproved comments and RSVPs without
+	 * distinguishing their types.
+	 *
+	 * @todo Address limitations in WordPress core get_pending_comments_num function that is too
+	 *       generic and does not take custom comment types into account. It just looks for
+	 *       unapproved comments of any type.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $columns An array of column names.
+	 * @return array The modified array of column names without the comments column.
+	 */
+	public function remove_comments_column( array $columns ): array {
+		unset( $columns['comments'] );
+
+		return $columns;
 	}
 }
