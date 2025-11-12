@@ -509,10 +509,12 @@ class Rsvp {
 			if ( ! empty( $user_id ) ) {
 				$user_info = get_userdata( $user_id );
 
-				// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
-				// eg for BuddyPress bp_core_get_user_domain( $user_id )
-				$profile      = get_author_posts_url( $user_id );
-				$display_name = $user_info->display_name;
+				if ( ! empty( $user_info ) ) {
+					// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
+					// eg for BuddyPress bp_core_get_user_domain( $user_id )
+					$profile      = get_author_posts_url( $user_id );
+					$display_name = $user_info->display_name;
+				}
 			}
 
 			if (
