@@ -43,12 +43,11 @@ const Edit = ( { context } ) => {
 		[],
 	);
 
-	// Add the dimmed class when max attendance limit is 0 and no comment context.
-	const dimmedClass = 'gatherpress--is-dimmed';
-	const shouldDim = 0 === maxAttendanceLimit && ! commentId;
+	// Add the no-render attribute when max attendance limit is 0 and no comment context.
+	const shouldNoRender = 0 === maxAttendanceLimit && ! commentId;
 
 	const blockProps = useBlockProps( {
-		className: shouldDim ? dimmedClass : '',
+		'data-gatherpress-no-render': shouldNoRender ? 'true' : undefined,
 	} );
 
 	const guestText = sprintf(

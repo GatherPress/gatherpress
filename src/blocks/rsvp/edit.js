@@ -86,41 +86,28 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			if ( 'gatherpress/form-field' === block.name ) {
 				const fieldName = block.attributes?.fieldName;
 				let shouldDisable = false;
-				let disabledReason = '';
 
 				// Determine if the field should be disabled based on its field name.
 				if ( 'gatherpress_rsvp_guest_count' === fieldName ) {
 					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
-					disabledReason = 'Guest count is disabled when attendance limit is not set.';
 				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
 					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
 					shouldDisable = ! enableAnonymousRsvp;
-					disabledReason = 'Anonymous RSVP is disabled in event settings.';
 				}
 
 				// Only process fields that have conditional visibility.
 				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
-					const currentClassName = block.attributes?.className || '';
-					let classNames = currentClassName.split( ' ' ).filter( Boolean );
-					const dimmedClass = 'gatherpress--is-dimmed';
-					const hasDimmedClass = classNames.includes( dimmedClass );
-
 					const newAttributes = { ...block.attributes };
 
-					if ( shouldDisable && ! hasDimmedClass ) {
-						classNames.push( dimmedClass );
-					} else if ( ! shouldDisable && hasDimmedClass ) {
-						classNames = classNames.filter( ( name ) => name !== dimmedClass );
+					if ( shouldDisable ) {
+						newAttributes[ 'data-gatherpress-no-render' ] = 'true';
+					} else {
+						delete newAttributes[ 'data-gatherpress-no-render' ];
 					}
-
-					const newClassName = classNames.join( ' ' );
 
 					return {
 						...block,
-						attributes: {
-							...newAttributes,
-							className: newClassName,
-						},
+						attributes: newAttributes,
 					};
 				}
 			}

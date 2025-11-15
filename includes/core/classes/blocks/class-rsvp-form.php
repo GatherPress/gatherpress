@@ -84,6 +84,7 @@ class Rsvp_Form {
 
 		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'add_form_visibility_data_attribute' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'conditionally_render_form_fields' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
 	}
 
@@ -215,6 +216,63 @@ class Rsvp_Form {
 			}
 
 			return $tag->get_updated_html();
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Conditionally render form field blocks based on event settings.
+	 *
+	 * This method prevents form fields from rendering when their associated
+	 * event settings indicate they shouldn't be displayed. For example, guest count
+	 * fields are removed when the max guest limit is 0, and anonymous RSVP fields
+	 * are removed when anonymous RSVPs are disabled.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The rendered block content.
+	 * @param array  $block         The block instance array.
+	 *
+	 * @return string The original block content or an empty string if the field should not render.
+	 */
+	public function conditionally_render_form_fields( string $block_content, array $block ): string {
+		// Only process form-field blocks.
+		if ( 'gatherpress/form-field' !== $block['blockName'] ) {
+			return $block_content;
+		}
+
+		// Get the field name from block attributes.
+		$field_name = $block['attrs']['fieldName'] ?? '';
+
+		// Skip if not a conditional field.
+		if ( ! in_array( $field_name, array( 'gatherpress_rsvp_guests', 'gatherpress_rsvp_anonymous' ), true ) ) {
+			return $block_content;
+		}
+
+		// Get the current post ID.
+		$post_id = get_the_ID();
+		if ( ! $post_id ) {
+			return $block_content;
+		}
+
+		$should_hide = false;
+
+		// Check guest count field.
+		if ( 'gatherpress_rsvp_guests' === $field_name ) {
+			$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+			$should_hide     = 0 === $max_guest_limit;
+		}
+
+		// Check anonymous field.
+		if ( 'gatherpress_rsvp_anonymous' === $field_name ) {
+			$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
+			$should_hide           = ! $enable_anonymous_rsvp;
+		}
+
+		// Return empty string if the field should not render.
+		if ( $should_hide ) {
+			return '';
 		}
 
 		return $block_content;
