@@ -102,19 +102,15 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
 					const currentClassName = block.attributes?.className || '';
 					let classNames = currentClassName.split( ' ' ).filter( Boolean );
-					const dimmedClasses = [ 'gatherpress--is-dimmed' ];
-					const hasDimmedClasses = dimmedClasses.some( ( cls ) => classNames.includes( cls ) );
+					const dimmedClass = 'gatherpress--is-dimmed';
+					const hasDimmedClass = classNames.includes( dimmedClass );
 
 					const newAttributes = { ...block.attributes };
 
-					if ( shouldDisable && ! hasDimmedClasses ) {
-						classNames.push( ...dimmedClasses );
-						newAttributes.title = disabledReason;
-						newAttributes[ 'aria-label' ] = `${ block.attributes?.label || fieldName } (disabled): ${ disabledReason }`;
-					} else if ( ! shouldDisable && hasDimmedClasses ) {
-						classNames = classNames.filter( ( name ) => ! dimmedClasses.includes( name ) );
-						delete newAttributes.title;
-						delete newAttributes[ 'aria-label' ];
+					if ( shouldDisable && ! hasDimmedClass ) {
+						classNames.push( dimmedClass );
+					} else if ( ! shouldDisable && hasDimmedClass ) {
+						classNames = classNames.filter( ( name ) => name !== dimmedClass );
 					}
 
 					const newClassName = classNames.join( ' ' );

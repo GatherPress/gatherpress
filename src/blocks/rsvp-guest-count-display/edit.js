@@ -43,12 +43,12 @@ const Edit = ( { context } ) => {
 		[],
 	);
 
-	// Add the `gatherpress--is-dimmed` class conditionally via `useBlockProps`.
+	// Add the dimmed class when max attendance limit is 0 and no comment context.
+	const dimmedClass = 'gatherpress--is-dimmed';
+	const shouldDim = 0 === maxAttendanceLimit && ! commentId;
+
 	const blockProps = useBlockProps( {
-		className:
-			0 === maxAttendanceLimit && ! commentId
-				? 'gatherpress--is-dimmed'
-				: '',
+		className: shouldDim ? dimmedClass : '',
 	} );
 
 	const guestText = sprintf(
