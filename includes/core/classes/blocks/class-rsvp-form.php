@@ -269,7 +269,7 @@ class Rsvp_Form {
 				$tag = new WP_HTML_Tag_Processor( $block_content );
 
 				// Find the input element and add the max attribute.
-				if ( $tag->next_tag( 'input' ) ) {
+				if ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
 					$tag->set_attribute( 'max', (string) $max_guest_limit );
 					// Also set min to 0 for guest count.
 					$tag->set_attribute( 'min', '0' );
