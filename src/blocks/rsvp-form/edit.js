@@ -10,6 +10,7 @@ import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
+import { getBlockTypes } from '@wordpress/blocks';
 
 /**
  * Internal dependencies.
@@ -18,6 +19,11 @@ import TEMPLATE from './template';
 
 const Edit = ( { clientId } ) => {
 	const [ formState, setFormState ] = useState( 'default' );
+
+	// Calculate allowed blocks - all blocks except gatherpress/rsvp-form.
+	const allowedBlocks = getBlockTypes()
+		.map( ( blockType ) => blockType.name )
+		.filter( ( name ) => 'gatherpress/rsvp-form' !== name );
 
 	// Get all inner blocks and track their visibility attributes specifically.
 	const { innerBlocks, visibilityAttributes } = useSelect( ( select ) => {
@@ -121,7 +127,10 @@ const Edit = ( { clientId } ) => {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				<InnerBlocks template={ TEMPLATE } />
+				<InnerBlocks
+					template={ TEMPLATE }
+					allowedBlocks={ allowedBlocks }
+				/>
 			</div>
 		</>
 	);
