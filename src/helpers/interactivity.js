@@ -174,7 +174,7 @@ export async function sendRsvpApiRequest(
 
 	// Add loading class to element if provided.
 	if ( loadingElement ) {
-		loadingElement.classList.add( 'gatherpress--loading' );
+		loadingElement.classList.add( 'gatherpress--is-loading' );
 	}
 
 	const makeRequest = async ( isRetry = false ) => {
@@ -240,7 +240,7 @@ export async function sendRsvpApiRequest(
 	} finally {
 		// Always remove loading class when request completes.
 		if ( loadingElement ) {
-			loadingElement.classList.remove( 'gatherpress--loading' );
+			loadingElement.classList.remove( 'gatherpress--is-loading' );
 		}
 	}
 }

@@ -85,36 +85,46 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			// Check if this is a form-field block that needs conditional visibility.
 			if ( 'gatherpress/form-field' === block.name ) {
 				const fieldName = block.attributes?.fieldName;
-				let shouldHide = false;
+				let shouldDisable = false;
+				let disabledReason = '';
 
-				// Determine if the field should be hidden based on its field name.
+				// Determine if the field should be disabled based on its field name.
 				if ( 'gatherpress_rsvp_guest_count' === fieldName ) {
-					shouldHide = 0 === parseInt( maxAttendanceLimit, 10 );
+					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
+					disabledReason = 'Guest count is disabled when attendance limit is not set.';
 				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
 					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
-					shouldHide = ! enableAnonymousRsvp;
+					shouldDisable = ! enableAnonymousRsvp;
+					disabledReason = 'Anonymous RSVP is disabled in event settings.';
 				}
 
 				// Only process fields that have conditional visibility.
 				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
 					const currentClassName = block.attributes?.className || '';
-					const classNames = currentClassName.split( ' ' ).filter( Boolean );
-					const hiddenClass = 'gatherpress--is-hidden';
-					const hasHiddenClass = classNames.includes( hiddenClass );
+					let classNames = currentClassName.split( ' ' ).filter( Boolean );
+					const dimmedClasses = [ 'gatherpress--is-dimmed' ];
+					const hasDimmedClasses = dimmedClasses.some( ( cls ) => classNames.includes( cls ) );
 
-					let newClassName = currentClassName;
-					if ( shouldHide && ! hasHiddenClass ) {
-						classNames.push( hiddenClass );
-						newClassName = classNames.join( ' ' );
-					} else if ( ! shouldHide && hasHiddenClass ) {
-						const filteredClasses = classNames.filter( ( name ) => name !== hiddenClass );
-						newClassName = filteredClasses.join( ' ' );
+					const newAttributes = { ...block.attributes };
+
+					if ( shouldDisable && ! hasDimmedClasses ) {
+						classNames.push( ...dimmedClasses );
+						newAttributes[ 'data-tooltip-id' ] = `gatherpress-dimmed-tooltip-${ fieldName }`;
+						newAttributes[ 'data-tooltip-content' ] = disabledReason;
+						newAttributes[ 'aria-label' ] = `${ block.attributes?.label || fieldName } (disabled): ${ disabledReason }`;
+					} else if ( ! shouldDisable && hasDimmedClasses ) {
+						classNames = classNames.filter( ( name ) => ! dimmedClasses.includes( name ) );
+						delete newAttributes[ 'data-tooltip-id' ];
+						delete newAttributes[ 'data-tooltip-content' ];
+						delete newAttributes[ 'aria-label' ];
 					}
+
+					const newClassName = classNames.join( ' ' );
 
 					return {
 						...block,
 						attributes: {
-							...block.attributes,
+							...newAttributes,
 							className: newClassName,
 						},
 					};

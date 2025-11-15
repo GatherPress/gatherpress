@@ -32,7 +32,7 @@ const { state } = store( 'gatherpress', {
 
 			// Find submit button for loading state.
 			const submitButton = form.querySelector( '.gatherpress-submit-button' );
-			const loadingClass = 'gatherpress--loading';
+			const loadingClass = 'gatherpress--is-loading';
 
 			state.rsvpForm.isSubmitting = true;
 

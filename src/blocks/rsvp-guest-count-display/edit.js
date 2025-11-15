@@ -43,18 +43,13 @@ const Edit = ( { context } ) => {
 		[],
 	);
 
-	// Add the `gatherpress--is-hidden` class conditionally via `useBlockProps`.
+	// Add the `gatherpress--is-dimmed` class conditionally via `useBlockProps`.
 	const blockProps = useBlockProps( {
 		className:
 			0 === maxAttendanceLimit && ! commentId
-				? 'gatherpress--is-hidden'
+				? 'gatherpress--is-dimmed'
 				: '',
 	} );
-
-	// If the guest count is 0, return nothing.
-	if ( 0 === guestCount ) {
-		return <div { ...blockProps }></div>;
-	}
 
 	const guestText = sprintf(
 		/* translators: %d: Number of guests. Singular and plural forms are used for 1 guest and multiple guests, respectively. */

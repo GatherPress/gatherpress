@@ -6,6 +6,7 @@
 	display: none !important;
 }
 
+
 .gatherpress-modal--trigger-open,
 .gatherpress-modal--trigger-close {
 	cursor: pointer;
@@ -17,7 +18,11 @@
 	text-decoration: none;
 }
 
-.gatherpress--loading {
+.gatherpress--is-dimmed {
+	opacity: 0.35;
+}
+
+.gatherpress--is-loading {
 	animation: gatherpress-pulse 1.5s ease-in-out infinite;
 	pointer-events: none;
 }
