@@ -212,6 +212,12 @@ class Rsvp {
 			$guests = $max_guest_limit;
 		}
 
+		// Check if anonymous RSVP is enabled for this event.
+		$enable_anonymous_rsvp = get_post_meta( $this->event->ID, 'gatherpress_enable_anonymous_rsvp', true );
+		if ( ! $enable_anonymous_rsvp ) {
+			$anonymous = 0;
+		}
+
 		$data = array(
 			'comment_id' => 0,
 			'post_id'    => 0,

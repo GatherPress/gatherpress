@@ -227,14 +227,15 @@ class Rsvp_Form {
 	 * This method prevents form fields from rendering when their associated
 	 * event settings indicate they shouldn't be displayed. For example, guest count
 	 * fields are removed when the max guest limit is 0, and anonymous RSVP fields
-	 * are removed when anonymous RSVPs are disabled.
+	 * are removed when anonymous RSVPs are disabled. For guest count fields with
+	 * a limit > 0, the max value is enforced in the field attributes.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The rendered block content.
 	 * @param array  $block         The block instance array.
 	 *
-	 * @return string The original block content or an empty string if the field should not render.
+	 * @return string The modified block content, or an empty string if the field should not render.
 	 */
 	public function conditionally_render_form_fields( string $block_content, array $block ): string {
 		// Only process form-field blocks.
@@ -262,6 +263,19 @@ class Rsvp_Form {
 		if ( 'gatherpress_rsvp_guests' === $field_name ) {
 			$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
 			$should_hide     = 0 === $max_guest_limit;
+
+			// If there's a max limit, add it to the input field.
+			if ( ! $should_hide && 0 < $max_guest_limit ) {
+				$tag = new WP_HTML_Tag_Processor( $block_content );
+
+				// Find the input element and add the max attribute.
+				if ( $tag->next_tag( 'input' ) ) {
+					$tag->set_attribute( 'max', (string) $max_guest_limit );
+					// Also set min to 0 for guest count.
+					$tag->set_attribute( 'min', '0' );
+					$block_content = $tag->get_updated_html();
+				}
+			}
 		}
 
 		// Check anonymous field.

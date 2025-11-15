@@ -152,6 +152,10 @@ class Rsvp_Setup {
 				if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
 					wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
 
+					// Get the event post ID from the comment.
+					$comment = get_comment( $comment_id );
+					$post_id = $comment ? $comment->comment_post_ID : 0;
+
 					// Handle email updates checkbox if present in form submission.
 					$email_updates = Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' );
 					if ( ! empty( $email_updates ) ) {
@@ -161,12 +165,23 @@ class Rsvp_Setup {
 					// Handle guest count field if present in form submission.
 					$guest_count = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_guests' );
 					if ( is_numeric( $guest_count ) ) {
-						update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', intval( $guest_count ) );
+						$guest_count     = intval( $guest_count );
+						$max_guest_limit = intval( get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ) );
+
+						// Cap guest count at the maximum allowed.
+						if ( $max_guest_limit > 0 && $guest_count > $max_guest_limit ) {
+							$guest_count = $max_guest_limit;
+						}
+
+						update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', $guest_count );
 					}
 
 					// Handle anonymous checkbox if present in form submission.
-					$anonymous = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_anonymous' );
-					if ( ! empty( $anonymous ) ) {
+					$anonymous             = Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_anonymous' );
+					$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
+
+					// Only set anonymous if it's enabled for the event.
+					if ( ! empty( $anonymous ) && ! empty( $enable_anonymous_rsvp ) ) {
 						update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', 1 );
 					}
 

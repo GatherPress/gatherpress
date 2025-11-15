@@ -974,12 +974,23 @@ class Event_Rest_Api {
 		// Handle guest count field.
 		$guest_count = $request->get_param( 'gatherpress_rsvp_guests' );
 		if ( ! is_null( $guest_count ) && is_numeric( $guest_count ) ) {
-			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', intval( $guest_count ) );
+			$guest_count     = intval( $guest_count );
+			$max_guest_limit = intval( get_post_meta( $post_id, 'gatherpress_max_guest_limit', true ) );
+
+			// Cap guest count at the maximum allowed.
+			if ( $max_guest_limit > 0 && $guest_count > $max_guest_limit ) {
+				$guest_count = $max_guest_limit;
+			}
+
+			update_comment_meta( $comment_id, 'gatherpress_rsvp_guests', $guest_count );
 		}
 
 		// Handle anonymous field.
-		$anonymous = $request->get_param( 'gatherpress_rsvp_anonymous' );
-		if ( ! is_null( $anonymous ) ) {
+		$anonymous             = $request->get_param( 'gatherpress_rsvp_anonymous' );
+		$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
+
+		// Only set anonymous if it's enabled for the event.
+		if ( ! is_null( $anonymous ) && ! empty( $enable_anonymous_rsvp ) ) {
 			update_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', (bool) $anonymous ? 1 : 0 );
 		}
 
@@ -1077,7 +1088,7 @@ class Event_Rest_Api {
 		$fields      = $form_schema['fields'] ?? array();
 
 		// Validate each field against the schema.
-		foreach ( $fields as $field_name => $field_config ) {
+		foreach ( $fields as $field_config ) {
 			$submitted_value = $request->get_param( $field_config['name'] );
 
 			if ( null === $submitted_value ) {

@@ -49,6 +49,12 @@ class Test_Rsvp_Form extends Base {
 				'callback' => array( $instance, 'add_form_visibility_data_attribute' ),
 			),
 			array(
+				'type'     => 'filter',
+				'name'     => 'render_block',
+				'priority' => 10,
+				'callback' => array( $instance, 'conditionally_render_form_fields' ),
+			),
+			array(
 				'type'     => 'action',
 				'name'     => 'save_post',
 				'priority' => 10,
