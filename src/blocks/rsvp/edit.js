@@ -109,13 +109,11 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 
 					if ( shouldDisable && ! hasDimmedClasses ) {
 						classNames.push( ...dimmedClasses );
-						newAttributes[ 'data-tooltip-id' ] = `gatherpress-dimmed-tooltip-${ fieldName }`;
-						newAttributes[ 'data-tooltip-content' ] = disabledReason;
+						newAttributes.title = disabledReason;
 						newAttributes[ 'aria-label' ] = `${ block.attributes?.label || fieldName } (disabled): ${ disabledReason }`;
 					} else if ( ! shouldDisable && hasDimmedClasses ) {
 						classNames = classNames.filter( ( name ) => ! dimmedClasses.includes( name ) );
-						delete newAttributes[ 'data-tooltip-id' ];
-						delete newAttributes[ 'data-tooltip-content' ];
+						delete newAttributes.title;
 						delete newAttributes[ 'aria-label' ];
 					}
 
