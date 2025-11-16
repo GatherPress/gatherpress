@@ -15,7 +15,6 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
-use GatherPress\Core\Rsvp_Form as Rsvp_Form_Core;
 use GatherPress\Core\Traits\Singleton;
 use WP_Site;
 
@@ -66,7 +65,7 @@ class Setup {
 		Event_Setup::get_instance();
 		Export::get_instance();
 		Import::get_instance();
-		Rsvp_Form_Core::get_instance();
+		Rsvp_Form::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
 		Settings::get_instance();
