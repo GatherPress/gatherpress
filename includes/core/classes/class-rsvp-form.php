@@ -221,7 +221,7 @@ class Rsvp_Form {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string      $location The original redirect location.
+	 * @param string     $location The original redirect location.
 	 * @param WP_Comment $comment  The comment object.
 	 * @return string The modified redirect location.
 	 */
