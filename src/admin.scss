@@ -2,3 +2,7 @@
 	display: flex;
 	gap: 0.5rem;
 }
+
+[data-gatherpress-no-render="true"] {
+	opacity: 0.35;
+}

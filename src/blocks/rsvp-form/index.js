@@ -6,8 +6,9 @@ import { useBlockProps, InnerBlocks, InspectorAdvancedControls } from '@wordpres
 import { __ } from '@wordpress/i18n';
 import { SelectControl } from '@wordpress/components';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import { Fragment } from '@wordpress/element';
+import { Fragment, useEffect } from '@wordpress/element';
 import { addFilter } from '@wordpress/hooks';
+import { select, dispatch } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -65,18 +66,14 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 			} );
 
 			if ( isInsideRsvpForm ) {
-				// Hide nested RSVP Forms by returning an empty div with an error message.
-				return (
-					<div style={ {
-						padding: '16px',
-						border: '2px dashed #cc1818',
-						backgroundColor: '#fcf0f1',
-						color: '#cc1818',
-						borderRadius: '4px',
-					} }>
-						{ __( 'RSVP Forms cannot be nested inside other RSVP Forms.', 'gatherpress' ) }
-					</div>
-				);
+				// Remove nested RSVP Forms automatically.
+				useEffect( () => {
+					const { removeBlock } = dispatch( 'core/block-editor' );
+					removeBlock( clientId );
+				}, [ clientId ] );
+
+				// Return null while the block is being removed.
+				return null;
 			}
 
 			return <BlockEdit { ...props } />;
@@ -171,6 +168,45 @@ registerBlockType( metadata, {
 	},
 } );
 
+/**
+ * Filter blocks that can be inserted based on context.
+ * Prevents RSVP Form from being inserted when already inside an RSVP Form.
+ *
+ * @param {boolean|Array} canInsert    Whether the block can be inserted.
+ * @param {Object}        blockType    The block type being checked.
+ * @param {string}        rootClientId The client ID of the parent block.
+ * @return {boolean} Whether the block can be inserted.
+ */
+function preventNestedRsvpFormInsertion( canInsert, blockType, rootClientId ) {
+	// Only check for RSVP Form blocks.
+	if ( 'gatherpress/rsvp-form' !== blockType.name ) {
+		return canInsert;
+	}
+
+	// Check if we're trying to insert inside any RSVP Form (at any nesting level).
+	// We need to check both rootClientId and when inserting at root level.
+	const { getBlockParents, getBlock, getSelectedBlockClientId } = select( 'core/block-editor' );
+
+	// Determine which block to check parents for.
+	const checkClientId = rootClientId || getSelectedBlockClientId();
+
+	if ( checkClientId ) {
+		const parents = getBlockParents( checkClientId, true ); // Include the checkClientId in the check.
+
+		// Check if any parent (including the direct parent) is an RSVP Form.
+		const isInsideRsvpForm = parents.some( ( parentId ) => {
+			const parentBlock = getBlock( parentId );
+			return 'gatherpress/rsvp-form' === parentBlock?.name;
+		} );
+
+		if ( isInsideRsvpForm ) {
+			return false; // Prevent insertion.
+		}
+	}
+
+	return canInsert;
+}
+
 // Register the filters for form visibility functionality.
 addFilter(
 	'blocks.registerBlockType',
@@ -188,4 +224,11 @@ addFilter(
 	'blocks.getSaveContent.extraProps',
 	'gatherpress/form-visibility-data-attribute',
 	addFormVisibilityDataAttribute
+);
+
+// Prevent RSVP Form from being inserted inside another RSVP Form.
+addFilter(
+	'blocks.canInsertBlockType',
+	'gatherpress/prevent-nested-rsvp-form',
+	preventNestedRsvpFormInsertion
 );

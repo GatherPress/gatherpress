@@ -84,6 +84,7 @@ class Rsvp_Form {
 
 		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'add_form_visibility_data_attribute' ), 10, 2 );
+		add_filter( 'render_block_gatherpress/form-field', array( $this, 'conditionally_render_form_fields' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
 	}
 
@@ -221,6 +222,72 @@ class Rsvp_Form {
 	}
 
 	/**
+	 * Conditionally render form field blocks based on event settings.
+	 *
+	 * This method prevents form fields from rendering when their associated
+	 * event settings indicate they shouldn't be displayed. For example, guest count
+	 * fields are removed when the max guest limit is 0, and anonymous RSVP fields
+	 * are removed when anonymous RSVPs are disabled. For guest count fields with
+	 * a limit > 0, the max value is enforced in the field attributes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The rendered block content.
+	 * @param array  $block         The block instance array.
+	 *
+	 * @return string The modified block content, or an empty string if the field should not render.
+	 */
+	public function conditionally_render_form_fields( string $block_content, array $block ): string {
+		// Get the field name from block attributes.
+		$field_name = $block['attrs']['fieldName'] ?? '';
+
+		// Skip if not a conditional field.
+		if ( ! in_array( $field_name, array( 'gatherpress_rsvp_guests', 'gatherpress_rsvp_anonymous' ), true ) ) {
+			return $block_content;
+		}
+
+		// Get the current post ID.
+		$post_id = get_the_ID();
+		if ( ! $post_id ) {
+			return $block_content;
+		}
+
+		$should_remove = false;
+
+		// Check guest count field.
+		if ( 'gatherpress_rsvp_guests' === $field_name ) {
+			$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+			$should_remove   = 0 === $max_guest_limit;
+
+			// If there's a max limit, add it to the input field.
+			if ( ! $should_remove && 0 < $max_guest_limit ) {
+				$tag = new WP_HTML_Tag_Processor( $block_content );
+
+				// Find the input element and add the max attribute.
+				if ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
+					$tag->set_attribute( 'max', (string) $max_guest_limit );
+					// Also set min to 0 for guest count.
+					$tag->set_attribute( 'min', '0' );
+					$block_content = $tag->get_updated_html();
+				}
+			}
+		}
+
+		// Check anonymous field.
+		if ( 'gatherpress_rsvp_anonymous' === $field_name ) {
+			$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
+			$should_remove         = ! $enable_anonymous_rsvp;
+		}
+
+		// Return empty string if the field should not render.
+		if ( $should_remove ) {
+			return '';
+		}
+
+		return $block_content;
+	}
+
+	/**
 	 * Apply visibility rule to a specific HTML element.
 	 *
 	 * @since 1.0.0
@@ -257,7 +324,6 @@ class Rsvp_Form {
 			$tag->set_attribute( 'role', 'status' );
 		}
 	}
-
 
 	/**
 	 * Save the form schema when a post is saved.

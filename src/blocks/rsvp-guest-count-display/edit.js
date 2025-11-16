@@ -43,18 +43,12 @@ const Edit = ( { context } ) => {
 		[],
 	);
 
-	// Add the `gatherpress--is-hidden` class conditionally via `useBlockProps`.
-	const blockProps = useBlockProps( {
-		className:
-			0 === maxAttendanceLimit && ! commentId
-				? 'gatherpress--is-hidden'
-				: '',
-	} );
+	// Add the no-render attribute when max attendance limit is 0 and no comment context.
+	const shouldNoRender = 0 === maxAttendanceLimit && ! commentId;
 
-	// If the guest count is 0, return nothing.
-	if ( 0 === guestCount ) {
-		return <div { ...blockProps }></div>;
-	}
+	const blockProps = useBlockProps( {
+		'data-gatherpress-no-render': shouldNoRender ? 'true' : undefined,
+	} );
 
 	const guestText = sprintf(
 		/* translators: %d: Number of guests. Singular and plural forms are used for 1 guest and multiple guests, respectively. */

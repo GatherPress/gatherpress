@@ -85,38 +85,29 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			// Check if this is a form-field block that needs conditional visibility.
 			if ( 'gatherpress/form-field' === block.name ) {
 				const fieldName = block.attributes?.fieldName;
-				let shouldHide = false;
+				let shouldDisable = false;
 
-				// Determine if the field should be hidden based on its field name.
+				// Determine if the field should be disabled based on its field name.
 				if ( 'gatherpress_rsvp_guest_count' === fieldName ) {
-					shouldHide = 0 === parseInt( maxAttendanceLimit, 10 );
+					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
 				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
 					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
-					shouldHide = ! enableAnonymousRsvp;
+					shouldDisable = ! enableAnonymousRsvp;
 				}
 
 				// Only process fields that have conditional visibility.
 				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
-					const currentClassName = block.attributes?.className || '';
-					const classNames = currentClassName.split( ' ' ).filter( Boolean );
-					const hiddenClass = 'gatherpress--is-hidden';
-					const hasHiddenClass = classNames.includes( hiddenClass );
+					const newAttributes = { ...block.attributes };
 
-					let newClassName = currentClassName;
-					if ( shouldHide && ! hasHiddenClass ) {
-						classNames.push( hiddenClass );
-						newClassName = classNames.join( ' ' );
-					} else if ( ! shouldHide && hasHiddenClass ) {
-						const filteredClasses = classNames.filter( ( name ) => name !== hiddenClass );
-						newClassName = filteredClasses.join( ' ' );
+					if ( shouldDisable ) {
+						newAttributes[ 'data-gatherpress-no-render' ] = 'true';
+					} else {
+						delete newAttributes[ 'data-gatherpress-no-render' ];
 					}
 
 					return {
 						...block,
-						attributes: {
-							...block.attributes,
-							className: newClassName,
-						},
+						attributes: newAttributes,
 					};
 				}
 			}

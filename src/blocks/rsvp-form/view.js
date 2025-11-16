@@ -30,7 +30,16 @@ const { state } = store( 'gatherpress', {
 				return;
 			}
 
+			// Find submit button for loading state.
+			const submitButton = form.querySelector( '.gatherpress-submit-button' );
+			const loadingClass = 'gatherpress--is-loading';
+
 			state.rsvpForm.isSubmitting = true;
+
+			// Add loading class to submit button.
+			if ( submitButton ) {
+				submitButton.classList.add( loadingClass );
+			}
 
 			// Get form data.
 			const formData = new FormData( form );
@@ -154,6 +163,11 @@ const { state } = store( 'gatherpress', {
 			}
 
 			state.rsvpForm.isSubmitting = false;
+
+			// Remove loading class from submit button.
+			if ( submitButton ) {
+				submitButton.classList.remove( loadingClass );
+			}
 		},
 	},
 	callbacks: {
