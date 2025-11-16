@@ -19,6 +19,8 @@ use GatherPress\Core\Blocks\Rsvp_Form as Rsvp_Form_Block;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
 use GatherPress\Core\Rsvp_Token;
+use WP_Comment;
+use WP_User;
 
 /**
  * Class Rsvp_Form
@@ -152,7 +154,7 @@ class Rsvp_Form {
 		// Handle user authentication.
 		$user = get_user_by( 'ID', get_current_user_id() );
 		if (
-			! $user instanceof \WP_User ||
+			! $user instanceof WP_User ||
 			$user->user_email !== $email
 		) {
 			add_filter( 'pre_comment_approved', '__return_zero' );
@@ -220,10 +222,10 @@ class Rsvp_Form {
 	 * @since 1.0.0
 	 *
 	 * @param string      $location The original redirect location.
-	 * @param \WP_Comment $comment  The comment object.
+	 * @param WP_Comment $comment  The comment object.
 	 * @return string The modified redirect location.
 	 */
-	public function handle_rsvp_comment_redirect( string $location, \WP_Comment $comment ): string {
+	public function handle_rsvp_comment_redirect( string $location, WP_Comment $comment ): string {
 		if ( Rsvp::COMMENT_TYPE !== $comment->comment_type ) {
 			return $location;
 		}
@@ -340,7 +342,7 @@ class Rsvp_Form {
 
 		$existing_user = get_user_by( 'email', $email );
 
-		if ( $existing_user instanceof \WP_User ) {
+		if ( $existing_user instanceof WP_User ) {
 			$query          = "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = %s AND (comment_author_email = %s OR user_id = %d)";
 			$prepare_values = array( $post_id, Rsvp::COMMENT_TYPE, $email, $existing_user->ID );
 		} else {
@@ -395,7 +397,7 @@ class Rsvp_Form {
 		}
 
 		// Handle user authentication and author data.
-		if ( $user instanceof \WP_User && $user->user_email === $email ) {
+		if ( $user instanceof WP_User && $user->user_email === $email ) {
 			// Current logged-in user matches the email.
 			$comment_data['user_id']              = $user->ID;
 			$comment_data['comment_author']       = $user->display_name;
@@ -405,7 +407,7 @@ class Rsvp_Form {
 			// Check if any user exists with this email.
 			$existing_user = get_user_by( 'email', $email );
 
-			if ( $existing_user instanceof \WP_User ) {
+			if ( $existing_user instanceof WP_User ) {
 				// Associate with existing user account.
 				$comment_data['user_id']              = $existing_user->ID;
 				$comment_data['comment_author']       = $existing_user->display_name;
