@@ -74,27 +74,43 @@ class Test_User extends Base {
 	 * Coverage for profile_fields.
 	 *
 	 * @covers ::profile_fields
+	 * @covers ::has_event_updates_opt_in
 	 *
 	 * @return void
 	 */
 	public function test_profile_fields(): void {
 		$instance = User::get_instance();
 		$user     = $this->mock->user( true )->get();
-		$markup   = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
 
+		// Test default checkbox state (should be checked).
+		delete_user_meta( $user->ID, 'gatherpress_event_updates_opt_in' );
+		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
 		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked by default.' );
 
+		// Test with explicit opt-out.
 		update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', 0 );
-
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
-
 		$this->assertStringNotContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is not checked.' );
 
+		// Test with explicit opt-in.
 		update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', 1 );
+		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked.' );
+
+		// Test with filter changing default to unchecked.
+		delete_user_meta( $user->ID, 'gatherpress_event_updates_opt_in' );
+		add_filter(
+			'gatherpress_event_updates_default_opt_in',
+			function () {
+				return '0';
+			}
+		);
 
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
+		$this->assertStringNotContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox respects filter for unchecked default.' );
 
-		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked.' );
+		// Clean up filter.
+		remove_all_filters( 'gatherpress_event_updates_default_opt_in' );
 
 		// Check 12 vs 24 hour preference.
 		update_user_meta( $user->ID, 'gatherpress_time_format', User::HOUR_12 );
@@ -160,5 +176,71 @@ class Test_User extends Base {
 			'Hammer Time',
 			$instance->user_set_timezone( 'ET-or-whatever' )
 		);
+	}
+
+	/**
+	 * Coverage for has_event_updates_opt_in method.
+	 *
+	 * @covers ::has_event_updates_opt_in
+	 *
+	 * @return void
+	 */
+	public function test_has_event_updates_opt_in(): void {
+		$instance = User::get_instance();
+		$user     = $this->factory->user->create();
+
+		// Test default behavior (should be true when not set).
+		$this->assertTrue(
+			$instance->has_event_updates_opt_in( $user ),
+			'Default opt-in should be true when user meta is not set.'
+		);
+
+		// Test explicitly opted out.
+		update_user_meta( $user, 'gatherpress_event_updates_opt_in', '0' );
+		$this->assertFalse(
+			$instance->has_event_updates_opt_in( $user ),
+			'Should return false when user has explicitly opted out.'
+		);
+
+		// Test explicitly opted in.
+		update_user_meta( $user, 'gatherpress_event_updates_opt_in', '1' );
+		$this->assertTrue(
+			$instance->has_event_updates_opt_in( $user ),
+			'Should return true when user has explicitly opted in.'
+		);
+
+		// Test with filter changing default to opted out.
+		delete_user_meta( $user, 'gatherpress_event_updates_opt_in' );
+		add_filter(
+			'gatherpress_event_updates_default_opt_in',
+			function () {
+				return '0';
+			}
+		);
+
+		$this->assertFalse(
+			$instance->has_event_updates_opt_in( $user ),
+			'Should return false when filter sets default to opted out.'
+		);
+
+		// Clean up filter.
+		remove_all_filters( 'gatherpress_event_updates_default_opt_in' );
+
+		// Test that filter doesn't override explicit user preference.
+		update_user_meta( $user, 'gatherpress_event_updates_opt_in', '1' );
+		add_filter(
+			'gatherpress_event_updates_default_opt_in',
+			function () {
+				return '0';
+			}
+		);
+
+		$this->assertTrue(
+			$instance->has_event_updates_opt_in( $user ),
+			'Filter should not override explicit user preference.'
+		);
+
+		// Clean up.
+		remove_all_filters( 'gatherpress_event_updates_default_opt_in' );
 	}
 }
