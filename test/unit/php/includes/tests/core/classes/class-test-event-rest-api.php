@@ -655,7 +655,6 @@ class Test_Event_Rest_Api extends Base {
 	 *
 	 * @since 1.0.0
 	 * @covers ::handle_rsvp_form_submission
-	 * @covers ::save_custom_fields
 	 *
 	 * @return void
 	 */
@@ -809,33 +808,5 @@ class Test_Event_Rest_Api extends Base {
 		$rsvp_data = $event->rsvp->get( $user_id );
 		$this->assertNotEmpty( $rsvp_data['comment_id'] );
 		$this->assertEquals( $user_id, $rsvp_data['user_id'] );
-	}
-
-	/**
-	 * Tests save_custom_fields with missing schema.
-	 *
-	 * Verifies that custom field processing is skipped when
-	 * no valid schema is found.
-	 *
-	 * @since 1.0.0
-	 * @covers ::save_custom_fields
-	 *
-	 * @return void
-	 */
-	public function test_save_custom_fields_missing_schema(): void {
-		$instance   = Event_Rest_Api::get_instance();
-		$post_id    = $this->factory()->post->create();
-		$comment_id = $this->factory()->comment->create();
-
-		$request = new WP_REST_Request( 'POST' );
-		$request->set_param( 'gatherpress_form_schema_id', 'nonexistent_form' );
-		$request->set_param( 'custom_field', 'Test value' );
-
-		// Use Utility to call private method.
-		Utility::invoke_hidden_method( $instance, 'save_custom_fields', array( $request, $post_id, $comment_id ) );
-
-		// Verify no custom fields were saved.
-		$custom_meta = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true );
-		$this->assertEmpty( $custom_meta );
 	}
 }

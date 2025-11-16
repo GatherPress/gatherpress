@@ -257,15 +257,15 @@ class Rsvp_Form {
 			return $block_content;
 		}
 
-		$should_hide = false;
+		$should_remove = false;
 
 		// Check guest count field.
 		if ( 'gatherpress_rsvp_guests' === $field_name ) {
 			$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
-			$should_hide     = 0 === $max_guest_limit;
+			$should_remove   = 0 === $max_guest_limit;
 
 			// If there's a max limit, add it to the input field.
-			if ( ! $should_hide && 0 < $max_guest_limit ) {
+			if ( ! $should_remove && 0 < $max_guest_limit ) {
 				$tag = new WP_HTML_Tag_Processor( $block_content );
 
 				// Find the input element and add the max attribute.
@@ -281,11 +281,11 @@ class Rsvp_Form {
 		// Check anonymous field.
 		if ( 'gatherpress_rsvp_anonymous' === $field_name ) {
 			$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
-			$should_hide           = ! $enable_anonymous_rsvp;
+			$should_remove         = ! $enable_anonymous_rsvp;
 		}
 
 		// Return empty string if the field should not render.
-		if ( $should_hide ) {
+		if ( $should_remove ) {
 			return '';
 		}
 
