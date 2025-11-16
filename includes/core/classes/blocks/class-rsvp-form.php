@@ -84,7 +84,7 @@ class Rsvp_Form {
 
 		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
 		add_filter( 'render_block', array( $this, 'add_form_visibility_data_attribute' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'conditionally_render_form_fields' ), 10, 2 );
+		add_filter( 'render_block_gatherpress/form-field', array( $this, 'conditionally_render_form_fields' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
 	}
 
@@ -238,11 +238,6 @@ class Rsvp_Form {
 	 * @return string The modified block content, or an empty string if the field should not render.
 	 */
 	public function conditionally_render_form_fields( string $block_content, array $block ): string {
-		// Only process form-field blocks.
-		if ( 'gatherpress/form-field' !== $block['blockName'] ) {
-			return $block_content;
-		}
-
 		// Get the field name from block attributes.
 		$field_name = $block['attrs']['fieldName'] ?? '';
 
@@ -329,7 +324,6 @@ class Rsvp_Form {
 			$tag->set_attribute( 'role', 'status' );
 		}
 	}
-
 
 	/**
 	 * Save the form schema when a post is saved.

@@ -50,7 +50,7 @@ class Test_Rsvp_Form extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => 'render_block',
+				'name'     => 'render_block_gatherpress/form-field',
 				'priority' => 10,
 				'callback' => array( $instance, 'conditionally_render_form_fields' ),
 			),
@@ -767,8 +767,6 @@ class Test_Rsvp_Form extends Base {
 		$this->assertEquals( $html, $result );
 	}
 
-
-
 	/**
 	 * Tests the add_form_visibility_data_attribute method with no gatherpressRsvpFormVisibility attribute.
 	 *
@@ -842,7 +840,8 @@ class Test_Rsvp_Form extends Base {
 		// Test showOnSuccess block.
 		$block_content = '<div class="wp-block-group">Success message</div>';
 		$block         = array(
-			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
+			'blockName' => 'core/group',
+			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
@@ -852,7 +851,8 @@ class Test_Rsvp_Form extends Base {
 		// Test hideOnSuccess block.
 		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
 		$block         = array(
-			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
+			'blockName' => 'gatherpress/form-field',
+			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
@@ -887,7 +887,8 @@ class Test_Rsvp_Form extends Base {
 		// Test showOnSuccess block (should be hidden).
 		$block_content = '<div class="wp-block-group">Success message</div>';
 		$block         = array(
-			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
+			'blockName' => 'core/group',
+			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
@@ -897,7 +898,8 @@ class Test_Rsvp_Form extends Base {
 		// Test hideOnSuccess block (should be visible).
 		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
 		$block         = array(
-			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
+			'blockName' => 'gatherpress/form-field',
+			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
 		);
 
 		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
