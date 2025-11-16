@@ -267,7 +267,7 @@ class Rsvp_Form {
 		$email   = sanitize_email( $data['email'] ?? '' );
 
 		// Validate required fields.
-		if ( ! $post_id || ! $email ) {
+		if ( ! $post_id || ! $email || ! $author ) {
 			return array(
 				'success'    => false,
 				'message'    => __( 'Missing required fields.', 'gatherpress' ),

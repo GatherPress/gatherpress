@@ -184,6 +184,61 @@ class Test_Rsvp_Form extends Base {
 		$this->assertSame( 409, $result['error_code'] );
 	}
 
+	/**
+	 * Coverage for process_rsvp method with missing required fields.
+	 *
+	 * @covers ::process_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_process_rsvp_missing_required_fields(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		// Test missing author.
+		$data = array(
+			'post_id' => $post_id,
+			'email'   => 'test@example.com',
+			// Missing author field.
+		);
+
+		$result = $instance->process_rsvp( $data );
+
+		$this->assertFalse( $result['success'] );
+		$this->assertStringContainsString( 'Missing required fields', $result['message'] );
+		$this->assertSame( 400, $result['error_code'] );
+
+		// Test missing email.
+		$data = array(
+			'post_id' => $post_id,
+			'author'  => 'Test User',
+			// Missing email field.
+		);
+
+		$result = $instance->process_rsvp( $data );
+
+		$this->assertFalse( $result['success'] );
+		$this->assertStringContainsString( 'Missing required fields', $result['message'] );
+		$this->assertSame( 400, $result['error_code'] );
+
+		// Test missing post_id.
+		$data = array(
+			'author' => 'Test User',
+			'email'  => 'test@example.com',
+			// Missing post_id field.
+		);
+
+		$result = $instance->process_rsvp( $data );
+
+		$this->assertFalse( $result['success'] );
+		$this->assertStringContainsString( 'Missing required fields', $result['message'] );
+		$this->assertSame( 400, $result['error_code'] );
+	}
 
 	/**
 	 * Coverage for process_rsvp method with guest count validation.
