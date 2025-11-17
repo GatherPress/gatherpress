@@ -139,6 +139,44 @@ class Rsvp_Query {
 	}
 
 	/**
+	 * Get all comment types registered in the database.
+	 *
+	 * This method queries the database for all distinct comment types
+	 * and caches the result for performance.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Array of all comment types in the database.
+	 */
+	protected function get_all_comment_types(): array {
+		$cache_key = 'gatherpress_all_comment_types';
+		$types     = get_transient( $cache_key );
+
+		if ( false === $types ) {
+			global $wpdb;
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$types = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT comment_type FROM %i WHERE comment_type != %s",
+					$wpdb->comments,
+					''
+				)
+			);
+
+			// If no types found, use WordPress defaults.
+			if ( empty( $types ) ) {
+				$types = array( 'comment', 'pingback', 'trackback' );
+			}
+
+			// Cache for 5 minutes.
+			set_transient( $cache_key, $types, 5 * MINUTE_IN_SECONDS );
+		}
+
+		return $types;
+	}
+
+	/**
 	 * Exclude RSVP comments from a query.
 	 *
 	 * This method modifies the comment query to exclude comments of the RSVP type. It
@@ -161,7 +199,8 @@ class Rsvp_Query {
 				$current_comment_types = '';
 			}
 		} else {
-			$current_comment_types = array( 'comment', 'pingback', 'trackback' );
+			// Get all registered comment types from the database (cached).
+			$current_comment_types = $this->get_all_comment_types();
 			$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
 		}
 

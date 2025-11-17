@@ -225,24 +225,45 @@ class Test_Rsvp_Query extends Base {
 	 * Test excluding RSVP from empty type sets default comment types.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
+	 * @covers ::get_all_comment_types
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_empty_type(): void {
 		$instance = Rsvp_Query::get_instance();
 		$query    = new WP_Comment_Query();
-		$expected = array( 'comment', 'pingback', 'trackback' );
+
+		// Clear any existing transient.
+		delete_transient( 'gatherpress_all_comment_types' );
+
+		// Create a custom comment type to test dynamic fetching.
+		$this->factory->comment->create(
+			array(
+				'comment_type' => 'custom_type',
+			)
+		);
 
 		$query->query_vars['type']     = '';
 		$query->query_vars['type__in'] = '';
 
 		$instance->exclude_rsvp_from_comment_query( $query );
 
-		$this->assertEquals(
-			$expected,
+		// Should include all types except RSVP.
+		$this->assertNotContains(
+			'gatherpress_rsvp',
 			$query->query_vars['type'],
-			'Default comment types should be set when type is empty'
+			'RSVP type should be excluded'
 		);
+
+		// Should include the custom type.
+		$this->assertContains(
+			'custom_type',
+			$query->query_vars['type'],
+			'Custom comment type should be included'
+		);
+
+		// Clean up.
+		delete_transient( 'gatherpress_all_comment_types' );
 	}
 
 
@@ -346,5 +367,66 @@ class Test_Rsvp_Query extends Base {
 			$query->query_vars['type__in'],
 			'Type__in array should remain unchanged when RSVP is not present'
 		);
+	}
+
+	/**
+	 * Test get_all_comment_types method caches results.
+	 *
+	 * @covers ::get_all_comment_types
+	 *
+	 * @return void
+	 */
+	public function test_get_all_comment_types_caching(): void {
+		$instance = Rsvp_Query::get_instance();
+
+		// Clear any existing transient.
+		delete_transient( 'gatherpress_all_comment_types' );
+
+		// Create some test comment types.
+		$this->factory->comment->create(
+			array(
+				'comment_type' => 'test_type_1',
+			)
+		);
+		$this->factory->comment->create(
+			array(
+				'comment_type' => 'test_type_2',
+			)
+		);
+
+		// Use reflection to access protected method.
+		$reflection = new \ReflectionClass( $instance );
+		$method     = $reflection->getMethod( 'get_all_comment_types' );
+		$method->setAccessible( true );
+
+		// First call should hit the database.
+		$types = $method->invoke( $instance );
+
+		// Should include our test types.
+		$this->assertContains( 'test_type_1', $types, 'First test type should be included' );
+		$this->assertContains( 'test_type_2', $types, 'Second test type should be included' );
+
+		// Verify transient was set.
+		$cached_types = get_transient( 'gatherpress_all_comment_types' );
+		$this->assertEquals( $types, $cached_types, 'Transient should store the types' );
+
+		// Create another type after caching.
+		$this->factory->comment->create(
+			array(
+				'comment_type' => 'test_type_3',
+			)
+		);
+
+		// Second call should use cache and NOT include the new type.
+		$cached_result = $method->invoke( $instance );
+		$this->assertNotContains( 'test_type_3', $cached_result, 'New type should not be in cached result' );
+
+		// Clear transient and verify new type is included.
+		delete_transient( 'gatherpress_all_comment_types' );
+		$fresh_result = $method->invoke( $instance );
+		$this->assertContains( 'test_type_3', $fresh_result, 'New type should be included after cache clear' );
+
+		// Clean up.
+		delete_transient( 'gatherpress_all_comment_types' );
 	}
 }
