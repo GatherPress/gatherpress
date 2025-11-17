@@ -158,7 +158,7 @@ class Rsvp_Query {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$types = $wpdb->get_col(
 				$wpdb->prepare(
-					"SELECT DISTINCT comment_type FROM %i WHERE comment_type != %s",
+					'SELECT DISTINCT comment_type FROM %i WHERE comment_type != %s',
 					$wpdb->comments,
 					''
 				)
