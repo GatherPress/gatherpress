@@ -166,7 +166,8 @@ class Rsvp_Query {
 	 * @return array Array of all comment types in the database.
 	 */
 	protected function get_all_comment_types(): array {
-		$types = get_transient( self::COMMENT_TYPES_CACHE_KEY );
+		$default_types = array( 'comment', 'pingback', 'trackback' );
+		$types         = get_transient( self::COMMENT_TYPES_CACHE_KEY );
 
 		if ( false === $types ) {
 			global $wpdb;
@@ -180,16 +181,17 @@ class Rsvp_Query {
 				)
 			);
 
-			// If no types found, use WordPress defaults.
-			if ( empty( $types ) ) {
-				$types = array( 'comment', 'pingback', 'trackback' );
+			// If no types found or database error, use WordPress defaults.
+			if ( empty( $types ) || ! is_array( $types ) ) {
+				$types = $default_types;
 			}
 
 			// Cache for 24 hours.
 			set_transient( self::COMMENT_TYPES_CACHE_KEY, $types, self::CACHE_EXPIRATION );
 		}
 
-		return $types;
+		// Ensure we always return an array.
+		return is_array( $types ) ? $types : $default_types;
 	}
 
 	/**
