@@ -144,6 +144,40 @@ class User {
 	}
 
 	/**
+	 * Check if a user has opted in to event updates.
+	 *
+	 * This method centralizes the logic for checking opt-in status,
+	 * including handling defaults when no preference has been set.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $user_id The user ID to check.
+	 * @return bool True if the user has opted in, false otherwise.
+	 */
+	public function has_event_updates_opt_in( int $user_id ): bool {
+		$opt_in = get_user_meta( $user_id, 'gatherpress_event_updates_opt_in', true );
+
+		// If not explicitly set (empty string), use the default.
+		if ( '' === $opt_in ) {
+			/**
+			 * Filters the default state of the event updates opt-in.
+			 *
+			 * This filter allows modification of the default opt-in state for compliance
+			 * with regional privacy laws (e.g., GDPR in Germany) that may require
+			 * opt-in consent to be unchecked by default.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param string $default_opt_in Default opt-in state ('1' for opted in, '0' for opted out).
+			 * @param int    $user_id        The user ID.
+			 */
+			$opt_in = apply_filters( 'gatherpress_event_updates_default_opt_in', '1', $user_id );
+		}
+
+		return '1' === $opt_in;
+	}
+
+	/**
 	 * Renders the profile fields for user notifications settings.
 	 *
 	 * This method is responsible for displaying the user notification
@@ -155,12 +189,8 @@ class User {
 	 * @return void
 	 */
 	public function profile_fields( WP_User $user ): void {
-		$event_updates_opt_in = get_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', true );
-
-		// Checkbox is selected by default. '1' is on, '0' is off.
-		if ( '0' !== $event_updates_opt_in ) {
-			$event_updates_opt_in = '1';
-		}
+		// Use the helper method to determine opt-in status, then convert to string for the form.
+		$event_updates_opt_in = $this->has_event_updates_opt_in( $user->ID ) ? '1' : '0';
 
 		Utility::render_template(
 			sprintf( '%s/includes/templates/admin/user/notifications.php', GATHERPRESS_CORE_PATH ),
