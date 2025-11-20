@@ -34,6 +34,22 @@ class Rsvp_Query {
 	use Singleton;
 
 	/**
+	 * Cache key for storing comment types.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const COMMENT_TYPES_CACHE_KEY = 'gatherpress_all_comment_types';
+
+	/**
+	 * Cache expiration time (24 hours).
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const CACHE_EXPIRATION = DAY_IN_SECONDS;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -56,6 +72,7 @@ class Rsvp_Query {
 	protected function setup_hooks(): void {
 		add_action( 'pre_get_comments', array( $this, 'exclude_rsvp_from_comment_query' ) );
 		add_filter( 'comments_clauses', array( $this, 'taxonomy_query' ), 10, 2 );
+		add_action( 'wp_insert_comment', array( $this, 'maybe_invalidate_comment_types_cache' ), 10, 2 );
 	}
 
 	/**
@@ -149,8 +166,7 @@ class Rsvp_Query {
 	 * @return array Array of all comment types in the database.
 	 */
 	protected function get_all_comment_types(): array {
-		$cache_key = 'gatherpress_all_comment_types';
-		$types     = get_transient( $cache_key );
+		$types = get_transient( self::COMMENT_TYPES_CACHE_KEY );
 
 		if ( false === $types ) {
 			global $wpdb;
@@ -169,11 +185,37 @@ class Rsvp_Query {
 				$types = array( 'comment', 'pingback', 'trackback' );
 			}
 
-			// Cache for 5 minutes.
-			set_transient( $cache_key, $types, 5 * MINUTE_IN_SECONDS );
+			// Cache for 24 hours.
+			set_transient( self::COMMENT_TYPES_CACHE_KEY, $types, self::CACHE_EXPIRATION );
 		}
 
 		return $types;
+	}
+
+	/**
+	 * Invalidate comment types cache when a new comment type is added.
+	 *
+	 * This method checks if a newly inserted comment has a type that's not
+	 * already in our cached types, and if so, invalidates the cache.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int        $id      The comment ID.
+	 * @param WP_Comment $comment The comment object.
+	 * @return void
+	 */
+	public function maybe_invalidate_comment_types_cache( int $id, WP_Comment $comment ): void {
+		// Skip if it's an empty comment type (regular comment).
+		if ( empty( $comment->comment_type ) ) {
+			return;
+		}
+
+		$cached_types = get_transient( self::COMMENT_TYPES_CACHE_KEY );
+
+		// If cache exists and this type isn't in it, invalidate the cache.
+		if ( false !== $cached_types && ! in_array( $comment->comment_type, $cached_types, true ) ) {
+			delete_transient( self::COMMENT_TYPES_CACHE_KEY );
+		}
 	}
 
 	/**
@@ -182,6 +224,9 @@ class Rsvp_Query {
 	 * This method modifies the comment query to exclude comments of the RSVP type. It
 	 * ensures that RSVP comments are not included in the query results by adjusting the
 	 * comment types in the query variables.
+	 *
+	 * Note: The comment_type field is not currently indexed in WordPress core,
+	 * which may impact query performance. See https://core.trac.wordpress.org/ticket/59488
 	 *
 	 * @since 1.0.0
 	 *
