@@ -460,8 +460,9 @@ class Event_Rest_Api {
 		foreach ( $recipients as $recipient ) {
 			// Check opt-in preference based on recipient type.
 			if ( $recipient['is_user'] ) {
-				// For WordPress users, check user meta.
-				if ( '0' === get_user_meta( $recipient['user_id'], 'gatherpress_event_updates_opt_in', true ) ) {
+				// For WordPress users, use the centralized helper method.
+				$user = User::get_instance();
+				if ( ! $user->has_event_updates_opt_in( $recipient['user_id'] ) ) {
 					continue;
 				}
 			} elseif ( '0' === get_comment_meta( $recipient['comment_id'], 'gatherpress_event_updates_opt_in', true ) ) {
