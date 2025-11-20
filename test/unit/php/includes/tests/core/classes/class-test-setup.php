@@ -34,12 +34,6 @@ class Test_Setup extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
-				'name'     => 'init',
-				'priority' => 10,
-				'callback' => array( $instance, 'maybe_flush_rewrite_rules' ),
-			),
-			array(
-				'type'     => 'action',
 				'name'     => 'admin_init',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_privacy_policy_content' ),
@@ -234,27 +228,44 @@ class Test_Setup extends Base {
 	}
 
 	/**
-	 * Coverage for maybe_create_flush_rewrite_rules_flag method.
+	 * Coverage for schedule_rewrite_flush method.
 	 *
-	 * @covers ::maybe_flush_rewrite_rules
+	 * @covers ::schedule_rewrite_flush
 	 *
 	 * @return void
 	 */
-	public function test_maybe_create_flush_rewrite_rules_flag(): void {
+	public function test_schedule_rewrite_flush(): void {
 		$instance = Setup::get_instance();
+
+		// Set up rewrite_rules option.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		$this->assertNotFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option exists.'
+		);
+
+		// Test that schedule_rewrite_flush deletes rewrite_rules option.
+		Utility::invoke_hidden_method( $instance, 'schedule_rewrite_flush' );
+
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option was deleted.'
+		);
+
+		// Test that it also cleans up old flag if it exists.
+		add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		Utility::invoke_hidden_method( $instance, 'schedule_rewrite_flush' );
+
+		$this->assertFalse(
+			get_option( 'rewrite_rules' ),
+			'Failed to assert that rewrite_rules option was deleted.'
+		);
 		$this->assertFalse(
 			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
-			'Failed to assert that flush rewrite rules option does not exist.'
+			'Failed to assert that old flag option was cleaned up.'
 		);
-
-		Utility::invoke_hidden_method( $instance, 'maybe_create_flush_rewrite_rules_flag' );
-
-		$this->assertTrue(
-			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
-			'Failed to assert that flush rewrite rules option exists.'
-		);
-
-		// Cleanup.
-		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
 	}
 }

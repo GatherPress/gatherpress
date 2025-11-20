@@ -824,15 +824,19 @@ class Settings {
 	}
 
 	/**
-	 * Update Rewrite rules, when post type rewrite slugs change.
+	 * Schedule rewrite rules flush when post type rewrite slugs change.
 	 *
 	 * Fires after the value of the 'gatherpress_general["urls"]' option-part has been successfully updated
 	 * and only if it has changed since before.
 	 *
-	 * @since 1.0.0
+	 * Deletes the core rewrite_rules option to trigger WordPress's automatic
+	 * rewrite rule regeneration on the next request. This is more efficient
+	 * than using a custom flag option.
+	 *
+	 * @since 0.33.0
 	 *
 	 * @param mixed $old_value The old option value.
-	 * @param mixed $new_value     The new option value.
+	 * @param mixed $new_value The new option value.
 	 * @return void
 	 */
 	public function maybe_flush_rewrite_rules( $old_value, $new_value ): void {
@@ -841,8 +845,7 @@ class Settings {
 			( isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ) ||
 			( $old_value['urls'] !== $new_value['urls'] )
 		) {
-			// Event_Setup->maybe_create_flush_rewrite_rules_flag //@TODO https://github.com/GatherPress/gatherpress/issues/880 Maybe make this a public method ?!
-			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+			delete_option( 'rewrite_rules' );
 		}
 	}
 }
