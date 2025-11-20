@@ -36,6 +36,10 @@
 
 - [`gatherpress_sub_pages`](gatherpress_sub_pages) Filters the list of GatherPress sub pages.
 
+## class-user.php
+
+- [`gatherpress_event_updates_default_opt_in`](gatherpress_event_updates_default_opt_in) Filters the default state of the event updates opt-in.
+
 ## class-utility.php
 
 - [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input) Short-circuit filter for HTTP input retrieval during testing.
