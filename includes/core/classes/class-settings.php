@@ -833,7 +833,7 @@ class Settings {
 	 * rewrite rule regeneration on the next request. This is more efficient
 	 * than using a custom flag option.
 	 *
-	 * @since 0.33.0
+	 * @since 1.0.0
 	 *
 	 * @param mixed $old_value The old option value.
 	 * @param mixed $new_value The new option value.

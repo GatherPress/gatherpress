@@ -192,7 +192,7 @@ class Setup {
 	 * calling flush_rewrite_rules() directly and removes the need for a custom
 	 * flag option.
 	 *
-	 * @since 0.33.0
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
