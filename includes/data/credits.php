@@ -143,5 +143,18 @@ return array (
         96 => '//www.gravatar.com/avatar/df262cbc82caecc7302849e8d591b32c?s=96&#038;r=g&#038;d=mm',
       ),
     ),
+    3 => 
+    array (
+      'id' => 16994801,
+      'name' => 'Paul Barthmaier (pbrocks)',
+      'link' => 'https://profiles.wordpress.org/pbrocks/',
+      'slug' => 'pbrocks',
+      'avatar_urls' => 
+      array (
+        24 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=24&#038;r=g&#038;d=mm',
+        48 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=48&#038;r=g&#038;d=mm',
+        96 => '//www.gravatar.com/avatar/b6d92ca42584e8419dffc636e809321a?s=96&#038;r=g&#038;d=mm',
+      ),
+    ),
   ),
 );
