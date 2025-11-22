@@ -97,7 +97,7 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
  *
  * Shows a ToggleControl to let the editor include events
  * that have started but not ended yet (unfinished events).
- * Updates the `include_unfinished` query param in block attributes.
+ * Updates the `gatherpress_include_unfinished` query param in block attributes.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
@@ -108,13 +108,31 @@ export const EventIncludeUnfinishedControls = ( {
 	attributes,
 	setAttributes,
 } ) => {
-	const { query: { include_unfinished: includeUnfinished } = {} } =
-		attributes;
+	const {
+		query: {
+			gatherpress_include_unfinished: includeUnfinished,
+			gatherpress_event_query: eventListType = 'upcoming',
+		} = {},
+	} = attributes;
+
+	// Determine the effective value based on defaults:
+	// - For upcoming events: default to true (include currently running events)
+	// - For past events: default to false (exclude currently running events)
+	// If explicitly set to 1 or 0, use that value
+	// Note: We need to check against undefined specifically, not just truthy/falsy
+	let effectiveValue;
+	if ( undefined === includeUnfinished ) {
+		// Not explicitly set, use defaults based on event type
+		effectiveValue = ( 'upcoming' === eventListType );
+	} else {
+		// Explicitly set to 1 or 0 (integers)
+		effectiveValue = ( 1 === includeUnfinished );
+	}
 
 	return (
 		<>
 			<ToggleControl
-				label={ __( 'Include unfinished Events', 'gatherpress' ) }
+				label={ __( 'Include unfinished events', 'gatherpress' ) }
 				help={ sprintf(
 					/* translators: %s: 'upcoming' or 'past' */
 					_x(
@@ -122,16 +140,17 @@ export const EventIncludeUnfinishedControls = ( {
 						"'Shows' or 'Hides'",
 						'gatherpress',
 					),
-					includeUnfinished
+					effectiveValue
 						? __( 'Shows', 'gatherpress' )
 						: __( 'Hides', 'gatherpress' ),
 				) }
-				checked={ includeUnfinished }
+				checked={ effectiveValue }
 				onChange={ ( value ) => {
+					const newValue = value ? 1 : 0;
 					setAttributes( {
 						query: {
 							...attributes.query,
-							include_unfinished: value ? 1 : 0,
+							gatherpress_include_unfinished: newValue,
 						},
 					} );
 				} }
@@ -179,10 +198,16 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 			) }
 			checked={ 'upcoming' === eventListType }
 			onChange={ ( value ) => {
+				// When switching event type, explicitly set gatherpress_include_unfinished to the
+				// default for the new event type to ensure WordPress recognizes the state change
+				const newEventType = value ? 'upcoming' : 'past';
+				const defaultIncludeUnfinished = ( 'upcoming' === newEventType ) ? 1 : 0;
+
 				setAttributes( {
 					query: {
 						...attributes.query,
-						gatherpress_event_query: value ? 'upcoming' : 'past',
+						gatherpress_event_query: newEventType,
+						gatherpress_include_unfinished: defaultIncludeUnfinished,
 					},
 				} );
 			} }

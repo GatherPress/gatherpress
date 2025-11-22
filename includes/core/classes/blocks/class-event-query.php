@@ -192,8 +192,8 @@ class Event_Query {
 			$query_args['post__not_in'] = $exclude_ids; // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 		}
 
-		if ( isset( $block_query['include_unfinished'] ) ) {
-			$query_args['include_unfinished'] = $block_query['include_unfinished'];
+		if ( isset( $block_query['gatherpress_include_unfinished'] ) ) {
+			$query_args['gatherpress_include_unfinished'] = $block_query['gatherpress_include_unfinished'];
 		}
 
 		// Order By.
@@ -246,9 +246,9 @@ class Event_Query {
 			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 		}
 
-		$include_unfinished = $request->get_param( 'include_unfinished' );
-		if ( $include_unfinished ) {
-			$custom_args['include_unfinished'] = $include_unfinished;
+		$include_unfinished = $request->get_param( 'gatherpress_include_unfinished' );
+		if ( null !== $include_unfinished ) {
+			$custom_args['gatherpress_include_unfinished'] = $include_unfinished;
 		}
 
 		$custom_args['orderby'] = $request->get_param( 'orderby' );
@@ -262,9 +262,15 @@ class Event_Query {
 		);
 
 		// Merge all queries.
+		// Use array_filter with callback to preserve 0 values while filtering out null/empty.
 		return array_merge(
 			$args,
-			array_filter( $filtered_query_args )
+			array_filter(
+				$filtered_query_args,
+				static function ( $value ) {
+					return null !== $value && '' !== $value;
+				}
+			)
 		);
 	}
 
@@ -283,6 +289,26 @@ class Event_Query {
 	public function rest_collection_params( array $query_params ): array {
 		$query_params['orderby']['enum'][] = 'rand';
 		$query_params['orderby']['enum'][] = 'datetime';
+
+		// Add custom GatherPress query parameters.
+		$query_params['gatherpress_event_query'] = array(
+			'description' => __( 'Type of events to query: upcoming or past', 'gatherpress' ),
+			'type'        => 'string',
+			'enum'        => array( 'upcoming', 'past' ),
+			'default'     => 'upcoming',
+		);
+
+		$query_params['gatherpress_include_unfinished'] = array(
+			'description' => __( 'Whether to include events that have started but not finished', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
+
+		$query_params['exclude_current'] = array(
+			'description' => __( 'Post ID to exclude from results', 'gatherpress' ),
+			'type'        => 'integer',
+		);
+
 		return $query_params;
 	}
 }

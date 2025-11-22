@@ -21,7 +21,7 @@ const QUERY_ATTRIBUTES = {
 		offset: 0,
 		postType: 'gatherpress_event',
 		gatherpress_event_query: 'upcoming',
-		include_unfinished: 1,
+		gatherpress_include_unfinished: 1,
 		order: 'asc',
 		orderBy: 'datetime',
 		inherit: false,
