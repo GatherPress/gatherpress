@@ -267,7 +267,7 @@ class Event_Query {
 			$args,
 			array_filter(
 				$filtered_query_args,
-				static function ( $value ) {
+				static function ( $value ): bool {
 					return null !== $value && '' !== $value;
 				}
 			)
