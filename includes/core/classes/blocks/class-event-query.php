@@ -287,6 +287,7 @@ class Event_Query {
 	 * @return array JSON Schema-formatted collection parameters.
 	 */
 	public function rest_collection_params( array $query_params ): array {
+		// Add GatherPress-specific orderby options.
 		$query_params['orderby']['enum'][] = 'rand';
 		$query_params['orderby']['enum'][] = 'datetime';
 
