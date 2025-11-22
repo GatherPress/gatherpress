@@ -198,9 +198,6 @@ class Setup {
 	 */
 	private function schedule_rewrite_flush(): void {
 		delete_option( 'rewrite_rules' );
-
-		// Clean up old flag option if it exists from previous versions.
-		delete_option( 'gatherpress_flush_rewrite_rules_flag' );
 	}
 
 	/**
