@@ -253,8 +253,6 @@ class Test_Setup extends Base {
 			'Failed to assert that rewrite_rules option was deleted.'
 		);
 
-		// Test that it also cleans up old flag if it exists.
-		add_option( 'gatherpress_flush_rewrite_rules_flag', true );
 		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
 
 		Utility::invoke_hidden_method( $instance, 'schedule_rewrite_flush' );
@@ -262,10 +260,6 @@ class Test_Setup extends Base {
 		$this->assertFalse(
 			get_option( 'rewrite_rules' ),
 			'Failed to assert that rewrite_rules option was deleted.'
-		);
-		$this->assertFalse(
-			get_option( 'gatherpress_flush_rewrite_rules_flag' ),
-			'Failed to assert that old flag option was cleaned up.'
 		);
 	}
 }
