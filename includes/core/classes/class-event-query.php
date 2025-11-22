@@ -272,7 +272,7 @@ class Event_Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for upcoming events.
 	 */
 	public function adjust_sorting_for_upcoming_events( array $query_pieces, WP_Query $query ): array {
-		$include_unfinished = $query->get( 'gatherpress_include_unfinished' );
+		$include_unfinished = $query->get( 'include_unfinished' );
 		// Default to true if not explicitly set to maintain backward compatibility.
 		$inclusive = ( '' === $include_unfinished ) ? true : (bool) $include_unfinished;
 
@@ -298,7 +298,7 @@ class Event_Query {
 	 * @return array The modified SQL query pieces with adjusted sorting criteria for past events.
 	 */
 	public function adjust_sorting_for_past_events( array $query_pieces, WP_Query $query ): array {
-		$include_unfinished = $query->get( 'gatherpress_include_unfinished' );
+		$include_unfinished = $query->get( 'include_unfinished' );
 		// For past events, default to false (exclude currently running events).
 		// This shows only truly finished events unless explicitly requested otherwise.
 		$inclusive = ( '' === $include_unfinished ) ? false : (bool) $include_unfinished;

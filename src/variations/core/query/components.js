@@ -97,7 +97,7 @@ export const EventExcludeControls = ( { attributes, setAttributes } ) => {
  *
  * Shows a ToggleControl to let the editor include events
  * that have started but not ended yet (unfinished events).
- * Updates the `gatherpress_include_unfinished` query param in block attributes.
+ * Updates the `include_unfinished` query param in block attributes.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
@@ -110,7 +110,7 @@ export const EventIncludeUnfinishedControls = ( {
 } ) => {
 	const {
 		query: {
-			gatherpress_include_unfinished: includeUnfinished,
+			include_unfinished: includeUnfinished,
 			gatherpress_event_query: eventListType = 'upcoming',
 		} = {},
 	} = attributes;
@@ -150,7 +150,7 @@ export const EventIncludeUnfinishedControls = ( {
 					setAttributes( {
 						query: {
 							...attributes.query,
-							gatherpress_include_unfinished: newValue,
+							include_unfinished: newValue,
 						},
 					} );
 				} }
@@ -198,7 +198,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 			) }
 			checked={ 'upcoming' === eventListType }
 			onChange={ ( value ) => {
-				// When switching event type, explicitly set gatherpress_include_unfinished to the
+				// When switching event type, explicitly set include_unfinished to the
 				// default for the new event type to ensure WordPress recognizes the state change
 				const newEventType = value ? 'upcoming' : 'past';
 				const defaultIncludeUnfinished = ( 'upcoming' === newEventType ) ? 1 : 0;
@@ -207,7 +207,7 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 					query: {
 						...attributes.query,
 						gatherpress_event_query: newEventType,
-						gatherpress_include_unfinished: defaultIncludeUnfinished,
+						include_unfinished: defaultIncludeUnfinished,
 					},
 				} );
 			} }

@@ -618,13 +618,13 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
-	 * Test that gatherpress_include_unfinished parameter works correctly for past events.
+	 * Test that include_unfinished parameter works correctly for past events.
 	 *
 	 * @covers ::adjust_sorting_for_past_events
 	 *
 	 * @return void
 	 */
-	public function test_gatherpress_include_unfinished_parameter_for_past_events(): void {
+	public function test_include_unfinished_parameter_for_past_events(): void {
 		$instance = Event_Query::get_instance();
 
 		// Create a currently running event.
@@ -658,14 +658,14 @@ class Test_Event_Query extends Base {
 			'Currently running event should NOT appear in past events by default'
 		);
 
-		// With gatherpress_include_unfinished=true: currently running events SHOULD appear.
+		// With include_unfinished=true: currently running events SHOULD appear.
 		$query = new WP_Query(
 			array(
-				'post_type'                      => Event::POST_TYPE,
-				'posts_per_page'                 => 10,
-				'fields'                         => 'ids',
-				Event_Query::EVENT_QUERY_PARAM   => 'past',
-				'gatherpress_include_unfinished' => true,
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'           => true,
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -674,12 +674,12 @@ class Test_Event_Query extends Base {
 		$this->assertContains(
 			$running_post->ID,
 			$query->posts,
-			'Currently running event SHOULD appear in past events when gatherpress_include_unfinished=true'
+			'Currently running event SHOULD appear in past events when include_unfinished=true'
 		);
 	}
 
 	/**
-	 * Test that gatherpress_include_unfinished parameter handles integer values correctly.
+	 * Test that include_unfinished parameter handles integer values correctly.
 	 *
 	 * This test specifically prevents regression of the array_filter bug that
 	 * removed integer 0 values from query parameters.
@@ -689,7 +689,7 @@ class Test_Event_Query extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_gatherpress_include_unfinished_integer_values(): void {
+	public function test_include_unfinished_integer_values(): void {
 		$instance = Event_Query::get_instance();
 
 		// Create a currently running event (using exact same pattern as working test).
@@ -708,11 +708,11 @@ class Test_Event_Query extends Base {
 		// First verify that boolean true works (like the original test).
 		$query = new WP_Query(
 			array(
-				'post_type'                      => Event::POST_TYPE,
-				'posts_per_page'                 => 10,
-				'fields'                         => 'ids',
-				Event_Query::EVENT_QUERY_PARAM   => 'past',
-				'gatherpress_include_unfinished' => true, // Boolean true.
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'           => true, // Boolean true.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -727,11 +727,11 @@ class Test_Event_Query extends Base {
 		// Now test integer 1 (should work the same as boolean true).
 		$query = new WP_Query(
 			array(
-				'post_type'                      => Event::POST_TYPE,
-				'posts_per_page'                 => 10,
-				'fields'                         => 'ids',
-				Event_Query::EVENT_QUERY_PARAM   => 'past',
-				'gatherpress_include_unfinished' => 1, // Integer 1.
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'           => 1, // Integer 1.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -750,11 +750,11 @@ class Test_Event_Query extends Base {
 		// Test integer 0 value (exclude unfinished).
 		$query = new WP_Query(
 			array(
-				'post_type'                      => Event::POST_TYPE,
-				'posts_per_page'                 => 10,
-				'fields'                         => 'ids',
-				Event_Query::EVENT_QUERY_PARAM   => 'past',
-				'gatherpress_include_unfinished' => 0, // Integer 0.
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'           => 0, // Integer 0.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -769,11 +769,11 @@ class Test_Event_Query extends Base {
 		// Test for upcoming events with integer 0 (should exclude).
 		$query = new WP_Query(
 			array(
-				'post_type'                      => Event::POST_TYPE,
-				'posts_per_page'                 => 10,
-				'fields'                         => 'ids',
-				Event_Query::EVENT_QUERY_PARAM   => 'upcoming',
-				'gatherpress_include_unfinished' => 0, // Integer 0.
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
+				'include_unfinished'           => 0, // Integer 0.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -788,11 +788,11 @@ class Test_Event_Query extends Base {
 		// Test for upcoming events with integer 1 (should include).
 		$query = new WP_Query(
 			array(
-				'post_type'                      => Event::POST_TYPE,
-				'posts_per_page'                 => 10,
-				'fields'                         => 'ids',
-				Event_Query::EVENT_QUERY_PARAM   => 'upcoming',
-				'gatherpress_include_unfinished' => 1, // Integer 1.
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
+				'include_unfinished'           => 1, // Integer 1.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -806,7 +806,7 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
-	 * Test default behavior for gatherpress_include_unfinished parameter.
+	 * Test default behavior for include_unfinished parameter.
 	 *
 	 * Upcoming events should include currently running events by default.
 	 * Past events should exclude currently running events by default.
@@ -816,7 +816,7 @@ class Test_Event_Query extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_gatherpress_include_unfinished_defaults(): void {
+	public function test_include_unfinished_defaults(): void {
 		$instance = Event_Query::get_instance();
 
 		// Create a currently running event.
@@ -838,7 +838,7 @@ class Test_Event_Query extends Base {
 				'posts_per_page'               => 10,
 				'fields'                       => 'ids',
 				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
-				// No gatherpress_include_unfinished parameter - test default.
+				// No include_unfinished parameter - test default.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );
@@ -857,7 +857,7 @@ class Test_Event_Query extends Base {
 				'posts_per_page'               => 10,
 				'fields'                       => 'ids',
 				Event_Query::EVENT_QUERY_PARAM => 'past',
-				// No gatherpress_include_unfinished parameter - test default.
+				// No include_unfinished parameter - test default.
 			)
 		);
 		$instance->prepare_event_query_before_execution( $query );

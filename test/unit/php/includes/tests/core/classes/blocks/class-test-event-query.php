@@ -76,7 +76,7 @@ class Test_Event_Query extends Base {
 		// Set up parameter map for get_param calls.
 		$param_map = array(
 			array( 'gatherpress_event_query', 'past' ),
-			array( 'gatherpress_include_unfinished', 0 ), // Integer 0 - the critical test case.
+			array( 'include_unfinished', 0 ), // Integer 0 - the critical test case.
 			array( 'exclude_current', null ),
 			array( 'orderby', 'datetime' ),
 		);
@@ -89,9 +89,9 @@ class Test_Event_Query extends Base {
 			->method( 'get_params' )
 			->willReturn(
 				array(
-					'gatherpress_event_query'        => 'past',
-					'gatherpress_include_unfinished' => 0,
-					'orderby'                        => 'datetime',
+					'gatherpress_event_query' => 'past',
+					'include_unfinished'      => 0,
+					'orderby'                 => 'datetime',
 				)
 			);
 
@@ -100,8 +100,8 @@ class Test_Event_Query extends Base {
 			'gatherpress_query_vars',
 			function ( $custom_args ) {
 				// Ensure the integer 0 value is preserved through the filter.
-				$this->assertArrayHasKey( 'gatherpress_include_unfinished', $custom_args );
-				$this->assertSame( 0, $custom_args['gatherpress_include_unfinished'] );
+				$this->assertArrayHasKey( 'include_unfinished', $custom_args );
+				$this->assertSame( 0, $custom_args['include_unfinished'] );
 				return $custom_args;
 			},
 			10,
@@ -116,8 +116,8 @@ class Test_Event_Query extends Base {
 		$result = $instance->rest_query( $initial_args, $request );
 
 		// Verify that integer 0 value survives array_filter and is in final result.
-		$this->assertArrayHasKey( 'gatherpress_include_unfinished', $result );
-		$this->assertSame( 0, $result['gatherpress_include_unfinished'] );
+		$this->assertArrayHasKey( 'include_unfinished', $result );
+		$this->assertSame( 0, $result['include_unfinished'] );
 
 		// Verify other expected values.
 		$this->assertSame( 'past', $result['gatherpress_event_query'] );
@@ -128,7 +128,7 @@ class Test_Event_Query extends Base {
 	}
 
 	/**
-	 * Test that REST API collection params include gatherpress_include_unfinished.
+	 * Test that REST API collection params include include_unfinished.
 	 *
 	 * @since 1.0.0
 	 * @covers ::rest_collection_params
@@ -146,10 +146,10 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->rest_collection_params( $base_params );
 
-		// Verify gatherpress_include_unfinished parameter is registered.
-		$this->assertArrayHasKey( 'gatherpress_include_unfinished', $result );
-		$this->assertSame( 'integer', $result['gatherpress_include_unfinished']['type'] );
-		$this->assertSame( array( 0, 1 ), $result['gatherpress_include_unfinished']['enum'] );
+		// Verify include_unfinished parameter is registered.
+		$this->assertArrayHasKey( 'include_unfinished', $result );
+		$this->assertSame( 'integer', $result['include_unfinished']['type'] );
+		$this->assertSame( array( 0, 1 ), $result['include_unfinished']['enum'] );
 
 		// Verify gatherpress_event_query parameter is registered.
 		$this->assertArrayHasKey( 'gatherpress_event_query', $result );

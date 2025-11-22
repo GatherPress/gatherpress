@@ -192,8 +192,8 @@ class Event_Query {
 			$query_args['post__not_in'] = $exclude_ids; // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 		}
 
-		if ( isset( $block_query['gatherpress_include_unfinished'] ) ) {
-			$query_args['gatherpress_include_unfinished'] = $block_query['gatherpress_include_unfinished'];
+		if ( isset( $block_query['include_unfinished'] ) ) {
+			$query_args['include_unfinished'] = $block_query['include_unfinished'];
 		}
 
 		// Order By.
@@ -246,9 +246,9 @@ class Event_Query {
 			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
 		}
 
-		$include_unfinished = $request->get_param( 'gatherpress_include_unfinished' );
+		$include_unfinished = $request->get_param( 'include_unfinished' );
 		if ( null !== $include_unfinished ) {
-			$custom_args['gatherpress_include_unfinished'] = $include_unfinished;
+			$custom_args['include_unfinished'] = $include_unfinished;
 		}
 
 		$custom_args['orderby'] = $request->get_param( 'orderby' );
@@ -298,7 +298,7 @@ class Event_Query {
 			'default'     => 'upcoming',
 		);
 
-		$query_params['gatherpress_include_unfinished'] = array(
+		$query_params['include_unfinished'] = array(
 			'description' => __( 'Whether to include events that have started but not finished', 'gatherpress' ),
 			'type'        => 'integer',
 			'enum'        => array( 0, 1 ),

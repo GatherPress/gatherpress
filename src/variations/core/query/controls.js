@@ -53,7 +53,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 				query: {
 					...attributes.query,
 					gatherpress_event_query: 'upcoming',
-					gatherpress_include_unfinished: 1,
+					include_unfinished: 1,
 					order: 'asc',
 					orderBy: 'datetime',
 					inherit: false,
