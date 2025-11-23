@@ -15,7 +15,6 @@ namespace GatherPress\Core;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use Exception;
-use GatherPress\Core\Blocks\Rsvp_Form as Rsvp_Form_Block;
 use GatherPress\Core\Blocks\Rsvp_Template;
 use GatherPress\Core\Rsvp_Form as Rsvp_Form_Core;
 use GatherPress\Core\Traits\Singleton;
