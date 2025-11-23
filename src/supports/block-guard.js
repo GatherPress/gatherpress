@@ -7,7 +7,7 @@ import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
-import { useState, useEffect, useRef } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 
 /**
  * Shared state store for block guard settings across all block instances.
@@ -178,9 +178,6 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 		// Use shared state to track if BlockGuard is enabled (default to enabled).
 		const [ isBlockGuardEnabled, setIsBlockGuardEnabled ] =
 			useSharedBlockGuardState( stateKey );
-
-		// Store event handlers for cleanup - use useRef to persist across renders.
-		const eventHandlersRef = useRef( {} );
 
 		useEffect( () => {
 			if ( ! clientId ) {
@@ -386,25 +383,21 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						);
 					}
 
-					// Cache the data-block attribute for performance.
-					const dataBlockSelector = `[data-block="${ clientId }"]`;
-
 					// Prevent drops into this block like WordPress lock removal.
 					if ( ! dropHandler ) {
 						dropHandler = ( e ) => {
-							const targetBlock = e.target.closest( dataBlockSelector );
-
+							// Check if we're in this block or its drop zones.
+							const targetBlock = e.target.closest( `[data-block="${ clientId }"]` );
 							if ( targetBlock ) {
-								// Prevent dragover and drop to disable block insertion indicators.
-								if ( 'dragover' === e.type || 'drop' === e.type ) {
+								// Prevent dragenter, dragover and drop to disable block insertion indicators.
+								if ( 'dragenter' === e.type || 'dragover' === e.type || 'drop' === e.type ) {
 									e.preventDefault();
 									e.stopPropagation();
 								}
-								// Let dragenter, dragleave flow naturally for smooth feedback.
 							}
 						};
 
-						// Add drag prevention listeners.
+						// Add drag prevention listeners globally.
 						addDragListeners( dropHandler );
 					}
 				} else {
