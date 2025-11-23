@@ -373,43 +373,29 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						}, 0 );
 					}
 
-					// Add dragover prevention if not already added.
+					// Prevent all drag and drop operations into this block like WordPress lock removal.
 					if ( ! dragoverHandler ) {
 						dragoverHandler = ( e ) => {
 							const targetBlock = e.target.closest(
 								`[data-block="${ clientId }"]`,
 							);
 
-							if ( ! targetBlock ) {
-								return;
-							}
-
-							// Calculate position within block.
-							const rect = targetBlock.getBoundingClientRect();
-							const relativeY = e.clientY - rect.top;
-
-							// 15px or 15% of height.
-							const heightThreshold = Math.min(
-								15,
-								rect.height * 0.15,
-							);
-
-							// Only prevent events in middle section (allow edges).
-							const isEdgeArea =
-								relativeY < heightThreshold ||
-								relativeY > rect.height - heightThreshold;
-
-							if ( ! isEdgeArea ) {
+							if ( targetBlock ) {
+								// Prevent all drag operations into this block entirely.
+								e.preventDefault();
 								e.stopPropagation();
 							}
 						};
 
-						// Add the event listener.
-						global.document.addEventListener(
-							'dragover',
-							dragoverHandler,
-							true,
-						);
+						// Add comprehensive drag prevention listeners.
+						const dragEvents = [ 'dragover', 'dragenter', 'drop' ];
+						dragEvents.forEach( ( eventType ) => {
+							global.document.addEventListener(
+								eventType,
+								dragoverHandler,
+								true,
+							);
+						} );
 					}
 				} else {
 					// Restore interactivity.
@@ -427,13 +413,16 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						);
 					}
 
-					// Remove dragover prevention.
+					// Remove drag prevention.
 					if ( dragoverHandler ) {
-						global.document.removeEventListener(
-							'dragover',
-							dragoverHandler,
-							true,
-						);
+						const dragEvents = [ 'dragover', 'dragenter', 'drop' ];
+						dragEvents.forEach( ( eventType ) => {
+							global.document.removeEventListener(
+								eventType,
+								dragoverHandler,
+								true,
+							);
+						} );
 						dragoverHandler = null;
 					}
 				}
@@ -453,13 +442,16 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			return () => {
 				observer.disconnect();
 
-				// Clean up event listener.
+				// Clean up event listeners.
 				if ( dragoverHandler ) {
-					global.document.removeEventListener(
-						'dragover',
-						dragoverHandler,
-						true,
-					);
+					const dragEvents = [ 'dragover', 'dragenter', 'drop' ];
+					dragEvents.forEach( ( eventType ) => {
+						global.document.removeEventListener(
+							eventType,
+							dragoverHandler,
+							true,
+						);
+					} );
 				}
 			};
 		}, [ clientId, isBlockGuardEnabled ] );
