@@ -325,7 +325,7 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			const DRAG_EVENTS = [ 'dragover', 'dragenter', 'dragleave', 'drop' ];
 			let dropHandler = null;
 			let lastY = 0;
-			let dragDirection = 0; // -1 = up, 1 = down, 0 = no direction
+			let dragDirection = 0;
 
 			// Helper functions for DRY event management.
 			const addDragListeners = ( handler ) => {
@@ -392,56 +392,43 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						dropHandler = ( e ) => {
 							const targetBlock = e.target.closest( `[data-block="${ clientId }"]` );
 
-							if ( ! targetBlock ) {
-								return;
-							}
-
-							// Track drag direction for smart insertion points.
-							if ( e.type === 'dragover' ) {
-								const currentY = e.clientY;
-								if ( lastY !== 0 ) {
-									const deltaY = currentY - lastY;
-									if ( Math.abs( deltaY ) > 2 ) { // Threshold to avoid jitter.
-										dragDirection = deltaY > 0 ? 1 : -1; // 1 = down, -1 = up
+							if ( targetBlock ) {
+								// Track drag direction for smart insertion points.
+								if ( 'dragover' === e.type ) {
+									const currentY = e.clientY;
+									if ( 0 !== lastY ) {
+										const deltaY = currentY - lastY;
+										if ( 2 < Math.abs( deltaY ) ) {
+											dragDirection = 0 < deltaY ? 1 : -1; // 1 = down, -1 = up
+										}
 									}
-								}
-								lastY = currentY;
+									lastY = currentY;
 
-								// Calculate position within block for edge detection.
-								const rect = targetBlock.getBoundingClientRect();
-								const relativeY = e.clientY - rect.top;
-								const blockHeight = rect.height;
+									// Calculate position within block for edge detection.
+									const rect = targetBlock.getBoundingClientRect();
+									const relativeY = e.clientY - rect.top;
+									const blockHeight = rect.height;
 
-								// Define edge zones (20% of block height, min 15px, max 40px).
-								const edgeThreshold = Math.min( 40, Math.max( 15, blockHeight * 0.2 ) );
-								const isTopEdge = relativeY < edgeThreshold;
-								const isBottomEdge = relativeY > blockHeight - edgeThreshold;
+									// Define edge zones (20% of block height, min 15px, max 40px).
+									const edgeThreshold = Math.min( 40, Math.max( 15, blockHeight * 0.2 ) );
+									const isTopEdge = relativeY < edgeThreshold;
+									const isBottomEdge = relativeY > blockHeight - edgeThreshold;
 
-								// Allow insertion based on direction and edge position.
-								const allowInsertion =
-									( dragDirection === -1 && isTopEdge ) ||   // Dragging up, near top
-									( dragDirection === 1 && isBottomEdge );  // Dragging down, near bottom
+									// Allow insertion based on direction and edge position.
+									const allowInsertion =
+										( -1 === dragDirection && isTopEdge ) || // Dragging up, near top
+										( 1 === dragDirection && isBottomEdge ); // Dragging down, near bottom
 
-								if ( ! allowInsertion ) {
-									// Prevent drag feedback in the middle area.
+									if ( ! allowInsertion ) {
+										// Prevent drag feedback in the middle area.
+										e.preventDefault();
+										e.stopPropagation();
+									}
+									// If allowInsertion is true, let the event flow for insertion points.
+								} else {
+									// For all other events (dragenter, dragleave, drop), always prevent.
 									e.preventDefault();
-								}
-								// If allowInsertion is true, let the event flow for insertion points.
-
-							} else if ( e.type === 'drop' ) {
-								// Always prevent drops directly into Block Guard areas.
-								e.preventDefault();
-								e.stopPropagation();
-
-								// Reset tracking variables.
-								lastY = 0;
-								dragDirection = 0;
-							} else if ( e.type === 'dragleave' ) {
-								// Reset when leaving the area.
-								const relatedTarget = e.relatedTarget;
-								if ( ! relatedTarget || ! targetBlock.contains( relatedTarget ) ) {
-									lastY = 0;
-									dragDirection = 0;
+									e.stopPropagation();
 								}
 							}
 						};
