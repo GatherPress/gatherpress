@@ -7,7 +7,7 @@ import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { addFilter } from '@wordpress/hooks';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 
 /**
  * Shared state store for block guard settings across all block instances.
@@ -179,6 +179,9 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 		const [ isBlockGuardEnabled, setIsBlockGuardEnabled ] =
 			useSharedBlockGuardState( stateKey );
 
+		// Store event handlers for cleanup - use useRef to persist across renders.
+		const eventHandlersRef = useRef( {} );
+
 		useEffect( () => {
 			if ( ! clientId ) {
 				return;
@@ -318,8 +321,85 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 				return;
 			}
 
-			// Store dragover handler reference for cleanup.
-			let dragoverHandler = null;
+			// Copy ref value to avoid react-hooks/exhaustive-deps warning.
+			const currentHandlers = eventHandlersRef.current;
+
+			// Inject CSS to prevent nesting behavior on guarded blocks.
+			let styleElement = global.document.getElementById( 'gatherpress-block-guard-styles' );
+			if ( ! styleElement ) {
+				styleElement = global.document.createElement( 'style' );
+				styleElement.id = 'gatherpress-block-guard-styles';
+				styleElement.textContent = `
+					/* Prevent WordPress from showing nesting state on guarded blocks */
+					.gatherpress-block-guard-enabled.is-nesting .block-editor-list-view-branch {
+						display: none !important;
+					}
+					.gatherpress-block-guard-enabled .block-editor-list-view-branch {
+						display: none !important;
+					}
+					/* Prevent drop indicator from showing */
+					.gatherpress-block-guard-enabled .block-editor-list-view-drop-indicator {
+						display: none !important;
+					}
+					/* Prevent the nesting effect */
+					.gatherpress-block-guard-enabled.is-nesting {
+						background: transparent !important;
+					}
+					/* Dim and disable expanders on guarded blocks */
+					.gatherpress-block-guard-enabled .block-editor-list-view__expander {
+						opacity: 0.3 !important;
+						pointer-events: none !important;
+					}
+					/* Prevent dragging into guarded blocks */
+					.gatherpress-block-guard-enabled * {
+						pointer-events: none !important;
+					}
+					.gatherpress-block-guard-enabled .block-editor-list-view-block-select-button {
+						pointer-events: auto !important;
+					}
+				`;
+				global.document.head.appendChild( styleElement );
+			}
+
+			// Global event handler to prevent expansion of ALL guarded blocks.
+			const preventGuardedExpansion = ( e ) => {
+				// Check if this is a click on a guarded block expander.
+				const expander = e.target.closest( '.block-editor-list-view__expander' );
+				if ( expander ) {
+					const guardedBlock = expander.closest( '.gatherpress-block-guard-enabled' );
+					if ( guardedBlock ) {
+						e.preventDefault();
+						e.stopPropagation();
+						e.stopImmediatePropagation();
+						return false;
+					}
+				}
+
+				// For drag events, completely stop WordPress from processing events on guarded blocks.
+				if ( 'dragover' === e.type || 'dragenter' === e.type || 'drop' === e.type ) {
+					const guardedTarget = e.target.closest( '.gatherpress-block-guard-enabled' );
+					if ( guardedTarget ) {
+						// Completely prevent WordPress from seeing this event.
+						e.preventDefault();
+						e.stopPropagation();
+						e.stopImmediatePropagation();
+
+						// Remove nesting class if it got added.
+						guardedTarget.classList.remove( 'is-nesting' );
+
+						if ( e.dataTransfer ) {
+							e.dataTransfer.dropEffect = 'none';
+						}
+						return false;
+					}
+				}
+			};
+
+			// Add global listeners for all interaction types.
+			const eventTypes = [ 'click', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragstart' ];
+			eventTypes.forEach( ( eventType ) => {
+				global.document.addEventListener( eventType, preventGuardedExpansion, true );
+			} );
 
 			const handleListView = () => {
 				// Find the list view item.
@@ -331,84 +411,79 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 					return;
 				}
 
-				// Find the expander.
-				const expander = listViewItem.querySelector(
-					'.block-editor-list-view__expander',
-				);
-
 				if ( isBlockGuardEnabled ) {
-					// Hide expander when guard is enabled.
+					// Visual feedback.
+					const expander = listViewItem.querySelector( '.block-editor-list-view__expander' );
 					if ( expander ) {
-						expander.style.visibility = 'hidden';
+						expander.style.opacity = '0.3';
 						expander.style.pointerEvents = 'none';
 					}
 
-					// Add visual indicators that this block doesn't accept children.
-					listViewItem.style.opacity = '0.9';
 					listViewItem.classList.add( 'gatherpress-block-guard-enabled' );
 
-					// Make any nested list container non-droppable using inert.
-					const nestedList = listViewItem.querySelector( '.block-editor-list-view-branch' );
-					if ( nestedList ) {
-						nestedList.inert = true;
-						nestedList.style.opacity = '0.5';
-					}
+					// Create event handler that blocks all drag interactions.
+					const blockDragEvents = ( e ) => {
+						// Check if this event is targeting our guarded block.
+						const targetGuardedBlock = e.target.closest( `[data-block="${ clientId }"]` );
+						if ( targetGuardedBlock ) {
+							e.preventDefault();
 
-					// Prevent drops by intercepting dragover events.
-					if ( ! dragoverHandler ) {
-						dragoverHandler = ( e ) => {
-							// Check if we're trying to drop into this guarded block.
-							const dropTarget = e.target.closest( `[data-block="${ clientId }"]` );
-							if ( dropTarget ) {
-								// Check if this is trying to drop as a child (not sibling).
-								const isChildDrop = e.target.closest( '.block-editor-list-view-branch' );
-								if ( isChildDrop && dropTarget.contains( isChildDrop ) ) {
-									e.preventDefault();
-									e.dataTransfer.dropEffect = 'none';
-								}
+							// Remove any nesting classes that might get added.
+							listViewItem.classList.remove( 'is-nesting' );
+
+							if ( e.dataTransfer ) {
+								e.dataTransfer.dropEffect = 'none';
 							}
-						};
 
-						// Listen for dragover in capture phase.
-						global.document.addEventListener(
-							'dragover',
-							dragoverHandler,
-							true,
-						);
+							return false;
+						}
+					};
+
+					// Store handler reference for cleanup.
+					eventHandlersRef.current[ clientId ] = blockDragEvents;
+
+					// Add event listeners for all drag events on the list item.
+					const dragEvents = [ 'dragenter', 'dragover', 'dragleave', 'drop' ];
+					dragEvents.forEach( ( eventType ) => {
+						listViewItem.addEventListener( eventType, blockDragEvents, true );
+					} );
+
+					// Also prevent click on expander to prevent opening.
+					if ( expander ) {
+						expander.addEventListener( 'click', blockDragEvents, true );
 					}
 				} else {
-					// Restore normal behavior.
+					// Restore everything.
+					const expander = listViewItem.querySelector( '.block-editor-list-view__expander' );
 					if ( expander ) {
-						expander.style.visibility = '';
+						expander.style.opacity = '';
 						expander.style.pointerEvents = '';
 					}
 
-					listViewItem.style.opacity = '';
 					listViewItem.classList.remove( 'gatherpress-block-guard-enabled' );
 
-					// Re-enable nested list.
-					const nestedList = listViewItem.querySelector( '.block-editor-list-view-branch' );
-					if ( nestedList ) {
-						nestedList.inert = false;
-						nestedList.style.opacity = '';
-					}
+					// Remove event listeners.
+					const handler = currentHandlers[ clientId ];
+					if ( handler ) {
+						const dragEvents = [ 'dragenter', 'dragover', 'dragleave', 'drop' ];
+						dragEvents.forEach( ( eventType ) => {
+							listViewItem.removeEventListener( eventType, handler, true );
+						} );
 
-					// Remove dragover prevention.
-					if ( dragoverHandler ) {
-						global.document.removeEventListener(
-							'dragover',
-							dragoverHandler,
-							true,
-						);
-						dragoverHandler = null;
+						const expanderElement = listViewItem.querySelector( '.block-editor-list-view__expander' );
+						if ( expanderElement ) {
+							expanderElement.removeEventListener( 'click', handler, true );
+						}
+
+						delete currentHandlers[ clientId ];
 					}
 				}
 			};
 
-			setTimeout( handleListView, 100 );
+			setTimeout( handleListView, 0 );
 
 			const observer = new MutationObserver( () =>
-				setTimeout( handleListView, 50 ),
+				setTimeout( handleListView, 0 ),
 			);
 
 			observer.observe( global.document.body, {
@@ -419,13 +494,40 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			return () => {
 				observer.disconnect();
 
-				// Clean up event listener.
-				if ( dragoverHandler ) {
-					global.document.removeEventListener(
-						'dragover',
-						dragoverHandler,
-						true,
-					);
+				// Remove global event listeners.
+				const globalEventTypes = [ 'click', 'dragenter', 'dragover', 'dragleave', 'drop', 'dragstart' ];
+				globalEventTypes.forEach( ( eventType ) => {
+					global.document.removeEventListener( eventType, preventGuardedExpansion, true );
+				} );
+
+				// Clean up event handlers and styles.
+				const listViewItem = global.document.querySelector(
+					`.block-editor-list-view-leaf[data-block="${ clientId }"]`,
+				);
+				if ( listViewItem ) {
+					const cleanupExpander = listViewItem.querySelector( '.block-editor-list-view__expander' );
+					if ( cleanupExpander ) {
+						cleanupExpander.style.opacity = '';
+						cleanupExpander.style.pointerEvents = '';
+					}
+
+					listViewItem.classList.remove( 'gatherpress-block-guard-enabled' );
+
+					// Remove event listeners.
+					const handler = currentHandlers[ clientId ];
+					if ( handler ) {
+						const dragEvents = [ 'dragenter', 'dragover', 'dragleave', 'drop' ];
+						dragEvents.forEach( ( eventType ) => {
+							listViewItem.removeEventListener( eventType, handler, true );
+						} );
+
+						const expanderElement = listViewItem.querySelector( '.block-editor-list-view__expander' );
+						if ( expanderElement ) {
+							expanderElement.removeEventListener( 'click', handler, true );
+						}
+
+						delete currentHandlers[ clientId ];
+					}
 				}
 			};
 		}, [ clientId, isBlockGuardEnabled ] );
