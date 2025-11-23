@@ -321,8 +321,22 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 				return;
 			}
 
-			// Store dragover handler reference for cleanup.
+			// Drag event configuration.
+			const DRAG_EVENTS = [ 'dragover', 'dragenter', 'drop' ];
 			let dragoverHandler = null;
+
+			// Helper functions for DRY event management.
+			const addDragListeners = ( handler ) => {
+				DRAG_EVENTS.forEach( ( eventType ) => {
+					global.document.addEventListener( eventType, handler, true );
+				} );
+			};
+
+			const removeDragListeners = ( handler ) => {
+				DRAG_EVENTS.forEach( ( eventType ) => {
+					global.document.removeEventListener( eventType, handler, true );
+				} );
+			};
 
 			const handleListView = () => {
 				// Find the list view item.
@@ -365,12 +379,10 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						parentLink.style.pointerEvents = 'none';
 
 						// Re-enable just the link itself, but not the expander.
-						setTimeout( () => {
-							parentLink.style.pointerEvents = 'auto';
-							parentLink.classList.add(
-								'gatherpress-block-guard-enabled',
-							);
-						}, 0 );
+						parentLink.style.pointerEvents = 'auto';
+						parentLink.classList.add(
+							'gatherpress-block-guard-enabled',
+						);
 					}
 
 					// Prevent all drag and drop operations into this block like WordPress lock removal.
@@ -387,15 +399,8 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 							}
 						};
 
-						// Add comprehensive drag prevention listeners.
-						const dragEvents = [ 'dragover', 'dragenter', 'drop' ];
-						dragEvents.forEach( ( eventType ) => {
-							global.document.addEventListener(
-								eventType,
-								dragoverHandler,
-								true,
-							);
-						} );
+						// Add drag prevention listeners.
+						addDragListeners( dragoverHandler );
 					}
 				} else {
 					// Restore interactivity.
@@ -415,25 +420,21 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 
 					// Remove drag prevention.
 					if ( dragoverHandler ) {
-						const dragEvents = [ 'dragover', 'dragenter', 'drop' ];
-						dragEvents.forEach( ( eventType ) => {
-							global.document.removeEventListener(
-								eventType,
-								dragoverHandler,
-								true,
-							);
-						} );
+						removeDragListeners( dragoverHandler );
 						dragoverHandler = null;
 					}
 				}
 			};
 
-			setTimeout( handleListView, 100 );
+			// Apply Block Guard initially and when List View changes.
+			handleListView();
 
-			const observer = new MutationObserver( () =>
-				setTimeout( handleListView, 50 ),
-			);
+			// Simple observer that just calls handleListView.
+			const observer = new MutationObserver( () => {
+				handleListView();
+			} );
 
+			// Observe the entire document for simplicity and reliability.
 			observer.observe( global.document.body, {
 				childList: true,
 				subtree: true,
@@ -444,14 +445,7 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 
 				// Clean up event listeners.
 				if ( dragoverHandler ) {
-					const dragEvents = [ 'dragover', 'dragenter', 'drop' ];
-					dragEvents.forEach( ( eventType ) => {
-						global.document.removeEventListener(
-							eventType,
-							dragoverHandler,
-							true,
-						);
-					} );
+					removeDragListeners( dragoverHandler );
 				}
 			};
 		}, [ clientId, isBlockGuardEnabled ] );
