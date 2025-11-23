@@ -1,7 +1,6 @@
 /**
  * WordPress dependencies.
  */
-import { dispatch } from '@wordpress/data';
 import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { InspectorControls } from '@wordpress/block-editor';
@@ -224,45 +223,17 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						return;
 					}
 
-					// Handle focusable elements.
-					const focusableElements =
-						innerBlocksContainer.querySelectorAll( `
-						a[href],
-						button,
-						input,
-						textarea,
-						select,
-						details,
-						iframe,
-						[tabindex],
-						[contentEditable="true"],
-						audio[controls],
-						video[controls],
-						[role="button"],
-						[role="link"],
-						[role="checkbox"],
-						[role="radio"],
-						[role="combobox"],
-						[role="menuitem"],
-						[role="textbox"],
-						[role="tab"]
-					` );
-
-					focusableElements.forEach( ( el ) => {
-						if ( isBlockGuardEnabled ) {
-							if ( ! el.dataset.originalTabIndex ) {
-								el.dataset.originalTabIndex =
-									el.getAttribute( 'tabindex' );
-							}
-							el.setAttribute( 'tabindex', '-1' );
-						} else if ( el.dataset.originalTabIndex ) {
-							el.setAttribute(
-								'tabindex',
-								el.dataset.originalTabIndex,
-							);
-							delete el.dataset.originalTabIndex;
-						}
-					} );
+					// Use the inert attribute to disable all interactions within inner blocks.
+					if ( isBlockGuardEnabled ) {
+						innerBlocksContainer.inert = true;
+						// Add a visual indicator that the content is protected (optional).
+						innerBlocksContainer.style.opacity = '0.95';
+						innerBlocksContainer.style.cursor = 'not-allowed';
+					} else {
+						innerBlocksContainer.inert = false;
+						innerBlocksContainer.style.opacity = '';
+						innerBlocksContainer.style.cursor = '';
+					}
 
 					// Handle block appender visibility.
 					const blockAppender = innerBlocksContainer.querySelector(
@@ -274,43 +245,6 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 							? 'none'
 							: '';
 					}
-
-					// Handle overlay.
-					let overlay = innerBlocksContainer.querySelector(
-						'.gatherpress-block-guard-overlay',
-					);
-
-					if ( ! overlay ) {
-						overlay = global.document.createElement( 'div' );
-						overlay.className = 'gatherpress-block-guard-overlay';
-
-						overlay.style.position = 'absolute';
-						overlay.style.top = '0';
-						overlay.style.left = '0';
-						overlay.style.width = '100%';
-						overlay.style.height = '100%';
-						overlay.style.background = 'transparent';
-						overlay.style.zIndex = '1';
-
-						// Get the actual clientId of this specific block instance.
-						const blockClientId =
-							blockElement.id?.replace( 'block-', '' ) || clientId;
-						overlay.onclick = ( e ) => {
-							e.stopPropagation();
-							dispatch( 'core/block-editor' ).selectBlock(
-								blockClientId,
-							);
-						};
-
-						// Ensure position relative on container.
-						innerBlocksContainer.style.position = 'relative';
-						innerBlocksContainer.appendChild( overlay );
-					}
-
-					// Toggle overlay visibility.
-					overlay.style.display = isBlockGuardEnabled
-						? 'block'
-						: 'none';
 				} );
 			};
 
@@ -352,11 +286,12 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 					const innerBlocks = blockElement?.querySelector(
 						'.block-editor-inner-blocks',
 					);
-					const overlay = innerBlocks?.querySelector(
-						'.gatherpress-block-guard-overlay',
-					);
-					if ( overlay && overlay.parentNode ) {
-						overlay.parentNode.removeChild( overlay );
+
+					// Clean up inert attribute and styles.
+					if ( innerBlocks ) {
+						innerBlocks.inert = false;
+						innerBlocks.style.opacity = '';
+						innerBlocks.style.cursor = '';
 					}
 				} );
 			};
