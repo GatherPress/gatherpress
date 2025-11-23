@@ -229,10 +229,13 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						// Add a visual indicator that the content is protected (optional).
 						innerBlocksContainer.style.opacity = '0.95';
 						innerBlocksContainer.style.cursor = 'not-allowed';
+						// Mark it so we can find it for cleanup.
+						innerBlocksContainer.dataset.gatherPressGuarded = 'true';
 					} else {
 						innerBlocksContainer.inert = false;
 						innerBlocksContainer.style.opacity = '';
 						innerBlocksContainer.style.cursor = '';
+						delete innerBlocksContainer.dataset.gatherPressGuarded;
 					}
 
 					// Handle block appender visibility.
@@ -261,14 +264,23 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			return () => {
 				observer.disconnect();
 
-				// Clean up overlays using the same state key targeting logic.
+				// Clean up ALL guarded elements, regardless of how we find them.
 				const editorDoc = getEditorDocument();
+
+				// First, clean up any elements we marked as guarded.
+				const guardedElements = editorDoc.querySelectorAll( '[data-gather-press-guarded="true"]' );
+				guardedElements.forEach( ( element ) => {
+					element.inert = false;
+					element.style.opacity = '';
+					element.style.cursor = '';
+					delete element.dataset.gatherPressGuarded;
+				} );
+
+				// Also clean up based on state key for thoroughness.
 				const allBlocks = Array.from(
 					editorDoc.querySelectorAll( `[data-type="${ name }"]` ),
 				);
-				const targetElements = [];
 
-				// Filter blocks to only include those with the same state key.
 				allBlocks.forEach( ( blockElement ) => {
 					const blockId = blockElement.id?.replace( 'block-', '' );
 					if ( blockId ) {
@@ -277,21 +289,24 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 							blockId,
 						);
 						if ( blockStateKey === stateKey ) {
-							targetElements.push( blockElement );
+							const innerBlocks = blockElement?.querySelector(
+								'.block-editor-inner-blocks',
+							);
+
+							// Clean up inert attribute and styles.
+							if ( innerBlocks ) {
+								innerBlocks.inert = false;
+								innerBlocks.style.opacity = '';
+								innerBlocks.style.cursor = '';
+								delete innerBlocks.dataset.gatherPressGuarded;
+
+								// Also restore block appender.
+								const blockAppender = innerBlocks.querySelector( '.block-list-appender' );
+								if ( blockAppender ) {
+									blockAppender.style.display = '';
+								}
+							}
 						}
-					}
-				} );
-
-				targetElements.forEach( ( blockElement ) => {
-					const innerBlocks = blockElement?.querySelector(
-						'.block-editor-inner-blocks',
-					);
-
-					// Clean up inert attribute and styles.
-					if ( innerBlocks ) {
-						innerBlocks.inert = false;
-						innerBlocks.style.opacity = '';
-						innerBlocks.style.cursor = '';
 					}
 				} );
 			};
@@ -321,72 +336,40 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 					'.block-editor-list-view__expander',
 				);
 
-				if ( ! expander ) {
-					return;
-				}
-
-				// Find the SVG inside the expander.
-				const expanderSvg = expander.querySelector( 'svg' );
-
-				if ( ! expanderSvg ) {
-					return;
-				}
-
 				if ( isBlockGuardEnabled ) {
-					// Make expander non-interactive but preserve layout.
-					expander.style.pointerEvents = 'none';
-					expander.style.opacity = '0.3';
-
-					// Disable the parent link element.
-					const parentLink = expander.closest(
-						'.block-editor-list-view-block-select-button',
-					);
-
-					if ( parentLink ) {
-						parentLink.setAttribute( 'aria-expanded', 'false' );
-						parentLink.style.pointerEvents = 'none';
-
-						// Re-enable just the link itself, but not the expander.
-						setTimeout( () => {
-							parentLink.style.pointerEvents = 'auto';
-							parentLink.classList.add(
-								'gatherpress-block-guard-enabled',
-							);
-						}, 0 );
+					// Hide expander when guard is enabled.
+					if ( expander ) {
+						expander.style.visibility = 'hidden';
+						expander.style.pointerEvents = 'none';
 					}
 
-					// Add dragover prevention if not already added.
+					// Add visual indicators that this block doesn't accept children.
+					listViewItem.style.opacity = '0.9';
+					listViewItem.classList.add( 'gatherpress-block-guard-enabled' );
+
+					// Make any nested list container non-droppable using inert.
+					const nestedList = listViewItem.querySelector( '.block-editor-list-view-branch' );
+					if ( nestedList ) {
+						nestedList.inert = true;
+						nestedList.style.opacity = '0.5';
+					}
+
+					// Prevent drops by intercepting dragover events.
 					if ( ! dragoverHandler ) {
 						dragoverHandler = ( e ) => {
-							const targetBlock = e.target.closest(
-								`[data-block="${ clientId }"]`,
-							);
-
-							if ( ! targetBlock ) {
-								return;
-							}
-
-							// Calculate position within block.
-							const rect = targetBlock.getBoundingClientRect();
-							const relativeY = e.clientY - rect.top;
-
-							// 15px or 15% of height.
-							const heightThreshold = Math.min(
-								15,
-								rect.height * 0.15,
-							);
-
-							// Only prevent events in middle section (allow edges).
-							const isEdgeArea =
-								relativeY < heightThreshold ||
-								relativeY > rect.height - heightThreshold;
-
-							if ( ! isEdgeArea ) {
-								e.stopPropagation();
+							// Check if we're trying to drop into this guarded block.
+							const dropTarget = e.target.closest( `[data-block="${ clientId }"]` );
+							if ( dropTarget ) {
+								// Check if this is trying to drop as a child (not sibling).
+								const isChildDrop = e.target.closest( '.block-editor-list-view-branch' );
+								if ( isChildDrop && dropTarget.contains( isChildDrop ) ) {
+									e.preventDefault();
+									e.dataTransfer.dropEffect = 'none';
+								}
 							}
 						};
 
-						// Add the event listener.
+						// Listen for dragover in capture phase.
 						global.document.addEventListener(
 							'dragover',
 							dragoverHandler,
@@ -394,19 +377,20 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						);
 					}
 				} else {
-					// Restore interactivity.
-					expander.style.pointerEvents = '';
-					expander.style.opacity = '';
+					// Restore normal behavior.
+					if ( expander ) {
+						expander.style.visibility = '';
+						expander.style.pointerEvents = '';
+					}
 
-					// Re-enable the parent link.
-					const parentLink = expander.closest(
-						'.block-editor-list-view-block-select-button',
-					);
-					if ( parentLink ) {
-						parentLink.style.pointerEvents = '';
-						parentLink.classList.remove(
-							'gatherpress-block-guard-enabled',
-						);
+					listViewItem.style.opacity = '';
+					listViewItem.classList.remove( 'gatherpress-block-guard-enabled' );
+
+					// Re-enable nested list.
+					const nestedList = listViewItem.querySelector( '.block-editor-list-view-branch' );
+					if ( nestedList ) {
+						nestedList.inert = false;
+						nestedList.style.opacity = '';
 					}
 
 					// Remove dragover prevention.
