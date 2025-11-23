@@ -321,11 +321,10 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 				return;
 			}
 
+			let dropHandler = null;
+
 			// Drag event configuration.
 			const DRAG_EVENTS = [ 'dragover', 'dragenter', 'dragleave', 'drop' ];
-			let dropHandler = null;
-			let lastY = 0;
-			let dragDirection = 0;
 
 			// Helper functions for DRY event management.
 			const addDragListeners = ( handler ) => {
@@ -387,49 +386,21 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						);
 					}
 
+					// Cache the data-block attribute for performance.
+					const dataBlockSelector = `[data-block="${ clientId }"]`;
+
 					// Prevent drops into this block like WordPress lock removal.
 					if ( ! dropHandler ) {
 						dropHandler = ( e ) => {
-							const targetBlock = e.target.closest( `[data-block="${ clientId }"]` );
+							const targetBlock = e.target.closest( dataBlockSelector );
 
 							if ( targetBlock ) {
-								// Track drag direction for smart insertion points.
-								if ( 'dragover' === e.type ) {
-									const currentY = e.clientY;
-									if ( 0 !== lastY ) {
-										const deltaY = currentY - lastY;
-										if ( 2 < Math.abs( deltaY ) ) {
-											dragDirection = 0 < deltaY ? 1 : -1; // 1 = down, -1 = up
-										}
-									}
-									lastY = currentY;
-
-									// Calculate position within block for edge detection.
-									const rect = targetBlock.getBoundingClientRect();
-									const relativeY = e.clientY - rect.top;
-									const blockHeight = rect.height;
-
-									// Define edge zones (20% of block height, min 15px, max 40px).
-									const edgeThreshold = Math.min( 40, Math.max( 15, blockHeight * 0.2 ) );
-									const isTopEdge = relativeY < edgeThreshold;
-									const isBottomEdge = relativeY > blockHeight - edgeThreshold;
-
-									// Allow insertion based on direction and edge position.
-									const allowInsertion =
-										( -1 === dragDirection && isTopEdge ) || // Dragging up, near top
-										( 1 === dragDirection && isBottomEdge ); // Dragging down, near bottom
-
-									if ( ! allowInsertion ) {
-										// Prevent drag feedback in the middle area.
-										e.preventDefault();
-										e.stopPropagation();
-									}
-									// If allowInsertion is true, let the event flow for insertion points.
-								} else {
-									// For all other events (dragenter, dragleave, drop), always prevent.
+								// Prevent dragover and drop to disable block insertion indicators.
+								if ( 'dragover' === e.type || 'drop' === e.type ) {
 									e.preventDefault();
 									e.stopPropagation();
 								}
+								// Let dragenter, dragleave flow naturally for smooth feedback.
 							}
 						};
 
