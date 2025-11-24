@@ -502,8 +502,8 @@ class Event_Setup {
 			// Create link to filtered RSVPs page for approved RSVPs.
 			$approved_rsvp_url = add_query_arg(
 				array(
-					'post_type' => 'gatherpress_event',
-					'page'      => 'gatherpress_rsvp',
+					'post_type' => Event::POST_TYPE,
+					'page'      => Rsvp::COMMENT_TYPE,
 					'post_id'   => $post_id,
 					'status'    => 'approved',
 				),
@@ -522,8 +522,8 @@ class Event_Setup {
 			if ( $unapproved_rsvps > 0 ) {
 				$unapproved_rsvp_url = add_query_arg(
 					array(
-						'post_type' => 'gatherpress_event',
-						'page'      => 'gatherpress_rsvp',
+						'post_type' => Event::POST_TYPE,
+						'page'      => Rsvp::COMMENT_TYPE,
 						'post_id'   => $post_id,
 						'status'    => 'pending',
 					),
@@ -739,7 +739,7 @@ class Event_Setup {
 		global $wpdb;
 
 		$join .= " LEFT JOIN {$wpdb->term_relationships} AS venue_tr ON {$wpdb->posts}.ID = venue_tr.object_id";
-		$join .= " LEFT JOIN {$wpdb->term_taxonomy} AS venue_tt ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id AND venue_tt.taxonomy = '_gatherpress_venue'";
+		$join .= " LEFT JOIN {$wpdb->term_taxonomy} AS venue_tt ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id AND venue_tt.taxonomy = '" . Venue::TAXONOMY . "'";
 		$join .= " LEFT JOIN {$wpdb->terms} AS venue_terms ON venue_tt.term_id = venue_terms.term_id";
 
 		return $join;
