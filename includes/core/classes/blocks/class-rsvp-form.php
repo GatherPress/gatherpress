@@ -83,7 +83,6 @@ class Rsvp_Form {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
 		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'add_form_visibility_data_attribute' ), 10, 2 );
 		add_filter( 'render_block_gatherpress/form-field', array( $this, 'conditionally_render_form_fields' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
 	}
@@ -108,9 +107,16 @@ class Rsvp_Form {
 		$post_id        = $block_instance->get_post_id( $block );
 		$unique_form_id = $this->generate_form_id();
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
-		$block_content  = trim( $block_content );
-		$block_content  = preg_replace( '/^<div\b/', '<form', $block_content );
-		$block_content  = preg_replace(
+
+		// Get the innerBlocksVisibility attribute.
+		$inner_blocks_visibility = $block['attrs']['innerBlocksVisibility'] ?? array();
+
+		// Apply visibility data attributes to inner blocks based on their path.
+		$block_content = $this->apply_visibility_to_inner_blocks( $block_content, $block['innerBlocks'] ?? array(), $inner_blocks_visibility );
+
+		$block_content = trim( $block_content );
+		$block_content = preg_replace( '/^<div\b/', '<form', $block_content );
+		$block_content = preg_replace(
 			'/(<\/div>)$/',
 			'<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
 			'<input type="hidden" name="' . esc_attr( Rsvp::COMMENT_TYPE ) . '" value="1">' .
@@ -145,6 +151,61 @@ class Rsvp_Form {
 	}
 
 	/**
+	 * Apply visibility data attributes to inner blocks based on innerBlocksVisibility.
+	 *
+	 * Recursively processes inner blocks and adds data-gatherpress-rsvp-form-visibility
+	 * attribute based on the block's path in the innerBlocksVisibility map.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $content                  The rendered block content.
+	 * @param array  $inner_blocks             The inner blocks array.
+	 * @param array  $inner_blocks_visibility  The visibility settings keyed by block path.
+	 * @param string $path_prefix              The current path prefix for nested blocks.
+	 * @return string The modified content with visibility attributes.
+	 */
+	private function apply_visibility_to_inner_blocks( string $content, array $inner_blocks, array $inner_blocks_visibility, string $path_prefix = '' ): string {
+		foreach ( $inner_blocks as $index => $inner_block ) {
+			$block_path = $path_prefix ? "{$path_prefix}-{$index}" : "{$index}";
+
+			// Check if this block has a visibility setting.
+			if ( isset( $inner_blocks_visibility[ $block_path ] ) ) {
+				$visibility = $inner_blocks_visibility[ $block_path ];
+
+				if ( 'default' !== $visibility ) {
+					// Render the inner block to get its HTML.
+					$inner_block_html = render_block( $inner_block );
+
+					if ( ! empty( $inner_block_html ) ) {
+						// Add the visibility data attribute to the rendered block.
+						$tag = new WP_HTML_Tag_Processor( $inner_block_html );
+
+						if ( $tag->next_tag() ) {
+							$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility );
+							$modified_html = $tag->get_updated_html();
+
+							// Replace the original block HTML with the modified version.
+							$content = str_replace( $inner_block_html, $modified_html, $content );
+						}
+					}
+				}
+			}
+
+			// Recursively process nested inner blocks.
+			if ( ! empty( $inner_block['innerBlocks'] ) ) {
+				$content = $this->apply_visibility_to_inner_blocks(
+					$content,
+					$inner_block['innerBlocks'],
+					$inner_blocks_visibility,
+					$block_path
+				);
+			}
+		}
+
+		return $content;
+	}
+
+	/**
 	 * Handle visibility of form elements based on success state and block attributes.
 	 *
 	 * Uses the gatherpressRsvpFormVisibility attribute to determine which blocks should
@@ -172,54 +233,6 @@ class Rsvp_Form {
 		return $tag->get_updated_html();
 	}
 
-	/**
-	 * Add form visibility data attribute to blocks with gatherpressRsvpFormVisibility attribute.
-	 *
-	 * This filter runs for all blocks and adds the data-gatherpress-rsvp-form-visibility
-	 * attribute to any block that has a gatherpressRsvpFormVisibility attribute set.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The full block, including name and attributes.
-	 * @return string The potentially modified block content.
-	 */
-	public function add_form_visibility_data_attribute( string $block_content, array $block ): string {
-		// Check if this block has a gatherpressRsvpFormVisibility attribute.
-		$form_visibility = $block['attrs']['gatherpressRsvpFormVisibility'] ?? null;
-
-		if ( empty( $form_visibility ) || 'default' === $form_visibility ) {
-			return $block_content;
-		}
-
-		// Check if this is a successful form submission redirect.
-		$success_param = Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
-		$is_success    = 'true' === $success_param;
-
-		// Use WP_HTML_Tag_Processor to add the data attribute and handle initial visibility.
-		$tag = new WP_HTML_Tag_Processor( $block_content );
-
-		if ( $tag->next_tag() ) {
-			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $form_visibility );
-
-			// Apply initial visibility rules for non-JS scenarios.
-			if ( 'showOnSuccess' === $form_visibility && ! $is_success ) {
-				// Hide blocks that should only show on success when not in success state.
-				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-				$updated_styles  = trim( $existing_styles . ' display: none;' );
-				$tag->set_attribute( 'style', $updated_styles );
-			} elseif ( 'hideOnSuccess' === $form_visibility && $is_success ) {
-				// Hide blocks that should hide on success when in success state.
-				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-				$updated_styles  = trim( $existing_styles . ' display: none;' );
-				$tag->set_attribute( 'style', $updated_styles );
-			}
-
-			return $tag->get_updated_html();
-		}
-
-		return $block_content;
-	}
 
 	/**
 	 * Conditionally render form field blocks based on event settings.
