@@ -138,7 +138,7 @@ const Edit = ( { attributes, clientId } ) => {
 				let shouldHide = false;
 
 				// Check if visibility is an object (new format) or string (legacy format).
-				if ( typeof visibility === 'object' ) {
+				if ( 'object' === typeof visibility ) {
 					const { onSuccess = 'default', whenPast = 'default' } = visibility;
 
 					// Determine visibility based on current state and settings.
@@ -163,29 +163,25 @@ const Edit = ( { attributes, clientId } ) => {
 							// Hide blocks that only show when past.
 							shouldHide = true;
 						}
-					} else {
+					} else if ( 'show' === onSuccess ) {
 						// Default state (not success, not past).
-						if ( 'show' === onSuccess ) {
-							// Hide blocks that only show on success.
-							shouldHide = true;
-						} else if ( 'show' === whenPast ) {
-							// Hide blocks that only show when past.
-							shouldHide = true;
-						} else if ( 'hide' === onSuccess || 'hide' === whenPast ) {
-							// Show blocks that hide on specific states.
-							shouldHide = false;
-						}
+						// Hide blocks that only show on success.
+						shouldHide = true;
+					} else if ( 'show' === whenPast ) {
+						// Hide blocks that only show when past.
+						shouldHide = true;
+					} else if ( 'hide' === onSuccess || 'hide' === whenPast ) {
+						// Show blocks that hide on specific states.
+						shouldHide = false;
 					}
-				} else {
+				} else if ( 'showOnSuccess' === visibility ) {
 					// Legacy string format support.
-					if ( 'showOnSuccess' === visibility ) {
-						if ( 'success' !== formState ) {
-							shouldHide = true;
-						}
-					} else if ( 'hideOnSuccess' === visibility ) {
-						if ( 'success' === formState ) {
-							shouldHide = true;
-						}
+					if ( 'success' !== formState ) {
+						shouldHide = true;
+					}
+				} else if ( 'hideOnSuccess' === visibility ) {
+					if ( 'success' === formState ) {
+						shouldHide = true;
 					}
 				}
 

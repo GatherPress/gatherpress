@@ -114,7 +114,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		}
 
 		// Validate selectedIndex is within bounds
-		if ( selectedIndex < 0 || selectedIndex >= innerBlocks.length ) {
+		if ( 0 > selectedIndex || selectedIndex >= innerBlocks.length ) {
 			return;
 		}
 
@@ -130,7 +130,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		if ( plainTextLabel && plainTextLabel !== label ) {
 			setAttributes( { label: plainTextLabel } );
 		}
-	}, [ actAsSelect, selectedIndex, innerBlocks, label ] );
+	}, [ actAsSelect, selectedIndex, innerBlocks, label, setAttributes ] );
 
 	useEffect( () => {
 		// Only run if actAsSelect is enabled and there are inner blocks
@@ -139,7 +139,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		}
 
 		// Check if selectedIndex is valid
-		if ( selectedIndex < 0 || selectedIndex >= innerBlocks.length ) {
+		if ( 0 > selectedIndex || selectedIndex >= innerBlocks.length ) {
 			return;
 		}
 
@@ -159,7 +159,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		if ( newLabel !== label ) {
 			setAttributes( { label: newLabel } );
 		}
-	}, [ innerBlocks, actAsSelect, selectedIndex, label ] );
+	}, [ innerBlocks, actAsSelect, selectedIndex, label, setAttributes ] );
 
 	const dropdownStyles = `
 		#${ dropdownId } .wp-block-gatherpress-dropdown-item {

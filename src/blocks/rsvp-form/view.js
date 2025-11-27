@@ -126,7 +126,7 @@ const { state } = store( 'gatherpress', {
 
 						let shouldShow = null; // null = default (no change)
 
-						if ( typeof visibility === 'object' ) {
+						if ( 'object' === typeof visibility ) {
 							const { onSuccess, whenPast } = visibility;
 
 							// whenPast takes precedence.
@@ -136,13 +136,11 @@ const { state } = store( 'gatherpress', {
 								// After successful submission.
 								shouldShow = 'show' === onSuccess;
 							}
-						} else {
+						} else if ( 'showOnSuccess' === visibility ) {
 							// Legacy string format support.
-							if ( 'showOnSuccess' === visibility ) {
-								shouldShow = true;
-							} else if ( 'hideOnSuccess' === visibility ) {
-								shouldShow = false;
-							}
+							shouldShow = true;
+						} else if ( 'hideOnSuccess' === visibility ) {
+							shouldShow = false;
 						}
 
 						// Apply visibility changes.
@@ -235,7 +233,7 @@ const { state } = store( 'gatherpress', {
 
 				let shouldShow = null; // null = default (always visible)
 
-				if ( typeof visibility === 'object' ) {
+				if ( 'object' === typeof visibility ) {
 					const { onSuccess, whenPast } = visibility;
 
 					// whenPast takes precedence over onSuccess.
@@ -250,13 +248,11 @@ const { state } = store( 'gatherpress', {
 						// Default state.
 						shouldShow = null;
 					}
-				} else {
+				} else if ( 'showOnSuccess' === visibility ) {
 					// Legacy string format support.
-					if ( 'showOnSuccess' === visibility ) {
-						shouldShow = isSuccess;
-					} else if ( 'hideOnSuccess' === visibility ) {
-						shouldShow = ! isSuccess;
-					}
+					shouldShow = isSuccess;
+				} else if ( 'hideOnSuccess' === visibility ) {
+					shouldShow = ! isSuccess;
 				}
 
 				// Apply visibility changes.

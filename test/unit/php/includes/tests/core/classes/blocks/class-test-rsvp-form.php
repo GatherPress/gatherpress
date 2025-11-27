@@ -46,7 +46,7 @@ class Test_Rsvp_Form extends Base {
 				'type'     => 'filter',
 				'name'     => 'render_block',
 				'priority' => 10,
-				'callback' => array( $instance, 'add_form_visibility_data_attribute' ),
+				'callback' => array( $instance, 'apply_visibility_attribute' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -768,37 +768,37 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests the add_form_visibility_data_attribute method with no gatherpressRsvpFormVisibility attribute.
+	 * Tests the apply_visibility_attribute method with no gatherpressRsvpFormVisibility attribute.
 	 *
 	 * Verifies that blocks without gatherpressRsvpFormVisibility attribute are unchanged.
 	 *
 	 * @since 1.0.0
-	 * @covers ::add_form_visibility_data_attribute
+	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
 	 */
-	public function test_add_form_visibility_data_attribute_no_attribute(): void {
+	public function test_apply_visibility_attribute_no_attribute(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		$block_content = '<div class="wp-block-paragraph">Normal content</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
 		$this->assertEquals( $block_content, $result );
 		$this->assertStringNotContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
 	}
 
 	/**
-	 * Tests the add_form_visibility_data_attribute method with default gatherpressRsvpFormVisibility.
+	 * Tests the apply_visibility_attribute method with default gatherpressRsvpFormVisibility.
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility set to 'default' are unchanged.
 	 *
 	 * @since 1.0.0
-	 * @covers ::add_form_visibility_data_attribute
+	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
 	 */
-	public function test_add_form_visibility_data_attribute_default_value(): void {
+	public function test_apply_visibility_attribute_default_value(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		$block_content = '<div class="wp-block-paragraph">Normal content</div>';
@@ -806,22 +806,22 @@ class Test_Rsvp_Form extends Base {
 			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'default' ),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
 		$this->assertEquals( $block_content, $result );
 		$this->assertStringNotContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
 	}
 
 	/**
-	 * Tests add_form_visibility_data_attribute with success state.
+	 * Tests apply_visibility_attribute with success state.
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to success state.
 	 *
 	 * @since 1.0.0
-	 * @covers ::add_form_visibility_data_attribute
+	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
 	 */
-	public function test_add_form_visibility_data_attribute_with_success(): void {
+	public function test_apply_visibility_attribute_with_success(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		// Mock GET parameter for success state using pre_ filter.
@@ -844,7 +844,7 @@ class Test_Rsvp_Form extends Base {
 			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
 		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $result );
 		$this->assertStringNotContainsString( 'display: none;', $result );
 
@@ -855,7 +855,7 @@ class Test_Rsvp_Form extends Base {
 			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
 		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="hideOnSuccess"', $result );
 		$this->assertStringContainsString( 'display: none;', $result );
 
@@ -864,16 +864,16 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests add_form_visibility_data_attribute without success state.
+	 * Tests apply_visibility_attribute without success state.
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to default state.
 	 *
 	 * @since 1.0.0
-	 * @covers ::add_form_visibility_data_attribute
+	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
 	 */
-	public function test_add_form_visibility_data_attribute_without_success(): void {
+	public function test_apply_visibility_attribute_without_success(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		// Mock no success parameter using pre_ filter.
@@ -891,7 +891,7 @@ class Test_Rsvp_Form extends Base {
 			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
 		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $result );
 		$this->assertStringContainsString( 'display: none;', $result );
 
@@ -902,7 +902,7 @@ class Test_Rsvp_Form extends Base {
 			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
 		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="hideOnSuccess"', $result );
 		$this->assertStringNotContainsString( 'display: none;', $result );
 

@@ -53,8 +53,6 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 			[ clientId ]
 		);
 
-		const { updateBlockAttributes } = dispatch( 'core/block-editor' );
-
 		// Don't show controls if this IS the RSVP Form block itself.
 		if ( 'gatherpress/rsvp-form' === currentBlock?.name ) {
 			// Also prevent nested RSVP Forms by hiding this block if it's inside another RSVP Form.
@@ -88,10 +86,12 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 		const onSuccess = currentVisibility?.onSuccess || '';
 		const whenPast = currentVisibility?.whenPast || '';
 
+		const { updateBlockAttributes } = dispatch( 'core/block-editor' );
+
 		// Handler to update visibility on this block's metadata.
 		const updateVisibility = ( state, value ) => {
 			const newMetadata = { ...( attributes.metadata || {} ) };
-			let newVisibility = { ...( currentVisibility || {} ) };
+			const newVisibility = { ...( currentVisibility || {} ) };
 
 			// Update the specific state.
 			if ( ! value || '' === value ) {
@@ -101,7 +101,7 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 			}
 
 			// If both states are empty, remove the entire visibility object.
-			if ( Object.keys( newVisibility ).length === 0 ) {
+			if ( 0 === Object.keys( newVisibility ).length ) {
 				delete newMetadata.gatherpressRsvpFormVisibility;
 			} else {
 				newMetadata.gatherpressRsvpFormVisibility = newVisibility;

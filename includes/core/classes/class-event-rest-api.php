@@ -888,6 +888,17 @@ class Event_Rest_Api {
 			}
 		}
 
+		// Check if event has passed - prevent RSVPs to past events.
+		$event = new Event( $data['post_id'] );
+		if ( $event->has_event_past() ) {
+			$response = array(
+				'success' => false,
+				'message' => __( 'Registration for this event is now closed.', 'gatherpress' ),
+			);
+
+			return new WP_REST_Response( $response, 400 );
+		}
+
 		// Process the RSVP using the centralized processor.
 		$rsvp_form = Rsvp_Form_Core::get_instance();
 		$result    = $rsvp_form->process_rsvp( $data );
