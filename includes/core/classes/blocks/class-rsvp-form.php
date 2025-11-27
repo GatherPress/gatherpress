@@ -302,7 +302,7 @@ class Rsvp_Form {
 
 		// Check if event has passed by looking for the data attribute on the form element.
 		$is_past = false;
-		if ( $tag->next_tag( 'form' ) ) {
+		if ( $tag->next_tag( array( 'tag_name' => 'form' ) ) ) {
 			$event_state = $tag->get_attribute( 'data-gatherpress-event-state' );
 			$is_past     = 'past' === $event_state;
 		}
