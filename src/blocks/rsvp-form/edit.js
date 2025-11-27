@@ -130,64 +130,58 @@ const Edit = ( { attributes, clientId } ) => {
 	const collectVisibilityStyles = useCallback( ( blocks ) => {
 		const styles = [];
 
+		const shouldHideBlock = ( visibility ) => {
+			// Legacy string format.
+			if ( 'string' === typeof visibility ) {
+				if ( 'showOnSuccess' === visibility ) {
+					return 'success' !== formState;
+				}
+				if ( 'hideOnSuccess' === visibility ) {
+					return 'success' === formState;
+				}
+				return false;
+			}
+
+			// Object format with onSuccess and whenPast.
+			const { onSuccess = '', whenPast = '' } = visibility;
+
+			// Helper to check if a setting matches the current state.
+			const matches = ( setting, state ) => {
+				if ( ! setting ) {
+					return null; // No preference (always visible).
+				}
+				return 'show' === setting ? state : ! state;
+			};
+
+			// Determine visibility based on precedence: whenPast > onSuccess.
+			const isPast = 'past' === formState;
+			const isSuccess = 'success' === formState;
+
+			// Check whenPast first (takes precedence).
+			if ( whenPast ) {
+				const whenPastResult = matches( whenPast, isPast );
+				if ( null !== whenPastResult ) {
+					return ! whenPastResult;
+				}
+			}
+
+			// Check onSuccess.
+			if ( onSuccess ) {
+				const onSuccessResult = matches( onSuccess, isSuccess );
+				if ( null !== onSuccessResult ) {
+					return ! onSuccessResult;
+				}
+			}
+
+			return false; // Default: visible.
+		};
+
 		blocks.forEach( ( block ) => {
 			const visibility = block.attributes?.metadata?.gatherpressRsvpFormVisibility;
 
-			if ( visibility ) {
+			if ( visibility && shouldHideBlock( visibility ) ) {
 				const selector = `#block-${ block.clientId }`;
-				let shouldHide = false;
-
-				// Check if visibility is an object (new format) or string (legacy format).
-				if ( 'object' === typeof visibility ) {
-					const { onSuccess = 'default', whenPast = 'default' } = visibility;
-
-					// Determine visibility based on current state and settings.
-					if ( 'past' === formState ) {
-						// When event is past, whenPast takes precedence.
-						if ( 'hide' === whenPast ) {
-							shouldHide = true;
-						} else if ( 'show' === whenPast ) {
-							shouldHide = false;
-						} else if ( 'hide' === onSuccess ) {
-							shouldHide = true;
-						} else if ( 'show' === onSuccess ) {
-							shouldHide = false;
-						}
-					} else if ( 'success' === formState ) {
-						// When form is successful.
-						if ( 'hide' === onSuccess ) {
-							shouldHide = true;
-						} else if ( 'show' === onSuccess ) {
-							shouldHide = false;
-						} else if ( 'show' === whenPast ) {
-							// Hide blocks that only show when past.
-							shouldHide = true;
-						}
-					} else if ( 'show' === onSuccess ) {
-						// Default state (not success, not past).
-						// Hide blocks that only show on success.
-						shouldHide = true;
-					} else if ( 'show' === whenPast ) {
-						// Hide blocks that only show when past.
-						shouldHide = true;
-					} else if ( 'hide' === onSuccess || 'hide' === whenPast ) {
-						// Show blocks that hide on specific states.
-						shouldHide = false;
-					}
-				} else if ( 'showOnSuccess' === visibility ) {
-					// Legacy string format support.
-					if ( 'success' !== formState ) {
-						shouldHide = true;
-					}
-				} else if ( 'hideOnSuccess' === visibility ) {
-					if ( 'success' === formState ) {
-						shouldHide = true;
-					}
-				}
-
-				if ( shouldHide ) {
-					styles.push( `${ selector } { display: none !important; }` );
-				}
+				styles.push( `${ selector } { display: none !important; }` );
 			}
 
 			// Recursively process inner blocks.
