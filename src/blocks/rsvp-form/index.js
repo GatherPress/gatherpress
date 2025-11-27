@@ -84,17 +84,27 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 		}
 
 		// Get current visibility from block's metadata attribute.
-		const currentVisibility = attributes?.metadata?.gatherpressRsvpFormVisibility || 'default';
+		const currentVisibility = attributes?.metadata?.gatherpressRsvpFormVisibility || {};
+		const onSuccess = currentVisibility?.onSuccess || '';
+		const whenPast = currentVisibility?.whenPast || '';
 
 		// Handler to update visibility on this block's metadata.
-		const updateVisibility = ( value ) => {
+		const updateVisibility = ( state, value ) => {
 			const newMetadata = { ...( attributes.metadata || {} ) };
+			let newVisibility = { ...( currentVisibility || {} ) };
 
-			if ( value === 'default' ) {
-				// Remove the entry if set to default.
+			// Update the specific state.
+			if ( ! value || '' === value ) {
+				delete newVisibility[ state ];
+			} else {
+				newVisibility[ state ] = value;
+			}
+
+			// If both states are empty, remove the entire visibility object.
+			if ( Object.keys( newVisibility ).length === 0 ) {
 				delete newMetadata.gatherpressRsvpFormVisibility;
 			} else {
-				newMetadata.gatherpressRsvpFormVisibility = value;
+				newMetadata.gatherpressRsvpFormVisibility = newVisibility;
 			}
 
 			updateBlockAttributes( clientId, {
@@ -107,27 +117,50 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 				<BlockEdit { ...props } />
 				<InspectorAdvancedControls>
 					<SelectControl
-						label={ __( 'Form State', 'gatherpress' ) }
+						label={ __( 'On Successful Submission', 'gatherpress' ) }
 						help={ __(
-							'Control when this block is visible based on RSVP form state.',
+							'Control visibility when the RSVP form is successfully submitted.',
 							'gatherpress'
 						) }
-						value={ currentVisibility }
+						value={ onSuccess }
 						options={ [
 							{
-								label: __( 'Always visible (default)', 'gatherpress' ),
-								value: 'default',
+								label: __( 'Always visible', 'gatherpress' ),
+								value: '',
 							},
 							{
-								label: __( 'Show on successful form submission', 'gatherpress' ),
-								value: 'showOnSuccess',
+								label: __( 'Show', 'gatherpress' ),
+								value: 'show',
 							},
 							{
-								label: __( 'Hide on successful form submission', 'gatherpress' ),
-								value: 'hideOnSuccess',
+								label: __( 'Hide', 'gatherpress' ),
+								value: 'hide',
 							},
 						] }
-						onChange={ updateVisibility }
+						onChange={ ( value ) => updateVisibility( 'onSuccess', value ) }
+					/>
+					<SelectControl
+						label={ __( 'When Event Has Passed', 'gatherpress' ) }
+						help={ __(
+							'Control visibility when the event end time has passed.',
+							'gatherpress'
+						) }
+						value={ whenPast }
+						options={ [
+							{
+								label: __( 'Always visible', 'gatherpress' ),
+								value: '',
+							},
+							{
+								label: __( 'Show', 'gatherpress' ),
+								value: 'show',
+							},
+							{
+								label: __( 'Hide', 'gatherpress' ),
+								value: 'hide',
+							},
+						] }
+						onChange={ ( value ) => updateVisibility( 'whenPast', value ) }
 					/>
 				</InspectorAdvancedControls>
 			</Fragment>

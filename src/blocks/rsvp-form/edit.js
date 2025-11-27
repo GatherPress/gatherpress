@@ -135,15 +135,62 @@ const Edit = ( { attributes, clientId } ) => {
 
 			if ( visibility ) {
 				const selector = `#block-${ block.clientId }`;
+				let shouldHide = false;
 
-				if ( 'showOnSuccess' === visibility ) {
-					if ( 'success' !== formState ) {
-						styles.push( `${ selector } { display: none !important; }` );
+				// Check if visibility is an object (new format) or string (legacy format).
+				if ( typeof visibility === 'object' ) {
+					const { onSuccess = 'default', whenPast = 'default' } = visibility;
+
+					// Determine visibility based on current state and settings.
+					if ( 'past' === formState ) {
+						// When event is past, whenPast takes precedence.
+						if ( 'hide' === whenPast ) {
+							shouldHide = true;
+						} else if ( 'show' === whenPast ) {
+							shouldHide = false;
+						} else if ( 'hide' === onSuccess ) {
+							shouldHide = true;
+						} else if ( 'show' === onSuccess ) {
+							shouldHide = false;
+						}
+					} else if ( 'success' === formState ) {
+						// When form is successful.
+						if ( 'hide' === onSuccess ) {
+							shouldHide = true;
+						} else if ( 'show' === onSuccess ) {
+							shouldHide = false;
+						} else if ( 'show' === whenPast ) {
+							// Hide blocks that only show when past.
+							shouldHide = true;
+						}
+					} else {
+						// Default state (not success, not past).
+						if ( 'show' === onSuccess ) {
+							// Hide blocks that only show on success.
+							shouldHide = true;
+						} else if ( 'show' === whenPast ) {
+							// Hide blocks that only show when past.
+							shouldHide = true;
+						} else if ( 'hide' === onSuccess || 'hide' === whenPast ) {
+							// Show blocks that hide on specific states.
+							shouldHide = false;
+						}
 					}
-				} else if ( 'hideOnSuccess' === visibility ) {
-					if ( 'success' === formState ) {
-						styles.push( `${ selector } { display: none !important; }` );
+				} else {
+					// Legacy string format support.
+					if ( 'showOnSuccess' === visibility ) {
+						if ( 'success' !== formState ) {
+							shouldHide = true;
+						}
+					} else if ( 'hideOnSuccess' === visibility ) {
+						if ( 'success' === formState ) {
+							shouldHide = true;
+						}
 					}
+				}
+
+				if ( shouldHide ) {
+					styles.push( `${ selector } { display: none !important; }` );
 				}
 			}
 
@@ -219,6 +266,10 @@ const Edit = ( { attributes, clientId } ) => {
 							{
 								label: __( 'Success (after submission)', 'gatherpress' ),
 								value: 'success',
+							},
+							{
+								label: __( 'Past (event has ended)', 'gatherpress' ),
+								value: 'past',
 							},
 						] }
 						onChange={ setFormState }

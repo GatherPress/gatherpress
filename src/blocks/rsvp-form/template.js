@@ -56,7 +56,6 @@ const TEMPLATE = [
 		{
 			metadata: {
 				gatherpressRsvpFormVisibility: {
-					onSuccess: 'default',
 					whenPast: 'show',
 				},
 			},
@@ -88,7 +87,7 @@ const TEMPLATE = [
 				'core/paragraph',
 				{
 					content: __(
-						'Registration for this event is now closed. Please check out our upcoming events.',
+						'Registration for this event is now closed.',
 						'gatherpress',
 					),
 				},

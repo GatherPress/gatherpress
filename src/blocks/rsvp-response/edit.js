@@ -26,7 +26,7 @@ import { useState, useEffect } from '@wordpress/element';
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
 import { getFromGlobal } from '../../helpers/globals';
-import { hasValidEventId } from '../../helpers/event';
+import { hasValidEventId, isEventPostType } from '../../helpers/event';
 import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
 
 /**

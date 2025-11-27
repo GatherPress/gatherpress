@@ -141,6 +141,11 @@ class Rsvp_Form {
 		$tag->set_attribute( 'data-wp-on--submit', 'actions.handleRsvpFormSubmit' );
 		$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
 
+		// Add event state if the event has passed.
+		if ( $event->has_event_past() ) {
+			$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
+		}
+
 		$updated_html = $tag->get_updated_html();
 
 		// Check if this is a successful form submission redirect.
@@ -158,31 +163,108 @@ class Rsvp_Form {
 	 *
 	 * This filter runs on every block as it's being rendered. If a block has
 	 * metadata.gatherpressRsvpFormVisibility set, adds the corresponding
-	 * data attribute to the rendered HTML.
+	 * data attribute(s) to the rendered HTML and potentially hides the block
+	 * based on event state.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @param string $block_content The rendered block content.
 	 * @param array  $block         The block instance array.
-	 * @return string The modified block content.
+	 * @return string The modified block content or empty string if block should be hidden.
 	 */
 	public function apply_visibility_attribute( string $block_content, array $block ): string {
 		// Check if this block has a visibility setting in metadata.
 		$visibility = $block['attrs']['metadata']['gatherpressRsvpFormVisibility'] ?? null;
 
-		if ( ! $visibility || 'default' === $visibility || empty( $block_content ) ) {
+		if ( ! $visibility || empty( $block_content ) ) {
 			return $block_content;
 		}
 
-		// Add the visibility data attribute to the rendered block.
+		// Legacy string format support (backwards compatibility).
+		if ( is_string( $visibility ) && 'default' === $visibility ) {
+			return $block_content;
+		}
+
+		// Check if event has passed (only for object format with whenPast).
+		$is_past = false;
+		if ( is_array( $visibility ) && isset( $visibility['whenPast'] ) ) {
+			// Find the parent RSVP form block to get the event ID.
+			$post_id = $this->get_post_id_from_context( $block );
+			if ( $post_id ) {
+				$event   = new Event( $post_id );
+				$is_past = $event->has_event_past();
+			}
+		}
+
+		// Determine if block should be hidden based on visibility settings and event state.
+		$should_hide = false;
+		if ( is_array( $visibility ) ) {
+			$on_success = $visibility['onSuccess'] ?? 'default';
+			$when_past  = $visibility['whenPast'] ?? 'default';
+
+			// whenPast takes precedence.
+			if ( $is_past ) {
+				if ( 'hide' === $when_past ) {
+					$should_hide = true;
+				} elseif ( 'show' === $when_past ) {
+					$should_hide = false;
+				}
+			} else {
+				// Event is NOT past - hide blocks that only show when past.
+				if ( 'show' === $when_past ) {
+					$should_hide = true;
+				}
+			}
+
+			// If we should hide, return empty string.
+			if ( $should_hide ) {
+				return '';
+			}
+		}
+
+		// Add the visibility data attribute(s) to the rendered block.
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
-			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility );
+			if ( is_array( $visibility ) ) {
+				// New object format: store as JSON.
+				$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', wp_json_encode( $visibility ) );
+			} else {
+				// Legacy string format.
+				$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility );
+			}
+
+			// Add event state for frontend JavaScript.
+			if ( $is_past ) {
+				$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
+			}
+
 			return $tag->get_updated_html();
 		}
 
 		return $block_content;
+	}
+
+	/**
+	 * Get the post ID from the block context.
+	 *
+	 * Attempts to find the event post ID by looking for a parent RSVP form block
+	 * or from the current global post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $block The block instance array.
+	 * @return int|null The post ID or null if not found.
+	 */
+	private function get_post_id_from_context( array $block ): ?int {
+		// Try to get from postId attribute (post ID override support).
+		if ( isset( $block['attrs']['postId'] ) ) {
+			return intval( $block['attrs']['postId'] );
+		}
+
+		// Fall back to current post.
+		$post_id = get_the_ID();
+		return $post_id ? $post_id : null;
 	}
 
 	/**
@@ -201,12 +283,20 @@ class Rsvp_Form {
 	private function handle_form_visibility( string $html, bool $is_success ): string {
 		$tag = new WP_HTML_Tag_Processor( $html );
 
-		// Loop through all HTML elements and check for form visibility data attributes.
+		// Check if event has passed by looking for the data attribute on the form element.
+		$is_past = false;
+		if ( $tag->next_tag( 'form' ) ) {
+			$event_state = $tag->get_attribute( 'data-gatherpress-event-state' );
+			$is_past     = 'past' === $event_state;
+		}
+
+		// Reset to beginning and loop through all elements.
+		$tag = new WP_HTML_Tag_Processor( $html );
 		while ( $tag->next_tag() ) {
 			$visibility_attr = $tag->get_attribute( 'data-gatherpress-rsvp-form-visibility' );
 
 			if ( $visibility_attr ) {
-				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success );
+				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past );
 			}
 		}
 
@@ -285,36 +375,64 @@ class Rsvp_Form {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param WP_HTML_Tag_Processor $tag           The HTML tag processor.
-	 * @param string                $visibility_rule The visibility rule (showOnSuccess, hideOnSuccess, or null).
-	 * @param bool                  $is_success    Whether the form was successfully submitted.
+	 * @param WP_HTML_Tag_Processor $tag             The HTML tag processor.
+	 * @param string                $visibility_rule The visibility rule (JSON object or legacy string format).
+	 * @param bool                  $is_success      Whether the form was successfully submitted.
+	 * @param bool                  $is_past         Whether the event has passed.
 	 * @return void
 	 */
-	private function apply_visibility_rule( WP_HTML_Tag_Processor $tag, ?string $visibility_rule, bool $is_success ): void {
+	private function apply_visibility_rule( WP_HTML_Tag_Processor $tag, ?string $visibility_rule, bool $is_success, bool $is_past ): void {
 		if ( ! $visibility_rule ) {
 			return;
 		}
 
-		$should_show = true;
+		$should_show = null; // null = default (always visible)
 
-		if ( 'showOnSuccess' === $visibility_rule ) {
-			$should_show = $is_success;
-		} elseif ( 'hideOnSuccess' === $visibility_rule ) {
-			$should_show = ! $is_success;
+		// Try to decode as JSON (new object format).
+		$visibility = json_decode( $visibility_rule, true );
+
+		if ( is_array( $visibility ) ) {
+			// New object format with onSuccess and whenPast.
+			$on_success = $visibility['onSuccess'] ?? 'default';
+			$when_past  = $visibility['whenPast'] ?? 'default';
+
+			// whenPast takes precedence over onSuccess.
+			if ( $is_past && 'default' !== $when_past ) {
+				$should_show = 'show' === $when_past;
+			} elseif ( $is_success && 'default' !== $on_success ) {
+				$should_show = 'show' === $on_success;
+			} elseif ( ! $is_success && 'show' === $on_success ) {
+				// Not success: hide blocks that only show on success.
+				$should_show = false;
+			} elseif ( ! $is_past && 'show' === $when_past ) {
+				// Not past: hide blocks that only show when past.
+				$should_show = false;
+			}
+		} else {
+			// Legacy string format support.
+			if ( 'showOnSuccess' === $visibility_rule ) {
+				$should_show = $is_success;
+			} elseif ( 'hideOnSuccess' === $visibility_rule ) {
+				$should_show = ! $is_success;
+			}
 		}
 
-		if ( ! $should_show ) {
+		// Apply visibility if determined.
+		if ( false === $should_show ) {
 			// Hide the element with display: none.
 			$existing_styles = $tag->get_attribute( 'style' ) ?? '';
 			$updated_styles  = trim( $existing_styles . ' display: none;' );
 			$tag->set_attribute( 'style', $updated_styles );
-		}
+			$tag->set_attribute( 'aria-hidden', 'true' );
+		} elseif ( true === $should_show ) {
+			// Show the element (remove any inline display: none).
+			$tag->set_attribute( 'aria-hidden', 'false' );
 
-		// Add accessibility attributes for success messages.
-		if ( 'showOnSuccess' === $visibility_rule ) {
-			$tag->set_attribute( 'aria-hidden', $should_show ? 'false' : 'true' );
-			$tag->set_attribute( 'aria-live', 'polite' );
-			$tag->set_attribute( 'role', 'status' );
+			// Add accessibility attributes for success messages.
+			if ( $is_success ) {
+				$tag->set_attribute( 'aria-live', 'polite' );
+				$tag->set_attribute( 'role', 'status' );
+			}
 		}
 	}
 
