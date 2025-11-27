@@ -1096,4 +1096,335 @@ class Test_Rsvp_Form extends Base {
 		$result = $instance->conditionally_render_form_fields( $block_content, $block );
 		$this->assertEquals( $block_content, $result, 'Block content should be unchanged when not in post context' );
 	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with valid form submission.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_with_valid_submission(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create an RSVP comment.
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set up form schema.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'custom_text_field'  => array(
+						'name' => 'custom_text_field',
+						'type' => 'text',
+					),
+					'custom_email_field' => array(
+						'name' => 'custom_email_field',
+						'type' => 'email',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		// Mock POST data using the test filter.
+		$mock_post_data = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'custom_text_field'          => 'Test Value',
+			'custom_email_field'         => 'test@example.com',
+			'author'                     => 'Built-in field', // Should be ignored.
+		);
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) use ( $mock_post_data ) {
+			if ( INPUT_POST === $type && isset( $mock_post_data[ $var_name ] ) ) {
+				return $mock_post_data[ $var_name ];
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Check that custom fields were saved.
+		$this->assertEquals( 'Test Value', get_comment_meta( $comment_id, 'gatherpress_custom_custom_text_field', true ) );
+		$this->assertEquals( 'test@example.com', get_comment_meta( $comment_id, 'gatherpress_custom_custom_email_field', true ) );
+
+		// Check that built-in fields were not processed.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_author', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with no form schema ID.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_no_schema_id(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Mock POST data without form schema ID.
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type && 'custom_field' === $var_name ) {
+				return 'Should not be processed';
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not create any custom field meta.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with invalid comment.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_invalid_comment(): void {
+		// Create a regular comment (not RSVP type).
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type' => '',
+			)
+		);
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( 'custom_field' === $var_name ) {
+					return 'Should not be processed';
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not create any meta since it's not an RSVP comment.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with nonexistent comment.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_nonexistent_comment(): void {
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( 'custom_field' === $var_name ) {
+					return 'Should not be processed';
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+
+		// Should not throw errors with invalid comment ID.
+		$instance->process_custom_fields_for_form( 99999 );
+
+		// No exception should be thrown.
+		$this->assertTrue( true );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with no stored schema.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_no_stored_schema(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'nonexistent_form';
+				}
+				if ( 'custom_field' === $var_name ) {
+					return 'Should not be processed';
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not create any meta since schema doesn't exist.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with empty field value.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_empty_field_value(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set up form schema.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'custom_field' => array(
+						'name' => 'custom_field',
+						'type' => 'text',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( 'custom_field' === $var_name ) {
+					return ''; // Empty value.
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not create meta for empty field.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with field validation failure.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_validation_failure(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set up form schema.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'email_field' => array(
+						'name' => 'email_field',
+						'type' => 'email',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( 'email_field' === $var_name ) {
+					return 'invalid-email'; // Invalid email.
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not save invalid email.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_email_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
 }
