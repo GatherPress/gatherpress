@@ -191,26 +191,17 @@ class Rsvp_Form {
 			}
 		}
 
-		// Determine if block should be hidden based on visibility settings and event state.
-		$should_hide = false;
-		$on_success  = $visibility['onSuccess'] ?? 'default';
-		$when_past   = $visibility['whenPast'] ?? 'default';
+		// Determine if block should be hidden based on whenPast setting and event state.
+		$when_past = $visibility['whenPast'] ?? '';
 
-		// whenPast takes precedence.
-		if ( $is_past ) {
-			if ( 'hide' === $when_past ) {
-				$should_hide = true;
-			} elseif ( 'show' === $when_past ) {
-				$should_hide = false;
+		if ( ! empty( $when_past ) ) {
+			// Helper to determine if block should be shown based on whenPast setting.
+			$should_show = 'show' === $when_past ? $is_past : ! $is_past;
+
+			// If block should not be shown, return empty string to hide it completely.
+			if ( ! $should_show ) {
+				return '';
 			}
-		} elseif ( 'show' === $when_past ) {
-			// Event is NOT past - hide blocks that only show when past.
-			$should_hide = true;
-		}
-
-		// If we should hide, return empty string.
-		if ( $should_hide ) {
-			return '';
 		}
 
 		// Add the visibility data attribute(s) to the rendered block.
@@ -372,34 +363,7 @@ class Rsvp_Form {
 			return;
 		}
 
-		$should_show = null; // Null represents the default state (always visible).
-
-		// Try to decode as JSON (new object format).
-		$visibility = json_decode( $visibility_rule, true );
-
-		if ( is_array( $visibility ) ) {
-			// New object format with onSuccess and whenPast.
-			$on_success = $visibility['onSuccess'] ?? 'default';
-			$when_past  = $visibility['whenPast'] ?? 'default';
-
-			// whenPast takes precedence over onSuccess.
-			if ( $is_past && 'default' !== $when_past ) {
-				$should_show = 'show' === $when_past;
-			} elseif ( $is_success && 'default' !== $on_success ) {
-				$should_show = 'show' === $on_success;
-			} elseif ( ! $is_success && 'show' === $on_success ) {
-				// Not success: hide blocks that only show on success.
-				$should_show = false;
-			} elseif ( ! $is_past && 'show' === $when_past ) {
-				// Not past: hide blocks that only show when past.
-				$should_show = false;
-			}
-		} elseif ( 'showOnSuccess' === $visibility_rule ) {
-			// Legacy string format support.
-			$should_show = $is_success;
-		} elseif ( 'hideOnSuccess' === $visibility_rule ) {
-			$should_show = ! $is_success;
-		}
+		$should_show = $this->determine_visibility( $visibility_rule, $is_success, $is_past );
 
 		// Apply visibility if determined.
 		if ( false === $should_show ) {
@@ -418,6 +382,62 @@ class Rsvp_Form {
 				$tag->set_attribute( 'role', 'status' );
 			}
 		}
+	}
+
+	/**
+	 * Determine if a block should be visible based on visibility rules and current state.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $visibility_rule The visibility rule (JSON object or legacy string format).
+	 * @param bool   $is_success      Whether the form was successfully submitted.
+	 * @param bool   $is_past         Whether the event has passed.
+	 * @return bool|null True to show, false to hide, null for no change (always visible).
+	 */
+	private function determine_visibility( string $visibility_rule, bool $is_success, bool $is_past ): ?bool {
+		// Try to decode as JSON (object format).
+		$visibility = json_decode( $visibility_rule, true );
+
+		// Legacy string format.
+		if ( ! is_array( $visibility ) ) {
+			if ( 'showOnSuccess' === $visibility_rule ) {
+				return $is_success;
+			}
+			if ( 'hideOnSuccess' === $visibility_rule ) {
+				return ! $is_success;
+			}
+			return null;
+		}
+
+		// Object format with onSuccess and whenPast.
+		$on_success = $visibility['onSuccess'] ?? '';
+		$when_past  = $visibility['whenPast'] ?? '';
+
+		// Helper to check if a setting matches the current state.
+		$matches = function ( $setting, $state ) {
+			if ( empty( $setting ) ) {
+				return null; // No preference (always visible).
+			}
+			return 'show' === $setting ? $state : ! $state;
+		};
+
+		// Check whenPast first (takes precedence).
+		if ( ! empty( $when_past ) ) {
+			$when_past_result = $matches( $when_past, $is_past );
+			if ( null !== $when_past_result ) {
+				return $when_past_result;
+			}
+		}
+
+		// Check onSuccess.
+		if ( ! empty( $on_success ) ) {
+			$on_success_result = $matches( $on_success, $is_success );
+			if ( null !== $on_success_result ) {
+				return $on_success_result;
+			}
+		}
+
+		return null; // Default: no change (always visible).
 	}
 
 	/**
