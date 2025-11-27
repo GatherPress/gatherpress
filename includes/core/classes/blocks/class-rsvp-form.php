@@ -352,7 +352,7 @@ class Rsvp_Form {
 	 * @since 1.0.0
 	 *
 	 * @param WP_HTML_Tag_Processor $tag             The HTML tag processor.
-	 * @param string                $visibility_rule The visibility rule (JSON object or legacy string format).
+	 * @param string                $visibility_rule The visibility rule as a JSON object.
 	 * @param bool                  $is_success      Whether the form was successfully submitted.
 	 * @param bool                  $is_past         Whether the event has passed.
 	 * @return void
@@ -388,7 +388,7 @@ class Rsvp_Form {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $visibility_rule The visibility rule (JSON object or legacy string format).
+	 * @param string $visibility_rule The visibility rule as a JSON object.
 	 * @param bool   $is_success      Whether the form was successfully submitted.
 	 * @param bool   $is_past         Whether the event has passed.
 	 * @return bool|null True to show, false to hide, null for no change (always visible).

@@ -19,6 +19,7 @@ import { getBlockTypes } from '@wordpress/blocks';
 import TEMPLATE from './template';
 import { hasValidEventId } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
+import { shouldHideBlock } from './visibility';
 
 const Edit = ( { attributes, clientId } ) => {
 	const [ formState, setFormState ] = useState( 'default' );
@@ -130,44 +131,10 @@ const Edit = ( { attributes, clientId } ) => {
 	const collectVisibilityStyles = useCallback( ( blocks ) => {
 		const styles = [];
 
-		const shouldHideBlock = ( visibility ) => {
-			const { onSuccess = '', whenPast = '' } = visibility;
-
-			// Helper to check if a setting matches the current state.
-			const matches = ( setting, state ) => {
-				if ( ! setting ) {
-					return null; // No preference (always visible).
-				}
-				return 'show' === setting ? state : ! state;
-			};
-
-			// Determine visibility based on precedence: whenPast > onSuccess.
-			const isPast = 'past' === formState;
-			const isSuccess = 'success' === formState;
-
-			// Check whenPast first (takes precedence).
-			if ( whenPast ) {
-				const whenPastResult = matches( whenPast, isPast );
-				if ( null !== whenPastResult ) {
-					return ! whenPastResult;
-				}
-			}
-
-			// Check onSuccess.
-			if ( onSuccess ) {
-				const onSuccessResult = matches( onSuccess, isSuccess );
-				if ( null !== onSuccessResult ) {
-					return ! onSuccessResult;
-				}
-			}
-
-			return false; // Default: visible.
-		};
-
 		blocks.forEach( ( block ) => {
 			const visibility = block.attributes?.metadata?.gatherpressRsvpFormVisibility;
 
-			if ( visibility && shouldHideBlock( visibility ) ) {
+			if ( visibility && shouldHideBlock( visibility, formState ) ) {
 				const selector = `#block-${ block.clientId }`;
 				styles.push( `${ selector } { display: none !important; }` );
 			}
