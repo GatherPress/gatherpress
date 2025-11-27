@@ -64,7 +64,6 @@ export function getEditorDocument() {
  *
  * This function determines if the user is editing a template or template part
  * in the Full Site Editor, as opposed to editing a regular post or page.
- * When editing FSE templates, blocks should not show validation opacity changes.
  *
  * @since 1.0.0
  *
