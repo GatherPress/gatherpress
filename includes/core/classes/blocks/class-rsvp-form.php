@@ -180,29 +180,19 @@ class Rsvp_Form {
 			return $block_content;
 		}
 
-		// Check if event has passed (only for object format with whenPast).
+		// Check if event has passed.
 		$is_past = false;
-		if ( is_array( $visibility ) && isset( $visibility['whenPast'] ) ) {
-			// Find the parent RSVP form block to get the event ID.
-			$post_id = $this->get_post_id_from_context( $block );
-			if ( $post_id ) {
-				$event   = new Event( $post_id );
-				$is_past = $event->has_event_past();
-			}
+		$post_id = $this->get_post_id_from_context( $block );
+		if ( $post_id ) {
+			$event   = new Event( $post_id );
+			$is_past = $event->has_event_past();
 		}
 
-		// Determine if block should be hidden based on whenPast setting and event state.
-		$when_past = $visibility['whenPast'] ?? '';
+		// Check if this is a success redirect (form was just submitted).
+		$is_success = 'true' === Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
 
-		if ( ! empty( $when_past ) ) {
-			// Helper to determine if block should be shown based on whenPast setting.
-			$should_show = 'show' === $when_past ? $is_past : ! $is_past;
-
-			// If block should not be shown, return empty string to hide it completely.
-			if ( ! $should_show ) {
-				return '';
-			}
-		}
+		// Determine if block should be visible using centralized logic.
+		$should_show = $this->determine_visibility( wp_json_encode( $visibility ), $is_success, $is_past );
 
 		// Add the visibility data attribute(s) to the rendered block.
 		$tag = new WP_HTML_Tag_Processor( $block_content );
@@ -214,6 +204,24 @@ class Rsvp_Form {
 			// Add event state for frontend JavaScript.
 			if ( $is_past ) {
 				$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
+			}
+
+			// Apply server-side visibility to prevent FOUC (Flash of Unstyled Content).
+			if ( false === $should_show ) {
+				// Hide the element with display: none and aria-hidden.
+				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
+				$updated_styles  = trim( $existing_styles . ' display: none;' );
+				$tag->set_attribute( 'style', $updated_styles );
+				$tag->set_attribute( 'aria-hidden', 'true' );
+			} elseif ( true === $should_show ) {
+				// Show the element explicitly.
+				$tag->set_attribute( 'aria-hidden', 'false' );
+
+				// Add accessibility attributes for success messages.
+				if ( $is_success ) {
+					$tag->set_attribute( 'aria-live', 'polite' );
+					$tag->set_attribute( 'role', 'status' );
+				}
 			}
 
 			return $tag->get_updated_html();
@@ -405,28 +413,24 @@ class Rsvp_Form {
 		$on_success = $visibility['onSuccess'] ?? '';
 		$when_past  = $visibility['whenPast'] ?? '';
 
-		// Helper to check if a setting matches the current state.
-		$matches = function ( $setting, $state ) {
-			if ( empty( $setting ) ) {
-				return null; // No preference (always visible).
-			}
-			return 'show' === $setting ? $state : ! $state;
-		};
+		// When event is past, check whenPast (takes precedence when past).
+		if ( $is_past && ! empty( $when_past ) ) {
+			return 'show' === $when_past;
+		}
 
-		// Check whenPast first (takes precedence).
-		if ( ! empty( $when_past ) ) {
-			$when_past_result = $matches( $when_past, $is_past );
-			if ( null !== $when_past_result ) {
-				return $when_past_result;
-			}
+		// When not past but block has ONLY whenPast setting (no onSuccess).
+		// This handles blocks that should only appear after event has passed.
+		if ( ! $is_past && ! empty( $when_past ) && empty( $on_success ) ) {
+			return 'show' !== $when_past; // Hide if set to show (because not past yet).
 		}
 
 		// Check onSuccess.
 		if ( ! empty( $on_success ) ) {
-			$on_success_result = $matches( $on_success, $is_success );
-			if ( null !== $on_success_result ) {
-				return $on_success_result;
+			if ( $is_success ) {
+				return 'show' === $on_success;
 			}
+			// Not success: hide if set to show on success.
+			return 'show' !== $on_success;
 		}
 
 		return null; // Default: no change (always visible).

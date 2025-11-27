@@ -210,14 +210,20 @@ const { state } = store( 'gatherpress', {
 
 				let shouldShow = null; // null = default (always visible)
 
-				// whenPast takes precedence over onSuccess.
+				// When event is past, check whenPast (takes precedence when past).
 				if ( isPast && whenPast ) {
 					shouldShow = 'show' === whenPast;
-				} else if ( isSuccess && onSuccess ) {
-					shouldShow = 'show' === onSuccess;
-				} else if ( ! isSuccess && onSuccess ) {
-					// Not success: only hide if set to show on success.
-					shouldShow = 'show' !== onSuccess;
+				} else if ( ! isPast && whenPast && ! onSuccess ) {
+					// When not past but block has ONLY whenPast setting (no onSuccess).
+					shouldShow = 'show' !== whenPast;
+				} else if ( onSuccess ) {
+					// Check onSuccess.
+					if ( isSuccess ) {
+						shouldShow = 'show' === onSuccess;
+					} else {
+						// Not success: hide if set to show on success.
+						shouldShow = 'show' !== onSuccess;
+					}
 				}
 
 				// Apply visibility changes.
