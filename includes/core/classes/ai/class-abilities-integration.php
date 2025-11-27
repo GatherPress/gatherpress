@@ -83,6 +83,16 @@ class Abilities_Integration {
 	 * @return string The ability name ('gatherpress/calculate-dates').
 	 */
 	public static function get_calculate_dates_ability(): string {
+		// Default to GatherPress's own implementation.
+		if ( ! function_exists( 'wp_has_ability' ) ) {
+			return 'gatherpress/calculate-dates';
+		}
+
+		// If external AI plugin's ability is registered, use it.
+		if ( wp_has_ability( 'ai/calculate-dates' ) ) {
+			return 'ai/calculate-dates';
+		}
+
 		return 'gatherpress/calculate-dates';
 	}
 
