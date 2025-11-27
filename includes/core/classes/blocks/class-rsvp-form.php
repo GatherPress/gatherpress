@@ -173,23 +173,12 @@ class Rsvp_Form {
 	 * @return string The modified block content or empty string if block should be hidden.
 	 */
 	public function apply_visibility_attribute( string $block_content, array $block ): string {
-		// Check if this block has a visibility setting (new format in metadata, or legacy format in attrs).
-		$visibility = $block['attrs']['metadata']['gatherpressRsvpFormVisibility']
-			?? $block['attrs']['gatherpressRsvpFormVisibility']
-			?? null;
+		// Check if this block has a visibility setting in metadata.
+		$visibility = $block['attrs']['metadata']['gatherpressRsvpFormVisibility'] ?? null;
 
 		if ( ! $visibility || empty( $block_content ) ) {
 			return $block_content;
 		}
-
-		// Legacy string format support (backwards compatibility).
-		if ( is_string( $visibility ) && 'default' === $visibility ) {
-			return $block_content;
-		}
-
-		// Check if this is a successful form submission redirect.
-		$success_param = Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
-		$is_success    = 'true' === $success_param;
 
 		// Check if event has passed (only for object format with whenPast).
 		$is_past = false;
@@ -204,52 +193,32 @@ class Rsvp_Form {
 
 		// Determine if block should be hidden based on visibility settings and event state.
 		$should_hide = false;
-		if ( is_array( $visibility ) ) {
-			$on_success = $visibility['onSuccess'] ?? 'default';
-			$when_past  = $visibility['whenPast'] ?? 'default';
+		$on_success  = $visibility['onSuccess'] ?? 'default';
+		$when_past   = $visibility['whenPast'] ?? 'default';
 
-			// whenPast takes precedence.
-			if ( $is_past ) {
-				if ( 'hide' === $when_past ) {
-					$should_hide = true;
-				} elseif ( 'show' === $when_past ) {
-					$should_hide = false;
-				}
-			} elseif ( 'show' === $when_past ) {
-				// Event is NOT past - hide blocks that only show when past.
+		// whenPast takes precedence.
+		if ( $is_past ) {
+			if ( 'hide' === $when_past ) {
 				$should_hide = true;
+			} elseif ( 'show' === $when_past ) {
+				$should_hide = false;
 			}
+		} elseif ( 'show' === $when_past ) {
+			// Event is NOT past - hide blocks that only show when past.
+			$should_hide = true;
+		}
 
-			// If we should hide, return empty string.
-			if ( $should_hide ) {
-				return '';
-			}
+		// If we should hide, return empty string.
+		if ( $should_hide ) {
+			return '';
 		}
 
 		// Add the visibility data attribute(s) to the rendered block.
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
-			if ( is_array( $visibility ) ) {
-				// New object format: store as JSON.
-				$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', wp_json_encode( $visibility ) );
-			} else {
-				// Legacy string format.
-				$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility );
-
-				// Apply server-side visibility for legacy string format.
-				if ( 'showOnSuccess' === $visibility && ! $is_success ) {
-					// Hide blocks that only show on success when not in success state.
-					$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-					$updated_styles  = trim( $existing_styles . ' display: none;' );
-					$tag->set_attribute( 'style', $updated_styles );
-				} elseif ( 'hideOnSuccess' === $visibility && $is_success ) {
-					// Hide blocks that hide on success when in success state.
-					$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-					$updated_styles  = trim( $existing_styles . ' display: none;' );
-					$tag->set_attribute( 'style', $updated_styles );
-				}
-			}
+			// Store visibility as JSON.
+			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', wp_json_encode( $visibility ) );
 
 			// Add event state for frontend JavaScript.
 			if ( $is_past ) {
