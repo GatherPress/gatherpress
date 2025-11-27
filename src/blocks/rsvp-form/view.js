@@ -114,33 +114,17 @@ const { state } = store( 'gatherpress', {
 
 					blocksWithVisibility.forEach( ( block ) => {
 						const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
-						let visibility;
-
-						// Try to parse as JSON (new object format).
-						try {
-							visibility = JSON.parse( visibilityAttr );
-						} catch ( e ) {
-							// Legacy string format.
-							visibility = visibilityAttr;
-						}
+						const visibility = JSON.parse( visibilityAttr );
+						const { onSuccess, whenPast } = visibility;
 
 						let shouldShow = null; // null = default (no change)
 
-						if ( 'object' === typeof visibility ) {
-							const { onSuccess, whenPast } = visibility;
-
-							// whenPast takes precedence.
-							if ( isPast && whenPast ) {
-								shouldShow = 'show' === whenPast;
-							} else if ( onSuccess ) {
-								// After successful submission.
-								shouldShow = 'show' === onSuccess;
-							}
-						} else if ( 'showOnSuccess' === visibility ) {
-							// Legacy string format support.
-							shouldShow = true;
-						} else if ( 'hideOnSuccess' === visibility ) {
-							shouldShow = false;
+						// whenPast takes precedence.
+						if ( isPast && whenPast ) {
+							shouldShow = 'show' === whenPast;
+						} else if ( onSuccess ) {
+							// After successful submission.
+							shouldShow = 'show' === onSuccess;
 						}
 
 						// Apply visibility changes.
@@ -221,38 +205,19 @@ const { state } = store( 'gatherpress', {
 			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 			blocksWithVisibility.forEach( ( block ) => {
 				const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
-				let visibility;
-
-				// Try to parse as JSON (new object format).
-				try {
-					visibility = JSON.parse( visibilityAttr );
-				} catch ( e ) {
-					// Legacy string format.
-					visibility = visibilityAttr;
-				}
+				const visibility = JSON.parse( visibilityAttr );
+				const { onSuccess, whenPast } = visibility;
 
 				let shouldShow = null; // null = default (always visible)
 
-				if ( 'object' === typeof visibility ) {
-					const { onSuccess, whenPast } = visibility;
-
-					// whenPast takes precedence over onSuccess.
-					if ( isPast && whenPast ) {
-						shouldShow = 'show' === whenPast;
-					} else if ( isSuccess && onSuccess ) {
-						shouldShow = 'show' === onSuccess;
-					} else if ( ! isSuccess && onSuccess ) {
-						// Not success: only hide if set to show on success.
-						shouldShow = 'show' !== onSuccess;
-					} else {
-						// Default state.
-						shouldShow = null;
-					}
-				} else if ( 'showOnSuccess' === visibility ) {
-					// Legacy string format support.
-					shouldShow = isSuccess;
-				} else if ( 'hideOnSuccess' === visibility ) {
-					shouldShow = ! isSuccess;
+				// whenPast takes precedence over onSuccess.
+				if ( isPast && whenPast ) {
+					shouldShow = 'show' === whenPast;
+				} else if ( isSuccess && onSuccess ) {
+					shouldShow = 'show' === onSuccess;
+				} else if ( ! isSuccess && onSuccess ) {
+					// Not success: only hide if set to show on success.
+					shouldShow = 'show' !== onSuccess;
 				}
 
 				// Apply visibility changes.

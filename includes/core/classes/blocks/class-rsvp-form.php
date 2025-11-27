@@ -280,7 +280,6 @@ class Rsvp_Form {
 		return $tag->get_updated_html();
 	}
 
-
 	/**
 	 * Conditionally render form field blocks based on event settings.
 	 *
@@ -395,17 +394,10 @@ class Rsvp_Form {
 	 * @return bool|null True to show, false to hide, null for no change (always visible).
 	 */
 	private function determine_visibility( string $visibility_rule, bool $is_success, bool $is_past ): ?bool {
-		// Try to decode as JSON (object format).
+		// Decode JSON object format.
 		$visibility = json_decode( $visibility_rule, true );
 
-		// Legacy string format.
 		if ( ! is_array( $visibility ) ) {
-			if ( 'showOnSuccess' === $visibility_rule ) {
-				return $is_success;
-			}
-			if ( 'hideOnSuccess' === $visibility_rule ) {
-				return ! $is_success;
-			}
 			return null;
 		}
 

@@ -131,18 +131,6 @@ const Edit = ( { attributes, clientId } ) => {
 		const styles = [];
 
 		const shouldHideBlock = ( visibility ) => {
-			// Legacy string format.
-			if ( 'string' === typeof visibility ) {
-				if ( 'showOnSuccess' === visibility ) {
-					return 'success' !== formState;
-				}
-				if ( 'hideOnSuccess' === visibility ) {
-					return 'success' === formState;
-				}
-				return false;
-			}
-
-			// Object format with onSuccess and whenPast.
 			const { onSuccess = '', whenPast = '' } = visibility;
 
 			// Helper to check if a setting matches the current state.

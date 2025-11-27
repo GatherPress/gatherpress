@@ -221,8 +221,8 @@ class Test_Rsvp_Form extends Base {
 		);
 
 		$block_content = '<div class="wp-block-gatherpress-rsvp-form">
-			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="showOnSuccess">Success message</div>
-			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Form field</div>
+			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;show&quot;}">Success message</div>
+			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Form field</div>
 		</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-form',
@@ -233,7 +233,7 @@ class Test_Rsvp_Form extends Base {
 
 		$transformed_content = $instance->transform_block_content( $block_content, $block );
 
-		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $transformed_content );
+		$this->assertStringContainsString( '&quot;onSuccess&quot;:&quot;show&quot;', $transformed_content );
 		$this->assertStringContainsString( 'display: none;', $transformed_content );
 		$this->assertStringContainsString( 'aria-hidden="true"', $transformed_content );
 	}
@@ -716,9 +716,9 @@ class Test_Rsvp_Form extends Base {
 		$instance = Rsvp_Form::get_instance();
 
 		$html = '<form>
-			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="showOnSuccess">Success message</div>
-			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Name field</div>
-			<div class="wp-block-buttons" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Submit Button</div>
+			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;show&quot;}">Success message</div>
+			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Name field</div>
+			<div class="wp-block-buttons" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Submit Button</div>
 		</form>';
 
 		// Test with success = false (default state).
@@ -731,13 +731,13 @@ class Test_Rsvp_Form extends Base {
 		$result_true = Utility::invoke_hidden_method( $instance, 'handle_form_visibility', array( $html, true ) );
 		$this->assertStringContainsString( 'wp-block-group', $result_true );
 
-		// Check that the showOnSuccess group block does NOT have display: none.
+		// Check that blocks with onSuccess: 'show' do NOT have display: none.
 		preg_match( '/<div[^>]*class="wp-block-group"[^>]*>/', $result_true, $group_matches );
 		if ( ! empty( $group_matches[0] ) ) {
 			$this->assertStringNotContainsString( 'display: none;', $group_matches[0], 'Success message should be visible' );
 		}
 
-		// Check that hideOnSuccess blocks DO have display: none.
+		// Check that blocks with onSuccess: 'hide' DO have display: none.
 		$this->assertStringContainsString( 'style="display: none;" class="wp-block-gatherpress-form-field"', $result_true );
 		$this->assertStringContainsString( 'aria-hidden="false"', $result_true );
 	}
