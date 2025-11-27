@@ -8,12 +8,6 @@
 	"icon": "forms",
 	"example": {},
 	"description": "Allows visitors to RSVP to an event without requiring a site account.",
-	"attributes": {
-		"innerBlocksVisibility": {
-			"type": "object",
-			"default": {}
-		}
-	},
 	"supports": {
 		"gatherpress": {
 			"postIdOverride": true

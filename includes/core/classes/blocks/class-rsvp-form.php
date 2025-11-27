@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -84,6 +85,7 @@ class Rsvp_Form {
 
 		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
 		add_filter( 'render_block_gatherpress/form-field', array( $this, 'conditionally_render_form_fields' ), 10, 2 );
+		add_filter( 'render_block', array( $this, 'apply_visibility_attribute' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
 	}
 
@@ -105,14 +107,15 @@ class Rsvp_Form {
 	public function transform_block_content( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
+		$event          = new Event( $post_id );
+
+		// Not an event, so return.
+		if ( ! $event->event ) {
+			return '';
+		}
+
 		$unique_form_id = $this->generate_form_id();
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
-
-		// Get the innerBlocksVisibility attribute.
-		$inner_blocks_visibility = $block['attrs']['innerBlocksVisibility'] ?? array();
-
-		// Apply visibility data attributes to inner blocks based on their path.
-		$block_content = $this->apply_visibility_to_inner_blocks( $block_content, $block['innerBlocks'] ?? array(), $inner_blocks_visibility );
 
 		$block_content = trim( $block_content );
 		$block_content = preg_replace( '/^<div\b/', '<form', $block_content );
@@ -151,58 +154,35 @@ class Rsvp_Form {
 	}
 
 	/**
-	 * Apply visibility data attributes to inner blocks based on innerBlocksVisibility.
+	 * Apply visibility data attribute to blocks based on metadata.
 	 *
-	 * Recursively processes inner blocks and adds data-gatherpress-rsvp-form-visibility
-	 * attribute based on the block's path in the innerBlocksVisibility map.
+	 * This filter runs on every block as it's being rendered. If a block has
+	 * metadata.gatherpressRsvpFormVisibility set, adds the corresponding
+	 * data attribute to the rendered HTML.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $content                  The rendered block content.
-	 * @param array  $inner_blocks             The inner blocks array.
-	 * @param array  $inner_blocks_visibility  The visibility settings keyed by block path.
-	 * @param string $path_prefix              The current path prefix for nested blocks.
-	 * @return string The modified content with visibility attributes.
+	 * @param string $block_content The rendered block content.
+	 * @param array  $block         The block instance array.
+	 * @return string The modified block content.
 	 */
-	private function apply_visibility_to_inner_blocks( string $content, array $inner_blocks, array $inner_blocks_visibility, string $path_prefix = '' ): string {
-		foreach ( $inner_blocks as $index => $inner_block ) {
-			$block_path = $path_prefix ? "{$path_prefix}-{$index}" : "{$index}";
+	public function apply_visibility_attribute( string $block_content, array $block ): string {
+		// Check if this block has a visibility setting in metadata.
+		$visibility = $block['attrs']['metadata']['gatherpressRsvpFormVisibility'] ?? null;
 
-			// Check if this block has a visibility setting.
-			if ( isset( $inner_blocks_visibility[ $block_path ] ) ) {
-				$visibility = $inner_blocks_visibility[ $block_path ];
-
-				if ( 'default' !== $visibility ) {
-					// Render the inner block to get its HTML.
-					$inner_block_html = render_block( $inner_block );
-
-					if ( ! empty( $inner_block_html ) ) {
-						// Add the visibility data attribute to the rendered block.
-						$tag = new WP_HTML_Tag_Processor( $inner_block_html );
-
-						if ( $tag->next_tag() ) {
-							$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility );
-							$modified_html = $tag->get_updated_html();
-
-							// Replace the original block HTML with the modified version.
-							$content = str_replace( $inner_block_html, $modified_html, $content );
-						}
-					}
-				}
-			}
-
-			// Recursively process nested inner blocks.
-			if ( ! empty( $inner_block['innerBlocks'] ) ) {
-				$content = $this->apply_visibility_to_inner_blocks(
-					$content,
-					$inner_block['innerBlocks'],
-					$inner_blocks_visibility,
-					$block_path
-				);
-			}
+		if ( ! $visibility || 'default' === $visibility || empty( $block_content ) ) {
+			return $block_content;
 		}
 
-		return $content;
+		// Add the visibility data attribute to the rendered block.
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		if ( $tag->next_tag() ) {
+			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $visibility );
+			return $tag->get_updated_html();
+		}
+
+		return $block_content;
 	}
 
 	/**

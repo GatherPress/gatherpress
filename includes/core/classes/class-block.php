@@ -99,6 +99,7 @@ class Block {
 		Blocks\Add_To_Calendar::get_instance();
 		Blocks\Dropdown::get_instance();
 		Blocks\Dropdown_Item::get_instance();
+		Blocks\Event_Date::get_instance();
 		Blocks\Event_Query::get_instance();
 		Blocks\General_Block::get_instance();
 		Blocks\Modal::get_instance();

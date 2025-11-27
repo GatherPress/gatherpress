@@ -18,26 +18,23 @@ import metadata from './block.json';
 
 /**
  * Add success visibility controls to block edit component.
- * Stores visibility settings on the parent RSVP Form block's
- * innerBlocksVisibility attribute, keyed by block clientId.
+ * Stores visibility settings on each block's metadata.gatherpressRsvpFormVisibility attribute.
  *
  * @param {Function} BlockEdit Original BlockEdit component.
  * @return {Function} Wrapped BlockEdit component.
  */
 const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => {
 	return ( props ) => {
-		const { clientId } = props;
+		const { clientId, attributes } = props;
 
 		// Use useSelect for reactive data fetching.
 		const {
 			currentBlock,
 			parents,
 			rsvpFormParentId,
-			rsvpFormBlock,
-			innerBlocksVisibility,
 		} = useSelect(
 			( selectFn ) => {
-				const { getBlockParents, getBlock, getBlockAttributes } = selectFn( 'core/block-editor' );
+				const { getBlockParents, getBlock } = selectFn( 'core/block-editor' );
 				const block = getBlock( clientId );
 				const parentIds = getBlockParents( clientId );
 
@@ -47,15 +44,10 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 					return 'gatherpress/rsvp-form' === parentBlock?.name;
 				} );
 
-				const formBlock = formParentId ? getBlock( formParentId ) : null;
-				const formAttributes = formParentId ? getBlockAttributes( formParentId ) : {};
-
 				return {
 					currentBlock: block,
 					parents: parentIds,
 					rsvpFormParentId: formParentId,
-					rsvpFormBlock: formBlock,
-					innerBlocksVisibility: formAttributes?.innerBlocksVisibility || {},
 				};
 			},
 			[ clientId ]
@@ -91,47 +83,22 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 			return <BlockEdit { ...props } />;
 		}
 
-		// Find the index of this block within the RSVP Form's inner blocks.
-		// Use a recursive function to handle nested blocks.
-		const findBlockIndex = ( blocks, targetId, path = '' ) => {
-			for ( let i = 0; i < blocks.length; i++ ) {
-				const block = blocks[ i ];
-				const currentPath = path ? `${ path }-${ i }` : `${ i }`;
+		// Get current visibility from block's metadata attribute.
+		const currentVisibility = attributes?.metadata?.gatherpressRsvpFormVisibility || 'default';
 
-				if ( block.clientId === targetId ) {
-					return currentPath;
-				}
-
-				if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
-					const found = findBlockIndex( block.innerBlocks, targetId, currentPath );
-					if ( found ) {
-						return found;
-					}
-				}
-			}
-			return null;
-		};
-
-		const blockPath = findBlockIndex( rsvpFormBlock?.innerBlocks || [], clientId );
-		const currentVisibility = blockPath ? ( innerBlocksVisibility[ blockPath ] || 'default' ) : 'default';
-
-		// Handler to update visibility on the parent RSVP Form.
+		// Handler to update visibility on this block's metadata.
 		const updateVisibility = ( value ) => {
-			if ( ! blockPath ) {
-				return;
-			}
-
-			const newVisibility = { ...innerBlocksVisibility };
+			const newMetadata = { ...( attributes.metadata || {} ) };
 
 			if ( value === 'default' ) {
 				// Remove the entry if set to default.
-				delete newVisibility[ blockPath ];
+				delete newMetadata.gatherpressRsvpFormVisibility;
 			} else {
-				newVisibility[ blockPath ] = value;
+				newMetadata.gatherpressRsvpFormVisibility = value;
 			}
 
-			updateBlockAttributes( rsvpFormParentId, {
-				innerBlocksVisibility: newVisibility,
+			updateBlockAttributes( clientId, {
+				metadata: newMetadata,
 			} );
 		};
 

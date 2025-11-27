@@ -95,9 +95,15 @@ class Rsvp {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 		$event          = new Event( $post_id );
-		$inner_blocks   = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
-		$attributes     = isset( $block['attrs'] ) ? $block['attrs'] : array();
+
+		// Not an event, so return.
+		if ( ! $event->event ) {
+			return '';
+		}
+
+		$inner_blocks = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
+		$tag          = new WP_HTML_Tag_Processor( $block_content );
+		$attributes   = isset( $block['attrs'] ) ? $block['attrs'] : array();
 
 		if ( $tag->next_tag() ) {
 			/**

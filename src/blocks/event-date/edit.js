@@ -38,7 +38,8 @@ import {
 } from '../../helpers/datetime';
 import DateTimeRange from '../../components/DateTimeRange';
 import { getFromGlobal } from '../../helpers/globals';
-import { isEventPostType } from '../../helpers/event';
+import { isEventPostType, hasValidEventId } from '../../helpers/event';
+import { isInFSETemplate } from '../../helpers/editor';
 
 const globalDateFormat = getFromGlobal( 'settings.dateFormat' );
 const globalTimeFormat = getFromGlobal( 'settings.timeFormat' );
@@ -163,20 +164,28 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		separator,
 		showTimezone,
 	} = attributes;
+	const postId = attributes?.postId ?? context?.postId ?? null;
+
+	// Check if block has a valid event connection.
+	const isValidEvent = hasValidEventId( postId );
+
 	const blockProps = useBlockProps( {
 		className: clsx( {
 			[ `has-text-align-${ textAlign }` ]: textAlign,
 		} ),
+		style: {
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : 0.3,
+		},
 	} );
-	const postId = attributes?.postId ?? context?.postId ?? null;
 
-	const { dateTimeStart, dateTimeEnd, timezone } = useSelect(
+	const { dateTimeStart, dateTimeEnd, timezone, isLoading } = useSelect(
 		( select ) => {
 			if ( ! postId ) {
 				return {
 					dateTimeStart: undefined,
 					dateTimeEnd: undefined,
 					timezone: undefined,
+					isLoading: false,
 				};
 			}
 
@@ -189,8 +198,15 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						'gatherpress/datetime',
 					).getDateTimeEnd(),
 					timezone: select( 'gatherpress/datetime' ).getTimezone(),
+					isLoading: false,
 				};
 			}
+
+			// Check if the entity record has finished loading.
+			const hasResolved = select( 'core' ).hasFinishedResolution(
+				'getEntityRecord',
+				[ 'postType', 'gatherpress_event', postId ]
+			);
 
 			const meta = select( 'core' ).getEntityRecord(
 				'postType',
@@ -202,18 +218,27 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				dateTimeStart: meta?.gatherpress_datetime_start,
 				dateTimeEnd: meta?.gatherpress_datetime_end,
 				timezone: meta?.gatherpress_timezone,
+				isLoading: ! hasResolved,
 			};
 		},
 		[ postId ],
 	);
 
-	if ( postId && ( ! dateTimeStart || ! dateTimeEnd || ! timezone ) ) {
+	// Show spinner only while loading, not on 404.
+	if ( isLoading ) {
 		return (
 			<div { ...blockProps }>
 				<Spinner />
 			</div>
 		);
 	}
+
+	// If we have a postId but no valid event data (404 or invalid event),
+	// fall back to today's date to show a normal appearance.
+	const fallbackDateTime = moment().tz( getTimezone() );
+	const finalDateTimeStart = dateTimeStart || fallbackDateTime.format();
+	const finalDateTimeEnd = dateTimeEnd || fallbackDateTime.clone().add( 1, 'hour' ).format();
+	const finalTimezone = timezone || getTimezone();
 
 	const showStartTime = [ 'start', 'both' ].includes( displayType );
 	const showEndTime = [ 'end', 'both' ].includes( displayType );
@@ -257,9 +282,9 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				</ToolbarGroup>
 			</BlockControls>
 			{ displayDateTime(
-				showStartTime ? dateTimeStart : null,
-				showEndTime ? dateTimeEnd : null,
-				timezone,
+				showStartTime ? finalDateTimeStart : null,
+				showEndTime ? finalDateTimeEnd : null,
+				finalTimezone,
 				startDateFormat,
 				endDateFormat,
 				separator,

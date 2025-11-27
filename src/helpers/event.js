@@ -31,6 +31,28 @@ export function isEventPostType() {
 }
 
 /**
+ * Checks if a block has a valid event ID (either from current post or postId override).
+ *
+ * This function checks if the block is connected to a valid event, either by being
+ * placed in an event post or having a postId attribute that points to a valid event.
+ *
+ * @since 1.0.0
+ *
+ * @param {number|null} postId Optional post ID override to check.
+ * @return {boolean} True if connected to a valid event, false otherwise.
+ */
+export function hasValidEventId( postId = null ) {
+	// If postId is provided, verify it points to a valid event.
+	if ( postId ) {
+		const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
+		return !! post;
+	}
+
+	// Otherwise, check if current post is an event.
+	return isEventPostType();
+}
+
+/**
  * Check if the event has already passed.
  *
  * This function compares the current time with the end time of the event

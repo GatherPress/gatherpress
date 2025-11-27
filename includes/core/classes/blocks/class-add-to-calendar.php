@@ -86,6 +86,12 @@ class Add_To_Calendar {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 		$event          = new Event( $post_id );
+
+		// Not an event, so return.
+		if ( ! $event->event ) {
+			return '';
+		}
+
 		$tag            = new WP_HTML_Tag_Processor( $block_content );
 		$calendar_links = $event->get_calendar_links();
 		$replacements   = array(
