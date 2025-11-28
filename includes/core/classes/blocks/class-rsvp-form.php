@@ -45,8 +45,6 @@ class Rsvp_Form {
 	 */
 	const BLOCK_NAME = 'gatherpress/rsvp-form';
 
-
-
 	/**
 	 * Built-in field names that should not be processed as custom fields.
 	 *
