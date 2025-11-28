@@ -252,6 +252,7 @@ class General_Block {
 		if ( ! $post_id || Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return $block_content;
 		}
+
 		// Get anonymous RSVP setting from event.
 		$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
 

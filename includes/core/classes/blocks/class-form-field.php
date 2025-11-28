@@ -337,7 +337,7 @@ class Form_Field {
 
 		// Add any data attributes from block attributes
 		foreach ( $this->attributes as $key => $value ) {
-			if ( strpos( $key, 'data-' ) === 0 ) {
+			if ( 0 === strpos( $key, 'data-' ) ) {
 				$wrapper_args[ $key ] = $value;
 			}
 		}
