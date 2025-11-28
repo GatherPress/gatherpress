@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
+use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
@@ -69,6 +70,11 @@ class Rsvp {
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
 		// Priority 9 ensures this runs before transform_block_content to properly register form field hooks.
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_input_interactivity' ), 9 );
+
+		// Add hooks for conditional form field processing.
+		$general_block = General_Block::get_instance();
+		add_filter( $render_block_hook, array( $general_block, 'process_guest_count_field' ), 10, 2 );
+		add_filter( $render_block_hook, array( $general_block, 'process_anonymous_field' ), 10, 2 );
 	}
 
 	/**
@@ -315,14 +321,13 @@ class Rsvp {
 		$attributes = $block['attrs'] ?? array();
 		$field_name = $attributes['fieldName'] ?? '';
 
-		// Handle guest count field.
-		if ( 'gatherpress_rsvp_guest_count' === $field_name ) {
-			$max_guest_limit = get_post_meta( get_the_ID(), 'gatherpress_max_guest_limit', true );
+		// Get the correct post ID for remaining logic.
+		$block_instance = Block::get_instance();
+		$post_id        = $block_instance->get_post_id( $block );
 
-			// If the maximum guest limit is set to 0, guests are not permitted. Return empty content.
-			if ( empty( $max_guest_limit ) ) {
-				return '';
-			}
+		// Handle guest count field interactivity.
+		if ( 'gatherpress_rsvp_guest_count' === $field_name ) {
+			$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
 
 			// Apply interactivity attributes and max limit for guest count.
 			$tag = new WP_HTML_Tag_Processor( $block_content );
@@ -341,15 +346,8 @@ class Rsvp {
 			return $tag->get_updated_html();
 		}
 
-		// Handle anonymous checkbox field.
+		// Handle anonymous checkbox field interactivity.
 		if ( 'gatherpress_rsvp_anonymous' === $field_name ) {
-			$enable_anonymous_rsvp = get_post_meta( get_the_ID(), 'gatherpress_enable_anonymous_rsvp', true );
-
-			// Meta is stored as boolean. Return empty content if not enabled.
-			if ( ! $enable_anonymous_rsvp ) {
-				return '';
-			}
-
 			// Apply interactivity attributes for anonymous checkbox.
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 

@@ -35,11 +35,12 @@ class Test_Rsvp_Form extends Base {
 	public function test_setup_hooks(): void {
 		$instance          = Rsvp_Form::get_instance();
 		$render_block_hook = sprintf( 'render_block_%s', Rsvp_Form::BLOCK_NAME );
+		$general_block     = \GatherPress\Core\Blocks\General_Block::get_instance();
 		$hooks             = array(
 			array(
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
-				'priority' => 10,
+				'priority' => 5,
 				'callback' => array( $instance, 'transform_block_content' ),
 			),
 			array(
@@ -49,16 +50,22 @@ class Test_Rsvp_Form extends Base {
 				'callback' => array( $instance, 'apply_visibility_attribute' ),
 			),
 			array(
-				'type'     => 'filter',
-				'name'     => 'render_block_gatherpress/form-field',
-				'priority' => 10,
-				'callback' => array( $instance, 'conditionally_render_form_fields' ),
-			),
-			array(
 				'type'     => 'action',
 				'name'     => 'save_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'save_form_schema' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $general_block, 'process_guest_count_field' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $general_block, 'process_anonymous_field' ),
 			),
 		);
 
@@ -924,177 +931,6 @@ class Test_Rsvp_Form extends Base {
 
 		// Clean up filters.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
-	}
-
-	/**
-	 * Tests the conditionally_render_form_fields method.
-	 *
-	 * Verifies that form fields are conditionally rendered or removed based on event settings.
-	 *
-	 * @since 1.0.0
-	 * @covers ::conditionally_render_form_fields
-	 *
-	 * @return void
-	 */
-	public function test_conditionally_render_form_fields(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// Create an event post.
-		$post_id = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-
-		$this->go_to( get_permalink( $post_id ) );
-
-		// Test non-form-field block (should be unchanged).
-		$block_content = '<div class="wp-block-paragraph">Normal paragraph</div>';
-		$block         = array(
-			'blockName' => 'core/paragraph',
-			'attrs'     => array(),
-		);
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( $block_content, $result );
-
-		// Test form field without conditional field name (should be unchanged).
-		$block_content = '<div class="wp-block-gatherpress-form-field">Other field</div>';
-		$block         = array(
-			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array(
-				'fieldName' => 'other_field',
-			),
-		);
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( $block_content, $result );
-	}
-
-	/**
-	 * Tests conditionally_render_form_fields with guest count field.
-	 *
-	 * Verifies guest count field behavior based on max guest limit setting.
-	 *
-	 * @since 1.0.0
-	 * @covers ::conditionally_render_form_fields
-	 *
-	 * @return void
-	 */
-	public function test_conditionally_render_form_fields_guest_count(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// Create event with no guest limit (0) - field should be removed.
-		$post_id = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 0 );
-
-		$this->go_to( get_permalink( $post_id ) );
-
-		$block_content = '<div class="wp-block-gatherpress-form-field"><input type="number" name="gatherpress_rsvp_guests" /></div>';
-		$block         = array(
-			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array(
-				'fieldName' => 'gatherpress_rsvp_guests',
-			),
-		);
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( '', $result, 'Guest field should be removed when max guest limit is 0' );
-
-		// Create event with guest limit > 0 - field should have max attribute.
-		$post_id_2 = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-		add_post_meta( $post_id_2, 'gatherpress_max_guest_limit', 3 );
-
-		$this->go_to( get_permalink( $post_id_2 ) );
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertStringContainsString( 'max="3"', $result, 'Guest field should have max attribute set' );
-		$this->assertStringContainsString( 'min="0"', $result, 'Guest field should have min attribute set' );
-		$this->assertNotEquals( '', $result, 'Guest field should not be removed when max guest limit > 0' );
-	}
-
-	/**
-	 * Tests conditionally_render_form_fields with anonymous field.
-	 *
-	 * Verifies anonymous field behavior based on anonymous RSVP setting.
-	 *
-	 * @since 1.0.0
-	 * @covers ::conditionally_render_form_fields
-	 *
-	 * @return void
-	 */
-	public function test_conditionally_render_form_fields_anonymous(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// Create event with anonymous RSVP disabled - field should be removed.
-		$post_id = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', false );
-
-		$this->go_to( get_permalink( $post_id ) );
-
-		$block_content = '<div class="wp-block-gatherpress-form-field"><input type="checkbox" name="gatherpress_rsvp_anonymous" /></div>';
-		$block         = array(
-			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array(
-				'fieldName' => 'gatherpress_rsvp_anonymous',
-			),
-		);
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( '', $result, 'Anonymous field should be removed when anonymous RSVP is disabled' );
-
-		// Create event with anonymous RSVP enabled - field should remain.
-		$post_id_2 = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-		add_post_meta( $post_id_2, 'gatherpress_enable_anonymous_rsvp', true );
-
-		$this->go_to( get_permalink( $post_id_2 ) );
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( $block_content, $result, 'Anonymous field should remain when anonymous RSVP is enabled' );
-	}
-
-	/**
-	 * Tests conditionally_render_form_fields without valid post context.
-	 *
-	 * Verifies that the method handles cases where get_the_ID() returns 0 or false.
-	 *
-	 * @since 1.0.0
-	 * @covers ::conditionally_render_form_fields
-	 *
-	 * @return void
-	 */
-	public function test_conditionally_render_form_fields_no_post_context(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// Ensure we're not in a post context.
-		$this->go_to( home_url() );
-
-		$block_content = '<div class="wp-block-gatherpress-form-field"><input type="number" name="gatherpress_rsvp_guests" /></div>';
-		$block         = array(
-			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array(
-				'fieldName' => 'gatherpress_rsvp_guests',
-			),
-		);
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( $block_content, $result, 'Block content should be unchanged when not in post context' );
 	}
 
 	/**

@@ -120,6 +120,7 @@
 			"default": "on"
 		}
 	},
+	"usesContext": [ "gatherpress/eventPostId" ],
 	"supports": {
 		"html": false
 	},

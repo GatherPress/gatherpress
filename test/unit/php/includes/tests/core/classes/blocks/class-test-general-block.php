@@ -325,4 +325,150 @@ class Test_General_Block extends Base {
 			'Block content should remain unchanged when block has no className attribute.'
 		);
 	}
+
+	/**
+	 * Test guest count field is hidden when max guest limit is 0.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_guest_count_field
+	 *
+	 * @return void
+	 */
+	public function test_process_guest_count_field_hides_when_limit_zero(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post()->get()->ID;
+
+		// Set the event post type.
+		set_post_type( $post_id, 'gatherpress_event' );
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', '0' );
+
+		$block_content = '<div class="gatherpress-rsvp-field-guest-count">Guest Count Field</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_guest_count_field( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'gatherpress--is-hidden',
+			$result,
+			'Guest count field should have hidden class when max limit is 0.'
+		);
+	}
+
+	/**
+	 * Test guest count field is visible when max guest limit is greater than 0.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_guest_count_field
+	 *
+	 * @return void
+	 */
+	public function test_process_guest_count_field_visible_when_limit_nonzero(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post()->get()->ID;
+
+		// Set the event post type.
+		set_post_type( $post_id, 'gatherpress_event' );
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', '5' );
+
+		$block_content = '<div class="gatherpress-rsvp-field-guest-count">Guest Count Field</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_guest_count_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Guest count field should remain unchanged when max limit is greater than 0.'
+		);
+	}
+
+	/**
+	 * Test anonymous field is hidden when anonymous RSVP is disabled.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_anonymous_field
+	 *
+	 * @return void
+	 */
+	public function test_process_anonymous_field_hides_when_disabled(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post()->get()->ID;
+
+		// Set the event post type.
+		set_post_type( $post_id, 'gatherpress_event' );
+		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', '' );
+
+		$block_content = '<div class="gatherpress-rsvp-field-anonymous">Anonymous Field</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_anonymous_field( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'gatherpress--is-hidden',
+			$result,
+			'Anonymous field should have hidden class when anonymous RSVP is disabled.'
+		);
+	}
+
+	/**
+	 * Test anonymous field is visible when anonymous RSVP is enabled.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_anonymous_field
+	 *
+	 * @return void
+	 */
+	public function test_process_anonymous_field_visible_when_enabled(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post()->get()->ID;
+
+		// Set the event post type.
+		set_post_type( $post_id, 'gatherpress_event' );
+		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', '1' );
+
+		$block_content = '<div class="gatherpress-rsvp-field-anonymous">Anonymous Field</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_anonymous_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Anonymous field should remain unchanged when anonymous RSVP is enabled.'
+		);
+	}
+
+	/**
+	 * Test process methods return unchanged content for non-event posts.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_guest_count_field
+	 * @covers ::process_anonymous_field
+	 *
+	 * @return void
+	 */
+	public function test_process_methods_skip_non_event_posts(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post()->get()->ID;
+
+		// Keep default post type (not gatherpress_event).
+		$guest_block_content = '<div class="gatherpress-rsvp-field-guest-count">Guest Count Field</div>';
+		$anon_block_content  = '<div class="gatherpress-rsvp-field-anonymous">Anonymous Field</div>';
+		$block               = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$guest_result = $general_block->process_guest_count_field( $guest_block_content, $block );
+		$anon_result  = $general_block->process_anonymous_field( $anon_block_content, $block );
+
+		$this->assertEquals(
+			$guest_block_content,
+			$guest_result,
+			'Guest count field processing should skip non-event posts.'
+		);
+
+		$this->assertEquals(
+			$anon_block_content,
+			$anon_result,
+			'Anonymous field processing should skip non-event posts.'
+		);
+	}
 }
