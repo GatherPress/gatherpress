@@ -114,7 +114,14 @@ const { state } = store( 'gatherpress', {
 
 					blocksWithVisibility.forEach( ( block ) => {
 						const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
-						const visibility = JSON.parse( visibilityAttr );
+						let visibility = {};
+
+						try {
+							visibility = JSON.parse( visibilityAttr );
+						} catch ( e ) {
+							// Invalid JSON, treat as no visibility rules (always visible).
+						}
+
 						const { onSuccess, whenPast } = visibility;
 
 						let shouldShow = null; // null = default (no change)
@@ -205,7 +212,14 @@ const { state } = store( 'gatherpress', {
 			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 			blocksWithVisibility.forEach( ( block ) => {
 				const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
-				const visibility = JSON.parse( visibilityAttr );
+				let visibility = {};
+
+				try {
+					visibility = JSON.parse( visibilityAttr );
+				} catch ( e ) {
+					// Invalid JSON, treat as no visibility rules (always visible).
+				}
+
 				const { onSuccess, whenPast } = visibility;
 
 				let shouldShow = null; // null = default (always visible)

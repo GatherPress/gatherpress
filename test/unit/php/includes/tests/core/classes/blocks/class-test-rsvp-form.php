@@ -59,7 +59,7 @@ class Test_Rsvp_Form extends Base {
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
 				'priority' => 10,
-				'callback' => array( $general_block, 'process_guest_count_field' ),
+				'callback' => array( $general_block, 'process_guests_field' ),
 			),
 			array(
 				'type'     => 'filter',

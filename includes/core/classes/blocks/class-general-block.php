@@ -199,7 +199,7 @@ class General_Block {
 	 *
 	 * @return string The processed block content.
 	 */
-	public function process_guest_count_field( string $block_content, array $block ): string {
+	public function process_guests_field( string $block_content, array $block ): string {
 		// Get the correct post ID using override logic.
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
@@ -218,10 +218,10 @@ class General_Block {
 
 			while ( $tag->next_tag() ) {
 				$class_attr = $tag->get_attribute( 'class' );
-				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-field-guest-count' ) ) {
+
+				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-field-guests' ) ) {
 					$existing_classes = $class_attr ? $class_attr . ' ' : '';
 					$tag->set_attribute( 'class', $existing_classes . 'gatherpress--is-hidden' );
-					break;
 				}
 			}
 
@@ -252,20 +252,19 @@ class General_Block {
 		if ( ! $post_id || Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return $block_content;
 		}
-
 		// Get anonymous RSVP setting from event.
 		$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
 
 		// Mark the field for removal if anonymous RSVP is disabled.
-		if ( ! $enable_anonymous_rsvp ) {
+		if ( empty( $enable_anonymous_rsvp ) ) {
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 
 			while ( $tag->next_tag() ) {
 				$class_attr = $tag->get_attribute( 'class' );
+
 				if ( Utility::has_css_class( $class_attr, 'gatherpress-rsvp-field-anonymous' ) ) {
 					$existing_classes = $class_attr ? $class_attr . ' ' : '';
 					$tag->set_attribute( 'class', $existing_classes . 'gatherpress--is-hidden' );
-					break;
 				}
 			}
 

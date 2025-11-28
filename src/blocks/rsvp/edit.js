@@ -113,7 +113,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				let shouldDisable = false;
 
 				// Determine if the field should be disabled based on its field name.
-				if ( 'gatherpress_rsvp_guest_count' === fieldName ) {
+				if ( 'gatherpress_rsvp_guests' === fieldName ) {
 					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
 				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
 					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
@@ -121,7 +121,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				}
 
 				// Only process fields that have conditional visibility.
-				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
+				if ( 'gatherpress_rsvp_guests' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
 					const newAttributes = { ...block.attributes };
 
 					if ( shouldDisable ) {

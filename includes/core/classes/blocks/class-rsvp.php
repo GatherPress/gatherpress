@@ -73,7 +73,7 @@ class Rsvp {
 
 		// Add hooks for conditional form field processing.
 		$general_block = General_Block::get_instance();
-		add_filter( $render_block_hook, array( $general_block, 'process_guest_count_field' ), 10, 2 );
+		add_filter( $render_block_hook, array( $general_block, 'process_guests_field' ), 10, 2 );
 		add_filter( $render_block_hook, array( $general_block, 'process_anonymous_field' ), 10, 2 );
 	}
 
@@ -326,7 +326,7 @@ class Rsvp {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Handle guest count field interactivity.
-		if ( 'gatherpress_rsvp_guest_count' === $field_name ) {
+		if ( 'gatherpress_rsvp_guests' === $field_name ) {
 			$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
 
 			// Apply interactivity attributes and max limit for guest count.
@@ -335,7 +335,7 @@ class Rsvp {
 			while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
 				$name_attr = $tag->get_attribute( 'name' );
 
-				if ( 'gatherpress_rsvp_guest_count' === $name_attr ) {
+				if ( 'gatherpress_rsvp_guests' === $name_attr ) {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
 					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );

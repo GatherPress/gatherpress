@@ -58,7 +58,7 @@ class Rsvp_Form {
 	const BUILT_IN_FIELDS = array(
 		'author',
 		'email',
-		'gatherpress_rsvp_guest_count',
+		'gatherpress_rsvp_guests',
 		'gatherpress_rsvp_anonymous',
 		'gatherpress_event_updates_opt_in',
 	);
@@ -92,7 +92,7 @@ class Rsvp_Form {
 
 		// Add hooks for conditional form field processing.
 		$general_block = General_Block::get_instance();
-		add_filter( $render_block_hook, array( $general_block, 'process_guest_count_field' ), 10, 2 );
+		add_filter( $render_block_hook, array( $general_block, 'process_guests_field' ), 10, 2 );
 		add_filter( $render_block_hook, array( $general_block, 'process_anonymous_field' ), 10, 2 );
 	}
 

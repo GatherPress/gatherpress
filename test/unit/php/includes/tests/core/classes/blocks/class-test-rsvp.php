@@ -64,7 +64,7 @@ class Test_Rsvp extends Base {
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
 				'priority' => 10,
-				'callback' => array( $general_block, 'process_guest_count_field' ),
+				'callback' => array( $general_block, 'process_guests_field' ),
 			),
 			array(
 				'type'     => 'filter',
@@ -546,11 +546,11 @@ class Test_Rsvp extends Base {
 
 		$block = array(
 			'attrs' => array(
-				'fieldName' => 'gatherpress_rsvp_guest_count',
+				'fieldName' => 'gatherpress_rsvp_guests',
 			),
 		);
 
-		$block_content = '<input type="number" name="gatherpress_rsvp_guest_count" value="0" />';
+		$block_content = '<input type="number" name="gatherpress_rsvp_guests" value="0" />';
 		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertStringContainsString(
@@ -602,11 +602,11 @@ class Test_Rsvp extends Base {
 
 		$block = array(
 			'attrs' => array(
-				'fieldName' => 'gatherpress_rsvp_guest_count',
+				'fieldName' => 'gatherpress_rsvp_guests',
 			),
 		);
 
-		$block_content = '<input type="number" name="gatherpress_rsvp_guest_count" value="0" />';
+		$block_content = '<input type="number" name="gatherpress_rsvp_guests" value="0" />';
 		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertStringContainsString(
@@ -791,16 +791,16 @@ class Test_Rsvp extends Base {
 
 		$block = array(
 			'attrs' => array(
-				'fieldName' => 'gatherpress_rsvp_guest_count',
+				'fieldName' => 'gatherpress_rsvp_guests',
 			),
 		);
 
-		$block_content = '<div><input type="text" name="other_field" value="" /><input type="number" name="gatherpress_rsvp_guest_count" value="0" /></div>';
+		$block_content = '<div><input type="text" name="other_field" value="" /><input type="number" name="gatherpress_rsvp_guests" value="0" /></div>';
 		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		// Check that only the guest count input gets the attributes.
 		$this->assertStringContainsString(
-			'name="gatherpress_rsvp_guest_count"',
+			'name="gatherpress_rsvp_guests"',
 			$result,
 			'The handle_rsvp_form_fields method should preserve the guest count input field name.'
 		);

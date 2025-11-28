@@ -43,10 +43,10 @@ const Edit = ( { context, clientId } ) => {
 			const parentBlocks = select( 'core/block-editor' ).getBlockParents( clientId, true );
 			let postIdOverride = null;
 
-			if ( parentBlocks && parentBlocks.length > 0 ) {
+			if ( parentBlocks && 0 < parentBlocks.length ) {
 				for ( const parentId of parentBlocks ) {
 					const parent = select( 'core/block-editor' ).getBlock( parentId );
-					if ( parent && parent.name === 'gatherpress/rsvp' && parent.attributes?.postId ) {
+					if ( parent && 'gatherpress/rsvp' === parent.name && parent.attributes?.postId ) {
 						postIdOverride = parent.attributes.postId;
 						break;
 					}
