@@ -513,7 +513,7 @@ class Test_Rsvp_Form extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) {
-				if ( INPUT_POST === $type && 'gatherpress_rsvp_guests' === $var_name ) {
+				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_guests' === $var_name ) {
 					return '2';
 				}
 				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_id' === $var_name ) {
@@ -715,5 +715,154 @@ class Test_Rsvp_Form extends Base {
 		$this->assertEquals( $user_id, $result['user_id'] );
 		$this->assertEquals( 'Existing User', $result['comment_author'] );
 		$this->assertEquals( 'existing@example.com', $result['comment_author_email'] );
+	}
+
+	/**
+	 * Tests process_fields method with meta and custom fields.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_fields_with_meta_and_custom_fields(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set up event meta for guest limit and anonymous RSVP.
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', 1 );
+
+		// Create a comment (RSVP).
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+				'user_id'         => 0,
+			)
+		);
+
+		// Set up form schema for custom fields.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'custom_field_1' => array(
+						'name' => 'custom_field_1',
+						'type' => 'text',
+					),
+					'custom_field_2' => array(
+						'name' => 'custom_field_2',
+						'type' => 'email',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$data = array(
+			'gatherpress_event_updates_opt_in' => '1',
+			'gatherpress_rsvp_guests'          => '3',
+			'gatherpress_rsvp_anonymous'       => '1',
+			'gatherpress_form_schema_id'       => 'form_0',
+			'custom_field_1'                   => 'Test Value',
+			'custom_field_2'                   => 'test@example.com',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Check that meta fields were processed.
+		$this->assertEquals( '1', get_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', true ) );
+		$this->assertEquals( '3', get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
+		$this->assertEquals( '1', get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true ) );
+
+		// Check that custom fields were processed.
+		$this->assertEquals( 'Test Value', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true ) );
+		$this->assertEquals( 'test@example.com', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_2', true ) );
+	}
+
+	/**
+	 * Tests process_fields method with guest limit cap enforcement.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_fields_enforces_guest_limit(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set guest limit to 2.
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 2 );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_rsvp_guests' => '5', // Try to add 5 guests.
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should be capped at 2.
+		$this->assertEquals( '2', get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
+	}
+
+	/**
+	 * Tests process_fields method with anonymous RSVP validation.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_fields_validates_anonymous_setting(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Anonymous RSVP is disabled.
+		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', 0 );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_rsvp_anonymous' => '1', // Try to set anonymous.
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should not be saved since anonymous is disabled.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true ) );
+	}
+
+	/**
+	 * Tests process_fields method with invalid comment ID.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_fields_with_invalid_comment(): void {
+		$data = array(
+			'gatherpress_event_updates_opt_in' => '1',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		// Should not throw errors with invalid comment ID.
+		$instance->process_fields( 99999, $data );
+
+		// No exception should be thrown.
+		$this->assertTrue( true );
 	}
 }

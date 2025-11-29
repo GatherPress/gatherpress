@@ -18,6 +18,8 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
+use GatherPress\Core\Blocks\General_Block;
+use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Traits\Singleton;
 use GatherPress\Core\Utility;
@@ -54,8 +56,8 @@ class Rsvp_Form {
 	const BUILT_IN_FIELDS = array(
 		'author',
 		'email',
-		'gatherpress_rsvp_guests',
-		'gatherpress_rsvp_anonymous',
+		'gatherpress_rsvp_form_guests',
+		'gatherpress_rsvp_form_anonymous',
 		'gatherpress_event_updates_opt_in',
 	);
 
@@ -82,10 +84,15 @@ class Rsvp_Form {
 	protected function setup_hooks(): void {
 		$render_block_hook = sprintf( 'render_block_%s', self::BLOCK_NAME );
 
-		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 10, 2 );
-		add_filter( 'render_block', array( $this, 'add_form_visibility_data_attribute' ), 10, 2 );
-		add_filter( 'render_block_gatherpress/form-field', array( $this, 'conditionally_render_form_fields' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'transform_block_content' ), 5, 2 );
+		add_filter( 'render_block', array( $this, 'apply_visibility_attribute' ), 10, 2 );
 		add_action( 'save_post', array( $this, 'save_form_schema' ) );
+
+		// Add hooks for conditional form field processing.
+		$general_block = General_Block::get_instance();
+		add_filter( $render_block_hook, array( $general_block, 'process_guests_field' ), 10, 2 );
+		add_filter( $render_block_hook, array( $general_block, 'process_anonymous_field' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'process_form_field_attributes' ), 10, 2 );
 	}
 
 	/**
@@ -106,11 +113,29 @@ class Rsvp_Form {
 	public function transform_block_content( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
+
+		// Validate that the post ID is an actual event post type.
+		// Only check publish status if not in preview mode.
+		if (
+			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+		) {
+			return '';
+		}
+
+		$event = new Event( $post_id );
+
+		// Double-check that the event object was created successfully.
+		if ( ! $event->event ) {
+			return '';
+		}
+
 		$unique_form_id = $this->generate_form_id();
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
-		$block_content  = trim( $block_content );
-		$block_content  = preg_replace( '/^<div\b/', '<form', $block_content );
-		$block_content  = preg_replace(
+
+		$block_content = trim( $block_content );
+		$block_content = preg_replace( '/^<div\b/', '<form', $block_content );
+		$block_content = preg_replace(
 			'/(<\/div>)$/',
 			'<input type="hidden" name="comment_post_ID" value="' . intval( $post_id ) . '">' .
 			'<input type="hidden" name="' . esc_attr( Rsvp::COMMENT_TYPE ) . '" value="1">' .
@@ -119,7 +144,7 @@ class Rsvp_Form {
 			'</form>',
 			$block_content
 		);
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
+		$tag           = new WP_HTML_Tag_Processor( $block_content );
 
 		$tag->next_tag();
 		$tag->set_attribute( 'action', site_url( 'wp-comments-post.php' ) );
@@ -132,6 +157,11 @@ class Rsvp_Form {
 		$tag->set_attribute( 'data-wp-on--submit', 'actions.handleRsvpFormSubmit' );
 		$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
 
+		// Add event state if the event has passed.
+		if ( $event->has_event_past() ) {
+			$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
+		}
+
 		$updated_html = $tag->get_updated_html();
 
 		// Check if this is a successful form submission redirect.
@@ -142,6 +172,100 @@ class Rsvp_Form {
 		$updated_html = $this->handle_form_visibility( $updated_html, $is_success );
 
 		return $updated_html;
+	}
+
+	/**
+	 * Apply visibility data attribute to blocks based on metadata.
+	 *
+	 * This filter runs on every block as it's being rendered. If a block has
+	 * metadata.gatherpressRsvpFormVisibility set, adds the corresponding
+	 * data attribute(s) to the rendered HTML and potentially hides the block
+	 * based on event state.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The rendered block content.
+	 * @param array  $block         The block instance array.
+	 * @return string The modified block content or empty string if block should be hidden.
+	 */
+	public function apply_visibility_attribute( string $block_content, array $block ): string {
+		// Check if this block has a visibility setting in metadata.
+		$visibility = $block['attrs']['metadata']['gatherpressRsvpFormVisibility'] ?? null;
+
+		if ( ! $visibility || empty( $block_content ) ) {
+			return $block_content;
+		}
+
+		// Check if event has passed.
+		$is_past = false;
+		$post_id = $this->get_post_id_from_context( $block );
+		if ( $post_id ) {
+			$event   = new Event( $post_id );
+			$is_past = $event->has_event_past();
+		}
+
+		// Check if this is a success redirect (form was just submitted).
+		$is_success = 'true' === Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
+
+		// Determine if block should be visible using centralized logic.
+		$should_show = $this->determine_visibility( wp_json_encode( $visibility ), $is_success, $is_past );
+
+		// Add the visibility data attribute(s) to the rendered block.
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		if ( $tag->next_tag() ) {
+			// Store visibility as JSON.
+			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', wp_json_encode( $visibility ) );
+
+			// Add event state for frontend JavaScript.
+			if ( $is_past ) {
+				$tag->set_attribute( 'data-gatherpress-event-state', 'past' );
+			}
+
+			// Apply server-side visibility to prevent FOUC (Flash of Unstyled Content).
+			if ( false === $should_show ) {
+				// Hide the element with display: none and aria-hidden.
+				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
+				$updated_styles  = trim( $existing_styles . ' display: none;' );
+				$tag->set_attribute( 'style', $updated_styles );
+				$tag->set_attribute( 'aria-hidden', 'true' );
+			} elseif ( true === $should_show ) {
+				// Show the element explicitly.
+				$tag->set_attribute( 'aria-hidden', 'false' );
+
+				// Add accessibility attributes for success messages.
+				if ( $is_success ) {
+					$tag->set_attribute( 'aria-live', 'polite' );
+					$tag->set_attribute( 'role', 'status' );
+				}
+			}
+
+			return $tag->get_updated_html();
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Get the post ID from the block context.
+	 *
+	 * Attempts to find the event post ID by looking for a parent RSVP form block
+	 * or from the current global post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $block The block instance array.
+	 * @return int|null The post ID or null if not found.
+	 */
+	private function get_post_id_from_context( array $block ): ?int {
+		// Try to get from postId attribute (post ID override support).
+		if ( isset( $block['attrs']['postId'] ) ) {
+			return intval( $block['attrs']['postId'] );
+		}
+
+		// Fall back to current post.
+		$post_id = get_the_ID();
+		return $post_id ? $post_id : null;
 	}
 
 	/**
@@ -160,169 +284,107 @@ class Rsvp_Form {
 	private function handle_form_visibility( string $html, bool $is_success ): string {
 		$tag = new WP_HTML_Tag_Processor( $html );
 
-		// Loop through all HTML elements and check for form visibility data attributes.
+		// Check if event has passed by looking for the data attribute on the form element.
+		$is_past = false;
+		if ( $tag->next_tag( array( 'tag_name' => 'form' ) ) ) {
+			$event_state = $tag->get_attribute( 'data-gatherpress-event-state' );
+			$is_past     = 'past' === $event_state;
+		}
+
+		// Reset to beginning and loop through all elements.
+		$tag = new WP_HTML_Tag_Processor( $html );
 		while ( $tag->next_tag() ) {
 			$visibility_attr = $tag->get_attribute( 'data-gatherpress-rsvp-form-visibility' );
 
 			if ( $visibility_attr ) {
-				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success );
+				$this->apply_visibility_rule( $tag, $visibility_attr, $is_success, $is_past );
 			}
 		}
 
 		return $tag->get_updated_html();
 	}
 
-	/**
-	 * Add form visibility data attribute to blocks with gatherpressRsvpFormVisibility attribute.
-	 *
-	 * This filter runs for all blocks and adds the data-gatherpress-rsvp-form-visibility
-	 * attribute to any block that has a gatherpressRsvpFormVisibility attribute set.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $block_content The block content.
-	 * @param array  $block         The full block, including name and attributes.
-	 * @return string The potentially modified block content.
-	 */
-	public function add_form_visibility_data_attribute( string $block_content, array $block ): string {
-		// Check if this block has a gatherpressRsvpFormVisibility attribute.
-		$form_visibility = $block['attrs']['gatherpressRsvpFormVisibility'] ?? null;
-
-		if ( empty( $form_visibility ) || 'default' === $form_visibility ) {
-			return $block_content;
-		}
-
-		// Check if this is a successful form submission redirect.
-		$success_param = Utility::get_http_input( INPUT_GET, 'gatherpress_rsvp_success' );
-		$is_success    = 'true' === $success_param;
-
-		// Use WP_HTML_Tag_Processor to add the data attribute and handle initial visibility.
-		$tag = new WP_HTML_Tag_Processor( $block_content );
-
-		if ( $tag->next_tag() ) {
-			$tag->set_attribute( 'data-gatherpress-rsvp-form-visibility', $form_visibility );
-
-			// Apply initial visibility rules for non-JS scenarios.
-			if ( 'showOnSuccess' === $form_visibility && ! $is_success ) {
-				// Hide blocks that should only show on success when not in success state.
-				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-				$updated_styles  = trim( $existing_styles . ' display: none;' );
-				$tag->set_attribute( 'style', $updated_styles );
-			} elseif ( 'hideOnSuccess' === $form_visibility && $is_success ) {
-				// Hide blocks that should hide on success when in success state.
-				$existing_styles = $tag->get_attribute( 'style' ) ?? '';
-				$updated_styles  = trim( $existing_styles . ' display: none;' );
-				$tag->set_attribute( 'style', $updated_styles );
-			}
-
-			return $tag->get_updated_html();
-		}
-
-		return $block_content;
-	}
-
-	/**
-	 * Conditionally render form field blocks based on event settings.
-	 *
-	 * This method prevents form fields from rendering when their associated
-	 * event settings indicate they shouldn't be displayed. For example, guest count
-	 * fields are removed when the max guest limit is 0, and anonymous RSVP fields
-	 * are removed when anonymous RSVPs are disabled. For guest count fields with
-	 * a limit > 0, the max value is enforced in the field attributes.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $block_content The rendered block content.
-	 * @param array  $block         The block instance array.
-	 *
-	 * @return string The modified block content, or an empty string if the field should not render.
-	 */
-	public function conditionally_render_form_fields( string $block_content, array $block ): string {
-		// Get the field name from block attributes.
-		$field_name = $block['attrs']['fieldName'] ?? '';
-
-		// Skip if not a conditional field.
-		if ( ! in_array( $field_name, array( 'gatherpress_rsvp_guests', 'gatherpress_rsvp_anonymous' ), true ) ) {
-			return $block_content;
-		}
-
-		// Get the current post ID.
-		$post_id = get_the_ID();
-		if ( ! $post_id ) {
-			return $block_content;
-		}
-
-		$should_remove = false;
-
-		// Check guest count field.
-		if ( 'gatherpress_rsvp_guests' === $field_name ) {
-			$max_guest_limit = (int) get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
-			$should_remove   = 0 === $max_guest_limit;
-
-			// If there's a max limit, add it to the input field.
-			if ( ! $should_remove && 0 < $max_guest_limit ) {
-				$tag = new WP_HTML_Tag_Processor( $block_content );
-
-				// Find the input element and add the max attribute.
-				if ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
-					$tag->set_attribute( 'max', (string) $max_guest_limit );
-					// Also set min to 0 for guest count.
-					$tag->set_attribute( 'min', '0' );
-					$block_content = $tag->get_updated_html();
-				}
-			}
-		}
-
-		// Check anonymous field.
-		if ( 'gatherpress_rsvp_anonymous' === $field_name ) {
-			$enable_anonymous_rsvp = get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
-			$should_remove         = ! $enable_anonymous_rsvp;
-		}
-
-		// Return empty string if the field should not render.
-		if ( $should_remove ) {
-			return '';
-		}
-
-		return $block_content;
-	}
 
 	/**
 	 * Apply visibility rule to a specific HTML element.
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param WP_HTML_Tag_Processor $tag           The HTML tag processor.
-	 * @param string                $visibility_rule The visibility rule (showOnSuccess, hideOnSuccess, or null).
-	 * @param bool                  $is_success    Whether the form was successfully submitted.
+	 * @param WP_HTML_Tag_Processor $tag             The HTML tag processor.
+	 * @param string                $visibility_rule The visibility rule as a JSON object.
+	 * @param bool                  $is_success      Whether the form was successfully submitted.
+	 * @param bool                  $is_past         Whether the event has passed.
 	 * @return void
 	 */
-	private function apply_visibility_rule( WP_HTML_Tag_Processor $tag, ?string $visibility_rule, bool $is_success ): void {
+	private function apply_visibility_rule( WP_HTML_Tag_Processor $tag, ?string $visibility_rule, bool $is_success, bool $is_past ): void {
 		if ( ! $visibility_rule ) {
 			return;
 		}
 
-		$should_show = true;
+		$should_show = $this->determine_visibility( $visibility_rule, $is_success, $is_past );
 
-		if ( 'showOnSuccess' === $visibility_rule ) {
-			$should_show = $is_success;
-		} elseif ( 'hideOnSuccess' === $visibility_rule ) {
-			$should_show = ! $is_success;
-		}
-
-		if ( ! $should_show ) {
+		// Apply visibility if determined.
+		if ( false === $should_show ) {
 			// Hide the element with display: none.
 			$existing_styles = $tag->get_attribute( 'style' ) ?? '';
 			$updated_styles  = trim( $existing_styles . ' display: none;' );
 			$tag->set_attribute( 'style', $updated_styles );
+			$tag->set_attribute( 'aria-hidden', 'true' );
+		} elseif ( true === $should_show ) {
+			// Show the element (remove any inline display: none).
+			$tag->set_attribute( 'aria-hidden', 'false' );
+
+			// Add accessibility attributes for success messages.
+			if ( $is_success ) {
+				$tag->set_attribute( 'aria-live', 'polite' );
+				$tag->set_attribute( 'role', 'status' );
+			}
+		}
+	}
+
+	/**
+	 * Determine if a block should be visible based on visibility rules and current state.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $visibility_rule The visibility rule as a JSON object.
+	 * @param bool   $is_success      Whether the form was successfully submitted.
+	 * @param bool   $is_past         Whether the event has passed.
+	 * @return bool|null True to show, false to hide, null for no change (always visible).
+	 */
+	private function determine_visibility( string $visibility_rule, bool $is_success, bool $is_past ): ?bool {
+		// Decode JSON object format.
+		$visibility = json_decode( $visibility_rule, true );
+
+		if ( ! is_array( $visibility ) ) {
+			return null;
 		}
 
-		// Add accessibility attributes for success messages.
-		if ( 'showOnSuccess' === $visibility_rule ) {
-			$tag->set_attribute( 'aria-hidden', $should_show ? 'false' : 'true' );
-			$tag->set_attribute( 'aria-live', 'polite' );
-			$tag->set_attribute( 'role', 'status' );
+		// Object format with onSuccess and whenPast.
+		$on_success = $visibility['onSuccess'] ?? '';
+		$when_past  = $visibility['whenPast'] ?? '';
+
+		// When event is past, check whenPast (takes precedence when past).
+		if ( $is_past && ! empty( $when_past ) ) {
+			return 'show' === $when_past;
 		}
+
+		// When not past but block has ONLY whenPast setting (no onSuccess).
+		// This handles blocks that should only appear after event has passed.
+		if ( ! $is_past && ! empty( $when_past ) && empty( $on_success ) ) {
+			return 'show' !== $when_past; // Hide if set to show (because not past yet).
+		}
+
+		// Check onSuccess.
+		if ( ! empty( $on_success ) ) {
+			if ( $is_success ) {
+				return 'show' === $on_success;
+			}
+			// Not success: hide if set to show on success.
+			return 'show' !== $on_success;
+		}
+
+		return null; // Default: no change (always visible).
 	}
 
 	/**
@@ -662,5 +724,43 @@ class Rsvp_Form {
 			default:
 				return sanitize_text_field( $value );
 		}
+	}
+
+	/**
+	 * Process form field attributes for RSVP Form fields.
+	 *
+	 * Sets the max attribute for guest count fields based on event settings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content.
+	 * @param array  $block         The block data.
+	 * @return string The processed block content.
+	 */
+	public function process_form_field_attributes( string $block_content, array $block ): string {
+		// Get the correct post ID using override logic.
+		$block_instance = Block::get_instance();
+		$post_id        = $block_instance->get_post_id( $block );
+
+		// Get max guest limit from event settings.
+		$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+
+		// Only process if max guest limit is numeric.
+		if ( ! is_numeric( $max_guest_limit ) ) {
+			return $block_content;
+		}
+
+		// Set max attribute on guest count input fields.
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
+			$name_attr = $tag->get_attribute( 'name' );
+
+			if ( 'gatherpress_rsvp_form_guests' === $name_attr ) {
+				$tag->set_attribute( 'max', (string) $max_guest_limit );
+			}
+		}
+
+		return $tag->get_updated_html();
 	}
 }

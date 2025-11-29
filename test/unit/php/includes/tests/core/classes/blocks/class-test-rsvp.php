@@ -34,6 +34,7 @@ class Test_Rsvp extends Base {
 	public function test_setup_hooks(): void {
 		$instance          = Rsvp::get_instance();
 		$render_block_hook = sprintf( 'render_block_%s', Rsvp::BLOCK_NAME );
+		$general_block     = \GatherPress\Core\Blocks\General_Block::get_instance();
 		$hooks             = array(
 			array(
 				'type'     => 'filter',
@@ -57,7 +58,19 @@ class Test_Rsvp extends Base {
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
 				'priority' => 9,
-				'callback' => array( $instance, 'apply_guest_count_input_interactivity' ),
+				'callback' => array( $instance, 'apply_guests_input_interactivity' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $general_block, 'process_guests_field' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $general_block, 'process_anonymous_field' ),
 			),
 		);
 
@@ -533,11 +546,11 @@ class Test_Rsvp extends Base {
 
 		$block = array(
 			'attrs' => array(
-				'fieldName' => 'gatherpress_rsvp_guest_count',
+				'fieldName' => 'gatherpress_rsvp_guests',
 			),
 		);
 
-		$block_content = '<input type="number" name="gatherpress_rsvp_guest_count" value="0" />';
+		$block_content = '<input type="number" name="gatherpress_rsvp_guests" value="0" />';
 		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		$this->assertStringContainsString(
@@ -589,17 +602,17 @@ class Test_Rsvp extends Base {
 
 		$block = array(
 			'attrs' => array(
-				'fieldName' => 'gatherpress_rsvp_guest_count',
+				'fieldName' => 'gatherpress_rsvp_guests',
 			),
 		);
 
-		$block_content = '<input type="number" name="gatherpress_rsvp_guest_count" value="0" />';
+		$block_content = '<input type="number" name="gatherpress_rsvp_guests" value="0" />';
 		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
-		$this->assertSame(
-			'',
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
 			$result,
-			'The handle_rsvp_form_fields method should return empty content when guests are not allowed.'
+			'The handle_rsvp_form_fields method should add interactivity attributes. Field visibility is handled by RSVP Form.'
 		);
 	}
 
@@ -688,10 +701,10 @@ class Test_Rsvp extends Base {
 		$block_content = '<input type="checkbox" name="gatherpress_rsvp_anonymous" value="1" />';
 		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
-		$this->assertSame(
-			'',
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
 			$result,
-			'The handle_rsvp_form_fields method should return empty content when anonymous RSVP is disabled.'
+			'The handle_rsvp_form_fields method should add interactivity attributes. Field visibility is handled by RSVP Form.'
 		);
 	}
 
@@ -778,16 +791,16 @@ class Test_Rsvp extends Base {
 
 		$block = array(
 			'attrs' => array(
-				'fieldName' => 'gatherpress_rsvp_guest_count',
+				'fieldName' => 'gatherpress_rsvp_guests',
 			),
 		);
 
-		$block_content = '<div><input type="text" name="other_field" value="" /><input type="number" name="gatherpress_rsvp_guest_count" value="0" /></div>';
+		$block_content = '<div><input type="text" name="other_field" value="" /><input type="number" name="gatherpress_rsvp_guests" value="0" /></div>';
 		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		// Check that only the guest count input gets the attributes.
 		$this->assertStringContainsString(
-			'name="gatherpress_rsvp_guest_count"',
+			'name="gatherpress_rsvp_guests"',
 			$result,
 			'The handle_rsvp_form_fields method should preserve the guest count input field name.'
 		);

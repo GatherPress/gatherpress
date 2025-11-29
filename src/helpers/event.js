@@ -16,6 +16,18 @@ import { getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
 
 /**
+ * Opacity value for disabled form fields and elements.
+ *
+ * This constant defines the opacity level applied to form fields and UI elements
+ * when they are disabled due to event settings (e.g., when guest limits are 0
+ * or anonymous RSVP is disabled).
+ *
+ * @since 1.0.0
+ * @type {number}
+ */
+export const DISABLED_FIELD_OPACITY = 0.3;
+
+/**
  * Checks if the current post type is an event in the GatherPress application.
  *
  * This function queries the current post type using the `select` function from the `core/editor` package.
@@ -28,6 +40,28 @@ import { getFromGlobal } from './globals';
  */
 export function isEventPostType() {
 	return 'gatherpress_event' === select( 'core/editor' )?.getCurrentPostType();
+}
+
+/**
+ * Checks if a block has a valid event ID (either from current post or postId override).
+ *
+ * This function checks if the block is connected to a valid event, either by being
+ * placed in an event post or having a postId attribute that points to a valid event.
+ *
+ * @since 1.0.0
+ *
+ * @param {number|null} postId Optional post ID override to check.
+ * @return {boolean} True if connected to a valid event, false otherwise.
+ */
+export function hasValidEventId( postId = null ) {
+	// If postId is provided, verify it points to a valid, published event.
+	if ( postId ) {
+		const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
+		return !! post && 'publish' === post.status;
+	}
+
+	// Otherwise, check if current post is an event (no publish check needed).
+	return isEventPostType();
 }
 
 /**

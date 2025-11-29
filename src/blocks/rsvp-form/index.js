@@ -8,7 +8,7 @@ import { SelectControl } from '@wordpress/components';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { Fragment, useEffect } from '@wordpress/element';
 import { addFilter } from '@wordpress/hooks';
-import { select, dispatch } from '@wordpress/data';
+import { select, dispatch, useSelect } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -17,50 +17,47 @@ import edit from './edit';
 import metadata from './block.json';
 
 /**
- * Add gatherpressRsvpFormVisibility attribute to all blocks.
- *
- * @param {Object} settings Block settings.
- * @return {Object} Modified settings.
- */
-function addFormVisibilityAttribute( settings ) {
-	// Only add to blocks that don't already have this attribute.
-	if ( settings?.attributes?.gatherpressRsvpFormVisibility ) {
-		return settings;
-	}
-
-	return {
-		...settings,
-		attributes: {
-			...( settings.attributes || {} ),
-			gatherpressRsvpFormVisibility: {
-				type: 'string',
-				enum: [ 'default', 'showOnSuccess', 'hideOnSuccess' ],
-				default: 'default',
-			},
-		},
-	};
-}
-
-/**
  * Add success visibility controls to block edit component.
+ * Stores visibility settings on each block's metadata.gatherpressRsvpFormVisibility attribute.
  *
  * @param {Function} BlockEdit Original BlockEdit component.
  * @return {Function} Wrapped BlockEdit component.
  */
 const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => {
 	return ( props ) => {
-		const { attributes, setAttributes, clientId } = props;
-		const { gatherpressRsvpFormVisibility } = attributes;
+		const { clientId, attributes } = props;
 
-		// Check if this block is inside an RSVP Form (but not the RSVP Form itself).
-		const { getBlockParents, getBlock } = wp.data.select( 'core/block-editor' );
-		const currentBlock = getBlock( clientId );
-		const parents = getBlockParents( clientId );
+		// Use useSelect for reactive data fetching.
+		const {
+			currentBlock,
+			parents,
+			rsvpFormParentId,
+		} = useSelect(
+			( selectFn ) => {
+				const { getBlockParents, getBlock } = selectFn( 'core/block-editor' );
+				const block = getBlock( clientId );
+				const parentIds = getBlockParents( clientId );
+
+				// Find the parent RSVP Form block.
+				const formParentId = parentIds.find( ( parentId ) => {
+					const parentBlock = getBlock( parentId );
+					return 'gatherpress/rsvp-form' === parentBlock?.name;
+				} );
+
+				return {
+					currentBlock: block,
+					parents: parentIds,
+					rsvpFormParentId: formParentId,
+				};
+			},
+			[ clientId ]
+		);
 
 		// Don't show controls if this IS the RSVP Form block itself.
 		if ( 'gatherpress/rsvp-form' === currentBlock?.name ) {
 			// Also prevent nested RSVP Forms by hiding this block if it's inside another RSVP Form.
 			const isInsideRsvpForm = parents.some( ( parentId ) => {
+				const { getBlock } = select( 'core/block-editor' );
 				const parentBlock = getBlock( parentId );
 				return 'gatherpress/rsvp-form' === parentBlock?.name;
 			} );
@@ -79,71 +76,97 @@ const withFormVisibilityControls = createHigherOrderComponent( ( BlockEdit ) => 
 			return <BlockEdit { ...props } />;
 		}
 
-		const isInsideRsvpForm = parents.some( ( parentId ) => {
-			const parentBlock = getBlock( parentId );
-			return 'gatherpress/rsvp-form' === parentBlock?.name;
-		} );
-
 		// Only show controls if inside RSVP Form.
-		if ( ! isInsideRsvpForm ) {
+		if ( ! rsvpFormParentId ) {
 			return <BlockEdit { ...props } />;
 		}
+
+		// Get current visibility from block's metadata attribute.
+		const currentVisibility = attributes?.metadata?.gatherpressRsvpFormVisibility || {};
+		const onSuccess = currentVisibility?.onSuccess || '';
+		const whenPast = currentVisibility?.whenPast || '';
+
+		const { updateBlockAttributes } = dispatch( 'core/block-editor' );
+
+		// Handler to update visibility on this block's metadata.
+		const updateVisibility = ( state, value ) => {
+			const newMetadata = { ...( attributes.metadata || {} ) };
+			const newVisibility = { ...( currentVisibility || {} ) };
+
+			// Update the specific state.
+			if ( ! value || '' === value ) {
+				delete newVisibility[ state ];
+			} else {
+				newVisibility[ state ] = value;
+			}
+
+			// If both states are empty, remove the entire visibility object.
+			if ( 0 === Object.keys( newVisibility ).length ) {
+				delete newMetadata.gatherpressRsvpFormVisibility;
+			} else {
+				newMetadata.gatherpressRsvpFormVisibility = newVisibility;
+			}
+
+			updateBlockAttributes( clientId, {
+				metadata: newMetadata,
+			} );
+		};
 
 		return (
 			<Fragment>
 				<BlockEdit { ...props } />
 				<InspectorAdvancedControls>
 					<SelectControl
-						label={ __( 'Form State', 'gatherpress' ) }
+						label={ __( 'On Successful Submission', 'gatherpress' ) }
 						help={ __(
-							'Control when this block is visible based on RSVP form state.',
+							'Control visibility when the RSVP form is successfully submitted.',
 							'gatherpress'
 						) }
-						value={ gatherpressRsvpFormVisibility || 'default' }
+						value={ onSuccess }
 						options={ [
 							{
-								label: __( 'Always visible (default)', 'gatherpress' ),
-								value: 'default',
+								label: __( 'Always visible', 'gatherpress' ),
+								value: '',
 							},
 							{
-								label: __( 'Show on successful form submission', 'gatherpress' ),
-								value: 'showOnSuccess',
+								label: __( 'Show', 'gatherpress' ),
+								value: 'show',
 							},
 							{
-								label: __( 'Hide on successful form submission', 'gatherpress' ),
-								value: 'hideOnSuccess',
+								label: __( 'Hide', 'gatherpress' ),
+								value: 'hide',
 							},
 						] }
-						onChange={ ( value ) =>
-							setAttributes( { gatherpressRsvpFormVisibility: value } )
-						}
+						onChange={ ( value ) => updateVisibility( 'onSuccess', value ) }
+					/>
+					<SelectControl
+						label={ __( 'When Event Has Passed', 'gatherpress' ) }
+						help={ __(
+							'Control visibility when the event end time has passed.',
+							'gatherpress'
+						) }
+						value={ whenPast }
+						options={ [
+							{
+								label: __( 'Always visible', 'gatherpress' ),
+								value: '',
+							},
+							{
+								label: __( 'Show', 'gatherpress' ),
+								value: 'show',
+							},
+							{
+								label: __( 'Hide', 'gatherpress' ),
+								value: 'hide',
+							},
+						] }
+						onChange={ ( value ) => updateVisibility( 'whenPast', value ) }
 					/>
 				</InspectorAdvancedControls>
 			</Fragment>
 		);
 	};
 }, 'withFormVisibilityControls' );
-
-/**
- * Add data attribute to blocks based on their success visibility setting.
- *
- * @param {Object} props      Block save props.
- * @param {Object} blockType  Block type.
- * @param {Object} attributes Block attributes.
- * @return {Object} Modified props.
- */
-function addFormVisibilityDataAttribute( props, blockType, attributes ) {
-	const { gatherpressRsvpFormVisibility } = attributes;
-
-	if ( gatherpressRsvpFormVisibility && 'default' !== gatherpressRsvpFormVisibility ) {
-		return {
-			...props,
-			'data-gatherpress-rsvp-form-visibility': gatherpressRsvpFormVisibility,
-		};
-	}
-
-	return props;
-}
 
 /**
  * Edit component for the GatherPress RSVP Form block.
@@ -207,23 +230,11 @@ function preventNestedRsvpFormInsertion( canInsert, blockType, rootClientId ) {
 	return canInsert;
 }
 
-// Register the filters for form visibility functionality.
-addFilter(
-	'blocks.registerBlockType',
-	'gatherpress/form-visibility-attribute',
-	addFormVisibilityAttribute
-);
-
+// Register the filter for form visibility controls.
 addFilter(
 	'editor.BlockEdit',
 	'gatherpress/form-visibility-controls',
 	withFormVisibilityControls
-);
-
-addFilter(
-	'blocks.getSaveContent.extraProps',
-	'gatherpress/form-visibility-data-attribute',
-	addFormVisibilityDataAttribute
 );
 
 // Prevent RSVP Form from being inserted inside another RSVP Form.

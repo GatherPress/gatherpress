@@ -141,6 +141,17 @@ class Rsvp_Form {
 		$email   = Utility::get_http_input( INPUT_POST, 'email', 'sanitize_email' );
 		$post_id = intval( $comment_data['comment_post_ID'] );
 
+		// Validate that the post is an event.
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+			wp_die( esc_html__( 'Invalid event ID.', 'gatherpress' ), esc_html__( 'Invalid Request', 'gatherpress' ), 400 );
+		}
+
+		// Check if event has passed - prevent RSVPs to past events.
+		$event = new Event( $post_id );
+		if ( $event->has_event_past() ) {
+			wp_die( esc_html__( 'Registration for this event is now closed.', 'gatherpress' ), esc_html__( 'Event Has Passed', 'gatherpress' ), 400 );
+		}
+
 		// Check for duplicate RSVP.
 		if ( $this->has_duplicate_rsvp( $post_id, $email ) ) {
 			wp_die( esc_html__( "You've already RSVP'd to this event.", 'gatherpress' ), esc_html__( 'Duplicate RSVP', 'gatherpress' ), 409 );
@@ -189,8 +200,8 @@ class Rsvp_Form {
 			// phpcs:disable WordPress.Security.NonceVerification.Missing
 			$data = array(
 				'gatherpress_event_updates_opt_in' => Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ),
-				'gatherpress_rsvp_guests'          => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_guests' ),
-				'gatherpress_rsvp_anonymous'       => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_anonymous' ),
+				'gatherpress_rsvp_guests'          => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_guests' ),
+				'gatherpress_rsvp_anonymous'       => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_anonymous' ),
 			);
 
 			// Add custom fields to data.
@@ -391,6 +402,7 @@ class Rsvp_Form {
 		// Set remote IP if available.
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+
 			if ( rest_is_ip_address( $remote_ip ) ) {
 				$comment_data['comment_author_IP'] = $remote_ip;
 			}

@@ -58,3 +58,19 @@ export function getEditorDocument() {
 
 	return global.document;
 }
+
+/**
+ * Checks if the current editor context is a Full Site Editor template.
+ *
+ * This function determines if the user is editing a template or template part
+ * in the Full Site Editor, as opposed to editing a regular post or page.
+ *
+ * @since 1.0.0
+ *
+ * @return {boolean} True if editing an FSE template or template part, false otherwise.
+ */
+export function isInFSETemplate() {
+	const postType = select( 'core/editor' )?.getCurrentPostType();
+
+	return [ 'wp_template', 'wp_template_part' ].includes( postType );
+}

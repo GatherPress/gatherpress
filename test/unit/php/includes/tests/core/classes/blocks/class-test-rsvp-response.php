@@ -73,7 +73,11 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_transform_block_content_basic(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$post_id       = $this->factory()->post->create();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-response',
 			'attrs'     => array(
@@ -112,7 +116,11 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_transform_block_content_empty_rsvp(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$post_id       = $this->factory()->post->create();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-response',
 			'attrs'     => array(
@@ -139,7 +147,11 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_transform_block_content_with_responses(): void {
 		$instance = Rsvp_Response::get_instance();
-		$post_id  = $this->factory()->post->create();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
 		$user_id  = $this->factory()->user->create();
 		$rsvp     = new Rsvp( $post_id );
 
@@ -171,7 +183,11 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_transform_block_content_default_limits(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$post_id       = $this->factory()->post->create();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-response',
 			'attrs'     => array(

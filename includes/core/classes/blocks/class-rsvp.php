@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
 use GatherPress\Core\Blocks\Form_Field;
+use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
@@ -68,7 +69,12 @@ class Rsvp {
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
 		// Priority 9 ensures this runs before transform_block_content to properly register form field hooks.
-		add_filter( $render_block_hook, array( $this, 'apply_guest_count_input_interactivity' ), 9 );
+		add_filter( $render_block_hook, array( $this, 'apply_guests_input_interactivity' ), 9 );
+
+		// Add hooks for conditional form field processing.
+		$general_block = General_Block::get_instance();
+		add_filter( $render_block_hook, array( $general_block, 'process_guests_field' ), 10, 2 );
+		add_filter( $render_block_hook, array( $general_block, 'process_anonymous_field' ), 10, 2 );
 	}
 
 	/**
@@ -94,10 +100,20 @@ class Rsvp {
 	public function transform_block_content( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
-		$event          = new Event( $post_id );
-		$inner_blocks   = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
-		$attributes     = isset( $block['attrs'] ) ? $block['attrs'] : array();
+
+		// Validate that the post ID is an actual event post type.
+		// Only check publish status if not in preview mode.
+		if (
+			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+		) {
+			return '';
+		}
+
+		$event        = new Event( $post_id );
+		$inner_blocks = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
+		$tag          = new WP_HTML_Tag_Processor( $block_content );
+		$attributes   = isset( $block['attrs'] ) ? $block['attrs'] : array();
 
 		if ( $tag->next_tag() ) {
 			/**
@@ -284,7 +300,7 @@ class Rsvp {
 	 * @param string $block_content The block content to modify.
 	 * @return string The modified block content with form field callbacks applied.
 	 */
-	public function apply_guest_count_input_interactivity( string $block_content ): string {
+	public function apply_guests_input_interactivity( string $block_content ): string {
 		// Apply form field callback for any form-field blocks within this RSVP block.
 		$form_field_hook = sprintf( 'render_block_%s', Form_Field::BLOCK_NAME );
 
@@ -309,14 +325,13 @@ class Rsvp {
 		$attributes = $block['attrs'] ?? array();
 		$field_name = $attributes['fieldName'] ?? '';
 
-		// Handle guest count field.
-		if ( 'gatherpress_rsvp_guest_count' === $field_name ) {
-			$max_guest_limit = get_post_meta( get_the_ID(), 'gatherpress_max_guest_limit', true );
+		// Get the correct post ID for remaining logic.
+		$block_instance = Block::get_instance();
+		$post_id        = $block_instance->get_post_id( $block );
 
-			// If the maximum guest limit is set to 0, guests are not permitted. Return empty content.
-			if ( empty( $max_guest_limit ) ) {
-				return '';
-			}
+		// Handle guest count field interactivity.
+		if ( 'gatherpress_rsvp_guests' === $field_name ) {
+			$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
 
 			// Apply interactivity attributes and max limit for guest count.
 			$tag = new WP_HTML_Tag_Processor( $block_content );
@@ -324,7 +339,7 @@ class Rsvp {
 			while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
 				$name_attr = $tag->get_attribute( 'name' );
 
-				if ( 'gatherpress_rsvp_guest_count' === $name_attr ) {
+				if ( 'gatherpress_rsvp_guests' === $name_attr ) {
 					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
 					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
 					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
@@ -335,15 +350,8 @@ class Rsvp {
 			return $tag->get_updated_html();
 		}
 
-		// Handle anonymous checkbox field.
+		// Handle anonymous checkbox field interactivity.
 		if ( 'gatherpress_rsvp_anonymous' === $field_name ) {
-			$enable_anonymous_rsvp = get_post_meta( get_the_ID(), 'gatherpress_enable_anonymous_rsvp', true );
-
-			// Meta is stored as boolean. Return empty content if not enabled.
-			if ( ! $enable_anonymous_rsvp ) {
-				return '';
-			}
-
 			// Apply interactivity attributes for anonymous checkbox.
 			$tag = new WP_HTML_Tag_Processor( $block_content );
 

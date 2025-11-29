@@ -162,9 +162,10 @@ const WAITING_LIST = [
 							[
 								'gatherpress/form-field',
 								{
+									className: 'gatherpress-rsvp-field-anonymous',
 									fieldType: 'checkbox',
 									fieldName: 'gatherpress_rsvp_anonymous',
-									label: 'List me as anonymous.',
+									label: __( 'List me as anonymous', 'gatherpress' ),
 									autocomplete: 'off',
 								},
 							],

@@ -35,30 +35,43 @@ class Test_Rsvp_Form extends Base {
 	public function test_setup_hooks(): void {
 		$instance          = Rsvp_Form::get_instance();
 		$render_block_hook = sprintf( 'render_block_%s', Rsvp_Form::BLOCK_NAME );
+		$general_block     = \GatherPress\Core\Blocks\General_Block::get_instance();
 		$hooks             = array(
 			array(
 				'type'     => 'filter',
 				'name'     => $render_block_hook,
-				'priority' => 10,
+				'priority' => 5,
 				'callback' => array( $instance, 'transform_block_content' ),
 			),
 			array(
 				'type'     => 'filter',
 				'name'     => 'render_block',
 				'priority' => 10,
-				'callback' => array( $instance, 'add_form_visibility_data_attribute' ),
-			),
-			array(
-				'type'     => 'filter',
-				'name'     => 'render_block_gatherpress/form-field',
-				'priority' => 10,
-				'callback' => array( $instance, 'conditionally_render_form_fields' ),
+				'callback' => array( $instance, 'apply_visibility_attribute' ),
 			),
 			array(
 				'type'     => 'action',
 				'name'     => 'save_post',
 				'priority' => 10,
 				'callback' => array( $instance, 'save_form_schema' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $general_block, 'process_guests_field' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $general_block, 'process_anonymous_field' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $instance, 'process_form_field_attributes' ),
 			),
 		);
 
@@ -221,8 +234,8 @@ class Test_Rsvp_Form extends Base {
 		);
 
 		$block_content = '<div class="wp-block-gatherpress-rsvp-form">
-			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="showOnSuccess">Success message</div>
-			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Form field</div>
+			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;show&quot;}">Success message</div>
+			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Form field</div>
 		</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-form',
@@ -233,7 +246,7 @@ class Test_Rsvp_Form extends Base {
 
 		$transformed_content = $instance->transform_block_content( $block_content, $block );
 
-		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $transformed_content );
+		$this->assertStringContainsString( '&quot;onSuccess&quot;:&quot;show&quot;', $transformed_content );
 		$this->assertStringContainsString( 'display: none;', $transformed_content );
 		$this->assertStringContainsString( 'aria-hidden="true"', $transformed_content );
 	}
@@ -716,9 +729,9 @@ class Test_Rsvp_Form extends Base {
 		$instance = Rsvp_Form::get_instance();
 
 		$html = '<form>
-			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="showOnSuccess">Success message</div>
-			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Name field</div>
-			<div class="wp-block-buttons" data-gatherpress-rsvp-form-visibility="hideOnSuccess">Submit Button</div>
+			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;show&quot;}">Success message</div>
+			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Name field</div>
+			<div class="wp-block-buttons" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Submit Button</div>
 		</form>';
 
 		// Test with success = false (default state).
@@ -731,13 +744,13 @@ class Test_Rsvp_Form extends Base {
 		$result_true = Utility::invoke_hidden_method( $instance, 'handle_form_visibility', array( $html, true ) );
 		$this->assertStringContainsString( 'wp-block-group', $result_true );
 
-		// Check that the showOnSuccess group block does NOT have display: none.
+		// Check that blocks with onSuccess: 'show' do NOT have display: none.
 		preg_match( '/<div[^>]*class="wp-block-group"[^>]*>/', $result_true, $group_matches );
 		if ( ! empty( $group_matches[0] ) ) {
 			$this->assertStringNotContainsString( 'display: none;', $group_matches[0], 'Success message should be visible' );
 		}
 
-		// Check that hideOnSuccess blocks DO have display: none.
+		// Check that blocks with onSuccess: 'hide' DO have display: none.
 		$this->assertStringContainsString( 'style="display: none;" class="wp-block-gatherpress-form-field"', $result_true );
 		$this->assertStringContainsString( 'aria-hidden="false"', $result_true );
 	}
@@ -768,37 +781,37 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests the add_form_visibility_data_attribute method with no gatherpressRsvpFormVisibility attribute.
+	 * Tests the apply_visibility_attribute method with no gatherpressRsvpFormVisibility attribute.
 	 *
 	 * Verifies that blocks without gatherpressRsvpFormVisibility attribute are unchanged.
 	 *
 	 * @since 1.0.0
-	 * @covers ::add_form_visibility_data_attribute
+	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
 	 */
-	public function test_add_form_visibility_data_attribute_no_attribute(): void {
+	public function test_apply_visibility_attribute_no_attribute(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		$block_content = '<div class="wp-block-paragraph">Normal content</div>';
 		$block         = array( 'attrs' => array() );
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
 		$this->assertEquals( $block_content, $result );
 		$this->assertStringNotContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
 	}
 
 	/**
-	 * Tests the add_form_visibility_data_attribute method with default gatherpressRsvpFormVisibility.
+	 * Tests the apply_visibility_attribute method with default gatherpressRsvpFormVisibility.
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility set to 'default' are unchanged.
 	 *
 	 * @since 1.0.0
-	 * @covers ::add_form_visibility_data_attribute
+	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
 	 */
-	public function test_add_form_visibility_data_attribute_default_value(): void {
+	public function test_apply_visibility_attribute_default_value(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		$block_content = '<div class="wp-block-paragraph">Normal content</div>';
@@ -806,22 +819,22 @@ class Test_Rsvp_Form extends Base {
 			'attrs' => array( 'gatherpressRsvpFormVisibility' => 'default' ),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
 		$this->assertEquals( $block_content, $result );
 		$this->assertStringNotContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
 	}
 
 	/**
-	 * Tests add_form_visibility_data_attribute with success state.
+	 * Tests apply_visibility_attribute with success state.
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to success state.
 	 *
 	 * @since 1.0.0
-	 * @covers ::add_form_visibility_data_attribute
+	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
 	 */
-	public function test_add_form_visibility_data_attribute_with_success(): void {
+	public function test_apply_visibility_attribute_with_success(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		// Mock GET parameter for success state using pre_ filter.
@@ -837,43 +850,51 @@ class Test_Rsvp_Form extends Base {
 			3
 		);
 
-		// Test showOnSuccess block.
+		// Test block that shows on success.
 		$block_content = '<div class="wp-block-group">Success message</div>';
 		$block         = array(
 			'blockName' => 'core/group',
-			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
+			'attrs'     => array(
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'onSuccess' => 'show' ),
+				),
+			),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
-		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $result );
-		$this->assertStringNotContainsString( 'display: none;', $result );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
+		$this->assertStringContainsString( '&quot;onSuccess&quot;:&quot;show&quot;', $result );
 
-		// Test hideOnSuccess block.
+		// Test block that hides on success.
 		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
+			'attrs'     => array(
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'onSuccess' => 'hide' ),
+				),
+			),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
-		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="hideOnSuccess"', $result );
-		$this->assertStringContainsString( 'display: none;', $result );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
+		$this->assertStringContainsString( '&quot;onSuccess&quot;:&quot;hide&quot;', $result );
 
 		// Clean up filters.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 
 	/**
-	 * Tests add_form_visibility_data_attribute without success state.
+	 * Tests apply_visibility_attribute without success state.
 	 *
 	 * Verifies that blocks with gatherpressRsvpFormVisibility attribute respond correctly to default state.
 	 *
 	 * @since 1.0.0
-	 * @covers ::add_form_visibility_data_attribute
+	 * @covers ::apply_visibility_attribute
 	 *
 	 * @return void
 	 */
-	public function test_add_form_visibility_data_attribute_without_success(): void {
+	public function test_apply_visibility_attribute_without_success(): void {
 		$instance = Rsvp_Form::get_instance();
 
 		// Mock no success parameter using pre_ filter.
@@ -884,200 +905,615 @@ class Test_Rsvp_Form extends Base {
 			}
 		);
 
-		// Test showOnSuccess block (should be hidden).
+		// Test block that shows on success (not in success state).
 		$block_content = '<div class="wp-block-group">Success message</div>';
 		$block         = array(
 			'blockName' => 'core/group',
-			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'showOnSuccess' ),
+			'attrs'     => array(
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'onSuccess' => 'show' ),
+				),
+			),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
-		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="showOnSuccess"', $result );
-		$this->assertStringContainsString( 'display: none;', $result );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
+		$this->assertStringContainsString( '&quot;onSuccess&quot;:&quot;show&quot;', $result );
 
-		// Test hideOnSuccess block (should be visible).
+		// Test block that hides on success (not in success state).
 		$block_content = '<div class="wp-block-gatherpress-form-field">Name field</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array( 'gatherpressRsvpFormVisibility' => 'hideOnSuccess' ),
+			'attrs'     => array(
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'onSuccess' => 'hide' ),
+				),
+			),
 		);
 
-		$result = $instance->add_form_visibility_data_attribute( $block_content, $block );
-		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility="hideOnSuccess"', $result );
-		$this->assertStringNotContainsString( 'display: none;', $result );
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
+		$this->assertStringContainsString( '&quot;onSuccess&quot;:&quot;hide&quot;', $result );
 
 		// Clean up filters.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
 
 	/**
-	 * Tests the conditionally_render_form_fields method.
+	 * Tests process_custom_fields_for_form method with valid form submission.
 	 *
-	 * Verifies that form fields are conditionally rendered or removed based on event settings.
-	 *
-	 * @since 1.0.0
-	 * @covers ::conditionally_render_form_fields
-	 *
-	 * @return void
+	 * @covers ::process_custom_fields_for_form
 	 */
-	public function test_conditionally_render_form_fields(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// Create an event post.
-		$post_id = $this->factory()->post->create(
+	public function test_process_custom_fields_for_form_with_valid_submission(): void {
+		$post_id = $this->factory->post->create(
 			array(
 				'post_type' => Event::POST_TYPE,
 			)
 		);
 
-		$this->go_to( get_permalink( $post_id ) );
-
-		// Test non-form-field block (should be unchanged).
-		$block_content = '<div class="wp-block-paragraph">Normal paragraph</div>';
-		$block         = array(
-			'blockName' => 'core/paragraph',
-			'attrs'     => array(),
+		// Create an RSVP comment.
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
 		);
 
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( $block_content, $result );
-
-		// Test form field without conditional field name (should be unchanged).
-		$block_content = '<div class="wp-block-gatherpress-form-field">Other field</div>';
-		$block         = array(
-			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array(
-				'fieldName' => 'other_field',
+		// Set up form schema.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'custom_text_field'  => array(
+						'name' => 'custom_text_field',
+						'type' => 'text',
+					),
+					'custom_email_field' => array(
+						'name' => 'custom_email_field',
+						'type' => 'email',
+					),
+				),
 			),
 		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
 
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( $block_content, $result );
+		// Mock POST data using the test filter.
+		$mock_post_data = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'custom_text_field'          => 'Test Value',
+			'custom_email_field'         => 'test@example.com',
+			'author'                     => 'Built-in field', // Should be ignored.
+		);
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) use ( $mock_post_data ) {
+			if ( INPUT_POST === $type && isset( $mock_post_data[ $var_name ] ) ) {
+				return $mock_post_data[ $var_name ];
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Check that custom fields were saved.
+		$this->assertEquals( 'Test Value', get_comment_meta( $comment_id, 'gatherpress_custom_custom_text_field', true ) );
+		$this->assertEquals( 'test@example.com', get_comment_meta( $comment_id, 'gatherpress_custom_custom_email_field', true ) );
+
+		// Check that built-in fields were not processed.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_author', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
 	}
 
 	/**
-	 * Tests conditionally_render_form_fields with guest count field.
+	 * Tests process_custom_fields_for_form method with no form schema ID.
 	 *
-	 * Verifies guest count field behavior based on max guest limit setting.
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_no_schema_id(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Mock POST data without form schema ID.
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type && 'custom_field' === $var_name ) {
+				return 'Should not be processed';
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not create any custom field meta.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with invalid comment.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_invalid_comment(): void {
+		// Create a regular comment (not RSVP type).
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type' => '',
+			)
+		);
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( 'custom_field' === $var_name ) {
+					return 'Should not be processed';
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not create any meta since it's not an RSVP comment.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with nonexistent comment.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_nonexistent_comment(): void {
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( 'custom_field' === $var_name ) {
+					return 'Should not be processed';
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+
+		// Should not throw errors with invalid comment ID.
+		$instance->process_custom_fields_for_form( 99999 );
+
+		// No exception should be thrown.
+		$this->assertTrue( true );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with no stored schema.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_no_stored_schema(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'nonexistent_form';
+				}
+				if ( 'custom_field' === $var_name ) {
+					return 'Should not be processed';
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not create any meta since schema doesn't exist.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with empty field value.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_empty_field_value(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set up form schema.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'custom_field' => array(
+						'name' => 'custom_field',
+						'type' => 'text',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( 'custom_field' === $var_name ) {
+					return ''; // Empty value.
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not create meta for empty field.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests process_custom_fields_for_form method with field validation failure.
+	 *
+	 * @covers ::process_custom_fields_for_form
+	 */
+	public function test_process_custom_fields_for_form_validation_failure(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set up form schema.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'email_field' => array(
+						'name' => 'email_field',
+						'type' => 'email',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$filter_callback = function ( $pre_value, $type, $var_name ) {
+			if ( INPUT_POST === $type ) {
+				if ( 'gatherpress_form_schema_id' === $var_name ) {
+					return 'form_0';
+				}
+				if ( 'email_field' === $var_name ) {
+					return 'invalid-email'; // Invalid email.
+				}
+			}
+			return $pre_value;
+		};
+
+		add_filter( 'gatherpress_pre_get_http_input', $filter_callback, 10, 3 );
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_custom_fields_for_form( $comment_id );
+
+		// Should not save invalid email.
+		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_email_field', true ) );
+
+		// Clean up.
+		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with guest count field.
+	 *
+	 * Verifies that the method correctly sets max attribute on guest count inputs
+	 * based on the event's max guest limit setting.
 	 *
 	 * @since 1.0.0
-	 * @covers ::conditionally_render_form_fields
+	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void
 	 */
-	public function test_conditionally_render_form_fields_guest_count(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// Create event with no guest limit (0) - field should be removed.
-		$post_id = $this->factory()->post->create(
+	public function test_process_form_field_attributes_sets_max_for_guest_field(): void {
+		// Create an event with a max guest limit.
+		$post_id = $this->factory->post->create(
 			array(
-				'post_type' => Event::POST_TYPE,
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+
+		// Mock block content with guest count input field.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<label>Number of guests</label>
+			<input type="number" name="gatherpress_rsvp_form_guests" min="0" placeholder="0">
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that max attribute was set.
+		$this->assertStringContainsString( 'max="5"', $result );
+		$this->assertStringContainsString( 'name="gatherpress_rsvp_form_guests"', $result );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with no max limit set.
+	 *
+	 * Verifies that the method returns unmodified content when max guest limit
+	 * meta is not set (returns empty).
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_skips_non_numeric_limit(): void {
+		// Create an event without setting max guest limit meta.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		// Explicitly do not set gatherpress_max_guest_limit meta.
+
+		// Mock block content with guest count input field.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<input type="number" name="gatherpress_rsvp_form_guests" min="0">
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that content is unmodified (no max attribute added).
+		$this->assertEquals( $block_content, $result );
+		$this->assertStringNotContainsString( 'max=', $result );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with multiple guest inputs.
+	 *
+	 * Verifies that the method sets max attribute on all matching guest count inputs
+	 * in the block content.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_handles_multiple_guest_inputs(): void {
+		// Create an event with a max guest limit.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 3 );
+
+		// Mock block content with multiple guest count input fields.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<input type="number" name="gatherpress_rsvp_form_guests" min="0">
+			<input type="hidden" name="other_field" value="test">
+			<input type="number" name="gatherpress_rsvp_form_guests" min="0" placeholder="Additional guests">
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that max attribute was set on both guest count inputs.
+		$this->assertEquals( 2, substr_count( $result, 'max="3"' ) );
+		$this->assertStringNotContainsString( 'name="other_field".*max=', $result );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with zero max guest limit.
+	 *
+	 * Verifies that the method sets max="0" when the event has zero guest limit.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_handles_zero_limit(): void {
+		// Create an event with zero max guest limit.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
 			)
 		);
 		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 0 );
 
-		$this->go_to( get_permalink( $post_id ) );
+		// Mock block content with guest count input field.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<input type="number" name="gatherpress_rsvp_form_guests">
+		</div>';
 
-		$block_content = '<div class="wp-block-gatherpress-form-field"><input type="number" name="gatherpress_rsvp_guests" /></div>';
-		$block         = array(
-			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array(
-				'fieldName' => 'gatherpress_rsvp_guests',
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
 			),
 		);
 
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( '', $result, 'Guest field should be removed when max guest limit is 0' );
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
 
-		// Create event with guest limit > 0 - field should have max attribute.
-		$post_id_2 = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-		add_post_meta( $post_id_2, 'gatherpress_max_guest_limit', 3 );
-
-		$this->go_to( get_permalink( $post_id_2 ) );
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertStringContainsString( 'max="3"', $result, 'Guest field should have max attribute set' );
-		$this->assertStringContainsString( 'min="0"', $result, 'Guest field should have min attribute set' );
-		$this->assertNotEquals( '', $result, 'Guest field should not be removed when max guest limit > 0' );
+		// Check that max attribute was set to 0.
+		$this->assertStringContainsString( 'max="0"', $result );
 	}
 
 	/**
-	 * Tests conditionally_render_form_fields with anonymous field.
+	 * Tests the process_form_field_attributes method with non-guest fields.
 	 *
-	 * Verifies anonymous field behavior based on anonymous RSVP setting.
+	 * Verifies that the method doesn't modify content with non-guest input fields.
 	 *
 	 * @since 1.0.0
-	 * @covers ::conditionally_render_form_fields
+	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void
 	 */
-	public function test_conditionally_render_form_fields_anonymous(): void {
-		$instance = Rsvp_Form::get_instance();
-
-		// Create event with anonymous RSVP disabled - field should be removed.
-		$post_id = $this->factory()->post->create(
+	public function test_process_form_field_attributes_ignores_non_guest_fields(): void {
+		// Create an event with a max guest limit.
+		$post_id = $this->factory->post->create(
 			array(
-				'post_type' => Event::POST_TYPE,
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
 			)
 		);
-		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', false );
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
 
-		$this->go_to( get_permalink( $post_id ) );
+		// Mock block content with non-guest input fields.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<input type="text" name="custom_field" placeholder="Name">
+			<input type="email" name="email" placeholder="Email">
+			<input type="checkbox" name="gatherpress_rsvp_form_anonymous" value="1">
+		</div>';
 
-		$block_content = '<div class="wp-block-gatherpress-form-field"><input type="checkbox" name="gatherpress_rsvp_anonymous" /></div>';
-		$block         = array(
-			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array(
-				'fieldName' => 'gatherpress_rsvp_anonymous',
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
 			),
 		);
 
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( '', $result, 'Anonymous field should be removed when anonymous RSVP is disabled' );
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
 
-		// Create event with anonymous RSVP enabled - field should remain.
-		$post_id_2 = $this->factory()->post->create(
-			array(
-				'post_type' => Event::POST_TYPE,
-			)
-		);
-		add_post_meta( $post_id_2, 'gatherpress_enable_anonymous_rsvp', true );
-
-		$this->go_to( get_permalink( $post_id_2 ) );
-
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( $block_content, $result, 'Anonymous field should remain when anonymous RSVP is enabled' );
+		// Check that content is unmodified (no max attributes added).
+		$this->assertEquals( $block_content, $result );
+		$this->assertStringNotContainsString( 'max=', $result );
 	}
 
 	/**
-	 * Tests conditionally_render_form_fields without valid post context.
+	 * Tests the process_form_field_attributes method with no input fields.
 	 *
-	 * Verifies that the method handles cases where get_the_ID() returns 0 or false.
+	 * Verifies that the method returns unmodified content when there are no input fields.
 	 *
 	 * @since 1.0.0
-	 * @covers ::conditionally_render_form_fields
+	 * @covers ::process_form_field_attributes
 	 *
 	 * @return void
 	 */
-	public function test_conditionally_render_form_fields_no_post_context(): void {
-		$instance = Rsvp_Form::get_instance();
+	public function test_process_form_field_attributes_with_no_input_fields(): void {
+		// Create an event with a max guest limit.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
 
-		// Ensure we're not in a post context.
-		$this->go_to( home_url() );
+		// Mock block content with no input fields.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<p>This is just text content with no inputs.</p>
+			<button type="submit">Submit</button>
+		</div>';
 
-		$block_content = '<div class="wp-block-gatherpress-form-field"><input type="number" name="gatherpress_rsvp_guests" /></div>';
-		$block         = array(
-			'blockName' => 'gatherpress/form-field',
-			'attrs'     => array(
-				'fieldName' => 'gatherpress_rsvp_guests',
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
 			),
 		);
 
-		$result = $instance->conditionally_render_form_fields( $block_content, $block );
-		$this->assertEquals( $block_content, $result, 'Block content should be unchanged when not in post context' );
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that content is unmodified.
+		$this->assertEquals( $block_content, $result );
 	}
 }

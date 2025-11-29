@@ -175,10 +175,11 @@ const ATTENDING = [
 							[
 								'gatherpress/form-field',
 								{
+									className: 'gatherpress-rsvp-field-guests',
 									fieldType: 'number',
-									fieldName: 'gatherpress_rsvp_guest_count',
-									label: 'Number of guests?',
-									placeholder: '0',
+									fieldName: 'gatherpress_rsvp_guests',
+									label: __( 'Number of guests?', 'gatherpress' ),
+									placeholder: __( '0', 'gatherpress' ),
 									minValue: 0,
 									inlineLayout: true,
 									fieldWidth: 10,
@@ -189,9 +190,10 @@ const ATTENDING = [
 							[
 								'gatherpress/form-field',
 								{
+									className: 'gatherpress-rsvp-field-anonymous',
 									fieldType: 'checkbox',
 									fieldName: 'gatherpress_rsvp_anonymous',
-									label: 'List me as anonymous.',
+									label: __( 'List me as anonymous', 'gatherpress' ),
 									autocomplete: 'off',
 								},
 							],

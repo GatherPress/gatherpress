@@ -5,71 +5,70 @@ import {
 	useBlockProps,
 	InnerBlocks,
 	InspectorControls,
-	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import { PanelBody, SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect, useCallback } from '@wordpress/element';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 import { getBlockTypes } from '@wordpress/blocks';
 
 /**
  * Internal dependencies.
  */
 import TEMPLATE from './template';
+import { hasValidEventId, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
+import { shouldHideBlock } from './visibility';
 
-const Edit = ( { clientId } ) => {
+const Edit = ( { attributes, clientId } ) => {
 	const [ formState, setFormState ] = useState( 'default' );
-	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
+	const { postId } = attributes;
 
 	// Calculate allowed blocks - all blocks except gatherpress/rsvp-form.
 	const allowedBlocks = getBlockTypes()
 		.map( ( blockType ) => blockType.name )
 		.filter( ( name ) => 'gatherpress/rsvp-form' !== name );
 
-	// Get max attendance limit from post meta to control guest count field visibility.
-	const maxAttendanceLimit = useSelect(
+	// Get event data - either from override postId or current post.
+	const { maxAttendanceLimit, enableAnonymousRsvp } = useSelect(
 		( select ) => {
-			const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
-			return meta?.gatherpress_max_guest_limit;
+			let maxLimit;
+			let enableAnonymous;
+
+			// Check if we have a postId override.
+			if ( postId ) {
+				// Fetch from specific post via core data store.
+				const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
+				maxLimit = post?.meta?.gatherpress_max_guest_limit;
+				enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
+			} else {
+				// Check if current post is an event.
+				const currentPostType = select( 'core/editor' )?.getCurrentPostType();
+				const isCurrentPostEvent = 'gatherpress_event' === currentPostType;
+
+				if ( isCurrentPostEvent ) {
+					const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+					maxLimit = meta?.gatherpress_max_guest_limit;
+					enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
+				}
+			}
+
+			return {
+				maxAttendanceLimit: maxLimit,
+				enableAnonymousRsvp: enableAnonymous,
+			};
 		},
+		[ postId ]
 	);
 
-	// Get anonymous RSVP setting from post meta to control anonymous checkbox visibility.
-	const enableAnonymousRsvp = useSelect(
-		( select ) => {
-			const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
-			// Convert meta value to boolean.
-			return Boolean( meta?.gatherpress_enable_anonymous_rsvp );
-		},
-	);
+	// Check if block has a valid event connection.
+	const isValidEvent = hasValidEventId( postId );
 
-	// Get all inner blocks and track their visibility attributes specifically.
-	const { innerBlocks, visibilityAttributes } = useSelect( ( select ) => {
+	// Get all inner blocks.
+	const innerBlocks = useSelect( ( select ) => {
 		const { getBlock } = select( 'core/block-editor' );
 		const block = getBlock( clientId );
-
-		if ( ! block ) {
-			return { innerBlocks: [], visibilityAttributes: {} };
-		}
-
-		// Recursively collect all visibility attributes to trigger updates.
-		const collectVisibilityAttributes = ( blocks, attrs = {} ) => {
-			blocks.forEach( ( childBlock ) => {
-				if ( childBlock.attributes?.gatherpressRsvpFormVisibility ) {
-					attrs[ childBlock.clientId ] = childBlock.attributes.gatherpressRsvpFormVisibility;
-				}
-				if ( childBlock.innerBlocks?.length ) {
-					collectVisibilityAttributes( childBlock.innerBlocks, attrs );
-				}
-			} );
-			return attrs;
-		};
-
-		return {
-			innerBlocks: block.innerBlocks,
-			visibilityAttributes: collectVisibilityAttributes( block.innerBlocks ),
-		};
+		return block?.innerBlocks || [];
 	}, [ clientId ] );
 
 	/**
@@ -86,14 +85,14 @@ const Edit = ( { clientId } ) => {
 				let shouldDisable = false;
 
 				// Determine if the field should be disabled based on its field name.
-				if ( 'gatherpress_rsvp_guests' === fieldName ) {
+				if ( 'gatherpress_rsvp_form_guests' === fieldName ) {
 					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
-				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
+				} else if ( 'gatherpress_rsvp_form_anonymous' === fieldName ) {
 					shouldDisable = ! enableAnonymousRsvp;
 				}
 
 				// Only process fields that have conditional visibility.
-				if ( 'gatherpress_rsvp_guests' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
+				if ( 'gatherpress_rsvp_form_guests' === fieldName || 'gatherpress_rsvp_form_anonymous' === fieldName ) {
 					const newAttributes = { ...block.attributes };
 
 					if ( shouldDisable ) {
@@ -121,40 +120,45 @@ const Edit = ( { clientId } ) => {
 		} );
 	}, [ maxAttendanceLimit, enableAnonymousRsvp ] );
 
+	/**
+	 * Recursively collect visibility styles from blocks with metadata.
+	 *
+	 * @param {Array} blocks The blocks array.
+	 * @return {Array} Array of CSS rules.
+	 */
+	const collectVisibilityStyles = useCallback( ( blocks ) => {
+		const styles = [];
+
+		blocks.forEach( ( block ) => {
+			const visibility = block.attributes?.metadata?.gatherpressRsvpFormVisibility;
+
+			if ( visibility && shouldHideBlock( visibility, formState ) ) {
+				const selector = `#block-${ block.clientId }`;
+				styles.push( `${ selector } { display: none !important; }` );
+			}
+
+			// Recursively process inner blocks.
+			if ( block.innerBlocks && 0 < block.innerBlocks.length ) {
+				styles.push( ...collectVisibilityStyles( block.innerBlocks ) );
+			}
+		} );
+
+		return styles;
+	}, [ formState ] );
+
 	// Generate CSS for visibility based on form state.
 	useEffect( () => {
-		const styles = [];
-		const collectVisibilityStyles = ( blocks, depth = 0 ) => {
-			blocks.forEach( ( block ) => {
-				if ( block.attributes?.gatherpressRsvpFormVisibility ) {
-					const visibility = block.attributes.gatherpressRsvpFormVisibility;
-					const selector = `#block-${ block.clientId }`;
+		const styles = collectVisibilityStyles( innerBlocks );
+		const editorDoc = getEditorDocument();
 
-					if ( 'showOnSuccess' === visibility ) {
-						if ( 'success' !== formState ) {
-							styles.push( `${ selector } { display: none !important; }` );
-						}
-					} else if ( 'hideOnSuccess' === visibility ) {
-						if ( 'success' === formState ) {
-							styles.push( `${ selector } { display: none !important; }` );
-						}
-					}
-				}
-				if ( 0 < block.innerBlocks?.length ) {
-					collectVisibilityStyles( block.innerBlocks, depth + 1 );
-				}
-			} );
-		};
-		collectVisibilityStyles( innerBlocks );
-
-		// Inject styles into the page.
+		// Inject styles into the correct document (iframe in FSE, main document otherwise).
 		const styleId = `gatherpress-form-visibility-${ clientId }`;
-		let styleElement = document.getElementById( styleId );
+		let styleElement = editorDoc.getElementById( styleId );
 
 		if ( ! styleElement ) {
-			styleElement = document.createElement( 'style' );
+			styleElement = editorDoc.createElement( 'style' );
 			styleElement.id = styleId;
-			document.head.appendChild( styleElement );
+			editorDoc.head.appendChild( styleElement );
 		}
 
 		styleElement.textContent = styles.join( '\n' );
@@ -165,22 +169,47 @@ const Edit = ( { clientId } ) => {
 				styleElement.parentNode.removeChild( styleElement );
 			}
 		};
-	}, [ formState, innerBlocks, visibilityAttributes, clientId ] );
+	}, [ formState, innerBlocks, clientId, collectVisibilityStyles ] );
 
-	// Apply form field visibility when event settings change.
+	// Apply form field visibility via CSS when event settings change.
 	useEffect( () => {
-		if ( innerBlocks && 0 < innerBlocks.length ) {
-			const updatedBlocks = applyFormFieldVisibility( innerBlocks );
+		const editorDoc = getEditorDocument();
+		const styleId = `gatherpress-rsvp-form-visibility-${ clientId }`;
+		let styleElement = editorDoc.getElementById( styleId );
 
-			// Only update if there are actual changes.
-			const hasChanges = JSON.stringify( updatedBlocks ) !== JSON.stringify( innerBlocks );
-			if ( hasChanges ) {
-				replaceInnerBlocks( clientId, updatedBlocks );
-			}
+		if ( ! styleElement ) {
+			styleElement = editorDoc.createElement( 'style' );
+			styleElement.id = styleId;
+			editorDoc.head.appendChild( styleElement );
 		}
-	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId, replaceInnerBlocks, applyFormFieldVisibility, innerBlocks ] );
 
-	const blockProps = useBlockProps();
+		const styles = [];
+
+		// Hide guest count field if max attendance limit is 0.
+		if ( 0 === parseInt( maxAttendanceLimit, 10 ) ) {
+			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-guests { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
+		}
+
+		// Hide anonymous field if anonymous RSVP is disabled.
+		if ( ! enableAnonymousRsvp ) {
+			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-anonymous { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
+		}
+
+		styleElement.textContent = styles.join( '\n' );
+
+		// Cleanup on unmount.
+		return () => {
+			if ( styleElement && styleElement.parentNode ) {
+				styleElement.parentNode.removeChild( styleElement );
+			}
+		};
+	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
+
+	const blockProps = useBlockProps( {
+		style: {
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+		},
+	} );
 
 	return (
 		<>
@@ -201,6 +230,10 @@ const Edit = ( { clientId } ) => {
 							{
 								label: __( 'Success (after submission)', 'gatherpress' ),
 								value: 'success',
+							},
+							{
+								label: __( 'Past (event has ended)', 'gatherpress' ),
+								value: 'past',
 							},
 						] }
 						onChange={ setFormState }

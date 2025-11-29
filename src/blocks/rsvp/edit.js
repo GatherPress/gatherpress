@@ -17,6 +17,8 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
+import { hasValidEventId, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 
 /**
  * Helper function to convert a template to blocks.
@@ -47,9 +49,17 @@ function templateToBlocks( template ) {
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
 const Edit = ( { attributes, setAttributes, clientId } ) => {
-	const { serializedInnerBlocks = '{}', selectedStatus } = attributes;
-	const blockProps = useBlockProps();
+	const { serializedInnerBlocks = '{}', selectedStatus, postId } = attributes;
 	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
+
+	// Check if block has a valid event connection.
+	const isValidEvent = hasValidEventId( postId );
+
+	const blockProps = useBlockProps( {
+		style: {
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+		},
+	} );
 
 	// Get the current inner blocks
 	const innerBlocks = useSelect(
@@ -57,21 +67,36 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		[ clientId ],
 	);
 
-	// Get max attendance limit from post meta to control guest count field visibility.
-	const maxAttendanceLimit = useSelect(
+	// Get event data - either from override postId or current post.
+	const { maxAttendanceLimit, enableAnonymousRsvp } = useSelect(
 		( select ) => {
-			const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
-			return meta?.gatherpress_max_guest_limit;
-		},
-	);
+			let maxLimit;
+			let enableAnonymous;
 
-	// Get anonymous RSVP setting from post meta to control anonymous checkbox visibility.
-	const enableAnonymousRsvp = useSelect(
-		( select ) => {
-			const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
-			// Convert meta value to boolean.
-			return Boolean( meta?.gatherpress_enable_anonymous_rsvp );
+			// Check if we have a postId override.
+			if ( postId ) {
+				// Fetch from specific post via core data store.
+				const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
+				maxLimit = post?.meta?.gatherpress_max_guest_limit;
+				enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
+			} else {
+				// Check if current post is an event.
+				const currentPostType = select( 'core/editor' )?.getCurrentPostType();
+				const isCurrentPostEvent = 'gatherpress_event' === currentPostType;
+
+				if ( isCurrentPostEvent ) {
+					const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
+					maxLimit = meta?.gatherpress_max_guest_limit;
+					enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
+				}
+			}
+
+			return {
+				maxAttendanceLimit: maxLimit,
+				enableAnonymousRsvp: enableAnonymous,
+			};
 		},
+		[ postId ]
 	);
 
 	/**
@@ -88,7 +113,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				let shouldDisable = false;
 
 				// Determine if the field should be disabled based on its field name.
-				if ( 'gatherpress_rsvp_guest_count' === fieldName ) {
+				if ( 'gatherpress_rsvp_guests' === fieldName ) {
 					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
 				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
 					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
@@ -96,7 +121,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				}
 
 				// Only process fields that have conditional visibility.
-				if ( 'gatherpress_rsvp_guest_count' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
+				if ( 'gatherpress_rsvp_guests' === fieldName || 'gatherpress_rsvp_anonymous' === fieldName ) {
 					const newAttributes = { ...block.attributes };
 
 					if ( shouldDisable ) {
@@ -212,18 +237,39 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		}, 0 );
 	}, [ serializedInnerBlocks, setAttributes, selectedStatus ] );
 
-	// Apply form field visibility when event settings change.
+	// Apply form field visibility via CSS when event settings change.
 	useEffect( () => {
-		if ( innerBlocks && 0 < innerBlocks.length ) {
-			const updatedBlocks = applyFormFieldVisibility( innerBlocks );
+		const editorDoc = getEditorDocument();
+		const styleId = `gatherpress-rsvp-visibility-${ clientId }`;
+		let styleElement = editorDoc.getElementById( styleId );
 
-			// Only update if there are actual changes.
-			const hasChanges = JSON.stringify( updatedBlocks ) !== JSON.stringify( innerBlocks );
-			if ( hasChanges ) {
-				replaceInnerBlocks( clientId, updatedBlocks );
-			}
+		if ( ! styleElement ) {
+			styleElement = editorDoc.createElement( 'style' );
+			styleElement.id = styleId;
+			editorDoc.head.appendChild( styleElement );
 		}
-	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId, replaceInnerBlocks, applyFormFieldVisibility, innerBlocks ] );
+
+		const styles = [];
+
+		// Hide guest count field if max attendance limit is 0.
+		if ( 0 === parseInt( maxAttendanceLimit, 10 ) ) {
+			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-guests { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
+		}
+
+		// Hide anonymous field if anonymous RSVP is disabled.
+		if ( ! enableAnonymousRsvp ) {
+			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-anonymous { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
+		}
+
+		styleElement.textContent = styles.join( '\n' );
+
+		// Cleanup on unmount.
+		return () => {
+			if ( styleElement && styleElement.parentNode ) {
+				styleElement.parentNode.removeChild( styleElement );
+			}
+		};
+	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
 
 	return (
 		<>

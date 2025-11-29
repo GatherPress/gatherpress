@@ -7,7 +7,12 @@ const TEMPLATE = [
 	[
 		'core/group',
 		{
-			gatherpressRsvpFormVisibility: 'showOnSuccess',
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					onSuccess: 'show',
+					whenPast: 'hide',
+				},
+			},
 			style: {
 				spacing: {
 					margin: {
@@ -47,33 +52,94 @@ const TEMPLATE = [
 		],
 	],
 	[
+		'core/group',
+		{
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					whenPast: 'show',
+				},
+			},
+			style: {
+				spacing: {
+					margin: {
+						bottom: '1rem',
+					},
+				},
+			},
+		},
+		[
+			[
+				'core/heading',
+				{
+					content: __(
+						'This event has already occurred.',
+						'gatherpress',
+					),
+					level: 3,
+					style: {
+						typography: {
+							fontWeight: '600',
+						},
+					},
+				},
+			],
+			[
+				'core/paragraph',
+				{
+					content: __(
+						'Registration for this event is now closed.',
+						'gatherpress',
+					),
+				},
+			],
+		],
+	],
+	[
 		'gatherpress/form-field',
 		{
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					onSuccess: 'hide',
+					whenPast: 'hide',
+				},
+			},
 			fieldName: 'author',
 			label: __( 'Name', 'gatherpress' ),
 			placeholder: __( "Name as you'd like it to appear", 'gatherpress' ),
 			required: true,
 			autocomplete: 'name',
-			gatherpressRsvpFormVisibility: 'hideOnSuccess',
 		},
 	],
 	[
 		'gatherpress/form-field',
 		{
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					onSuccess: 'hide',
+					whenPast: 'hide',
+				},
+			},
 			fieldType: 'email',
 			fieldName: 'email',
 			label: __( 'Email', 'gatherpress' ),
 			placeholder: __( 'your@email.com', 'gatherpress' ),
 			required: true,
 			autocomplete: 'email',
-			gatherpressRsvpFormVisibility: 'hideOnSuccess',
 		},
 	],
 	[
 		'gatherpress/form-field',
 		{
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					onSuccess: 'hide',
+					whenPast: 'hide',
+				},
+			},
+			className: 'gatherpress-rsvp-field-guests',
 			fieldType: 'number',
-			fieldName: 'gatherpress_rsvp_guests',
+			fieldName: 'gatherpress_rsvp_form_guests',
+			'data-gatherpress-field-type': 'guests',
 			label: __( 'Number of guests?', 'gatherpress' ),
 			placeholder: __( '0', 'gatherpress' ),
 			minValue: 0,
@@ -81,33 +147,49 @@ const TEMPLATE = [
 			fieldWidth: 10,
 			inputPadding: 5,
 			autocomplete: 'off',
-			gatherpressRsvpFormVisibility: 'hideOnSuccess',
 		},
 	],
 	[
 		'gatherpress/form-field',
 		{
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					onSuccess: 'hide',
+					whenPast: 'hide',
+				},
+			},
+			className: 'gatherpress-rsvp-field-anonymous',
 			fieldType: 'checkbox',
-			fieldName: 'gatherpress_rsvp_anonymous',
+			fieldName: 'gatherpress_rsvp_form_anonymous',
+			'data-gatherpress-field-type': 'anonymous',
 			fieldValue: false,
 			label: __( 'List me as anonymous', 'gatherpress' ),
-			gatherpressRsvpFormVisibility: 'hideOnSuccess',
 		},
 	],
 	[
 		'gatherpress/form-field',
 		{
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					onSuccess: 'hide',
+					whenPast: 'hide',
+				},
+			},
 			fieldType: 'checkbox',
 			fieldName: 'gatherpress_event_updates_opt_in',
 			fieldValue: false,
 			label: __( 'Email me updates about this event', 'gatherpress' ),
-			gatherpressRsvpFormVisibility: 'hideOnSuccess',
 		},
 	],
 	[
 		'core/buttons',
 		{
-			gatherpressRsvpFormVisibility: 'hideOnSuccess',
+			metadata: {
+				gatherpressRsvpFormVisibility: {
+					onSuccess: 'hide',
+					whenPast: 'hide',
+				},
+			},
 		},
 		[
 			[

@@ -47,7 +47,7 @@ const { state } = store( 'gatherpress', {
 				comment_post_ID: postId,
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
-				gatherpress_rsvp_guests: formData.get( 'gatherpress_rsvp_guests' ) || '0',
+				gatherpress_rsvp_form_guests: formData.get( 'gatherpress_rsvp_form_guests' ) || '0',
 			};
 
 			// Handle checkbox fields - they only appear in FormData when checked.
@@ -63,7 +63,7 @@ const { state } = store( 'gatherpress', {
 					'comment_post_ID',
 					'author',
 					'email',
-					'gatherpress_rsvp_guests',
+					'gatherpress_rsvp_form_guests',
 					'gatherpress_rsvp_anonymous',
 					'gatherpress_event_updates_opt_in',
 				];
@@ -110,17 +110,37 @@ const { state } = store( 'gatherpress', {
 				if ( result && result.success ) {
 					// Handle blocks with form visibility attributes.
 					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
-					blocksWithVisibility.forEach( ( block ) => {
-						const visibilityRule = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+					const isPast = 'past' === form.getAttribute( 'data-gatherpress-event-state' );
 
-						if ( 'showOnSuccess' === visibilityRule ) {
-							// Show this block on success.
+					blocksWithVisibility.forEach( ( block ) => {
+						const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+						let visibility = {};
+
+						try {
+							visibility = JSON.parse( visibilityAttr );
+						} catch ( e ) {
+							// Invalid JSON, treat as no visibility rules (always visible).
+						}
+
+						const { onSuccess, whenPast } = visibility;
+
+						let shouldShow = null; // null = default (no change)
+
+						// whenPast takes precedence.
+						if ( isPast && whenPast ) {
+							shouldShow = 'show' === whenPast;
+						} else if ( onSuccess ) {
+							// After successful submission.
+							shouldShow = 'show' === onSuccess;
+						}
+
+						// Apply visibility changes.
+						if ( true === shouldShow ) {
 							block.style.removeProperty( 'display' );
 							block.setAttribute( 'aria-hidden', 'false' );
 							block.setAttribute( 'aria-live', 'polite' );
 							block.setAttribute( 'role', 'status' );
-						} else if ( 'hideOnSuccess' === visibilityRule ) {
-							// Hide this block on success.
+						} else if ( false === shouldShow ) {
 							block.style.display = 'none';
 							block.setAttribute( 'aria-hidden', 'true' );
 						}
@@ -186,34 +206,51 @@ const { state } = store( 'gatherpress', {
 			// Check if this is a success page (form was just submitted).
 			const urlParams = new URLSearchParams( window.location.search );
 			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
+			const isPast = 'past' === form.getAttribute( 'data-gatherpress-event-state' );
 
 			// Set initial visibility for blocks based on their attributes and current state.
 			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 			blocksWithVisibility.forEach( ( block ) => {
-				const visibilityRule = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+				const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+				let visibility = {};
 
-				if ( 'showOnSuccess' === visibilityRule ) {
+				try {
+					visibility = JSON.parse( visibilityAttr );
+				} catch ( e ) {
+					// Invalid JSON, treat as no visibility rules (always visible).
+				}
+
+				const { onSuccess, whenPast } = visibility;
+
+				let shouldShow = null; // null = default (always visible)
+
+				// When event is past, check whenPast (takes precedence when past).
+				if ( isPast && whenPast ) {
+					shouldShow = 'show' === whenPast;
+				} else if ( ! isPast && whenPast && ! onSuccess ) {
+					// When not past but block has ONLY whenPast setting (no onSuccess).
+					shouldShow = 'show' !== whenPast;
+				} else if ( onSuccess ) {
+					// Check onSuccess.
 					if ( isSuccess ) {
-						// Show blocks that should show on success.
-						block.style.removeProperty( 'display' );
-						block.setAttribute( 'aria-hidden', 'false' );
+						shouldShow = 'show' === onSuccess;
+					} else {
+						// Not success: hide if set to show on success.
+						shouldShow = 'show' !== onSuccess;
+					}
+				}
+
+				// Apply visibility changes.
+				if ( true === shouldShow ) {
+					block.style.removeProperty( 'display' );
+					block.setAttribute( 'aria-hidden', 'false' );
+					if ( isSuccess ) {
 						block.setAttribute( 'aria-live', 'polite' );
 						block.setAttribute( 'role', 'status' );
-					} else {
-						// Hide blocks that should only show on success.
-						block.style.display = 'none';
-						block.setAttribute( 'aria-hidden', 'true' );
 					}
-				} else if ( 'hideOnSuccess' === visibilityRule ) {
-					if ( isSuccess ) {
-						// Hide blocks that should hide on success.
-						block.style.display = 'none';
-						block.setAttribute( 'aria-hidden', 'true' );
-					} else {
-						// Show blocks that should hide on success (visible by default).
-						block.style.removeProperty( 'display' );
-						block.setAttribute( 'aria-hidden', 'false' );
-					}
+				} else if ( false === shouldShow ) {
+					block.style.display = 'none';
+					block.setAttribute( 'aria-hidden', 'true' );
 				}
 			} );
 		},
