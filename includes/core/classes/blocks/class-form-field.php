@@ -327,15 +327,15 @@ class Form_Field {
 	public function get_wrapper_attributes(): string {
 		$classes = $this->get_wrapper_classes();
 
-		// Build wrapper arguments
+		// Build wrapper arguments.
 		$wrapper_args = array( 'class' => implode( ' ', $classes ) );
 
-		// If there's a className in attributes, pass it to WordPress directly too
+		// If there's a className in attributes, pass it to WordPress directly too.
 		if ( ! empty( $this->attributes['className'] ) ) {
 			$wrapper_args['className'] = $this->attributes['className'];
 		}
 
-		// Add any data attributes from block attributes
+		// Add any data attributes from block attributes.
 		foreach ( $this->attributes as $key => $value ) {
 			if ( 0 === strpos( $key, 'data-' ) ) {
 				$wrapper_args[ $key ] = $value;
