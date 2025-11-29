@@ -47,7 +47,7 @@ const { state } = store( 'gatherpress', {
 				comment_post_ID: postId,
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
-				gatherpress_rsvp_guests: formData.get( 'gatherpress_rsvp_guests' ) || '0',
+				gatherpress_rsvp_form_guests: formData.get( 'gatherpress_rsvp_form_guests' ) || '0',
 			};
 
 			// Handle checkbox fields - they only appear in FormData when checked.
@@ -63,7 +63,7 @@ const { state } = store( 'gatherpress', {
 					'comment_post_ID',
 					'author',
 					'email',
-					'gatherpress_rsvp_guests',
+					'gatherpress_rsvp_form_guests',
 					'gatherpress_rsvp_anonymous',
 					'gatherpress_event_updates_opt_in',
 				];

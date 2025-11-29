@@ -56,8 +56,8 @@ class Rsvp_Form {
 	const BUILT_IN_FIELDS = array(
 		'author',
 		'email',
-		'gatherpress_rsvp_guests',
-		'gatherpress_rsvp_anonymous',
+		'gatherpress_rsvp_form_guests',
+		'gatherpress_rsvp_form_anonymous',
 		'gatherpress_event_updates_opt_in',
 	);
 
@@ -92,6 +92,7 @@ class Rsvp_Form {
 		$general_block = General_Block::get_instance();
 		add_filter( $render_block_hook, array( $general_block, 'process_guests_field' ), 10, 2 );
 		add_filter( $render_block_hook, array( $general_block, 'process_anonymous_field' ), 10, 2 );
+		add_filter( $render_block_hook, array( $this, 'process_form_field_attributes' ), 10, 2 );
 	}
 
 	/**
@@ -723,5 +724,43 @@ class Rsvp_Form {
 			default:
 				return sanitize_text_field( $value );
 		}
+	}
+
+	/**
+	 * Process form field attributes for RSVP Form fields.
+	 *
+	 * Sets the max attribute for guest count fields based on event settings.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content.
+	 * @param array  $block         The block data.
+	 * @return string The processed block content.
+	 */
+	public function process_form_field_attributes( string $block_content, array $block ): string {
+		// Get the correct post ID using override logic.
+		$block_instance = Block::get_instance();
+		$post_id        = $block_instance->get_post_id( $block );
+
+		// Get max guest limit from event settings.
+		$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+
+		// Only process if max guest limit is numeric.
+		if ( ! is_numeric( $max_guest_limit ) ) {
+			return $block_content;
+		}
+
+		// Set max attribute on guest count input fields.
+		$tag = new WP_HTML_Tag_Processor( $block_content );
+
+		while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
+			$name_attr = $tag->get_attribute( 'name' );
+
+			if ( 'gatherpress_rsvp_form_guests' === $name_attr ) {
+				$tag->set_attribute( 'max', (string) $max_guest_limit );
+			}
+		}
+
+		return $tag->get_updated_html();
 	}
 }

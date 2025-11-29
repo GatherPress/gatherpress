@@ -200,8 +200,8 @@ class Rsvp_Form {
 			// phpcs:disable WordPress.Security.NonceVerification.Missing
 			$data = array(
 				'gatherpress_event_updates_opt_in' => Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ),
-				'gatherpress_rsvp_guests'          => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_guests' ),
-				'gatherpress_rsvp_anonymous'       => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_anonymous' ),
+				'gatherpress_rsvp_guests'          => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_guests' ),
+				'gatherpress_rsvp_anonymous'       => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_anonymous' ),
 			);
 
 			// Add custom fields to data.
@@ -402,6 +402,7 @@ class Rsvp_Form {
 		// Set remote IP if available.
 		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$remote_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+
 			if ( rest_is_ip_address( $remote_ip ) ) {
 				$comment_data['comment_author_IP'] = $remote_ip;
 			}

@@ -513,7 +513,7 @@ class Test_Rsvp_Form extends Base {
 		add_filter(
 			'gatherpress_pre_get_http_input',
 			function ( $pre_value, $type, $var_name ) {
-				if ( INPUT_POST === $type && 'gatherpress_rsvp_guests' === $var_name ) {
+				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_guests' === $var_name ) {
 					return '2';
 				}
 				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_id' === $var_name ) {

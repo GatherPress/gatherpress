@@ -67,6 +67,12 @@ class Test_Rsvp_Form extends Base {
 				'priority' => 10,
 				'callback' => array( $general_block, 'process_anonymous_field' ),
 			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $instance, 'process_form_field_attributes' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );

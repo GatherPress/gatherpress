@@ -270,11 +270,11 @@ class Event_Rest_Api {
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
-					'gatherpress_rsvp_guests'          => array(
+					'gatherpress_rsvp_form_guests'     => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'non_negative_number' ),
 					),
-					'gatherpress_rsvp_anonymous'       => array(
+					'gatherpress_rsvp_form_anonymous'  => array(
 						'required'          => false,
 						'validate_callback' => array( Validate::class, 'boolean' ),
 					),
@@ -861,8 +861,8 @@ class Event_Rest_Api {
 			'author'                           => $params['author'] ?? '',
 			'email'                            => $params['email'] ?? '',
 			'gatherpress_event_updates_opt_in' => $request->get_param( 'gatherpress_event_updates_opt_in' ),
-			'gatherpress_rsvp_guests'          => $request->get_param( 'gatherpress_rsvp_guests' ),
-			'gatherpress_rsvp_anonymous'       => $request->get_param( 'gatherpress_rsvp_anonymous' ),
+			'gatherpress_rsvp_guests'          => $request->get_param( 'gatherpress_rsvp_form_guests' ),
+			'gatherpress_rsvp_anonymous'       => $request->get_param( 'gatherpress_rsvp_form_anonymous' ),
 			'gatherpress_form_schema_id'       => $request->get_param( 'gatherpress_form_schema_id' ),
 		);
 
@@ -875,9 +875,11 @@ class Event_Rest_Api {
 
 		// Also include custom fields defined in form schema.
 		$form_schema_id = $data['gatherpress_form_schema_id'] ?? '';
+
 		if ( ! empty( $form_schema_id ) ) {
 			$post_id = $data['post_id'];
 			$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
 			if ( is_array( $schemas ) && isset( $schemas[ $form_schema_id ]['fields'] ) ) {
 				$fields = $schemas[ $form_schema_id ]['fields'];
 				foreach ( $fields as $field_name => $field_config ) {
@@ -890,6 +892,7 @@ class Event_Rest_Api {
 
 		// Check if event has passed - prevent RSVPs to past events.
 		$event = new Event( $data['post_id'] );
+
 		if ( $event->has_event_past() ) {
 			$response = array(
 				'success' => false,
