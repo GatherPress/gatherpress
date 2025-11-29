@@ -69,7 +69,7 @@ class Rsvp {
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
 		// Priority 9 ensures this runs before transform_block_content to properly register form field hooks.
-		add_filter( $render_block_hook, array( $this, 'apply_guest_count_input_interactivity' ), 9 );
+		add_filter( $render_block_hook, array( $this, 'apply_guests_input_interactivity' ), 9 );
 
 		// Add hooks for conditional form field processing.
 		$general_block = General_Block::get_instance();
@@ -300,7 +300,7 @@ class Rsvp {
 	 * @param string $block_content The block content to modify.
 	 * @return string The modified block content with form field callbacks applied.
 	 */
-	public function apply_guest_count_input_interactivity( string $block_content ): string {
+	public function apply_guests_input_interactivity( string $block_content ): string {
 		// Apply form field callback for any form-field blocks within this RSVP block.
 		$form_field_hook = sprintf( 'render_block_%s', Form_Field::BLOCK_NAME );
 
