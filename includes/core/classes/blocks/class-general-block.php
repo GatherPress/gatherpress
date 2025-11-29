@@ -204,10 +204,11 @@ class General_Block {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid, published event post.
+		// Only process if we have a valid event post.
+		// Only check publish status if not in preview mode.
 		if (
 			Event::POST_TYPE !== get_post_type( $post_id ) ||
-			'publish' !== get_post_status( $post_id )
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
 		}
@@ -251,10 +252,11 @@ class General_Block {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid, published event post.
+		// Only process if we have a valid event post.
+		// Only check publish status if not in preview mode.
 		if (
 			Event::POST_TYPE !== get_post_type( $post_id ) ||
-			'publish' !== get_post_status( $post_id )
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
 		}

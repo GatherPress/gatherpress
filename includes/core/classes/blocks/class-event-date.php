@@ -84,10 +84,11 @@ class Event_Date {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post ID is an actual published event post type.
+		// Validate that the post ID is an actual event post type.
+		// Only check publish status if not in preview mode.
 		if (
 			Event::POST_TYPE !== get_post_type( $post_id ) ||
-			'publish' !== get_post_status( $post_id )
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return '';
 		}

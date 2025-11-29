@@ -124,10 +124,11 @@ class Rsvp_Template {
 		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
 
-		// Only process if we have a valid, published event post.
+		// Only process if we have a valid event post.
+		// Only check publish status if not in preview mode.
 		if (
 			Event::POST_TYPE !== get_post_type( $post_id ) ||
-			'publish' !== get_post_status( $post_id )
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
 		) {
 			return $block_content;
 		}
