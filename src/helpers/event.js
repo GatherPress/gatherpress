@@ -16,6 +16,18 @@ import { getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
 
 /**
+ * Opacity value for disabled form fields and elements.
+ *
+ * This constant defines the opacity level applied to form fields and UI elements
+ * when they are disabled due to event settings (e.g., when guest limits are 0
+ * or anonymous RSVP is disabled).
+ *
+ * @since 1.0.0
+ * @type {number}
+ */
+export const DISABLED_FIELD_OPACITY = 0.3;
+
+/**
  * Checks if the current post type is an event in the GatherPress application.
  *
  * This function queries the current post type using the `select` function from the `core/editor` package.

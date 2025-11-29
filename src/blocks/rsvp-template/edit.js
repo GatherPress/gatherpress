@@ -90,6 +90,7 @@ const List = ( {
 	activeRsvpId,
 	setActiveRsvpId,
 	firstRsvpId,
+	postId,
 } ) => (
 	<>
 		{ responses &&
@@ -103,6 +104,7 @@ const List = ( {
 						value={ {
 							commentId:
 								0 > forcedCommentId ? null : forcedCommentId,
+							postId,
 						} }
 					>
 						<TemplateInnerBlocks
@@ -129,6 +131,7 @@ const Edit = ( { clientId, context } ) => {
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
 	const rsvpLimitEnabled = context?.[ 'gatherpress/rsvpLimitEnabled' ] ?? false;
 	const rsvpLimit = context?.[ 'gatherpress/rsvpLimit' ] ?? 8;
+	const postId = context?.postId;
 
 	// Initialize active RSVP ID.
 	const [ activeRsvpId, setActiveRsvpId ] = useState(
@@ -166,6 +169,7 @@ const Edit = ( { clientId, context } ) => {
 			activeRsvpId={ activeRsvpId }
 			setActiveRsvpId={ setActiveRsvpId }
 			firstRsvpId={ rsvps[ 0 ]?.commentId }
+			postId={ postId }
 		/>
 	);
 };

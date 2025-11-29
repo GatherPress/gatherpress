@@ -17,8 +17,8 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATES from './templates';
-import { hasValidEventId } from '../../helpers/event';
-import { isInFSETemplate } from '../../helpers/editor';
+import { hasValidEventId, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 
 /**
  * Helper function to convert a template to blocks.
@@ -57,7 +57,7 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 
 	const blockProps = useBlockProps( {
 		style: {
-			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : 0.3,
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
 		},
 	} );
 
@@ -237,18 +237,39 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		}, 0 );
 	}, [ serializedInnerBlocks, setAttributes, selectedStatus ] );
 
-	// Apply form field visibility when event settings change.
+	// Apply form field visibility via CSS when event settings change.
 	useEffect( () => {
-		if ( innerBlocks && 0 < innerBlocks.length ) {
-			const updatedBlocks = applyFormFieldVisibility( innerBlocks );
+		const editorDoc = getEditorDocument();
+		const styleId = `gatherpress-rsvp-visibility-${ clientId }`;
+		let styleElement = editorDoc.getElementById( styleId );
 
-			// Only update if there are actual changes.
-			const hasChanges = JSON.stringify( updatedBlocks ) !== JSON.stringify( innerBlocks );
-			if ( hasChanges ) {
-				replaceInnerBlocks( clientId, updatedBlocks );
-			}
+		if ( ! styleElement ) {
+			styleElement = editorDoc.createElement( 'style' );
+			styleElement.id = styleId;
+			editorDoc.head.appendChild( styleElement );
 		}
-	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId, replaceInnerBlocks, applyFormFieldVisibility, innerBlocks ] );
+
+		const styles = [];
+
+		// Hide guest count field if max attendance limit is 0.
+		if ( 0 === parseInt( maxAttendanceLimit, 10 ) ) {
+			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-guests { opacity: ${ DISABLED_FIELD_OPACITY }; pointer-events: none; }` );
+		}
+
+		// Hide anonymous field if anonymous RSVP is disabled.
+		if ( ! enableAnonymousRsvp ) {
+			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-anonymous { opacity: ${ DISABLED_FIELD_OPACITY }; pointer-events: none; }` );
+		}
+
+		styleElement.textContent = styles.join( '\n' );
+
+		// Cleanup on unmount.
+		return () => {
+			if ( styleElement && styleElement.parentNode ) {
+				styleElement.parentNode.removeChild( styleElement );
+			}
+		};
+	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
 
 	return (
 		<>

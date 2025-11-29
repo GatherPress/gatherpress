@@ -48,10 +48,9 @@ const EmailNotificationManager = () => {
 
 	useEffect( () => {
 		const justFinishedSaving = wasSaving.current && ! isSaving && ! isDirty;
-		const justReverted = wasDirty.current && ! isDirty && ! isSaving;
 
-		// Show notice after save completion or when user reverts changes.
-		if ( shouldShowNotice && ( justFinishedSaving || justReverted ) ) {
+		// Show notice only after save completion.
+		if ( shouldShowNotice && justFinishedSaving ) {
 			createNotice(
 				'success',
 				__( 'Send an event update via email', 'gatherpress' ),

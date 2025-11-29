@@ -4,6 +4,13 @@
 import { _n, sprintf } from '@wordpress/i18n';
 import { useBlockProps } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
+import { useEffect } from '@wordpress/element';
+
+/**
+ * Internal dependencies.
+ */
+import { getEditorDocument } from '../../helpers/editor';
+import { DISABLED_FIELD_OPACITY } from '../../helpers/event';
 
 /**
  * Edit function for the RSVP Guest Count Display Block.
@@ -21,6 +28,7 @@ import { useSelect } from '@wordpress/data';
  */
 const Edit = ( { context, clientId } ) => {
 	const { commentId } = context;
+	const contextPostId = context?.postId;
 	const rsvpResponses = context?.[ 'gatherpress/rsvpResponses' ] ?? null;
 
 	// Example guest count.
@@ -39,7 +47,7 @@ const Edit = ( { context, clientId } ) => {
 	// Get max attendance limit from meta - check Post ID override first.
 	const maxAttendanceLimit = useSelect(
 		( select ) => {
-			// Check if parent RSVP block has a postId override.
+			// Check if parent RSVP or RSVP Response block has a postId override.
 			const parentBlocks = select( 'core/block-editor' ).getBlockParents( clientId, true );
 			let postIdOverride = null;
 
@@ -50,7 +58,16 @@ const Edit = ( { context, clientId } ) => {
 						postIdOverride = parent.attributes.postId;
 						break;
 					}
+					if ( parent && 'gatherpress/rsvp-response' === parent.name && parent.attributes?.postId ) {
+						postIdOverride = parent.attributes.postId;
+						break;
+					}
 				}
+			}
+
+			// If no parent block postId, check context postId.
+			if ( ! postIdOverride && contextPostId ) {
+				postIdOverride = contextPostId;
 			}
 
 			// If we have a Post ID override, fetch from that post.
@@ -70,15 +87,38 @@ const Edit = ( { context, clientId } ) => {
 
 			return 0;
 		},
-		[ clientId ],
+		[ clientId, contextPostId ],
 	);
 
-	// Add the no-render attribute when max attendance limit is 0 and no comment context.
-	const shouldNoRender = 0 === maxAttendanceLimit && ! commentId;
+	// Apply dimming via CSS when max attendance limit is 0.
+	const shouldDim = 0 === maxAttendanceLimit;
 
-	const blockProps = useBlockProps( {
-		'data-gatherpress-no-render': shouldNoRender ? 'true' : undefined,
-	} );
+	useEffect( () => {
+		const editorDoc = getEditorDocument();
+		const styleId = `gatherpress-guest-count-visibility-${ clientId }`;
+		let styleElement = editorDoc.getElementById( styleId );
+
+		if ( ! styleElement ) {
+			styleElement = editorDoc.createElement( 'style' );
+			styleElement.id = styleId;
+			editorDoc.head.appendChild( styleElement );
+		}
+
+		if ( shouldDim ) {
+			styleElement.textContent = `#block-${ clientId } { opacity: ${ DISABLED_FIELD_OPACITY } !important; pointer-events: none !important; }`;
+		} else {
+			styleElement.textContent = '';
+		}
+
+		// Cleanup on unmount.
+		return () => {
+			if ( styleElement && styleElement.parentNode ) {
+				styleElement.parentNode.removeChild( styleElement );
+			}
+		};
+	}, [ shouldDim, clientId ] );
+
+	const blockProps = useBlockProps();
 
 	const guestText = sprintf(
 		/* translators: %d: Number of guests. Singular and plural forms are used for 1 guest and multiple guests, respectively. */
