@@ -204,8 +204,12 @@ class General_Block {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid event post.
-		if ( ! $post_id || Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		// Only process if we have a valid, published event post.
+		if (
+			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			'publish' !== get_post_status( $post_id )
+
+		) {
 			return $block_content;
 		}
 
@@ -248,8 +252,12 @@ class General_Block {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Only process if we have a valid event post.
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		// Only process if we have a valid, published event post.
+		if (
+			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			'publish' !== get_post_status( $post_id )
+
+		) {
 			return $block_content;
 		}
 

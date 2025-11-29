@@ -42,13 +42,13 @@ export function isEventPostType() {
  * @return {boolean} True if connected to a valid event, false otherwise.
  */
 export function hasValidEventId( postId = null ) {
-	// If postId is provided, verify it points to a valid event.
+	// If postId is provided, verify it points to a valid, published event.
 	if ( postId ) {
 		const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
-		return !! post;
+		return !! post && 'publish' === post.status;
 	}
 
-	// Otherwise, check if current post is an event.
+	// Otherwise, check if current post is an event (no publish check needed).
 	return isEventPostType();
 }
 

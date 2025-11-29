@@ -86,8 +86,12 @@ class Add_To_Calendar {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
 
-		// Validate that the post ID is an actual event post type.
-		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		// Validate that the post ID is an actual published event post type.
+		if (
+			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			'publish' !== get_post_status( $post_id )
+
+		) {
 			return '';
 		}
 
