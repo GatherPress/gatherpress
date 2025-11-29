@@ -1269,4 +1269,251 @@ class Test_Rsvp_Form extends Base {
 		// Clean up.
 		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
 	}
+
+	/**
+	 * Tests the process_form_field_attributes method with guest count field.
+	 *
+	 * Verifies that the method correctly sets max attribute on guest count inputs
+	 * based on the event's max guest limit setting.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_sets_max_for_guest_field(): void {
+		// Create an event with a max guest limit.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+
+		// Mock block content with guest count input field.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<label>Number of guests</label>
+			<input type="number" name="gatherpress_rsvp_form_guests" min="0" placeholder="0">
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that max attribute was set.
+		$this->assertStringContainsString( 'max="5"', $result );
+		$this->assertStringContainsString( 'name="gatherpress_rsvp_form_guests"', $result );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with no max limit set.
+	 *
+	 * Verifies that the method returns unmodified content when max guest limit
+	 * meta is not set (returns empty).
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_skips_non_numeric_limit(): void {
+		// Create an event without setting max guest limit meta.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		// Explicitly do not set gatherpress_max_guest_limit meta.
+
+		// Mock block content with guest count input field.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<input type="number" name="gatherpress_rsvp_form_guests" min="0">
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that content is unmodified (no max attribute added).
+		$this->assertEquals( $block_content, $result );
+		$this->assertStringNotContainsString( 'max=', $result );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with multiple guest inputs.
+	 *
+	 * Verifies that the method sets max attribute on all matching guest count inputs
+	 * in the block content.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_handles_multiple_guest_inputs(): void {
+		// Create an event with a max guest limit.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 3 );
+
+		// Mock block content with multiple guest count input fields.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<input type="number" name="gatherpress_rsvp_form_guests" min="0">
+			<input type="hidden" name="other_field" value="test">
+			<input type="number" name="gatherpress_rsvp_form_guests" min="0" placeholder="Additional guests">
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that max attribute was set on both guest count inputs.
+		$this->assertEquals( 2, substr_count( $result, 'max="3"' ) );
+		$this->assertStringNotContainsString( 'name="other_field".*max=', $result );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with zero max guest limit.
+	 *
+	 * Verifies that the method sets max="0" when the event has zero guest limit.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_handles_zero_limit(): void {
+		// Create an event with zero max guest limit.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 0 );
+
+		// Mock block content with guest count input field.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<input type="number" name="gatherpress_rsvp_form_guests">
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that max attribute was set to 0.
+		$this->assertStringContainsString( 'max="0"', $result );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with non-guest fields.
+	 *
+	 * Verifies that the method doesn't modify content with non-guest input fields.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_ignores_non_guest_fields(): void {
+		// Create an event with a max guest limit.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+
+		// Mock block content with non-guest input fields.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<input type="text" name="custom_field" placeholder="Name">
+			<input type="email" name="email" placeholder="Email">
+			<input type="checkbox" name="gatherpress_rsvp_form_anonymous" value="1">
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that content is unmodified (no max attributes added).
+		$this->assertEquals( $block_content, $result );
+		$this->assertStringNotContainsString( 'max=', $result );
+	}
+
+	/**
+	 * Tests the process_form_field_attributes method with no input fields.
+	 *
+	 * Verifies that the method returns unmodified content when there are no input fields.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_form_field_attributes
+	 *
+	 * @return void
+	 */
+	public function test_process_form_field_attributes_with_no_input_fields(): void {
+		// Create an event with a max guest limit.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+
+		// Mock block content with no input fields.
+		$block_content = '<div class="wp-block-gatherpress-form-field">
+			<p>This is just text content with no inputs.</p>
+			<button type="submit">Submit</button>
+		</div>';
+
+		// Mock block data.
+		$block = array(
+			'attrs' => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$result   = $instance->process_form_field_attributes( $block_content, $block );
+
+		// Check that content is unmodified.
+		$this->assertEquals( $block_content, $result );
+	}
 }

@@ -105,7 +105,6 @@ class Rsvp {
 		if (
 			Event::POST_TYPE !== get_post_type( $post_id ) ||
 			'publish' !== get_post_status( $post_id )
-
 		) {
 			return '';
 		}
