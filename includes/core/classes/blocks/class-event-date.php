@@ -83,10 +83,9 @@ class Event_Date {
 	public function validate_event( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
-		$event          = new Event( $post_id );
 
-		// Not an event, so return empty string.
-		if ( ! $event->event ) {
+		// Validate that the post ID is an actual event post type.
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return '';
 		}
 
