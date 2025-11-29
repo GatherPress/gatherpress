@@ -187,12 +187,12 @@ const Edit = ( { attributes, clientId } ) => {
 
 		// Hide guest count field if max attendance limit is 0.
 		if ( 0 === parseInt( maxAttendanceLimit, 10 ) ) {
-			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-guests { opacity: ${ DISABLED_FIELD_OPACITY }; pointer-events: none; }` );
+			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-guests { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
 		}
 
 		// Hide anonymous field if anonymous RSVP is disabled.
 		if ( ! enableAnonymousRsvp ) {
-			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-anonymous { opacity: ${ DISABLED_FIELD_OPACITY }; pointer-events: none; }` );
+			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-anonymous { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
 		}
 
 		styleElement.textContent = styles.join( '\n' );

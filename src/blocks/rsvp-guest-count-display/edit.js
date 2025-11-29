@@ -105,7 +105,7 @@ const Edit = ( { context, clientId } ) => {
 		}
 
 		if ( shouldDim ) {
-			styleElement.textContent = `#block-${ clientId } { opacity: ${ DISABLED_FIELD_OPACITY } !important; pointer-events: none !important; }`;
+			styleElement.textContent = `#block-${ clientId } { opacity: ${ DISABLED_FIELD_OPACITY } !important; }`;
 		} else {
 			styleElement.textContent = '';
 		}
