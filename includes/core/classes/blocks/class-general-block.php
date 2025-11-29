@@ -249,7 +249,7 @@ class General_Block {
 		$post_id        = $block_instance->get_post_id( $block );
 
 		// Only process if we have a valid event post.
-		if ( ! $post_id || Event::POST_TYPE !== get_post_type( $post_id ) ) {
+		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
 			return $block_content;
 		}
 
