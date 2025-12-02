@@ -521,6 +521,8 @@ class Event {
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['website']      = $venue_meta->website ?? '';
+			$venue_information['latitude']     = $venue_meta->latitude ?? '';
+			$venue_information['longitude']    = $venue_meta->longitude ?? '';
 			$venue_information['permalink']    = (string) get_permalink( $venue->ID );
 		}
 
