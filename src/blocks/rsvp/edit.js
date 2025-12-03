@@ -43,14 +43,18 @@ function templateToBlocks( template ) {
  * @param {Object}   props.attributes    Block attributes.
  * @param {Function} props.setAttributes Function to update block attributes.
  * @param {string}   props.clientId      The unique ID of the block instance.
+ * @param {Object}   props.context       Block context data containing postId and event info.
  *
  * @since 1.0.0
  *
  * @return {JSX.Element} The rendered edit interface for the RSVP block.
  */
-const Edit = ( { attributes, setAttributes, clientId } ) => {
-	const { serializedInnerBlocks = '{}', selectedStatus, postId } = attributes;
+const Edit = ( { attributes, setAttributes, clientId, context } ) => {
+	const { serializedInnerBlocks = '{}', selectedStatus } = attributes;
 	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
+
+	// Normalize empty strings to null so fallback to context.postId works correctly.
+	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
 
 	// Check if block has a valid event connection.
 	const isValidEvent = hasValidEventId( postId );

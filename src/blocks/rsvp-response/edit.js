@@ -64,7 +64,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 	const [ responses, setResponses ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
-	const postId = attributes?.postId ?? context?.postId ?? null;
+	// Normalize empty strings to null so fallback to context.postId works correctly.
+	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
 	const { rsvpLimitEnabled, rsvpLimit } = attributes;
 
 	// Check if block has a valid event connection.
