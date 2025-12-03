@@ -706,8 +706,6 @@ class RSVP_List_Table extends WP_List_Table {
 		$post_id = 0;
 		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
 			$post_id = intval( $_REQUEST['post_id'] );
-		} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
-			$post_id = intval( $_REQUEST['event'] );
 		}
 
 		// Check for current view status (doesn't require nonce).

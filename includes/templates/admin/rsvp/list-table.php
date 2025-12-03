@@ -24,8 +24,6 @@ $rsvp_table->prepare_items();
 	$gatherpress_post_id = 0;
 	if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
 		$gatherpress_post_id = intval( $_REQUEST['post_id'] );
-	} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
-		$gatherpress_post_id = intval( $_REQUEST['event'] );
 	}
 
 	if ( $gatherpress_post_id ) {
