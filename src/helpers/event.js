@@ -57,6 +57,17 @@ export function hasValidEventId( postId = null ) {
 	// If postId is provided, verify it points to a valid, published event.
 	if ( postId ) {
 		const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
+
+		// Check if this is the current post being edited in the editor.
+		const currentPostId = select( 'core/editor' )?.getCurrentPostId();
+		const isCurrentPost = currentPostId && currentPostId === postId;
+
+		// If editing this post in the editor, it's valid regardless of status.
+		// Otherwise, check if it's published.
+		if ( isCurrentPost ) {
+			return !! post;
+		}
+
 		return !! post && 'publish' === post.status;
 	}
 

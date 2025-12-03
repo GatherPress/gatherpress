@@ -18,7 +18,39 @@ $rsvp_table->prepare_items();
 ?>
 
 <div class="wrap">
-	<h1 class="wp-heading-inline"><?php echo esc_html__( 'RSVPs', 'gatherpress' ); ?></h1>
+	<h1 class="wp-heading-inline">
+	<?php
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended
+	$gatherpress_post_id = 0;
+	if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
+		$gatherpress_post_id = intval( $_REQUEST['post_id'] );
+	} elseif ( isset( $_REQUEST['event'] ) && ! empty( $_REQUEST['event'] ) ) {
+		$gatherpress_post_id = intval( $_REQUEST['event'] );
+	}
+
+	if ( $gatherpress_post_id ) {
+		printf(
+			/* translators: %s: Event title. */
+			esc_html__( 'RSVPs for &#8220;%s&#8221;', 'gatherpress' ),
+			esc_html( wp_html_excerpt( get_the_title( $gatherpress_post_id ), 50, '&hellip;' ) )
+		);
+	} else {
+		esc_html_e( 'RSVPs', 'gatherpress' );
+	}
+	// phpcs:enable WordPress.Security.NonceVerification.Recommended
+	?>
+	</h1>
+
+	<?php
+	if ( $gatherpress_post_id ) {
+		printf(
+			'<a href="%1$s" class="comments-view-item-link">%2$s</a>',
+			esc_url( get_permalink( $gatherpress_post_id ) ),
+			esc_html__( 'View Event', 'gatherpress' )
+		);
+	}
+	?>
+
 	<hr class="wp-header-end">
 
 	<form method="get">

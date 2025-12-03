@@ -20,9 +20,10 @@ import { hasValidEventId, DISABLED_FIELD_OPACITY } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { shouldHideBlock } from './visibility';
 
-const Edit = ( { attributes, clientId } ) => {
+const Edit = ( { attributes, clientId, context } ) => {
 	const [ formState, setFormState ] = useState( 'default' );
-	const { postId } = attributes;
+	// Normalize empty strings to null so fallback to context.postId works correctly.
+	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
 
 	// Calculate allowed blocks - all blocks except gatherpress/rsvp-form.
 	const allowedBlocks = getBlockTypes()

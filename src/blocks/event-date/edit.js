@@ -164,7 +164,8 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 		separator,
 		showTimezone,
 	} = attributes;
-	const postId = attributes?.postId ?? context?.postId ?? null;
+	// Normalize empty strings to null so fallback to context.postId works correctly.
+	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
 
 	// Check if block has a valid event connection.
 	const isValidEvent = hasValidEventId( postId );
