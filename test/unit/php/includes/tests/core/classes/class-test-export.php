@@ -245,4 +245,48 @@ class Test_Export extends Base {
 			'Failed to assert that datetimes data matches'
 		);
 	}
+
+	/**
+	 * Coverage for render method early return conditions.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_early_return_conditions(): void {
+		$export = Export::get_instance();
+		$post   = $this->mock->post(
+			array(
+				'post_title'   => 'Unit Test Event',
+				'post_type'    => 'gatherpress_event',
+				'post_content' => 'Unit Test description.',
+			)
+		)->get();
+
+		// Test when export_callback is not set.
+		ob_start();
+		$export->render( array(), 'test_key', $post );
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert that render produces no output when export_callback is not set.'
+		);
+
+		// Test when export_callback is not callable.
+		ob_start();
+		$export->render(
+			array(
+				'export_callback' => 'nonexistent_function_name',
+			),
+			'test_key',
+			$post
+		);
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert that render produces no output when export_callback is not callable.'
+		);
+	}
 }
