@@ -671,10 +671,9 @@ class Event_Setup {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $orderby The ORDER BY clause of the query.
 	 * @return string Modified ORDER BY clause.
 	 */
-	public function rsvp_sorting_orderby( string $orderby ): string {
+	public function rsvp_sorting_orderby(): string {
 		global $wp_query;
 
 		$order = $wp_query->get( 'rsvp_sort_order', 'ASC' );
@@ -748,10 +747,9 @@ class Event_Setup {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param string $orderby The ORDER BY clause of the query.
 	 * @return string Modified ORDER BY clause.
 	 */
-	public function venue_sorting_orderby( string $orderby ): string {
+	public function venue_sorting_orderby(): string {
 		global $wp_query;
 
 		$order = $wp_query->get( 'venue_sort_order', 'ASC' );
