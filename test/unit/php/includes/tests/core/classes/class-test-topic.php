@@ -125,5 +125,22 @@ class Test_Topic extends Base {
 		);
 
 		remove_filter( 'gettext_with_context_gatherpress', $filter );
+
+		// Test restore_previous_locale() path by switching to a different locale first.
+		switch_to_locale( 'es_ES' );
+		$this->assertSame(
+			'topic',
+			Topic::get_localized_taxonomy_slug(),
+			'Failed to assert taxonomy slug is "topic" after locale restore.'
+		);
+		// Verify we're back to Spanish after the method restored the previous locale.
+		$this->assertSame(
+			'es_ES',
+			determine_locale(),
+			'Failed to assert locale was restored to Spanish.'
+		);
+
+		// Clean up: restore to en_US for other tests.
+		restore_previous_locale();
 	}
 }
