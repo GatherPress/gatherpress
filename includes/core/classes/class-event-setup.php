@@ -675,18 +675,16 @@ class Event_Setup {
 	 * @return string Modified ORDER BY clause.
 	 */
 	public function rsvp_sorting_orderby( string $orderby ): string {
-		global $wpdb, $wp_query;
+		global $wp_query;
 
 		$order = $wp_query->get( 'rsvp_sort_order', 'ASC' );
-
-		$orderby = "COUNT(rsvp_sort_comments.comment_ID) {$order}";
 
 		// Remove the filters to prevent them from affecting other queries.
 		remove_filter( 'posts_join_paged', array( $this, 'rsvp_sorting_join_paged' ) );
 		remove_filter( 'posts_groupby', array( $this, 'rsvp_sorting_groupby' ) );
 		remove_filter( 'posts_orderby', array( $this, 'rsvp_sorting_orderby' ) );
 
-		return $orderby;
+		return "COUNT(rsvp_sort_comments.comment_ID) {$order}";
 	}
 
 	/**
@@ -758,14 +756,12 @@ class Event_Setup {
 
 		$order = $wp_query->get( 'venue_sort_order', 'ASC' );
 
-		// Sort by venue name, with NULL/empty values last.
-		$orderby = "CASE WHEN venue_terms.name IS NULL THEN 1 ELSE 0 END ASC, venue_terms.name {$order}";
-
 		// Remove the filters to prevent them from affecting other queries.
 		remove_filter( 'posts_join_paged', array( $this, 'venue_sorting_join_paged' ) );
 		remove_filter( 'posts_orderby', array( $this, 'venue_sorting_orderby' ) );
 
-		return $orderby;
+		// Sort by venue name, with NULL/empty values last.
+		return "CASE WHEN venue_terms.name IS NULL THEN 1 ELSE 0 END ASC, venue_terms.name {$order}";
 	}
 
 	/**
