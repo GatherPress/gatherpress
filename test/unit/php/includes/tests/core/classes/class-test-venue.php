@@ -155,6 +155,23 @@ class Test_Venue extends Base {
 		);
 
 		remove_filter( 'gettext_with_context_gatherpress', $filter );
+
+		// Test restore_previous_locale() path by switching to a different locale first.
+		switch_to_locale( 'es_ES' );
+		$this->assertSame(
+			'venue',
+			Venue::get_localized_post_type_slug(),
+			'Failed to assert post type slug is "venue" after locale restore.'
+		);
+		// Verify we're back to Spanish after the method restored the previous locale.
+		$this->assertSame(
+			'es_ES',
+			determine_locale(),
+			'Failed to assert locale was restored to Spanish.'
+		);
+
+		// Clean up: restore to en_US for other tests.
+		restore_previous_locale();
 	}
 
 	/**

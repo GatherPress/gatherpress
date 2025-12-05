@@ -548,6 +548,42 @@ class Test_Rsvp_Token extends Base {
 	}
 
 	/**
+	 * Coverage for generate_url method when permalink is unavailable.
+	 *
+	 * @covers ::generate_url
+	 *
+	 * @return void
+	 */
+	public function test_generate_url_with_no_permalink(): void {
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post->ID,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$token = new Rsvp_Token( $comment_id );
+		$token->generate_token();
+
+		// Filter get_permalink to return false.
+		$filter = static function () {
+			return false;
+		};
+		add_filter( 'post_type_link', $filter );
+
+		$this->assertFalse( get_permalink( $post ) );
+		$this->assertEmpty( $token->generate_url() );
+
+		remove_filter( 'post_type_link', $filter );
+	}
+
+	/**
 	 * Coverage for send_rsvp_confirmation_email method.
 	 *
 	 * @covers ::send_rsvp_confirmation_email
