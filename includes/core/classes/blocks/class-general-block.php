@@ -85,19 +85,15 @@ class General_Block {
 			return '';
 		}
 
-		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' )
-		) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-			while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
-				if ( '#gatherpress-login-url' === $tag->get_attribute( 'href' ) ) {
-					$tag->set_attribute( 'href', Utility::get_login_url() );
-				}
+		while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
+			if ( '#gatherpress-login-url' === $tag->get_attribute( 'href' ) ) {
+				$tag->set_attribute( 'href', Utility::get_login_url() );
 			}
-
-			$block_content = $tag->get_updated_html();
 		}
+
+		$block_content = $tag->get_updated_html();
 
 		return $block_content;
 	}
