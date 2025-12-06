@@ -62,21 +62,56 @@ jobs:
       - name: Playwright install
         run: npx playwright install --with-deps
 
-      - name: Install @wordpress/env
-        run: npm install -g @wordpress/env
+      - name: Build plugin assets
+        run: npm run build
 
-      - name: Start WordPress
+      - name: Install dependencies
         run: |
-          # Start test environment
-          wp-env start
-          npx wait-on http://localhost:8889 -t 60000
+          # Install WordPress environment
+          npm install -g @wordpress/env
+
+          # Install Composer dependencies that might be needed for the plugin
+          composer install --no-dev --no-interaction || echo "Composer install failed or not needed"
+
+      - name: Install WordPress and start the server
+        run: |
+          npm run wp-env start
+
+          # Wait for WordPress admin to be accessible.
+          npx wait-on http://localhost:8889/wp-admin -t 60000
+
+          # Verify plugin is active.
+          echo "Verifying GatherPress plugin is active..."
+          wp-env run cli wp plugin list --status=active | grep gatherpress
+
+          # Verify post types are registered via REST API.
+          echo "Verifying GatherPress post types via REST API..."
+          for i in 1 2 3 4 5; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8889/?rest_route=/wp/v2/types/gatherpress_event")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✓ GatherPress event post type registered (HTTP 200)"
+              break
+            fi
+            echo "⏳ Waiting for post types... (attempt $i/5, HTTP status: $HTTP_STATUS)"
+            sleep 2
+          done
+
+          # Final verification - fail if post type still not found.
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8889/?rest_route=/wp/v2/types/gatherpress_event")
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ ERROR: GatherPress post types not accessible via REST API (HTTP $HTTP_STATUS)"
+            wp-env run cli wp post-type list
+            exit 1
+          fi
+
+          echo "✓ WordPress environment ready for E2E tests"
 
       - name: Run Playwright Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WP_BASE_URL: 'http://localhost:8889'
           PLAYWRIGHT_DEBUG: '1'
-        run: npm run test:e2e -- test/e2e/admin-tests/gatherpress-admin.spec.js
+        run: npm run test:e2e
 
       - name: Upload test results
         if: always()
