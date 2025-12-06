@@ -14,7 +14,18 @@ import { __ } from '@wordpress/i18n';
  */
 import { getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
-import { Broadcaster } from './broadcasting';
+
+/**
+ * Opacity value for disabled form fields and elements.
+ *
+ * This constant defines the opacity level applied to form fields and UI elements
+ * when they are disabled due to event settings (e.g., when guest limits are 0
+ * or anonymous RSVP is disabled).
+ *
+ * @since 1.0.0
+ * @type {number}
+ */
+export const DISABLED_FIELD_OPACITY = 0.3;
 
 /**
  * Checks if the current post type is an event in the GatherPress application.
@@ -29,6 +40,39 @@ import { Broadcaster } from './broadcasting';
  */
 export function isEventPostType() {
 	return 'gatherpress_event' === select( 'core/editor' )?.getCurrentPostType();
+}
+
+/**
+ * Checks if a block has a valid event ID (either from current post or postId override).
+ *
+ * This function checks if the block is connected to a valid event, either by being
+ * placed in an event post or having a postId attribute that points to a valid event.
+ *
+ * @since 1.0.0
+ *
+ * @param {number|null} postId Optional post ID override to check.
+ * @return {boolean} True if connected to a valid event, false otherwise.
+ */
+export function hasValidEventId( postId = null ) {
+	// If postId is provided, verify it points to a valid, published event.
+	if ( postId ) {
+		const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
+
+		// Check if this is the current post being edited in the editor.
+		const currentPostId = select( 'core/editor' )?.getCurrentPostId();
+		const isCurrentPost = currentPostId && currentPostId === postId;
+
+		// If editing this post in the editor, it's valid regardless of status.
+		// Otherwise, check if it's published.
+		if ( isCurrentPost ) {
+			return !! post;
+		}
+
+		return !! post && 'publish' === post.status;
+	}
+
+	// Otherwise, check if current post is an event (no publish check needed).
+	return isEventPostType();
 }
 
 /**
@@ -80,68 +124,3 @@ export function hasEventPastNotice() {
 	}
 }
 
-/**
- * Flag to prevent multiple event communication notices.
- *
- * @type {boolean}
- */
-let isEventCommunicationNoticeCreated = false;
-
-/**
- * Trigger communication notice for event updates.
- *
- * This function checks if the event is published and not yet passed,
- * then displays a success notice prompting the user to send an event update
- * to members via email. The notice includes an action to compose the message.
- *
- * @since 1.0.0
- *
- * @return {void}
- */
-export function triggerEventCommunication() {
-	const id = 'gatherpress_event_communication';
-	const notices = dispatch( 'core/notices' );
-	const isSavingPost = select( 'core/editor' ).isSavingPost();
-	const isAutosavingPost = select( 'core/editor' ).isAutosavingPost();
-
-	// Only proceed if a save is in progress and it's not an autosave.
-	if (
-		'publish' === select( 'core/editor' ).getEditedPostAttribute( 'status' ) &&
-		isEventPostType() &&
-		isSavingPost &&
-		! isAutosavingPost &&
-		! hasEventPast() &&
-		! isEventCommunicationNoticeCreated
-	) {
-		// Mark notice as created.
-		isEventCommunicationNoticeCreated = true;
-
-		// Remove any previous notices with the same ID.
-		notices.removeNotice( id );
-
-		// Create a new notice with an action.
-		notices.createNotice(
-			'success',
-			__( 'Send an event update to members via email?', 'gatherpress' ),
-			{
-				id,
-				isDismissible: true,
-				actions: [
-					{
-						onClick: () => {
-							Broadcaster( {
-								setOpen: true,
-							} );
-						},
-						label: __( 'Compose Message', 'gatherpress' ),
-					},
-				],
-			},
-		);
-	}
-
-	// Reset the flag after the save operation completes.
-	if ( ! isSavingPost ) {
-		isEventCommunicationNoticeCreated = false;
-	}
-}

@@ -39,6 +39,10 @@ class Test_Validate extends Base {
 			Validate::rsvp_status( 'no_status' ),
 			'Failed to assert valid attendance status.'
 		);
+		$this->assertTrue(
+			Validate::rsvp_status( 'waiting_list' ),
+			'Failed to assert valid waiting_list status.'
+		);
 		$this->assertFalse(
 			Validate::rsvp_status( 'wait_list' ),
 			'Failed to assert invalid attendance status.'
@@ -46,6 +50,10 @@ class Test_Validate extends Base {
 		$this->assertFalse(
 			Validate::rsvp_status( 'unit_test' ),
 			'Failed to assert invalid attendance status.'
+		);
+		$this->assertFalse(
+			Validate::rsvp_status( '' ),
+			'Failed to assert invalid empty string status.'
 		);
 	}
 
@@ -114,7 +122,7 @@ class Test_Validate extends Base {
 	 *
 	 * @since 1.0.0
 	 * @covers ::event_post_id
-	 * @covers ::number
+	 * @covers ::positive_number
 	 *
 	 * @return void
 	 */
@@ -390,5 +398,301 @@ class Test_Validate extends Base {
 		);
 
 		$this->assertTrue( Validate::block_data( $complex_data ) );
+	}
+
+	/**
+	 * Coverage for positive_number method with valid positive numbers.
+	 *
+	 * @since 1.0.0
+	 * @covers ::positive_number
+	 *
+	 * @return void
+	 */
+	public function test_positive_number_valid(): void {
+		$this->assertTrue(
+			Validate::positive_number( 1 ),
+			'Failed to assert 1 is a valid positive number.'
+		);
+		$this->assertTrue(
+			Validate::positive_number( 42 ),
+			'Failed to assert 42 is a valid positive number.'
+		);
+		$this->assertTrue(
+			Validate::positive_number( '123' ),
+			'Failed to assert string "123" is a valid positive number.'
+		);
+		$this->assertTrue(
+			Validate::positive_number( '1' ),
+			'Failed to assert string "1" is a valid positive number.'
+		);
+	}
+
+	/**
+	 * Coverage for positive_number method with invalid values.
+	 *
+	 * @since 1.0.0
+	 * @covers ::positive_number
+	 *
+	 * @return void
+	 */
+	public function test_positive_number_invalid(): void {
+		$this->assertFalse(
+			Validate::positive_number( 0 ),
+			'Failed to assert 0 is not a valid positive number.'
+		);
+		$this->assertFalse(
+			Validate::positive_number( -5 ),
+			'Failed to assert -5 is not a valid positive number.'
+		);
+		$this->assertFalse(
+			Validate::positive_number( '-10' ),
+			'Failed to assert string "-10" is not a valid positive number.'
+		);
+		$this->assertFalse(
+			Validate::positive_number( 'abc' ),
+			'Failed to assert "abc" is not a valid positive number.'
+		);
+		$this->assertFalse(
+			Validate::positive_number( '' ),
+			'Failed to assert empty string is not a valid positive number.'
+		);
+		$this->assertFalse(
+			Validate::positive_number( '0' ),
+			'Failed to assert string "0" is not a valid positive number.'
+		);
+	}
+
+	/**
+	 * Coverage for non_negative_number method with valid non-negative numbers.
+	 *
+	 * @since 1.0.0
+	 * @covers ::non_negative_number
+	 *
+	 * @return void
+	 */
+	public function test_non_negative_number_valid(): void {
+		$this->assertTrue(
+			Validate::non_negative_number( 0 ),
+			'Failed to assert 0 is a valid non-negative number.'
+		);
+		$this->assertTrue(
+			Validate::non_negative_number( 1 ),
+			'Failed to assert 1 is a valid non-negative number.'
+		);
+		$this->assertTrue(
+			Validate::non_negative_number( 42 ),
+			'Failed to assert 42 is a valid non-negative number.'
+		);
+		$this->assertTrue(
+			Validate::non_negative_number( '0' ),
+			'Failed to assert string "0" is a valid non-negative number.'
+		);
+		$this->assertTrue(
+			Validate::non_negative_number( '123' ),
+			'Failed to assert string "123" is a valid non-negative number.'
+		);
+	}
+
+	/**
+	 * Coverage for non_negative_number method with invalid values.
+	 *
+	 * @since 1.0.0
+	 * @covers ::non_negative_number
+	 *
+	 * @return void
+	 */
+	public function test_non_negative_number_invalid(): void {
+		$this->assertFalse(
+			Validate::non_negative_number( -1 ),
+			'Failed to assert -1 is not a valid non-negative number.'
+		);
+		$this->assertFalse(
+			Validate::non_negative_number( -42 ),
+			'Failed to assert -42 is not a valid non-negative number.'
+		);
+		$this->assertFalse(
+			Validate::non_negative_number( '-5' ),
+			'Failed to assert string "-5" is not a valid non-negative number.'
+		);
+		$this->assertFalse(
+			Validate::non_negative_number( 'abc' ),
+			'Failed to assert "abc" is not a valid non-negative number.'
+		);
+		$this->assertFalse(
+			Validate::non_negative_number( '' ),
+			'Failed to assert empty string is not a valid non-negative number.'
+		);
+	}
+
+	/**
+	 * Coverage for datetime method with additional edge cases.
+	 *
+	 * @since 1.0.0
+	 * @covers ::datetime
+	 *
+	 * @return void
+	 */
+	public function test_datetime_edge_cases(): void {
+		$this->assertTrue(
+			Validate::datetime( '2025-12-31 23:59:59' ),
+			'Failed to assert valid datetime at end of year.'
+		);
+		$this->assertTrue(
+			Validate::datetime( '2024-02-29 12:00:00' ),
+			'Failed to assert valid datetime for leap year.'
+		);
+		$this->assertTrue(
+			Validate::datetime( '2023-01-01 00:00:00' ),
+			'Failed to assert valid datetime at start of year.'
+		);
+		$this->assertFalse(
+			Validate::datetime( '2023-05-11' ),
+			'Failed to assert date-only string is invalid.'
+		);
+		$this->assertFalse(
+			Validate::datetime( '12:00:00' ),
+			'Failed to assert time-only string is invalid.'
+		);
+		$this->assertFalse(
+			Validate::datetime( '' ),
+			'Failed to assert empty string is invalid datetime.'
+		);
+		$this->assertFalse(
+			Validate::datetime( '2023/05/11 12:00:00' ),
+			'Failed to assert wrong date format is invalid.'
+		);
+		$this->assertFalse(
+			Validate::datetime( 'invalid-datetime' ),
+			'Failed to assert completely invalid string.'
+		);
+	}
+
+	/**
+	 * Coverage for timezone method with UTC offset format.
+	 *
+	 * @since 1.0.0
+	 * @covers ::timezone
+	 *
+	 * @return void
+	 */
+	public function test_timezone_utc_offsets(): void {
+		$this->assertTrue(
+			Validate::timezone( 'UTC' ),
+			'Failed to assert UTC is a valid timezone.'
+		);
+		$this->assertTrue(
+			Validate::timezone( 'Europe/London' ),
+			'Failed to assert Europe/London is a valid timezone.'
+		);
+		$this->assertTrue(
+			Validate::timezone( 'Asia/Tokyo' ),
+			'Failed to assert Asia/Tokyo is a valid timezone.'
+		);
+		$this->assertFalse(
+			Validate::timezone( '' ),
+			'Failed to assert empty string is invalid timezone.'
+		);
+		$this->assertFalse(
+			Validate::timezone( 'Invalid/Timezone' ),
+			'Failed to assert invalid timezone identifier.'
+		);
+	}
+
+	/**
+	 * Coverage for send method with missing keys.
+	 *
+	 * @since 1.0.0
+	 * @covers ::send
+	 *
+	 * @return void
+	 */
+	public function test_send_missing_keys(): void {
+		// Missing 'attending' key.
+		$this->assertFalse(
+			Validate::send(
+				array(
+					'all'           => true,
+					'waiting_list'  => false,
+					'not_attending' => false,
+				)
+			),
+			'Failed to assert invalid send params with missing attending key.'
+		);
+
+		// Missing 'waiting_list' key.
+		$this->assertFalse(
+			Validate::send(
+				array(
+					'all'           => true,
+					'attending'     => false,
+					'not_attending' => false,
+				)
+			),
+			'Failed to assert invalid send params with missing waiting_list key.'
+		);
+
+		// Missing 'not_attending' key.
+		$this->assertFalse(
+			Validate::send(
+				array(
+					'all'          => true,
+					'attending'    => false,
+					'waiting_list' => false,
+				)
+			),
+			'Failed to assert invalid send params with missing not_attending key.'
+		);
+	}
+
+	/**
+	 * Coverage for event_post_id with string numeric ID.
+	 *
+	 * @since 1.0.0
+	 * @covers ::event_post_id
+	 *
+	 * @return void
+	 */
+	public function test_event_post_id_string_numeric(): void {
+		$event = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		$this->assertTrue(
+			Validate::event_post_id( (string) $event->ID ),
+			'Failed to assert string numeric event ID is valid.'
+		);
+	}
+
+	/**
+	 * Coverage for boolean with additional edge cases.
+	 *
+	 * @since 1.0.0
+	 * @covers ::boolean
+	 *
+	 * @return void
+	 */
+	public function test_boolean_edge_cases(): void {
+		$this->assertFalse(
+			Validate::boolean( 2 ),
+			'Failed to assert 2 is not a valid boolean.'
+		);
+		$this->assertFalse(
+			Validate::boolean( '2' ),
+			'Failed to assert string "2" is not a valid boolean.'
+		);
+		$this->assertFalse(
+			Validate::boolean( 'true' ),
+			'Failed to assert string "true" is not a valid boolean.'
+		);
+		$this->assertFalse(
+			Validate::boolean( 'false' ),
+			'Failed to assert string "false" is not a valid boolean.'
+		);
+		$this->assertFalse(
+			Validate::boolean( array() ),
+			'Failed to assert empty array is not a valid boolean.'
+		);
+		$this->assertFalse(
+			Validate::boolean( null ),
+			'Failed to assert null is not a valid boolean.'
+		);
 	}
 }

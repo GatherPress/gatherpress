@@ -92,6 +92,9 @@ class Test_Rsvp extends Base {
 
 		$user_1_id = $this->factory->user->create();
 
+		// Enable anonymous RSVP for this test.
+		update_post_meta( $post->ID, 'gatherpress_enable_anonymous_rsvp', true );
+
 		// When not_attending and anonymous, user record should be removed and marked no_status.
 		$this->assertSame( 'waiting_list', $rsvp->save( $user_1_id, 'attending', 1 )['status'], 'Failed to assert that user 1 is attending' );
 		$this->assertSame( 'no_status', $rsvp->save( $user_1_id, 'not_attending', 1 )['status'], 'Failed to assert that user 1 is no_status.' );
@@ -338,6 +341,9 @@ class Test_Rsvp extends Base {
 		$post      = $this->mock->post(
 			array(
 				'post_type' => Event::POST_TYPE,
+				'post_meta' => array(
+					'gatherpress_enable_anonymous_rsvp' => true,
+				),
 			)
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );

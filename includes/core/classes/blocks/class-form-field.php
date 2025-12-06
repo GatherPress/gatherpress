@@ -294,7 +294,7 @@ class Form_Field {
 	 */
 	public function get_wrapper_classes(): array {
 		$field_type = $this->get_field_type();
-		$classes    = array( sprintf( 'gatherpress-field-type-%s', esc_attr( $field_type ) ) );
+		$classes    = array( sprintf( 'gatherpress-form-field--%s', esc_attr( $field_type ) ) );
 
 		// Add inline layout class for text-based fields.
 		if (
@@ -302,6 +302,12 @@ class Form_Field {
 			! in_array( $field_type, array( 'checkbox', 'radio', 'hidden', 'textarea' ), true )
 		) {
 			$classes[] = 'gatherpress-inline-layout';
+		}
+
+		// Add custom className from block attributes.
+		if ( ! empty( $this->attributes['className'] ) ) {
+			$custom_classes = explode( ' ', $this->attributes['className'] );
+			$classes        = array_merge( $classes, $custom_classes );
 		}
 
 		return $classes;
@@ -321,7 +327,22 @@ class Form_Field {
 	public function get_wrapper_attributes(): string {
 		$classes = $this->get_wrapper_classes();
 
-		return get_block_wrapper_attributes( array( 'class' => implode( ' ', $classes ) ) );
+		// Build wrapper arguments.
+		$wrapper_args = array( 'class' => implode( ' ', $classes ) );
+
+		// If there's a className in attributes, pass it to WordPress directly too.
+		if ( ! empty( $this->attributes['className'] ) ) {
+			$wrapper_args['className'] = $this->attributes['className'];
+		}
+
+		// Add any data attributes from block attributes.
+		foreach ( $this->attributes as $key => $value ) {
+			if ( 0 === strpos( $key, 'data-' ) ) {
+				$wrapper_args[ $key ] = $value;
+			}
+		}
+
+		return get_block_wrapper_attributes( $wrapper_args );
 	}
 
 	/**

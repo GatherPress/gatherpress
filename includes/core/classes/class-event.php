@@ -59,6 +59,46 @@ class Event {
 	const TABLE_FORMAT = '%sgatherpress_events';
 
 	/**
+	 * Non-time PHP DateTime formatting characters
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	const PHP_NON_TIME_FORMAT_CHARS = array(
+		'd',
+		'D',
+		'j',
+		'l',
+		'N',
+		'S',
+		'w',
+		'z',
+		'W',
+		'F',
+		'm',
+		'M',
+		'n',
+		't',
+		'L',
+		'o',
+		'X',
+		'x',
+		'Y',
+		'y',
+		'e',
+		'I',
+		'O',
+		'P',
+		'p',
+		'T',
+		'Z',
+		'c',
+		'r',
+		'U',
+		',',
+	);
+
+	/**
 	 * Event post object.
 	 *
 	 * @since 1.0.0
@@ -99,31 +139,73 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $type           Display type: 'start', 'end', or 'both'.
+	 * @param string $start_format   PHP display format for start date/time.
+	 * @param string $end_format     PHP display format for end date/time.
+	 * @param string $separator      Separator "word" between start and end dates (if both are being displayed).
+	 * @param string $show_timezone  Show timezone.
+	 *
 	 * @return string A string representing the formatted start and end dates/times of the event, or an
 	 * em dash if data is unavailable.
 	 *
 	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
 	 */
-	public function get_display_datetime(): string {
+	public function get_display_datetime(
+		string $type = '',
+		string $start_format = '',
+		string $end_format = '',
+		string $separator = '',
+		string $show_timezone = ''
+	): string {
 		$settings    = Settings::get_instance();
 		$date_format = apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
 		$time_format = apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
 
-		if ( $this->is_same_date() ) {
-			$start = $this->get_datetime_start( $date_format . ' ' . $time_format );
-			$end   = $this->get_datetime_end( $time_format . $timezone );
+		$show_start = $type
+			? in_array( $type, array( 'start', 'both' ), true )
+			: true;
+
+		$show_end = $type
+			? in_array( $type, array( 'end', 'both' ), true )
+			: true;
+
+		// Set start date/time.
+		$start = $show_start
+			? $this->get_datetime_start(
+				$start_format ? $start_format : "{$date_format} {$time_format}"
+			)
+			: false;
+
+		// Set end date/time.
+		if ( $show_end ) {
+			$end = $show_start && $this->is_same_date()
+				? $this->get_time_end( $end_format ? $end_format : $time_format )
+				: $this->get_datetime_end(
+					$end_format ? $end_format : "{$date_format} {$time_format}"
+				);
 		} else {
-			$start = $this->get_datetime_start( $date_format . ', ' . $time_format );
-			$end   = $this->get_datetime_end( $date_format . ', ' . $time_format . $timezone );
+			$end = false;
 		}
 
-		if ( ! empty( $start ) && ! empty( $end ) ) {
-			/* translators: %1$s: start datetime, %2$s: end datetime. */
-			return sprintf( __( '%1$s to %2$s', 'gatherpress' ), $start, $end );
+		// Add separator if there's both start and end date/time.
+		$separator = $start && $end
+			? ( $separator ? $separator : __( 'to', 'gatherpress' ) )
+			: false;
+
+		// Add timezone.
+		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
+			$timezone = $this->get_datetime_start( $timezone );
+		} else {
+			$timezone = false;
 		}
 
-		return __( '—', 'gatherpress' );
+		$parts = array_filter(
+			array( $start, $separator, $end, $timezone )
+		);
+
+		// Stick the parts back together.
+		return $parts ? implode( ' ', $parts ) : '-';
 	}
 
 	/**
@@ -250,6 +332,25 @@ class Event {
 	}
 
 	/**
+	 * Get the end time of an event.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $format PHP DateTime format (defaults to g:ia).
+	 *
+	 * @return string The formatting end time of the event.
+	 */
+	public function get_time_end( string $format = '' ): string {
+		return $this->get_datetime_end(
+			str_replace(
+				static::PHP_NON_TIME_FORMAT_CHARS,
+				'',
+				$format ? $format : 'g:i a'
+			)
+		);
+	}
+
+	/**
 	 * Format a datetime value for display.
 	 *
 	 * This method takes a datetime value from the event table, formats it according to the specified PHP date format,
@@ -286,10 +387,14 @@ class Event {
 
 		if ( ! empty( $date ) ) {
 			$ts   = strtotime( $date );
-			$date = wp_date( $format, $ts, $tz );
+			$date = wp_date(
+				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
+				$ts,
+				$tz
+			);
 		}
 
-		return (string) $date;
+		return (string) trim( $date );
 	}
 
 	/**
@@ -416,6 +521,8 @@ class Event {
 			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$venue_information['website']      = $venue_meta->website ?? '';
+			$venue_information['latitude']     = $venue_meta->latitude ?? '';
+			$venue_information['longitude']    = $venue_meta->longitude ?? '';
 			$venue_information['permalink']    = (string) get_permalink( $venue->ID );
 		}
 
@@ -794,7 +901,8 @@ class Event {
 				return '';
 			}
 
-			$response = $this->rsvp->get( get_current_user_id() );
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$response        = $this->rsvp->get( $user_identifier );
 
 			if (
 				! isset( $response['status'] ) ||

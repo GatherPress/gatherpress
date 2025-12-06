@@ -30,7 +30,16 @@ const { state } = store( 'gatherpress', {
 				return;
 			}
 
+			// Find submit button for loading state.
+			const submitButton = form.querySelector( '.gatherpress-submit-button' );
+			const loadingClass = 'gatherpress--is-loading';
+
 			state.rsvpForm.isSubmitting = true;
+
+			// Add loading class to submit button.
+			if ( submitButton ) {
+				submitButton.classList.add( loadingClass );
+			}
 
 			// Get form data.
 			const formData = new FormData( form );
@@ -38,11 +47,31 @@ const { state } = store( 'gatherpress', {
 				comment_post_ID: postId,
 				author: formData.get( 'author' ),
 				email: formData.get( 'email' ),
-				gatherpress_event_email_updates:
-					formData.get( 'gatherpress_event_email_updates' ) === 'on'
-						? true
-						: false,
+				gatherpress_rsvp_form_guests: formData.get( 'gatherpress_rsvp_form_guests' ) || '0',
 			};
+
+			// Handle checkbox fields - they only appear in FormData when checked.
+			// When checked, they typically have value 'on' or a custom value.
+			// When unchecked, formData.get() returns null.
+			data.gatherpress_rsvp_anonymous = formData.get( 'gatherpress_rsvp_anonymous' ) ? '1' : '0';
+			data.gatherpress_event_updates_opt_in = formData.get( 'gatherpress_event_updates_opt_in' ) ? '1' : '0';
+
+			// Add any custom fields and schema ID from the form.
+			for ( const [ key, value ] of formData.entries() ) {
+				// Skip fields we've already explicitly handled above.
+				const skipFields = [
+					'comment_post_ID',
+					'author',
+					'email',
+					'gatherpress_rsvp_form_guests',
+					'gatherpress_rsvp_anonymous',
+					'gatherpress_event_updates_opt_in',
+				];
+
+				if ( ! skipFields.includes( key ) ) {
+					data[ key ] = value;
+				}
+			}
 
 			const makeRequest = async ( isRetry = false ) => {
 				const nonce = await getNonce();
@@ -79,20 +108,42 @@ const { state } = store( 'gatherpress', {
 				const result = await makeRequest();
 
 				if ( result && result.success ) {
-					// Success - show message block and disable form.
-					const messageContainer = form.querySelector(
-						'.gatherpress-rsvp-form-message',
-					);
-					if ( messageContainer ) {
-						messageContainer.style.display = 'block';
-					}
+					// Handle blocks with form visibility attributes.
+					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
+					const isPast = 'past' === form.getAttribute( 'data-gatherpress-event-state' );
 
-					// Disable all form inputs.
-					const inputs = form.querySelectorAll(
-						'input, textarea, button, select',
-					);
-					inputs.forEach( ( input ) => {
-						input.disabled = true;
+					blocksWithVisibility.forEach( ( block ) => {
+						const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+						let visibility = {};
+
+						try {
+							visibility = JSON.parse( visibilityAttr );
+						} catch ( e ) {
+							// Invalid JSON, treat as no visibility rules (always visible).
+						}
+
+						const { onSuccess, whenPast } = visibility;
+
+						let shouldShow = null; // null = default (no change)
+
+						// whenPast takes precedence.
+						if ( isPast && whenPast ) {
+							shouldShow = 'show' === whenPast;
+						} else if ( onSuccess ) {
+							// After successful submission.
+							shouldShow = 'show' === onSuccess;
+						}
+
+						// Apply visibility changes.
+						if ( true === shouldShow ) {
+							block.style.removeProperty( 'display' );
+							block.setAttribute( 'aria-hidden', 'false' );
+							block.setAttribute( 'aria-live', 'polite' );
+							block.setAttribute( 'role', 'status' );
+						} else if ( false === shouldShow ) {
+							block.style.display = 'none';
+							block.setAttribute( 'aria-hidden', 'true' );
+						}
 					} );
 
 					// Update the responses data if available.
@@ -132,10 +183,17 @@ const { state } = store( 'gatherpress', {
 			}
 
 			state.rsvpForm.isSubmitting = false;
+
+			// Remove loading class from submit button.
+			if ( submitButton ) {
+				submitButton.classList.remove( loadingClass );
+			}
 		},
 	},
 	callbacks: {
 		initRsvpForm() {
+			const element = getElement();
+			const form = element.ref;
 			const context = getContext();
 			const postId = context?.postId || 0;
 
@@ -144,6 +202,57 @@ const { state } = store( 'gatherpress', {
 
 			// Reset submission state.
 			state.rsvpForm.isSubmitting = false;
+
+			// Check if this is a success page (form was just submitted).
+			const urlParams = new URLSearchParams( window.location.search );
+			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
+			const isPast = 'past' === form.getAttribute( 'data-gatherpress-event-state' );
+
+			// Set initial visibility for blocks based on their attributes and current state.
+			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
+			blocksWithVisibility.forEach( ( block ) => {
+				const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+				let visibility = {};
+
+				try {
+					visibility = JSON.parse( visibilityAttr );
+				} catch ( e ) {
+					// Invalid JSON, treat as no visibility rules (always visible).
+				}
+
+				const { onSuccess, whenPast } = visibility;
+
+				let shouldShow = null; // null = default (always visible)
+
+				// When event is past, check whenPast (takes precedence when past).
+				if ( isPast && whenPast ) {
+					shouldShow = 'show' === whenPast;
+				} else if ( ! isPast && whenPast && ! onSuccess ) {
+					// When not past but block has ONLY whenPast setting (no onSuccess).
+					shouldShow = 'show' !== whenPast;
+				} else if ( onSuccess ) {
+					// Check onSuccess.
+					if ( isSuccess ) {
+						shouldShow = 'show' === onSuccess;
+					} else {
+						// Not success: hide if set to show on success.
+						shouldShow = 'show' !== onSuccess;
+					}
+				}
+
+				// Apply visibility changes.
+				if ( true === shouldShow ) {
+					block.style.removeProperty( 'display' );
+					block.setAttribute( 'aria-hidden', 'false' );
+					if ( isSuccess ) {
+						block.setAttribute( 'aria-live', 'polite' );
+						block.setAttribute( 'role', 'status' );
+					}
+				} else if ( false === shouldShow ) {
+					block.style.display = 'none';
+					block.setAttribute( 'aria-hidden', 'true' );
+				}
+			} );
 		},
 	},
 } );

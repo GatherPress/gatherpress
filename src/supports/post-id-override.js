@@ -101,7 +101,7 @@ const withPostIdOverride = createHigherOrderComponent( ( BlockEdit ) => {
 						value={ postId }
 						onChange={ ( value ) => {
 							updateBlockAttributes( clientId, {
-								postId: parseInt( value, 10 ) || 0,
+								postId: parseInt( value, 10 ) || '',
 							} );
 						} }
 						help={ __(

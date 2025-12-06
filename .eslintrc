@@ -11,6 +11,13 @@
 			{
 				"allowedTextDomain": "gatherpress"
 			}
+		],
+		"yoda": [
+			"error",
+			"always",
+			{
+				"exceptRange": true
+			}
 		]
 	}
 }

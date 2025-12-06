@@ -83,7 +83,7 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'upcoming', $response->query['gatherpress_events_query'], 'Failed to assert query is upcoming.' );
+		$this->assertSame( 'upcoming', $response->query['gatherpress_event_query'], 'Failed to assert query is upcoming.' );
 		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
 	}
 
@@ -119,7 +119,7 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'past', $response->query['gatherpress_events_query'], 'Failed to assert query is past.' );
+		$this->assertSame( 'past', $response->query['gatherpress_event_query'], 'Failed to assert query is past.' );
 		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
 	}
 
@@ -205,7 +205,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
-		$query->set( 'gatherpress_events_query', 'upcoming' );
+		$query->set( 'gatherpress_event_query', 'upcoming' );
 		$instance->prepare_event_query_before_execution( $query );
 
 		$this->assertEquals(
@@ -232,7 +232,7 @@ class Test_Event_Query extends Base {
 		$instance = Event_Query::get_instance();
 		$query    = new WP_Query();
 
-		$query->set( 'gatherpress_events_query', 'past' );
+		$query->set( 'gatherpress_event_query', 'past' );
 		$instance->prepare_event_query_before_execution( $query );
 
 		$this->assertEquals(
@@ -275,7 +275,7 @@ class Test_Event_Query extends Base {
 			->method( 'get' )
 			->willReturnCallback(
 				function ( $key ) {
-					return 'gatherpress_events_query' === $key ? 'past' : null;
+					return 'gatherpress_event_query' === $key ? 'past' : null;
 				}
 			);
 
@@ -474,6 +474,489 @@ class Test_Event_Query extends Base {
 			'datetime_end_gmt',
 			Utility::invoke_hidden_method( $instance, 'get_datetime_comparison_column', array( 'past', false ) ),
 			'Failed to assert, that non-inclusive, past events should be ordered by datetime_end_gmt.'
+		);
+	}
+
+	/**
+	 * Test that past events are ordered correctly (most recent first).
+	 *
+	 * @covers ::get_past_events
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_past_events_order(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create multiple past events with different dates.
+		$oldest_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$oldest_event = new Event( $oldest_post->ID );
+		$oldest_date  = new DateTime( '-10 days' );
+
+		$params = array(
+			'datetime_start' => $oldest_date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $oldest_date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+		$oldest_event->save_datetimes( $params );
+
+		$middle_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$middle_event = new Event( $middle_post->ID );
+		$middle_date  = new DateTime( '-5 days' );
+
+		$params = array(
+			'datetime_start' => $middle_date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $middle_date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+		$middle_event->save_datetimes( $params );
+
+		$recent_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$recent_event = new Event( $recent_post->ID );
+		$recent_date  = new DateTime( '-2 days' );
+
+		$params = array(
+			'datetime_start' => $recent_date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $recent_date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+		$recent_event->save_datetimes( $params );
+
+		// Get past events.
+		$past_events = $instance->get_past_events( 10 );
+
+		// Verify the order is DESC (most recent first).
+		$this->assertSame( 'DESC', $past_events->query['order'], 'Past events should be ordered DESC' );
+
+		// The posts should be in order: recent, middle, oldest.
+		$posts = $past_events->posts;
+		$this->assertSame(
+			$recent_post->ID,
+			$posts[0],
+			'Most recent past event should be first'
+		);
+		$this->assertSame(
+			$middle_post->ID,
+			$posts[1],
+			'Middle past event should be second'
+		);
+		$this->assertSame(
+			$oldest_post->ID,
+			$posts[2],
+			'Oldest past event should be last'
+		);
+	}
+
+	/**
+	 * Test that upcoming events are ordered correctly (soonest first).
+	 *
+	 * @covers ::get_upcoming_events
+	 * @covers ::get_events_list
+	 *
+	 * @return void
+	 */
+	public function test_upcoming_events_order(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create multiple upcoming events with different dates.
+		$soon_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$soon_event = new Event( $soon_post->ID );
+		$soon_date  = new DateTime( '+2 days' );
+
+		$params = array(
+			'datetime_start' => $soon_date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $soon_date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+		$soon_event->save_datetimes( $params );
+
+		$middle_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$middle_event = new Event( $middle_post->ID );
+		$middle_date  = new DateTime( '+5 days' );
+
+		$params = array(
+			'datetime_start' => $middle_date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $middle_date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+		$middle_event->save_datetimes( $params );
+
+		$far_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$far_event = new Event( $far_post->ID );
+		$far_date  = new DateTime( '+10 days' );
+
+		$params = array(
+			'datetime_start' => $far_date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $far_date->modify( '+1 hour' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+		$far_event->save_datetimes( $params );
+
+		// Get upcoming events.
+		$upcoming_events = $instance->get_upcoming_events( 10 );
+
+		// Verify the order is ASC (soonest first).
+		$this->assertSame( 'ASC', $upcoming_events->query['order'], 'Upcoming events should be ordered ASC' );
+
+		// The posts should be in order: soon, middle, far.
+		$posts = $upcoming_events->posts;
+		$this->assertSame(
+			$soon_post->ID,
+			$posts[0],
+			'Soonest upcoming event should be first'
+		);
+		$this->assertSame(
+			$middle_post->ID,
+			$posts[1],
+			'Middle upcoming event should be second'
+		);
+		$this->assertSame(
+			$far_post->ID,
+			$posts[2],
+			'Farthest upcoming event should be last'
+		);
+	}
+
+	/**
+	 * Test that include_unfinished parameter works correctly for past events.
+	 *
+	 * @covers ::adjust_sorting_for_past_events
+	 *
+	 * @return void
+	 */
+	public function test_include_unfinished_parameter_for_past_events(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a currently running event.
+		$running_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$running_event = new Event( $running_post->ID );
+		$date          = new DateTime( 'now' );
+
+		$params = array(
+			'datetime_start' => $date->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $date->modify( '+2 days' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$running_event->save_datetimes( $params );
+
+		// Default behavior: currently running events should NOT appear in past events.
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertNotContains(
+			$running_post->ID,
+			$query->posts,
+			'Currently running event should NOT appear in past events by default'
+		);
+
+		// With include_unfinished=true: currently running events SHOULD appear.
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'           => true,
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertContains(
+			$running_post->ID,
+			$query->posts,
+			'Currently running event SHOULD appear in past events when include_unfinished=true'
+		);
+	}
+
+	/**
+	 * Test that include_unfinished parameter handles integer values correctly.
+	 *
+	 * This test specifically prevents regression of the array_filter bug that
+	 * removed integer 0 values from query parameters.
+	 *
+	 * @covers ::adjust_sorting_for_upcoming_events
+	 * @covers ::adjust_sorting_for_past_events
+	 *
+	 * @return void
+	 */
+	public function test_include_unfinished_integer_values(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a currently running event (using exact same pattern as working test).
+		$running_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$running_event = new Event( $running_post->ID );
+		$date          = new DateTime( 'now' );
+
+		$params = array(
+			'datetime_start' => $date->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $date->modify( '+2 days' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$running_event->save_datetimes( $params );
+
+		// First verify that boolean true works (like the original test).
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'           => true, // Boolean true.
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertContains(
+			$running_post->ID,
+			$query->posts,
+			'Boolean true should include currently running events in past events (baseline test)'
+		);
+
+		// Now test integer 1 (should work the same as boolean true).
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'           => 1, // Integer 1.
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertContains(
+			$running_post->ID,
+			$query->posts,
+			sprintf(
+				'Integer 1 should include currently running events in past events. Found posts: %s, Looking for: %d',
+				implode( ', ', $query->posts ),
+				$running_post->ID
+			)
+		);
+
+		// Test integer 0 value (exclude unfinished).
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				'include_unfinished'           => 0, // Integer 0.
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertNotContains(
+			$running_post->ID,
+			$query->posts,
+			'Integer 0 should exclude currently running events from past events'
+		);
+
+		// Test for upcoming events with integer 0 (should exclude).
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
+				'include_unfinished'           => 0, // Integer 0.
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertNotContains(
+			$running_post->ID,
+			$query->posts,
+			'Integer 0 should exclude currently running events from upcoming events'
+		);
+
+		// Test for upcoming events with integer 1 (should include).
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
+				'include_unfinished'           => 1, // Integer 1.
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertContains(
+			$running_post->ID,
+			$query->posts,
+			'Integer 1 should include currently running events in upcoming events'
+		);
+	}
+
+	/**
+	 * Test default behavior for include_unfinished parameter.
+	 *
+	 * Upcoming events should include currently running events by default.
+	 * Past events should exclude currently running events by default.
+	 *
+	 * @covers ::adjust_sorting_for_upcoming_events
+	 * @covers ::adjust_sorting_for_past_events
+	 *
+	 * @return void
+	 */
+	public function test_include_unfinished_defaults(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a currently running event.
+		$running_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$running_event = new Event( $running_post->ID );
+
+		// Set event to be currently running (started 2 hours ago, ends 2 hours from now).
+		$params = array(
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', time() - ( 2 * HOUR_IN_SECONDS ) ), // Started 2 hours ago.
+			'datetime_end'   => gmdate( 'Y-m-d H:i:s', time() + ( 2 * HOUR_IN_SECONDS ) ), // Ends 2 hours from now.
+			'timezone'       => 'America/New_York',
+		);
+		$running_event->save_datetimes( $params );
+
+		// Test upcoming events default behavior (should include currently running).
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'upcoming',
+				// No include_unfinished parameter - test default.
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertContains(
+			$running_post->ID,
+			$query->posts,
+			'Upcoming events should include currently running events by default'
+		);
+
+		// Test past events default behavior (should exclude currently running).
+		$query = new WP_Query(
+			array(
+				'post_type'                    => Event::POST_TYPE,
+				'posts_per_page'               => 10,
+				'fields'                       => 'ids',
+				Event_Query::EVENT_QUERY_PARAM => 'past',
+				// No include_unfinished parameter - test default.
+			)
+		);
+		$instance->prepare_event_query_before_execution( $query );
+		$query->query( $query->query_vars );
+
+		$this->assertNotContains(
+			$running_post->ID,
+			$query->posts,
+			'Past events should exclude currently running events by default'
+		);
+	}
+
+	/**
+	 * Test that currently running events appear in upcoming query by default.
+	 *
+	 * @covers ::adjust_sorting_for_upcoming_events
+	 * @covers ::adjust_sorting_for_past_events
+	 * @covers ::get_upcoming_events
+	 * @covers ::get_past_events
+	 *
+	 * @return void
+	 */
+	public function test_currently_running_events_in_upcoming_query(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create an event that started yesterday and ends tomorrow (currently running).
+		$running_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$running_event = new Event( $running_post->ID );
+		$date          = new DateTime( 'now' );
+
+		$params = array(
+			'datetime_start' => $date->modify( '-1 day' )->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $date->modify( '+2 days' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$running_event->save_datetimes( $params );
+
+		// Create a truly future event.
+		$future_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$future_event = new Event( $future_post->ID );
+		$future_date  = new DateTime( 'tomorrow' );
+
+		$params = array(
+			'datetime_start' => $future_date->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $future_date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$future_event->save_datetimes( $params );
+
+		// Create a truly past event.
+		$past_post  = $this->mock->post( array( 'post_type' => 'gatherpress_event' ) )->get();
+		$past_event = new Event( $past_post->ID );
+		$past_date  = new DateTime( 'yesterday' );
+
+		$params = array(
+			'datetime_start' => $past_date->modify( '-2 days' )->format( 'Y-m-d H:i:s' ),
+			'datetime_end'   => $past_date->modify( '+1 day' )->format( 'Y-m-d H:i:s' ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$past_event->save_datetimes( $params );
+
+		// The currently running event should appear in upcoming events.
+		$upcoming = $instance->get_upcoming_events( 10 );
+		$this->assertContains(
+			$running_post->ID,
+			$upcoming->posts,
+			'Currently running event should appear in upcoming events query'
+		);
+		$this->assertContains(
+			$future_post->ID,
+			$upcoming->posts,
+			'Future event should appear in upcoming events query'
+		);
+		$this->assertNotContains(
+			$past_post->ID,
+			$upcoming->posts,
+			'Completely past event should not appear in upcoming events query'
+		);
+
+		// With the default inclusive=false for past events, currently running
+		// events should NOT appear in past queries - only truly finished events.
+		$past = $instance->get_past_events( 10 );
+		$this->assertNotContains(
+			$running_post->ID,
+			$past->posts,
+			'Currently running event should NOT appear in past events query by default'
+		);
+		$this->assertContains(
+			$past_post->ID,
+			$past->posts,
+			'Completely past event should appear in past events query'
+		);
+		$this->assertNotContains(
+			$future_post->ID,
+			$past->posts,
+			'Future event should not appear in past events query'
 		);
 	}
 }

@@ -59,16 +59,18 @@ class Setup {
 		Assets::get_instance();
 		Block::get_instance();
 		Cli::get_instance();
+		Feed::get_instance();
 		Event_Query::get_instance();
 		Event_Rest_Api::get_instance();
 		Event_Setup::get_instance();
 		Export::get_instance();
 		Import::get_instance();
+		Rsvp_Form::get_instance();
 		Rsvp_Query::get_instance();
 		Rsvp_Setup::get_instance();
 		Settings::get_instance();
-		User::get_instance();
 		Topic::get_instance();
+		User::get_instance();
 		Venue::get_instance();
 	}
 
@@ -85,7 +87,6 @@ class Setup {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
-		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ) );
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );
 		add_action( 'network_admin_notices', array( $this, 'check_gatherpress_alpha' ) );
@@ -184,37 +185,19 @@ class Setup {
 	}
 
 	/**
-	 * Flush GatherPress rewrite rules if the previously added flag exists and then remove the flag.
+	 * Schedule rewrite rules flush by deleting the core rewrite_rules option.
 	 *
-	 * This method checks if the 'gatherpress_flush_rewrite_rules_flag' option exists. If it does, it flushes
-	 * the rewrite rules to ensure they are up to date and removes the flag afterward.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public function maybe_flush_rewrite_rules(): void {
-		if ( get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
-			flush_rewrite_rules();
-			delete_option( 'gatherpress_flush_rewrite_rules_flag' );
-		}
-	}
-
-	/**
-	 * Creates a flag option to indicate that rewrite rules need to be flushed.
-	 *
-	 * This method checks if the 'gatherpress_flush_rewrite_rules_flag' option
-	 * exists. If it does not, it adds the option and sets it to true. This flag
-	 * can be used to determine when rewrite rules should be flushed.
+	 * WordPress will automatically regenerate rewrite rules on the next request
+	 * when the rewrite_rules option is missing. This is more efficient than
+	 * calling flush_rewrite_rules() directly and removes the need for a custom
+	 * flag option.
 	 *
 	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
-	private function maybe_create_flush_rewrite_rules_flag(): void {
-		if ( ! get_option( 'gatherpress_flush_rewrite_rules_flag' ) ) {
-			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
-		}
+	private function schedule_rewrite_flush(): void {
+		delete_option( 'rewrite_rules' );
 	}
 
 	/**
@@ -410,7 +393,7 @@ class Setup {
 		dbDelta( $sql );
 
 		$this->add_online_event_term();
-		$this->maybe_create_flush_rewrite_rules_flag();
+		$this->schedule_rewrite_flush();
 	}
 
 	/**
@@ -428,9 +411,9 @@ class Setup {
 		if (
 			defined( 'GATHERPRESS_ALPHA_VERSION' ) ||
 			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
-				false === strpos( get_current_screen()->id, 'plugins' ) &&
-				false === strpos( get_current_screen()->id, 'plugin-install' ) &&
-				false === strpos( get_current_screen()->id, 'gatherpress' )
+				! str_contains( get_current_screen()->id, 'plugins' ) &&
+				! str_contains( get_current_screen()->id, 'plugin-install' ) &&
+				! str_contains( get_current_screen()->id, 'gatherpress' )
 			)
 		) {
 			return;

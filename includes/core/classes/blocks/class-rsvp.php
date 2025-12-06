@@ -13,10 +13,12 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Block;
+use GatherPress\Core\Blocks\Form_Field;
+use GatherPress\Core\Blocks\General_Block;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp_Setup;
-use GatherPress\Core\Rsvp_Token;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -66,6 +68,13 @@ class Rsvp {
 		add_filter( $render_block_hook, array( $this, 'apply_rsvp_button_interactivity' ) );
 		// Priority 11 ensures this runs after transform_block_content which modifies the block structure.
 		add_filter( $render_block_hook, array( $this, 'apply_guest_count_watch' ), 11 );
+		// Priority 9 ensures this runs before transform_block_content to properly register form field hooks.
+		add_filter( $render_block_hook, array( $this, 'apply_guests_input_interactivity' ), 9 );
+
+		// Add hooks for conditional form field processing.
+		$general_block = General_Block::get_instance();
+		add_filter( $render_block_hook, array( $general_block, 'process_guests_field' ), 10, 2 );
+		add_filter( $render_block_hook, array( $general_block, 'process_anonymous_field' ), 10, 2 );
 	}
 
 	/**
@@ -91,10 +100,20 @@ class Rsvp {
 	public function transform_block_content( string $block_content, array $block ): string {
 		$block_instance = Block::get_instance();
 		$post_id        = $block_instance->get_post_id( $block );
-		$event          = new Event( $post_id );
-		$inner_blocks   = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
-		$attributes     = isset( $block['attrs'] ) ? $block['attrs'] : array();
+
+		// Validate that the post ID is an actual event post type.
+		// Only check publish status if not in preview mode.
+		if (
+			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+		) {
+			return '';
+		}
+
+		$event        = new Event( $post_id );
+		$inner_blocks = isset( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
+		$tag          = new WP_HTML_Tag_Processor( $block_content );
+		$attributes   = isset( $block['attrs'] ) ? $block['attrs'] : array();
 
 		if ( $tag->next_tag() ) {
 			/**
@@ -141,7 +160,7 @@ class Rsvp {
 				$inner_blocks_markup = '';
 
 				foreach ( $serialized_inner_blocks as $status => $serialized_inner_block ) {
-					$class                = $status !== $filtered_status ? 'gatherpress--is-not-visible' : '';
+					$class                = $status !== $filtered_status ? 'gatherpress--is-hidden' : '';
 					$inner_blocks_markup .= sprintf(
 						'<div class="%s" data-rsvp-status="%s">%s</div>',
 						esc_attr( $class ),
@@ -181,7 +200,7 @@ class Rsvp {
 	 * Adds interactivity to RSVP buttons within the block content.
 	 *
 	 * This method scans the block content for elements with the class
-	 * `gatherpress--update-rsvp`. If such an element is found, it checks for a
+	 * `gatherpress-rsvp--trigger-update`. If such an element is found, it checks for a
 	 * nested `<a>` or `<button>` tag. The appropriate attributes for interactivity
 	 * are added to either the nested tag or the containing element if no nested tag
 	 * exists.
@@ -195,44 +214,55 @@ class Rsvp {
 	public function apply_rsvp_button_interactivity( string $block_content ): string {
 		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-		// Process only tags with the specific class 'gatherpress--update-rsvp'.
-		$rsvp_class = 'gatherpress--update-rsvp';
+		// Process only tags with the specific class 'gatherpress-rsvp--trigger-update'.
+		$rsvp_class = 'gatherpress-rsvp--trigger-update';
 
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, $rsvp_class ) ) {
-				$classes        = explode( ' ', $class_attr );
+			// str_contains is used here to match BEM modifiers that extend the base class.
+			// For example, 'gatherpress-rsvp--trigger-update__attending' includes the base class as a prefix.
+			if ( $class_attr && str_contains( $class_attr, $rsvp_class ) ) {
+				$classes        = preg_split( '/\s+/', trim( $class_attr ) );
 				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );
 				$matched_status = null;
 
-				foreach ( $classes as $class ) {
-					if ( false !== strpos( $class, $rsvp_class ) ) {
-						foreach ( $statuses as $status ) {
-							if ( sprintf( '%s__%s', $rsvp_class, $status ) === $class ) {
-								$matched_status = $status;
-								break 2;
-							}
-						}
+				foreach ( $statuses as $status ) {
+					$target_class = sprintf( '%s__%s', $rsvp_class, $status );
+					if ( in_array( $target_class, $classes, true ) ) {
+						$matched_status = $status;
+						break;
 					}
 				}
 
-				if (
-					// @phpstan-ignore-next-line
+				$target_found = false;
+
+				// Check if current element is an anchor or button.
+				if ( in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true ) ) {
+					$target_found = true;
+				} elseif (
 					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A' ), true )
+					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
 				) {
-					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-				} else {
-					$tag->set_attribute( 'tabindex', '0' );
-					$tag->set_attribute( 'role', 'button' );
+					$target_found = true;
 				}
 
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+				// Apply RSVP attributes if target was found.
+				if ( $target_found ) {
+					// Links only get role="button", others get full keyboard handling.
+					if ( 'A' === $tag->get_tag() ) {
+						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
+					} else {
+						$tag->set_attribute( 'tabindex', '0' );
+						$tag->set_attribute( 'role', 'button' );
+					}
 
-				if ( ! empty( $matched_status ) ) {
-					$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+
+					if ( ! empty( $matched_status ) ) {
+						$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
+					}
 				}
 			}
 		}
@@ -265,15 +295,97 @@ class Rsvp {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && false !== strpos( $class_attr, 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
+			if ( Utility::has_css_class( $class_attr, 'wp-block-gatherpress-rsvp-guest-count-display' ) ) {
 				$tag->set_attribute( 'data-wp-watch', 'callbacks.updateGuestCountDisplay' );
 
 				if ( empty( $user_details['guests'] ) ) {
-					$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-not-visible' );
+					$tag->set_attribute( 'class', $class_attr . ' gatherpress--is-hidden' );
 				}
 			}
 		}
 
 		return $tag->get_updated_html();
+	}
+
+	/**
+	 * Apply interactivity attributes to guest count form field.
+	 *
+	 * Processes form-field blocks within RSVP blocks, applying the guest count form field callback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The block content to modify.
+	 * @return string The modified block content with form field callbacks applied.
+	 */
+	public function apply_guests_input_interactivity( string $block_content ): string {
+		// Apply form field callback for any form-field blocks within this RSVP block.
+		$form_field_hook = sprintf( 'render_block_%s', Form_Field::BLOCK_NAME );
+
+		add_filter( $form_field_hook, array( $this, 'handle_rsvp_form_fields' ), 10, 2 );
+
+		return $block_content;
+	}
+
+	/**
+	 * Handle RSVP-related form field rendering.
+	 *
+	 * Processes form-field blocks with RSVP-specific field names to either
+	 * remove the field (if not permitted) or apply interactivity attributes.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $block_content The form field block content.
+	 * @param array  $block         The block data including attributes.
+	 * @return string The modified block content or empty string if field should be hidden.
+	 */
+	public function handle_rsvp_form_fields( string $block_content, array $block ): string {
+		$attributes = $block['attrs'] ?? array();
+		$field_name = $attributes['fieldName'] ?? '';
+
+		// Get the correct post ID for remaining logic.
+		$block_instance = Block::get_instance();
+		$post_id        = $block_instance->get_post_id( $block );
+
+		// Handle guest count field interactivity.
+		if ( 'gatherpress_rsvp_guests' === $field_name ) {
+			$max_guest_limit = get_post_meta( $post_id, 'gatherpress_max_guest_limit', true );
+
+			// Apply interactivity attributes and max limit for guest count.
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
+				$name_attr = $tag->get_attribute( 'name' );
+
+				if ( 'gatherpress_rsvp_guests' === $name_attr ) {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-watch', 'callbacks.setGuestCount' );
+					$tag->set_attribute( 'data-wp-on--change', 'actions.updateGuestCount' );
+					$tag->set_attribute( 'max', (string) $max_guest_limit );
+				}
+			}
+
+			return $tag->get_updated_html();
+		}
+
+		// Handle anonymous checkbox field interactivity.
+		if ( 'gatherpress_rsvp_anonymous' === $field_name ) {
+			// Apply interactivity attributes for anonymous checkbox.
+			$tag = new WP_HTML_Tag_Processor( $block_content );
+
+			while ( $tag->next_tag( array( 'tag_name' => 'input' ) ) ) {
+				$name_attr = $tag->get_attribute( 'name' );
+
+				if ( 'gatherpress_rsvp_anonymous' === $name_attr ) {
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--change', 'actions.updateAnonymous' );
+					$tag->set_attribute( 'data-wp-watch', 'callbacks.monitorAnonymousStatus' );
+				}
+			}
+
+			return $tag->get_updated_html();
+		}
+
+		// Return unmodified content for non-RSVP form fields.
+		return $block_content;
 	}
 }

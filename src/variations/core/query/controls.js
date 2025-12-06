@@ -52,7 +52,7 @@ const QueryPosttypeObserver = ( { attributes, setAttributes } ) => {
 				namespace: NAME,
 				query: {
 					...attributes.query,
-					gatherpress_events_query: 'upcoming',
+					gatherpress_event_query: 'upcoming',
 					include_unfinished: 1,
 					order: 'asc',
 					orderBy: 'datetime',
@@ -96,7 +96,7 @@ const withGatherPressQueryControls = ( BlockEdit ) => ( props ) => {
 			<BlockEdit { ...props } />
 			<InspectorControls>
 				<PanelBody title={ __( 'Event Query Settings', 'gatherpress' ) }>
-					{ props.attributes.query.inherit === false ? (
+					{ false === props.attributes.query.inherit ? (
 						<GatherPressQueryControls.Slot
 							fillProps={ { ...props } }
 						/>

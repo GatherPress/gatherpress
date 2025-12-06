@@ -43,7 +43,14 @@ export default function Edit( { attributes, setAttributes } ) {
 		required,
 		autocomplete,
 	} = attributes;
-	const blockProps = useBlockProps();
+
+	// Handle data attributes for conditional rendering.
+	const additionalProps = {};
+	if ( attributes[ 'data-gatherpress-no-render' ] ) {
+		additionalProps[ 'data-gatherpress-no-render' ] = attributes[ 'data-gatherpress-no-render' ];
+	}
+
+	const blockProps = useBlockProps( additionalProps );
 
 	/**
 	 * Generate field name from label.
@@ -291,7 +298,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							onChange={ ( value ) => {
 								// Only allow lowercase alphanumeric, underscore, hyphen, space.
 								const sanitized = value.replace(
-									/[^a-zA0-9_\s-]/g,
+									/[^a-z0-9_\s-]/g,
 									'',
 								);
 

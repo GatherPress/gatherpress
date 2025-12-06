@@ -22,7 +22,7 @@ All settings for the GatherPress plugins are located in `Events > Settings > Gen
 As default, the event date is used as the date of the event you're adding to your website. You can toggle this change here to use the publish date instead.
 
 **Mapping Platform**
-You can select from two providers for Maps which are displayed on the event page. The default is `OpenStreetMap`, but can be changed to `Google Maps` here.
+You can select from two providers for Maps which are displayed on the event page. The default is `OpenStreetMap`, but it can be changed to `Google Maps` here.
 
 **Maximum Attendance Limit**
 This option allows you to choose the default number chosen as the maximum number of attendees you can have for an event. This is useful if you use the same venue which may have restrictions on occupancy. You can also amend this value on any event page. Choosing `0` will remove any limits.

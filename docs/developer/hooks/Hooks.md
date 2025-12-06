@@ -10,9 +10,15 @@
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format)
+- [`gatherpress_datetime_format`](gatherpress_datetime_format)
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format)
 - [`gatherpress_timezone`](gatherpress_timezone)
+
+## class-feed.php
+
+- [`gatherpress_event_feed_content`](gatherpress_event_feed_content) Filters the event content in feeds.
+- [`gatherpress_event_feed_excerpt`](gatherpress_event_feed_excerpt) Filters the event excerpt in feeds.
 
 ## class-import.php
 
@@ -29,6 +35,15 @@
 ## class-settings.php
 
 - [`gatherpress_sub_pages`](gatherpress_sub_pages) Filters the list of GatherPress sub pages.
+
+## class-user.php
+
+- [`gatherpress_event_updates_default_opt_in`](gatherpress_event_updates_default_opt_in) Filters the default state of the event updates opt-in.
+
+## class-utility.php
+
+- [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input) Short-circuit filter for HTTP input retrieval during testing.
+- [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer) Short-circuit filter for wp_get_referer() during testing.
 
 ## index.php
 

@@ -468,14 +468,9 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return string HTML content for the attendee column, including attendee information and action links.
 	 */
 	public function column_attendee( array $item ): string {
-		$base_url    = admin_url( 'edit.php' );
-		$current_url = add_query_arg(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'page'      => Rsvp::COMMENT_TYPE,
-			),
-			$base_url
-		);
+		// Use current URL to preserve all filtering parameters.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 		$nonce       = wp_create_nonce( Rsvp::COMMENT_TYPE );
 		$actions     = array();
 		$is_approved = ( '1' === $item['comment_approved'] );
@@ -707,57 +702,74 @@ class RSVP_List_Table extends WP_List_Table {
 			}
 		}
 
-		if ( $nonce_verified ) {
-			if ( isset( $_REQUEST['user_id'] ) ) {
-				$user_id = absint( $_REQUEST['user_id'] );
-
-				if ( get_current_user_id() === $user_id ) {
-					$current = 'mine';
-				}
-			} elseif ( isset( $_REQUEST['status'] ) ) {
-				$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
-			}
+		// Check for post_id filter.
+		$post_id = 0;
+		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
+			$post_id = intval( $_REQUEST['post_id'] );
 		}
 
-		$base_url = add_query_arg(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'page'      => Rsvp::COMMENT_TYPE,
-				'_wpnonce'  => wp_create_nonce( Rsvp::COMMENT_TYPE ),
-			),
-			admin_url( 'edit.php' )
+		// Check for current view status (doesn't require nonce).
+		if ( isset( $_REQUEST['user_id'] ) ) {
+			$user_id = absint( $_REQUEST['user_id'] );
+
+			if ( get_current_user_id() === $user_id ) {
+				$current = 'mine';
+			}
+		} elseif ( isset( $_REQUEST['status'] ) ) {
+			$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
+		}
+
+		$base_url_args = array(
+			'post_type' => Event::POST_TYPE,
+			'page'      => Rsvp::COMMENT_TYPE,
+			'_wpnonce'  => wp_create_nonce( Rsvp::COMMENT_TYPE ),
 		);
+
+		// Preserve post_id filter in base URL.
+		if ( $post_id ) {
+			$base_url_args['post_id'] = $post_id;
+		}
+
+		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
+
+		// Base args for count queries.
+		$count_base_args = array( 'count' => true );
+		if ( $post_id ) {
+			$count_base_args['post_id'] = $post_id;
+		}
 
 		// Get counts for each status.
 		$all_count      = $rsvp_query->get_rsvps(
-			array(
-				'status' => 'all',
-				'count'  => true,
+			array_merge(
+				$count_base_args,
+				array( 'status' => 'all' )
 			)
 		);
 		$approved_count = $rsvp_query->get_rsvps(
-			array(
-				'status' => 'approve',
-				'count'  => true,
+			array_merge(
+				$count_base_args,
+				array( 'status' => 'approve' )
 			)
 		);
 		$pending_count  = $rsvp_query->get_rsvps(
-			array(
-				'status' => 'hold',
-				'count'  => true,
+			array_merge(
+				$count_base_args,
+				array( 'status' => 'hold' )
 			)
 		);
 		$spam_count     = $rsvp_query->get_rsvps(
-			array(
-				'status' => 'spam',
-				'count'  => true,
+			array_merge(
+				$count_base_args,
+				array( 'status' => 'spam' )
 			)
 		);
 		$mine_count     = $rsvp_query->get_rsvps(
-			array(
-				'status'  => 'all',
-				'user_id' => get_current_user_id(),
-				'count'   => true,
+			array_merge(
+				$count_base_args,
+				array(
+					'status'  => 'all',
+					'user_id' => get_current_user_id(),
+				)
 			)
 		);
 

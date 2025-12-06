@@ -69,12 +69,12 @@ const { state, actions } = store( 'gatherpress', {
 				);
 				element.ref.textContent = element.ref.dataset.showFewer;
 
-				// Show all RSVP responses by removing the 'gatherpress--is-not-visible' class.
+				// Show all RSVP responses by removing the 'gatherpress--is-hidden' class.
 				const hiddenElements = rsvpResponsesElement.querySelectorAll(
-					'[data-id].gatherpress--is-not-visible',
+					'[data-id].gatherpress--is-hidden',
 				);
 				hiddenElements.forEach( ( el ) =>
-					el.classList.remove( 'gatherpress--is-not-visible' ),
+					el.classList.remove( 'gatherpress--is-hidden' ),
 				);
 			} else {
 				element.ref.setAttribute(
@@ -88,9 +88,9 @@ const { state, actions } = store( 'gatherpress', {
 					rsvpResponsesElement.querySelectorAll( '[data-id]' );
 				rsvpItems.forEach( ( el, index ) => {
 					if ( index >= limit ) {
-						el.classList.add( 'gatherpress--is-not-visible' );
+						el.classList.add( 'gatherpress--is-hidden' );
 					} else {
-						el.classList.remove( 'gatherpress--is-not-visible' );
+						el.classList.remove( 'gatherpress--is-hidden' );
 					}
 				} );
 			}
@@ -156,11 +156,11 @@ const { state, actions } = store( 'gatherpress', {
 			// Determine the count to replace %d with based on the class.
 			let count = 0;
 
-			if ( classList.contains( 'gatherpress--rsvp-attending' ) ) {
+			if ( classList.contains( 'gatherpress--is-attending' ) ) {
 				count = state.posts[ postId ]?.eventResponses?.attending || 0;
-			} else if ( classList.contains( 'gatherpress--rsvp-waiting-list' ) ) {
+			} else if ( classList.contains( 'gatherpress--is-waiting-list' ) ) {
 				count = state.posts[ postId ]?.eventResponses?.waitingList || 0;
-			} else if ( classList.contains( 'gatherpress--rsvp-not-attending' ) ) {
+			} else if ( classList.contains( 'gatherpress--is-not-attending' ) ) {
 				count = state.posts[ postId ]?.eventResponses?.notAttending || 0;
 			}
 
@@ -189,15 +189,15 @@ const { state, actions } = store( 'gatherpress', {
 
 			if (
 				0 === count &&
-				! classList.contains( 'gatherpress--rsvp-attending' )
+				! classList.contains( 'gatherpress--is-attending' )
 			) {
-				parentElement.classList.add( 'gatherpress--is-not-visible' );
+				parentElement.classList.add( 'gatherpress--is-hidden' );
 			} else {
-				parentElement.classList.remove( 'gatherpress--is-not-visible' );
+				parentElement.classList.remove( 'gatherpress--is-hidden' );
 			}
 
 			const visibleItems = dropdownParent.querySelectorAll(
-				'.wp-block-gatherpress-dropdown-item:not(.gatherpress--is-not-visible)',
+				'.wp-block-gatherpress-dropdown-item:not(.gatherpress--is-hidden)',
 			);
 
 			// Disable the dropdown if "Attending" is both:
@@ -206,7 +206,7 @@ const { state, actions } = store( 'gatherpress', {
 			if (
 				1 === visibleItems.length &&
 				visibleItems[ 0 ].classList.contains(
-					'gatherpress--rsvp-attending',
+					'gatherpress--is-attending',
 				) &&
 				visibleItems[ 0 ].textContent === triggerElement.textContent
 			) {
@@ -249,9 +249,9 @@ const { state, actions } = store( 'gatherpress', {
 
 			// If the count is less than or equal to the limit, apply the class.
 			if ( count <= limit ) {
-				element.ref.classList.add( 'gatherpress--is-not-visible' );
+				element.ref.classList.add( 'gatherpress--is-hidden' );
 			} else {
-				element.ref.classList.remove( 'gatherpress--is-not-visible' );
+				element.ref.classList.remove( 'gatherpress--is-hidden' );
 			}
 
 			// Reset the anchor.

@@ -108,13 +108,31 @@ export const EventIncludeUnfinishedControls = ( {
 	attributes,
 	setAttributes,
 } ) => {
-	const { query: { include_unfinished: includeUnfinished } = {} } =
-		attributes;
+	const {
+		query: {
+			include_unfinished: includeUnfinished,
+			gatherpress_event_query: eventListType = 'upcoming',
+		} = {},
+	} = attributes;
+
+	// Determine the effective value based on defaults:
+	// - For upcoming events: default to true (include currently running events)
+	// - For past events: default to false (exclude currently running events)
+	// If explicitly set to 1 or 0, use that value
+	// Note: We need to check against undefined specifically, not just truthy/falsy
+	let effectiveValue;
+	if ( undefined === includeUnfinished ) {
+		// Not explicitly set, use defaults based on event type
+		effectiveValue = ( 'upcoming' === eventListType );
+	} else {
+		// Explicitly set to 1 or 0 (integers)
+		effectiveValue = ( 1 === includeUnfinished );
+	}
 
 	return (
 		<>
 			<ToggleControl
-				label={ __( 'Include unfinished Events', 'gatherpress' ) }
+				label={ __( 'Include unfinished events', 'gatherpress' ) }
 				help={ sprintf(
 					/* translators: %s: 'upcoming' or 'past' */
 					_x(
@@ -122,16 +140,17 @@ export const EventIncludeUnfinishedControls = ( {
 						"'Shows' or 'Hides'",
 						'gatherpress',
 					),
-					includeUnfinished
+					effectiveValue
 						? __( 'Shows', 'gatherpress' )
 						: __( 'Hides', 'gatherpress' ),
 				) }
-				checked={ includeUnfinished }
+				checked={ effectiveValue }
 				onChange={ ( value ) => {
+					const newValue = value ? 1 : 0;
 					setAttributes( {
 						query: {
 							...attributes.query,
-							include_unfinished: value ? 1 : 0,
+							include_unfinished: newValue,
 						},
 					} );
 				} }
@@ -145,7 +164,7 @@ export const EventIncludeUnfinishedControls = ( {
  *
  * Lets the editor choose whether the query returns "upcoming" or "past" events.
  * Toggled via a ToggleControl between upcoming (future) or past (archived) events,
- * stored as `gatherpress_events_query` in attributes.
+ * stored as `gatherpress_event_query` in attributes.
  *
  * @param {Object}   props
  * @param {Object}   props.attributes    Block attributes.
@@ -154,7 +173,7 @@ export const EventIncludeUnfinishedControls = ( {
  */
 export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 	const {
-		query: { gatherpress_events_query: eventListType = 'upcoming' } = {},
+		query: { gatherpress_event_query: eventListType = 'upcoming' } = {},
 	} = attributes;
 
 	const currentPost = useSelect( ( select ) => {
@@ -179,10 +198,16 @@ export const EventListTypeControls = ( { attributes, setAttributes } ) => {
 			) }
 			checked={ 'upcoming' === eventListType }
 			onChange={ ( value ) => {
+				// When switching event type, explicitly set include_unfinished to the
+				// default for the new event type to ensure WordPress recognizes the state change
+				const newEventType = value ? 'upcoming' : 'past';
+				const defaultIncludeUnfinished = ( 'upcoming' === newEventType ) ? 1 : 0;
+
 				setAttributes( {
 					query: {
 						...attributes.query,
-						gatherpress_events_query: value ? 'upcoming' : 'past',
+						gatherpress_event_query: newEventType,
+						include_unfinished: defaultIncludeUnfinished,
 					},
 				} );
 			} }
@@ -236,9 +261,9 @@ export const EventOffsetControls = ( { attributes, setAttributes } ) => {
 export const EventOrderControls = ( { attributes, setAttributes } ) => {
 	const { query: { order, orderBy } = {} } = attributes;
 	let label;
-	if ( orderBy === 'rand' ) {
+	if ( 'rand' === orderBy ) {
 		label = __( 'Random Order', 'gatherpress' );
-	} else if ( order === 'asc' ) {
+	} else if ( 'asc' === order ) {
 		label = __( 'Ascending Order', 'gatherpress' );
 	} else {
 		label = __( 'Descending Order', 'gatherpress' );
@@ -281,13 +306,13 @@ export const EventOrderControls = ( { attributes, setAttributes } ) => {
 			/>
 			<ToggleControl
 				label={ label }
-				checked={ order === 'asc' }
-				disabled={ orderBy === 'rand' }
+				checked={ 'asc' === order }
+				disabled={ 'rand' === orderBy }
 				onChange={ () => {
 					setAttributes( {
 						query: {
 							...attributes.query,
-							order: order === 'asc' ? 'desc' : 'asc',
+							order: 'asc' === order ? 'desc' : 'asc',
 						},
 					} );
 				} }

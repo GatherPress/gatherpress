@@ -56,7 +56,7 @@ export default function RadioField( {
 		const newOptions = [ ...radioOptions ];
 		newOptions[ index ] = { ...newOptions[ index ], [ field ]: value };
 
-		if ( field === 'label' ) {
+		if ( 'label' === field ) {
 			const cleanValue = value
 				.toLowerCase()
 				.replace( /[^a-z0-9]+/g, '-' )
@@ -66,7 +66,7 @@ export default function RadioField( {
 
 		setAttributes( { radioOptions: newOptions } );
 
-		if ( field === 'label' && index === 0 && ! fieldName && value ) {
+		if ( 'label' === field && 0 === index && ! fieldName && value ) {
 			const generatedFieldName = generateFieldName( value );
 			if ( generatedFieldName ) {
 				setAttributes( { fieldName: generatedFieldName } );
@@ -125,14 +125,14 @@ export default function RadioField( {
 	};
 
 	const handleKeyDown = ( event, index ) => {
-		if ( event.key === 'Enter' ) {
+		if ( 'Enter' === event.key ) {
 			event.preventDefault();
 			addRadioOption();
-		} else if ( event.key === 'Backspace' || event.key === 'Delete' ) {
+		} else if ( 'Backspace' === event.key || 'Delete' === event.key ) {
 			const currentOption = radioOptions[ index ];
 
 			// Only remove if the option is empty and it's not the last remaining option.
-			if ( ! currentOption.label && radioOptions.length > 1 ) {
+			if ( ! currentOption.label && 1 < radioOptions.length ) {
 				event.preventDefault();
 				removeRadioOption( index );
 			}

@@ -90,7 +90,7 @@ const Edit = ( props ) => {
 
 	const selectTopics = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			( token ) => typeof token === 'string' && ! topicSuggestions[ token ],
+			( token ) => 'string' === typeof token && ! topicSuggestions[ token ],
 		);
 
 		if ( hasNoSuggestion ) {
@@ -98,7 +98,7 @@ const Edit = ( props ) => {
 		}
 
 		const allTopics = tokens.map( ( token ) => {
-			return typeof token === 'string' ? topicSuggestions[ token ] : token;
+			return 'string' === typeof token ? topicSuggestions[ token ] : token;
 		} );
 
 		if ( includes( allTopics, null ) ) {
@@ -110,7 +110,7 @@ const Edit = ( props ) => {
 
 	const selectVenues = ( tokens ) => {
 		const hasNoSuggestion = tokens.some(
-			( token ) => typeof token === 'string' && ! venueSuggestions[ token ],
+			( token ) => 'string' === typeof token && ! venueSuggestions[ token ],
 		);
 
 		if ( hasNoSuggestion ) {
@@ -118,7 +118,7 @@ const Edit = ( props ) => {
 		}
 
 		const allVenues = tokens.map( ( token ) => {
-			return typeof token === 'string' ? venueSuggestions[ token ] : token;
+			return 'string' === typeof token ? venueSuggestions[ token ] : token;
 		} );
 
 		if ( includes( allVenues, null ) ) {

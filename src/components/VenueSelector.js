@@ -108,7 +108,7 @@ const VenueSelector = () => {
 			setWebsite: websiteUpdated,
 			setLatitude: latitudeUpdated,
 			setLongitude: longitudeUpdated,
-			setIsOnlineEventTerm: venueSlug === 'online-event',
+			setIsOnlineEventTerm: 'online-event' === venueSlug,
 		} );
 	}, [
 		venueSlug,

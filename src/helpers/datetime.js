@@ -345,9 +345,23 @@ export function updateDateTimeStart(
 	setDateTimeStart = null,
 	setDateTimeEnd = null,
 ) {
-	validateDateTimeStart( date, setDateTimeEnd );
+	// Store the current duration before updating the start time.
+	const currentDuration = getDateTimeOffset();
 
 	setToGlobal( 'eventDetails.dateTime.datetime_start', date );
+
+	// If in relative mode (duration is numeric), always update the end time to maintain the offset.
+	if ( 'number' === typeof currentDuration && false !== currentDuration ) {
+		const dateTimeEnd = moment
+			.tz( date, getTimezone() )
+			.add( currentDuration, 'hours' )
+			.format( dateTimeDatabaseFormat );
+
+		updateDateTimeEnd( dateTimeEnd, setDateTimeEnd );
+	} else {
+		// Otherwise, only validate to ensure end is after start.
+		validateDateTimeStart( date, setDateTimeEnd, currentDuration );
+	}
 
 	if ( 'function' === typeof setDateTimeStart ) {
 		setDateTimeStart( date );
@@ -394,17 +408,19 @@ export function updateDateTimeEnd(
  *
  * This function compares the provided start date and time with the current end date
  * and time of the event. If the start date is greater than or equal to the end date,
- * it adjusts the end date to ensure a minimum two-hour duration from the start date.
+ * it adjusts the end date. If there's an active duration (relative mode), it maintains
+ * that duration offset. Otherwise, it defaults to a two-hour duration.
  * If `setDateTimeEnd` is provided, it updates the end date accordingly.
  *
  * @since 1.0.0
  *
- * @param {string}        dateTimeStart  - The start date and time in a valid format.
- * @param {Function|null} setDateTimeEnd - Optional callback to update the end date and time.
+ * @param {string}        dateTimeStart   - The start date and time in a valid format.
+ * @param {Function|null} setDateTimeEnd  - Optional callback to update the end date and time.
+ * @param {number|false}  currentDuration - The current duration in hours (numeric for relative mode, false for absolute mode).
  *
  * @return {void}
  */
-export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null ) {
+export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null, currentDuration = null ) {
 	const dateTimeEndNumeric = moment
 		.tz( getFromGlobal( 'eventDetails.dateTime.datetime_end' ), getTimezone() )
 		.valueOf();
@@ -413,9 +429,14 @@ export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null ) {
 		.valueOf();
 
 	if ( dateTimeStartNumeric >= dateTimeEndNumeric ) {
+		// Use the passed duration if available, otherwise check current offset.
+		// Only use duration if it's numeric (relative mode), not if it's false (absolute mode).
+		const duration = null !== currentDuration ? currentDuration : getDateTimeOffset();
+		const hoursToAdd = ( false !== duration && 'number' === typeof duration ) ? duration : 2;
+
 		const dateTimeEnd = moment
 			.tz( dateTimeStartNumeric, getTimezone() )
-			.add( 2, 'hours' )
+			.add( hoursToAdd, 'hours' )
 			.format( dateTimeDatabaseFormat );
 
 		updateDateTimeEnd( dateTimeEnd, setDateTimeEnd );
@@ -513,7 +534,7 @@ export function convertPHPToMomentFormat( format ) {
 		.map( ( chr, index, elements ) => {
 			// Allow the format string to contain escaped chars, like ES or DE needs
 			const last = elements[ index - 1 ];
-			if ( chr in replacements && last !== '\\' ) {
+			if ( chr in replacements && '\\' !== last ) {
 				return replacements[ chr ];
 			}
 			return chr;
@@ -549,4 +570,63 @@ export function dateTimePreview() {
 			<DateTimePreview attrs={ attrs } />,
 		);
 	}
+}
+
+/**
+ * Non-time PHP Date format characters
+ *
+ * @since 1.0.0
+ *
+ * @see https://www.php.net/manual/en/datetime.format.php
+ *
+ * @type {Array}
+ */
+export const phpNonTimeFormatChars = [
+	'd',
+	'D',
+	'j',
+	'l',
+	'N',
+	'S',
+	'w',
+	'z',
+	'W',
+	'F',
+	'm',
+	'M',
+	'n',
+	't',
+	'L',
+	'o',
+	'X',
+	'x',
+	'Y',
+	'y',
+	'e',
+	'I',
+	'O',
+	'P',
+	'p',
+	'T',
+	'Z',
+	'c',
+	'r',
+	'U',
+	',',
+];
+
+/**
+ * Remove non-time characters from PHP format string
+ *
+ * @since 1.0.0
+ *
+ * @param {string} format - The PHP datetime format.
+ * @return {string} The PHP time-only format.
+ */
+export function removeNonTimePHPFormatChars( format ) {
+	return format
+		.split( '' )
+		.filter( ( char ) => ! phpNonTimeFormatChars.includes( char ) )
+		.join( '' )
+		.trim();
 }

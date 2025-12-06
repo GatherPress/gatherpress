@@ -145,6 +145,7 @@ class Rsvp {
 
 		$args = array(
 			'post_id' => $post_id,
+			'status'  => 'approve',
 		);
 
 		if ( ! empty( $user_id ) ) {
@@ -209,6 +210,12 @@ class Rsvp {
 
 		if ( $max_guest_limit < $guests ) {
 			$guests = $max_guest_limit;
+		}
+
+		// Check if anonymous RSVP is enabled for this event.
+		$enable_anonymous_rsvp = get_post_meta( $this->event->ID, 'gatherpress_enable_anonymous_rsvp', true );
+		if ( ! $enable_anonymous_rsvp ) {
+			$anonymous = 0;
 		}
 
 		$data = array(
@@ -283,8 +290,9 @@ class Rsvp {
 		if ( empty( $rsvp ) ) {
 			$comment_id = wp_insert_comment( $args );
 		} else {
-			$comment_id         = $rsvp->comment_ID;
-			$args['comment_ID'] = $comment_id;
+			$comment_id               = $rsvp->comment_ID;
+			$args['comment_ID']       = $comment_id;
+			$args['comment_approved'] = 1;
 
 			wp_update_comment( $args );
 		}
@@ -507,10 +515,12 @@ class Rsvp {
 			if ( ! empty( $user_id ) ) {
 				$user_info = get_userdata( $user_id );
 
-				// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
-				// eg for BuddyPress bp_core_get_user_domain( $user_id )
-				$profile      = get_author_posts_url( $user_id );
-				$display_name = $user_info->display_name;
+				if ( ! empty( $user_info ) ) {
+					// @todo make a filter so we can use this function if gatherpress-buddypress plugin is activated.
+					// eg for BuddyPress bp_core_get_user_domain( $user_id )
+					$profile      = get_author_posts_url( $user_id );
+					$display_name = $user_info->display_name;
+				}
 			}
 
 			if (

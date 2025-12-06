@@ -1,7 +1,6 @@
 /**
  * WordPress dependencies.
  */
-import { dispatch } from '@wordpress/data';
 import { getBlockType } from '@wordpress/blocks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { InspectorControls } from '@wordpress/block-editor';
@@ -124,7 +123,7 @@ function generateBlockGuardStateKey( name, clientId ) {
 			( block ) => block.id === `block-${ clientId }`,
 		);
 
-		if ( blockIndex !== -1 ) {
+		if ( -1 !== blockIndex ) {
 			// Create a unique key for this block position within query loops.
 			// This ensures the 1st RSVP block across all posts shares state,
 			// but is independent from the 2nd RSVP block.
@@ -224,45 +223,20 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						return;
 					}
 
-					// Handle focusable elements.
-					const focusableElements =
-						innerBlocksContainer.querySelectorAll( `
-						a[href],
-						button,
-						input,
-						textarea,
-						select,
-						details,
-						iframe,
-						[tabindex],
-						[contentEditable="true"],
-						audio[controls],
-						video[controls],
-						[role="button"],
-						[role="link"],
-						[role="checkbox"],
-						[role="radio"],
-						[role="combobox"],
-						[role="menuitem"],
-						[role="textbox"],
-						[role="tab"]
-					` );
-
-					focusableElements.forEach( ( el ) => {
-						if ( isBlockGuardEnabled ) {
-							if ( ! el.dataset.originalTabIndex ) {
-								el.dataset.originalTabIndex =
-									el.getAttribute( 'tabindex' );
-							}
-							el.setAttribute( 'tabindex', '-1' );
-						} else if ( el.dataset.originalTabIndex ) {
-							el.setAttribute(
-								'tabindex',
-								el.dataset.originalTabIndex,
-							);
-							delete el.dataset.originalTabIndex;
-						}
-					} );
+					// Use the inert attribute to disable all interactions within inner blocks.
+					if ( isBlockGuardEnabled ) {
+						innerBlocksContainer.inert = true;
+						// Add a visual indicator that the content is protected (optional).
+						innerBlocksContainer.style.opacity = '0.95';
+						innerBlocksContainer.style.cursor = 'not-allowed';
+						// Mark it so we can find it for cleanup.
+						innerBlocksContainer.dataset.gatherPressGuarded = 'true';
+					} else {
+						innerBlocksContainer.inert = false;
+						innerBlocksContainer.style.opacity = '';
+						innerBlocksContainer.style.cursor = '';
+						delete innerBlocksContainer.dataset.gatherPressGuarded;
+					}
 
 					// Handle block appender visibility.
 					const blockAppender = innerBlocksContainer.querySelector(
@@ -274,43 +248,6 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 							? 'none'
 							: '';
 					}
-
-					// Handle overlay.
-					let overlay = innerBlocksContainer.querySelector(
-						'.gatherpress-block-guard-overlay',
-					);
-
-					if ( ! overlay ) {
-						overlay = global.document.createElement( 'div' );
-						overlay.className = 'gatherpress-block-guard-overlay';
-
-						overlay.style.position = 'absolute';
-						overlay.style.top = '0';
-						overlay.style.left = '0';
-						overlay.style.width = '100%';
-						overlay.style.height = '100%';
-						overlay.style.background = 'transparent';
-						overlay.style.zIndex = '1';
-
-						// Get the actual clientId of this specific block instance.
-						const blockClientId =
-							blockElement.id?.replace( 'block-', '' ) || clientId;
-						overlay.onclick = ( e ) => {
-							e.stopPropagation();
-							dispatch( 'core/block-editor' ).selectBlock(
-								blockClientId,
-							);
-						};
-
-						// Ensure position relative on container.
-						innerBlocksContainer.style.position = 'relative';
-						innerBlocksContainer.appendChild( overlay );
-					}
-
-					// Toggle overlay visibility.
-					overlay.style.display = isBlockGuardEnabled
-						? 'block'
-						: 'none';
 				} );
 			};
 
@@ -327,14 +264,23 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			return () => {
 				observer.disconnect();
 
-				// Clean up overlays using the same state key targeting logic.
+				// Clean up ALL guarded elements, regardless of how we find them.
 				const editorDoc = getEditorDocument();
+
+				// First, clean up any elements we marked as guarded.
+				const guardedElements = editorDoc.querySelectorAll( '[data-gather-press-guarded="true"]' );
+				guardedElements.forEach( ( element ) => {
+					element.inert = false;
+					element.style.opacity = '';
+					element.style.cursor = '';
+					delete element.dataset.gatherPressGuarded;
+				} );
+
+				// Also clean up based on state key for thoroughness.
 				const allBlocks = Array.from(
 					editorDoc.querySelectorAll( `[data-type="${ name }"]` ),
 				);
-				const targetElements = [];
 
-				// Filter blocks to only include those with the same state key.
 				allBlocks.forEach( ( blockElement ) => {
 					const blockId = blockElement.id?.replace( 'block-', '' );
 					if ( blockId ) {
@@ -343,20 +289,24 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 							blockId,
 						);
 						if ( blockStateKey === stateKey ) {
-							targetElements.push( blockElement );
-						}
-					}
-				} );
+							const innerBlocks = blockElement?.querySelector(
+								'.block-editor-inner-blocks',
+							);
 
-				targetElements.forEach( ( blockElement ) => {
-					const innerBlocks = blockElement?.querySelector(
-						'.block-editor-inner-blocks',
-					);
-					const overlay = innerBlocks?.querySelector(
-						'.gatherpress-block-guard-overlay',
-					);
-					if ( overlay && overlay.parentNode ) {
-						overlay.parentNode.removeChild( overlay );
+							// Clean up inert attribute and styles.
+							if ( innerBlocks ) {
+								innerBlocks.inert = false;
+								innerBlocks.style.opacity = '';
+								innerBlocks.style.cursor = '';
+								delete innerBlocks.dataset.gatherPressGuarded;
+
+								// Also restore block appender.
+								const blockAppender = innerBlocks.querySelector( '.block-list-appender' );
+								if ( blockAppender ) {
+									blockAppender.style.display = '';
+								}
+							}
+						}
 					}
 				} );
 			};
@@ -368,8 +318,23 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 				return;
 			}
 
-			// Store dragover handler reference for cleanup.
-			let dragoverHandler = null;
+			let dropHandler = null;
+
+			// Drag event configuration.
+			const DRAG_EVENTS = [ 'dragover', 'dragenter', 'dragleave', 'drop' ];
+
+			// Helper functions for DRY event management.
+			const addDragListeners = ( handler ) => {
+				DRAG_EVENTS.forEach( ( eventType ) => {
+					global.document.addEventListener( eventType, handler, true );
+				} );
+			};
+
+			const removeDragListeners = ( handler ) => {
+				DRAG_EVENTS.forEach( ( eventType ) => {
+					global.document.removeEventListener( eventType, handler, true );
+				} );
+			};
 
 			const handleListView = () => {
 				// Find the list view item.
@@ -412,51 +377,28 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						parentLink.style.pointerEvents = 'none';
 
 						// Re-enable just the link itself, but not the expander.
-						setTimeout( () => {
-							parentLink.style.pointerEvents = 'auto';
-							parentLink.classList.add(
-								'gatherpress-block-guard-enabled',
-							);
-						}, 0 );
+						parentLink.style.pointerEvents = 'auto';
+						parentLink.classList.add(
+							'gatherpress-block-guard-enabled',
+						);
 					}
 
-					// Add dragover prevention if not already added.
-					if ( ! dragoverHandler ) {
-						dragoverHandler = ( e ) => {
-							const targetBlock = e.target.closest(
-								`[data-block="${ clientId }"]`,
-							);
-
-							if ( ! targetBlock ) {
-								return;
-							}
-
-							// Calculate position within block.
-							const rect = targetBlock.getBoundingClientRect();
-							const relativeY = e.clientY - rect.top;
-
-							// 15px or 15% of height.
-							const heightThreshold = Math.min(
-								15,
-								rect.height * 0.15,
-							);
-
-							// Only prevent events in middle section (allow edges).
-							const isEdgeArea =
-								relativeY < heightThreshold ||
-								relativeY > rect.height - heightThreshold;
-
-							if ( ! isEdgeArea ) {
-								e.stopPropagation();
+					// Prevent drops into this block like WordPress lock removal.
+					if ( ! dropHandler ) {
+						dropHandler = ( e ) => {
+							// Check if we're in this block or its drop zones.
+							const targetBlock = e.target.closest( `[data-block="${ clientId }"]` );
+							if ( targetBlock ) {
+								// Prevent dragenter, dragover and drop to disable block insertion indicators.
+								if ( 'dragenter' === e.type || 'dragover' === e.type || 'drop' === e.type ) {
+									e.preventDefault();
+									e.stopPropagation();
+								}
 							}
 						};
 
-						// Add the event listener.
-						global.document.addEventListener(
-							'dragover',
-							dragoverHandler,
-							true,
-						);
+						// Add drag prevention listeners globally.
+						addDragListeners( dropHandler );
 					}
 				} else {
 					// Restore interactivity.
@@ -474,24 +416,23 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						);
 					}
 
-					// Remove dragover prevention.
-					if ( dragoverHandler ) {
-						global.document.removeEventListener(
-							'dragover',
-							dragoverHandler,
-							true,
-						);
-						dragoverHandler = null;
+					// Remove drop prevention.
+					if ( dropHandler ) {
+						removeDragListeners( dropHandler );
+						dropHandler = null;
 					}
 				}
 			};
 
-			setTimeout( handleListView, 100 );
+			// Apply Block Guard initially and when List View changes.
+			handleListView();
 
-			const observer = new MutationObserver( () =>
-				setTimeout( handleListView, 50 ),
-			);
+			// Simple observer that just calls handleListView.
+			const observer = new MutationObserver( () => {
+				handleListView();
+			} );
 
+			// Observe the entire document for simplicity and reliability.
 			observer.observe( global.document.body, {
 				childList: true,
 				subtree: true,
@@ -500,13 +441,9 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			return () => {
 				observer.disconnect();
 
-				// Clean up event listener.
-				if ( dragoverHandler ) {
-					global.document.removeEventListener(
-						'dragover',
-						dragoverHandler,
-						true,
-					);
+				// Clean up event listeners.
+				if ( dropHandler ) {
+					removeDragListeners( dropHandler );
 				}
 			};
 		}, [ clientId, isBlockGuardEnabled ] );

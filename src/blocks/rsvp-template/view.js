@@ -28,7 +28,7 @@ const { state } = store( 'gatherpress', {
 					post_id: context.postId,
 					block_data: element.ref.textContent,
 					limit_enabled:
-						rsvpResponseElement.dataset.limitEnabled === '1',
+						'1' === rsvpResponseElement.dataset.limitEnabled,
 					limit: parseInt( rsvpResponseElement.dataset.limit, 10 ),
 				} ),
 			} )
@@ -49,7 +49,7 @@ const { state } = store( 'gatherpress', {
 						const grandParent = parent.parentElement;
 						const emptyRsvpMessageElement =
 							grandParent.querySelector(
-								'.gatherpress--empty-rsvp',
+								'.gatherpress-rsvp-response--no-responses',
 							);
 
 						if ( emptyRsvpMessageElement ) {
@@ -63,11 +63,11 @@ const { state } = store( 'gatherpress', {
 									'gatherpress--is-visible',
 								);
 								emptyRsvpMessageElement.classList.remove(
-									'gatherpress--is-not-visible',
+									'gatherpress--is-hidden',
 								);
 							} else {
 								emptyRsvpMessageElement.classList.add(
-									'gatherpress--is-not-visible',
+									'gatherpress--is-hidden',
 								);
 								emptyRsvpMessageElement.classList.remove(
 									'gatherpress--is-visible',

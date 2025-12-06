@@ -114,7 +114,7 @@ const createMockBlockElement = ( clientId, blockType, queryLoop = false ) => {
 		id: `block-${ clientId }`,
 		getAttribute: jest.fn( () => blockType ),
 		closest: jest.fn( ( selector ) => {
-			if ( selector === '[data-type="core/post-template"]' && queryLoop ) {
+			if ( '[data-type="core/post-template"]' === selector && queryLoop ) {
 				return {
 					id: 'query-loop-123',
 					querySelectorAll: jest.fn( () => [ element ] ),
@@ -124,7 +124,7 @@ const createMockBlockElement = ( clientId, blockType, queryLoop = false ) => {
 					} ) ),
 				};
 			}
-			if ( selector === '[data-type="core/query"]' && queryLoop ) {
+			if ( '[data-type="core/query"]' === selector && queryLoop ) {
 				return {
 					id: 'query-block-456',
 					querySelectorAll: jest.fn( () => [ element ] ),

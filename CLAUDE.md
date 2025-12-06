@@ -141,11 +141,20 @@ When working with this codebase:
 ### PHP Coding Standards
 
 - **Use statements**: Always use `use` statements at the top of files for classes and functions instead of fully qualified namespace calls
-    - ✅ Good: `use GatherPress\Core\Event;` then `new Event()`
-    - ❌ Bad: `new \GatherPress\Core\Event()`
-    - For functions: `use function GatherPress\Core\filter_input;` then `filter_input()`
+    - ✅ Good: `use GatherPress\Core\Event;` then `new Event( $post_id )`
+    - ❌ Bad: `new \GatherPress\Core\Event( $post_id )`
+    - For functions: `use function GatherPress\Core\filter_input;` then `filter_input( $value )`
 - **Namespace resolution**: When moving code between namespaces, ensure proper imports are updated
 - **Method organization**: Place related methods in logically grouped classes (e.g., form-related methods in `Rsvp_Form`)
+- **Singleton pattern**: Many GatherPress classes use the Singleton trait - check if a class has `use Singleton;`
+    - **Singleton classes** (Blocks, Settings, Setup classes): Use `ClassName::get_instance()`
+        - ✅ Good: `$instance = Blocks\Rsvp::get_instance(); $instance->method();`
+        - ❌ Bad: `new Blocks\Rsvp()` (will fail - constructor is protected)
+    - **Regular classes** (Event, Rsvp, Venue): Use normal instantiation with parameters
+        - ✅ Good: `$event = new Event( $post_id ); $event->method();`
+        - ❌ Bad: `Event::get_instance()` (doesn't exist for these classes)
+    - In tests, always check the class structure before deciding instantiation method
+    - Look for `use Singleton;` trait to determine if `::get_instance()` should be used
 
 ### PHP Linting Requirements
 
@@ -169,3 +178,27 @@ Based on WordPress Coding Standards (WPCS), always ensure:
 - **Type handling**: WordPress functions may return multiple types; handle all cases with proper type checking
     - Use `is_wp_error()`, `is_numeric()`, and similar WordPress/PHP functions
     - Cast types explicitly when needed: `(int) $comment->comment_post_ID`
+
+### PHP Testing Guidelines
+
+When writing PHPUnit tests that need WordPress post context:
+
+- **Global variable override**: Never directly assign to `$GLOBALS['post']` - WordPress Coding Standards prohibit this
+    - ❌ Bad: `$GLOBALS['post'] = get_post( $post_id );`
+    - ✅ Good: `$this->go_to( get_permalink( $post_id ) );` (sets up proper WordPress query context)
+- **Post context setup**: Use `$this->go_to()` method to set up WordPress global query and post context
+    - This properly initializes `get_the_ID()`, `get_queried_object()`, and other WordPress globals
+    - Example: `$this->go_to( get_permalink( $post_id ) );` before calling methods that use `get_the_ID()`
+- **Meta data setup**: Use `add_post_meta()` instead of factory meta parameter for better test clarity
+    - ✅ Good: `add_post_meta( $post_id, 'meta_key', 'value' );`
+    - Works better with WordPress testing framework than factory meta arrays
+
+### JavaScript Coding Standards
+
+When working with JavaScript code:
+
+- **Inline comments**: All inline comments must end with proper punctuation (periods)
+    - ✅ Good: `// Check if this is a form-field block with guest count field name.`
+    - ❌ Bad: `// Check if this is a form-field block with guest count field name`
+- **Comment consistency**: Apply the same punctuation standards across PHP and JavaScript for consistency
+- **Block comments**: Multi-line JSDoc comments should follow proper formatting with periods in descriptions

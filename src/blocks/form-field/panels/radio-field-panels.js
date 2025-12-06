@@ -116,7 +116,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 								/>
 							</FlexItem>
 							<FlexItem>
-								{ radioOptions.length > 1 && (
+								{ 1 < radioOptions.length && (
 									<Button
 										variant="secondary"
 										isDestructive

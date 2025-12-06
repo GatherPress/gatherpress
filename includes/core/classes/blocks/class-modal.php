@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 use GatherPress\Core\Block;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -141,7 +142,7 @@ class Modal {
 	 * Filters the output of login modals for logged-in users.
 	 *
 	 * This method checks if the block is a `gatherpress/modal` block with the
-	 * `gatherpress--is-login-modal` class. If the user is logged in, it removes
+	 * `gatherpress-modal--type-login` class. If the user is logged in, it removes
 	 * the block's output.
 	 *
 	 * @since 1.0.0
@@ -153,7 +154,7 @@ class Modal {
 	 */
 	public function filter_login_modal( string $block_content, array $block ): string {
 		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--is-login-modal' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-login' ) &&
 			is_user_logged_in()
 		) {
 			return '';
@@ -166,7 +167,7 @@ class Modal {
 	 * Filters the output of RSVP modals for non-logged-in users.
 	 *
 	 * This method checks if the block is a `gatherpress/modal` block with the
-	 * `gatherpress--is-rsvp-modal` class. If the user is not logged in, it removes
+	 * `gatherpress-modal--type-rsvp` class. If the user is not logged in, it removes
 	 * the block's output.
 	 *
 	 * @since 1.0.0
@@ -178,7 +179,7 @@ class Modal {
 	 */
 	public function filter_rsvp_modal( string $block_content, array $block ): string {
 		if (
-			str_contains( $block['attrs']['className'] ?? '', 'gatherpress--is-rsvp-modal' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? null, 'gatherpress-modal--type-rsvp' ) &&
 			! Rsvp_Setup::get_instance()->get_user_identifier()
 		) {
 			return '';

@@ -88,16 +88,19 @@ class Autoloader {
 					array_pop( $structure );
 					array_unshift( $structure, 'includes' );
 
-					switch ( $class_type ) {
-						case 'blocks':
-						case 'commands':
-						case 'settings':
-						case 'traits':
-							array_pop( $structure );
-							array_push( $structure, 'classes', $class_type );
-							break;
-						default:
-							$structure[] = 'classes';
+					// Check if a specialized directory exists for this class type.
+					$test_structure = $structure;
+
+					array_pop( $test_structure );
+					array_push( $test_structure, 'classes', $class_type );
+
+					$specialized_dir = $path . DIRECTORY_SEPARATOR . implode( DIRECTORY_SEPARATOR, $test_structure );
+
+					if ( is_dir( $specialized_dir ) ) {
+						array_pop( $structure );
+						array_push( $structure, 'classes', $class_type );
+					} else {
+						$structure[] = 'classes';
 					}
 
 					$structure[]         = sprintf( 'class-%s.php', $file );

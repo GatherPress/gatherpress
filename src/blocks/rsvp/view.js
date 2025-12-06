@@ -18,37 +18,45 @@ const { state, actions } = store( 'gatherpress', {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
+
+			initPostContext( state, postId );
+
 			const currentUser = state.posts[ postId ].currentUser;
 
 			currentUser.guests = parseInt( element.ref.value, 10 );
 			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
-			initPostContext( state, postId );
+			// Find the closest trigger element for loading state.
+			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
 
 			sendRsvpApiRequest( postId, currentUser, state, () => {
 				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
 				setTimeout( () => {
 					element.ref.focus();
-				}, 1 );
-			} );
+				}, 10 );
+			}, triggerElement );
 		},
 		updateAnonymous() {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
+
+			initPostContext( state, postId );
+
 			const currentUser = state.posts[ postId ].currentUser;
 
 			currentUser.anonymous = element.ref.checked ? 1 : 0;
 			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
-			initPostContext( state, postId );
+			// Find the closest trigger element for loading state.
+			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
 
 			sendRsvpApiRequest( postId, currentUser, state, () => {
 				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
 				setTimeout( () => {
 					element.ref.focus();
-				}, 1 );
-			} );
+				}, 10 );
+			}, triggerElement );
 		},
 		updateRsvp( event = null ) {
 			if ( event ) {
@@ -58,6 +66,9 @@ const { state, actions } = store( 'gatherpress', {
 			const element = getElement();
 			const context = getContext();
 			const postId = context?.postId || 0;
+
+			initPostContext( state, postId );
+
 			const setStatus = element.ref.getAttribute( 'data-set-status' ) ?? '';
 			const currentUserStatus = state.posts[ postId ].currentUser.status;
 
@@ -83,6 +94,9 @@ const { state, actions } = store( 'gatherpress', {
 			const anonymous = state.posts[ postId ].currentUser.anonymous;
 			const rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
 
+			// Find the closest trigger element for loading state.
+			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
+
 			sendRsvpApiRequest(
 				postId,
 				{
@@ -104,12 +118,8 @@ const { state, actions } = store( 'gatherpress', {
 					if ( [ 'not_attending', 'no_status' ].includes( rsvpStatus ) ) {
 						const attendingStatusButton =
 							rsvpContainer.querySelector(
-								'[data-rsvp-status="attending"] .gatherpress--update-rsvp',
+								'[data-rsvp-status="attending"] .gatherpress-rsvp--trigger-update',
 							);
-
-						const closeButton = rsvpContainer.querySelector(
-							'[data-rsvp-status="attending"] .gatherpress--close-modal button',
-						);
 
 						actions.openModal( null, attendingStatusButton );
 
@@ -119,8 +129,7 @@ const { state, actions } = store( 'gatherpress', {
 						 */
 						setTimeout( () => {
 							actions.closeModal( null, element.ref, false );
-							closeButton.focus();
-						}, 1 );
+						}, 10 );
 					} else {
 						/**
 						 * When fully closing a modal, use findActiveSibling=true
@@ -128,9 +137,10 @@ const { state, actions } = store( 'gatherpress', {
 						 */
 						setTimeout( () => {
 							actions.closeModal( null, element.ref, true );
-						}, 1 );
+						}, 10 );
 					}
 				},
+				triggerElement,
 			);
 		},
 	},
@@ -186,11 +196,11 @@ const { state, actions } = store( 'gatherpress', {
 					innerBlock.getAttribute( 'data-rsvp-status' ) ===
 					state.posts[ postId ].currentUser.status
 				) {
-					innerBlock.classList.remove( 'gatherpress--is-not-visible' );
+					innerBlock.classList.remove( 'gatherpress--is-hidden' );
 					// Move the visible block to the start of its parent.
 					parent.insertBefore( innerBlock, parent.firstChild );
 				} else {
-					innerBlock.classList.add( 'gatherpress--is-not-visible' );
+					innerBlock.classList.add( 'gatherpress--is-hidden' );
 				}
 			} );
 		},
@@ -230,9 +240,9 @@ const { state, actions } = store( 'gatherpress', {
 			element.ref.textContent = text;
 
 			if ( 0 < guestCount ) {
-				element.ref.classList.remove( 'gatherpress--is-not-visible' );
+				element.ref.classList.remove( 'gatherpress--is-hidden' );
 			} else {
-				element.ref.classList.add( 'gatherpress--is-not-visible' );
+				element.ref.classList.add( 'gatherpress--is-hidden' );
 			}
 		},
 	},

@@ -306,4 +306,302 @@ class Test_Assets extends Base {
 			'Failed to assert that asset_data is an array.'
 		);
 	}
+
+	/**
+	 * Coverage for maybe_enqueue_styles method with GatherPress block.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_with_gatherpress_block(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		$block_content = '<div class="wp-block-gatherpress-event-date">Test</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/event-date',
+		);
+
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is not enqueued before filter.'
+		);
+
+		$result = $instance->maybe_enqueue_styles( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Failed to assert block content is unchanged.'
+		);
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued for GatherPress blocks.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_enqueue_styles method with non-GatherPress block.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_with_non_gatherpress_block(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		// Dequeue if it was enqueued by previous test.
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$block_content = '<div class="wp-block-paragraph">Test</div>';
+		$block         = array(
+			'blockName' => 'core/paragraph',
+		);
+
+		$result = $instance->maybe_enqueue_styles( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Failed to assert block content is unchanged.'
+		);
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is not enqueued for non-GatherPress blocks.'
+		);
+	}
+
+	/**
+	 * Coverage for maybe_enqueue_styles method with missing blockName.
+	 *
+	 * @covers ::maybe_enqueue_styles
+	 *
+	 * @return void
+	 */
+	public function test_maybe_enqueue_styles_missing_block_name(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		// Dequeue if it was enqueued by previous test.
+		wp_dequeue_style( 'gatherpress-utility-style' );
+
+		$block_content = '<div>Test</div>';
+		$block         = array();
+
+		$result = $instance->maybe_enqueue_styles( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Failed to assert block content is unchanged.'
+		);
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is not enqueued when blockName is missing.'
+		);
+	}
+
+	/**
+	 * Coverage for editor_enqueue_scripts method.
+	 *
+	 * @covers ::editor_enqueue_scripts
+	 *
+	 * @return void
+	 */
+	public function test_editor_enqueue_scripts(): void {
+		$instance = Assets::get_instance();
+
+		// First register the utility style.
+		$instance->block_enqueue_scripts();
+
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-editor', 'enqueued' ),
+			'Failed to assert gatherpress-editor is not enqueued before calling editor_enqueue_scripts.'
+		);
+
+		$instance->editor_enqueue_scripts();
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-editor', 'enqueued' ),
+			'Failed to assert gatherpress-editor is enqueued.'
+		);
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-utility-style', 'enqueued' ),
+			'Failed to assert gatherpress-utility-style is enqueued in editor.'
+		);
+	}
+
+	/**
+	 * Coverage for register_variation_assets method.
+	 *
+	 * @covers ::register_variation_assets
+	 *
+	 * @return void
+	 */
+	public function test_register_variation_assets(): void {
+		$instance = Assets::get_instance();
+
+		$instance->register_variation_assets();
+
+		// The method should register variation assets.
+		// We can't easily verify all variations, but we can verify the method runs.
+		$this->assertTrue(
+			true,
+			'The register_variation_assets method should execute without error.'
+		);
+	}
+
+	/**
+	 * Coverage for enqueue_variation_assets method.
+	 *
+	 * @covers ::enqueue_variation_assets
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_variation_assets(): void {
+		$instance = Assets::get_instance();
+
+		// First register the assets.
+		$instance->register_variation_assets();
+
+		// Then enqueue them.
+		$instance->enqueue_variation_assets();
+
+		// The method should enqueue variation assets.
+		// We can't easily verify all variations, but we can verify the method runs.
+		$this->assertTrue(
+			true,
+			'The enqueue_variation_assets method should execute without error.'
+		);
+	}
+
+	/**
+	 * Coverage for register_asset method.
+	 *
+	 * @covers ::register_asset
+	 *
+	 * @return void
+	 */
+	public function test_register_asset(): void {
+		$instance = Assets::get_instance();
+
+		// Test with a variation that exists.
+		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query' ) );
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-query', 'registered' ),
+			'Failed to assert gatherpress-query script is registered.'
+		);
+	}
+
+	/**
+	 * Coverage for enqueue_asset method.
+	 *
+	 * @covers ::enqueue_asset
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_asset(): void {
+		$instance = Assets::get_instance();
+
+		// First register the asset.
+		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query' ) );
+
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-query', 'enqueued' ),
+			'Failed to assert gatherpress-query is not enqueued before calling enqueue_asset.'
+		);
+
+		// Then enqueue it.
+		Utility::invoke_hidden_method( $instance, 'enqueue_asset', array( 'query' ) );
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-query', 'enqueued' ),
+			'Failed to assert gatherpress-query is enqueued after calling enqueue_asset.'
+		);
+	}
+
+	/**
+	 * Coverage for asset_exists method with existing file.
+	 *
+	 * @covers ::asset_exists
+	 *
+	 * @return void
+	 */
+	public function test_asset_exists_with_existing_file(): void {
+		$instance = Assets::get_instance();
+		$path     = GATHERPRESS_CORE_PATH . '/build/editor.asset.php';
+
+		$result = Utility::invoke_hidden_method( $instance, 'asset_exists', array( $path, 'editor', true ) );
+
+		$this->assertTrue(
+			$result,
+			'Failed to assert asset_exists returns true for existing file.'
+		);
+	}
+
+	/**
+	 * Coverage for asset_exists method with non-existent file and non-critical.
+	 *
+	 * @covers ::asset_exists
+	 *
+	 * @return void
+	 */
+	public function test_asset_exists_with_non_existent_file_non_critical(): void {
+		$instance = Assets::get_instance();
+		$path     = GATHERPRESS_CORE_PATH . '/build/non-existent-asset.asset.php';
+
+		$result = Utility::invoke_hidden_method( $instance, 'asset_exists', array( $path, 'non-existent', false ) );
+
+		$this->assertFalse(
+			$result,
+			'Failed to assert asset_exists returns false for non-existent non-critical file.'
+		);
+	}
+
+	/**
+	 * Coverage for admin_enqueue_scripts with settings page.
+	 *
+	 * @covers ::admin_enqueue_scripts
+	 *
+	 * @return void
+	 */
+	public function test_admin_enqueue_scripts_settings_page(): void {
+		$instance = Assets::get_instance();
+
+		// Test with a settings page hook.
+		$hook = 'gatherpress_event_page_gatherpress_general';
+
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-settings-style', 'enqueued' ),
+			'Failed to assert gatherpress-settings-style is not enqueued before calling admin_enqueue_scripts.'
+		);
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-settings', 'enqueued' ),
+			'Failed to assert gatherpress-settings is not enqueued before calling admin_enqueue_scripts.'
+		);
+
+		$instance->admin_enqueue_scripts( $hook );
+
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-settings-style', 'enqueued' ),
+			'Failed to assert gatherpress-settings-style is enqueued for settings page.'
+		);
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-settings', 'enqueued' ),
+			'Failed to assert gatherpress-settings is enqueued for settings page.'
+		);
+		$this->assertTrue(
+			wp_style_is( 'wp-edit-blocks', 'enqueued' ),
+			'Failed to assert wp-edit-blocks is enqueued for settings page.'
+		);
+	}
 }

@@ -245,7 +245,7 @@ class Venue {
 				'hierarchical'       => false,
 				'public'             => true,
 				'show_ui'            => false,
-				'show_admin_column'  => true,
+				'show_admin_column'  => false,
 				'query_var'          => true,
 				'publicly_queryable' => false,
 				'show_in_rest'       => true,
@@ -457,10 +457,7 @@ class Venue {
 			if ( ! empty( $venue_terms ) && is_array( $venue_terms ) ) {
 				$venue_term = $venue_terms[0];
 				$venue_slug = $venue_term->slug;
-
-				if ( is_a( $venue_term, 'WP_Term' ) ) {
-					$venue_post = $this->get_venue_post_from_term_slug( $venue_slug );
-				}
+				$venue_post = $this->get_venue_post_from_term_slug( $venue_slug );
 			}
 
 			$venue_meta['isOnlineEventTerm'] = ( 'online-event' === $venue_slug );

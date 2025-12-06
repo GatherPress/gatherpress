@@ -43,6 +43,12 @@ class Test_Rsvp_Query extends Base {
 				'priority' => 10,
 				'callback' => array( $instance, 'taxonomy_query' ),
 			),
+			array(
+				'type'     => 'action',
+				'name'     => 'wp_insert_comment',
+				'priority' => 10,
+				'callback' => array( $instance, 'maybe_invalidate_comment_types_cache' ),
+			),
 		);
 
 		$this->assert_hooks( $hooks, $instance );
@@ -90,7 +96,7 @@ class Test_Rsvp_Query extends Base {
 			'Failed to assert that join is the same.'
 		);
 		$this->assertSame(
-			' AND ( wp_term_relationships.term_taxonomy_id IN (' . $term->term_id . ') )',
+			' AND ( wp_term_relationships.term_taxonomy_id IN (' . $term->term_taxonomy_id . ') )',
 			preg_replace( '/\s+/', ' ', $pieces['where'] ),
 			'Failed to assert where is the same.'
 		);
@@ -225,24 +231,45 @@ class Test_Rsvp_Query extends Base {
 	 * Test excluding RSVP from empty type sets default comment types.
 	 *
 	 * @covers ::exclude_rsvp_from_comment_query
+	 * @covers ::get_all_comment_types
 	 *
 	 * @return void
 	 */
 	public function test_exclude_rsvp_from_empty_type(): void {
 		$instance = Rsvp_Query::get_instance();
 		$query    = new WP_Comment_Query();
-		$expected = array( 'comment', 'pingback', 'trackback' );
+
+		// Clear any existing transient.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+
+		// Create a custom comment type to test dynamic fetching.
+		$this->factory->comment->create(
+			array(
+				'comment_type' => 'custom_type',
+			)
+		);
 
 		$query->query_vars['type']     = '';
 		$query->query_vars['type__in'] = '';
 
 		$instance->exclude_rsvp_from_comment_query( $query );
 
-		$this->assertEquals(
-			$expected,
+		// Should include all types except RSVP.
+		$this->assertNotContains(
+			'gatherpress_rsvp',
 			$query->query_vars['type'],
-			'Default comment types should be set when type is empty'
+			'RSVP type should be excluded'
 		);
+
+		// Should include the custom type.
+		$this->assertContains(
+			'custom_type',
+			$query->query_vars['type'],
+			'Custom comment type should be included'
+		);
+
+		// Clean up.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
 	}
 
 
@@ -346,5 +373,120 @@ class Test_Rsvp_Query extends Base {
 			$query->query_vars['type__in'],
 			'Type__in array should remain unchanged when RSVP is not present'
 		);
+	}
+
+	/**
+	 * Test get_all_comment_types method caches results.
+	 *
+	 * @covers ::get_all_comment_types
+	 *
+	 * @return void
+	 */
+	public function test_get_all_comment_types_caching(): void {
+		$instance = Rsvp_Query::get_instance();
+
+		// Clear any existing transient.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+
+		// Temporarily remove the cache invalidation hook for this test.
+		remove_action( 'wp_insert_comment', array( $instance, 'maybe_invalidate_comment_types_cache' ), 10 );
+
+		// Create some test comment types.
+		$this->factory->comment->create(
+			array(
+				'comment_type' => 'test_type_1',
+			)
+		);
+		$this->factory->comment->create(
+			array(
+				'comment_type' => 'test_type_2',
+			)
+		);
+
+		// Use reflection to access protected method.
+		$reflection = new \ReflectionClass( $instance );
+		$method     = $reflection->getMethod( 'get_all_comment_types' );
+		$method->setAccessible( true );
+
+		// First call should hit the database.
+		$types = $method->invoke( $instance );
+
+		// Should include our test types.
+		$this->assertContains( 'test_type_1', $types, 'First test type should be included' );
+		$this->assertContains( 'test_type_2', $types, 'Second test type should be included' );
+
+		// Verify transient was set.
+		$cached_types = get_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+		$this->assertEquals( $types, $cached_types, 'Transient should store the types' );
+
+		// Create another type after caching.
+		$this->factory->comment->create(
+			array(
+				'comment_type' => 'test_type_3',
+			)
+		);
+
+		// Second call should use cache and NOT include the new type.
+		$cached_result = $method->invoke( $instance );
+		$this->assertNotContains( 'test_type_3', $cached_result, 'New type should not be in cached result' );
+
+		// Clear transient and verify new type is included.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+		$fresh_result = $method->invoke( $instance );
+		$this->assertContains( 'test_type_3', $fresh_result, 'New type should be included after cache clear' );
+
+		// Clean up and restore hook.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+		add_action( 'wp_insert_comment', array( $instance, 'maybe_invalidate_comment_types_cache' ), 10, 2 );
+	}
+
+	/**
+	 * Test cache invalidation when new comment type is added.
+	 *
+	 * @covers ::maybe_invalidate_comment_types_cache
+	 *
+	 * @return void
+	 */
+	public function test_maybe_invalidate_comment_types_cache(): void {
+		$instance = Rsvp_Query::get_instance();
+
+		// Clear any existing transient.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+
+		// Set up initial cache with known types.
+		set_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY, array( 'comment', 'pingback', 'trackback' ), Rsvp_Query::CACHE_EXPIRATION );
+
+		// Create a comment with existing type (should not invalidate).
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type' => 'pingback',
+			)
+		);
+		$comment    = get_comment( $comment_id );
+		$instance->maybe_invalidate_comment_types_cache( $comment_id, $comment );
+
+		// Cache should still exist.
+		$this->assertNotFalse(
+			get_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY ),
+			'Cache should not be invalidated for existing comment type'
+		);
+
+		// Create a comment with new type (should invalidate).
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type' => 'new_custom_type',
+			)
+		);
+		$comment    = get_comment( $comment_id );
+		$instance->maybe_invalidate_comment_types_cache( $comment_id, $comment );
+
+		// Cache should be cleared.
+		$this->assertFalse(
+			get_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY ),
+			'Cache should be invalidated when new comment type is added'
+		);
+
+		// Clean up.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
 	}
 }

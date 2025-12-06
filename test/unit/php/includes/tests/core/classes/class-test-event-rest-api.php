@@ -11,9 +11,13 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Rest_Api;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Topic;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_REST_Request;
+use WP_REST_Response;
 use WP_REST_Server;
 
 /**
@@ -222,93 +226,250 @@ class Test_Event_Rest_Api extends Base {
 	}
 
 	/**
-	 * Coverage for get_members method.
+	 * Coverage for get_recipients method with no send options selected.
 	 *
-	 * @covers ::get_members
+	 * @covers ::get_recipients
 	 *
 	 * @return void
 	 */
-	public function test_get_members(): void {
+	public function test_get_recipients_with_no_send_options(): void {
 		$instance = Event_Rest_Api::get_instance();
 		$event_id = $this->mock->post(
 			array( 'post_type' => Event::POST_TYPE )
 		)->get()->ID;
-		$send     = array(
+
+		$send = array(
 			'all'           => false,
 			'attending'     => false,
 			'waiting_list'  => false,
 			'not_attending' => false,
 		);
-		$event    = new Event( $event_id );
-		$members  = $instance->get_members( $send, $event_id );
 
-		Utility::set_and_get_hidden_property( $event->rsvp, 'max_attendance_limit', 2 );
+		$recipients = $instance->get_recipients( $send, $event_id );
 
-		$this->assertEmpty( $members );
-
-		$user_1_id = $this->factory->user->create();
-		$user_2_id = $this->factory->user->create();
-		$user_3_id = $this->factory->user->create();
-		$user_4_id = $this->factory->user->create();
-
-		$event->rsvp->save( $user_1_id, 'attending' );
-		$event->rsvp->save( $user_2_id, 'not_attending' );
-		$event->rsvp->save( $user_3_id, 'attending' );
-		$event->rsvp->save( $user_4_id, 'waiting_list' );
-
-		$send['all'] = true;
-		$members     = $instance->get_members( $send, $event_id );
-		$member_ids  = $this->get_member_ids( $members );
-
-		$this->assertContains( $user_1_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertContains( $user_2_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertContains( $user_3_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
-
-		$send['all']       = false;
-		$send['attending'] = true;
-		$members           = $instance->get_members( $send, $event_id );
-		$member_ids        = $this->get_member_ids( $members );
-
-		$this->assertContains( $user_1_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertNotContains( $user_2_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertContains( $user_3_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertNotContains( $user_4_id, $member_ids, 'Failed to assert user ID is not in array.' );
-
-		$send['attending']    = false;
-		$send['waiting_list'] = true;
-		$members              = $instance->get_members( $send, $event_id );
-		$member_ids           = $this->get_member_ids( $members );
-
-		$this->assertNotContains( $user_1_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertNotContains( $user_2_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertNotContains( $user_3_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
-
-		$send['not_attending'] = true;
-		$send['waiting_list']  = true;
-		$members               = $instance->get_members( $send, $event_id );
-		$member_ids            = $this->get_member_ids( $members );
-
-		$this->assertNotContains( $user_1_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertContains( $user_2_id, $member_ids, 'Failed to assert user ID is in array.' );
-		$this->assertNotContains( $user_3_id, $member_ids, 'Failed to assert user ID is not in array.' );
-		$this->assertContains( $user_4_id, $member_ids, 'Failed to assert user ID is in array.' );
+		$this->assertEmpty( $recipients, 'Failed to assert empty recipients when no send options are selected.' );
 	}
 
 	/**
-	 * Helper to get members IDs for test.
+	 * Coverage for get_recipients method with 'all' option for users only.
 	 *
-	 * @param array $members Array of user objects.
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_with_all_users_only(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+
+		// Create WordPress users - 'all' gets ALL site users, not just those who RSVP'd.
+		$user_1_id = $this->factory->user->create();
+		$user_2_id = $this->factory->user->create();
+		$user_3_id = $this->factory->user->create();
+
+		$send = array(
+			'all'           => true,
+			'attending'     => false,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+
+		$recipients    = $instance->get_recipients( $send, $event_id );
+		$recipient_ids = $this->get_recipient_user_ids( $recipients );
+
+		// Should include all site users (including the 3 we created plus any existing users).
+		$this->assertContains( $user_1_id, $recipient_ids, 'Failed to assert user 1 is included in all recipients.' );
+		$this->assertContains( $user_2_id, $recipient_ids, 'Failed to assert user 2 is included in all recipients.' );
+		$this->assertContains( $user_3_id, $recipient_ids, 'Failed to assert user 3 is included in all recipients.' );
+		$this->assertGreaterThanOrEqual( 3, count( $recipients ), 'Failed to assert minimum recipient count for all users.' );
+	}
+
+	/**
+	 * Coverage for get_recipients method with 'attending' status filter.
+	 *
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_with_attending_filter(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		// Create users and save RSVPs using the RSVP system.
+		$attending_user_id     = $this->factory->user->create();
+		$not_attending_user_id = $this->factory->user->create();
+
+		$event->rsvp->save( $attending_user_id, 'attending' );
+		$event->rsvp->save( $not_attending_user_id, 'not_attending' );
+
+		// Create anonymous attending RSVP using wp_insert_comment for better control.
+		wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anonymous Attendee',
+				'comment_author_email' => 'attendee@example.com',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		$event->rsvp->save( 'attendee@example.com', 'attending' );
+
+		$send = array(
+			'all'           => false,
+			'attending'     => true,
+			'waiting_list'  => false,
+			'not_attending' => false,
+		);
+
+		$recipients = $instance->get_recipients( $send, $event_id );
+
+		$this->assertCount( 2, $recipients, 'Failed to assert correct count for attending recipients.' );
+
+		// Check that we have both user and anonymous attending.
+		$user_recipients      = array_filter(
+			$recipients,
+			static function ( $recipient ) {
+				return $recipient['is_user'];
+			}
+		);
+		$anonymous_recipients = array_filter(
+			$recipients,
+			static function ( $recipient ) {
+				return ! $recipient['is_user'];
+			}
+		);
+
+		$this->assertCount( 1, $user_recipients, 'Failed to assert one attending user recipient.' );
+		$this->assertCount( 1, $anonymous_recipients, 'Failed to assert one attending anonymous recipient.' );
+
+		$user_recipient      = reset( $user_recipients );
+		$anonymous_recipient = reset( $anonymous_recipients );
+
+		$this->assertEquals( $attending_user_id, $user_recipient['user_id'], 'Failed to assert correct attending user ID.' );
+		$this->assertEquals( 'attendee@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous attendee email.' );
+	}
+
+	/**
+	 * Coverage for get_recipients method with mixed user and non-user RSVPs.
+	 *
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_with_mixed_recipients(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->mock->post(
+			array( 'post_type' => Event::POST_TYPE )
+		)->get()->ID;
+		$event    = new Event( $event_id );
+
+		// Force no attendance so responses remain on waiting list.
+		Utility::set_and_get_hidden_property( $event->rsvp, 'max_attendance_limit', -1 );
+
+		// Create user RSVP.
+		$user_id = $this->factory->user->create(
+			array(
+				'user_email'   => 'user@example.com',
+				'display_name' => 'User Name',
+			)
+		);
+		$event->rsvp->save( $user_id, 'waiting_list' );
+
+		// Create anonymous RSVP using wp_insert_comment for better control.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anonymous Person',
+				'comment_author_email' => 'anonymous@example.com',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		$event->rsvp->save( 'anonymous@example.com', 'waiting_list' );
+
+		$send = array(
+			'all'           => false,
+			'attending'     => false,
+			'waiting_list'  => true,
+			'not_attending' => false,
+		);
+
+		$recipients = $instance->get_recipients( $send, $event_id );
+
+		$this->assertCount( 2, $recipients, 'Failed to assert correct count for mixed recipients.' );
+
+		// Verify recipient structure for user.
+		$user_recipient = array_filter(
+			$recipients,
+			static function ( $recipient ) {
+				return $recipient['is_user'];
+			}
+		);
+		$user_recipient = reset( $user_recipient );
+
+		$this->assertTrue( $user_recipient['is_user'], 'Failed to assert user recipient is marked as user.' );
+		$this->assertEquals( $user_id, $user_recipient['user_id'], 'Failed to assert correct user ID.' );
+		$this->assertEquals( 'user@example.com', $user_recipient['email'], 'Failed to assert correct user email.' );
+		$this->assertEquals( 'User Name', $user_recipient['name'], 'Failed to assert correct user name.' );
+
+		// Verify recipient structure for anonymous.
+		$anonymous_recipient = array_filter(
+			$recipients,
+			static function ( $recipient ) {
+				return ! $recipient['is_user'];
+			}
+		);
+		$anonymous_recipient = reset( $anonymous_recipient );
+
+		$this->assertFalse( $anonymous_recipient['is_user'], 'Failed to assert anonymous recipient is not marked as user.' );
+		$this->assertEquals( 0, $anonymous_recipient['user_id'], 'Failed to assert anonymous recipient has zero user ID.' );
+		$this->assertEquals( $comment_id, $anonymous_recipient['comment_id'], 'Failed to assert correct comment ID.' );
+		$this->assertEquals( 'anonymous@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous email.' );
+		$this->assertEquals( 'Anonymous Person', $anonymous_recipient['name'], 'Failed to assert correct anonymous name.' );
+	}
+
+	/**
+	 * Helper to get user IDs from recipients array for users only.
+	 *
+	 * @param array $recipients Array of recipient objects.
 	 *
 	 * @return array
 	 */
-	protected function get_member_ids( array $members ): array {
+	protected function get_recipient_user_ids( array $recipients ): array {
 		return array_map(
-			static function ( $member ): int {
-				return $member->ID;
+			static function ( $recipient ): int {
+				return $recipient['user_id'];
 			},
-			$members
+			array_filter(
+				$recipients,
+				static function ( $recipient ) {
+					return $recipient['is_user'];
+				}
+			)
+		);
+	}
+
+	/**
+	 * Helper to get all email addresses from recipients array.
+	 *
+	 * @param array $recipients Array of recipient objects.
+	 *
+	 * @return array
+	 */
+	protected function get_recipient_emails( array $recipients ): array {
+		return array_map(
+			static function ( $recipient ): string {
+				return $recipient['email'];
+			},
+			$recipients
 		);
 	}
 
@@ -482,12 +643,12 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertArrayHasKey( 'comment_post_ID', $route['args']['args'] );
 		$this->assertArrayHasKey( 'author', $route['args']['args'] );
 		$this->assertArrayHasKey( 'email', $route['args']['args'] );
-		$this->assertArrayHasKey( 'gatherpress_event_email_updates', $route['args']['args'] );
+		$this->assertArrayHasKey( 'gatherpress_event_updates_opt_in', $route['args']['args'] );
 
 		$this->assertTrue( $route['args']['args']['comment_post_ID']['required'] );
 		$this->assertTrue( $route['args']['args']['author']['required'] );
 		$this->assertTrue( $route['args']['args']['email']['required'] );
-		$this->assertFalse( $route['args']['args']['gatherpress_event_email_updates']['required'] );
+		$this->assertFalse( $route['args']['args']['gatherpress_event_updates_opt_in']['required'] );
 	}
 
 	/**
@@ -498,7 +659,6 @@ class Test_Event_Rest_Api extends Base {
 	 *
 	 * @since 1.0.0
 	 * @covers ::handle_rsvp_form_submission
-	 * @covers ::save_custom_fields
 	 *
 	 * @return void
 	 */
@@ -529,7 +689,7 @@ class Test_Event_Rest_Api extends Base {
 		$request->set_param( 'comment_post_ID', $post_id );
 		$request->set_param( 'author', 'Test Author' );
 		$request->set_param( 'email', 'test@example.com' );
-		$request->set_param( 'gatherpress_event_email_updates', true );
+		$request->set_param( 'gatherpress_event_updates_opt_in', true );
 		$request->set_param( 'gatherpress_form_schema_id', 'form_0' );
 		$request->set_param( 'custom_field', 'Test value' );
 
@@ -543,6 +703,9 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertStringContainsString( 'successfully', $data['message'] );
 		$this->assertGreaterThan( 0, $data['comment_id'] );
 
+		// Approve the comment since rsvp->get() now only finds approved comments.
+		wp_set_comment_status( $data['comment_id'], 'approve' );
+
 		$event     = new Event( $post_id );
 		$rsvp_data = $event->rsvp->get( 'test@example.com' );
 
@@ -550,7 +713,7 @@ class Test_Event_Rest_Api extends Base {
 
 		// Check email updates meta.
 		$comment_id    = $data['comment_id'];
-		$email_updates = get_comment_meta( $comment_id, 'gatherpress_event_email_updates', true );
+		$email_updates = get_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', true );
 		$this->assertEquals( '1', $email_updates );
 
 		// Check custom field was saved.
@@ -642,6 +805,9 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertTrue( $data['success'] );
 		$this->assertGreaterThan( 0, $data['comment_id'] );
 
+		// Approve the comment since rsvp->get() now only finds approved comments.
+		wp_set_comment_status( $data['comment_id'], 'approve' );
+
 		$event     = new Event( $post_id );
 		$rsvp_data = $event->rsvp->get( $user_id );
 		$this->assertNotEmpty( $rsvp_data['comment_id'] );
@@ -649,30 +815,435 @@ class Test_Event_Rest_Api extends Base {
 	}
 
 	/**
-	 * Tests save_custom_fields with missing schema.
+	 * Coverage for handle_rsvp_form_submission with past event.
 	 *
-	 * Verifies that custom field processing is skipped when
-	 * no valid schema is found.
-	 *
-	 * @since 1.0.0
-	 * @covers ::save_custom_fields
+	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
 	 */
-	public function test_save_custom_fields_missing_schema(): void {
-		$instance   = Event_Rest_Api::get_instance();
-		$post_id    = $this->factory()->post->create();
-		$comment_id = $this->factory()->comment->create();
+	public function test_handle_rsvp_form_submission_past_event(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set event in the past.
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-01-01 10:00:00',
+				'datetime_end'   => '2020-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
 
 		$request = new WP_REST_Request( 'POST' );
-		$request->set_param( 'gatherpress_form_schema_id', 'nonexistent_form' );
-		$request->set_param( 'custom_field', 'Test value' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
 
-		// Use Utility to call private method.
-		Utility::invoke_hidden_method( $instance, 'save_custom_fields', array( $request, $post_id, $comment_id ) );
+		$response = $instance->handle_rsvp_form_submission( $request );
 
-		// Verify no custom fields were saved.
-		$custom_meta = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field', true );
-		$this->assertEmpty( $custom_meta );
+		$this->assertEquals( 400, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertStringContainsString( 'closed', $data['message'] );
+	}
+
+	/**
+	 * Coverage for handle_email_send_action method.
+	 *
+	 * @covers ::handle_email_send_action
+	 *
+	 * @return void
+	 */
+	public function test_handle_email_send_action(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$send    = array( 'all' => true );
+		$message = 'Test message';
+
+		// The method should call send_emails internally.
+		$instance->handle_email_send_action( $post_id, $send, $message );
+
+		// If no exception thrown, test passes.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Coverage for rsvp_responses method.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create an RSVP.
+		$user_id = $this->factory()->user->create();
+		$event   = new Event( $post_id );
+		$event->rsvp->save( $user_id, 'attending', 0, 1 );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$response = $instance->rsvp_responses( $request );
+		$data     = $response->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertArrayHasKey( 'data', $data );
+		$this->assertArrayHasKey( 'attending', $data['data'] );
+	}
+
+	/**
+	 * Coverage for rsvp_responses with non-event post.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses_non_event_post(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create();
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$response = $instance->rsvp_responses( $request );
+		$data     = $response->get_data();
+
+		$this->assertFalse( $data['success'] );
+		$this->assertEmpty( $data['data'] );
+	}
+
+	/**
+	 * Coverage for rsvp_status_html method.
+	 *
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create an approved RSVP.
+		$user_id     = $this->factory()->user->create();
+		$event       = new Event( $post_id );
+		$user_record = $event->rsvp->save( $user_id, 'attending', 0, 1 );
+
+		// Approve the comment.
+		wp_set_comment_status( $user_record['comment_id'], 'approve' );
+
+		$block_data = array(
+			'blockName' => 'gatherpress/rsvp-template',
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
+		$request->set_param( 'limit_enabled', false );
+		$request->set_param( 'limit', 10 );
+
+		$response = $instance->rsvp_status_html( $request );
+		$data     = $response->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertArrayHasKey( 'content', $data );
+		$this->assertArrayHasKey( 'responses', $data );
+	}
+
+	/**
+	 * Coverage for rsvp_status_html method with no responses.
+	 *
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html_no_responses(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$block_data = array(
+			'blockName' => 'gatherpress/rsvp-template',
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
+
+		$response = $instance->rsvp_status_html( $request );
+		$data     = $response->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertEmpty( $data['content'] );
+	}
+
+	/**
+	 * Coverage for prepare_event_data method.
+	 *
+	 * @covers ::prepare_event_data
+	 *
+	 * @return void
+	 */
+	public function test_prepare_event_data(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set online event link.
+		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://example.com/meeting' );
+
+		$response_data = array(
+			'id'   => $post_id,
+			'meta' => array(),
+		);
+
+		$response = new WP_REST_Response( $response_data );
+
+		$result = $instance->prepare_event_data( $response );
+
+		$this->assertArrayHasKey( 'online_event_link', $result->data['meta'] );
+	}
+
+	/**
+	 * Coverage for events_list with topics filter.
+	 *
+	 * @covers ::events_list
+	 *
+	 * @return void
+	 */
+	public function test_events_list_with_topics(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Create a topic term.
+		$term = wp_insert_term( 'Test Topic', Topic::TAXONOMY );
+		wp_set_post_terms( $post_id, array( $term['term_id'] ), Topic::TAXONOMY );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'event_list_type', 'upcoming' );
+		$request->set_param( 'max_number', 5 );
+		$request->set_param( 'topics', 'test-topic' );
+
+		$response = $instance->events_list( $request );
+		$data     = $response->get_data();
+
+		$this->assertIsArray( $data );
+	}
+
+	/**
+	 * Coverage for events_list with venues filter.
+	 *
+	 * @covers ::events_list
+	 *
+	 * @return void
+	 */
+	public function test_events_list_with_venues(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Create a venue term.
+		$term = wp_insert_term( 'Test Venue', Venue::TAXONOMY );
+		wp_set_post_terms( $post_id, array( $term['term_id'] ), Venue::TAXONOMY );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'event_list_type', 'upcoming' );
+		$request->set_param( 'max_number', 5 );
+		$request->set_param( 'venues', 'test-venue' );
+
+		$response = $instance->events_list( $request );
+		$data     = $response->get_data();
+
+		$this->assertIsArray( $data );
+	}
+
+	/**
+	 * Coverage for events_list with custom datetime format.
+	 *
+	 * @covers ::events_list
+	 *
+	 * @return void
+	 */
+	public function test_events_list_custom_datetime_format(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'event_list_type', 'upcoming' );
+		$request->set_param( 'max_number', 5 );
+		$request->set_param( 'datetime_format', 'Y-m-d H:i:s' );
+
+		$response = $instance->events_list( $request );
+		$data     = $response->get_data();
+
+		$this->assertIsArray( $data );
+		if ( ! empty( $data ) ) {
+			$this->assertArrayHasKey( 'datetime_start', $data[0] );
+		}
+	}
+
+	/**
+	 * Coverage for update_rsvp with token.
+	 *
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_with_token(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Create an RSVP with email.
+		$email       = 'test@example.com';
+		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
+
+		// Generate token.
+		$rsvp_token = new Rsvp_Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+		$token_value = $rsvp_token->get_token();
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'not_attending' );
+		$request->set_param( 'rsvp_token', sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
+
+		$response = $instance->update_rsvp( $request );
+		$data     = $response->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertEquals( 'not_attending', $data['status'] );
+	}
+
+	/**
+	 * Coverage for update_rsvp with past event.
+	 *
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_past_event(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-01-01 10:00:00',
+				'datetime_end'   => '2020-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$user_id = $this->factory()->user->create();
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+		$data     = $response->get_data();
+
+		$this->assertFalse( $data['success'] );
+	}
+
+	/**
+	 * Coverage for send_emails with non-event post.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_non_event_post(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create();
+
+		$result = $instance->send_emails( $post_id, array( 'all' => true ), '' );
+
+		$this->assertFalse( $result );
 	}
 }

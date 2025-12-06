@@ -179,7 +179,7 @@ export const getWrapperClasses = (
 	blockProps,
 	inlineLayout = false,
 ) => {
-	let classes = `${ blockProps.className || '' } gatherpress-field-type-${ fieldType }`;
+	let classes = `${ blockProps.className || '' } gatherpress-form-field--${ fieldType }`;
 
 	// Add inline layout class for text-based fields.
 	if (

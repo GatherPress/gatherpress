@@ -34,6 +34,7 @@ class Test_Rsvp extends Base {
 	public function test_setup_hooks(): void {
 		$instance          = Rsvp::get_instance();
 		$render_block_hook = sprintf( 'render_block_%s', Rsvp::BLOCK_NAME );
+		$general_block     = \GatherPress\Core\Blocks\General_Block::get_instance();
 		$hooks             = array(
 			array(
 				'type'     => 'filter',
@@ -52,6 +53,24 @@ class Test_Rsvp extends Base {
 				'name'     => $render_block_hook,
 				'priority' => 11,
 				'callback' => array( $instance, 'apply_guest_count_watch' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 9,
+				'callback' => array( $instance, 'apply_guests_input_interactivity' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $general_block, 'process_guests_field' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => $render_block_hook,
+				'priority' => 10,
+				'callback' => array( $general_block, 'process_anonymous_field' ),
 			),
 		);
 
@@ -134,17 +153,17 @@ class Test_Rsvp extends Base {
 			'The transform_block_content method should display content for the attending status without a visibility class.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-not-visible" data-rsvp-status="no_status"><p>No status content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status"><p>No status content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the no_status status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-not-visible" data-rsvp-status="waiting_list"><p>Waiting List content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="waiting_list"><p>Waiting List content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the waiting_list status as not visible.'
 		);
 		$this->assertStringContainsString(
-			'<div class="gatherpress--is-not-visible" data-rsvp-status="not_attending"><p>Not Attending content</p></div>',
+			'<div class="gatherpress--is-hidden" data-rsvp-status="not_attending"><p>Not Attending content</p></div>',
 			$result,
 			'The transform_block_content method should mark content for the not_attending status as not visible.'
 		);
@@ -334,7 +353,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_for_button(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--update-rsvp"><button>RSVP</button></div>';
+		$input    = '<div class="gatherpress-rsvp--trigger-update"><button>RSVP</button></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
@@ -378,7 +397,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_for_link(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--update-rsvp"><a href="#">RSVP</a></div>';
+		$input    = '<div class="gatherpress-rsvp--trigger-update"><a href="#">RSVP</a></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
@@ -402,7 +421,7 @@ class Test_Rsvp extends Base {
 	 * Tests the apply_rsvp_button_interactivity method with a status-specific class.
 	 *
 	 * Ensures that when the RSVP element includes a status-specific class
-	 * (e.g., gatherpress--update-rsvp__attending), the correct data-set-status
+	 * (e.g., gatherpress-rsvp--trigger-update__attending), the correct data-set-status
 	 * attribute is added to reflect the status.
 	 *
 	 * Specifically checks for:
@@ -415,7 +434,7 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_rsvp_button_interactivity_with_status(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div class="gatherpress--update-rsvp__attending"><button>Attending</button></div>';
+		$input    = '<div class="gatherpress-rsvp--trigger-update__attending"><button>Attending</button></div>';
 		$output   = $instance->apply_rsvp_button_interactivity( $input );
 
 		$this->assertStringContainsString(
@@ -440,7 +459,7 @@ class Test_Rsvp extends Base {
 	public function test_apply_guest_count_watch_with_no_guests(): void {
 		$instance = Rsvp::get_instance();
 		$input    = '<div data-user-details=\'{"guests":0}\'><div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
-		$expected = '<div data-user-details=\'{"guests":0}\'><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-not-visible">Guest Count</div></div>';
+		$expected = '<div data-user-details=\'{"guests":0}\'><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-hidden">Guest Count</div></div>';
 		$result   = $instance->apply_guest_count_watch( $input );
 
 		$this->assertSame(
@@ -471,7 +490,7 @@ class Test_Rsvp extends Base {
 		$this->assertSame(
 			$expected,
 			$result,
-			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute without adding the gatherpress--is-not-visible class when the guest count is greater than zero.'
+			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute without adding the gatherpress--is-hidden class when the guest count is greater than zero.'
 		);
 	}
 
@@ -490,13 +509,316 @@ class Test_Rsvp extends Base {
 	public function test_apply_guest_count_watch_no_user_details(): void {
 		$instance = Rsvp::get_instance();
 		$input    = '<div><div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
-		$expected = '<div><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-not-visible">Guest Count</div></div>';
+		$expected = '<div><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-hidden">Guest Count</div></div>';
 		$result   = $instance->apply_guest_count_watch( $input );
 
 		$this->assertSame(
 			$expected,
 			$result,
-			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute and the gatherpress--is-not-visible class when no user details are present.'
+			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute and the gatherpress--is-hidden class when no user details are present.'
+		);
+	}
+
+	/**
+	 * Tests the handle_rsvp_form_fields method for guest count field with allowed guests.
+	 *
+	 * Ensures that when guest count field is rendered and guests are allowed (max_guest_limit > 0),
+	 * the appropriate interactivity attributes are added to the input field.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_fields
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_fields_guest_count_allowed(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Add post meta.
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+
+		// Set the WordPress global query context by visiting the post.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block = array(
+			'attrs' => array(
+				'fieldName' => 'gatherpress_rsvp_guests',
+			),
+		);
+
+		$block_content = '<input type="number" name="gatherpress_rsvp_guests" value="0" />';
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$result,
+			'The handle_rsvp_form_fields method should add the data-wp-interactive attribute for guest count field.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-watch="callbacks.setGuestCount"',
+			$result,
+			'The handle_rsvp_form_fields method should add the data-wp-watch attribute with the setGuestCount callback.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on--change="actions.updateGuestCount"',
+			$result,
+			'The handle_rsvp_form_fields method should add the data-wp-on--change attribute with the updateGuestCount action.'
+		);
+		$this->assertStringContainsString(
+			'max="5"',
+			$result,
+			'The handle_rsvp_form_fields method should add the max attribute with the guest limit value.'
+		);
+	}
+
+	/**
+	 * Tests the handle_rsvp_form_fields method for guest count field when guests are not allowed.
+	 *
+	 * Ensures that when guests are not allowed (max_guest_limit is 0 or empty),
+	 * the method returns empty content to hide the field.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_fields
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_fields_guest_count_not_allowed(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Add post meta.
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 0 );
+
+		// Set the WordPress global query context by visiting the post.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block = array(
+			'attrs' => array(
+				'fieldName' => 'gatherpress_rsvp_guests',
+			),
+		);
+
+		$block_content = '<input type="number" name="gatherpress_rsvp_guests" value="0" />';
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$result,
+			'The handle_rsvp_form_fields method should add interactivity attributes. Field visibility is handled by RSVP Form.'
+		);
+	}
+
+	/**
+	 * Tests the handle_rsvp_form_fields method for anonymous checkbox field when enabled.
+	 *
+	 * Ensures that when anonymous RSVP is enabled, the appropriate interactivity
+	 * attributes are added to the checkbox input field.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_fields
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_fields_anonymous_enabled(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Add post meta.
+		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
+
+		// Set the WordPress global query context by visiting the post.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block = array(
+			'attrs' => array(
+				'fieldName' => 'gatherpress_rsvp_anonymous',
+			),
+		);
+
+		$block_content = '<input type="checkbox" name="gatherpress_rsvp_anonymous" value="1" />';
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$result,
+			'The handle_rsvp_form_fields method should add the data-wp-interactive attribute for anonymous checkbox field.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on--change="actions.updateAnonymous"',
+			$result,
+			'The handle_rsvp_form_fields method should add the data-wp-on--change attribute with the updateAnonymous action.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-watch="callbacks.monitorAnonymousStatus"',
+			$result,
+			'The handle_rsvp_form_fields method should add the data-wp-watch attribute with the monitorAnonymousStatus callback.'
+		);
+	}
+
+	/**
+	 * Tests the handle_rsvp_form_fields method for anonymous checkbox field when disabled.
+	 *
+	 * Ensures that when anonymous RSVP is disabled, the method returns empty content
+	 * to hide the field from the frontend.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_fields
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_fields_anonymous_disabled(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Add post meta.
+		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', false );
+
+		// Set the WordPress global query context by visiting the post.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block = array(
+			'attrs' => array(
+				'fieldName' => 'gatherpress_rsvp_anonymous',
+			),
+		);
+
+		$block_content = '<input type="checkbox" name="gatherpress_rsvp_anonymous" value="1" />';
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$result,
+			'The handle_rsvp_form_fields method should add interactivity attributes. Field visibility is handled by RSVP Form.'
+		);
+	}
+
+	/**
+	 * Tests the handle_rsvp_form_fields method for non-RSVP form fields.
+	 *
+	 * Ensures that form fields that are not RSVP-related are returned unmodified,
+	 * allowing other form-field blocks to function normally.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_fields
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_fields_non_rsvp_field(): void {
+		$instance = Rsvp::get_instance();
+		$block    = array(
+			'attrs' => array(
+				'fieldName' => 'some_other_field',
+			),
+		);
+
+		$block_content = '<input type="text" name="some_other_field" value="" />';
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'The handle_rsvp_form_fields method should return unmodified content for non-RSVP form fields.'
+		);
+	}
+
+	/**
+	 * Tests the handle_rsvp_form_fields method when fieldName attribute is missing.
+	 *
+	 * Ensures that when no fieldName is provided in the block attributes,
+	 * the method returns the original content unmodified.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_fields
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_fields_missing_field_name(): void {
+		$instance = Rsvp::get_instance();
+		$block    = array(
+			'attrs' => array(),
+		);
+
+		$block_content = '<input type="text" name="test_field" value="" />';
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
+
+		$this->assertSame(
+			$block_content,
+			$result,
+			'The handle_rsvp_form_fields method should return unmodified content when fieldName attribute is missing.'
+		);
+	}
+
+	/**
+	 * Tests the handle_rsvp_form_fields method for guest count field with multiple input elements.
+	 *
+	 * Ensures that when there are multiple input elements in the content,
+	 * only the one with the matching name attribute gets the interactivity attributes.
+	 *
+	 * @since 1.0.0
+	 * @covers ::handle_rsvp_form_fields
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_fields_guest_count_multiple_inputs(): void {
+		$instance = Rsvp::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Add post meta.
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 3 );
+
+		// Set the WordPress global query context by visiting the post.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block = array(
+			'attrs' => array(
+				'fieldName' => 'gatherpress_rsvp_guests',
+			),
+		);
+
+		$block_content = '<div><input type="text" name="other_field" value="" /><input type="number" name="gatherpress_rsvp_guests" value="0" /></div>';
+		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
+
+		// Check that only the guest count input gets the attributes.
+		$this->assertStringContainsString(
+			'name="gatherpress_rsvp_guests"',
+			$result,
+			'The handle_rsvp_form_fields method should preserve the guest count input field name.'
+		);
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$result,
+			'The handle_rsvp_form_fields method should add the data-wp-interactive attribute to the guest count input field.'
+		);
+		$this->assertStringContainsString(
+			'name="other_field" value=""',
+			$result,
+			'The handle_rsvp_form_fields method should leave other input fields unmodified.'
+		);
+		// Ensure the other field doesn't have interactivity attributes.
+		$this->assertStringNotContainsString(
+			'name="other_field" value="" data-wp-interactive',
+			$result,
+			'The handle_rsvp_form_fields method should not add interactivity attributes to non-matching input fields.'
 		);
 	}
 }
