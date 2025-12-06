@@ -11,9 +11,13 @@ namespace GatherPress\Tests\Core;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Rest_Api;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Topic;
+use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_REST_Request;
+use WP_REST_Response;
 use WP_REST_Server;
 
 /**
@@ -808,5 +812,438 @@ class Test_Event_Rest_Api extends Base {
 		$rsvp_data = $event->rsvp->get( $user_id );
 		$this->assertNotEmpty( $rsvp_data['comment_id'] );
 		$this->assertEquals( $user_id, $rsvp_data['user_id'] );
+	}
+
+	/**
+	 * Coverage for handle_rsvp_form_submission with past event.
+	 *
+	 * @covers ::handle_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_form_submission_past_event(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set event in the past.
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-01-01 10:00:00',
+				'datetime_end'   => '2020-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'comment_post_ID', $post_id );
+		$request->set_param( 'author', 'Test Author' );
+		$request->set_param( 'email', 'test@example.com' );
+
+		$response = $instance->handle_rsvp_form_submission( $request );
+
+		$this->assertEquals( 400, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertFalse( $data['success'] );
+		$this->assertStringContainsString( 'closed', $data['message'] );
+	}
+
+	/**
+	 * Coverage for handle_email_send_action method.
+	 *
+	 * @covers ::handle_email_send_action
+	 *
+	 * @return void
+	 */
+	public function test_handle_email_send_action(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$send    = array( 'all' => true );
+		$message = 'Test message';
+
+		// The method should call send_emails internally.
+		$instance->handle_email_send_action( $post_id, $send, $message );
+
+		// If no exception thrown, test passes.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Coverage for rsvp_responses method.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create an RSVP.
+		$user_id = $this->factory()->user->create();
+		$event   = new Event( $post_id );
+		$event->rsvp->save( $user_id, 'attending', 0, 1 );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$response = $instance->rsvp_responses( $request );
+		$data     = $response->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertArrayHasKey( 'data', $data );
+		$this->assertArrayHasKey( 'attending', $data['data'] );
+	}
+
+	/**
+	 * Coverage for rsvp_responses with non-event post.
+	 *
+	 * @covers ::rsvp_responses
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_responses_non_event_post(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create();
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'post_id', $post_id );
+
+		$response = $instance->rsvp_responses( $request );
+		$data     = $response->get_data();
+
+		$this->assertFalse( $data['success'] );
+		$this->assertEmpty( $data['data'] );
+	}
+
+	/**
+	 * Coverage for rsvp_status_html method.
+	 *
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create an approved RSVP.
+		$user_id     = $this->factory()->user->create();
+		$event       = new Event( $post_id );
+		$user_record = $event->rsvp->save( $user_id, 'attending', 0, 1 );
+
+		// Approve the comment.
+		wp_set_comment_status( $user_record['comment_id'], 'approve' );
+
+		$block_data = array(
+			'blockName' => 'gatherpress/rsvp-template',
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
+		$request->set_param( 'limit_enabled', false );
+		$request->set_param( 'limit', 10 );
+
+		$response = $instance->rsvp_status_html( $request );
+		$data     = $response->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertArrayHasKey( 'content', $data );
+		$this->assertArrayHasKey( 'responses', $data );
+	}
+
+	/**
+	 * Coverage for rsvp_status_html method with no responses.
+	 *
+	 * @covers ::rsvp_status_html
+	 *
+	 * @return void
+	 */
+	public function test_rsvp_status_html_no_responses(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$block_data = array(
+			'blockName' => 'gatherpress/rsvp-template',
+		);
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'block_data', wp_json_encode( $block_data ) );
+
+		$response = $instance->rsvp_status_html( $request );
+		$data     = $response->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertEmpty( $data['content'] );
+	}
+
+	/**
+	 * Coverage for prepare_event_data method.
+	 *
+	 * @covers ::prepare_event_data
+	 *
+	 * @return void
+	 */
+	public function test_prepare_event_data(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set online event link.
+		update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://example.com/meeting' );
+
+		$response_data = array(
+			'id'   => $post_id,
+			'meta' => array(),
+		);
+
+		$response = new WP_REST_Response( $response_data );
+
+		$result = $instance->prepare_event_data( $response );
+
+		$this->assertArrayHasKey( 'online_event_link', $result->data['meta'] );
+	}
+
+	/**
+	 * Coverage for events_list with topics filter.
+	 *
+	 * @covers ::events_list
+	 *
+	 * @return void
+	 */
+	public function test_events_list_with_topics(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Create a topic term.
+		$term = wp_insert_term( 'Test Topic', Topic::TAXONOMY );
+		wp_set_post_terms( $post_id, array( $term['term_id'] ), Topic::TAXONOMY );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'event_list_type', 'upcoming' );
+		$request->set_param( 'max_number', 5 );
+		$request->set_param( 'topics', 'test-topic' );
+
+		$response = $instance->events_list( $request );
+		$data     = $response->get_data();
+
+		$this->assertIsArray( $data );
+	}
+
+	/**
+	 * Coverage for events_list with venues filter.
+	 *
+	 * @covers ::events_list
+	 *
+	 * @return void
+	 */
+	public function test_events_list_with_venues(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Create a venue term.
+		$term = wp_insert_term( 'Test Venue', Venue::TAXONOMY );
+		wp_set_post_terms( $post_id, array( $term['term_id'] ), Venue::TAXONOMY );
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'event_list_type', 'upcoming' );
+		$request->set_param( 'max_number', 5 );
+		$request->set_param( 'venues', 'test-venue' );
+
+		$response = $instance->events_list( $request );
+		$data     = $response->get_data();
+
+		$this->assertIsArray( $data );
+	}
+
+	/**
+	 * Coverage for events_list with custom datetime format.
+	 *
+	 * @covers ::events_list
+	 *
+	 * @return void
+	 */
+	public function test_events_list_custom_datetime_format(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$request = new WP_REST_Request( 'GET' );
+		$request->set_param( 'event_list_type', 'upcoming' );
+		$request->set_param( 'max_number', 5 );
+		$request->set_param( 'datetime_format', 'Y-m-d H:i:s' );
+
+		$response = $instance->events_list( $request );
+		$data     = $response->get_data();
+
+		$this->assertIsArray( $data );
+		if ( ! empty( $data ) ) {
+			$this->assertArrayHasKey( 'datetime_start', $data[0] );
+		}
+	}
+
+	/**
+	 * Coverage for update_rsvp with token.
+	 *
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_with_token(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2099-01-01 10:00:00',
+				'datetime_end'   => '2099-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Create an RSVP with email.
+		$email       = 'test@example.com';
+		$user_record = $event->rsvp->save( $email, 'attending', 0, 0 );
+
+		// Generate token.
+		$rsvp_token = new Rsvp_Token( $user_record['comment_id'] );
+		$rsvp_token->generate_token();
+		$token_value = $rsvp_token->get_token();
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'not_attending' );
+		$request->set_param( 'rsvp_token', sprintf( '%d_%s', $user_record['comment_id'], $token_value ) );
+
+		$response = $instance->update_rsvp( $request );
+		$data     = $response->get_data();
+
+		$this->assertTrue( $data['success'] );
+		$this->assertEquals( 'not_attending', $data['status'] );
+	}
+
+	/**
+	 * Coverage for update_rsvp with past event.
+	 *
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_past_event(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2020-01-01 10:00:00',
+				'datetime_end'   => '2020-01-01 14:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$user_id = $this->factory()->user->create();
+		wp_set_current_user( $user_id );
+
+		$request = new WP_REST_Request( 'POST' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+
+		$response = $instance->update_rsvp( $request );
+		$data     = $response->get_data();
+
+		$this->assertFalse( $data['success'] );
+	}
+
+	/**
+	 * Coverage for send_emails with non-event post.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_non_event_post(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$post_id  = $this->factory()->post->create();
+
+		$result = $instance->send_emails( $post_id, array( 'all' => true ), '' );
+
+		$this->assertFalse( $result );
 	}
 }
