@@ -18,12 +18,13 @@ const { state, actions } = store( 'gatherpress', {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
+
+			initPostContext( state, postId );
+
 			const currentUser = state.posts[ postId ].currentUser;
 
 			currentUser.guests = parseInt( element.ref.value, 10 );
 			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
-
-			initPostContext( state, postId );
 
 			// Find the closest trigger element for loading state.
 			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
@@ -32,19 +33,20 @@ const { state, actions } = store( 'gatherpress', {
 				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
 				setTimeout( () => {
 					element.ref.focus();
-				}, 1 );
+				}, 10 );
 			}, triggerElement );
 		},
 		updateAnonymous() {
 			const element = getElement();
 			const context = getContext();
 			const postId = context.postId || 0;
+
+			initPostContext( state, postId );
+
 			const currentUser = state.posts[ postId ].currentUser;
 
 			currentUser.anonymous = element.ref.checked ? 1 : 0;
 			currentUser.rsvpToken = getUrlParam( 'gatherpress_rsvp_token' );
-
-			initPostContext( state, postId );
 
 			// Find the closest trigger element for loading state.
 			const triggerElement = element.ref.closest( '.gatherpress-rsvp--trigger-update' );
@@ -53,7 +55,7 @@ const { state, actions } = store( 'gatherpress', {
 				// Use a short timeout to restore focus after data-wp-watch updates the DOM.
 				setTimeout( () => {
 					element.ref.focus();
-				}, 1 );
+				}, 10 );
 			}, triggerElement );
 		},
 		updateRsvp( event = null ) {
@@ -64,6 +66,9 @@ const { state, actions } = store( 'gatherpress', {
 			const element = getElement();
 			const context = getContext();
 			const postId = context?.postId || 0;
+
+			initPostContext( state, postId );
+
 			const setStatus = element.ref.getAttribute( 'data-set-status' ) ?? '';
 			const currentUserStatus = state.posts[ postId ].currentUser.status;
 
@@ -116,10 +121,6 @@ const { state, actions } = store( 'gatherpress', {
 								'[data-rsvp-status="attending"] .gatherpress-rsvp--trigger-update',
 							);
 
-						const closeButton = rsvpContainer.querySelector(
-							'[data-rsvp-status="attending"] .gatherpress-modal--trigger-close button',
-						);
-
 						actions.openModal( null, attendingStatusButton );
 
 						/**
@@ -128,8 +129,7 @@ const { state, actions } = store( 'gatherpress', {
 						 */
 						setTimeout( () => {
 							actions.closeModal( null, element.ref, false );
-							closeButton.focus();
-						}, 1 );
+						}, 10 );
 					} else {
 						/**
 						 * When fully closing a modal, use findActiveSibling=true
@@ -137,7 +137,7 @@ const { state, actions } = store( 'gatherpress', {
 						 */
 						setTimeout( () => {
 							actions.closeModal( null, element.ref, true );
-						}, 1 );
+						}, 10 );
 					}
 				},
 				triggerElement,

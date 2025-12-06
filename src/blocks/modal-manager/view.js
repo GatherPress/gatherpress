@@ -54,14 +54,28 @@ const { actions } = store( 'gatherpress', {
 							modalContent.querySelectorAll(
 								focusableSelectors.join( ',' ),
 							),
-						);
+						).filter( ( el ) => {
+							// Exclude if element itself is hidden.
+							if ( el.classList.contains( 'gatherpress--is-hidden' ) ) {
+								return false;
+							}
+							// Exclude if there's a hidden container between element and modalContent.
+							let parent = el.parentElement;
+							while ( parent && parent !== modalContent ) {
+								if ( parent.classList.contains( 'gatherpress--is-hidden' ) ) {
+									return false;
+								}
+								parent = parent.parentElement;
+							}
+							return true;
+						} );
 
 						// Focus the first focusable element, if available.
 						if ( focusableElements[ 0 ] ) {
 							setTimeout( () => {
 								modal.setAttribute( 'aria-hidden', 'false' );
 								focusableElements[ 0 ].focus();
-							}, 1 );
+							}, 10 );
 						}
 
 						// Set up focus trap using the helper function and store cleanup.
@@ -151,7 +165,7 @@ const { actions } = store( 'gatherpress', {
 			modal.setAttribute( 'aria-hidden', 'true' );
 
 			// Clean up focus trap if applicable.
-			const modalContent = modal.querySelector( '.modal-content' );
+			const modalContent = modal.querySelector( '.wp-block-gatherpress-modal-content' );
 
 			if (
 				modalContent &&
@@ -168,13 +182,16 @@ const { actions } = store( 'gatherpress', {
 				modalContent.cleanupCloseHandlers();
 			}
 
-			// Return focus to the open modal button.
-			const openButton = modalManager.querySelector(
-				'.gatherpress-modal--trigger-open button',
-			);
+			// Return focus to the open modal button only when fully closing.
+			// When switching modals (findActiveSibling=false), don't focus the button.
+			if ( findActiveSibling ) {
+				const openButton = modalManager.querySelector(
+					'.gatherpress-modal--trigger-open button',
+				);
 
-			if ( openButton ) {
-				openButton.focus();
+				if ( openButton ) {
+					openButton.focus();
+				}
 			}
 		},
 	},
