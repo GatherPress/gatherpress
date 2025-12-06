@@ -1025,6 +1025,21 @@ class Test_Rsvp_Form extends Base {
 				'post_type' => Event::POST_TYPE,
 			)
 		);
+		$event   = new Event( $post_id );
+
+		// Set event datetime to future.
+		$start = new \DateTime( 'now' );
+		$end   = new \DateTime( 'now' );
+
+		$start->modify( '+1 day' );
+		$end->modify( '+1 day +2 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
 
 		// Use different email than logged-in user.
 		add_filter(

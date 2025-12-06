@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\RSVP_List_Table;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 use WP_Screen;
 
 /**
@@ -696,6 +697,384 @@ class Test_RSVP_List_Table extends Base {
 		$this->assertTrue(
 			true,
 			'Failed to assert register_column_options works with screen.'
+		);
+	}
+
+	/**
+	 * Tests get_sortable_columns method.
+	 *
+	 * @covers ::get_sortable_columns
+	 * @return void
+	 */
+	public function test_get_sortable_columns(): void {
+		$sortable = Utility::invoke_hidden_method( $this->list_table, 'get_sortable_columns' );
+
+		$this->assertIsArray(
+			$sortable,
+			'Failed to assert get_sortable_columns returns an array.'
+		);
+		$this->assertArrayHasKey(
+			'attendee',
+			$sortable,
+			'Failed to assert sortable columns include attendee.'
+		);
+		$this->assertArrayHasKey(
+			'response',
+			$sortable,
+			'Failed to assert sortable columns include response.'
+		);
+		$this->assertArrayHasKey(
+			'event',
+			$sortable,
+			'Failed to assert sortable columns include event.'
+		);
+		$this->assertArrayHasKey(
+			'approved',
+			$sortable,
+			'Failed to assert sortable columns include approved.'
+		);
+		$this->assertArrayHasKey(
+			'date',
+			$sortable,
+			'Failed to assert sortable columns include date.'
+		);
+		$this->assertSame(
+			array( 'date', true ),
+			$sortable['date'],
+			'Failed to assert date is the default sort column.'
+		);
+	}
+
+	/**
+	 * Tests display method.
+	 *
+	 * @covers ::display
+	 * @return void
+	 */
+	public function test_display(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->list_table->prepare_items();
+
+		ob_start();
+		$this->list_table->display();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'gatherpress_rsvp',
+			$output,
+			'Failed to assert display outputs table with RSVP nonce field.'
+		);
+	}
+
+	/**
+	 * Tests process_bulk_action with approve action.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_approve(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		// Create an RSVP comment with pending status.
+		$rsvp_id = $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->post_id,
+				'comment_approved' => '0',
+			)
+		);
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+
+		$this->list_table->process_bulk_action();
+
+		$comment = get_comment( $rsvp_id );
+		$this->assertSame(
+			'1',
+			$comment->comment_approved,
+			'Failed to assert RSVP was approved.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+	}
+
+	/**
+	 * Tests process_bulk_action with unapprove action.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_unapprove(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		// Create an RSVP comment with approved status.
+		$rsvp_id = $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->post_id,
+				'comment_approved' => '1',
+			)
+		);
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['action']              = 'unapprove';
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+
+		$this->list_table->process_bulk_action();
+
+		$comment = get_comment( $rsvp_id );
+		$this->assertSame(
+			'0',
+			$comment->comment_approved,
+			'Failed to assert RSVP was unapproved.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+	}
+
+	/**
+	 * Tests process_bulk_action with spam action.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_spam(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		// Create an RSVP comment.
+		$rsvp_id = $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->post_id,
+				'comment_approved' => '1',
+			)
+		);
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['action']              = 'spam';
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+
+		$this->list_table->process_bulk_action();
+
+		$comment = get_comment( $rsvp_id );
+		$this->assertSame(
+			'spam',
+			$comment->comment_approved,
+			'Failed to assert RSVP was marked as spam.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+	}
+
+	/**
+	 * Tests process_bulk_action with unspam action.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_unspam(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		// Create an RSVP comment with spam status.
+		$rsvp_id = $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->post_id,
+				'comment_approved' => 'spam',
+			)
+		);
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['action']              = 'unspam';
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+
+		$this->list_table->process_bulk_action();
+
+		$comment = get_comment( $rsvp_id );
+		$this->assertSame(
+			'1',
+			$comment->comment_approved,
+			'Failed to assert RSVP was unmarked as spam.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+	}
+
+	/**
+	 * Tests process_bulk_action with delete action.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_delete(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		// Create an RSVP comment.
+		$rsvp_id = $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->post_id,
+				'comment_approved' => '1',
+			)
+		);
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( 'gatherpress_rsvp_action' );
+		$_REQUEST['action']              = 'delete';
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+
+		$this->list_table->process_bulk_action();
+
+		$comment = get_comment( $rsvp_id );
+		$this->assertNull(
+			$comment,
+			'Failed to assert RSVP was deleted.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+	}
+
+	/**
+	 * Tests process_bulk_action with single RSVP ID (not array).
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_single_id(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		// Create an RSVP comment.
+		$rsvp_id = $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->post_id,
+				'comment_approved' => '0',
+			)
+		);
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = $rsvp_id;
+
+		$this->list_table->process_bulk_action();
+
+		$comment = get_comment( $rsvp_id );
+		$this->assertSame(
+			'1',
+			$comment->comment_approved,
+			'Failed to assert single RSVP ID was processed.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+	}
+
+	/**
+	 * Tests process_bulk_action with no capability.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_no_capability(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'subscriber' ) ) );
+
+		// Create an RSVP comment.
+		$rsvp_id = $this->factory->comment->create(
+			array(
+				'comment_type'     => Rsvp::COMMENT_TYPE,
+				'comment_post_ID'  => $this->post_id,
+				'comment_approved' => '0',
+			)
+		);
+
+		$_REQUEST['_wpnonce']            = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['action']              = 'approve';
+		$_REQUEST['gatherpress_rsvp_id'] = array( $rsvp_id );
+
+		$this->list_table->process_bulk_action();
+
+		$comment = get_comment( $rsvp_id );
+		$this->assertSame(
+			'0',
+			$comment->comment_approved,
+			'Failed to assert RSVP was not processed without capability.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['action'], $_REQUEST['gatherpress_rsvp_id'] );
+	}
+
+	/**
+	 * Tests get_views with post_id filter.
+	 *
+	 * @covers ::get_views
+	 * @return void
+	 */
+	public function test_get_views_with_post_id(): void {
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['post_id']  = $this->post_id;
+
+		$views = $this->list_table->get_views();
+
+		$this->assertIsArray(
+			$views,
+			'Failed to assert get_views returns an array with post_id filter.'
+		);
+		$this->assertArrayHasKey(
+			'all',
+			$views,
+			'Failed to assert views contain all with post_id filter.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * Tests get_views with user_id filter.
+	 *
+	 * @covers ::get_views
+	 * @return void
+	 */
+	public function test_get_views_with_user_id(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['user_id']  = $user_id;
+
+		$views = $this->list_table->get_views();
+
+		$this->assertIsArray(
+			$views,
+			'Failed to assert get_views returns an array with user_id filter.'
+		);
+		$this->assertArrayHasKey(
+			'all',
+			$views,
+			'Failed to assert views contain all with user_id filter.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['user_id'] );
+	}
+
+	/**
+	 * Tests column_default with unknown response.
+	 *
+	 * @covers ::column_default
+	 * @return void
+	 */
+	public function test_column_default_response_unknown(): void {
+		// Create a term with an unknown slug.
+		$term_id = wp_insert_term( 'Unknown', Rsvp::TAXONOMY, array( 'slug' => 'unknown_status' ) );
+		wp_set_object_terms( $this->rsvp['comment_ID'], $term_id['term_id'], Rsvp::TAXONOMY );
+
+		$output = $this->list_table->column_default( $this->rsvp, 'response' );
+
+		$this->assertSame(
+			'-',
+			$output,
+			'Failed to assert unknown response returns dash.'
 		);
 	}
 }
