@@ -92,36 +92,41 @@ jobs:
 
           # Check if Setup class exists and can be instantiated.
           echo "Checking GatherPress Setup class..."
-          wp-env run cli wp eval "
-            if (class_exists('GatherPress\\\\Core\\\\Setup')) {
-              echo 'Setup class exists' . PHP_EOL;
+          wp-env run cli wp eval '
+            if (class_exists("GatherPress\Core\Setup")) {
+              echo "Setup class exists" . PHP_EOL;
               try {
-                \$instance = GatherPress\\\\Core\\\\Setup::get_instance();
-                echo 'Setup instance created successfully' . PHP_EOL;
-              } catch (Exception \$e) {
-                echo 'ERROR creating Setup instance: ' . \$e->getMessage() . PHP_EOL;
+                $instance = GatherPress\Core\Setup::get_instance();
+                echo "Setup instance created successfully" . PHP_EOL;
+              } catch (Exception $e) {
+                echo "ERROR creating Setup instance: " . $e->getMessage() . PHP_EOL;
               }
             } else {
-              echo 'ERROR: Setup class does not exist!' . PHP_EOL;
+              echo "ERROR: Setup class does not exist!" . PHP_EOL;
             }
-          "
+          '
 
-          # Verify post types exist with retry logic (max 5 attempts, 2s between).
-          echo "Verifying GatherPress post types are registered..."
+          # Verify post types via REST API (more reliable than wp-cli).
+          echo "Verifying GatherPress post types via REST API..."
           for i in 1 2 3 4 5; do
-            if wp-env run cli wp post-type list --field=name | grep -q gatherpress_event; then
-              echo "✓ GatherPress post types registered successfully"
+            # Check if post type exists via REST API
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8889/wp-json/wp/v2/types/gatherpress_event)
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✓ GatherPress event post type registered (HTTP 200)"
               break
             fi
-            echo "⏳ Waiting for post types... (attempt $i/5)"
+            echo "⏳ Waiting for post types... (attempt $i/5, HTTP status: $HTTP_STATUS)"
             sleep 2
           done
 
-          # Final verification - fail if post types still not found.
-          if ! wp-env run cli wp post-type list --field=name | grep -q gatherpress_event; then
-            echo "❌ ERROR: GatherPress post types not registered after 5 attempts"
-            echo "Registered post types:"
+          # Final verification - fail if post type still not found.
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8889/wp-json/wp/v2/types/gatherpress_event)
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ ERROR: GatherPress post types not accessible via REST API (HTTP $HTTP_STATUS)"
+            echo "Checking via wp-cli as fallback..."
             wp-env run cli wp post-type list
+            echo "Checking REST API response:"
+            curl -s http://localhost:8889/wp-json/wp/v2/types/gatherpress_event || echo "No response"
             exit 1
           fi
 
