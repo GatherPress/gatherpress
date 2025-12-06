@@ -796,4 +796,402 @@ class Test_Event extends Base {
 			'Failed to assert empty string due to RSVP being set to null.'
 		);
 	}
+
+	/**
+	 * Coverage for is_same_date method.
+	 *
+	 * @covers ::is_same_date
+	 *
+	 * @return void
+	 */
+	public function test_is_same_date(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		// Test same day event.
+		$start = new DateTime( '2025-06-15 10:00:00' );
+		$end   = new DateTime( '2025-06-15 14:00:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$this->assertTrue(
+			$event->is_same_date(),
+			'Failed to assert event starts and ends on the same day.'
+		);
+
+		// Test multi-day event.
+		$start = new DateTime( '2025-06-15 22:00:00' );
+		$end   = new DateTime( '2025-06-16 02:00:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$this->assertFalse(
+			$event->is_same_date(),
+			'Failed to assert event spans multiple days.'
+		);
+	}
+
+	/**
+	 * Coverage for get_datetime_start method.
+	 *
+	 * @covers ::get_datetime_start
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_start(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_datetime_start();
+
+		$this->assertNotEmpty( $result, 'Failed to assert datetime start is not empty.' );
+		$this->assertStringContainsString( '2025', $result );
+	}
+
+	/**
+	 * Coverage for get_datetime_end method.
+	 *
+	 * @covers ::get_datetime_end
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_end(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_datetime_end();
+
+		$this->assertNotEmpty( $result, 'Failed to assert datetime end is not empty.' );
+		$this->assertStringContainsString( 'June', $result );
+	}
+
+	/**
+	 * Coverage for get_time_end method.
+	 *
+	 * @covers ::get_time_end
+	 *
+	 * @return void
+	 */
+	public function test_get_time_end(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		// Test default format.
+		$result = $event->get_time_end();
+
+		$this->assertNotEmpty( $result, 'Failed to assert time end is not empty.' );
+
+		// Test custom format.
+		$result = $event->get_time_end( 'H:i' );
+
+		$this->assertMatchesRegularExpression( '/^\d{2}:\d{2}$/', $result, 'Failed to assert custom time format.' );
+	}
+
+	/**
+	 * Coverage for get_formatted_datetime method.
+	 *
+	 * @covers ::get_formatted_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_formatted_datetime(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		// Test start datetime.
+		$result = $event->get_formatted_datetime( 'start' );
+
+		$this->assertNotEmpty( $result, 'Failed to assert formatted start datetime is not empty.' );
+
+		// Test end datetime.
+		$result = $event->get_formatted_datetime( 'end' );
+
+		$this->assertNotEmpty( $result, 'Failed to assert formatted end datetime is not empty.' );
+	}
+
+	/**
+	 * Coverage for get_google_calendar_link method.
+	 *
+	 * @covers ::get_google_calendar_link
+	 *
+	 * @return void
+	 */
+	public function test_get_google_calendar_link(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_google_calendar_link();
+
+		$this->assertStringContainsString( 'google.com/calendar', $result, 'Failed to assert Google calendar link contains expected URL.' );
+		$this->assertStringContainsString( 'Test%20Event', $result, 'Failed to assert Google calendar link contains event title.' );
+	}
+
+	/**
+	 * Coverage for get_yahoo_calendar_link method.
+	 *
+	 * @covers ::get_yahoo_calendar_link
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_calendar_link(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_yahoo_calendar_link();
+
+		$this->assertStringContainsString( 'yahoo.com', $result, 'Failed to assert Yahoo calendar link contains expected URL.' );
+		$this->assertStringContainsString( 'Test%20Event', $result, 'Failed to assert Yahoo calendar link contains event title.' );
+	}
+
+	/**
+	 * Coverage for get_ics_download_link method.
+	 *
+	 * @covers ::get_ics_download_link
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_download_link(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_ics_download_link();
+
+		$this->assertNotEmpty( $result, 'Failed to assert ICS link is not empty.' );
+		$this->assertStringContainsString( '.ics', $result, 'Failed to assert ICS link ends with .ics.' );
+	}
+
+	/**
+	 * Coverage for escape_ics_text method.
+	 *
+	 * @covers ::escape_ics_text
+	 *
+	 * @return void
+	 */
+	public function test_escape_ics_text(): void {
+		$event = new Event( 0 );
+
+		// Use reflection to test protected method.
+		$reflection = new \ReflectionClass( $event );
+		$method     = $reflection->getMethod( 'escape_ics_text' );
+		$method->setAccessible( true );
+
+		// Test backslash escaping.
+		$result = $method->invoke( $event, 'Test \\ text' );
+		$this->assertStringContainsString( '\\\\', $result, 'Failed to escape backslashes.' );
+
+		// Test semicolon escaping.
+		$result = $method->invoke( $event, 'Test; text' );
+		$this->assertStringContainsString( '\;', $result, 'Failed to escape semicolons.' );
+
+		// Test comma escaping.
+		$result = $method->invoke( $event, 'Test, text' );
+		$this->assertStringContainsString( '\,', $result, 'Failed to escape commas.' );
+
+		// Test that method is callable.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Coverage for get_ics_calendar_string method.
+	 *
+	 * @covers ::get_ics_calendar_string
+	 * @covers ::escape_ics_text
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_calendar_string(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_ics_calendar_string();
+
+		$this->assertStringContainsString( 'BEGIN:VCALENDAR', $result, 'Failed to assert ICS contains VCALENDAR.' );
+		$this->assertStringContainsString( 'BEGIN:VEVENT', $result, 'Failed to assert ICS contains VEVENT.' );
+		$this->assertStringContainsString( 'SUMMARY:', $result, 'Failed to assert ICS contains SUMMARY.' );
+		$this->assertStringContainsString( 'END:VEVENT', $result, 'Failed to assert ICS contains VEVENT end.' );
+		$this->assertStringContainsString( 'END:VCALENDAR', $result, 'Failed to assert ICS contains VCALENDAR end.' );
+	}
+
+	/**
+	 * Coverage for get_calendar_description method.
+	 *
+	 * @covers ::get_calendar_description
+	 *
+	 * @return void
+	 */
+	public function test_get_calendar_description(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_title'   => 'Test Event',
+				'post_excerpt' => 'This is a test event description.',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_calendar_description();
+
+		// The method returns "For details go to {permalink}".
+		$this->assertNotEmpty( $result, 'Failed to assert calendar description is not empty.' );
+		$this->assertStringContainsString( 'For details', $result, 'Failed to assert calendar description contains standard text.' );
+
+		// Test with no excerpt.
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event No Excerpt',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+		$event->save_datetimes( $params );
+		$result = $event->get_calendar_description();
+
+		$this->assertNotEmpty( $result, 'Failed to assert calendar description is not empty even without excerpt.' );
+	}
+
+	/**
+	 * Coverage for __construct with non-event post type.
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_with_non_event_post(): void {
+		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+		$event   = new Event( $post_id );
+
+		$this->assertNull( $event->event, 'Failed to assert event is null for non-event post.' );
+		$this->assertNull( $event->rsvp, 'Failed to assert rsvp is null for non-event post.' );
+	}
 }
