@@ -233,19 +233,34 @@ class Rsvp {
 					}
 				}
 
-				// Check if current element is an anchor.
-				if ( 'A' === $tag->get_tag() ) {
-					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-				} else {
-					$tag->set_attribute( 'tabindex', '0' );
-					$tag->set_attribute( 'role', 'button' );
+				$target_found = false;
+
+				// Check if current element is an anchor or button.
+				if ( in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true ) ) {
+					$target_found = true;
+				} elseif (
+					$tag->next_tag() &&
+					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
+				) {
+					$target_found = true;
 				}
 
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+				// Apply RSVP attributes if target was found.
+				if ( $target_found ) {
+					// Links only get role="button", others get full keyboard handling.
+					if ( 'A' === $tag->get_tag() ) {
+						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
+					} else {
+						$tag->set_attribute( 'tabindex', '0' );
+						$tag->set_attribute( 'role', 'button' );
+					}
 
-				if ( ! empty( $matched_status ) ) {
-					$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.updateRsvp' );
+
+					if ( ! empty( $matched_status ) ) {
+						$tag->set_attribute( 'data-set-status', str_replace( '-', '_', $matched_status ) );
+					}
 				}
 			}
 		}
