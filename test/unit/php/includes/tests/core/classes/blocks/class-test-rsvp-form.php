@@ -1516,4 +1516,441 @@ class Test_Rsvp_Form extends Base {
 		// Check that content is unmodified.
 		$this->assertEquals( $block_content, $result );
 	}
+
+	/**
+	 * Tests transform_block_content with non-event post type.
+	 *
+	 * @covers ::transform_block_content
+	 */
+	public function test_transform_block_content_non_event_post_type(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type' => 'post', // Not an event.
+			)
+		);
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		// Should return empty string for non-event posts.
+		$this->assertEmpty( $result );
+	}
+
+	/**
+	 * Tests transform_block_content with unpublished event.
+	 *
+	 * @covers ::transform_block_content
+	 */
+	public function test_transform_block_content_unpublished_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'draft', // Not published.
+			)
+		);
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		// Should return empty string for unpublished events (when not in preview mode).
+		$this->assertEmpty( $result );
+	}
+
+	/**
+	 * Tests transform_block_content with past event.
+	 *
+	 * @covers ::transform_block_content
+	 */
+	public function test_transform_block_content_past_event(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$event    = new Event( $post_id );
+
+		// Set event to be in the past.
+		$start = new \DateTime( 'now' );
+		$end   = new \DateTime( 'now' );
+		$start->modify( '-3 hours' );
+		$end->modify( '-1 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+		$event->save_datetimes( $params );
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form Content</div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		// Should include past event data attribute.
+		$this->assertStringContainsString( 'data-gatherpress-event-state="past"', $result );
+	}
+
+	/**
+	 * Tests save_form_schema with autosave.
+	 *
+	 * @covers ::save_form_schema
+	 */
+	public function test_save_form_schema_autosave(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create autosave using WordPress autosave mechanism.
+		$_POST['wp_autosave'] = array(
+			'post_ID'      => $post_id,
+			'post_content' => '<!-- wp:gatherpress/rsvp-form --><div></div><!-- /wp:gatherpress/rsvp-form -->',
+		);
+
+		$autosave_id = wp_create_post_autosave(
+			array(
+				'post_ID'      => $post_id,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form --><div></div><!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		if ( is_int( $autosave_id ) ) {
+			// Should not process autosaves.
+			$instance->save_form_schema( $autosave_id );
+
+			// Check that no schema was created for autosave.
+			$schemas = get_post_meta( $autosave_id, 'gatherpress_rsvp_form_schemas', true );
+			$this->assertEmpty( $schemas );
+		} else {
+			// Autosave wasn't created, just verify wp_is_post_autosave works.
+			$this->assertTrue( true );
+		}
+
+		unset( $_POST['wp_autosave'] );
+	}
+
+	/**
+	 * Tests save_form_schema with revision.
+	 *
+	 * @covers ::save_form_schema
+	 */
+	public function test_save_form_schema_revision(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create a revision.
+		$revision_id = wp_save_post_revision( $post_id );
+
+		if ( $revision_id ) {
+			// Should not process revisions.
+			$instance->save_form_schema( $revision_id );
+
+			// Check that no schema was created for revision.
+			$schemas = get_post_meta( $revision_id, 'gatherpress_rsvp_form_schemas', true );
+			$this->assertEmpty( $schemas );
+		} else {
+			// If revision wasn't created, just verify the test ran.
+			$this->assertTrue( true );
+		}
+	}
+
+	/**
+	 * Tests extract_form_fields with select field type.
+	 *
+	 * @covers ::save_form_schema
+	 * @covers ::extract_form_schemas_from_blocks
+	 * @covers ::extract_form_fields_from_inner_blocks
+	 */
+	public function test_extract_form_fields_select_type(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
+					<div class="wp-block-gatherpress-rsvp-form">
+						<!-- wp:gatherpress/form-field {"fieldName":"select_field","fieldType":"select","options":["Option 1","Option 2","Option 3"]} -->
+						<div class="wp-block-gatherpress-form-field"></div>
+						<!-- /wp:gatherpress/form-field -->
+					</div>
+					<!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$instance->save_form_schema( $post_id );
+
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		$this->assertArrayHasKey( 'select_field', $schemas['form_0']['fields'] );
+		$this->assertEquals( 'select', $schemas['form_0']['fields']['select_field']['type'] );
+		$this->assertEquals( array( 'Option 1', 'Option 2', 'Option 3' ), $schemas['form_0']['fields']['select_field']['options'] );
+	}
+
+	/**
+	 * Tests extract_form_fields with textarea field type.
+	 *
+	 * @covers ::save_form_schema
+	 * @covers ::extract_form_fields_from_inner_blocks
+	 */
+	public function test_extract_form_fields_textarea_type(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
+					<div class="wp-block-gatherpress-rsvp-form">
+						<!-- wp:gatherpress/form-field {"fieldName":"message_field","fieldType":"textarea","maxLength":500} -->
+						<div class="wp-block-gatherpress-form-field"></div>
+						<!-- /wp:gatherpress/form-field -->
+					</div>
+					<!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$instance->save_form_schema( $post_id );
+
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		$this->assertArrayHasKey( 'message_field', $schemas['form_0']['fields'] );
+		$this->assertEquals( 'textarea', $schemas['form_0']['fields']['message_field']['type'] );
+		$this->assertEquals( 500, $schemas['form_0']['fields']['message_field']['max_length'] );
+	}
+
+	/**
+	 * Tests determine_visibility with whenPast set.
+	 *
+	 * @covers ::determine_visibility
+	 * @covers ::apply_visibility_attribute
+	 */
+	public function test_determine_visibility_with_when_past(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post     = $this->mock->post()->get();
+		$post_id  = $post->ID;
+
+		// Set global post.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$block_content = '<div class="wp-block-paragraph">Content</div>';
+		$block         = array(
+			'blockName' => 'core/paragraph',
+			'attrs'     => array(
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'whenPast' => 'show' ),
+				),
+			),
+		);
+
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
+
+		// Should include visibility data attribute.
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
+		$this->assertStringContainsString( 'whenPast', $result );
+	}
+
+	/**
+	 * Tests get_post_id_from_context without postId attribute.
+	 *
+	 * @covers ::get_post_id_from_context
+	 * @covers ::apply_visibility_attribute
+	 */
+	public function test_get_post_id_from_context_fallback(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post     = $this->mock->post()->get();
+
+		// Set global post.
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$block_content = '<div class="wp-block-paragraph">Content</div>';
+		$block         = array(
+			'blockName' => 'core/paragraph',
+			'attrs'     => array(
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'onSuccess' => 'show' ),
+				),
+			),
+		);
+
+		// Should use global post ID.
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
+
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility', $result );
+	}
+
+	/**
+	 * Tests apply_visibility_attribute with empty block content.
+	 *
+	 * @covers ::apply_visibility_attribute
+	 */
+	public function test_apply_visibility_attribute_empty_content(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$block_content = '';
+		$block         = array(
+			'blockName' => 'core/paragraph',
+			'attrs'     => array(
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'onSuccess' => 'show' ),
+				),
+			),
+		);
+
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
+
+		// Should return empty string unchanged.
+		$this->assertEmpty( $result );
+	}
+
+	/**
+	 * Tests save_form_schema with empty post content.
+	 *
+	 * @covers ::save_form_schema
+	 */
+	public function test_save_form_schema_empty_content(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '', // Empty content.
+			)
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$instance->save_form_schema( $post_id );
+
+		// Should not create schemas for empty content.
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+		$this->assertEmpty( $schemas );
+	}
+
+	/**
+	 * Tests extract_form_fields with nested form fields.
+	 *
+	 * @covers ::save_form_schema
+	 * @covers ::extract_form_fields_from_inner_blocks
+	 */
+	public function test_extract_form_fields_nested_blocks(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
+					<div class="wp-block-gatherpress-rsvp-form">
+						<!-- wp:group -->
+						<div class="wp-block-group">
+							<!-- wp:gatherpress/form-field {"fieldName":"nested_field","fieldType":"text"} -->
+							<div class="wp-block-gatherpress-form-field"></div>
+							<!-- /wp:gatherpress/form-field -->
+						</div>
+						<!-- /wp:group -->
+					</div>
+					<!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$instance->save_form_schema( $post_id );
+
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		// Should find nested field.
+		$this->assertArrayHasKey( 'nested_field', $schemas['form_0']['fields'] );
+	}
+
+	/**
+	 * Tests extract_form_fields with radio field type.
+	 *
+	 * @covers ::save_form_schema
+	 * @covers ::extract_form_fields_from_inner_blocks
+	 */
+	public function test_extract_form_fields_radio_type(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
+					<div class="wp-block-gatherpress-rsvp-form">
+						<!-- wp:gatherpress/form-field {"fieldName":"radio_field","fieldType":"radio","options":["Yes","No","Maybe"]} -->
+						<div class="wp-block-gatherpress-form-field"></div>
+						<!-- /wp:gatherpress/form-field -->
+					</div>
+					<!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$instance->save_form_schema( $post_id );
+
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		$this->assertArrayHasKey( 'radio_field', $schemas['form_0']['fields'] );
+		$this->assertEquals( 'radio', $schemas['form_0']['fields']['radio_field']['type'] );
+		$this->assertEquals( array( 'Yes', 'No', 'Maybe' ), $schemas['form_0']['fields']['radio_field']['options'] );
+	}
+
+	/**
+	 * Tests extract_form_fields with email field type validation.
+	 *
+	 * @covers ::save_form_schema
+	 * @covers ::extract_form_fields_from_inner_blocks
+	 */
+	public function test_extract_form_fields_email_validation(): void {
+		$instance = Rsvp_Form::get_instance();
+		$post_id  = $this->factory->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
+					<div class="wp-block-gatherpress-rsvp-form">
+						<!-- wp:gatherpress/form-field {"fieldName":"email_field","fieldType":"email"} -->
+						<div class="wp-block-gatherpress-form-field"></div>
+						<!-- /wp:gatherpress/form-field -->
+					</div>
+					<!-- /wp:gatherpress/rsvp-form -->',
+			)
+		);
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$instance->save_form_schema( $post_id );
+
+		$schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+
+		$this->assertArrayHasKey( 'email_field', $schemas['form_0']['fields'] );
+		$this->assertEquals( 'email', $schemas['form_0']['fields']['email_field']['type'] );
+		$this->assertEquals( 'email', $schemas['form_0']['fields']['email_field']['validation'] );
+	}
 }

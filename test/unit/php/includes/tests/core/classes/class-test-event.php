@@ -167,6 +167,17 @@ class Test_Event extends Base {
 			}
 		}
 
+		// For empty params test, ensure no datetime data exists.
+		// This needs to be done right before the assertion because
+		// previous tests may have set datetime values for this post ID.
+		if ( empty( $params ) ) {
+			global $wpdb;
+			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->delete( $table, array( 'post_id' => $post->ID ), array( '%d' ) );
+			delete_transient( sprintf( Event::DATETIME_CACHE_KEY, $post->ID ) );
+		}
+
 		$this->assertSame(
 			$expects,
 			$event->get_display_datetime(
