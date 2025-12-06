@@ -87,7 +87,7 @@ jobs:
           # Verify post types are registered via REST API.
           echo "Verifying GatherPress post types via REST API..."
           for i in 1 2 3 4 5; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8889/wp-json/wp/v2/types/gatherpress_event)
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8889/?rest_route=/wp/v2/types/gatherpress_event")
             if [ "$HTTP_STATUS" = "200" ]; then
               echo "✓ GatherPress event post type registered (HTTP 200)"
               break
@@ -97,7 +97,7 @@ jobs:
           done
 
           # Final verification - fail if post type still not found.
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8889/wp-json/wp/v2/types/gatherpress_event)
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8889/?rest_route=/wp/v2/types/gatherpress_event")
           if [ "$HTTP_STATUS" != "200" ]; then
             echo "❌ ERROR: GatherPress post types not accessible via REST API (HTTP $HTTP_STATUS)"
             wp-env run cli wp post-type list
