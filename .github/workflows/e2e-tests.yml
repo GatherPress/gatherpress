@@ -72,184 +72,49 @@ jobs:
 
       - name: Start WordPress and wait for full initialization
         run: |
-          # Start test environment
+          # Start test environment.
           wp-env start
 
-          # Wait for HTTP server to be available
+          # Wait for HTTP server to be available.
           npx wait-on http://localhost:8889 -t 60000
 
-          # Wait for WordPress to fully initialize (crucial step!)
+          # Wait for WordPress to fully initialize.
           echo "Waiting for WordPress to fully initialize..."
           sleep 10
 
-          # Wait for WordPress admin to be responsive
+          # Wait for WordPress core to be installed.
           timeout 60 bash -c 'until wp-env run cli wp core is-installed; do echo "Waiting for WordPress..."; sleep 2; done'
 
-          # Wait for plugins to be loaded and post types registered
-          echo "Waiting for plugins to initialize..."
-          timeout 60 bash -c 'until wp-env run cli wp plugin list --status=active | grep gatherpress; do echo "Waiting for GatherPress..."; sleep 2; done'
-
-          # Give extra time for post type registration
-          echo "Allowing time for post type registration..."
-          sleep 5
-
-          # Flush rewrite rules to ensure post types are available
-          wp-env run cli wp rewrite flush
-
-          # Debug plugin loading
-          echo "=== DEBUG: Plugin loading status ==="
+          # Verify GatherPress plugin is active.
+          echo "Verifying GatherPress plugin status..."
           wp-env run cli wp plugin list --status=active
 
-          echo "=== DEBUG: Checking for PHP errors ==="
-          wp-env run cli wp eval "error_reporting(E_ALL); ini_set('display_errors', 1);"
-
-          echo "=== DEBUG: Forcing plugin deactivate/activate ==="
-          wp-env run cli wp plugin deactivate gatherpress || true
+          # Ensure plugin is activated.
           wp-env run cli wp plugin activate gatherpress
 
-          echo "=== DEBUG: Manually loading plugin ==="
-          wp-env run cli wp eval "require_once(ABSPATH . 'wp-content/plugins/gatherpress/gatherpress.php');"
+          # Flush rewrite rules to ensure post types are available.
+          echo "Flushing rewrite rules..."
+          wp-env run cli wp rewrite flush
 
-          echo "=== DEBUG: Checking if main class exists ==="
-          wp-env run cli wp eval "if (class_exists('GatherPress\Core\Setup')) { echo 'GatherPress Setup class found'; } else { echo 'GatherPress Setup class NOT found'; }"
-
-          echo "=== DEBUG: Manually running init hooks ==="
-          wp-env run cli wp eval "do_action('plugins_loaded'); do_action('init'); do_action('wp_loaded');"
-
-          echo "=== DEBUG: Checking autoloader and dependencies ==="
+          # Verify post types are registered.
+          echo "Verifying GatherPress post types..."
           wp-env run cli wp eval "
-            echo 'Checking if autoloader file exists: ';
-            if (file_exists(ABSPATH . 'wp-content/plugins/gatherpress/includes/core/classes/class-autoloader.php')) {
-              echo 'YES';
-            } else {
-              echo 'NO';
-            }
-            echo PHP_EOL;
-          "
-
-          echo "=== DEBUG: Installing Composer dependencies ==="
-          wp-env run cli bash -c "cd /var/www/html/wp-content/plugins/gatherpress && composer install --no-dev --no-interaction || echo 'Composer failed'"
-
-          echo "=== DEBUG: Testing autoloader directly ==="
-          wp-env run cli wp eval "
-            echo 'GATHERPRESS_CORE_PATH: ' . GATHERPRESS_CORE_PATH . PHP_EOL;
-            echo 'Autoloader path: ' . GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php' . PHP_EOL;
-            if (file_exists(GATHERPRESS_CORE_PATH . '/includes/core/classes/class-autoloader.php')) {
-              echo 'Autoloader file exists' . PHP_EOL;
-            } else {
-              echo 'Autoloader file does NOT exist' . PHP_EOL;
-            }
-            
-            echo 'Expected Setup class path: ' . GATHERPRESS_CORE_PATH . '/includes/core/classes/class-setup.php' . PHP_EOL;
-            if (file_exists(GATHERPRESS_CORE_PATH . '/includes/core/classes/class-setup.php')) {
-              echo 'Setup class file exists' . PHP_EOL;
-            } else {
-              echo 'Setup class file does NOT exist' . PHP_EOL;
-            }
-            
-            echo 'Expected Singleton trait path: ' . GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php' . PHP_EOL;
-            if (file_exists(GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php')) {
-              echo 'Singleton trait file exists' . PHP_EOL;
-            } else {
-              echo 'Singleton trait file does NOT exist' . PHP_EOL;
-            }
-            
-            echo 'Testing trait loading first...' . PHP_EOL;
-            try {
-              require_once(GATHERPRESS_CORE_PATH . '/includes/core/classes/traits/class-singleton.php');
-              echo 'Singleton trait loaded successfully' . PHP_EOL;
-              if (trait_exists('GatherPress\Core\Traits\Singleton')) {
-                echo 'Singleton trait exists' . PHP_EOL;
-              } else {
-                echo 'Singleton trait NOT found' . PHP_EOL;
-              }
-            } catch (Exception \$e) {
-              echo 'ERROR loading Singleton trait: ' . \$e->getMessage() . PHP_EOL;
-            }
-            
-            echo 'Testing manual require of Setup class...' . PHP_EOL;
-            try {
-              require_once(GATHERPRESS_CORE_PATH . '/includes/core/classes/class-setup.php');
-              if (class_exists('GatherPress\Core\Setup')) {
-                echo 'SUCCESS: Setup class found after manual require' . PHP_EOL;
-              } else {
-                echo 'FAILED: Setup class still not found after manual require' . PHP_EOL;
-              }
-            } catch (Exception \$e) {
-              echo 'ERROR loading Setup class: ' . \$e->getMessage() . PHP_EOL;
-            }
-          "
-          
-          echo "=== DEBUG: Re-testing after composer ==="
-          wp-env run cli wp plugin deactivate gatherpress
-          wp-env run cli wp plugin activate gatherpress
-          wp-env run cli wp eval "if (class_exists('GatherPress\Core\Setup')) { echo 'SUCCESS: GatherPress Setup class now found'; } else { echo 'FAILED: GatherPress Setup class still NOT found'; }"
-
-          echo "=== DEBUG: Testing post type registration directly ==="
-          wp-env run cli wp eval "
-            // Force all WordPress hooks to run
-            do_action('plugins_loaded');
-            do_action('init');
-            do_action('wp_loaded');
-            
-            // Check if post types are registered
-            \$post_types = get_post_types(array(), 'names');
-            echo 'All registered post types: ' . implode(', ', \$post_types) . PHP_EOL;
-            
-            // Specifically check for GatherPress post types
             if (post_type_exists('gatherpress_event')) {
-              echo 'gatherpress_event post type EXISTS' . PHP_EOL;
+              echo 'SUCCESS: gatherpress_event post type is registered' . PHP_EOL;
             } else {
-              echo 'gatherpress_event post type NOT FOUND' . PHP_EOL;
+              echo 'ERROR: gatherpress_event post type NOT found' . PHP_EOL;
+              exit(1);
             }
-            
+
             if (post_type_exists('gatherpress_venue')) {
-              echo 'gatherpress_venue post type EXISTS' . PHP_EOL;
+              echo 'SUCCESS: gatherpress_venue post type is registered' . PHP_EOL;
             } else {
-              echo 'gatherpress_venue post type NOT FOUND' . PHP_EOL;
-            }
-            
-            // Check if Setup class instance exists and has run
-            if (class_exists('GatherPress\Core\Setup')) {
-              echo 'Setup class exists' . PHP_EOL;
-              
-              // Try to get the instance
-              \$instance = GatherPress\Core\Setup::get_instance();
-              if (\$instance) {
-                echo 'Setup instance retrieved successfully' . PHP_EOL;
-              } else {
-                echo 'Failed to get Setup instance' . PHP_EOL;
-              }
+              echo 'ERROR: gatherpress_venue post type NOT found' . PHP_EOL;
+              exit(1);
             }
           "
 
-          echo "=== DEBUG: Check error logs for plugin loading ==="
-          wp-env run cli wp eval "
-            // Check if error logging is enabled
-            echo 'Error logging enabled: ' . (ini_get('log_errors') ? 'YES' : 'NO') . PHP_EOL;
-            echo 'Error log file: ' . ini_get('error_log') . PHP_EOL;
-            
-            // Force plugin to load again to generate debug logs
-            echo 'Forcing plugin to reload...' . PHP_EOL;
-            require_once(ABSPATH . 'wp-content/plugins/gatherpress/gatherpress.php');
-            
-            // Check the WordPress debug log
-            if (file_exists('/var/www/html/wp-content/debug.log')) {
-              echo 'WordPress debug log contents:' . PHP_EOL;
-              echo file_get_contents('/var/www/html/wp-content/debug.log');
-            } else {
-              echo 'No WordPress debug log found' . PHP_EOL;
-            }
-            
-            // Also check if there are any PHP error logs
-            if (file_exists('/tmp/php_errors.log')) {
-              echo 'PHP error log contents:' . PHP_EOL;
-              echo file_get_contents('/tmp/php_errors.log');
-            }
-          "
-
-          echo "=== DEBUG: Final post type check ==="
-          wp-env run cli wp post-type list | grep gatherpress || echo "Still no GatherPress post types found"
+          echo "WordPress environment ready for E2E tests"
 
       - name: Run Playwright Tests
         env:

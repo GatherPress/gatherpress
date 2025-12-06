@@ -37,24 +37,8 @@ module.exports = async () => {
 			throw new Error( 'Login failed - admin elements not found after login attempt' );
 		}
 
-		// Ensure GatherPress plugin is activated.
-		await page.goto( `${ baseUrl }/wp-admin/plugins.php` );
-		await page.waitForLoadState( 'networkidle' );
-
-		const gatherPressPlugin = page.locator( 'tr[data-slug="gatherpress"]' );
-		const pluginExists = await gatherPressPlugin.count() > 0;
-
-		if ( pluginExists ) {
-			// Check if plugin needs activation.
-			const needsActivation = await gatherPressPlugin.locator( '.activate' ).count() > 0;
-
-			if ( needsActivation ) {
-				// Activate the plugin.
-				await gatherPressPlugin.locator( '.activate a' ).click();
-				await page.waitForLoadState( 'networkidle' );
-			}
-		}
-
+		// Save the authenticated browser state for use in tests.
+		// Note: Plugin activation is handled by the CI workflow via wp-env CLI commands.
 		const storageStatePath = path.join( __dirname, 'storageState.json' );
 		await page.context().storageState( { path: storageStatePath } );
 	} catch ( error ) {
