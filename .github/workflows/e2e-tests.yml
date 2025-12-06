@@ -90,6 +90,14 @@ jobs:
           echo "Checking WordPress debug log after activation..."
           wp-env run cli wp eval "if (file_exists('/var/www/html/wp-content/debug.log')) { echo file_get_contents('/var/www/html/wp-content/debug.log'); }" || echo "No debug log found"
 
+          # Debug duplicate check issue.
+          echo "Checking duplicate check logic..."
+          wp-env run cli wp eval '
+            // Manually run the duplicate check to see what it returns
+            $duplicate_result = require_once("/var/www/html/wp-content/plugins/gatherpress/includes/core/duplicate-check.php");
+            echo "Duplicate check result: " . ($duplicate_result ? "TRUE (duplicate found!)" : "FALSE (no duplicate)") . PHP_EOL;
+          '
+
           # Debug autoloader and file system.
           echo "Debugging GatherPress installation..."
           wp-env run cli wp eval '
