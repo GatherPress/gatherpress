@@ -90,19 +90,44 @@ jobs:
           echo "Checking WordPress debug log after activation..."
           wp-env run cli wp eval "if (file_exists('/var/www/html/wp-content/debug.log')) { echo file_get_contents('/var/www/html/wp-content/debug.log'); }" || echo "No debug log found"
 
-          # Check if Setup class exists and can be instantiated.
-          echo "Checking GatherPress Setup class..."
+          # Debug autoloader and file system.
+          echo "Debugging GatherPress installation..."
           wp-env run cli wp eval '
-            if (class_exists("GatherPress\Core\Setup")) {
-              echo "Setup class exists" . PHP_EOL;
-              try {
-                $instance = GatherPress\Core\Setup::get_instance();
-                echo "Setup instance created successfully" . PHP_EOL;
-              } catch (Exception $e) {
-                echo "ERROR creating Setup instance: " . $e->getMessage() . PHP_EOL;
-              }
-            } else {
-              echo "ERROR: Setup class does not exist!" . PHP_EOL;
+            echo "=== GatherPress Debug Info ===" . PHP_EOL;
+
+            // Check if plugin directory exists
+            $plugin_path = "/var/www/html/wp-content/plugins/gatherpress";
+            echo "Plugin path exists: " . (file_exists($plugin_path) ? "YES" : "NO") . PHP_EOL;
+
+            // Check if main plugin file exists
+            $main_file = "$plugin_path/gatherpress.php";
+            echo "Main file exists: " . (file_exists($main_file) ? "YES" : "NO") . PHP_EOL;
+
+            // Check if autoloader file exists
+            $autoloader = "$plugin_path/includes/core/classes/class-autoloader.php";
+            echo "Autoloader exists: " . (file_exists($autoloader) ? "YES" : "NO") . PHP_EOL;
+
+            // Check if Setup class file exists
+            $setup_file = "$plugin_path/includes/core/classes/class-setup.php";
+            echo "Setup file exists: " . (file_exists($setup_file) ? "YES" : "NO") . PHP_EOL;
+
+            // Check if constants are defined
+            echo "GATHERPRESS_CORE_PATH defined: " . (defined("GATHERPRESS_CORE_PATH") ? "YES" : "NO") . PHP_EOL;
+            if (defined("GATHERPRESS_CORE_PATH")) {
+              echo "GATHERPRESS_CORE_PATH value: " . GATHERPRESS_CORE_PATH . PHP_EOL;
+            }
+
+            // Check if Autoloader class exists
+            echo "Autoloader class exists: " . (class_exists("GatherPress\Core\Autoloader") ? "YES" : "NO") . PHP_EOL;
+
+            // Check if Setup class exists
+            echo "Setup class exists: " . (class_exists("GatherPress\Core\Setup") ? "YES" : "NO") . PHP_EOL;
+
+            // List files in plugin directory
+            echo "Files in plugin root:" . PHP_EOL;
+            $files = scandir($plugin_path);
+            foreach (array_slice($files, 0, 10) as $file) {
+              echo "  - $file" . PHP_EOL;
             }
           '
 
