@@ -70,51 +70,9 @@ jobs:
           # Install Composer dependencies that might be needed for the plugin
           composer install --no-dev --no-interaction || echo "Composer install failed or not needed"
 
-      - name: Start WordPress and wait for full initialization
+      - name: Install WordPress and start the server
         run: |
-          # Start test environment.
-          wp-env start
-
-          # Wait for HTTP server to be available.
-          npx wait-on http://localhost:8889 -t 60000
-
-          # Wait for WordPress to fully initialize.
-          echo "Waiting for WordPress to fully initialize..."
-          sleep 10
-
-          # Wait for WordPress core to be installed.
-          timeout 60 bash -c 'until wp-env run cli wp core is-installed; do echo "Waiting for WordPress..."; sleep 2; done'
-
-          # Verify GatherPress plugin is active.
-          echo "Verifying GatherPress plugin status..."
-          wp-env run cli wp plugin list --status=active
-
-          # Ensure plugin is activated.
-          wp-env run cli wp plugin activate gatherpress
-
-          # Flush rewrite rules to ensure post types are available.
-          echo "Flushing rewrite rules..."
-          wp-env run cli wp rewrite flush
-
-          # Verify post types are registered.
-          echo "Verifying GatherPress post types..."
-          wp-env run cli wp eval "
-            if (post_type_exists('gatherpress_event')) {
-              echo 'SUCCESS: gatherpress_event post type is registered' . PHP_EOL;
-            } else {
-              echo 'ERROR: gatherpress_event post type NOT found' . PHP_EOL;
-              exit(1);
-            }
-
-            if (post_type_exists('gatherpress_venue')) {
-              echo 'SUCCESS: gatherpress_venue post type is registered' . PHP_EOL;
-            } else {
-              echo 'ERROR: gatherpress_venue post type NOT found' . PHP_EOL;
-              exit(1);
-            }
-          "
-
-          echo "WordPress environment ready for E2E tests"
+          npm run wp-env start
 
       - name: Run Playwright Tests
         env:

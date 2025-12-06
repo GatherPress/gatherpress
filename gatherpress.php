@@ -22,8 +22,8 @@
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 // Ensure no other versions of GatherPress are currently running.
-$duplicate_check_result = require_once __DIR__ . '/includes/core/duplicate-check.php';
-if ( $duplicate_check_result ) {
+$gatherpress_duplicate_check_result = require_once __DIR__ . '/includes/core/duplicate-check.php';
+if ( $gatherpress_duplicate_check_result ) {
 	return;
 }
 

@@ -20,7 +20,7 @@ test.describe( 'Authentication Test', () => {
 		] );
 
 		// At least one admin indicator should be present
-		const hasAdminElement = adminElements.some( ( count ) => count > 0 );
+		const hasAdminElement = adminElements.some( ( count ) => 0 < count );
 		expect( hasAdminElement ).toBe( true );
 
 		// Check for admin menu
@@ -38,7 +38,7 @@ test.describe( 'Authentication Test', () => {
 		// Look for GatherPress in the admin menu
 		const gatherPressMenu = page.locator( '#menu-posts-gatherpress_event, a:has-text("Events")' );
 
-		if ( await gatherPressMenu.count() > 0 ) {
+		if ( 0 < await gatherPressMenu.count() ) {
 			// Try to access events page
 			await page.goto( '/wp-admin/edit.php?post_type=gatherpress_event' );
 
@@ -46,7 +46,7 @@ test.describe( 'Authentication Test', () => {
 			await page.waitForSelector( '#wpbody', { timeout: 10000 } );
 
 			// Should not show "post type does not exist" error
-			const hasError = await page.locator( ':has-text("post type does not exist")' ).count() > 0;
+			const hasError = 0 < await page.locator( ':has-text("post type does not exist")' ).count();
 			expect( hasError ).toBe( false );
 		} else {
 			// Check plugins page to see if GatherPress is there
@@ -54,10 +54,10 @@ test.describe( 'Authentication Test', () => {
 			await page.waitForSelector( '#wpbody', { timeout: 10000 } );
 
 			const gatherPressPlugin = page.locator( 'tr[data-slug="gatherpress"]' );
-			const pluginExists = await gatherPressPlugin.count() > 0;
+			const pluginExists = 0 < await gatherPressPlugin.count();
 
 			if ( pluginExists ) {
-				const isActive = await gatherPressPlugin.locator( '.deactivate' ).count() > 0;
+				const isActive = 0 < await gatherPressPlugin.locator( '.deactivate' ).count();
 				expect( isActive ).toBeTruthy();
 			} else {
 			}
