@@ -59,6 +59,59 @@ class Test_Feed extends Base {
 	}
 
 	/**
+	 * Test setup_hooks registers all filters and actions.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::__construct
+	 * @covers ::setup_hooks
+	 *
+	 * @return void
+	 */
+	public function test_setup_hooks(): void {
+		$hooks = array(
+			array(
+				'type'     => 'filter',
+				'name'     => 'gatherpress_event_feed_excerpt',
+				'priority' => 10,
+				'callback' => array( $this->instance, 'get_default_event_excerpt' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'gatherpress_event_feed_content',
+				'priority' => 10,
+				'callback' => array( $this->instance, 'get_default_event_content' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'the_excerpt_rss',
+				'priority' => 10,
+				'callback' => array( $this->instance, 'apply_event_excerpt' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'the_content_feed',
+				'priority' => 10,
+				'callback' => array( $this->instance, 'apply_event_content' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'pre_get_posts',
+				'priority' => 10,
+				'callback' => array( $this->instance, 'handle_events_feed_query' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'post_type_archive_feed_link',
+				'priority' => 10,
+				'callback' => array( $this->instance, 'modify_feed_link_for_past_events' ),
+			),
+		);
+
+		$this->assert_hooks( $hooks, $this->instance );
+	}
+
+	/**
 	 * Test force_events_feed_query method.
 	 *
 	 * @since 1.0.0
@@ -429,6 +482,340 @@ class Test_Feed extends Base {
 		$result = $method->invoke( $this->instance, $event_mock );
 
 		// Verify the result is empty when no datetime data.
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result );
+	}
+
+	/**
+	 * Test apply_event_excerpt method with non-event post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::apply_event_excerpt
+	 *
+	 * @return void
+	 */
+	public function test_apply_event_excerpt_non_event(): void {
+		// Create a test post (not an event).
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'post',
+				'post_title' => 'Test Post',
+			)
+		);
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$excerpt = 'Original excerpt';
+		$result  = $this->instance->apply_event_excerpt( $excerpt );
+
+		// Should return original excerpt unchanged for non-events.
+		$this->assertEquals( $excerpt, $result );
+	}
+
+	/**
+	 * Test apply_event_excerpt method with event post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::apply_event_excerpt
+	 *
+	 * @return void
+	 */
+	public function test_apply_event_excerpt_event(): void {
+		// Create a test event.
+		$post = $this->mock->post()->get();
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$excerpt = 'Original excerpt';
+		$result  = $this->instance->apply_event_excerpt( $excerpt );
+
+		// Should pass through the filter for events.
+		$this->assertIsString( $result );
+	}
+
+	/**
+	 * Test apply_event_content method with non-event post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::apply_event_content
+	 *
+	 * @return void
+	 */
+	public function test_apply_event_content_non_event(): void {
+		// Create a test post (not an event).
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'post',
+				'post_title' => 'Test Post',
+			)
+		);
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post_id ) );
+
+		$content = 'Original content';
+		$result  = $this->instance->apply_event_content( $content );
+
+		// Should return original content unchanged for non-events.
+		$this->assertEquals( $content, $result );
+	}
+
+	/**
+	 * Test apply_event_content method with event post.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::apply_event_content
+	 *
+	 * @return void
+	 */
+	public function test_apply_event_content_event(): void {
+		// Create a test event.
+		$post = $this->mock->post()->get();
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$content = 'Original content';
+		$result  = $this->instance->apply_event_content( $content );
+
+		// Should pass through the filter for events.
+		$this->assertIsString( $result );
+	}
+
+	/**
+	 * Test handle_events_feed_query without REQUEST_URI.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_events_feed_query_no_request_uri(): void {
+		// Unset REQUEST_URI if it exists.
+		if ( isset( $_SERVER['REQUEST_URI'] ) ) {
+			unset( $_SERVER['REQUEST_URI'] );
+		}
+
+		// Create a mock query for event feed.
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( true );
+		$query->method( 'is_feed' )->willReturn( true );
+		$query->expects( $this->never() )->method( 'set' );
+
+		$this->instance->handle_events_feed_query( $query );
+
+		// Method should return early without setting anything.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test handle_events_feed_query with non-main query.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::handle_events_feed_query
+	 *
+	 * @return void
+	 */
+	public function test_handle_events_feed_query_non_main_query(): void {
+		// Mock the request URI.
+		$_SERVER['REQUEST_URI'] = '/events/feed/';
+
+		// Create a mock query that's not the main query.
+		$query = $this->createMock( WP_Query::class );
+		$query->method( 'is_main_query' )->willReturn( false );
+		$query->method( 'is_feed' )->willReturn( true );
+		$query->expects( $this->never() )->method( 'set' );
+
+		$this->instance->handle_events_feed_query( $query );
+
+		// Clean up.
+		unset( $_SERVER['REQUEST_URI'] );
+	}
+
+	/**
+	 * Test get_default_event_excerpt with empty excerpt.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::get_default_event_excerpt
+	 *
+	 * @return void
+	 */
+	public function test_get_default_event_excerpt_empty_excerpt(): void {
+		// Create a test event.
+		$post = $this->mock->post()->get();
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$result = $this->instance->get_default_event_excerpt( '' );
+
+		// Should return string even with empty excerpt.
+		$this->assertIsString( $result );
+	}
+
+	/**
+	 * Test get_default_event_excerpt with excerpt same as content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::get_default_event_excerpt
+	 *
+	 * @return void
+	 */
+	public function test_get_default_event_excerpt_same_as_content(): void {
+		// Create a test event.
+		$content = 'Test event content';
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_title'   => 'Test Event',
+				'post_content' => $content,
+			)
+		);
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post_id ) );
+
+		// Pass the same content as excerpt.
+		$result = $this->instance->get_default_event_excerpt( $content );
+
+		// Should return string.
+		$this->assertIsString( $result );
+	}
+
+	/**
+	 * Test get_default_event_excerpt with whitespace-only excerpt.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::get_default_event_excerpt
+	 *
+	 * @return void
+	 */
+	public function test_get_default_event_excerpt_whitespace_only(): void {
+		// Create a test event.
+		$post = $this->mock->post()->get();
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post->ID ) );
+
+		// Pass whitespace-only excerpt.
+		$result = $this->instance->get_default_event_excerpt( "   \n\t   " );
+
+		// Should return string.
+		$this->assertIsString( $result );
+	}
+
+	/**
+	 * Test get_default_event_content with empty content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::get_default_event_content
+	 *
+	 * @return void
+	 */
+	public function test_get_default_event_content_empty_content(): void {
+		// Create a test event.
+		$post = $this->mock->post()->get();
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post->ID ) );
+
+		$result = $this->instance->get_default_event_content( '' );
+
+		// Should return string even with empty content.
+		$this->assertIsString( $result );
+	}
+
+	/**
+	 * Test get_default_event_content with whitespace-only content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::get_default_event_content
+	 *
+	 * @return void
+	 */
+	public function test_get_default_event_content_whitespace_only(): void {
+		// Create a test event.
+		$post = $this->mock->post()->get();
+
+		// Set up global post data.
+		$this->go_to( get_permalink( $post->ID ) );
+
+		// Pass whitespace-only content.
+		$result = $this->instance->get_default_event_content( "   \n\t   " );
+
+		// Should return string.
+		$this->assertIsString( $result );
+	}
+
+	/**
+	 * Test modify_feed_link_for_past_events with non-past events.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::modify_feed_link_for_past_events
+	 *
+	 * @return void
+	 */
+	public function test_modify_feed_link_for_past_events_non_past(): void {
+		// Store original global state.
+		global $wp_query;
+		$original_wp_query = $wp_query;
+
+		// Create a mock WP_Query object without past events.
+		$mock_query             = $this->createMock( WP_Query::class );
+		$mock_query->query_vars = array( 'gatherpress_event_query' => 'upcoming' );
+
+		// Temporarily replace the global wp_query.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Testing requires global manipulation.
+		$wp_query = $mock_query;
+
+		// Test the method with a feed link.
+		$feed_link = 'http://example.com/event/feed/';
+		$result    = $this->instance->modify_feed_link_for_past_events( $feed_link );
+
+		// Should return original link for non-past events.
+		$this->assertEquals( $feed_link, $result );
+
+		// Restore original global state.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Testing requires global manipulation.
+		$wp_query = $original_wp_query;
+	}
+
+	/**
+	 * Test get_event_datetime_info with empty string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @covers ::get_event_datetime_info
+	 *
+	 * @return void
+	 */
+	public function test_get_event_datetime_info_empty_string(): void {
+		// Create a mock Event object with empty string datetime.
+		$event_mock = $this->createMock( Event::class );
+		$event_mock->method( 'get_display_datetime' )->willReturn( '' );
+
+		// Use reflection to access the private method.
+		$reflection = new \ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'get_event_datetime_info' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, $event_mock );
+
+		// Verify the result is empty when datetime is empty string.
 		$this->assertIsArray( $result );
 		$this->assertEmpty( $result );
 	}

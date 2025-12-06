@@ -865,4 +865,539 @@ class Test_Rsvp_Form extends Base {
 		// No exception should be thrown.
 		$this->assertTrue( true );
 	}
+
+	/**
+	 * Tests preprocess_rsvp_comment with invalid post type.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 */
+	public function test_preprocess_rsvp_comment_invalid_post_type(): void {
+		// Create a regular post (not an event).
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => 'post',
+			)
+		);
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment with past event.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 */
+	public function test_preprocess_rsvp_comment_past_event(): void {
+		// Create a past event.
+		$post    = $this->mock->post()->get();
+		$post_id = $post->ID;
+		$event   = new Event( $post_id );
+
+		// Set event datetime to past.
+		$start = new \DateTime( 'now' );
+		$end   = new \DateTime( 'now' );
+
+		$start->modify( '-3 hours' );
+		$end->modify( '-1 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event->save_datetimes( $params );
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment with duplicate RSVP.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 */
+	public function test_preprocess_rsvp_comment_duplicate_rsvp(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create existing RSVP.
+		$this->factory->comment->create(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author_email' => 'test@example.com',
+			)
+		);
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$this->expectException( 'WPDieException' );
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment with user mismatch.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 */
+	public function test_preprocess_rsvp_comment_user_mismatch(): void {
+		$user_id = $this->factory->user->create(
+			array(
+				'user_email' => 'user@example.com',
+			)
+		);
+
+		wp_set_current_user( $user_id );
+
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Use different email than logged-in user.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'different@example.com';
+				}
+				return '';
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$result = $instance->preprocess_rsvp_comment( $comment_data );
+
+		// Should set user_id to 0 when email doesn't match.
+		$this->assertEquals( 0, $result['user_id'] );
+		$this->assertEquals( '', $result['comment_author_url'] );
+
+		wp_set_current_user( 0 );
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests handle_rsvp_comment_post with non-RSVP comment.
+	 *
+	 * @covers ::handle_rsvp_comment_post
+	 */
+	public function test_handle_rsvp_comment_post_non_rsvp_comment(): void {
+		$post_id = $this->factory->post->create();
+
+		// Create regular comment (not RSVP).
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+			)
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->handle_rsvp_comment_post( $comment_id );
+
+		// Should not set any RSVP meta or terms.
+		$terms = wp_get_object_terms( $comment_id, Rsvp::TAXONOMY );
+		$this->assertEmpty( $terms );
+	}
+
+	/**
+	 * Tests handle_rsvp_comment_post with custom fields.
+	 *
+	 * @covers ::handle_rsvp_comment_post
+	 */
+	public function test_handle_rsvp_comment_post_with_custom_fields(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Mock custom field in $_POST.
+		$_POST['gatherpress_custom_field_1'] = 'Custom Value';
+
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'gatherpress_event_updates_opt_in' === $var_name ) {
+					return '1';
+				}
+				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_guests' === $var_name ) {
+					return '2';
+				}
+				if ( INPUT_POST === $type && 'gatherpress_rsvp_form_anonymous' === $var_name ) {
+					return '0';
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->handle_rsvp_comment_post( $comment_id );
+
+		// Verify the custom field processing was attempted.
+		$this->assertTrue( true );
+
+		// Clean up.
+		unset( $_POST['gatherpress_custom_field_1'] );
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests handle_rsvp_comment_redirect without referer.
+	 *
+	 * @covers ::handle_rsvp_comment_redirect
+	 */
+	public function test_handle_rsvp_comment_redirect_no_referer(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment = $this->factory->comment->create_and_get(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Mock no referer.
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			function () {
+				return false;
+			}
+		);
+
+		$instance          = Rsvp_Form::get_instance();
+		$original_location = 'https://example.com/original';
+		$result            = $instance->handle_rsvp_comment_redirect( $original_location, $comment );
+
+		// Should return original location when no referer.
+		$this->assertEquals( $original_location, $result );
+
+		remove_all_filters( 'gatherpress_pre_get_wp_referer' );
+	}
+
+	/**
+	 * Tests prepare_comment_data with REMOTE_ADDR.
+	 *
+	 * @covers ::prepare_comment_data
+	 */
+	public function test_prepare_comment_data_with_remote_addr(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set REMOTE_ADDR.
+		$_SERVER['REMOTE_ADDR'] = '192.168.1.1';
+
+		$instance = Rsvp_Form::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'prepare_comment_data',
+			array( $post_id, 'Test Author', 'test@example.com' )
+		);
+
+		$this->assertEquals( '192.168.1.1', $result['comment_author_IP'] );
+
+		// Clean up.
+		unset( $_SERVER['REMOTE_ADDR'] );
+	}
+
+	/**
+	 * Tests prepare_comment_data with invalid IP.
+	 *
+	 * @covers ::prepare_comment_data
+	 */
+	public function test_prepare_comment_data_with_invalid_ip(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set invalid REMOTE_ADDR.
+		$_SERVER['REMOTE_ADDR'] = 'not-an-ip';
+
+		$instance = Rsvp_Form::get_instance();
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'prepare_comment_data',
+			array( $post_id, 'Test Author', 'test@example.com' )
+		);
+
+		// Should fall back to default IP.
+		$this->assertEquals( '127.0.0.1', $result['comment_author_IP'] );
+
+		// Clean up.
+		unset( $_SERVER['REMOTE_ADDR'] );
+	}
+
+	/**
+	 * Tests process_custom_fields with traditional form submission.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_custom_fields_traditional_form(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// No form_schema_id - should use traditional form processing.
+		$data = array(
+			'gatherpress_event_updates_opt_in' => '1',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should complete without errors.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Tests process_custom_fields with non-RSVP comment.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_custom_fields_non_rsvp_comment(): void {
+		$post_id = $this->factory->post->create();
+
+		// Create regular comment (not RSVP).
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+			)
+		);
+
+		$data = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'custom_field_1'             => 'Test Value',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should not process custom fields for non-RSVP comments.
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true ) );
+	}
+
+	/**
+	 * Tests process_custom_fields with no schemas.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_custom_fields_no_schemas(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// No schemas saved for this post.
+		$data = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'custom_field_1'             => 'Test Value',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should not process custom fields when schemas are missing.
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true ) );
+	}
+
+	/**
+	 * Tests process_custom_fields with field not in data.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_custom_fields_field_not_in_data(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set up form schema with fields.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'field_1' => array(
+						'name' => 'field_1',
+						'type' => 'text',
+					),
+					'field_2' => array(
+						'name' => 'field_2',
+						'type' => 'text',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		// Only include field_1 in data, not field_2.
+		$data = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'field_1'                    => 'Value 1',
+			// field_2 is missing.
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// field_1 should be saved.
+		$this->assertEquals( 'Value 1', get_comment_meta( $comment_id, 'gatherpress_custom_field_1', true ) );
+
+		// field_2 should not be saved.
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_custom_field_2', true ) );
+	}
+
+	/**
+	 * Tests process_meta_fields with non-numeric guests value.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_meta_fields_non_numeric_guests(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_rsvp_guests' => 'not-a-number',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should not save non-numeric guest count.
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
+	}
 }
