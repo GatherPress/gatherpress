@@ -77,10 +77,34 @@ jobs:
           # Wait for WordPress admin to be accessible.
           npx wait-on http://localhost:8889/wp-admin -t 60000
 
+          # Check for PHP errors before activation.
+          echo "Checking WordPress debug log before activation..."
+          wp-env run cli wp eval "if (file_exists('/var/www/html/wp-content/debug.log')) { echo file_get_contents('/var/www/html/wp-content/debug.log'); }" || echo "No debug log found"
+
           # Force plugin initialization by deactivating/reactivating.
           # This ensures WordPress hooks fire and post types get registered.
           wp-env run cli wp plugin deactivate gatherpress || true
           wp-env run cli wp plugin activate gatherpress
+
+          # Check for PHP errors after activation.
+          echo "Checking WordPress debug log after activation..."
+          wp-env run cli wp eval "if (file_exists('/var/www/html/wp-content/debug.log')) { echo file_get_contents('/var/www/html/wp-content/debug.log'); }" || echo "No debug log found"
+
+          # Check if Setup class exists and can be instantiated.
+          echo "Checking GatherPress Setup class..."
+          wp-env run cli wp eval "
+            if (class_exists('GatherPress\\\\Core\\\\Setup')) {
+              echo 'Setup class exists' . PHP_EOL;
+              try {
+                \$instance = GatherPress\\\\Core\\\\Setup::get_instance();
+                echo 'Setup instance created successfully' . PHP_EOL;
+              } catch (Exception \$e) {
+                echo 'ERROR creating Setup instance: ' . \$e->getMessage() . PHP_EOL;
+              }
+            } else {
+              echo 'ERROR: Setup class does not exist!' . PHP_EOL;
+            }
+          "
 
           # Verify post types exist with retry logic (max 5 attempts, 2s between).
           echo "Verifying GatherPress post types are registered..."
