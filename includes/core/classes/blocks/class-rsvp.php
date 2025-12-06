@@ -220,6 +220,8 @@ class Rsvp {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
+			// str_contains is used here to match BEM modifiers that extend the base class.
+			// For example, 'gatherpress-rsvp--trigger-update__attending' includes the base class as a prefix.
 			if ( $class_attr && str_contains( $class_attr, $rsvp_class ) ) {
 				$classes        = preg_split( '/\s+/', trim( $class_attr ) );
 				$statuses       = array( 'attending', 'waiting-list', 'not-attending' );

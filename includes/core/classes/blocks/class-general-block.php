@@ -79,25 +79,21 @@ class General_Block {
 	 */
 	public function process_login_block( string $block_content, array $block ): string {
 		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' ) &&
 			is_user_logged_in()
 		) {
 			return '';
 		}
 
-		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-login-url' )
-		) {
-			$tag = new WP_HTML_Tag_Processor( $block_content );
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
-			while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
-				if ( '#gatherpress-login-url' === $tag->get_attribute( 'href' ) ) {
-					$tag->set_attribute( 'href', Utility::get_login_url() );
-				}
+		while ( $tag->next_tag( array( 'tag_name' => 'a' ) ) ) {
+			if ( '#gatherpress-login-url' === $tag->get_attribute( 'href' ) ) {
+				$tag->set_attribute( 'href', Utility::get_login_url() );
 			}
-
-			$block_content = $tag->get_updated_html();
 		}
+
+		$block_content = $tag->get_updated_html();
 
 		return $block_content;
 	}
@@ -119,7 +115,7 @@ class General_Block {
 	 */
 	public function process_registration_block( string $block_content, array $block ): string {
 		if (
-			false !== strpos( $block['attrs']['className'] ?? '', 'gatherpress--has-registration-url' ) &&
+			Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress--has-registration-url' ) &&
 			! get_option( 'users_can_register' )
 		) {
 			return '';
@@ -154,8 +150,7 @@ class General_Block {
 	 */
 	public function convert_submit_button( string $block_content, array $block ): string {
 		// Check if the button has the gatherpress-submit-button class.
-		if ( ! isset( $block['attrs']['className'] ) ||
-			false === strpos( $block['attrs']['className'], 'gatherpress-submit-button' ) ) {
+		if ( ! Utility::has_css_class( $block['attrs']['className'] ?? '', 'gatherpress-submit-button' ) ) {
 			return $block_content;
 		}
 

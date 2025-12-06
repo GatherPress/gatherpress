@@ -154,10 +154,10 @@ class Test_General_Block extends Base {
 
 		$result = $general_block->process_login_block( $block_content, $block );
 
-		$this->assertEquals(
-			$block_content,
+		$this->assertStringContainsString(
+			'wp-login.php',
 			$result,
-			'Block content should remain unchanged when block does not have login URL class.'
+			'Login URL should always be replaced regardless of class.'
 		);
 
 		wp_set_current_user( 0 );
@@ -189,10 +189,10 @@ class Test_General_Block extends Base {
 
 		$result = $general_block->process_login_block( $block_content, $block );
 
-		$this->assertEquals(
-			$block_content,
+		$this->assertStringContainsString(
+			'wp-login.php',
 			$result,
-			'Block content should remain unchanged when block has no className attribute.'
+			'Login URL should always be replaced regardless of className attribute.'
 		);
 
 		wp_set_current_user( 0 );
