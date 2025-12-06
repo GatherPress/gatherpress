@@ -182,15 +182,22 @@ const { actions } = store( 'gatherpress', {
 				modalContent.cleanupCloseHandlers();
 			}
 
-			// Return focus to the open modal button only when fully closing.
-			// When switching modals (findActiveSibling=false), don't focus the button.
+			// Return focus to the open modal trigger only when fully closing.
+			// When switching modals (findActiveSibling=false), don't focus the trigger.
 			if ( findActiveSibling ) {
-				const openButton = modalManager.querySelector(
+				let openTrigger = modalManager.querySelector(
 					'.gatherpress-modal--trigger-open button',
 				);
 
-				if ( openButton ) {
-					openButton.focus();
+				// If no nested button, try the trigger element itself (could be anchor or button).
+				if ( ! openTrigger ) {
+					openTrigger = modalManager.querySelector(
+						'.gatherpress-modal--trigger-open',
+					);
+				}
+
+				if ( openTrigger ) {
+					openTrigger.focus();
 				}
 			}
 		},
