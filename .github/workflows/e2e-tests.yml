@@ -74,6 +74,35 @@ jobs:
         run: |
           npm run wp-env start
 
+          # Wait for WordPress admin to be accessible.
+          npx wait-on http://localhost:8889/wp-admin -t 60000
+
+          # Force plugin initialization by deactivating/reactivating.
+          # This ensures WordPress hooks fire and post types get registered.
+          wp-env run cli wp plugin deactivate gatherpress || true
+          wp-env run cli wp plugin activate gatherpress
+
+          # Verify post types exist with retry logic (max 5 attempts, 2s between).
+          echo "Verifying GatherPress post types are registered..."
+          for i in 1 2 3 4 5; do
+            if wp-env run cli wp post-type list --field=name | grep -q gatherpress_event; then
+              echo "✓ GatherPress post types registered successfully"
+              break
+            fi
+            echo "⏳ Waiting for post types... (attempt $i/5)"
+            sleep 2
+          done
+
+          # Final verification - fail if post types still not found.
+          if ! wp-env run cli wp post-type list --field=name | grep -q gatherpress_event; then
+            echo "❌ ERROR: GatherPress post types not registered after 5 attempts"
+            echo "Registered post types:"
+            wp-env run cli wp post-type list
+            exit 1
+          fi
+
+          echo "WordPress environment ready for E2E tests"
+
       - name: Run Playwright Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
