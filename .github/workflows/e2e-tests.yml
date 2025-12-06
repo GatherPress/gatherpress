@@ -81,6 +81,52 @@ jobs:
           echo "Verifying GatherPress plugin is active..."
           wp-env run cli wp plugin list --status=active | grep gatherpress
 
+          # Comprehensive debugging to understand wp-cli vs web context.
+          echo "=== Comprehensive Debugging ==="
+
+          echo "1. Checking class existence..."
+          wp-env run cli wp eval '
+            echo "Setup class exists: " . (class_exists("GatherPress\Core\Setup") ? "YES" : "NO") . PHP_EOL;
+            echo "GATHERPRESS_VERSION defined: " . (defined("GATHERPRESS_VERSION") ? "YES (" . GATHERPRESS_VERSION . ")" : "NO") . PHP_EOL;
+          '
+
+          echo "2. Checking active plugins in database..."
+          wp-env run cli wp option get active_plugins --format=json
+
+          echo "3. Manually triggering init hooks..."
+          wp-env run cli wp eval '
+            // Try to manually trigger WordPress init hooks
+            do_action("plugins_loaded");
+            do_action("init");
+
+            // Now check if post types exist
+            if (post_type_exists("gatherpress_event")) {
+              echo "✓ Post type registered after manual init" . PHP_EOL;
+            } else {
+              echo "✗ Post type NOT registered even after manual init" . PHP_EOL;
+            }
+          '
+
+          echo "4. Checking via actual HTTP request..."
+          HTTP_CHECK=$(curl -s http://localhost:8889/wp-json/wp/v2/types)
+          echo "REST API types response length: ${#HTTP_CHECK} bytes"
+          echo "$HTTP_CHECK" | grep -q "gatherpress_event" && echo "✓ Found in HTTP response!" || echo "✗ Not found in HTTP response"
+
+          echo "5. Trying to manually register post types..."
+          wp-env run cli wp eval '
+            // Check if Event_Setup class exists and try to use it
+            if (class_exists("GatherPress\Core\Event_Setup")) {
+              echo "Event_Setup class exists, trying to register post types..." . PHP_EOL;
+              $setup = GatherPress\Core\Event_Setup::get_instance();
+              // Post types should be registered in constructor
+              if (post_type_exists("gatherpress_event")) {
+                echo "✓ Post types registered!" . PHP_EOL;
+              }
+            } else {
+              echo "Event_Setup class does not exist" . PHP_EOL;
+            }
+          '
+
           # Verify post types via REST API (more reliable than wp-cli).
           echo "Verifying GatherPress post types via REST API..."
           for i in 1 2 3 4 5; do
