@@ -96,7 +96,7 @@ class Test_Rsvp_Query extends Base {
 			'Failed to assert that join is the same.'
 		);
 		$this->assertSame(
-			' AND ( wp_term_relationships.term_taxonomy_id IN (' . $term->term_id . ') )',
+			' AND ( wp_term_relationships.term_taxonomy_id IN (' . $term->term_taxonomy_id . ') )',
 			preg_replace( '/\s+/', ' ', $pieces['where'] ),
 			'Failed to assert where is the same.'
 		);
