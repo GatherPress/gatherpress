@@ -142,7 +142,9 @@ npm run test:unit:php
 
 ### Validation Warnings
 
-If the validation script shows warnings, update `phpunit.xml.dist` or `sonar-project.properties` to match the centralized configuration.
+The validation script may show informational warnings about patterns not being in SonarCloud configuration. This is expected and doesn't indicate a problem.
+
+**PHPUnit Include-Only Approach**: GatherPress uses an include-only approach in `phpunit.xml.dist` (only includes `./includes/core/classes`). This means all exclusions are implicit - files outside this directory are automatically excluded. The validation script recognizes this and skips checking for explicit exclusions.
 
 ## Best Practices
 

@@ -37,7 +37,7 @@ function load_coverage_config(): array {
 /**
  * Extract exclude patterns from phpunit.xml.dist.
  *
- * @return array List of exclude patterns.
+ * @return array Array with 'excludes' and 'uses_include_only' keys.
  */
 function get_phpunit_excludes(): array {
 	$phpunit_file = __DIR__ . '/../../phpunit.xml.dist';
@@ -61,7 +61,14 @@ function get_phpunit_excludes(): array {
 		$excludes[] = (string) $exclude;
 	}
 
-	return $excludes;
+	// Check if PHPUnit uses include-only approach (no excludes, only includes).
+	$includes         = $xml->xpath( '//coverage/include/*' );
+	$uses_include_only = ! empty( $includes ) && empty( $excludes );
+
+	return array(
+		'excludes'          => $excludes,
+		'uses_include_only' => $uses_include_only,
+	);
 }
 
 /**
@@ -155,13 +162,20 @@ function main(): void {
 	echo "=== Coverage Configuration Validation ===\n\n";
 
 	// Load centralized configuration.
-	$config           = load_coverage_config();
-	$config_patterns  = $config['excludePatterns'] ?? array();
-	$phpunit_excludes = get_phpunit_excludes();
-	$sonar_excludes   = get_sonar_excludes();
+	$config          = load_coverage_config();
+	$config_patterns = $config['excludePatterns'] ?? array();
+	$phpunit_data    = get_phpunit_excludes();
+	$phpunit_excludes = $phpunit_data['excludes'];
+	$uses_include_only = $phpunit_data['uses_include_only'];
+	$sonar_excludes  = get_sonar_excludes();
 
 	echo "Centralized config patterns: " . count( $config_patterns ) . "\n";
 	echo "PHPUnit exclusions: " . count( $phpunit_excludes ) . "\n";
+
+	if ( $uses_include_only ) {
+		echo "PHPUnit strategy: Include-only (directory-level exclusions are implicit)\n";
+	}
+
 	echo "SonarCloud exclusions: " . count( $sonar_excludes ) . "\n\n";
 
 	$errors   = array();
@@ -169,13 +183,24 @@ function main(): void {
 
 	// Check that all centralized patterns are in PHPUnit config.
 	echo "Checking PHPUnit configuration...\n";
-	foreach ( $config_patterns as $pattern ) {
-		$match = find_matching_pattern( $pattern, $phpunit_excludes );
 
-		if ( $match === null ) {
-			$errors[] = "Pattern '{$pattern}' from config is missing in phpunit.xml.dist";
-		} else {
-			echo "  ✅ {$pattern} → {$match}\n";
+	if ( $uses_include_only ) {
+		echo "  ℹ️  PHPUnit uses include-only approach - all exclusions are implicit (only includes ./includes/core/classes)\n";
+
+		// All patterns are implicitly excluded when using include-only approach.
+		// Files outside of the included directory don't need explicit exclusion.
+		foreach ( $config_patterns as $pattern ) {
+			echo "  ⏭️  {$pattern} - Skipped (implicit in include-only approach)\n";
+		}
+	} else {
+		foreach ( $config_patterns as $pattern ) {
+			$match = find_matching_pattern( $pattern, $phpunit_excludes );
+
+			if ( $match === null ) {
+				$errors[] = "Pattern '{$pattern}' from config is missing in phpunit.xml.dist";
+			} else {
+				echo "  ✅ {$pattern} → {$match}\n";
+			}
 		}
 	}
 
@@ -194,12 +219,14 @@ function main(): void {
 	}
 
 	// Check for patterns in PHPUnit that aren't in centralized config.
-	echo "\nChecking for PHPUnit patterns not in centralized config...\n";
-	foreach ( $phpunit_excludes as $pattern ) {
-		$match = find_matching_pattern( $pattern, $config_patterns );
+	if ( ! $uses_include_only && ! empty( $phpunit_excludes ) ) {
+		echo "\nChecking for PHPUnit patterns not in centralized config...\n";
+		foreach ( $phpunit_excludes as $pattern ) {
+			$match = find_matching_pattern( $pattern, $config_patterns );
 
-		if ( $match === null ) {
-			$warnings[] = "Pattern '{$pattern}' in phpunit.xml.dist is not in centralized config";
+			if ( $match === null ) {
+				$warnings[] = "Pattern '{$pattern}' in phpunit.xml.dist is not in centralized config";
+			}
 		}
 	}
 
