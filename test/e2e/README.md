@@ -81,6 +81,55 @@ test.afterEach(async () => {
 });
 ```
 
+## Test Suites
+
+### Admin Tests (`admin-tests/`)
+Tests for WordPress admin functionality using Page Object Model.
+
+### Event Display Tests (`event-tests/`)
+Basic frontend tests verifying event pages load correctly.
+
+```bash
+npm run test:e2e -- event-tests/event-display.spec.js
+```
+
+### RSVP Flow Tests (`rsvp-tests/`) - **CURRENTLY SKIPPED**
+
+**Status**: These tests are fully written but currently skipped in CI due to manual setup requirements.
+
+Comprehensive tests for RSVP functionality covering:
+- Open RSVP Flow (logged-out users with email)
+- Logged-in user RSVP interactions
+- Status changes (attending, not attending, waiting list)
+- Anonymous checkbox (hide user identity)
+- Guest count functionality
+- Modal interactions
+
+**11 tests total** - All test logic is complete and ready to run.
+
+#### To Run Locally
+
+These tests require a manually created event with an RSVP block:
+
+```bash
+# 1. Create event via WordPress admin at http://localhost:8889/wp-admin
+# 2. Add RSVP block to the event
+# 3. Set event date to 7+ days in the future
+# 4. Publish the event
+# 5. Run tests with event URL:
+EVENT_URL=http://localhost:8889/event/test-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js
+```
+
+#### Future Work Needed
+
+To make these tests production-ready and run in CI, automated event creation is needed. See inline documentation in `rsvp-flows.spec.js` for three potential approaches:
+
+1. **WordPress Playground Blueprint** - WXR import (similar to PR preview workflow)
+2. **Playwright Admin UI** - Automate event creation via WordPress editor
+3. **Direct Database Seeding** - wp-cli with proper post content
+
+Experimental helper implementations exist in `test/e2e/helpers/` for reference.
+
 ## Running Tests
 
 ### Local Development
@@ -91,6 +140,9 @@ npm run test:e2e
 
 # Run specific test file
 npm run test:e2e -- test/e2e/admin-tests/gatherpress-event-robust.spec.js
+
+# Run RSVP tests with manual event setup
+EVENT_URL=http://localhost:8889/event/your-event/ npm run test:e2e -- rsvp-tests/rsvp-flows.spec.js
 
 # Run tests in headed mode (see browser)
 npm run test:e2e -- --headed
