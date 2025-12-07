@@ -489,4 +489,171 @@ class Test_Rsvp_Query extends Base {
 		// Clean up.
 		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
 	}
+
+	/**
+	 * Test maybe_invalidate_comment_types_cache with empty comment type.
+	 *
+	 * @covers ::maybe_invalidate_comment_types_cache
+	 *
+	 * @return void
+	 */
+	public function test_maybe_invalidate_comment_types_cache_with_empty_type(): void {
+		$instance = Rsvp_Query::get_instance();
+
+		// Set up cache.
+		set_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY, array( 'comment', 'pingback' ), Rsvp_Query::CACHE_EXPIRATION );
+
+		// Create a regular comment with empty comment_type.
+		$comment_id = $this->factory->comment->create();
+		$comment    = get_comment( $comment_id );
+
+		$instance->maybe_invalidate_comment_types_cache( $comment_id, $comment );
+
+		// Cache should still exist (method returns early for empty types).
+		$this->assertNotFalse(
+			get_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY ),
+			'Cache should not be invalidated for empty comment type'
+		);
+
+		// Clean up.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+	}
+
+	/**
+	 * Test maybe_invalidate_comment_types_cache when cache doesn't exist.
+	 *
+	 * @covers ::maybe_invalidate_comment_types_cache
+	 *
+	 * @return void
+	 */
+	public function test_maybe_invalidate_comment_types_cache_no_cache(): void {
+		$instance = Rsvp_Query::get_instance();
+
+		// Clear any existing transient.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+
+		// Create a comment with custom type when cache doesn't exist.
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_type' => 'custom_type',
+			)
+		);
+		$comment    = get_comment( $comment_id );
+
+		// Should not error and should do nothing since cache doesn't exist.
+		$instance->maybe_invalidate_comment_types_cache( $comment_id, $comment );
+
+		// Verify cache still doesn't exist.
+		$this->assertFalse(
+			get_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY ),
+			'Cache should remain non-existent when it was not set'
+		);
+	}
+
+	/**
+	 * Test get_rsvps with count parameter returns integer.
+	 *
+	 * @covers ::get_rsvps
+	 *
+	 * @return void
+	 */
+	public function test_get_rsvps_with_count(): void {
+		$instance = Rsvp_Query::get_instance();
+		$event    = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get();
+
+		// Create multiple RSVPs.
+		for ( $i = 0; $i < 3; $i++ ) {
+			$this->factory->comment->create(
+				array(
+					'comment_post_ID' => $event->ID,
+					'comment_type'    => Rsvp::COMMENT_TYPE,
+				)
+			);
+		}
+
+		$count = $instance->get_rsvps(
+			array(
+				'post_id' => $event->ID,
+				'count'   => true,
+			)
+		);
+
+		$this->assertIsInt( $count, 'Count should return an integer' );
+		$this->assertEquals( 3, $count, 'Should return count of 3 RSVPs' );
+	}
+
+	/**
+	 * Test taxonomy_query with empty tax_query.
+	 *
+	 * @covers ::taxonomy_query
+	 *
+	 * @return void
+	 */
+	public function test_taxonomy_query_with_empty_tax_query(): void {
+		$instance = Rsvp_Query::get_instance();
+		$clauses  = array(
+			'join'  => ' ORIGINAL JOIN',
+			'where' => ' ORIGINAL WHERE',
+		);
+
+		$comment_query = new WP_Comment_Query();
+
+		// No tax_query set.
+		$result = $instance->taxonomy_query( $clauses, $comment_query );
+
+		// Clauses should be unchanged.
+		$this->assertSame(
+			' ORIGINAL JOIN',
+			$result['join'],
+			'Join should remain unchanged when tax_query is empty'
+		);
+		$this->assertSame(
+			' ORIGINAL WHERE',
+			$result['where'],
+			'Where should remain unchanged when tax_query is empty'
+		);
+	}
+
+	/**
+	 * Test get_all_comment_types returns defaults when database query fails.
+	 *
+	 * @covers ::get_all_comment_types
+	 *
+	 * @return void
+	 */
+	public function test_get_all_comment_types_with_empty_db_result(): void {
+		global $wpdb;
+
+		$instance = Rsvp_Query::get_instance();
+
+		// Clear any existing transient.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+
+		// Suppress database errors to avoid output during test.
+		$wpdb->suppress_errors( true );
+
+		// Temporarily replace the comments table name to force empty result.
+		$original_comments = $wpdb->comments;
+		$wpdb->comments    = 'nonexistent_table_xyz';
+
+		// Use reflection to access protected method.
+		$reflection = new \ReflectionClass( $instance );
+		$method     = $reflection->getMethod( 'get_all_comment_types' );
+		$method->setAccessible( true );
+
+		// Should return defaults when query fails.
+		$types = $method->invoke( $instance );
+
+		// Restore original table name and error settings.
+		$wpdb->comments = $original_comments;
+		$wpdb->suppress_errors( false );
+
+		// Should return default types.
+		$this->assertContains( 'comment', $types, 'Should include default comment type' );
+		$this->assertContains( 'pingback', $types, 'Should include default pingback type' );
+		$this->assertContains( 'trackback', $types, 'Should include default trackback type' );
+
+		// Clean up.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+	}
 }

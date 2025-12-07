@@ -143,4 +143,23 @@ class Test_Topic extends Base {
 		// Clean up: restore to en_US for other tests.
 		restore_previous_locale();
 	}
+
+	/**
+	 * Coverage for get_localized_taxonomy_slug when locale doesn't switch.
+	 *
+	 * @covers ::get_localized_taxonomy_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_localized_taxonomy_slug_no_locale_switch(): void {
+		// When switch_to_locale returns false (already on that locale), restore shouldn't be called.
+		// This tests the else branch of the if ( $switched_locale ) condition.
+		$current_locale = get_locale();
+
+		// Switch to the current locale (should return false).
+		$result = Topic::get_localized_taxonomy_slug();
+
+		$this->assertIsString( $result );
+		$this->assertEquals( $current_locale, get_locale(), 'Locale should remain unchanged.' );
+	}
 }

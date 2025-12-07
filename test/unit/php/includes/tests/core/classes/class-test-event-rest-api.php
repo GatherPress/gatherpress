@@ -1246,4 +1246,181 @@ class Test_Event_Rest_Api extends Base {
 
 		$this->assertFalse( $result );
 	}
+
+	/**
+	 * Test send_emails with user who opted out of event updates.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_opted_out_user(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+
+		// User opts out of event updates.
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 0 );
+
+		$event = new Event( $event_id );
+		$event->rsvp->save( $user_id, 'attending' );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		// Should still return true but skip the opted-out user.
+		$result = $instance->send_emails( $event_id, $send, 'Test message' );
+		$this->assertTrue( $result );
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+	}
+
+	/**
+	 * Test send_emails with non-user RSVP who opted out.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_opted_out_non_user(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Create anonymous RSVP.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Anonymous User',
+				'comment_author_email' => 'anonymous@example.com',
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		// Set RSVP status.
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		// Opt out of event updates.
+		update_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', 0 );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		// Should still return true but skip the opted-out RSVP.
+		$result = $instance->send_emails( $event_id, $send, 'Test message' );
+		$this->assertTrue( $result );
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+	}
+
+	/**
+	 * Test send_emails with recipient who has no email.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_no_email(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Create RSVP with no email.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'No Email User',
+				'comment_author_email' => '', // Empty email.
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		// Should return true but skip recipient with no email.
+		$result = $instance->send_emails( $event_id, $send, 'Test message' );
+		$this->assertTrue( $result );
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+	}
+
+	/**
+	 * Test get_recipients skips RSVPs with empty email.
+	 *
+	 * @covers ::get_recipients
+	 *
+	 * @return void
+	 */
+	public function test_get_recipients_skips_empty_email(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+
+		// Create RSVP with empty email.
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $event_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'No Email User',
+				'comment_author_email' => '', // Empty email.
+				'comment_approved'     => 1,
+				'user_id'              => 0,
+			)
+		);
+
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		$recipients = $instance->get_recipients( $send, $event_id );
+
+		// Should not include the RSVP with empty email.
+		$this->assertEmpty( $recipients );
+	}
+
+	/**
+	 * Test send_emails with locale switching for user.
+	 *
+	 * @covers ::send_emails
+	 *
+	 * @return void
+	 */
+	public function test_send_emails_with_locale_switching(): void {
+		add_filter( 'pre_wp_mail', '__return_false' );
+
+		$instance = Event_Rest_Api::get_instance();
+		$event_id = $this->factory->post->create( array( 'post_type' => Event::POST_TYPE ) );
+		$user_id  = $this->factory->user->create();
+
+		// Opt in to updates.
+		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', 1 );
+
+		$event = new Event( $event_id );
+		$event->rsvp->save( $user_id, 'attending' );
+
+		$send = array(
+			'attending' => true,
+		);
+
+		// Should handle locale switching for user.
+		$result = $instance->send_emails( $event_id, $send, 'Test message' );
+		$this->assertTrue( $result );
+
+		remove_filter( 'pre_wp_mail', '__return_false' );
+	}
 }
