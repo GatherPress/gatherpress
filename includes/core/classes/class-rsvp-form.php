@@ -571,27 +571,4 @@ class Rsvp_Form {
 			update_comment_meta( $comment_id, $meta_key, $sanitized_value );
 		}
 	}
-
-	/**
-	 * Test method for coverage check - TO BE REMOVED.
-	 *
-	 * This is a temporary method added to test the PR coverage check system.
-	 * It should be removed after testing.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $test_param A test parameter.
-	 * @return string Test result.
-	 */
-	public function test_coverage_check( string $test_param ): string {
-		if ( empty( $test_param ) ) {
-			return 'empty';
-		}
-
-		if ( 'special' === $test_param ) {
-			return 'special_value';
-		}
-
-		return 'default_value';
-	}
 }
