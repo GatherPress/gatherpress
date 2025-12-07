@@ -11,6 +11,8 @@
  * 5. Exits with error code if any changed files don't meet minimum coverage
  *
  * @package GatherPress
+ *
+ * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped, WordPress.NamingConventions.PrefixAllGlobals, WordPress.WP.AlternativeFunctions, WordPress.PHP.DiscouragedPHPFunctions, WordPress.PHP.YodaConditions, Universal.Operators.DisallowShortTernary
  */
 
 /**
@@ -29,7 +31,7 @@ function load_coverage_config(): array {
 	$config = json_decode( file_get_contents( $config_file ), true );
 
 	if ( json_last_error() !== JSON_ERROR_NONE ) {
-		echo "❌ Error: Invalid JSON in coverage config: " . json_last_error_msg() . "\n";
+		echo '❌ Error: Invalid JSON in coverage config: ' . json_last_error_msg() . "\n";
 		exit( 1 );
 	}
 
@@ -173,11 +175,12 @@ function format_line_ranges( array $lines ): string {
 	}
 
 	sort( $lines );
-	$ranges = array();
-	$start  = $lines[0];
-	$end    = $lines[0];
+	$ranges     = array();
+	$start      = $lines[0];
+	$end        = $lines[0];
+	$line_count = count( $lines );
 
-	for ( $i = 1; $i < count( $lines ); $i++ ) {
+	for ( $i = 1; $i < $line_count; $i++ ) {
 		if ( $lines[ $i ] === $end + 1 ) {
 			// Consecutive line, extend the range.
 			$end = $lines[ $i ];
@@ -210,8 +213,8 @@ function main(): void {
 
 	echo "Configuration loaded:\n";
 	echo "  Minimum coverage: {$min_coverage}%\n";
-	echo "  Exclude patterns: " . count( $exclude_patterns ) . " patterns\n";
-	echo "  Low coverage exceptions: " . count( $allow_low_files ) . " files\n\n";
+	echo '  Exclude patterns: ' . count( $exclude_patterns ) . " patterns\n";
+	echo '  Low coverage exceptions: ' . count( $allow_low_files ) . " files\n\n";
 
 	// Get base branch from environment variable or default to 'develop'.
 	$base_ref = getenv( 'GITHUB_BASE_REF' ) ?: 'develop';
@@ -226,7 +229,7 @@ function main(): void {
 		exit( 0 );
 	}
 
-	echo "Found " . count( $changed_files ) . " changed PHP file(s):\n";
+	echo 'Found ' . count( $changed_files ) . " changed PHP file(s):\n";
 	foreach ( $changed_files as $file ) {
 		echo "  - {$file}\n";
 	}
@@ -246,7 +249,7 @@ function main(): void {
 		exit( 0 );
 	}
 
-	echo "Files requiring coverage check: " . count( $files_to_check ) . "\n";
+	echo 'Files requiring coverage check: ' . count( $files_to_check ) . "\n";
 	foreach ( $files_to_check as $file ) {
 		echo "  - {$file}\n";
 	}
@@ -327,9 +330,9 @@ function main(): void {
 
 	// Summary.
 	echo "\n=== Summary ===\n";
-	echo "✅ Passed: " . count( $passed_files ) . " file(s)\n";
-	echo "⏭️  Excluded: " . $excluded_count . " file(s)\n";
-	echo "❌ Failed: " . count( $failed_files ) . " file(s)\n\n";
+	echo '✅ Passed: ' . count( $passed_files ) . " file(s)\n";
+	echo '⏭️  Excluded: ' . $excluded_count . " file(s)\n";
+	echo '❌ Failed: ' . count( $failed_files ) . " file(s)\n\n";
 
 	// If any files failed, provide detailed information and exit with error.
 	if ( ! empty( $failed_files ) ) {
@@ -345,7 +348,7 @@ function main(): void {
 				if ( ! empty( $failed['uncovered_lines'] ) ) {
 					$line_ranges = format_line_ranges( $failed['uncovered_lines'] );
 					echo "  Uncovered lines: {$line_ranges}\n";
-					echo "  Total uncovered: " . count( $failed['uncovered_lines'] ) . " lines\n";
+					echo '  Total uncovered: ' . count( $failed['uncovered_lines'] ) . " lines\n";
 				}
 			} else {
 				echo "  Issue: {$failed['reason']}\n";

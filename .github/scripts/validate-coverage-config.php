@@ -9,6 +9,8 @@
  * - sonar-project.properties (SonarCloud analysis)
  *
  * @package GatherPress
+ *
+ * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped, WordPress.NamingConventions.PrefixAllGlobals, WordPress.WP.AlternativeFunctions, WordPress.PHP.YodaConditions, Universal.NamingConventions.NoReservedKeywordParameterNames
  */
 
 /**
@@ -27,7 +29,7 @@ function load_coverage_config(): array {
 	$config = json_decode( file_get_contents( $config_file ), true );
 
 	if ( json_last_error() !== JSON_ERROR_NONE ) {
-		echo "❌ Error: Invalid JSON in coverage config: " . json_last_error_msg() . "\n";
+		echo '❌ Error: Invalid JSON in coverage config: ' . json_last_error_msg() . "\n";
 		exit( 1 );
 	}
 
@@ -62,7 +64,7 @@ function get_phpunit_excludes(): array {
 	}
 
 	// Check if PHPUnit uses include-only approach (no excludes, only includes).
-	$includes         = $xml->xpath( '//coverage/include/*' );
+	$includes          = $xml->xpath( '//coverage/include/*' );
 	$uses_include_only = ! empty( $includes ) && empty( $excludes );
 
 	return array(
@@ -162,21 +164,21 @@ function main(): void {
 	echo "=== Coverage Configuration Validation ===\n\n";
 
 	// Load centralized configuration.
-	$config          = load_coverage_config();
-	$config_patterns = $config['excludePatterns'] ?? array();
-	$phpunit_data    = get_phpunit_excludes();
-	$phpunit_excludes = $phpunit_data['excludes'];
+	$config            = load_coverage_config();
+	$config_patterns   = $config['excludePatterns'] ?? array();
+	$phpunit_data      = get_phpunit_excludes();
+	$phpunit_excludes  = $phpunit_data['excludes'];
 	$uses_include_only = $phpunit_data['uses_include_only'];
-	$sonar_excludes  = get_sonar_excludes();
+	$sonar_excludes    = get_sonar_excludes();
 
-	echo "Centralized config patterns: " . count( $config_patterns ) . "\n";
-	echo "PHPUnit exclusions: " . count( $phpunit_excludes ) . "\n";
+	echo 'Centralized config patterns: ' . count( $config_patterns ) . "\n";
+	echo 'PHPUnit exclusions: ' . count( $phpunit_excludes ) . "\n";
 
 	if ( $uses_include_only ) {
 		echo "PHPUnit strategy: Include-only (directory-level exclusions are implicit)\n";
 	}
 
-	echo "SonarCloud exclusions: " . count( $sonar_excludes ) . "\n\n";
+	echo 'SonarCloud exclusions: ' . count( $sonar_excludes ) . "\n\n";
 
 	$errors   = array();
 	$warnings = array();
