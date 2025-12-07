@@ -1419,4 +1419,254 @@ class Test_Rsvp_Form extends Base {
 		// Should not save non-numeric guest count.
 		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
 	}
+
+	/**
+	 * Tests process_meta_fields with email opt-out.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_meta_fields_email_opt_out(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_event_updates_opt_in' => false, // Opted out.
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should save 0 for opt-out.
+		$this->assertEquals( '0', get_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', true ) );
+	}
+
+	/**
+	 * Tests process_meta_fields with zero guests.
+	 *
+	 * @covers ::process_fields
+	 */
+	public function test_process_meta_fields_zero_guests(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set guest limit.
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+
+		$data = array(
+			'gatherpress_rsvp_guests' => 0,
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should save 0 for zero guests.
+		$this->assertEquals( '0', get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
+	}
+
+	/**
+	 * Test that initialize_rsvp_form_handling returns early when not an RSVP form submission.
+	 *
+	 * @covers ::initialize_rsvp_form_handling
+	 * @covers ::is_rsvp_form_submission
+	 *
+	 * @return void
+	 */
+	public function test_initialize_rsvp_form_handling_not_rsvp_submission(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Remove existing hooks to get clean slate.
+		remove_all_filters( 'preprocess_comment' );
+		remove_all_actions( 'comment_post' );
+
+		// Set up non-RSVP request (missing required fields).
+		$_SERVER['REQUEST_METHOD'] = 'GET';
+
+		$instance->initialize_rsvp_form_handling();
+
+		// Verify hooks were NOT registered since this isn't an RSVP form submission.
+		$this->assertFalse( has_filter( 'preprocess_comment', array( $instance, 'preprocess_rsvp_comment' ) ) );
+		$this->assertFalse( has_action( 'comment_post', array( $instance, 'handle_rsvp_comment_post' ) ) );
+
+		// Clean up.
+		unset( $_SERVER['REQUEST_METHOD'] );
+	}
+
+	/**
+	 * Test handle_rsvp_comment_redirect with non-RSVP comment type.
+	 *
+	 * @covers ::handle_rsvp_comment_redirect
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_comment_redirect_non_rsvp_comment(): void {
+		$post_id = $this->factory->post->create();
+
+		// Create regular comment (not RSVP type).
+		$comment = $this->factory->comment->create_and_get(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => '', // Regular comment.
+			)
+		);
+
+		$instance          = Rsvp_Form::get_instance();
+		$original_location = 'https://example.com/original';
+		$result            = $instance->handle_rsvp_comment_redirect( $original_location, $comment );
+
+		// Should return original location unchanged for non-RSVP comments.
+		$this->assertEquals( $original_location, $result );
+	}
+
+	/**
+	 * Test process_meta_fields with invalid comment ID.
+	 *
+	 * @covers ::process_meta_fields
+	 *
+	 * @return void
+	 */
+	public function test_process_meta_fields_invalid_comment(): void {
+		$instance = Rsvp_Form::get_instance();
+		$data     = array(
+			'gatherpress_event_updates_opt_in' => true,
+			'gatherpress_rsvp_guests'          => 2,
+		);
+
+		// Use non-existent comment ID.
+		$invalid_comment_id = 999999;
+
+		// Should return early without errors.
+		$instance->process_fields( $invalid_comment_id, $data );
+
+		// Verify no meta was created.
+		$this->assertEmpty( get_comment_meta( $invalid_comment_id, 'gatherpress_event_updates_opt_in', true ) );
+		$this->assertEmpty( get_comment_meta( $invalid_comment_id, 'gatherpress_rsvp_guests', true ) );
+	}
+
+	/**
+	 * Test process_meta_fields when fields are not set in data array.
+	 *
+	 * @covers ::process_meta_fields
+	 *
+	 * @return void
+	 */
+	public function test_process_meta_fields_unset_fields(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		// Call with empty data array (no fields set).
+		$data = array();
+		$instance->process_fields( $comment_id, $data );
+
+		// Verify no meta was saved.
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', true ) );
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_rsvp_guests', true ) );
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true ) );
+	}
+
+	/**
+	 * Test process_meta_fields when anonymous is false (not trying to be anonymous).
+	 *
+	 * @covers ::process_meta_fields
+	 *
+	 * @return void
+	 */
+	public function test_process_meta_fields_anonymous_false(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Enable anonymous RSVP.
+		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', 1 );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_rsvp_anonymous' => false, // Explicitly not anonymous.
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->process_fields( $comment_id, $data );
+
+		// Should not save anonymous meta when value is false.
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true ) );
+	}
+
+	/**
+	 * Test handle_rsvp_comment_post with non-RSVP comment (early return).
+	 *
+	 * @covers ::handle_rsvp_comment_post
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_comment_post_wrong_comment_type(): void {
+		$post_id = $this->factory->post->create();
+
+		// Create regular comment (not RSVP type).
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => '', // Regular comment.
+			)
+		);
+
+		// Mock POST data.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'gatherpress_event_updates_opt_in' === $var_name ) {
+					return '1';
+				}
+				return null;
+			},
+			10,
+			3
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		$instance->handle_rsvp_comment_post( $comment_id );
+
+		// Should not process any fields since it's not an RSVP comment.
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', true ) );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
 }

@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Assets;
+use GatherPress\Core\Event;
 use GatherPress\Core\Setup;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -335,7 +336,7 @@ class Test_Setup extends Base {
 
 		$result = $instance->on_site_delete( $tables );
 
-		$expected_table = sprintf( \GatherPress\Core\Event::TABLE_FORMAT, $wpdb->prefix );
+		$expected_table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
 		$this->assertContains(
 			$expected_table,
@@ -397,6 +398,117 @@ class Test_Setup extends Base {
 		$this->assertTrue(
 			true,
 			'The smash_table method should execute without error.'
+		);
+	}
+
+	/**
+	 * Coverage for activate_gatherpress_plugin method in single site mode.
+	 *
+	 * @covers ::activate_gatherpress_plugin
+	 * @covers ::create_tables
+	 *
+	 * @return void
+	 */
+	public function test_activate_gatherpress_plugin_single_site(): void {
+		global $wpdb;
+
+		$instance = Setup::get_instance();
+
+		// Drop the table if it exists from previous tests.
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+
+		// Activate plugin in single site mode.
+		$instance->activate_gatherpress_plugin( false );
+
+		// Verify table was created.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+		$this->assertEquals(
+			$table,
+			$table_exists,
+			'Failed to assert that events table was created during activation.'
+		);
+
+		// Verify online event term was added.
+		$term = term_exists( 'online-event', Venue::TAXONOMY );
+
+		$this->assertNotEmpty(
+			$term,
+			'Failed to assert that online-event term was created during activation.'
+		);
+
+		// Verify rewrite rules were scheduled to flush.
+		$rewrite_rules = get_option( 'rewrite_rules' );
+
+		$this->assertFalse(
+			$rewrite_rules,
+			'Failed to assert that rewrite_rules option was deleted to schedule flush.'
+		);
+	}
+
+	/**
+	 * Coverage for create_tables method.
+	 *
+	 * @covers ::create_tables
+	 * @covers ::add_online_event_term
+	 * @covers ::schedule_rewrite_flush
+	 *
+	 * @return void
+	 */
+	public function test_create_tables(): void {
+		global $wpdb;
+
+		$instance = Setup::get_instance();
+
+		// Drop the table if it exists.
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+
+		// Add rewrite_rules option to verify it gets deleted.
+		add_option( 'rewrite_rules', array( 'test' => 'rules' ) );
+
+		// Call create_tables.
+		Utility::invoke_hidden_method( $instance, 'create_tables' );
+
+		// Verify table structure.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table structure.
+		$columns = $wpdb->get_results( "DESCRIBE {$table}" );
+
+		$column_names = array_column( $columns, 'Field' );
+
+		$this->assertContains( 'post_id', $column_names, 'Table should have post_id column.' );
+		$this->assertContains( 'datetime_start', $column_names, 'Table should have datetime_start column.' );
+		$this->assertContains( 'datetime_start_gmt', $column_names, 'Table should have datetime_start_gmt column.' );
+		$this->assertContains( 'datetime_end', $column_names, 'Table should have datetime_end column.' );
+		$this->assertContains( 'datetime_end_gmt', $column_names, 'Table should have datetime_end_gmt column.' );
+		$this->assertContains( 'timezone', $column_names, 'Table should have timezone column.' );
+	}
+
+	/**
+	 * Coverage for check_gatherpress_alpha when user lacks install_plugins capability.
+	 *
+	 * @covers ::check_gatherpress_alpha
+	 *
+	 * @return void
+	 */
+	public function test_check_gatherpress_alpha_without_capability(): void {
+		$instance = Setup::get_instance();
+
+		// Create a subscriber user (no install_plugins capability).
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		ob_start();
+		$instance->check_gatherpress_alpha();
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert that no notice is shown to users without install_plugins capability.'
 		);
 	}
 }
