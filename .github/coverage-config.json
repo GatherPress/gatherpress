@@ -1,0 +1,18 @@
+{
+  "minCoverage": 80,
+  "excludePatterns": [
+    "*/vendor/*",
+    "*/node_modules/*",
+    "*/build/*",
+    "*/test/*",
+    "*/tests/*",
+    "*gatherpress.php",
+    "*/class-autoloader.php",
+    ".github/**"
+  ],
+  "allowLowCoverage": [
+    "includes/core/classes/class-setup.php",
+    "includes/core/classes/class-event-setup.php"
+  ],
+  "allowLowCoverageReason": "Contains multisite-specific code that cannot be tested in single-site environment"
+}
