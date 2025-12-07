@@ -35,6 +35,13 @@ class RSVP_List_Table extends WP_List_Table {
 	const DEFAULT_PER_PAGE = 20;
 
 	/**
+	 * HTML template for status view links with count badge.
+	 *
+	 * @var string
+	 */
+	const STATUS_LINK_TEMPLATE = '<a href="%s"%s>%s <span class="count">(%s)</span></a>';
+
+	/**
 	 * Initializes the RSVP list table.
 	 *
 	 * Sets up the table with appropriate labels and configuration options.
@@ -677,6 +684,19 @@ class RSVP_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Gets the CSS class attribute for current status links.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $status_key The status key to check.
+	 * @param string $current    The currently active status.
+	 * @return string The class attribute string or empty string.
+	 */
+	private function get_current_class_attr( string $status_key, string $current ): string {
+		return $status_key === $current ? ' class="current"' : '';
+	}
+
+	/**
 	 * Retrieves the list of views available on this table.
 	 *
 	 * Overrides parent method to add custom views for RSVP management.
@@ -775,43 +795,43 @@ class RSVP_List_Table extends WP_List_Table {
 
 		// Build the links array with nonce included in base URL.
 		$status_links['all'] = sprintf(
-			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			self::STATUS_LINK_TEMPLATE,
 			esc_url( $base_url ),
-			'all' === $current ? ' class="current"' : '',
+			$this->get_current_class_attr( 'all', $current ),
 			__( 'All', 'gatherpress' ),
 			number_format_i18n( $all_count )
 		);
 
 		if ( $mine_count > 0 ) {
 			$status_links['mine'] = sprintf(
-				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+				self::STATUS_LINK_TEMPLATE,
 				esc_url( add_query_arg( array( 'user_id' => get_current_user_id() ), $base_url ) ),
-				'mine' === $current ? ' class="current"' : '',
+				$this->get_current_class_attr( 'mine', $current ),
 				__( 'Mine', 'gatherpress' ),
 				number_format_i18n( $mine_count )
 			);
 		}
 
 		$status_links['approved'] = sprintf(
-			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			self::STATUS_LINK_TEMPLATE,
 			esc_url( add_query_arg( array( 'status' => 'approved' ), $base_url ) ),
-			'approved' === $current ? ' class="current"' : '',
+			$this->get_current_class_attr( 'approved', $current ),
 			__( 'Approved', 'gatherpress' ),
 			number_format_i18n( $approved_count )
 		);
 
 		$status_links['pending'] = sprintf(
-			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			self::STATUS_LINK_TEMPLATE,
 			esc_url( add_query_arg( array( 'status' => 'pending' ), $base_url ) ),
-			'pending' === $current ? ' class="current"' : '',
+			$this->get_current_class_attr( 'pending', $current ),
 			__( 'Pending', 'gatherpress' ),
 			number_format_i18n( $pending_count )
 		);
 
 		$status_links['spam'] = sprintf(
-			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			self::STATUS_LINK_TEMPLATE,
 			esc_url( add_query_arg( array( 'status' => 'spam' ), $base_url ) ),
-			'spam' === $current ? ' class="current"' : '',
+			$this->get_current_class_attr( 'spam', $current ),
 			__( 'Spam', 'gatherpress' ),
 			number_format_i18n( $spam_count )
 		);

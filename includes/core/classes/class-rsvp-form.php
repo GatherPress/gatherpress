@@ -61,6 +61,17 @@ class Rsvp_Form {
 	}
 
 	/**
+	 * Get the duplicate RSVP error message.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The translated error message.
+	 */
+	private function get_duplicate_rsvp_message(): string {
+		return __( "You've already RSVP'd to this event.", 'gatherpress' );
+	}
+
+	/**
 	 * Check if this is an RSVP form submission.
 	 *
 	 * This method determines if the current request is an RSVP form submission
@@ -112,9 +123,7 @@ class Rsvp_Form {
 
 		add_filter(
 			'comment_duplicate_message',
-			static function (): string {
-				return __( "You've already RSVP'd to this event.", 'gatherpress' );
-			}
+			array( $this, 'get_duplicate_rsvp_message' )
 		);
 
 		add_filter(
@@ -154,7 +163,7 @@ class Rsvp_Form {
 
 		// Check for duplicate RSVP.
 		if ( $this->has_duplicate_rsvp( $post_id, $email ) ) {
-			wp_die( esc_html__( "You've already RSVP'd to this event.", 'gatherpress' ), esc_html__( 'Duplicate RSVP', 'gatherpress' ), 409 );
+			wp_die( esc_html( $this->get_duplicate_rsvp_message() ), esc_html__( 'Duplicate RSVP', 'gatherpress' ), 409 );
 		}
 
 		// Prepare comment data for WordPress processing.
@@ -293,7 +302,7 @@ class Rsvp_Form {
 		if ( $this->has_duplicate_rsvp( $post_id, $email ) ) {
 			return array(
 				'success'    => false,
-				'message'    => __( "You've already RSVP'd to this event.", 'gatherpress' ),
+				'message'    => $this->get_duplicate_rsvp_message(),
 				'comment_id' => 0,
 				'error_code' => 409,
 			);

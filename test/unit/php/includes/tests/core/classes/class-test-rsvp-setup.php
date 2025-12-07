@@ -488,6 +488,7 @@ class Test_Rsvp_Setup extends Base {
 	 * Coverage for set_rsvp_screen_options method.
 	 *
 	 * @covers ::set_rsvp_screen_options
+	 * @covers ::get_per_page_option
 	 *
 	 * @return void
 	 */
