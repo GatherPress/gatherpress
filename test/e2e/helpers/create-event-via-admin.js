@@ -38,9 +38,9 @@ async function createEventWithRSVP( page ) {
 	// Look for GatherPress datetime controls in the sidebar.
 	// First, ensure the event settings panel is open.
 	const eventSettingsButton = page.locator( 'button:has-text("Event settings")' );
-	if ( await eventSettingsButton.count() > 0 ) {
+	if ( 0 < await eventSettingsButton.count() ) {
 		const isExpanded = await eventSettingsButton.getAttribute( 'aria-expanded' );
-		if ( isExpanded !== 'true' ) {
+		if ( 'true' !== isExpanded ) {
 			await eventSettingsButton.click();
 		}
 	}
@@ -77,7 +77,7 @@ async function createEventWithRSVP( page ) {
 
 	// Try to get the URL from the view post link.
 	const viewPostLink = page.locator( 'a:has-text("View Event"), a:has-text("View Post")' ).first();
-	if ( await viewPostLink.count() > 0 ) {
+	if ( 0 < await viewPostLink.count() ) {
 		eventUrl = await viewPostLink.getAttribute( 'href' );
 	} else {
 		// Fallback: get the post ID from the URL and construct the event URL.

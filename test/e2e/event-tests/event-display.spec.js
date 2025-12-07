@@ -7,7 +7,6 @@ const { execSync } = require( 'child_process' );
  * Simple tests to verify events display correctly on the frontend.
  */
 test.describe( 'Event Display', () => {
-	let eventPermalink;
 	let eventId;
 
 	test.beforeAll( async () => {
@@ -28,14 +27,6 @@ test.describe( 'Event Display', () => {
 
 		// Set event datetime meta.
 		execSync( `npm run wp-env run cli -- wp post meta update ${ eventId } gatherpress_datetime_start '${ dateString }' 2>&1 | grep -v "Xdebug"` );
-
-		// Get permalink.
-		const linkResult = execSync(
-			`npm run wp-env run cli -- wp post url ${ eventId } 2>&1 | grep -v "Xdebug\\|Ran\\|Starting\\|gatherpress@\\|^>" | grep -v "^$" | head -1`,
-			{ encoding: 'utf-8' }
-		);
-		// Replace internal Docker port 8888 with external port 8889.
-		eventPermalink = linkResult.trim().replace( ':8888', ':8889' );
 	} );
 
 	test( 'should load event page and display content', async ( { page } ) => {

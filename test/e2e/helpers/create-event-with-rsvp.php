@@ -6,31 +6,39 @@
  * that the RSVP block requires to render correctly on the frontend.
  *
  * Usage: npm run wp-env run cli -- wp eval-file test/e2e/helpers/create-event-with-rsvp.php
+ *
+ * @package GatherPress\Core
  */
 
-// Create event post.
-$post_id = wp_insert_post(
-	array(
-		'post_type'   => 'gatherpress_event',
-		'post_status' => 'publish',
-		'post_title'  => 'Test Event with RSVP',
-	)
-);
+/**
+ * Create test event with RSVP block.
+ *
+ * @return void
+ */
+function gatherpress_create_test_event_with_rsvp() {
+	// Create event post.
+	$event_post_id = wp_insert_post(
+		array(
+			'post_type'   => 'gatherpress_event',
+			'post_status' => 'publish',
+			'post_title'  => 'Test Event with RSVP',
+		)
+	);
 
-if ( is_wp_error( $post_id ) ) {
-	WP_CLI::error( 'Failed to create event post' );
-	exit( 1 );
-}
+	if ( is_wp_error( $event_post_id ) ) {
+		WP_CLI::error( 'Failed to create event post' );
+		exit( 1 );
+	}
 
-// Set event datetime meta (7 days in the future).
-$future_date = gmdate( 'Y-m-d\TH:i:s', strtotime( '+7 days' ) );
-update_post_meta( $post_id, 'gatherpress_datetime_start', $future_date );
-update_post_meta( $post_id, 'gatherpress_datetime_end', gmdate( 'Y-m-d\TH:i:s', strtotime( '+7 days +2 hours' ) ) );
-update_post_meta( $post_id, 'gatherpress_timezone', 'America/New_York' );
+	// Set event datetime meta (7 days in the future).
+	$gatherpress_future_date = gmdate( 'Y-m-d\TH:i:s', strtotime( '+7 days' ) );
+	update_post_meta( $event_post_id, 'gatherpress_datetime_start', $gatherpress_future_date );
+	update_post_meta( $event_post_id, 'gatherpress_datetime_end', gmdate( 'Y-m-d\TH:i:s', strtotime( '+7 days +2 hours' ) ) );
+	update_post_meta( $event_post_id, 'gatherpress_timezone', 'America/New_York' );
 
-// Create minimal RSVP block with serializedInnerBlocks attribute.
-// The visible content is the "no_status" template for logged-out users.
-$post_content = <<<'BLOCKS'
+	// Create minimal RSVP block with serializedInnerBlocks attribute.
+	// The visible content is the "no_status" template for logged-out users.
+	$gatherpress_event_content = <<<'BLOCKS'
 <!-- wp:gatherpress/rsvp {"serializedInnerBlocks":""} -->
 <div class="wp-block-gatherpress-rsvp"><!-- wp:gatherpress/modal-manager -->
 <div class="wp-block-gatherpress-modal-manager"><!-- wp:buttons {"metadata":{"name":"Call to Action"},"align":"center","layout":{"type":"flex","justifyContent":"center"}} -->
@@ -88,14 +96,17 @@ $post_content = <<<'BLOCKS'
 <!-- /wp:gatherpress/rsvp -->
 BLOCKS;
 
-// Update post with RSVP block.
-wp_update_post(
-	array(
-		'ID'           => $post_id,
-		'post_content' => $post_content,
-	)
-);
+	// Update post with RSVP block.
+	wp_update_post(
+		array(
+			'ID'           => $event_post_id,
+			'post_content' => $gatherpress_event_content,
+		)
+	);
 
-// Output the post ID for the test script to use with query string format.
-// Using ?p={id} format works regardless of permalink settings.
-echo $post_id;
+	// Output the post ID for the test script to use with query string format.
+	// Using ?p={id} format works regardless of permalink settings.
+	echo absint( $event_post_id );
+}
+
+gatherpress_create_test_event_with_rsvp();
