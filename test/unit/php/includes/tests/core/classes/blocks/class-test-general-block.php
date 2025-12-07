@@ -571,6 +571,135 @@ class Test_General_Block extends Base {
 	}
 
 	/**
+	 * Test converting anchor tag to submit button.
+	 *
+	 * @since 1.0.0
+	 * @covers ::convert_submit_button
+	 *
+	 * @return void
+	 */
+	public function test_convert_submit_button_converts_anchor_to_button(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div class="wp-block-button gatherpress-submit-button"><a href="#" role="button" class="wp-block-button__link">Submit</a></div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress-submit-button',
+			),
+		);
+
+		$result = $general_block->convert_submit_button( $block_content, $block );
+
+		$this->assertStringContainsString( '<button', $result, 'Anchor should be converted to button.' );
+		$this->assertStringContainsString( 'type="submit"', $result, 'Button should have type="submit".' );
+		$this->assertStringContainsString( '</button>', $result, 'Should have closing button tag.' );
+		$this->assertStringNotContainsString( '<a', $result, 'Should not contain anchor tag.' );
+		$this->assertStringNotContainsString( 'href=', $result, 'Should not have href attribute.' );
+		$this->assertStringNotContainsString( 'role=', $result, 'Should not have role attribute.' );
+	}
+
+	/**
+	 * Test adding type="submit" to existing button element.
+	 *
+	 * @since 1.0.0
+	 * @covers ::convert_submit_button
+	 *
+	 * @return void
+	 */
+	public function test_convert_submit_button_adds_type_to_button(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div class="wp-block-button gatherpress-submit-button"><button class="wp-block-button__link">Submit</button></div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'gatherpress-submit-button',
+			),
+		);
+
+		$result = $general_block->convert_submit_button( $block_content, $block );
+
+		$this->assertStringContainsString( 'type="submit"', $result, 'Button should have type="submit" attribute.' );
+		$this->assertStringContainsString( '<button', $result, 'Should contain button tag.' );
+	}
+
+	/**
+	 * Test that button without gatherpress-submit-button class is not modified.
+	 *
+	 * @since 1.0.0
+	 * @covers ::convert_submit_button
+	 *
+	 * @return void
+	 */
+	public function test_convert_submit_button_skips_without_class(): void {
+		$general_block = General_Block::get_instance();
+
+		$block_content = '<div class="wp-block-button"><a href="#" class="wp-block-button__link">Click Me</a></div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'wp-block-button',
+			),
+		);
+
+		$result = $general_block->convert_submit_button( $block_content, $block );
+
+		$this->assertEquals( $block_content, $result, 'Block without gatherpress-submit-button class should remain unchanged.' );
+	}
+
+	/**
+	 * Test process_guests_field with non-publish status returns content unchanged.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_guests_field
+	 *
+	 * @return void
+	 */
+	public function test_process_guests_field_skips_non_published_posts(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post( array( 'post_status' => 'draft' ) )->get()->ID;
+
+		set_post_type( $post_id, 'gatherpress_event' );
+		add_post_meta( $post_id, 'gatherpress_max_guest_limit', '0' );
+
+		$block_content = '<div class="gatherpress-rsvp-field-guests">Guest Count Field</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_guests_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Guest field processing should skip draft posts.'
+		);
+	}
+
+	/**
+	 * Test process_anonymous_field with non-publish status returns content unchanged.
+	 *
+	 * @since 1.0.0
+	 * @covers ::process_anonymous_field
+	 *
+	 * @return void
+	 */
+	public function test_process_anonymous_field_skips_non_published_posts(): void {
+		$general_block = General_Block::get_instance();
+		$post_id       = $this->mock->post( array( 'post_status' => 'draft' ) )->get()->ID;
+
+		set_post_type( $post_id, 'gatherpress_event' );
+		add_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', '' );
+
+		$block_content = '<div class="gatherpress-rsvp-field-anonymous">Anonymous Field</div>';
+		$block         = array( 'attrs' => array( 'postId' => $post_id ) );
+
+		$result = $general_block->process_anonymous_field( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Anonymous field processing should skip draft posts.'
+		);
+	}
+
+	/**
 	 * Test mixed field types processing with multiple fields.
 	 *
 	 * This test ensures that when both guest and anonymous fields are present
