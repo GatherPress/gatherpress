@@ -568,6 +568,55 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for asset_exists method with critical file missing in development.
+	 *
+	 * @covers ::asset_exists
+	 *
+	 * @return void
+	 */
+	public function test_asset_exists_critical_file_missing_development(): void {
+		$instance = Assets::get_instance();
+		$path     = GATHERPRESS_CORE_PATH . '/build/missing-critical-asset.asset.php';
+
+		// WordPress test suite runs in 'development' by default, so no need to filter.
+		// Just test that an Error is thrown for missing critical files.
+
+		$this->expectException( \Error::class );
+		$this->expectExceptionMessageMatches( '/You need to run `npm start` or `npm run build`/' );
+
+		Utility::invoke_hidden_method( $instance, 'asset_exists', array( $path, 'missing-critical', true ) );
+	}
+
+	/**
+	 * Coverage for enqueue_asset when style is not registered.
+	 *
+	 * @covers ::enqueue_asset
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_asset_without_style(): void {
+		$instance = Assets::get_instance();
+
+		// Register only script, no style.
+		wp_register_script( 'gatherpress-test-asset', 'test.js', array(), '1.0.0', true );
+
+		Utility::invoke_hidden_method( $instance, 'enqueue_asset', array( 'test-asset' ) );
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-test-asset', 'enqueued' ),
+			'Script should be enqueued.'
+		);
+		$this->assertFalse(
+			wp_style_is( 'gatherpress-test-asset', 'enqueued' ),
+			'Style should not be enqueued when not registered.'
+		);
+
+		// Clean up.
+		wp_dequeue_script( 'gatherpress-test-asset' );
+		wp_deregister_script( 'gatherpress-test-asset' );
+	}
+
+	/**
 	 * Coverage for admin_enqueue_scripts with settings page.
 	 *
 	 * @covers ::admin_enqueue_scripts
