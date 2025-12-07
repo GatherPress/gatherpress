@@ -6,10 +6,13 @@ on:
       - develop
       - main
     paths:
-      - '**.php'
-      - 'phpunit.xml.dist'
-      - '.github/coverage-config.json'
       - '.github/workflows/pr-coverage.yml'
+      - '.github/coverage-config.json'
+      - 'includes/**'
+      - 'test/unit/php**'
+      - '*.php'
+      - 'phpunit.xml.dist'
+      - 'composer.*'
 
 jobs:
   check-coverage:
