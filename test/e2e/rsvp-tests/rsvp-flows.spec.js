@@ -38,11 +38,10 @@ test.describe( 'RSVP Flows', () => {
 		// Try to find an existing event with RSVP block.
 		try {
 			const result = execSync(
-				'npm run wp-env run cli -- wp post list --post_type=gatherpress_event --post_status=publish --posts_per_page=1 --field=url',
+				'npm run wp-env run cli -- wp post list --post_type=gatherpress_event --post_status=publish --posts_per_page=1 --field=url 2>&1 | grep -v "Xdebug\\|Ran\\|Starting\\|gatherpress@\\|^>" | grep -v "^$" | tail -1',
 				{ encoding: 'utf-8' }
 			);
-			const lines = result.trim().split( '\n' );
-			eventPermalink = lines[ lines.length - 1 ].trim();
+			eventPermalink = result.trim();
 
 			// eslint-disable-next-line no-console
 			console.log( `Using existing event: ${ eventPermalink }` );
