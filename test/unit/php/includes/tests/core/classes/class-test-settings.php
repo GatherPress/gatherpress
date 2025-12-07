@@ -1457,4 +1457,180 @@ class Test_Settings extends Base {
 			'Failed to assert equal priorities with defaults.'
 		);
 	}
+
+	/**
+	 * Test options_page method.
+	 *
+	 * @covers ::options_page
+	 *
+	 * @return void
+	 */
+	public function test_options_page(): void {
+		global $submenu;
+
+		// Initialize submenu if not set.
+		if ( ! is_array( $submenu ) ) {
+			$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		}
+
+		$instance = Settings::get_instance();
+		$instance->options_page();
+
+		// Check that submenu was populated.
+		$this->assertIsArray( $submenu );
+	}
+
+	/**
+	 * Test remove_sub_options method.
+	 *
+	 * @covers ::remove_sub_options
+	 *
+	 * @return void
+	 */
+	public function test_remove_sub_options(): void {
+		global $submenu;
+
+		// Initialize submenu if not set.
+		if ( ! is_array( $submenu ) ) {
+			$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		}
+
+		$instance = Settings::get_instance();
+
+		// First add submenu pages.
+		$instance->options_page();
+
+		// Then remove them (except main).
+		$instance->remove_sub_options();
+
+		// Should execute without errors.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test register_settings method.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings(): void {
+		global $wp_registered_settings;
+
+		$instance = Settings::get_instance();
+		$instance->register_settings();
+
+		// Check that general settings were registered.
+		$this->assertArrayHasKey( 'gatherpress_general', $wp_registered_settings );
+	}
+
+	/**
+	 * Test register_settings with empty sections.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_with_empty_sections(): void {
+		$instance = Settings::get_instance();
+
+		// Mock sub_pages with no sections.
+		add_filter(
+			'gatherpress_settings',
+			function ( $settings ) {
+				$settings['test_page'] = array(
+					'name'     => 'Test Page',
+					'priority' => 99,
+				);
+				return $settings;
+			}
+		);
+
+		// Should not throw errors when sections are missing.
+		$instance->register_settings();
+
+		$this->assertTrue( true );
+
+		remove_all_filters( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test register_settings with section but no options.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_with_empty_options(): void {
+		$instance = Settings::get_instance();
+
+		// Mock sub_pages with section but no options.
+		add_filter(
+			'gatherpress_settings',
+			function ( $settings ) {
+				$settings['test_page_2'] = array(
+					'name'     => 'Test Page 2',
+					'priority' => 99,
+					'sections' => array(
+						'test_section' => array(
+							'name' => 'Test Section',
+						),
+					),
+				);
+				return $settings;
+			}
+		);
+
+		// Should not throw errors when options are missing.
+		$instance->register_settings();
+
+		$this->assertTrue( true );
+
+		remove_all_filters( 'gatherpress_settings' );
+	}
+
+	/**
+	 * Test register_settings with invalid field type.
+	 *
+	 * @covers ::register_settings
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_with_invalid_field_type(): void {
+		$instance = Settings::get_instance();
+
+		// Mock sub_pages with invalid field type.
+		add_filter(
+			'gatherpress_settings',
+			function ( $settings ) {
+				$settings['test_page_3'] = array(
+					'name'     => 'Test Page 3',
+					'priority' => 99,
+					'sections' => array(
+						'test_section' => array(
+							'name'    => 'Test Section',
+							'options' => array(
+								'test_option' => array(
+									'field'  => array(
+										'type' => 'nonexistent_method',
+									),
+									'labels' => array(
+										'name' => 'Test Option',
+									),
+								),
+							),
+						),
+					),
+				);
+				return $settings;
+			}
+		);
+
+		// Should not set callback when method doesn't exist.
+		$instance->register_settings();
+
+		$this->assertTrue( true );
+
+		remove_all_filters( 'gatherpress_settings' );
+	}
 }

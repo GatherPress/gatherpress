@@ -80,4 +80,71 @@ class Test_Base extends Base_Unit_Test {
 		$this->assertNull( $instance->get( 'unit-test' ), 'Failed to assert property is null.' );
 		$this->assertSame( $slug, $instance->get( 'slug' ), 'Failed to assert property is unit-test.' );
 	}
+
+	/**
+	 * Coverage for init method.
+	 *
+	 * @covers ::init
+	 * @covers ::get_name
+	 * @covers ::get_sections
+	 *
+	 * @return void
+	 */
+	public function test_init(): void {
+		$instance = new Base();
+
+		// Call init to set name and sections.
+		$instance->init();
+
+		// Verify name is set from get_name().
+		$this->assertSame( '', $instance->get( 'name' ), 'Failed to assert name is empty string.' );
+
+		// Verify sections is set from get_sections().
+		$this->assertIsArray( $instance->get( 'sections' ), 'Failed to assert sections is an array.' );
+		$this->assertEmpty( $instance->get( 'sections' ), 'Failed to assert sections is empty array.' );
+	}
+
+	/**
+	 * Coverage for get_slug method.
+	 *
+	 * @covers ::__construct
+	 * @covers ::get_slug
+	 * @covers ::get_priority
+	 *
+	 * @return void
+	 */
+	public function test_constructor_sets_properties(): void {
+		$instance = new Base();
+
+		// Verify slug is set from get_slug().
+		$this->assertSame( '', $instance->get( 'slug' ), 'Failed to assert slug is empty string.' );
+
+		// Verify priority is set from get_priority().
+		$this->assertSame( 10, $instance->get( 'priority' ), 'Failed to assert priority is 10.' );
+	}
+
+	/**
+	 * Coverage for page method.
+	 *
+	 * @covers ::page
+	 * @covers ::get_name
+	 * @covers ::get_priority
+	 * @covers ::get_sections
+	 *
+	 * @return void
+	 */
+	public function test_page(): void {
+		$instance = new Base();
+		$page     = $instance->page();
+
+		$this->assertIsArray( $page, 'Failed to assert page is an array.' );
+		$this->assertArrayHasKey( 'name', $page, 'Failed to assert page has name key.' );
+		$this->assertArrayHasKey( 'priority', $page, 'Failed to assert page has priority key.' );
+		$this->assertArrayHasKey( 'sections', $page, 'Failed to assert page has sections key.' );
+
+		$this->assertSame( '', $page['name'], 'Failed to assert page name is empty string.' );
+		$this->assertSame( 10, $page['priority'], 'Failed to assert page priority is 10.' );
+		$this->assertIsArray( $page['sections'], 'Failed to assert page sections is an array.' );
+		$this->assertEmpty( $page['sections'], 'Failed to assert page sections is empty array.' );
+	}
 }

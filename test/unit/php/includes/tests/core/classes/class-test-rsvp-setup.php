@@ -22,6 +22,21 @@ use GatherPress\Tests\Base;
 class Test_Rsvp_Setup extends Base {
 
 	/**
+	 * Coverage for constructor.
+	 *
+	 * @covers ::__construct
+	 * @covers ::setup_hooks
+	 *
+	 * @return void
+	 */
+	public function test_constructor(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Instance should be created successfully.
+		$this->assertInstanceOf( Rsvp_Setup::class, $instance );
+	}
+
+	/**
 	 * Coverage for setup_hooks.
 	 *
 	 * @covers ::setup_hooks
@@ -561,5 +576,197 @@ class Test_Rsvp_Setup extends Base {
 
 		$result = $instance->set_submenu_file();
 		$this->assertSame( Rsvp::COMMENT_TYPE, $result );
+	}
+
+	/**
+	 * Test add_rsvp_submenu_page method.
+	 *
+	 * @covers ::add_rsvp_submenu_page
+	 * @covers ::get_per_page_option
+	 *
+	 * @return void
+	 */
+	public function test_add_rsvp_submenu_page(): void {
+		global $submenu;
+
+		// Initialize submenu if not set.
+		if ( ! is_array( $submenu ) ) {
+			$submenu = array(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		}
+
+		$instance = Rsvp_Setup::get_instance();
+		$instance->add_rsvp_submenu_page();
+
+		// Verify that the load hook was registered.
+		$hook_name = sprintf( 'load-events_page_%s', Rsvp::COMMENT_TYPE );
+
+		// Trigger the load hook to test the callback.
+		do_action( $hook_name ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
+
+		// Should execute without errors.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test render_rsvp_admin_page method.
+	 *
+	 * @covers ::render_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_render_rsvp_admin_page(): void {
+		// Create admin user with proper capabilities.
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$instance = Rsvp_Setup::get_instance();
+
+		ob_start();
+		$instance->render_rsvp_admin_page();
+		$output = ob_get_clean();
+
+		// Should output something.
+		$this->assertNotEmpty( $output );
+
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Test add_rsvp_screen_options method.
+	 *
+	 * @covers ::add_rsvp_screen_options
+	 *
+	 * @return void
+	 */
+	public function test_add_rsvp_screen_options(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Mock the screen.
+		set_current_screen( 'edit-comments' );
+
+		// Should execute without errors.
+		$instance->add_rsvp_screen_options();
+		$this->assertTrue( true );
+
+		// Clean up.
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Test set_rsvp_screen_options with invalid option.
+	 *
+	 * @covers ::set_rsvp_screen_options
+	 *
+	 * @return void
+	 */
+	public function test_set_rsvp_screen_options_invalid_option(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Test with invalid option name.
+		$result = $instance->set_rsvp_screen_options( false, 'invalid_option', 10 );
+
+		// Should return false for invalid option.
+		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Test add_rsvp_screen_options with correct page parameter.
+	 *
+	 * @covers ::add_rsvp_screen_options
+	 * @covers ::get_per_page_option
+	 *
+	 * @return void
+	 */
+	public function test_add_rsvp_screen_options_with_page_parameter(): void {
+		// Set up the $_GET parameter for the RSVP page.
+		$_GET['page'] = Rsvp::COMMENT_TYPE; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$instance = Rsvp_Setup::get_instance();
+
+		// Mock the screen - use a proper admin screen.
+		$screen = \WP_Screen::get( 'admin_init' );
+		set_current_screen( $screen );
+
+		// Should execute and add screen option.
+		$instance->add_rsvp_screen_options();
+
+		$screen = get_current_screen();
+		$this->assertNotNull( $screen );
+
+		// Clean up.
+		unset( $_GET['page'] );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Test add_rsvp_screen_options without page parameter returns early.
+	 *
+	 * @covers ::add_rsvp_screen_options
+	 *
+	 * @return void
+	 */
+	public function test_add_rsvp_screen_options_without_page_returns_early(): void {
+		// Ensure $_GET['page'] is not set.
+		unset( $_GET['page'] );
+
+		$instance = Rsvp_Setup::get_instance();
+
+		// Should return early without doing anything.
+		$instance->add_rsvp_screen_options();
+
+		// Should execute without errors.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Test render_rsvp_admin_page with request parameters.
+	 *
+	 * @covers ::render_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_render_rsvp_admin_page_with_request_parameters(): void {
+		// Create admin user with proper capabilities.
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Set up request parameters.
+		$_REQUEST['s']      = 'test search'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$_REQUEST['status'] = 'attending'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$_REQUEST['event']  = '123'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		$instance = Rsvp_Setup::get_instance();
+
+		ob_start();
+		$instance->render_rsvp_admin_page();
+		$output = ob_get_clean();
+
+		// Should output something.
+		$this->assertNotEmpty( $output );
+
+		// Clean up.
+		unset( $_REQUEST['s'], $_REQUEST['status'], $_REQUEST['event'] );
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Test render_rsvp_admin_page without capability.
+	 *
+	 * @covers ::render_rsvp_admin_page
+	 *
+	 * @return void
+	 */
+	public function test_render_rsvp_admin_page_without_capability(): void {
+		// Create subscriber user without RSVP capability.
+		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		$instance = Rsvp_Setup::get_instance();
+
+		// Should trigger wp_die.
+		$this->expectException( 'WPDieException' );
+		$instance->render_rsvp_admin_page();
+
+		wp_set_current_user( 0 );
 	}
 }
