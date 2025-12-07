@@ -48,6 +48,17 @@ class Rsvp_Setup {
 	}
 
 	/**
+	 * Gets the per page option name for RSVP list table.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string The per page option name.
+	 */
+	private static function get_per_page_option(): string {
+		return sprintf( '%s_per_page', Rsvp::COMMENT_TYPE );
+	}
+
+	/**
 	 * Set up hooks for various purposes.
 	 *
 	 * This method adds hooks for different purposes as needed.
@@ -200,7 +211,7 @@ class Rsvp_Setup {
 					array(
 						'label'   => __( 'RSVPs per page', 'gatherpress' ),
 						'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
-						'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
+						'option'  => self::get_per_page_option(),
 					)
 				);
 
@@ -292,7 +303,7 @@ class Rsvp_Setup {
 			array(
 				'label'   => __( 'RSVPs per page', 'gatherpress' ),
 				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
-				'option'  => sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ),
+				'option'  => self::get_per_page_option(),
 			)
 		);
 
@@ -320,7 +331,7 @@ class Rsvp_Setup {
 	 * @return mixed The screen option value or false to use default.
 	 */
 	public function set_rsvp_screen_options( $status, $option, $value ) {
-		if ( sprintf( '%s_per_page', Rsvp::COMMENT_TYPE ) === $option ) {
+		if ( self::get_per_page_option() === $option ) {
 			return $value;
 		}
 

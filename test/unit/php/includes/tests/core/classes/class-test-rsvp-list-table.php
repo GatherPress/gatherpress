@@ -631,6 +631,7 @@ class Test_RSVP_List_Table extends Base {
 	 * Tests get_views method.
 	 *
 	 * @covers ::get_views
+	 * @covers ::get_current_class_attr
 	 * @return void
 	 */
 	public function test_get_views(): void {
@@ -647,6 +648,46 @@ class Test_RSVP_List_Table extends Base {
 			$views,
 			'Failed to assert views contain all.'
 		);
+	}
+
+	/**
+	 * Tests get_current_class_attr method.
+	 *
+	 * @covers ::get_current_class_attr
+	 * @return void
+	 */
+	public function test_get_current_class_attr(): void {
+		// Test when status matches current.
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_current_class_attr',
+			array( 'pending', 'pending' )
+		);
+		$this->assertEquals( ' class="current"', $result );
+
+		// Test when status does not match current.
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_current_class_attr',
+			array( 'pending', 'approved' )
+		);
+		$this->assertEquals( '', $result );
+
+		// Test with 'all' status.
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_current_class_attr',
+			array( 'all', 'all' )
+		);
+		$this->assertEquals( ' class="current"', $result );
+
+		// Test with 'mine' status.
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_current_class_attr',
+			array( 'mine', 'spam' )
+		);
+		$this->assertEquals( '', $result );
 	}
 
 	/**

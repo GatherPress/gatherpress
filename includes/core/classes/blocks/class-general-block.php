@@ -168,7 +168,7 @@ class General_Block {
 				// Replace tag names.
 				$content = $processor->get_updated_html();
 				$content = preg_replace( '/<a\b/', '<button', $content );
-				$content = preg_replace( '/<\/a>/', '</button>', $content );
+				$content = str_replace( '</a>', '</button>', $content );
 
 				return $content;
 			} elseif ( 'BUTTON' === $tag_name ) {

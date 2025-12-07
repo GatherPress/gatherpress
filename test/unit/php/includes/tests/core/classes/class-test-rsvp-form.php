@@ -151,6 +151,7 @@ class Test_Rsvp_Form extends Base {
 	 *
 	 * @covers ::process_rsvp
 	 * @covers ::has_duplicate_rsvp
+	 * @covers ::get_duplicate_rsvp_message
 	 *
 	 * @return void
 	 */
@@ -391,6 +392,7 @@ class Test_Rsvp_Form extends Base {
 	 * Coverage for initialize_rsvp_form_handling method.
 	 *
 	 * @covers ::initialize_rsvp_form_handling
+	 * @covers ::get_duplicate_rsvp_message
 	 *
 	 * @return void
 	 */
@@ -962,6 +964,8 @@ class Test_Rsvp_Form extends Base {
 	 * Tests preprocess_rsvp_comment with duplicate RSVP.
 	 *
 	 * @covers ::preprocess_rsvp_comment
+	 * @covers ::has_duplicate_rsvp
+	 * @covers ::get_duplicate_rsvp_message
 	 */
 	public function test_preprocess_rsvp_comment_duplicate_rsvp(): void {
 		$post_id = $this->factory->post->create(
