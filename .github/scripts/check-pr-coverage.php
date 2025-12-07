@@ -232,6 +232,26 @@ function main(): void {
 	}
 	echo "\n";
 
+	// Filter out excluded files before loading coverage.
+	$files_to_check = array_filter(
+		$changed_files,
+		function ( $file ) use ( $exclude_patterns ) {
+			return ! should_exclude_file( $file, $exclude_patterns );
+		}
+	);
+
+	if ( empty( $files_to_check ) ) {
+		echo "✅ All changed files are excluded from coverage checks.\n";
+		echo "Changed files are in excluded directories (test, vendor, .github, etc.)\n";
+		exit( 0 );
+	}
+
+	echo "Files requiring coverage check: " . count( $files_to_check ) . "\n";
+	foreach ( $files_to_check as $file ) {
+		echo "  - {$file}\n";
+	}
+	echo "\n";
+
 	// Load coverage XML.
 	$coverage_file = __DIR__ . '/../../coverage.xml';
 
@@ -248,18 +268,11 @@ function main(): void {
 		exit( 1 );
 	}
 
-	// Check coverage for each changed file.
+	// Check coverage for each file that needs checking.
 	$failed_files = array();
 	$passed_files = array();
-	$skipped_files = array();
 
-	foreach ( $changed_files as $file ) {
-		// Check if file should be excluded.
-		if ( should_exclude_file( $file, $exclude_patterns ) ) {
-			$skipped_files[] = $file;
-			echo "⏭️  {$file} - Excluded from coverage check\n";
-			continue;
-		}
+	foreach ( $files_to_check as $file ) {
 
 		// Get coverage data for this file.
 		$coverage = get_file_coverage( $coverage_xml, $file );
@@ -267,7 +280,6 @@ function main(): void {
 		if ( $coverage === null ) {
 			// File not in coverage report (might be new file with no tests yet).
 			if ( is_low_coverage_allowed( $file, $allow_low_files ) ) {
-				$skipped_files[] = $file;
 				echo "⚠️  {$file} - Not in coverage report (exception allowed)\n";
 			} else {
 				$failed_files[] = array(
@@ -287,7 +299,6 @@ function main(): void {
 		// Check if coverage meets minimum.
 		if ( $percentage < $min_coverage ) {
 			if ( is_low_coverage_allowed( $file, $allow_low_files ) ) {
-				$skipped_files[] = $file;
 				echo "⚠️  {$file} - {$percentage}% coverage ({$covered}/{$total} lines) - Exception allowed\n";
 			} else {
 				$failed_files[] = array(
@@ -311,10 +322,13 @@ function main(): void {
 		}
 	}
 
+	// Count excluded files.
+	$excluded_count = count( $changed_files ) - count( $files_to_check );
+
 	// Summary.
 	echo "\n=== Summary ===\n";
 	echo "✅ Passed: " . count( $passed_files ) . " file(s)\n";
-	echo "⏭️  Skipped: " . count( $skipped_files ) . " file(s)\n";
+	echo "⏭️  Excluded: " . $excluded_count . " file(s)\n";
 	echo "❌ Failed: " . count( $failed_files ) . " file(s)\n\n";
 
 	// If any files failed, provide detailed information and exit with error.

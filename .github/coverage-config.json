@@ -7,7 +7,8 @@
     "*/test/*",
     "*/tests/*",
     "*gatherpress.php",
-    "*/class-autoloader.php"
+    "*/class-autoloader.php",
+    ".github/**"
   ],
   "allowLowCoverage": [
     "includes/core/classes/class-setup.php",
