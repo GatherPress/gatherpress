@@ -79,8 +79,12 @@ const { actions } = store( 'gatherpress', {
 						}
 
 						// Set up focus trap using the helper function and store cleanup.
-						modalContent.cleanupFocusTrap =
-							manageFocusTrap( focusableElements );
+						// Use 11ms to ensure this runs AFTER the initial focus (10ms above).
+						// This prevents focus trap conflicts when switching between RSVP modal states.
+						setTimeout( () => {
+							modalContent.cleanupFocusTrap =
+								manageFocusTrap( focusableElements );
+						}, 11 );
 
 						// Set up close handlers and store cleanup function.
 						modalContent.cleanupCloseHandlers = setupCloseHandlers(
