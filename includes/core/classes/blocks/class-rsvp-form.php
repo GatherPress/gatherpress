@@ -510,6 +510,8 @@ class Rsvp_Form {
 						case 'textarea':
 							$field_config['max_length'] = intval( $attrs['maxLength'] ?? 1000 );
 							break;
+						default:
+							// Nothing to see here. Other field types don't need special handling.
 					}
 
 					$fields[ $field_config['name'] ] = $field_config;
@@ -565,11 +567,12 @@ class Rsvp_Form {
 	 */
 	private function find_form_index_in_blocks( array $blocks, array $target_block, int $base_index = 0 ): int {
 		foreach ( $blocks as $index => $block ) {
-			if ( self::BLOCK_NAME === $block['blockName'] ) {
+			if (
+				self::BLOCK_NAME === $block['blockName'] &&
+				$this->blocks_match( $block, $target_block )
+			) {
 				// Compare block content or attributes to identify the same block.
-				if ( $this->blocks_match( $block, $target_block ) ) {
-					return $base_index + $index;
-				}
+				return $base_index + $index;
 			}
 
 			// Check nested blocks.

@@ -235,17 +235,15 @@ class Rsvp {
 					}
 				}
 
-				$target_found = false;
-
 				// Check if current element is an anchor or button.
-				if ( in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true ) ) {
-					$target_found = true;
-				} elseif (
-					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true )
-				) {
-					$target_found = true;
+				$is_actionable_element = in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
+
+				if ( ! $is_actionable_element ) {
+					// If not, check if the next element is an anchor or button.
+					$is_actionable_element = $tag->next_tag() && in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
+
+				$target_found = $is_actionable_element;
 
 				// Apply RSVP attributes if target was found.
 				if ( $target_found ) {

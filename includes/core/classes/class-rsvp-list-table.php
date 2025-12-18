@@ -314,8 +314,15 @@ class RSVP_List_Table extends WP_List_Table {
 		}
 
 		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
-			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
-			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
+			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+
+			if ( 'approved' === $status ) {
+				$args['status'] = 'approve';
+			} elseif ( 'spam' === $status ) {
+				$args['status'] = 'spam';
+			} else {
+				$args['status'] = 'hold';
+			}
 		}
 
 		$orderby = isset( $_REQUEST['orderby'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) ) : 'comment_date';
@@ -373,8 +380,15 @@ class RSVP_List_Table extends WP_List_Table {
 		}
 
 		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
-			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
-			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
+			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+
+			if ( 'approved' === $status ) {
+				$args['status'] = 'approve';
+			} elseif ( 'spam' === $status ) {
+				$args['status'] = 'spam';
+			} else {
+				$args['status'] = 'hold';
+			}
 		}
 
 		return $rsvp_query->get_rsvps( $args );
@@ -610,8 +624,14 @@ class RSVP_List_Table extends WP_List_Table {
 			return;
 		}
 
-		$status      = ( '1' === $item['comment_approved'] ) ? 'approved' :
-			( ( 'spam' === $item['comment_approved'] ) ? 'spam' : 'unapproved' );
+		if ( '1' === $item['comment_approved'] ) {
+			$status = 'approved';
+		} elseif ( 'spam' === $item['comment_approved'] ) {
+			$status = 'spam';
+		} else {
+			$status = 'unapproved';
+		}
+
 		$odd_or_even = 'odd';
 
 		echo '<tr id="' . esc_attr( 'gatherpress-rsvp-' . $item['comment_ID'] ) . '" class="' . esc_attr( 'gatherpress-rsvp ' . $odd_or_even . ' ' . $status ) . '">';
