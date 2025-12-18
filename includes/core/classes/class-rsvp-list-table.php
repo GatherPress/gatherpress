@@ -314,8 +314,15 @@ class RSVP_List_Table extends WP_List_Table {
 		}
 
 		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
-			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
-			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
+			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+
+			if ( 'approved' === $status ) {
+				$args['status'] = 'approve';
+			} elseif ( 'spam' === $status ) {
+				$args['status'] = 'spam';
+			} else {
+				$args['status'] = 'hold';
+			}
 		}
 
 		$orderby = isset( $_REQUEST['orderby'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) ) : 'comment_date';
@@ -373,8 +380,15 @@ class RSVP_List_Table extends WP_List_Table {
 		}
 
 		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
-			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
-			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
+			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+
+			if ( 'approved' === $status ) {
+				$args['status'] = 'approve';
+			} elseif ( 'spam' === $status ) {
+				$args['status'] = 'spam';
+			} else {
+				$args['status'] = 'hold';
+			}
 		}
 
 		return $rsvp_query->get_rsvps( $args );
@@ -610,8 +624,14 @@ class RSVP_List_Table extends WP_List_Table {
 			return;
 		}
 
-		$status      = ( '1' === $item['comment_approved'] ) ? 'approved' :
-			( ( 'spam' === $item['comment_approved'] ) ? 'spam' : 'unapproved' );
+		if ( '1' === $item['comment_approved'] ) {
+			$status = 'approved';
+		} elseif ( 'spam' === $item['comment_approved'] ) {
+			$status = 'spam';
+		} else {
+			$status = 'unapproved';
+		}
+
 		$odd_or_even = 'odd';
 
 		echo '<tr id="' . esc_attr( 'gatherpress-rsvp-' . $item['comment_ID'] ) . '" class="' . esc_attr( 'gatherpress-rsvp ' . $odd_or_even . ' ' . $status ) . '">';
@@ -709,21 +729,14 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array An array of HTML links for different views.
 	 */
 	public function get_views(): array {
-		$rsvp_query     = Rsvp_Query::get_instance();
-		$status_links   = array();
-		$current        = 'all';
-		$nonce_verified = false;
-
-		if ( isset( $_REQUEST['_wpnonce'] ) ) {
-			$nonce = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
-
-			if ( wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
-				$nonce_verified = true;
-			}
-		}
+		$rsvp_query   = Rsvp_Query::get_instance();
+		$status_links = array();
+		$current      = 'all';
 
 		// Check for post_id filter.
 		$post_id = 0;
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- View state only, no data modification.
 		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
 			$post_id = intval( $_REQUEST['post_id'] );
 		}
@@ -738,6 +751,7 @@ class RSVP_List_Table extends WP_List_Table {
 		} elseif ( isset( $_REQUEST['status'] ) ) {
 			$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$base_url_args = array(
 			'post_type' => Event::POST_TYPE,
@@ -754,6 +768,7 @@ class RSVP_List_Table extends WP_List_Table {
 
 		// Base args for count queries.
 		$count_base_args = array( 'count' => true );
+
 		if ( $post_id ) {
 			$count_base_args['post_id'] = $post_id;
 		}

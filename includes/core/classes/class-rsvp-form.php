@@ -201,10 +201,6 @@ class Rsvp_Form {
 	 */
 	public function handle_rsvp_comment_post( int $comment_id ): void {
 		if ( Rsvp::COMMENT_TYPE === get_comment_type( $comment_id ) ) {
-			// Get the event post ID from the comment.
-			$comment = get_comment( $comment_id );
-			$post_id = $comment ? $comment->comment_post_ID : 0;
-
 			// Prepare data for meta processing.
 			// phpcs:disable WordPress.Security.NonceVerification.Missing
 			$data = array(

@@ -171,27 +171,24 @@ class Event {
 			: true;
 
 		// Set start date/time.
-		$start = $show_start
-			? $this->get_datetime_start(
-				$start_format ? $start_format : "{$date_format} {$time_format}"
-			)
-			: false;
+		$start_datetime_format = $start_format ? $start_format : "{$date_format} {$time_format}";
+		$start                 = $show_start ? $this->get_datetime_start( $start_datetime_format ) : false;
 
 		// Set end date/time.
 		if ( $show_end ) {
+			$end_time_format     = $end_format ? $end_format : $time_format;
+			$end_datetime_format = $end_format ? $end_format : "{$date_format} {$time_format}";
+
 			$end = $show_start && $this->is_same_date()
-				? $this->get_time_end( $end_format ? $end_format : $time_format )
-				: $this->get_datetime_end(
-					$end_format ? $end_format : "{$date_format} {$time_format}"
-				);
+				? $this->get_time_end( $end_time_format )
+				: $this->get_datetime_end( $end_datetime_format );
 		} else {
 			$end = false;
 		}
 
 		// Add separator if there's both start and end date/time.
-		$separator = $start && $end
-			? ( $separator ? $separator : __( 'to', 'gatherpress' ) )
-			: false;
+		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
+		$separator         = $start && $end ? $default_separator : false;
 
 		// Add timezone.
 		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {

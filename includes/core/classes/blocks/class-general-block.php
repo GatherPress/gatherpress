@@ -93,9 +93,7 @@ class General_Block {
 			}
 		}
 
-		$block_content = $tag->get_updated_html();
-
-		return $block_content;
+		return $tag->get_updated_html();
 	}
 
 	/**

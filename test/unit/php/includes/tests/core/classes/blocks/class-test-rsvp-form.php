@@ -1953,4 +1953,80 @@ class Test_Rsvp_Form extends Base {
 		$this->assertEquals( 'email', $schemas['form_0']['fields']['email_field']['type'] );
 		$this->assertEquals( 'email', $schemas['form_0']['fields']['email_field']['validation'] );
 	}
+
+	/**
+	 * Tests transform_block_content returns empty when event object creation fails.
+	 *
+	 * @covers ::transform_block_content
+	 * @return void
+	 */
+	public function test_transform_block_content_invalid_event_object(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Create a regular post (not an event) to trigger event object creation failure.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			)
+		);
+
+		$block = array(
+			'blockName' => 'gatherpress/rsvp-form',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+
+		$result = $instance->transform_block_content( '<div class="wp-block-gatherpress-rsvp-form"></div>', $block );
+
+		$this->assertSame( '', $result, 'Failed to assert transform_block_content returns empty string for invalid event object.' );
+	}
+
+	/**
+	 * Tests apply_visibility_attribute with past event and postId attribute.
+	 *
+	 * @covers ::apply_visibility_attribute
+	 * @covers ::get_post_id_from_context
+	 * @return void
+	 */
+	public function test_apply_visibility_attribute_past_event_with_post_id(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Create a past event.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_status' => 'publish',
+			)
+		);
+		$event   = new Event( $post_id );
+
+		$start = new \DateTime( 'now' );
+		$end   = new \DateTime( 'now' );
+		$start->modify( '-3 hours' );
+		$end->modify( '-1 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+		$event->save_datetimes( $params );
+
+		$block_content = '<div class="wp-block-paragraph">Content</div>';
+		$block         = array(
+			'blockName' => 'core/paragraph',
+			'attrs'     => array(
+				'postId'   => $post_id,
+				'metadata' => array(
+					'gatherpressRsvpFormVisibility' => array( 'whenPast' => 'show' ),
+				),
+			),
+		);
+
+		$result = $instance->apply_visibility_attribute( $block_content, $block );
+
+		$this->assertStringContainsString( 'data-gatherpress-event-state="past"', $result, 'Failed to assert past event state attribute is set.' );
+		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility', $result, 'Failed to assert visibility attribute is set.' );
+	}
 }
