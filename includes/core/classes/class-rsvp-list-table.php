@@ -736,6 +736,7 @@ class RSVP_List_Table extends WP_List_Table {
 		// Check for post_id filter.
 		$post_id = 0;
 
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- View state only, no data modification.
 		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
 			$post_id = intval( $_REQUEST['post_id'] );
 		}
@@ -750,6 +751,7 @@ class RSVP_List_Table extends WP_List_Table {
 		} elseif ( isset( $_REQUEST['status'] ) ) {
 			$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$base_url_args = array(
 			'post_type' => Event::POST_TYPE,

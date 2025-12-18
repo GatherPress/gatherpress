@@ -98,6 +98,7 @@ class Modal_Manager {
 
 				if ( ! $is_actionable_element ) {
 					// If not, check if the next element is an anchor or button.
+					// @phpstan-ignore-next-line.
 					$is_actionable_element = $tag->next_tag() && in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
 
