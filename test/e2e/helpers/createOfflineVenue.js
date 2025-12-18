@@ -41,10 +41,9 @@ async function createVenue( page ) {
 	await locationInput.fill( 'Amravati, Maharashtra' );
 
 	// Publish
-	const publishToggle = page.locator(
-		'button.editor-post-publish-panel__toggle'
-	);
-	await publishToggle.click();
+	// Click the publish button in the header.
+	const publishButton = page.locator( '.editor-post-publish-panel__toggle, button:has-text("Publish")' ).first();
+	await publishButton.click();
 
 	// Wait for the final Publish button inside the panel
 	const finalPublish = page.locator(
