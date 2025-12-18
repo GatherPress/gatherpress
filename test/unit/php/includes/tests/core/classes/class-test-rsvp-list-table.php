@@ -592,6 +592,28 @@ class Test_RSVP_List_Table extends Base {
 	}
 
 	/**
+	 * Tests single_row method with pending/unapproved status.
+	 *
+	 * @covers ::single_row
+	 * @return void
+	 */
+	public function test_single_row_pending(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->rsvp['comment_approved'] = '0';
+
+		ob_start();
+		$this->list_table->single_row( $this->rsvp );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'unapproved',
+			$output,
+			'Failed to assert single_row includes unapproved class.'
+		);
+	}
+
+	/**
 	 * Tests single_row method without capability.
 	 *
 	 * @covers ::single_row
@@ -624,6 +646,27 @@ class Test_RSVP_List_Table extends Base {
 		$this->assertTrue(
 			true,
 			'Failed to assert process_bulk_action handles missing nonce gracefully.'
+		);
+	}
+
+	/**
+	 * Tests process_bulk_action with empty rsvp_ids.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_empty_ids(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		// Don't set any rsvp_ids - they'll be empty.
+
+		// Should not throw any errors.
+		$this->list_table->process_bulk_action();
+
+		$this->assertTrue(
+			true,
+			'Failed to assert process_bulk_action handles empty rsvp_ids gracefully.'
 		);
 	}
 
@@ -1117,5 +1160,44 @@ class Test_RSVP_List_Table extends Base {
 			$output,
 			'Failed to assert unknown response returns dash.'
 		);
+	}
+
+	/**
+	 * Tests get_views with status filter.
+	 *
+	 * @covers ::get_views
+	 * @return void
+	 */
+	public function test_get_views_with_status_filter(): void {
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['status']   = 'attending';
+
+		$views = $this->list_table->get_views();
+
+		$this->assertIsArray( $views, 'Failed to assert get_views returns an array with status filter.' );
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests process_bulk_action with delete action and invalid nonce.
+	 *
+	 * @covers ::process_bulk_action
+	 * @return void
+	 */
+	public function test_process_bulk_action_delete_with_invalid_nonce(): void {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['gatherpress_rsvp_id'] = array( $this->rsvp['comment_ID'] );
+		$_REQUEST['action']              = 'delete';
+		$_REQUEST['_wpnonce']            = 'invalid_nonce';
+
+		$this->list_table->process_bulk_action();
+
+		// Verify comment still exists since nonce was invalid.
+		$comment = get_comment( $this->rsvp['comment_ID'] );
+		$this->assertNotNull( $comment, 'Failed to assert comment still exists after delete with invalid nonce.' );
+
+		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'], $_REQUEST['_wpnonce'] );
 	}
 }
