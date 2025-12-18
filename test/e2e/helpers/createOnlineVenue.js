@@ -46,12 +46,12 @@ async function createVenue( page ) {
 		.locator( '.editor-post-publish-panel__toggle, button:has-text("Publish")' )
 		.first();
 
-	await page.waitForSelector(
-		'.components-modal__screen-overlay',
-		{ state: 'hidden', timeout: 15000 }
-	);
-
 	await publishButton.click( { force: true } );
+	// Wait for publish panel (NOT overlay)
+	await page.waitForSelector(
+		'.editor-post-publish-panel',
+		{ state: 'visible', timeout: 15000 }
+	);
 
 	// Wait for final Publish button
 	const finalPublish = page.locator(
