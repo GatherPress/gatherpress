@@ -1,22 +1,23 @@
 /**
  * Create a GatherPress Venue via WordPress admin UI
  * @param {import('@playwright/test').Page} page
- * @returns {Promise<{ venueId: string, venueTitle: string, venueUrl: string }>}
+ * @return {Promise<{ venueId: string, venueTitle: string, venueUrl: string }>}
+ * An object containing the created venue ID, title, and public URL
  */
-async function createVenue(page) {
+async function createVenue( page ) {
 	const adminUrl = 'http://localhost:8889/wp-admin';
 	const venueTitle = 'offline Venue';
 
-	await page.goto(`${adminUrl}/post-new.php?post_type=gatherpress_venue`);
-	await page.waitForLoadState('load');
+	await page.goto( `${ adminUrl }/post-new.php?post_type=gatherpress_venue` );
+	await page.waitForLoadState( 'load' );
 
 	// Dismiss Gutenberg modals
-	await page.waitForTimeout(800);
-	await page.keyboard.press('Escape');
-	await page.keyboard.press('Escape');
+	await page.waitForTimeout( 800 );
+	await page.keyboard.press( 'Escape' );
+	await page.keyboard.press( 'Escape' );
 
 	// Wait for editor
-	await page.waitForSelector('.editor-post-title__input, [aria-label="Add title"]');
+	await page.waitForSelector( '.editor-post-title__input, [aria-label="Add title"]' );
 
 	// Venue title
 	await page.fill(
@@ -25,9 +26,9 @@ async function createVenue(page) {
 	);
 
 	// Open Venue settings panel
-	const venueSettings = page.locator('button:has-text("Venue settings")');
-	if (await venueSettings.count()) {
-		if ('true' !== await venueSettings.getAttribute('aria-expanded')) {
+	const venueSettings = page.locator( 'button:has-text("Venue settings")' );
+	if ( await venueSettings.count() ) {
+		if ( 'true' !== await venueSettings.getAttribute( 'aria-expanded' ) ) {
 			await venueSettings.click();
 		}
 	}
@@ -37,7 +38,7 @@ async function createVenue(page) {
 		'input[aria-label*="Location"], input[id="inspector-text-control-0"]'
 	).first();
 
-	await locationInput.fill('Amravati, Maharashtra');
+	await locationInput.fill( 'Amravati, Maharashtra' );
 
 	// Publish
 	const publishToggle = page.locator(
@@ -50,13 +51,13 @@ async function createVenue(page) {
 		'button.editor-post-publish-button__button.is-primary'
 	).last();
 
-	await finalPublish.waitFor({ state: 'visible' });
+	await finalPublish.waitFor( { state: 'visible' } );
 
 	// Give Gutenberg a moment to remove overlay
-	await page.waitForTimeout(500);
+	await page.waitForTimeout( 500 );
 
 	// Click the real publish button (overlay-safe)
-	await finalPublish.click({ force: true });
+	await finalPublish.click( { force: true } );
 
 	// Wait for confirmation
 	await page.waitForSelector(
@@ -68,22 +69,20 @@ async function createVenue(page) {
 	);
 
 	// Extract venue ID
-	const postIdMatch = page.url().match(/post=(\d+)/);
-	if (!postIdMatch) {
-		throw new Error('Could not determine venue ID');
+	const postIdMatch = page.url().match( /post=(\d+)/ );
+	if ( ! postIdMatch ) {
+		throw new Error( 'Could not determine venue ID' );
 	}
-	const venueId = postIdMatch[1];
+	const venueId = postIdMatch[ 1 ];
 
 	// Venue URL
 	let venueUrl;
-	const viewLink = page.locator('a:has-text("View Venue"), a:has-text("View Post")').first();
-	if (await viewLink.count()) {
-		venueUrl = await viewLink.getAttribute('href');
+	const viewLink = page.locator( 'a:has-text("View Venue"), a:has-text("View Post")' ).first();
+	if ( await viewLink.count() ) {
+		venueUrl = await viewLink.getAttribute( 'href' );
 	} else {
-		venueUrl = `http://localhost:8889/?p=${venueId}`;
+		venueUrl = `http://localhost:8889/?p=${ venueId }`;
 	}
-
-	console.log(`Venue created: ${venueUrl}`);
 
 	return { venueId, venueTitle, venueUrl };
 }
