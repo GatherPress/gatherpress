@@ -2,7 +2,7 @@ const { test, expect } = require( '@playwright/test' );
 const { createVenue } = require( '../helpers/createOnlineVenue' );
 const { createEventWithVenue } = require( '../helpers/createEventWithVenue' );
 
-test( 'Event displays venue on frontend', async ( { page } ) => {
+test( 'Verify that the user should be able to create event for online venue link', async ( { page } ) => {
 	// Create Venue
 	const { venueTitle } = await createVenue( page );
 
