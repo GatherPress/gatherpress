@@ -47,24 +47,24 @@ jobs:
         run: npm run wp-env start
 
       - name: Run PHP unit tests with coverage
-        run: npm run test:unit:php
-        continue-on-error: true  # Continue even if tests fail to show coverage report
-
-      - name: Debug - Check for coverage file
         run: |
-          echo "Checking for coverage.xml in various locations..."
-          ls -la coverage.xml 2>/dev/null || echo "Not found in root"
-          ls -la build/ 2>/dev/null || echo "No build directory"
-          find . -name "coverage.xml" -type f 2>/dev/null || echo "No coverage.xml found anywhere"
-          docker exec $(docker ps -qf "name=tests-wordpress") ls -la /var/www/html/wp-content/plugins/gatherpress/coverage.xml 2>/dev/null || echo "Not found in container"
+          echo "Running PHPUnit tests with coverage..."
+          npm run test:unit:php || TEST_EXIT_CODE=$?
+          echo "Test exit code: ${TEST_EXIT_CODE:-0}"
 
-      - name: Copy coverage file from container if needed
-        run: |
-          if [ ! -f coverage.xml ]; then
-            echo "Coverage file not found on host, copying from container..."
-            docker cp $(docker ps -qf "name=tests-wordpress"):/var/www/html/wp-content/plugins/gatherpress/coverage.xml ./coverage.xml || echo "Failed to copy from container"
+          echo "Checking if coverage was generated..."
+          if docker exec $(docker ps -qf "name=tests-wordpress") test -f /var/www/html/wp-content/plugins/gatherpress/coverage.xml; then
+            echo "✓ Coverage file exists in container"
+            docker cp $(docker ps -qf "name=tests-wordpress"):/var/www/html/wp-content/plugins/gatherpress/coverage.xml ./coverage.xml
+            echo "✓ Coverage file copied to host"
           else
-            echo "Coverage file already exists on host"
+            echo "✗ Coverage file not found in container - checking mounted directory..."
+            if [ -f coverage.xml ]; then
+              echo "✓ Coverage file found on host (mounted directory worked)"
+            else
+              echo "✗ Coverage file not generated. Tests may have failed."
+              exit ${TEST_EXIT_CODE:-1}
+            fi
           fi
 
       - name: Validate coverage configuration
