@@ -93,8 +93,15 @@ class Event_Query {
 	 * @return string|null The pre-rendered content. Default null.
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
-		if ( isset( $parsed_block['attrs']['namespace'] ) && self::BLOCK_NAME === $parsed_block['attrs']['namespace'] ) {
-			if ( isset( $parsed_block['attrs']['query']['inherit'] ) && true === $parsed_block['attrs']['query']['inherit'] ) {
+		// Check if this is our event query block by verifying the namespace attribute.
+		if (
+			isset( $parsed_block['attrs']['namespace'] ) &&
+			self::BLOCK_NAME === $parsed_block['attrs']['namespace']
+		) {
+			if (
+				isset( $parsed_block['attrs']['query']['inherit'] ) &&
+				true === $parsed_block['attrs']['query']['inherit']
+			) {
 				global $wp_query;
 
 				$query_args = array_merge(
@@ -126,7 +133,8 @@ class Event_Query {
 					true,
 				);
 				// "Hijack the global query. It's a hack, but it works." Ryan Welcher.
-				$wp_query = new WP_Query( $filtered_query_args ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+				$wp_query = new WP_Query( $filtered_query_args );
 			} else {
 				add_filter(
 					'query_loop_block_query_vars',
@@ -189,7 +197,8 @@ class Event_Query {
 		// Exclude Posts.
 		$exclude_ids = $this->get_exclude_ids( $block_query );
 		if ( ! empty( $exclude_ids ) ) {
-			$query_args['post__not_in'] = $exclude_ids; // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			$query_args['post__not_in'] = $exclude_ids;
 		}
 
 		if ( isset( $block_query['include_unfinished'] ) ) {
@@ -240,10 +249,11 @@ class Event_Query {
 		// Exclusion Related.
 		$exclude_current = $request->get_param( 'exclude_current' );
 		if ( $exclude_current ) {
-			$attributes                  = array(
+			$attributes = array(
 				'exclude_current' => $exclude_current,
 			);
-			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes );
 		}
 
 		$include_unfinished = $request->get_param( 'include_unfinished' );

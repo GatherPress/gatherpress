@@ -103,7 +103,9 @@ class Rsvp_Response {
 
 		$rsvp               = new Rsvp( $post_id );
 		$tag                = new WP_HTML_Tag_Processor( $block_content );
-		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ? (string) $block['attrs']['rsvpLimitEnabled'] : '0';
+		$rsvp_limit_enabled = isset( $block['attrs']['rsvpLimitEnabled'] ) ?
+			(string) $block['attrs']['rsvpLimitEnabled'] :
+			'0';
 		$rsvp_limit         = isset( $block['attrs']['rsvpLimit'] ) ? (string) $block['attrs']['rsvpLimit'] : '8';
 
 		if ( $tag->next_tag() ) {
@@ -210,7 +212,11 @@ class Rsvp_Response {
 
 				if (
 					$current_class &&
-					preg_match( '/gatherpress--is-(attending|waiting-list|not-attending)/', $current_class, $matches ) &&
+					preg_match(
+						'/gatherpress--is-(attending|waiting-list|not-attending)/',
+						$current_class,
+						$matches
+					) &&
 					$tag->next_tag( array( 'tag_name' => 'a' ) )
 				) {
 					// Change for needed format.

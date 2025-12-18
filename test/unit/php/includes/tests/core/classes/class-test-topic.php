@@ -96,8 +96,8 @@ class Test_Topic extends Base {
 		// Restore default locale for following tests.
 		switch_to_locale( 'en_US' );
 
-		// This also checks that the taxonomy is still registered with the same 'Admin menu and taxonomy singular name' label,
-		// which is used by the method under test and the test itself.
+		// This also checks that the taxonomy is still registered with the same
+		// 'Admin menu and taxonomy singular name' label, which is used by the method under test and the test itself.
 		$filter = static function ( string $translation, string $text, string $context ): string {
 			if ( 'Topic' !== $text || 'Admin menu and taxonomy singular name' !== $context ) {
 				return $translation;

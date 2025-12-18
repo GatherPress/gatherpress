@@ -126,8 +126,8 @@ class Test_Venue extends Base {
 		// Restore default locale for following tests.
 		switch_to_locale( 'en_US' );
 
-		// This also checks that the post type is still registered with the same 'Admin menu and post type singular name' label,
-		// which is used by the method under test and the test itself.
+		// This checks that the post type is still registered with the same
+		// 'Admin menu and post type singular name' label, used by the method under test.
 		$filter = static function ( string $translation, string $text, string $context ): string {
 			if ( 'Venue' !== $text || 'Admin menu and post type singular name' !== $context ) {
 				return $translation;
@@ -188,13 +188,21 @@ class Test_Venue extends Base {
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertArrayNotHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does not exist.' );
+		$this->assertArrayNotHasKey(
+			'gatherpress_venue_information',
+			$meta,
+			'Failed to assert that gatherpress_venue_information does not exist.'
+		);
 
 		$instance->register_post_meta();
 
 		$meta = get_registered_meta_keys( 'post', Venue::POST_TYPE );
 
-		$this->assertArrayHasKey( 'gatherpress_venue_information', $meta, 'Failed to assert that gatherpress_venue_information does exist.' );
+		$this->assertArrayHasKey(
+			'gatherpress_venue_information',
+			$meta,
+			'Failed to assert that gatherpress_venue_information does exist.'
+		);
 	}
 
 	/**

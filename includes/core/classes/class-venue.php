@@ -104,8 +104,16 @@ class Venue {
 			self::POST_TYPE,
 			array(
 				'labels'       => array(
-					'name'                     => _x( 'Venues', 'Admin menu and post type general name', 'gatherpress' ),
-					'singular_name'            => _x( 'Venue', 'Admin menu and post type singular name', 'gatherpress' ),
+					'name'                     => _x(
+						'Venues',
+						'Admin menu and post type general name',
+						'gatherpress'
+					),
+					'singular_name'            => _x(
+						'Venue',
+						'Admin menu and post type singular name',
+						'gatherpress'
+					),
 					'add_new'                  => __( 'Add New', 'gatherpress' ),
 					'add_new_item'             => __( 'Add New Venue', 'gatherpress' ),
 					'edit_item'                => __( 'Edit Venue', 'gatherpress' ),
@@ -133,7 +141,11 @@ class Venue {
 					'item_scheduled'           => __( 'Venue scheduled.', 'gatherpress' ),
 					'item_updated'             => __( 'Venue updated.', 'gatherpress' ),
 					'item_link'                => _x( 'Venue Link', 'Block editor link label', 'gatherpress' ),
-					'item_link_description'    => _x( 'A link to a venue.', 'Block editor link description', 'gatherpress' ),
+					'item_link_description'    => _x(
+						'A link to a venue.',
+						'Block editor link description',
+						'gatherpress'
+					),
 				),
 				'show_in_rest' => true,
 				'rest_base'    => 'gatherpress_venues',
@@ -227,7 +239,8 @@ class Venue {
 	 * This taxonomy, programmatically managed and linked to the Venue post type, is hidden from users
 	 * and designed for internal purposes only. Slugs for taxonomy terms are prefixed with an underscore,
 	 * emphasizing their programmatic nature and ensuring they remain uneditable through the WordPress UI.
-	 * It supports query var and REST API interactions but is entirely excluded from the admin UI and user-facing interfaces.
+	 * It supports query var and REST API interactions but is entirely excluded from the admin UI
+	 * and user-facing interfaces.
 	 *
 	 * @since 1.0.0
 	 *

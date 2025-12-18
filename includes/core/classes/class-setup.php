@@ -127,8 +127,9 @@ class Setup {
 	public function filter_plugin_action_links( array $actions ): array {
 		return array_merge(
 			array(
-				'settings' => '<a href="' . esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) . '">'
-					. esc_html__( 'Settings', 'gatherpress' ) . '</a>',
+				'settings' => '<a href="' .
+					esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) .
+					'">' . esc_html__( 'Settings', 'gatherpress' ) . '</a>',
 			),
 			$actions
 		);
@@ -225,11 +226,13 @@ class Setup {
 		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
 			return;
 		}
-		$content = '<h2>' . __( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) . '</h2>'
+		$content = '<h2>' .
+			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
+			'</h2>'
 				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'default' ) . '</strong> '
 				. sprintf(
-					/* translators: %1$s: privacy policy URL of the OpenStreetMap foundation */
-					__( 'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. This data is processed according to their <a href="%1$s" target="_blank">privacy policy</a>. For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.', 'gatherpress' ),
+					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
+					__( 'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. This data is processed according to their <a href="%1$s" target="_blank">privacy policy</a>. For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 					'https://osmfoundation.org/wiki/Privacy_Policy'
 				)
 				. '</p>';
@@ -238,8 +241,8 @@ class Setup {
 	/**
 	 * Add GatherPress-specific body classes to the existing body classes.
 	 *
-	 * This method appends custom body classes, such as 'gatherpress-enabled' and 'gatherpress-theme-{theme-name}',
-	 * to the array of existing body classes.
+	 * This method appends custom body classes, such as 'gatherpress-enabled' and
+	 * 'gatherpress-theme-{theme-name}', to the array of existing body classes.
 	 *
 	 * @since 1.0.0
 	 *
@@ -358,10 +361,10 @@ class Setup {
 	 * Creates necessary database tables for the GatherPress plugin.
 	 *
 	 * This method creates the required database tables for storing event and RSVP data.
-	 * It constructs SQL queries for creating the tables with appropriate charset and
-	 * collation, and then executes these queries using the `dbDelta` function to ensure
-	 * the tables are created or updated as necessary. Additionally, it calls methods to
-	 * add the online event term and to set a flag for flushing rewrite rules.
+	 * It constructs SQL queries for creating the tables with appropriate charset and collation,
+	 * and then executes these queries using the `dbDelta` function to ensure the tables are created
+	 * or updated as necessary. Additionally, it calls methods to add the online event term
+	 * and to set a flag for flushing rewrite rules.
 	 *
 	 * @since 1.0.0
 	 *
@@ -420,10 +423,8 @@ class Setup {
 		}
 
 		wp_admin_notice(
-			__(
-				'The GatherPress Alpha plugin is not installed or activated. This plugin is currently in heavy development and requires GatherPress Alpha to handle breaking changes. Please <a href="https://github.com/GatherPress/gatherpress-alpha" target="_blank">download and install GatherPress Alpha</a> to ensure compatibility and avoid issues.',
-				'gatherpress'
-			),
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			__( 'The GatherPress Alpha plugin is not installed or activated. This plugin is currently in heavy development and requires GatherPress Alpha to handle breaking changes. Please <a href="https://github.com/GatherPress/gatherpress-alpha" target="_blank">download and install GatherPress Alpha</a> to ensure compatibility and avoid issues.', 'gatherpress' ),
 			array(
 				'type'        => 'warning',
 				'dismissible' => true,

@@ -241,8 +241,20 @@ class User {
 			return;
 		}
 
-		update_user_meta( $user_id, 'gatherpress_event_updates_opt_in', intval( Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) ) );
-		update_user_meta( $user_id, 'gatherpress_time_format', Utility::get_http_input( INPUT_POST, 'gatherpress_time_format' ) );
-		update_user_meta( $user_id, 'gatherpress_timezone', Utility::get_http_input( INPUT_POST, 'gatherpress_timezone' ) );
+		update_user_meta(
+			$user_id,
+			'gatherpress_event_updates_opt_in',
+			intval( Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ) )
+		);
+		update_user_meta(
+			$user_id,
+			'gatherpress_time_format',
+			Utility::get_http_input( INPUT_POST, 'gatherpress_time_format' )
+		);
+		update_user_meta(
+			$user_id,
+			'gatherpress_timezone',
+			Utility::get_http_input( INPUT_POST, 'gatherpress_timezone' )
+		);
 	}
 }

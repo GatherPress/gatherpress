@@ -432,7 +432,9 @@ class Test_Rsvp_Form extends Base {
 		// Verify hooks are registered (returns priority, not boolean).
 		$this->assertNotFalse( has_filter( 'preprocess_comment', array( $instance, 'preprocess_rsvp_comment' ) ) );
 		$this->assertNotFalse( has_action( 'comment_post', array( $instance, 'handle_rsvp_comment_post' ) ) );
-		$this->assertNotFalse( has_filter( 'comment_post_redirect', array( $instance, 'handle_rsvp_comment_redirect' ) ) );
+		$this->assertNotFalse(
+			has_filter( 'comment_post_redirect', array( $instance, 'handle_rsvp_comment_redirect' ) )
+		);
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_METHOD'] );
@@ -780,7 +782,10 @@ class Test_Rsvp_Form extends Base {
 
 		// Check that custom fields were processed.
 		$this->assertEquals( 'Test Value', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true ) );
-		$this->assertEquals( 'test@example.com', get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_2', true ) );
+		$this->assertEquals(
+			'test@example.com',
+			get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_2', true )
+		);
 	}
 
 	/**

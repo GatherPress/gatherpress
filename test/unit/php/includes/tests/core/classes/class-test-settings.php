@@ -149,8 +149,15 @@ class Test_Settings extends Base {
 	public function test_render_settings_form(): void {
 		$instance = Settings::get_instance();
 
-		$response = Utility::buffer_and_return( array( $instance, 'render_settings_form' ), array( 'gatherpress_general' ) );
-		$this->assertStringContainsString( 'value=\'gatherpress_general\'', $response, 'Failed to assert general form rendered.' );
+		$response = Utility::buffer_and_return(
+			array( $instance, 'render_settings_form' ),
+			array( 'gatherpress_general' )
+		);
+		$this->assertStringContainsString(
+			'value=\'gatherpress_general\'',
+			$response,
+			'Failed to assert general form rendered.'
+		);
 	}
 
 	/**
@@ -183,7 +190,8 @@ class Test_Settings extends Base {
 			'Failed to assert that label matches.'
 		);
 		$this->assertStringContainsString(
-			'<input id="gatherpress_option" type="text" name="sub_page[section][option]" class="regular-text" value="" />',
+			'<input id="gatherpress_option" type="text" name="sub_page[section][option]" ' .
+			'class="regular-text" value="" />',
 			$text,
 			'Failed to assert that input matches.'
 		);
@@ -326,7 +334,8 @@ class Test_Settings extends Base {
 			'Failed to assert that label matches.'
 		);
 		$this->assertStringContainsString(
-			'<input id="gatherpress_option" type="number" name="sub_page[section][option]" class="regular-text" value="" min="1" max="5" />',
+			'<input id="gatherpress_option" type="number" name="sub_page[section][option]" ' .
+			'class="regular-text" value="" min="1" max="5" />',
 			$text,
 			'Failed to assert that input matches.'
 		);
@@ -361,7 +370,10 @@ class Test_Settings extends Base {
 		);
 
 		$this->assertStringContainsString(
-			'<div class="regular-text" data-gatherpress_component_name="autocomplete" data-gatherpress_component_attrs="{&quot;name&quot;:&quot;sub_page[section][option]&quot;,&quot;option&quot;:&quot;gatherpress_option&quot;,&quot;value&quot;:&quot;[]&quot;,&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;}}"></div>',
+			'<div class="regular-text" data-gatherpress_component_name="autocomplete" ' .
+			'data-gatherpress_component_attrs="{&quot;name&quot;:&quot;sub_page[section][option]&quot;,' .
+			'&quot;option&quot;:&quot;gatherpress_option&quot;,&quot;value&quot;:&quot;[]&quot;,' .
+			'&quot;fieldOptions&quot;:{&quot;unit&quot;:&quot;test&quot;}}"></div>',
 			$autocomplete,
 			'Failed to assert that markup matches.'
 		);

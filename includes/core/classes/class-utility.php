@@ -234,7 +234,8 @@ class Utility {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string The timezone string representing the system's default timezone. Falls back to a UTC offset representation if a named timezone string is not set.
+	 * @return string The timezone string representing the system's default timezone.
+	 *                Falls back to a UTC offset representation if a named timezone string is not set.
 	 */
 	public static function get_system_timezone(): string {
 		$gmt_offset      = intval( get_option( 'gmt_offset' ) );

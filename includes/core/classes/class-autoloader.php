@@ -53,7 +53,8 @@ class Autoloader {
 				 * add_filter( 'gatherpress_autoloader', 'gatherpress_awesome_autoloader' );
 				 * ```
 				 *
-				 * **Example:** The namespace `GatherPress_Awesome\Setup` would map to `gatherpress-awesome/includes/classes/class-setup.php`.
+				 * **Example:** The namespace `GatherPress_Awesome\Setup` would map to
+			 * `gatherpress-awesome/includes/classes/class-setup.php`.
 				 */
 				$registered_autoloaders = apply_filters( 'gatherpress_autoloader', array() );
 

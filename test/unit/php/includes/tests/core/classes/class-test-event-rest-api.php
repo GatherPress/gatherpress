@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event_Rest_Api.
  *
  * @package GatherPress\Core
- * @since 1.0.0
+ * @since   1.0.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -26,6 +26,7 @@ use WP_REST_Server;
  * @coversDefaultClass \GatherPress\Core\Event_Rest_Api
  */
 class Test_Event_Rest_Api extends Base {
+
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -282,7 +283,11 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertContains( $user_1_id, $recipient_ids, 'Failed to assert user 1 is included in all recipients.' );
 		$this->assertContains( $user_2_id, $recipient_ids, 'Failed to assert user 2 is included in all recipients.' );
 		$this->assertContains( $user_3_id, $recipient_ids, 'Failed to assert user 3 is included in all recipients.' );
-		$this->assertGreaterThanOrEqual( 3, count( $recipients ), 'Failed to assert minimum recipient count for all users.' );
+		$this->assertGreaterThanOrEqual(
+			3,
+			count( $recipients ),
+			'Failed to assert minimum recipient count for all users.'
+		);
 	}
 
 	/**
@@ -351,8 +356,16 @@ class Test_Event_Rest_Api extends Base {
 		$user_recipient      = reset( $user_recipients );
 		$anonymous_recipient = reset( $anonymous_recipients );
 
-		$this->assertEquals( $attending_user_id, $user_recipient['user_id'], 'Failed to assert correct attending user ID.' );
-		$this->assertEquals( 'attendee@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous attendee email.' );
+		$this->assertEquals(
+			$attending_user_id,
+			$user_recipient['user_id'],
+			'Failed to assert correct attending user ID.'
+		);
+		$this->assertEquals(
+			'attendee@example.com',
+			$anonymous_recipient['email'],
+			'Failed to assert correct anonymous attendee email.'
+		);
 	}
 
 	/**
@@ -429,11 +442,26 @@ class Test_Event_Rest_Api extends Base {
 		);
 		$anonymous_recipient = reset( $anonymous_recipient );
 
-		$this->assertFalse( $anonymous_recipient['is_user'], 'Failed to assert anonymous recipient is not marked as user.' );
-		$this->assertEquals( 0, $anonymous_recipient['user_id'], 'Failed to assert anonymous recipient has zero user ID.' );
+		$this->assertFalse(
+			$anonymous_recipient['is_user'],
+			'Failed to assert anonymous recipient is not marked as user.'
+		);
+		$this->assertEquals(
+			0,
+			$anonymous_recipient['user_id'],
+			'Failed to assert anonymous recipient has zero user ID.'
+		);
 		$this->assertEquals( $comment_id, $anonymous_recipient['comment_id'], 'Failed to assert correct comment ID.' );
-		$this->assertEquals( 'anonymous@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous email.' );
-		$this->assertEquals( 'Anonymous Person', $anonymous_recipient['name'], 'Failed to assert correct anonymous name.' );
+		$this->assertEquals(
+			'anonymous@example.com',
+			$anonymous_recipient['email'],
+			'Failed to assert correct anonymous email.'
+		);
+		$this->assertEquals(
+			'Anonymous Person',
+			$anonymous_recipient['name'],
+			'Failed to assert correct anonymous name.'
+		);
 	}
 
 	/**
@@ -625,7 +653,7 @@ class Test_Event_Rest_Api extends Base {
 	 * Verifies that the RSVP form route is properly configured
 	 * with correct methods and callback.
 	 *
-	 * @since 1.0.0
+	 * @since  1.0.0
 	 * @covers ::rsvp_form_route
 	 *
 	 * @return void
@@ -657,7 +685,7 @@ class Test_Event_Rest_Api extends Base {
 	 * Verifies that the Ajax RSVP form submission creates an
 	 * unapproved comment with proper RSVP data.
 	 *
-	 * @since 1.0.0
+	 * @since  1.0.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -727,7 +755,7 @@ class Test_Event_Rest_Api extends Base {
 	 * Verifies that duplicate RSVP submissions are properly rejected
 	 * with appropriate error message.
 	 *
-	 * @since 1.0.0
+	 * @since  1.0.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -770,7 +798,7 @@ class Test_Event_Rest_Api extends Base {
 	 * Verifies that logged-in users with matching email addresses
 	 * have their user ID associated with the RSVP comment.
 	 *
-	 * @since 1.0.0
+	 * @since  1.0.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void

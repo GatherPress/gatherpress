@@ -343,11 +343,19 @@ class Assets {
 			),
 			'settings'     => array(
 				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value(
+					'general',
+					'general',
+					'enable_anonymous_rsvp'
+				) ),
 				'mapPlatform'         => $settings->get_value( 'general', 'general', 'map_platform' ),
 				'maxAttendanceLimit'  => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
 				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
-				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'showTimezone'        => ( 1 === (int) $settings->get_value(
+					'general',
+					'formatting',
+					'show_timezone'
+				) ),
 				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),
 			'urls'         => array(
@@ -532,6 +540,7 @@ class Assets {
 			$error_message = sprintf(
 				/* Translators: %s Name of a block-asset */
 				__(
+					// phpcs:ignore Generic.Files.LineLength.TooLong
 					'You need to run `npm start` or `npm run build` for the "%1$s" block-asset first. %2$s does not exist.',
 					'gatherpress'
 				),

@@ -855,7 +855,11 @@ class Test_Feed extends Base {
 		$result = $this->instance->get_default_event_excerpt( 'This is a test event excerpt.' );
 
 		$this->assertStringContainsString( 'Test Venue', $result, 'Excerpt should contain venue name.' );
-		$this->assertStringContainsString( 'This is a test event excerpt.', $result, 'Excerpt should contain original text.' );
+		$this->assertStringContainsString(
+			'This is a test event excerpt.',
+			$result,
+			'Excerpt should contain original text.'
+		);
 	}
 
 	/**
@@ -893,7 +897,11 @@ class Test_Feed extends Base {
 		$result = $this->instance->get_default_event_content( 'This is the full event content.' );
 
 		$this->assertStringContainsString( 'Conference Center', $result, 'Content should contain venue name.' );
-		$this->assertStringContainsString( 'This is the full event content.', $result, 'Content should contain original text.' );
+		$this->assertStringContainsString(
+			'This is the full event content.',
+			$result,
+			'Content should contain original text.'
+		);
 	}
 
 	/**
@@ -940,7 +948,11 @@ class Test_Feed extends Base {
 
 		// Verify the query was modified.
 		$this->assertEquals( Event::POST_TYPE, $wp_query->get( 'post_type' ), 'Post type should be set to event.' );
-		$this->assertEquals( 'upcoming', $wp_query->get( 'gatherpress_event_query' ), 'Event query type should be upcoming by default.' );
+		$this->assertEquals(
+			'upcoming',
+			$wp_query->get( 'gatherpress_event_query' ),
+			'Event query type should be upcoming by default.'
+		);
 
 		// Clean up.
 		unset( $_SERVER['REQUEST_URI'] );

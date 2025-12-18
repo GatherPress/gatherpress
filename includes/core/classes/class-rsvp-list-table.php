@@ -291,7 +291,8 @@ class RSVP_List_Table extends WP_List_Table {
 						$search_term = '%' . $wpdb->esc_like( $search ) . '%';
 
 						$clauses['where'] .= $wpdb->prepare(
-							" AND (comment_author LIKE %s OR comment_author_email LIKE %s OR {$wpdb->posts}.post_title LIKE %s)",
+							' AND (comment_author LIKE %s OR comment_author_email LIKE %s OR ' .
+							"{$wpdb->posts}.post_title LIKE %s)",
 							$search_term,
 							$search_term,
 							$search_term
@@ -313,7 +314,10 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['post_id'] = intval( $_REQUEST['event'] );
 		}
 
-		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
+		if (
+			isset( $_REQUEST['status'] ) &&
+			in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true )
+		) {
 			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
 
 			if ( 'approved' === $status ) {
@@ -325,7 +329,9 @@ class RSVP_List_Table extends WP_List_Table {
 			}
 		}
 
-		$orderby = isset( $_REQUEST['orderby'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) ) : 'comment_date';
+		$orderby = isset( $_REQUEST['orderby'] )
+			? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) )
+			: 'comment_date';
 		$order   = isset( $_REQUEST['order'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['order'] ) ) : 'DESC';
 
 		$args['orderby'] = $orderby;
@@ -379,7 +385,10 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['post_id'] = intval( $_REQUEST['event'] );
 		}
 
-		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
+		if (
+			isset( $_REQUEST['status'] ) &&
+			in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true )
+		) {
 			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
 
 			if ( 'approved' === $status ) {
@@ -439,7 +448,8 @@ class RSVP_List_Table extends WP_List_Table {
 
 				return $name;
 			case 'event':
-				return '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' . wp_kses_post( $item['event_title'] ) . '</a>';
+				return '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
+					wp_kses_post( $item['event_title'] ) . '</a>';
 			case 'approved':
 				$statuses = array(
 					'1'    => __( 'Approved', 'gatherpress' ),
@@ -634,7 +644,8 @@ class RSVP_List_Table extends WP_List_Table {
 
 		$odd_or_even = 'odd';
 
-		echo '<tr id="' . esc_attr( 'gatherpress-rsvp-' . $item['comment_ID'] ) . '" class="' . esc_attr( 'gatherpress-rsvp ' . $odd_or_even . ' ' . $status ) . '">';
+		echo '<tr id="' . esc_attr( 'gatherpress-rsvp-' . $item['comment_ID'] ) . '" class="' .
+			esc_attr( 'gatherpress-rsvp ' . $odd_or_even . ' ' . $status ) . '">';
 
 		$this->single_row_columns( $item );
 
@@ -658,7 +669,13 @@ class RSVP_List_Table extends WP_List_Table {
 		if ( ! $nonce || ! wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
 			// Check for delete action nonce separately.
 			if ( 'delete' === $this->current_action() ) {
-				if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'gatherpress_rsvp_action' ) ) {
+				if (
+					! isset( $_REQUEST['_wpnonce'] ) ||
+					! wp_verify_nonce(
+						sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ),
+						'gatherpress_rsvp_action'
+					)
+				) {
 					return;
 				}
 			} else {

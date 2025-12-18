@@ -454,7 +454,11 @@ class Test_Rsvp_Query extends Base {
 		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
 
 		// Set up initial cache with known types.
-		set_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY, array( 'comment', 'pingback', 'trackback' ), Rsvp_Query::CACHE_EXPIRATION );
+		set_transient(
+			Rsvp_Query::COMMENT_TYPES_CACHE_KEY,
+			array( 'comment', 'pingback', 'trackback' ),
+			Rsvp_Query::CACHE_EXPIRATION
+		);
 
 		// Create a comment with existing type (should not invalidate).
 		$comment_id = $this->factory->comment->create(
@@ -501,7 +505,11 @@ class Test_Rsvp_Query extends Base {
 		$instance = Rsvp_Query::get_instance();
 
 		// Set up cache.
-		set_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY, array( 'comment', 'pingback' ), Rsvp_Query::CACHE_EXPIRATION );
+		set_transient(
+			Rsvp_Query::COMMENT_TYPES_CACHE_KEY,
+			array( 'comment', 'pingback' ),
+			Rsvp_Query::CACHE_EXPIRATION
+		);
 
 		// Create a regular comment with empty comment_type.
 		$comment_id = $this->factory->comment->create();

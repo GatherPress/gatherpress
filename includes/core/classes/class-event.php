@@ -158,8 +158,14 @@ class Event {
 		string $show_timezone = ''
 	): string {
 		$settings    = Settings::get_instance();
-		$date_format = apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
-		$time_format = apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
+		$date_format = apply_filters(
+			'gatherpress_date_format',
+			$settings->get_value( 'general', 'formatting', 'date_format' )
+		);
+		$time_format = apply_filters(
+			'gatherpress_time_format',
+			$settings->get_value( 'general', 'formatting', 'time_format' )
+		);
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
 
 		$show_start = $type
@@ -282,7 +288,8 @@ class Event {
 	 * @since 1.0.0
 	 *
 	 * @param int $started_offset The time offset, in minutes, to adjust the consideration of the event start time.
-	 *                            A positive value delays the event start, while a negative value checks for an earlier start.
+	 *                            A positive value delays the event start,
+	 *                            while a negative value checks for an earlier start.
 	 *                            Default is 0, checking if the event has started at the exact current time.
 	 * @param int $past_offset    The time offset, in minutes, to adjust the consideration of the event end time.
 	 *                            A positive value extends the period of considering the event ongoing,
@@ -314,7 +321,8 @@ class Event {
 	/**
 	 * Get the end date and time of the event.
 	 *
-	 * This method retrieves the end date and time of the event and formats it according to the specified PHP date format.
+	 * This method retrieves the end date and time of the event and formats it
+	 * according to the specified PHP date format.
 	 *
 	 * @since 1.0.0
 	 *
@@ -432,8 +440,16 @@ class Event {
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
 			$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
-			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM %i WHERE post_id = %d LIMIT 1', $table, $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$data = (array) $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone
+					FROM %i WHERE post_id = %d LIMIT 1',
+					$table,
+					$this->event->ID
+				)
+			);
+			$data = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
 			set_transient( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
 		}
@@ -514,9 +530,11 @@ class Event {
 		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {
-			$venue_meta                        = json_decode( get_post_meta( $venue->ID, 'gatherpress_venue_information', true ) );
-			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_meta = json_decode( get_post_meta( $venue->ID, 'gatherpress_venue_information', true ) );
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_information['full_address'] = $venue_meta->fullAddress ?? '';
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? '';
 			$venue_information['website']      = $venue_meta->website ?? '';
 			$venue_information['latitude']     = $venue_meta->latitude ?? '';
 			$venue_information['longitude']    = $venue_meta->longitude ?? '';
@@ -681,7 +699,9 @@ class Event {
 		$settings     = Settings::get_instance();
 		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
 
-		return home_url( '/' . sanitize_title( $rewrite_slug ) . '/' . get_post_field( 'post_name', $this->event->ID ) . '.ics' );
+		return home_url(
+			'/' . sanitize_title( $rewrite_slug ) . '/' . get_post_field( 'post_name', $this->event->ID ) . '.ics'
+		);
 	}
 
 	/**
@@ -829,16 +849,19 @@ class Event {
 		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo Add caching to this and create new method to check existence.
-		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$exists = $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT post_id FROM %i WHERE post_id = %d', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+				'SELECT post_id FROM %i WHERE post_id = %d',
 				$table,
 				$fields['post_id']
 			)
 		);
 
 		if ( ! empty( $exists ) ) {
-			$value = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$value = $wpdb->update(
 				$table,
 				$fields,
 				array( 'post_id' => $fields['post_id'] )

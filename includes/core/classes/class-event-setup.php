@@ -107,8 +107,16 @@ class Event_Setup {
 			Event::POST_TYPE,
 			array(
 				'labels'        => array(
-					'name'                     => _x( 'Events', 'Admin menu and post type general name', 'gatherpress' ),
-					'singular_name'            => _x( 'Event', 'Admin menu and post type singular name', 'gatherpress' ),
+					'name'                     => _x(
+						'Events',
+						'Admin menu and post type general name',
+						'gatherpress'
+					),
+					'singular_name'            => _x(
+						'Event',
+						'Admin menu and post type singular name',
+						'gatherpress'
+					),
 					'add_new'                  => __( 'Add New', 'gatherpress' ),
 					'add_new_item'             => __( 'Add New Event', 'gatherpress' ),
 					'edit_item'                => __( 'Edit Event', 'gatherpress' ),
@@ -136,7 +144,11 @@ class Event_Setup {
 					'item_scheduled'           => __( 'Event scheduled.', 'gatherpress' ),
 					'item_updated'             => __( 'Event updated.', 'gatherpress' ),
 					'item_link'                => _x( 'Event Link', 'Block editor link label', 'gatherpress' ),
-					'item_link_description'    => _x( 'A link to an event.', 'Block editor link description', 'gatherpress' ),
+					'item_link_description'    => _x(
+						'A link to an event.',
+						'Block editor link description',
+						'gatherpress'
+					),
 				),
 				'show_in_rest'  => true,
 				'rest_base'     => 'gatherpress_events',
@@ -151,7 +163,9 @@ class Event_Setup {
 						'core/paragraph',
 						array(
 							'placeholder' => __(
-								'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
+								'Add a description of the event and let people know what to expect,
+ including the agenda,
+ what they need to bring, and how to find the group.',
 								'gatherpress'
 							),
 						),
@@ -381,7 +395,11 @@ class Event_Setup {
 				$event = new Event( $post->ID );
 
 				header( 'Content-Type: text/calendar; charset=utf-8' );
-				header( 'Content-Disposition: attachment; filename="' . get_post_field( 'post_name', $post->ID ) . '.ics"' );
+				header(
+					'Content-Disposition: attachment; filename="'
+					. get_post_field( 'post_name', $post->ID )
+					. '.ics"'
+				);
 
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ICS content is safely generated and must not be escaped.
 				echo $event->get_ics_calendar_string();
@@ -429,7 +447,8 @@ class Event_Setup {
 
 		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
-		$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete(
 			$table,
 			array(
 				'post_id' => $post_id,
@@ -641,7 +660,8 @@ class Event_Setup {
 	public function rsvp_sorting_join_paged( string $join ): string {
 		global $wpdb;
 
-		$join .= " LEFT JOIN {$wpdb->comments} AS rsvp_sort_comments ON {$wpdb->posts}.ID = rsvp_sort_comments.comment_post_ID";
+		$join .= " LEFT JOIN {$wpdb->comments} AS rsvp_sort_comments"
+		. " ON {$wpdb->posts}.ID = rsvp_sort_comments.comment_post_ID";
 		$join .= " AND rsvp_sort_comments.comment_type = 'gatherpress_rsvp'";
 		$join .= " AND rsvp_sort_comments.comment_approved = '1'";
 
@@ -736,7 +756,9 @@ class Event_Setup {
 		global $wpdb;
 
 		$join .= " LEFT JOIN {$wpdb->term_relationships} AS venue_tr ON {$wpdb->posts}.ID = venue_tr.object_id";
-		$join .= " LEFT JOIN {$wpdb->term_taxonomy} AS venue_tt ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id AND venue_tt.taxonomy = '" . Venue::TAXONOMY . "'";
+		$join .= " LEFT JOIN {$wpdb->term_taxonomy} AS venue_tt"
+		. ' ON venue_tr.term_taxonomy_id = venue_tt.term_taxonomy_id'
+		. " AND venue_tt.taxonomy = '" . Venue::TAXONOMY . "'";
 		$join .= " LEFT JOIN {$wpdb->terms} AS venue_terms ON venue_tt.term_id = venue_terms.term_id";
 
 		return $join;

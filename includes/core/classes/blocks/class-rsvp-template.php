@@ -151,9 +151,13 @@ class Rsvp_Template {
 		}
 
 		// Used for generating a parsed block for calls to API on the front end.
-		$blocks                 = wp_json_encode( $block, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+		$blocks                 = wp_json_encode(
+			$block,
+			JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+		);
 		$rsvp_response_template = sprintf(
-			'<script type="application/json" data-wp-interactive="gatherpress" data-wp-watch="callbacks.renderBlocks">%s</script>',
+			'<script type="application/json" data-wp-interactive="gatherpress"'
+				. ' data-wp-watch="callbacks.renderBlocks">%s</script>',
 			$blocks
 		);
 
@@ -246,7 +250,8 @@ class Rsvp_Template {
 				$block['attrs']['isLink'] = 0;
 
 				// Render the block with context for commentId.
-				$block_html = ( new WP_Block( $block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => true ) );
+				$block_html = ( new WP_Block( $block, array( 'commentId' => $response_id ) ) )
+					->render( array( 'dynamic' => true ) );
 
 				// Process HTML to update text.
 				$tag = new WP_HTML_Tag_Processor( $block_html );
@@ -254,7 +259,11 @@ class Rsvp_Template {
 				$tag->next_token();
 
 				$tag->set_modifiable_text(
-					esc_html_x( 'Anonymous', 'Label for users who wish to remain anonymous in RSVP responses.', 'gatherpress' )
+					esc_html_x(
+						'Anonymous',
+						'Label for users who wish to remain anonymous in RSVP responses.',
+						'gatherpress'
+					)
 				);
 				$block_html = $tag->get_updated_html();
 

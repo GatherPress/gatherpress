@@ -145,7 +145,11 @@ class Test_Block extends Base {
 
 		$this->assertSame(
 			'Unit_Test',
-			Utility::invoke_hidden_method( $instance, 'get_classname_from_foldername', array( '/src/variations/unit-test' ) ),
+			Utility::invoke_hidden_method(
+				$instance,
+				'get_classname_from_foldername',
+				array( '/src/variations/unit-test' )
+			),
 			'Failed to assert, to get class name from foldername.'
 		);
 	}
@@ -184,7 +188,8 @@ class Test_Block extends Base {
 	 */
 	public function test_docs_contain_patterns(): void {
 
-		$doc_file = file_get_contents( // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$doc_file = file_get_contents(
 			sprintf(
 				'%s/docs/%s',
 				GATHERPRESS_CORE_PATH,

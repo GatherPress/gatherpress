@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Disable shallow clone for SonarCloud analysis
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
