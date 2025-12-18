@@ -50,9 +50,22 @@ jobs:
         run: npm run test:unit:php
         continue-on-error: true  # Continue even if tests fail to show coverage report
 
-      - name: Copy coverage file from container
+      - name: Debug - Check for coverage file
         run: |
-          docker cp $(docker ps -qf "name=tests-wordpress"):/var/www/html/wp-content/plugins/gatherpress/coverage.xml ./coverage.xml || echo "Coverage file already exists on host"
+          echo "Checking for coverage.xml in various locations..."
+          ls -la coverage.xml 2>/dev/null || echo "Not found in root"
+          ls -la build/ 2>/dev/null || echo "No build directory"
+          find . -name "coverage.xml" -type f 2>/dev/null || echo "No coverage.xml found anywhere"
+          docker exec $(docker ps -qf "name=tests-wordpress") ls -la /var/www/html/wp-content/plugins/gatherpress/coverage.xml 2>/dev/null || echo "Not found in container"
+
+      - name: Copy coverage file from container if needed
+        run: |
+          if [ ! -f coverage.xml ]; then
+            echo "Coverage file not found on host, copying from container..."
+            docker cp $(docker ps -qf "name=tests-wordpress"):/var/www/html/wp-content/plugins/gatherpress/coverage.xml ./coverage.xml || echo "Failed to copy from container"
+          else
+            echo "Coverage file already exists on host"
+          fi
 
       - name: Validate coverage configuration
         run: php .github/scripts/validate-coverage-config.php
