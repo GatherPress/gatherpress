@@ -40,32 +40,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer install --prefer-dist --no-progress
-          npm ci
-
-      - name: Start WordPress environment
-        run: npm run wp-env start
+          composer install --optimize-autoloader --prefer-dist
+          npm i -g @wordpress/env
+          npm install
+          npm run build
 
       - name: Run PHP unit tests with coverage
-        run: |
-          echo "Running PHPUnit tests with coverage..."
-          npm run test:unit:php || TEST_EXIT_CODE=$?
-          echo "Test exit code: ${TEST_EXIT_CODE:-0}"
+        run: npm run test:unit:php
+        continue-on-error: true  # Continue even if tests fail to show coverage report
 
-          echo "Checking if coverage was generated..."
-          if docker exec $(docker ps -qf "name=tests-wordpress") test -f /var/www/html/wp-content/plugins/gatherpress/coverage.xml; then
-            echo "✓ Coverage file exists in container"
-            docker cp $(docker ps -qf "name=tests-wordpress"):/var/www/html/wp-content/plugins/gatherpress/coverage.xml ./coverage.xml
-            echo "✓ Coverage file copied to host"
-          else
-            echo "✗ Coverage file not found in container - checking mounted directory..."
-            if [ -f coverage.xml ]; then
-              echo "✓ Coverage file found on host (mounted directory worked)"
-            else
-              echo "✗ Coverage file not generated. Tests may have failed."
-              exit ${TEST_EXIT_CODE:-1}
-            fi
-          fi
+      - name: Copy coverage file from container
+        run: docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
 
       - name: Validate coverage configuration
         run: php .github/scripts/validate-coverage-config.php
