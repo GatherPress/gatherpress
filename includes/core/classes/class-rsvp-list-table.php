@@ -709,21 +709,13 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array An array of HTML links for different views.
 	 */
 	public function get_views(): array {
-		$rsvp_query     = Rsvp_Query::get_instance();
-		$status_links   = array();
-		$current        = 'all';
-		$nonce_verified = false;
-
-		if ( isset( $_REQUEST['_wpnonce'] ) ) {
-			$nonce = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
-
-			if ( wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
-				$nonce_verified = true;
-			}
-		}
+		$rsvp_query   = Rsvp_Query::get_instance();
+		$status_links = array();
+		$current      = 'all';
 
 		// Check for post_id filter.
 		$post_id = 0;
+
 		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
 			$post_id = intval( $_REQUEST['post_id'] );
 		}
@@ -754,6 +746,7 @@ class RSVP_List_Table extends WP_List_Table {
 
 		// Base args for count queries.
 		$count_base_args = array( 'count' => true );
+
 		if ( $post_id ) {
 			$count_base_args['post_id'] = $post_id;
 		}
