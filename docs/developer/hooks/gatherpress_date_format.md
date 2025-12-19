@@ -20,7 +20,10 @@ add_filter(
 
 - [includes/core/classes/class-event.php:161](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-event.php#L161)
 ```php
-apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) )
+apply_filters(
+			'gatherpress_date_format',
+			$settings->get_value( 'general', 'formatting', 'date_format' )
+		)
 ```
 
 
