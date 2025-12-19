@@ -200,8 +200,8 @@ class Dropdown {
 					if ( $item_index === (int) $selected_index ) {
 						$existing_class = $tag->get_attribute( 'class' );
 						$new_class      = $existing_class
-						? $existing_class . ' gatherpress--is-disabled'
-						: 'gatherpress--is-disabled';
+							? $existing_class . ' gatherpress--is-disabled'
+							: 'gatherpress--is-disabled';
 
 						$tag->set_attribute( 'class', $new_class );
 						$tag->set_attribute( 'tabindex', '-1' );
