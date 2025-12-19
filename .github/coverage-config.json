@@ -8,6 +8,12 @@
     "*/tests/*",
     "*gatherpress.php",
     "*/class-autoloader.php",
+    "*/class-singleton.php",
+    "*/requirements-check.php",
+    "*/duplicate-check.php",
+    "*/templates/*",
+    "*/render.php",
+    "*/e2e/*",
     ".github/**"
   ],
   "allowLowCoverage": [

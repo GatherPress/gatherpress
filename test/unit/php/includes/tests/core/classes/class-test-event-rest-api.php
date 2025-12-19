@@ -3,7 +3,7 @@
  * Class handles unit tests for GatherPress\Core\Event_Rest_Api.
  *
  * @package GatherPress\Core
- * @since   1.0.0
+ * @since 1.0.0
  */
 
 namespace GatherPress\Tests\Core;
@@ -26,7 +26,6 @@ use WP_REST_Server;
  * @coversDefaultClass \GatherPress\Core\Event_Rest_Api
  */
 class Test_Event_Rest_Api extends Base {
-
 	/**
 	 * Coverage for setup_hooks method.
 	 *
@@ -653,7 +652,7 @@ class Test_Event_Rest_Api extends Base {
 	 * Verifies that the RSVP form route is properly configured
 	 * with correct methods and callback.
 	 *
-	 * @since  1.0.0
+	 * @since 1.0.0
 	 * @covers ::rsvp_form_route
 	 *
 	 * @return void
@@ -685,7 +684,7 @@ class Test_Event_Rest_Api extends Base {
 	 * Verifies that the Ajax RSVP form submission creates an
 	 * unapproved comment with proper RSVP data.
 	 *
-	 * @since  1.0.0
+	 * @since 1.0.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -755,7 +754,7 @@ class Test_Event_Rest_Api extends Base {
 	 * Verifies that duplicate RSVP submissions are properly rejected
 	 * with appropriate error message.
 	 *
-	 * @since  1.0.0
+	 * @since 1.0.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void
@@ -798,7 +797,7 @@ class Test_Event_Rest_Api extends Base {
 	 * Verifies that logged-in users with matching email addresses
 	 * have their user ID associated with the RSVP comment.
 	 *
-	 * @since  1.0.0
+	 * @since 1.0.0
 	 * @covers ::handle_rsvp_form_submission
 	 *
 	 * @return void

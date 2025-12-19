@@ -1200,4 +1200,213 @@ class Test_RSVP_List_Table extends Base {
 
 		unset( $_REQUEST['gatherpress_rsvp_id'], $_REQUEST['action'], $_REQUEST['_wpnonce'] );
 	}
+
+	/**
+	 * Tests prepare_items with text search.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_text_search(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['s'] = 'Test';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with search.'
+		);
+
+		unset( $_REQUEST['s'] );
+	}
+
+	/**
+	 * Tests prepare_items with IP address search.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_ip_search(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['s'] = '192.168.1.1';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with IP search.'
+		);
+
+		unset( $_REQUEST['s'] );
+	}
+
+	/**
+	 * Tests prepare_items with user_id filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_user_id_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$_REQUEST['user_id'] = $user_id;
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with user_id filter.'
+		);
+
+		unset( $_REQUEST['user_id'] );
+	}
+
+	/**
+	 * Tests prepare_items with post_id filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_post_id_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['post_id'] = $this->event_id;
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with post_id filter.'
+		);
+
+		unset( $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * Tests prepare_items with event filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_event_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['event'] = $this->event_id;
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with event filter.'
+		);
+
+		unset( $_REQUEST['event'] );
+	}
+
+	/**
+	 * Tests prepare_items with approved status filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_approved_status_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['status'] = 'approved';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with approved status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests prepare_items with pending status filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_pending_status_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['status'] = 'pending';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with pending status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests prepare_items with spam status filter.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_spam_status_filter(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['status'] = 'spam';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with spam status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests prepare_items with custom orderby and order.
+	 *
+	 * @covers ::prepare_items
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_prepare_items_with_custom_order(): void {
+		set_current_screen( 'gatherpress_event_page_gatherpress_rsvp' );
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$_REQUEST['orderby'] = 'comment_author';
+		$_REQUEST['order']   = 'ASC';
+
+		$this->list_table->prepare_items();
+
+		$this->assertIsArray(
+			$this->list_table->items,
+			'Failed to assert items is an array after prepare_items with custom order.'
+		);
+
+		unset( $_REQUEST['orderby'], $_REQUEST['order'] );
+	}
 }

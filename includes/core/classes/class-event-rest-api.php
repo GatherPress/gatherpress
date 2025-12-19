@@ -466,7 +466,11 @@ class Event_Rest_Api {
 					continue;
 				}
 			} elseif (
-			'0' === get_comment_meta( $recipient['comment_id'], 'gatherpress_event_updates_opt_in', true )
+				'0' === get_comment_meta(
+					$recipient['comment_id'],
+					'gatherpress_event_updates_opt_in',
+					true
+				)
 			) {
 				// For non-user RSVPs, check comment meta.
 				continue;
@@ -670,8 +674,8 @@ class Event_Rest_Api {
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
 					'current_user'             => ( $current_user_rsvp ) ? $current_user_rsvp : '',
 					'venue'                    => ( $venue_information['name'] )
-					? $event->get_venue_information()
-					: null,
+						? $event->get_venue_information()
+						: null,
 				);
 			}
 		}

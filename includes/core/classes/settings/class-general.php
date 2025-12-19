@@ -89,8 +89,8 @@ class General extends Base {
 			'general'    => array(
 				'name'        => __( 'General Settings', 'gatherpress' ),
 				'description' => __(
-					'GatherPress allows you to set event dates to reflect either the post date or event date.
-					Default: event date.',
+					// phpcs:ignore Generic.Files.LineLength.TooLong
+					'GatherPress allows you to set event dates to reflect either the post date or event date. Default: event date.',
 					'gatherpress'
 				),
 				'options'     => array(
@@ -128,9 +128,8 @@ class General extends Base {
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
 						),
 						'description' => __(
-							'Set this as your default, but you can still override it for each event as you like.
-						This is the total number of people allowed at an event.
-						If you set it to 0, there will not be any limit.',
+							// phpcs:ignore Generic.Files.LineLength.TooLong
+							'Set this as your default, but you can still override it for each event as you like. This is the total number of people allowed at an event. If you set it to 0, there will not be any limit.',
 							'gatherpress'
 						),
 						'field'       => array(
@@ -185,9 +184,8 @@ class General extends Base {
 			'formatting' => array(
 				'name'        => __( 'Date & Time Formatting', 'gatherpress' ),
 				'description' => __(
-					'For more information read the
-					<a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">
-					Documentation on date and time formatting</a>.',
+					// phpcs:ignore Generic.Files.LineLength.TooLong
+					'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/"> Documentation on date and time formatting</a>.',
 					'gatherpress'
 				),
 				'options'     => array(

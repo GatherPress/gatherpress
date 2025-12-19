@@ -163,9 +163,8 @@ class Event_Setup {
 						'core/paragraph',
 						array(
 							'placeholder' => __(
-								'Add a description of the event and let people know what to expect,
- including the agenda,
- what they need to bring, and how to find the group.',
+								// phpcs:ignore Generic.Files.LineLength.TooLong
+								'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
 								'gatherpress'
 							),
 						),
@@ -447,7 +446,7 @@ class Event_Setup {
 
 		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->delete(
 			$table,
 			array(

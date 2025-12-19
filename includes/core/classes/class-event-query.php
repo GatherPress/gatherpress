@@ -394,7 +394,7 @@ class Event_Query {
 			'limits'   => '',
 		);
 		$pieces   = array_merge( $defaults, $pieces );
-		// Could also be (just) $wpdb->{gatherpress_events}.
+
 		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID='
 						. esc_sql( $table ) . '.post_id';
