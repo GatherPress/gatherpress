@@ -96,7 +96,19 @@ class Test_Utility extends Base {
 	 */
 	public function test_timezone_choices(): void {
 		$timezones = Utility::timezone_choices();
-		$keys      = array( 'Africa', 'America', 'Antarctica', 'Arctic', 'Asia', 'Atlantic', 'Australia', 'Europe', 'Indian', 'UTC', 'Manual Offsets' );
+		$keys      = array(
+			'Africa',
+			'America',
+			'Antarctica',
+			'Arctic',
+			'Asia',
+			'Atlantic',
+			'Australia',
+			'Europe',
+			'Indian',
+			'UTC',
+			'Manual Offsets',
+		);
 
 		$this->assertIsArray( $timezones );
 
@@ -227,7 +239,8 @@ class Test_Utility extends Base {
 	 * @covers ::get_system_timezone
 	 *
 	 * @param int|boolean    $gmt_offset      The GMT offset to simulate getting from WordPress settings for testing.
-	 * @param string|boolean $timezone_string The timezone string to simulate getting from WordPress settings for testing.
+	 * @param string|boolean $timezone_string The timezone string to simulate getting from WordPress settings
+	 *                                        for testing.
 	 * @param string         $expects         The expected timezone string result from get_system_timezone.
 	 *
 	 * @return void
@@ -333,7 +346,11 @@ class Test_Utility extends Base {
 		$authenticated_user_id = Utility::ensure_user_authentication();
 
 		$this->assertSame( $test_user_id, $authenticated_user_id, 'Should return the authenticated user ID' );
-		$this->assertSame( $test_user_id, get_current_user_id(), 'Current user should be set to the authenticated user' );
+		$this->assertSame(
+			$test_user_id,
+			get_current_user_id(),
+			'Current user should be set to the authenticated user'
+		);
 
 		// Clean up.
 		wp_set_current_user( 0 );
@@ -465,7 +482,12 @@ class Test_Utility extends Base {
 	 *
 	 * @return void
 	 */
-	public function test_has_css_class( ?string $class_string, string $target_class, bool $expected, string $message ): void {
+	public function test_has_css_class(
+		?string $class_string,
+		string $target_class,
+		bool $expected,
+		string $message
+	): void {
 		$this->assertSame(
 			$expected,
 			Utility::has_css_class( $class_string, $target_class ),
@@ -546,7 +568,11 @@ class Test_Utility extends Base {
 
 		// Test HTML sanitization with wp_kses_post.
 		$result = Utility::get_http_input( INPUT_POST, 'html_field', 'wp_kses_post' );
-		$this->assertEquals( 'alert("XSS")Hello', $result, 'Script tags should be removed by wp_kses_post, content preserved.' );
+		$this->assertEquals(
+			'alert("XSS")Hello',
+			$result,
+			'Script tags should be removed by wp_kses_post, content preserved.'
+		);
 
 		// Test custom sanitization function.
 		$result = Utility::get_http_input(

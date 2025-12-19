@@ -83,13 +83,21 @@ class Test_Setup extends Base {
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ),
+				'name'     => sprintf(
+					'plugin_action_links_%s/%s',
+					basename( GATHERPRESS_CORE_PATH ),
+					basename( GATHERPRESS_CORE_FILE )
+				),
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
 			),
 			array(
 				'type'     => 'filter',
-				'name'     => sprintf( 'network_admin_plugin_action_links_%s/%s', basename( GATHERPRESS_CORE_PATH ), basename( GATHERPRESS_CORE_FILE ) ),
+				'name'     => sprintf(
+					'network_admin_plugin_action_links_%s/%s',
+					basename( GATHERPRESS_CORE_PATH ),
+					basename( GATHERPRESS_CORE_FILE )
+				),
 				'priority' => 10,
 				'callback' => array( $instance, 'filter_plugin_action_links' ),
 			),
@@ -119,8 +127,11 @@ class Test_Setup extends Base {
 			$response['unit-test'],
 			'Failed to assert unit-test link matches.'
 		);
+		$expected_url = esc_url(
+			admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' )
+		);
 		$this->assertSame(
-			'<a href="' . esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_general' ) ) . '">Settings</a>',
+			'<a href="' . $expected_url . '">Settings</a>',
 			$response['settings'],
 			'Failed to assert settings link matches.'
 		);

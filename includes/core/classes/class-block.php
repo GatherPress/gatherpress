@@ -196,7 +196,10 @@ class Block {
 					// Even this paragraph seems useless, it's not.
 					// It is the entry point for all our hooked blocks
 					// and as such absolutely important!
-					'content'  => '<!-- wp:post-featured-image /--><!-- wp:paragraph {"placeholder":"Add some infos about the venue and maybe a nice picture."} --><p></p><!-- /wp:paragraph -->', // Other blocks are hooked-in here.
+					// Other blocks are hooked-in here.
+					'content'  => '<!-- wp:post-featured-image /--><!-- wp:paragraph ' .
+						'{"placeholder":"Add some infos about the venue and maybe a nice picture."} -->' .
+						'<p></p><!-- /wp:paragraph -->',
 					'inserter' => false,
 					'source'   => 'plugin',
 				),
@@ -231,12 +234,20 @@ class Block {
 	 * @see https://developer.wordpress.org/reference/hooks/hooked_block_types/
 	 *
 	 * @param string[]                $hooked_block_types The list of hooked block types.
-	 * @param string                  $relative_position  The relative position of the hooked blocks. Can be one of 'before', 'after', 'first_child', or 'last_child'.
+	 * @param string                  $relative_position  The relative position of the hooked blocks.
+	 *                                                    Can be one of 'before', 'after',
+	 *                                                    'first_child', or 'last_child'.
 	 * @param string                  $anchor_block_type  The anchor block type.
-	 * @param WP_Block_Template|array $context            The block template, template part, or pattern that the anchor block belongs to.
+	 * @param WP_Block_Template|array $context            The block template, template part, or pattern
+	 *                                                    that the anchor block belongs to.
 	 * @return string[]               The list of hooked block types.
 	 */
-	public function hook_blocks_into_patterns( array $hooked_block_types, string $relative_position, ?string $anchor_block_type, $context ): array {
+	public function hook_blocks_into_patterns(
+		array $hooked_block_types,
+		string $relative_position,
+		?string $anchor_block_type,
+		$context
+	): array {
 		// Check that the place to hook into is a pattern.
 		if ( ! is_array( $context ) || ! isset( $context['name'] ) ) {
 			return $hooked_block_types;
@@ -278,15 +289,24 @@ class Block {
 	 *
 	 * @see https://developer.wordpress.org/reference/hooks/hooked_block_hooked_block_type/
 	 *
-	 * @param array|null                      $parsed_hooked_block The parsed block array for the given hooked block type, or null to suppress the block.
+	 * @param array|null                      $parsed_hooked_block The parsed block array for the given
+	 *                                                             hooked block type, or null to suppress the block.
 	 * @param string                          $hooked_block_type   The hooked block type name.
 	 * @param string                          $relative_position   The relative position of the hooked block.
 	 * @param array                           $parsed_anchor_block The anchor block, in parsed block array format.
-	 * @param WP_Block_Template|WP_Post|array $context             The block template, template part, `wp_navigation` post type,
-	 *                                                             or pattern that the anchor block belongs to.
-	 * @return array|null                     The parsed block array for the given hooked block type, or null to suppress the block.
+	 * @param WP_Block_Template|WP_Post|array $context             The block template, template part,
+	 *                                                             `wp_navigation` post type, or pattern
+	 *                                                             that the anchor block belongs to.
+	 * @return array|null                     The parsed block array for the given hooked block type,
+	 *                                        or null to suppress the block.
 	 */
-	public function modify_hooked_blocks_in_patterns( ?array $parsed_hooked_block, string $hooked_block_type, string $relative_position, array $parsed_anchor_block, $context ): ?array {
+	public function modify_hooked_blocks_in_patterns(
+		?array $parsed_hooked_block,
+		string $hooked_block_type,
+		string $relative_position,
+		array $parsed_anchor_block,
+		$context
+	): ?array {
 		// Has the hooked block been suppressed by a previous filter?
 		if ( is_null( $parsed_hooked_block ) ) {
 			return $parsed_hooked_block;
@@ -309,6 +329,7 @@ class Block {
 		// The opener text for new Events... a paragraph block.
 		if ( 'core/paragraph' === $hooked_block_type ) {
 			$parsed_hooked_block['attrs']['placeholder'] = __(
+				// phpcs:ignore Generic.Files.LineLength.TooLong
 				'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
 				'gatherpress'
 			);

@@ -71,7 +71,11 @@ class Test_General extends Base {
 		$instance = General::get_instance();
 
 		$section = Utility::invoke_hidden_method( $instance, 'get_sections' );
-		$this->assertSame( 'General Settings', $section['general']['name'], 'Failed to assert name is General Settings.' );
+		$this->assertSame(
+			'General Settings',
+			$section['general']['name'],
+			'Failed to assert name is General Settings.'
+		);
 		$this->assertIsArray(
 			$section['pages'],
 			'Failed to assert sections is an array.'

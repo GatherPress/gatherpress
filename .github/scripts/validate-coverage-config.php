@@ -187,7 +187,8 @@ function main(): void {
 	echo "Checking PHPUnit configuration...\n";
 
 	if ( $uses_include_only ) {
-		echo "  ℹ️  PHPUnit uses include-only approach - all exclusions are implicit (only includes ./includes/core/classes)\n";
+		echo '  ℹ️  PHPUnit uses include-only approach - all exclusions are implicit '
+			. "(only includes ./includes/core/classes)\n";
 
 		// All patterns are implicitly excluded when using include-only approach.
 		// Files outside of the included directory don't need explicit exclusion.

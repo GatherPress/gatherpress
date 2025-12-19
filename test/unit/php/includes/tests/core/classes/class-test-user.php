@@ -85,17 +85,29 @@ class Test_User extends Base {
 		// Test default checkbox state (should be checked).
 		delete_user_meta( $user->ID, 'gatherpress_event_updates_opt_in' );
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
-		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked by default.' );
+		$this->assertStringContainsString(
+			'checked=\'checked\'',
+			$markup,
+			'Failed to assert that checkbox is checked by default.'
+		);
 
 		// Test with explicit opt-out.
 		update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', 0 );
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
-		$this->assertStringNotContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is not checked.' );
+		$this->assertStringNotContainsString(
+			'checked=\'checked\'',
+			$markup,
+			'Failed to assert that checkbox is not checked.'
+		);
 
 		// Test with explicit opt-in.
 		update_user_meta( $user->ID, 'gatherpress_event_updates_opt_in', 1 );
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
-		$this->assertStringContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox is checked.' );
+		$this->assertStringContainsString(
+			'checked=\'checked\'',
+			$markup,
+			'Failed to assert that checkbox is checked.'
+		);
 
 		// Test with filter changing default to unchecked.
 		delete_user_meta( $user->ID, 'gatherpress_event_updates_opt_in' );
@@ -107,7 +119,11 @@ class Test_User extends Base {
 		);
 
 		$markup = Utility::buffer_and_return( array( $instance, 'profile_fields' ), array( $user ) );
-		$this->assertStringNotContainsString( 'checked=\'checked\'', $markup, 'Failed to assert that checkbox respects filter for unchecked default.' );
+		$this->assertStringNotContainsString(
+			'checked=\'checked\'',
+			$markup,
+			'Failed to assert that checkbox respects filter for unchecked default.'
+		);
 
 		// Clean up filter.
 		remove_all_filters( 'gatherpress_event_updates_default_opt_in' );

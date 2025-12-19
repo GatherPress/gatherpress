@@ -149,7 +149,10 @@ class Rsvp {
 				$user_data = $event->rsvp->get( $user_identifier );
 			}
 
-			$filtered_data   = array_intersect_key( $user_data, array_flip( array( 'status', 'guests', 'anonymous' ) ) );
+			$filtered_data   = array_intersect_key(
+				$user_data,
+				array_flip( array( 'status', 'guests', 'anonymous' ) )
+			);
 			$filtered_status = ! empty( $filtered_data['status'] ) ? $filtered_data['status'] : 'no_status';
 
 			if ( $event->has_event_past() ) {
@@ -241,7 +244,8 @@ class Rsvp {
 				if ( ! $is_actionable_element ) {
 					// If not, check if the next element is an anchor or button.
 					// @phpstan-ignore-next-line.
-					$is_actionable_element = $tag->next_tag() && in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
+					$is_actionable_element = $tag->next_tag() &&
+					in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
 
 				$target_found = $is_actionable_element;

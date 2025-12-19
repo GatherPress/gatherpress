@@ -316,7 +316,12 @@ class Rsvp_Form {
 	 * @param bool                  $is_past         Whether the event has passed.
 	 * @return void
 	 */
-	private function apply_visibility_rule( WP_HTML_Tag_Processor $tag, ?string $visibility_rule, bool $is_success, bool $is_past ): void {
+	private function apply_visibility_rule(
+		WP_HTML_Tag_Processor $tag,
+		?string $visibility_rule,
+		bool $is_success,
+		bool $is_past
+	): void {
 		if ( ! $visibility_rule ) {
 			return;
 		}

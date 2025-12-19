@@ -79,8 +79,16 @@ class Topic {
 			Event::POST_TYPE,
 			array(
 				'labels'            => array(
-					'name'                       => _x( 'Topics', 'Admin menu and taxonomy general name', 'gatherpress' ),
-					'singular_name'              => _x( 'Topic', 'Admin menu and taxonomy singular name', 'gatherpress' ),
+					'name'                       => _x(
+						'Topics',
+						'Admin menu and taxonomy general name',
+						'gatherpress'
+					),
+					'singular_name'              => _x(
+						'Topic',
+						'Admin menu and taxonomy singular name',
+						'gatherpress'
+					),
 					'search_items'               => __( 'Search Topics', 'gatherpress' ),
 					'popular_items'              => __( 'Popular Topics', 'gatherpress' ),
 					'all_items'                  => __( 'All Topics', 'gatherpress' ),
@@ -101,7 +109,11 @@ class Topic {
 					'items_list'                 => __( 'Topics list', 'gatherpress' ),
 					'back_to_items'              => __( 'Back to Topics', 'gatherpress' ),
 					'item_link'                  => _x( 'Topic Link', 'Navigation link block title', 'gatherpress' ),
-					'item_link_description'      => _x( 'A link to a topic.', 'Navigation link block description', 'gatherpress' ),
+					'item_link_description'      => _x(
+						'A link to a topic.',
+						'Navigation link block description',
+						'gatherpress'
+					),
 					'menu_name'                  => __( 'Topics', 'gatherpress' ),
 				),
 				'hierarchical'      => true,

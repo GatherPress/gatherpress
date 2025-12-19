@@ -88,7 +88,8 @@ class Rsvp_Setup {
 	/**
 	 * Register custom comment taxonomy for RSVPs.
 	 *
-	 * Registers a custom taxonomy 'gatherpress_rsvp' for managing RSVP related functionalities specifically for comments.
+	 * Registers a custom taxonomy 'gatherpress_rsvp' for managing RSVP related functionalities
+	 * specifically for comments.
 	 *
 	 * @since 1.0.0
 	 *

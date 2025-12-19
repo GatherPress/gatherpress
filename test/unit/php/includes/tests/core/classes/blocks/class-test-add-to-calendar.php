@@ -70,7 +70,8 @@ class Test_Add_To_Calendar extends Base {
 				'post_date'    => '2020-05-11 00:00:00',
 			)
 		)->get();
-		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
+		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",' .
+			'"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 		$event      = new Event( $post->ID );
 		$params     = array(
 			'datetime_start' => '2020-05-11 15:00:00',

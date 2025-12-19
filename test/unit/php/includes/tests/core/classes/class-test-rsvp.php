@@ -71,13 +71,25 @@ class Test_Rsvp extends Base {
 
 		$status = 'not_attending';
 
-		$this->assertSame( $status, $rsvp->save( $user_id, $status )['status'], 'Failed to assert user is not attending.' );
+		$this->assertSame(
+			$status,
+			$rsvp->save( $user_id, $status )['status'],
+			'Failed to assert user is not attending.'
+		);
 
-		$this->assertSame( 'no_status', $rsvp->save( 0, $status )['status'], 'Failed to assert no_status due to invalid user ID.' );
+		$this->assertSame(
+			'no_status',
+			$rsvp->save( 0, $status )['status'],
+			'Failed to assert no_status due to invalid user ID.'
+		);
 
 		$status = 'unittest';
 
-		$this->assertSame( 'no_status', $rsvp->save( $user_id, $status )['status'], 'Failed to assert no_status due to invalid status.' );
+		$this->assertSame(
+			'no_status',
+			$rsvp->save( $user_id, $status )['status'],
+			'Failed to assert no_status due to invalid status.'
+		);
 
 		$rsvp = new Rsvp( $post->ID );
 
@@ -87,8 +99,16 @@ class Test_Rsvp extends Base {
 		$user_2_id = $this->factory->user->create();
 		$status    = 'attending';
 
-		$this->assertSame( 'attending', $rsvp->save( $user_1_id, $status )['status'], 'Failed to assert that user 1 is attending.' );
-		$this->assertSame( 'waiting_list', $rsvp->save( $user_2_id, $status )['status'], 'Failed to assert that user 2 is on waiting list.' );
+		$this->assertSame(
+			'attending',
+			$rsvp->save( $user_1_id, $status )['status'],
+			'Failed to assert that user 1 is attending.'
+		);
+		$this->assertSame(
+			'waiting_list',
+			$rsvp->save( $user_2_id, $status )['status'],
+			'Failed to assert that user 2 is on waiting list.'
+		);
 
 		$user_1_id = $this->factory->user->create();
 
@@ -96,12 +116,24 @@ class Test_Rsvp extends Base {
 		update_post_meta( $post->ID, 'gatherpress_enable_anonymous_rsvp', true );
 
 		// When not_attending and anonymous, user record should be removed and marked no_status.
-		$this->assertSame( 'waiting_list', $rsvp->save( $user_1_id, 'attending', 1 )['status'], 'Failed to assert that user 1 is attending' );
-		$this->assertSame( 'no_status', $rsvp->save( $user_1_id, 'not_attending', 1 )['status'], 'Failed to assert that user 1 is no_status.' );
+		$this->assertSame(
+			'waiting_list',
+			$rsvp->save( $user_1_id, 'attending', 1 )['status'],
+			'Failed to assert that user 1 is attending'
+		);
+		$this->assertSame(
+			'no_status',
+			$rsvp->save( $user_1_id, 'not_attending', 1 )['status'],
+			'Failed to assert that user 1 is no_status.'
+		);
 
 		$user_2_id = $this->factory->user->create();
 
-		$this->assertSame( 'no_status', $rsvp->save( $user_2_id, 'no_status' )['status'], 'Failed to assert that user 2 is no_status.' );
+		$this->assertSame(
+			'no_status',
+			$rsvp->save( $user_2_id, 'no_status' )['status'],
+			'Failed to assert that user 2 is no_status.'
+		);
 
 		$post      = $this->mock->post(
 			array(
@@ -113,7 +145,11 @@ class Test_Rsvp extends Base {
 		)->get();
 		$rsvp      = new Rsvp( $post->ID );
 		$user_1_id = $this->factory->user->create();
-		$this->assertSame( 2, $rsvp->save( $user_1_id, 'attending', 0, 3 )['guests'], 'Failed to assert that user 1 can only bring 2 guests at most.' );
+		$this->assertSame(
+			2,
+			$rsvp->save( $user_1_id, 'attending', 0, 3 )['guests'],
+			'Failed to assert that user 1 can only bring 2 guests at most.'
+		);
 
 		// Simulate error saving RSVP.
 		add_filter( 'query', '__return_false' );
@@ -333,7 +369,10 @@ class Test_Rsvp extends Base {
 		$rsvp      = new Rsvp( $post->ID );
 		$responses = $rsvp->responses();
 
-		$this->assertEmpty( $responses['all']['records'], 'Failed to assert all responses empty with non-event post type.' );
+		$this->assertEmpty(
+			$responses['all']['records'],
+			'Failed to assert all responses empty with non-event post type.'
+		);
 		$this->assertEquals( 0, $responses['count'], 'Failed to assert count is 0 with non-event post type.' );
 
 		$this->mock->user( 'subscriber' );

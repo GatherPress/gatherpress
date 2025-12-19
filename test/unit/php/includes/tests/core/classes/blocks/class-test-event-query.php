@@ -513,7 +513,11 @@ class Test_Event_Query extends Base {
 
 		$result = $instance->rest_query( $initial_args, $request );
 
-		$this->assertArrayNotHasKey( 'post__not_in', $result, 'Should not have post__not_in when exclude_current is null.' );
+		$this->assertArrayNotHasKey(
+			'post__not_in',
+			$result,
+			'Should not have post__not_in when exclude_current is null.'
+		);
 		$this->assertSame( 1, $result['include_unfinished'] );
 	}
 

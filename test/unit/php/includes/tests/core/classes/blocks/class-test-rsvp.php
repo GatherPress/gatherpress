@@ -140,7 +140,8 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
-			'The transform_block_content method should add the data-wp-interactive attribute to the RSVP block for interactivity.'
+			'The transform_block_content method should add the data-wp-interactive attribute to the RSVP block '
+			. 'for interactivity.'
 		);
 		$this->assertStringContainsString(
 			'data-rsvp-status="attending"',
@@ -150,7 +151,8 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'<div class="" data-rsvp-status="attending"><p>Attending content</p></div>',
 			$result,
-			'The transform_block_content method should display content for the attending status without a visibility class.'
+			'The transform_block_content method should display content for the attending status without a '
+			. 'visibility class.'
 		);
 		$this->assertStringContainsString(
 			'<div class="gatherpress--is-hidden" data-rsvp-status="no_status"><p>No status content</p></div>',
@@ -238,7 +240,8 @@ class Test_Rsvp extends Base {
 		$this->assertStringNotContainsString(
 			'Attending content',
 			$result,
-			'The transform_block_content method should exclude content for other statuses, such as "attending", when the event is in the past.'
+			'The transform_block_content method should exclude content for other statuses, such as "attending", '
+			. 'when the event is in the past.'
 		);
 	}
 
@@ -273,17 +276,20 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
-			'The transform_block_content method should include the data-wp-interactive attribute for interactivity, even when inner blocks are missing.'
+			'The transform_block_content method should include the data-wp-interactive attribute '
+			. 'for interactivity, even when inner blocks are missing.'
 		);
 		$this->assertStringContainsString(
 			'data-wp-context',
 			$result,
-			'The transform_block_content method should include the data-wp-context attribute to provide block context, even when inner blocks are missing.'
+			'The transform_block_content method should include the data-wp-context attribute to provide block '
+			. 'context, even when inner blocks are missing.'
 		);
 		$this->assertStringContainsString(
 			'data-rsvp-status="no_status"',
 			$result,
-			'The transform_block_content method should set the RSVP status to "no_status" when inner blocks are missing.'
+			'The transform_block_content method should set the RSVP status to "no_status" when inner blocks '
+			. 'are missing.'
 		);
 	}
 
@@ -359,12 +365,14 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$output,
-			'The apply_rsvp_button_interactivity method should add the data-wp-interactive attribute with the correct value.'
+			'The apply_rsvp_button_interactivity method should add the data-wp-interactive attribute with the '
+			. 'correct value.'
 		);
 		$this->assertStringContainsString(
 			'data-wp-on--click="actions.updateRsvp"',
 			$output,
-			'The apply_rsvp_button_interactivity method should add the data-wp-on--click attribute with the updateRsvp action.'
+			'The apply_rsvp_button_interactivity method should add the data-wp-on--click attribute with the '
+			. 'updateRsvp action.'
 		);
 		$this->assertStringContainsString(
 			'role="button"',
@@ -403,17 +411,20 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$output,
-			'The apply_rsvp_button_interactivity method should add the data-wp-interactive attribute with the correct value to the RSVP link.'
+			'The apply_rsvp_button_interactivity method should add the data-wp-interactive attribute with the '
+			. 'correct value to the RSVP link.'
 		);
 		$this->assertStringContainsString(
 			'data-wp-on--click="actions.updateRsvp"',
 			$output,
-			'The apply_rsvp_button_interactivity method should add the data-wp-on--click attribute with the updateRsvp action to the RSVP link.'
+			'The apply_rsvp_button_interactivity method should add the data-wp-on--click attribute with the '
+			. 'updateRsvp action to the RSVP link.'
 		);
 		$this->assertStringContainsString(
 			'role="button"',
 			$output,
-			'The apply_rsvp_button_interactivity method should add the role="button" attribute to the RSVP link for accessibility.'
+			'The apply_rsvp_button_interactivity method should add the role="button" attribute to the RSVP link '
+			. 'for accessibility.'
 		);
 	}
 
@@ -440,7 +451,8 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-set-status="attending"',
 			$output,
-			'The apply_rsvp_button_interactivity method should add the data-set-status attribute with the correct status value when a status-specific class is present.'
+			'The apply_rsvp_button_interactivity method should add the data-set-status attribute with the correct '
+			. 'status value when a status-specific class is present.'
 		);
 	}
 
@@ -458,14 +470,18 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_guest_count_watch_with_no_guests(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div data-user-details=\'{"guests":0}\'><div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
-		$expected = '<div data-user-details=\'{"guests":0}\'><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-hidden">Guest Count</div></div>';
+		$input    = '<div data-user-details=\'{"guests":0}\'>'
+			. '<div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
+		$expected = '<div data-user-details=\'{"guests":0}\'>'
+			. '<div data-wp-watch="callbacks.updateGuestCountDisplay" '
+			. 'class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-hidden">Guest Count</div></div>';
 		$result   = $instance->apply_guest_count_watch( $input );
 
 		$this->assertSame(
 			$expected,
 			$result,
-			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute and visibility class when the guest count is zero.'
+			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute and visibility '
+			. 'class when the guest count is zero.'
 		);
 	}
 
@@ -483,14 +499,18 @@ class Test_Rsvp extends Base {
 	 */
 	public function test_apply_guest_count_watch_with_guests(): void {
 		$instance = Rsvp::get_instance();
-		$input    = '<div data-user-details=\'{"guests":2}\'><div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
-		$expected = '<div data-user-details=\'{"guests":2}\'><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
+		$input    = '<div data-user-details=\'{"guests":2}\'>'
+			. '<div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
+		$expected = '<div data-user-details=\'{"guests":2}\'>'
+			. '<div data-wp-watch="callbacks.updateGuestCountDisplay" '
+			. 'class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
 		$result   = $instance->apply_guest_count_watch( $input );
 
 		$this->assertSame(
 			$expected,
 			$result,
-			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute without adding the gatherpress--is-hidden class when the guest count is greater than zero.'
+			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute without adding '
+			. 'the gatherpress--is-hidden class when the guest count is greater than zero.'
 		);
 	}
 
@@ -509,13 +529,15 @@ class Test_Rsvp extends Base {
 	public function test_apply_guest_count_watch_no_user_details(): void {
 		$instance = Rsvp::get_instance();
 		$input    = '<div><div class="wp-block-gatherpress-rsvp-guest-count-display">Guest Count</div></div>';
-		$expected = '<div><div data-wp-watch="callbacks.updateGuestCountDisplay" class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-hidden">Guest Count</div></div>';
+		$expected = '<div><div data-wp-watch="callbacks.updateGuestCountDisplay" '
+			. 'class="wp-block-gatherpress-rsvp-guest-count-display gatherpress--is-hidden">Guest Count</div></div>';
 		$result   = $instance->apply_guest_count_watch( $input );
 
 		$this->assertSame(
 			$expected,
 			$result,
-			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute and the gatherpress--is-hidden class when no user details are present.'
+			'The apply_guest_count_watch method should correctly apply the data-wp-watch attribute and the '
+			. 'gatherpress--is-hidden class when no user details are present.'
 		);
 	}
 
@@ -566,7 +588,8 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-on--change="actions.updateGuestCount"',
 			$result,
-			'The handle_rsvp_form_fields method should add the data-wp-on--change attribute with the updateGuestCount action.'
+			'The handle_rsvp_form_fields method should add the data-wp-on--change attribute with the '
+			. 'updateGuestCount action.'
 		);
 		$this->assertStringContainsString(
 			'max="5"',
@@ -612,7 +635,8 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
-			'The handle_rsvp_form_fields method should add interactivity attributes. Field visibility is handled by RSVP Form.'
+			'The handle_rsvp_form_fields method should add interactivity attributes. Field visibility is handled '
+			. 'by RSVP Form.'
 		);
 	}
 
@@ -653,17 +677,20 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
-			'The handle_rsvp_form_fields method should add the data-wp-interactive attribute for anonymous checkbox field.'
+			'The handle_rsvp_form_fields method should add the data-wp-interactive attribute for anonymous '
+			. 'checkbox field.'
 		);
 		$this->assertStringContainsString(
 			'data-wp-on--change="actions.updateAnonymous"',
 			$result,
-			'The handle_rsvp_form_fields method should add the data-wp-on--change attribute with the updateAnonymous action.'
+			'The handle_rsvp_form_fields method should add the data-wp-on--change attribute with the '
+			. 'updateAnonymous action.'
 		);
 		$this->assertStringContainsString(
 			'data-wp-watch="callbacks.monitorAnonymousStatus"',
 			$result,
-			'The handle_rsvp_form_fields method should add the data-wp-watch attribute with the monitorAnonymousStatus callback.'
+			'The handle_rsvp_form_fields method should add the data-wp-watch attribute with the '
+			. 'monitorAnonymousStatus callback.'
 		);
 	}
 
@@ -704,7 +731,8 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
-			'The handle_rsvp_form_fields method should add interactivity attributes. Field visibility is handled by RSVP Form.'
+			'The handle_rsvp_form_fields method should add interactivity attributes. Field visibility is handled '
+			. 'by RSVP Form.'
 		);
 	}
 
@@ -795,7 +823,8 @@ class Test_Rsvp extends Base {
 			),
 		);
 
-		$block_content = '<div><input type="text" name="other_field" value="" /><input type="number" name="gatherpress_rsvp_guests" value="0" /></div>';
+		$block_content = '<div><input type="text" name="other_field" value="" />'
+			. '<input type="number" name="gatherpress_rsvp_guests" value="0" /></div>';
 		$result        = $instance->handle_rsvp_form_fields( $block_content, $block );
 
 		// Check that only the guest count input gets the attributes.
@@ -807,7 +836,8 @@ class Test_Rsvp extends Base {
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
-			'The handle_rsvp_form_fields method should add the data-wp-interactive attribute to the guest count input field.'
+			'The handle_rsvp_form_fields method should add the data-wp-interactive attribute to the guest count '
+			. 'input field.'
 		);
 		$this->assertStringContainsString(
 			'name="other_field" value=""',

@@ -371,7 +371,8 @@ class Test_Event extends Base {
 			)
 		)->get()->ID;
 		$event      = new Event( $event_id );
-		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
+		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",'
+			. '"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 
 		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
 		wp_set_post_terms( $event_id, '_unit-test-venue', Venue::TAXONOMY );
@@ -466,7 +467,8 @@ class Test_Event extends Base {
 				'post_name'  => 'unit-test-venue',
 			)
 		)->get();
-		$venue_info  = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
+		$venue_info  = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",'
+			. '"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 		$event       = new Event( $post->ID );
 		$description = sanitize_text_field( sprintf( 'For details go to %s', get_the_permalink( $post ) ) );
 		$params      = array(
@@ -481,8 +483,15 @@ class Test_Event extends Base {
 
 		$output = $event->get_calendar_links();
 
-		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit%20Test%20Event&dates=20200511T150000Z%2F20200511T170000Z&details=' . rawurlencode( $description ) . '&location=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042&sprop=name%3A';
-		$expected_yahoo_link  = 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200&desc=' . rawurlencode( $description ) . '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
+		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE'
+			. '&text=Unit%20Test%20Event&dates=20200511T150000Z%2F20200511T170000Z'
+			. '&details=' . rawurlencode( $description )
+			. '&location=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042'
+			. '&sprop=name%3A';
+		$expected_yahoo_link  = 'https://calendar.yahoo.com/?v=60&view=d&type=20'
+			. '&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200'
+			. '&desc=' . rawurlencode( $description )
+			. '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
 		$expected_ics_link    = home_url( '/event/' . get_post_field( 'post_name', $post->ID ) . '.ics' );
 		$expects              = array(
 			'google'  => array(
@@ -985,9 +994,12 @@ class Test_Event extends Base {
 		$start = new DateTime( '2025-06-15 14:30:00' );
 		$end   = new DateTime( '2025-06-15 16:30:00' );
 
+		$start_formatted = $start->format( Event::DATETIME_FORMAT );
+		$end_formatted   = $end->format( Event::DATETIME_FORMAT );
+
 		$params = array(
-			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
-			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'datetime_start' => $start_formatted,
+			'datetime_end'   => $end_formatted,
 			'timezone'       => 'America/New_York',
 		);
 
@@ -995,8 +1007,16 @@ class Test_Event extends Base {
 
 		$result = $event->get_google_calendar_link();
 
-		$this->assertStringContainsString( 'google.com/calendar', $result, 'Failed to assert Google calendar link contains expected URL.' );
-		$this->assertStringContainsString( 'Test%20Event', $result, 'Failed to assert Google calendar link contains event title.' );
+		$this->assertStringContainsString(
+			'google.com/calendar',
+			$result,
+			'Failed to assert Google calendar link contains expected URL.'
+		);
+		$this->assertStringContainsString(
+			'Test%20Event',
+			$result,
+			'Failed to assert Google calendar link contains event title.'
+		);
 	}
 
 	/**
@@ -1019,9 +1039,12 @@ class Test_Event extends Base {
 		$start = new DateTime( '2025-06-15 14:30:00' );
 		$end   = new DateTime( '2025-06-15 16:30:00' );
 
+		$start_formatted = $start->format( Event::DATETIME_FORMAT );
+		$end_formatted   = $end->format( Event::DATETIME_FORMAT );
+
 		$params = array(
-			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
-			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'datetime_start' => $start_formatted,
+			'datetime_end'   => $end_formatted,
 			'timezone'       => 'America/New_York',
 		);
 
@@ -1029,8 +1052,16 @@ class Test_Event extends Base {
 
 		$result = $event->get_yahoo_calendar_link();
 
-		$this->assertStringContainsString( 'yahoo.com', $result, 'Failed to assert Yahoo calendar link contains expected URL.' );
-		$this->assertStringContainsString( 'Test%20Event', $result, 'Failed to assert Yahoo calendar link contains event title.' );
+		$this->assertStringContainsString(
+			'yahoo.com',
+			$result,
+			'Failed to assert Yahoo calendar link contains expected URL.'
+		);
+		$this->assertStringContainsString(
+			'Test%20Event',
+			$result,
+			'Failed to assert Yahoo calendar link contains event title.'
+		);
 	}
 
 	/**
@@ -1151,9 +1182,12 @@ class Test_Event extends Base {
 		$start = new DateTime( '2025-06-15 14:30:00' );
 		$end   = new DateTime( '2025-06-15 16:30:00' );
 
+		$start_formatted = $start->format( Event::DATETIME_FORMAT );
+		$end_formatted   = $end->format( Event::DATETIME_FORMAT );
+
 		$params = array(
-			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
-			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'datetime_start' => $start_formatted,
+			'datetime_end'   => $end_formatted,
 			'timezone'       => 'America/New_York',
 		);
 
@@ -1163,7 +1197,11 @@ class Test_Event extends Base {
 
 		// The method returns "For details go to {permalink}".
 		$this->assertNotEmpty( $result, 'Failed to assert calendar description is not empty.' );
-		$this->assertStringContainsString( 'For details', $result, 'Failed to assert calendar description contains standard text.' );
+		$this->assertStringContainsString(
+			'For details',
+			$result,
+			'Failed to assert calendar description contains standard text.'
+		);
 
 		// Test with no excerpt.
 		$event_id = $this->mock->post(

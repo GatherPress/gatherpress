@@ -159,7 +159,10 @@ class Test_Event_Setup extends Base {
 
 		// Build the expected rule pattern.
 		$expected_rule_pattern     = '^event/([^/]+)\.ics$';
-		$expected_rule_replacement = sprintf( 'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1', Event::POST_TYPE );
+		$expected_rule_replacement = sprintf(
+			'index.php?post_type=%s&name=$matches[1]&gatherpress_ics=1',
+			Event::POST_TYPE
+		);
 
 		// Check that our specific rule pattern exists.
 		$this->assertArrayHasKey(
@@ -172,7 +175,8 @@ class Test_Event_Setup extends Base {
 		$this->assertEquals(
 			$expected_rule_replacement,
 			$rules[ $expected_rule_pattern ],
-			'The rewrite rule replacement does not match the expected format - should map event .ics requests to the correct query vars'
+			'The rewrite rule replacement does not match the expected format -
+			should map event .ics requests to the correct query vars'
 		);
 
 		// Verify that the gatherpress_ics parameter appears in the rules.
@@ -317,19 +321,51 @@ class Test_Event_Setup extends Base {
 
 		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
-		$this->assertArrayNotHasKey( 'online_event_link', $meta, 'Failed to assert that online_event_link does not exist.' );
-		$this->assertArrayNotHasKey( 'enable_anonymous_rsvp', $meta, 'Failed to assert that enable_anonymous_rsvp does not exist.' );
-		$this->assertArrayNotHasKey( 'max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does not exist.' );
-		$this->assertArrayNotHasKey( 'max_guest_limit', $meta, 'Failed to assert that max_guest_limit does not exist.' );
+		$this->assertArrayNotHasKey(
+			'online_event_link',
+			$meta,
+			'Failed to assert that online_event_link does not exist.'
+		);
+		$this->assertArrayNotHasKey(
+			'enable_anonymous_rsvp',
+			$meta,
+			'Failed to assert that enable_anonymous_rsvp does not exist.'
+		);
+		$this->assertArrayNotHasKey(
+			'max_attendance_limit',
+			$meta,
+			'Failed to assert that max_guest_limit does not exist.'
+		);
+		$this->assertArrayNotHasKey(
+			'max_guest_limit',
+			$meta,
+			'Failed to assert that max_guest_limit does not exist.'
+		);
 
 		$instance->register_post_meta();
 
 		$meta = get_registered_meta_keys( 'post', Event::POST_TYPE );
 
-		$this->assertArrayHasKey( 'gatherpress_online_event_link', $meta, 'Failed to assert that gatherpress_online_event_link does exist.' );
-		$this->assertArrayHasKey( 'gatherpress_enable_anonymous_rsvp', $meta, 'Failed to assert that gatherpress_enable_anonymous_rsvp does exist.' );
-		$this->assertArrayHasKey( 'gatherpress_max_attendance_limit', $meta, 'Failed to assert that max_guest_limit does exist.' );
-		$this->assertArrayHasKey( 'gatherpress_max_guest_limit', $meta, 'Failed to assert that gatherpress_max_guest_limit does exist.' );
+		$this->assertArrayHasKey(
+			'gatherpress_online_event_link',
+			$meta,
+			'Failed to assert that gatherpress_online_event_link does exist.'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_enable_anonymous_rsvp',
+			$meta,
+			'Failed to assert that gatherpress_enable_anonymous_rsvp does exist.'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_max_attendance_limit',
+			$meta,
+			'Failed to assert that max_guest_limit does exist.'
+		);
+		$this->assertArrayHasKey(
+			'gatherpress_max_guest_limit',
+			$meta,
+			'Failed to assert that gatherpress_max_guest_limit does exist.'
+		);
 	}
 
 	/**
@@ -387,7 +423,8 @@ class Test_Event_Setup extends Base {
 			array(
 				'post_type' => Event::POST_TYPE,
 				'post_meta' => array(
-					'gatherpress_datetime' => '{"dateTimeStart":"2019-09-18 18:00:00","dateTimeEnd":"2019-09-18 20:00:00","timezone":"America/New_York"}',
+					'gatherpress_datetime' => '{"dateTimeStart":"2019-09-18 18:00:00",
+					"dateTimeEnd":"2019-09-18 20:00:00","timezone":"America/New_York"}',
 				),
 			)
 		)->get()->ID;
@@ -1004,7 +1041,11 @@ class Test_Event_Setup extends Base {
 		$instance->custom_columns( 'rsvps', $post_id );
 		$output = ob_get_clean();
 
-		$this->assertStringContainsString( 'gatherpress-rsvp-pending', $output, 'Should show unapproved RSVP indicator.' );
+		$this->assertStringContainsString(
+			'gatherpress-rsvp-pending',
+			$output,
+			'Should show unapproved RSVP indicator.'
+		);
 		$this->assertStringContainsString( 'Unapproved RSVPs', $output, 'Should contain title for unapproved.' );
 	}
 
@@ -1211,7 +1252,11 @@ class Test_Event_Setup extends Base {
 		$result = $instance->set_event_archive_labels( $post_states, $post );
 
 		$this->assertArrayHasKey( 'gatherpress_upcoming_events', $result, 'Should have upcoming events label.' );
-		$this->assertStringContainsString( 'GatherPress', $result['gatherpress_upcoming_events'], 'Label should contain GatherPress.' );
+		$this->assertStringContainsString(
+			'GatherPress',
+			$result['gatherpress_upcoming_events'],
+			'Label should contain GatherPress.'
+		);
 	}
 
 	/**
@@ -1248,7 +1293,11 @@ class Test_Event_Setup extends Base {
 		$result = $instance->set_event_archive_labels( $post_states, $post );
 
 		$this->assertArrayHasKey( 'gatherpress_past_events', $result, 'Should have past events label.' );
-		$this->assertStringContainsString( 'GatherPress', $result['gatherpress_past_events'], 'Label should contain GatherPress.' );
+		$this->assertStringContainsString(
+			'GatherPress',
+			$result['gatherpress_past_events'],
+			'Label should contain GatherPress.'
+		);
 	}
 
 	/**

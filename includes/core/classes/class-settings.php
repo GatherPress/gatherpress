@@ -245,7 +245,8 @@ class Settings {
 						$section_settings['name'],
 						static function () use ( $section_settings ) {
 							if ( ! empty( $section_settings['description'] ) ) {
-								echo '<p class="description">' . wp_kses_post( $section_settings['description'] ) . '</p>';
+								echo '<p class="description">'
+									. wp_kses_post( $section_settings['description'] ) . '</p>';
 							}
 						},
 						Utility::prefix_key( $sub_page )
@@ -257,9 +258,19 @@ class Settings {
 								$option_settings['field']['type']
 								&& method_exists( $this, $option_settings['field']['type'] )
 							) {
-								$option_settings['callback'] = function () use ( $sub_page, $section, $option, $option_settings ) {
+								$option_settings['callback'] = function () use (
+									$sub_page,
+									$section,
+									$option,
+									$option_settings
+								) {
 									$sub_page = Utility::prefix_key( $sub_page );
-									$this->{$option_settings['field']['type']}( $sub_page, $section, $option, $option_settings );
+									$this->{$option_settings['field']['type']}(
+										$sub_page,
+										$section,
+										$option,
+										$option_settings
+									);
 								};
 							}
 							add_settings_field(
@@ -807,12 +818,19 @@ class Settings {
 					$suffix = _x( 'sample-venue', 'URL permalink structure example for venues', 'gatherpress' );
 					break;
 				case 'gatherpress_general[urls][topics]':
-					$suffix = _x( 'sample-topic-term', 'URL permalink structure example for topics', 'gatherpress' );
+					$suffix = _x(
+						'sample-topic-term',
+						'URL permalink structure example for topics',
+						'gatherpress'
+					);
 					break;
 			}
 
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/settings/partials/url-rewrite-preview.php', GATHERPRESS_CORE_PATH ),
+				sprintf(
+					'%s/includes/templates/admin/settings/partials/url-rewrite-preview.php',
+					GATHERPRESS_CORE_PATH
+				),
 				array(
 					'name'   => $name,
 					'value'  => $value,

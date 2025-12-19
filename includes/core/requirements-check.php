@@ -49,7 +49,11 @@ if ( ! is_dir( GATHERPRESS_CORE_PATH . '/build' ) ) {
 			wp_admin_notice(
 				sprintf(
 					/* translators: %1$s: build command, %2$s: the plugin path */
-					esc_html__( 'Please run %1$s in the %2$s plugin directory to generate required assets. This is needed after first cloning the plugin for development.', 'gatherpress' ),
+					esc_html__(
+						// phpcs:ignore Generic.Files.LineLength.TooLong
+						'Please run %1$s in the %2$s plugin directory to generate required assets. This is needed after first cloning the plugin for development.',
+						'gatherpress'
+					),
 					'<code>npm run build</code>',
 					'<code>gatherpress</code>'
 				),

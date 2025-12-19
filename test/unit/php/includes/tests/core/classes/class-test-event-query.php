@@ -83,8 +83,16 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'upcoming', $response->query['gatherpress_event_query'], 'Failed to assert query is upcoming.' );
-		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
+		$this->assertSame(
+			'upcoming',
+			$response->query['gatherpress_event_query'],
+			'Failed to assert query is upcoming.'
+		);
+		$this->assertSame(
+			'gatherpress_event',
+			$response->query['post_type'],
+			'Failed to assert post type is gatherpress_event.'
+		);
 	}
 
 	/**
@@ -119,8 +127,16 @@ class Test_Event_Query extends Base {
 
 		$this->assertSame( $response->posts[0], $post->ID, 'Failed to assert that event ID is in array.' );
 		$this->assertSame( 1, $response->query['posts_per_page'], 'Failed to assert post per page limit.' );
-		$this->assertSame( 'past', $response->query['gatherpress_event_query'], 'Failed to assert query is past.' );
-		$this->assertSame( 'gatherpress_event', $response->query['post_type'], 'Failed to assert post type is gatherpress_event.' );
+		$this->assertSame(
+			'past',
+			$response->query['gatherpress_event_query'],
+			'Failed to assert query is past.'
+		);
+		$this->assertSame(
+			'gatherpress_event',
+			$response->query['post_type'],
+			'Failed to assert post type is gatherpress_event.'
+		);
 	}
 
 	/**
@@ -391,7 +407,10 @@ class Test_Event_Query extends Base {
 		$response = $instance->adjust_admin_event_sorting( array(), $wp_query );
 
 		// Assert that an array was generated from the adjustsql argument. todo: make this test more meaningful.
-		$this->assertNotEmpty( $response, 'Failed to assert the array, containing pieces of the SQL query, is not empty' );
+		$this->assertNotEmpty(
+			$response,
+			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
 	}
 
 	/**

@@ -83,7 +83,9 @@ class Rsvp_Form {
 	 */
 	public function is_rsvp_form_submission(): bool {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
+		$request_method = isset( $_SERVER['REQUEST_METHOD'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
+			: '';
 		return (
 			'POST' === $request_method &&
 			! empty( Utility::get_http_input( INPUT_POST, 'comment_post_ID' ) ) &&
@@ -152,18 +154,30 @@ class Rsvp_Form {
 
 		// Validate that the post is an event.
 		if ( Event::POST_TYPE !== get_post_type( $post_id ) ) {
-			wp_die( esc_html__( 'Invalid event ID.', 'gatherpress' ), esc_html__( 'Invalid Request', 'gatherpress' ), 400 );
+			wp_die(
+				esc_html__( 'Invalid event ID.', 'gatherpress' ),
+				esc_html__( 'Invalid Request', 'gatherpress' ),
+				400
+			);
 		}
 
 		// Check if event has passed - prevent RSVPs to past events.
 		$event = new Event( $post_id );
 		if ( $event->has_event_past() ) {
-			wp_die( esc_html__( 'Registration for this event is now closed.', 'gatherpress' ), esc_html__( 'Event Has Passed', 'gatherpress' ), 400 );
+			wp_die(
+				esc_html__( 'Registration for this event is now closed.', 'gatherpress' ),
+				esc_html__( 'Event Has Passed', 'gatherpress' ),
+				400
+			);
 		}
 
 		// Check for duplicate RSVP.
 		if ( $this->has_duplicate_rsvp( $post_id, $email ) ) {
-			wp_die( esc_html( $this->get_duplicate_rsvp_message() ), esc_html__( 'Duplicate RSVP', 'gatherpress' ), 409 );
+			wp_die(
+				esc_html( $this->get_duplicate_rsvp_message() ),
+				esc_html__( 'Duplicate RSVP', 'gatherpress' ),
+				409
+			);
 		}
 
 		// Prepare comment data for WordPress processing.
@@ -204,9 +218,18 @@ class Rsvp_Form {
 			// Prepare data for meta processing.
 			// phpcs:disable WordPress.Security.NonceVerification.Missing
 			$data = array(
-				'gatherpress_event_updates_opt_in' => Utility::get_http_input( INPUT_POST, 'gatherpress_event_updates_opt_in' ),
-				'gatherpress_rsvp_guests'          => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_guests' ),
-				'gatherpress_rsvp_anonymous'       => Utility::get_http_input( INPUT_POST, 'gatherpress_rsvp_form_anonymous' ),
+				'gatherpress_event_updates_opt_in' => Utility::get_http_input(
+					INPUT_POST,
+					'gatherpress_event_updates_opt_in'
+				),
+				'gatherpress_rsvp_guests'          => Utility::get_http_input(
+					INPUT_POST,
+					'gatherpress_rsvp_form_guests'
+				),
+				'gatherpress_rsvp_anonymous'       => Utility::get_http_input(
+					INPUT_POST,
+					'gatherpress_rsvp_form_anonymous'
+				),
 			);
 
 			// Add custom fields to data.
@@ -334,7 +357,10 @@ class Rsvp_Form {
 
 		return array(
 			'success'    => true,
-			'message'    => __( 'Your RSVP has been submitted successfully! Please check your email for a confirmation link.', 'gatherpress' ),
+			'message'    => __(
+				'Your RSVP has been submitted successfully! Please check your email for a confirmation link.',
+				'gatherpress'
+			),
 			'comment_id' => $comment_id,
 		);
 	}
@@ -359,10 +385,13 @@ class Rsvp_Form {
 		$existing_user = get_user_by( 'email', $email );
 
 		if ( $existing_user instanceof WP_User ) {
-			$query          = "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = %s AND (comment_author_email = %s OR user_id = %d)";
+			$query          = "SELECT COUNT(*) FROM {$wpdb->comments}
+				WHERE comment_post_ID = %d AND comment_type = %s
+				AND (comment_author_email = %s OR user_id = %d)";
 			$prepare_values = array( $post_id, Rsvp::COMMENT_TYPE, $email, $existing_user->ID );
 		} else {
-			$query          = "SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_post_ID = %d AND comment_type = %s AND comment_author_email = %s";
+			$query          = "SELECT COUNT(*) FROM {$wpdb->comments}
+				WHERE comment_post_ID = %d AND comment_type = %s AND comment_author_email = %s";
 			$prepare_values = array( $post_id, Rsvp::COMMENT_TYPE, $email );
 		}
 

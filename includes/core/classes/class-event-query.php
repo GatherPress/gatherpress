@@ -365,9 +365,12 @@ class Event_Query {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param array           $pieces    An array of query pieces, including join, where, orderby, and more.
-	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past') (Default: 'all').
-	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending) (Default: 'DESC').
+	 * @param array           $pieces    An array of query pieces, including join, where, orderby,
+	 *                                   and more.
+	 * @param string          $type      The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                                   (Default: 'all').
+	 * @param string          $order     The event order ('DESC' for descending or 'ASC' for ascending)
+	 *                                   (Default: 'DESC').
 	 * @param string[]|string $order_by  List  or singular string of ORDERBY statement(s) (Default: ['datetime']).
 	 * @param bool            $inclusive Whether to include currently running events in the query (Default: true).
 	 * @return array An array containing adjusted SQL clauses for the Event query.
@@ -381,7 +384,7 @@ class Event_Query {
 	): array {
 		global $wpdb;
 
-		$defaults        = array(
+		$defaults = array(
 			'where'    => '',
 			'groupby'  => '',
 			'join'     => '',
@@ -390,8 +393,9 @@ class Event_Query {
 			'fields'   => '',
 			'limits'   => '',
 		);
-		$pieces          = array_merge( $defaults, $pieces );
-		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix ); // Could also be (just) $wpdb->{gatherpress_events}.
+		$pieces   = array_merge( $defaults, $pieces );
+
+		$table           = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
 		$pieces['join'] .= ' LEFT JOIN ' . esc_sql( $table ) . ' ON ' . esc_sql( $wpdb->posts ) . '.ID='
 						. esc_sql( $table ) . '.post_id';
 		$order           = strtoupper( $order );
@@ -409,7 +413,10 @@ class Event_Query {
 					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_name %s', esc_sql( $order ) );
 					break;
 				case 'modified':
-					$pieces['orderby'] = sprintf( esc_sql( $wpdb->posts ) . '.post_modified_gmt %s', esc_sql( $order ) );
+					$pieces['orderby'] = sprintf(
+						esc_sql( $wpdb->posts ) . '.post_modified_gmt %s',
+						esc_sql( $order )
+					);
 					break;
 				case 'rand':
 					$pieces['orderby'] = esc_sql( 'RAND()' );
@@ -446,7 +453,8 @@ class Event_Query {
 	 * based on the type of event query (either upcoming or past)
 	 * and if started but unfinished events should be included.
 	 *
-	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past') (Cannot be 'all' anymore).
+	 * @param  string $type      The type of events to query (options: 'all', 'upcoming', 'past')
+	 *                          (Cannot be 'all' anymore).
 	 * @param  bool   $inclusive Whether to include currently running events in the query.
 	 *
 	 * @return string Name of the DB column, which content to compare against the current time.

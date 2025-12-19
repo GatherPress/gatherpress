@@ -241,7 +241,9 @@ class Rsvp_Query {
 
 		if ( ! empty( $current_comment_types ) ) {
 			if ( is_array( $current_comment_types ) ) {
-				$current_comment_types = array_values( array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) ) );
+				$current_comment_types = array_values(
+					array_diff( $current_comment_types, array( Rsvp::COMMENT_TYPE ) )
+				);
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types ) {
 				$current_comment_types = '';
 			}
@@ -258,7 +260,9 @@ class Rsvp_Query {
 
 		if ( ! empty( $current_comment_types_in ) ) {
 			if ( is_array( $current_comment_types_in ) ) {
-				$current_comment_types_in = array_values( array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) ) );
+				$current_comment_types_in = array_values(
+					array_diff( $current_comment_types_in, array( Rsvp::COMMENT_TYPE ) )
+				);
 			} elseif ( Rsvp::COMMENT_TYPE === $current_comment_types_in ) {
 				$current_comment_types_in = '';
 			}

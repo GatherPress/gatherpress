@@ -251,7 +251,8 @@ class Test_Dropdown extends Base {
 				'actAsSelect' => false,
 			),
 		);
-		$block_content = '<div class="wp-block-gatherpress-dropdown"><div class="wp-block-gatherpress-dropdown__menu"><div class="wp-block-gatherpress-dropdown-item"><a href="#">Item 1</a></div></div></div>';
+		$block_content = '<div class="wp-block-gatherpress-dropdown"><div class="wp-block-gatherpress-dropdown__menu">
+<div class="wp-block-gatherpress-dropdown-item"><a href="#">Item 1</a></div></div></div>';
 		$result        = $instance->apply_select_mode_attributes( $block_content, $block );
 
 		$this->assertStringNotContainsString(
@@ -278,7 +279,8 @@ class Test_Dropdown extends Base {
 				'selectedIndex' => 0,
 			),
 		);
-		$block_content = '<div class="wp-block-gatherpress-dropdown"><div class="wp-block-gatherpress-dropdown__menu"><div class="wp-block-gatherpress-dropdown-item"><a href="#">Item 1</a></div></div></div>';
+		$block_content = '<div class="wp-block-gatherpress-dropdown"><div class="wp-block-gatherpress-dropdown__menu">
+<div class="wp-block-gatherpress-dropdown-item"><a href="#">Item 1</a></div></div></div>';
 		$result        = $instance->apply_select_mode_attributes( $block_content, $block );
 
 		$this->assertStringContainsString(
@@ -330,7 +332,9 @@ class Test_Dropdown extends Base {
 				'selectedIndex' => 1,
 			),
 		);
-		$block_content = '<div class="wp-block-gatherpress-dropdown"><div class="wp-block-gatherpress-dropdown__menu"><div class="wp-block-gatherpress-dropdown-item"><a href="#">Item 1</a></div><div class="wp-block-gatherpress-dropdown-item"><a href="#">Item 2</a></div></div></div>';
+		$block_content = '<div class="wp-block-gatherpress-dropdown"><div class="wp-block-gatherpress-dropdown__menu">
+<div class="wp-block-gatherpress-dropdown-item"><a href="#">Item 1</a></div>
+<div class="wp-block-gatherpress-dropdown-item"><a href="#">Item 2</a></div></div></div>';
 		$result        = $instance->apply_select_mode_attributes( $block_content, $block );
 
 		$this->assertStringContainsString(
@@ -444,7 +448,8 @@ class Test_Dropdown extends Base {
 				'dropdownWidth'           => 300,
 			),
 		);
-		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Styled</a><div class="wp-block-gatherpress-dropdown__menu"></div></div>';
+		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Styled</a>
+<div class="wp-block-gatherpress-dropdown__menu"></div></div>';
 		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
 
 		$this->assertStringContainsString(
@@ -487,7 +492,8 @@ class Test_Dropdown extends Base {
 		$block         = array(
 			'blockName' => 'gatherpress/dropdown',
 		);
-		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Default</a><div class="wp-block-gatherpress-dropdown__menu"></div></div>';
+		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Default</a>
+<div class="wp-block-gatherpress-dropdown__menu"></div></div>';
 		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
 
 		$this->assertStringContainsString(

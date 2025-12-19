@@ -282,7 +282,11 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertContains( $user_1_id, $recipient_ids, 'Failed to assert user 1 is included in all recipients.' );
 		$this->assertContains( $user_2_id, $recipient_ids, 'Failed to assert user 2 is included in all recipients.' );
 		$this->assertContains( $user_3_id, $recipient_ids, 'Failed to assert user 3 is included in all recipients.' );
-		$this->assertGreaterThanOrEqual( 3, count( $recipients ), 'Failed to assert minimum recipient count for all users.' );
+		$this->assertGreaterThanOrEqual(
+			3,
+			count( $recipients ),
+			'Failed to assert minimum recipient count for all users.'
+		);
 	}
 
 	/**
@@ -351,8 +355,16 @@ class Test_Event_Rest_Api extends Base {
 		$user_recipient      = reset( $user_recipients );
 		$anonymous_recipient = reset( $anonymous_recipients );
 
-		$this->assertEquals( $attending_user_id, $user_recipient['user_id'], 'Failed to assert correct attending user ID.' );
-		$this->assertEquals( 'attendee@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous attendee email.' );
+		$this->assertEquals(
+			$attending_user_id,
+			$user_recipient['user_id'],
+			'Failed to assert correct attending user ID.'
+		);
+		$this->assertEquals(
+			'attendee@example.com',
+			$anonymous_recipient['email'],
+			'Failed to assert correct anonymous attendee email.'
+		);
 	}
 
 	/**
@@ -429,11 +441,26 @@ class Test_Event_Rest_Api extends Base {
 		);
 		$anonymous_recipient = reset( $anonymous_recipient );
 
-		$this->assertFalse( $anonymous_recipient['is_user'], 'Failed to assert anonymous recipient is not marked as user.' );
-		$this->assertEquals( 0, $anonymous_recipient['user_id'], 'Failed to assert anonymous recipient has zero user ID.' );
+		$this->assertFalse(
+			$anonymous_recipient['is_user'],
+			'Failed to assert anonymous recipient is not marked as user.'
+		);
+		$this->assertEquals(
+			0,
+			$anonymous_recipient['user_id'],
+			'Failed to assert anonymous recipient has zero user ID.'
+		);
 		$this->assertEquals( $comment_id, $anonymous_recipient['comment_id'], 'Failed to assert correct comment ID.' );
-		$this->assertEquals( 'anonymous@example.com', $anonymous_recipient['email'], 'Failed to assert correct anonymous email.' );
-		$this->assertEquals( 'Anonymous Person', $anonymous_recipient['name'], 'Failed to assert correct anonymous name.' );
+		$this->assertEquals(
+			'anonymous@example.com',
+			$anonymous_recipient['email'],
+			'Failed to assert correct anonymous email.'
+		);
+		$this->assertEquals(
+			'Anonymous Person',
+			$anonymous_recipient['name'],
+			'Failed to assert correct anonymous name.'
+		);
 	}
 
 	/**

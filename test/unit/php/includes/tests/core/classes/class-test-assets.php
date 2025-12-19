@@ -103,7 +103,11 @@ class Test_Assets extends Base {
 		)->get()->ID;
 		$object   = Utility::buffer_and_return( array( $instance, 'add_global_object' ) );
 
-		$this->assertMatchesRegularExpression( '#<script>window.GatherPress = {.*}</script>#', $object, 'Failed to assert regex of global object matches.' );
+		$this->assertMatchesRegularExpression(
+			'#<script>window.GatherPress = {.*}</script>#',
+			$object,
+			'Failed to assert regex of global object matches.'
+		);
 	}
 
 	/**
@@ -209,7 +213,11 @@ class Test_Assets extends Base {
 			$output['eventDetails']['dateTime'],
 			'Failed to assert that datetime array matches.'
 		);
-		$this->assertEquals( 1, $output['eventDetails']['hasEventPast'], 'Failed to assert that has_event_past is true' );
+		$this->assertEquals(
+			1,
+			$output['eventDetails']['hasEventPast'],
+			'Failed to assert that has_event_past is true'
+		);
 		$this->assertEquals( $event_id, $output['eventDetails']['postId'], 'Failed to assert that post_id matches.' );
 	}
 

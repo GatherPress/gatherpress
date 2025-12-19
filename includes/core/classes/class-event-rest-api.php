@@ -394,9 +394,9 @@ class Event_Rest_Api {
 	/**
 	 * Send an event email notification to members.
 	 *
-	 * This method allows sending an email notification about a specific event to members. It checks the user's capability
-	 * to edit posts before initiating the email sending process. If the user doesn't have the required capability,
-	 * the method returns a response with 'success' set to false.
+	 * This method allows sending an email notification about a specific event to members.
+	 * It checks the user's capability to edit posts before initiating the email sending process.
+	 * If the user doesn't have the required capability, the method returns a response with 'success' set to false.
 	 *
 	 * @since 1.0.0
 	 *
@@ -419,8 +419,9 @@ class Event_Rest_Api {
 	/**
 	 * Hooked method to trigger the sending of related emails.
 	 *
-	 * This method hooks into a WordPress action, triggering the `send_emails` method to send emails to selected members.
-	 * It doesn't return any value, as it's intended to be called by an action hook.
+	 * This method hooks into a WordPress action, triggering the `send_emails` method
+	 * to send emails to selected members. It doesn't return any value,
+	 * as it's intended to be called by an action hook.
 	 *
 	 * @since 1.0.0
 	 *
@@ -464,7 +465,13 @@ class Event_Rest_Api {
 				if ( ! $user->has_event_updates_opt_in( $recipient['user_id'] ) ) {
 					continue;
 				}
-			} elseif ( '0' === get_comment_meta( $recipient['comment_id'], 'gatherpress_event_updates_opt_in', true ) ) {
+			} elseif (
+				'0' === get_comment_meta(
+					$recipient['comment_id'],
+					'gatherpress_event_updates_opt_in',
+					true
+				)
+			) {
 				// For non-user RSVPs, check comment meta.
 				continue;
 			}
@@ -482,8 +489,8 @@ class Event_Rest_Api {
 					wp_set_current_user( $recipient['user_id'] );
 				}
 
-				/* translators: %s: event title. */
-				$subject = sprintf( _x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ), get_the_title( $post_id ) );
+				// translators: %s: event title.
+				$subject = sprintf( _x( '📅 %s', 'Email notification subject with event title', 'gatherpress' ), get_the_title( $post_id ) ); // phpcs:ignore Generic.Files.LineLength.TooLong
 				$body    = Utility::render_template(
 					sprintf( '%s/includes/templates/admin/emails/event-email.php', GATHERPRESS_CORE_PATH ),
 					array(
@@ -511,10 +518,11 @@ class Event_Rest_Api {
 	/**
 	 * Get the list of recipients to send event-related emails to.
 	 *
-	 * This method retrieves the list of recipients to whom event-related emails should be sent based on the given `$send`
-	 * parameter and the specified event `$post_id`. It checks the `$send` array for specific email recipient categories,
-	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a unified list of recipients that
-	 * includes both WordPress users and non-user RSVPs with their email addresses and metadata.
+	 * This method retrieves the list of recipients to whom event-related emails should be sent
+	 * based on the given `$send` parameter and the specified event `$post_id`.
+	 * It checks the `$send` array for specific email recipient categories,
+	 * such as 'all,' 'attending,' 'waiting_list,' and 'not_attending,' and compiles a unified list of recipients
+	 * that includes both WordPress users and non-user RSVPs with their email addresses and metadata.
 	 *
 	 * @since 1.0.0
 	 *
@@ -658,10 +666,16 @@ class Event_Rest_Api {
 					'featured_image'           => get_the_post_thumbnail( $post_id, 'medium' ),
 					'featured_image_large'     => get_the_post_thumbnail( $post_id, 'large' ),
 					'featured_image_thumbnail' => get_the_post_thumbnail( $post_id, 'thumbnail' ),
-					'enable_anonymous_rsvp'    => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
+					'enable_anonymous_rsvp'    => (bool) get_post_meta(
+						$post_id,
+						'gatherpress_enable_anonymous_rsvp',
+						true
+					),
 					'responses'                => ( $event->rsvp ) ? $event->rsvp->responses() : array(),
 					'current_user'             => ( $current_user_rsvp ) ? $current_user_rsvp : '',
-					'venue'                    => ( $venue_information['name'] ? $event->get_venue_information() : null ),
+					'venue'                    => ( $venue_information['name'] )
+						? $event->get_venue_information()
+						: null,
 				);
 			}
 		}
@@ -974,8 +988,9 @@ class Event_Rest_Api {
 	/**
 	 * Prepare event data for the response.
 	 *
-	 * This method prepares and enhances the event data for the response object. It retrieves additional meta information,
-	 * such as the online event link, based on specific conditions. The enhanced data is then added to the response.
+	 * This method prepares and enhances the event data for the response object.
+	 * It retrieves additional meta information, such as the online event link, based on specific conditions.
+	 * The enhanced data is then added to the response.
 	 *
 	 * @since 1.0.0
 	 *

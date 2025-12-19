@@ -106,7 +106,8 @@ class Test_General_Block extends Base {
 		// Ensure no user is logged in.
 		wp_set_current_user( 0 );
 
-		$block_content = '<p class="wp-block-example gatherpress--has-login-url">Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
+		$block_content = '<p class="wp-block-example gatherpress--has-login-url">' .
+			'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
 		$block         = array(
 			'attrs'        => array(
 				'className' => 'wp-block-example gatherpress--has-login-url',
@@ -141,7 +142,8 @@ class Test_General_Block extends Base {
 		$user_id = $this->factory->user->create();
 		wp_set_current_user( $user_id );
 
-		$block_content = '<p class="wp-block-example">Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
+		$block_content = '<p class="wp-block-example">' .
+			'Please <a href="#gatherpress-login-url">Login to RSVP</a> to this event.</p>';
 		$block         = array(
 			'attrs'        => array(
 				'className' => 'wp-block-example',
@@ -248,12 +250,14 @@ class Test_General_Block extends Base {
 		// Enable user registration.
 		update_option( 'users_can_register', 1 );
 
-		$block_content = '<p class="wp-block-example gatherpress--has-registration-url">Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.</p>';
+		$block_content = '<p class="wp-block-example gatherpress--has-registration-url">' .
+			'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.</p>';
 		$block         = array(
 			'attrs'        => array(
 				'className' => 'wp-block-example gatherpress--has-registration-url',
 			),
-			'innerHTML'    => 'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
+			'innerHTML'    => 'Don\'t have an account? ' .
+				'<a href="#gatherpress-registration-url">Register here</a> to create one.',
 			'innerContent' => array(
 				'Don\'t have an account? <a href="#gatherpress-registration-url">Register here</a> to create one.',
 			),
@@ -581,7 +585,8 @@ class Test_General_Block extends Base {
 	public function test_convert_submit_button_converts_anchor_to_button(): void {
 		$general_block = General_Block::get_instance();
 
-		$block_content = '<div class="wp-block-button gatherpress-submit-button"><a href="#" role="button" class="wp-block-button__link">Submit</a></div>';
+		$block_content = '<div class="wp-block-button gatherpress-submit-button">' .
+			'<a href="#" role="button" class="wp-block-button__link">Submit</a></div>';
 		$block         = array(
 			'attrs' => array(
 				'className' => 'gatherpress-submit-button',
@@ -609,7 +614,8 @@ class Test_General_Block extends Base {
 	public function test_convert_submit_button_adds_type_to_button(): void {
 		$general_block = General_Block::get_instance();
 
-		$block_content = '<div class="wp-block-button gatherpress-submit-button"><button class="wp-block-button__link">Submit</button></div>';
+		$block_content = '<div class="wp-block-button gatherpress-submit-button">' .
+			'<button class="wp-block-button__link">Submit</button></div>';
 		$block         = array(
 			'attrs' => array(
 				'className' => 'gatherpress-submit-button',
@@ -642,7 +648,11 @@ class Test_General_Block extends Base {
 
 		$result = $general_block->convert_submit_button( $block_content, $block );
 
-		$this->assertEquals( $block_content, $result, 'Block without gatherpress-submit-button class should remain unchanged.' );
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block without gatherpress-submit-button class should remain unchanged.'
+		);
 	}
 
 	/**

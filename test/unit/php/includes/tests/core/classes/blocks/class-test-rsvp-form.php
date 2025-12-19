@@ -133,7 +133,10 @@ class Test_Rsvp_Form extends Base {
 
 		$this->assertStringStartsWith( '<form', $transformed_content );
 		$this->assertStringEndsWith( '</form>', $transformed_content );
-		$this->assertStringContainsString( 'action="' . site_url( 'wp-comments-post.php' ) . '"', $transformed_content );
+		$this->assertStringContainsString(
+			'action="' . site_url( 'wp-comments-post.php' ) . '"',
+			$transformed_content
+		);
 		$this->assertStringContainsString( 'method="post"', $transformed_content );
 		$this->assertStringContainsString( 'name="comment_post_ID" value="' . $post_id . '"', $transformed_content );
 		$this->assertStringContainsString( 'name="gatherpress_rsvp" value="1"', $transformed_content );
@@ -173,7 +176,10 @@ class Test_Rsvp_Form extends Base {
 		$this->assertStringContainsString( '<form', $transformed_content );
 		$this->assertStringContainsString( 'method="post"', $transformed_content );
 		$this->assertStringContainsString( 'action="', $transformed_content );
-		$this->assertStringContainsString( 'class="wp-block-gatherpress-rsvp-form custom-class"', $transformed_content );
+		$this->assertStringContainsString(
+			'class="wp-block-gatherpress-rsvp-form custom-class"',
+			$transformed_content
+		);
 		$this->assertStringContainsString( 'id="gatherpress_rsvp_', $transformed_content );
 	}
 
@@ -234,8 +240,10 @@ class Test_Rsvp_Form extends Base {
 		);
 
 		$block_content = '<div class="wp-block-gatherpress-rsvp-form">
-			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;show&quot;}">Success message</div>
-			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Form field</div>
+			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility='
+			. '"{&quot;onSuccess&quot;:&quot;show&quot;}">Success message</div>
+			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility='
+			. '"{&quot;onSuccess&quot;:&quot;hide&quot;}">Form field</div>
 		</div>';
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-form',
@@ -305,7 +313,8 @@ class Test_Rsvp_Form extends Base {
 				'post_type'    => Event::POST_TYPE,
 				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
 					<div class="wp-block-gatherpress-rsvp-form">
-						<!-- wp:gatherpress/form-field {"fieldName":"custom_field","fieldType":"text","required":true} -->
+						<!-- wp:gatherpress/form-field '
+					. '{"fieldName":"custom_field","fieldType":"text","required":true} -->
 						<div class="wp-block-gatherpress-form-field"></div>
 						<!-- /wp:gatherpress/form-field -->
 					</div>
@@ -729,9 +738,12 @@ class Test_Rsvp_Form extends Base {
 		$instance = Rsvp_Form::get_instance();
 
 		$html = '<form>
-			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;show&quot;}">Success message</div>
-			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Name field</div>
-			<div class="wp-block-buttons" data-gatherpress-rsvp-form-visibility="{&quot;onSuccess&quot;:&quot;hide&quot;}">Submit Button</div>
+			<div class="wp-block-group" data-gatherpress-rsvp-form-visibility='
+			. '"{&quot;onSuccess&quot;:&quot;show&quot;}">Success message</div>
+			<div class="wp-block-gatherpress-form-field" data-gatherpress-rsvp-form-visibility='
+			. '"{&quot;onSuccess&quot;:&quot;hide&quot;}">Name field</div>
+			<div class="wp-block-buttons" data-gatherpress-rsvp-form-visibility='
+			. '"{&quot;onSuccess&quot;:&quot;hide&quot;}">Submit Button</div>
 		</form>';
 
 		// Test with success = false (default state).
@@ -747,11 +759,18 @@ class Test_Rsvp_Form extends Base {
 		// Check that blocks with onSuccess: 'show' do NOT have display: none.
 		preg_match( '/<div[^>]*class="wp-block-group"[^>]*>/', $result_true, $group_matches );
 		if ( ! empty( $group_matches[0] ) ) {
-			$this->assertStringNotContainsString( 'display: none;', $group_matches[0], 'Success message should be visible' );
+			$this->assertStringNotContainsString(
+				'display: none;',
+				$group_matches[0],
+				'Success message should be visible'
+			);
 		}
 
 		// Check that blocks with onSuccess: 'hide' DO have display: none.
-		$this->assertStringContainsString( 'style="display: none;" class="wp-block-gatherpress-form-field"', $result_true );
+		$this->assertStringContainsString(
+			'style="display: none;" class="wp-block-gatherpress-form-field"',
+			$result_true
+		);
 		$this->assertStringContainsString( 'aria-hidden="false"', $result_true );
 	}
 
@@ -997,8 +1016,14 @@ class Test_Rsvp_Form extends Base {
 		$instance->process_custom_fields_for_form( $comment_id );
 
 		// Check that custom fields were saved.
-		$this->assertEquals( 'Test Value', get_comment_meta( $comment_id, 'gatherpress_custom_custom_text_field', true ) );
-		$this->assertEquals( 'test@example.com', get_comment_meta( $comment_id, 'gatherpress_custom_custom_email_field', true ) );
+		$this->assertEquals(
+			'Test Value',
+			get_comment_meta( $comment_id, 'gatherpress_custom_custom_text_field', true )
+		);
+		$this->assertEquals(
+			'test@example.com',
+			get_comment_meta( $comment_id, 'gatherpress_custom_custom_email_field', true )
+		);
 
 		// Check that built-in fields were not processed.
 		$this->assertEquals( '', get_comment_meta( $comment_id, 'gatherpress_custom_author', true ) );
@@ -1697,7 +1722,9 @@ class Test_Rsvp_Form extends Base {
 				'post_type'    => Event::POST_TYPE,
 				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
 					<div class="wp-block-gatherpress-rsvp-form">
-						<!-- wp:gatherpress/form-field {"fieldName":"select_field","fieldType":"select","options":["Option 1","Option 2","Option 3"]} -->
+						<!-- wp:gatherpress/form-field '
+					. '{"fieldName":"select_field","fieldType":"select",'
+					. '"options":["Option 1","Option 2","Option 3"]} -->
 						<div class="wp-block-gatherpress-form-field"></div>
 						<!-- /wp:gatherpress/form-field -->
 					</div>
@@ -1713,7 +1740,10 @@ class Test_Rsvp_Form extends Base {
 
 		$this->assertArrayHasKey( 'select_field', $schemas['form_0']['fields'] );
 		$this->assertEquals( 'select', $schemas['form_0']['fields']['select_field']['type'] );
-		$this->assertEquals( array( 'Option 1', 'Option 2', 'Option 3' ), $schemas['form_0']['fields']['select_field']['options'] );
+		$this->assertEquals(
+			array( 'Option 1', 'Option 2', 'Option 3' ),
+			$schemas['form_0']['fields']['select_field']['options']
+		);
 	}
 
 	/**
@@ -1729,7 +1759,8 @@ class Test_Rsvp_Form extends Base {
 				'post_type'    => Event::POST_TYPE,
 				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
 					<div class="wp-block-gatherpress-rsvp-form">
-						<!-- wp:gatherpress/form-field {"fieldName":"message_field","fieldType":"textarea","maxLength":500} -->
+						<!-- wp:gatherpress/form-field '
+					. '{"fieldName":"message_field","fieldType":"textarea","maxLength":500} -->
 						<div class="wp-block-gatherpress-form-field"></div>
 						<!-- /wp:gatherpress/form-field -->
 					</div>
@@ -1903,7 +1934,8 @@ class Test_Rsvp_Form extends Base {
 				'post_type'    => Event::POST_TYPE,
 				'post_content' => '<!-- wp:gatherpress/rsvp-form -->
 					<div class="wp-block-gatherpress-rsvp-form">
-						<!-- wp:gatherpress/form-field {"fieldName":"radio_field","fieldType":"radio","options":["Yes","No","Maybe"]} -->
+						<!-- wp:gatherpress/form-field '
+					. '{"fieldName":"radio_field","fieldType":"radio","options":["Yes","No","Maybe"]} -->
 						<div class="wp-block-gatherpress-form-field"></div>
 						<!-- /wp:gatherpress/form-field -->
 					</div>
@@ -1980,7 +2012,11 @@ class Test_Rsvp_Form extends Base {
 
 		$result = $instance->transform_block_content( '<div class="wp-block-gatherpress-rsvp-form"></div>', $block );
 
-		$this->assertSame( '', $result, 'Failed to assert transform_block_content returns empty string for invalid event object.' );
+		$this->assertSame(
+			'',
+			$result,
+			'Failed to assert transform_block_content returns empty string for invalid event object.'
+		);
 	}
 
 	/**
@@ -2026,7 +2062,15 @@ class Test_Rsvp_Form extends Base {
 
 		$result = $instance->apply_visibility_attribute( $block_content, $block );
 
-		$this->assertStringContainsString( 'data-gatherpress-event-state="past"', $result, 'Failed to assert past event state attribute is set.' );
-		$this->assertStringContainsString( 'data-gatherpress-rsvp-form-visibility', $result, 'Failed to assert visibility attribute is set.' );
+		$this->assertStringContainsString(
+			'data-gatherpress-event-state="past"',
+			$result,
+			'Failed to assert past event state attribute is set.'
+		);
+		$this->assertStringContainsString(
+			'data-gatherpress-rsvp-form-visibility',
+			$result,
+			'Failed to assert visibility attribute is set.'
+		);
 	}
 }
