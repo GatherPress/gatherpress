@@ -13,6 +13,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Tests\Base;
 use WP_Block;
+use WP_Block_Type_Registry;
 
 /**
  * Class Test_Rsvp_Template.
@@ -566,6 +567,170 @@ class Test_Rsvp_Template extends Base {
 			'data-id="rsvp-' . $comment_id . '"',
 			$result,
 			'Failed to assert admin can see anonymous RSVP.'
+		);
+	}
+
+	/**
+	 * Tests ensure_block_styles_loaded with a block that has styles.
+	 *
+	 * @covers ::ensure_block_styles_loaded
+	 * @return void
+	 */
+	public function test_ensure_block_styles_loaded_with_block_styles(): void {
+		$instance = Rsvp_Template::get_instance();
+
+		// Register the style handle first.
+		wp_register_style( 'test-block-style', false, array(), '1.0.0' );
+
+		// Register a test block type with a style handle (can be string or array).
+		register_block_type(
+			'test/block-with-style',
+			array(
+				'style' => array( 'test-block-style' ),
+			)
+		);
+
+		// Structure as a single block with innerBlocks (how get_block_names expects it).
+		$blocks_data   = wp_json_encode(
+			array(
+				'blockName'   => 'gatherpress/rsvp-template',
+				'innerBlocks' => array(
+					array( 'blockName' => 'test/block-with-style' ),
+				),
+			)
+		);
+		$block_content = sprintf( '<div data-blocks="%s">Test content</div>', esc_attr( $blocks_data ) );
+
+		// Verify the style was registered but not enqueued initially.
+		$this->assertFalse(
+			wp_style_is( 'test-block-style', 'enqueued' ),
+			'Style should not be enqueued before processing.'
+		);
+
+		$result = $instance->ensure_block_styles_loaded( $block_content );
+
+		// Tests lines 95-99: Block registry get and style property check.
+		// Verify method executed without error and returned content.
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Failed to assert block content returned correctly after processing block with styles.'
+		);
+
+		// Verify the style was enqueued by the method.
+		$this->assertTrue(
+			wp_style_is( 'test-block-style', 'enqueued' ),
+			'Style should be enqueued after processing blocks with styles.'
+		);
+
+		// Verify block type was registered.
+		$block_registry = WP_Block_Type_Registry::get_instance();
+		$this->assertTrue(
+			$block_registry->is_registered( 'test/block-with-style' ),
+			'Failed to assert test block type is registered.'
+		);
+
+		// Clean up.
+		unregister_block_type( 'test/block-with-style' );
+		wp_deregister_style( 'test-block-style' );
+	}
+
+	/**
+	 * Tests generate_rsvp_template_block with RSVP limit context.
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_with_limit_context(): void {
+		$instance = Rsvp_Template::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+		$post_id  = $post->ID;
+
+		$wp_block = new WP_Block(
+			array(),
+			array(
+				'postId'                       => $post_id,
+				'gatherpress/rsvpLimitEnabled' => true,
+				'gatherpress/rsvpLimit'        => 50,
+			)
+		);
+		$block    = array( 'innerBlocks' => array() );
+
+		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
+
+		// Tests lines 140 and 143: Context values for limit.
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$result,
+			'Failed to assert event with limit context generates interactive markup.'
+		);
+	}
+
+	/**
+	 * Tests generate_rsvp_template_block with RSVP responses.
+	 *
+	 * @covers ::generate_rsvp_template_block
+	 * @return void
+	 */
+	public function test_generate_rsvp_template_block_with_responses(): void {
+		$instance = Rsvp_Template::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
+		$post_id  = $post->ID;
+
+		// Get event and save an RSVP using the proper API.
+		$event   = new Event( $post_id );
+		$user_id = $this->factory->user->create();
+
+		// Save RSVP using the Event's RSVP system.
+		$event->rsvp->save( $user_id, 'attending', 0, 0 );
+
+		// Create one more RSVP.
+		$user_id_2 = $this->factory->user->create();
+		$event->rsvp->save( $user_id_2, 'attending', 0, 0 );
+
+		$wp_block = new WP_Block(
+			array(),
+			array(
+				'postId'                       => $post_id,
+				'gatherpress/rsvpLimitEnabled' => true,
+				'gatherpress/rsvpLimit'        => 100,
+			)
+		);
+		$block    = array(
+			'innerBlocks' => array(
+				array(
+					'blockName'    => 'core/paragraph',
+					'attrs'        => array(),
+					'innerBlocks'  => array(),
+					'innerHTML'    => '<p>Test Response</p>',
+					'innerContent' => array( '<p>Test Response</p>' ),
+				),
+			),
+		);
+
+		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
+
+		// Tests lines 148-150: Foreach loop through responses.
+		// Just verify that output was generated (responses were processed).
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$result,
+			'Failed to assert output was generated with responses.'
+		);
+
+		// Verify script tag with block data is present.
+		$this->assertStringContainsString(
+			'<script type="application/json"',
+			$result,
+			'Failed to assert script tag is present.'
 		);
 	}
 }

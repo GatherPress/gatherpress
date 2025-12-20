@@ -55,7 +55,7 @@ class Import extends Migrate {
 			/**
 			 * Setup for WordPress Importer (v2).
 			 *
-			 * @see https://github.com/humanmade/Wordpress-Importer
+			 * @see https://github.com/humanmade/WordPress-Importer
 			 */
 			$hook_name = 'wxr_importer.pre_process.post';
 		} else {

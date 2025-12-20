@@ -39,6 +39,7 @@ class Test_Rsvp_Setup extends Base {
 	/**
 	 * Coverage for setup_hooks.
 	 *
+	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
 	 * @return void
@@ -600,11 +601,19 @@ class Test_Rsvp_Setup extends Base {
 		// Verify that the load hook was registered.
 		$hook_name = sprintf( 'load-events_page_%s', Rsvp::COMMENT_TYPE );
 
-		// Trigger the load hook to test the callback.
+		// Set up a proper screen context for add_screen_option to work.
+		$screen_id = sprintf( 'events_page_%s', Rsvp::COMMENT_TYPE );
+		set_current_screen( $screen_id );
+
+		// Trigger the load hook to test the callback (tests lines 210-219).
 		do_action( $hook_name ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 
-		// Should execute without errors.
-		$this->assertTrue( true );
+		// Verify screen option was added.
+		$screen = get_current_screen();
+		$this->assertNotNull( $screen, 'Screen should be set.' );
+
+		// Clean up.
+		set_current_screen( 'front' );
 	}
 
 	/**

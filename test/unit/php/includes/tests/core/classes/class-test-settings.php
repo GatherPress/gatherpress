@@ -1645,4 +1645,84 @@ class Test_Settings extends Base {
 
 		remove_all_filters( 'gatherpress_settings' );
 	}
+
+	/**
+	 * Test register_settings section descriptions and field callbacks render.
+	 *
+	 * Tests lines 247-249 (section description rendering) and
+	 * lines 267-273 (field callback execution).
+	 *
+	 * @covers ::register_settings
+	 * @covers ::render_settings_form
+	 *
+	 * @return void
+	 */
+	public function test_register_settings_renders_section_descriptions_and_fields(): void {
+		$instance = Settings::get_instance();
+
+		// Add a test page with a section that has a description and a field.
+		add_filter(
+			'gatherpress_sub_pages',
+			function ( $settings ) {
+				$settings['test_page_render'] = array(
+					'name'     => 'Test Render Page',
+					'priority' => 99,
+					'sections' => array(
+						'test_section_render' => array(
+							'name'        => 'Test Section Render',
+							'description' => 'This is a test section description.',
+							'options'     => array(
+								'test_text_field' => array(
+									'field'  => array(
+										'type'  => 'text',
+										'label' => 'Test Field',
+									),
+									'labels' => array(
+										'name' => 'Test Field Name',
+									),
+								),
+							),
+						),
+					),
+				);
+				return $settings;
+			}
+		);
+
+		// Register the settings (sets up sections and fields with closures).
+		$instance->register_settings();
+
+		// Render the settings form which triggers both the section description
+		// closure (lines 247-249) and field callback closure (lines 267-273).
+		$output = \PMC\Unit_Test\Utility::buffer_and_return(
+			array( $instance, 'render_settings_form' ),
+			array( 'gatherpress_test_page_render' )
+		);
+
+		// Verify section description was rendered (tests lines 247-249).
+		$this->assertStringContainsString(
+			'This is a test section description.',
+			$output,
+			'Failed to assert section description was rendered.'
+		);
+		$this->assertStringContainsString(
+			'<p class="description">',
+			$output,
+			'Failed to assert section description has proper markup.'
+		);
+
+		// Verify field was rendered via the closure callback (tests lines 267-273).
+		$this->assertStringContainsString(
+			'Test Field',
+			$output,
+			'Failed to assert field label was rendered via callback.'
+		);
+		$this->assertStringContainsString(
+			'type="text"',
+			$output,
+			'Failed to assert text field type was rendered via callback.'
+		);
+
+		remove_all_filters( 'gatherpress_sub_pages' );
+	}
 }
