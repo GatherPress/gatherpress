@@ -14,6 +14,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Disable shallow clone for SonarCloud analysis
+          fetch-tags: true  # Explicitly fetch all tags
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -77,10 +78,19 @@ jobs:
       - name: Fix Code Coverage Paths
         run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
 
-      - name: Fetch unshallow
+      - name: Fetch full git history for SonarCloud
         run: |
-          git fetch --prune --unshallow --tags || true
-          git fetch --all || true
+          git fetch --prune --unshallow || true
+          git fetch --all --tags --prune
+
+      - name: Verify git repository state
+        run: |
+          echo "Git repository diagnostics:"
+          git rev-parse --is-shallow-repository
+          git log --oneline -n 5
+          git tag | wc -l
+          git branch -r | wc -l
+          echo "Git log count: $(git rev-list --all --count)"
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3

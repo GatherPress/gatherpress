@@ -525,16 +525,39 @@ class Test_Feed extends Base {
 	 */
 	public function test_apply_event_excerpt_event(): void {
 		// Create a test event.
-		$post = $this->mock->post()->get();
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
 
 		// Set up global post data.
 		$this->go_to( get_permalink( $post->ID ) );
 
+		// Add a filter to modify the excerpt.
+		$filter = static function ( $excerpt ) {
+			return $excerpt . ' - Modified by filter';
+		};
+		add_filter( 'gatherpress_event_feed_excerpt', $filter );
+
 		$excerpt = 'Original excerpt';
 		$result  = $this->instance->apply_event_excerpt( $excerpt );
 
-		// Should pass through the filter for events.
-		$this->assertIsString( $result );
+		// Should pass through the filter and return modified value.
+		// The Feed class adds HTML formatting first, then our filter appends text.
+		$this->assertStringContainsString(
+			' - Modified by filter',
+			$result,
+			'Filter should modify the excerpt.'
+		);
+		$this->assertStringContainsString(
+			'Original excerpt',
+			$result,
+			'Original excerpt should be present.'
+		);
+
+		// Clean up.
+		remove_filter( 'gatherpress_event_feed_excerpt', $filter );
 	}
 
 	/**
@@ -576,16 +599,39 @@ class Test_Feed extends Base {
 	 */
 	public function test_apply_event_content_event(): void {
 		// Create a test event.
-		$post = $this->mock->post()->get();
+		$post = $this->mock->post(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		)->get();
 
 		// Set up global post data.
 		$this->go_to( get_permalink( $post->ID ) );
 
+		// Add a filter to modify the content.
+		$filter = static function ( $content ) {
+			return $content . ' - Modified by filter';
+		};
+		add_filter( 'gatherpress_event_feed_content', $filter );
+
 		$content = 'Original content';
 		$result  = $this->instance->apply_event_content( $content );
 
-		// Should pass through the filter for events.
-		$this->assertIsString( $result );
+		// Should pass through the filter and return modified value.
+		// The Feed class adds HTML formatting first, then our filter appends text.
+		$this->assertStringContainsString(
+			' - Modified by filter',
+			$result,
+			'Filter should modify the content.'
+		);
+		$this->assertStringContainsString(
+			'Original content',
+			$result,
+			'Original content should be present.'
+		);
+
+		// Clean up.
+		remove_filter( 'gatherpress_event_feed_content', $filter );
 	}
 
 	/**

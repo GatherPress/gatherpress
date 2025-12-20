@@ -360,6 +360,44 @@ class Test_Dropdown extends Base {
 	}
 
 	/**
+	 * Tests select mode with existing class on anchor.
+	 *
+	 * @since 1.0.0
+	 * @covers ::apply_select_mode_attributes
+	 *
+	 * @return void
+	 */
+	public function test_apply_select_mode_attributes_with_existing_class(): void {
+		$instance      = Dropdown::get_instance();
+		$block         = array(
+			'blockName' => 'gatherpress/dropdown',
+			'attrs'     => array(
+				'actAsSelect'   => true,
+				'selectedIndex' => 0,
+			),
+		);
+		$block_content = '<div class="wp-block-gatherpress-dropdown"><div class="wp-block-gatherpress-dropdown__menu">
+<div class="wp-block-gatherpress-dropdown-item"><a class="my-custom-class" href="#">Item 1</a></div></div></div>';
+		$result        = $instance->apply_select_mode_attributes( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'data-dropdown-mode="select"',
+			$result,
+			'Select mode attribute should be added when actAsSelect is true.'
+		);
+		$this->assertStringContainsString(
+			'my-custom-class gatherpress--is-disabled',
+			$result,
+			'Disabled class should be appended to existing class.'
+		);
+		$this->assertStringContainsString(
+			'aria-disabled="true"',
+			$result,
+			'Aria-disabled attribute should be added to selected item.'
+		);
+	}
+
+	/**
 	 * Tests click interactions.
 	 *
 	 * @since 1.0.0

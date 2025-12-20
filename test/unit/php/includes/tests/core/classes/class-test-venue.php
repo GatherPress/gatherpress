@@ -175,6 +175,46 @@ class Test_Venue extends Base {
 	}
 
 	/**
+	 * Coverage for get_localized_post_type_slug with locale restoration.
+	 *
+	 * Tests that restore_previous_locale() is called when switch_to_locale() succeeds.
+	 * This test creates a scenario where the global locale differs from get_locale().
+	 *
+	 * @covers ::get_localized_post_type_slug
+	 *
+	 * @return void
+	 */
+	public function test_get_localized_post_type_slug_restores_locale(): void {
+		// Create a scenario where get_locale() returns a different value.
+		// than the current global locale by using the locale filter.
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Intentionally overriding locale.
+		$locale_filter = static function ( $locale ) {
+			return 'de_DE';
+		};
+
+		add_filter( 'locale', $locale_filter );
+
+		// Now get_locale() will return 'de_DE', but the global locale is still 'en_US'.
+		// When the method calls switch_to_locale(get_locale()), it will actually switch.
+		// to 'de_DE' and return true, triggering the restore_previous_locale() path.
+		$slug = Venue::get_localized_post_type_slug();
+
+		// Verify the slug was generated.
+		$this->assertNotEmpty( $slug, 'Failed to assert slug is not empty.' );
+
+		// The method should have called restore_previous_locale() since.
+		// switch_to_locale() returned true.
+		// We should be back to en_US (with the filter still active).
+		remove_filter( 'locale', $locale_filter );
+
+		$this->assertSame(
+			'en_US',
+			determine_locale(),
+			'Failed to assert locale was restored after method execution.'
+		);
+	}
+
+	/**
 	 * Coverage for register_post_meta method.
 	 *
 	 * @covers ::register_post_meta

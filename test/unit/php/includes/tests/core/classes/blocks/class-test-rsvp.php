@@ -851,4 +851,79 @@ class Test_Rsvp extends Base {
 			'The handle_rsvp_form_fields method should not add interactivity attributes to non-matching input fields.'
 		);
 	}
+
+	/**
+	 * Test transform_block_content with non-event post.
+	 *
+	 * Verifies that the method returns an empty string when called
+	 * on a post that is not an event post type.
+	 *
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_with_non_event_post(): void {
+		$instance = Rsvp::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => 'post',
+			)
+		)->get();
+
+		$block_content = '<div class="wp-block-gatherpress-rsvp"></div>';
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-v2',
+			'attrs'     => array(
+				'postId' => $post->ID,
+			),
+		);
+
+		$result = $instance->transform_block_content( $block_content, $block );
+
+		// Tests line 110: return ''; (when post is not an event).
+		$this->assertSame(
+			'',
+			$result,
+			'Should return empty string for non-event post.'
+		);
+	}
+
+	/**
+	 * Test apply_guests_input_interactivity method.
+	 *
+	 * Verifies that the method adds the form field filter hook
+	 * and returns the block content unchanged.
+	 *
+	 * @covers ::apply_guests_input_interactivity
+	 *
+	 * @return void
+	 */
+	public function test_apply_guests_input_interactivity(): void {
+		$instance      = Rsvp::get_instance();
+		$block_content = '<div class="wp-block-gatherpress-rsvp">'
+			. '<input type="number" name="gatherpress_rsvp_guests" />'
+			. '</div>';
+
+		// Remove any existing filters to ensure clean state.
+		$form_field_hook = sprintf( 'render_block_%s', \GatherPress\Core\Blocks\Form_Field::BLOCK_NAME );
+		remove_all_filters( $form_field_hook );
+
+		$result = $instance->apply_guests_input_interactivity( $block_content );
+
+		// Method should return block content unchanged.
+		$this->assertSame(
+			$block_content,
+			$result,
+			'Method should return block content unchanged.'
+		);
+
+		// Method should add the filter hook.
+		$this->assertTrue(
+			has_filter( $form_field_hook, array( $instance, 'handle_rsvp_form_fields' ) ) !== false,
+			'Method should add the handle_rsvp_form_fields filter.'
+		);
+
+		// Clean up.
+		remove_filter( $form_field_hook, array( $instance, 'handle_rsvp_form_fields' ) );
+	}
 }

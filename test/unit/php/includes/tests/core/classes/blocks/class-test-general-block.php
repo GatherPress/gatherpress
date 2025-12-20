@@ -656,6 +656,37 @@ class Test_General_Block extends Base {
 	}
 
 	/**
+	 * Test convert_submit_button when block has class but no button/anchor elements.
+	 *
+	 * Tests the fallback return path when the block has the gatherpress-submit-button
+	 * class but doesn't contain any anchor or button tags to process.
+	 *
+	 * @since 1.0.0
+	 * @covers ::convert_submit_button
+	 *
+	 * @return void
+	 */
+	public function test_convert_submit_button_no_elements_to_process(): void {
+		$general_block = General_Block::get_instance();
+
+		// Block has the class but only contains a div with text (no <a> or <button>).
+		$block_content = '<div class="wp-block-group gatherpress-submit-button"><p>This is just text</p></div>';
+		$block         = array(
+			'attrs' => array(
+				'className' => 'wp-block-group gatherpress-submit-button',
+			),
+		);
+
+		$result = $general_block->convert_submit_button( $block_content, $block );
+
+		$this->assertEquals(
+			$block_content,
+			$result,
+			'Block with class but no anchor/button elements should return unchanged.'
+		);
+	}
+
+	/**
 	 * Test process_guests_field with non-publish status returns content unchanged.
 	 *
 	 * @since 1.0.0
