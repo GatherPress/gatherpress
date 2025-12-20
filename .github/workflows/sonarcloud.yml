@@ -16,6 +16,24 @@ jobs:
           fetch-depth: 0  # Disable shallow clone for SonarCloud analysis
           fetch-tags: true  # Explicitly fetch all tags
 
+      - name: Ensure full git history for SonarCloud
+        run: |
+          # Remove shallow marker if it exists
+          rm -f .git/shallow
+          # Fetch complete history
+          git fetch --prune --unshallow || true
+          git fetch --all --tags --prune
+          git fetch origin +refs/heads/*:refs/remotes/origin/*
+          # Verify
+          IS_SHALLOW=$(git rev-parse --is-shallow-repository)
+          echo "Is shallow repository: $IS_SHALLOW"
+          if [ "$IS_SHALLOW" = "true" ]; then
+            echo "ERROR: Repository is still shallow after fetch!"
+            exit 1
+          fi
+          echo "Total commits: $(git rev-list --all --count)"
+          echo "Git directory size: $(du -sh .git)"
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -77,28 +95,6 @@ jobs:
 
       - name: Fix Code Coverage Paths
         run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
-
-      - name: Fetch full git history for SonarCloud
-        run: |
-          git fetch --prune --unshallow || true
-          git fetch --all --tags --prune
-          git fetch origin +refs/heads/*:refs/remotes/origin/*
-
-      - name: Verify git repository state
-        run: |
-          echo "Git repository diagnostics:"
-          IS_SHALLOW=$(git rev-parse --is-shallow-repository)
-          echo "Is shallow: $IS_SHALLOW"
-          if [ "$IS_SHALLOW" = "true" ]; then
-            echo "WARNING: Repository is still shallow!"
-            exit 1
-          fi
-          echo "Recent commits:"
-          git log --oneline -n 5
-          echo "Total tags: $(git tag | wc -l)"
-          echo "Total remote branches: $(git branch -r | wc -l)"
-          echo "Total commits: $(git rev-list --all --count)"
-          echo "Git directory size: $(du -sh .git)"
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
