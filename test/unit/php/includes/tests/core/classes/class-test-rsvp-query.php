@@ -12,6 +12,8 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Query;
 use GatherPress\Tests\Base;
+use stdClass;
+use WP_Comment;
 use WP_Comment_Query;
 
 /**
@@ -497,6 +499,8 @@ class Test_Rsvp_Query extends Base {
 	/**
 	 * Test maybe_invalidate_comment_types_cache with empty comment type.
 	 *
+	 * Tests the early return path when comment_type is empty (regular comment).
+	 *
 	 * @covers ::maybe_invalidate_comment_types_cache
 	 *
 	 * @return void
@@ -507,20 +511,61 @@ class Test_Rsvp_Query extends Base {
 		// Set up cache.
 		set_transient(
 			Rsvp_Query::COMMENT_TYPES_CACHE_KEY,
-			array( 'comment', 'pingback' ),
+			array( 'pingback', 'trackback' ),
 			Rsvp_Query::CACHE_EXPIRATION
 		);
 
-		// Create a regular comment with empty comment_type.
-		$comment_id = $this->factory->comment->create();
-		$comment    = get_comment( $comment_id );
+		// Create a mock WP_Comment object with empty string comment_type.
+		$comment               = new WP_Comment( new stdClass() );
+		$comment->comment_ID   = 998;
+		$comment->comment_type = '';
 
-		$instance->maybe_invalidate_comment_types_cache( $comment_id, $comment );
+		// Verify comment_type is actually empty.
+		$this->assertEmpty(
+			$comment->comment_type,
+			'Comment type should be empty for this test'
+		);
+
+		$instance->maybe_invalidate_comment_types_cache( 998, $comment );
 
 		// Cache should still exist (method returns early for empty types).
 		$this->assertNotFalse(
 			get_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY ),
 			'Cache should not be invalidated for empty comment type'
+		);
+
+		// Clean up.
+		delete_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY );
+	}
+
+	/**
+	 * Test maybe_invalidate_comment_types_cache with null comment type.
+	 *
+	 * @covers ::maybe_invalidate_comment_types_cache
+	 *
+	 * @return void
+	 */
+	public function test_maybe_invalidate_comment_types_cache_with_null_type(): void {
+		$instance = Rsvp_Query::get_instance();
+
+		// Set up cache.
+		set_transient(
+			Rsvp_Query::COMMENT_TYPES_CACHE_KEY,
+			array( 'comment', 'pingback' ),
+			Rsvp_Query::CACHE_EXPIRATION
+		);
+
+		// Create a mock WP_Comment object with null comment_type.
+		$comment               = new WP_Comment( new stdClass() );
+		$comment->comment_ID   = 999;
+		$comment->comment_type = null;
+
+		$instance->maybe_invalidate_comment_types_cache( 999, $comment );
+
+		// Cache should still exist (method returns early for empty types).
+		$this->assertNotFalse(
+			get_transient( Rsvp_Query::COMMENT_TYPES_CACHE_KEY ),
+			'Cache should not be invalidated for null comment type'
 		);
 
 		// Clean up.

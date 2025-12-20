@@ -1162,6 +1162,68 @@ class Test_Event extends Base {
 	}
 
 	/**
+	 * Coverage for get_ics_calendar_string method with venue full address.
+	 *
+	 * @covers ::get_ics_calendar_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_calendar_string_with_venue_full_address(): void {
+		$venue      = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Test Venue',
+				'post_name'  => 'test-venue',
+			)
+		)->get();
+		$event_id   = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event with Venue',
+			)
+		)->get()->ID;
+		$event      = new Event( $event_id );
+		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042"}';
+
+		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		wp_set_post_terms( $event_id, '_test-venue', Venue::TAXONOMY );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_ics_calendar_string();
+
+		$this->assertStringContainsString( 'BEGIN:VCALENDAR', $result, 'Failed to assert ICS contains VCALENDAR.' );
+		$this->assertStringContainsString( 'BEGIN:VEVENT', $result, 'Failed to assert ICS contains VEVENT.' );
+		$this->assertStringContainsString( 'SUMMARY:', $result, 'Failed to assert ICS contains SUMMARY.' );
+		$this->assertStringContainsString(
+			'LOCATION:',
+			$result,
+			'Failed to assert ICS contains LOCATION field.'
+		);
+		$this->assertStringContainsString(
+			'123 Mai',
+			$result,
+			'Failed to assert ICS LOCATION contains full address.'
+		);
+		$this->assertStringContainsString(
+			'Test Ve',
+			$result,
+			'Failed to assert ICS LOCATION contains venue name.'
+		);
+		$this->assertStringContainsString( 'END:VEVENT', $result, 'Failed to assert ICS contains VEVENT end.' );
+		$this->assertStringContainsString( 'END:VCALENDAR', $result, 'Failed to assert ICS contains VCALENDAR end.' );
+	}
+
+	/**
 	 * Coverage for get_calendar_description method.
 	 *
 	 * @covers ::get_calendar_description

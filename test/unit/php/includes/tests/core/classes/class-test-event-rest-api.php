@@ -770,6 +770,14 @@ class Test_Event_Rest_Api extends Base {
 			)
 		);
 
+		// Set up future event datetime to prevent "event has passed" error.
+		$event  = new Event( $post_id );
+		$params = array(
+			'datetime_start' => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day' ) ),
+			'datetime_end'   => gmdate( 'Y-m-d H:i:s', strtotime( '+1 day 2 hours' ) ),
+		);
+		$event->save_datetimes( $params );
+
 		// Create existing RSVP.
 		$this->factory()->comment->create(
 			array(

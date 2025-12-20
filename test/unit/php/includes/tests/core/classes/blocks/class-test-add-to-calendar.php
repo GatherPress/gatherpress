@@ -112,4 +112,45 @@ class Test_Add_To_Calendar extends Base {
 			"Generated calendar link content is missing expected Yahoo Calendar URL component 'calendar.yahoo.com'"
 		);
 	}
+
+	/**
+	 * Test replace_calendar_placeholders with non-event post.
+	 *
+	 * Verifies that the method returns an empty string when called
+	 * on a post that is not an event post type.
+	 *
+	 * @covers ::replace_calendar_placeholders
+	 *
+	 * @return void
+	 */
+	public function test_replace_calendar_placeholders_with_non_event_post(): void {
+		$instance = Add_To_Calendar::get_instance();
+		$post     = $this->mock->post(
+			array(
+				'post_type' => 'post',
+			)
+		)->get();
+
+		$block_content = '
+			<div class="wp-block-gatherpress-add-to-calendar">
+				<a href="#gatherpress-google-calendar">Google Calendar</a>
+				<a href="#gatherpress-ical-calendar">iCal</a>
+			</div>
+		';
+		$block         = array(
+			'blockName' => 'gatherpress/add-to-calendar',
+			'attrs'     => array(
+				'postId' => $post->ID,
+			),
+		);
+
+		$result = $instance->replace_calendar_placeholders( $block_content, $block );
+
+		// Tests line 95: return ''; (when post is not an event).
+		$this->assertSame(
+			'',
+			$result,
+			'Should return empty string for non-event post.'
+		);
+	}
 }
