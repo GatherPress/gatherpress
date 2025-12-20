@@ -13,6 +13,10 @@ on:
       - '*.php'
       - 'phpunit.xml.dist'
       - 'composer.*'
+      - 'src/**'
+      - 'test/unit/js/**'
+      - 'jest.config.js'
+      - 'package.json'
 
 jobs:
   check-coverage:
@@ -51,11 +55,21 @@ jobs:
           docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
         continue-on-error: true  # Continue even if tests fail to show coverage report
 
+      - name: Run JavaScript unit tests with coverage
+        run: npm run test:unit:js
+        continue-on-error: true  # Continue even if tests fail to show coverage report
+
       - name: Validate coverage configuration
         run: php .github/scripts/validate-coverage-config.php
 
-      - name: Check PR coverage
+      - name: Check PHP PR coverage
         run: php .github/scripts/check-pr-coverage.php
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        continue-on-error: true  # Continue to check JS coverage even if PHP fails
+
+      - name: Check JavaScript PR coverage
+        run: php .github/scripts/check-pr-coverage-js.php
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
 
