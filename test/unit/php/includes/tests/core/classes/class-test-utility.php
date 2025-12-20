@@ -650,4 +650,73 @@ class Test_Utility extends Base {
 		// Clean up.
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
 	}
+
+	/**
+	 * Tests get_wp_referer method.
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_wp_referer
+	 *
+	 * @return void
+	 */
+	public function test_get_wp_referer(): void {
+		// Test when referer is available.
+		$expected_referer = 'https://example.com/test-page';
+
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () use ( $expected_referer ) {
+				return $expected_referer;
+			}
+		);
+
+		$result = Utility::get_wp_referer();
+
+		$this->assertEquals(
+			$expected_referer,
+			$result,
+			'Should return the mocked referer URL.'
+		);
+
+		// Clean up.
+		remove_all_filters( 'gatherpress_pre_get_wp_referer' );
+
+		// Test when referer is false.
+		add_filter(
+			'gatherpress_pre_get_wp_referer',
+			static function () {
+				return false;
+			}
+		);
+
+		$result = Utility::get_wp_referer();
+
+		$this->assertFalse(
+			$result,
+			'Should return false when no referer is available.'
+		);
+
+		// Clean up.
+		remove_all_filters( 'gatherpress_pre_get_wp_referer' );
+	}
+
+	/**
+	 * Tests get_wp_referer without filter (normal WordPress behavior).
+	 *
+	 * @since 1.0.0
+	 * @covers ::get_wp_referer
+	 *
+	 * @return void
+	 */
+	public function test_get_wp_referer_without_filter(): void {
+		// When no pre-filter is applied, it should call wp_get_referer().
+		// In test environment, wp_get_referer() typically returns false.
+		$result = Utility::get_wp_referer();
+
+		// Should return whatever wp_get_referer() returns (typically false in tests).
+		$this->assertFalse(
+			$result,
+			'Should return false when wp_get_referer has no referer in test environment.'
+		);
+	}
 }

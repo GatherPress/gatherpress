@@ -608,10 +608,13 @@ class Test_Event_Rest_Api extends Base {
 	public function test_update_rsvp(): void {
 		$instance = Event_Rest_Api::get_instance();
 		$request  = new WP_REST_Request( 'POST' );
-		$user_id  = $this->mock->user( true, 'admin' )->get()->ID;
-		$event_id = $this->mock->post(
+		$user_id  = $this->factory->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( $user_id );
+
+		$event_id = $this->factory->post->create(
 			array( 'post_type' => Event::POST_TYPE )
-		)->get()->ID;
+		);
 		$event    = new Event( $event_id );
 
 		$event->save_datetimes(

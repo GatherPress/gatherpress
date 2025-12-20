@@ -507,7 +507,7 @@ class Test_Dropdown extends Base {
 			'Default border radius should be applied'
 		);
 		$this->assertStringContainsString(
-			'z-index: 10',
+			'z-index: 1001',
 			$result,
 			'Default z-index should be applied'
 		);
@@ -515,6 +515,126 @@ class Test_Dropdown extends Base {
 			'width: 240px',
 			$result,
 			'Default width should be applied'
+		);
+	}
+
+	/**
+	 * Tests apply_select_mode_attributes with invalid HTML.
+	 *
+	 * @since 1.0.0
+	 * @covers ::apply_select_mode_attributes
+	 *
+	 * @return void
+	 */
+	public function test_apply_select_mode_attributes_invalid_html(): void {
+		$instance      = Dropdown::get_instance();
+		$block         = array(
+			'blockName' => 'gatherpress/dropdown',
+			'attrs'     => array(
+				'actAsSelect' => true,
+			),
+		);
+		$block_content = '';
+		$result        = $instance->apply_select_mode_attributes( $block_content, $block );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Empty HTML should be returned unchanged.'
+		);
+	}
+
+	/**
+	 * Tests apply_dropdown_attributes with no trigger element.
+	 *
+	 * @since 1.0.0
+	 * @covers ::apply_dropdown_attributes
+	 *
+	 * @return void
+	 */
+	public function test_apply_dropdown_attributes_no_trigger(): void {
+		$instance      = Dropdown::get_instance();
+		$block         = array(
+			'blockName' => 'gatherpress/dropdown',
+			'attrs'     => array(
+				'labelColor' => '#FF0000',
+			),
+		);
+		$block_content = '<div><div class="wp-block-gatherpress-dropdown__menu"></div></div>';
+		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
+
+		$this->assertStringNotContainsString(
+			'color: #FF0000',
+			$result,
+			'Label color should not be applied when trigger is missing.'
+		);
+	}
+
+	/**
+	 * Tests apply_dropdown_attributes with no menu element.
+	 *
+	 * @since 1.0.0
+	 * @covers ::apply_dropdown_attributes
+	 *
+	 * @return void
+	 */
+	public function test_apply_dropdown_attributes_no_menu(): void {
+		$instance      = Dropdown::get_instance();
+		$block         = array(
+			'blockName' => 'gatherpress/dropdown',
+			'attrs'     => array(
+				'dropdownBorderColor' => '#FF0000',
+			),
+		);
+		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger">Click</a></div>';
+		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
+
+		$this->assertStringNotContainsString(
+			'border: 1px solid #FF0000',
+			$result,
+			'Menu styles should not be applied when menu is missing.'
+		);
+	}
+
+	/**
+	 * Tests apply_dropdown_attributes with existing label styles.
+	 *
+	 * @since 1.0.0
+	 * @covers ::apply_dropdown_attributes
+	 *
+	 * @return void
+	 */
+	public function test_apply_dropdown_attributes_merge_existing_styles(): void {
+		$instance      = Dropdown::get_instance();
+		$block         = array(
+			'blockName' => 'gatherpress/dropdown',
+			'attrs'     => array(
+				'labelColor' => '#FF0000',
+			),
+		);
+		$block_content = '<div><a class="wp-block-gatherpress-dropdown__trigger" style="font-size: 16px;">Click</a>
+<div class="wp-block-gatherpress-dropdown__menu" style="display: none;"></div></div>';
+		$result        = $instance->apply_dropdown_attributes( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'font-size: 16px;',
+			$result,
+			'Existing trigger styles should be preserved.'
+		);
+		$this->assertStringContainsString(
+			'color: #FF0000',
+			$result,
+			'New label color should be added.'
+		);
+		$this->assertStringContainsString(
+			'display: none;',
+			$result,
+			'Existing menu styles should be preserved.'
+		);
+		$this->assertStringContainsString(
+			'border:',
+			$result,
+			'New menu styles should be added.'
 		);
 	}
 }
