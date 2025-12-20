@@ -47,7 +47,7 @@ All test logic is implemented and covers:
 
 The tests need a GatherPress event with an RSVP block to run. Currently, this requires:
 
-1. Manual login to WordPress admin (http://localhost:8889/wp-admin)
+1. Manual login to WordPress admin (<http://localhost:8889/wp-admin>)
 2. Creating an event
 3. Adding RSVP block
 4. Setting future date
@@ -65,7 +65,8 @@ Three potential solutions have been explored. Each has blockers that need resolu
 **Approach**: Import demo data via WXR file (similar to PR preview workflow)
 
 **Resources**:
-- Demo data URL: https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml
+
+- Demo data URL: <https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml>
 - Contains "Christmas 2025" event with complete RSVP block
 - Reference implementation: `.github/scripts/playground-preview/index.js`
 
@@ -74,6 +75,7 @@ Three potential solutions have been explored. Each has blockers that need resolu
 The wp-cli importer inside the WordPress container cannot access files from the host filesystem or external URLs directly. The `/tmp` directory doesn't appear to be shared between host and container in wp-env.
 
 **Next Steps**:
+
 1. Research wp-env volume mounting configuration
 2. Find shared directory between host and container
 3. Download WXR file to shared location
@@ -88,6 +90,7 @@ The wp-cli importer inside the WordPress container cannot access files from the 
 **Approach**: Use Playwright to create event through WordPress admin interface
 
 **Resources**:
+
 - Reference: `test/e2e/helpers/create-event-via-admin.js`
 - Navigate to `/wp-admin/post-new.php?post_type=gatherpress_event`
 - Add RSVP block via block inserter
@@ -98,6 +101,7 @@ The wp-cli importer inside the WordPress container cannot access files from the 
 WordPress shows a welcome modal on first editor access that blocks interaction with the title field and other editor elements. Standard dismissal methods (clicking close, pressing Escape) have been unreliable.
 
 **Next Steps**:
+
 1. Research WordPress editor welcome modal dismissal in Playwright
 2. Try alternative approaches:
    - Set user meta to skip welcome guide: `wp user meta update 1 show_welcome_guide_for_blocks 0`
@@ -112,6 +116,7 @@ WordPress shows a welcome modal on first editor access that blocks interaction w
 **Approach**: Create post directly in database with proper RSVP block markup
 
 **Resources**:
+
 - Reference: `test/e2e/helpers/create-event-with-rsvp.php`
 - User provided actual RSVP block structure (see git history)
 - Uses `wp_insert_post` and `wp_update_post`
@@ -121,6 +126,7 @@ WordPress shows a welcome modal on first editor access that blocks interaction w
 Posts created via wp-cli exist in the database (`wp post exists` confirms) but return 404 when accessed via HTTP. This appears to be a wp-env caching or permalink issue.
 
 **Next Steps**:
+
 1. Try flushing rewrite rules after post creation: `wp rewrite flush`
 2. Set specific permalink structure before creating posts
 3. Wait for WordPress to rebuild permalinks
@@ -160,7 +166,7 @@ EVENT_URL=http://localhost:8889/event/your-event/ npm run test:e2e -- rsvp-tests
 
 When running full test suite (`npm run test:e2e`):
 
-```
+```text
 ✓ 7 tests passing (admin tests + event display)
 - 11 tests skipped (RSVP tests)
 ```
@@ -169,7 +175,7 @@ When running full test suite (`npm run test:e2e`):
 
 Once automated event creation is implemented:
 
-```
+```text
 ✓ 18 tests passing
 ```
 
@@ -180,7 +186,7 @@ All tests should run in CI without manual intervention.
 - **Main test file**: `test/e2e/rsvp-tests/rsvp-flows.spec.js`
 - **Helper attempts**: `test/e2e/helpers/create-event-*.js` and `create-event-with-rsvp.php`
 - **Blueprint reference**: `.github/scripts/playground-preview/index.js`
-- **Demo data**: https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml
+- **Demo data**: <https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml>
 
 ## Questions?
 

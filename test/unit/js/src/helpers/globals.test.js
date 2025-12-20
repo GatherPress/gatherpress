@@ -11,6 +11,7 @@ import {
 	setToGlobal,
 	toCamelCase,
 	safeHTML,
+	getUrlParam,
 } from '../../../../../src/helpers/globals';
 
 /**
@@ -275,5 +276,61 @@ describe( 'toCamelCase', () => {
 
 	it( 'handles uppercase letters in the middle of words', () => {
 		expect( toCamelCase( 'heLLo_world' ) ).toBe( 'heLLoWorld' );
+	} );
+} );
+
+/**
+ * Coverage for getUrlParam.
+ */
+describe( 'getUrlParam', () => {
+	beforeEach( () => {
+		// Mock global.location.search.
+		delete global.location;
+		global.location = { search: '' };
+	} );
+
+	it( 'returns parameter value when parameter exists', () => {
+		global.location.search = '?foo=bar&baz=qux';
+
+		expect( getUrlParam( 'foo' ) ).toBe( 'bar' );
+		expect( getUrlParam( 'baz' ) ).toBe( 'qux' );
+	} );
+
+	it( 'returns null when parameter does not exist', () => {
+		global.location.search = '?foo=bar';
+
+		expect( getUrlParam( 'missing' ) ).toBeNull();
+	} );
+
+	it( 'handles empty query string', () => {
+		global.location.search = '';
+
+		expect( getUrlParam( 'anything' ) ).toBeNull();
+	} );
+
+	it( 'handles URL-encoded values', () => {
+		global.location.search = '?message=hello%20world';
+
+		expect( getUrlParam( 'message' ) ).toBe( 'hello world' );
+	} );
+
+	it( 'handles parameters with no value', () => {
+		global.location.search = '?flag';
+
+		expect( getUrlParam( 'flag' ) ).toBe( '' );
+	} );
+
+	it( 'handles multiple parameters with same name', () => {
+		global.location.search = '?tag=react&tag=wordpress';
+
+		// URLSearchParams.get() returns the first value.
+		expect( getUrlParam( 'tag' ) ).toBe( 'react' );
+	} );
+
+	it( 'handles parameters with special characters', () => {
+		global.location.search = '?email=test%40example.com&path=%2Fhome%2Fuser';
+
+		expect( getUrlParam( 'email' ) ).toBe( 'test@example.com' );
+		expect( getUrlParam( 'path' ) ).toBe( '/home/user' );
 	} );
 } );

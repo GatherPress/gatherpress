@@ -84,9 +84,11 @@ test.afterEach(async () => {
 ## Test Suites
 
 ### Admin Tests (`admin-tests/`)
+
 Tests for WordPress admin functionality using Page Object Model.
 
 ### Event Display Tests (`event-tests/`)
+
 Basic frontend tests verifying event pages load correctly.
 
 ```bash
@@ -98,6 +100,7 @@ npm run test:e2e -- event-tests/event-display.spec.js
 **Status**: These tests are fully written but currently skipped in CI due to manual setup requirements.
 
 Comprehensive tests for RSVP functionality covering:
+
 - Open RSVP Flow (logged-out users with email)
 - Logged-in user RSVP interactions
 - Status changes (attending, not attending, waiting list)
