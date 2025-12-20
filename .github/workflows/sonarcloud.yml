@@ -77,6 +77,11 @@ jobs:
       - name: Fix Code Coverage Paths
         run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
 
+      - name: Fetch unshallow
+        run: |
+          git fetch --prune --unshallow --tags || true
+          git fetch --all || true
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
         env:
