@@ -351,7 +351,7 @@ export function updateDateTimeStart(
 	setToGlobal( 'eventDetails.dateTime.datetime_start', date );
 
 	// If in relative mode (duration is numeric), always update the end time to maintain the offset.
-	if ( 'number' === typeof currentDuration && false !== currentDuration ) {
+	if ( 'number' === typeof currentDuration ) {
 		const dateTimeEnd = moment
 			.tz( date, getTimezone() )
 			.add( currentDuration, 'hours' )

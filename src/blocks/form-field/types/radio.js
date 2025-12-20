@@ -60,7 +60,7 @@ export default function RadioField( {
 			const cleanValue = value
 				.toLowerCase()
 				.replace( /[^a-z0-9]+/g, '-' )
-				.replace( /^-+|-+$/g, '' );
+				.replace( /(?:^-+|-+$)/g, '' );
 			newOptions[ index ].value = cleanValue || value;
 		}
 

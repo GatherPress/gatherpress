@@ -18,21 +18,46 @@ jobs:
 
       - name: Ensure full git history for SonarCloud
         run: |
-          # Remove shallow marker if it exists
-          rm -f .git/shallow
-          # Fetch complete history
-          git fetch --prune --unshallow || true
-          git fetch --all --tags --prune
-          git fetch origin +refs/heads/*:refs/remotes/origin/*
-          # Verify
+          # Configure git to never use shallow clones
+          git config --global fetch.unshallow true
+          # Check if currently shallow
           IS_SHALLOW=$(git rev-parse --is-shallow-repository)
-          echo "Is shallow repository: $IS_SHALLOW"
+          echo "Initially shallow: $IS_SHALLOW"
+
           if [ "$IS_SHALLOW" = "true" ]; then
-            echo "ERROR: Repository is still shallow after fetch!"
+            echo "Removing shallow clone indicators..."
+            # Remove shallow file and grafts
+            rm -f .git/shallow .git/info/grafts
+            # Update git config
+            git config --local core.repositoryformatversion 0
+          fi
+
+          # Fetch complete history with all refs
+          echo "Fetching full history..."
+          git fetch --prune --unshallow 2>/dev/null || echo "Already unshallowed"
+          git fetch --all --tags --prune --force
+          git fetch origin +refs/heads/*:refs/remotes/origin/* --force
+
+          # Force git to recognize full history
+          git reflog expire --expire=now --all
+          git gc --prune=now
+
+          # Final verification
+          IS_SHALLOW=$(git rev-parse --is-shallow-repository)
+          echo "After processing - Is shallow: $IS_SHALLOW"
+          if [ "$IS_SHALLOW" = "true" ]; then
+            echo "ERROR: Repository is still shallow after all attempts!"
             exit 1
           fi
+
+          # Show repository stats
+          echo "=== Repository Statistics ==="
           echo "Total commits: $(git rev-list --all --count)"
-          echo "Git directory size: $(du -sh .git)"
+          echo "Total branches: $(git branch -a | wc -l)"
+          echo "Total tags: $(git tag | wc -l)"
+          echo "Git directory size: $(du -sh .git | cut -f1)"
+          echo "Recent commits:"
+          git log --oneline -n 5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -101,4 +126,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_SCANNER_OPTS: "-Dsonar.scm.disabled=false"
+          SONAR_SCANNER_OPTS: "-Dsonar.scm.disabled=false -Dsonar.scm.forceReloadAll=true"

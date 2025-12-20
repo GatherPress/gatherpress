@@ -45,7 +45,7 @@ export default function RadioFieldPanels( { attributes, setAttributes } ) {
 			const cleanValue = value
 				.toLowerCase()
 				.replace( /[^a-z0-9]+/g, '-' )
-				.replace( /^-+|-+$/g, '' );
+				.replace( /(?:^-+|-+$)/g, '' );
 			newOptions[ index ].value = cleanValue || value;
 		}
 
