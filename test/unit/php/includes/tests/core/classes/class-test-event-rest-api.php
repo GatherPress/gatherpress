@@ -1694,21 +1694,14 @@ class Test_Event_Rest_Api extends Base {
 			)
 		);
 
-		// Create RSVP comment.
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID'      => $post_id,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_approved'     => 1,
-				'comment_author'       => 'Non User',
-				'comment_author_email' => 'nonuser@example.com',
-				'user_id'              => 0,
-			)
-		);
+		$event = new Event( $post_id );
+
+		// Create non-user RSVP using email address.
+		$email   = 'nonuser@example.com';
+		$comment = $event->rsvp->save( $email, 'attending', 0, 0 );
 
 		// Set opt-in to '0' (opted out).
-		add_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', '0' );
-		add_comment_meta( $comment_id, 'gatherpress_rsvp_status', 'attending' );
+		update_comment_meta( $comment['comment_id'], 'gatherpress_event_updates_opt_in', '0' );
 
 		$send = array( 'attending' => true );
 
@@ -1756,22 +1749,14 @@ class Test_Event_Rest_Api extends Base {
 			)
 		);
 
-		// Create RSVP for the user.
-		$comment_id = $this->factory->comment->create(
-			array(
-				'comment_post_ID'      => $post_id,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_approved'     => 1,
-				'comment_author_email' => 'user@example.com',
-				'user_id'              => $user_id,
-			)
-		);
+		$event = new Event( $post_id );
 
-		add_comment_meta( $comment_id, 'gatherpress_rsvp_status', 'attending' );
+		// Create RSVP for the user.
+		$event->rsvp->save( $user_id, 'attending' );
 
 		$send = array( 'attending' => true );
 
-		// Set a current user.
+		// Set a current user (as the editor sending the email).
 		wp_set_current_user( $this->factory->user->create() );
 
 		// Mock wp_mail.
@@ -1804,19 +1789,19 @@ class Test_Event_Rest_Api extends Base {
 			)
 		);
 
-		// Create RSVP comment with empty email.
-		$comment_id = $this->factory->comment->create(
+		$event = new Event( $post_id );
+
+		// Create RSVP with valid email first.
+		$email   = 'test@example.com';
+		$comment = $event->rsvp->save( $email, 'attending', 0, 0 );
+
+		// Now remove the email to test the skip logic.
+		wp_update_comment(
 			array(
-				'comment_post_ID'      => $post_id,
-				'comment_type'         => Rsvp::COMMENT_TYPE,
-				'comment_approved'     => 1,
-				'comment_author'       => 'Test User',
-				'comment_author_email' => '', // Empty email.
-				'user_id'              => 0,
+				'comment_ID'           => $comment['comment_id'],
+				'comment_author_email' => '',
 			)
 		);
-
-		add_comment_meta( $comment_id, 'gatherpress_rsvp_status', 'attending' );
 
 		$send = array( 'attending' => true );
 
