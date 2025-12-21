@@ -62,10 +62,10 @@ export default function Edit( { attributes, setAttributes } ) {
 		return labelValue
 			.toLowerCase()
 			.trim()
-			.replace( /[^a-z0-9\s]/g, '' )
-			.replace( /\s+/g, '_' )
-			.replace( /^_+/g, '' )
-			.replace( /_+$/g, '' );
+			.replace( /[^a-z0-9\s]/g, '' ) // Remove special characters.
+			.split( /\s+/ ) // Split on whitespace sequences.
+			.filter( ( part ) => 0 < part.length ) // Remove empty strings.
+			.join( '_' ); // Join with underscores.
 	};
 
 	/**

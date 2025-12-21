@@ -94,6 +94,7 @@ jobs:
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         with:
           path: |
             ./node_modules
@@ -126,3 +127,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.scm.revision=${{ github.sha }}
