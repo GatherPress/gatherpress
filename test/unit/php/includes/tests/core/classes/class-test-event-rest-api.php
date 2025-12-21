@@ -12,6 +12,7 @@ use GatherPress\Core\Event;
 use GatherPress\Core\Event_Rest_Api;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Rsvp_Token;
+use GatherPress\Core\Setup;
 use GatherPress\Core\Topic;
 use GatherPress\Core\Venue;
 use GatherPress\Tests\Base;
@@ -1484,6 +1485,80 @@ class Test_Event_Rest_Api extends Base {
 	}
 
 	/**
+	 * Tests nonce_route callback to generate nonce.
+	 *
+	 * Covers: nonce generation callback with cache headers.
+	 *
+	 * @covers ::nonce_route
+	 */
+	public function test_nonce_route_callback(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'nonce_route' );
+
+		// Create a logged-in user.
+		$user_id = $this->factory->user->create();
+		wp_set_current_user( $user_id );
+
+		// Call the callback.
+		$callback = $route['args']['callback'];
+		$response = call_user_func( $callback );
+
+		$this->assertInstanceOf( WP_REST_Response::class, $response, 'Callback should return WP_REST_Response' );
+
+		$data = $response->get_data();
+		$this->assertArrayHasKey( 'nonce', $data, 'Response should contain nonce key' );
+		$this->assertNotEmpty( $data['nonce'], 'Nonce should not be empty' );
+
+		// Verify the nonce is valid.
+		$this->assertIsString( $data['nonce'], 'Nonce should be a string' );
+		$this->assertGreaterThan( 0, wp_verify_nonce( $data['nonce'], 'wp_rest' ), 'Nonce should be valid' );
+	}
+
+	/**
+	 * Tests email_route permission callback with user who can edit posts.
+	 *
+	 * Covers: permission callback returning true for users with edit_posts capability.
+	 *
+	 * @covers ::email_route
+	 */
+	public function test_email_route_permission_callback_can_edit(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+
+		// Create an editor who can edit posts.
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+
+		// Call the permission callback.
+		$permission_callback = $route['args']['permission_callback'];
+		$result              = call_user_func( $permission_callback );
+
+		$this->assertTrue( $result, 'Permission callback should return true for user with edit_posts capability' );
+	}
+
+	/**
+	 * Tests email_route permission callback with user who cannot edit posts.
+	 *
+	 * Covers: permission callback returning false for users without edit_posts capability.
+	 *
+	 * @covers ::email_route
+	 */
+	public function test_email_route_permission_callback_cannot_edit(): void {
+		$instance = Event_Rest_Api::get_instance();
+		$route    = Utility::invoke_hidden_method( $instance, 'email_route' );
+
+		// Create a subscriber who cannot edit posts.
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		// Call the permission callback.
+		$permission_callback = $route['args']['permission_callback'];
+		$result              = call_user_func( $permission_callback );
+
+		$this->assertFalse( $result, 'Permission callback should return false for user without edit_posts capability' );
+	}
+
+	/**
 	 * Tests rsvp_route permission callback with valid RSVP token.
 	 *
 	 * Covers: permission callback returning true when valid token is provided.
@@ -1947,5 +2022,72 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertInstanceOf( 'WP_REST_Response', $response );
 		$this->assertTrue( $response->data['success'], 'rsvp_responses should return success' );
 		// If test runs without error, nocache_headers was called successfully.
+	}
+
+	/**
+	 * Tests update_rsvp adds user to blog in multisite when not a member.
+	 *
+	 * Covers: add_user_to_blog when user RSVPs to event on different site.
+	 *
+	 * @group multisite
+	 * @covers ::update_rsvp
+	 *
+	 * @return void
+	 */
+	public function test_update_rsvp_adds_user_to_blog_multisite(): void {
+		$instance = Event_Rest_Api::get_instance();
+
+		// Create a user on site 1.
+		$user_id = $this->factory->user->create(
+			array(
+				'user_login' => 'testuser',
+				'user_email' => 'testuser@example.com',
+				'role'       => 'subscriber',
+			)
+		);
+
+		// Create site 2.
+		$site_2_id = $this->factory->blog->create();
+
+		// Switch to site 2.
+		switch_to_blog( $site_2_id );
+
+		// Create tables on site 2.
+		$setup = Setup::get_instance();
+		Utility::invoke_hidden_method( $setup, 'create_tables' );
+
+		// Create an event on site 2.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Verify user is NOT a member of site 2.
+		$this->assertFalse( is_user_member_of_blog( $user_id, $site_2_id ), 'User should not be member of site 2' );
+
+		// Set current user to the user from site 1.
+		wp_set_current_user( $user_id );
+
+		// Create RSVP request.
+		$request = new WP_REST_Request( 'POST', '/gatherpress/v1/event/rsvp' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'status', 'attending' );
+		$request->set_param( 'user_id', $user_id );
+
+		// Call update_rsvp.
+		$response = $instance->update_rsvp( $request );
+
+		// Verify user was added to site 2 as a subscriber.
+		$this->assertTrue( is_user_member_of_blog( $user_id, $site_2_id ), 'User should be added to site 2' );
+
+		// Verify they have subscriber role on site 2.
+		$user = new \WP_User( $user_id );
+		$this->assertTrue( $user->has_cap( 'read' ), 'User should have subscriber capabilities on site 2' );
+
+		// Verify RSVP was successful.
+		$this->assertTrue( $response->data['success'], 'RSVP should be successful' );
+
+		restore_current_blog();
 	}
 }
