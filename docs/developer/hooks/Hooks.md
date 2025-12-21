@@ -1,4 +1,8 @@
 
+## class-assets.php
+
+- [`gatherpress_asset_critical`](gatherpress_asset_critical) Filters whether an asset file is considered critical.
+
 ## class-autoloader.php
 
 - [`gatherpress_autoloader`](gatherpress_autoloader) Filters the registered autoloaders for GatherPress.
