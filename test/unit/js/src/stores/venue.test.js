@@ -6,79 +6,16 @@ import { describe, expect, it } from '@jest/globals';
 /**
  * WordPress dependencies.
  */
-import { select, dispatch, register, createReduxStore } from '@wordpress/data';
+import { select, dispatch } from '@wordpress/data';
+
+/**
+ * Internal dependencies.
+ */
+// Import the actual store to get coverage.
+import '../../../../../src/stores/venue';
 
 describe( 'Venue store', () => {
 	const STORE_NAME = 'gatherpress/venue';
-
-	const DEFAULT_STATE = {
-		latitude: 0,
-		longitude: 0,
-		mapCustomLatLong: false,
-	};
-
-	const actions = {
-		updateVenueLatitude( latitude ) {
-			return {
-				type: 'UPDATE_VENUE_LATITUDE',
-				latitude,
-			};
-		},
-		updateVenueLongitude( longitude ) {
-			return {
-				type: 'UPDATE_VENUE_LONGITUDE',
-				longitude,
-			};
-		},
-		updateMapCustomLatLong( mapCustomLatLong ) {
-			return {
-				type: 'UPDATE_MAP_CUSTOM_LAT_LONG',
-				mapCustomLatLong,
-			};
-		},
-	};
-
-	const reducer = ( state = DEFAULT_STATE, action ) => {
-		switch ( action.type ) {
-			case 'UPDATE_VENUE_LATITUDE':
-				return {
-					...state,
-					latitude: action.latitude,
-				};
-			case 'UPDATE_VENUE_LONGITUDE':
-				return {
-					...state,
-					longitude: action.longitude,
-				};
-			case 'UPDATE_MAP_CUSTOM_LAT_LONG':
-				return {
-					...state,
-					mapCustomLatLong: action.mapCustomLatLong,
-				};
-			default:
-				return state;
-		}
-	};
-
-	const selectors = {
-		getVenueLatitude( state ) {
-			return state.latitude;
-		},
-		getVenueLongitude( state ) {
-			return state.longitude;
-		},
-		getMapCustomLatLong( state ) {
-			return state.mapCustomLatLong;
-		},
-	};
-
-	const store = createReduxStore( STORE_NAME, {
-		reducer,
-		actions,
-		selectors,
-	} );
-
-	register( store );
 
 	describe( 'initial state', () => {
 		it( 'has latitude set to 0 by default', () => {
@@ -100,56 +37,27 @@ describe( 'Venue store', () => {
 		} );
 	} );
 
-	describe( 'action creators', () => {
-		it( 'updateVenueLatitude creates correct action object', () => {
-			const action = actions.updateVenueLatitude( 40.7128 );
-
-			expect( action ).toEqual( {
-				type: 'UPDATE_VENUE_LATITUDE',
-				latitude: 40.7128,
-			} );
-		} );
-
-		it( 'updateVenueLongitude creates correct action object', () => {
-			const action = actions.updateVenueLongitude( -74.006 );
-
-			expect( action ).toEqual( {
-				type: 'UPDATE_VENUE_LONGITUDE',
-				longitude: -74.006,
-			} );
-		} );
-
-		it( 'updateMapCustomLatLong creates correct action object', () => {
-			const action = actions.updateMapCustomLatLong( true );
-
-			expect( action ).toEqual( {
-				type: 'UPDATE_MAP_CUSTOM_LAT_LONG',
-				mapCustomLatLong: true,
-			} );
-		} );
-	} );
-
 	describe( 'selectors', () => {
 		it( 'getVenueLatitude returns the latitude from state', () => {
-			const state = { latitude: 40.7128, longitude: -74.006, mapCustomLatLong: false };
+			dispatch( STORE_NAME ).updateVenueLatitude( 40.7128 );
 
-			const result = selectors.getVenueLatitude( state );
+			const result = select( STORE_NAME ).getVenueLatitude();
 
 			expect( result ).toBe( 40.7128 );
 		} );
 
 		it( 'getVenueLongitude returns the longitude from state', () => {
-			const state = { latitude: 40.7128, longitude: -74.006, mapCustomLatLong: false };
+			dispatch( STORE_NAME ).updateVenueLongitude( -74.006 );
 
-			const result = selectors.getVenueLongitude( state );
+			const result = select( STORE_NAME ).getVenueLongitude();
 
 			expect( result ).toBe( -74.006 );
 		} );
 
 		it( 'getMapCustomLatLong returns the mapCustomLatLong from state', () => {
-			const state = { latitude: 40.7128, longitude: -74.006, mapCustomLatLong: true };
+			dispatch( STORE_NAME ).updateMapCustomLatLong( true );
 
-			const result = selectors.getMapCustomLatLong( state );
+			const result = select( STORE_NAME ).getMapCustomLatLong();
 
 			expect( result ).toBe( true );
 		} );
