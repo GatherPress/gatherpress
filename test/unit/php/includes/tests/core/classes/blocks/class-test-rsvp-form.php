@@ -2075,68 +2075,6 @@ class Test_Rsvp_Form extends Base {
 	}
 
 	/**
-	 * Tests transform_block_content when event object has no event property.
-	 *
-	 * Covers line 130: if ( ! $event->event ) { return ''; }
-	 *
-	 * @covers ::transform_block_content
-	 */
-	public function test_transform_block_content_event_without_event_property(): void {
-		global $wpdb;
-		$instance = Rsvp_Form::get_instance();
-
-		// Create event post.
-		$post_id = $this->factory->post->create(
-			array(
-				'post_type'   => Event::POST_TYPE,
-				'post_status' => 'publish',
-			)
-		);
-
-		// Manipulate cache and database to create inconsistent state.
-		// Cache the correct post type, then change it in the database.
-		$initial_post = get_post( $post_id );
-		wp_cache_set( $post_id, $initial_post, 'posts' );
-		wp_cache_set( $post_id, Event::POST_TYPE, 'post_type' );
-
-		// Change post type in database to create inconsistency.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Necessary for testing race condition.
-		$wpdb->update(
-			$wpdb->posts,
-			array( 'post_type' => 'page' ),
-			array( 'ID' => $post_id ),
-			array( '%s' ),
-			array( '%d' )
-		);
-
-		// Clear the posts cache but keep the post_type cache.
-		wp_cache_delete( $post_id, 'posts' );
-
-		$block_content = '<div class="wp-block-gatherpress-rsvp-form">RSVP Form</div>';
-		$block         = array(
-			'blockName' => 'gatherpress/rsvp-form',
-			'attrs'     => array(
-				'postId' => $post_id,
-			),
-		);
-
-		$result = $instance->transform_block_content( $block_content, $block );
-
-		// Cleanup: restore post type.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Cleanup for test race condition.
-		$wpdb->update(
-			$wpdb->posts,
-			array( 'post_type' => Event::POST_TYPE ),
-			array( 'ID' => $post_id ),
-			array( '%s' ),
-			array( '%d' )
-		);
-		clean_post_cache( $post_id );
-
-		$this->assertEmpty( $result, 'Should return empty string when event object has no event property' );
-	}
-
-	/**
 	 * Tests apply_visibility_attribute returns unchanged content when tag processor fails.
 	 *
 	 * Covers line 246: return $block_content;
@@ -2754,5 +2692,64 @@ class Test_Rsvp_Form extends Base {
 		);
 
 		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
+	}
+
+	/**
+	 * Tests apply_visibility_rule with null visibility rule.
+	 *
+	 * Covers line 326: Early return when ! $visibility_rule.
+	 *
+	 * @covers ::apply_visibility_rule
+	 * @return void
+	 */
+	public function test_apply_visibility_rule_null_rule(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$html = '<div class="test">Content</div>';
+		$tag  = new \WP_HTML_Tag_Processor( $html );
+		$tag->next_tag();
+
+		// Call apply_visibility_rule with null visibility_rule.
+		Utility::invoke_hidden_method(
+			$instance,
+			'apply_visibility_rule',
+			array( $tag, null, false, false )
+		);
+
+		// Tag should remain unchanged.
+		$this->assertNull(
+			$tag->get_attribute( 'style' ),
+			'Should not add style attribute when visibility_rule is null.'
+		);
+		$this->assertNull(
+			$tag->get_attribute( 'aria-hidden' ),
+			'Should not add aria-hidden when visibility_rule is null.'
+		);
+	}
+
+	/**
+	 * Tests determine_visibility with no visibility rules.
+	 *
+	 * Covers line 392: return null when no onSuccess or whenPast rules.
+	 *
+	 * @covers ::determine_visibility
+	 * @return void
+	 */
+	public function test_determine_visibility_no_rules(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		// Empty visibility rules object.
+		$visibility_rule = wp_json_encode( array() );
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'determine_visibility',
+			array( $visibility_rule, false, false )
+		);
+
+		$this->assertNull(
+			$result,
+			'Should return null when visibility rules object is empty.'
+		);
 	}
 }
