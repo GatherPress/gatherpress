@@ -1413,7 +1413,7 @@ class Test_RSVP_List_Table extends Base {
 	/**
 	 * Tests get_rsvps with null per_page parameter.
 	 *
-	 * Covers line 270: Fallback to DEFAULT_PER_PAGE when per_page is null.
+	 * Covers: Fallback to DEFAULT_PER_PAGE when per_page is null.
 	 *
 	 * @covers ::get_rsvps
 	 * @return void
@@ -1593,7 +1593,7 @@ class Test_RSVP_List_Table extends Base {
 	/**
 	 * Tests get_rsvp_count with pending status filter.
 	 *
-	 * Covers line 399: Sets args['status'] to 'hold' for pending status in get_rsvp_count.
+	 * Covers: Sets args['status'] to 'hold' for pending status in get_rsvp_count.
 	 *
 	 * @covers ::get_rsvp_count
 	 * @return void
@@ -1617,7 +1617,7 @@ class Test_RSVP_List_Table extends Base {
 	/**
 	 * Tests get_views with valid post_id filter.
 	 *
-	 * Covers lines 758, 781, 790: post_id filter handling in get_views.
+	 * Covers: post_id filter handling in get_views.
 	 *
 	 * @covers ::get_views
 	 * @return void
@@ -1646,7 +1646,7 @@ class Test_RSVP_List_Table extends Base {
 	/**
 	 * Tests get_rsvps with pending status filter.
 	 *
-	 * Covers line 399: Sets args['status'] to 'hold' for pending status.
+	 * Covers: Sets args['status'] to 'hold' for pending status.
 	 *
 	 * @covers ::get_rsvps
 	 * @return void

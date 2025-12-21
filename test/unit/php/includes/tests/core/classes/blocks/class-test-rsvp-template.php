@@ -609,7 +609,7 @@ class Test_Rsvp_Template extends Base {
 
 		$result = $instance->ensure_block_styles_loaded( $block_content );
 
-		// Tests lines 95-99: Block registry get and style property check.
+		// Tests: Block registry get and style property check.
 		// Verify method executed without error and returned content.
 		$this->assertSame(
 			$block_content,
@@ -651,18 +651,30 @@ class Test_Rsvp_Template extends Base {
 		$post_id  = $post->ID;
 
 		$wp_block = new WP_Block(
-			array(),
+			array(
+				'blockName' => 'gatherpress/rsvp-template',
+			),
+			array(
+				'postId' => $post_id,
+			)
+		);
+
+		$reflection       = new \ReflectionClass( $wp_block );
+		$context_property = $reflection->getProperty( 'context' );
+		$context_property->setAccessible( true );
+		$context_property->setValue(
+			$wp_block,
 			array(
 				'postId'                       => $post_id,
 				'gatherpress/rsvpLimitEnabled' => true,
 				'gatherpress/rsvpLimit'        => 50,
 			)
 		);
-		$block    = array( 'innerBlocks' => array() );
 
+		$block  = array( 'innerBlocks' => array() );
 		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
-		// Tests lines 140 and 143: Context values for limit.
+		// Tests context values for limit.
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
@@ -697,14 +709,27 @@ class Test_Rsvp_Template extends Base {
 		$event->rsvp->save( $user_id_2, 'attending', 0, 0 );
 
 		$wp_block = new WP_Block(
-			array(),
+			array(
+				'blockName' => 'gatherpress/rsvp-template',
+			),
+			array(
+				'postId' => $post_id,
+			)
+		);
+
+		$reflection       = new \ReflectionClass( $wp_block );
+		$context_property = $reflection->getProperty( 'context' );
+		$context_property->setAccessible( true );
+		$context_property->setValue(
+			$wp_block,
 			array(
 				'postId'                       => $post_id,
 				'gatherpress/rsvpLimitEnabled' => true,
 				'gatherpress/rsvpLimit'        => 100,
 			)
 		);
-		$block    = array(
+
+		$block = array(
 			'innerBlocks' => array(
 				array(
 					'blockName'    => 'core/paragraph',
@@ -718,7 +743,7 @@ class Test_Rsvp_Template extends Base {
 
 		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
-		// Tests lines 148-150: Foreach loop through responses.
+		// Tests: Foreach loop through responses.
 		// Just verify that output was generated (responses were processed).
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',

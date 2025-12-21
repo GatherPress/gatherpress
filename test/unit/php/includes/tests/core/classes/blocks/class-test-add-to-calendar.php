@@ -146,7 +146,7 @@ class Test_Add_To_Calendar extends Base {
 
 		$result = $instance->replace_calendar_placeholders( $block_content, $block );
 
-		// Tests line 95: return ''; (when post is not an event).
+		// Tests: return ''; (when post is not an event).
 		$this->assertSame(
 			'',
 			$result,

@@ -502,7 +502,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// Test with a variation that exists.
-		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query' ) );
+		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query', 'variations/core/' ) );
 
 		$this->assertTrue(
 			wp_script_is( 'gatherpress-query', 'registered' ),
@@ -511,9 +511,36 @@ class Test_Assets extends Base {
 	}
 
 	/**
-	 * Coverage for register_asset with CSS file.
+	 * Coverage for register_asset with non-existent folder.
 	 *
-	 * Covers lines 495-501: Registering style when CSS file exists.
+	 * @covers ::register_asset
+	 * @covers ::asset_exists
+	 *
+	 * @return void
+	 */
+	public function test_register_asset_nonexistent_folder(): void {
+		$instance = Assets::get_instance();
+
+		add_filter( 'gatherpress_asset_critical', '__return_false' );
+
+		// Call register_asset with a bogus folder name that doesn't exist.
+		Utility::invoke_hidden_method(
+			$instance,
+			'register_asset',
+			array( 'fake-nonexistent-folder', 'fake-build-dir/' )
+		);
+
+		remove_all_filters( 'gatherpress_asset_critical' );
+
+		// Verify script was NOT registered due to early return.
+		$this->assertFalse(
+			wp_script_is( 'gatherpress-fake-nonexistent-folder', 'registered' ),
+			'Script should not be registered when folder does not exist.'
+		);
+	}
+
+	/**
+	 * Coverage for register_asset with CSS file.
 	 *
 	 * @covers ::register_asset
 	 *
@@ -535,7 +562,7 @@ class Test_Assets extends Base {
 		}
 
 		// Test with 'query' which now has both JS and CSS files.
-		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query' ) );
+		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query', 'variations/core/' ) );
 
 		$this->assertTrue(
 			wp_script_is( 'gatherpress-query', 'registered' ),
@@ -564,7 +591,7 @@ class Test_Assets extends Base {
 		$instance = Assets::get_instance();
 
 		// First register the asset.
-		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query' ) );
+		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query', 'variations/core/' ) );
 
 		$this->assertFalse(
 			wp_script_is( 'gatherpress-query', 'enqueued' ),
@@ -689,7 +716,7 @@ class Test_Assets extends Base {
 		);
 		$this->assertTrue(
 			wp_style_is( 'gatherpress-test-with-style', 'enqueued' ),
-			'Style should be enqueued when registered (line 519).'
+			'Style should be enqueued when registered.'
 		);
 
 		// Clean up.

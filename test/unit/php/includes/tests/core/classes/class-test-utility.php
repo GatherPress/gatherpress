@@ -510,7 +510,7 @@ class Test_Utility extends Base {
 				'text_field'     => '  Test Value  ',
 				'email_field'    => 'test@example.com',
 				'url_field'      => 'https://example.com',
-				'textarea_field' => "Line 1\nLine 2",
+				'textarea_field' => "Target line\nTarget line",
 				'key_field'      => 'some-key_123',
 				'title_field'    => 'Test Title 123',
 				'user_field'     => 'testuser',
@@ -548,7 +548,7 @@ class Test_Utility extends Base {
 
 		// Test textarea sanitization.
 		$result = Utility::get_http_input( INPUT_POST, 'textarea_field', 'sanitize_textarea_field' );
-		$this->assertEquals( "Line 1\nLine 2", $result, 'Textarea should preserve line breaks.' );
+		$this->assertEquals( "Target line\nTarget line", $result, 'Textarea should preserve line breaks.' );
 
 		// Test key sanitization.
 		$result = Utility::get_http_input( INPUT_POST, 'key_field', 'sanitize_key' );

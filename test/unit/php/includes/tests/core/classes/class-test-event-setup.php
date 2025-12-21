@@ -1327,7 +1327,7 @@ class Test_Event_Setup extends Base {
 	/**
 	 * Tests that restore_previous_locale() is called in get_localized_post_type_slug().
 	 *
-	 * Covers line 217: restore_previous_locale when locale is switched.
+	 * Covers: restore_previous_locale when locale is switched.
 	 *
 	 * @covers ::get_localized_post_type_slug
 	 * @return void
@@ -1354,7 +1354,7 @@ class Test_Event_Setup extends Base {
 	/**
 	 * Tests auth callbacks for post meta registration.
 	 *
-	 * Covers lines 246, 254, 263, 272, 281, 290, 299, 309, 318: auth_callback returns.
+	 * Covers: auth_callback returns.
 	 *
 	 * @covers ::register_post_meta
 	 * @return void
@@ -1419,7 +1419,7 @@ class Test_Event_Setup extends Base {
 	/**
 	 * Tests custom_columns with online event.
 	 *
-	 * Covers line 483: is_online_event icon display.
+	 * Covers: is_online_event icon display.
 	 *
 	 * @covers ::custom_columns
 	 * @return void
@@ -1449,7 +1449,7 @@ class Test_Event_Setup extends Base {
 	/**
 	 * Tests handle_rsvp_sorting with RSVP orderby.
 	 *
-	 * Covers lines 624-648: RSVP sorting logic.
+	 * Covers: RSVP sorting logic.
 	 *
 	 * @covers ::handle_rsvp_sorting
 	 * @return void
@@ -1503,7 +1503,7 @@ class Test_Event_Setup extends Base {
 	/**
 	 * Tests handle_rsvp_sorting with invalid order.
 	 *
-	 * Covers lines 638-640: Order validation.
+	 * Covers: Order validation.
 	 *
 	 * @covers ::handle_rsvp_sorting
 	 * @return void
@@ -1543,7 +1543,7 @@ class Test_Event_Setup extends Base {
 	/**
 	 * Tests handle_venue_sorting with venue orderby.
 	 *
-	 * Covers lines 725-743: Venue sorting logic.
+	 * Covers: Venue sorting logic.
 	 *
 	 * @covers ::handle_venue_sorting
 	 * @return void
@@ -1590,7 +1590,7 @@ class Test_Event_Setup extends Base {
 	/**
 	 * Tests handle_venue_sorting with invalid order.
 	 *
-	 * Covers lines 734-736: Order validation in venue sorting.
+	 * Covers: Order validation in venue sorting.
 	 *
 	 * @covers ::handle_venue_sorting
 	 * @return void

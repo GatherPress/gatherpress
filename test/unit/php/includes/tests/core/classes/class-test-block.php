@@ -136,7 +136,7 @@ class Test_Block extends Base {
 	/**
 	 * Coverage for get_block_variations when directory doesn't exist.
 	 *
-	 * Covers line 124: Early return when variations directory doesn't exist.
+	 * Covers: Early return when variations directory doesn't exist.
 	 *
 	 * @covers ::get_block_variations
 	 *
@@ -175,7 +175,7 @@ class Test_Block extends Base {
 	/**
 	 * Coverage for get_block_variations caching behavior.
 	 *
-	 * Covers lines 128-133: Caching of block variation names.
+	 * Covers: Caching of block variation names.
 	 *
 	 * @covers ::get_block_variations
 	 *
@@ -194,11 +194,11 @@ class Test_Block extends Base {
 		// First call should populate the cache.
 		$first_result = $instance->get_block_variations();
 
-		// Verify cache is now populated (lines 128-133 executed).
+		// Verify cache is now populated (target code executed).
 		$cache_after_first = Utility::get_hidden_property( $instance, 'block_variation_names' );
 		$this->assertNotEmpty( $cache_after_first );
 
-		// Second call should use cached values (lines 127 check causes early return from cache).
+		// Second call should use cached values (target code check causes early return from cache).
 		$second_result = $instance->get_block_variations();
 
 		// Verify cache wasn't modified by second call.

@@ -2175,7 +2175,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests preprocess_rsvp_comment when event has passed.
 	 *
-	 * Covers lines 167-171: wp_die when event has passed.
+	 * Covers: wp_die when event has passed.
 	 *
 	 * @covers ::preprocess_rsvp_comment
 	 * @return void
@@ -2237,7 +2237,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests process_meta_fields with email updates opt-in.
 	 *
-	 * Covers lines 511-512: Email updates preference handling.
+	 * Covers: Email updates preference handling.
 	 *
 	 * @covers ::process_meta_fields
 	 * @return void
@@ -2274,7 +2274,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests process_meta_fields with email updates opt-out.
 	 *
-	 * Covers lines 511-512: Email updates preference with false value.
+	 * Covers: Email updates preference with false value.
 	 *
 	 * @covers ::process_meta_fields
 	 * @return void
@@ -2311,7 +2311,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests process_meta_fields with anonymous RSVP enabled.
 	 *
-	 * Covers line 535: Setting anonymous RSVP when enabled for the event.
+	 * Covers: Setting anonymous RSVP when enabled for the event.
 	 *
 	 * @covers ::process_meta_fields
 	 * @return void
