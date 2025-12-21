@@ -410,8 +410,19 @@ class Setup {
 	 * @return void
 	 */
 	public function check_gatherpress_alpha(): void {
+		/**
+		 * Filters whether GatherPress Alpha is considered active.
+		 *
+		 * Allows tests to override the constant check.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool $is_alpha_active Whether GatherPress Alpha is active.
+		 */
+		$is_alpha_active = apply_filters( 'gatherpress_is_alpha_active', defined( 'GATHERPRESS_ALPHA_VERSION' ) );
+
 		if (
-			defined( 'GATHERPRESS_ALPHA_VERSION' ) ||
+			$is_alpha_active ||
 			filter_var( ! current_user_can( 'install_plugins' ), FILTER_VALIDATE_BOOLEAN ) || (
 				! str_contains( get_current_screen()->id, 'plugins' ) &&
 				! str_contains( get_current_screen()->id, 'plugin-install' ) &&
