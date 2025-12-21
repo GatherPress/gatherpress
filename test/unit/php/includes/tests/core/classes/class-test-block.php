@@ -134,6 +134,85 @@ class Test_Block extends Base {
 	}
 
 	/**
+	 * Coverage for get_block_variations when directory doesn't exist.
+	 *
+	 * Covers line 124: Early return when variations directory doesn't exist.
+	 *
+	 * @covers ::get_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_get_block_variations_directory_not_exists(): void {
+		$instance            = Block::get_instance();
+		$variations_dir      = sprintf( '%1$s/build/variations/core/', GATHERPRESS_CORE_PATH );
+		$temp_renamed_dir    = sprintf( '%1$s/build/variations/core-temp-renamed/', GATHERPRESS_CORE_PATH );
+		$variations_dir_base = sprintf( '%1$s/build/variations/', GATHERPRESS_CORE_PATH );
+
+		// Temporarily rename the variations directory to simulate non-existence.
+		if ( file_exists( $variations_dir ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Necessary for testing.
+			rename( $variations_dir, $temp_renamed_dir );
+		}
+
+		// Reset the cached property to force a fresh check.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+
+		// Now the directory doesn't exist, should return empty array.
+		$result = $instance->get_block_variations();
+
+		$this->assertSame( array(), $result, 'Should return empty array when variations directory does not exist.' );
+
+		// Restore the directory.
+		if ( file_exists( $temp_renamed_dir ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Necessary for testing.
+			rename( $temp_renamed_dir, $variations_dir );
+		}
+
+		// Reset the cache again for other tests.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+	}
+
+	/**
+	 * Coverage for get_block_variations caching behavior.
+	 *
+	 * Covers lines 128-133: Caching of block variation names.
+	 *
+	 * @covers ::get_block_variations
+	 *
+	 * @return void
+	 */
+	public function test_get_block_variations_caching(): void {
+		$instance = Block::get_instance();
+
+		// Reset the cache to ensure we're starting fresh.
+		Utility::set_and_get_hidden_property( $instance, 'block_variation_names', array() );
+
+		// Verify block_variation_names is empty initially.
+		$cache_before = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertEmpty( $cache_before );
+
+		// First call should populate the cache.
+		$first_result = $instance->get_block_variations();
+
+		// Verify cache is now populated (lines 128-133 executed).
+		$cache_after_first = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertNotEmpty( $cache_after_first );
+
+		// Second call should use cached values (lines 127 check causes early return from cache).
+		$second_result = $instance->get_block_variations();
+
+		// Verify cache wasn't modified by second call.
+		$cache_after_second = Utility::get_hidden_property( $instance, 'block_variation_names' );
+		$this->assertSame( $cache_after_first, $cache_after_second );
+
+		// Both results should be identical.
+		$this->assertSame( $first_result, $second_result, 'Should return cached variation names on subsequent calls.' );
+
+		// Verify the final result matches the cached data after array_filter.
+		$this->assertSame( array_filter( $cache_after_second ), $second_result );
+	}
+
+	/**
 	 * Coverage for get_classname_from_foldername.
 	 *
 	 * @covers ::get_classname_from_foldername

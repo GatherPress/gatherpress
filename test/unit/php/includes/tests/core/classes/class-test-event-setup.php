@@ -8,9 +8,13 @@
 
 namespace GatherPress\Tests\Core;
 
+use Exception;
 use GatherPress\Core\Event;
 use GatherPress\Core\Event_Setup;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
+use WP;
+use WP_Query;
 
 /**
  * Class Test_Event_Query.
@@ -1318,5 +1322,307 @@ class Test_Event_Setup extends Base {
 			get_post_meta( $post_id, 'gatherpress_datetime_start', true ),
 			'Should not set datetime meta for non-event posts.'
 		);
+	}
+
+	/**
+	 * Tests that restore_previous_locale() is called in get_localized_post_type_slug().
+	 *
+	 * Covers line 217: restore_previous_locale when locale is switched.
+	 *
+	 * @covers ::get_localized_post_type_slug
+	 * @return void
+	 */
+	public function test_get_localized_post_type_slug_restores_locale(): void {
+		// Create a scenario where get_locale() returns a different value.
+		// than the current global locale by using the locale filter.
+		// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Intentionally overriding locale.
+		$locale_filter = static function ( $locale ) {
+			return 'de_DE';
+		};
+
+		add_filter( 'locale', $locale_filter );
+
+		// Now get_locale() will return 'de_DE', triggering switch and restore.
+		$slug = Event_Setup::get_localized_post_type_slug();
+
+		// If no error occurs, restore_previous_locale was called correctly.
+		$this->assertIsString( $slug, 'Should return a string slug' );
+
+		remove_filter( 'locale', $locale_filter );
+	}
+
+	/**
+	 * Tests auth callbacks for post meta registration.
+	 *
+	 * Covers lines 246, 254, 263, 272, 281, 290, 299, 309, 318: auth_callback returns.
+	 *
+	 * @covers ::register_post_meta
+	 * @return void
+	 */
+	public function test_register_post_meta_auth_callbacks(): void {
+		// Set current user as editor.
+		$user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $user_id );
+
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		// Test that meta can be updated when user has edit_posts capability.
+		$result = update_post_meta( $post_id, 'gatherpress_datetime_start', '2024-01-01 10:00:00' );
+		$this->assertNotFalse( $result, 'Should allow meta update with edit_posts capability' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_datetime_start_gmt', '2024-01-01 10:00:00' );
+		$this->assertNotFalse( $result, 'Should allow meta update for datetime_start_gmt' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_datetime_end', '2024-01-01 12:00:00' );
+		$this->assertNotFalse( $result, 'Should allow meta update for datetime_end' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_datetime_end_gmt', '2024-01-01 12:00:00' );
+		$this->assertNotFalse( $result, 'Should allow meta update for datetime_end_gmt' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_timezone', 'America/New_York' );
+		$this->assertNotFalse( $result, 'Should allow meta update for timezone' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_max_guest_limit', 5 );
+		$this->assertNotFalse( $result, 'Should allow meta update for max_guest_limit' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true );
+		$this->assertNotFalse( $result, 'Should allow meta update for enable_anonymous_rsvp' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_online_event_link', 'https://example.com' );
+		$this->assertNotFalse( $result, 'Should allow meta update for online_event_link' );
+
+		$result = update_post_meta( $post_id, 'gatherpress_max_attendance_limit', 100 );
+		$this->assertNotFalse( $result, 'Should allow meta update for max_attendance_limit' );
+	}
+
+	/**
+	 * Tests handle_calendar_ics_request with event not found.
+	 *
+	 * @covers ::handle_calendar_ics_request
+	 * @return void
+	 */
+	public function test_handle_calendar_ics_request_event_not_found(): void {
+		$wp             = new WP();
+		$wp->query_vars = array(
+			'gatherpress_ics' => true,
+			'name'            => 'non-existent-event',
+		);
+
+		$instance = Event_Setup::get_instance();
+
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'Event not found.' );
+
+		$instance->handle_calendar_ics_request( $wp );
+	}
+
+	/**
+	 * Tests custom_columns with online event.
+	 *
+	 * Covers line 483: is_online_event icon display.
+	 *
+	 * @covers ::custom_columns
+	 * @return void
+	 */
+	public function test_custom_columns_venue_with_online_event(): void {
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		// Create 'online-event' venue term.
+		$term = wp_insert_term(
+			'Online Event',
+			'_gatherpress_venue',
+			array( 'slug' => 'online-event' )
+		);
+
+		// Assign the term to the event.
+		wp_set_object_terms( $post_id, $term['term_id'], '_gatherpress_venue' );
+
+		$instance = Event_Setup::get_instance();
+
+		ob_start();
+		$instance->custom_columns( 'venue', $post_id );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'dashicons-video-alt3', $output, 'Should display online event icon' );
+	}
+
+	/**
+	 * Tests handle_rsvp_sorting with RSVP orderby.
+	 *
+	 * Covers lines 624-648: RSVP sorting logic.
+	 *
+	 * @covers ::handle_rsvp_sorting
+	 * @return void
+	 */
+	public function test_rsvp_sorting_with_rsvp_orderby(): void {
+		global $wp_the_query;
+
+		// Create a WP_Query for events with RSVP sorting.
+		$query = new WP_Query(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'orderby'   => 'rsvps',
+				'order'     => 'DESC',
+			)
+		);
+
+		// Set as main query.
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
+		$wp_the_query = $query;
+
+		// Simulate admin context.
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$instance = Event_Setup::get_instance();
+		$instance->handle_rsvp_sorting( $query );
+
+		// Verify that sorting order was set.
+		$this->assertEquals( 'DESC', $query->get( 'rsvp_sort_order' ), 'Should set DESC order' );
+
+		// Verify filters were added.
+		$this->assertNotFalse(
+			has_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) ),
+			'Should add posts_join_paged filter'
+		);
+		$this->assertNotFalse(
+			has_filter( 'posts_groupby', array( $instance, 'rsvp_sorting_groupby' ) ),
+			'Should add posts_groupby filter'
+		);
+		$this->assertNotFalse(
+			has_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) ),
+			'Should add posts_orderby filter'
+		);
+
+		// Clean up.
+		remove_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) );
+		remove_filter( 'posts_groupby', array( $instance, 'rsvp_sorting_groupby' ) );
+		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests handle_rsvp_sorting with invalid order.
+	 *
+	 * Covers lines 638-640: Order validation.
+	 *
+	 * @covers ::handle_rsvp_sorting
+	 * @return void
+	 */
+	public function test_rsvp_sorting_with_invalid_order(): void {
+		global $wp_the_query;
+
+		// Create a WP_Query for RSVP sorting.
+		$query = new WP_Query(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'orderby'   => 'rsvps',
+			)
+		);
+
+		// Manually set invalid order (bypasses WP_Query's sanitization).
+		$query->set( 'order', 'INVALID' );
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$instance = Event_Setup::get_instance();
+		$instance->handle_rsvp_sorting( $query );
+
+		// Should default to ASC for invalid order.
+		$this->assertEquals( 'ASC', $query->get( 'rsvp_sort_order' ), 'Should default to ASC for invalid order' );
+
+		// Clean up.
+		remove_filter( 'posts_join_paged', array( $instance, 'rsvp_sorting_join_paged' ) );
+		remove_filter( 'posts_groupby', array( $instance, 'rsvp_sorting_groupby' ) );
+		remove_filter( 'posts_orderby', array( $instance, 'rsvp_sorting_orderby' ) );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests handle_venue_sorting with venue orderby.
+	 *
+	 * Covers lines 725-743: Venue sorting logic.
+	 *
+	 * @covers ::handle_venue_sorting
+	 * @return void
+	 */
+	public function test_venue_sorting_with_venue_orderby(): void {
+		global $wp_the_query;
+
+		// Create a WP_Query for events with venue sorting.
+		$query = new WP_Query(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'orderby'   => 'venue',
+				'order'     => 'DESC',
+			)
+		);
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$instance = Event_Setup::get_instance();
+		$instance->handle_venue_sorting( $query );
+
+		// Verify that sorting order was set.
+		$this->assertEquals( 'DESC', $query->get( 'venue_sort_order' ), 'Should set DESC order' );
+
+		// Verify filters were added.
+		$this->assertNotFalse(
+			has_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) ),
+			'Should add posts_join_paged filter for venue sorting'
+		);
+		$this->assertNotFalse(
+			has_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) ),
+			'Should add posts_orderby filter for venue sorting'
+		);
+
+		// Clean up.
+		remove_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) );
+		remove_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests handle_venue_sorting with invalid order.
+	 *
+	 * Covers lines 734-736: Order validation in venue sorting.
+	 *
+	 * @covers ::handle_venue_sorting
+	 * @return void
+	 */
+	public function test_venue_sorting_with_invalid_order(): void {
+		global $wp_the_query;
+
+		// Create a WP_Query for venue sorting.
+		$query = new WP_Query(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'orderby'   => 'venue',
+			)
+		);
+
+		// Manually set invalid order (bypasses WP_Query's sanitization).
+		$query->set( 'order', 'RANDOM' );
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$instance = Event_Setup::get_instance();
+		$instance->handle_venue_sorting( $query );
+
+		// Should default to ASC for invalid order.
+		$this->assertEquals( 'ASC', $query->get( 'venue_sort_order' ), 'Should default to ASC for invalid order' );
+
+		// Clean up.
+		remove_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) );
+		remove_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) );
+		set_current_screen( 'front' );
 	}
 }

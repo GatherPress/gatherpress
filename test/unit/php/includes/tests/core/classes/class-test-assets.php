@@ -511,6 +511,89 @@ class Test_Assets extends Base {
 	}
 
 	/**
+	 * Coverage for register_asset with non-existent asset.
+	 *
+	 * Covers line 479: Early return when asset file doesn't exist in production.
+	 *
+	 * @covers ::register_asset
+	 * @covers ::asset_exists
+	 *
+	 * @return void
+	 */
+	public function test_register_asset_non_existent(): void {
+		$instance = Assets::get_instance();
+
+		// Create directory structure but no asset file.
+		$test_dir = GATHERPRESS_CORE_PATH . '/build/variations/core/test-empty';
+		if ( ! is_dir( $test_dir ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- Necessary for testing.
+			mkdir( $test_dir, 0755, true );
+		}
+
+		// Use asset_exists directly to test the production path.
+		$test_path = $test_dir . '/index.asset.php';
+		$result    = Utility::invoke_hidden_method(
+			$instance,
+			'asset_exists',
+			array( $test_path, 'test-empty', false ) // false = not critical, won't throw error.
+		);
+
+		$this->assertFalse(
+			$result,
+			'asset_exists should return false for non-existent file when not critical.'
+		);
+
+		// Clean up.
+		if ( is_dir( $test_dir ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Necessary for testing.
+			rmdir( $test_dir );
+		}
+	}
+
+	/**
+	 * Coverage for register_asset with CSS file.
+	 *
+	 * Covers lines 495-501: Registering style when CSS file exists.
+	 *
+	 * @covers ::register_asset
+	 *
+	 * @return void
+	 */
+	public function test_register_asset_with_css(): void {
+		$instance  = Assets::get_instance();
+		$css_path  = GATHERPRESS_CORE_PATH . '/build/variations/core/query/index.css';
+		$css_exist = file_exists( $css_path );
+
+		// Create a temporary CSS file for testing if it doesn't exist.
+		if ( ! $css_exist ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Necessary for testing.
+			$file = fopen( $css_path, 'w' );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Necessary for testing.
+			fwrite( $file, '/* Test CSS */' );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Necessary for testing.
+			fclose( $file );
+		}
+
+		// Test with 'query' which now has both JS and CSS files.
+		Utility::invoke_hidden_method( $instance, 'register_asset', array( 'query' ) );
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-query', 'registered' ),
+			'Failed to assert gatherpress-query script is registered.'
+		);
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-query', 'registered' ),
+			'Failed to assert gatherpress-query style is registered when CSS file exists.'
+		);
+
+		// Clean up temporary CSS file if we created it.
+		if ( ! $css_exist && file_exists( $css_path ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Necessary for testing.
+			unlink( $css_path );
+		}
+	}
+
+	/**
 	 * Coverage for enqueue_asset method.
 	 *
 	 * @covers ::enqueue_asset

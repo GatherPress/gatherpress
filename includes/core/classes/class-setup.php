@@ -223,9 +223,6 @@ class Setup {
 	 * @return void
 	 */
 	public function add_privacy_policy_content() {
-		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
-			return;
-		}
 		$content = '<h2>' .
 			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
 			'</h2>'
@@ -236,8 +233,10 @@ class Setup {
 					'https://osmfoundation.org/wiki/Privacy_Policy'
 				)
 				. '</p>';
+
 		wp_add_privacy_policy_content( 'GatherPress', wp_kses_post( wpautop( $content, false ) ) );
 	}
+
 	/**
 	 * Add GatherPress-specific body classes to the existing body classes.
 	 *

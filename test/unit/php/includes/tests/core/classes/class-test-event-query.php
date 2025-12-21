@@ -335,6 +335,8 @@ class Test_Event_Query extends Base {
 	/**
 	 * Test query with invalid general options.
 	 *
+	 * Covers line 183: Early return when $general is not an array.
+	 *
 	 * @since  1.0.0
 	 * @covers ::prepare_event_query_before_execution
 	 *
@@ -355,6 +357,190 @@ class Test_Event_Query extends Base {
 		);
 
 		delete_option( 'gatherpress_general' );
+	}
+
+	/**
+	 * Test query with empty pages configuration.
+	 *
+	 * Covers line 189: Early return when $pages is empty or not an array.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_with_empty_pages(): void {
+		$instance             = Event_Query::get_instance();
+		$query                = new WP_Query();
+		$query->is_main_query = true;
+
+		// Test with empty pages.
+		add_option(
+			'gatherpress_general',
+			array(
+				'pages' => '',
+			)
+		);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertEmpty(
+			$query->get( 'post_type' ),
+			'Should not modify query when pages is empty'
+		);
+
+		delete_option( 'gatherpress_general' );
+
+		// Test with pages not being an array.
+		add_option(
+			'gatherpress_general',
+			array(
+				'pages' => 'not-an-array',
+			)
+		);
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		$this->assertEmpty(
+			$query->get( 'post_type' ),
+			'Should not modify query when pages is not an array'
+		);
+
+		delete_option( 'gatherpress_general' );
+	}
+
+	/**
+	 * Test pre_option filter callbacks for archive pages.
+	 *
+	 * Covers lines 219-227: pre_option filter for page_for_posts and show_on_front.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_pre_option_filters(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a page to use as the archive page.
+		$page_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'page',
+				'post_title' => 'Upcoming Events Page',
+			)
+		);
+
+		// Mock WP_Query with necessary properties.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->is_main_query     = true;
+		$query->queried_object_id = $page_id;
+
+		// Mock main query check.
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				function ( $key ) {
+					return 'gatherpress_event_query' === $key ? '' : null;
+				}
+			);
+
+		$page_data = array(
+			'pages' => array(
+				'upcoming_events' => wp_json_encode(
+					array(
+						(object) array( 'id' => $page_id ),
+					)
+				),
+			),
+		);
+
+		add_option( 'gatherpress_general', $page_data );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Verify the pre_option filters are working for specific options.
+		$this->assertEquals( -1, get_option( 'page_for_posts' ), 'page_for_posts should be -1' );
+		$this->assertEquals( 'page', get_option( 'show_on_front' ), 'show_on_front should be page' );
+
+		// Verify line 227: default return for other options.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
+		$other_option = apply_filters( 'pre_option', 'original_value', 'some_other_option' );
+		$this->assertEquals( 'original_value', $other_option, 'Other options should return original pre value' );
+
+		delete_option( 'gatherpress_general' );
+		wp_delete_post( $page_id, true );
+	}
+
+	/**
+	 * Test get_the_archive_title filter callback.
+	 *
+	 * Covers line 237: get_the_archive_title filter callback.
+	 *
+	 * @since  1.0.0
+	 * @covers ::prepare_event_query_before_execution
+	 *
+	 * @return void
+	 */
+	public function test_prepare_query_archive_title_filter(): void {
+		$instance = Event_Query::get_instance();
+
+		// Create a page to use as the archive page.
+		$page_id = $this->factory->post->create(
+			array(
+				'post_type'  => 'page',
+				'post_title' => 'Custom Archive Title',
+			)
+		);
+
+		// Mock WP_Query with necessary properties.
+		$query = $this->getMockBuilder( 'WP_Query' )
+			->setMethods( array( 'is_main_query', 'get', 'set' ) )
+			->getMock();
+
+		$query->is_main_query     = true;
+		$query->queried_object_id = $page_id;
+
+		// Mock main query check.
+		$query->expects( $this->any() )
+			->method( 'is_main_query' )
+			->willReturn( true );
+
+		$query->expects( $this->any() )
+			->method( 'get' )
+			->willReturnCallback(
+				function ( $key ) {
+					return 'gatherpress_event_query' === $key ? '' : null;
+				}
+			);
+
+		$page_data = array(
+			'pages' => array(
+				'past_events' => wp_json_encode(
+					array(
+						(object) array( 'id' => $page_id ),
+					)
+				),
+			),
+		);
+
+		add_option( 'gatherpress_general', $page_data );
+
+		$instance->prepare_event_query_before_execution( $query );
+
+		// Verify the get_the_archive_title filter returns the page title.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Testing WordPress core hook.
+		$archive_title = apply_filters( 'get_the_archive_title', 'Default Title' );
+		$this->assertEquals( 'Custom Archive Title', $archive_title, 'Archive title should be the page title' );
+
+		delete_option( 'gatherpress_general' );
+		wp_delete_post( $page_id, true );
 	}
 
 	/**
@@ -410,6 +596,38 @@ class Test_Event_Query extends Base {
 		$this->assertNotEmpty(
 			$response,
 			'Failed to assert the array, containing pieces of the SQL query, is not empty'
+		);
+	}
+
+	/**
+	 * Test adjust_admin_event_sorting with wrong screen.
+	 *
+	 * Covers line 345: Early return when current_screen is not 'edit-gatherpress_event'.
+	 *
+	 * @covers ::adjust_admin_event_sorting
+	 *
+	 * @return void
+	 */
+	public function test_adjust_admin_event_sorting_wrong_screen(): void {
+		$instance     = Event_Query::get_instance();
+		$wp_query     = new WP_Query();
+		$query_pieces = array( 'orderby' => 'post_date' );
+
+		$this->mock->user( true, 'admin' );
+
+		// Set a different screen (not edit-gatherpress_event).
+		set_current_screen( 'edit-post' );
+
+		// Set 'orderby' admin query to 'datetime'.
+		$wp_query->set( 'orderby', 'datetime' );
+
+		// Should return query_pieces unchanged.
+		$response = $instance->adjust_admin_event_sorting( $query_pieces, $wp_query );
+
+		$this->assertSame(
+			$query_pieces,
+			$response,
+			'Should return query_pieces unchanged when screen is not edit-gatherpress_event'
 		);
 	}
 
