@@ -1,4 +1,6 @@
 /**
+ * TODO: Remove from coverage exclusion in .github/coverage-config.json once this file is deleted (planned for v0.34.0).
+ *
  * WordPress dependencies.
  */
 import domReady from '@wordpress/dom-ready';

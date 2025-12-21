@@ -6,7 +6,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 /**
  * WordPress dependencies.
  */
-import { select, dispatch, register, createReduxStore } from '@wordpress/data';
+import { select, dispatch } from '@wordpress/data';
 
 /**
  * Internal dependencies.
@@ -25,85 +25,17 @@ jest.mock( '../../../../../src/helpers/datetime', () => ( {
 import { getFromGlobal, setToGlobal } from '../../../../../src/helpers/globals';
 import { getDateTimeOffset } from '../../../../../src/helpers/datetime';
 
+// Import the actual store to get coverage.
+import '../../../../../src/stores/datetime';
+
 describe( 'DateTime store', () => {
 	const STORE_NAME = 'gatherpress/datetime';
-
-	const DEFAULT_STATE = {
-		dateTimeStart: '2025-01-15 18:00:00',
-		dateTimeEnd: '2025-01-15 20:00:00',
-		duration: null,
-		timezone: 'America/New_York',
-	};
-
-	const actions = {
-		setDateTimeStart( dateTimeStart ) {
-			setToGlobal( 'eventDetails.dateTime.datetime_start', dateTimeStart );
-
-			return {
-				type: 'SET_DATETIME_START',
-				dateTimeStart,
-			};
-		},
-		setDateTimeEnd( dateTimeEnd ) {
-			setToGlobal( 'eventDetails.dateTime.datetime_end', dateTimeEnd );
-
-			return {
-				type: 'SET_DATETIME_END',
-				dateTimeEnd,
-			};
-		},
-		setDuration( duration ) {
-			return {
-				type: 'SET_DURATION',
-				duration,
-			};
-		},
-		setTimezone( timezone ) {
-			setToGlobal( 'eventDetails.dateTime.timezone', timezone );
-
-			return {
-				type: 'SET_TIMEZONE',
-				timezone,
-			};
-		},
-	};
-
-	const reducer = ( state = DEFAULT_STATE, action ) => {
-		switch ( action.type ) {
-			case 'SET_DATETIME_START':
-				return { ...state, dateTimeStart: action.dateTimeStart };
-			case 'SET_DATETIME_END':
-				return { ...state, dateTimeEnd: action.dateTimeEnd };
-			case 'SET_DURATION':
-				return { ...state, duration: action.duration };
-			case 'SET_TIMEZONE':
-				return { ...state, timezone: action.timezone };
-			default:
-				return state;
-		}
-	};
-
-	const selectors = {
-		getDateTimeStart: ( state ) => state.dateTimeStart,
-		getDateTimeEnd: ( state ) => state.dateTimeEnd,
-		getDuration: ( state ) =>
-			false === state.duration ? false : getDateTimeOffset(),
-		getTimezone: ( state ) => state.timezone,
-	};
-
-	const store = createReduxStore( STORE_NAME, {
-		reducer,
-		actions,
-		selectors,
-	} );
 
 	beforeEach( () => {
 		getFromGlobal.mockReturnValue( null );
 		setToGlobal.mockClear();
 		getDateTimeOffset.mockReturnValue( 2 );
 	} );
-
-	register( store );
 
 	describe( 'initial state', () => {
 		it( 'has dateTimeStart set to default value', () => {
@@ -124,118 +56,10 @@ describe( 'DateTime store', () => {
 			expect( duration ).toBe( 2 );
 		} );
 
-		it( 'has timezone set to default value', () => {
+		it( 'has timezone set to undefined when not provided', () => {
 			const timezone = select( STORE_NAME ).getTimezone();
 
-			expect( timezone ).toBe( 'America/New_York' );
-		} );
-	} );
-
-	describe( 'action creators', () => {
-		it( 'setDateTimeStart creates correct action object', () => {
-			const action = actions.setDateTimeStart( '2025-02-01 10:00:00' );
-
-			expect( action ).toEqual( {
-				type: 'SET_DATETIME_START',
-				dateTimeStart: '2025-02-01 10:00:00',
-			} );
-		} );
-
-		it( 'setDateTimeEnd creates correct action object', () => {
-			const action = actions.setDateTimeEnd( '2025-02-01 12:00:00' );
-
-			expect( action ).toEqual( {
-				type: 'SET_DATETIME_END',
-				dateTimeEnd: '2025-02-01 12:00:00',
-			} );
-		} );
-
-		it( 'setDuration creates correct action object', () => {
-			const action = actions.setDuration( 3 );
-
-			expect( action ).toEqual( {
-				type: 'SET_DURATION',
-				duration: 3,
-			} );
-		} );
-
-		it( 'setTimezone creates correct action object', () => {
-			const action = actions.setTimezone( 'Europe/London' );
-
-			expect( action ).toEqual( {
-				type: 'SET_TIMEZONE',
-				timezone: 'Europe/London',
-			} );
-		} );
-	} );
-
-	describe( 'selectors', () => {
-		it( 'getDateTimeStart returns the dateTimeStart state', () => {
-			const state = {
-				dateTimeStart: '2025-03-01 14:00:00',
-				dateTimeEnd: '2025-03-01 16:00:00',
-				duration: null,
-				timezone: 'UTC',
-			};
-
-			const result = selectors.getDateTimeStart( state );
-
-			expect( result ).toBe( '2025-03-01 14:00:00' );
-		} );
-
-		it( 'getDateTimeEnd returns the dateTimeEnd state', () => {
-			const state = {
-				dateTimeStart: '2025-03-01 14:00:00',
-				dateTimeEnd: '2025-03-01 16:00:00',
-				duration: null,
-				timezone: 'UTC',
-			};
-
-			const result = selectors.getDateTimeEnd( state );
-
-			expect( result ).toBe( '2025-03-01 16:00:00' );
-		} );
-
-		it( 'getDuration returns false when duration is false', () => {
-			const state = {
-				dateTimeStart: '2025-03-01 14:00:00',
-				dateTimeEnd: '2025-03-01 16:00:00',
-				duration: false,
-				timezone: 'UTC',
-			};
-
-			const result = selectors.getDuration( state );
-
-			expect( result ).toBe( false );
-		} );
-
-		it( 'getDuration calls getDateTimeOffset when duration is not false', () => {
-			const state = {
-				dateTimeStart: '2025-03-01 14:00:00',
-				dateTimeEnd: '2025-03-01 16:00:00',
-				duration: null,
-				timezone: 'UTC',
-			};
-
-			getDateTimeOffset.mockReturnValue( 1.5 );
-
-			const result = selectors.getDuration( state );
-
-			expect( result ).toBe( 1.5 );
-			expect( getDateTimeOffset ).toHaveBeenCalled();
-		} );
-
-		it( 'getTimezone returns the timezone state', () => {
-			const state = {
-				dateTimeStart: '2025-03-01 14:00:00',
-				dateTimeEnd: '2025-03-01 16:00:00',
-				duration: null,
-				timezone: 'Asia/Tokyo',
-			};
-
-			const result = selectors.getTimezone( state );
-
-			expect( result ).toBe( 'Asia/Tokyo' );
+			expect( timezone ).toBeUndefined();
 		} );
 	} );
 
