@@ -1,5 +1,5 @@
 {
-  "minCoverage": 80,
+  "minCoverage": 100,
   "excludePatterns": [
     "*/vendor/*",
     "*/node_modules/*",
@@ -45,5 +45,5 @@
     "includes/core/classes/class-setup.php",
     "includes/core/classes/class-event-setup.php"
   ],
-  "allowLowCoverageReason": "Contains multisite-specific code that cannot be tested in single-site environment"
+  "allowLowCoverageReason": "Contains multisite-specific code that cannot be tested in single-site environment, or code requiring HTTP response handling (ICS downloads)"
 }
