@@ -1618,5 +1618,4 @@ class Test_RSVP_List_Table extends Base {
 
 		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
 	}
-
 }
