@@ -35,7 +35,11 @@
     "src/supports/**/*",
     "src/stores/index.js",
     "src/helpers/urlrewrite.js",
-    "src/helpers/interactivity.js"
+    "src/helpers/interactivity.js",
+    "src/blocks/events-list/events-list.js",
+    "src/blocks/online-event/online-event.js",
+    "src/blocks/venue/venue.js",
+    "src/blocks/rsvp-response/rsvp-manager.js"
   ],
   "allowLowCoverage": [
     "includes/core/classes/class-setup.php",

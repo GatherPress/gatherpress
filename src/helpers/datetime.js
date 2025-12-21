@@ -227,8 +227,8 @@ export function maybeConvertUtcOffsetForDisplay( offset = '' ) {
  * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
  */
 export function maybeConvertUtcOffsetForDatabase( offset = '' ) {
-	// Regex: https://regex101.com/r/9bMgJd/2.
-	const pattern = /^UTC([+-])(\d+)(.\d+)?$/;
+	// Regex: https://regex101.com/r/9bMgJd/3.
+	const pattern = /^UTC([+-])(\d+)(\.\d+)?$/;
 	const sign = offset.replace( pattern, '$1' );
 
 	if ( sign !== offset ) {
