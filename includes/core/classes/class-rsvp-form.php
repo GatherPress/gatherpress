@@ -333,36 +333,7 @@ class Rsvp_Form {
 		// Insert the comment.
 		$comment_id_result = wp_insert_comment( $comment_data );
 
-		// Handle failure case.
-		if ( ! $comment_id_result ) {
-			return array(
-				'success'    => false,
-				'message'    => __( 'Failed to create RSVP.', 'gatherpress' ),
-				'comment_id' => 0,
-				'error_code' => 500,
-			);
-		}
-
-		$comment_id = (int) $comment_id_result;
-
-		// Set RSVP status to attending.
-		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
-
-		// Process all fields.
-		$this->process_fields( $comment_id, $data );
-
-		// Generate and send confirmation email.
-		$rsvp_token = new Rsvp_Token( $comment_id );
-		$rsvp_token->generate_token()->send_rsvp_confirmation_email();
-
-		return array(
-			'success'    => true,
-			'message'    => __(
-				'Your RSVP has been submitted successfully! Please check your email for a confirmation link.',
-				'gatherpress'
-			),
-			'comment_id' => $comment_id,
-		);
+		return $this->handle_rsvp_creation( $comment_id_result, $data );
 	}
 
 	/**
@@ -595,5 +566,51 @@ class Rsvp_Form {
 			$meta_key = 'gatherpress_custom_' . sanitize_key( $field_name );
 			update_comment_meta( $comment_id, $meta_key, $sanitized_value );
 		}
+	}
+
+	/**
+	 * Handle the result of RSVP comment creation.
+	 *
+	 * Processes the result of wp_insert_comment, handling both success and failure cases.
+	 * On success, sets the RSVP status, processes custom fields, and sends confirmation email.
+	 * On failure, returns an error response.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int|false $comment_id_result The result from wp_insert_comment (comment ID or false).
+	 * @param array     $data              RSVP submission data.
+	 * @return array{success: bool, message: string, comment_id: int, error_code?: int} Processing result.
+	 */
+	private function handle_rsvp_creation( $comment_id_result, array $data ): array {
+		// Handle failure case.
+		if ( ! $comment_id_result ) {
+			return array(
+				'success'    => false,
+				'message'    => __( 'Failed to create RSVP.', 'gatherpress' ),
+				'comment_id' => 0,
+				'error_code' => 500,
+			);
+		}
+
+		$comment_id = (int) $comment_id_result;
+
+		// Set RSVP status to attending.
+		wp_set_object_terms( $comment_id, 'attending', Rsvp::TAXONOMY );
+
+		// Process all fields.
+		$this->process_fields( $comment_id, $data );
+
+		// Generate and send confirmation email.
+		$rsvp_token = new Rsvp_Token( $comment_id );
+		$rsvp_token->generate_token()->send_rsvp_confirmation_email();
+
+		return array(
+			'success'    => true,
+			'message'    => __(
+				'Your RSVP has been submitted successfully! Please check your email for a confirmation link.',
+				'gatherpress'
+			),
+			'comment_id' => $comment_id,
+		);
 	}
 }
