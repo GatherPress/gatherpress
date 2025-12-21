@@ -37,6 +37,14 @@ class Rsvp_Setup {
 	use Singleton;
 
 	/**
+	 * The RSVP list table instance.
+	 *
+	 * @since 1.0.0
+	 * @var RSVP_List_Table|null
+	 */
+	protected $list_table = null;
+
+	/**
 	 * Class constructor.
 	 *
 	 * This method initializes the object and sets up necessary hooks.
@@ -54,7 +62,7 @@ class Rsvp_Setup {
 	 *
 	 * @return string The per page option name.
 	 */
-	private static function get_per_page_option(): string {
+	private function get_per_page_option(): string {
 		return sprintf( '%s_per_page', Rsvp::COMMENT_TYPE );
 	}
 
@@ -202,23 +210,35 @@ class Rsvp_Setup {
 			2
 		);
 
-		$list_table = new RSVP_List_Table();
+		$this->list_table = new RSVP_List_Table();
 
 		add_action(
-			"load-$hook",
-			static function () use ( $list_table ) {
-				add_screen_option(
-					'per_page',
-					array(
-						'label'   => __( 'RSVPs per page', 'gatherpress' ),
-						'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
-						'option'  => self::get_per_page_option(),
-					)
-				);
-
-				$list_table->register_column_options();
-			}
+			sprintf( 'load-%s', $hook ),
+			array( $this, 'setup_rsvp_list_table_screen_options' )
 		);
+	}
+
+	/**
+	 * Sets up screen options for the RSVP list table.
+	 *
+	 * This method registers the per-page screen option and column options
+	 * for the RSVP list table in the WordPress admin.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function setup_rsvp_list_table_screen_options(): void {
+		add_screen_option(
+			'per_page',
+			array(
+				'label'   => __( 'RSVPs per page', 'gatherpress' ),
+				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
+				'option'  => $this->get_per_page_option(),
+			)
+		);
+
+		$this->list_table->register_column_options();
 	}
 
 	/**
@@ -304,7 +324,7 @@ class Rsvp_Setup {
 			array(
 				'label'   => __( 'RSVPs per page', 'gatherpress' ),
 				'default' => RSVP_List_Table::DEFAULT_PER_PAGE,
-				'option'  => self::get_per_page_option(),
+				'option'  => $this->get_per_page_option(),
 			)
 		);
 
@@ -332,7 +352,7 @@ class Rsvp_Setup {
 	 * @return mixed The screen option value or false to use default.
 	 */
 	public function set_rsvp_screen_options( $status, $option, $value ) {
-		if ( self::get_per_page_option() === $option ) {
+		if ( $this->get_per_page_option() === $option ) {
 			return $value;
 		}
 
