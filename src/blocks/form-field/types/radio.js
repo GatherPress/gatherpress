@@ -59,8 +59,9 @@ export default function RadioField( {
 		if ( 'label' === field ) {
 			const cleanValue = value
 				.toLowerCase()
-				.replace( /[^a-z0-9]+/g, '-' )
-				.replace( /(?:^-+|-+$)/g, '' );
+				.split( /[^a-z0-9]+/ ) // Split on non-alphanumeric sequences.
+				.filter( ( part ) => 0 < part.length ) // Remove empty strings.
+				.join( '-' ); // Join with dashes.
 			newOptions[ index ].value = cleanValue || value;
 		}
 
