@@ -234,6 +234,54 @@ describe( 'safeHTML', () => {
 		expect( sanitized ).not.toContain( '<script>' );
 		expect( sanitized ).toContain( '<div>Unclosed div' );
 	} );
+
+	it( 'handles script elements that are already detached', () => {
+		// Create a document with a script element.
+		const html = '<div id="container"><script>bad();</script></div>';
+
+		// Mock getElementsByTagName to return an element without a parentNode.
+		const originalCreateHTMLDocument =
+			document.implementation.createHTMLDocument;
+		document.implementation.createHTMLDocument = function( title ) {
+			const doc = originalCreateHTMLDocument.call( this, title );
+			const originalGetElementsByTagName =
+				doc.body.getElementsByTagName;
+
+			// Override getElementsByTagName to test the defensive check.
+			doc.body.getElementsByTagName = function( tagName ) {
+				const elements = originalGetElementsByTagName.call(
+					this,
+					tagName,
+				);
+
+				// Create a detached script element to test the parentNode check.
+				if ( 0 < elements.length ) {
+					const detachedScript = doc.createElement( 'script' );
+					detachedScript.textContent = 'detached();';
+
+					// Create a new collection that includes the detached element.
+					const newCollection = Array.from( elements );
+					newCollection.push( detachedScript );
+
+					return newCollection;
+				}
+
+				return elements;
+			};
+
+			return doc;
+		};
+
+		// This should not throw even with a detached script element.
+		const sanitized = safeHTML( html );
+
+		// Restore original implementation.
+		document.implementation.createHTMLDocument =
+			originalCreateHTMLDocument;
+
+		expect( sanitized ).not.toContain( '<script>' );
+		expect( sanitized ).toContain( '<div' );
+	} );
 } );
 
 /**

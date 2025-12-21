@@ -641,8 +641,6 @@ class Test_Assets extends Base {
 	/**
 	 * Coverage for enqueue_asset when style is not registered.
 	 *
-	 * Tests that line 519 is NOT executed when style is not registered.
-	 *
 	 * @covers ::enqueue_asset
 	 *
 	 * @return void
@@ -670,9 +668,7 @@ class Test_Assets extends Base {
 	}
 
 	/**
-	 * Coverage for enqueue_asset when style IS registered.
-	 *
-	 * Covers line 519: wp_enqueue_style is called when style is registered.
+	 * Coverage for enqueue_asset when style is registered.
 	 *
 	 * @covers ::enqueue_asset
 	 *
