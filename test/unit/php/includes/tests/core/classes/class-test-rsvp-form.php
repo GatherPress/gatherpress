@@ -2599,4 +2599,178 @@ class Test_Rsvp_Form extends Base {
 		$this->assertNotEmpty( $terms, 'Should set RSVP status' );
 		$this->assertSame( 'attending', $terms[0]->slug, 'Should set status to attending' );
 	}
+
+	/**
+	 * Tests process_custom_fields skips custom fields not present in submitted data.
+	 *
+	 * @covers ::process_custom_fields
+	 * @group foobar
+	 *
+	 * @return void
+	 */
+	public function test_process_custom_fields_skips_missing_fields(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set up form schema with 5 custom fields BEFORE creating comment.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'field_1' => array(
+						'name' => 'field_1',
+						'type' => 'text',
+					),
+					'field_2' => array(
+						'name' => 'field_2',
+						'type' => 'text',
+					),
+					'field_3' => array(
+						'name' => 'field_3',
+						'type' => 'text',
+					),
+					'field_4' => array(
+						'name' => 'field_4',
+						'type' => 'text',
+					),
+					'field_5' => array(
+						'name' => 'field_5',
+						'type' => 'text',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		// Verify schema was stored correctly.
+		$stored_schemas = get_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', true );
+		$this->assertIsArray( $stored_schemas, 'Schemas should be an array' );
+		$this->assertArrayHasKey( 'form_0', $stored_schemas, 'form_0 schema should exist' );
+		$this->assertCount( 5, $stored_schemas['form_0']['fields'], 'Should have 5 fields in schema' );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+				'user_id'         => 1,
+			)
+		);
+
+		// Submit data with only 2 of the 5 fields (3 fields missing to hit continue multiple times).
+		$data = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'field_1'                    => 'Value 1',
+			'field_5'                    => 'Value 5',
+			// field_2, field_3, field_4 are intentionally missing.
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		// Call process_custom_fields directly using Utility.
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array( $comment_id, $data )
+		);
+
+		// Verify submitted fields were saved (proves isset check passed for these fields).
+		$this->assertEquals( 'Value 1', get_comment_meta( $comment_id, 'gatherpress_custom_field_1', true ) );
+		$this->assertEquals( 'Value 5', get_comment_meta( $comment_id, 'gatherpress_custom_field_5', true ) );
+
+		// Verify missing fields were NOT saved (isset check prevented saving).
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_field_2', true ),
+			'Field 2 not in submitted data should not be saved'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_field_3', true ),
+			'Field 3 not in submitted data should not be saved'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_field_4', true ),
+			'Field 4 not in submitted data should not be saved'
+		);
+	}
+
+	/**
+	 * Tests process_custom_fields with multiple invocations to ensure continue coverage.
+	 *
+	 * @covers ::process_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_process_custom_fields_multiple_missing_scenarios(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+				'user_id'         => 1,
+			)
+		);
+
+		// Set up form schema with 3 fields.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'alpha' => array(
+						'name' => 'alpha',
+						'type' => 'text',
+					),
+					'beta'  => array(
+						'name' => 'beta',
+						'type' => 'text',
+					),
+					'gamma' => array(
+						'name' => 'gamma',
+						'type' => 'text',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$instance = Rsvp_Form::get_instance();
+
+		// Scenario 1: Only alpha present (beta, gamma missing).
+		$data1 = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'alpha'                      => 'Value Alpha',
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array( $comment_id, $data1 )
+		);
+
+		$this->assertEquals( 'Value Alpha', get_comment_meta( $comment_id, 'gatherpress_custom_alpha', true ) );
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_custom_beta', true ) );
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_custom_gamma', true ) );
+
+		// Scenario 2: Only gamma present (alpha, beta missing).
+		delete_comment_meta( $comment_id, 'gatherpress_custom_alpha' );
+
+		$data2 = array(
+			'gatherpress_form_schema_id' => 'form_0',
+			'gamma'                      => 'Value Gamma',
+		);
+
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array( $comment_id, $data2 )
+		);
+
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_custom_alpha', true ) );
+		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_custom_beta', true ) );
+		$this->assertEquals( 'Value Gamma', get_comment_meta( $comment_id, 'gatherpress_custom_gamma', true ) );
+	}
 }

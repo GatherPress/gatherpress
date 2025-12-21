@@ -886,4 +886,113 @@ class Test_Form_Field extends Base {
 			'Failed to assert render output contains label.'
 		);
 	}
+
+	/**
+	 * Tests that className is NOT preserved through process_attributes.
+	 *
+	 * This test proves that the className checking code at lines 310-312 and 338-339
+	 * is dead code because process_attributes() does not preserve className.
+	 *
+	 * @since 1.0.0
+	 * @covers ::__construct
+	 * @covers ::process_attributes
+	 * @covers ::get_wrapper_classes
+	 * @covers ::get_wrapper_attributes
+	 *
+	 * @return void
+	 */
+	public function test_className_not_preserved_in_attributes(): void {
+		// Create form field with className in raw attributes.
+		$form_field = new Form_Field(
+			array(
+				'fieldName' => 'test_field',
+				'className' => 'my-custom-class another-class',
+			)
+		);
+
+		// Use reflection to access processed attributes.
+		$reflection = new \ReflectionClass( $form_field );
+		$property   = $reflection->getProperty( 'attributes' );
+		$property->setAccessible( true );
+		$processed_attrs = $property->getValue( $form_field );
+
+		// Verify className is NOT in processed attributes.
+		$this->assertArrayNotHasKey(
+			'className',
+			$processed_attrs,
+			'className should NOT be preserved in processed attributes'
+		);
+
+		// Verify wrapper classes do NOT include custom className.
+		$method = $reflection->getMethod( 'get_wrapper_classes' );
+		$method->setAccessible( true );
+		$wrapper_classes = $method->invoke( $form_field );
+
+		$this->assertNotContains(
+			'my-custom-class',
+			$wrapper_classes,
+			'Custom className should NOT be in wrapper classes'
+		);
+		$this->assertNotContains(
+			'another-class',
+			$wrapper_classes,
+			'Custom className should NOT be in wrapper classes'
+		);
+	}
+
+	/**
+	 * Tests that data-* attributes are NOT preserved through process_attributes.
+	 *
+	 * This test proves that the data-* attribute checking code at lines 345-348
+	 * is dead code because process_attributes() does not preserve data-* attributes.
+	 *
+	 * @since 1.0.0
+	 * @covers ::__construct
+	 * @covers ::process_attributes
+	 * @covers ::get_wrapper_attributes
+	 *
+	 * @return void
+	 */
+	public function test_data_attributes_not_preserved(): void {
+		// Create form field with data-* attributes.
+		$form_field = new Form_Field(
+			array(
+				'fieldName'      => 'test_field',
+				'data-custom'    => 'custom-value',
+				'data-test-attr' => 'test-value',
+			)
+		);
+
+		// Use reflection to access processed attributes.
+		$reflection = new \ReflectionClass( $form_field );
+		$property   = $reflection->getProperty( 'attributes' );
+		$property->setAccessible( true );
+		$processed_attrs = $property->getValue( $form_field );
+
+		// Verify data-* attributes are NOT in processed attributes.
+		$this->assertArrayNotHasKey(
+			'data-custom',
+			$processed_attrs,
+			'data-custom should NOT be preserved in processed attributes'
+		);
+		$this->assertArrayNotHasKey(
+			'data-test-attr',
+			$processed_attrs,
+			'data-test-attr should NOT be preserved in processed attributes'
+		);
+
+		// Verify wrapper attributes do NOT include data-* attributes.
+		$wrapper_attrs = $form_field->get_wrapper_attributes();
+
+		$this->assertStringNotContainsString(
+			'data-custom',
+			$wrapper_attrs,
+			'data-custom should NOT be in wrapper attributes'
+		);
+		$this->assertStringNotContainsString(
+			'data-test-attr',
+			$wrapper_attrs,
+			'data-test-attr should NOT be in wrapper attributes'
+		);
+	}
 }
