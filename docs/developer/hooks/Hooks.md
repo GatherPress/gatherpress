@@ -40,6 +40,10 @@
 
 - [`gatherpress_sub_pages`](gatherpress_sub_pages) Filters the list of GatherPress sub pages.
 
+## class-setup.php
+
+- [`gatherpress_is_alpha_active`](gatherpress_is_alpha_active) Filters whether GatherPress Alpha is considered active.
+
 ## class-user.php
 
 - [`gatherpress_event_updates_default_opt_in`](gatherpress_event_updates_default_opt_in) Filters the default state of the event updates opt-in.
