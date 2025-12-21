@@ -1,18 +1,34 @@
 /**
  * External dependencies.
  */
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 
 /**
  * Internal dependencies.
  */
-import {
+import FieldValue, {
 	getInputStyles,
 	getLabelStyles,
 	getLabelWrapperStyles,
 	getOptionStyles,
 	getWrapperClasses,
 } from '../../../../../../src/blocks/form-field/helpers';
+
+/**
+ * Mock WordPress i18n.
+ */
+jest.mock( '@wordpress/i18n', () => ( {
+	__: jest.fn( ( text ) => text ),
+} ) );
+
+/**
+ * Mock WordPress components.
+ */
+jest.mock( '@wordpress/components', () => ( {
+	TextControl: jest.fn( ( props ) => ( { type: 'TextControl', props } ) ),
+	TextareaControl: jest.fn( ( props ) => ( { type: 'TextareaControl', props } ) ),
+	ToggleControl: jest.fn( ( props ) => ( { type: 'ToggleControl', props } ) ),
+} ) );
 
 describe( 'Form field helper functions', () => {
 	describe( 'getInputStyles', () => {
@@ -326,6 +342,180 @@ describe( 'Form field helper functions', () => {
 
 			// Should not have leading/trailing spaces.
 			expect( result ).toBe( result.trim() );
+		} );
+
+		it( 'uses default inlineLayout value of false when not provided', () => {
+			const blockProps = { className: '' };
+
+			// Call without third parameter to test default value.
+			const result = getWrapperClasses( 'text', blockProps );
+
+			// Should not include inline layout class when using default false.
+			expect( result ).not.toContain( 'gatherpress-inline-layout' );
+			expect( result ).toBe( 'gatherpress-form-field--text' );
+		} );
+	} );
+
+	describe( 'FieldValue', () => {
+		const mockSetAttributes = jest.fn();
+
+		beforeEach( () => {
+			mockSetAttributes.mockClear();
+		} );
+
+		it( 'renders TextControl for email field type and calls onChange', () => {
+			const attributes = { fieldValue: 'test@example.com' };
+			const result = FieldValue( {
+				fieldType: 'email',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeTruthy();
+			expect( result.props ).toBeDefined();
+
+			// Test onChange callback.
+			result.props.onChange( 'new@example.com' );
+			expect( mockSetAttributes ).toHaveBeenCalledWith( {
+				fieldValue: 'new@example.com',
+			} );
+		} );
+
+		it( 'renders TextControl for url field type and calls onChange', () => {
+			const attributes = { fieldValue: 'https://example.com' };
+			const result = FieldValue( {
+				fieldType: 'url',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeTruthy();
+			expect( result.props ).toBeDefined();
+
+			// Test onChange callback.
+			result.props.onChange( 'https://newsite.com' );
+			expect( mockSetAttributes ).toHaveBeenCalledWith( {
+				fieldValue: 'https://newsite.com',
+			} );
+		} );
+
+		it( 'renders TextControl for tel field type and calls onChange', () => {
+			const attributes = { fieldValue: '555-1234' };
+			const result = FieldValue( {
+				fieldType: 'tel',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeTruthy();
+			expect( result.props ).toBeDefined();
+
+			// Test onChange callback.
+			result.props.onChange( '555-5678' );
+			expect( mockSetAttributes ).toHaveBeenCalledWith( {
+				fieldValue: '555-5678',
+			} );
+		} );
+
+		it( 'renders TextControl for number field type and calls onChange', () => {
+			const attributes = { fieldValue: '42' };
+			const result = FieldValue( {
+				fieldType: 'number',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeTruthy();
+			expect( result.props ).toBeDefined();
+
+			// Test onChange callback.
+			result.props.onChange( '99' );
+			expect( mockSetAttributes ).toHaveBeenCalledWith( {
+				fieldValue: '99',
+			} );
+		} );
+
+		it( 'renders TextareaControl for textarea field type and calls onChange', () => {
+			const attributes = { fieldValue: 'Some text content' };
+			const result = FieldValue( {
+				fieldType: 'textarea',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeTruthy();
+			expect( result.props ).toBeDefined();
+
+			// Test onChange callback.
+			result.props.onChange( 'Updated content' );
+			expect( mockSetAttributes ).toHaveBeenCalledWith( {
+				fieldValue: 'Updated content',
+			} );
+		} );
+
+		it( 'renders ToggleControl for checkbox field type and calls onChange', () => {
+			const attributes = { fieldValue: true };
+			const result = FieldValue( {
+				fieldType: 'checkbox',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeTruthy();
+			expect( result.props ).toBeDefined();
+
+			// Test onChange callback.
+			result.props.onChange( false );
+			expect( mockSetAttributes ).toHaveBeenCalledWith( {
+				fieldValue: false,
+			} );
+		} );
+
+		it( 'returns null for radio field type', () => {
+			const attributes = { fieldValue: '' };
+			const result = FieldValue( {
+				fieldType: 'radio',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeNull();
+		} );
+
+		it( 'renders TextControl for hidden field type and calls onChange', () => {
+			const attributes = { fieldValue: 'hidden-value' };
+			const result = FieldValue( {
+				fieldType: 'hidden',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeTruthy();
+			expect( result.props ).toBeDefined();
+
+			// Test onChange callback.
+			result.props.onChange( 'new-hidden-value' );
+			expect( mockSetAttributes ).toHaveBeenCalledWith( {
+				fieldValue: 'new-hidden-value',
+			} );
+		} );
+
+		it( 'renders TextControl for default/text field type and calls onChange', () => {
+			const attributes = { fieldValue: 'default text' };
+			const result = FieldValue( {
+				fieldType: 'text',
+				attributes,
+				setAttributes: mockSetAttributes,
+			} );
+
+			expect( result ).toBeTruthy();
+			expect( result.props ).toBeDefined();
+
+			// Test onChange callback.
+			result.props.onChange( 'updated text' );
+			expect( mockSetAttributes ).toHaveBeenCalledWith( {
+				fieldValue: 'updated text',
+			} );
 		} );
 	} );
 } );

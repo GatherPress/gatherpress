@@ -64,7 +64,8 @@ export default function Edit( { attributes, setAttributes } ) {
 			.trim()
 			.replace( /[^a-z0-9\s]/g, '' )
 			.replace( /\s+/g, '_' )
-			.replace( /(?:^_+|_+$)/g, '' );
+			.replace( /^_+/g, '' )
+			.replace( /_+$/g, '' );
 	};
 
 	/**
