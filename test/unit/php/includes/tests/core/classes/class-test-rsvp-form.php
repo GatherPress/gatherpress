@@ -24,6 +24,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Coverage for setup_hooks.
 	 *
+	 * @covers ::__construct
 	 * @covers ::setup_hooks
 	 *
 	 * @return void
@@ -2169,5 +2170,353 @@ class Test_Rsvp_Form extends Base {
 
 		remove_all_filters( 'gatherpress_pre_get_http_input' );
 		remove_all_filters( 'gatherpress_pre_get_wp_referer' );
+	}
+
+	/**
+	 * Tests preprocess_rsvp_comment when event has passed.
+	 *
+	 * Covers lines 167-171: wp_die when event has passed.
+	 *
+	 * @covers ::preprocess_rsvp_comment
+	 * @return void
+	 */
+	public function test_preprocess_rsvp_comment_event_passed(): void {
+		// Create an event that has already ended.
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Set the event to a past date using DateTimeImmutable.
+		$start = new \DateTimeImmutable( 'now', wp_timezone() );
+		$end   = new \DateTimeImmutable( 'now', wp_timezone() );
+
+		$start = $start->modify( '-3 hours' );
+		$end   = $end->modify( '-1 hours' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+		);
+
+		$event = new Event( $post_id );
+		$event->save_datetimes( $params );
+
+		// Mock form submission data.
+		add_filter(
+			'gatherpress_pre_get_http_input',
+			static function ( $pre_value, $type, $var_name ) {
+				if ( INPUT_POST === $type && 'author' === $var_name ) {
+					return 'Test Author';
+				}
+				if ( INPUT_POST === $type && 'email' === $var_name ) {
+					return 'test@example.com';
+				}
+				return $pre_value;
+			},
+			10,
+			3
+		);
+
+		$comment_data = array(
+			'comment_post_ID' => $post_id,
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		// Expect wp_die to be called.
+		$this->expectException( 'WPDieException' );
+		$this->expectExceptionMessage( 'Registration for this event is now closed.' );
+
+		$instance->preprocess_rsvp_comment( $comment_data );
+
+		remove_all_filters( 'gatherpress_pre_get_http_input' );
+	}
+
+	/**
+	 * Tests process_meta_fields with email updates opt-in.
+	 *
+	 * Covers lines 511-512: Email updates preference handling.
+	 *
+	 * @covers ::process_meta_fields
+	 * @return void
+	 */
+	public function test_process_meta_fields_with_email_opt_in(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_event_updates_opt_in' => true,
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_meta_fields',
+			array( $comment_id, $data )
+		);
+
+		$opt_in = get_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', true );
+		$this->assertEquals( 1, $opt_in, 'Email opt-in should be saved as 1' );
+	}
+
+	/**
+	 * Tests process_meta_fields with email updates opt-out.
+	 *
+	 * Covers lines 511-512: Email updates preference with false value.
+	 *
+	 * @covers ::process_meta_fields
+	 * @return void
+	 */
+	public function test_process_meta_fields_with_email_opt_out(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_event_updates_opt_in' => false,
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_meta_fields',
+			array( $comment_id, $data )
+		);
+
+		$opt_in = get_comment_meta( $comment_id, 'gatherpress_event_updates_opt_in', true );
+		$this->assertEquals( 0, $opt_in, 'Email opt-in should be saved as 0' );
+	}
+
+	/**
+	 * Tests process_meta_fields with anonymous RSVP enabled.
+	 *
+	 * Covers line 535: Setting anonymous RSVP when enabled for the event.
+	 *
+	 * @covers ::process_meta_fields
+	 * @return void
+	 */
+	public function test_process_meta_fields_with_anonymous_enabled(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Enable anonymous RSVP for the event.
+		update_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', '1' );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_rsvp_anonymous' => true,
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_meta_fields',
+			array( $comment_id, $data )
+		);
+
+		$anonymous = get_comment_meta( $comment_id, 'gatherpress_rsvp_anonymous', true );
+		$this->assertEquals( 1, $anonymous, 'Anonymous RSVP should be saved when enabled' );
+	}
+
+	/**
+	 * Tests process_custom_fields method with form schema ID.
+	 *
+	 * Covers process_custom_fields method (private).
+	 *
+	 * @covers ::process_custom_fields
+	 * @return void
+	 */
+	public function test_process_custom_fields_with_schema_id(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create a form schema with custom fields.
+		$form_schema_id = 'test-form-schema';
+		$schemas        = array(
+			$form_schema_id => array(
+				'fields' => array(
+					'custom_field_1' => array(
+						'type'  => 'text',
+						'label' => 'Custom Field 1',
+					),
+					'custom_field_2' => array(
+						'type'  => 'number',
+						'label' => 'Custom Field 2',
+					),
+				),
+			),
+		);
+		update_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_form_schema_id' => $form_schema_id,
+			'custom_field_1'             => 'Test Value',
+			'custom_field_2'             => '42',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array( $comment_id, $data )
+		);
+
+		// Verify custom fields were saved.
+		$custom_value_1 = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true );
+		$custom_value_2 = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_2', true );
+
+		$this->assertEquals( 'Test Value', $custom_value_1, 'Custom field 1 should be saved' );
+		$this->assertEquals( '42', $custom_value_2, 'Custom field 2 should be saved' );
+	}
+
+	/**
+	 * Tests process_custom_fields without form schema ID.
+	 *
+	 * Covers process_custom_fields delegating to blocks class.
+	 *
+	 * @covers ::process_custom_fields
+	 * @return void
+	 */
+	public function test_process_custom_fields_without_schema_id(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array();
+
+		$instance = Rsvp_Form::get_instance();
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array( $comment_id, $data )
+		);
+
+		// Should delegate to Rsvp_Form_Block::process_custom_fields_for_form.
+		// No assertions needed, just verifying it doesn't error.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Tests process_custom_fields with invalid comment type.
+	 *
+	 * @covers ::process_custom_fields
+	 * @return void
+	 */
+	public function test_process_custom_fields_invalid_comment_type(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		// Create a regular comment, not an RSVP comment.
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => 'comment',
+			)
+		);
+
+		$data = array(
+			'gatherpress_form_schema_id' => 'test-schema',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array( $comment_id, $data )
+		);
+
+		// Should return early without processing.
+		// No custom fields should be saved.
+		$custom_value = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true );
+		$this->assertEmpty( $custom_value, 'Should not save custom fields for non-RSVP comments' );
+	}
+
+	/**
+	 * Tests process_custom_fields with no schema found.
+	 *
+	 * @covers ::process_custom_fields
+	 * @return void
+	 */
+	public function test_process_custom_fields_no_schema_found(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		$data = array(
+			'gatherpress_form_schema_id' => 'non-existent-schema',
+			'custom_field_1'             => 'Test Value',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array( $comment_id, $data )
+		);
+
+		// Should return early without processing.
+		$custom_value = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true );
+		$this->assertEmpty( $custom_value, 'Should not save custom fields when schema not found' );
 	}
 }
