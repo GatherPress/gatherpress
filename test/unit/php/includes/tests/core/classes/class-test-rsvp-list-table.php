@@ -1409,4 +1409,214 @@ class Test_RSVP_List_Table extends Base {
 
 		unset( $_REQUEST['orderby'], $_REQUEST['order'] );
 	}
+
+	/**
+	 * Tests get_rsvps with null per_page parameter.
+	 *
+	 * Covers line 270: Fallback to DEFAULT_PER_PAGE when per_page is null.
+	 *
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_get_rsvps_null_per_page(): void {
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvps',
+			array( null, 1 )
+		);
+
+		$this->assertIsArray(
+			$result,
+			'Failed to assert get_rsvps returns an array with null per_page.'
+		);
+	}
+
+	/**
+	 * Tests get_rsvp_count method directly.
+	 *
+	 * Covers get_rsvp_count method (private method).
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count(): void {
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer.'
+		);
+		$this->assertGreaterThanOrEqual(
+			0,
+			$count,
+			'Failed to assert get_rsvp_count returns a non-negative number.'
+		);
+	}
+
+	/**
+	 * Tests get_rsvp_count with user_id filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_user_id_filter(): void {
+		$user_id = $this->factory->user->create();
+
+		$_REQUEST['user_id'] = $user_id;
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with user_id filter.'
+		);
+
+		unset( $_REQUEST['user_id'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with search parameter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_search(): void {
+		$_REQUEST['s'] = 'test search';
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with search.'
+		);
+
+		unset( $_REQUEST['s'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with post_id filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_post_id_filter(): void {
+		$_REQUEST['post_id'] = $this->event_id;
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with post_id filter.'
+		);
+
+		unset( $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with event filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_event_filter(): void {
+		$_REQUEST['event'] = $this->event_id;
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with event filter.'
+		);
+
+		unset( $_REQUEST['event'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with approved status filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_approved_status(): void {
+		$_REQUEST['status'] = 'approved';
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with approved status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests get_rsvp_count with spam status filter.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_spam_status(): void {
+		$_REQUEST['status'] = 'spam';
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with spam status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
+	 * Tests get_views with valid post_id filter.
+	 *
+	 * Covers lines 758, 781, 790: post_id filter handling in get_views.
+	 *
+	 * @covers ::get_views
+	 * @return void
+	 */
+	public function test_get_views_with_valid_post_id_filter(): void {
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Rsvp::COMMENT_TYPE );
+		$_REQUEST['post_id']  = $this->event_id;
+
+		$views = $this->list_table->get_views();
+
+		$this->assertIsArray(
+			$views,
+			'Failed to assert get_views returns an array with valid post_id filter.'
+		);
+
+		// Verify that post_id is included in the view URLs.
+		$this->assertStringContainsString(
+			'post_id=' . $this->event_id,
+			$views['all'],
+			'Failed to assert all view contains post_id parameter.'
+		);
+
+		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
+	}
+
 }
