@@ -444,4 +444,25 @@ class Utility {
 
 		return wp_get_referer();
 	}
+
+	/**
+	 * Safely exits the script in a testable way.
+	 *
+	 * This method provides a centralized exit point that returns early during unit tests
+	 * instead of calling exit(). The actual exit statement is excluded from code coverage.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public static function safe_exit(): void {
+		// Return early during unit tests instead of exiting.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			return;
+		}
+
+		// @codeCoverageIgnoreStart
+		exit;
+		// @codeCoverageIgnoreEnd
+	}
 }
