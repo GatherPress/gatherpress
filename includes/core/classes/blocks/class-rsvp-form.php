@@ -123,13 +123,6 @@ class Rsvp_Form {
 			return '';
 		}
 
-		$event = new Event( $post_id );
-
-		// Double-check that the event object was created successfully.
-		if ( ! $event->event ) {
-			return '';
-		}
-
 		$unique_form_id = $this->generate_form_id();
 		$schema_form_id = $this->get_form_schema_id( $post_id, $block );
 
@@ -156,6 +149,8 @@ class Rsvp_Form {
 		$tag->set_attribute( 'data-wp-init', 'callbacks.initRsvpForm' );
 		$tag->set_attribute( 'data-wp-on--submit', 'actions.handleRsvpFormSubmit' );
 		$tag->set_attribute( 'data-wp-context', wp_json_encode( array( 'postId' => $post_id ) ) );
+
+		$event = new Event( $post_id );
 
 		// Add event state if the event has passed.
 		if ( $event->has_event_past() ) {
