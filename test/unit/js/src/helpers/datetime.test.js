@@ -25,6 +25,7 @@ import {
 	removeNonTimePHPFormatChars,
 	updateDateTimeEnd,
 	updateDateTimeStart,
+	validateDateTimeEnd,
 	validateDateTimeStart,
 } from '../../../../../src/helpers/datetime';
 
@@ -413,6 +414,27 @@ describe( 'Relative mode duration tests', () => {
 		expect( setDateTimeEnd ).not.toHaveBeenCalled();
 	} );
 
+	test( 'validateDateTimeStart with only dateTimeStart parameter', () => {
+		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-30 16:00:00';
+		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 14:00:00';
+
+		validateDateTimeStart( '2023-11-30 18:00:00' );
+
+		expect( global.GatherPress.eventDetails.dateTime.datetime_end ).toBe(
+			'2023-11-30 20:00:00'
+		);
+	} );
+
+	test( 'validateDateTimeStart without currentDuration parameter calls getDateTimeOffset', () => {
+		const setDateTimeEnd = jest.fn();
+		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-30 16:00:00';
+		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 14:00:00';
+
+		validateDateTimeStart( '2023-11-30 18:00:00', setDateTimeEnd );
+
+		expect( setDateTimeEnd ).toHaveBeenCalledWith( '2023-11-30 20:00:00' );
+	} );
+
 	test( 'relative mode works with different duration values', () => {
 		const setDateTimeStart = jest.fn();
 		const setDateTimeEnd = jest.fn();
@@ -455,6 +477,40 @@ describe( 'Relative mode duration tests', () => {
 
 		// Should maintain 3-hour offset.
 		expect( setDateTimeEnd ).toHaveBeenCalledWith( '2023-11-26 21:00:00' );
+	} );
+} );
+
+/**
+ * Coverage for validateDateTimeEnd.
+ */
+describe( 'validateDateTimeEnd', () => {
+	test( 'validateDateTimeEnd updates start when end <= start', () => {
+		const setDateTimeStart = jest.fn();
+		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 18:00:00';
+
+		validateDateTimeEnd( '2023-11-30 16:00:00', setDateTimeStart );
+
+		expect( setDateTimeStart ).toHaveBeenCalledWith( '2023-11-30 14:00:00' );
+	} );
+
+	test( 'validateDateTimeEnd with only dateTimeEnd parameter', () => {
+		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 18:00:00';
+		global.GatherPress.eventDetails.dateTime.datetime_end = '2023-11-30 20:00:00';
+
+		validateDateTimeEnd( '2023-11-30 16:00:00' );
+
+		expect( global.GatherPress.eventDetails.dateTime.datetime_start ).toBe(
+			'2023-11-30 14:00:00'
+		);
+	} );
+
+	test( 'validateDateTimeEnd does not update start when end > start', () => {
+		const setDateTimeStart = jest.fn();
+		global.GatherPress.eventDetails.dateTime.datetime_start = '2023-11-30 18:00:00';
+
+		validateDateTimeEnd( '2023-11-30 20:00:00', setDateTimeStart );
+
+		expect( setDateTimeStart ).not.toHaveBeenCalled();
 	} );
 } );
 
