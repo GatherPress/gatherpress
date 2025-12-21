@@ -122,12 +122,16 @@ jobs:
           npm install
           npm run build
           npm run test:unit:php
+          npm run test:unit:php:multisite
           npm run test:unit:js
           docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
+          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage-multisite.xml coverage-multisite.xml
         if: ${{ success() || failure() }}
 
       - name: Fix Code Coverage Paths
-        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+        run: |
+          sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+          sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage-multisite.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3

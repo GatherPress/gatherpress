@@ -91,6 +91,8 @@
 		"test:unit:js": "wp-scripts test-unit-js --coverage --testResultsProcessor=jest-sonar-reporter",
 		"pretest:unit:php": "wp-env start --xdebug",
 		"test:unit:php": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit.xml.dist --coverage-clover=coverage.xml --coverage-html=build/coverage-report",
+		"pretest:unit:php:multisite": "wp-env start --xdebug",
+		"test:unit:php:multisite": "wp-env run tests-wordpress php -dxdebug.mode=coverage /var/www/html/wp-content/plugins/gatherpress/vendor/bin/phpunit -c /var/www/html/wp-content/plugins/gatherpress/phpunit-multisite.xml.dist --coverage-clover=coverage-multisite.xml --coverage-html=build/coverage-report-multisite",
 		"wp-env": "wp-env",
 		"playground": "./node_modules/@wp-playground/cli/wp-playground.js server",
 		"playground:mount": "./node_modules/@wp-playground/cli/wp-playground.js server --mount=./:/wordpress/wp-content/plugins/gatherpress",

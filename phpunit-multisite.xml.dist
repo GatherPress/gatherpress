@@ -8,15 +8,18 @@
 	convertDeprecationsToExceptions="true"
 	verbose="true"
 	>
+	<php>
+		<const name="WP_TESTS_MULTISITE" value="1" />
+	</php>
 	<testsuites>
-		<testsuite name="test">
+		<testsuite name="multisite">
 			<directory prefix="class-test-" suffix=".php">./test/unit/php/</directory>
 		</testsuite>
 	</testsuites>
 	<groups>
-		<exclude>
+		<include>
 			<group>multisite</group>
-		</exclude>
+		</include>
 	</groups>
 	<coverage>
 		<include>
