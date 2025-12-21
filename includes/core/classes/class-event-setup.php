@@ -220,6 +220,17 @@ class Event_Setup {
 	}
 
 	/**
+	 * Authorization callback for post meta that requires edit_posts capability.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return bool True if user can edit posts, false otherwise.
+	 */
+	public function can_edit_posts_meta(): bool {
+		return current_user_can( 'edit_posts' );
+	}
+
+	/**
 	 * Registers post meta for the Event custom post type.
 	 *
 	 * This method sets up custom metadata fields associated with Event posts, including
@@ -233,71 +244,55 @@ class Event_Setup {
 	public function register_post_meta(): void {
 		$post_meta = array(
 			'gatherpress_datetime'              => array(
-				'auth_callback'     => static function () {
-					return current_user_can( 'edit_posts' ); // @codeCoverageIgnore
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_start'        => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 			),
 			'gatherpress_datetime_start_gmt'    => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end'          => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_datetime_end_gmt'      => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_timezone'              => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_max_guest_limit'       => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'integer',
 			),
 			'gatherpress_enable_anonymous_rsvp' => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'rest_sanitize_boolean',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -305,18 +300,14 @@ class Event_Setup {
 				'default'           => false,
 			),
 			'gatherpress_online_event_link'     => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'sanitize_url',
 				'show_in_rest'      => true,
 				'single'            => true,
 				'type'              => 'string',
 			),
 			'gatherpress_max_attendance_limit'  => array(
-				'auth_callback'     => function () {
-					return current_user_can( 'edit_posts' );
-				},
+				'auth_callback'     => array( $this, 'can_edit_posts_meta' ),
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 				'single'            => true,
@@ -402,7 +393,7 @@ class Event_Setup {
 
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ICS content is safely generated and must not be escaped.
 				echo $event->get_ics_calendar_string();
-				exit;
+				Utility::safe_exit();
 			}
 
 			wp_die( esc_html__( 'Event not found.', 'gatherpress' ), '', array( 'response' => 404 ) );

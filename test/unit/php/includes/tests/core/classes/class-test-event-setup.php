@@ -1357,6 +1357,7 @@ class Test_Event_Setup extends Base {
 	 * Covers: auth_callback returns.
 	 *
 	 * @covers ::register_post_meta
+	 * @covers ::can_edit_posts_meta
 	 * @return void
 	 */
 	public function test_register_post_meta_auth_callbacks(): void {
@@ -1393,6 +1394,34 @@ class Test_Event_Setup extends Base {
 
 		$result = update_post_meta( $post_id, 'gatherpress_max_attendance_limit', 100 );
 		$this->assertNotFalse( $result, 'Should allow meta update for max_attendance_limit' );
+	}
+
+	/**
+	 * Tests can_edit_posts_meta authorization callback.
+	 *
+	 * @covers ::can_edit_posts_meta
+	 *
+	 * @return void
+	 */
+	public function test_can_edit_posts_meta(): void {
+		$instance = Event_Setup::get_instance();
+
+		// Test with user who can edit posts.
+		$editor_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $editor_id );
+
+		$this->assertTrue( $instance->can_edit_posts_meta(), 'Editor should be able to edit post meta' );
+
+		// Test with user who cannot edit posts.
+		$subscriber_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Subscriber should not be able to edit post meta' );
+
+		// Test with logged-out user.
+		wp_set_current_user( 0 );
+
+		$this->assertFalse( $instance->can_edit_posts_meta(), 'Logged-out user should not be able to edit post meta' );
 	}
 
 	/**
@@ -1541,6 +1570,39 @@ class Test_Event_Setup extends Base {
 	}
 
 	/**
+	 * Tests handle_rsvp_sorting early return when orderby is not 'rsvps'.
+	 *
+	 * Covers: Line 619 early return.
+	 *
+	 * @covers ::handle_rsvp_sorting
+	 * @return void
+	 */
+	public function test_rsvp_sorting_early_return_wrong_orderby(): void {
+		global $wp_the_query;
+
+		// Create a WP_Query for non-RSVP sorting.
+		$query = new WP_Query(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'orderby'   => 'date',
+			)
+		);
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$instance = Event_Setup::get_instance();
+		$instance->handle_rsvp_sorting( $query );
+
+		// Should not set rsvp_sort_order since orderby is not 'rsvps'.
+		$this->assertEmpty( $query->get( 'rsvp_sort_order' ), 'Should not set rsvp_sort_order for non-RSVP orderby' );
+
+		set_current_screen( 'front' );
+	}
+
+	/**
 	 * Tests handle_venue_sorting with venue orderby.
 	 *
 	 * Covers: Venue sorting logic.
@@ -1623,6 +1685,42 @@ class Test_Event_Setup extends Base {
 		// Clean up.
 		remove_filter( 'posts_join_paged', array( $instance, 'venue_sorting_join_paged' ) );
 		remove_filter( 'posts_orderby', array( $instance, 'venue_sorting_orderby' ) );
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Tests handle_venue_sorting early return when orderby is not 'venue'.
+	 *
+	 * Covers: Line 720 early return.
+	 *
+	 * @covers ::handle_venue_sorting
+	 * @return void
+	 */
+	public function test_venue_sorting_early_return_wrong_orderby(): void {
+		global $wp_the_query;
+
+		// Create a WP_Query for non-venue sorting.
+		$query = new WP_Query(
+			array(
+				'post_type' => Event::POST_TYPE,
+				'orderby'   => 'title',
+			)
+		);
+
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Necessary for testing query modifications.
+		$wp_the_query = $query;
+
+		set_current_screen( 'edit-gatherpress_event' );
+
+		$instance = Event_Setup::get_instance();
+		$instance->handle_venue_sorting( $query );
+
+		// Should not set venue_sort_order since orderby is not 'venue'.
+		$this->assertEmpty(
+			$query->get( 'venue_sort_order' ),
+			'Should not set venue_sort_order for non-venue orderby'
+		);
+
 		set_current_screen( 'front' );
 	}
 }

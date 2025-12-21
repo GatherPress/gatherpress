@@ -719,4 +719,21 @@ class Test_Utility extends Base {
 			'Should return false when wp_get_referer has no referer in test environment.'
 		);
 	}
+
+	/**
+	 * Tests safe_exit returns early during unit tests instead of calling exit().
+	 *
+	 * @since 1.0.0
+	 * @covers ::safe_exit
+	 *
+	 * @return void
+	 */
+	public function test_safe_exit_in_unit_tests(): void {
+		// In unit test environment, safe_exit should return early instead of calling exit().
+		// If this test completes, it means safe_exit returned instead of exiting.
+		Utility::safe_exit();
+
+		// If we reach this assertion, safe_exit returned successfully.
+		$this->assertTrue( true, 'safe_exit should return early during unit tests' );
+	}
 }
