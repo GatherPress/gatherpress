@@ -10,9 +10,11 @@ namespace GatherPress\Tests\Core;
 
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
+use GatherPress\Core\Rsvp_List_Table;
 use GatherPress\Core\Rsvp_Setup;
 use GatherPress\Core\Rsvp_Token;
 use GatherPress\Tests\Base;
+use PMC\Unit_Test\Utility;
 
 /**
  * Class Test_Rsvp_Setup.
@@ -611,6 +613,43 @@ class Test_Rsvp_Setup extends Base {
 		// Verify screen option was added.
 		$screen = get_current_screen();
 		$this->assertNotNull( $screen, 'Screen should be set.' );
+
+		// Clean up.
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Test setup_rsvp_list_table_screen_options method.
+	 *
+	 * @covers ::setup_rsvp_list_table_screen_options
+	 * @covers ::get_per_page_option
+	 *
+	 * @return void
+	 */
+	public function test_setup_rsvp_list_table_screen_options(): void {
+		$instance = Rsvp_Setup::get_instance();
+
+		// Set up list_table property.
+		Utility::set_and_get_hidden_property( $instance, 'list_table', new RSVP_List_Table() );
+
+		// Set up a proper screen context for add_screen_option to work.
+		$screen_id = sprintf( 'events_page_%s', Rsvp::COMMENT_TYPE );
+		set_current_screen( $screen_id );
+
+		// Call the public method.
+		$instance->setup_rsvp_list_table_screen_options();
+
+		// Verify screen option was added.
+		$screen  = get_current_screen();
+		$options = $screen->get_options();
+
+		$this->assertNotEmpty( $options, 'Screen options should not be empty' );
+		$this->assertArrayHasKey( 'per_page', $options, 'Per page option should be registered' );
+		$this->assertEquals(
+			RSVP_List_Table::DEFAULT_PER_PAGE,
+			$options['per_page']['default'],
+			'Default per page should match RSVP_List_Table::DEFAULT_PER_PAGE'
+		);
 
 		// Clean up.
 		set_current_screen( 'front' );
