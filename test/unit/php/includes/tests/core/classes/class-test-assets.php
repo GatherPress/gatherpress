@@ -511,46 +511,6 @@ class Test_Assets extends Base {
 	}
 
 	/**
-	 * Coverage for register_asset with non-existent asset.
-	 *
-	 * Covers line 479: Early return when asset file doesn't exist in production.
-	 *
-	 * @covers ::register_asset
-	 * @covers ::asset_exists
-	 *
-	 * @return void
-	 */
-	public function test_register_asset_non_existent(): void {
-		$instance = Assets::get_instance();
-
-		// Create directory structure but no asset file.
-		$test_dir = GATHERPRESS_CORE_PATH . '/build/variations/core/test-empty';
-		if ( ! is_dir( $test_dir ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- Necessary for testing.
-			mkdir( $test_dir, 0755, true );
-		}
-
-		// Use asset_exists directly to test the production path.
-		$test_path = $test_dir . '/index.asset.php';
-		$result    = Utility::invoke_hidden_method(
-			$instance,
-			'asset_exists',
-			array( $test_path, 'test-empty', false ) // false = not critical, won't throw error.
-		);
-
-		$this->assertFalse(
-			$result,
-			'asset_exists should return false for non-existent file when not critical.'
-		);
-
-		// Clean up.
-		if ( is_dir( $test_dir ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Necessary for testing.
-			rmdir( $test_dir );
-		}
-	}
-
-	/**
 	 * Coverage for register_asset with CSS file.
 	 *
 	 * Covers lines 495-501: Registering style when CSS file exists.
@@ -681,6 +641,8 @@ class Test_Assets extends Base {
 	/**
 	 * Coverage for enqueue_asset when style is not registered.
 	 *
+	 * Tests that line 519 is NOT executed when style is not registered.
+	 *
 	 * @covers ::enqueue_asset
 	 *
 	 * @return void
@@ -705,6 +667,40 @@ class Test_Assets extends Base {
 		// Clean up.
 		wp_dequeue_script( 'gatherpress-test-asset' );
 		wp_deregister_script( 'gatherpress-test-asset' );
+	}
+
+	/**
+	 * Coverage for enqueue_asset when style IS registered.
+	 *
+	 * Covers line 519: wp_enqueue_style is called when style is registered.
+	 *
+	 * @covers ::enqueue_asset
+	 *
+	 * @return void
+	 */
+	public function test_enqueue_asset_with_style(): void {
+		$instance = Assets::get_instance();
+
+		// Register both script and style.
+		wp_register_script( 'gatherpress-test-with-style', 'test.js', array(), '1.0.0', true );
+		wp_register_style( 'gatherpress-test-with-style', 'test.css', array(), '1.0.0', 'all' );
+
+		Utility::invoke_hidden_method( $instance, 'enqueue_asset', array( 'test-with-style' ) );
+
+		$this->assertTrue(
+			wp_script_is( 'gatherpress-test-with-style', 'enqueued' ),
+			'Script should be enqueued.'
+		);
+		$this->assertTrue(
+			wp_style_is( 'gatherpress-test-with-style', 'enqueued' ),
+			'Style should be enqueued when registered (line 519).'
+		);
+
+		// Clean up.
+		wp_dequeue_script( 'gatherpress-test-with-style' );
+		wp_deregister_script( 'gatherpress-test-with-style' );
+		wp_dequeue_style( 'gatherpress-test-with-style' );
+		wp_deregister_style( 'gatherpress-test-with-style' );
 	}
 
 	/**

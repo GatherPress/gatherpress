@@ -1591,6 +1591,30 @@ class Test_RSVP_List_Table extends Base {
 	}
 
 	/**
+	 * Tests get_rsvp_count with pending status filter.
+	 *
+	 * Covers line 399: Sets args['status'] to 'hold' for pending status in get_rsvp_count.
+	 *
+	 * @covers ::get_rsvp_count
+	 * @return void
+	 */
+	public function test_get_rsvp_count_with_pending_status(): void {
+		$_REQUEST['status'] = 'pending';
+
+		$count = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvp_count'
+		);
+
+		$this->assertIsInt(
+			$count,
+			'Failed to assert get_rsvp_count returns an integer with pending status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
+	}
+
+	/**
 	 * Tests get_views with valid post_id filter.
 	 *
 	 * Covers lines 758, 781, 790: post_id filter handling in get_views.
@@ -1617,5 +1641,30 @@ class Test_RSVP_List_Table extends Base {
 		);
 
 		unset( $_REQUEST['_wpnonce'], $_REQUEST['post_id'] );
+	}
+
+	/**
+	 * Tests get_rsvps with pending status filter.
+	 *
+	 * Covers line 399: Sets args['status'] to 'hold' for pending status.
+	 *
+	 * @covers ::get_rsvps
+	 * @return void
+	 */
+	public function test_get_rsvps_with_pending_status(): void {
+		$_REQUEST['status'] = 'pending';
+
+		$result = Utility::invoke_hidden_method(
+			$this->list_table,
+			'get_rsvps',
+			array( 10, 1 )
+		);
+
+		$this->assertIsArray(
+			$result,
+			'Failed to assert get_rsvps returns an array with pending status filter.'
+		);
+
+		unset( $_REQUEST['status'] );
 	}
 }
