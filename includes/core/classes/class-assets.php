@@ -436,10 +436,11 @@ class Assets {
 	 * @return void
 	 */
 	public function register_variation_assets(): void {
-		array_map(
-			array( $this, 'register_asset' ),
-			Block::get_instance()->get_block_variations()
-		);
+		$variations = Block::get_instance()->get_block_variations();
+
+		foreach ( $variations as $variation ) {
+			$this->register_asset( $variation, 'variations/core/' );
+		}
 	}
 
 	/**
@@ -462,11 +463,11 @@ class Assets {
 	 * @since 1.0.0
 	 *
 	 * @param string $folder_name Slug of the block to register scripts and translations for.
-	 * @param string $build_dir Name of the folder ro register assets from, relative to the plugins root directory.
+	 * @param string $build_dir Name of the folder to register assets from, relative to the plugins root directory.
 	 *
 	 * @return void
 	 */
-	protected function register_asset( string $folder_name, $build_dir = 'variations/core/' ): void {
+	protected function register_asset( string $folder_name, string $build_dir = '' ): void {
 		$slug     = sprintf( 'gatherpress-%s', $folder_name );
 		$folders  = sprintf( '%1$s%2$s', $build_dir, $folder_name );
 		$dir      = sprintf( '%1$s%2$s', $this->path, $folders );
@@ -536,6 +537,23 @@ class Assets {
 	 * @return bool
 	 */
 	protected function asset_exists( string $path, string $name, bool $critical = true ): bool {
+		/**
+		 * Filters whether an asset file is considered critical.
+		 *
+		 * This filter allows modification of the critical flag for asset files,
+		 * which determines whether missing assets throw an Error in development
+		 * environments or silently return false.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool   $critical Whether file is mandatory for the plugin to work.
+		 * @param string $path     Full file path to the asset file.
+		 * @param string $name     Name of the asset being loaded.
+		 *
+		 * @return bool True if asset is critical, false otherwise.
+		 */
+		$critical = apply_filters( 'gatherpress_asset_critical', $critical, $path, $name );
+
 		if ( ! file_exists( $path ) ) {
 			$error_message = sprintf(
 				/* Translators: %s Name of a block-asset */
@@ -555,6 +573,7 @@ class Assets {
 				return false;
 			}
 		}
+
 		return true;
 	}
 }
