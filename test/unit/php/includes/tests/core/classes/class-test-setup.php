@@ -625,4 +625,39 @@ class Test_Setup extends Base {
 			'Failed to assert that no notice is shown to users without install_plugins capability.'
 		);
 	}
+
+	/**
+	 * Tests check_gatherpress_alpha displays notice when Alpha is not active.
+	 *
+	 * @covers ::check_gatherpress_alpha
+	 *
+	 * @return void
+	 */
+	public function test_check_gatherpress_alpha_displays_notice(): void {
+		// Set up admin user with install_plugins capability.
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Set current screen to a plugins page.
+		set_current_screen( 'plugins' );
+
+		// Use filter to simulate Alpha not being active even if constant is defined.
+		add_filter( 'gatherpress_is_alpha_active', '__return_false' );
+
+		$instance = Setup::get_instance();
+
+		ob_start();
+		$instance->check_gatherpress_alpha();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'GatherPress Alpha',
+			$output,
+			'Failed to assert that admin notice about GatherPress Alpha is displayed.'
+		);
+
+		// Clean up.
+		remove_filter( 'gatherpress_is_alpha_active', '__return_false' );
+		set_current_screen( 'front' );
+	}
 }

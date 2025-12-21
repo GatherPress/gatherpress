@@ -2519,4 +2519,84 @@ class Test_Rsvp_Form extends Base {
 		$custom_value = get_comment_meta( $comment_id, 'gatherpress_custom_custom_field_1', true );
 		$this->assertEmpty( $custom_value, 'Should not save custom fields when schema not found' );
 	}
+
+	/**
+	 * Tests handle_rsvp_creation when comment creation fails.
+	 *
+	 * @covers ::handle_rsvp_creation
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_creation_failure(): void {
+		$instance = Rsvp_Form::get_instance();
+
+		$data = array(
+			'post_id' => 123,
+			'author'  => 'Test User',
+			'email'   => 'test@example.com',
+		);
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'handle_rsvp_creation',
+			array( false, $data )
+		);
+
+		$this->assertFalse( $result['success'], 'Should return failure when comment creation fails' );
+		$this->assertSame( 'Failed to create RSVP.', $result['message'] );
+		$this->assertSame( 0, $result['comment_id'] );
+		$this->assertSame( 500, $result['error_code'] );
+	}
+
+	/**
+	 * Tests handle_rsvp_creation with successful comment creation.
+	 *
+	 * @covers ::handle_rsvp_creation
+	 *
+	 * @return void
+	 */
+	public function test_handle_rsvp_creation_success(): void {
+		$post_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-12-25 10:00:00',
+				'datetime_end'   => '2025-12-25 12:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		$comment_id = wp_insert_comment(
+			array(
+				'comment_post_ID'      => $post_id,
+				'comment_type'         => Rsvp::COMMENT_TYPE,
+				'comment_author'       => 'Test User',
+				'comment_author_email' => 'test@example.com',
+				'comment_approved'     => 1,
+			)
+		);
+
+		$instance = Rsvp_Form::get_instance();
+
+		$data = array(
+			'post_id' => $post_id,
+			'author'  => 'Test User',
+			'email'   => 'test@example.com',
+		);
+
+		$result = Utility::invoke_hidden_method(
+			$instance,
+			'handle_rsvp_creation',
+			array( $comment_id, $data )
+		);
+
+		$this->assertTrue( $result['success'], 'Should return success when comment is created' );
+		$this->assertStringContainsString( 'RSVP has been submitted successfully', $result['message'] );
+		$this->assertSame( $comment_id, $result['comment_id'] );
+
+		$terms = wp_get_object_terms( $comment_id, Rsvp::TAXONOMY );
+		$this->assertNotEmpty( $terms, 'Should set RSVP status' );
+		$this->assertSame( 'attending', $terms[0]->slug, 'Should set status to attending' );
+	}
 }
