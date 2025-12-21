@@ -1445,6 +1445,67 @@ class Test_Event_Setup extends Base {
 		$instance->handle_calendar_ics_request( $wp );
 	}
 
+
+	/**
+	 * Tests handle_calendar_ics_request with ICS generation.
+	 *
+	 * @covers ::handle_calendar_ics_request
+	 * @return void
+	 */
+	public function test_handle_calendar_ics_request_with_ics_output(): void {
+		// Create event post directly with wp_insert_post.
+		$post_id = wp_insert_post(
+			array(
+				'post_type'   => Event::POST_TYPE,
+				'post_name'   => 'test-ics-download',
+				'post_title'  => 'Test ICS Download',
+				'post_status' => 'publish',
+			),
+			true
+		);
+
+		$this->assertIsInt( $post_id, 'Post should be created successfully' );
+
+		// Set event datetime so ICS has valid content.
+		$event = new Event( $post_id );
+		$event->save_datetimes(
+			array(
+				'datetime_start' => '2025-12-25 10:00:00',
+				'datetime_end'   => '2025-12-25 12:00:00',
+				'timezone'       => 'America/New_York',
+			)
+		);
+
+		// Set up global WP object with proper query_vars.
+		global $wp;
+
+		if ( ! ( $wp instanceof WP ) ) {
+			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required for testing ICS request handling.
+			$wp = new WP();
+		}
+
+		$wp->query_vars = array(
+			'gatherpress_ics' => true,
+			'name'            => 'test-ics-download',
+		);
+
+		$instance = Event_Setup::get_instance();
+
+		// Buffer output to capture ICS content without displaying it.
+		$output = Utility::buffer_and_return(
+			static function () use ( $instance, $wp ) {
+				$instance->handle_calendar_ics_request( $wp );
+			}
+		);
+
+		// Verify ICS content is generated correctly.
+		$this->assertStringContainsString( 'BEGIN:VCALENDAR', $output );
+		$this->assertStringContainsString( 'VERSION:2.0', $output );
+		$this->assertStringContainsString( 'BEGIN:VEVENT', $output );
+		$this->assertStringContainsString( 'END:VEVENT', $output );
+		$this->assertStringContainsString( 'END:VCALENDAR', $output );
+	}
+
 	/**
 	 * Tests custom_columns with online event.
 	 *

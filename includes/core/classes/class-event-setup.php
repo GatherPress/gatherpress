@@ -394,6 +394,9 @@ class Event_Setup {
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ICS content is safely generated and must not be escaped.
 				echo $event->get_ics_calendar_string();
 				Utility::safe_exit();
+
+				// Return statement allows unit tests to complete after safe_exit returns instead of exiting.
+				return;
 			}
 
 			wp_die( esc_html__( 'Event not found.', 'gatherpress' ), '', array( 'response' => 404 ) );
