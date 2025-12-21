@@ -1649,8 +1649,8 @@ class Test_Settings extends Base {
 	/**
 	 * Test register_settings section descriptions and field callbacks render.
 	 *
-	 * Tests lines 247-249 (section description rendering) and
-	 * lines 267-273 (field callback execution).
+	 * Tests section description rendering and
+	 * target code (field callback execution).
 	 *
 	 * @covers ::register_settings
 	 * @covers ::render_settings_form
@@ -1693,13 +1693,13 @@ class Test_Settings extends Base {
 		$instance->register_settings();
 
 		// Render the settings form which triggers both the section description
-		// closure (lines 247-249) and field callback closure (lines 267-273).
+		// closure (target code) and field callback closure (target code).
 		$output = \PMC\Unit_Test\Utility::buffer_and_return(
 			array( $instance, 'render_settings_form' ),
 			array( 'gatherpress_test_page_render' )
 		);
 
-		// Verify section description was rendered (tests lines 247-249).
+		// Verify section description was rendered (tests target code).
 		$this->assertStringContainsString(
 			'This is a test section description.',
 			$output,
@@ -1711,7 +1711,7 @@ class Test_Settings extends Base {
 			'Failed to assert section description has proper markup.'
 		);
 
-		// Verify field was rendered via the closure callback (tests lines 267-273).
+		// Verify field was rendered via the closure callback (tests target code).
 		$this->assertStringContainsString(
 			'Test Field',
 			$output,

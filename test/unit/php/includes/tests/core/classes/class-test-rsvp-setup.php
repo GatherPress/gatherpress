@@ -605,7 +605,7 @@ class Test_Rsvp_Setup extends Base {
 		$screen_id = sprintf( 'events_page_%s', Rsvp::COMMENT_TYPE );
 		set_current_screen( $screen_id );
 
-		// Trigger the load hook to test the callback (tests lines 210-219).
+		// Trigger the load hook to test the callback (tests target code).
 		do_action( $hook_name ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound
 
 		// Verify screen option was added.

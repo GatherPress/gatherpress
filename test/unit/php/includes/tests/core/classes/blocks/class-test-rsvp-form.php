@@ -2077,7 +2077,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests apply_visibility_attribute returns unchanged content when tag processor fails.
 	 *
-	 * Covers line 246: return $block_content;
+	 * Covers: return $block_content;
 	 *
 	 * @covers ::apply_visibility_attribute
 	 */
@@ -2155,7 +2155,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests determine_visibility with non-array visibility value.
 	 *
-	 * Covers line 365: return null;
+	 * Covers: return null;
 	 *
 	 * @covers ::determine_visibility
 	 */
@@ -2178,7 +2178,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests determine_visibility with past event and whenPast rule.
 	 *
-	 * Covers line 374: return 'show' === $when_past;
+	 * Covers: return 'show' === $when_past;
 	 *
 	 * @covers ::determine_visibility
 	 */
@@ -2213,7 +2213,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests determine_visibility with not past event and only whenPast rule.
 	 *
-	 * Covers lines 384-392.
+	 * Covers target code.
 	 *
 	 * @covers ::determine_visibility
 	 */
@@ -2250,7 +2250,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests determine_visibility with onSuccess rule when is_success is true.
 	 *
-	 * Covers lines 385-386.
+	 * Covers target code.
 	 *
 	 * @covers ::determine_visibility
 	 */
@@ -2285,7 +2285,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests determine_visibility with onSuccess rule when is_success is false.
 	 *
-	 * Covers lines 389.
+	 * Covers target code.
 	 *
 	 * @covers ::determine_visibility
 	 */
@@ -2320,7 +2320,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests extract_form_schemas_from_blocks with nested RSVP forms.
 	 *
-	 * Covers lines 469-470: nested schema prefixing.
+	 * Covers: nested schema prefixing.
 	 *
 	 * @covers ::save_form_schema
 	 * @covers ::extract_form_schemas_from_blocks
@@ -2368,7 +2368,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests get_form_schema_id with no post content.
 	 *
-	 * Covers line 551: return 'form_0'; // Fallback.
+	 * Covers: return 'form_0'; // Fallback.
 	 *
 	 * @covers ::get_form_schema_id
 	 */
@@ -2564,7 +2564,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests process_custom_fields_for_form with no fields in schema.
 	 *
-	 * Covers line 665: return;
+	 * Covers: return;
 	 *
 	 * @covers ::process_custom_fields_for_form
 	 */
@@ -2612,7 +2612,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests process_custom_fields_for_form skips built-in fields.
 	 *
-	 * Covers line 672: continue;
+	 * Covers: continue;
 	 *
 	 * @covers ::process_custom_fields_for_form
 	 */
@@ -2697,7 +2697,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests apply_visibility_rule with null visibility rule.
 	 *
-	 * Covers line 326: Early return when ! $visibility_rule.
+	 * Covers: Early return when ! $visibility_rule.
 	 *
 	 * @covers ::apply_visibility_rule
 	 * @return void
@@ -2730,7 +2730,7 @@ class Test_Rsvp_Form extends Base {
 	/**
 	 * Tests determine_visibility with no visibility rules.
 	 *
-	 * Covers line 392: return null when no onSuccess or whenPast rules.
+	 * Covers: return null when no onSuccess or whenPast rules.
 	 *
 	 * @covers ::determine_visibility
 	 * @return void

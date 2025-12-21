@@ -1465,7 +1465,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests nonce_route protected method.
 	 *
-	 * Covers line 127.
+	 * Covers target.
 	 *
 	 * @covers ::nonce_route
 	 */
@@ -1486,7 +1486,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests rsvp_route permission callback with valid RSVP token.
 	 *
-	 * Covers lines 199-206: permission callback returning true when valid token is provided.
+	 * Covers: permission callback returning true when valid token is provided.
 	 *
 	 * @covers ::rsvp_route
 	 */
@@ -1525,7 +1525,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests rsvp_route permission callback without token for logged out user.
 	 *
-	 * Covers line 206: permission callback returning false when user is not logged in.
+	 * Covers: permission callback returning false when user is not logged in.
 	 *
 	 * @covers ::rsvp_route
 	 */
@@ -1552,7 +1552,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests rsvp_route validate callback for rsvp_token with empty token.
 	 *
-	 * Covers line 216: validate callback returning false for empty token.
+	 * Covers: validate callback returning false for empty token.
 	 *
 	 * @covers ::rsvp_route
 	 */
@@ -1569,7 +1569,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests rsvp_form_route author validate callback with empty value.
 	 *
-	 * Covers line 254: validate callback returning false for empty sanitized author.
+	 * Covers: validate callback returning false for empty sanitized author.
 	 *
 	 * @covers ::rsvp_form_route
 	 */
@@ -1591,7 +1591,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests rsvp_form_route email validate callback.
 	 *
-	 * Covers line 260: validate callback using is_email().
+	 * Covers: validate callback using is_email().
 	 *
 	 * @covers ::rsvp_form_route
 	 */
@@ -1613,7 +1613,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests rsvp_form_route form schema ID validate callback.
 	 *
-	 * Covers line 266: validate callback checking string format.
+	 * Covers: validate callback checking string format.
 	 *
 	 * @covers ::rsvp_form_route
 	 */
@@ -1681,7 +1681,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests send_emails with non-user RSVP that has opt-out.
 	 *
-	 * Covers lines 469-476: skip sending email when comment meta opt-in is '0'.
+	 * Covers: skip sending email when comment meta opt-in is '0'.
 	 *
 	 * @covers ::send_emails
 	 */
@@ -1731,7 +1731,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests send_emails with locale switching for user.
 	 *
-	 * Covers line 510: restore_previous_locale when switched_locale is true.
+	 * Covers: restore_previous_locale when switched_locale is true.
 	 *
 	 * @covers ::send_emails
 	 */
@@ -1791,7 +1791,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests get_recipients skipping RSVP with empty email.
 	 *
-	 * Covers line 594: skip recipient when email is empty.
+	 * Covers: skip recipient when email is empty.
 	 *
 	 * @covers ::get_recipients
 	 */
@@ -1828,7 +1828,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests update_rsvp when non-admin user tries to add someone else.
 	 *
-	 * Covers lines 742-743: user without edit_posts permission gets user_id set to 0.
+	 * Covers: user without edit_posts permission gets user_id set to 0.
 	 *
 	 * @covers ::update_rsvp
 	 */
@@ -1863,7 +1863,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests rsvp_status_html setting nocache headers when logged in.
 	 *
-	 * Covers line 819: nocache_headers() called when user is logged in.
+	 * Covers: nocache_headers() called when user is logged in.
 	 *
 	 * @covers ::rsvp_status_html
 	 */
@@ -1895,7 +1895,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests handle_rsvp_form_submission with custom fields.
 	 *
-	 * Covers line 886: adding custom fields with gatherpress_custom_ prefix.
+	 * Covers: adding custom fields with gatherpress_custom_ prefix.
 	 *
 	 * @covers ::handle_rsvp_form_submission
 	 */
@@ -1928,7 +1928,7 @@ class Test_Event_Rest_Api extends Base {
 		$this->assertInstanceOf( 'WP_REST_Response', $response );
 		$this->assertTrue( $response->data['success'], 'RSVP form submission should succeed' );
 
-		// Line 886 adds custom fields with gatherpress_custom_ prefix to the data array.
+		// Target line adds custom fields with gatherpress_custom_ prefix to the data array.
 		// The actual processing and saving is done by Rsvp_Form::process_rsvp().
 		// This test confirms the endpoint successfully processes requests with custom fields.
 	}
@@ -1936,7 +1936,7 @@ class Test_Event_Rest_Api extends Base {
 	/**
 	 * Tests rsvp_responses setting nocache headers when logged in.
 	 *
-	 * Covers line 965: nocache_headers() called when user is logged in.
+	 * Covers: nocache_headers() called when user is logged in.
 	 *
 	 * @covers ::rsvp_responses
 	 */

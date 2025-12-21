@@ -75,7 +75,7 @@ class Test_Import extends Base {
 		$method->invoke( $instance );
 
 		/*
-		 * Tests line 60: $hook_name = 'wxr_importer.pre_process.post'.
+		 * Tests: $hook_name = 'wxr_importer.pre_process.post'.
 		 */
 		$this->assertNotFalse(
 			has_filter( 'wxr_importer.pre_process.post', array( $instance, 'prepare' ) ),
@@ -215,7 +215,7 @@ class Test_Import extends Base {
 		$meta_value = 'test_data';
 		$unique     = true;
 
-		// Tests line 151: return null; (when import_callback is not set).
+		// Tests: return null; (when import_callback is not set).
 		$result = $instance->run( $check, $object_id, 'test_meta_no_callback', $meta_value, $unique );
 
 		$this->assertNull(
@@ -234,7 +234,7 @@ class Test_Import extends Base {
 		};
 		add_filter( 'gatherpress_pseudopostmetas', $filter_noncallable );
 
-		// Tests line 151: return null; (when import_callback is not callable).
+		// Tests: return null; (when import_callback is not callable).
 		$result = $instance->run( $check, $object_id, 'test_meta_noncallable', $meta_value, $unique );
 
 		$this->assertNull(

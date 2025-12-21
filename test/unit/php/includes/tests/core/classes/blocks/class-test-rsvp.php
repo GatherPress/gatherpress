@@ -880,7 +880,7 @@ class Test_Rsvp extends Base {
 
 		$result = $instance->transform_block_content( $block_content, $block );
 
-		// Tests line 110: return ''; (when post is not an event).
+		// Tests: return ''; (when post is not an event).
 		$this->assertSame(
 			'',
 			$result,

@@ -609,7 +609,7 @@ class Test_Rsvp_Template extends Base {
 
 		$result = $instance->ensure_block_styles_loaded( $block_content );
 
-		// Tests lines 95-99: Block registry get and style property check.
+		// Tests: Block registry get and style property check.
 		// Verify method executed without error and returned content.
 		$this->assertSame(
 			$block_content,
@@ -674,7 +674,7 @@ class Test_Rsvp_Template extends Base {
 		$block  = array( 'innerBlocks' => array() );
 		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
-		// Tests lines 140 and 143: Context values for limit.
+		// Tests context values for limit.
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
 			$result,
@@ -743,7 +743,7 @@ class Test_Rsvp_Template extends Base {
 
 		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
-		// Tests lines 148-150: Foreach loop through responses.
+		// Tests: Foreach loop through responses.
 		// Just verify that output was generated (responses were processed).
 		$this->assertStringContainsString(
 			'data-wp-interactive="gatherpress"',
