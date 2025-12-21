@@ -651,15 +651,27 @@ class Test_Rsvp_Template extends Base {
 		$post_id  = $post->ID;
 
 		$wp_block = new WP_Block(
-			array(),
+			array(
+				'blockName' => 'gatherpress/rsvp-template',
+			),
+			array(
+				'postId' => $post_id,
+			)
+		);
+
+		$reflection       = new \ReflectionClass( $wp_block );
+		$context_property = $reflection->getProperty( 'context' );
+		$context_property->setAccessible( true );
+		$context_property->setValue(
+			$wp_block,
 			array(
 				'postId'                       => $post_id,
 				'gatherpress/rsvpLimitEnabled' => true,
 				'gatherpress/rsvpLimit'        => 50,
 			)
 		);
-		$block    = array( 'innerBlocks' => array() );
 
+		$block  = array( 'innerBlocks' => array() );
 		$result = $instance->generate_rsvp_template_block( '', $block, $wp_block );
 
 		// Tests lines 140 and 143: Context values for limit.
@@ -697,14 +709,27 @@ class Test_Rsvp_Template extends Base {
 		$event->rsvp->save( $user_id_2, 'attending', 0, 0 );
 
 		$wp_block = new WP_Block(
-			array(),
+			array(
+				'blockName' => 'gatherpress/rsvp-template',
+			),
+			array(
+				'postId' => $post_id,
+			)
+		);
+
+		$reflection       = new \ReflectionClass( $wp_block );
+		$context_property = $reflection->getProperty( 'context' );
+		$context_property->setAccessible( true );
+		$context_property->setValue(
+			$wp_block,
 			array(
 				'postId'                       => $post_id,
 				'gatherpress/rsvpLimitEnabled' => true,
 				'gatherpress/rsvpLimit'        => 100,
 			)
 		);
-		$block    = array(
+
+		$block = array(
 			'innerBlocks' => array(
 				array(
 					'blockName'    => 'core/paragraph',
