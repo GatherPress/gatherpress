@@ -461,6 +461,109 @@ class Test_Setup extends Base {
 	}
 
 	/**
+	 * Coverage for activate_gatherpress_plugin method in multisite mode.
+	 *
+	 * @group multisite
+	 * @covers ::activate_gatherpress_plugin
+	 * @covers ::create_tables
+	 *
+	 * @return void
+	 */
+	public function test_activate_gatherpress_plugin_multisite(): void {
+		global $wpdb;
+
+		$instance = Setup::get_instance();
+
+		// Create a second site for testing network activation.
+		$site_id_2 = $this->factory()->blog->create();
+
+		// Drop tables from both sites if they exist.
+		foreach ( array( get_current_blog_id(), $site_id_2 ) as $site_id ) {
+			switch_to_blog( $site_id );
+			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+			$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+			restore_current_blog();
+		}
+
+		// Activate plugin network-wide.
+		$instance->activate_gatherpress_plugin( true );
+
+		// Verify tables were created on both sites.
+		foreach ( array( get_current_blog_id(), $site_id_2 ) as $site_id ) {
+			switch_to_blog( $site_id );
+
+			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+			$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+			$this->assertEquals(
+				$table,
+				$table_exists,
+				sprintf( 'Events table not created on site %d during network activation.', $site_id )
+			);
+
+			// Verify online event term was added on each site.
+			$term = term_exists( 'online-event', Venue::TAXONOMY );
+
+			$this->assertNotEmpty(
+				$term,
+				sprintf( 'Online-event term not created on site %d during network activation.', $site_id )
+			);
+
+			restore_current_blog();
+		}
+	}
+
+	/**
+	 * Coverage for on_site_create method when new site is created in multisite.
+	 *
+	 * @group multisite
+	 * @covers ::on_site_create
+	 * @covers ::create_tables
+	 *
+	 * @return void
+	 */
+	public function test_on_site_create_multisite(): void {
+		global $wpdb;
+
+		// Simulate plugin being network-activated.
+		$active_sitewide_plugins                                = get_site_option( 'active_sitewide_plugins', array() );
+		$active_sitewide_plugins['gatherpress/gatherpress.php'] = time();
+		update_site_option( 'active_sitewide_plugins', $active_sitewide_plugins );
+
+		// Create a new site which should trigger the wp_initialize_site hook.
+		$new_site_id = $this->factory()->blog->create();
+
+		// Switch to the new site to verify table was created.
+		switch_to_blog( $new_site_id );
+
+		$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- Required for testing table creation.
+		$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" );
+
+		$this->assertEquals(
+			$table,
+			$table_exists,
+			'Failed to assert that events table was created on new site when wp_initialize_site hook fired.'
+		);
+
+		// Verify online event term was added.
+		$term = term_exists( 'online-event', Venue::TAXONOMY );
+
+		$this->assertNotEmpty(
+			$term,
+			'Failed to assert that online-event term was created on new site when wp_initialize_site hook fired.'
+		);
+
+		restore_current_blog();
+
+		// Clean up.
+		unset( $active_sitewide_plugins['gatherpress/gatherpress.php'] );
+		update_site_option( 'active_sitewide_plugins', $active_sitewide_plugins );
+	}
+
+	/**
 	 * Coverage for create_tables method.
 	 *
 	 * @covers ::create_tables
