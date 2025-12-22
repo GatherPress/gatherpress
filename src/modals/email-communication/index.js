@@ -46,7 +46,8 @@ const EventCommunicationModal = () => {
 	const textareaRef = useRef( null );
 	const sendMessage = () => {
 		if (
-			global.confirm( __( 'Confirm you are ready to send?', 'gatherpress' ) )
+			// eslint-disable-next-line no-alert -- Confirmation required before sending mass emails.
+			window.confirm( __( 'Confirm you are ready to send?', 'gatherpress' ) )
 		) {
 			apiFetch( {
 				path: getFromGlobal( 'urls.eventApiPath' ) + '/email',
@@ -186,7 +187,7 @@ const EventCommunicationModal = () => {
 };
 
 domReady( () => {
-	const modalWrapper = global.document.getElementById(
+	const modalWrapper = document.getElementById(
 		'gatherpress-event-communication-modal',
 	);
 	if ( modalWrapper ) {

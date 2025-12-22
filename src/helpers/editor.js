@@ -48,7 +48,7 @@ export function isGatherPressPostType() {
  * @return {Document} The document object containing the block editor content.
  */
 export function getEditorDocument() {
-	const iframe = global.document.querySelector(
+	const iframe = document.querySelector(
 		'iframe[name="editor-canvas"]',
 	);
 
@@ -56,7 +56,7 @@ export function getEditorDocument() {
 		return iframe.contentDocument;
 	}
 
-	return global.document;
+	return document;
 }
 
 /**

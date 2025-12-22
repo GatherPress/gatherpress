@@ -76,7 +76,7 @@ function useSharedBlockGuardState( blockName ) {
  * @return {Document} The document object containing the block editor content.
  */
 function getEditorDocument() {
-	const iframe = global.document.querySelector(
+	const iframe = document.querySelector(
 		'iframe[name="editor-canvas"]',
 	);
 
@@ -84,7 +84,110 @@ function getEditorDocument() {
 		return iframe.contentDocument;
 	}
 
-	return global.document;
+	return document;
+}
+
+/**
+ * Apply block guard styling to an inner blocks container.
+ *
+ * @param {HTMLElement} innerBlocksContainer - The container to apply guard to.
+ * @param {boolean}     isEnabled            - Whether guard is enabled.
+ */
+function applyGuardToContainer( innerBlocksContainer, isEnabled ) {
+	if ( ! innerBlocksContainer ) {
+		return;
+	}
+
+	// Use the inert attribute to disable all interactions within inner blocks.
+	if ( isEnabled ) {
+		innerBlocksContainer.inert = true;
+		// Add a visual indicator that the content is protected (optional).
+		innerBlocksContainer.style.opacity = '0.95';
+		innerBlocksContainer.style.cursor = 'not-allowed';
+		// Mark it so we can find it for cleanup.
+		innerBlocksContainer.dataset.gatherPressGuarded = 'true';
+	} else {
+		innerBlocksContainer.inert = false;
+		innerBlocksContainer.style.opacity = '';
+		innerBlocksContainer.style.cursor = '';
+		delete innerBlocksContainer.dataset.gatherPressGuarded;
+	}
+
+	// Handle block appender visibility.
+	const blockAppender = innerBlocksContainer.querySelector(
+		'.block-list-appender',
+	);
+
+	if ( blockAppender ) {
+		blockAppender.style.display = isEnabled ? 'none' : '';
+	}
+}
+
+/**
+ * Clean up guard styles from an inner blocks container.
+ *
+ * @param {HTMLElement} innerBlocks - The container to clean up.
+ */
+function cleanupGuardFromContainer( innerBlocks ) {
+	if ( ! innerBlocks ) {
+		return;
+	}
+
+	innerBlocks.inert = false;
+	innerBlocks.style.opacity = '';
+	innerBlocks.style.cursor = '';
+	delete innerBlocks.dataset.gatherPressGuarded;
+
+	// Also restore block appender.
+	const blockAppender = innerBlocks.querySelector( '.block-list-appender' );
+	if ( blockAppender ) {
+		blockAppender.style.display = '';
+	}
+}
+
+/**
+ * Apply list view styling for block guard.
+ *
+ * @param {HTMLElement} expander  - The expander element.
+ * @param {boolean}     isEnabled - Whether guard is enabled.
+ */
+function applyListViewGuard( expander, isEnabled ) {
+	if ( ! expander ) {
+		return;
+	}
+
+	if ( isEnabled ) {
+		// Make expander non-interactive but preserve layout.
+		expander.style.pointerEvents = 'none';
+		expander.style.opacity = '0.3';
+
+		// Disable the parent link element.
+		const parentLink = expander.closest(
+			'.block-editor-list-view-block-select-button',
+		);
+
+		if ( parentLink ) {
+			parentLink.setAttribute( 'aria-expanded', 'false' );
+			parentLink.style.pointerEvents = 'none';
+
+			// Re-enable just the link itself, but not the expander.
+			parentLink.style.pointerEvents = 'auto';
+			parentLink.classList.add( 'gatherpress-block-guard-enabled' );
+		}
+	} else {
+		// Restore interactivity.
+		expander.style.pointerEvents = '';
+		expander.style.opacity = '';
+
+		// Re-enable the parent link.
+		const parentLink = expander.closest(
+			'.block-editor-list-view-block-select-button',
+		);
+		if ( parentLink ) {
+			parentLink.style.pointerEvents = '';
+			parentLink.classList.remove( 'gatherpress-block-guard-enabled' );
+		}
+	}
 }
 
 /**
@@ -218,36 +321,7 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 					const innerBlocksContainer = blockElement.querySelector(
 						'.block-editor-inner-blocks',
 					);
-
-					if ( ! innerBlocksContainer ) {
-						return;
-					}
-
-					// Use the inert attribute to disable all interactions within inner blocks.
-					if ( isBlockGuardEnabled ) {
-						innerBlocksContainer.inert = true;
-						// Add a visual indicator that the content is protected (optional).
-						innerBlocksContainer.style.opacity = '0.95';
-						innerBlocksContainer.style.cursor = 'not-allowed';
-						// Mark it so we can find it for cleanup.
-						innerBlocksContainer.dataset.gatherPressGuarded = 'true';
-					} else {
-						innerBlocksContainer.inert = false;
-						innerBlocksContainer.style.opacity = '';
-						innerBlocksContainer.style.cursor = '';
-						delete innerBlocksContainer.dataset.gatherPressGuarded;
-					}
-
-					// Handle block appender visibility.
-					const blockAppender = innerBlocksContainer.querySelector(
-						'.block-list-appender',
-					);
-
-					if ( blockAppender ) {
-						blockAppender.style.display = isBlockGuardEnabled
-							? 'none'
-							: '';
-					}
+					applyGuardToContainer( innerBlocksContainer, isBlockGuardEnabled );
 				} );
 			};
 
@@ -256,7 +330,7 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 
 			// Set up observer for DOM changes.
 			const observer = new MutationObserver( applyBlockGuard );
-			observer.observe( global.document.body, {
+			observer.observe( document.body, {
 				childList: true,
 				subtree: true,
 			} );
@@ -292,20 +366,7 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 							const innerBlocks = blockElement?.querySelector(
 								'.block-editor-inner-blocks',
 							);
-
-							// Clean up inert attribute and styles.
-							if ( innerBlocks ) {
-								innerBlocks.inert = false;
-								innerBlocks.style.opacity = '';
-								innerBlocks.style.cursor = '';
-								delete innerBlocks.dataset.gatherPressGuarded;
-
-								// Also restore block appender.
-								const blockAppender = innerBlocks.querySelector( '.block-list-appender' );
-								if ( blockAppender ) {
-									blockAppender.style.display = '';
-								}
-							}
+							cleanupGuardFromContainer( innerBlocks );
 						}
 					}
 				} );
@@ -326,19 +387,19 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			// Helper functions for DRY event management.
 			const addDragListeners = ( handler ) => {
 				DRAG_EVENTS.forEach( ( eventType ) => {
-					global.document.addEventListener( eventType, handler, true );
+					document.addEventListener( eventType, handler, true );
 				} );
 			};
 
 			const removeDragListeners = ( handler ) => {
 				DRAG_EVENTS.forEach( ( eventType ) => {
-					global.document.removeEventListener( eventType, handler, true );
+					document.removeEventListener( eventType, handler, true );
 				} );
 			};
 
 			const handleListView = () => {
 				// Find the list view item.
-				const listViewItem = global.document.querySelector(
+				const listViewItem = document.querySelector(
 					`.block-editor-list-view-leaf[data-block="${ clientId }"]`,
 				);
 
@@ -362,27 +423,10 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 					return;
 				}
 
+				applyListViewGuard( expander, isBlockGuardEnabled );
+
+				// Handle drag prevention for block guard.
 				if ( isBlockGuardEnabled ) {
-					// Make expander non-interactive but preserve layout.
-					expander.style.pointerEvents = 'none';
-					expander.style.opacity = '0.3';
-
-					// Disable the parent link element.
-					const parentLink = expander.closest(
-						'.block-editor-list-view-block-select-button',
-					);
-
-					if ( parentLink ) {
-						parentLink.setAttribute( 'aria-expanded', 'false' );
-						parentLink.style.pointerEvents = 'none';
-
-						// Re-enable just the link itself, but not the expander.
-						parentLink.style.pointerEvents = 'auto';
-						parentLink.classList.add(
-							'gatherpress-block-guard-enabled',
-						);
-					}
-
 					// Prevent drops into this block like WordPress lock removal.
 					if ( ! dropHandler ) {
 						dropHandler = ( e ) => {
@@ -400,27 +444,10 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 						// Add drag prevention listeners globally.
 						addDragListeners( dropHandler );
 					}
-				} else {
-					// Restore interactivity.
-					expander.style.pointerEvents = '';
-					expander.style.opacity = '';
-
-					// Re-enable the parent link.
-					const parentLink = expander.closest(
-						'.block-editor-list-view-block-select-button',
-					);
-					if ( parentLink ) {
-						parentLink.style.pointerEvents = '';
-						parentLink.classList.remove(
-							'gatherpress-block-guard-enabled',
-						);
-					}
-
+				} else if ( dropHandler ) {
 					// Remove drop prevention.
-					if ( dropHandler ) {
-						removeDragListeners( dropHandler );
-						dropHandler = null;
-					}
+					removeDragListeners( dropHandler );
+					dropHandler = null;
 				}
 			};
 
@@ -433,7 +460,7 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 			} );
 
 			// Observe the entire document for simplicity and reliability.
-			observer.observe( global.document.body, {
+			observer.observe( document.body, {
 				childList: true,
 				subtree: true,
 			} );
@@ -459,7 +486,7 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 							onChange={ ( value ) => {
 								setIsBlockGuardEnabled( value );
 
-								const expander = global.document.querySelector(
+								const expander = document.querySelector(
 									`.block-editor-list-view-leaf[data-block="${ clientId }"][data-expanded="true"] .block-editor-list-view__expander`,
 								);
 
