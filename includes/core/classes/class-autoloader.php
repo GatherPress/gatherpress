@@ -112,7 +112,8 @@ class Autoloader {
 						file_exists( $resource_path ) &&
 						( 0 === $resource_path_valid || 2 === $resource_path_valid )
 					) {
-						require_once $resource_path;
+						// Autoloader dynamically loads class files at runtime - cannot use 'use' keyword.
+						require_once $resource_path; // NOSONAR.
 					}
 				}
 			}
