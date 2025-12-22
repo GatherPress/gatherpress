@@ -110,10 +110,10 @@ const { state } = store( 'gatherpress', {
 				if ( result && result.success ) {
 					// Handle blocks with form visibility attributes.
 					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
-					const isPast = 'past' === form.getAttribute( 'data-gatherpress-event-state' );
+					const isPast = 'past' === form.dataset.gatherpressEventState;
 
 					blocksWithVisibility.forEach( ( block ) => {
-						const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+						const visibilityAttr = block.dataset.gatherpressRsvpFormVisibility;
 						let visibility = {};
 
 						try {
@@ -206,12 +206,12 @@ const { state } = store( 'gatherpress', {
 			// Check if this is a success page (form was just submitted).
 			const urlParams = new URLSearchParams( window.location.search );
 			const isSuccess = 'true' === urlParams.get( 'gatherpress_rsvp_success' );
-			const isPast = 'past' === form.getAttribute( 'data-gatherpress-event-state' );
+			const isPast = 'past' === form.dataset.gatherpressEventState;
 
 			// Set initial visibility for blocks based on their attributes and current state.
 			const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 			blocksWithVisibility.forEach( ( block ) => {
-				const visibilityAttr = block.getAttribute( 'data-gatherpress-rsvp-form-visibility' );
+				const visibilityAttr = block.dataset.gatherpressRsvpFormVisibility;
 				let visibility = {};
 
 				try {

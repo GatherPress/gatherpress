@@ -124,7 +124,7 @@ export function toCamelCase( snakeCaseString ) {
  * @return {string|null} The parameter value or null if not found.
  */
 export function getUrlParam( name ) {
-	const urlParams = new URLSearchParams( global.location.search );
+	const urlParams = new URLSearchParams( location.search );
 
 	return urlParams.get( name );
 }
