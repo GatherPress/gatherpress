@@ -304,14 +304,6 @@ class Form_Field {
 			$classes[] = 'gatherpress-inline-layout';
 		}
 
-		// Add custom className from block attributes.
-		// TODO: This block may be unreachable - process_attributes() doesn't preserve className.
-		// Investigate if this is dead code or if className should be preserved in process_attributes().
-		if ( ! empty( $this->attributes['className'] ) ) {
-			$custom_classes = explode( ' ', $this->attributes['className'] );
-			$classes        = array_merge( $classes, $custom_classes );
-		}
-
 		return $classes;
 	}
 
@@ -331,22 +323,6 @@ class Form_Field {
 
 		// Build wrapper arguments.
 		$wrapper_args = array( 'class' => implode( ' ', $classes ) );
-
-		// If there's a className in attributes, pass it to WordPress directly too.
-		// TODO: This block may be unreachable - process_attributes() doesn't preserve className.
-		// Investigate if this is dead code or if className should be preserved in process_attributes().
-		if ( ! empty( $this->attributes['className'] ) ) {
-			$wrapper_args['className'] = $this->attributes['className'];
-		}
-
-		// Add any data attributes from block attributes.
-		// TODO: This foreach loop may never execute - process_attributes() doesn't preserve data-* attributes.
-		// Investigate if this is dead code or if data-* attributes should be preserved in process_attributes().
-		foreach ( $this->attributes as $key => $value ) {
-			if ( 0 === strpos( $key, 'data-' ) ) {
-				$wrapper_args[ $key ] = $value;
-			}
-		}
 
 		return get_block_wrapper_attributes( $wrapper_args );
 	}
