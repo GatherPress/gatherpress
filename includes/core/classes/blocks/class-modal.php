@@ -118,8 +118,7 @@ class Modal {
 	 * @return string The updated block content with the applied `z-index` styling.
 	 */
 	public function adjust_block_z_index( string $block_content, array $block ): string {
-		$block_instance = Block::get_instance();
-		$tag            = new WP_HTML_Tag_Processor( $block_content );
+		$tag = new WP_HTML_Tag_Processor( $block_content );
 
 		if ( $tag->next_tag() ) {
 			$z_index               = $block['attrs']['zIndex'] ?? 1000;
@@ -133,9 +132,7 @@ class Modal {
 			$tag->set_attribute( 'style', $updated_styles );
 		}
 
-		$block_content = $tag->get_updated_html();
-
-		return $block_content;
+		return $tag->get_updated_html();
 	}
 
 	/**
