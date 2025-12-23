@@ -80,7 +80,7 @@ jobs:
 
           # Verify plugin is active.
           echo "Verifying GatherPress plugin is active..."
-          wp-env run cli wp plugin list --status=active | grep gatherpress
+          npm run wp-env run cli wp plugin list --status=active | grep gatherpress
 
           # Verify post types are registered via REST API.
           echo "Verifying GatherPress post types via REST API..."
@@ -98,7 +98,7 @@ jobs:
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8889/?rest_route=/wp/v2/types/gatherpress_event")
           if [ "$HTTP_STATUS" != "200" ]; then
             echo "❌ ERROR: GatherPress post types not accessible via REST API (HTTP $HTTP_STATUS)"
-            wp-env run cli wp post-type list
+            npm run wp-env run cli wp post-type list
             exit 1
           fi
 
@@ -121,4 +121,4 @@ jobs:
 
       - name: Stop WordPress
         if: always()
-        run: wp-env stop
+        run: npm run wp-env stop
