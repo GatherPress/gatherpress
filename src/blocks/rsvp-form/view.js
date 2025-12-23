@@ -107,7 +107,7 @@ const { state } = store( 'gatherpress', {
 			try {
 				const result = await makeRequest();
 
-				if ( result && result.success ) {
+				if ( result?.success ) {
 					// Handle blocks with form visibility attributes.
 					const blocksWithVisibility = form.querySelectorAll( '[data-gatherpress-rsvp-form-visibility]' );
 					const isPast = 'past' === form.dataset.gatherpressEventState;

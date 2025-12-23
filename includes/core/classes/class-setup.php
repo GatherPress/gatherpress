@@ -228,9 +228,7 @@ class Setup {
 			'</h2>'
 				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'default' ) . '</strong> '
 				. __(
-					// phpcs:disable Generic.Files.LineLength.TooLong
-					'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. ',
-					// phpcs:enable Generic.Files.LineLength.TooLong
+					'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. ', // phpcs:ignore Generic.Files.LineLength.TooLong
 					'gatherpress'
 				)
 				. sprintf(
@@ -244,9 +242,7 @@ class Setup {
 				. sprintf(
 					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
 					__(
-						// phpcs:disable Generic.Files.LineLength.TooLong
-						'For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.',
-						// phpcs:enable Generic.Files.LineLength.TooLong
+						'For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.', // phpcs:ignore Generic.Files.LineLength.TooLong
 						'gatherpress'
 					),
 					'https://osmfoundation.org/wiki/Privacy_Policy'
