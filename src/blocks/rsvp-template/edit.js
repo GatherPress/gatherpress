@@ -93,34 +93,33 @@ const List = ( {
 	postId,
 } ) => (
 	<>
-		{ responses &&
-			responses.map( ( { commentId, ...response }, index ) => {
-				// Force commentId to be an integer
-				const forcedCommentId = parseInt( commentId, 10 );
+		{ responses?.map( ( { commentId, ...response }, index ) => {
+			// Force commentId to be an integer
+			const forcedCommentId = parseInt( commentId, 10 );
 
-				return (
-					<BlockContextProvider
-						key={ forcedCommentId || index }
-						value={ {
-							commentId:
+			return (
+				<BlockContextProvider
+					key={ forcedCommentId || index }
+					value={ {
+						commentId:
 								0 > forcedCommentId ? null : forcedCommentId,
-							postId,
+						postId,
+					} }
+				>
+					<TemplateInnerBlocks
+						response={ {
+							commentId: forcedCommentId,
+							...response,
 						} }
-					>
-						<TemplateInnerBlocks
-							response={ {
-								commentId: forcedCommentId,
-								...response,
-							} }
-							blockProps={ blockProps }
-							blocks={ blocks }
-							activeRsvpId={ activeRsvpId }
-							setActiveRsvpId={ setActiveRsvpId }
-							firstRsvpId={ firstRsvpId }
-						/>
-					</BlockContextProvider>
-				);
-			} ) }
+						blockProps={ blockProps }
+						blocks={ blocks }
+						activeRsvpId={ activeRsvpId }
+						setActiveRsvpId={ setActiveRsvpId }
+						firstRsvpId={ firstRsvpId }
+					/>
+				</BlockContextProvider>
+			);
+		} ) }
 	</>
 );
 

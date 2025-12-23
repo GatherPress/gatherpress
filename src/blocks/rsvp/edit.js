@@ -269,9 +269,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 		// Cleanup on unmount.
 		return () => {
-			if ( styleElement && styleElement.parentNode ) {
-				styleElement.parentNode.removeChild( styleElement );
-			}
+			styleElement?.remove();
 		};
 	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
 
