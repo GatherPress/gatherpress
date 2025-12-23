@@ -391,7 +391,8 @@ class Event_Setup {
 					. '.ics"'
 				);
 
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ICS content is safely generated and must not be escaped.
+				// ICS content is safely generated and must not be escaped.
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				echo $event->get_ics_calendar_string();
 				Utility::safe_exit();
 

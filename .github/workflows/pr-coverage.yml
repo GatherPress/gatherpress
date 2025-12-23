@@ -45,7 +45,6 @@ jobs:
       - name: Install dependencies
         run: |
           composer install --optimize-autoloader --prefer-dist
-          npm i -g @wordpress/env
           npm install
           npm run build
 

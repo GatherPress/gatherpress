@@ -227,11 +227,28 @@ class Setup {
 			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
 			'</h2>'
 				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'default' ) . '</strong> '
+				// phpcs:disable Generic.Files.LineLength.TooLong
+				. __(
+					'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. ',
+					'gatherpress'
+				)
 				. sprintf(
 					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
-					__( 'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. This data is processed according to their <a href="%1$s" target="_blank">privacy policy</a>. For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+					__(
+						'This data is processed according to their <a href="%1$s" target="_blank">privacy policy</a>. ',
+						'gatherpress'
+					),
 					'https://osmfoundation.org/wiki/Privacy_Policy'
 				)
+				. sprintf(
+					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
+					__(
+						'For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.',
+						'gatherpress'
+					),
+					'https://osmfoundation.org/wiki/Privacy_Policy'
+				)
+				// phpcs:enable Generic.Files.LineLength.TooLong
 				. '</p>';
 
 		wp_add_privacy_policy_content( 'GatherPress', wp_kses_post( wpautop( $content, false ) ) );
