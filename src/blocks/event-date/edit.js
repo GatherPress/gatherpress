@@ -132,6 +132,30 @@ const displayDateTime = (
 };
 
 /**
+ * Calculate the new display type when toggling start/end date visibility.
+ *
+ * @param {string}  toggleType    - Which date to toggle: 'start' or 'end'.
+ * @param {boolean} showStartTime - Whether start time is currently shown.
+ * @param {boolean} showEndTime   - Whether end time is currently shown.
+ * @return {string} New display type value.
+ */
+const calculateDisplayType = ( toggleType, showStartTime, showEndTime ) => {
+	if ( 'start' === toggleType ) {
+		// Toggling start date.
+		if ( showEndTime ) {
+			return showStartTime ? 'end' : 'both';
+		}
+		return 'start';
+	}
+
+	// Toggling end date.
+	if ( showStartTime ) {
+		return showEndTime ? 'start' : 'both';
+	}
+	return 'end';
+};
+
+/**
  * Edit component for the GatherPress Event Date block.
  *
  * This component represents the editable view of the GatherPress Event Date block
@@ -260,10 +284,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						isPressed={ showStartTime }
 						onClick={ () => {
 							setAttributes( {
-								// eslint-disable-next-line no-nested-ternary
-								displayType: showEndTime
-									? ( showStartTime ? 'end' : 'both' )
-									: 'start',
+								displayType: calculateDisplayType(
+									'start',
+									showStartTime,
+									showEndTime
+								),
 							} );
 						} }
 					/>
@@ -273,10 +298,11 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 						isPressed={ showEndTime }
 						onClick={ () => {
 							setAttributes( {
-								// eslint-disable-next-line no-nested-ternary
-								displayType: showStartTime
-									? ( showEndTime ? 'start' : 'both' )
-									: 'end',
+								displayType: calculateDisplayType(
+									'end',
+									showStartTime,
+									showEndTime
+								),
 							} );
 						} }
 					/>
