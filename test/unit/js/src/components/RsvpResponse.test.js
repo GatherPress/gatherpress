@@ -162,10 +162,6 @@ describe( 'RsvpResponse', () => {
 		const { container } = render( <RsvpResponse /> );
 
 		const button = container.querySelector( 'button' );
-		const mockEvent = { preventDefault: jest.fn() };
-
-		// Manually call the onClick handler with preventDefault mock.
-		const header = container.querySelector( '[data-testid="rsvp-response-header"]' );
 
 		// We can't directly test preventDefault since React's synthetic events handle it,
 		// but we can verify the button exists and onClick is called.
