@@ -210,12 +210,14 @@ When working with JavaScript code:
 **Issue**: `@wordpress/env` is currently pinned to version `10.15.0` in `package.json` due to a Docker build bug in versions 10.16.0+.
 
 **Problem**: Versions 10.16.0 and later fail during Docker container build with this error:
-```
+
+```bash
 RUN composer global require --dev phpunit/phpunit:"^5.7.21 || ^6.0 || ^7.0 || ^8.0 || ^9.0 || ^10.0"
 target cli: failed to solve: process did not complete successfully: exit code: 1
 ```
 
 **Action Required**:
+
 - Monitor the [@wordpress/env releases](https://www.npmjs.com/package/@wordpress/env) for a fix
 - Test upgrading to the latest version periodically by:
   1. Changing `"@wordpress/env": "10.15.0"` to `"@wordpress/env": "^10.25.0"` (or latest)
