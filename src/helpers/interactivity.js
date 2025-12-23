@@ -236,7 +236,9 @@ export async function sendRsvpApiRequest(
 			}
 		}
 	} catch ( error ) {
-		// Handle error silently.
+		// Handle error silently - log for debugging but don't interrupt user.
+		// eslint-disable-next-line no-console
+		console.warn( 'RSVP API request failed:', error );
 	} finally {
 		// Always remove loading class when request completes.
 		if ( loadingElement ) {

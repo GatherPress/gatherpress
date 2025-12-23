@@ -431,7 +431,7 @@ export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null, cur
 	if ( dateTimeStartNumeric >= dateTimeEndNumeric ) {
 		// Use the passed duration if available, otherwise check current offset.
 		// Only use duration if it's numeric (relative mode), not if it's false (absolute mode).
-		const duration = null !== currentDuration ? currentDuration : getDateTimeOffset();
+		const duration = null === currentDuration ? getDateTimeOffset() : currentDuration;
 		const hoursToAdd = ( false !== duration && 'number' === typeof duration ) ? duration : 2;
 
 		const dateTimeEnd = moment
@@ -559,14 +559,14 @@ export function dateTimePreview() {
 	);
 
 	// Iterate through each matched element and initialize DateTimePreview component.
-	for ( let i = 0; i < dateTimePreviewContainers.length; i++ ) {
+	for ( const container of dateTimePreviewContainers ) {
 		// Parse attributes from the 'data-gatherpress_component_attrs' attribute.
 		const attrs = JSON.parse(
-			dateTimePreviewContainers[ i ].dataset.gatherpress_component_attrs,
+			container.dataset.gatherpress_component_attrs,
 		);
 
 		// Create a root element and render the DateTimePreview component with the parsed attributes.
-		createRoot( dateTimePreviewContainers[ i ] ).render(
+		createRoot( container ).render(
 			<DateTimePreview attrs={ attrs } />,
 		);
 	}

@@ -84,7 +84,7 @@ const displayDateTime = (
 	// Add start date/time.
 	if ( dateTimeStart ) {
 		startFormat = convertPHPToMomentFormat(
-			startFormat ? startFormat : defaultFormat
+			startFormat || defaultFormat
 		);
 		parts.push( moment.tz( dateTimeStart, timezone ).format( startFormat ) );
 	}
@@ -92,7 +92,7 @@ const displayDateTime = (
 	// Determine end date/time.
 	if ( dateTimeEnd ) {
 		// Fall formatting back to default.
-		endFormat = endFormat ? endFormat : defaultFormat;
+		endFormat = endFormat || defaultFormat;
 
 		// Remove non-time characters from PHP date format if start and end
 		// are on the same day.
@@ -119,7 +119,7 @@ const displayDateTime = (
 	if ( showTimezone ? 'yes' === showTimezone : globalShowTimezone ) {
 		parts.push(
 			moment
-				.tz( dateTimeEnd ? dateTimeEnd : dateTimeStart, timezone )
+				.tz( dateTimeEnd || dateTimeStart, timezone )
 				.format( 'z' )
 		);
 	}
@@ -128,7 +128,7 @@ const displayDateTime = (
 	parts.push( getUtcOffset( timezone ) );
 
 	// The filter removes empty values.
-	return parts.filter( ( part ) => part ).join( ' ' );
+	return parts.filter( Boolean ).join( ' ' );
 };
 
 /**
