@@ -440,7 +440,9 @@ class Event {
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
 			$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 			$data = (array) $wpdb->get_results(
 				$wpdb->prepare(
 					'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone
@@ -449,6 +451,9 @@ class Event {
 					$this->event->ID
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 			$data = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
 			set_transient( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
@@ -849,7 +854,8 @@ class Event {
 		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo Add caching to this and create new method to check existence.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
 		$exists = $wpdb->get_var(
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
@@ -860,7 +866,6 @@ class Event {
 		);
 
 		if ( ! empty( $exists ) ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$value = $wpdb->update(
 				$table,
 				$fields,
@@ -869,8 +874,10 @@ class Event {
 
 			delete_transient( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
 		} else {
-			$value = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$value = $wpdb->insert( $table, $fields );
 		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		foreach ( $fields as $key => $field ) {
 			if ( 'post_id' === $key ) {
