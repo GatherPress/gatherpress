@@ -202,3 +202,26 @@ When working with JavaScript code:
     - ❌ Bad: `// Check if this is a form-field block with guest count field name`
 - **Comment consistency**: Apply the same punctuation standards across PHP and JavaScript for consistency
 - **Block comments**: Multi-line JSDoc comments should follow proper formatting with periods in descriptions
+
+## Known Issues / Technical Debt
+
+### @wordpress/env Version Pinned
+
+**Issue**: `@wordpress/env` is currently pinned to version `10.15.0` in `package.json` due to a Docker build bug in versions 10.16.0+.
+
+**Problem**: Versions 10.16.0 and later fail during Docker container build with this error:
+```
+RUN composer global require --dev phpunit/phpunit:"^5.7.21 || ^6.0 || ^7.0 || ^8.0 || ^9.0 || ^10.0"
+target cli: failed to solve: process did not complete successfully: exit code: 1
+```
+
+**Action Required**:
+- Monitor the [@wordpress/env releases](https://www.npmjs.com/package/@wordpress/env) for a fix
+- Test upgrading to the latest version periodically by:
+  1. Changing `"@wordpress/env": "10.15.0"` to `"@wordpress/env": "^10.25.0"` (or latest)
+  2. Running `npm install`
+  3. Running `npm run test:unit:php` locally to verify Docker build succeeds
+  4. If successful, keep the upgrade; if not, revert and wait for the next release
+- Related GitHub Actions workflows that depend on this: `phpunit-tests.yml`, `sonarcloud.yml`, `pr-coverage.yml`, `e2e-tests.yml`
+
+**Tracking**: This issue was identified on December 23, 2025 while fixing CI test failures.
