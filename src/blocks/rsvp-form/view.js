@@ -120,6 +120,7 @@ const { state } = store( 'gatherpress', {
 							visibility = JSON.parse( visibilityAttr );
 						} catch ( e ) {
 							// Invalid JSON, treat as no visibility rules (always visible).
+							visibility = {};
 						}
 
 						const { onSuccess, whenPast } = visibility;
@@ -218,6 +219,7 @@ const { state } = store( 'gatherpress', {
 					visibility = JSON.parse( visibilityAttr );
 				} catch ( e ) {
 					// Invalid JSON, treat as no visibility rules (always visible).
+					visibility = {};
 				}
 
 				const { onSuccess, whenPast } = visibility;

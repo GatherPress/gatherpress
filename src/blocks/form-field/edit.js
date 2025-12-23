@@ -62,7 +62,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		return labelValue
 			.toLowerCase()
 			.trim()
-			.replace( /[^a-z0-9\s]/g, '' ) // Remove special characters.
+			.replaceAll( /[^a-z0-9\s]/g, '' ) // Remove special characters.
 			.split( /\s+/ ) // Split on whitespace sequences.
 			.filter( ( part ) => 0 < part.length ) // Remove empty strings.
 			.join( '_' ); // Join with underscores.
@@ -187,7 +187,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ fieldName }
 						onChange={ ( value ) => {
 							// Only allow alphanumeric, underscore, and hyphen.
-							const sanitized = value.replace(
+							const sanitized = value.replaceAll(
 								/[^a-zA-Z0-9_-]/g,
 								'',
 							);
@@ -298,7 +298,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							value={ autocomplete }
 							onChange={ ( value ) => {
 								// Only allow lowercase alphanumeric, underscore, hyphen, space.
-								const sanitized = value.replace(
+								const sanitized = value.replaceAll(
 									/[^a-z0-9_\s-]/g,
 									'',
 								);

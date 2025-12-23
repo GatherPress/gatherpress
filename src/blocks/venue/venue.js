@@ -28,10 +28,10 @@ domReady( () => {
 		`[data-gatherpress_block_name="venue"]`,
 	);
 
-	for ( let i = 0; i < containers.length; i++ ) {
-		const attrs = JSON.parse( containers[ i ].dataset.gatherpress_block_attrs );
+	for ( const container of containers ) {
+		const attrs = JSON.parse( container.dataset.gatherpress_block_attrs );
 
-		createRoot( containers[ i ] ).render(
+		createRoot( container ).render(
 			<VenueOrOnlineEvent
 				name={ attrs.name ?? '' }
 				fullAddress={ attrs.fullAddress ?? '' }
@@ -47,14 +47,14 @@ domReady( () => {
 		`[data-gatherpress_block_name="map-embed"]`,
 	);
 
-	for ( let i = 0; i < containers.length; i++ ) {
-		const attrs = JSON.parse( containers[ i ].dataset.gatherpress_block_attrs );
+	for ( const container of containers ) {
+		const attrs = JSON.parse( container.dataset.gatherpress_block_attrs );
 
 		if ( attrs.isOnlineEventTerm ) {
 			continue;
 		}
 
-		createRoot( containers[ i ] ).render(
+		createRoot( container ).render(
 			<MapEmbed
 				location={ attrs.fullAddress }
 				latitude={ attrs.latitude }
