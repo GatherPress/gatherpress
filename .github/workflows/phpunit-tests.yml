@@ -52,7 +52,6 @@ jobs:
       - name: Running PHPUnit Tests
         run: |
           php --version
-          npm i -g @wordpress/env
           npm install
           npm run build
           npm run test:unit:php
@@ -91,7 +90,6 @@ jobs:
       - name: Running PHPUnit Multisite Tests
         run: |
           php --version
-          npm i -g @wordpress/env
           npm install
           npm run build
           npm run test:unit:php:multisite

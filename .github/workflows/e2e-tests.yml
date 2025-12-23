@@ -68,9 +68,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Install WordPress environment
-          npm install -g @wordpress/env
-
           # Install Composer dependencies that might be needed for the plugin
           composer install --no-dev --no-interaction || echo "Composer install failed or not needed"
 
