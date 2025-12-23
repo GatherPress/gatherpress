@@ -37,13 +37,23 @@ $gatherpress_venue       = $gatherpress_event->get_venue_information()['name'];
 
 			<p>
 				<?php
+				printf(
 				/* translators: %s: Event title */
-				printf( esc_html__( 'You recently RSVP\'d for %s. To confirm your attendance and complete your RSVP, please click the button below:', 'gatherpress' ), '<strong>' . wp_kses_post( get_the_title( $event_id ) ) . '</strong>' );
+					esc_html__(
+						// phpcs:disable Generic.Files.LineLength.TooLong
+						'You recently RSVP\'d for %s. To confirm your attendance and complete your RSVP, please click the button below:',
+						// phpcs:enable Generic.Files.LineLength.TooLong
+						'gatherpress'
+					),
+					'<strong>' . wp_kses_post( get_the_title( $event_id ) ) . '</strong>'
+				);
 				?>
 			</p>
 
 			<div style="text-align: center; margin: 30px 0;">
+				<?php // phpcs:disable Generic.Files.LineLength.TooLong ?>
 				<a href="<?php echo esc_url( $token_url ); ?>" style="background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+				<?php // phpcs:enable Generic.Files.LineLength.TooLong ?>
 					<?php esc_html_e( 'Confirm My RSVP', 'gatherpress' ); ?>
 				</a>
 			</div>

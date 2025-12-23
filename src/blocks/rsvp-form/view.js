@@ -120,6 +120,8 @@ const { state } = store( 'gatherpress', {
 							visibility = JSON.parse( visibilityAttr );
 						} catch ( e ) {
 							// Invalid JSON, treat as no visibility rules (always visible).
+							// eslint-disable-next-line no-console
+							console.warn( 'Failed to parse RSVP form visibility JSON:', e );
 							visibility = {};
 						}
 
@@ -219,6 +221,8 @@ const { state } = store( 'gatherpress', {
 					visibility = JSON.parse( visibilityAttr );
 				} catch ( e ) {
 					// Invalid JSON, treat as no visibility rules (always visible).
+					// eslint-disable-next-line no-console
+					console.warn( 'Failed to parse RSVP form visibility JSON:', e );
 					visibility = {};
 				}
 

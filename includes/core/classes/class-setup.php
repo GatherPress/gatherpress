@@ -227,9 +227,10 @@ class Setup {
 			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
 			'</h2>'
 				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'default' ) . '</strong> '
-				// phpcs:disable Generic.Files.LineLength.TooLong
 				. __(
+					// phpcs:disable Generic.Files.LineLength.TooLong
 					'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. ',
+					// phpcs:enable Generic.Files.LineLength.TooLong
 					'gatherpress'
 				)
 				. sprintf(
@@ -243,12 +244,13 @@ class Setup {
 				. sprintf(
 					// translators: %1$s: privacy policy URL of the OpenStreetMap foundation.
 					__(
+						// phpcs:disable Generic.Files.LineLength.TooLong
 						'For more information about what data OpenStreetMap collects and how it is used, please refer to their <a href="%1$s" target="_blank">privacy documents</a>.',
+						// phpcs:enable Generic.Files.LineLength.TooLong
 						'gatherpress'
 					),
 					'https://osmfoundation.org/wiki/Privacy_Policy'
 				)
-				// phpcs:enable Generic.Files.LineLength.TooLong
 				. '</p>';
 
 		wp_add_privacy_policy_content( 'GatherPress', wp_kses_post( wpautop( $content, false ) ) );
@@ -450,8 +452,11 @@ class Setup {
 		}
 
 		wp_admin_notice(
-			// phpcs:ignore Generic.Files.LineLength.TooLong
-			__( 'The GatherPress Alpha plugin is not installed or activated. This plugin is currently in heavy development and requires GatherPress Alpha to handle breaking changes. Please <a href="https://github.com/GatherPress/gatherpress-alpha" target="_blank">download and install GatherPress Alpha</a> to ensure compatibility and avoid issues.', 'gatherpress' ),
+			__(
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				'The GatherPress Alpha plugin is not installed or activated. This plugin is currently in heavy development and requires GatherPress Alpha to handle breaking changes. Please <a href="https://github.com/GatherPress/gatherpress-alpha" target="_blank">download and install GatherPress Alpha</a> to ensure compatibility and avoid issues.',
+				'gatherpress'
+			),
 			array(
 				'type'        => 'warning',
 				'dismissible' => true,
