@@ -191,6 +191,177 @@ function applyListViewGuard( expander, isEnabled ) {
 }
 
 /**
+ * Drag event types for block guard.
+ */
+const DRAG_EVENTS = [ 'dragover', 'dragenter', 'dragleave', 'drop' ];
+
+/**
+ * Add drag event listeners.
+ *
+ * @param {Function} handler - Event handler function.
+ */
+function addDragListeners( handler ) {
+	DRAG_EVENTS.forEach( ( eventType ) => {
+		document.addEventListener( eventType, handler, true );
+	} );
+}
+
+/**
+ * Remove drag event listeners.
+ *
+ * @param {Function} handler - Event handler function.
+ */
+function removeDragListeners( handler ) {
+	DRAG_EVENTS.forEach( ( eventType ) => {
+		document.removeEventListener( eventType, handler, true );
+	} );
+}
+
+/**
+ * Create a drop handler for the given clientId.
+ *
+ * @param {string} clientId - The block's client ID.
+ * @return {Function} Drop handler function.
+ */
+function createDropHandler( clientId ) {
+	return ( e ) => {
+		// Check if we're in this block or its drop zones.
+		const targetBlock = e.target.closest( `[data-block="${ clientId }"]` );
+		if ( targetBlock ) {
+			// Prevent dragenter, dragover and drop to disable block insertion indicators.
+			if ( 'dragenter' === e.type || 'dragover' === e.type || 'drop' === e.type ) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+		}
+	};
+}
+
+/**
+ * Apply list view guard for a specific block.
+ *
+ * @param {string}  clientId            - The block's client ID.
+ * @param {boolean} isBlockGuardEnabled - Whether guard is enabled.
+ * @return {Object|null} Object with expander element or null if not found.
+ */
+function applyListViewGuardForBlock( clientId, isBlockGuardEnabled ) {
+	// Find the list view item.
+	const listViewItem = document.querySelector(
+		`.block-editor-list-view-leaf[data-block="${ clientId }"]`,
+	);
+
+	if ( ! listViewItem ) {
+		return null;
+	}
+
+	// Find the expander.
+	const expander = listViewItem.querySelector(
+		'.block-editor-list-view__expander',
+	);
+
+	if ( ! expander ) {
+		return null;
+	}
+
+	// Find the SVG inside the expander.
+	const expanderSvg = expander.querySelector( 'svg' );
+
+	if ( ! expanderSvg ) {
+		return null;
+	}
+
+	applyListViewGuard( expander, isBlockGuardEnabled );
+
+	return { expander };
+}
+
+/**
+ * Clean up block guard from all elements that share the same state key.
+ *
+ * @param {string} name     - The block type name.
+ * @param {string} stateKey - The shared state key.
+ */
+function cleanupBlockGuard( name, stateKey ) {
+	const editorDoc = getEditorDocument();
+
+	// First, clean up any elements we marked as guarded.
+	const guardedElements = editorDoc.querySelectorAll( '[data-gather-press-guarded="true"]' );
+	guardedElements.forEach( ( element ) => {
+		element.inert = false;
+		element.style.opacity = '';
+		element.style.cursor = '';
+		delete element.dataset.gatherPressGuarded;
+	} );
+
+	// Also clean up based on state key for thoroughness.
+	const allBlocks = Array.from(
+		editorDoc.querySelectorAll( `[data-type="${ name }"]` ),
+	);
+
+	allBlocks.forEach( ( blockElement ) => {
+		const blockId = blockElement.id?.replace( 'block-', '' );
+		if ( blockId ) {
+			const blockStateKey = generateBlockGuardStateKey(
+				name,
+				blockId,
+			);
+			if ( blockStateKey === stateKey ) {
+				const innerBlocks = blockElement?.querySelector(
+					'.block-editor-inner-blocks',
+				);
+				cleanupGuardFromContainer( innerBlocks );
+			}
+		}
+	} );
+}
+
+/**
+ * Apply block guard to all elements that share the same state key.
+ *
+ * @param {string}  clientId            - The current block's client ID.
+ * @param {string}  name                - The block type name.
+ * @param {string}  stateKey            - The shared state key.
+ * @param {boolean} isBlockGuardEnabled - Whether guard is enabled.
+ */
+function applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled ) {
+	const editorDoc = getEditorDocument();
+	const currentBlockElement = editorDoc.getElementById(
+		`block-${ clientId }`,
+	);
+
+	if ( ! currentBlockElement ) {
+		return;
+	}
+
+	// Find all blocks on the page that should share the same state as this block.
+	const allBlocks = Array.from(
+		editorDoc.querySelectorAll( `[data-type="${ name }"]` ),
+	);
+	const targetElements = [];
+
+	// Filter blocks to only include those with the same state key.
+	allBlocks.forEach( ( blockElement ) => {
+		const blockId = blockElement.id?.replace( 'block-', '' );
+		if ( blockId ) {
+			const blockStateKey = generateBlockGuardStateKey(
+				name,
+				blockId,
+			);
+			if ( blockStateKey === stateKey ) {
+				targetElements.push( blockElement );
+			}
+		}
+	} );
+
+	targetElements.forEach( ( blockElement ) => {
+		const innerBlocksContainer = blockElement.querySelector(
+			'.block-editor-inner-blocks',
+		);
+		applyGuardToContainer( innerBlocksContainer, isBlockGuardEnabled );
+	} );
+}
+
+/**
  * Generate a unique state key for block guard state management.
  * This creates the right level of sharing vs independence:
  * - Individual blocks outside query loops: each gets unique state
@@ -287,49 +458,13 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 				return;
 			}
 
-			const applyBlockGuard = () => {
-				const editorDoc = getEditorDocument();
-				const currentBlockElement = editorDoc.getElementById(
-					`block-${ clientId }`,
-				);
-
-				if ( ! currentBlockElement ) {
-					return;
-				}
-
-				// Find all blocks on the page that should share the same state as this block.
-				const allBlocks = Array.from(
-					editorDoc.querySelectorAll( `[data-type="${ name }"]` ),
-				);
-				const targetElements = [];
-
-				// Filter blocks to only include those with the same state key.
-				allBlocks.forEach( ( blockElement ) => {
-					const blockId = blockElement.id?.replace( 'block-', '' );
-					if ( blockId ) {
-						const blockStateKey = generateBlockGuardStateKey(
-							name,
-							blockId,
-						);
-						if ( blockStateKey === stateKey ) {
-							targetElements.push( blockElement );
-						}
-					}
-				} );
-
-				targetElements.forEach( ( blockElement ) => {
-					const innerBlocksContainer = blockElement.querySelector(
-						'.block-editor-inner-blocks',
-					);
-					applyGuardToContainer( innerBlocksContainer, isBlockGuardEnabled );
-				} );
-			};
-
 			// Apply initially.
-			applyBlockGuard();
+			applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled );
 
 			// Set up observer for DOM changes.
-			const observer = new MutationObserver( applyBlockGuard );
+			const observer = new MutationObserver( () => {
+				applyBlockGuard( clientId, name, stateKey, isBlockGuardEnabled );
+			} );
 			observer.observe( document.body, {
 				childList: true,
 				subtree: true,
@@ -337,39 +472,7 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 
 			return () => {
 				observer.disconnect();
-
-				// Clean up ALL guarded elements, regardless of how we find them.
-				const editorDoc = getEditorDocument();
-
-				// First, clean up any elements we marked as guarded.
-				const guardedElements = editorDoc.querySelectorAll( '[data-gather-press-guarded="true"]' );
-				guardedElements.forEach( ( element ) => {
-					element.inert = false;
-					element.style.opacity = '';
-					element.style.cursor = '';
-					delete element.dataset.gatherPressGuarded;
-				} );
-
-				// Also clean up based on state key for thoroughness.
-				const allBlocks = Array.from(
-					editorDoc.querySelectorAll( `[data-type="${ name }"]` ),
-				);
-
-				allBlocks.forEach( ( blockElement ) => {
-					const blockId = blockElement.id?.replace( 'block-', '' );
-					if ( blockId ) {
-						const blockStateKey = generateBlockGuardStateKey(
-							name,
-							blockId,
-						);
-						if ( blockStateKey === stateKey ) {
-							const innerBlocks = blockElement?.querySelector(
-								'.block-editor-inner-blocks',
-							);
-							cleanupGuardFromContainer( innerBlocks );
-						}
-					}
-				} );
+				cleanupBlockGuard( name, stateKey );
 			};
 		}, [ clientId, isBlockGuardEnabled, name, stateKey ] );
 
@@ -381,66 +484,14 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 
 			let dropHandler = null;
 
-			// Drag event configuration.
-			const DRAG_EVENTS = [ 'dragover', 'dragenter', 'dragleave', 'drop' ];
-
-			// Helper functions for DRY event management.
-			const addDragListeners = ( handler ) => {
-				DRAG_EVENTS.forEach( ( eventType ) => {
-					document.addEventListener( eventType, handler, true );
-				} );
-			};
-
-			const removeDragListeners = ( handler ) => {
-				DRAG_EVENTS.forEach( ( eventType ) => {
-					document.removeEventListener( eventType, handler, true );
-				} );
-			};
-
 			const handleListView = () => {
-				// Find the list view item.
-				const listViewItem = document.querySelector(
-					`.block-editor-list-view-leaf[data-block="${ clientId }"]`,
-				);
-
-				if ( ! listViewItem ) {
-					return;
-				}
-
-				// Find the expander.
-				const expander = listViewItem.querySelector(
-					'.block-editor-list-view__expander',
-				);
-
-				if ( ! expander ) {
-					return;
-				}
-
-				// Find the SVG inside the expander.
-				const expanderSvg = expander.querySelector( 'svg' );
-
-				if ( ! expanderSvg ) {
-					return;
-				}
-
-				applyListViewGuard( expander, isBlockGuardEnabled );
+				applyListViewGuardForBlock( clientId, isBlockGuardEnabled );
 
 				// Handle drag prevention for block guard.
 				if ( isBlockGuardEnabled ) {
 					// Prevent drops into this block like WordPress lock removal.
 					if ( ! dropHandler ) {
-						dropHandler = ( e ) => {
-							// Check if we're in this block or its drop zones.
-							const targetBlock = e.target.closest( `[data-block="${ clientId }"]` );
-							if ( targetBlock ) {
-								// Prevent dragenter, dragover and drop to disable block insertion indicators.
-								if ( 'dragenter' === e.type || 'dragover' === e.type || 'drop' === e.type ) {
-									e.preventDefault();
-									e.stopPropagation();
-								}
-							}
-						};
-
+						dropHandler = createDropHandler( clientId );
 						// Add drag prevention listeners globally.
 						addDragListeners( dropHandler );
 					}
@@ -522,4 +573,18 @@ const withBlockGuard = createHigherOrderComponent( ( BlockEdit ) => {
 addFilter( 'editor.BlockEdit', 'gatherpress/with-block-guard', withBlockGuard );
 
 // Export functions for testing.
-export { useSharedBlockGuardState, generateBlockGuardStateKey, withBlockGuard };
+export {
+	useSharedBlockGuardState,
+	generateBlockGuardStateKey,
+	withBlockGuard,
+	getEditorDocument,
+	applyGuardToContainer,
+	cleanupGuardFromContainer,
+	applyListViewGuard,
+	addDragListeners,
+	removeDragListeners,
+	createDropHandler,
+	applyListViewGuardForBlock,
+	cleanupBlockGuard,
+	applyBlockGuard,
+};

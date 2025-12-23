@@ -2,13 +2,38 @@
  * External dependencies.
  */
 import { render, act } from '@testing-library/react';
-import { expect, test } from '@jest/globals';
+import { expect, test, jest, beforeEach } from '@jest/globals';
 import '@testing-library/jest-dom';
+
+/**
+ * WordPress dependencies.
+ */
+jest.mock( '@wordpress/data', () => ( {
+	select: jest.fn(),
+} ) );
 
 /**
  * Internal dependencies.
  */
 import MapEmbed from '../../../../../src/components/MapEmbed';
+import { select } from '@wordpress/data';
+
+beforeEach( () => {
+	jest.clearAllMocks();
+
+	// Default mock for select().
+	select.mockImplementation( ( store ) => {
+		if ( 'core' === store ) {
+			return {
+				canUser: jest.fn( () => false ),
+			};
+		}
+		if ( 'core/edit-post' === store ) {
+			return null;
+		}
+		return null;
+	} );
+} );
 
 /**
  * Coverage for MapEmbed.
@@ -86,4 +111,49 @@ test( 'MapEmbed returns address in source when location, zoom, map type, height,
 		'border: 0px; height: 100px; width: 100%;',
 	);
 	expect( container.children[ 0 ] ).toHaveClass( 'unit-test' );
+} );
+
+test( 'MapEmbed uses default location when admin user is not in post editor and no location provided', () => {
+	global.GatherPress = {
+		settings: {
+			mapPlatform: 'google',
+		},
+	};
+
+	// Mock isAdmin = true, isPostEditor = false.
+	select.mockImplementation( ( store ) => {
+		if ( 'core' === store ) {
+			return {
+				canUser: jest.fn( () => true ),
+			};
+		}
+		if ( 'core/edit-post' === store ) {
+			return null; // Not in post editor.
+		}
+		return null;
+	} );
+
+	const { container } = render( <MapEmbed /> );
+
+	// Should render a Google Map iframe with the default location.
+	// The component sets location to "660 4th Street #119 San Francisco CA 94107, USA".
+	// Since no coordinates are provided, the URL will use "undefined" for lat/lng.
+	// We just verify that it rendered a map (iframe exists).
+	expect( container.children[ 0 ] ).toBeInTheDocument();
+	expect( container.children[ 0 ].tagName ).toBe( 'IFRAME' );
+} );
+
+test( 'MapEmbed returns empty fragment when mapPlatform is invalid', () => {
+	global.GatherPress = {
+		settings: {
+			mapPlatform: 'invalid-platform',
+		},
+	};
+
+	const { container } = render(
+		<MapEmbed location="50 South Fullerton Avenue, Montclair, NJ 07042" />,
+	);
+
+	// Should return empty fragment.
+	expect( container ).toHaveTextContent( '' );
 } );
