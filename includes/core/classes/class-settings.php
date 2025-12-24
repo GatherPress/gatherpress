@@ -810,6 +810,9 @@ class Settings {
 			'gatherpress_general[urls][venues]' === $name ||
 			'gatherpress_general[urls][topics]' === $name
 		) {
+			// Initialize suffix - all switch cases will override this.
+			$suffix = '';
+
 			switch ( $name ) {
 				case 'gatherpress_general[urls][events]':
 					$suffix = _x( 'sample-event', 'URL permalink structure example for events', 'gatherpress' );
@@ -825,7 +828,7 @@ class Settings {
 					);
 					break;
 				default:
-					$suffix = '';
+					// Nothing to see here. All valid names are already handled.
 			}
 
 			Utility::render_template(
