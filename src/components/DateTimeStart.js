@@ -58,7 +58,7 @@ const DateTimeStart = () => {
 	const is12HourTime = /a(?!\\)/i.test(
 		settings.formats.time
 			.toLowerCase()
-			.replace( /\\\\/g, '' )
+			.replaceAll( '\\\\', '' )
 			.split( '' )
 			.reverse()
 			.join( '' ),
@@ -96,7 +96,7 @@ const DateTimeStart = () => {
 								id="gatherpress-datetime-start"
 								onClick={ onToggle }
 								aria-expanded={ isOpen }
-								isLink
+								variant="link"
 							>
 								{ moment
 									.tz( dateTimeStart, getTimezone() )

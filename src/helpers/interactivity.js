@@ -292,8 +292,7 @@ export function manageFocusTrap( focusableElements ) {
 	}
 
 	const firstFocusableElement = visibleFocusableElements[ 0 ];
-	const lastFocusableElement =
-		visibleFocusableElements[ visibleFocusableElements.length - 1 ];
+	const lastFocusableElement = visibleFocusableElements.at( -1 );
 
 	const handleFocusTrap = ( e ) => {
 		if ( 'Tab' === e.key ) {

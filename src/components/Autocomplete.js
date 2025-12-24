@@ -38,7 +38,7 @@ const Autocomplete = ( props ) => {
 		( select ) => {
 			const { getEntityRecords } = select( coreStore );
 			const entityType =
-				'user' !== fieldOptions.type ? 'postType' : 'root';
+				'user' === fieldOptions.type ? 'root' : 'postType';
 			const kind = fieldOptions.type || 'post';
 			return {
 				contentList: getEntityRecords( entityType, kind, {

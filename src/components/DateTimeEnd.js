@@ -56,7 +56,7 @@ const DateTimeEnd = () => {
 	const is12HourTime = /a(?!\\)/i.test(
 		settings.formats.time
 			.toLowerCase()
-			.replace( /\\\\/g, '' )
+			.replaceAll( '\\\\', '' )
 			.split( '' )
 			.reverse()
 			.join( '' ),
@@ -88,7 +88,7 @@ const DateTimeEnd = () => {
 								id="gatherpress-datetime-end"
 								onClick={ onToggle }
 								aria-expanded={ isOpen }
-								isLink
+								variant="link"
 							>
 								{ moment
 									.tz( dateTimeEnd, getTimezone() )

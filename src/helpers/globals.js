@@ -107,10 +107,10 @@ export function safeHTML( html ) {
  */
 export function toCamelCase( snakeCaseString ) {
 	// First replace consecutive underscores with a single one.
-	const normalized = snakeCaseString.replace( /__+/g, '_' );
+	const normalized = snakeCaseString.replaceAll( /__+/g, '_' );
 
 	// Then do the camelCase conversion with a simpler regex.
-	return normalized.replace( /_([a-zA-Z])/g, ( _, letter ) =>
+	return normalized.replaceAll( /_([a-zA-Z])/g, ( _, letter ) =>
 		letter.toUpperCase(),
 	);
 }

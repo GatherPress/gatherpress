@@ -825,7 +825,7 @@ class Settings {
 					);
 					break;
 				default:
-					// Nothing to see here. Other URL types don't need special handling.
+					$suffix = '';
 			}
 
 			Utility::render_template(

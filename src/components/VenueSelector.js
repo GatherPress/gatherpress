@@ -148,7 +148,7 @@ const VenueSelector = () => {
 		setVenue( value );
 		value = value.split( ':' );
 
-		const term = '' !== value[ 0 ] ? [ value[ 0 ] ] : [];
+		const term = '' === value[ 0 ] ? [] : [ value[ 0 ] ];
 
 		editPost( { _gatherpress_venue: term } );
 		setVenueSlug( value[ 1 ] );

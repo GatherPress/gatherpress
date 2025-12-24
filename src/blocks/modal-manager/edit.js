@@ -7,7 +7,7 @@ import {
 	InnerBlocks,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import { PanelBody, ButtonGroup, Button } from '@wordpress/components';
+import { PanelBody, Button } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { select, dispatch, subscribe } from '@wordpress/data';
 import TEMPLATE from './template';
@@ -43,20 +43,26 @@ const Edit = ( { clientId } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Open a Modal', 'gatherpress' ) }>
-					<ButtonGroup style={ { display: 'flex', gap: '0.5rem' } }>
+					<div
+						role="group"
+						aria-label={ __( 'Modal selection', 'gatherpress' ) }
+						style={ { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' } }
+					>
 						{ innerBlocks.map( ( block ) => {
 							if ( 'gatherpress/modal' === block.name ) {
 								const modalName =
 									block?.attributes?.metadata?.name ||
 									__( 'Modal', 'gatherpress' );
+								const isActive = activeModalId === block.clientId;
 
 								return (
 									<Button
 										key={ block.clientId }
-										variant="secondary"
+										variant={ isActive ? 'primary' : 'secondary' }
 										onClick={ () =>
 											handleModalSelect( block.clientId )
 										}
+										aria-pressed={ isActive }
 									>
 										{ modalName }
 									</Button>
@@ -64,7 +70,7 @@ const Edit = ( { clientId } ) => {
 							}
 							return null;
 						} ) }
-					</ButtonGroup>
+					</div>
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
