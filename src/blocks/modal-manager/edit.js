@@ -43,10 +43,16 @@ const Edit = ( { clientId } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Open a Modal', 'gatherpress' ) }>
-					<div
-						role="group"
+					<fieldset
 						aria-label={ __( 'Modal selection', 'gatherpress' ) }
-						style={ { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' } }
+						style={ {
+							display: 'flex',
+							gap: '0.5rem',
+							flexWrap: 'wrap',
+							border: 'none',
+							padding: 0,
+							margin: 0,
+						} }
 					>
 						{ innerBlocks.map( ( block ) => {
 							if ( 'gatherpress/modal' === block.name ) {
@@ -70,7 +76,7 @@ const Edit = ( { clientId } ) => {
 							}
 							return null;
 						} ) }
-					</div>
+					</fieldset>
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
