@@ -824,6 +824,8 @@ class Settings {
 						'gatherpress'
 					);
 					break;
+				default:
+					// Nothing to see here. Other URL types don't need special handling.
 			}
 
 			Utility::render_template(

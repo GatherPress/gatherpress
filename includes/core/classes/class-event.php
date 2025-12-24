@@ -59,6 +59,17 @@ class Event {
 	const TABLE_FORMAT = '%sgatherpress_events';
 
 	/**
+	 * ISO 8601 datetime format for calendar services.
+	 *
+	 * Format combines date (YYYYMMDD) and time (HHMMSS) with 'T' separator
+	 * and 'Z' suffix indicating UTC timezone. Example: 20240315T143000Z
+	 *
+	 * @since 1.0.0
+	 * @var string $CALENDAR_DATETIME_FORMAT
+	 */
+	const CALENDAR_DATETIME_FORMAT = '%sT%sZ';
+
+	/**
 	 * Non-time PHP DateTime formatting characters
 	 *
 	 * @since 1.0.0
@@ -609,7 +620,13 @@ class Event {
 		$time_start  = $this->get_formatted_datetime( 'His', 'start', false );
 		$date_end    = $this->get_formatted_datetime( 'Ymd', 'end', false );
 		$time_end    = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime    = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		$datetime    = sprintf(
+			self::CALENDAR_DATETIME_FORMAT . '/' . self::CALENDAR_DATETIME_FORMAT,
+			$date_start,
+			$time_start,
+			$date_end,
+			$time_end
+		);
 		$venue       = $this->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();
@@ -648,7 +665,7 @@ class Event {
 	public function get_yahoo_calendar_link(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+		$datetime_start = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_start, $time_start );
 
 		// Figure out duration of event in hours and minutes: hhmm format.
 		$diff_start  = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
@@ -744,10 +761,14 @@ class Event {
 		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
 		$date_end       = $this->get_formatted_datetime( 'Ymd', 'end', false );
 		$time_end       = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
-		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
+		$datetime_start = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_start, $time_start );
+		$datetime_end   = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_end, $time_end );
 		$modified_date  = strtotime( $this->event->post_modified );
-		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
+		$datetime_stamp = sprintf(
+			self::CALENDAR_DATETIME_FORMAT,
+			gmdate( 'Ymd', $modified_date ),
+			gmdate( 'His', $modified_date )
+		);
 		$venue          = $this->get_venue_information();
 		$location       = $venue['name'] ?? '';
 		$description    = $this->get_calendar_description();

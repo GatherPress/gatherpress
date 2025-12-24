@@ -40,7 +40,7 @@ const { state } = store( 'gatherpress', {
 						Array.from( parent.children ).forEach( ( sibling ) => {
 							if (
 								sibling !== element.ref &&
-								sibling.hasAttribute( 'data-id' )
+								'id' in sibling.dataset
 							) {
 								sibling.remove();
 							}
