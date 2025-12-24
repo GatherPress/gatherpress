@@ -16,8 +16,7 @@ import {
 	RichText,
 } from '@wordpress/block-editor';
 import {
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalBoxControl as BoxControl,
+	BoxControl,
 	PanelBody,
 	ToolbarButton,
 	RangeControl,

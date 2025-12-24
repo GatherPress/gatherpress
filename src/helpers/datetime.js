@@ -172,7 +172,7 @@ export function dateTimeLabelFormat() {
 export function getTimezone(
 	timezone = getFromGlobal( 'eventDetails.dateTime.timezone' ),
 ) {
-	if ( !! moment.tz.zone( timezone ) ) {
+	if ( moment.tz.zone( timezone ) ) {
 		return timezone;
 	}
 
@@ -192,13 +192,13 @@ export function getTimezone(
 export function getUtcOffset( timezone ) {
 	timezone = getTimezone( timezone );
 
-	if ( __( 'GMT', 'gatherpress' ) !== timezone ) {
-		return '';
+	if ( __( 'GMT', 'gatherpress' ) === timezone ) {
+		const offset = getFromGlobal( 'eventDetails.dateTime.timezone' );
+
+		return maybeConvertUtcOffsetForDisplay( offset );
 	}
 
-	const offset = getFromGlobal( 'eventDetails.dateTime.timezone' );
-
-	return maybeConvertUtcOffsetForDisplay( offset );
+	return '';
 }
 
 /**
@@ -231,23 +231,23 @@ export function maybeConvertUtcOffsetForDatabase( offset = '' ) {
 	const pattern = /^UTC([+-])(\d+)(\.\d+)?$/;
 	const sign = offset.replace( pattern, '$1' );
 
-	if ( sign !== offset ) {
-		const hour = offset.replace( pattern, '$2' ).padStart( 2, '0' );
-		let minute = offset.replace( pattern, '$3' );
-
-		if ( '' === minute ) {
-			minute = ':00';
-		}
-
-		minute = minute
-			.replace( '.25', ':15' )
-			.replace( '.5', ':30' )
-			.replace( '.75', ':45' );
-
-		return sign + hour + minute;
+	if ( sign === offset ) {
+		return offset;
 	}
 
-	return offset;
+	const hour = offset.replace( pattern, '$2' ).padStart( 2, '0' );
+	let minute = offset.replace( pattern, '$3' );
+
+	if ( '' === minute ) {
+		minute = ':00';
+	}
+
+	minute = minute
+		.replace( '.25', ':15' )
+		.replace( '.5', ':30' )
+		.replace( '.75', ':45' );
+
+	return sign + hour + minute;
 }
 
 /**

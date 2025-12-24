@@ -46,6 +46,8 @@ const DateTimeRange = () => {
 	try {
 		dateTimeMetaData = dateTimeMetaData ? JSON.parse( dateTimeMetaData ) : {};
 	} catch ( e ) {
+		// eslint-disable-next-line no-console
+		console.error( 'Failed to parse gatherpress_datetime meta:', e );
 		dateTimeMetaData = {};
 	}
 
@@ -63,15 +65,13 @@ const DateTimeRange = () => {
 	useEffect( () => {
 		const payload = JSON.stringify( {
 			...dateTimeMetaData,
-			...{
-				dateTimeStart: moment
-					.tz( dateTimeStart, timezone )
-					.format( dateTimeDatabaseFormat ),
-				dateTimeEnd: moment
-					.tz( dateTimeEnd, timezone )
-					.format( dateTimeDatabaseFormat ),
-				timezone,
-			},
+			dateTimeStart: moment
+				.tz( dateTimeStart, timezone )
+				.format( dateTimeDatabaseFormat ),
+			dateTimeEnd: moment
+				.tz( dateTimeEnd, timezone )
+				.format( dateTimeDatabaseFormat ),
+			timezone,
 		} );
 		const meta = { gatherpress_datetime: payload };
 

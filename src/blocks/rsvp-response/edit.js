@@ -96,10 +96,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				);
 			} );
 			responseBlocks.forEach( ( block ) => {
-				if ( ! showEmptyRsvpBlock ) {
-					block.style.removeProperty( 'display' );
-				} else {
+				if ( showEmptyRsvpBlock ) {
 					block.style.setProperty( 'display', 'none', 'important' );
+				} else {
+					block.style.removeProperty( 'display' );
 				}
 			} );
 		};

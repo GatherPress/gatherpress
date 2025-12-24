@@ -824,6 +824,8 @@ class Settings {
 						'gatherpress'
 					);
 					break;
+				default:
+					$suffix = '';
 			}
 
 			Utility::render_template(
