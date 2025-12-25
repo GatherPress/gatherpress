@@ -293,9 +293,9 @@ export function getDateTimeStart() {
 	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_start' );
 
 	dateTime =
-		'' !== dateTime
-			? moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat )
-			: defaultDateTimeStart;
+		'' === dateTime
+			? defaultDateTimeStart
+			: moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat );
 
 	setToGlobal( 'eventDetails.dateTime.datetime_start', dateTime );
 
@@ -315,9 +315,9 @@ export function getDateTimeEnd() {
 	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_end' );
 
 	dateTime =
-		'' !== dateTime
-			? moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat )
-			: defaultDateTimeEnd;
+		'' === dateTime
+			? defaultDateTimeEnd
+			: moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat );
 
 	setToGlobal( 'eventDetails.dateTime.datetime_end', dateTime );
 
