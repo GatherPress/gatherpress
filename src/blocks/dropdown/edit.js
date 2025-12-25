@@ -435,7 +435,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			<style>{ dropdownStyles }</style>
 			<div
 				id={ dropdownId }
-				role="region"
 				className="wp-block-gatherpress-dropdown__menu"
 				style={ {
 					display: isExpanded ? 'block' : 'none',

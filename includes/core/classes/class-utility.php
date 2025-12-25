@@ -45,12 +45,14 @@ class Utility {
 		}
 
 		if ( true === $output ) {
-			require $path;
+			// Loading PHP template file, not importing a class.
+			require $path; // NOSONAR.
 			return '';
 		}
 
 		ob_start();
-		require $path;
+		// Loading PHP template file, not importing a class.
+		require $path; // NOSONAR.
 		return ob_get_clean();
 	}
 

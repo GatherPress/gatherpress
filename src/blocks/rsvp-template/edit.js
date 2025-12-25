@@ -72,7 +72,7 @@ const RsvpTemplatePreview = ( {
 		<div
 			{ ...blockPreviewProps }
 			tabIndex={ 0 }
-			role="button"
+			role="button" // NOSONAR - WordPress block preview requires div container.
 			style={ style }
 			// eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
 			onClick={ handleOnClick }

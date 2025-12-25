@@ -405,7 +405,8 @@ class Setup {
 					KEY datetime_end_gmt (datetime_end_gmt)
 				) {$charset_collate};";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		// Loading WordPress core file for dbDelta function, not importing a class.
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php'; // NOSONAR.
 
 		dbDelta( $sql );
 

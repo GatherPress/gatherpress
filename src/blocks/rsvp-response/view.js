@@ -18,19 +18,16 @@ const { state, actions } = store( 'gatherpress', {
 			// Call the linkHandler action to handle the default link behavior.
 			actions.linkHandler( event );
 			const element = getElement();
+			const status = element?.ref?.dataset?.status;
 
-			if ( element && element.ref ) {
-				const status = element.ref.dataset.status;
+			if ( status ) {
+				const context = getContext();
+				const postId = context?.postId || 0;
 
-				if ( status ) {
-					const context = getContext();
-					const postId = context?.postId || 0;
+				initPostContext( state, postId );
 
-					initPostContext( state, postId );
-
-					if ( postId ) {
-						state.posts[ postId ].rsvpSelection = status;
-					}
+				if ( postId ) {
+					state.posts[ postId ].rsvpSelection = status;
 				}
 			}
 		},
@@ -125,14 +122,12 @@ const { state, actions } = store( 'gatherpress', {
 				};
 			}
 
-			if ( element && element.ref ) {
-				// Check if the `data-label` attribute is already set.
-				if ( ! element.ref.dataset.label ) {
-					// Set `data-label` to the element's text content.
-					const textContent = element.ref.textContent.trim();
-					if ( textContent ) {
-						element.ref.dataset.label = textContent;
-					}
+			// Check if the `data-label` attribute is already set.
+			if ( element?.ref && ! element.ref.dataset.label ) {
+				// Set `data-label` to the element's text content.
+				const textContent = element.ref.textContent.trim();
+				if ( textContent ) {
+					element.ref.dataset.label = textContent;
 				}
 			}
 

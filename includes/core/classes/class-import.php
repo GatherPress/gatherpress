@@ -111,7 +111,7 @@ class Import extends Migrate {
 	 * @return void
 	 */
 	public function extend(): void {
-		add_filter( 'add_post_metadata', array( $this, 'run' ), 10, 5 );
+		add_filter( 'add_post_metadata', array( $this, 'run' ), 10, 4 );
 	}
 
 	/**
@@ -133,11 +133,10 @@ class Import extends Migrate {
 	 * @param  int       $object_id  ID of the object metadata is for.
 	 * @param  string    $meta_key   Metadata key.
 	 * @param  mixed     $meta_value Metadata value. Must be serializable if non-scalar.
-	 * @param  bool      $unique     Whether the specified meta key should be unique for the object.
 	 * @return null|bool             Returning a non-null value will effectively short-circuit the saving
 	 *                               of 'normal' meta data.
 	 */
-	public function run( ?bool $check, int $object_id, string $meta_key, $meta_value, bool $unique ): ?bool {
+	public function run( ?bool $check, int $object_id, string $meta_key, $meta_value ): ?bool {
 		$pseudopostmetas = $this->get_pseudopostmetas();
 
 		if ( ! isset( $pseudopostmetas[ $meta_key ] ) ) {

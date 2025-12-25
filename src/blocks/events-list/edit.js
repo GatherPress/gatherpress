@@ -184,14 +184,11 @@ const Edit = ( props ) => {
 					<FormTokenField
 						key="query-controls-topics-select"
 						label={ __( 'Topics', 'gatherpress' ) }
-						value={
-							topics &&
-							topics.map( ( item ) => ( {
-								id: item.id,
-								slug: item.slug,
-								value: item.name || item.value,
-							} ) )
-						}
+						value={ topics?.map( ( item ) => ( {
+							id: item.id,
+							slug: item.slug,
+							value: item.name || item.value,
+						} ) ) }
 						suggestions={ Object.keys( topicSuggestions ) }
 						onChange={ selectTopics }
 						maxSuggestions={ 20 }
@@ -199,14 +196,11 @@ const Edit = ( props ) => {
 					<FormTokenField
 						key="query-controls-venues-select"
 						label={ __( 'Venues', 'gatherpress' ) }
-						value={
-							venues &&
-							venues.map( ( item ) => ( {
-								id: item.id,
-								slug: item.slug,
-								value: item.name || item.value,
-							} ) )
-						}
+						value={ venues?.map( ( item ) => ( {
+							id: item.id,
+							slug: item.slug,
+							value: item.name || item.value,
+						} ) ) }
 						suggestions={ Object.keys( venueSuggestions ) }
 						onChange={ selectVenues }
 						maxSuggestions={ 20 }
