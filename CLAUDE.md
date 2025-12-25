@@ -227,3 +227,161 @@ target cli: failed to solve: process did not complete successfully: exit code: 1
 - Related GitHub Actions workflows that depend on this: `phpunit-tests.yml`, `sonarcloud.yml`, `pr-coverage.yml`, `e2e-tests.yml`
 
 **Tracking**: This issue was identified on December 23, 2025 while fixing CI test failures.
+
+## Planned Improvements for v0.34.0
+
+### JavaScript Test Coverage Improvements
+
+**Goal**: Increase unit test coverage by extracting business logic from UI components into testable helper functions.
+
+#### High Priority - Extract & Test
+
+1. **Extract DOM utilities from `src/helpers/interactivity.js`**
+
+   Create new file: `src/helpers/dom-utils.js`
+
+   Extract the following for better testability:
+
+   ```javascript
+   /**
+    * Checks if a DOM element is visible.
+    *
+    * @param {HTMLElement} element - The element to check.
+    * @return {boolean} True if the element is visible, false otherwise.
+    */
+   export function isElementVisible(element) {
+       return (
+           null !== element.offsetParent &&
+           'hidden' !== window.getComputedStyle(element).visibility &&
+           '0' !== window.getComputedStyle(element).opacity
+       );
+   }
+
+   /**
+    * Filters an array of elements to only visible ones.
+    *
+    * @param {HTMLElement[]} elements - Array of elements to filter.
+    * @return {HTMLElement[]} Array of visible elements.
+    */
+   export function getVisibleElements(elements) {
+       return Array.from(elements).filter(isElementVisible);
+   }
+   ```
+
+   Then update `manageFocusTrap()` in `interactivity.js` to use the extracted function.
+
+2. **Extract RSVP utilities from `src/blocks/rsvp-response/rsvp-manager.js`**
+
+   Create new file: `src/helpers/rsvp-utils.js`
+
+   Extract the following business logic:
+
+   ```javascript
+   /**
+    * Maps user list to username-keyed object for suggestions.
+    *
+    * @param {Object[]} userList - Array of user objects.
+    * @return {Object} Object mapping usernames to user objects.
+    */
+   export function mapUsersToSuggestions(userList) {
+       return userList?.reduce(
+           (accumulator, user) => ({
+               ...accumulator,
+               [user.username]: user,
+           }),
+           {},
+       ) ?? {};
+   }
+
+   /**
+    * Gets attendees that have been removed from the list.
+    *
+    * @param {Object[]} currentAttendees - Current list of attendees.
+    * @param {Object[]} newTokens        - New token list.
+    * @return {Object[]} Array of removed attendees.
+    */
+   export function getRemovedAttendees(currentAttendees, newTokens) {
+       return currentAttendees.filter(
+           (attendee) => !newTokens.some((item) => item.id === attendee.userId)
+       );
+   }
+
+   /**
+    * Gets users that have been added to the list.
+    *
+    * @param {string[]} tokens          - Array of username tokens.
+    * @param {Object}   userSuggestions - Mapping of usernames to user objects.
+    * @return {Object[]} Array of added user objects.
+    */
+   export function getAddedUsers(tokens, userSuggestions) {
+       return tokens
+           .filter((token) => userSuggestions[token])
+           .map((token) => userSuggestions[token]);
+   }
+   ```
+
+#### Medium Priority
+
+1. **Add unit tests for existing `interactivity.js` functions**
+
+   Create: `test/unit/js/src/helpers/interactivity.test.js`
+
+   Test these already well-structured functions:
+
+   - `initPostContext()` - Pure state transformation
+   - `getNonce()` - Async with caching (test with mocks)
+   - `sendRsvpApiRequest()` - Complex API logic
+   - `manageFocusTrap()` - Focus management
+   - `setupCloseHandlers()` - Event handler setup
+
+2. **Extract validation logic from components**
+
+   Components with extractable business logic:
+
+   - `src/components/Duration.js` - Duration calculation logic
+   - `src/components/GuestLimit.js` - Limit validation
+   - `src/components/MaxAttendanceLimit.js` - Attendance calculations
+
+#### Components Without Tests (26 total)
+
+Most of these are UI-heavy React components that rely on WordPress hooks/state, making them harder to test. Focus on extracting pure functions from them rather than testing the components directly:
+
+- AnonymousRsvp.js
+- Autocomplete.js
+- DateTimeEnd.js
+- DateTimeRange.js
+- DateTimeStart.js
+- Duration.js
+- EmailNotificationManager.js
+- EventItem.js
+- EventsList.js
+- GoogleMap.js
+- GuestLimit.js
+- MaxAttendanceLimit.js
+- OnlineEventLink.js
+- OpenStreetMap.js
+- Rsvp.js
+- RsvpResponseAvatarOnly.js
+- RsvpResponseCard.js
+- RsvpResponseContent.js
+- RsvpResponseEdit.js
+- RsvpStatusResponse.js
+- Timezone.js
+- UrlRewritePreview.js
+- Venue.js
+- VenueInformation.js
+- VenueOrOnlineEvent.js
+- VenueSelector.js
+
+#### Testing Strategy
+
+**Philosophy**: Extract pure business logic into helper functions that can be easily unit tested. Leave UI components for integration/E2E testing.
+
+**Benefits**:
+
+- Easier to test complex logic in isolation
+- Better separation of concerns
+- Improved code reusability
+- Higher test coverage with less test complexity
+
+**Reference**: `src/blocks/form-field/helpers.js` is a good example - it has comprehensive tests at `test/unit/js/src/blocks/form-field/helpers.test.js`.
