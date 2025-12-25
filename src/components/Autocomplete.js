@@ -87,14 +87,11 @@ const Autocomplete = ( props ) => {
 				key={ option }
 				label={ fieldOptions.label || __( 'Select Posts', 'gatherpress' ) }
 				name={ name }
-				value={
-					content &&
-					content.map( ( item ) => ( {
-						id: item.id,
-						slug: item.slug,
-						value: item.title?.rendered || item.name || item.value,
-					} ) )
-				}
+				value={ content?.map( ( item ) => ( {
+					id: item.id,
+					slug: item.slug,
+					value: item.title?.rendered || item.name || item.value,
+				} ) ) }
 				suggestions={ Object.keys( contentSuggestions ) }
 				onChange={ selectContent }
 				maxSuggestions={ fieldOptions.max_suggestions || 20 }
@@ -111,15 +108,16 @@ const Autocomplete = ( props ) => {
 				id={ option }
 				name={ name }
 				value={
-					content &&
-					JSON.stringify(
-						content.map( ( item ) => ( {
-							id: item.id,
-							slug: item.slug,
-							value:
-								item.title?.rendered || item.name || item.value,
-						} ) ),
-					)
+					content
+						? JSON.stringify(
+							content.map( ( item ) => ( {
+								id: item.id,
+								slug: item.slug,
+								value:
+										item.title?.rendered || item.name || item.value,
+							} ) ),
+						)
+						: undefined
 				}
 			/>
 		</>

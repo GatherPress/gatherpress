@@ -210,11 +210,14 @@ class Rsvp_Template {
 		add_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ), 10, 3 );
 		$class_name = '';
 
-		if ( ! empty( $args ) && ! empty( $args['limit_enabled'] ) && isset( $args['limit'], $args['index'] ) ) {
-			// Check if the RSVP limit has been reached.
-			if ( $args['index'] >= $args['limit'] ) {
-				$class_name = 'gatherpress--is-hidden';
-			}
+		// Check if the RSVP limit has been reached.
+		if (
+			! empty( $args ) &&
+			! empty( $args['limit_enabled'] ) &&
+			isset( $args['limit'], $args['index'] ) &&
+			$args['index'] >= $args['limit']
+		) {
+			$class_name = 'gatherpress--is-hidden';
 		}
 
 		// Wrap the rendered block content in a container div with a unique data ID for the RSVP response.

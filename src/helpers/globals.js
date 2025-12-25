@@ -18,7 +18,7 @@ export function getFromGlobal( args ) {
 
 	return args.split( '.' ).reduce(
 		// eslint-disable-next-line no-undef
-		( GatherPress, level ) => GatherPress && GatherPress[ level ],
+		( GatherPress, level ) => GatherPress?.[ level ],
 		// eslint-disable-next-line no-undef
 		GatherPress,
 	);
@@ -72,9 +72,7 @@ export function safeHTML( html ) {
 	while ( elementIndex-- ) {
 		const element = elements[ elementIndex ];
 		if ( 'SCRIPT' === element.tagName ) {
-			if ( element.parentNode ) {
-				element.parentNode.removeChild( element );
-			}
+			element.remove();
 		} else {
 			let attributeIndex = element.attributes.length;
 			while ( attributeIndex-- ) {
