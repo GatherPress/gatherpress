@@ -53,3 +53,5 @@ if ( ! trait_exists( 'GatherPress\Core\Traits\Singleton' ) ) {
 
 // Initialize setups.
 GatherPress\Core\Setup::get_instance();
+
+// Remove this.
