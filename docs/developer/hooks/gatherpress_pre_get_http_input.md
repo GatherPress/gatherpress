@@ -33,7 +33,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-utility.php:384](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L384)
+- [includes/core/classes/class-utility.php:386](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-utility.php#L386)
 ```php
 apply_filters( 'gatherpress_pre_get_http_input', null, $type, $var_name )
 ```

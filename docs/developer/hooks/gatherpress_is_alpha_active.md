@@ -23,7 +23,7 @@ add_filter(
 
 ## Files
 
-- [includes/core/classes/class-setup.php:437](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-setup.php#L437)
+- [includes/core/classes/class-setup.php:438](https://github.com/GatherPress/gatherpress/blob/develop/includes/core/classes/class-setup.php#L438)
 ```php
 apply_filters( 'gatherpress_is_alpha_active', defined( 'GATHERPRESS_ALPHA_VERSION' ) )
 ```
