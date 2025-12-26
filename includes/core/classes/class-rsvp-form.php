@@ -557,6 +557,11 @@ class Rsvp_Form {
 
 		// Process each custom field.
 		foreach ( $fields as $field_name => $field_config ) {
+			// Skip built-in fields - they are handled by process_meta_fields().
+			if ( in_array( $field_name, Rsvp_Form_Block::BUILT_IN_FIELDS, true ) ) {
+				continue;
+			}
+
 			if ( ! isset( $data[ $field_name ] ) ) {
 				continue;
 			}
