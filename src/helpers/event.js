@@ -124,3 +124,51 @@ export function hasEventPastNotice() {
 	}
 }
 
+/**
+ * Gets event meta data (max guest limit and anonymous RSVP setting).
+ *
+ * This function retrieves event meta data either from the current post being edited
+ * (for live updates) or from a specific post (for overrides). It handles three scenarios:
+ * 1. Explicit override - attributes.postId is set (uses saved data from that post)
+ * 2. Context postId - postId from block context (uses live editor data)
+ * 3. No postId - checks if current post is an event (uses live editor data)
+ *
+ * @since 1.0.0
+ *
+ * @param {Object}      selectFunc WordPress data select function.
+ * @param {number|null} postId     Post ID from context or null.
+ * @param {Object}      attributes Block attributes (may contain explicit postId override).
+ * @return {Object} Object containing maxGuestLimit and enableAnonymousRsvp.
+ */
+export function getEventMeta( selectFunc, postId, attributes ) {
+	let maxLimit;
+	let enableAnonymous;
+
+	// Check if there's an explicit postId override in attributes.
+	// If attributes.postId exists, it's an override - use entity record.
+	// If postId only comes from context, use editor for live edits.
+	const hasExplicitOverride = !! attributes?.postId;
+
+	if ( hasExplicitOverride && postId ) {
+		// Explicit override - fetch from post via core data store.
+		const post = selectFunc( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
+		maxLimit = post?.meta?.gatherpress_max_guest_limit;
+		enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
+	} else {
+		// No override - check if current post is an event and use editor for live edits.
+		const currentPostType = selectFunc( 'core/editor' )?.getCurrentPostType();
+		const isCurrentPostEvent = 'gatherpress_event' === currentPostType;
+
+		if ( isCurrentPostEvent ) {
+			const meta = selectFunc( 'core/editor' ).getEditedPostAttribute( 'meta' );
+			maxLimit = meta?.gatherpress_max_guest_limit;
+			enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
+		}
+	}
+
+	return {
+		maxGuestLimit: maxLimit ?? 0,
+		enableAnonymousRsvp: enableAnonymous ?? false,
+	};
+}
+

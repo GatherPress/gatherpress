@@ -33,6 +33,11 @@ import { useState, useEffect } from '@wordpress/element';
 import { dispatch, select, useSelect } from '@wordpress/data';
 
 /**
+ * Internal dependencies.
+ */
+import { useIsBlockOrDescendantSelected } from './helpers';
+
+/**
  * Edit component for the GatherPress Dropdown block.
  *
  * This component is used in the WordPress editor to manage the editable interface
@@ -77,6 +82,16 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				?.innerBlocks || [],
 		[ clientId ],
 	);
+
+	// Track if dropdown or its children are selected for auto-close behavior.
+	const isDropdownOrChildSelected = useIsBlockOrDescendantSelected( clientId );
+
+	// Auto-close dropdown when clicking outside the dropdown tree.
+	useEffect( () => {
+		if ( ! isDropdownOrChildSelected && isExpanded ) {
+			setIsExpanded( false );
+		}
+	}, [ isDropdownOrChildSelected, isExpanded ] );
 
 	// Generate a persistent unique ID for the dropdown if not already set.
 	useEffect( () => {

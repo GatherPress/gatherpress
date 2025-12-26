@@ -2773,4 +2773,110 @@ class Test_Rsvp_Form extends Base {
 		$this->assertEmpty( get_comment_meta( $comment_id, 'gatherpress_custom_beta', true ) );
 		$this->assertEquals( 'Value Gamma', get_comment_meta( $comment_id, 'gatherpress_custom_gamma', true ) );
 	}
+
+	/**
+	 * Tests that built-in fields are not saved with gatherpress_custom_ prefix (REST API path).
+	 *
+	 * Verifies that the built-in fields (author, email, gatherpress_rsvp_form_guests,
+	 * gatherpress_rsvp_form_anonymous, gatherpress_event_updates_opt_in) are NOT saved
+	 * with the gatherpress_custom_ prefix when processing through the REST API path.
+	 *
+	 * @covers ::process_custom_fields
+	 *
+	 * @return void
+	 */
+	public function test_built_in_fields_not_saved_with_custom_prefix_rest_api(): void {
+		$post_id = $this->factory->post->create(
+			array(
+				'post_type' => Event::POST_TYPE,
+			)
+		);
+
+		$comment_id = $this->factory->comment->create(
+			array(
+				'comment_post_ID' => $post_id,
+				'comment_type'    => Rsvp::COMMENT_TYPE,
+			)
+		);
+
+		// Set up form schema that includes built-in fields and a custom field.
+		$schemas = array(
+			'form_0' => array(
+				'fields' => array(
+					'author'                           => array(
+						'name' => 'author',
+						'type' => 'text',
+					),
+					'email'                            => array(
+						'name' => 'email',
+						'type' => 'email',
+					),
+					'gatherpress_rsvp_form_guests'     => array(
+						'name' => 'gatherpress_rsvp_form_guests',
+						'type' => 'number',
+					),
+					'gatherpress_rsvp_form_anonymous'  => array(
+						'name' => 'gatherpress_rsvp_form_anonymous',
+						'type' => 'checkbox',
+					),
+					'gatherpress_event_updates_opt_in' => array(
+						'name' => 'gatherpress_event_updates_opt_in',
+						'type' => 'checkbox',
+					),
+					'my_custom_field'                  => array(
+						'name' => 'my_custom_field',
+						'type' => 'text',
+					),
+				),
+			),
+		);
+		add_post_meta( $post_id, 'gatherpress_rsvp_form_schemas', $schemas );
+
+		// Simulate REST API submission with both built-in and custom fields.
+		$data = array(
+			'gatherpress_form_schema_id'       => 'form_0',
+			'author'                           => 'John Doe',
+			'email'                            => 'john@example.com',
+			'gatherpress_rsvp_form_guests'     => '2',
+			'gatherpress_rsvp_form_anonymous'  => '1',
+			'gatherpress_event_updates_opt_in' => '1',
+			'my_custom_field'                  => 'Custom Value',
+		);
+
+		$instance = Rsvp_Form::get_instance();
+		Utility::invoke_hidden_method(
+			$instance,
+			'process_custom_fields',
+			array( $comment_id, $data )
+		);
+
+		// Verify built-in fields are NOT saved with gatherpress_custom_ prefix.
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_author', true ),
+			'author should not be saved with custom prefix'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_email', true ),
+			'email should not be saved with custom prefix'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_gatherpress_rsvp_form_guests', true ),
+			'guests field should not be saved with custom prefix'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_gatherpress_rsvp_form_anonymous', true ),
+			'anonymous field should not be saved with custom prefix'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_gatherpress_event_updates_opt_in', true ),
+			'opt-in field should not be saved with custom prefix'
+		);
+
+		// Verify custom field IS saved with gatherpress_custom_ prefix.
+		$this->assertEquals(
+			'Custom Value',
+			get_comment_meta( $comment_id, 'gatherpress_custom_my_custom_field', true ),
+			'Custom field should be saved with custom prefix'
+		);
+	}
 }

@@ -16,7 +16,7 @@ import { getBlockTypes } from '@wordpress/blocks';
  * Internal dependencies.
  */
 import TEMPLATE from './template';
-import { hasValidEventId, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { hasValidEventId, DISABLED_FIELD_OPACITY, getEventMeta } from '../../helpers/event';
 import { isInFSETemplate, getEditorDocument } from '../../helpers/editor';
 import { shouldHideBlock } from './visibility';
 
@@ -31,35 +31,9 @@ const Edit = ( { attributes, clientId, context } ) => {
 		.filter( ( name ) => 'gatherpress/rsvp-form' !== name );
 
 	// Get event data - either from override postId or current post.
-	const { maxAttendanceLimit, enableAnonymousRsvp } = useSelect(
-		( select ) => {
-			let maxLimit;
-			let enableAnonymous;
-
-			// Check if we have a postId override.
-			if ( postId ) {
-				// Fetch from specific post via core data store.
-				const post = select( 'core' ).getEntityRecord( 'postType', 'gatherpress_event', postId );
-				maxLimit = post?.meta?.gatherpress_max_guest_limit;
-				enableAnonymous = Boolean( post?.meta?.gatherpress_enable_anonymous_rsvp );
-			} else {
-				// Check if current post is an event.
-				const currentPostType = select( 'core/editor' )?.getCurrentPostType();
-				const isCurrentPostEvent = 'gatherpress_event' === currentPostType;
-
-				if ( isCurrentPostEvent ) {
-					const meta = select( 'core/editor' ).getEditedPostAttribute( 'meta' );
-					maxLimit = meta?.gatherpress_max_guest_limit;
-					enableAnonymous = Boolean( meta?.gatherpress_enable_anonymous_rsvp );
-				}
-			}
-
-			return {
-				maxAttendanceLimit: maxLimit,
-				enableAnonymousRsvp: enableAnonymous,
-			};
-		},
-		[ postId ]
+	const { maxGuestLimit: maxAttendanceLimit, enableAnonymousRsvp } = useSelect(
+		( select ) => getEventMeta( select, postId, attributes ),
+		[ postId, attributes ]
 	);
 
 	// Check if block has a valid event connection.

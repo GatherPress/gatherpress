@@ -2632,7 +2632,7 @@ class Test_Rsvp_Form extends Base {
 			)
 		);
 
-		// Set up schema with built-in fields.
+		// Set up schema with built-in fields and a custom field.
 		$schemas = array(
 			'form_0' => array(
 				'fields' => array(
@@ -2656,6 +2656,10 @@ class Test_Rsvp_Form extends Base {
 						'name' => 'gatherpress_event_updates_opt_in',
 						'type' => 'checkbox',
 					),
+					'my_custom_field'                  => array(
+						'name' => 'my_custom_field',
+						'type' => 'text',
+					),
 				),
 			),
 		);
@@ -2673,6 +2677,18 @@ class Test_Rsvp_Form extends Base {
 				if ( 'email' === $var_name ) {
 					return 'test@example.com';
 				}
+				if ( 'gatherpress_rsvp_form_guests' === $var_name ) {
+					return '2';
+				}
+				if ( 'gatherpress_rsvp_form_anonymous' === $var_name ) {
+					return '1';
+				}
+				if ( 'gatherpress_event_updates_opt_in' === $var_name ) {
+					return '1';
+				}
+				if ( 'my_custom_field' === $var_name ) {
+					return 'Custom Value';
+				}
 			}
 			return $pre_value;
 		};
@@ -2681,7 +2697,7 @@ class Test_Rsvp_Form extends Base {
 
 		$instance->process_custom_fields_for_form( $comment_id );
 
-		// Verify built-in fields were NOT saved as custom fields.
+		// Verify all built-in fields were NOT saved with gatherpress_custom_ prefix.
 		$this->assertEmpty(
 			get_comment_meta( $comment_id, 'gatherpress_custom_author', true ),
 			'Built-in field "author" should not be saved as custom field'
@@ -2689,6 +2705,25 @@ class Test_Rsvp_Form extends Base {
 		$this->assertEmpty(
 			get_comment_meta( $comment_id, 'gatherpress_custom_email', true ),
 			'Built-in field "email" should not be saved as custom field'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_gatherpress_rsvp_form_guests', true ),
+			'Built-in field "gatherpress_rsvp_form_guests" should not be saved as custom field'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_gatherpress_rsvp_form_anonymous', true ),
+			'Built-in field "gatherpress_rsvp_form_anonymous" should not be saved as custom field'
+		);
+		$this->assertEmpty(
+			get_comment_meta( $comment_id, 'gatherpress_custom_gatherpress_event_updates_opt_in', true ),
+			'Built-in field "gatherpress_event_updates_opt_in" should not be saved as custom field'
+		);
+
+		// Verify custom field IS saved with gatherpress_custom_ prefix.
+		$this->assertEquals(
+			'Custom Value',
+			get_comment_meta( $comment_id, 'gatherpress_custom_my_custom_field', true ),
+			'Custom field should be saved with custom prefix'
 		);
 
 		remove_filter( 'gatherpress_pre_get_http_input', $filter_callback );
