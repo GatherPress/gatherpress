@@ -72,7 +72,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 	);
 
 	// Get event data - either from override postId or current post.
-	const { maxAttendanceLimit, enableAnonymousRsvp } = useSelect(
+	const { maxNumberOfGuests, enableAnonymousRsvp } = useSelect(
 		( select ) => {
 			let maxLimit;
 			let enableAnonymous;
@@ -96,7 +96,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 			}
 
 			return {
-				maxAttendanceLimit: maxLimit,
+				maxNumberOfGuests: maxLimit,
 				enableAnonymousRsvp: enableAnonymous,
 			};
 		},
@@ -118,7 +118,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 				// Determine if the field should be disabled based on its field name.
 				if ( 'gatherpress_rsvp_guests' === fieldName ) {
-					shouldDisable = 0 === parseInt( maxAttendanceLimit, 10 );
+					shouldDisable = 0 === parseInt( maxNumberOfGuests, 10 );
 				} else if ( 'gatherpress_rsvp_anonymous' === fieldName ) {
 					// enableAnonymousRsvp is now a boolean from the useSelect conversion.
 					shouldDisable = ! enableAnonymousRsvp;
@@ -151,7 +151,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 
 			return block;
 		} );
-	}, [ maxAttendanceLimit, enableAnonymousRsvp ] );
+	}, [ maxNumberOfGuests, enableAnonymousRsvp ] );
 
 	// Save the provided inner blocks to the serializedInnerBlocks attribute
 	const saveInnerBlocks = useCallback(
@@ -256,7 +256,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		const styles = [];
 
 		// Hide guest count field if max attendance limit is 0.
-		if ( 0 === parseInt( maxAttendanceLimit, 10 ) ) {
+		if ( 0 === parseInt( maxNumberOfGuests, 10 ) ) {
 			styles.push( `#block-${ clientId } .gatherpress-rsvp-field-guests { opacity: ${ DISABLED_FIELD_OPACITY }; }` );
 		}
 
@@ -271,7 +271,7 @@ const Edit = ( { attributes, setAttributes, clientId, context } ) => {
 		return () => {
 			styleElement?.remove();
 		};
-	}, [ maxAttendanceLimit, enableAnonymousRsvp, clientId ] );
+	}, [ maxNumberOfGuests, enableAnonymousRsvp, clientId ] );
 
 	return (
 		<>
