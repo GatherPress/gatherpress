@@ -1,7 +1,7 @@
 /**
  * External dependencies.
  */
-import { describe, expect, jest, it } from '@jest/globals';
+import { describe, expect, jest, it, beforeEach } from '@jest/globals';
 import moment from 'moment';
 import 'moment-timezone';
 
@@ -18,6 +18,7 @@ import {
 	hasEventPastNotice,
 	isEventPostType,
 	hasValidEventId,
+	getEventMeta,
 } from '../../../../../src/helpers/event';
 import { dateTimeDatabaseFormat } from '../../../../../src/helpers/datetime';
 
@@ -374,5 +375,225 @@ describe( 'hasEventPastNotice', () => {
 				isDismissible: false,
 			},
 		);
+	} );
+} );
+
+/**
+ * Coverage for getEventMeta.
+ */
+describe( 'getEventMeta', () => {
+	let mockSelect;
+
+	beforeEach( () => {
+		// Create mock select function.
+		mockSelect = jest.fn( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecord: jest.fn(),
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: jest.fn(),
+					getEditedPostAttribute: jest.fn(),
+				};
+			}
+			return {};
+		} );
+	} );
+
+	it( 'should return defaults when no post is an event', () => {
+		mockSelect.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: jest.fn( () => 'post' ),
+					getEditedPostAttribute: jest.fn(),
+				};
+			}
+			return {};
+		} );
+
+		const result = getEventMeta( mockSelect, null, {} );
+
+		expect( result ).toEqual( {
+			maxGuestLimit: 0,
+			enableAnonymousRsvp: false,
+		} );
+	} );
+
+	it( 'should get live editor data when current post is an event (no override)', () => {
+		mockSelect.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: jest.fn( () => 'gatherpress_event' ),
+					getEditedPostAttribute: jest.fn( ( attr ) => {
+						if ( 'meta' === attr ) {
+							return {
+								gatherpress_max_guest_limit: 5,
+								gatherpress_enable_anonymous_rsvp: true,
+							};
+						}
+						return null;
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		const result = getEventMeta( mockSelect, null, {} );
+
+		expect( result ).toEqual( {
+			maxGuestLimit: 5,
+			enableAnonymousRsvp: true,
+		} );
+	} );
+
+	it( 'should get live editor data when postId from context matches current post', () => {
+		mockSelect.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: jest.fn( () => 'gatherpress_event' ),
+					getEditedPostAttribute: jest.fn( ( attr ) => {
+						if ( 'meta' === attr ) {
+							return {
+								gatherpress_max_guest_limit: 10,
+								gatherpress_enable_anonymous_rsvp: false,
+							};
+						}
+						return null;
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		// PostId from context, but no explicit override in attributes.
+		const result = getEventMeta( mockSelect, 123, {} );
+
+		expect( result ).toEqual( {
+			maxGuestLimit: 10,
+			enableAnonymousRsvp: false,
+		} );
+	} );
+
+	it( 'should get saved data when attributes.postId is explicitly set (override)', () => {
+		mockSelect.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecord: jest.fn( ( postType, slug, postId ) => {
+						if ( 'gatherpress_event' === slug && 456 === postId ) {
+							return {
+								meta: {
+									gatherpress_max_guest_limit: 20,
+									gatherpress_enable_anonymous_rsvp: true,
+								},
+							};
+						}
+						return null;
+					} ),
+				};
+			}
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: jest.fn( () => 'gatherpress_event' ),
+					getEditedPostAttribute: jest.fn(),
+				};
+			}
+			return {};
+		} );
+
+		// Explicit override via attributes.postId.
+		const result = getEventMeta( mockSelect, 456, { postId: 456 } );
+
+		expect( result ).toEqual( {
+			maxGuestLimit: 20,
+			enableAnonymousRsvp: true,
+		} );
+	} );
+
+	it( 'should handle missing meta gracefully', () => {
+		mockSelect.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecord: jest.fn( () => ( {
+						meta: {},
+					} ) ),
+				};
+			}
+			return {};
+		} );
+
+		const result = getEventMeta( mockSelect, 789, { postId: 789 } );
+
+		expect( result ).toEqual( {
+			maxGuestLimit: 0,
+			enableAnonymousRsvp: false,
+		} );
+	} );
+
+	it( 'should handle null post gracefully', () => {
+		mockSelect.mockImplementation( ( store ) => {
+			if ( 'core' === store ) {
+				return {
+					getEntityRecord: jest.fn( () => null ),
+				};
+			}
+			return {};
+		} );
+
+		const result = getEventMeta( mockSelect, 999, { postId: 999 } );
+
+		expect( result ).toEqual( {
+			maxGuestLimit: 0,
+			enableAnonymousRsvp: false,
+		} );
+	} );
+
+	it( 'should convert truthy values to boolean for enableAnonymousRsvp', () => {
+		mockSelect.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: jest.fn( () => 'gatherpress_event' ),
+					getEditedPostAttribute: jest.fn( ( attr ) => {
+						if ( 'meta' === attr ) {
+							return {
+								gatherpress_max_guest_limit: 3,
+								gatherpress_enable_anonymous_rsvp: 1, // Truthy number.
+							};
+						}
+						return null;
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		const result = getEventMeta( mockSelect, null, {} );
+
+		expect( result.enableAnonymousRsvp ).toBe( true );
+	} );
+
+	it( 'should convert falsy values to boolean for enableAnonymousRsvp', () => {
+		mockSelect.mockImplementation( ( store ) => {
+			if ( 'core/editor' === store ) {
+				return {
+					getCurrentPostType: jest.fn( () => 'gatherpress_event' ),
+					getEditedPostAttribute: jest.fn( ( attr ) => {
+						if ( 'meta' === attr ) {
+							return {
+								gatherpress_max_guest_limit: 3,
+								gatherpress_enable_anonymous_rsvp: 0, // Falsy number.
+							};
+						}
+						return null;
+					} ),
+				};
+			}
+			return {};
+		} );
+
+		const result = getEventMeta( mockSelect, null, {} );
+
+		expect( result.enableAnonymousRsvp ).toBe( false );
 	} );
 } );
