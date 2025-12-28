@@ -226,7 +226,7 @@ class Setup {
 		$content = '<h2>' .
 			__( 'Inform your visitors about GatherPress\' use of OpenStreetMap services.', 'gatherpress' ) .
 			'</h2>'
-				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'default' ) . '</strong> '
+				. '<p><strong class="privacy-policy-tutorial">' . __( 'Suggested Text:', 'gatherpress' ) . '</strong> '
 				. __(
 					'When viewing maps on event or venue pages, your IP address and certain technical information (such as browser type and referrer URL) are transmitted to the OpenStreetMap Foundation, which operates the map service. ', // phpcs:ignore Generic.Files.LineLength.TooLong
 					'gatherpress'

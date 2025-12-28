@@ -36,6 +36,7 @@ phpstan.neon.dist
 phpstan.stubs
 phpunit.xml
 phpunit.xml.dist
+phpunit-multisite.xml.dist
 playwright.config.js
 sonar-project.properties
 webpack.config.js
