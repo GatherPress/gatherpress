@@ -278,7 +278,7 @@ class Settings {
 								$option_settings['callback'],
 								Utility::prefix_key( $sub_page ),
 								$section
-							); // phpcs:ignore Generic.Files.LineLength.TooLong
+							);
 						}
 					}
 				}
