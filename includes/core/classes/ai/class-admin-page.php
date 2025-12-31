@@ -117,10 +117,15 @@ class Admin_Page {
 				<div class="notice notice-warning">
 					<p>
 						<strong><?php esc_html_e( 'API Key Required', 'gatherpress' ); ?></strong><br>
-						<?php esc_html_e( 'Please configure your OpenAI API key to use the AI Assistant.', 'gatherpress' ); ?>
+						<?php
+						esc_html_e(
+							'Please configure your OpenAI API key to use the AI Assistant.',
+							'gatherpress'
+						);
+						?>
 					</p>
 					<p>
-						<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_ai' ) ); ?>" class="button button-primary">
+						<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_ai' ) ); // phpcs:ignore Generic.Files.LineLength.TooLong ?>" class="button button-primary">
 							<?php esc_html_e( 'Configure API Key →', 'gatherpress' ); ?>
 						</a>
 					</p>
@@ -136,12 +141,19 @@ class Admin_Page {
 			<div class="gp-ai-container">
 				<div class="gp-ai-intro">
 					<h2><?php esc_html_e( 'Create and Manage Events with AI', 'gatherpress' ); ?></h2>
-					<p><?php esc_html_e( 'Tell me what you want to do in plain English, and I\'ll help you create and manage your GatherPress events.', 'gatherpress' ); ?></p>
+					<p>
+						<?php
+						esc_html_e(
+							'Tell me what you want to do in plain English, and I\'ll help you create and manage your GatherPress events.',
+							'gatherpress'
+						);
+						?>
+					</p>
 					
 					<div class="gp-ai-examples">
 						<p><strong><?php esc_html_e( 'Example prompts:', 'gatherpress' ); ?></strong></p>
 						<ul>
-							<li>"Create a book club event on the 3rd Tuesday of each month for 6 months at Downtown Library, 7pm"</li>
+							<li>"Create a book club event on the 3rd Tuesday of each month for 6 months at Downtown Library, 7pm"</li> <?php // phpcs:ignore Generic.Files.LineLength.TooLong ?>
 							<li>"Change all Book Club events from 7pm to 8pm"</li>
 							<li>"Create a 5-day conference from May 1-5 at the Convention Center"</li>
 							<li>"List all my venues"</li>
@@ -158,7 +170,7 @@ class Admin_Page {
 						<textarea 
 							id="gp-ai-prompt" 
 							class="gp-ai-prompt" 
-							placeholder="<?php esc_attr_e( 'What would you like me to do? (e.g., Create monthly book club events...)', 'gatherpress' ); ?>"
+							placeholder="<?php esc_attr_e( 'What would you like me to do? (e.g., Create monthly book club events...)', 'gatherpress' ); // phpcs:ignore Generic.Files.LineLength.TooLong ?>"
 							rows="3"
 						></textarea>
 						<button id="gp-ai-submit" class="button button-primary button-large">

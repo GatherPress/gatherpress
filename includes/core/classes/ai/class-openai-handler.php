@@ -51,7 +51,8 @@ Rules:
 - For recurring events: Call calculate-dates first, then use those exact dates. Do NOT calculate dates yourself.
 - When user mentions a venue by name, call list-venues to get the venue ID.
 - Always create events as drafts. Event dates must be after %s.
-- If success=true: Display the data (even if empty - say "No X found", don\'t say "error"). Only say "error" if success=false.',
+- If success=true: Display the data (even if empty - say "No X found", '
+					. 'don\'t say "error"). Only say "error" if success=false.',
 			$current_date,
 			$current_date
 		);
@@ -456,7 +457,11 @@ Rules:
 					'Executed ability "%s", result: %s',
 					$ability_name,
 					is_array( $result ) && isset( $result['success'] )
-						? sprintf( 'success=%s, message=%s', $result['success'] ? 'true' : 'false', $result['message'] ?? 'none' )
+						? sprintf(
+							'success=%s, message=%s',
+							$result['success'] ? 'true' : 'false',
+							$result['message'] ?? 'none'
+						)
 						: 'non-array result'
 				)
 			);

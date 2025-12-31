@@ -106,7 +106,8 @@ class AI extends Base {
 			'ai_service' => array(
 				'name'        => __( 'AI Service Configuration', 'gatherpress' ),
 				'description' => __(
-					'Configure your AI service provider and API credentials. This enables AI-powered features in GatherPress.',
+					'Configure your AI service provider and API credentials. '
+					. 'This enables AI-powered features in GatherPress.',
 					'gatherpress'
 				),
 				'options'     => array(
@@ -131,7 +132,9 @@ class AI extends Base {
 							'name' => __( 'OpenAI API Key', 'gatherpress' ),
 						),
 						'description' => __(
-							'Enter your OpenAI API key. This plugin uses the OpenAI API. You need to provide your own API key and will be charged by OpenAI for usage. Typical costs are $0.01-0.10 per prompt.',
+							'Enter your OpenAI API key. This plugin uses the OpenAI API. '
+							. 'You need to provide your own API key and will be charged by OpenAI for usage. '
+							. 'Typical costs are $0.01-0.10 per prompt.',
 							'gatherpress'
 						),
 						'field'       => array(

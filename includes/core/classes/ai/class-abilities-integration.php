@@ -196,7 +196,12 @@ class Abilities_Integration {
 			'gatherpress/list-events',
 			array(
 				'label'               => __( 'List Events', 'gatherpress' ),
-				'description'         => __( 'Retrieve a list of events with their dates, venues, and details. IMPORTANT: When searching for events by name, use the search parameter to find all events (not just upcoming).', 'gatherpress' ),
+				'description'         => __(
+					'Retrieve a list of events with their dates, venues, and details. '
+					. 'IMPORTANT: When searching for events by name, use the search parameter '
+					. 'to find all events (not just upcoming).',
+					'gatherpress'
+				),
 				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_list_events' ),
 				'permission_callback' => static function (): bool {
@@ -207,7 +212,11 @@ class Abilities_Integration {
 					'properties' => array(
 						'max_number' => array(
 							'type'        => 'integer',
-							'description' => __( 'Maximum number of events to return (default: 50, maximum: 100). Use -1 or a large number to get more events.', 'gatherpress' ),
+							'description' => __(
+								'Maximum number of events to return (default: 50, maximum: 100). '
+								. 'Use -1 or a large number to get more events.',
+								'gatherpress'
+							),
 							'default'     => 50,
 						),
 						'search'     => array(
@@ -443,7 +452,16 @@ class Abilities_Integration {
 			'gatherpress/calculate-dates',
 			array(
 				'label'               => __( 'Calculate Recurring Dates', 'gatherpress' ),
-				'description'         => __( 'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. 2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. 3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. 4) "Relative dates" (e.g., "next Tuesday", "tomorrow") - calculates relative dates. 5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.', 'gatherpress' ),
+				'description'         => __(
+					'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. '
+					. 'PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. '
+					. '2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. '
+					. '3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. '
+					. '4) "Relative dates" (e.g., "next Tuesday", "tomorrow") - calculates relative dates. '
+					. '5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. '
+					. 'IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.',
+					'gatherpress'
+				),
 				'category'            => 'event',
 				'input_schema'        => array(
 					'type'       => 'object',
@@ -1272,7 +1290,13 @@ class Abilities_Integration {
 			'gatherpress/update-events-batch',
 			array(
 				'label'               => __( 'Update Multiple Events', 'gatherpress' ),
-				'description'         => __( 'Update multiple events at once based on search criteria. IMPORTANT: When user says "change events from X to Y", this means CHANGE the start time from X to Y. Do NOT search for events currently at X - instead, find all matching events and change their start time to Y. For time ranges "from X to Y", set start time to X and end time to Y.', 'gatherpress' ),
+				'description'         => __(
+					'Update multiple events at once based on search criteria. IMPORTANT: '
+					. 'When user says "change events from X to Y", this means CHANGE the start time from X to Y. '
+					. 'Do NOT search for events currently at X - instead, find all matching events and change their start time to Y. '
+					. 'For time ranges "from X to Y", set start time to X and end time to Y.',
+					'gatherpress'
+				),
 				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_update_events_batch' ),
 				'permission_callback' => static function (): bool {
@@ -1287,7 +1311,12 @@ class Abilities_Integration {
 						),
 						'datetime_start' => array(
 							'type'        => 'string',
-							'description' => __( 'New start datetime in Y-m-d H:i:s format. For "change from X to Y", this should be the NEW start time (Y). For time ranges "from X to Y", this should be X.', 'gatherpress' ),
+							'description' => __(
+								'New start datetime in Y-m-d H:i:s format. '
+								. 'For "change from X to Y", this should be the NEW start time (Y). '
+								. 'For time ranges "from X to Y", this should be X.',
+								'gatherpress'
+							),
 						),
 						'datetime_end'   => array(
 							'type'        => 'string',

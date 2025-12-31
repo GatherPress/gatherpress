@@ -50,7 +50,9 @@ class Date_Calculator {
 
 		$pattern     = sanitize_text_field( $params['pattern'] );
 		$occurrences = intval( $params['occurrences'] );
-		$start_date  = ! empty( $params['start_date'] ) ? sanitize_text_field( $params['start_date'] ) : gmdate( 'Y-m-d' );
+		$start_date = ! empty( $params['start_date'] )
+			? sanitize_text_field( $params['start_date'] )
+			: gmdate( 'Y-m-d' );
 
 		// Validate start_date format.
 		$start_datetime = \DateTime::createFromFormat( 'Y-m-d', $start_date );
@@ -110,7 +112,8 @@ class Date_Calculator {
 		$pattern_low = strtolower( trim( $pattern ) );
 
 		// Handle relative patterns first (next, last, this, tomorrow, yesterday).
-		if ( preg_match( '/^(next|last|this)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+		$relative_weekday_pattern = '/^(next|last|this)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i';
+		if ( preg_match( $relative_weekday_pattern, $pattern_low, $matches ) ) {
 			$relative = strtolower( $matches[1] );
 			$weekday  = strtolower( $matches[2] );
 			$dates    = $this->calculate_relative_weekday_dates( $relative, $weekday, $occurrences, $start_datetime );
@@ -127,7 +130,7 @@ class Date_Calculator {
 		} elseif ( preg_match( '/^(\d+)\s+(day|days)\s+(ago|before)$/i', $pattern_low, $matches ) ) {
 			$days  = intval( $matches[1] );
 			$dates = $this->calculate_past_day_dates( $days, $occurrences, $start_datetime );
-		} elseif ( preg_match( '/^every\s+other\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+		} elseif ( preg_match( '/^every\s+other\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			// Bi-weekly pattern.
 			$weekday = strtolower( $matches[1] );
 			$dates   = $this->calculate_biweekly_dates( $weekday, $occurrences, $start_datetime );
@@ -136,12 +139,12 @@ class Date_Calculator {
 			$interval = intval( $matches[1] );
 			$period   = strtolower( $matches[2] );
 			$dates    = $this->calculate_interval_dates( $interval, $period, $occurrences, $start_datetime );
-		} elseif ( preg_match( '/^(\d+)\s+weeks?\s+from\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+		} elseif ( preg_match( '/^(\d+)\s+weeks?\s+from\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			// X weeks from weekday pattern (2 weeks from Thursday).
 			$weeks   = intval( $matches[1] );
 			$weekday = strtolower( $matches[2] );
 			$dates   = $this->calculate_weeks_from_weekday( $weeks, $weekday, $occurrences, $start_datetime );
-		} elseif ( preg_match( '/^(first|second|third|fourth|last|1st|2nd|3rd|4th|5th)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+		} elseif ( preg_match( '/^(first|second|third|fourth|last|1st|2nd|3rd|4th|5th)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			// Original Nth weekday pattern.
 			$ordinal = strtolower( $matches[1] );
 			$weekday = strtolower( $matches[2] );
@@ -167,22 +170,26 @@ class Date_Calculator {
 			$current = clone $start_datetime;
 
 			for ( $i = 0; $i < $occurrences; $i++ ) {
-				$date = $this->get_nth_weekday_of_month( (int) $current->format( 'Y' ), (int) $current->format( 'm' ), $weekday, $nth );
+				$year  = (int) $current->format( 'Y' );
+				$month = (int) $current->format( 'm' );
+				$date  = $this->get_nth_weekday_of_month( $year, $month, $weekday, $nth );
 
 				// If the calculated date is before start_date, move to next month.
 				if ( $date < $start_datetime->format( 'Y-m-d' ) ) {
 					$current->modify( '+1 month' );
-					$date = $this->get_nth_weekday_of_month( (int) $current->format( 'Y' ), (int) $current->format( 'm' ), $weekday, $nth );
+					$year  = (int) $current->format( 'Y' );
+					$month = (int) $current->format( 'm' );
+					$date  = $this->get_nth_weekday_of_month( $year, $month, $weekday, $nth );
 				}
 
 				$dates[] = $date;
 
 				// Move to the first day of the month after the date we just added.
 				$date_obj = \DateTime::createFromFormat( 'Y-m-d', $date );
-				$current = clone $date_obj;
+				$current  = clone $date_obj;
 				$current->modify( 'first day of next month' );
 			}
-		} elseif ( preg_match( '/^every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
+		} elseif ( preg_match( '/^every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			// Original weekly pattern.
 			$weekday = strtolower( $matches[1] );
 			$current = clone $start_datetime;

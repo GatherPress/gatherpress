@@ -34,7 +34,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertEmpty( $result['data'], 'Failed to assert data is empty.' );
-		$this->assertStringContainsString( 'Found 0 venue', $result['message'], 'Failed to assert message contains count.' );
+		$this->assertStringContainsString( 'Found 0 venue', $result['message'], 'Failed to assert message contains count.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
@@ -106,7 +106,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertIsArray( $result['data']['events'], 'Failed to assert data events is an array.' );
 		$this->assertEmpty( $result['data']['events'], 'Failed to assert data events is empty.' );
-		$this->assertStringContainsString( 'Found 0 event', $result['message'], 'Failed to assert message contains count.' );
+		$this->assertStringContainsString( 'Found 0 event', $result['message'], 'Failed to assert message contains count.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
@@ -164,13 +164,13 @@ class Test_Abilities_Integration extends Base {
 
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertIsInt( $result['venue_id'], 'Failed to assert venue_id is an integer.' );
-		$this->assertStringContainsString( 'Test Venue', $result['message'], 'Failed to assert message contains venue name.' );
+		$this->assertStringContainsString( 'Test Venue', $result['message'], 'Failed to assert message contains venue name.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 
 		// Verify venue was created.
 		$venue_post = get_post( $result['venue_id'] );
 		$this->assertSame( Venue::POST_TYPE, $venue_post->post_type, 'Failed to assert post type is venue.' );
 		$this->assertSame( 'Test Venue', $venue_post->post_title, 'Failed to assert venue title.' );
-		$this->assertStringContainsString( 'gatherpress/venue-template', $venue_post->post_content, 'Failed to assert venue template pattern.' );
+		$this->assertStringContainsString( 'gatherpress/venue-template', $venue_post->post_content, 'Failed to assert venue template pattern.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 
 		// Verify venue information.
 		$venue_info = json_decode( get_post_meta( $result['venue_id'], 'gatherpress_venue_information', true ), true );
@@ -249,7 +249,7 @@ class Test_Abilities_Integration extends Base {
 		$result   = $instance->execute_create_venue( $params );
 
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'address is required', $result['message'], 'Failed to assert error message.' );
+		$this->assertStringContainsString( 'address is required', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
@@ -272,7 +272,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertIsInt( $result['event_id'], 'Failed to assert event_id is an integer.' );
 		$this->assertSame( 'draft', $result['post_status'], 'Failed to assert post status is draft.' );
-		$this->assertStringContainsString( 'Test Event', $result['message'], 'Failed to assert message contains event title.' );
+		$this->assertStringContainsString( 'Test Event', $result['message'], 'Failed to assert message contains event title.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 
 		// Verify event was created.
 		$event_post = get_post( $result['event_id'] );
@@ -367,7 +367,7 @@ class Test_Abilities_Integration extends Base {
 		$result   = $instance->execute_create_event( $params );
 
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'start date/time is required', $result['message'], 'Failed to assert error message.' );
+		$this->assertStringContainsString( 'start date/time is required', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
@@ -386,7 +386,7 @@ class Test_Abilities_Integration extends Base {
 		$result   = $instance->execute_create_event( $params );
 
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Invalid start date/time format', $result['message'], 'Failed to assert error message.' );
+		$this->assertStringContainsString( 'Invalid start date/time format', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
@@ -479,7 +479,7 @@ class Test_Abilities_Integration extends Base {
 		$result   = $instance->execute_update_venue( $params );
 
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Venue ID is required', $result['message'], 'Failed to assert error message.' );
+		$this->assertStringContainsString( 'Venue ID is required', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
@@ -565,7 +565,7 @@ class Test_Abilities_Integration extends Base {
 		$result   = $instance->execute_update_event( $params );
 
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Event ID is required', $result['message'], 'Failed to assert error message.' );
+		$this->assertStringContainsString( 'Event ID is required', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
@@ -612,7 +612,7 @@ class Test_Abilities_Integration extends Base {
 		$result   = $instance->execute_update_event( $params );
 
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Invalid start date/time format', $result['message'], 'Failed to assert error message.' );
+		$this->assertStringContainsString( 'Invalid start date/time format', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
