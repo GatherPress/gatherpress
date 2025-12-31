@@ -278,8 +278,12 @@ class Settings {
 									);
 								};
 							} elseif ( 'password' === $option_settings['field']['type'] ) {
-								// phpcs:ignore Generic.Files.LineLength.TooLong
-								$option_settings['callback'] = function () use ( $sub_page, $section, $option, $option_settings ) {
+								$option_settings['callback'] = function () use (
+									$sub_page,
+									$section,
+									$option,
+									$option_settings
+								) {
 									$sub_page = Utility::prefix_key( $sub_page );
 									$this->text( $sub_page, $section, $option, $option_settings );
 								};
