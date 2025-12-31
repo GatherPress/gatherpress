@@ -89,23 +89,8 @@ class Abilities_Integration {
 			return 'gatherpress/calculate-dates';
 		}
 
-		// Ensure abilities are registered before checking.
-		// Fire hooks if they haven't fired yet (for AJAX requests).
-		$categories_fired = did_action( 'wp_abilities_api_categories_init' );
-		$abilities_fired  = did_action( 'wp_abilities_api_init' );
-
-		if ( ! $categories_fired ) {
-			do_action( 'wp_abilities_api_categories_init' );
-		}
-		if ( ! $abilities_fired ) {
-			do_action( 'wp_abilities_api_init' );
-		}
-
-		// Check if ability exists.
-		$has_ai_ability = wp_has_ability( 'ai/calculate-dates' );
-
 		// If external AI plugin's ability is registered, use it.
-		if ( $has_ai_ability ) {
+		if ( wp_has_ability( 'ai/calculate-dates' ) ) {
 			return 'ai/calculate-dates';
 		}
 
