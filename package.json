@@ -66,6 +66,14 @@
 		"uuid": "^11.1.0",
 		"webpack-remove-empty-scripts": "^1.1.1"
 	},
+	"overrides": {
+		"@wordpress/scripts": {
+			"qs": ">=6.14.1"
+		},
+		"@wp-playground/cli": {
+			"qs": ">=6.14.1"
+		}
+	},
 	"scripts": {
 		"build": "rimraf build && wp-scripts build --experimental-modules",
 		"check-engines": "wp-scripts check-engines",
