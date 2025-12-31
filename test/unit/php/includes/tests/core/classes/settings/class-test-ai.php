@@ -138,7 +138,7 @@ class Test_AI extends Base {
 		$result = $instance->set_sub_page( $sub_pages );
 
 		$this->assertIsArray( $result, 'Failed to assert result is an array.' );
-		
+
 		// If function doesn't exist, result should be exactly the same as input (line 87).
 		if ( ! function_exists( 'wp_register_ability' ) ) {
 			$this->assertSame( $sub_pages, $result, 'Failed to assert unchanged array when function does not exist.' );

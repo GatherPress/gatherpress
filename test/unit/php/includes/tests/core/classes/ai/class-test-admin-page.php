@@ -114,7 +114,7 @@ class Test_Admin_Page extends Base {
 		// If function doesn't exist, should return early (line 55) without adding menu.
 		// We can't easily mock function_exists, but we can verify the method executes.
 		$this->assertTrue( true );
-		
+
 		// If function doesn't exist, submenu should not be modified.
 		if ( ! function_exists( 'wp_register_ability' ) ) {
 			// Verify no AI Assistant menu was added.
@@ -127,6 +127,7 @@ class Test_Admin_Page extends Base {
 					}
 				}
 			}
+			// phpcs:ignore Generic.Files.LineLength.TooLong
 			$this->assertFalse( $found, 'AI Assistant menu should not be added when function does not exist.' );
 		}
 	}
@@ -266,6 +267,8 @@ class Test_Admin_Page extends Base {
 			'version'      => '1.0.0',
 		);
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		file_put_contents( $asset_path, '<?php return ' . var_export( $asset_data, true ) . ';' );
 
 		$result = \PMC\Unit_Test\Utility::invoke_hidden_method( $instance, 'get_asset_data', array( 'ai-assistant' ) );
@@ -276,6 +279,7 @@ class Test_Admin_Page extends Base {
 
 		// Clean up.
 		if ( file_exists( $asset_path ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 			unlink( $asset_path );
 		}
 	}
@@ -287,10 +291,16 @@ class Test_Admin_Page extends Base {
 	 *
 	 * @return void
 	 */
+	// phpcs:ignore Generic.Files.LineLength.TooLong
 	public function test_get_asset_data_when_file_not_exists(): void {
 		$instance = Admin_Page::get_instance();
 
-		$result = \PMC\Unit_Test\Utility::invoke_hidden_method( $instance, 'get_asset_data', array( 'nonexistent-asset' ) );
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$result = \PMC\Unit_Test\Utility::invoke_hidden_method(
+			$instance,
+			'get_asset_data',
+			array( 'nonexistent-asset' )
+		);
 
 		$this->assertIsArray( $result );
 		$this->assertArrayHasKey( 'dependencies', $result );
