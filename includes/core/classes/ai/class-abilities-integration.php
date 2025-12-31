@@ -385,7 +385,7 @@ class Abilities_Integration {
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
-						'title'          => array( // phpcs:ignore Generic.Files.LineLength.TooLong
+						'title'          => array(
 							'type'        => 'string',
 							'description' => __( 'Title of the event', 'gatherpress' ),
 						),
@@ -614,7 +614,8 @@ class Abilities_Integration {
 	 * @param array $params Optional parameters (currently unused).
 	 * @return array Response with venue list or error.
 	 */
-	public function execute_list_venues( array $params = array() ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Generic.Files.LineLength.TooLong
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	public function execute_list_venues( array $params = array() ): array {
 		try {
 			$venues = get_posts(
 				array(
@@ -1133,7 +1134,7 @@ class Abilities_Integration {
 		}
 
 		// Update datetime using Event class if there are changes.
-		if ( ! empty( $datetime_params ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		if ( ! empty( $datetime_params ) ) {
 			$event = new Event( $event_id );
 			$event->save_datetimes( $datetime_params );
 		}
@@ -1569,7 +1570,8 @@ class Abilities_Integration {
 	 * @param array $params Optional parameters (currently unused).
 	 * @return array List of topics with their IDs and names.
 	 */
-	public function execute_list_topics( array $params = array() ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Generic.Files.LineLength.TooLong
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	public function execute_list_topics( array $params = array() ): array {
 		$topics = get_terms(
 			array(
 				'taxonomy'   => Topic::TAXONOMY,
