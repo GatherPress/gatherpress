@@ -177,8 +177,10 @@ class Date_Calculator {
 
 				$dates[] = $date;
 
-				// Move to next month.
-				$current->modify( '+1 month' );
+				// Move to the first day of the month after the date we just added.
+				$date_obj = \DateTime::createFromFormat( 'Y-m-d', $date );
+				$current = clone $date_obj;
+				$current->modify( 'first day of next month' );
 			}
 		} elseif ( preg_match( '/^every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) {
 			// Original weekly pattern.
