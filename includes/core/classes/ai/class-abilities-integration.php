@@ -614,7 +614,7 @@ class Abilities_Integration {
 	 * @param array $params Optional parameters (currently unused).
 	 * @return array Response with venue list or error.
 	 */
-	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Squiz.Commenting.FunctionComment.Missing
 	public function execute_list_venues( array $params = array() ): array {
 		try {
 			$venues = get_posts(
@@ -1570,7 +1570,7 @@ class Abilities_Integration {
 	 * @param array $params Optional parameters (currently unused).
 	 * @return array List of topics with their IDs and names.
 	 */
-	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Squiz.Commenting.FunctionComment.Missing
 	public function execute_list_topics( array $params = array() ): array {
 		$topics = get_terms(
 			array(
