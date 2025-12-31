@@ -105,11 +105,7 @@ class AI extends Base {
 		return array(
 			'ai_service' => array(
 				'name'        => __( 'AI Service Configuration', 'gatherpress' ),
-				'description' => __(
-					'Configure your AI service provider and API credentials. '
-					. 'This enables AI-powered features in GatherPress.',
-					'gatherpress'
-				),
+				'description' => __( 'Configure your AI service provider and API credentials. This enables AI-powered features in GatherPress.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 				'options'     => array(
 					'service_provider' => array(
 						'labels'      => array(
@@ -131,12 +127,7 @@ class AI extends Base {
 						'labels'      => array(
 							'name' => __( 'OpenAI API Key', 'gatherpress' ),
 						),
-						'description' => __(
-							'Enter your OpenAI API key. This plugin uses the OpenAI API. '
-							. 'You need to provide your own API key and will be charged by OpenAI for usage. '
-							. 'Typical costs are $0.01-0.10 per prompt.',
-							'gatherpress'
-						),
+						'description' => __( 'Enter your OpenAI API key. This plugin uses the OpenAI API. You need to provide your own API key and will be charged by OpenAI for usage. Typical costs are $0.01-0.10 per prompt.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 						'field'       => array(
 							'label'   => __( 'OpenAI API Key', 'gatherpress' ),
 							'type'    => 'password',

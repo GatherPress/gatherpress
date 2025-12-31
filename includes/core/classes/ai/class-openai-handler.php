@@ -153,7 +153,7 @@ Rules:
 	 * @param string $ability_name Ability name (currently unused).
 	 * @return array OpenAI-compatible JSON Schema format.
 	 */
-	private function convert_input_schema_to_openai( array $input_schema, string $ability_name ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+	private function convert_input_schema_to_openai( array $input_schema, string $ability_name ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed,Generic.Files.LineLength.TooLong
 		// Empty schema? Return minimal valid schema.
 		if ( empty( $input_schema ) ) {
 			return array(

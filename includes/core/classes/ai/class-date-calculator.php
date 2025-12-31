@@ -50,7 +50,7 @@ class Date_Calculator {
 
 		$pattern     = sanitize_text_field( $params['pattern'] );
 		$occurrences = intval( $params['occurrences'] );
-		$start_date = ! empty( $params['start_date'] )
+		$start_date  = ! empty( $params['start_date'] )
 			? sanitize_text_field( $params['start_date'] )
 			: gmdate( 'Y-m-d' );
 
@@ -112,7 +112,7 @@ class Date_Calculator {
 		$pattern_low = strtolower( trim( $pattern ) );
 
 		// Handle relative patterns first (next, last, this, tomorrow, yesterday).
-		$relative_weekday_pattern = '/^(next|last|this)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i';
+		$relative_weekday_pattern = '/^(next|last|this)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i'; // phpcs:ignore Generic.Files.LineLength.TooLong
 		if ( preg_match( $relative_weekday_pattern, $pattern_low, $matches ) ) {
 			$relative = strtolower( $matches[1] );
 			$weekday  = strtolower( $matches[2] );
@@ -282,7 +282,7 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_relative_weekday_dates( string $relative, string $weekday, int $occurrences, \DateTime $start_datetime ): array {
+	private function calculate_relative_weekday_dates( string $relative, string $weekday, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
 		$dates       = array();
 		$current     = clone $start_datetime;
 		$day_num     = $this->get_weekday_number( $weekday );
@@ -339,7 +339,7 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_relative_day_dates( string $relative, int $occurrences, \DateTime $start_datetime ): array {
+	private function calculate_relative_day_dates( string $relative, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
 		$dates   = array();
 		$current = clone $start_datetime;
 
@@ -370,7 +370,7 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_relative_period_dates( string $relative, string $period, int $occurrences, \DateTime $start_datetime ): array {
+	private function calculate_relative_period_dates( string $relative, string $period, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
 		$dates   = array();
 		$current = clone $start_datetime;
 
@@ -487,7 +487,7 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_interval_dates( int $interval, string $period, int $occurrences, \DateTime $start_datetime ): array {
+	private function calculate_interval_dates( int $interval, string $period, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
 		$dates   = array();
 		$current = clone $start_datetime;
 
@@ -516,7 +516,7 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_weeks_from_weekday( int $weeks, string $weekday, int $occurrences, \DateTime $start_datetime ): array {
+	private function calculate_weeks_from_weekday( int $weeks, string $weekday, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
 		$dates   = array();
 		$current = clone $start_datetime;
 

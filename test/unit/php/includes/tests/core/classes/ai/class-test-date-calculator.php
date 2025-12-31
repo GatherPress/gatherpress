@@ -103,7 +103,7 @@ class Test_Date_Calculator extends Base {
 		$result     = $calculator->calculate_dates( $params );
 
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Pattern is required', $result['message'], 'Failed to assert error message.' );
+		$this->assertStringContainsString( 'Pattern is required', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
 	}
 
 	/**
