@@ -23,6 +23,7 @@ Contributors: mauteri, patricia70, hrmervin, jmarx75, stephenerdelyi, carstenbac
 
 - Event scheduling (date, time, location, description)
 - Attendee registration (with optional anonymous listing)
+- Open RSVP support (non-logged-in users)
 - Attendees can bring guests
 - Email notifications for attendees and non-attendees
 - Online and in-person event support (with mapping)
