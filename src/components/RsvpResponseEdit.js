@@ -153,13 +153,10 @@ const RsvpResponseEdit = ( { defaultStatus, setDefaultStatus } ) => {
 			<FormTokenField
 				key="query-controls-topics-select"
 				label={ __( 'Members', 'gatherpress' ) }
-				value={
-					attendees &&
-					attendees.map( ( item ) => ( {
-						id: item.id,
-						value: item.name,
-					} ) )
-				}
+				value={ attendees?.map( ( item ) => ( {
+					id: item.id,
+					value: item.name,
+				} ) ) }
 				tokenizeOnSpace={ true }
 				onChange={ changeAttendees }
 				suggestions={ Object.keys( userSuggestions ) }

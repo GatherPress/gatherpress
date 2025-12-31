@@ -59,6 +59,57 @@ class Event {
 	const TABLE_FORMAT = '%sgatherpress_events';
 
 	/**
+	 * ISO 8601 datetime format for calendar services.
+	 *
+	 * Format combines date (YYYYMMDD) and time (HHMMSS) with 'T' separator
+	 * and 'Z' suffix indicating UTC timezone. Example: 20240315T143000Z
+	 *
+	 * @since 1.0.0
+	 * @var string $CALENDAR_DATETIME_FORMAT
+	 */
+	const CALENDAR_DATETIME_FORMAT = '%sT%sZ';
+
+	/**
+	 * Non-time PHP DateTime formatting characters
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	const PHP_NON_TIME_FORMAT_CHARS = array(
+		'd',
+		'D',
+		'j',
+		'l',
+		'N',
+		'S',
+		'w',
+		'z',
+		'W',
+		'F',
+		'm',
+		'M',
+		'n',
+		't',
+		'L',
+		'o',
+		'X',
+		'x',
+		'Y',
+		'y',
+		'e',
+		'I',
+		'O',
+		'P',
+		'p',
+		'T',
+		'Z',
+		'c',
+		'r',
+		'U',
+		',',
+	);
+
+	/**
 	 * Event post object.
 	 *
 	 * @since 1.0.0
@@ -99,31 +150,76 @@ class Event {
 	 *
 	 * @since 1.0.0
 	 *
+	 * @param string $type           Display type: 'start', 'end', or 'both'.
+	 * @param string $start_format   PHP display format for start date/time.
+	 * @param string $end_format     PHP display format for end date/time.
+	 * @param string $separator      Separator "word" between start and end dates (if both are being displayed).
+	 * @param string $show_timezone  Show timezone.
+	 *
 	 * @return string A string representing the formatted start and end dates/times of the event, or an
 	 * em dash if data is unavailable.
 	 *
 	 * @throws Exception If date/time formatting fails or settings cannot be retrieved.
 	 */
-	public function get_display_datetime(): string {
+	public function get_display_datetime(
+		string $type = '',
+		string $start_format = '',
+		string $end_format = '',
+		string $separator = '',
+		string $show_timezone = ''
+	): string {
 		$settings    = Settings::get_instance();
-		$date_format = apply_filters( 'gatherpress_date_format', $settings->get_value( 'general', 'formatting', 'date_format' ) );
-		$time_format = apply_filters( 'gatherpress_time_format', $settings->get_value( 'general', 'formatting', 'time_format' ) );
+		$date_format = apply_filters(
+			'gatherpress_date_format',
+			$settings->get_value( 'general', 'formatting', 'date_format' )
+		);
+		$time_format = apply_filters(
+			'gatherpress_time_format',
+			$settings->get_value( 'general', 'formatting', 'time_format' )
+		);
 		$timezone    = $settings->get_value( 'general', 'formatting', 'show_timezone' ) ? ' T' : '';
 
-		if ( $this->is_same_date() ) {
-			$start = $this->get_datetime_start( $date_format . ' ' . $time_format );
-			$end   = $this->get_datetime_end( $time_format . $timezone );
+		$show_start = $type
+			? in_array( $type, array( 'start', 'both' ), true )
+			: true;
+
+		$show_end = $type
+			? in_array( $type, array( 'end', 'both' ), true )
+			: true;
+
+		// Set start date/time.
+		$start_datetime_format = $start_format ? $start_format : "{$date_format} {$time_format}";
+		$start                 = $show_start ? $this->get_datetime_start( $start_datetime_format ) : false;
+
+		// Set end date/time.
+		if ( $show_end ) {
+			$end_time_format     = $end_format ? $end_format : $time_format;
+			$end_datetime_format = $end_format ? $end_format : "{$date_format} {$time_format}";
+
+			$end = $show_start && $this->is_same_date()
+				? $this->get_time_end( $end_time_format )
+				: $this->get_datetime_end( $end_datetime_format );
 		} else {
-			$start = $this->get_datetime_start( $date_format . ', ' . $time_format );
-			$end   = $this->get_datetime_end( $date_format . ', ' . $time_format . $timezone );
+			$end = false;
 		}
 
-		if ( ! empty( $start ) && ! empty( $end ) ) {
-			/* translators: %1$s: start datetime, %2$s: end datetime. */
-			return sprintf( __( '%1$s to %2$s', 'gatherpress' ), $start, $end );
+		// Add separator if there's both start and end date/time.
+		$default_separator = $separator ? $separator : __( 'to', 'gatherpress' );
+		$separator         = $start && $end ? $default_separator : false;
+
+		// Add timezone.
+		if ( $show_timezone ? 'yes' === $show_timezone : $timezone ) {
+			$timezone = $this->get_datetime_start( $timezone );
+		} else {
+			$timezone = false;
 		}
 
-		return '—';
+		$parts = array_filter(
+			array( $start, $separator, $end, $timezone )
+		);
+
+		// Stick the parts back together.
+		return $parts ? implode( ' ', $parts ) : '-';
 	}
 
 	/**
@@ -203,7 +299,8 @@ class Event {
 	 * @since 1.0.0
 	 *
 	 * @param int $started_offset The time offset, in minutes, to adjust the consideration of the event start time.
-	 *                            A positive value delays the event start, while a negative value checks for an earlier start.
+	 *                            A positive value delays the event start,
+	 *                            while a negative value checks for an earlier start.
 	 *                            Default is 0, checking if the event has started at the exact current time.
 	 * @param int $past_offset    The time offset, in minutes, to adjust the consideration of the event end time.
 	 *                            A positive value extends the period of considering the event ongoing,
@@ -235,7 +332,8 @@ class Event {
 	/**
 	 * Get the end date and time of the event.
 	 *
-	 * This method retrieves the end date and time of the event and formats it according to the specified PHP date format.
+	 * This method retrieves the end date and time of the event and formats it
+	 * according to the specified PHP date format.
 	 *
 	 * @since 1.0.0
 	 *
@@ -247,6 +345,25 @@ class Event {
 	 */
 	public function get_datetime_end( string $format = 'D, F j, g:ia T' ): string {
 		return $this->get_formatted_datetime( $format, 'end' );
+	}
+
+	/**
+	 * Get the end time of an event.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $format PHP DateTime format (defaults to g:ia).
+	 *
+	 * @return string The formatting end time of the event.
+	 */
+	public function get_time_end( string $format = '' ): string {
+		return $this->get_datetime_end(
+			str_replace(
+				static::PHP_NON_TIME_FORMAT_CHARS,
+				'',
+				$format ? $format : 'g:i a'
+			)
+		);
 	}
 
 	/**
@@ -286,10 +403,14 @@ class Event {
 
 		if ( ! empty( $date ) ) {
 			$ts   = strtotime( $date );
-			$date = wp_date( $format, $ts, $tz );
+			$date = wp_date(
+				apply_filters( 'gatherpress_datetime_format', $format, $which, $local ),
+				$ts,
+				$tz
+			);
 		}
 
-		return (string) $date;
+		return (string) trim( $date );
 	}
 
 	/**
@@ -330,8 +451,21 @@ class Event {
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
 			$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
-			$data  = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone FROM %i WHERE post_id = %d LIMIT 1', $table, $this->event->ID ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-			$data  = ( ! empty( $data ) ) ? (array) current( $data ) : array();
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$data = (array) $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone
+					FROM %i WHERE post_id = %d LIMIT 1',
+					$table,
+					$this->event->ID
+				)
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$data = ( ! empty( $data ) ) ? (array) current( $data ) : array();
 
 			set_transient( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
 		}
@@ -412,10 +546,14 @@ class Event {
 		}
 
 		if ( is_a( $venue, 'WP_Post' ) ) {
-			$venue_meta                        = json_decode( get_post_meta( $venue->ID, 'gatherpress_venue_information', true ) );
-			$venue_information['full_address'] = $venue_meta->fullAddress ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? ''; // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_meta = json_decode( get_post_meta( $venue->ID, 'gatherpress_venue_information', true ) );
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_information['full_address'] = $venue_meta->fullAddress ?? '';
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+			$venue_information['phone_number'] = $venue_meta->phoneNumber ?? '';
 			$venue_information['website']      = $venue_meta->website ?? '';
+			$venue_information['latitude']     = $venue_meta->latitude ?? '';
+			$venue_information['longitude']    = $venue_meta->longitude ?? '';
 			$venue_information['permalink']    = (string) get_permalink( $venue->ID );
 		}
 
@@ -482,7 +620,13 @@ class Event {
 		$time_start  = $this->get_formatted_datetime( 'His', 'start', false );
 		$date_end    = $this->get_formatted_datetime( 'Ymd', 'end', false );
 		$time_end    = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime    = sprintf( '%sT%sZ/%sT%sZ', $date_start, $time_start, $date_end, $time_end );
+		$datetime    = sprintf(
+			self::CALENDAR_DATETIME_FORMAT . '/' . self::CALENDAR_DATETIME_FORMAT,
+			$date_start,
+			$time_start,
+			$date_end,
+			$time_end
+		);
 		$venue       = $this->get_venue_information();
 		$location    = $venue['name'];
 		$description = $this->get_calendar_description();
@@ -521,7 +665,7 @@ class Event {
 	public function get_yahoo_calendar_link(): string {
 		$date_start     = $this->get_formatted_datetime( 'Ymd', 'start', false );
 		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
+		$datetime_start = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_start, $time_start );
 
 		// Figure out duration of event in hours and minutes: hhmm format.
 		$diff_start  = $this->get_formatted_datetime( self::DATETIME_FORMAT, 'start', false );
@@ -577,7 +721,9 @@ class Event {
 		$settings     = Settings::get_instance();
 		$rewrite_slug = $settings->get_value( 'general', 'urls', 'events' );
 
-		return home_url( '/' . sanitize_title( $rewrite_slug ) . '/' . get_post_field( 'post_name', $this->event->ID ) . '.ics' );
+		return home_url(
+			'/' . sanitize_title( $rewrite_slug ) . '/' . get_post_field( 'post_name', $this->event->ID ) . '.ics'
+		);
 	}
 
 	/**
@@ -615,10 +761,14 @@ class Event {
 		$time_start     = $this->get_formatted_datetime( 'His', 'start', false );
 		$date_end       = $this->get_formatted_datetime( 'Ymd', 'end', false );
 		$time_end       = $this->get_formatted_datetime( 'His', 'end', false );
-		$datetime_start = sprintf( '%sT%sZ', $date_start, $time_start );
-		$datetime_end   = sprintf( '%sT%sZ', $date_end, $time_end );
+		$datetime_start = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_start, $time_start );
+		$datetime_end   = sprintf( self::CALENDAR_DATETIME_FORMAT, $date_end, $time_end );
 		$modified_date  = strtotime( $this->event->post_modified );
-		$datetime_stamp = sprintf( '%sT%sZ', gmdate( 'Ymd', $modified_date ), gmdate( 'His', $modified_date ) );
+		$datetime_stamp = sprintf(
+			self::CALENDAR_DATETIME_FORMAT,
+			gmdate( 'Ymd', $modified_date ),
+			gmdate( 'His', $modified_date )
+		);
 		$venue          = $this->get_venue_information();
 		$location       = $venue['name'] ?? '';
 		$description    = $this->get_calendar_description();
@@ -725,16 +875,19 @@ class Event {
 		$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
 
 		// @todo Add caching to this and create new method to check existence.
-		$exists = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
+		$exists = $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT post_id FROM %i WHERE post_id = %d', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+				'SELECT post_id FROM %i WHERE post_id = %d',
 				$table,
 				$fields['post_id']
 			)
 		);
 
 		if ( ! empty( $exists ) ) {
-			$value = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$value = $wpdb->update(
 				$table,
 				$fields,
 				array( 'post_id' => $fields['post_id'] )
@@ -742,8 +895,10 @@ class Event {
 
 			delete_transient( sprintf( self::DATETIME_CACHE_KEY, $fields['post_id'] ) );
 		} else {
-			$value = $wpdb->insert( $table, $fields ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$value = $wpdb->insert( $table, $fields );
 		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		foreach ( $fields as $key => $field ) {
 			if ( 'post_id' === $key ) {
@@ -794,7 +949,8 @@ class Event {
 				return '';
 			}
 
-			$response = $this->rsvp->get( get_current_user_id() );
+			$user_identifier = Rsvp_Setup::get_instance()->get_user_identifier();
+			$response        = $this->rsvp->get( $user_identifier );
 
 			if (
 				! isset( $response['status'] ) ||

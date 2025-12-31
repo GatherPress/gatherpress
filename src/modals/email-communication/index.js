@@ -13,11 +13,11 @@ import {
 	TextareaControl,
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
+import { useSelect, useDispatch } from '@wordpress/data';
 
 /**
  * Internal dependencies.
  */
-import { Listener } from '../../helpers/broadcasting';
 import { getFromGlobal } from '../../helpers/globals';
 
 /**
@@ -32,19 +32,22 @@ import { getFromGlobal } from '../../helpers/globals';
  * @return {JSX.Element} The JSX element for the Event Communication Modal.
  */
 const EventCommunicationModal = () => {
-	const [ isOpen, setOpen ] = useState( false );
+	const { isOpen, isSaving } = useSelect( ( select ) => ( {
+		isOpen: select( 'gatherpress/email-modal' ).isModalOpen(),
+		isSaving: select( 'gatherpress/email-modal' ).isSaving(),
+	} ), [] );
+	const { closeModal } = useDispatch( 'gatherpress/email-modal' );
 	const [ isAllChecked, setAllChecked ] = useState( false );
 	const [ isAttendingChecked, setAttendingChecked ] = useState( false );
 	const [ isWaitingListChecked, setWaitingListChecked ] = useState( false );
 	const [ isNotAttendingChecked, setNotAttendingChecked ] = useState( false );
-	const [ isCheckBoxDisabled, setCheckBoxDisabled ] = useState( false );
 	const [ buttonDisabled, setButtonDisabled ] = useState( false );
 	const [ message, setMessage ] = useState( '' );
 	const textareaRef = useRef( null );
-	const closeModal = () => setOpen( false );
 	const sendMessage = () => {
 		if (
-			global.confirm( __( 'Confirm you are ready to send?', 'gatherpress' ) )
+			// eslint-disable-next-line no-alert -- Confirmation required before sending mass emails.
+			window.confirm( __( 'Confirm you are ready to send?', 'gatherpress' ) )
 		) {
 			apiFetch( {
 				path: getFromGlobal( 'urls.eventApiPath' ) + '/email',
@@ -73,15 +76,6 @@ const EventCommunicationModal = () => {
 	};
 
 	useEffect( () => {
-		if ( isAllChecked ) {
-			setCheckBoxDisabled( true );
-			setAttendingChecked( false );
-			setWaitingListChecked( false );
-			setNotAttendingChecked( false );
-		} else {
-			setCheckBoxDisabled( false );
-		}
-
 		if (
 			! isAllChecked &&
 			! isAttendingChecked &&
@@ -99,8 +93,6 @@ const EventCommunicationModal = () => {
 		isNotAttendingChecked,
 	] );
 
-	Listener( { setOpen } );
-
 	useEffect( () => {
 		// Focus the TextareaControl when the modal opens
 		if ( isOpen && textareaRef.current ) {
@@ -112,9 +104,10 @@ const EventCommunicationModal = () => {
 		<>
 			{ isOpen && (
 				<Modal
-					title={ __( 'Notify members via email', 'gatherpress' ) }
+					title={ __( 'Send event update via email', 'gatherpress' ) }
 					onRequestClose={ closeModal }
 					shouldCloseOnClickOutside={ false }
+					style={ { maxWidth: '550px' } }
 				>
 					<TextareaControl
 						label={ __( 'Optional message', 'gatherpress' ) }
@@ -125,7 +118,7 @@ const EventCommunicationModal = () => {
 					/>
 					<p className="description">
 						{ __(
-							'Select the recipients for your message by checking the relevant boxes.',
+							'Select the recipients for your message by checking the relevant boxes. "All Members" includes site users only. RSVP status options include both site users and non-user RSVPs.',
 							'gatherpress',
 						) }
 					</p>
@@ -150,7 +143,6 @@ const EventCommunicationModal = () => {
 								) }
 								checked={ isAttendingChecked }
 								onChange={ setAttendingChecked }
-								disabled={ isCheckBoxDisabled }
 							/>
 						</FlexItem>
 						<FlexItem>
@@ -162,7 +154,6 @@ const EventCommunicationModal = () => {
 								) }
 								checked={ isWaitingListChecked }
 								onChange={ setWaitingListChecked }
-								disabled={ isCheckBoxDisabled }
 							/>
 						</FlexItem>
 						<FlexItem>
@@ -174,7 +165,6 @@ const EventCommunicationModal = () => {
 								) }
 								checked={ isNotAttendingChecked }
 								onChange={ setNotAttendingChecked }
-								disabled={ isCheckBoxDisabled }
 							/>
 						</FlexItem>
 					</Flex>
@@ -182,7 +172,7 @@ const EventCommunicationModal = () => {
 					<Button
 						variant="primary"
 						onClick={ sendMessage }
-						disabled={ buttonDisabled }
+						disabled={ buttonDisabled || isSaving }
 					>
 						{ _x(
 							'Send Email',
@@ -197,7 +187,7 @@ const EventCommunicationModal = () => {
 };
 
 domReady( () => {
-	const modalWrapper = global.document.getElementById(
+	const modalWrapper = document.getElementById(
 		'gatherpress-event-communication-modal',
 	);
 	if ( modalWrapper ) {

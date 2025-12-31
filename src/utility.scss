@@ -16,3 +16,18 @@
 	cursor: not-allowed;
 	text-decoration: none;
 }
+
+.gatherpress--is-loading {
+	animation: gatherpress-pulse 1.5s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes gatherpress-pulse {
+	0%, 100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.4;
+	}
+}

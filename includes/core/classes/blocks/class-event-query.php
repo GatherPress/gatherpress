@@ -93,8 +93,15 @@ class Event_Query {
 	 * @return string|null The pre-rendered content. Default null.
 	 */
 	public function pre_render_block( ?string $pre_render, array $parsed_block ): ?string {
-		if ( isset( $parsed_block['attrs']['namespace'] ) && self::BLOCK_NAME === $parsed_block['attrs']['namespace'] ) {
-			if ( isset( $parsed_block['attrs']['query']['inherit'] ) && true === $parsed_block['attrs']['query']['inherit'] ) {
+		// Check if this is our event query block by verifying the namespace attribute.
+		if (
+			isset( $parsed_block['attrs']['namespace'] ) &&
+			self::BLOCK_NAME === $parsed_block['attrs']['namespace']
+		) {
+			if (
+				isset( $parsed_block['attrs']['query']['inherit'] ) &&
+				true === $parsed_block['attrs']['query']['inherit']
+			) {
 				global $wp_query;
 
 				$query_args = array_merge(
@@ -126,7 +133,8 @@ class Event_Query {
 					true,
 				);
 				// "Hijack the global query. It's a hack, but it works." Ryan Welcher.
-				$wp_query = new WP_Query( $filtered_query_args ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+				$wp_query = new WP_Query( $filtered_query_args );
 			} else {
 				add_filter(
 					'query_loop_block_query_vars',
@@ -189,7 +197,8 @@ class Event_Query {
 		// Exclude Posts.
 		$exclude_ids = $this->get_exclude_ids( $block_query );
 		if ( ! empty( $exclude_ids ) ) {
-			$query_args['post__not_in'] = $exclude_ids; // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			$query_args['post__not_in'] = $exclude_ids;
 		}
 
 		if ( isset( $block_query['include_unfinished'] ) ) {
@@ -240,14 +249,15 @@ class Event_Query {
 		// Exclusion Related.
 		$exclude_current = $request->get_param( 'exclude_current' );
 		if ( $exclude_current ) {
-			$attributes                  = array(
+			$attributes = array(
 				'exclude_current' => $exclude_current,
 			);
-			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in
+			$custom_args['post__not_in'] = $this->get_exclude_ids( $attributes );
 		}
 
 		$include_unfinished = $request->get_param( 'include_unfinished' );
-		if ( $include_unfinished ) {
+		if ( null !== $include_unfinished ) {
 			$custom_args['include_unfinished'] = $include_unfinished;
 		}
 
@@ -262,9 +272,15 @@ class Event_Query {
 		);
 
 		// Merge all queries.
+		// Use array_filter with callback to preserve 0 values while filtering out null/empty.
 		return array_merge(
 			$args,
-			array_filter( $filtered_query_args )
+			array_filter(
+				$filtered_query_args,
+				static function ( $value ): bool {
+					return null !== $value && '' !== $value;
+				}
+			)
 		);
 	}
 
@@ -281,8 +297,29 @@ class Event_Query {
 	 * @return array JSON Schema-formatted collection parameters.
 	 */
 	public function rest_collection_params( array $query_params ): array {
+		// Add GatherPress-specific orderby options.
 		$query_params['orderby']['enum'][] = 'rand';
 		$query_params['orderby']['enum'][] = 'datetime';
+
+		// Add custom GatherPress query parameters.
+		$query_params['gatherpress_event_query'] = array(
+			'description' => __( 'Type of events to query: upcoming or past', 'gatherpress' ),
+			'type'        => 'string',
+			'enum'        => array( 'upcoming', 'past' ),
+			'default'     => 'upcoming',
+		);
+
+		$query_params['include_unfinished'] = array(
+			'description' => __( 'Whether to include events that have started but not finished', 'gatherpress' ),
+			'type'        => 'integer',
+			'enum'        => array( 0, 1 ),
+		);
+
+		$query_params['exclude_current'] = array(
+			'description' => __( 'Post ID to exclude from results', 'gatherpress' ),
+			'type'        => 'integer',
+		);
+
 		return $query_params;
 	}
 }

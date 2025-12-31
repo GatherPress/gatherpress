@@ -16,8 +16,7 @@ import {
 	RichText,
 } from '@wordpress/block-editor';
 import {
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalBoxControl as BoxControl,
+	BoxControl,
 	PanelBody,
 	ToolbarButton,
 	RangeControl,
@@ -32,6 +31,11 @@ import {
 import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import { dispatch, select, useSelect } from '@wordpress/data';
+
+/**
+ * Internal dependencies.
+ */
+import { useIsBlockOrDescendantSelected } from './helpers';
 
 /**
  * Edit component for the GatherPress Dropdown block.
@@ -79,6 +83,16 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		[ clientId ],
 	);
 
+	// Track if dropdown or its children are selected for auto-close behavior.
+	const isDropdownOrChildSelected = useIsBlockOrDescendantSelected( clientId );
+
+	// Auto-close dropdown when clicking outside the dropdown tree.
+	useEffect( () => {
+		if ( ! isDropdownOrChildSelected && isExpanded ) {
+			setIsExpanded( false );
+		}
+	}, [ isDropdownOrChildSelected, isExpanded ] );
+
 	// Generate a persistent unique ID for the dropdown if not already set.
 	useEffect( () => {
 		if ( ! dropdownId ) {
@@ -108,52 +122,58 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			return;
 		}
 
-		// Validate innerBlocks and selectedIndex.
-		if (
-			Array.isArray( innerBlocks ) &&
-			0 <= selectedIndex &&
-			selectedIndex < innerBlocks.length
-		) {
-			const selectedBlock = innerBlocks[ selectedIndex ];
-			const selectedBlockText = selectedBlock?.attributes?.text || '';
-
-			// Parse and extract plain text to remove any markup.
-			const plainTextLabel = new DOMParser()
-				.parseFromString( selectedBlockText, 'text/html' )
-				.body.textContent.trim();
-
-			// Update the label if it differs from the current one.
-			if ( plainTextLabel !== label ) {
-				setAttributes( { label: plainTextLabel } );
-			}
+		// Validate innerBlocks exists and has items
+		if ( ! Array.isArray( innerBlocks ) || ! innerBlocks.length ) {
+			return;
 		}
-	}, [
-		actAsSelect,
-		selectedIndex,
-		clientId,
-		innerBlocks,
-		label,
-		setAttributes,
-	] );
+
+		// Validate selectedIndex is within bounds
+		if ( 0 > selectedIndex || selectedIndex >= innerBlocks.length ) {
+			return;
+		}
+
+		const selectedBlock = innerBlocks[ selectedIndex ];
+		const selectedBlockText = selectedBlock?.attributes?.text || '';
+
+		// Parse and extract plain text to remove any markup.
+		const plainTextLabel = new DOMParser()
+			.parseFromString( selectedBlockText, 'text/html' )
+			.body.textContent.trim();
+
+		// Update the label if it differs from the current one.
+		if ( plainTextLabel && plainTextLabel !== label ) {
+			setAttributes( { label: plainTextLabel } );
+		}
+	}, [ actAsSelect, selectedIndex, innerBlocks, label, setAttributes ] );
 
 	useEffect( () => {
-		if ( actAsSelect ) {
-			const selectedBlockText =
-				innerBlocks[ selectedIndex ]?.attributes?.text || '';
-
-			// Parse the selected block's text to remove any HTML markup.
-			const plainTextLabel = new DOMParser()
-				.parseFromString( selectedBlockText, 'text/html' )
-				.body.textContent.trim();
-
-			// Update the label attribute.
-			setAttributes( {
-				label:
-					plainTextLabel ||
-					__( 'Item', 'gatherpress' ) + ` ${ selectedIndex + 1 }`,
-			} );
+		// Only run if actAsSelect is enabled and there are inner blocks
+		if ( ! actAsSelect || ! innerBlocks.length ) {
+			return;
 		}
-	}, [ innerBlocks, actAsSelect, selectedIndex, setAttributes ] );
+
+		// Check if selectedIndex is valid
+		if ( 0 > selectedIndex || selectedIndex >= innerBlocks.length ) {
+			return;
+		}
+
+		const selectedBlockText =
+			innerBlocks[ selectedIndex ]?.attributes?.text || '';
+
+		// Parse the selected block's text to remove any HTML markup.
+		const plainTextLabel = new DOMParser()
+			.parseFromString( selectedBlockText, 'text/html' )
+			.body.textContent.trim();
+
+		const newLabel =
+			plainTextLabel ||
+			__( 'Item', 'gatherpress' ) + ` ${ selectedIndex + 1 }`;
+
+		// Only update if the label has changed
+		if ( newLabel !== label ) {
+			setAttributes( { label: newLabel } );
+		}
+	}, [ innerBlocks, actAsSelect, selectedIndex, label, setAttributes ] );
 
 	const dropdownStyles = `
 		#${ dropdownId } .wp-block-gatherpress-dropdown-item {
@@ -430,7 +450,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			<style>{ dropdownStyles }</style>
 			<div
 				id={ dropdownId }
-				role="region"
 				className="wp-block-gatherpress-dropdown__menu"
 				style={ {
 					display: isExpanded ? 'block' : 'none',

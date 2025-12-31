@@ -89,7 +89,9 @@ class General extends Base {
 			'general'    => array(
 				'name'        => __( 'General Settings', 'gatherpress' ),
 				'description' => __(
+					// phpcs:disable Generic.Files.LineLength.TooLong
 					'GatherPress allows you to set event dates to reflect either the post date or event date. Default: event date.',
+					// phpcs:enable Generic.Files.LineLength.TooLong
 					'gatherpress'
 				),
 				'options'     => array(
@@ -126,7 +128,12 @@ class General extends Base {
 						'labels'      => array(
 							'name' => __( 'Maximum Attendance Limit', 'gatherpress' ),
 						),
-						'description' => __( 'Set this as your default, but you can still override it for each event as you like. This is the total number of people allowed at an event. If you set it to 0, there will not be any limit.', 'gatherpress' ),
+						'description' => __(
+							// phpcs:disable Generic.Files.LineLength.TooLong
+							'Set this as your default, but you can still override it for each event as you like. This is the total number of people allowed at an event. If you set it to 0, there will not be any limit.',
+							// phpcs:enable Generic.Files.LineLength.TooLong
+							'gatherpress'
+						),
 						'field'       => array(
 							'label'   => __( 'The default maximum limit of attendees to an event.', 'gatherpress' ),
 							'type'    => 'number',
@@ -140,9 +147,15 @@ class General extends Base {
 						'labels'      => array(
 							'name' => __( 'Maximum Number of Guests', 'gatherpress' ),
 						),
-						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
+						'description' => __(
+							'Set this as your default, but you can still override it for each event as you like.',
+							'gatherpress'
+						),
 						'field'       => array(
-							'label'   => __( 'The default maximum number of people each attendee can bring to an event.', 'gatherpress' ),
+							'label'   => __(
+								'The default maximum number of people each attendee can bring to an event.',
+								'gatherpress'
+							),
 							'type'    => 'number',
 							'size'    => 'small',
 							'options' => array(
@@ -156,7 +169,10 @@ class General extends Base {
 						'labels'      => array(
 							'name' => __( 'Anonymous RSVP', 'gatherpress' ),
 						),
-						'description' => __( 'Set this as your default, but you can still override it for each event as you like.', 'gatherpress' ),
+						'description' => __(
+							'Set this as your default, but you can still override it for each event as you like.',
+							'gatherpress'
+						),
 						'field'       => array(
 							'label'   => __( 'Enable Anonymous RSVP for New Events.', 'gatherpress' ),
 							'type'    => 'checkbox',
@@ -169,7 +185,12 @@ class General extends Base {
 			),
 			'formatting' => array(
 				'name'        => __( 'Date & Time Formatting', 'gatherpress' ),
-				'description' => __( 'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/">Documentation on date and time formatting</a>.', 'gatherpress' ),
+				'description' => __(
+					// phpcs:disable Generic.Files.LineLength.TooLong
+					'For more information read the <a href="https://wordpress.org/documentation/article/customize-date-and-time-format/"> Documentation on date and time formatting</a>.',
+					// phpcs:enable Generic.Files.LineLength.TooLong
+					'gatherpress'
+				),
 				'options'     => array(
 					'date_format'   => array(
 						'labels' => array(
@@ -213,7 +234,10 @@ class General extends Base {
 			),
 			'pages'      => array(
 				'name'        => __( 'Event Archive Pages', 'gatherpress' ),
-				'description' => __( 'GatherPress allows you to set event archives to pages you have created.', 'gatherpress' ),
+				'description' => __(
+					'GatherPress allows you to set event archives to pages you have created.',
+					'gatherpress'
+				),
 				'options'     => array(
 					'upcoming_events' => array(
 						'labels' => array(

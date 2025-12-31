@@ -124,7 +124,12 @@ class Rsvp_Template {
 		$post_id = (int) $instance->context['postId'];
 		$event   = new Event( $post_id );
 
-		if ( ! $event->rsvp ) {
+		// Only process if we have a valid event post.
+		// Only check publish status if not in preview mode.
+		if (
+			Event::POST_TYPE !== get_post_type( $post_id ) ||
+			( ! is_preview() && 'publish' !== get_post_status( $post_id ) )
+		) {
 			return $block_content;
 		}
 
@@ -146,9 +151,13 @@ class Rsvp_Template {
 		}
 
 		// Used for generating a parsed block for calls to API on the front end.
-		$blocks                 = wp_json_encode( $block, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+		$blocks                 = wp_json_encode(
+			$block,
+			JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+		);
 		$rsvp_response_template = sprintf(
-			'<script type="application/json" data-wp-interactive="gatherpress" data-wp-watch="callbacks.renderBlocks">%s</script>',
+			'<script type="application/json" data-wp-interactive="gatherpress"'
+				. ' data-wp-watch="callbacks.renderBlocks">%s</script>',
 			$blocks
 		);
 
@@ -201,13 +210,14 @@ class Rsvp_Template {
 		add_filter( $render_block_hook, array( $this, 'generate_rsvp_template_block' ), 10, 3 );
 		$class_name = '';
 
-		if ( ! empty( $args ) && ! empty( $args['limit_enabled'] ) ) {
-			if ( isset( $args['limit'], $args['index'] ) ) {
-				// Check if the RSVP limit has been reached.
-				if ( $args['index'] >= $args['limit'] ) {
-					$class_name = 'gatherpress--is-hidden';
-				}
-			}
+		// Check if the RSVP limit has been reached.
+		if (
+			! empty( $args ) &&
+			! empty( $args['limit_enabled'] ) &&
+			isset( $args['limit'], $args['index'] ) &&
+			$args['index'] >= $args['limit']
+		) {
+			$class_name = 'gatherpress--is-hidden';
 		}
 
 		// Wrap the rendered block content in a container div with a unique data ID for the RSVP response.
@@ -241,17 +251,20 @@ class Rsvp_Template {
 				$block['attrs']['isLink'] = 0;
 
 				// Render the block with context for commentId.
-				$block_html = ( new WP_Block( $block, array( 'commentId' => $response_id ) ) )->render( array( 'dynamic' => true ) );
+				$block_html = ( new WP_Block( $block, array( 'commentId' => $response_id ) ) )
+					->render( array( 'dynamic' => true ) );
 
 				// Process HTML to update text.
 				$tag = new WP_HTML_Tag_Processor( $block_html );
 				$tag->next_tag();
 				$tag->next_token();
 
-				// @todo PHPStan flags this line. The method is available in WordPress 6.7. Revisit and consider removing this ignore in the future.
-				// @phpstan-ignore-next-line
 				$tag->set_modifiable_text(
-					esc_html_x( 'Anonymous', 'Label for users who wish to remain anonymous in RSVP responses.', 'gatherpress' )
+					esc_html_x(
+						'Anonymous',
+						'Label for users who wish to remain anonymous in RSVP responses.',
+						'gatherpress'
+					)
 				);
 				$block_html = $tag->get_updated_html();
 

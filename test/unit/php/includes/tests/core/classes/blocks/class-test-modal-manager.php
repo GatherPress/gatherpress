@@ -133,6 +133,78 @@ class Test_Modal_Manager extends Base {
 	}
 
 	/**
+	 * Test modal open behavior with button element having modal class directly.
+	 *
+	 * @since  1.0.0
+	 * @covers ::attach_modal_open_behavior
+	 *
+	 * @return void
+	 */
+	public function test_open_behavior_with_direct_button_class(): void {
+		$instance = Modal_Manager::get_instance();
+
+		$input_html  = '<button class="gatherpress-modal--trigger-open">Open Modal</button>';
+		$output_html = $instance->attach_modal_open_behavior( $input_html );
+
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$output_html,
+			'Output should contain interactive attribute'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on--click="actions.openModal"',
+			$output_html,
+			'Output should contain click handler'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on--keydown="actions.openModalOnEnter"',
+			$output_html,
+			'Output should contain keydown handler for buttons'
+		);
+		$this->assertStringContainsString(
+			'role="button"',
+			$output_html,
+			'Output should contain button role'
+		);
+	}
+
+	/**
+	 * Test modal open behavior with anchor element having modal class directly.
+	 *
+	 * @since  1.0.0
+	 * @covers ::attach_modal_open_behavior
+	 *
+	 * @return void
+	 */
+	public function test_open_behavior_with_direct_anchor_class(): void {
+		$instance = Modal_Manager::get_instance();
+
+		$input_html  = '<a href="#" class="gatherpress-modal--trigger-open">Open Modal</a>';
+		$output_html = $instance->attach_modal_open_behavior( $input_html );
+
+		$this->assertStringContainsString(
+			'data-wp-interactive="gatherpress"',
+			$output_html,
+			'Output should contain interactive attribute'
+		);
+		$this->assertStringContainsString(
+			'data-wp-on--click="actions.openModal"',
+			$output_html,
+			'Output should contain click handler'
+		);
+		$this->assertStringContainsString(
+			'role="button"',
+			$output_html,
+			'Output should contain button role for links'
+		);
+		$this->assertStringNotContainsString(
+			'data-wp-on--keydown',
+			$output_html,
+			'Output should not contain keydown handler for links'
+		);
+	}
+
+	/**
 	 * Test modal open behavior is not applied to elements without open modal class.
 	 *
 	 * @since  1.0.0
@@ -201,7 +273,8 @@ class Test_Modal_Manager extends Base {
 	public function test_open_behavior_with_mixed_classes(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="custom-class gatherpress-modal--trigger-open another-class"><button>Button</button></div>';
+		$input_html  = '<div class="custom-class gatherpress-modal--trigger-open another-class">'
+			. '<button>Button</button></div>';
 		$output_html = $instance->attach_modal_open_behavior( $input_html );
 
 		$this->assertStringContainsString(
@@ -232,7 +305,8 @@ class Test_Modal_Manager extends Base {
 	public function test_close_behavior_with_button(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="gatherpress-modal--trigger-close" data-close-modal="true"><button type="button">Close Modal</button></div>';
+		$input_html  = '<div class="gatherpress-modal--trigger-close" data-close-modal="true">'
+			. '<button type="button">Close Modal</button></div>';
 		$output_html = $instance->attach_modal_close_behavior( $input_html );
 
 		$this->assertStringContainsString(
@@ -273,7 +347,8 @@ class Test_Modal_Manager extends Base {
 	public function test_close_behavior_with_link(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="gatherpress-modal--trigger-close" data-close-modal="true"><a href="#">Close Modal</a></div>';
+		$input_html  = '<div class="gatherpress-modal--trigger-close" data-close-modal="true">'
+			. '<a href="#">Close Modal</a></div>';
 		$output_html = $instance->attach_modal_close_behavior( $input_html );
 
 		$this->assertStringContainsString(
@@ -337,9 +412,11 @@ class Test_Modal_Manager extends Base {
 
 		$input_html  = '
 			<div>
-				<div class="gatherpress-modal--trigger-close" data-close-modal="true"><button type="button">Close First Modal</button></div>
+				<div class="gatherpress-modal--trigger-close" data-close-modal="true">'
+				. '<button type="button">Close First Modal</button></div>
 				<p>Regular content</p>
-				<div class="gatherpress-modal--trigger-close" data-close-modal="true"><a href="#">Close Second Modal</a></div>
+				<div class="gatherpress-modal--trigger-close" data-close-modal="true">'
+				. '<a href="#">Close Second Modal</a></div>
 			</div>
 		';
 		$output_html = $instance->attach_modal_close_behavior( $input_html );
@@ -372,7 +449,8 @@ class Test_Modal_Manager extends Base {
 	public function test_close_behavior_with_mixed_classes(): void {
 		$instance = Modal_Manager::get_instance();
 
-		$input_html  = '<div class="custom-class gatherpress-modal--trigger-close another-class" data-close-modal="true"><button type="button">Close Modal</button></div>';
+		$input_html  = '<div class="custom-class gatherpress-modal--trigger-close another-class" '
+			. 'data-close-modal="true"><button type="button">Close Modal</button></div>';
 		$output_html = $instance->attach_modal_close_behavior( $input_html );
 
 		$this->assertStringContainsString(

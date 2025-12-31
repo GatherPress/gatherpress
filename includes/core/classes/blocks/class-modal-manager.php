@@ -16,6 +16,7 @@ namespace GatherPress\Core\Blocks;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\Traits\Singleton;
+use GatherPress\Core\Utility;
 use WP_HTML_Tag_Processor;
 
 /**
@@ -91,21 +92,33 @@ class Modal_Manager {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && str_contains( $class_attr, 'gatherpress-modal--trigger-open' ) ) {
-				if (
-					// @phpstan-ignore-next-line
-					$tag->next_tag() &&
-					in_array( $tag->get_tag(), array( 'A' ), true )
-				) {
-					$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
-				} else {
-					$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
-					$tag->set_attribute( 'tabindex', '0' );
-					$tag->set_attribute( 'role', 'button' );
+			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-open' ) ) {
+				// Check if current element is an anchor or button.
+				$is_actionable_element = in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
+
+				if ( ! $is_actionable_element ) {
+					// If not, check if the next element is an anchor or button.
+					// @phpstan-ignore-next-line.
+					$is_actionable_element = $tag->next_tag()
+					&& in_array( $tag->get_tag(), array( 'A', 'BUTTON' ), true );
 				}
 
-				$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
-				$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
+				$target_found = $is_actionable_element;
+
+				// Apply modal attributes if target was found.
+				if ( $target_found ) {
+					// Links only get role="button", others get full keyboard handling.
+					if ( 'A' === $tag->get_tag() ) {
+						$tag->set_attribute( 'role', 'button' ); // For links acting as buttons.
+					} else {
+						$tag->set_attribute( 'data-wp-on--keydown', 'actions.openModalOnEnter' );
+						$tag->set_attribute( 'tabindex', '0' );
+						$tag->set_attribute( 'role', 'button' );
+					}
+
+					$tag->set_attribute( 'data-wp-interactive', 'gatherpress' );
+					$tag->set_attribute( 'data-wp-on--click', 'actions.openModal' );
+				}
 			}
 		}
 
@@ -138,7 +151,7 @@ class Modal_Manager {
 		while ( $tag->next_tag() ) {
 			$class_attr = $tag->get_attribute( 'class' );
 
-			if ( $class_attr && str_contains( $class_attr, 'gatherpress-modal--trigger-close' ) ) {
+			if ( Utility::has_css_class( $class_attr, 'gatherpress-modal--trigger-close' ) ) {
 				if (
 					// @phpstan-ignore-next-line
 					$tag->next_tag() &&

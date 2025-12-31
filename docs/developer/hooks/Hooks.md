@@ -1,4 +1,8 @@
 
+## class-assets.php
+
+- [`gatherpress_asset_critical`](gatherpress_asset_critical) Filters whether an asset file is considered critical.
+
 ## class-autoloader.php
 
 - [`gatherpress_autoloader`](gatherpress_autoloader) Filters the registered autoloaders for GatherPress.
@@ -10,6 +14,7 @@
 ## class-event.php
 
 - [`gatherpress_date_format`](gatherpress_date_format)
+- [`gatherpress_datetime_format`](gatherpress_datetime_format)
 - [`gatherpress_force_online_event_link`](gatherpress_force_online_event_link) Filters whether to force the display of the online event link.
 - [`gatherpress_time_format`](gatherpress_time_format)
 - [`gatherpress_timezone`](gatherpress_timezone)
@@ -34,6 +39,19 @@
 ## class-settings.php
 
 - [`gatherpress_sub_pages`](gatherpress_sub_pages) Filters the list of GatherPress sub pages.
+
+## class-setup.php
+
+- [`gatherpress_is_alpha_active`](gatherpress_is_alpha_active) Filters whether GatherPress Alpha is considered active.
+
+## class-user.php
+
+- [`gatherpress_event_updates_default_opt_in`](gatherpress_event_updates_default_opt_in) Filters the default state of the event updates opt-in.
+
+## class-utility.php
+
+- [`gatherpress_pre_get_http_input`](gatherpress_pre_get_http_input) Short-circuit filter for HTTP input retrieval during testing.
+- [`gatherpress_pre_get_wp_referer`](gatherpress_pre_get_wp_referer) Short-circuit filter for wp_get_referer() during testing.
 
 ## index.php
 

@@ -63,7 +63,17 @@ jest.mock( '@wordpress/element', () => ( {
 /**
  * Internal dependencies.
  */
-import { generateBlockGuardStateKey } from '../../../../../src/supports/block-guard';
+import {
+	generateBlockGuardStateKey,
+	getEditorDocument,
+	applyGuardToContainer,
+	cleanupGuardFromContainer,
+	applyListViewGuard,
+	addDragListeners,
+	removeDragListeners,
+	createDropHandler,
+	applyListViewGuardForBlock,
+} from '../../../../../src/supports/block-guard';
 
 /**
  * Mock DOM setup for editor document detection.
@@ -418,5 +428,524 @@ describe( 'Block Guard Integration', () => {
 
 	it( 'cleans up properly on component unmount', () => {
 		// Test that overlays are removed and listeners are cleaned up.
+	} );
+} );
+
+/**
+ * Tests for getEditorDocument function.
+ */
+describe( 'getEditorDocument', () => {
+	beforeEach( () => {
+		jest.clearAllMocks();
+	} );
+
+	afterEach( () => {
+		// Clean up global document.
+		delete global.document;
+	} );
+
+	it( 'returns iframe contentDocument in FSE context', () => {
+		const mockContentDocument = {
+			getElementById: jest.fn(),
+		};
+		const mockIframe = { contentDocument: mockContentDocument };
+
+		document.querySelector = jest.fn( () => mockIframe );
+
+		const result = getEditorDocument();
+		expect( result ).toBe( mockContentDocument );
+		expect( document.querySelector ).toHaveBeenCalledWith(
+			'iframe[name="editor-canvas"]',
+		);
+	} );
+
+	it( 'returns main document when iframe is not found', () => {
+		global.document = {
+			querySelector: jest.fn( () => null ),
+		};
+
+		const result = getEditorDocument();
+		expect( result ).toBe( global.document );
+	} );
+
+	it( 'returns main document when iframe has no contentDocument', () => {
+		const mockIframe = { contentDocument: null };
+
+		global.document = {
+			querySelector: jest.fn( () => mockIframe ),
+		};
+
+		const result = getEditorDocument();
+		expect( result ).toBe( global.document );
+	} );
+} );
+
+/**
+ * Tests for applyGuardToContainer function.
+ */
+describe( 'applyGuardToContainer', () => {
+	let mockContainer;
+	let mockBlockAppender;
+
+	beforeEach( () => {
+		mockBlockAppender = {
+			style: {},
+		};
+
+		mockContainer = {
+			style: {},
+			dataset: {},
+			querySelectorAll: jest.fn( () => [] ),
+			querySelector: jest.fn( ( selector ) => {
+				if ( '.block-list-appender' === selector ) {
+					return mockBlockAppender;
+				}
+				return null;
+			} ),
+		};
+	} );
+
+	it( 'returns early if container is null', () => {
+		applyGuardToContainer( null, true );
+		// No error should be thrown.
+		expect( true ).toBe( true );
+	} );
+
+	it( 'applies guard styles when enabled', () => {
+		applyGuardToContainer( mockContainer, true );
+
+		expect( mockContainer.inert ).toBe( true );
+		expect( mockContainer.style.opacity ).toBe( '0.95' );
+		expect( mockContainer.style.cursor ).toBe( 'not-allowed' );
+		expect( mockContainer.dataset.gatherPressGuarded ).toBe( 'true' );
+	} );
+
+	it( 'hides block appender when enabled', () => {
+		applyGuardToContainer( mockContainer, true );
+
+		expect( mockBlockAppender.style.display ).toBe( 'none' );
+	} );
+
+	it( 'removes guard styles when disabled', () => {
+		// First apply guard.
+		mockContainer.inert = true;
+		mockContainer.style.opacity = '0.95';
+		mockContainer.style.cursor = 'not-allowed';
+		mockContainer.dataset.gatherPressGuarded = 'true';
+
+		applyGuardToContainer( mockContainer, false );
+
+		expect( mockContainer.inert ).toBe( false );
+		expect( mockContainer.style.opacity ).toBe( '' );
+		expect( mockContainer.style.cursor ).toBe( '' );
+		expect( mockContainer.dataset.gatherPressGuarded ).toBeUndefined();
+	} );
+
+	it( 'shows block appender when disabled', () => {
+		mockBlockAppender.style.display = 'none';
+
+		applyGuardToContainer( mockContainer, false );
+
+		expect( mockBlockAppender.style.display ).toBe( '' );
+	} );
+} );
+
+/**
+ * Tests for cleanupGuardFromContainer function.
+ */
+describe( 'cleanupGuardFromContainer', () => {
+	let mockBlockAppender;
+
+	beforeEach( () => {
+		mockBlockAppender = {
+			style: {},
+		};
+	} );
+
+	it( 'returns early if container is null', () => {
+		cleanupGuardFromContainer( null );
+		// No error should be thrown.
+		expect( true ).toBe( true );
+	} );
+
+	it( 'removes guard styles and attributes from container', () => {
+		const mockContainer = {
+			inert: true,
+			style: { opacity: '0.95', cursor: 'not-allowed' },
+			dataset: { gatherPressGuarded: 'true' },
+			querySelectorAll: jest.fn( () => [] ),
+			querySelector: jest.fn( () => mockBlockAppender ),
+		};
+
+		cleanupGuardFromContainer( mockContainer );
+
+		expect( mockContainer.inert ).toBe( false );
+		expect( mockContainer.style.opacity ).toBe( '' );
+		expect( mockContainer.style.cursor ).toBe( '' );
+		expect( mockContainer.dataset.gatherPressGuarded ).toBeUndefined();
+	} );
+
+	it( 'restores block appender display', () => {
+		mockBlockAppender.style.display = 'none';
+
+		const mockContainer = {
+			inert: false,
+			style: {},
+			dataset: {},
+			querySelectorAll: jest.fn( () => [] ),
+			querySelector: jest.fn( () => mockBlockAppender ),
+		};
+
+		cleanupGuardFromContainer( mockContainer );
+
+		expect( mockBlockAppender.style.display ).toBe( '' );
+	} );
+} );
+
+/**
+ * Tests for applyListViewGuard function.
+ */
+describe( 'applyListViewGuard', () => {
+	let mockExpander;
+	let mockParentLink;
+
+	beforeEach( () => {
+		mockParentLink = {
+			style: {},
+			setAttribute: jest.fn(),
+			classList: {
+				add: jest.fn(),
+				remove: jest.fn(),
+			},
+		};
+
+		mockExpander = {
+			style: {},
+			onclick: null,
+			closest: jest.fn( ( selector ) => {
+				if (
+					'.block-editor-list-view-block-select-button' === selector
+				) {
+					return mockParentLink;
+				}
+				return null;
+			} ),
+		};
+	} );
+
+	it( 'returns early if expander is null', () => {
+		applyListViewGuard( null, true );
+		// No error should be thrown.
+		expect( true ).toBe( true );
+	} );
+
+	it( 'applies guard styles to expander when enabled', () => {
+		applyListViewGuard( mockExpander, true );
+
+		expect( mockExpander.style.opacity ).toBe( '0.3' );
+		expect( mockExpander.style.pointerEvents ).toBe( 'none' );
+	} );
+
+	it( 'sets parent link styles and attributes when enabled', () => {
+		applyListViewGuard( mockExpander, true );
+
+		expect( mockParentLink.setAttribute ).toHaveBeenCalledWith(
+			'aria-expanded',
+			'false',
+		);
+		expect( mockParentLink.style.pointerEvents ).toBe( 'auto' );
+		expect( mockParentLink.classList.add ).toHaveBeenCalledWith(
+			'gatherpress-block-guard-enabled',
+		);
+	} );
+
+	it( 'removes guard styles from expander when disabled', () => {
+		mockExpander.style.opacity = '0.3';
+		mockExpander.style.pointerEvents = 'none';
+
+		applyListViewGuard( mockExpander, false );
+
+		expect( mockExpander.style.opacity ).toBe( '' );
+		expect( mockExpander.style.pointerEvents ).toBe( '' );
+	} );
+
+	it( 're-enables parent link when disabled', () => {
+		mockParentLink.style.pointerEvents = 'auto';
+
+		applyListViewGuard( mockExpander, false );
+
+		expect( mockParentLink.style.pointerEvents ).toBe( '' );
+		expect( mockParentLink.classList.remove ).toHaveBeenCalledWith(
+			'gatherpress-block-guard-enabled',
+		);
+	} );
+} );
+
+/**
+ * Tests for drag event handler functions.
+ */
+describe( 'Drag Event Handlers', () => {
+	beforeEach( () => {
+		global.document = {
+			addEventListener: jest.fn(),
+			removeEventListener: jest.fn(),
+		};
+	} );
+
+	afterEach( () => {
+		delete global.document;
+		jest.clearAllMocks();
+	} );
+
+	describe( 'addDragListeners', () => {
+		it( 'adds all drag event listeners', () => {
+			const mockHandler = jest.fn();
+			addDragListeners( mockHandler );
+
+			expect( global.document.addEventListener ).toHaveBeenCalledWith(
+				'dragover',
+				mockHandler,
+				true,
+			);
+			expect( global.document.addEventListener ).toHaveBeenCalledWith(
+				'dragenter',
+				mockHandler,
+				true,
+			);
+			expect( global.document.addEventListener ).toHaveBeenCalledWith(
+				'dragleave',
+				mockHandler,
+				true,
+			);
+			expect( global.document.addEventListener ).toHaveBeenCalledWith(
+				'drop',
+				mockHandler,
+				true,
+			);
+			expect( global.document.addEventListener ).toHaveBeenCalledTimes( 4 );
+		} );
+	} );
+
+	describe( 'removeDragListeners', () => {
+		it( 'removes all drag event listeners', () => {
+			const mockHandler = jest.fn();
+			removeDragListeners( mockHandler );
+
+			expect( global.document.removeEventListener ).toHaveBeenCalledWith(
+				'dragover',
+				mockHandler,
+				true,
+			);
+			expect( global.document.removeEventListener ).toHaveBeenCalledWith(
+				'dragenter',
+				mockHandler,
+				true,
+			);
+			expect( global.document.removeEventListener ).toHaveBeenCalledWith(
+				'dragleave',
+				mockHandler,
+				true,
+			);
+			expect( global.document.removeEventListener ).toHaveBeenCalledWith(
+				'drop',
+				mockHandler,
+				true,
+			);
+			expect( global.document.removeEventListener ).toHaveBeenCalledTimes(
+				4,
+			);
+		} );
+	} );
+
+	describe( 'createDropHandler', () => {
+		it( 'creates a handler that prevents default for matching blocks', () => {
+			const clientId = 'test-123';
+			const handler = createDropHandler( clientId );
+
+			const mockTarget = {
+				closest: jest.fn( () => ( {
+					dataset: { block: clientId },
+				} ) ),
+			};
+
+			const mockEvent = {
+				type: 'dragover',
+				target: mockTarget,
+				preventDefault: jest.fn(),
+				stopPropagation: jest.fn(),
+			};
+
+			handler( mockEvent );
+
+			expect( mockEvent.preventDefault ).toHaveBeenCalled();
+			expect( mockEvent.stopPropagation ).toHaveBeenCalled();
+		} );
+
+		it( 'does not prevent default for non-matching blocks', () => {
+			const clientId = 'test-123';
+			const handler = createDropHandler( clientId );
+
+			const mockEvent = {
+				type: 'dragover',
+				target: {
+					closest: jest.fn( () => null ),
+				},
+				preventDefault: jest.fn(),
+				stopPropagation: jest.fn(),
+			};
+
+			handler( mockEvent );
+
+			expect( mockEvent.preventDefault ).not.toHaveBeenCalled();
+			expect( mockEvent.stopPropagation ).not.toHaveBeenCalled();
+		} );
+
+		it( 'prevents default for dragenter events', () => {
+			const clientId = 'test-123';
+			const handler = createDropHandler( clientId );
+
+			const mockEvent = {
+				type: 'dragenter',
+				target: {
+					closest: jest.fn( () => ( {
+						dataset: { block: clientId },
+					} ) ),
+				},
+				preventDefault: jest.fn(),
+				stopPropagation: jest.fn(),
+			};
+
+			handler( mockEvent );
+
+			expect( mockEvent.preventDefault ).toHaveBeenCalled();
+		} );
+
+		it( 'prevents default for drop events', () => {
+			const clientId = 'test-123';
+			const handler = createDropHandler( clientId );
+
+			const mockEvent = {
+				type: 'drop',
+				target: {
+					closest: jest.fn( () => ( {
+						dataset: { block: clientId },
+					} ) ),
+				},
+				preventDefault: jest.fn(),
+				stopPropagation: jest.fn(),
+			};
+
+			handler( mockEvent );
+
+			expect( mockEvent.preventDefault ).toHaveBeenCalled();
+		} );
+
+		it( 'does not prevent default for dragleave events', () => {
+			const clientId = 'test-123';
+			const handler = createDropHandler( clientId );
+
+			const mockEvent = {
+				type: 'dragleave',
+				target: {
+					closest: jest.fn( () => ( {
+						dataset: { block: clientId },
+					} ) ),
+				},
+				preventDefault: jest.fn(),
+				stopPropagation: jest.fn(),
+			};
+
+			handler( mockEvent );
+
+			// dragleave is listened to but doesn't prevent default.
+			expect( mockEvent.preventDefault ).not.toHaveBeenCalled();
+		} );
+	} );
+} );
+
+/**
+ * Tests for applyListViewGuardForBlock function.
+ */
+describe( 'applyListViewGuardForBlock', () => {
+	let mockDocument;
+
+	beforeEach( () => {
+		mockDocument = {
+			querySelector: jest.fn(),
+		};
+
+		// Mock getEditorDocument to return our mock.
+		global.document = mockDocument;
+	} );
+
+	afterEach( () => {
+		delete global.document;
+		jest.clearAllMocks();
+	} );
+
+	it( 'returns null if list view item is not found', () => {
+		mockDocument.querySelector = jest.fn( () => null );
+
+		const result = applyListViewGuardForBlock( 'test-123', true );
+
+		expect( result ).toBeNull();
+	} );
+
+	it( 'returns null if expander is not found', () => {
+		const mockListViewItem = {
+			querySelector: jest.fn( () => null ),
+		};
+
+		mockDocument.querySelector = jest.fn( () => mockListViewItem );
+
+		const result = applyListViewGuardForBlock( 'test-123', true );
+
+		expect( result ).toBeNull();
+	} );
+
+	it( 'returns null if expander SVG is not found', () => {
+		const mockExpander = {
+			querySelector: jest.fn( () => null ),
+		};
+
+		const mockListViewItem = {
+			querySelector: jest.fn( () => mockExpander ),
+		};
+
+		mockDocument.querySelector = jest.fn( () => mockListViewItem );
+
+		const result = applyListViewGuardForBlock( 'test-123', true );
+
+		expect( result ).toBeNull();
+	} );
+
+	it( 'applies guard and returns expander when all elements are found', () => {
+		const mockExpanderSvg = {};
+		const mockParentLink = {
+			style: {},
+			setAttribute: jest.fn(),
+			classList: {
+				add: jest.fn(),
+				remove: jest.fn(),
+			},
+		};
+
+		const mockExpander = {
+			querySelector: jest.fn( () => mockExpanderSvg ),
+			style: {},
+			onclick: null,
+			closest: jest.fn( () => mockParentLink ),
+		};
+
+		const mockListViewItem = {
+			querySelector: jest.fn( () => mockExpander ),
+		};
+
+		mockDocument.querySelector = jest.fn( () => mockListViewItem );
+
+		const result = applyListViewGuardForBlock( 'test-123', true );
+
+		expect( result ).toEqual( { expander: mockExpander } );
+		expect( mockExpander.style.pointerEvents ).toBe( 'none' );
 	} );
 } );

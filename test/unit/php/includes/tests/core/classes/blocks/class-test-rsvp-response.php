@@ -73,7 +73,11 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_transform_block_content_basic(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$post_id       = $this->factory()->post->create();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-response',
 			'attrs'     => array(
@@ -103,6 +107,37 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
+	 * Tests transform_block_content returns empty string for non-event post type.
+	 *
+	 * @since 1.0.0
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_non_event_post(): void {
+		$instance      = Rsvp_Response::get_instance();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'post',
+			)
+		);
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+		$block_content = '<div class="wp-block-gatherpress-rsvp-response">Content</div>';
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertSame(
+			'',
+			$result,
+			'Non-event post type should return empty string.'
+		);
+	}
+
+	/**
 	 * Tests empty RSVP visibility handling.
 	 *
 	 * @since 1.0.0
@@ -112,7 +147,11 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_transform_block_content_empty_rsvp(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$post_id       = $this->factory()->post->create();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-response',
 			'attrs'     => array(
@@ -139,7 +178,11 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_transform_block_content_with_responses(): void {
 		$instance = Rsvp_Response::get_instance();
-		$post_id  = $this->factory()->post->create();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
 		$user_id  = $this->factory()->user->create();
 		$rsvp     = new Rsvp( $post_id );
 
@@ -162,6 +205,49 @@ class Test_Rsvp_Response extends Base {
 	}
 
 	/**
+	 * Tests no-responses visibility handling with attending responses.
+	 *
+	 * @since 1.0.0
+	 * @covers ::transform_block_content
+	 *
+	 * @return void
+	 */
+	public function test_transform_block_content_hide_no_responses_with_attendees(): void {
+		$instance = Rsvp_Response::get_instance();
+		$post_id  = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
+		$user_id  = $this->factory()->user->create();
+		$rsvp     = new Rsvp( $post_id );
+
+		$rsvp->save( $user_id, 'attending' );
+
+		$block         = array(
+			'blockName' => 'gatherpress/rsvp-response',
+			'attrs'     => array(
+				'postId' => $post_id,
+			),
+		);
+		$block_content = '<div class="wp-block-gatherpress-rsvp-response">' .
+			'<div class="gatherpress-rsvp-response--no-responses gatherpress--is-visible">No responses</div>' .
+			'</div>';
+		$result        = $instance->transform_block_content( $block_content, $block );
+
+		$this->assertStringContainsString(
+			'gatherpress--is-hidden',
+			$result,
+			'No-responses section should have hidden class when attendees exist.'
+		);
+		$this->assertStringNotContainsString(
+			'gatherpress--is-visible',
+			$result,
+			'No-responses section should not have visible class when attendees exist.'
+		);
+	}
+
+	/**
 	 * Tests default values for RSVP limits.
 	 *
 	 * @since 1.0.0
@@ -171,7 +257,11 @@ class Test_Rsvp_Response extends Base {
 	 */
 	public function test_transform_block_content_default_limits(): void {
 		$instance      = Rsvp_Response::get_instance();
-		$post_id       = $this->factory()->post->create();
+		$post_id       = $this->factory()->post->create(
+			array(
+				'post_type' => 'gatherpress_event',
+			)
+		);
 		$block         = array(
 			'blockName' => 'gatherpress/rsvp-response',
 			'attrs'     => array(
@@ -235,9 +325,12 @@ class Test_Rsvp_Response extends Base {
 		$block_content = '<div>
 			<a class="wp-block-gatherpress-dropdown__trigger">Attending</a>
 			<div class="wp-block-gatherpress-dropdown__menu">
-				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-attending"><a href="#">Attending</a></div>
-				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-waiting-list"><a href="#">Waiting List</a></div>
-				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-not-attending"><a href="#">Not Attending</a></div>
+				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-attending">
+					<a href="#">Attending</a></div>
+				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-waiting-list">
+					<a href="#">Waiting List</a></div>
+				<div class="wp-block-gatherpress-dropdown-item gatherpress--is-not-attending">
+					<a href="#">Not Attending</a></div>
 			</div>
 		</div>';
 		$result        = $instance->attach_dropdown_interactivity( $block_content );

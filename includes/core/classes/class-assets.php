@@ -149,8 +149,6 @@ class Assets {
 	 */
 	public function maybe_enqueue_styles( string $block_content, array $block ): string {
 		if ( isset( $block['blockName'] ) && str_contains( $block['blockName'], 'gatherpress/' ) ) {
-			$asset = $this->get_asset_data( 'utility_style' );
-
 			wp_enqueue_style( 'gatherpress-utility-style' );
 		}
 
@@ -318,16 +316,11 @@ class Assets {
 		$settings            = Settings::get_instance();
 		$event_details       = array();
 		$event_rest_api_slug = sprintf( '%s/event', GATHERPRESS_REST_NAMESPACE );
-
-		if ( is_user_logged_in() ) {
-			$event_rest_api = '/' . $event_rest_api_slug;
-		} else {
-			$event_rest_api = home_url( 'wp-json/' . $event_rest_api_slug );
-		}
+		$user_identifier     = Rsvp_Setup::get_instance()->get_user_identifier();
 
 		if ( ! empty( $event->event ) ) {
 			$event_details = array(
-				'currentUser'         => $event->rsvp->get( get_current_user_id() ),
+				'currentUser'         => $event->rsvp->get( $user_identifier ),
 				'dateTime'            => $event->get_datetime(),
 				'enableAnonymousRsvp' => (bool) get_post_meta( $post_id, 'gatherpress_enable_anonymous_rsvp', true ),
 				'maxAttendanceLimit'  => (int) get_post_meta( $post_id, 'gatherpress_max_attendance_limit', true ),
@@ -348,11 +341,19 @@ class Assets {
 			),
 			'settings'     => array(
 				'dateFormat'          => $settings->get_value( 'general', 'formatting', 'date_format' ),
-				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value( 'general', 'general', 'enable_anonymous_rsvp' ) ),
+				'enableAnonymousRsvp' => ( 1 === (int) $settings->get_value(
+					'general',
+					'general',
+					'enable_anonymous_rsvp'
+				) ),
 				'mapPlatform'         => $settings->get_value( 'general', 'general', 'map_platform' ),
 				'maxAttendanceLimit'  => $settings->get_value( 'general', 'general', 'max_attendance_limit' ),
 				'maxGuestLimit'       => $settings->get_value( 'general', 'general', 'max_guest_limit' ),
-				'showTimezone'        => ( 1 === (int) $settings->get_value( 'general', 'formatting', 'show_timezone' ) ),
+				'showTimezone'        => ( 1 === (int) $settings->get_value(
+					'general',
+					'formatting',
+					'show_timezone'
+				) ),
 				'timeFormat'          => $settings->get_value( 'general', 'formatting', 'time_format' ),
 			),
 			'urls'         => array(
@@ -419,7 +420,8 @@ class Assets {
 	protected function get_asset_data( string $asset, ?string $path = null ): array {
 		$path = $path ?? $this->path . sprintf( '%s.asset.php', $asset );
 		if ( empty( $this->asset_data[ $asset ] ) ) {
-			$this->asset_data[ $asset ] = require_once $path;
+			// Loading WordPress asset metadata file that returns an array, not importing a class.
+			$this->asset_data[ $asset ] = require_once $path; // NOSONAR.
 		}
 
 		return (array) $this->asset_data[ $asset ];
@@ -433,10 +435,11 @@ class Assets {
 	 * @return void
 	 */
 	public function register_variation_assets(): void {
-		array_map(
-			array( $this, 'register_asset' ),
-			Block::get_instance()->get_block_variations()
-		);
+		$variations = Block::get_instance()->get_block_variations();
+
+		foreach ( $variations as $variation ) {
+			$this->register_asset( $variation, 'variations/core/' );
+		}
 	}
 
 	/**
@@ -459,11 +462,11 @@ class Assets {
 	 * @since 1.0.0
 	 *
 	 * @param string $folder_name Slug of the block to register scripts and translations for.
-	 * @param string $build_dir Name of the folder ro register assets from, relative to the plugins root directory.
+	 * @param string $build_dir Name of the folder to register assets from, relative to the plugins root directory.
 	 *
 	 * @return void
 	 */
-	protected function register_asset( string $folder_name, $build_dir = 'variations/core/' ): void {
+	protected function register_asset( string $folder_name, string $build_dir = '' ): void {
 		$slug     = sprintf( 'gatherpress-%s', $folder_name );
 		$folders  = sprintf( '%1$s%2$s', $build_dir, $folder_name );
 		$dir      = sprintf( '%1$s%2$s', $this->path, $folders );
@@ -533,10 +536,28 @@ class Assets {
 	 * @return bool
 	 */
 	protected function asset_exists( string $path, string $name, bool $critical = true ): bool {
+		/**
+		 * Filters whether an asset file is considered critical.
+		 *
+		 * This filter allows modification of the critical flag for asset files,
+		 * which determines whether missing assets throw an Error in development
+		 * environments or silently return false.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param bool   $critical Whether file is mandatory for the plugin to work.
+		 * @param string $path     Full file path to the asset file.
+		 * @param string $name     Name of the asset being loaded.
+		 *
+		 * @return bool True if asset is critical, false otherwise.
+		 */
+		$critical = apply_filters( 'gatherpress_asset_critical', $critical, $path, $name );
+
 		if ( ! file_exists( $path ) ) {
 			$error_message = sprintf(
 				/* Translators: %s Name of a block-asset */
 				__(
+					// phpcs:ignore Generic.Files.LineLength.TooLong
 					'You need to run `npm start` or `npm run build` for the "%1$s" block-asset first. %2$s does not exist.',
 					'gatherpress'
 				),
@@ -551,6 +572,7 @@ class Assets {
 				return false;
 			}
 		}
+
 		return true;
 	}
 }

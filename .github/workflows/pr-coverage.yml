@@ -1,0 +1,77 @@
+name: PR Coverage Check
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - '.github/workflows/pr-coverage.yml'
+      - '.github/coverage-config.json'
+      - 'includes/**'
+      - 'test/unit/php**'
+      - '*.php'
+      - 'phpunit.xml.dist'
+      - 'composer.*'
+      - 'src/**'
+      - 'test/unit/js/**'
+      - 'jest.config.js'
+      - 'package.json'
+
+jobs:
+  check-coverage:
+    name: Check Test Coverage on Changed Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: xdebug
+          tools: composer
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          composer install --optimize-autoloader --prefer-dist
+          npm install
+          npm run build
+
+      - name: Run PHP unit tests with coverage
+        run: |
+          npm run test:unit:php
+          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
+        continue-on-error: true  # Continue even if tests fail to show coverage report
+
+      - name: Run JavaScript unit tests with coverage
+        run: npm run test:unit:js
+        continue-on-error: true  # Continue even if tests fail to show coverage report
+
+      - name: Validate coverage configuration
+        run: php .github/scripts/validate-coverage-config.php
+
+      - name: Check PHP PR coverage
+        run: php .github/scripts/check-pr-coverage.php
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        continue-on-error: true  # Continue to check JS coverage even if PHP fails
+
+      - name: Check JavaScript PR coverage
+        run: php .github/scripts/check-pr-coverage-js.php
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+
+      - name: Stop WordPress environment
+        if: always()
+        run: npm run wp-env stop

@@ -9,6 +9,7 @@
 	<exclude-pattern>/data/credits.php</exclude-pattern>
 	<exclude-pattern>/vendor/</exclude-pattern>
 	<exclude-pattern>/node_modules/</exclude-pattern>
+	<exclude-pattern>/build/</exclude-pattern>
 	<exclude-pattern>/wp-core/</exclude-pattern>
 	<exclude-pattern>/languages/</exclude-pattern>
 
@@ -72,7 +73,9 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<!-- Value: replace the function, class, and variable prefixes used. Separate multiple prefixes with a comma. -->
-			<property name="prefixes" type="array" value="gatherpress"/>
+			<property name="prefixes" type="array">
+				<element value="gatherpress"/>
+			</property>
 		</properties>
 	</rule>
 	<rule ref="WordPress.WP.I18n">
@@ -89,5 +92,14 @@
 		<properties>
 			<property name="blank_line_check" value="true"/>
 		</properties>
+	</rule>
+	<rule ref="Generic.Files.LineLength">
+		<properties>
+			<property name="lineLimit" value="120"/>
+			<property name="absoluteLineLimit" value="0"/>
+		</properties>
+		<!-- Exclude template files from line length checks as they contain HTML output. -->
+		<exclude-pattern>*/templates/*</exclude-pattern>
+		<exclude-pattern>*/blocks/*/render.php</exclude-pattern>
 	</rule>
 </ruleset>

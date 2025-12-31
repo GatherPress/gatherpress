@@ -48,7 +48,7 @@ export function isGatherPressPostType() {
  * @return {Document} The document object containing the block editor content.
  */
 export function getEditorDocument() {
-	const iframe = global.document.querySelector(
+	const iframe = document.querySelector(
 		'iframe[name="editor-canvas"]',
 	);
 
@@ -56,5 +56,21 @@ export function getEditorDocument() {
 		return iframe.contentDocument;
 	}
 
-	return global.document;
+	return document;
+}
+
+/**
+ * Checks if the current editor context is a Full Site Editor template.
+ *
+ * This function determines if the user is editing a template or template part
+ * in the Full Site Editor, as opposed to editing a regular post or page.
+ *
+ * @since 1.0.0
+ *
+ * @return {boolean} True if editing an FSE template or template part, false otherwise.
+ */
+export function isInFSETemplate() {
+	const postType = select( 'core/editor' )?.getCurrentPostType();
+
+	return [ 'wp_template', 'wp_template_part' ].includes( postType );
 }

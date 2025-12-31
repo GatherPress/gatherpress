@@ -138,11 +138,13 @@ class Test_Export extends Base {
 		);
 		$this->assertTrue(
 			$instance->extend( true, $meta_key, $meta ),
-			'Failed to assert the method accepts whether to "skip" saving the current post meta, independent from the data to save.'
+			'Failed to assert the method accepts whether to "skip" saving the current post meta, '
+			. 'independent from the data to save.'
 		);
 		$this->assertFalse(
 			$instance->extend( false, $meta_key, $meta ),
-			'Failed to assert the method accepts whether to "skip" saving the current post meta, independent from the data to save.'
+			'Failed to assert the method accepts whether to "skip" saving the current post meta, '
+			. 'independent from the data to save.'
 		);
 
 		$skip     = false;
@@ -162,7 +164,7 @@ class Test_Export extends Base {
 			'Failed to assert the method returns true, even with false given, because the "meta_key" matches.'
 		);
 		$this->assertFalse(
-			get_post_meta( $post_id, $meta_key ),
+			get_post_meta( $post_id, $meta_key, true ),
 			'Failed to assert the temporary marker was deleted from post meta.'
 		);
 	}
@@ -201,13 +203,17 @@ class Test_Export extends Base {
 		$this->assertStringContainsString( '<wp:post_name><![CDATA[unit-test-event]]></wp:post_name>', $output );
 		$this->assertStringContainsString( '<wp:post_type><![CDATA[gatherpress_event]]></wp:post_type>', $output );
 
-		$this->assertStringContainsString( '<wp:meta_key><![CDATA[gatherpress_datetime_start]]></wp:meta_key>', $output );
+		$this->assertStringContainsString(
+			'<wp:meta_key><![CDATA[gatherpress_datetime_start]]></wp:meta_key>',
+			$output
+		);
 		$this->assertStringContainsString( '<wp:meta_value><![CDATA[2020-05-11 15:00:00]]></wp:meta_value>', $output );
 
 		$this->assertStringContainsString( '<wp:meta_key><![CDATA[gatherpress_datetime_end]]></wp:meta_key>', $output );
 		$this->assertStringContainsString( '<wp:meta_value><![CDATA[2020-05-12 17:00:00]]></wp:meta_value>', $output );
 
 		$this->assertStringContainsString( '<wp:meta_key><![CDATA[gatherpress_datetimes]]></wp:meta_key>', $output );
+		// phpcs:ignore Generic.Files.LineLength.TooLong
 		$this->assertStringContainsString( '<wp:meta_value><![CDATA[a:5:{s:14:"datetime_start";s:19:"2020-05-11 15:00:00";s:18:"datetime_start_gmt";s:19:"2020-05-11 19:00:00";s:12:"datetime_end";s:19:"2020-05-12 17:00:00";s:16:"datetime_end_gmt";s:19:"2020-05-12 21:00:00";s:8:"timezone";s:16:"America/New_York";}]]></wp:meta_value>', $output );
 	}
 
@@ -237,12 +243,57 @@ class Test_Export extends Base {
 			)
 		);
 
+		// phpcs:ignore Generic.Files.LineLength.TooLong
 		$datetimes_data = 'a:5:{s:14:"datetime_start";s:19:"2020-05-11 15:00:00";s:18:"datetime_start_gmt";s:19:"2020-05-11 19:00:00";s:12:"datetime_end";s:19:"2020-05-11 17:00:00";s:16:"datetime_end_gmt";s:19:"2020-05-11 21:00:00";s:8:"timezone";s:16:"America/New_York";}';
 
 		$this->assertSame(
 			$datetimes_data,
 			$export->datetimes_callback( $post ),
 			'Failed to assert that datetimes data matches'
+		);
+	}
+
+	/**
+	 * Coverage for render method early return conditions.
+	 *
+	 * @covers ::render
+	 *
+	 * @return void
+	 */
+	public function test_render_early_return_conditions(): void {
+		$export = Export::get_instance();
+		$post   = $this->mock->post(
+			array(
+				'post_title'   => 'Unit Test Event',
+				'post_type'    => 'gatherpress_event',
+				'post_content' => 'Unit Test description.',
+			)
+		)->get();
+
+		// Test when export_callback is not set.
+		ob_start();
+		$export->render( array(), 'test_key', $post );
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert that render produces no output when export_callback is not set.'
+		);
+
+		// Test when export_callback is not callable.
+		ob_start();
+		$export->render(
+			array(
+				'export_callback' => 'nonexistent_function_name',
+			),
+			'test_key',
+			$post
+		);
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert that render produces no output when export_callback is not callable.'
 		);
 	}
 }

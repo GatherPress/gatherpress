@@ -46,28 +46,28 @@ const RsvpResponseCard = ( { value, limit, responses = [] } ) => {
 			return (
 				<div key={ index } className="gatherpress-rsvp-response__item">
 					<figure className="gatherpress-rsvp-response__member-avatar">
-						{ '' !== profile ? (
+						{ '' === profile ? (
+							<img alt={ name } title={ name } src={ photo } />
+						) : (
 							<a href={ profile }>
 								<img alt={ name } title={ name } src={ photo } />
 							</a>
-						) : (
-							<img alt={ name } title={ name } src={ photo } />
 						) }
 					</figure>
 					<div className="gatherpress-rsvp-response__member-info">
 						<div className="gatherpress-rsvp-response__member-name">
-							{ '' !== profile ? (
+							{ '' === profile ? (
+								<span>{ name }</span>
+							) : (
 								<a href={ profile } title={ name }>
 									{ name }
 								</a>
-							) : (
-								<span>{ name }</span>
 							) }
 						</div>
 						<div className="gatherpress-rsvp-response__member-role">
 							{ role }
 						</div>
-						{ 0 !== guests && (
+						{ 0 < guests && (
 							<small className="gatherpress-rsvp-response__guests">
 								{ sprintf(
 									/* translators: %d: Number of guests. */
@@ -90,12 +90,12 @@ const RsvpResponseCard = ( { value, limit, responses = [] } ) => {
 		<>
 			{ 'attending' === value && 0 === renderedItems.length && (
 				<div className="gatherpress-rsvp-response__no-responses">
-					{ false === getFromGlobal( 'eventDetails.hasEventPast' )
-						? __(
+					{ true === getFromGlobal( 'eventDetails.hasEventPast' )
+						? __( 'No one went to this event.', 'gatherpress' )
+						: __(
 							'No one is attending this event yet.',
 							'gatherpress',
-						)
-						: __( 'No one went to this event.', 'gatherpress' ) }
+						) }
 				</div>
 			) }
 			{ renderedItems }

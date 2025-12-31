@@ -55,49 +55,47 @@ export default function CheckboxField( {
 			{ ...blockProps }
 			className={ getWrapperClasses( fieldType, blockProps ) }
 		>
-			<>
-				<input
-					style={ getInputStyles( fieldType, attributes ) }
-					type="checkbox"
-					name={ fieldName }
-					required={ required }
-					checked={ !! fieldValue }
-					disabled={ true }
-					tabIndex={ -1 }
-					autoComplete="off"
+			<input
+				style={ getInputStyles( fieldType, attributes ) }
+				type="checkbox"
+				name={ fieldName }
+				required={ required }
+				checked={ !! fieldValue }
+				disabled={ true }
+				tabIndex={ -1 }
+				autoComplete="off"
+			/>
+			<div
+				className="gatherpress-label-wrapper"
+				style={ getLabelWrapperStyles( attributes ) }
+			>
+				<RichText
+					tagName="label"
+					placeholder={ __( 'Add checkbox label…', 'gatherpress' ) }
+					value={ label }
+					onChange={ ( value ) => setAttributes( { label: value } ) }
+					onBlur={ () => handleLabelBlur( label ) }
+					allowedFormats={ [] }
+					style={ getLabelStyles( attributes ) }
 				/>
-				<div
-					className="gatherpress-label-wrapper"
-					style={ getLabelWrapperStyles( attributes ) }
-				>
+				{ required && (
 					<RichText
-						tagName="label"
-						placeholder={ __( 'Add checkbox label…', 'gatherpress' ) }
-						value={ label }
-						onChange={ ( value ) => setAttributes( { label: value } ) }
-						onBlur={ () => handleLabelBlur( label ) }
+						tagName="span"
+						className="gatherpress-label-required"
+						placeholder={ __( '(required)', 'gatherpress' ) }
+						value={ requiredText }
+						onChange={ ( value ) =>
+							setAttributes( { requiredText: value } )
+						}
 						allowedFormats={ [] }
-						style={ getLabelStyles( attributes ) }
+						style={ {
+							...( requiredTextColor && {
+								color: requiredTextColor,
+							} ),
+						} }
 					/>
-					{ required && (
-						<RichText
-							tagName="span"
-							className="gatherpress-label-required"
-							placeholder={ __( '(required)', 'gatherpress' ) }
-							value={ requiredText }
-							onChange={ ( value ) =>
-								setAttributes( { requiredText: value } )
-							}
-							allowedFormats={ [] }
-							style={ {
-								...( requiredTextColor && {
-									color: requiredTextColor,
-								} ),
-							} }
-						/>
-					) }
-				</div>
-			</>
+				) }
+			</div>
 		</div>
 	);
 }

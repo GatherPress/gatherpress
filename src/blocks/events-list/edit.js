@@ -2,7 +2,6 @@
  * External dependencies.
  */
 import { includes } from 'lodash';
-import classnames from 'classnames';
 import HtmlReactParser from 'html-react-parser';
 
 /**
@@ -15,12 +14,12 @@ import {
 	FormTokenField,
 	SelectControl,
 	RangeControl,
-	ButtonGroup,
-	Button,
-	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-	__experimentalText as Text,
 	TextControl,
 	ToggleControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 import { store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
@@ -138,55 +137,23 @@ const Edit = ( props ) => {
 		<>
 			<InspectorControls>
 				<PanelBody>
-					<p>{ __( 'Event List type', 'gatherpress' ) }</p>
-					<ButtonGroup className="block-editor-block-styles__variants">
-						<Button
-							className={ classnames(
-								'block-editor-block-styles__item',
-								{
-									'is-active': 'upcoming' === attributes.type,
-								},
-							) }
-							variant="secondary"
+					<ToggleGroupControl
+						label={ __( 'Event List type', 'gatherpress' ) }
+						value={ attributes.type }
+						onChange={ ( value ) => {
+							setAttributes( { type: value } );
+						} }
+						isBlock
+					>
+						<ToggleGroupControlOption
+							value="upcoming"
 							label={ __( 'Upcoming', 'gatherpress' ) }
-							onClick={ () => {
-								setAttributes( { type: 'upcoming' } );
-							} }
-						>
-							<Text
-								as="span"
-								limit={ 12 }
-								ellipsizeMode="tail"
-								className="block-editor-block-styles__item-text"
-								truncate
-							>
-								{ __( 'Upcoming', 'gatherpress' ) }
-							</Text>
-						</Button>
-						<Button
-							className={ classnames(
-								'block-editor-block-styles__item',
-								{
-									'is-active': 'past' === attributes.type,
-								},
-							) }
-							variant="secondary"
+						/>
+						<ToggleGroupControlOption
+							value="past"
 							label={ __( 'Past', 'gatherpress' ) }
-							onClick={ () => {
-								setAttributes( { type: 'past' } );
-							} }
-						>
-							<Text
-								as="span"
-								limit={ 12 }
-								ellipsizeMode="tail"
-								className="block-editor-block-styles__item-text"
-								truncate
-							>
-								{ __( 'Past', 'gatherpress' ) }
-							</Text>
-						</Button>
-					</ButtonGroup>
+						/>
+					</ToggleGroupControl>
 				</PanelBody>
 				<PanelBody>
 					<TextControl
@@ -217,14 +184,11 @@ const Edit = ( props ) => {
 					<FormTokenField
 						key="query-controls-topics-select"
 						label={ __( 'Topics', 'gatherpress' ) }
-						value={
-							topics &&
-							topics.map( ( item ) => ( {
-								id: item.id,
-								slug: item.slug,
-								value: item.name || item.value,
-							} ) )
-						}
+						value={ topics?.map( ( item ) => ( {
+							id: item.id,
+							slug: item.slug,
+							value: item.name || item.value,
+						} ) ) }
 						suggestions={ Object.keys( topicSuggestions ) }
 						onChange={ selectTopics }
 						maxSuggestions={ 20 }
@@ -232,14 +196,11 @@ const Edit = ( props ) => {
 					<FormTokenField
 						key="query-controls-venues-select"
 						label={ __( 'Venues', 'gatherpress' ) }
-						value={
-							venues &&
-							venues.map( ( item ) => ( {
-								id: item.id,
-								slug: item.slug,
-								value: item.name || item.value,
-							} ) )
-						}
+						value={ venues?.map( ( item ) => ( {
+							id: item.id,
+							slug: item.slug,
+							value: item.name || item.value,
+						} ) ) }
 						suggestions={ Object.keys( venueSuggestions ) }
 						onChange={ selectVenues }
 						maxSuggestions={ 20 }

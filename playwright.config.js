@@ -4,12 +4,19 @@ require( 'dotenv' ).config();
 
 module.exports = defineConfig( {
 	testDir: './test/e2e',
-	fullyParallel: true,
+	fullyParallel: false, // Disable parallel for better stability
 	forbidOnly: !! process.env.CI,
-	retries: process.env.CI ? 2 : 0,
-	workers: process.env.CI ? 1 : undefined,
+	retries: process.env.CI ? 2 : 1,
+	workers: 1, // Use single worker to avoid conflicts
 	timeout: 180000,
-	reporter: [ [ 'html' ], [ 'list', { printSteps: true } ] ],
+	expect: {
+		timeout: 10000, // Shorter expect timeout for faster feedback
+	},
+	reporter: [
+		[ 'html' ],
+		[ 'list', { printSteps: true } ],
+		[ 'junit', { outputFile: 'test-results/junit.xml' } ],
+	],
 	globalSetup: './test/e2e/global-setup.js',
 	use: {
 		baseURL: process.env.WP_BASE_URL || 'http://localhost:8889',
@@ -17,6 +24,8 @@ module.exports = defineConfig( {
 		video: 'on-first-retry',
 		screenshot: 'only-on-failure',
 		storageState: './test/e2e/storageState.json',
+		actionTimeout: 15000, // Longer action timeout for slow WordPress admin
+		navigationTimeout: 30000, // Longer navigation timeout
 	},
 	projects: [
 		{

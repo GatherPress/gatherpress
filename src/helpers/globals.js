@@ -18,7 +18,7 @@ export function getFromGlobal( args ) {
 
 	return args.split( '.' ).reduce(
 		// eslint-disable-next-line no-undef
-		( GatherPress, level ) => GatherPress && GatherPress[ level ],
+		( GatherPress, level ) => GatherPress?.[ level ],
 		// eslint-disable-next-line no-undef
 		GatherPress,
 	);
@@ -72,9 +72,7 @@ export function safeHTML( html ) {
 	while ( elementIndex-- ) {
 		const element = elements[ elementIndex ];
 		if ( 'SCRIPT' === element.tagName ) {
-			if ( element.parentNode ) {
-				element.parentNode.removeChild( element );
-			}
+			element.remove();
 		} else {
 			let attributeIndex = element.attributes.length;
 			while ( attributeIndex-- ) {
@@ -107,10 +105,10 @@ export function safeHTML( html ) {
  */
 export function toCamelCase( snakeCaseString ) {
 	// First replace consecutive underscores with a single one.
-	const normalized = snakeCaseString.replace( /__+/g, '_' );
+	const normalized = snakeCaseString.replaceAll( /__+/g, '_' );
 
 	// Then do the camelCase conversion with a simpler regex.
-	return normalized.replace( /_([a-zA-Z])/g, ( _, letter ) =>
+	return normalized.replaceAll( /_([a-zA-Z])/g, ( _, letter ) =>
 		letter.toUpperCase(),
 	);
 }
@@ -124,7 +122,7 @@ export function toCamelCase( snakeCaseString ) {
  * @return {string|null} The parameter value or null if not found.
  */
 export function getUrlParam( name ) {
-	const urlParams = new URLSearchParams( global.location.search );
+	const urlParams = new URLSearchParams( location.search );
 
 	return urlParams.get( name );
 }

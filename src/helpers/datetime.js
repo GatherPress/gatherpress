@@ -172,7 +172,7 @@ export function dateTimeLabelFormat() {
 export function getTimezone(
 	timezone = getFromGlobal( 'eventDetails.dateTime.timezone' ),
 ) {
-	if ( !! moment.tz.zone( timezone ) ) {
+	if ( moment.tz.zone( timezone ) ) {
 		return timezone;
 	}
 
@@ -192,13 +192,13 @@ export function getTimezone(
 export function getUtcOffset( timezone ) {
 	timezone = getTimezone( timezone );
 
-	if ( __( 'GMT', 'gatherpress' ) !== timezone ) {
-		return '';
+	if ( __( 'GMT', 'gatherpress' ) === timezone ) {
+		const offset = getFromGlobal( 'eventDetails.dateTime.timezone' );
+
+		return maybeConvertUtcOffsetForDisplay( offset );
 	}
 
-	const offset = getFromGlobal( 'eventDetails.dateTime.timezone' );
-
-	return maybeConvertUtcOffsetForDisplay( offset );
+	return '';
 }
 
 /**
@@ -227,27 +227,27 @@ export function maybeConvertUtcOffsetForDisplay( offset = '' ) {
  * @return {string} Converted UTC offset in the format '+HH:mm' or '-HH:mm'.
  */
 export function maybeConvertUtcOffsetForDatabase( offset = '' ) {
-	// Regex: https://regex101.com/r/9bMgJd/2.
-	const pattern = /^UTC([+-])(\d+)(.\d+)?$/;
+	// Regex: https://regex101.com/r/9bMgJd/3.
+	const pattern = /^UTC([+-])(\d+)(\.\d+)?$/;
 	const sign = offset.replace( pattern, '$1' );
 
-	if ( sign !== offset ) {
-		const hour = offset.replace( pattern, '$2' ).padStart( 2, '0' );
-		let minute = offset.replace( pattern, '$3' );
-
-		if ( '' === minute ) {
-			minute = ':00';
-		}
-
-		minute = minute
-			.replace( '.25', ':15' )
-			.replace( '.5', ':30' )
-			.replace( '.75', ':45' );
-
-		return sign + hour + minute;
+	if ( sign === offset ) {
+		return offset;
 	}
 
-	return offset;
+	const hour = offset.replace( pattern, '$2' ).padStart( 2, '0' );
+	let minute = offset.replace( pattern, '$3' );
+
+	if ( '' === minute ) {
+		minute = ':00';
+	}
+
+	minute = minute
+		.replace( '.25', ':15' )
+		.replace( '.5', ':30' )
+		.replace( '.75', ':45' );
+
+	return sign + hour + minute;
 }
 
 /**
@@ -293,9 +293,9 @@ export function getDateTimeStart() {
 	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_start' );
 
 	dateTime =
-		'' !== dateTime
-			? moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat )
-			: defaultDateTimeStart;
+		'' === dateTime
+			? defaultDateTimeStart
+			: moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat );
 
 	setToGlobal( 'eventDetails.dateTime.datetime_start', dateTime );
 
@@ -315,9 +315,9 @@ export function getDateTimeEnd() {
 	let dateTime = getFromGlobal( 'eventDetails.dateTime.datetime_end' );
 
 	dateTime =
-		'' !== dateTime
-			? moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat )
-			: defaultDateTimeEnd;
+		'' === dateTime
+			? defaultDateTimeEnd
+			: moment.tz( dateTime, getTimezone() ).format( dateTimeDatabaseFormat );
 
 	setToGlobal( 'eventDetails.dateTime.datetime_end', dateTime );
 
@@ -345,9 +345,23 @@ export function updateDateTimeStart(
 	setDateTimeStart = null,
 	setDateTimeEnd = null,
 ) {
-	validateDateTimeStart( date, setDateTimeEnd );
+	// Store the current duration before updating the start time.
+	const currentDuration = getDateTimeOffset();
 
 	setToGlobal( 'eventDetails.dateTime.datetime_start', date );
+
+	// If in relative mode (duration is numeric), always update the end time to maintain the offset.
+	if ( 'number' === typeof currentDuration ) {
+		const dateTimeEnd = moment
+			.tz( date, getTimezone() )
+			.add( currentDuration, 'hours' )
+			.format( dateTimeDatabaseFormat );
+
+		updateDateTimeEnd( dateTimeEnd, setDateTimeEnd );
+	} else {
+		// Otherwise, only validate to ensure end is after start.
+		validateDateTimeStart( date, setDateTimeEnd, currentDuration );
+	}
 
 	if ( 'function' === typeof setDateTimeStart ) {
 		setDateTimeStart( date );
@@ -394,17 +408,19 @@ export function updateDateTimeEnd(
  *
  * This function compares the provided start date and time with the current end date
  * and time of the event. If the start date is greater than or equal to the end date,
- * it adjusts the end date to ensure a minimum two-hour duration from the start date.
+ * it adjusts the end date. If there's an active duration (relative mode), it maintains
+ * that duration offset. Otherwise, it defaults to a two-hour duration.
  * If `setDateTimeEnd` is provided, it updates the end date accordingly.
  *
  * @since 1.0.0
  *
- * @param {string}        dateTimeStart  - The start date and time in a valid format.
- * @param {Function|null} setDateTimeEnd - Optional callback to update the end date and time.
+ * @param {string}        dateTimeStart   - The start date and time in a valid format.
+ * @param {Function|null} setDateTimeEnd  - Optional callback to update the end date and time.
+ * @param {number|false}  currentDuration - The current duration in hours (numeric for relative mode, false for absolute mode).
  *
  * @return {void}
  */
-export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null ) {
+export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null, currentDuration = null ) {
 	const dateTimeEndNumeric = moment
 		.tz( getFromGlobal( 'eventDetails.dateTime.datetime_end' ), getTimezone() )
 		.valueOf();
@@ -413,9 +429,14 @@ export function validateDateTimeStart( dateTimeStart, setDateTimeEnd = null ) {
 		.valueOf();
 
 	if ( dateTimeStartNumeric >= dateTimeEndNumeric ) {
+		// Use the passed duration if available, otherwise check current offset.
+		// Only use duration if it's numeric (relative mode), not if it's false (absolute mode).
+		const duration = null === currentDuration ? getDateTimeOffset() : currentDuration;
+		const hoursToAdd = ( false !== duration && 'number' === typeof duration ) ? duration : 2;
+
 		const dateTimeEnd = moment
 			.tz( dateTimeStartNumeric, getTimezone() )
-			.add( 2, 'hours' )
+			.add( hoursToAdd, 'hours' )
 			.format( dateTimeDatabaseFormat );
 
 		updateDateTimeEnd( dateTimeEnd, setDateTimeEnd );
@@ -538,15 +559,74 @@ export function dateTimePreview() {
 	);
 
 	// Iterate through each matched element and initialize DateTimePreview component.
-	for ( let i = 0; i < dateTimePreviewContainers.length; i++ ) {
+	for ( const container of dateTimePreviewContainers ) {
 		// Parse attributes from the 'data-gatherpress_component_attrs' attribute.
 		const attrs = JSON.parse(
-			dateTimePreviewContainers[ i ].dataset.gatherpress_component_attrs,
+			container.dataset.gatherpress_component_attrs,
 		);
 
 		// Create a root element and render the DateTimePreview component with the parsed attributes.
-		createRoot( dateTimePreviewContainers[ i ] ).render(
+		createRoot( container ).render(
 			<DateTimePreview attrs={ attrs } />,
 		);
 	}
+}
+
+/**
+ * Non-time PHP Date format characters
+ *
+ * @since 1.0.0
+ *
+ * @see https://www.php.net/manual/en/datetime.format.php
+ *
+ * @type {Array}
+ */
+export const phpNonTimeFormatChars = [
+	'd',
+	'D',
+	'j',
+	'l',
+	'N',
+	'S',
+	'w',
+	'z',
+	'W',
+	'F',
+	'm',
+	'M',
+	'n',
+	't',
+	'L',
+	'o',
+	'X',
+	'x',
+	'Y',
+	'y',
+	'e',
+	'I',
+	'O',
+	'P',
+	'p',
+	'T',
+	'Z',
+	'c',
+	'r',
+	'U',
+	',',
+];
+
+/**
+ * Remove non-time characters from PHP format string
+ *
+ * @since 1.0.0
+ *
+ * @param {string} format - The PHP datetime format.
+ * @return {string} The PHP time-only format.
+ */
+export function removeNonTimePHPFormatChars( format ) {
+	return format
+		.split( '' )
+		.filter( ( char ) => ! phpNonTimeFormatChars.includes( char ) )
+		.join( '' )
+		.trim();
 }

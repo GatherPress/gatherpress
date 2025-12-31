@@ -26,8 +26,8 @@ import { useState, useEffect } from '@wordpress/element';
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
 import { getFromGlobal } from '../../helpers/globals';
-import { isEventPostType } from '../../helpers/event';
-import { getEditorDocument } from '../../helpers/editor';
+import { hasValidEventId, isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
 
 /**
  * Fetch RSVP responses from the API.
@@ -58,15 +58,24 @@ async function fetchRsvpResponses( postId ) {
  * @return {JSX.Element} The rendered edit interface for the block.
  */
 const Edit = ( { attributes, setAttributes, context } ) => {
-	const blockProps = useBlockProps();
 	const [ editMode, setEditMode ] = useState( false );
 	const [ showEmptyRsvpBlock, setShowEmptyRsvpBlock ] = useState( false );
 	const [ defaultStatus, setDefaultStatus ] = useState( 'attending' );
 	const [ responses, setResponses ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
-	const postId = attributes?.postId ?? context?.postId ?? null;
+	// Normalize empty strings to null so fallback to context.postId works correctly.
+	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
 	const { rsvpLimitEnabled, rsvpLimit } = attributes;
+
+	// Check if block has a valid event connection.
+	const isValidEvent = hasValidEventId( postId );
+
+	const blockProps = useBlockProps( {
+		style: {
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+		},
+	} );
 
 	useEffect( () => {
 		const editorDoc = getEditorDocument();
@@ -87,10 +96,10 @@ const Edit = ( { attributes, setAttributes, context } ) => {
 				);
 			} );
 			responseBlocks.forEach( ( block ) => {
-				if ( ! showEmptyRsvpBlock ) {
-					block.style.removeProperty( 'display' );
-				} else {
+				if ( showEmptyRsvpBlock ) {
 					block.style.setProperty( 'display', 'none', 'important' );
+				} else {
+					block.style.removeProperty( 'display' );
 				}
 			} );
 		};

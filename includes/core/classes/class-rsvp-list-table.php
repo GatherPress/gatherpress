@@ -35,6 +35,13 @@ class RSVP_List_Table extends WP_List_Table {
 	const DEFAULT_PER_PAGE = 20;
 
 	/**
+	 * HTML template for status view links with count badge.
+	 *
+	 * @var string
+	 */
+	const STATUS_LINK_TEMPLATE = '<a href="%s"%s>%s <span class="count">(%s)</span></a>';
+
+	/**
 	 * Initializes the RSVP list table.
 	 *
 	 * Sets up the table with appropriate labels and configuration options.
@@ -284,7 +291,8 @@ class RSVP_List_Table extends WP_List_Table {
 						$search_term = '%' . $wpdb->esc_like( $search ) . '%';
 
 						$clauses['where'] .= $wpdb->prepare(
-							" AND (comment_author LIKE %s OR comment_author_email LIKE %s OR {$wpdb->posts}.post_title LIKE %s)",
+							' AND (comment_author LIKE %s OR comment_author_email LIKE %s OR ' .
+							"{$wpdb->posts}.post_title LIKE %s)",
 							$search_term,
 							$search_term,
 							$search_term
@@ -306,12 +314,24 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['post_id'] = intval( $_REQUEST['event'] );
 		}
 
-		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
-			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
-			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
+		if (
+			isset( $_REQUEST['status'] ) &&
+			in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true )
+		) {
+			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+
+			if ( 'approved' === $status ) {
+				$args['status'] = 'approve';
+			} elseif ( 'spam' === $status ) {
+				$args['status'] = 'spam';
+			} else {
+				$args['status'] = 'hold';
+			}
 		}
 
-		$orderby = isset( $_REQUEST['orderby'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) ) : 'comment_date';
+		$orderby = isset( $_REQUEST['orderby'] )
+			? sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) )
+			: 'comment_date';
 		$order   = isset( $_REQUEST['order'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['order'] ) ) : 'DESC';
 
 		$args['orderby'] = $orderby;
@@ -365,9 +385,19 @@ class RSVP_List_Table extends WP_List_Table {
 			$args['post_id'] = intval( $_REQUEST['event'] );
 		}
 
-		if ( isset( $_REQUEST['status'] ) && in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true ) ) {
-			$status         = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
-			$args['status'] = ( 'approved' === $status ) ? 'approve' : ( ( 'spam' === $status ) ? 'spam' : 'hold' );
+		if (
+			isset( $_REQUEST['status'] ) &&
+			in_array( $_REQUEST['status'], array( 'approved', 'pending', 'spam' ), true )
+		) {
+			$status = sanitize_text_field( wp_unslash( $_REQUEST['status'] ) );
+
+			if ( 'approved' === $status ) {
+				$args['status'] = 'approve';
+			} elseif ( 'spam' === $status ) {
+				$args['status'] = 'spam';
+			} else {
+				$args['status'] = 'hold';
+			}
 		}
 
 		return $rsvp_query->get_rsvps( $args );
@@ -418,7 +448,8 @@ class RSVP_List_Table extends WP_List_Table {
 
 				return $name;
 			case 'event':
-				return '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' . wp_kses_post( $item['event_title'] ) . '</a>';
+				return '<a href="' . esc_url( get_permalink( $item['comment_post_ID'] ) ) . '">' .
+					wp_kses_post( $item['event_title'] ) . '</a>';
 			case 'approved':
 				$statuses = array(
 					'1'    => __( 'Approved', 'gatherpress' ),
@@ -468,14 +499,9 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return string HTML content for the attendee column, including attendee information and action links.
 	 */
 	public function column_attendee( array $item ): string {
-		$base_url    = admin_url( 'edit.php' );
-		$current_url = add_query_arg(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'page'      => Rsvp::COMMENT_TYPE,
-			),
-			$base_url
-		);
+		// Use current URL to preserve all filtering parameters.
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 		$nonce       = wp_create_nonce( Rsvp::COMMENT_TYPE );
 		$actions     = array();
 		$is_approved = ( '1' === $item['comment_approved'] );
@@ -608,11 +634,18 @@ class RSVP_List_Table extends WP_List_Table {
 			return;
 		}
 
-		$status      = ( '1' === $item['comment_approved'] ) ? 'approved' :
-			( ( 'spam' === $item['comment_approved'] ) ? 'spam' : 'unapproved' );
+		if ( '1' === $item['comment_approved'] ) {
+			$status = 'approved';
+		} elseif ( 'spam' === $item['comment_approved'] ) {
+			$status = 'spam';
+		} else {
+			$status = 'unapproved';
+		}
+
 		$odd_or_even = 'odd';
 
-		echo '<tr id="' . esc_attr( 'gatherpress-rsvp-' . $item['comment_ID'] ) . '" class="' . esc_attr( 'gatherpress-rsvp ' . $odd_or_even . ' ' . $status ) . '">';
+		echo '<tr id="' . esc_attr( 'gatherpress-rsvp-' . $item['comment_ID'] ) . '" class="' .
+			esc_attr( 'gatherpress-rsvp ' . $odd_or_even . ' ' . $status ) . '">';
 
 		$this->single_row_columns( $item );
 
@@ -636,7 +669,13 @@ class RSVP_List_Table extends WP_List_Table {
 		if ( ! $nonce || ! wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
 			// Check for delete action nonce separately.
 			if ( 'delete' === $this->current_action() ) {
-				if ( ! isset( $_REQUEST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ), 'gatherpress_rsvp_action' ) ) {
+				if (
+					! isset( $_REQUEST['_wpnonce'] ) ||
+					! wp_verify_nonce(
+						sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ),
+						'gatherpress_rsvp_action'
+					)
+				) {
 					return;
 				}
 			} else {
@@ -682,6 +721,19 @@ class RSVP_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Gets the CSS class attribute for current status links.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $status_key The status key to check.
+	 * @param string $current    The currently active status.
+	 * @return string The class attribute string or empty string.
+	 */
+	private function get_current_class_attr( string $status_key, string $current ): string {
+		return $status_key === $current ? ' class="current"' : '';
+	}
+
+	/**
 	 * Retrieves the list of views available on this table.
 	 *
 	 * Overrides parent method to add custom views for RSVP management.
@@ -694,112 +746,124 @@ class RSVP_List_Table extends WP_List_Table {
 	 * @return array An array of HTML links for different views.
 	 */
 	public function get_views(): array {
-		$rsvp_query     = Rsvp_Query::get_instance();
-		$status_links   = array();
-		$current        = 'all';
-		$nonce_verified = false;
+		$rsvp_query   = Rsvp_Query::get_instance();
+		$status_links = array();
+		$current      = 'all';
 
-		if ( isset( $_REQUEST['_wpnonce'] ) ) {
-			$nonce = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) );
+		// Check for post_id filter.
+		$post_id = 0;
 
-			if ( wp_verify_nonce( $nonce, Rsvp::COMMENT_TYPE ) ) {
-				$nonce_verified = true;
-			}
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- View state only, no data modification.
+		if ( isset( $_REQUEST['post_id'] ) && ! empty( $_REQUEST['post_id'] ) ) {
+			$post_id = intval( $_REQUEST['post_id'] );
 		}
 
-		if ( $nonce_verified ) {
-			if ( isset( $_REQUEST['user_id'] ) ) {
-				$user_id = absint( $_REQUEST['user_id'] );
+		// Check for current view status (doesn't require nonce).
+		if ( isset( $_REQUEST['user_id'] ) ) {
+			$user_id = absint( $_REQUEST['user_id'] );
 
-				if ( get_current_user_id() === $user_id ) {
-					$current = 'mine';
-				}
-			} elseif ( isset( $_REQUEST['status'] ) ) {
-				$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
+			if ( get_current_user_id() === $user_id ) {
+				$current = 'mine';
 			}
+		} elseif ( isset( $_REQUEST['status'] ) ) {
+			$current = sanitize_key( wp_unslash( $_REQUEST['status'] ) );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-		$base_url = add_query_arg(
-			array(
-				'post_type' => Event::POST_TYPE,
-				'page'      => Rsvp::COMMENT_TYPE,
-				'_wpnonce'  => wp_create_nonce( Rsvp::COMMENT_TYPE ),
-			),
-			admin_url( 'edit.php' )
+		$base_url_args = array(
+			'post_type' => Event::POST_TYPE,
+			'page'      => Rsvp::COMMENT_TYPE,
+			'_wpnonce'  => wp_create_nonce( Rsvp::COMMENT_TYPE ),
 		);
+
+		// Preserve post_id filter in base URL.
+		if ( $post_id ) {
+			$base_url_args['post_id'] = $post_id;
+		}
+
+		$base_url = add_query_arg( $base_url_args, admin_url( 'edit.php' ) );
+
+		// Base args for count queries.
+		$count_base_args = array( 'count' => true );
+
+		if ( $post_id ) {
+			$count_base_args['post_id'] = $post_id;
+		}
 
 		// Get counts for each status.
 		$all_count      = $rsvp_query->get_rsvps(
-			array(
-				'status' => 'all',
-				'count'  => true,
+			array_merge(
+				$count_base_args,
+				array( 'status' => 'all' )
 			)
 		);
 		$approved_count = $rsvp_query->get_rsvps(
-			array(
-				'status' => 'approve',
-				'count'  => true,
+			array_merge(
+				$count_base_args,
+				array( 'status' => 'approve' )
 			)
 		);
 		$pending_count  = $rsvp_query->get_rsvps(
-			array(
-				'status' => 'hold',
-				'count'  => true,
+			array_merge(
+				$count_base_args,
+				array( 'status' => 'hold' )
 			)
 		);
 		$spam_count     = $rsvp_query->get_rsvps(
-			array(
-				'status' => 'spam',
-				'count'  => true,
+			array_merge(
+				$count_base_args,
+				array( 'status' => 'spam' )
 			)
 		);
 		$mine_count     = $rsvp_query->get_rsvps(
-			array(
-				'status'  => 'all',
-				'user_id' => get_current_user_id(),
-				'count'   => true,
+			array_merge(
+				$count_base_args,
+				array(
+					'status'  => 'all',
+					'user_id' => get_current_user_id(),
+				)
 			)
 		);
 
 		// Build the links array with nonce included in base URL.
 		$status_links['all'] = sprintf(
-			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			self::STATUS_LINK_TEMPLATE,
 			esc_url( $base_url ),
-			'all' === $current ? ' class="current"' : '',
+			$this->get_current_class_attr( 'all', $current ),
 			__( 'All', 'gatherpress' ),
 			number_format_i18n( $all_count )
 		);
 
 		if ( $mine_count > 0 ) {
 			$status_links['mine'] = sprintf(
-				'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+				self::STATUS_LINK_TEMPLATE,
 				esc_url( add_query_arg( array( 'user_id' => get_current_user_id() ), $base_url ) ),
-				'mine' === $current ? ' class="current"' : '',
+				$this->get_current_class_attr( 'mine', $current ),
 				__( 'Mine', 'gatherpress' ),
 				number_format_i18n( $mine_count )
 			);
 		}
 
 		$status_links['approved'] = sprintf(
-			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			self::STATUS_LINK_TEMPLATE,
 			esc_url( add_query_arg( array( 'status' => 'approved' ), $base_url ) ),
-			'approved' === $current ? ' class="current"' : '',
+			$this->get_current_class_attr( 'approved', $current ),
 			__( 'Approved', 'gatherpress' ),
 			number_format_i18n( $approved_count )
 		);
 
 		$status_links['pending'] = sprintf(
-			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			self::STATUS_LINK_TEMPLATE,
 			esc_url( add_query_arg( array( 'status' => 'pending' ), $base_url ) ),
-			'pending' === $current ? ' class="current"' : '',
+			$this->get_current_class_attr( 'pending', $current ),
 			__( 'Pending', 'gatherpress' ),
 			number_format_i18n( $pending_count )
 		);
 
 		$status_links['spam'] = sprintf(
-			'<a href="%s"%s>%s <span class="count">(%s)</span></a>',
+			self::STATUS_LINK_TEMPLATE,
 			esc_url( add_query_arg( array( 'status' => 'spam' ), $base_url ) ),
-			'spam' === $current ? ' class="current"' : '',
+			$this->get_current_class_attr( 'spam', $current ),
 			__( 'Spam', 'gatherpress' ),
 			number_format_i18n( $spam_count )
 		);

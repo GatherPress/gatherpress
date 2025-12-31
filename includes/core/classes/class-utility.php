@@ -45,12 +45,14 @@ class Utility {
 		}
 
 		if ( true === $output ) {
-			require $path;
+			// Loading PHP template file, not importing a class.
+			require $path; // NOSONAR.
 			return '';
 		}
 
 		ob_start();
-		require $path;
+		// Loading PHP template file, not importing a class.
+		require $path; // NOSONAR.
 		return ob_get_clean();
 	}
 
@@ -234,7 +236,8 @@ class Utility {
 	 *
 	 * @since 1.0.0
 	 *
-	 * @return string The timezone string representing the system's default timezone. Falls back to a UTC offset representation if a named timezone string is not set.
+	 * @return string The timezone string representing the system's default timezone.
+	 *                Falls back to a UTC offset representation if a named timezone string is not set.
 	 */
 	public static function get_system_timezone(): string {
 		$gmt_offset      = intval( get_option( 'gmt_offset' ) );
@@ -323,5 +326,145 @@ class Utility {
 		}
 
 		return $user_id;
+	}
+
+	/**
+	 * Check if a CSS class string contains a specific class.
+	 *
+	 * This method properly handles space-separated CSS class strings and checks for
+	 * exact class matches, preventing false positives from substring matches.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string|null $class_string The CSS class string to search in.
+	 * @param string      $target_class The specific class to search for.
+	 *
+	 * @return bool True if the target class is found, false otherwise.
+	 */
+	public static function has_css_class( ?string $class_string, string $target_class ): bool {
+		if ( empty( $class_string ) || empty( $target_class ) ) {
+			return false;
+		}
+
+		$classes = preg_split( '/\s+/', trim( $class_string ) );
+
+		return in_array( $target_class, $classes, true );
+	}
+
+	/**
+	 * Get HTTP input with optional mocking for testing.
+	 *
+	 * Wrapper around filter_input() that can be easily mocked for testing.
+	 * In production, uses real filter_input(). In tests, can use filters to mock data.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int           $type      Input type (INPUT_GET, INPUT_POST, INPUT_COOKIE, INPUT_SERVER, INPUT_ENV).
+	 * @param string        $var_name  Variable name to retrieve.
+	 * @param callable|null $sanitizer Sanitization function to apply. Defaults to sanitize_text_field.
+	 *
+	 * @return string Sanitized input value or empty string if not found.
+	 */
+	public static function get_http_input( int $type, string $var_name, ?callable $sanitizer = null ): string {
+		$value = null;
+
+		// Only allow pre-filtering during unit tests for security.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			/**
+			 * Short-circuit filter for HTTP input retrieval during testing.
+			 *
+			 * Allows tests to completely bypass filter_input() and provide
+			 * their own values. Only available during unit tests for security.
+			 * Return a non-null value to short-circuit.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param string|null $pre_value Pre-value to return instead of using filter_input.
+			 * @param int         $type      Input type (INPUT_GET, INPUT_POST, etc.).
+			 * @param string      $var_name  Variable name being requested.
+			 */
+			$pre_value = apply_filters( 'gatherpress_pre_get_http_input', null, $type, $var_name );
+
+			if ( null !== $pre_value ) {
+				$value = $pre_value;
+			}
+		}
+
+		if ( null === $value ) {
+			/**
+			 * Raw input value from HTTP request.
+			 *
+			 * @var string|false|null $value
+			 * @phpstan-var 0|1|2|4|5 $type
+			 */
+			$value = filter_input( $type, $var_name );
+		}
+
+		if ( null === $value || false === $value ) {
+			return '';
+		}
+
+		// Apply sanitizer function.
+		if ( null === $sanitizer ) {
+			$sanitizer = 'sanitize_text_field';
+		}
+
+		// For WordPress sanitizers, unslash first.
+		if ( in_array( $sanitizer, array( 'sanitize_text_field', 'sanitize_email' ), true ) ) {
+			$value = wp_unslash( $value );
+		}
+
+		return (string) call_user_func( $sanitizer, $value );
+	}
+
+	/**
+	 * Wrapper for wp_get_referer() with testable fallback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return string|false The referer URL on success, false on failure.
+	 */
+	public static function get_wp_referer() {
+		// Only allow pre-filtering during unit tests for security.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			/**
+			 * Short-circuit filter for wp_get_referer() during testing.
+			 *
+			 * Allows tests to completely bypass wp_get_referer() and provide
+			 * their own referer values. Only available during unit tests for security.
+			 * Return a non-null value to short-circuit.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param string|false|null $pre_value Pre-value to return instead of using wp_get_referer().
+			 */
+			$pre_value = apply_filters( 'gatherpress_pre_get_wp_referer', null );
+			if ( null !== $pre_value ) {
+				return $pre_value;
+			}
+		}
+
+		return wp_get_referer();
+	}
+
+	/**
+	 * Safely exits the script in a testable way.
+	 *
+	 * This method provides a centralized exit point that returns early during unit tests
+	 * instead of calling exit(). The actual exit statement is excluded from code coverage.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public static function safe_exit(): void {
+		// Return early during unit tests instead of exiting.
+		if ( defined( 'WP_TESTS_DOMAIN' ) || ( defined( 'PHPUNIT_RUNNING' ) && PHPUNIT_RUNNING ) ) {
+			return;
+		}
+
+		// @codeCoverageIgnoreStart
+		exit;
+		// @codeCoverageIgnoreEnd
 	}
 }
