@@ -161,7 +161,10 @@ class Abilities_Integration {
 			'gatherpress/list-venues',
 			array(
 				'label'               => __( 'List Venues', 'gatherpress' ),
-				'description'         => __( 'Retrieve a list of all available event venues with their addresses and details.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				'description'         => __(
+					'Retrieve a list of all available event venues with their addresses and details.',
+					'gatherpress'
+				),
 				'category'            => 'venue',
 				'input_schema'        => array(
 					'type'                 => 'object',
@@ -196,7 +199,8 @@ class Abilities_Integration {
 			'gatherpress/list-events',
 			array(
 				'label'               => __( 'List Events', 'gatherpress' ),
-				'description'         => __( 'Retrieve a list of events with their dates, venues, and details. IMPORTANT: When searching for events by name, use the search parameter to find all events (not just upcoming).', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				'description'         => __( 'Retrieve a list of events with their dates, venues, and details. IMPORTANT: When searching for events by name, use the search parameter to find all events (not just upcoming).', 'gatherpress' ),
 				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_list_events' ),
 				'permission_callback' => static function (): bool {
@@ -207,12 +211,16 @@ class Abilities_Integration {
 					'properties' => array(
 						'max_number' => array(
 							'type'        => 'integer',
-							'description' => __( 'Maximum number of events to return (default: 50, maximum: 100). Use -1 or a large number to get more events.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							// phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __( 'Maximum number of events to return (default: 50, maximum: 100). Use -1 or a large number to get more events.', 'gatherpress' ),
 							'default'     => 50,
 						),
 						'search'     => array(
 							'type'        => 'string',
-							'description' => __( 'Search term to find specific events by title or content', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __(
+								'Search term to find specific events by title or content',
+								'gatherpress'
+							),
 						),
 					),
 					'required'   => array(),
@@ -376,7 +384,8 @@ class Abilities_Integration {
 			'gatherpress/create-event',
 			array(
 				'label'               => __( 'Create Event', 'gatherpress' ),
-				'description'         => __( 'Create a new event with a title, date/time, and optional venue. Events are created as drafts by default for review before publishing.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				'description'         => __( 'Create a new event with a title, date/time, and optional venue. Events are created as drafts by default for review before publishing.', 'gatherpress' ),
 				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_create_event' ),
 				'permission_callback' => static function (): bool {
@@ -443,24 +452,32 @@ class Abilities_Integration {
 			'gatherpress/calculate-dates',
 			array(
 				'label'               => __( 'Calculate Recurring Dates', 'gatherpress' ),
-				'description'         => __( 'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. 2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. 3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. 4) "Relative dates" (e.g., "next Tuesday", "tomorrow") - calculates relative dates. 5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				'description'         => __( 'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. 2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. 3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. 4) "Relative dates" (e.g., "next Tuesday", "tomorrow") - calculates relative dates. 5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.', 'gatherpress' ),
 				'category'            => 'event',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
 						'pattern'     => array(
 							'type'        => 'string',
-							'description' => __( 'The date pattern to calculate (e.g., "3rd Tuesday", "every Monday", "next Thursday", "3 weeks from Friday")', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							// phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __( 'The date pattern to calculate (e.g., "3rd Tuesday", "every Monday", "next Thursday", "3 weeks from Friday")', 'gatherpress' ),
 						),
 						'occurrences' => array(
 							'type'        => 'integer',
-							'description' => __( 'Number of dates to calculate (minimum 1)', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __(
+								'Number of dates to calculate (minimum 1)',
+								'gatherpress'
+							),
 							'minimum'     => 1,
 						),
 						'start_date'  => array(
 							'type'        => 'string',
 							'format'      => 'date',
-							'description' => __( 'Start date in Y-m-d format (defaults to today)', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __(
+								'Start date in Y-m-d format (defaults to today)',
+								'gatherpress'
+							),
 						),
 					),
 					'required'   => array( 'pattern', 'occurrences' ),
@@ -493,7 +510,10 @@ class Abilities_Integration {
 			'gatherpress/update-venue',
 			array(
 				'label'               => __( 'Update Venue', 'gatherpress' ),
-				'description'         => __( 'Update an existing venue\'s information including name, address, and contact details.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				'description'         => __(
+					'Update an existing venue\'s information including name, address, and contact details.',
+					'gatherpress'
+				),
 				'category'            => 'venue',
 				'execute_callback'    => array( $this, 'execute_update_venue' ),
 				'permission_callback' => static function (): bool {
@@ -549,7 +569,10 @@ class Abilities_Integration {
 			'gatherpress/update-event',
 			array(
 				'label'               => __( 'Update Event', 'gatherpress' ),
-				'description'         => __( 'Update an existing event\'s details including title, date/time, venue, and description.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				'description'         => __(
+					'Update an existing event\'s details including title, date/time, venue, and description.',
+					'gatherpress'
+				),
 				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_update_event' ),
 				'permission_callback' => static function (): bool {
@@ -633,7 +656,7 @@ class Abilities_Integration {
 				$venue_info_json = get_post_meta( $venue_post->ID, 'gatherpress_venue_information', true );
 				$venue_info      = json_decode( $venue_info_json, true );
 
-				$edit_url  = get_edit_post_link( $venue_post->ID, 'raw' ); // phpcs:ignore Generic.Files.LineLength.TooLong
+				$edit_url  = get_edit_post_link( $venue_post->ID, 'raw' );
 				$permalink = get_permalink( $venue_post->ID );
 
 				$venue_list[] = array(
@@ -886,7 +909,10 @@ class Abilities_Integration {
 		if ( ! $start_datetime ) {
 			return array(
 				'success' => false,
-				'message' => __( 'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				'message' => __(
+					'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)',
+					'gatherpress'
+				),
 			);
 		}
 
@@ -1088,7 +1114,10 @@ class Abilities_Integration {
 			$post_update['post_content'] = wp_kses_post( $params['description'] );
 		}
 
-		if ( isset( $params['post_status'] ) && in_array( $params['post_status'], array( 'draft', 'publish' ), true ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		if (
+			isset( $params['post_status'] ) &&
+			in_array( $params['post_status'], array( 'draft', 'publish' ), true )
+		) {
 			$post_update['post_status'] = $params['post_status'];
 		}
 
@@ -1116,7 +1145,10 @@ class Abilities_Integration {
 			if ( ! $start_datetime ) {
 				return array(
 					'success' => false,
-					'message' => __( 'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+					'message' => __(
+						'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)',
+						'gatherpress'
+					),
 				);
 			}
 			$datetime_params['datetime_start'] = $start_datetime->format( 'Y-m-d H:i:s' );
@@ -1127,7 +1159,10 @@ class Abilities_Integration {
 			if ( ! $end_datetime ) {
 				return array(
 					'success' => false,
-					'message' => __( 'Invalid end date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 21:00:00)', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+					'message' => __(
+						'Invalid end date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 21:00:00)',
+						'gatherpress'
+					),
 				);
 			}
 			$datetime_params['datetime_end'] = $end_datetime->format( 'Y-m-d H:i:s' );
@@ -1199,11 +1234,11 @@ class Abilities_Integration {
 			$content            .= '<p>' . $description_content . '</p>' . "\n";
 			$content            .= '<!-- /wp:paragraph -->' . "\n\n";
 		} else {
-			$description_placeholder = __(
-				'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', // phpcs:ignore Generic.Files.LineLength.TooLong
-				'gatherpress'
-			);
-			$content                .= '<!-- wp:paragraph {"placeholder":"' . esc_attr( $description_placeholder ) . '"} -->' . "\n"; // phpcs:ignore Generic.Files.LineLength.TooLong
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$description_placeholder = __( 'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', 'gatherpress' );
+			$content                .= '<!-- wp:paragraph {"placeholder":"'
+				. esc_attr( $description_placeholder )
+				. '"} -->' . "\n";
 			$content                .= '<p></p>' . "\n";
 			$content                .= '<!-- /wp:paragraph -->' . "\n\n";
 		}
@@ -1273,7 +1308,8 @@ class Abilities_Integration {
 			'gatherpress/update-events-batch',
 			array(
 				'label'               => __( 'Update Multiple Events', 'gatherpress' ),
-				'description'         => __( 'Update multiple events at once based on search criteria. IMPORTANT: When user says "change events from X to Y", this means CHANGE the start time from X to Y. Do NOT search for events currently at X - instead, find all matching events and change their start time to Y. For time ranges "from X to Y", set start time to X and end time to Y.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				'description'         => __( 'Update multiple events at once based on search criteria. IMPORTANT: When user says "change events from X to Y", this means CHANGE the start time from X to Y. Do NOT search for events currently at X - instead, find all matching events and change their start time to Y. For time ranges "from X to Y", set start time to X and end time to Y.', 'gatherpress' ),
 				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_update_events_batch' ),
 				'permission_callback' => static function (): bool {
@@ -1284,15 +1320,18 @@ class Abilities_Integration {
 					'properties' => array(
 						'search_term'    => array(
 							'type'        => 'string',
-							'description' => __( 'Search term to find events to update (searches title and content).', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							// phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __( 'Search term to find events to update (searches title and content).', 'gatherpress' ),
 						),
 						'datetime_start' => array(
 							'type'        => 'string',
-							'description' => __( 'New start datetime in Y-m-d H:i:s format. For "change from X to Y", this should be the NEW start time (Y). For time ranges "from X to Y", this should be X.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							// phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __( 'New start datetime in Y-m-d H:i:s format. For "change from X to Y", this should be the NEW start time (Y). For time ranges "from X to Y", this should be X.', 'gatherpress' ),
 						),
 						'datetime_end'   => array(
 							'type'        => 'string',
-							'description' => __( 'New end datetime in Y-m-d H:i:s format. For time ranges "from X to Y", this should be Y.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+							// phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __( 'New end datetime in Y-m-d H:i:s format. For time ranges "from X to Y", this should be Y.', 'gatherpress' ),
 						),
 						'venue_id'       => array(
 							'type'        => 'integer',
@@ -1319,7 +1358,7 @@ class Abilities_Integration {
 	 * @param array $params The parameters passed to the ability.
 	 * @return array The result of the ability execution.
 	 */
-	public function execute_search_events( array $params ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
+	public function execute_search_events( array $params ): array {
 		// Validate required parameters.
 		if ( empty( $params['search_term'] ) ) {
 			return array(
@@ -1419,7 +1458,10 @@ class Abilities_Integration {
 		if ( ! $has_updates ) {
 			return array(
 				'success' => false,
-				'message' => __( 'At least one update parameter (datetime_start, datetime_end, or venue_id) is required.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				'message' => __(
+					'At least one update parameter (datetime_start, datetime_end, or venue_id) is required.',
+					'gatherpress'
+				),
 			);
 		}
 
@@ -1600,7 +1642,7 @@ class Abilities_Integration {
 		}
 
 		return array(
-			'success' => true, // phpcs:ignore Generic.Files.LineLength.TooLong
+			'success' => true,
 			'data'    => $topic_list,
 			'message' => sprintf(
 				/* translators: %d: number of topics */
