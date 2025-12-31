@@ -144,7 +144,7 @@ class Admin_Page {
 					<p>
 						<?php
 						esc_html_e(
-							'Tell me what you want to do in plain English, and I\'ll help you create and manage your GatherPress events.',
+							'Tell me what you want to do in plain English, and I\'ll help you create and manage your GatherPress events.', // phpcs:ignore Generic.Files.LineLength.TooLong
 							'gatherpress'
 						);
 						?>

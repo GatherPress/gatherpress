@@ -212,7 +212,7 @@ class Abilities_Integration {
 						),
 						'search'     => array(
 							'type'        => 'string',
-							'description' => __( 'Search term to find specific events by title or content', 'gatherpress' ),
+							'description' => __( 'Search term to find specific events by title or content', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 						),
 					),
 					'required'   => array(),
@@ -376,7 +376,7 @@ class Abilities_Integration {
 			'gatherpress/create-event',
 			array(
 				'label'               => __( 'Create Event', 'gatherpress' ),
-				'description'         => __( 'Create a new event with a title, date/time, and optional venue. Events are created as drafts by default for review before publishing.', 'gatherpress' ),
+				'description'         => __( 'Create a new event with a title, date/time, and optional venue. Events are created as drafts by default for review before publishing.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_create_event' ),
 				'permission_callback' => static function (): bool {
@@ -450,7 +450,7 @@ class Abilities_Integration {
 					'properties' => array(
 						'pattern'     => array(
 							'type'        => 'string',
-							'description' => __( 'The date pattern to calculate (e.g., "3rd Tuesday", "every Monday", "next Thursday", "3 weeks from Friday")', 'gatherpress' ),
+							'description' => __( 'The date pattern to calculate (e.g., "3rd Tuesday", "every Monday", "next Thursday", "3 weeks from Friday")', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 						),
 						'occurrences' => array(
 							'type'        => 'integer',
@@ -493,7 +493,7 @@ class Abilities_Integration {
 			'gatherpress/update-venue',
 			array(
 				'label'               => __( 'Update Venue', 'gatherpress' ),
-				'description'         => __( 'Update an existing venue\'s information including name, address, and contact details.', 'gatherpress' ),
+				'description'         => __( 'Update an existing venue\'s information including name, address, and contact details.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 				'category'            => 'venue',
 				'execute_callback'    => array( $this, 'execute_update_venue' ),
 				'permission_callback' => static function (): bool {
@@ -549,7 +549,7 @@ class Abilities_Integration {
 			'gatherpress/update-event',
 			array(
 				'label'               => __( 'Update Event', 'gatherpress' ),
-				'description'         => __( 'Update an existing event\'s details including title, date/time, venue, and description.', 'gatherpress' ),
+				'description'         => __( 'Update an existing event\'s details including title, date/time, venue, and description.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 				'category'            => 'event',
 				'execute_callback'    => array( $this, 'execute_update_event' ),
 				'permission_callback' => static function (): bool {
@@ -614,7 +614,7 @@ class Abilities_Integration {
 	 * @param array $params Optional parameters (currently unused).
 	 * @return array Response with venue list or error.
 	 */
-	public function execute_list_venues( array $params = array() ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	public function execute_list_venues( array $params = array() ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Generic.Files.LineLength.TooLong
 		try {
 			$venues = get_posts(
 				array(
@@ -885,7 +885,7 @@ class Abilities_Integration {
 		if ( ! $start_datetime ) {
 			return array(
 				'success' => false,
-				'message' => __( 'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)', 'gatherpress' ),
+				'message' => __( 'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 			);
 		}
 
@@ -1087,7 +1087,7 @@ class Abilities_Integration {
 			$post_update['post_content'] = wp_kses_post( $params['description'] );
 		}
 
-		if ( isset( $params['post_status'] ) && in_array( $params['post_status'], array( 'draft', 'publish' ), true ) ) {
+		if ( isset( $params['post_status'] ) && in_array( $params['post_status'], array( 'draft', 'publish' ), true ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
 			$post_update['post_status'] = $params['post_status'];
 		}
 
@@ -1115,7 +1115,7 @@ class Abilities_Integration {
 			if ( ! $start_datetime ) {
 				return array(
 					'success' => false,
-					'message' => __( 'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)', 'gatherpress' ),
+					'message' => __( 'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 				);
 			}
 			$datetime_params['datetime_start'] = $start_datetime->format( 'Y-m-d H:i:s' );
@@ -1126,7 +1126,7 @@ class Abilities_Integration {
 			if ( ! $end_datetime ) {
 				return array(
 					'success' => false,
-					'message' => __( 'Invalid end date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 21:00:00)', 'gatherpress' ),
+					'message' => __( 'Invalid end date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 21:00:00)', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 				);
 			}
 			$datetime_params['datetime_end'] = $end_datetime->format( 'Y-m-d H:i:s' );
@@ -1199,10 +1199,10 @@ class Abilities_Integration {
 			$content            .= '<!-- /wp:paragraph -->' . "\n\n";
 		} else {
 			$description_placeholder = __(
-				'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.',
+				'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', // phpcs:ignore Generic.Files.LineLength.TooLong
 				'gatherpress'
 			);
-			$content                .= '<!-- wp:paragraph {"placeholder":"' . esc_attr( $description_placeholder ) . '"} -->' . "\n";
+			$content                .= '<!-- wp:paragraph {"placeholder":"' . esc_attr( $description_placeholder ) . '"} -->' . "\n"; // phpcs:ignore Generic.Files.LineLength.TooLong
 			$content                .= '<p></p>' . "\n";
 			$content                .= '<!-- /wp:paragraph -->' . "\n\n";
 		}
@@ -1418,7 +1418,7 @@ class Abilities_Integration {
 		if ( ! $has_updates ) {
 			return array(
 				'success' => false,
-				'message' => __( 'At least one update parameter (datetime_start, datetime_end, or venue_id) is required.', 'gatherpress' ),
+				'message' => __( 'At least one update parameter (datetime_start, datetime_end, or venue_id) is required.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
 			);
 		}
 
@@ -1569,7 +1569,7 @@ class Abilities_Integration {
 	 * @param array $params Optional parameters (currently unused).
 	 * @return array List of topics with their IDs and names.
 	 */
-	public function execute_list_topics( array $params = array() ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	public function execute_list_topics( array $params = array() ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found,Generic.Files.LineLength.TooLong
 		$topics = get_terms(
 			array(
 				'taxonomy'   => Topic::TAXONOMY,
