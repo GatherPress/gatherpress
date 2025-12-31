@@ -267,8 +267,7 @@ class Test_Admin_Page extends Base {
 			'version'      => '1.0.0',
 		);
 
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents,WordPress.PHP.DevelopmentFunctions.error_log_var_export
 		file_put_contents( $asset_path, '<?php return ' . var_export( $asset_data, true ) . ';' );
 
 		$result = \PMC\Unit_Test\Utility::invoke_hidden_method( $instance, 'get_asset_data', array( 'ai-assistant' ) );
@@ -291,7 +290,6 @@ class Test_Admin_Page extends Base {
 	 *
 	 * @return void
 	 */
-	// phpcs:ignore Generic.Files.LineLength.TooLong
 	public function test_get_asset_data_when_file_not_exists(): void {
 		$instance = Admin_Page::get_instance();
 
