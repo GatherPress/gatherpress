@@ -278,20 +278,20 @@ class Settings {
 									);
 								};
 							} elseif ( 'password' === $option_settings['field']['type'] ) {
+								// phpcs:ignore Generic.Files.LineLength.TooLong
 								$option_settings['callback'] = function () use ( $sub_page, $section, $option, $option_settings ) {
 									$sub_page = Utility::prefix_key( $sub_page );
 									$this->text( $sub_page, $section, $option, $option_settings );
 								};
 							}
-							// phpcs:disable Generic.Files.LineLength.TooLong
+							$prefix_key = Utility::prefix_key( $sub_page );
 							add_settings_field(
 								$option,
 								$option_settings['labels']['name'],
 								$option_settings['callback'],
-								Utility::prefix_key( $sub_page ),
+								$prefix_key,
 								$section
 							);
-							// phpcs:enable Generic.Files.LineLength.TooLong
 						}
 					}
 				}
