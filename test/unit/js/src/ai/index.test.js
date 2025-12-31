@@ -72,7 +72,7 @@ const createMockJQuery = () => {
 		const mockElement = createMockElement();
 
 		// Handle jQuery(document).ready() - check if selector is document
-		if ( selector && ( selector.nodeType === 9 || selector === global.document || selector.toString().includes( 'HTMLDocument' ) ) ) {
+		if ( selector && ( 9 === selector.nodeType || global.document === selector || selector.toString().includes( 'HTMLDocument' ) ) ) {
 			mockElement.ready = jest.fn( ( callback ) => {
 				callback( mock );
 			} );
@@ -110,7 +110,6 @@ jest.resetModules();
 describe( 'AI Assistant', () => {
 	let mockPrompt, mockSubmit, mockMessages, mockStatus;
 	let ajaxSpy;
-	let aiModule;
 
 	beforeEach( () => {
 		// Reset mocks and create fresh jQuery mock
@@ -168,7 +167,7 @@ describe( 'AI Assistant', () => {
 		// Mock jQuery selector returns
 		mockJQuery.mockImplementation( ( selector ) => {
 			// Handle jQuery(document).ready()
-			if ( selector && ( selector.nodeType === 9 || selector === global.document || selector.toString().includes( 'HTMLDocument' ) ) ) {
+			if ( selector && ( 9 === selector.nodeType || global.document === selector || selector.toString().includes( 'HTMLDocument' ) ) ) {
 				const docElement = createMockElement();
 				docElement.ready = jest.fn( ( callback ) => {
 					callback( mockJQuery );
@@ -225,7 +224,7 @@ describe( 'AI Assistant', () => {
 	describe( 'Initialization', () => {
 		it( 'should initialize on document ready', () => {
 			// Require the module to trigger initialization
-			aiModule = require( '../../../../../src/ai/index.js' );
+			require( '../../../../../src/ai/index.js' );
 
 			// Check that jQuery was called with document
 			expect( mockJQuery ).toHaveBeenCalledWith( global.document );
@@ -235,7 +234,7 @@ describe( 'AI Assistant', () => {
 			mockMessages.children.mockReturnValue( { length: 0 } );
 
 			jest.resetModules();
-			aiModule = require( '../../../../../src/ai/index.js' );
+			require( '../../../../../src/ai/index.js' );
 
 			// Wait for async operations
 			setTimeout( () => {
@@ -248,7 +247,7 @@ describe( 'AI Assistant', () => {
 	describe( 'Event Handlers', () => {
 		beforeEach( () => {
 			jest.resetModules();
-			aiModule = require( '../../../../../src/ai/index.js' );
+			require( '../../../../../src/ai/index.js' );
 		} );
 
 		it( 'should attach click handler to submit button', () => {
@@ -267,7 +266,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should process prompt on Enter key (without Shift)', () => {
 			const keydownHandler = mockPrompt.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'keydown'
+				( call ) => 'keydown' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Test prompt' );
@@ -286,7 +285,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should not process prompt on Shift+Enter', () => {
 			const keydownHandler = mockPrompt.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'keydown'
+				( call ) => 'keydown' === call[ 0 ]
 			)[ 1 ];
 
 			const mockEvent = {
@@ -302,7 +301,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should process prompt on submit button click', () => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Test prompt' );
@@ -321,12 +320,12 @@ describe( 'AI Assistant', () => {
 	describe( 'processPrompt', () => {
 		beforeEach( () => {
 			jest.resetModules();
-			aiModule = require( '../../../../../src/ai/index.js' );
+			require( '../../../../../src/ai/index.js' );
 		} );
 
 		it( 'should not process empty prompt', () => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( '   ' ); // Whitespace only
@@ -338,7 +337,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should add user message and clear input', () => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Create an event' );
@@ -351,7 +350,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should disable submit button and show status during processing', () => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Test prompt' );
@@ -364,7 +363,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should send AJAX request with correct data', () => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Create an event' );
@@ -373,11 +372,11 @@ describe( 'AI Assistant', () => {
 
 			expect( ajaxSpy ).toHaveBeenCalledWith(
 				expect.objectContaining( {
-					url: gatherpressAI.ajaxUrl,
+					url: global.gatherpressAI.ajaxUrl,
 					type: 'POST',
 					data: expect.objectContaining( {
 						action: 'gatherpress_ai_process_prompt',
-						nonce: gatherpressAI.nonce,
+						nonce: global.gatherpressAI.nonce,
 						prompt: 'Create an event',
 					} ),
 				} )
@@ -386,7 +385,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should handle successful response', ( done ) => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Test prompt' );
@@ -417,7 +416,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should handle error response', ( done ) => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Test prompt' );
@@ -447,7 +446,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should handle AJAX error', ( done ) => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Test prompt' );
@@ -474,12 +473,12 @@ describe( 'AI Assistant', () => {
 	describe( 'addMessage', () => {
 		beforeEach( () => {
 			jest.resetModules();
-			aiModule = require( '../../../../../src/ai/index.js' );
+			require( '../../../../../src/ai/index.js' );
 		} );
 
 		it( 'should add message with correct type and content', () => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Test' );
@@ -492,7 +491,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should add actions when provided', ( done ) => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Create event' );
@@ -526,7 +525,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should format create-event action correctly', ( done ) => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Create event' );
@@ -563,7 +562,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should format create-venue action correctly', ( done ) => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Create venue' );
@@ -600,7 +599,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should format list-venues action correctly', ( done ) => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'List venues' );
@@ -637,7 +636,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should format list-events action correctly', ( done ) => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'List events' );
@@ -674,7 +673,7 @@ describe( 'AI Assistant', () => {
 
 		it( 'should scroll to bottom after adding message', () => {
 			const clickHandler = mockSubmit.on.mock.calls.find(
-				( call ) => call[ 0 ] === 'click'
+				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
 			mockPrompt.val.mockReturnValue( 'Test' );
@@ -684,6 +683,188 @@ describe( 'AI Assistant', () => {
 			expect( mockMessages.scrollTop ).toHaveBeenCalledWith(
 				mockMessages.scrollHeight
 			);
+		} );
+
+		it( 'should format update-event action correctly', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Update event' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Event updated',
+							actions: [
+								{
+									ability: 'gatherpress/update-event',
+									args: { event_id: 123 },
+									result: {
+										success: true,
+										edit_url: 'http://example.com/edit-event',
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format update-event action without edit_url', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Update event' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Event updated',
+							actions: [
+								{
+									ability: 'gatherpress/update-event',
+									args: { event_id: 456 },
+									result: {
+										success: true,
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format update-venue action correctly', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Update venue' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Venue updated',
+							actions: [
+								{
+									ability: 'gatherpress/update-venue',
+									args: { venue_id: 789 },
+									result: {
+										success: true,
+										edit_url: 'http://example.com/edit-venue',
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format update-venue action without edit_url', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Update venue' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Venue updated',
+							actions: [
+								{
+									ability: 'gatherpress/update-venue',
+									args: { venue_id: 101 },
+									result: {
+										success: true,
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
+		} );
+
+		it( 'should format unknown ability with default case', ( done ) => {
+			const clickHandler = mockSubmit.on.mock.calls.find(
+				( call ) => 'click' === call[ 0 ]
+			)[ 1 ];
+
+			mockPrompt.val.mockReturnValue( 'Execute unknown ability' );
+
+			mockJQuery.ajax.mockImplementation( ( options ) => {
+				setTimeout( () => {
+					options.success( {
+						success: true,
+						data: {
+							response: 'Unknown ability executed',
+							actions: [
+								{
+									ability: 'gatherpress/unknown-ability',
+									args: {},
+									result: {
+										success: true,
+									},
+								},
+							],
+						},
+					} );
+					options.complete();
+				}, 0 );
+			} );
+
+			clickHandler( { preventDefault: jest.fn() } );
+
+			setTimeout( () => {
+				expect( mockMessages.append ).toHaveBeenCalled();
+				done();
+			}, 10 );
 		} );
 	} );
 } );
