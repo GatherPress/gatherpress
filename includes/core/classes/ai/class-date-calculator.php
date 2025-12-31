@@ -112,7 +112,8 @@ class Date_Calculator {
 		$pattern_low = strtolower( trim( $pattern ) );
 
 		// Handle relative patterns first (next, last, this, tomorrow, yesterday).
-		$relative_weekday_pattern = '/^(next|last|this)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i'; // phpcs:ignore Generic.Files.LineLength.TooLong
+		$relative_weekday_pattern = '/^(next|last|this)\s+'
+			. '(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i';
 		if ( preg_match( $relative_weekday_pattern, $pattern_low, $matches ) ) {
 			$relative = strtolower( $matches[1] );
 			$weekday  = strtolower( $matches[2] );
@@ -130,7 +131,11 @@ class Date_Calculator {
 		} elseif ( preg_match( '/^(\d+)\s+(day|days)\s+(ago|before)$/i', $pattern_low, $matches ) ) {
 			$days  = intval( $matches[1] );
 			$dates = $this->calculate_past_day_dates( $days, $occurrences, $start_datetime );
-		} elseif ( preg_match( '/^every\s+other\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( preg_match(
+			'/^every\s+other\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i',
+			$pattern_low,
+			$matches
+		) ) {
 			// Bi-weekly pattern.
 			$weekday = strtolower( $matches[1] );
 			$dates   = $this->calculate_biweekly_dates( $weekday, $occurrences, $start_datetime );
@@ -139,12 +144,21 @@ class Date_Calculator {
 			$interval = intval( $matches[1] );
 			$period   = strtolower( $matches[2] );
 			$dates    = $this->calculate_interval_dates( $interval, $period, $occurrences, $start_datetime );
-		} elseif ( preg_match( '/^(\d+)\s+weeks?\s+from\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( preg_match(
+			'/^(\d+)\s+weeks?\s+from\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i',
+			$pattern_low,
+			$matches
+		) ) {
 			// X weeks from weekday pattern (2 weeks from Thursday).
 			$weeks   = intval( $matches[1] );
 			$weekday = strtolower( $matches[2] );
 			$dates   = $this->calculate_weeks_from_weekday( $weeks, $weekday, $occurrences, $start_datetime );
-		} elseif ( preg_match( '/^(first|second|third|fourth|last|1st|2nd|3rd|4th|5th)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( preg_match(
+			'/^(first|second|third|fourth|last|1st|2nd|3rd|4th|5th)\s+'
+			. '(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i',
+			$pattern_low,
+			$matches
+		) ) {
 			// Original Nth weekday pattern.
 			$ordinal = strtolower( $matches[1] );
 			$weekday = strtolower( $matches[2] );
@@ -189,7 +203,11 @@ class Date_Calculator {
 				$current  = clone $date_obj;
 				$current->modify( 'first day of next month' );
 			}
-		} elseif ( preg_match( '/^every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i', $pattern_low, $matches ) ) { // phpcs:ignore Generic.Files.LineLength.TooLong
+		} elseif ( preg_match(
+			'/^every\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i',
+			$pattern_low,
+			$matches
+		) ) {
 			// Original weekly pattern.
 			$weekday = strtolower( $matches[1] );
 			$current = clone $start_datetime;
@@ -282,7 +300,12 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_relative_weekday_dates( string $relative, string $weekday, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
+	private function calculate_relative_weekday_dates(
+		string $relative,
+		string $weekday,
+		int $occurrences,
+		\DateTime $start_datetime
+	): array {
 		$dates       = array();
 		$current     = clone $start_datetime;
 		$day_num     = $this->get_weekday_number( $weekday );
@@ -339,7 +362,11 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_relative_day_dates( string $relative, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
+	private function calculate_relative_day_dates(
+		string $relative,
+		int $occurrences,
+		\DateTime $start_datetime
+	): array {
 		$dates   = array();
 		$current = clone $start_datetime;
 
@@ -370,7 +397,12 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_relative_period_dates( string $relative, string $period, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
+	private function calculate_relative_period_dates(
+		string $relative,
+		string $period,
+		int $occurrences,
+		\DateTime $start_datetime
+	): array {
 		$dates   = array();
 		$current = clone $start_datetime;
 
@@ -487,7 +519,12 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_interval_dates( int $interval, string $period, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
+	private function calculate_interval_dates(
+		int $interval,
+		string $period,
+		int $occurrences,
+		\DateTime $start_datetime
+	): array {
 		$dates   = array();
 		$current = clone $start_datetime;
 
@@ -516,7 +553,12 @@ class Date_Calculator {
 	 * @param \DateTime $start_datetime Starting date.
 	 * @return array Array of date strings in Y-m-d format.
 	 */
-	private function calculate_weeks_from_weekday( int $weeks, string $weekday, int $occurrences, \DateTime $start_datetime ): array { // phpcs:ignore Generic.Files.LineLength.TooLong
+	private function calculate_weeks_from_weekday(
+		int $weeks,
+		string $weekday,
+		int $occurrences,
+		\DateTime $start_datetime
+	): array {
 		$dates   = array();
 		$current = clone $start_datetime;
 
