@@ -125,7 +125,11 @@ class Admin_Page {
 						?>
 					</p>
 					<p>
-						<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_ai' ) ); // phpcs:ignore Generic.Files.LineLength.TooLong ?>" class="button button-primary">
+						<?php
+						$settings_url = admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_ai' );
+						?>
+						<a href="<?php echo esc_url( $settings_url ); ?>" 
+							class="button button-primary">
 							<?php esc_html_e( 'Configure API Key →', 'gatherpress' ); ?>
 						</a>
 					</p>
@@ -143,9 +147,9 @@ class Admin_Page {
 					<h2><?php esc_html_e( 'Create and Manage Events with AI', 'gatherpress' ); ?></h2>
 					<p>
 						<?php
-						esc_html_e(
-							'Tell me what you want to do in plain English, and I\'ll help you create and manage your GatherPress events.', // phpcs:ignore Generic.Files.LineLength.TooLong
-							'gatherpress'
+						echo esc_html(
+							__( 'Tell me what you want to do in plain English, ', 'gatherpress' ) .
+							__( 'and I\'ll help you create and manage your GatherPress events.', 'gatherpress' )
 						);
 						?>
 					</p>
@@ -153,7 +157,8 @@ class Admin_Page {
 					<div class="gp-ai-examples">
 						<p><strong><?php esc_html_e( 'Example prompts:', 'gatherpress' ); ?></strong></p>
 						<ul>
-							<li>"Create a book club event on the 3rd Tuesday of each month for 6 months at Downtown Library, 7pm"</li> <?php // phpcs:ignore Generic.Files.LineLength.TooLong ?>
+							<li>"Create a book club event on the 3rd Tuesday of each month "
+								. "for 6 months at Downtown Library, 7pm"</li>
 							<li>"Change all Book Club events from 7pm to 8pm"</li>
 							<li>"Create a 5-day conference from May 1-5 at the Convention Center"</li>
 							<li>"List all my venues"</li>
@@ -170,7 +175,7 @@ class Admin_Page {
 						<textarea 
 							id="gp-ai-prompt" 
 							class="gp-ai-prompt" 
-							placeholder="<?php esc_attr_e( 'What would you like me to do? (e.g., Create monthly book club events...)', 'gatherpress' ); // phpcs:ignore Generic.Files.LineLength.TooLong ?>"
+							placeholder="<?php esc_attr_e( 'What would you like me to do?', 'gatherpress' ); ?>"
 							rows="3"
 						></textarea>
 						<button id="gp-ai-submit" class="button button-primary button-large">

@@ -102,10 +102,20 @@ class AI extends Base {
 	 * @return array An array representing the sections and options for the "AI" settings page.
 	 */
 	protected function get_sections(): array {
+		$ai_service_desc_part1 = __(
+			'Configure your AI service provider and API credentials. ',
+			'gatherpress'
+		);
+		$ai_service_desc_part2 = __(
+			'This enables AI-powered features in GatherPress.',
+			'gatherpress'
+		);
+		$ai_service_desc       = $ai_service_desc_part1 . $ai_service_desc_part2;
+
 		return array(
 			'ai_service' => array(
 				'name'        => __( 'AI Service Configuration', 'gatherpress' ),
-				'description' => __( 'Configure your AI service provider and API credentials. This enables AI-powered features in GatherPress.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+				'description' => $ai_service_desc,
 				'options'     => array(
 					'service_provider' => array(
 						'labels'      => array(
@@ -127,7 +137,16 @@ class AI extends Base {
 						'labels'      => array(
 							'name' => __( 'OpenAI API Key', 'gatherpress' ),
 						),
-						'description' => __( 'Enter your OpenAI API key. This plugin uses the OpenAI API. You need to provide your own API key and will be charged by OpenAI for usage. Typical costs are $0.01-0.10 per prompt.', 'gatherpress' ), // phpcs:ignore Generic.Files.LineLength.TooLong
+						'description' => __(
+							'Enter your OpenAI API key. This plugin uses the OpenAI API. ',
+							'gatherpress'
+						) . __(
+							'You need to provide your own API key and will be charged by OpenAI for usage. ',
+							'gatherpress'
+						) . __(
+							'Typical costs are $0.01-0.10 per prompt.',
+							'gatherpress'
+						),
 						'field'       => array(
 							'label'   => __( 'OpenAI API Key', 'gatherpress' ),
 							'type'    => 'password',

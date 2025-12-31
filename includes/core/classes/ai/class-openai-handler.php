@@ -130,7 +130,7 @@ Rules:
 
 			$input_schema = $ability->get_input_schema();
 			// Convert input_schema to OpenAI format if needed.
-			$parameters = $this->convert_input_schema_to_openai( $input_schema, $ability_name );
+			$parameters = $this->convert_input_schema_to_openai( $input_schema );
 
 			$functions[] = array(
 				'name'        => str_replace( '/', '_', $ability_name ),
@@ -149,11 +149,13 @@ Rules:
 	 * We just need to clean it up (remove invalid 'required' from properties,
 	 * ensure empty properties is {}, etc.).
 	 *
-	 * @param array  $input_schema The ability's input_schema (JSON Schema format).
-	 * @param string $ability_name Ability name (currently unused).
+	 * @param array $input_schema The ability's input_schema (JSON Schema format).
 	 * @return array OpenAI-compatible JSON Schema format.
 	 */
-	private function convert_input_schema_to_openai( array $input_schema, string $ability_name ): array { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed,Generic.Files.LineLength.TooLong
+	private function convert_input_schema_to_openai(
+		array $input_schema
+	): array {
+
 		// Empty schema? Return minimal valid schema.
 		if ( empty( $input_schema ) ) {
 			return array(
