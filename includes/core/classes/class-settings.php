@@ -272,15 +272,13 @@ class Settings {
 									$this->text( $sub_page, $section, $option, $option_settings );
 								};
 							}
-							// phpcs:disable Generic.Files.LineLength.TooLong
 							add_settings_field(
 								$option,
 								$option_settings['labels']['name'],
 								$option_settings['callback'],
 								Utility::prefix_key( $sub_page ),
 								$section
-							);
-							// phpcs:enable Generic.Files.LineLength.TooLong
+							); // phpcs:ignore Generic.Files.LineLength.TooLong
 						}
 					}
 				}
