@@ -16,6 +16,7 @@ namespace GatherPress\Core\AI;
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
 use GatherPress\Core\AI\Date_Calculator;
+use GatherPress\Core\AI\Event_Datetime_Parser;
 use GatherPress\Core\Event;
 use GatherPress\Core\Rsvp;
 use GatherPress\Core\Topic;
@@ -591,11 +592,20 @@ class Abilities_Integration {
 						),
 						'datetime_start' => array(
 							'type'        => 'string',
-							'description' => __( 'Event start date and time in Y-m-d H:i:s format', 'gatherpress' ),
+							// phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __( 'Event start date and time. Accepts full datetime (Y-m-d H:i:s) or time-only (e.g., "3pm", "15:00", "3:00 PM"). Time-only will merge with existing event date.', 'gatherpress' ),
 						),
 						'datetime_end'   => array(
 							'type'        => 'string',
-							'description' => __( 'Event end date and time in Y-m-d H:i:s format', 'gatherpress' ),
+							// phpcs:ignore Generic.Files.LineLength.TooLong
+							'description' => __( 'Event end date and time. Accepts full datetime (Y-m-d H:i:s) or time-only (e.g., "5pm", "17:00", "5:00 PM"). Time-only will merge with existing event date.', 'gatherpress' ),
+						),
+						'timezone'       => array(
+							'type'        => 'string',
+							'description' => __(
+								'Timezone for datetime parsing (e.g., "America/New_York"). Defaults to site timezone.',
+								'gatherpress'
+							),
 						),
 						'venue_id'       => array(
 							'type'        => 'integer',
@@ -1138,40 +1148,59 @@ class Abilities_Integration {
 		}
 
 		// Update datetime if provided using the Event class method.
-		$datetime_params = array();
+		$event = new Event( $event_id );
 
+		// Clear cache to ensure we get fresh datetime data.
+		$cache_key = sprintf( Event::DATETIME_CACHE_KEY, $event_id );
+		delete_transient( $cache_key );
+
+		$existing_datetime = $event->get_datetime();
+
+		// If no existing datetime and we're trying to update with time-only, we need a date.
+		// Check if the input is time-only (not a full datetime).
+		$is_time_only_start = isset( $params['datetime_start'] )
+			&& ! preg_match( '/^\d{4}-\d{2}-\d{2}/', $params['datetime_start'] );
+		$is_time_only_end   = isset( $params['datetime_end'] )
+			&& ! preg_match( '/^\d{4}-\d{2}-\d{2}/', $params['datetime_end'] );
+
+		// Check if datetime exists (check both regular and GMT versions).
+		$has_existing_datetime = ! empty( $existing_datetime['datetime_start'] )
+			|| ! empty( $existing_datetime['datetime_end'] )
+			|| ! empty( $existing_datetime['datetime_start_gmt'] )
+			|| ! empty( $existing_datetime['datetime_end_gmt'] );
+
+		// If updating with time-only and no existing datetime, we can't determine the date.
+		if ( ( $is_time_only_start || $is_time_only_end ) && ! $has_existing_datetime ) {
+			return array(
+				'success' => false,
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				'message' => __( 'Cannot update time-only without an existing event date. Please provide a full datetime (e.g., "2025-01-04 15:00:00") or create the event with a date first.', 'gatherpress' ),
+			);
+		}
+
+		// Prepare datetime updates if any datetime parameters are provided.
+		$new_datetimes = array();
 		if ( isset( $params['datetime_start'] ) ) {
-			$start_datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $params['datetime_start'] );
-			if ( ! $start_datetime ) {
-				return array(
-					'success' => false,
-					'message' => __(
-						'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)',
-						'gatherpress'
-					),
-				);
-			}
-			$datetime_params['datetime_start'] = $start_datetime->format( 'Y-m-d H:i:s' );
+			$new_datetimes['datetime_start'] = $params['datetime_start'];
 		}
-
 		if ( isset( $params['datetime_end'] ) ) {
-			$end_datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $params['datetime_end'] );
-			if ( ! $end_datetime ) {
-				return array(
-					'success' => false,
-					'message' => __(
-						'Invalid end date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 21:00:00)',
-						'gatherpress'
-					),
-				);
-			}
-			$datetime_params['datetime_end'] = $end_datetime->format( 'Y-m-d H:i:s' );
+			$new_datetimes['datetime_end'] = $params['datetime_end'];
+		}
+		if ( isset( $params['timezone'] ) ) {
+			$new_datetimes['timezone'] = $params['timezone'];
 		}
 
-		// Update datetime using Event class if there are changes.
-		if ( ! empty( $datetime_params ) ) {
-			$event = new Event( $event_id );
-			$event->save_datetimes( $datetime_params );
+		if ( ! empty( $new_datetimes ) ) {
+			try {
+				$parser          = new Event_Datetime_Parser();
+				$datetime_params = $parser->prepare_datetime_params( $new_datetimes, $existing_datetime );
+				$event->save_datetimes( $datetime_params );
+			} catch ( \Exception $e ) {
+				return array(
+					'success' => false,
+					'message' => $e->getMessage(),
+				);
+			}
 		}
 
 		// Update venue if provided.
@@ -1193,11 +1222,17 @@ class Abilities_Integration {
 			wp_set_object_terms( $event_id, $topic_ids, Topic::TAXONOMY );
 		}
 
+		// Get updated datetime to include in response (so OpenAI can use correct date in response message).
+		// Clear cache again to ensure we get the fresh updated datetime.
+		delete_transient( $cache_key );
+		$updated_datetime = $event->get_datetime();
+
 		return array(
 			'success'     => true,
 			'event_id'    => $event_id,
 			'post_status' => get_post_status( $event_id ),
 			'edit_url'    => get_edit_post_link( $event_id, 'raw' ),
+			'datetime'    => $updated_datetime,
 			'message'     => sprintf(
 				/* translators: %s: event title */
 				__( 'Event "%s" updated successfully.', 'gatherpress' ),
@@ -1466,16 +1501,40 @@ class Abilities_Integration {
 		}
 
 		// Find matching events.
-		$events = get_posts(
+		$search_term = sanitize_text_field( $params['search_term'] );
+
+		// Search for events using WP_Query for better performance.
+		$query = new \WP_Query(
 			array(
 				'post_type'      => Event::POST_TYPE,
 				'post_status'    => array( 'publish', 'draft' ),
-				'posts_per_page' => -1, // Get all matching events.
-				's'              => sanitize_text_field( $params['search_term'] ),
+				'posts_per_page' => -1,
+				's'              => $search_term,
 				'orderby'        => 'date',
 				'order'          => 'DESC',
 			)
 		);
+
+		$all_events = $query->posts;
+
+		// Filter to exact title matches first (case-insensitive).
+		$exact_matches = array();
+		$other_matches = array();
+
+		foreach ( $all_events as $event ) {
+			$event_title = trim( get_the_title( $event->ID ) );
+			if ( strtolower( $event_title ) === strtolower( trim( $search_term ) ) ) {
+				$exact_matches[] = $event;
+			} else {
+				$other_matches[] = $event;
+			}
+		}
+
+		// Use exact matches if found, otherwise use all matches.
+		$events = ! empty( $exact_matches ) ? $exact_matches : $other_matches;
+
+		// Clean up the query object.
+		wp_reset_postdata();
 
 		if ( empty( $events ) ) {
 			return array(
@@ -1496,46 +1555,43 @@ class Abilities_Integration {
 
 		foreach ( $events as $event ) {
 			$event_obj = new Event( $event->ID );
-			$datetime  = $event_obj->get_datetime();
 
-			// Prepare datetime updates.
-			$new_datetime_start = ! empty( $params['datetime_start'] ) ? $params['datetime_start'] : $datetime['start'];
-			$new_datetime_end   = ! empty( $params['datetime_end'] ) ? $params['datetime_end'] : $datetime['end'];
+			// Clear cache to ensure we get fresh datetime data.
+			$cache_key = sprintf( Event::DATETIME_CACHE_KEY, $event->ID );
+			delete_transient( $cache_key );
 
-			// Validate datetime format.
-			if ( ! empty( $params['datetime_start'] ) ) {
-				$start_datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $new_datetime_start );
-				if ( ! $start_datetime ) {
+			$datetime = $event_obj->get_datetime();
+
+			// Prepare datetime updates if any datetime parameters are provided.
+			$new_datetimes = array();
+			if ( isset( $params['datetime_start'] ) ) {
+				$new_datetimes['datetime_start'] = $params['datetime_start'];
+			}
+			if ( isset( $params['datetime_end'] ) ) {
+				$new_datetimes['datetime_end'] = $params['datetime_end'];
+			}
+			if ( isset( $params['timezone'] ) ) {
+				$new_datetimes['timezone'] = $params['timezone'];
+			}
+
+			$event_updated = false;
+
+			// Update datetime if provided.
+			if ( ! empty( $new_datetimes ) ) {
+				try {
+					$parser          = new Event_Datetime_Parser();
+					$datetime_params = $parser->prepare_datetime_params( $new_datetimes, $datetime );
+					$event_obj->save_datetimes( $datetime_params );
+					$event_updated = true;
+				} catch ( \Exception $e ) {
 					$errors[] = sprintf(
-						/* translators: %s: event title */
-						__( 'Invalid datetime_start format for event "%s".', 'gatherpress' ),
-						get_the_title( $event->ID )
+						/* translators: 1: event title, 2: error message */
+						__( 'Error updating event "%1$s": %2$s', 'gatherpress' ),
+						get_the_title( $event->ID ),
+						$e->getMessage()
 					);
 					continue;
 				}
-			}
-
-			if ( ! empty( $params['datetime_end'] ) ) {
-				$end_datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $new_datetime_end );
-				if ( ! $end_datetime ) {
-					$errors[] = sprintf(
-						/* translators: %s: event title */
-						__( 'Invalid datetime_end format for event "%s".', 'gatherpress' ),
-						get_the_title( $event->ID )
-					);
-					continue;
-				}
-			}
-
-			// Update datetime if changed.
-			if ( $new_datetime_start !== $datetime['start'] || $new_datetime_end !== $datetime['end'] ) {
-				$event_obj->save_datetimes(
-					array(
-						'datetime_start' => $new_datetime_start,
-						'datetime_end'   => $new_datetime_end,
-						'timezone'       => $datetime['timezone'] ?? 'UTC',
-					)
-				);
 			}
 
 			// Update venue if specified.
@@ -1543,6 +1599,7 @@ class Abilities_Integration {
 				$venue_id = absint( $params['venue_id'] );
 				if ( get_post( $venue_id ) && get_post_type( $venue_id ) === Venue::POST_TYPE ) {
 					update_post_meta( $event->ID, 'gatherpress_venue', $venue_id );
+					$event_updated = true;
 				} else {
 					$errors[] = sprintf(
 						/* translators: %s: event title */
@@ -1553,7 +1610,10 @@ class Abilities_Integration {
 				}
 			}
 
-			++$updated_count;
+			// Only count if event was actually updated.
+			if ( $event_updated ) {
+				++$updated_count;
+			}
 		}
 
 		$message = sprintf(
