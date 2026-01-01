@@ -939,4 +939,308 @@ class Test_Date_Calculator extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success for 5th Friday.' );
 		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
 	}
+
+	/**
+	 * Test get_nth_weekday_of_month private method via reflection.
+	 *
+	 * @covers ::get_nth_weekday_of_month
+	 *
+	 * @return void
+	 */
+	public function test_get_nth_weekday_of_month(): void {
+		$calculator = new Date_Calculator();
+		$method     = new \ReflectionMethod( $calculator, 'get_nth_weekday_of_month' );
+		$method->setAccessible( true );
+
+		// Test first occurrence.
+		$result = $method->invoke( $calculator, 2025, 1, 'monday', 1 );
+		$this->assertSame( '2025-01-06', $result, 'Failed to assert first Monday of January 2025.' );
+
+		// Test last occurrence.
+		$result = $method->invoke( $calculator, 2025, 1, 'friday', -1 );
+		$this->assertSame( '2025-01-31', $result, 'Failed to assert last Friday of January 2025.' );
+
+		// Test 5th occurrence (use a month that has 5 Fridays - May 2025).
+		$result = $method->invoke( $calculator, 2025, 5, 'friday', 5 );
+		$this->assertSame( '2025-05-30', $result, 'Failed to assert 5th Friday of May 2025.' );
+	}
+
+	/**
+	 * Test get_weekday_number private method via reflection.
+	 *
+	 * @covers ::get_weekday_number
+	 *
+	 * @return void
+	 */
+	public function test_get_weekday_number(): void {
+		$calculator = new Date_Calculator();
+		$method     = new \ReflectionMethod( $calculator, 'get_weekday_number' );
+		$method->setAccessible( true );
+
+		$weekdays = array(
+			'monday'    => 1,
+			'tuesday'   => 2,
+			'wednesday' => 3,
+			'thursday'  => 4,
+			'friday'    => 5,
+			'saturday'  => 6,
+			'sunday'    => 7,
+		);
+
+		foreach ( $weekdays as $weekday => $expected ) {
+			$result = $method->invoke( $calculator, $weekday );
+			$this->assertSame( $expected, $result, "Failed to assert weekday number for {$weekday}." );
+		}
+
+		// Test invalid weekday (should default to 1).
+		$result = $method->invoke( $calculator, 'invalid' );
+		$this->assertSame( 1, $result, 'Failed to assert default weekday number for invalid input.' );
+	}
+
+	/**
+	 * Test calculate_relative_weekday_dates with all relative terms.
+	 *
+	 * @covers ::calculate_relative_weekday_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_relative_weekday_dates_all_terms(): void {
+		$calculator = new Date_Calculator();
+
+		// Test "next" with multiple occurrences.
+		$params = array(
+			'pattern'     => 'next Saturday',
+			'occurrences' => 3,
+			'start_date'  => '2025-01-01', // Wednesday.
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for next Saturday.' );
+		$this->assertCount( 3, $result['data']['dates'], 'Failed to assert 3 dates returned.' );
+
+		// Test "last" with multiple occurrences.
+		$params = array(
+			'pattern'     => 'last Sunday',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-15', // Wednesday.
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for last Sunday.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+
+		// Test "this" with multiple occurrences.
+		$params = array(
+			'pattern'     => 'this Thursday',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-01', // Wednesday.
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for this Thursday.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+	}
+
+	/**
+	 * Test calculate_relative_day_dates with multiple occurrences.
+	 *
+	 * @covers ::calculate_relative_day_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_relative_day_dates_multiple(): void {
+		$calculator = new Date_Calculator();
+
+		// Test tomorrow with multiple occurrences.
+		$params = array(
+			'pattern'     => 'tomorrow',
+			'occurrences' => 5,
+			'start_date'  => '2025-01-01',
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for tomorrow.' );
+		$this->assertCount( 5, $result['data']['dates'], 'Failed to assert 5 dates returned.' );
+
+		// Test yesterday with multiple occurrences.
+		$params = array(
+			'pattern'     => 'yesterday',
+			'occurrences' => 3,
+			'start_date'  => '2025-01-10',
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for yesterday.' );
+		$this->assertCount( 3, $result['data']['dates'], 'Failed to assert 3 dates returned.' );
+	}
+
+	/**
+	 * Test calculate_relative_period_dates with all combinations.
+	 *
+	 * @covers ::calculate_relative_period_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_relative_period_dates_all(): void {
+		$calculator = new Date_Calculator();
+
+		// Test "next week" with multiple occurrences.
+		$params = array(
+			'pattern'     => 'next week',
+			'occurrences' => 4,
+			'start_date'  => '2025-01-01',
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for next week.' );
+		$this->assertCount( 4, $result['data']['dates'], 'Failed to assert 4 dates returned.' );
+
+		// Test "last month" with multiple occurrences.
+		$params = array(
+			'pattern'     => 'last month',
+			'occurrences' => 3,
+			'start_date'  => '2025-01-15',
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for last month.' );
+		$this->assertCount( 3, $result['data']['dates'], 'Failed to assert 3 dates returned.' );
+	}
+
+	/**
+	 * Test calculate_future_day_dates with multiple occurrences.
+	 *
+	 * @covers ::calculate_future_day_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_future_day_dates_multiple(): void {
+		$calculator = new Date_Calculator();
+
+		$params = array(
+			'pattern'     => 'in 10 days',
+			'occurrences' => 4,
+			'start_date'  => '2025-01-01',
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for in 10 days.' );
+		$this->assertCount( 4, $result['data']['dates'], 'Failed to assert 4 dates returned.' );
+	}
+
+	/**
+	 * Test calculate_past_day_dates with multiple occurrences.
+	 *
+	 * @covers ::calculate_past_day_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_past_day_dates_multiple(): void {
+		$calculator = new Date_Calculator();
+
+		$params = array(
+			'pattern'     => '7 days ago',
+			'occurrences' => 3,
+			'start_date'  => '2025-01-15',
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for 7 days ago.' );
+		$this->assertCount( 3, $result['data']['dates'], 'Failed to assert 3 dates returned.' );
+	}
+
+	/**
+	 * Test calculate_biweekly_dates when current day is after weekday.
+	 *
+	 * @covers ::calculate_biweekly_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_biweekly_dates_after(): void {
+		$calculator = new Date_Calculator();
+		// Start on Friday (2025-01-03), test for every other Monday.
+		$params = array(
+			'pattern'     => 'every other Monday',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-03', // Friday.
+		);
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for every other Monday.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+	}
+
+	/**
+	 * Test calculate_interval_dates with months.
+	 *
+	 * @covers ::calculate_interval_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_interval_dates_months(): void {
+		$calculator = new Date_Calculator();
+
+		$params = array(
+			'pattern'     => 'every 2 months',
+			'occurrences' => 3,
+			'start_date'  => '2025-01-01',
+		);
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for every 2 months.' );
+		$this->assertCount( 3, $result['data']['dates'], 'Failed to assert 3 dates returned.' );
+	}
+
+	/**
+	 * Test calculate_weeks_from_weekday with different weekdays.
+	 *
+	 * @covers ::calculate_weeks_from_weekday
+	 *
+	 * @return void
+	 */
+	public function test_calculate_weeks_from_weekday_variations(): void {
+		$calculator = new Date_Calculator();
+
+		// Test when current day is before weekday.
+		$params = array(
+			'pattern'     => '1 week from Tuesday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-06', // Monday.
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for 1 week from Tuesday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+
+		// Test when current day is after weekday.
+		$params = array(
+			'pattern'     => '2 weeks from Monday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-03', // Friday.
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success for 2 weeks from Monday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+	}
+
+	/**
+	 * Test calculate_dates with message formatting (singular vs plural).
+	 *
+	 * @covers ::calculate_dates
+	 *
+	 * @return void
+	 */
+	public function test_calculate_dates_message_formatting(): void {
+		$calculator = new Date_Calculator();
+
+		// Test singular message.
+		$params = array(
+			'pattern'     => 'every Monday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-01',
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success.' );
+		$this->assertStringContainsString( '1 date', $result['message'], 'Failed to assert singular message.' );
+
+		// Test plural message.
+		$params = array(
+			'pattern'     => 'every Monday',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-01',
+		);
+		$result = $calculator->calculate_dates( $params );
+		$this->assertTrue( $result['success'], 'Failed to assert success.' );
+		$this->assertStringContainsString( '2 dates', $result['message'], 'Failed to assert plural message.' );
+	}
 }
