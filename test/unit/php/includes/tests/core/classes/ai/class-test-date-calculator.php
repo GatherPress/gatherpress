@@ -1243,4 +1243,133 @@ class Test_Date_Calculator extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success.' );
 		$this->assertStringContainsString( '2 dates', $result['message'], 'Failed to assert plural message.' );
 	}
+
+	/**
+	 * Test "last weekday" when current day is before weekday (covers line 329).
+	 *
+	 * @covers ::calculate_relative_weekday_dates
+	 *
+	 * @return void
+	 */
+	public function test_last_weekday_before_current_day(): void {
+		$calculator = new Date_Calculator();
+		// Start on Monday (2025-01-06), test for last Friday (should go back to previous Friday).
+		$params = array(
+			'pattern'     => 'last Friday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-06', // Monday.
+		);
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for last Friday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( '2025-01-03', $result['data']['dates'][0], 'Failed to assert correct date.' );
+	}
+
+	/**
+	 * Test "this weekday" when current day equals weekday (covers line 336).
+	 *
+	 * @covers ::calculate_relative_weekday_dates
+	 *
+	 * @return void
+	 */
+	public function test_this_weekday_same_day(): void {
+		$calculator = new Date_Calculator();
+		// Start on Monday (2025-01-06), test for this Monday.
+		$params = array(
+			'pattern'     => 'this Monday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-06', // Monday.
+		);
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for this Monday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( '2025-01-06', $result['data']['dates'][0], 'Failed to assert correct date.' );
+	}
+
+	/**
+	 * Test "every weekday" when current day is after weekday (covers line 222).
+	 *
+	 * @covers ::calculate_recurring_dates
+	 *
+	 * @return void
+	 */
+	public function test_every_weekday_after_current_day(): void {
+		$calculator = new Date_Calculator();
+		// Start on Friday (2025-01-03), test for every Monday (should use else branch).
+		$params = array(
+			'pattern'     => 'every Monday',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-03', // Friday.
+		);
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for every Monday.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+	}
+
+	/**
+	 * Test biweekly when current day is after weekday (covers line 498).
+	 *
+	 * @covers ::calculate_biweekly_dates
+	 *
+	 * @return void
+	 */
+	public function test_biweekly_after_weekday(): void {
+		$calculator = new Date_Calculator();
+		// Start on Friday (2025-01-03), test for every other Monday.
+		$params = array(
+			'pattern'     => 'every other Monday',
+			'occurrences' => 2,
+			'start_date'  => '2025-01-03', // Friday.
+		);
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for every other Monday.' );
+		$this->assertCount( 2, $result['data']['dates'], 'Failed to assert 2 dates returned.' );
+	}
+
+	/**
+	 * Test "last weekday" when current day equals weekday (covers line 327).
+	 *
+	 * @covers ::calculate_relative_weekday_dates
+	 *
+	 * @return void
+	 */
+	public function test_last_weekday_same_day(): void {
+		$calculator = new Date_Calculator();
+		// Start on Friday (2025-01-03), test for last Friday.
+		$params = array(
+			'pattern'     => 'last Friday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-03', // Friday.
+		);
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for last Friday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+		$this->assertSame( '2025-01-03', $result['data']['dates'][0], 'Failed to assert correct date.' );
+	}
+
+	/**
+	 * Test "this weekday" when current day is after weekday (covers line 339).
+	 *
+	 * @covers ::calculate_relative_weekday_dates
+	 *
+	 * @return void
+	 */
+	public function test_this_weekday_after_current_day(): void {
+		$calculator = new Date_Calculator();
+		// Start on Friday (2025-01-03), test for this Monday (should use else branch).
+		$params = array(
+			'pattern'     => 'this Monday',
+			'occurrences' => 1,
+			'start_date'  => '2025-01-03', // Friday.
+		);
+		$result = $calculator->calculate_dates( $params );
+
+		$this->assertTrue( $result['success'], 'Failed to assert success for this Monday.' );
+		$this->assertCount( 1, $result['data']['dates'], 'Failed to assert 1 date returned.' );
+	}
 }
