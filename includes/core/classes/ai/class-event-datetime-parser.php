@@ -154,10 +154,12 @@ class Event_Datetime_Parser {
 		foreach ( $patterns as $pattern ) {
 			if ( preg_match( $pattern, $input, $matches ) ) {
 				$hour   = (int) $matches[1];
-				$minute = isset( $matches[2] ) ? (int) $matches[2] : 0;
+				// Pattern 1 has optional minutes (?:), patterns 2-3 require it. Check key existence for pattern 1.
+				// @phpstan-ignore-next-line -- Pattern 1 has optional $matches[2], but patterns 2-3 always have it.
+				$minute = array_key_exists( 2, $matches ) ? (int) $matches[2] : 0;
 
 				// Handle 12-hour format.
-				if ( isset( $matches[3] ) ) {
+				if ( array_key_exists( 3, $matches ) ) {
 					$ampm = strtolower( $matches[3] );
 					if ( 'pm' === $ampm && 12 !== $hour ) {
 						$hour += 12;
