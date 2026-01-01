@@ -271,8 +271,9 @@ Rules:
 	 * @return array|WP_Error Result with actions taken, or error.
 	 */
 	private function process_function_calls( $openai_response, $messages, $functions, $api_key, $max_iterations = 15 ) {
-		$actions_taken = array();
-		$iterations    = 0;
+		$actions_taken  = array();
+		$iterations     = 0;
+		$executed_calls = array(); // Track executed function calls to prevent duplicates.
 
 		while ( $iterations < $max_iterations ) {
 			++$iterations;
@@ -296,6 +297,20 @@ Rules:
 				$function_name = $tool_call['function']['name'] ?? '';
 				$arguments     = json_decode( $tool_call['function']['arguments'] ?? '{}', true );
 
+				// Create a unique key for this function call to detect duplicates.
+				$call_key = md5( $function_name . wp_json_encode( $arguments ) );
+
+				// Skip if we've already executed this exact function call.
+				if ( isset( $executed_calls[ $call_key ] ) ) {
+					// Use the previous result instead of re-executing.
+					$messages[] = array(
+						'tool_call_id' => $tool_call['id'],
+						'role'         => 'tool',
+						'content'      => $this->encode_result( $executed_calls[ $call_key ] ),
+					);
+					continue;
+				}
+
 				// Convert function name to ability name and get the ability.
 				$ability_name = $this->convert_function_name_to_ability( $function_name );
 				$ability      = $this->get_ability( $ability_name, $function_name );
@@ -308,6 +323,9 @@ Rules:
 				// Execute the ability and handle the result.
 				$result = $this->execute_ability( $ability, $arguments, $ability_name );
 				$result = $this->normalize_result( $result );
+
+				// Store the result to prevent duplicate execution.
+				$executed_calls[ $call_key ] = $result;
 
 				$messages[] = array(
 					'tool_call_id' => $tool_call['id'],
