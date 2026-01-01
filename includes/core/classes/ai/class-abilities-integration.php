@@ -1440,8 +1440,8 @@ class Abilities_Integration {
 				'id'             => $event->ID,
 				'title'          => get_the_title( $event->ID ),
 				'status'         => $event->post_status,
-				'datetime_start' => $datetime['start'] ?? '',
-				'datetime_end'   => $datetime['end'] ?? '',
+				'datetime_start' => $datetime['datetime_start'] ?? '',
+				'datetime_end'   => $datetime['datetime_end'] ?? '',
 				'timezone'       => $datetime['timezone'] ?? '',
 				'venue_id'       => get_post_meta( $event->ID, 'gatherpress_venue', true ),
 				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
@@ -1556,11 +1556,44 @@ class Abilities_Integration {
 		foreach ( $events as $event ) {
 			$event_obj = new Event( $event->ID );
 
+			// Ensure Event object is properly initialized.
+			if ( ! $event_obj->event ) {
+				$errors[] = sprintf(
+					/* translators: %s: event title */
+					__( 'Event "%s" not found.', 'gatherpress' ),
+					get_the_title( $event->ID )
+				);
+				continue;
+			}
+
 			// Clear cache to ensure we get fresh datetime data.
 			$cache_key = sprintf( Event::DATETIME_CACHE_KEY, $event->ID );
 			delete_transient( $cache_key );
 
 			$datetime = $event_obj->get_datetime();
+
+			// Check if the input is time-only (not a full datetime).
+			$is_time_only_start = isset( $params['datetime_start'] )
+				&& ! preg_match( '/^\d{4}-\d{2}-\d{2}/', $params['datetime_start'] );
+			$is_time_only_end = isset( $params['datetime_end'] )
+				&& ! preg_match( '/^\d{4}-\d{2}-\d{2}/', $params['datetime_end'] );
+
+			// Check if datetime exists (check both regular and GMT versions).
+			$has_existing_datetime = ! empty( $datetime['datetime_start'] )
+				|| ! empty( $datetime['datetime_end'] )
+				|| ! empty( $datetime['datetime_start_gmt'] )
+				|| ! empty( $datetime['datetime_end_gmt'] );
+
+			// If updating with time-only and no existing datetime, skip this event.
+			if ( ( $is_time_only_start || $is_time_only_end ) && ! $has_existing_datetime ) {
+				$errors[] = sprintf(
+					/* translators: %s: event title */
+					// phpcs:ignore Generic.Files.LineLength.TooLong
+					__( 'Cannot update time-only for event "%s" without an existing event date. Please provide a full datetime (e.g., "2025-01-04 15:00:00") or create the event with a date first.', 'gatherpress' ),
+					get_the_title( $event->ID )
+				);
+				continue;
+			}
 
 			// Prepare datetime updates if any datetime parameters are provided.
 			$new_datetimes = array();
