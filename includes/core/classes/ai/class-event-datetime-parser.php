@@ -9,6 +9,8 @@
  * @since 1.0.0
  */
 
+// Trigger playground preview.
+
 namespace GatherPress\Core\AI;
 
 // Exit if accessed directly.
