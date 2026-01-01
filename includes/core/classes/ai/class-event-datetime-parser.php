@@ -153,7 +153,7 @@ class Event_Datetime_Parser {
 
 		foreach ( $patterns as $pattern ) {
 			if ( preg_match( $pattern, $input, $matches ) ) {
-				$hour   = (int) $matches[1];
+				$hour = (int) $matches[1];
 				// Pattern 1 has optional minutes (?:), patterns 2-3 require it. Check key existence for pattern 1.
 				// @phpstan-ignore-next-line -- Pattern 1 has optional $matches[2], but patterns 2-3 always have it.
 				$minute = array_key_exists( 2, $matches ) ? (int) $matches[2] : 0;
