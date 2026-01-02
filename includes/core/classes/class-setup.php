@@ -82,6 +82,45 @@ class Setup {
 	}
 
 	/**
+	 * Initialize wp-ai-client if available.
+	 *
+	 * Called on the 'init' hook, following the pattern used by the AI plugin.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function init_wp_ai_client(): void {
+		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
+			return;
+		}
+
+		// Initialize wp-ai-client (it checks internally if already initialized).
+		\WordPress\AI_Client\AI_Client::init();
+	}
+
+	/**
+	 * Increase HTTP request timeout for AI API requests.
+	 *
+	 * Matches the old OpenAI handler's 60-second timeout to prevent timeouts
+	 * on complex prompts with many function calls.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array  $args Request arguments.
+	 * @param string $url  Request URL.
+	 * @return array Modified request arguments.
+	 */
+	public function increase_ai_request_timeout( array $args, string $url ): array {
+		// Check if this is an OpenAI API request.
+		if ( strpos( $url, 'api.openai.com' ) !== false || strpos( $url, 'api.anthropic.com' ) !== false ) {
+			$args['timeout'] = 60; // Match old handler's timeout.
+		}
+
+		return $args;
+	}
+
+	/**
 	 * Set up hooks for various purposes.
 	 *
 	 * This method adds hooks for different purposes as needed.
@@ -93,6 +132,13 @@ class Setup {
 	protected function setup_hooks(): void {
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
+
+		// Initialize wp-ai-client if available.
+		// Call on init hook, following the pattern used by the AI plugin.
+		add_action( 'init', array( $this, 'init_wp_ai_client' ) );
+
+		// Increase HTTP timeout for OpenAI API requests (matching old handler's 60-second timeout).
+		add_filter( 'http_request_args', array( $this, 'increase_ai_request_timeout' ), 10, 2 );
 
 		add_action( 'admin_init', array( $this, 'add_privacy_policy_content' ) );
 		add_action( 'admin_notices', array( $this, 'check_gatherpress_alpha' ) );

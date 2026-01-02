@@ -14,7 +14,6 @@ namespace GatherPress\Core;
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit; // @codeCoverageIgnore
 
-use GatherPress\Core\Settings\AI;
 use GatherPress\Core\Settings\Credits;
 use GatherPress\Core\Settings\General;
 use GatherPress\Core\Settings\Leadership;
@@ -74,10 +73,6 @@ class Settings {
 	 * @return void
 	 */
 	protected function instantiate_classes(): void {
-		// Only instantiate AI settings if Abilities API is available.
-		if ( function_exists( 'wp_register_ability' ) ) {
-			AI::get_instance();
-		}
 		Credits::get_instance();
 		General::get_instance();
 		Leadership::get_instance();

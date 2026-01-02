@@ -119,14 +119,14 @@ class Admin_Page {
 						<strong><?php esc_html_e( 'API Key Required', 'gatherpress' ); ?></strong><br>
 						<?php
 						esc_html_e(
-							'Please configure your OpenAI API key to use the AI Assistant.',
+							'Please configure your AI API credentials to use the AI Assistant.',
 							'gatherpress'
 						);
 						?>
 					</p>
 					<p>
 						<?php
-						$settings_url = admin_url( 'edit.php?post_type=gatherpress_event&page=gatherpress_ai' );
+						$settings_url = admin_url( 'options-general.php?page=wp-ai-client' );
 						?>
 						<a href="<?php echo esc_url( $settings_url ); ?>" 
 							class="button button-primary">
@@ -213,8 +213,8 @@ class Admin_Page {
 			wp_send_json_error( array( 'message' => 'Prompt is required' ) );
 		}
 
-		// Process with OpenAI.
-		$handler = new OpenAI_Handler();
+		// Process with AI handler (wp-ai-client).
+		$handler = new AI_Handler();
 		$result  = $handler->process_prompt( $prompt );
 
 		if ( is_wp_error( $result ) ) {
@@ -230,10 +230,20 @@ class Admin_Page {
 	 * @return bool
 	 */
 	private function has_api_key(): bool {
-		$settings = Settings::get_instance();
-		$api_key  = $settings->get_value( 'ai', 'ai_service', 'openai_api_key' );
+		// Check wp-ai-client credentials.
+		$credentials = get_option( 'wp_ai_client_provider_credentials', array() );
 
-		return ! empty( $api_key );
+		if ( ! is_array( $credentials ) ) {
+			return false;
+		}
+
+		foreach ( $credentials as $api_key ) {
+			if ( ! empty( $api_key ) && is_string( $api_key ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
