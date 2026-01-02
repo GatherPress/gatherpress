@@ -108,7 +108,8 @@ Rules:
 				continue;
 			}
 
-			// Convert ability name to function name (e.g., "gatherpress/list-events" -> "wpab__gatherpress__list_events").
+			// Convert ability name to function name.
+			// Example: "gatherpress/list-events" -> "wpab__gatherpress__list_events".
 			$ability_name  = $ability->get_name();
 			$function_name = 'wpab__' . str_replace( '/', '__', $ability_name );
 			$input_schema  = $ability->get_input_schema();
@@ -116,9 +117,9 @@ Rules:
 			// Ensure input_schema is either a valid object schema or null.
 			// The schema must have 'type' => 'object' and 'properties' (even if empty).
 			$schema_for_declaration = null;
-			if ( is_array( $input_schema ) 
-				&& isset( $input_schema['type'] ) 
-				&& 'object' === $input_schema['type'] 
+			if ( is_array( $input_schema )
+				&& isset( $input_schema['type'] )
+				&& 'object' === $input_schema['type']
 			) {
 				// Ensure properties key exists and is an object (not array).
 				// Empty array [] serializes to [] in JSON, but we need {} (object).
@@ -144,7 +145,12 @@ Rules:
 		$original_user_message = new UserMessage( array( new MessagePart( $prompt ) ) );
 
 		// Process the conversation loop.
-		return $this->process_conversation_loop( $builder, $original_user_message, $system_content, $function_declarations );
+		return $this->process_conversation_loop(
+			$builder,
+			$original_user_message,
+			$system_content,
+			$function_declarations
+		);
 	}
 
 	/**
@@ -152,11 +158,12 @@ Rules:
 	 *
 	 * @since 1.0.0
 	 *
-	 * @param Prompt_Builder        $builder              The prompt builder instance.
-	 * @param UserMessage           $original_user_message The original user message.
-	 * @param string                $system_instruction   The system instruction.
+	 * @param Prompt_Builder             $builder              The prompt builder instance.
+	 * @param UserMessage                $original_user_message The original user message.
+	 * @param string                     $system_instruction   The system instruction.
 	 * @param array<FunctionDeclaration> $function_declarations Function declarations.
 	 * @return array|WP_Error Result with actions taken, or error.
+	 * @throws \WordPress\AiClient\Common\Exception\InvalidArgumentException If invalid arguments are provided.
 	 */
 	private function process_conversation_loop(
 		Prompt_Builder $builder,
@@ -164,11 +171,11 @@ Rules:
 		string $system_instruction,
 		array $function_declarations
 	) {
-		$actions_taken       = array();
-		$iterations          = 0;
-		$executed_calls      = array(); // Track executed function calls to prevent duplicates.
+		$actions_taken        = array();
+		$iterations           = 0;
+		$executed_calls       = array(); // Track executed function calls to prevent duplicates.
 		$conversation_history = array();
-		$model_info          = null; // Store model/provider info from first successful result.
+		$model_info           = null; // Store model/provider info from first successful result.
 
 		while ( $iterations < self::MAX_ITERATIONS ) {
 			++$iterations;
@@ -179,13 +186,16 @@ Rules:
 			} catch ( \WordPress\AiClient\Providers\Http\Exception\ClientException $e ) {
 				// Handle HTTP client errors (429 rate limit, 401 auth, etc.).
 				$message = $e->getMessage();
-				
+
 				// Try to determine which provider was used from the request URL.
 				$provider_name = '';
 				try {
 					$request = $e->getRequest();
 					$url     = (string) $request->getUri();
-					if ( strpos( $url, 'api.google.com' ) !== false || strpos( $url, 'generativelanguage.googleapis.com' ) !== false ) {
+					if (
+						strpos( $url, 'api.google.com' ) !== false
+						|| strpos( $url, 'generativelanguage.googleapis.com' ) !== false
+					) {
 						$provider_name = 'Google';
 					} elseif ( strpos( $url, 'api.openai.com' ) !== false ) {
 						$provider_name = 'OpenAI';
@@ -193,26 +203,41 @@ Rules:
 						$provider_name = 'Anthropic';
 					}
 				} catch ( \Exception $request_exception ) {
-					// Request not available, continue without provider name.
+					// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Request not available, continue without provider name.
+					// Intentionally empty - we continue with empty provider name.
 				}
-				
+
 				if ( strpos( $message, '429' ) !== false || strpos( $message, 'Too Many Requests' ) !== false ) {
-					$error_msg = __( 'API rate limit exceeded. You may need to upgrade your API plan or check your quota limits.', 'gatherpress' );
+					$error_msg = __(
+						'API rate limit exceeded. You may need to upgrade your API plan or check your quota limits.',
+						'gatherpress'
+					);
 					if ( $provider_name ) {
+						// phpcs:ignore Generic.Files.LineLength.TooLong -- Translation string.
 						$error_msg = sprintf(
 							/* translators: %s: Provider name (e.g., Google, OpenAI) */
-							__( 'API rate limit exceeded for %s. You may need to upgrade your API plan or check your quota limits.', 'gatherpress' ),
+							__(
+								'API rate limit exceeded for %s. You may need to upgrade your API plan or check your quota limits.',
+								'gatherpress'
+							),
 							$provider_name
 						);
 					}
 					return new WP_Error( 'rate_limit', $error_msg );
 				}
 				if ( strpos( $message, '401' ) !== false || strpos( $message, 'Unauthorized' ) !== false ) {
-					$error_msg = __( 'Invalid API credentials. Please check your API key in Settings > AI Credentials.', 'gatherpress' );
+					$error_msg = __(
+						'Invalid API credentials. Please check your API key in Settings > AI Credentials.',
+						'gatherpress'
+					);
 					if ( $provider_name ) {
+						// phpcs:ignore Generic.Files.LineLength.TooLong -- Translation string.
 						$error_msg = sprintf(
 							/* translators: %s: Provider name (e.g., Google, OpenAI) */
-							__( 'Invalid API credentials for %s. Please check your API key in Settings > AI Credentials.', 'gatherpress' ),
+							__(
+								'Invalid API credentials for %s. Please check your API key in Settings > AI Credentials.',
+								'gatherpress'
+							),
 							$provider_name
 						);
 					}
@@ -230,9 +255,13 @@ Rules:
 			} catch ( \WordPress\AiClient\Common\Exception\InvalidArgumentException $e ) {
 				// Handle "No models found" error - credentials not recognized.
 				if ( strpos( $e->getMessage(), 'No models found' ) !== false ) {
+					// phpcs:ignore Generic.Files.LineLength.TooLong -- Translation string.
 					return new WP_Error(
 						'no_models_found',
-						__( 'No AI models found. Please verify your API credentials are correctly configured in Settings > AI Credentials.', 'gatherpress' )
+						__(
+							'No AI models found. Please verify your API credentials are correctly configured in Settings > AI Credentials.',
+							'gatherpress'
+						)
 					);
 				}
 				// Re-throw other InvalidArgumentException errors.
@@ -289,18 +318,18 @@ Rules:
 			// Execute ability calls and get responses.
 			// Each function response must be in its own UserMessage (OpenAI API requirement).
 			$function_response_messages = array();
-			
+
 			foreach ( $message->getParts() as $part ) {
 				if ( $part->getType()->isFunctionCall() ) {
 					$function_call = $part->getFunctionCall();
 					if ( $function_call instanceof FunctionCall && $this->is_ability_call( $function_call ) ) {
 						$function_response = $this->execute_ability( $function_call );
-						
+
 						// Create a separate UserMessage for each function response (OpenAI API requirement).
-						$function_response_messages[] = new UserMessage( 
-							array( new MessagePart( $function_response ) ) 
+						$function_response_messages[] = new UserMessage(
+							array( new MessagePart( $function_response ) )
 						);
-						
+
 						// Track action for response display.
 						// Convert function name back to ability name for tracking.
 						$function_name = $function_call->getName();
@@ -320,10 +349,10 @@ Rules:
 
 			// Add to conversation history: model message, then each function response message separately.
 			$conversation_history[] = $message;
-			$conversation_history = array_merge( $conversation_history, $function_response_messages );
+			$conversation_history   = array_merge( $conversation_history, $function_response_messages );
 
 			// Rebuild builder with all messages in correct order.
-			// Build the full conversation array: [original_user, model1, user1, model2, user2, ...]
+			// Build the full conversation array: [original_user, model1, user1, model2, user2, ...].
 			$all_messages = array( $original_user_message );
 			$all_messages = array_merge( $all_messages, $conversation_history );
 
