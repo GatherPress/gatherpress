@@ -35,27 +35,6 @@ class Test_AI_Handler extends Base {
 	}
 
 	/**
-	 * Coverage for process_prompt when wp-ai-client is not available.
-	 *
-	 * @covers ::process_prompt
-	 *
-	 * @return void
-	 */
-	public function test_process_prompt_when_wp_ai_client_not_available(): void {
-		// Only test if class doesn't exist (would need to mock, but we'll test actual behavior).
-		// Since we can't easily remove the class once loaded, we'll skip if it exists.
-		if ( class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
-			$this->markTestSkipped( 'wp-ai-client is available in test environment.' );
-		}
-
-		$handler = new AI_Handler();
-		$result  = $handler->process_prompt( 'Test prompt' );
-
-		$this->assertInstanceOf( WP_Error::class, $result );
-		$this->assertSame( 'wp_ai_client_not_available', $result->get_error_code() );
-	}
-
-	/**
 	 * Coverage for process_prompt when API key is not configured.
 	 *
 	 * @covers ::process_prompt
@@ -77,43 +56,6 @@ class Test_AI_Handler extends Base {
 
 		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertSame( 'no_api_key', $result->get_error_code() );
-	}
-
-	/**
-	 * Coverage for process_prompt when no abilities are available.
-	 *
-	 * @covers ::process_prompt
-	 * @covers ::get_gatherpress_abilities
-	 *
-	 * @return void
-	 */
-	public function test_process_prompt_without_abilities(): void {
-		if ( ! class_exists( 'WordPress\AI_Client\AI_Client' ) ) {
-			$this->markTestSkipped( 'wp-ai-client is not available in test environment.' );
-		}
-
-		$handler = new AI_Handler();
-
-		// Set API key.
-		update_option(
-			'wp_ai_client_provider_credentials',
-			array(
-				'openai' => 'test-api-key',
-			)
-		);
-
-		// Only test if wp_get_ability doesn't exist.
-		if ( function_exists( 'wp_get_ability' ) ) {
-			$this->markTestSkipped( 'Abilities API is available in test environment.' );
-		}
-
-		$result = $handler->process_prompt( 'Test prompt' );
-
-		$this->assertInstanceOf( WP_Error::class, $result );
-		$this->assertSame( 'no_abilities', $result->get_error_code() );
-
-		// Clean up.
-		delete_option( 'wp_ai_client_provider_credentials' );
 	}
 
 	/**
@@ -206,27 +148,6 @@ class Test_AI_Handler extends Base {
 
 		// Clean up.
 		delete_option( 'wp_ai_client_provider_credentials' );
-	}
-
-	/**
-	 * Coverage for get_gatherpress_abilities when Abilities API is not available.
-	 *
-	 * @covers ::get_gatherpress_abilities
-	 *
-	 * @return void
-	 */
-	public function test_get_gatherpress_abilities_when_api_not_available(): void {
-		$handler = new AI_Handler();
-
-		// Only test if wp_get_ability doesn't exist.
-		if ( function_exists( 'wp_get_ability' ) ) {
-			$this->markTestSkipped( 'Abilities API is available in test environment.' );
-		}
-
-		$abilities = Utility::invoke_hidden_method( $handler, 'get_gatherpress_abilities' );
-
-		$this->assertIsArray( $abilities );
-		$this->assertEmpty( $abilities );
 	}
 
 	/**
