@@ -678,4 +678,168 @@ class Test_Setup extends Base {
 		remove_filter( 'gatherpress_is_alpha_active', '__return_false' );
 		set_current_screen( 'front' );
 	}
+
+	/**
+	 * Coverage for show_ai_provider_notice when on wp-ai-client settings page.
+	 *
+	 * @covers ::show_ai_provider_notice
+	 *
+	 * @return void
+	 */
+	public function test_show_ai_provider_notice_displays_on_settings_page(): void {
+		$instance = Setup::get_instance();
+
+		// Set current screen to wp-ai-client settings page.
+		set_current_screen( 'settings_page_wp-ai-client' );
+
+		ob_start();
+		$instance->show_ai_provider_notice();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'Provider Recommendation',
+			$output,
+			'Failed to assert that provider recommendation notice is displayed.'
+		);
+		$this->assertStringContainsString(
+			'OpenAI',
+			$output,
+			'Failed to assert that OpenAI is mentioned in the notice.'
+		);
+
+		// Clean up.
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for show_ai_provider_notice when not on wp-ai-client settings page.
+	 *
+	 * @covers ::show_ai_provider_notice
+	 *
+	 * @return void
+	 */
+	public function test_show_ai_provider_notice_does_not_display_on_other_pages(): void {
+		$instance = Setup::get_instance();
+
+		// Set current screen to a different page.
+		set_current_screen( 'plugins' );
+
+		ob_start();
+		$instance->show_ai_provider_notice();
+		$output = ob_get_clean();
+
+		$this->assertEmpty(
+			$output,
+			'Failed to assert that no notice is displayed on non-wp-ai-client pages.'
+		);
+
+		// Clean up.
+		set_current_screen( 'front' );
+	}
+
+	/**
+	 * Coverage for init_wp_ai_client method.
+	 *
+	 * @covers ::init_wp_ai_client
+	 *
+	 * @return void
+	 */
+	public function test_init_wp_ai_client(): void {
+		$instance = Setup::get_instance();
+
+		// The method should execute without error.
+		// If wp-ai-client class exists, it will be initialized.
+		// If it doesn't exist, the method will return early.
+		$instance->init_wp_ai_client();
+
+		$this->assertTrue(
+			true,
+			'The init_wp_ai_client method should execute without error.'
+		);
+	}
+
+	/**
+	 * Coverage for increase_ai_request_timeout with OpenAI URL.
+	 *
+	 * @covers ::increase_ai_request_timeout
+	 *
+	 * @return void
+	 */
+	public function test_increase_ai_request_timeout_with_openai_url(): void {
+		$instance = Setup::get_instance();
+
+		$args = array(
+			'timeout' => 5,
+			'method'  => 'POST',
+		);
+		$url  = 'https://api.openai.com/v1/chat/completions';
+
+		$result = $instance->increase_ai_request_timeout( $args, $url );
+
+		$this->assertSame(
+			60,
+			$result['timeout'],
+			'Failed to assert that timeout is increased to 60 seconds for OpenAI URLs.'
+		);
+		$this->assertSame(
+			'POST',
+			$result['method'],
+			'Failed to assert that other args are preserved.'
+		);
+	}
+
+	/**
+	 * Coverage for increase_ai_request_timeout with Anthropic URL.
+	 *
+	 * @covers ::increase_ai_request_timeout
+	 *
+	 * @return void
+	 */
+	public function test_increase_ai_request_timeout_with_anthropic_url(): void {
+		$instance = Setup::get_instance();
+
+		$args = array(
+			'timeout' => 5,
+			'method'  => 'POST',
+		);
+		$url  = 'https://api.anthropic.com/v1/messages';
+
+		$result = $instance->increase_ai_request_timeout( $args, $url );
+
+		$this->assertSame(
+			60,
+			$result['timeout'],
+			'Failed to assert that timeout is increased to 60 seconds for Anthropic URLs.'
+		);
+	}
+
+	/**
+	 * Coverage for increase_ai_request_timeout with non-AI URL.
+	 *
+	 * @covers ::increase_ai_request_timeout
+	 *
+	 * @return void
+	 */
+	public function test_increase_ai_request_timeout_with_non_ai_url(): void {
+		$instance = Setup::get_instance();
+
+		$args = array(
+			'timeout' => 5,
+			'method'  => 'GET',
+		);
+		$url  = 'https://example.com/api/endpoint';
+
+		$result = $instance->increase_ai_request_timeout( $args, $url );
+
+		$this->assertSame(
+			5,
+			$result['timeout'],
+			'Failed to assert that timeout is unchanged for non-AI URLs.'
+		);
+		$this->assertSame(
+			'GET',
+			$result['method'],
+			'Failed to assert that other args are preserved.'
+		);
+	}
 }
