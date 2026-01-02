@@ -172,9 +172,6 @@ Rules:
 		while ( $iterations < self::MAX_ITERATIONS ) {
 			++$iterations;
 
-			// Debug: Log iteration and builder state.
-			error_log( sprintf( 'GatherPress AI: Loop iteration %d', $iterations ) );
-
 			// Generate result from AI.
 			$result = $builder->generate_result();
 
@@ -216,20 +213,15 @@ Rules:
 				if ( $part->getType()->isFunctionCall() ) {
 					$function_call = $part->getFunctionCall();
 					if ( $function_call instanceof FunctionCall && $this->is_ability_call( $function_call ) ) {
-						// Debug: Log function call execution.
-						error_log( sprintf( 'GatherPress AI: Executing function call: %s', $function_call->getName() ) );
-						
 						$function_response = $this->execute_ability( $function_call );
 						
-						// Create a separate UserMessage for each function response.
+						// Create a separate UserMessage for each function response (OpenAI API requirement).
 						$function_response_messages[] = new UserMessage( 
 							array( new MessagePart( $function_response ) ) 
 						);
 						
-						// Debug: Log function response.
-						error_log( sprintf( 'GatherPress AI: Function call %s completed', $function_call->getName() ) );
-						
 						// Track action for response display.
+						// Convert function name back to ability name for tracking.
 						$function_name = $function_call->getName();
 						$ability_name  = $this->function_name_to_ability_name( $function_name );
 						$result        = $function_response->getResponse();
@@ -254,10 +246,6 @@ Rules:
 			$all_messages = array( $original_user_message );
 			$all_messages = array_merge( $all_messages, $conversation_history );
 
-			// Debug: Log message count and rebuilding.
-			error_log( sprintf( 'GatherPress AI: Rebuilding builder with %d total messages', count( $all_messages ) ) );
-			error_log( sprintf( 'GatherPress AI: Conversation history has %d messages', count( $conversation_history ) ) );
-
 			// Create a new builder with the full message array.
 			// The PromptBuilder constructor accepts an array of Messages directly.
 			$builder = AI_Client::prompt( $all_messages );
@@ -270,9 +258,6 @@ Rules:
 			if ( ! empty( $function_declarations ) ) {
 				$builder->using_function_declarations( ...$function_declarations );
 			}
-
-			// Debug: Log that builder was rebuilt.
-			error_log( 'GatherPress AI: Builder rebuilt with system instruction and function declarations' );
 		}
 
 		return new WP_Error(
@@ -443,6 +428,9 @@ Rules:
 	/**
 	 * Get all registered GatherPress abilities.
 	 *
+	 * Uses Abilities_Integration to get the list of ability names,
+	 * then filters to only return abilities that are actually registered.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return array<string> Array of ability names.
@@ -452,19 +440,8 @@ Rules:
 			return array();
 		}
 
-		$ability_names = array(
-			'gatherpress/list-venues',
-			'gatherpress/list-events',
-			'gatherpress/list-topics',
-			'gatherpress/search-events',
-			'gatherpress/calculate-dates',
-			'gatherpress/create-venue',
-			'gatherpress/create-topic',
-			'gatherpress/create-event',
-			'gatherpress/update-venue',
-			'gatherpress/update-event',
-			'gatherpress/update-events-batch',
-		);
+		// Get ability names from Abilities_Integration (single source of truth).
+		$ability_names = Abilities_Integration::get_all_ability_names();
 
 		$abilities = array();
 

@@ -128,6 +128,32 @@ class Abilities_Integration {
 	}
 
 	/**
+	 * Get all GatherPress ability names.
+	 *
+	 * Returns a list of all ability names that GatherPress registers.
+	 * This provides a single source of truth for ability names.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array<string> Array of ability names.
+	 */
+	public static function get_all_ability_names(): array {
+		return array(
+			'gatherpress/list-venues',
+			'gatherpress/list-events',
+			'gatherpress/list-topics',
+			'gatherpress/search-events',
+			'gatherpress/calculate-dates',
+			'gatherpress/create-venue',
+			'gatherpress/create-topic',
+			'gatherpress/create-event',
+			'gatherpress/update-venue',
+			'gatherpress/update-event',
+			'gatherpress/update-events-batch',
+		);
+	}
+
+	/**
 	 * Register all GatherPress abilities.
 	 *
 	 * @since 1.0.0
