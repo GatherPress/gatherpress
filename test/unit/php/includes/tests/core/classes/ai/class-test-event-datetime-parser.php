@@ -634,6 +634,67 @@ class Test_Event_Datetime_Parser extends Base {
 	}
 
 	/**
+	 * Test prepare_datetime_params preserves existing start when only in GMT format.
+	 *
+	 * @covers ::prepare_datetime_params
+	 *
+	 * @return void
+	 */
+	public function test_prepare_datetime_params_preserves_gmt_start_when_updating_end(): void {
+		$new_datetimes     = array(
+			'datetime_end' => '2pm',
+		);
+		$existing_datetime = array(
+			// Start only exists in GMT, not local.
+			'datetime_start_gmt' => '2025-01-06 09:00:00',
+			'datetime_end'       => '2025-01-06 11:00:00',
+			'datetime_end_gmt'   => '2025-01-06 11:00:00',
+			'timezone'           => 'UTC',
+		);
+
+		$result = $this->parser->prepare_datetime_params( $new_datetimes, $existing_datetime );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertArrayHasKey( 'datetime_start', $result, 'Failed to assert datetime_start is preserved from GMT.' );
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertEquals( '2025-01-06 09:00:00', $result['datetime_start'], 'Failed to assert start time preserved from GMT.' );
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertEquals( '2025-01-06 14:00:00', $result['datetime_end'], 'Failed to assert end time updated to 2pm.' );
+	}
+
+	/**
+	 * Test prepare_datetime_params converts GMT to local when both are only in GMT.
+	 *
+	 * @covers ::prepare_datetime_params
+	 *
+	 * @return void
+	 */
+	public function test_prepare_datetime_params_converts_gmt_to_local_when_only_gmt_exists(): void {
+		$new_datetimes     = array(
+			'datetime_end' => '2pm',
+		);
+		$existing_datetime = array(
+			// Both start and end only exist in GMT, not local.
+			'datetime_start_gmt' => '2025-01-06 09:00:00',
+			'datetime_end_gmt'   => '2025-01-06 11:00:00',
+			'timezone'           => 'America/New_York',
+		);
+
+		$result = $this->parser->prepare_datetime_params( $new_datetimes, $existing_datetime );
+
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertArrayHasKey( 'datetime_start', $result, 'Failed to assert datetime_start converted from GMT.' );
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertArrayHasKey( 'datetime_end', $result, 'Failed to assert datetime_end is present.' );
+		// Start should be converted from GMT to local timezone.
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertStringStartsWith( '2025-01-06', $result['datetime_start'], 'Failed to assert start date preserved.' );
+		// End should be updated to 2pm in local timezone.
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertEquals( 14, (int) DateTime::createFromFormat( 'Y-m-d H:i:s', $result['datetime_end'] )->format( 'H' ), 'Failed to assert end time updated to 2pm.' );
+	}
+
+	/**
 	 * Test prepare_datetime_params recalculates end when updating start time only.
 	 *
 	 * @covers ::prepare_datetime_params
