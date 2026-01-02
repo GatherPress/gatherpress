@@ -291,14 +291,10 @@ Rules:
 					: __( 'Task completed!', 'gatherpress' );
 
 				$return_data = array(
-					'response' => $response_text,
-					'actions'  => $actions_taken,
+					'response'   => $response_text,
+					'actions'    => $actions_taken,
+					'model_info' => $model_info,
 				);
-
-				// Add model/provider info if available.
-				if ( $model_info ) {
-					$return_data['model_info'] = $model_info;
-				}
 
 				return $return_data;
 			}
@@ -482,7 +478,7 @@ Rules:
 		}
 
 		// Execute the ability.
-		$args   = $call->getArgs();
+		$args = $call->getArgs();
 		// @phpstan-ignore-next-line
 		$result = $ability->execute( $args );
 
