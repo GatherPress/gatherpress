@@ -203,8 +203,9 @@ Rules:
 						$provider_name = 'Anthropic';
 					}
 				} catch ( \Exception $request_exception ) {
-					// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Request not available, continue without provider name.
-					// Intentionally empty - we continue with empty provider name.
+					// Request not available, continue without provider name.
+					// Provider name will remain empty string.
+					$provider_name = '';
 				}
 
 				if ( strpos( $message, '429' ) !== false || strpos( $message, 'Too Many Requests' ) !== false ) {
@@ -213,15 +214,12 @@ Rules:
 						'gatherpress'
 					);
 					if ( $provider_name ) {
-						// phpcs:ignore Generic.Files.LineLength.TooLong -- Translation string.
-						$error_msg = sprintf(
-							/* translators: %s: Provider name (e.g., Google, OpenAI) */
-							__(
-								'API rate limit exceeded for %s. You may need to upgrade your API plan or check your quota limits.',
-								'gatherpress'
-							),
-							$provider_name
+						/* translators: %s: Provider name (e.g., Google, OpenAI) */
+						$rate_limit_msg = __(
+							'API rate limit exceeded for %s. Upgrade your API plan or check quota limits.',
+							'gatherpress'
 						);
+						$error_msg      = sprintf( $rate_limit_msg, $provider_name );
 					}
 					return new WP_Error( 'rate_limit', $error_msg );
 				}
@@ -231,15 +229,12 @@ Rules:
 						'gatherpress'
 					);
 					if ( $provider_name ) {
-						// phpcs:ignore Generic.Files.LineLength.TooLong -- Translation string.
-						$error_msg = sprintf(
-							/* translators: %s: Provider name (e.g., Google, OpenAI) */
-							__(
-								'Invalid API credentials for %s. Please check your API key in Settings > AI Credentials.',
-								'gatherpress'
-							),
-							$provider_name
+						/* translators: %s: Provider name (e.g., Google, OpenAI) */
+						$invalid_creds_msg = __(
+							'Invalid API credentials for %s. Please check your API key in Settings > AI Credentials.',
+							'gatherpress'
 						);
+						$error_msg         = sprintf( $invalid_creds_msg, $provider_name );
 					}
 					return new WP_Error( 'invalid_credentials', $error_msg );
 				}
@@ -255,14 +250,11 @@ Rules:
 			} catch ( \WordPress\AiClient\Common\Exception\InvalidArgumentException $e ) {
 				// Handle "No models found" error - credentials not recognized.
 				if ( strpos( $e->getMessage(), 'No models found' ) !== false ) {
-					// phpcs:ignore Generic.Files.LineLength.TooLong -- Translation string.
-					return new WP_Error(
-						'no_models_found',
-						__(
-							'No AI models found. Please verify your API credentials are correctly configured in Settings > AI Credentials.',
-							'gatherpress'
-						)
+					$no_models_msg = __(
+						'No AI models found. Verify your API credentials in Settings > AI Credentials.',
+						'gatherpress'
 					);
+					return new WP_Error( 'no_models_found', $no_models_msg );
 				}
 				// Re-throw other InvalidArgumentException errors.
 				throw $e;
