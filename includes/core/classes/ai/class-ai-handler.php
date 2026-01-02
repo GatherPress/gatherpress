@@ -168,12 +168,76 @@ Rules:
 		$iterations          = 0;
 		$executed_calls      = array(); // Track executed function calls to prevent duplicates.
 		$conversation_history = array();
+		$model_info          = null; // Store model/provider info from first successful result.
 
 		while ( $iterations < self::MAX_ITERATIONS ) {
 			++$iterations;
 
 			// Generate result from AI.
-			$result = $builder->generate_result();
+			try {
+				$result = $builder->generate_result();
+			} catch ( \WordPress\AiClient\Providers\Http\Exception\ClientException $e ) {
+				// Handle HTTP client errors (429 rate limit, 401 auth, etc.).
+				$message = $e->getMessage();
+				
+				// Try to determine which provider was used from the request URL.
+				$provider_name = '';
+				try {
+					$request = $e->getRequest();
+					$url     = (string) $request->getUri();
+					if ( strpos( $url, 'api.google.com' ) !== false || strpos( $url, 'generativelanguage.googleapis.com' ) !== false ) {
+						$provider_name = 'Google';
+					} elseif ( strpos( $url, 'api.openai.com' ) !== false ) {
+						$provider_name = 'OpenAI';
+					} elseif ( strpos( $url, 'api.anthropic.com' ) !== false ) {
+						$provider_name = 'Anthropic';
+					}
+				} catch ( \Exception $request_exception ) {
+					// Request not available, continue without provider name.
+				}
+				
+				if ( strpos( $message, '429' ) !== false || strpos( $message, 'Too Many Requests' ) !== false ) {
+					$error_msg = __( 'API rate limit exceeded. You may need to upgrade your API plan or check your quota limits.', 'gatherpress' );
+					if ( $provider_name ) {
+						$error_msg = sprintf(
+							/* translators: %s: Provider name (e.g., Google, OpenAI) */
+							__( 'API rate limit exceeded for %s. You may need to upgrade your API plan or check your quota limits.', 'gatherpress' ),
+							$provider_name
+						);
+					}
+					return new WP_Error( 'rate_limit', $error_msg );
+				}
+				if ( strpos( $message, '401' ) !== false || strpos( $message, 'Unauthorized' ) !== false ) {
+					$error_msg = __( 'Invalid API credentials. Please check your API key in Settings > AI Credentials.', 'gatherpress' );
+					if ( $provider_name ) {
+						$error_msg = sprintf(
+							/* translators: %s: Provider name (e.g., Google, OpenAI) */
+							__( 'Invalid API credentials for %s. Please check your API key in Settings > AI Credentials.', 'gatherpress' ),
+							$provider_name
+						);
+					}
+					return new WP_Error( 'invalid_credentials', $error_msg );
+				}
+				// For other client errors, return the error message.
+				return new WP_Error(
+					'api_error',
+					sprintf(
+						/* translators: %s: Error message */
+						__( 'API error: %s', 'gatherpress' ),
+						$message
+					)
+				);
+			} catch ( \WordPress\AiClient\Common\Exception\InvalidArgumentException $e ) {
+				// Handle "No models found" error - credentials not recognized.
+				if ( strpos( $e->getMessage(), 'No models found' ) !== false ) {
+					return new WP_Error(
+						'no_models_found',
+						__( 'No AI models found. Please verify your API credentials are correctly configured in Settings > AI Credentials.', 'gatherpress' )
+					);
+				}
+				// Re-throw other InvalidArgumentException errors.
+				throw $e;
+			}
 
 			if ( $result instanceof WP_Error ) {
 				return $result;
@@ -188,6 +252,16 @@ Rules:
 				);
 			}
 
+			// Store model/provider info from first successful result.
+			if ( null === $model_info ) {
+				$provider_metadata = $result->getProviderMetadata();
+				$model_metadata    = $result->getModelMetadata();
+				$model_info        = array(
+					'provider' => $provider_metadata->getName(),
+					'model'    => $model_metadata->getName(),
+				);
+			}
+
 			$message = $candidates[0]->getMessage();
 
 			// Check if message has ability function calls.
@@ -199,10 +273,17 @@ Rules:
 					? $text_content
 					: __( 'Task completed!', 'gatherpress' );
 
-				return array(
+				$return_data = array(
 					'response' => $response_text,
 					'actions'  => $actions_taken,
 				);
+
+				// Add model/provider info if available.
+				if ( $model_info ) {
+					$return_data['model_info'] = $model_info;
+				}
+
+				return $return_data;
 			}
 
 			// Execute ability calls and get responses.

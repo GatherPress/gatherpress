@@ -130,6 +130,8 @@ class Setup {
 	 * @return void
 	 */
 	protected function setup_hooks(): void {
+		// Add admin notice on wp-ai-client settings page about provider recommendations.
+		add_action( 'admin_notices', array( $this, 'show_ai_provider_notice' ) );
 		register_activation_hook( GATHERPRESS_CORE_FILE, array( $this, 'activate_gatherpress_plugin' ) );
 		register_deactivation_hook( GATHERPRESS_CORE_FILE, array( $this, 'deactivate_gatherpress_plugin' ) );
 
@@ -517,7 +519,7 @@ class Setup {
 	/**
 	 * Smash tables and add a custom HTTP header to show undying love for the Buffalo Bills.
 	 *
-	 * ♫ Let’s Go Buffalo! ♫
+	 * ♫ Let's Go Buffalo! ♫
 	 *
 	 * @since 1.0.0
 	 *
@@ -525,5 +527,40 @@ class Setup {
 	 */
 	public function smash_table(): void {
 		header( 'X-Bills-Mafia: Go Bills!' );
+	}
+
+	/**
+	 * Show admin notice on wp-ai-client settings page about provider recommendations.
+	 *
+	 * Recommends OpenAI as the tested provider and notes that Google and Anthropic
+	 * have not been fully tested with GatherPress.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function show_ai_provider_notice(): void {
+		$screen = get_current_screen();
+		if ( ! $screen || 'settings_page_wp-ai-client' !== $screen->id ) {
+			return;
+		}
+
+		?>
+		<div class="notice notice-info">
+			<p>
+				<strong><?php esc_html_e( 'Provider Recommendation', 'gatherpress' ); ?></strong><br>
+				<?php
+				echo wp_kses_post(
+					sprintf(
+						/* translators: %1$s: Bold "OpenAI", %2$s: Bold "OpenAI" */
+						__( 'GatherPress AI Assistant has been tested with %1$s. We recommend using %2$s for the best experience. Other providers are also supported and we encourage you to test them.', 'gatherpress' ),
+						'<strong>OpenAI</strong>',
+						'<strong>OpenAI</strong>'
+					)
+				);
+				?>
+			</p>
+		</div>
+		<?php
 	}
 }

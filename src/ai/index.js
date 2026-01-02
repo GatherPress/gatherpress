@@ -54,7 +54,7 @@ jQuery( document ).ready( function( $ ) {
 					const data = response.data;
 
 					// Add AI response
-					addMessage( data.response, 'assistant', data.actions );
+					addMessage( data.response, 'assistant', data.actions, data.model_info );
 				} else {
 					addMessage( 'Error: ' + ( response.data.message || 'Unknown error' ), 'error' );
 				}
@@ -72,14 +72,31 @@ jQuery( document ).ready( function( $ ) {
 	/**
 	 * Add a message to the chat
 	 *
-	 * @param {string} content The message content
-	 * @param {string} type    The message type (user, assistant, error, success)
-	 * @param {Array}  actions Optional array of actions taken
+	 * @param {string} content   The message content
+	 * @param {string} type      The message type (user, assistant, error, success)
+	 * @param {Array}  actions   Optional array of actions taken
+	 * @param {Object} modelInfo Optional object with provider and model info
 	 */
-	function addMessage( content, type, actions ) {
+	function addMessage( content, type, actions, modelInfo ) {
 		const $message = $( '<div>' )
 			.addClass( 'gp-ai-message' )
 			.addClass( type );
+
+		// Add model/provider info at the top if available (for assistant messages).
+		if ( modelInfo && type === 'assistant' ) {
+			const $modelInfo = $( '<div>' )
+				.addClass( 'gp-ai-model-info' )
+				.css( {
+					'margin-bottom': '10px',
+					'padding-bottom': '10px',
+					'border-bottom': '1px solid rgba(0, 0, 0, 0.1)',
+					'font-size': '13px',
+					'font-weight': 'bold',
+					'color': '#646970',
+				} )
+				.text( `Using ${ modelInfo.provider } ${ modelInfo.model }` );
+			$message.append( $modelInfo );
+		}
 
 		const $content = $( '<div>' )
 			.addClass( 'gp-ai-message-content' )
