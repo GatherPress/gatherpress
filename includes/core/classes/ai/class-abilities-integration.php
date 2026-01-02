@@ -743,8 +743,8 @@ class Abilities_Integration {
 				$event_list[] = array(
 					'id'             => $event->ID,
 					'title'          => get_the_title( $event->ID ),
-					'datetime_start' => $event_obj->get_datetime_start( 'Y-m-d H:i:s' ),
-					'datetime_end'   => $event_obj->get_datetime_end( 'Y-m-d H:i:s' ),
+					'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
+					'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
 					'venue'          => $venue_information['name'] ?? null,
 					'permalink'      => get_permalink( $event->ID ),
 					'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
@@ -790,8 +790,8 @@ class Abilities_Integration {
 			$event_list[] = array(
 				'id'             => $event->ID,
 				'title'          => get_the_title( $event->ID ),
-				'datetime_start' => $event_obj->get_datetime_start( 'Y-m-d H:i:s' ),
-				'datetime_end'   => $event_obj->get_datetime_end( 'Y-m-d H:i:s' ),
+				'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
+				'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
 				'venue'          => $venue_information['name'] ?? null,
 				'permalink'      => get_permalink( $event->ID ),
 				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
@@ -1440,8 +1440,8 @@ class Abilities_Integration {
 				'id'             => $event->ID,
 				'title'          => get_the_title( $event->ID ),
 				'status'         => $event->post_status,
-				'datetime_start' => $datetime['datetime_start'] ?? '',
-				'datetime_end'   => $datetime['datetime_end'] ?? '',
+				'datetime_start' => $event_obj->get_datetime_start( 'F j, Y, g:i a' ),
+				'datetime_end'   => $event_obj->get_datetime_end( 'F j, Y, g:i a' ),
 				'timezone'       => $datetime['timezone'] ?? '',
 				'venue_id'       => get_post_meta( $event->ID, 'gatherpress_venue', true ),
 				'edit_url'       => get_edit_post_link( $event->ID, 'raw' ),
@@ -1575,7 +1575,7 @@ class Abilities_Integration {
 			// Check if the input is time-only (not a full datetime).
 			$is_time_only_start = isset( $params['datetime_start'] )
 				&& ! preg_match( '/^\d{4}-\d{2}-\d{2}/', $params['datetime_start'] );
-			$is_time_only_end = isset( $params['datetime_end'] )
+			$is_time_only_end   = isset( $params['datetime_end'] )
 				&& ! preg_match( '/^\d{4}-\d{2}-\d{2}/', $params['datetime_end'] );
 
 			// Check if datetime exists (check both regular and GMT versions).
@@ -1588,8 +1588,10 @@ class Abilities_Integration {
 			if ( ( $is_time_only_start || $is_time_only_end ) && ! $has_existing_datetime ) {
 				$errors[] = sprintf(
 					/* translators: %s: event title */
-					// phpcs:ignore Generic.Files.LineLength.TooLong
-					__( 'Cannot update time-only for event "%s" without an existing event date. Please provide a full datetime (e.g., "2025-01-04 15:00:00") or create the event with a date first.', 'gatherpress' ),
+					__(
+						'Cannot update time-only for event "%s" without an existing date. Provide a full datetime.',
+						'gatherpress'
+					),
 					get_the_title( $event->ID )
 				);
 				continue;

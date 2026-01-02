@@ -76,9 +76,7 @@ class Test_Admin_Page extends Base {
 	public function test_add_admin_page_when_ability_api_available(): void {
 		global $submenu;
 
-		if ( ! function_exists( 'wp_register_ability' ) ) {
-			$this->markTestSkipped( 'wp_register_ability function not available.' );
-		}
+		// Test both paths: when function exists and when it doesn't.
 
 		// Initialize submenu if not set.
 		if ( ! is_array( $submenu ) ) {

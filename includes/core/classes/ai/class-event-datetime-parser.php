@@ -96,8 +96,10 @@ class Event_Datetime_Parser {
 			return $datetime;
 		}
 
-		// Try parsing as time-only formats.
-		$time_only = $this->parse_time_only( $input );
+		// Try parsing as time-only formats (strip seconds first if present).
+		// Remove seconds if present (e.g., "19:30:00" -> "19:30").
+		$time_input = preg_replace( '/:(\d{2})$/', '', $input );
+		$time_only  = $this->parse_time_only( $time_input );
 		if ( $time_only ) {
 			// If we have an existing date, merge with it.
 			if ( $existing_date ) {
@@ -117,6 +119,22 @@ class Event_Datetime_Parser {
 		// Try parsing with DateTime's flexible parser as last resort.
 		try {
 			$datetime = new DateTime( $input, $tz );
+			// If we have an existing date and the parsed date is not what we want, use existing date.
+			if ( $existing_date ) {
+				$parsed_date = $datetime->format( 'Y-m-d' );
+				if ( $parsed_date !== $existing_date ) {
+					// Use existing date with parsed time.
+					$time_string       = $datetime->format( 'H:i:s' );
+					$existing_datetime = DateTime::createFromFormat(
+						'Y-m-d H:i:s',
+						$existing_date . ' ' . $time_string,
+						$tz
+					);
+					if ( $existing_datetime ) {
+						return $existing_datetime;
+					}
+				}
+			}
 			return $datetime;
 		} catch ( Exception $e ) {
 			throw new Exception(
@@ -147,8 +165,8 @@ class Event_Datetime_Parser {
 		$patterns = array(
 			// 12-hour format with am/pm.
 			'/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/',
-			// 24-hour format with colon.
-			'/^(\d{1,2}):(\d{2})$/',
+			// 24-hour format with colon (with or without seconds).
+			'/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/',
 			// 24-hour format without colon.
 			'/^(\d{1,2})(\d{2})$/',
 		);
@@ -235,11 +253,22 @@ class Event_Datetime_Parser {
 		// Parse new end datetime if provided.
 		if ( isset( $new_datetimes['datetime_end'] ) ) {
 			// Extract date from existing datetime (local or GMT).
+			// Prefer start datetime's date if available (for time-only updates).
 			$existing_end_date = null;
-			if ( $existing_end ) {
+			if ( $existing_start ) {
+				// Use start datetime's date for time-only end updates.
+				$existing_end_date = $this->extract_date_from_datetime( $existing_start, $timezone );
+			} elseif ( ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
+				// Use GMT start datetime and convert to local timezone.
+				$existing_end_date = $this->extract_date_from_gmt(
+					$existing_datetime['datetime_start_gmt'],
+					$timezone
+				);
+			} elseif ( $existing_end ) {
+				// Fall back to end datetime's date if start doesn't exist.
 				$existing_end_date = $this->extract_date_from_datetime( $existing_end, $timezone );
 			} elseif ( ! empty( $existing_datetime['datetime_end_gmt'] ) ) {
-				// Use GMT datetime and convert to local timezone.
+				// Use GMT end datetime and convert to local timezone.
 				$existing_end_date = $this->extract_date_from_gmt(
 					$existing_datetime['datetime_end_gmt'],
 					$timezone
@@ -273,8 +302,15 @@ class Event_Datetime_Parser {
 			}
 		}
 
-		// If only end is provided and start is missing, default start to end - default duration.
-		if ( isset( $result['datetime_end'] ) && ! isset( $result['datetime_start'] ) ) {
+		// If only end is provided and start is missing (no existing start), default start to end - default duration.
+		// Only recalculate if updating end, not updating start, and no existing start exists (local or GMT).
+		if ( isset( $result['datetime_end'] )
+			&& ! isset( $result['datetime_start'] )
+			&& isset( $new_datetimes['datetime_end'] )
+			&& ! isset( $new_datetimes['datetime_start'] )
+			&& empty( $existing_start )
+			&& empty( $existing_datetime['datetime_start_gmt'] )
+			&& empty( $existing_datetime['datetime_start'] ) ) {
 			$end_dt = DateTime::createFromFormat(
 				'Y-m-d H:i:s',
 				$result['datetime_end'],

@@ -1005,6 +1005,16 @@ class Test_Abilities_Integration extends Base {
 			)
 		);
 
+		// Add datetimes to event.
+		$event1 = new Event( $event_id_1 );
+		$event1->save_datetimes(
+			array(
+				'datetime_start' => '2025-12-25 19:00:00',
+				'datetime_end'   => '2025-12-25 21:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
 		$instance = Abilities_Integration::get_instance();
 		$result   = $instance->execute_search_events( array( 'search_term' => 'Book' ) );
 
@@ -1012,6 +1022,18 @@ class Test_Abilities_Integration extends Base {
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
 		$this->assertArrayHasKey( 'count', $result['data'], 'Failed to assert count key exists.' );
+
+		// Verify datetime format is 12-hour (F j, Y, g:i a).
+		if ( ! empty( $result['data']['events'] ) ) {
+			$event_data = $result['data']['events'][0];
+			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
+			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
+			// Check format contains am/pm (12-hour format).
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
+		}
 	}
 
 	/**
@@ -1545,6 +1567,18 @@ class Test_Abilities_Integration extends Base {
 		$this->assertTrue( $result['success'], 'Failed to assert success is true.' );
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
+
+		// Verify datetime format is 12-hour (F j, Y, g:i a).
+		if ( ! empty( $result['data']['events'] ) ) {
+			$event_data = $result['data']['events'][0];
+			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
+			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
+			// Check format contains am/pm (12-hour format).
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
+		}
 	}
 
 	/**
@@ -2175,6 +2209,24 @@ class Test_Abilities_Integration extends Base {
 			)
 		);
 
+		// Add datetimes to both events (required for time-only updates).
+		$exact_event = new Event( $exact_event_id );
+		$exact_event->save_datetimes(
+			array(
+				'datetime_start' => '2025-01-15 12:00:00',
+				'datetime_end'   => '2025-01-15 14:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+		$partial_event = new Event( $partial_event_id );
+		$partial_event->save_datetimes(
+			array(
+				'datetime_start' => '2025-01-15 12:00:00',
+				'datetime_end'   => '2025-01-15 14:00:00',
+				'timezone'       => 'UTC',
+			)
+		);
+
 		$instance = Abilities_Integration::get_instance();
 		$result   = $instance->execute_update_events_batch(
 			array(
@@ -2399,6 +2451,18 @@ class Test_Abilities_Integration extends Base {
 		$this->assertIsArray( $result['data'], 'Failed to assert data is an array.' );
 		$this->assertArrayHasKey( 'events', $result['data'], 'Failed to assert events key exists.' );
 		$this->assertArrayHasKey( 'count', $result['data'], 'Failed to assert count key exists.' );
+
+		// Verify datetime format is 12-hour (F j, Y, g:i a).
+		if ( ! empty( $result['data']['events'] ) ) {
+			$event_data = $result['data']['events'][0];
+			$this->assertArrayHasKey( 'datetime_start', $event_data, 'Failed to assert datetime_start key exists.' );
+			$this->assertArrayHasKey( 'datetime_end', $event_data, 'Failed to assert datetime_end key exists.' );
+			// Check format contains am/pm (12-hour format).
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_start'], 'Failed to assert datetime_start is in 12-hour format.' );
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			$this->assertMatchesRegularExpression( '/\b(am|pm)\b/i', $event_data['datetime_end'], 'Failed to assert datetime_end is in 12-hour format.' );
+		}
 	}
 
 	/**
