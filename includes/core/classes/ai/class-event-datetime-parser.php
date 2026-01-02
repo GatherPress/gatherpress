@@ -221,9 +221,21 @@ class Event_Datetime_Parser {
 		$existing_start = ! empty( $existing_datetime['datetime_start'] )
 			? $existing_datetime['datetime_start']
 			: null;
-		$existing_end   = ! empty( $existing_datetime['datetime_end'] )
+		if ( empty( $existing_start ) && ! empty( $existing_datetime['datetime_start_gmt'] ) ) {
+			$existing_start = $this->convert_gmt_to_local(
+				$existing_datetime['datetime_start_gmt'],
+				$timezone
+			);
+		}
+		$existing_end = ! empty( $existing_datetime['datetime_end'] )
 			? $existing_datetime['datetime_end']
 			: null;
+		if ( empty( $existing_end ) && ! empty( $existing_datetime['datetime_end_gmt'] ) ) {
+			$existing_end = $this->convert_gmt_to_local(
+				$existing_datetime['datetime_end_gmt'],
+				$timezone
+			);
+		}
 
 		// Parse new start datetime if provided.
 		if ( isset( $new_datetimes['datetime_start'] ) ) {
@@ -395,5 +407,27 @@ class Event_Datetime_Parser {
 		$target_tz = new DateTimeZone( $timezone );
 		$dt->setTimezone( $target_tz );
 		return $dt->format( 'Y-m-d' );
+	}
+
+	/**
+	 * Convert GMT datetime to local timezone datetime string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $gmt_datetime GMT datetime string in Y-m-d H:i:s format.
+	 * @param string $timezone     Target timezone to convert to.
+	 * @return string|null Local datetime string in Y-m-d H:i:s format, or null if parsing fails.
+	 */
+	private function convert_gmt_to_local( string $gmt_datetime, string $timezone ): ?string {
+		$gmt_tz = new DateTimeZone( 'UTC' );
+		$dt     = DateTime::createFromFormat( 'Y-m-d H:i:s', $gmt_datetime, $gmt_tz );
+		if ( ! $dt ) {
+			return null;
+		}
+
+		// Convert to target timezone.
+		$target_tz = new DateTimeZone( $timezone );
+		$dt->setTimezone( $target_tz );
+		return $dt->format( 'Y-m-d H:i:s' );
 	}
 }
