@@ -83,7 +83,7 @@ jQuery( document ).ready( function( $ ) {
 			.addClass( type );
 
 		// Add model/provider info at the top if available (for assistant messages).
-		if ( modelInfo && type === 'assistant' ) {
+		if ( modelInfo && 'assistant' === type ) {
 			const $modelInfo = $( '<div>' )
 				.addClass( 'gp-ai-model-info' )
 				.css( {
@@ -92,7 +92,7 @@ jQuery( document ).ready( function( $ ) {
 					'border-bottom': '1px solid rgba(0, 0, 0, 0.1)',
 					'font-size': '13px',
 					'font-weight': 'bold',
-					'color': '#646970',
+					color: '#646970',
 				} )
 				.text( `Using ${ modelInfo.provider } ${ modelInfo.model }` );
 			$message.append( $modelInfo );
