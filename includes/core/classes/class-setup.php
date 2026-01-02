@@ -553,7 +553,10 @@ class Setup {
 				echo wp_kses_post(
 					sprintf(
 						/* translators: %1$s: Bold "OpenAI", %2$s: Bold "OpenAI" */
-						__( 'GatherPress AI Assistant has been tested with %1$s. We recommend using %2$s for the best experience. Other providers are also supported and we encourage you to test them.', 'gatherpress' ),
+						__(
+							'GatherPress AI Assistant has been tested with %1$s. We recommend %2$s.',
+							'gatherpress'
+						),
 						'<strong>OpenAI</strong>',
 						'<strong>OpenAI</strong>'
 					)
