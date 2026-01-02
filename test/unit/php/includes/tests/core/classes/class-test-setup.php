@@ -35,6 +35,24 @@ class Test_Setup extends Base {
 		$hooks    = array(
 			array(
 				'type'     => 'action',
+				'name'     => 'admin_notices',
+				'priority' => 10,
+				'callback' => array( $instance, 'show_ai_provider_notice' ),
+			),
+			array(
+				'type'     => 'action',
+				'name'     => 'init',
+				'priority' => 10,
+				'callback' => array( $instance, 'init_wp_ai_client' ),
+			),
+			array(
+				'type'     => 'filter',
+				'name'     => 'http_request_args',
+				'priority' => 10,
+				'callback' => array( $instance, 'increase_ai_request_timeout' ),
+			),
+			array(
+				'type'     => 'action',
 				'name'     => 'admin_init',
 				'priority' => 10,
 				'callback' => array( $instance, 'add_privacy_policy_content' ),

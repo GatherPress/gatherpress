@@ -204,13 +204,11 @@ class Test_Admin_Page extends Base {
 	public function test_render_admin_page_with_api_key(): void {
 		$instance = Admin_Page::get_instance();
 
-		// Set a test API key.
+		// Set a test API key using wp-ai-client option format.
 		update_option(
-			'gatherpress_ai',
+			'wp_ai_client_provider_credentials',
 			array(
-				'ai_service' => array(
-					'openai_api_key' => 'test-key',
-				),
+				'openai' => 'test-key',
 			)
 		);
 
@@ -224,7 +222,7 @@ class Test_Admin_Page extends Base {
 		$this->assertStringContainsString( 'gp-ai-prompt', $output );
 
 		// Clean up.
-		delete_option( 'gatherpress_ai' );
+		delete_option( 'wp_ai_client_provider_credentials' );
 	}
 
 	/**

@@ -112,7 +112,7 @@ class Admin_Page {
 	public function render_admin_page(): void {
 		if ( ! $this->has_api_key() ) {
 			?>
-			<div class="wrap">
+			<div class="wrap gp-ai-assistant">
 				<h1><?php echo esc_html__( 'GatherPress AI Assistant', 'gatherpress' ); ?></h1>
 				<div class="notice notice-warning">
 					<p>
