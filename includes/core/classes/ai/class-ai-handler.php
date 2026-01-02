@@ -260,10 +260,6 @@ Rules:
 				throw $e;
 			}
 
-			if ( $result instanceof WP_Error ) {
-				return $result;
-			}
-
 			// Get the first candidate message.
 			$candidates = $result->getCandidates();
 			if ( empty( $candidates ) ) {
@@ -473,6 +469,7 @@ Rules:
 
 		$ability = wp_get_ability( $ability_name );
 
+		// @phpstan-ignore-next-line
 		if ( ! $ability instanceof \WP_Ability ) {
 			return new FunctionResponse(
 				$function_id,
@@ -486,6 +483,7 @@ Rules:
 
 		// Execute the ability.
 		$args   = $call->getArgs();
+		// @phpstan-ignore-next-line
 		$result = $ability->execute( $args );
 
 		// Handle WP_Error responses.
