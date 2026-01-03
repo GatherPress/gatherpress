@@ -54,7 +54,7 @@ jQuery( document ).ready( function( $ ) {
 					const data = response.data;
 
 					// Add AI response
-					addMessage( data.response, 'assistant', data.actions, data.model_info );
+					addMessage( data.response, 'assistant', data.actions, data.model_info, data.state );
 				} else {
 					addMessage( 'Error: ' + ( response.data.message || 'Unknown error' ), 'error' );
 				}
@@ -76,8 +76,9 @@ jQuery( document ).ready( function( $ ) {
 	 * @param {string} type      The message type (user, assistant, error, success)
 	 * @param {Array}  actions   Optional array of actions taken
 	 * @param {Object} modelInfo Optional object with provider and model info
+	 * @param {Object} state     Optional object with conversation state (prompt_count, char_count)
 	 */
-	function addMessage( content, type, actions, modelInfo ) {
+	function addMessage( content, type, actions, modelInfo, state ) {
 		const $message = $( '<div>' )
 			.addClass( 'gp-ai-message' )
 			.addClass( type );
@@ -96,6 +97,25 @@ jQuery( document ).ready( function( $ ) {
 				} )
 				.text( `Using ${ modelInfo.provider } ${ modelInfo.model }` );
 			$message.append( $modelInfo );
+		}
+
+		// Add temporary debug state info (for assistant messages).
+		if ( state && 'assistant' === type ) {
+			const $debugState = $( '<div>' )
+				.addClass( 'gp-ai-debug-state' )
+				.css( {
+					'margin-top': '10px',
+					'padding-top': '10px',
+					'border-top': '1px solid rgba(0, 0, 0, 0.1)',
+					'font-size': '12px',
+					color: '#646970',
+					'font-style': 'italic',
+				} )
+				.text(
+					`[DEBUG: State - Prompts: ${ state.prompt_count }/${ state.max_prompts }, ` +
+					`Chars: ${ state.char_count.toLocaleString() }/${ state.max_chars.toLocaleString() }]`
+				);
+			$message.append( $debugState );
 		}
 
 		const $content = $( '<div>' )

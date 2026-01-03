@@ -39,6 +39,30 @@ class AI_Handler {
 	const MAX_ITERATIONS = 15;
 
 	/**
+	 * Maximum prompts before reset.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const MAX_PROMPTS = 10;
+
+	/**
+	 * Maximum characters before reset.
+	 *
+	 * @since 1.0.0
+	 * @var int
+	 */
+	const MAX_CHARS = 40000;
+
+	/**
+	 * User meta key for conversation state.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	const META_KEY_CONVERSATION_STATE = 'gatherpress_ai_conversation_state';
+
+	/**
 	 * Process a user prompt with AI.
 	 *
 	 * @since 1.0.0
@@ -144,13 +168,50 @@ Rules:
 		// Store original user message for conversation loop.
 		$original_user_message = new UserMessage( array( new MessagePart( $prompt ) ) );
 
+		// Load conversation state.
+		$user_id      = get_current_user_id();
+		$state        = $this->get_conversation_state( $user_id );
+		$prompt_count = $state['prompt_count'];
+		$char_count   = $state['char_count'];
+
+		// Increment prompt count and add prompt length to char count.
+		++$prompt_count;
+		$char_count += strlen( $prompt );
+
 		// Process the conversation loop.
-		return $this->process_conversation_loop(
+		$result = $this->process_conversation_loop(
 			$builder,
 			$original_user_message,
 			$system_content,
 			$function_declarations
 		);
+
+		// If result is error, return early without saving state.
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		// Add response length to char count.
+		$response_text = isset( $result['response'] ) ? $result['response'] : '';
+		$char_count   += strlen( $response_text );
+
+		// Save updated state.
+		$updated_state = array(
+			'prompt_count' => $prompt_count,
+			'char_count'   => $char_count,
+			'history'      => $state['history'], // Will be populated in later chunks.
+		);
+		$this->save_conversation_state( $user_id, $updated_state );
+
+		// Add state metadata to result for frontend display.
+		$result['state'] = array(
+			'prompt_count' => $prompt_count,
+			'char_count'   => $char_count,
+			'max_prompts'  => self::MAX_PROMPTS,
+			'max_chars'    => self::MAX_CHARS,
+		);
+
+		return $result;
 	}
 
 	/**
@@ -573,5 +634,57 @@ Rules:
 		}
 
 		return false;
+	}
+
+	/**
+	 * Get conversation state for a user.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return array Conversation state with prompt_count, char_count, and history.
+	 */
+	private function get_conversation_state( int $user_id ): array {
+		$state = get_user_meta( $user_id, self::META_KEY_CONVERSATION_STATE, true );
+
+		if ( ! is_array( $state ) ) {
+			return array(
+				'prompt_count' => 0,
+				'char_count'   => 0,
+				'history'      => array(),
+			);
+		}
+
+		// Ensure all required keys exist.
+		return array(
+			'prompt_count' => isset( $state['prompt_count'] ) ? (int) $state['prompt_count'] : 0,
+			'char_count'   => isset( $state['char_count'] ) ? (int) $state['char_count'] : 0,
+			'history'      => isset( $state['history'] ) && is_array( $state['history'] ) ? $state['history'] : array(),
+		);
+	}
+
+	/**
+	 * Save conversation state for a user.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int   $user_id User ID.
+	 * @param array $state   Conversation state to save.
+	 * @return void
+	 */
+	private function save_conversation_state( int $user_id, array $state ): void {
+		update_user_meta( $user_id, self::META_KEY_CONVERSATION_STATE, $state );
+	}
+
+	/**
+	 * Clear conversation state for a user.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return void
+	 */
+	private function clear_conversation_state( int $user_id ): void {
+		delete_user_meta( $user_id, self::META_KEY_CONVERSATION_STATE );
 	}
 }

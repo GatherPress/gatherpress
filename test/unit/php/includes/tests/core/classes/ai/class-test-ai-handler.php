@@ -35,6 +35,51 @@ class Test_AI_Handler extends Base {
 	}
 
 	/**
+	 * Coverage for MAX_PROMPTS constant.
+	 *
+	 * @coversDefaultClass \GatherPress\Core\AI\AI_Handler
+	 *
+	 * @return void
+	 */
+	public function test_max_prompts_constant(): void {
+		$this->assertSame(
+			10,
+			AI_Handler::MAX_PROMPTS,
+			'Failed to assert MAX_PROMPTS constant is 10.'
+		);
+	}
+
+	/**
+	 * Coverage for MAX_CHARS constant.
+	 *
+	 * @coversDefaultClass \GatherPress\Core\AI\AI_Handler
+	 *
+	 * @return void
+	 */
+	public function test_max_chars_constant(): void {
+		$this->assertSame(
+			40000,
+			AI_Handler::MAX_CHARS,
+			'Failed to assert MAX_CHARS constant is 40000.'
+		);
+	}
+
+	/**
+	 * Coverage for META_KEY_CONVERSATION_STATE constant.
+	 *
+	 * @coversDefaultClass \GatherPress\Core\AI\AI_Handler
+	 *
+	 * @return void
+	 */
+	public function test_meta_key_conversation_state_constant(): void {
+		$this->assertSame(
+			'gatherpress_ai_conversation_state',
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			'Failed to assert META_KEY_CONVERSATION_STATE constant is correct.'
+		);
+	}
+
+	/**
 	 * Coverage for process_prompt when API key is not configured.
 	 *
 	 * @covers ::process_prompt
@@ -374,5 +419,260 @@ class Test_AI_Handler extends Base {
 		// Verify the method signature.
 		$parameters = $method->getParameters();
 		$this->assertCount( 4, $parameters, 'process_conversation_loop should have 4 parameters.' );
+	}
+
+	/**
+	 * Coverage for get_conversation_state returns default when none exists.
+	 *
+	 * @covers ::get_conversation_state
+	 *
+	 * @return void
+	 */
+	public function test_get_conversation_state_returns_default(): void {
+		$handler = new AI_Handler();
+		$user_id = $this->factory->user->create();
+
+		// Ensure no state exists.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+
+		$state = Utility::invoke_hidden_method(
+			$handler,
+			'get_conversation_state',
+			array( $user_id )
+		);
+
+		$expected = array(
+			'prompt_count' => 0,
+			'char_count'   => 0,
+			'history'      => array(),
+		);
+
+		$this->assertEquals(
+			$expected,
+			$state,
+			'Failed to assert get_conversation_state returns default when none exists.'
+		);
+	}
+
+	/**
+	 * Coverage for get_conversation_state loads saved state.
+	 *
+	 * @covers ::get_conversation_state
+	 *
+	 * @return void
+	 */
+	public function test_get_conversation_state_loads_saved(): void {
+		$handler = new AI_Handler();
+		$user_id = $this->factory->user->create();
+
+		$state = array(
+			'prompt_count' => 5,
+			'char_count'   => 10000,
+			'history'      => array( 'msg1', 'msg2' ),
+		);
+
+		update_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			$state
+		);
+
+		$loaded = Utility::invoke_hidden_method(
+			$handler,
+			'get_conversation_state',
+			array( $user_id )
+		);
+
+		$this->assertEquals(
+			$state,
+			$loaded,
+			'Failed to assert get_conversation_state loads saved state.'
+		);
+
+		// Clean up.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
+	 * Coverage for get_conversation_state handles missing keys.
+	 *
+	 * @covers ::get_conversation_state
+	 *
+	 * @return void
+	 */
+	public function test_get_conversation_state_handles_missing_keys(): void {
+		$handler = new AI_Handler();
+		$user_id = $this->factory->user->create();
+
+		// Save state with missing keys.
+		update_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			array( 'prompt_count' => 3 )
+		);
+
+		$loaded = Utility::invoke_hidden_method(
+			$handler,
+			'get_conversation_state',
+			array( $user_id )
+		);
+
+		$expected = array(
+			'prompt_count' => 3,
+			'char_count'   => 0,
+			'history'      => array(),
+		);
+
+		$this->assertEquals(
+			$expected,
+			$loaded,
+			'Failed to assert get_conversation_state handles missing keys.'
+		);
+
+		// Clean up.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
+	 * Coverage for save_conversation_state saves correctly.
+	 *
+	 * @covers ::save_conversation_state
+	 *
+	 * @return void
+	 */
+	public function test_save_conversation_state(): void {
+		$handler = new AI_Handler();
+		$user_id = $this->factory->user->create();
+
+		$state = array(
+			'prompt_count' => 7,
+			'char_count'   => 20000,
+			'history'      => array( 'test' ),
+		);
+
+		Utility::invoke_hidden_method(
+			$handler,
+			'save_conversation_state',
+			array( $user_id, $state )
+		);
+
+		$saved = get_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			true
+		);
+
+		$this->assertEquals(
+			$state,
+			$saved,
+			'Failed to assert save_conversation_state saves correctly.'
+		);
+
+		// Clean up.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
+	 * Coverage for clear_conversation_state clears state.
+	 *
+	 * @covers ::clear_conversation_state
+	 *
+	 * @return void
+	 */
+	public function test_clear_conversation_state(): void {
+		$handler = new AI_Handler();
+		$user_id = $this->factory->user->create();
+
+		// Set some state first.
+		$state = array(
+			'prompt_count' => 9,
+			'char_count'   => 35000,
+			'history'      => array( 'test' ),
+		);
+		update_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			$state
+		);
+
+		// Clear it.
+		Utility::invoke_hidden_method(
+			$handler,
+			'clear_conversation_state',
+			array( $user_id )
+		);
+
+		$after = get_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			true
+		);
+
+		$this->assertEmpty(
+			$after,
+			'Failed to assert clear_conversation_state clears state.'
+		);
+	}
+
+	/**
+	 * Coverage for conversation state is user-specific.
+	 *
+	 * @covers ::get_conversation_state
+	 * @covers ::save_conversation_state
+	 *
+	 * @return void
+	 */
+	public function test_conversation_state_is_user_specific(): void {
+		$handler  = new AI_Handler();
+		$user1_id = $this->factory->user->create();
+		$user2_id = $this->factory->user->create();
+
+		$state1 = array(
+			'prompt_count' => 2,
+			'char_count'   => 3000,
+			'history'      => array( 'user1_msg' ),
+		);
+		$state2 = array(
+			'prompt_count' => 4,
+			'char_count'   => 8000,
+			'history'      => array( 'user2_msg' ),
+		);
+
+		Utility::invoke_hidden_method(
+			$handler,
+			'save_conversation_state',
+			array( $user1_id, $state1 )
+		);
+		Utility::invoke_hidden_method(
+			$handler,
+			'save_conversation_state',
+			array( $user2_id, $state2 )
+		);
+
+		$loaded1 = Utility::invoke_hidden_method(
+			$handler,
+			'get_conversation_state',
+			array( $user1_id )
+		);
+		$loaded2 = Utility::invoke_hidden_method(
+			$handler,
+			'get_conversation_state',
+			array( $user2_id )
+		);
+
+		$this->assertEquals(
+			$state1,
+			$loaded1,
+			'Failed to assert user1 state is saved correctly.'
+		);
+		$this->assertEquals(
+			$state2,
+			$loaded2,
+			'Failed to assert user2 state is saved correctly.'
+		);
+
+		// Clean up.
+		delete_user_meta( $user1_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+		delete_user_meta( $user2_id, AI_Handler::META_KEY_CONVERSATION_STATE );
 	}
 }
