@@ -207,6 +207,16 @@ class Admin_Page {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ) );
 		}
 
+		$handler = new AI_Handler();
+
+		// Handle reset request.
+		$reset = isset( $_POST['reset'] ) && 'true' === sanitize_text_field( wp_unslash( $_POST['reset'] ) );
+		if ( $reset ) {
+			$state = $handler->reset_conversation_state();
+			wp_send_json_success( array( 'state' => $state ) );
+			return;
+		}
+
 		$prompt = isset( $_POST['prompt'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt'] ) ) : '';
 
 		if ( empty( $prompt ) ) {
@@ -214,8 +224,7 @@ class Admin_Page {
 		}
 
 		// Process with AI handler (wp-ai-client).
-		$handler = new AI_Handler();
-		$result  = $handler->process_prompt( $prompt );
+		$result = $handler->process_prompt( $prompt );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );

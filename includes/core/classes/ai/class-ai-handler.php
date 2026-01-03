@@ -715,6 +715,25 @@ Rules:
 	}
 
 	/**
+	 * Reset conversation state for the current user.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array Reset state metadata.
+	 */
+	public function reset_conversation_state(): array {
+		$user_id = get_current_user_id();
+		$this->clear_conversation_state( $user_id );
+
+		return array(
+			'prompt_count' => 0,
+			'char_count'   => 0,
+			'max_prompts'  => self::MAX_PROMPTS,
+			'max_chars'    => self::MAX_CHARS,
+		);
+	}
+
+	/**
 	 * Load conversation history from stored state and convert to Message objects.
 	 *
 	 * @since 1.0.0

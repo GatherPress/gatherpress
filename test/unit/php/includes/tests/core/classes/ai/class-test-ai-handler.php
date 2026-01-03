@@ -681,6 +681,56 @@ class Test_AI_Handler extends Base {
 	}
 
 	/**
+	 * Coverage for reset_conversation_state.
+	 *
+	 * @covers ::reset_conversation_state
+	 *
+	 * @return void
+	 */
+	public function test_reset_conversation_state(): void {
+		$handler = new AI_Handler();
+		$user_id = $this->factory->user->create();
+
+		// Set current user.
+		wp_set_current_user( $user_id );
+
+		// Set some state first.
+		$state = array(
+			'prompt_count' => 5,
+			'char_count'   => 10000,
+			'history'      => array( 'test' ),
+		);
+		update_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			$state
+		);
+
+		// Reset state.
+		$result = $handler->reset_conversation_state();
+
+		// Verify returned state.
+		$expected = array(
+			'prompt_count' => 0,
+			'char_count'   => 0,
+			'max_prompts'  => AI_Handler::MAX_PROMPTS,
+			'max_chars'    => AI_Handler::MAX_CHARS,
+		);
+		$this->assertEquals( $expected, $result );
+
+		// Verify state is cleared in database.
+		$after = get_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			true
+		);
+		$this->assertEmpty( $after );
+
+		// Clean up.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
 	 * Coverage for load_history_from_state with empty array.
 	 *
 	 * @covers ::load_history_from_state

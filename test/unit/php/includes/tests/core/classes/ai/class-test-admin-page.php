@@ -9,6 +9,7 @@
 namespace GatherPress\Tests\Core\AI;
 
 use GatherPress\Core\AI\Admin_Page;
+use GatherPress\Core\AI\AI_Handler;
 use GatherPress\Tests\Base;
 
 /**
@@ -238,6 +239,60 @@ class Test_Admin_Page extends Base {
 		// Verify the method exists and is callable.
 		$this->assertTrue( method_exists( $instance, 'process_prompt_ajax' ) );
 		$this->assertTrue( is_callable( array( $instance, 'process_prompt_ajax' ) ) );
+	}
+
+	/**
+	 * Coverage for process_prompt_ajax reset logic.
+	 *
+	 * Tests that the reset functionality works by verifying that
+	 * reset_conversation_state() (which process_prompt_ajax calls)
+	 * correctly clears the conversation state.
+	 *
+	 * Note: Full AJAX handler testing (with wp_send_json_success)
+	 * would require WP_Ajax_UnitTestCase. The core reset logic
+	 * is tested via test_reset_conversation_state in Test_AI_Handler.
+	 *
+	 * @covers ::process_prompt_ajax
+	 *
+	 * @return void
+	 */
+	public function test_process_prompt_ajax_reset_clears_state(): void {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		// Set up some conversation state first.
+		$state = array(
+			'prompt_count' => 5,
+			'char_count'   => 10000,
+			'history'      => array( 'test' ),
+		);
+		update_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			$state
+		);
+
+		// Test that reset_conversation_state clears the state.
+		// This verifies the logic that process_prompt_ajax calls.
+		$handler = new AI_Handler();
+		$result  = $handler->reset_conversation_state();
+
+		// Verify returned state.
+		$this->assertEquals( 0, $result['prompt_count'] );
+		$this->assertEquals( 0, $result['char_count'] );
+		$this->assertEquals( AI_Handler::MAX_PROMPTS, $result['max_prompts'] );
+		$this->assertEquals( AI_Handler::MAX_CHARS, $result['max_chars'] );
+
+		// Verify state is cleared in database.
+		$after = get_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			true
+		);
+		$this->assertEmpty( $after );
+
+		// Clean up.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
 	}
 
 	/**
