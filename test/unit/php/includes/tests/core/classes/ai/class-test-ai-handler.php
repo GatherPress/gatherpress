@@ -681,6 +681,81 @@ class Test_AI_Handler extends Base {
 	}
 
 	/**
+	 * Coverage for get_conversation_state_metadata.
+	 *
+	 * @covers ::get_conversation_state_metadata
+	 *
+	 * @return void
+	 */
+	public function test_get_conversation_state_metadata(): void {
+		$handler = new AI_Handler();
+		$user_id = $this->factory->user->create();
+
+		// Set current user.
+		wp_set_current_user( $user_id );
+
+		// Set some state first.
+		$state = array(
+			'prompt_count' => 5,
+			'char_count'   => 10000,
+			'history'      => array( 'test' ),
+		);
+		update_user_meta(
+			$user_id,
+			AI_Handler::META_KEY_CONVERSATION_STATE,
+			$state
+		);
+
+		// Get state metadata.
+		$result = $handler->get_conversation_state_metadata();
+
+		// Verify returned state.
+		$expected = array(
+			'prompt_count' => 5,
+			'char_count'   => 10000,
+			'max_prompts'  => AI_Handler::MAX_PROMPTS,
+			'max_chars'    => AI_Handler::MAX_CHARS,
+		);
+		$this->assertEquals( $expected, $result );
+
+		// Clean up.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
+	 * Coverage for get_conversation_state_metadata with no state.
+	 *
+	 * @covers ::get_conversation_state_metadata
+	 *
+	 * @return void
+	 */
+	public function test_get_conversation_state_metadata_with_no_state(): void {
+		$handler = new AI_Handler();
+		$user_id = $this->factory->user->create();
+
+		// Set current user.
+		wp_set_current_user( $user_id );
+
+		// Ensure no state exists.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+
+		// Get state metadata.
+		$result = $handler->get_conversation_state_metadata();
+
+		// Verify returned state defaults.
+		$expected = array(
+			'prompt_count' => 0,
+			'char_count'   => 0,
+			'max_prompts'  => AI_Handler::MAX_PROMPTS,
+			'max_chars'    => AI_Handler::MAX_CHARS,
+		);
+		$this->assertEquals( $expected, $result );
+
+		// Clean up.
+		delete_user_meta( $user_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
 	 * Coverage for reset_conversation_state.
 	 *
 	 * @covers ::reset_conversation_state

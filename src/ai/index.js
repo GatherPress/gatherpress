@@ -5,6 +5,58 @@ jQuery( document ).ready( function( $ ) {
 	const $submit = $( '#gp-ai-submit' );
 	const $messages = $( '#gp-ai-messages' );
 	const $status = $( '#gp-ai-status' );
+	const $inputContainer = $( '.gp-ai-input-container' );
+
+	// Create counter container.
+	const $counterContainer = $( '<div>' ).addClass( 'gp-ai-counter-container' );
+
+	// Create counter display element.
+	const $counter = $( '<div>' )
+		.addClass( 'gp-ai-counter' )
+		.text( '0/10 prompts • 0/40,000 characters' );
+
+	// Create reset button.
+	const $resetButton = $( '<button>' )
+		.addClass( 'button gp-ai-reset-button' )
+		.text( 'Reset Conversation' )
+		.on( 'click', handleReset );
+
+	$counterContainer.append( $counter );
+	$counterContainer.append( $resetButton );
+
+	// Create warning notification element.
+	const $warning = $( '<div>' )
+		.addClass( 'gp-ai-warning' )
+		.hide();
+
+	// Insert counter container and warning before input container.
+	$inputContainer.before( $counterContainer );
+	$inputContainer.before( $warning );
+
+	// Current state (will be updated from responses).
+	let currentState = {
+		prompt_count: 0,
+		char_count: 0,
+		max_prompts: 10,
+		max_chars: 40000,
+	};
+
+	// Load initial state on page load.
+	$.ajax( {
+		url: gatherpressAI.ajaxUrl,
+		type: 'POST',
+		data: {
+			action: 'gatherpress_ai_process_prompt',
+			nonce: gatherpressAI.nonce,
+			get_state: 'true',
+		},
+		success( response ) {
+			if ( response.success && response.data.state ) {
+				currentState = response.data.state;
+				updateCounter();
+			}
+		},
+	} );
 
 	// Handle submit button click
 	$submit.on( 'click', function( e ) {
@@ -53,8 +105,24 @@ jQuery( document ).ready( function( $ ) {
 				if ( response.success ) {
 					const data = response.data;
 
+					// Update state if provided.
+					if ( data.state ) {
+						currentState = data.state;
+						updateCounter();
+					}
+
+					// If conversation was auto-reset, add notification message first.
+					if ( data.was_reset ) {
+						addMessage(
+							'Conversation reset: You reached the limit (' +
+							`${ currentState.max_prompts } prompts or ${ currentState.max_chars.toLocaleString() } characters). ` +
+							'Your conversation history has been cleared and the conversation has started fresh.',
+							'success'
+						);
+					}
+
 					// Add AI response
-					addMessage( data.response, 'assistant', data.actions, data.model_info, data.state );
+					addMessage( data.response, 'assistant', data.actions, data.model_info );
 				} else {
 					addMessage( 'Error: ' + ( response.data.message || 'Unknown error' ), 'error' );
 				}
@@ -70,15 +138,92 @@ jQuery( document ).ready( function( $ ) {
 	}
 
 	/**
+	 * Update the counter display with current state and show/hide warnings.
+	 */
+	function updateCounter() {
+		const promptText = `${ currentState.prompt_count }/${ currentState.max_prompts } prompts`;
+		const charText = `${ currentState.char_count.toLocaleString() }/${ currentState.max_chars.toLocaleString() } characters`;
+		$counter.text( `${ promptText } • ${ charText }` );
+
+		// Show warning if approaching limits (8/10 prompts or 80% characters).
+		const promptPercent = ( currentState.prompt_count / currentState.max_prompts ) * 100;
+		const charPercent = ( currentState.char_count / currentState.max_chars ) * 100;
+		const isApproachingLimit = 80 <= promptPercent || 80 <= charPercent;
+
+		if ( isApproachingLimit && 0 < currentState.prompt_count ) {
+			$counter.addClass( 'is-warning' );
+			$warning.html(
+				'<strong>Warning:</strong> You are approaching the conversation limit ' +
+				`(${ currentState.max_prompts } prompts or ${ currentState.max_chars.toLocaleString() } characters). ` +
+				'Consider resetting to start fresh.'
+			);
+			$warning.show();
+		} else {
+			$counter.removeClass( 'is-warning' );
+			$warning.hide();
+		}
+	}
+
+	/**
+	 * Handle reset button click.
+	 *
+	 * @param {Event} e The click event.
+	 */
+	function handleReset( e ) {
+		e.preventDefault();
+
+		// Disable button during reset.
+		$resetButton.prop( 'disabled', true );
+
+		// Send reset request.
+		$.ajax( {
+			url: gatherpressAI.ajaxUrl,
+			type: 'POST',
+			data: {
+				action: 'gatherpress_ai_process_prompt',
+				nonce: gatherpressAI.nonce,
+				reset: 'true',
+			},
+			success( response ) {
+				if ( response.success && response.data.state ) {
+					// Update state.
+					currentState = response.data.state;
+					updateCounter();
+
+					// Clear all messages.
+					$messages.empty();
+
+					// Show reset notification message.
+					addMessage(
+						'Conversation reset. Your conversation history has been cleared and the counter has been reset.',
+						'success'
+					);
+
+					// Show initial message again.
+					addMessage(
+						'Hi! I\'m your AI assistant for managing GatherPress events. What would you like me to help you with?',
+						'assistant'
+					);
+				}
+			},
+			error() {
+				addMessage( 'Error: Failed to reset conversation', 'error' );
+			},
+			complete() {
+				$resetButton.prop( 'disabled', false );
+			},
+		} );
+	}
+
+	/**
 	 * Add a message to the chat
 	 *
 	 * @param {string} content   The message content
 	 * @param {string} type      The message type (user, assistant, error, success)
 	 * @param {Array}  actions   Optional array of actions taken
 	 * @param {Object} modelInfo Optional object with provider and model info
-	 * @param {Object} state     Optional object with conversation state (prompt_count, char_count)
 	 */
-	function addMessage( content, type, actions, modelInfo, state ) {
+	function addMessage( content, type, actions, modelInfo ) {
 		const $message = $( '<div>' )
 			.addClass( 'gp-ai-message' )
 			.addClass( type );
@@ -97,25 +242,6 @@ jQuery( document ).ready( function( $ ) {
 				} )
 				.text( `Using ${ modelInfo.provider } ${ modelInfo.model }` );
 			$message.append( $modelInfo );
-		}
-
-		// Add temporary debug state info (for assistant messages).
-		if ( state && 'assistant' === type ) {
-			const $debugState = $( '<div>' )
-				.addClass( 'gp-ai-debug-state' )
-				.css( {
-					'margin-top': '10px',
-					'padding-top': '10px',
-					'border-top': '1px solid rgba(0, 0, 0, 0.1)',
-					'font-size': '12px',
-					color: '#646970',
-					'font-style': 'italic',
-				} )
-				.text(
-					`[DEBUG: State - Prompts: ${ state.prompt_count }/${ state.max_prompts }, ` +
-					`Chars: ${ state.char_count.toLocaleString() }/${ state.max_chars.toLocaleString() }]`
-				);
-			$message.append( $debugState );
 		}
 
 		const $content = $( '<div>' )

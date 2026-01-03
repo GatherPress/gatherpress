@@ -127,6 +127,7 @@ Rules:
 		$char_count   = $state['char_count'];
 
 		// Check if limits are exceeded and auto-reset if needed.
+		$was_reset = false;
 		if ( $prompt_count >= self::MAX_PROMPTS || $char_count >= self::MAX_CHARS ) {
 			// Clear state to reset conversation.
 			$this->clear_conversation_state( $user_id );
@@ -134,6 +135,7 @@ Rules:
 			$state        = $this->get_conversation_state( $user_id );
 			$prompt_count = 0;
 			$char_count   = 0;
+			$was_reset    = true;
 		}
 
 		// Increment prompt count and add prompt length to char count.
@@ -233,6 +235,11 @@ Rules:
 			'max_prompts'  => self::MAX_PROMPTS,
 			'max_chars'    => self::MAX_CHARS,
 		);
+
+		// Add reset flag if conversation was auto-reset.
+		if ( $was_reset ) {
+			$result['was_reset'] = true;
+		}
 
 		return $result;
 	}
@@ -712,6 +719,25 @@ Rules:
 	 */
 	private function clear_conversation_state( int $user_id ): void {
 		delete_user_meta( $user_id, self::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
+	 * Get current conversation state metadata for the current user.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array State metadata with prompt_count, char_count, max_prompts, max_chars.
+	 */
+	public function get_conversation_state_metadata(): array {
+		$user_id = get_current_user_id();
+		$state   = $this->get_conversation_state( $user_id );
+
+		return array(
+			'prompt_count' => $state['prompt_count'],
+			'char_count'   => $state['char_count'],
+			'max_prompts'  => self::MAX_PROMPTS,
+			'max_chars'    => self::MAX_CHARS,
+		);
 	}
 
 	/**

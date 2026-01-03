@@ -209,6 +209,15 @@ class Admin_Page {
 
 		$handler = new AI_Handler();
 
+		// Handle get_state request.
+		$get_state = isset( $_POST['get_state'] )
+			&& 'true' === sanitize_text_field( wp_unslash( $_POST['get_state'] ) );
+		if ( $get_state ) {
+			$state = $handler->get_conversation_state_metadata();
+			wp_send_json_success( array( 'state' => $state ) );
+			return;
+		}
+
 		// Handle reset request.
 		$reset = isset( $_POST['reset'] ) && 'true' === sanitize_text_field( wp_unslash( $_POST['reset'] ) );
 		if ( $reset ) {
