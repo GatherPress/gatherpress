@@ -32,6 +32,9 @@ const createMockElement = () => {
 		addClass: jest.fn( function() {
 			return this;
 		} ),
+		removeClass: jest.fn( function() {
+			return this;
+		} ),
 		prop: jest.fn( function( prop, value ) {
 			if ( value !== undefined ) {
 				return this;
@@ -52,6 +55,15 @@ const createMockElement = () => {
 				return this;
 			}
 			return 0;
+		} ),
+		before: jest.fn( function() {
+			return this;
+		} ),
+		css: jest.fn( function() {
+			return this;
+		} ),
+		empty: jest.fn( function() {
+			return this;
 		} ),
 		children: jest.fn( () => ( { length: 0 } ) ),
 		length: 1,
@@ -184,11 +196,14 @@ describe( 'AI Assistant', () => {
 			if ( '#gp-ai-messages' === selector ) {
 				return mockMessages;
 			}
-			if ( '#gp-ai-status' === selector ) {
-				return mockStatus;
-			}
-			// Default mock element
+		if ( '#gp-ai-status' === selector ) {
+			return mockStatus;
+		}
+		if ( '.gp-ai-input-container' === selector ) {
 			return createMockElement();
+		}
+		// Default mock element
+		return createMockElement();
 		} );
 
 		// Mock jQuery.ajax
@@ -328,10 +343,14 @@ describe( 'AI Assistant', () => {
 				( call ) => 'click' === call[ 0 ]
 			)[ 1 ];
 
+			// Clear previous AJAX calls (including initial state call)
+			ajaxSpy.mockClear();
+
 			mockPrompt.val.mockReturnValue( '   ' ); // Whitespace only
 
 			clickHandler( { preventDefault: jest.fn() } );
 
+			// Should not make an AJAX call for empty prompt
 			expect( ajaxSpy ).not.toHaveBeenCalled();
 		} );
 

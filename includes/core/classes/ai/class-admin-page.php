@@ -215,7 +215,7 @@ class Admin_Page {
 		if ( $get_state ) {
 			$state = $handler->get_conversation_state_metadata();
 			wp_send_json_success( array( 'state' => $state ) );
-			return;
+			// wp_send_json_success() terminates execution.
 		}
 
 		// Handle reset request.
@@ -223,9 +223,10 @@ class Admin_Page {
 		if ( $reset ) {
 			$state = $handler->reset_conversation_state();
 			wp_send_json_success( array( 'state' => $state ) );
-			return;
+			// wp_send_json_success() terminates execution.
 		}
 
+		// Handle prompt request.
 		$prompt = isset( $_POST['prompt'] ) ? sanitize_textarea_field( wp_unslash( $_POST['prompt'] ) ) : '';
 
 		if ( empty( $prompt ) ) {
