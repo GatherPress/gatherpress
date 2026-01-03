@@ -12,6 +12,10 @@ use GatherPress\Core\AI\AI_Handler;
 use GatherPress\Tests\Base;
 use PMC\Unit_Test\Utility;
 use WP_Error;
+use WordPress\AiClient\Messages\DTO\Message;
+use WordPress\AiClient\Messages\DTO\MessagePart;
+use WordPress\AiClient\Messages\DTO\ModelMessage;
+use WordPress\AiClient\Messages\DTO\UserMessage;
 
 /**
  * Class Test_AI_Handler.
@@ -418,7 +422,7 @@ class Test_AI_Handler extends Base {
 
 		// Verify the method signature.
 		$parameters = $method->getParameters();
-		$this->assertCount( 4, $parameters, 'process_conversation_loop should have 4 parameters.' );
+		$this->assertCount( 5, $parameters, 'process_conversation_loop should have 5 parameters.' );
 	}
 
 	/**
@@ -674,5 +678,208 @@ class Test_AI_Handler extends Base {
 		// Clean up.
 		delete_user_meta( $user1_id, AI_Handler::META_KEY_CONVERSATION_STATE );
 		delete_user_meta( $user2_id, AI_Handler::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
+	 * Coverage for load_history_from_state with empty array.
+	 *
+	 * @covers ::load_history_from_state
+	 *
+	 * @return void
+	 */
+	public function test_load_history_from_state_with_empty_array(): void {
+		$handler = new AI_Handler();
+
+		$result = Utility::invoke_hidden_method(
+			$handler,
+			'load_history_from_state',
+			array( array() )
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result, 'Failed to assert load_history_from_state returns empty array.' );
+	}
+
+	/**
+	 * Coverage for load_history_from_state with valid history.
+	 *
+	 * @covers ::load_history_from_state
+	 *
+	 * @return void
+	 */
+	public function test_load_history_from_state_with_valid_history(): void {
+		$handler = new AI_Handler();
+
+		// Create valid message arrays.
+		$user_message  = new UserMessage( array( new MessagePart( 'Test prompt' ) ) );
+		$model_message = new ModelMessage( array( new MessagePart( 'Test response' ) ) );
+
+		$history_array = array(
+			$user_message->toArray(),
+			$model_message->toArray(),
+		);
+
+		$result = Utility::invoke_hidden_method(
+			$handler,
+			'load_history_from_state',
+			array( $history_array )
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertCount( 2, $result, 'Failed to assert load_history_from_state returns 2 messages.' );
+		$this->assertInstanceOf(
+			UserMessage::class,
+			$result[0],
+			'Failed to assert first message is UserMessage.'
+		);
+		$this->assertInstanceOf(
+			ModelMessage::class,
+			$result[1],
+			'Failed to assert second message is ModelMessage.'
+		);
+	}
+
+	/**
+	 * Coverage for load_history_from_state with invalid data.
+	 *
+	 * @covers ::load_history_from_state
+	 *
+	 * @return void
+	 */
+	public function test_load_history_from_state_with_invalid_data(): void {
+		$handler = new AI_Handler();
+
+		// Create history with invalid data.
+		$history_array = array(
+			'invalid',
+			array( 'not' => 'valid' ),
+			null,
+		);
+
+		$result = Utility::invoke_hidden_method(
+			$handler,
+			'load_history_from_state',
+			array( $history_array )
+		);
+
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result, 'Failed to assert load_history_from_state skips invalid data.' );
+	}
+
+	/**
+	 * Coverage for append_to_history appends user and model messages.
+	 *
+	 * @covers ::append_to_history
+	 *
+	 * @return void
+	 */
+	public function test_append_to_history(): void {
+		$handler = new AI_Handler();
+
+		$existing_history = array();
+		$user_message     = new UserMessage( array( new MessagePart( 'Test prompt' ) ) );
+		$result           = array(
+			'response' => 'Test response text',
+		);
+
+		$updated = Utility::invoke_hidden_method(
+			$handler,
+			'append_to_history',
+			array( $existing_history, $user_message, $result )
+		);
+
+		$this->assertIsArray( $updated );
+		$this->assertCount( 2, $updated, 'Failed to assert append_to_history adds 2 messages.' );
+
+		// Verify first message is user message.
+		$loaded_user = Message::fromArray( $updated[0] );
+		$this->assertInstanceOf(
+			UserMessage::class,
+			$loaded_user,
+			'Failed to assert first message is UserMessage.'
+		);
+
+		// Verify second message is model message.
+		$loaded_model = Message::fromArray( $updated[1] );
+		$this->assertInstanceOf(
+			ModelMessage::class,
+			$loaded_model,
+			'Failed to assert second message is ModelMessage.'
+		);
+	}
+
+	/**
+	 * Coverage for append_to_history with empty response.
+	 *
+	 * @covers ::append_to_history
+	 *
+	 * @return void
+	 */
+	public function test_append_to_history_with_empty_response(): void {
+		$handler = new AI_Handler();
+
+		$existing_history = array();
+		$user_message     = new UserMessage( array( new MessagePart( 'Test prompt' ) ) );
+		$result           = array(
+			'response' => '',
+		);
+
+		$updated = Utility::invoke_hidden_method(
+			$handler,
+			'append_to_history',
+			array( $existing_history, $user_message, $result )
+		);
+
+		$this->assertIsArray( $updated );
+		$this->assertCount(
+			1,
+			$updated,
+			'Failed to assert append_to_history adds only user message when response is empty.'
+		);
+	}
+
+	/**
+	 * Coverage for append_to_history preserves existing history.
+	 *
+	 * @covers ::append_to_history
+	 *
+	 * @return void
+	 */
+	public function test_append_to_history_preserves_existing(): void {
+		$handler = new AI_Handler();
+
+		// Create existing history.
+		$existing_user    = new UserMessage( array( new MessagePart( 'Previous prompt' ) ) );
+		$existing_model   = new ModelMessage( array( new MessagePart( 'Previous response' ) ) );
+		$existing_history = array(
+			$existing_user->toArray(),
+			$existing_model->toArray(),
+		);
+
+		$user_message = new UserMessage( array( new MessagePart( 'New prompt' ) ) );
+		$result       = array(
+			'response' => 'New response',
+		);
+
+		$updated = Utility::invoke_hidden_method(
+			$handler,
+			'append_to_history',
+			array( $existing_history, $user_message, $result )
+		);
+
+		$this->assertIsArray( $updated );
+		$this->assertCount( 4, $updated, 'Failed to assert append_to_history preserves existing history.' );
+
+		// Verify first messages are preserved.
+		$first = Message::fromArray( $updated[0] );
+		$this->assertInstanceOf( UserMessage::class, $first );
+		$second = Message::fromArray( $updated[1] );
+		$this->assertInstanceOf( ModelMessage::class, $second );
+
+		// Verify new messages are appended.
+		$third = Message::fromArray( $updated[2] );
+		$this->assertInstanceOf( UserMessage::class, $third );
+		$fourth = Message::fromArray( $updated[3] );
+		$this->assertInstanceOf( ModelMessage::class, $fourth );
 	}
 }

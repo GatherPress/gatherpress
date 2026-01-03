@@ -16,6 +16,7 @@ use WordPress\AI_Client\AI_Client;
 use WordPress\AI_Client\Builders\Prompt_Builder;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
+use WordPress\AiClient\Messages\DTO\ModelMessage;
 use WordPress\AiClient\Messages\DTO\UserMessage;
 use WordPress\AiClient\Results\DTO\GenerativeAiResult;
 use WordPress\AiClient\Tools\DTO\FunctionCall;
@@ -116,10 +117,37 @@ Rules:
 			$current_date
 		);
 
-		// Create prompt builder with user prompt.
-		$builder = AI_Client::prompt(
-			new UserMessage( array( new MessagePart( $prompt ) ) )
-		);
+		// Store original user message for conversation loop.
+		$original_user_message = new UserMessage( array( new MessagePart( $prompt ) ) );
+
+		// Load conversation state.
+		$user_id      = get_current_user_id();
+		$state        = $this->get_conversation_state( $user_id );
+		$prompt_count = $state['prompt_count'];
+		$char_count   = $state['char_count'];
+
+		// Check if limits are exceeded and auto-reset if needed.
+		if ( $prompt_count >= self::MAX_PROMPTS || $char_count >= self::MAX_CHARS ) {
+			// Clear state to reset conversation.
+			$this->clear_conversation_state( $user_id );
+			// Reset to defaults.
+			$state        = $this->get_conversation_state( $user_id );
+			$prompt_count = 0;
+			$char_count   = 0;
+		}
+
+		// Increment prompt count and add prompt length to char count.
+		++$prompt_count;
+		$char_count += strlen( $prompt );
+
+		// Load existing conversation history and convert to Message objects.
+		$existing_history = $this->load_history_from_state( $state['history'] );
+
+		// Build initial message array with existing history and new user message.
+		$initial_messages = array_merge( $existing_history, array( $original_user_message ) );
+
+		// Create prompt builder with history and user prompt.
+		$builder = AI_Client::prompt( $initial_messages );
 
 		// Set system instruction.
 		$builder->using_system_instruction( $system_content );
@@ -165,35 +193,13 @@ Rules:
 			$builder->using_function_declarations( ...$function_declarations );
 		}
 
-		// Store original user message for conversation loop.
-		$original_user_message = new UserMessage( array( new MessagePart( $prompt ) ) );
-
-		// Load conversation state.
-		$user_id      = get_current_user_id();
-		$state        = $this->get_conversation_state( $user_id );
-		$prompt_count = $state['prompt_count'];
-		$char_count   = $state['char_count'];
-
-		// Check if limits are exceeded and auto-reset if needed.
-		if ( $prompt_count >= self::MAX_PROMPTS || $char_count >= self::MAX_CHARS ) {
-			// Clear state to reset conversation.
-			$this->clear_conversation_state( $user_id );
-			// Reset to defaults.
-			$state        = $this->get_conversation_state( $user_id );
-			$prompt_count = 0;
-			$char_count   = 0;
-		}
-
-		// Increment prompt count and add prompt length to char count.
-		++$prompt_count;
-		$char_count += strlen( $prompt );
-
 		// Process the conversation loop.
 		$result = $this->process_conversation_loop(
 			$builder,
 			$original_user_message,
 			$system_content,
-			$function_declarations
+			$function_declarations,
+			$existing_history
 		);
 
 		// If result is error, return early without saving state.
@@ -205,11 +211,18 @@ Rules:
 		$response_text = isset( $result['response'] ) ? $result['response'] : '';
 		$char_count   += strlen( $response_text );
 
+		// Update history: append new user message and AI response.
+		$updated_history = $this->append_to_history(
+			$state['history'],
+			$original_user_message,
+			$result
+		);
+
 		// Save updated state.
 		$updated_state = array(
 			'prompt_count' => $prompt_count,
 			'char_count'   => $char_count,
-			'history'      => $state['history'], // Will be populated in later chunks.
+			'history'      => $updated_history,
 		);
 		$this->save_conversation_state( $user_id, $updated_state );
 
@@ -233,6 +246,7 @@ Rules:
 	 * @param UserMessage                $original_user_message The original user message.
 	 * @param string                     $system_instruction   The system instruction.
 	 * @param array<FunctionDeclaration> $function_declarations Function declarations.
+	 * @param array<Message>             $existing_history     Existing conversation history.
 	 * @return array|WP_Error Result with actions taken, or error.
 	 * @throws \WordPress\AiClient\Common\Exception\InvalidArgumentException If invalid arguments are provided.
 	 */
@@ -240,7 +254,8 @@ Rules:
 		Prompt_Builder $builder,
 		UserMessage $original_user_message,
 		string $system_instruction,
-		array $function_declarations
+		array $function_declarations,
+		array $existing_history = array()
 	) {
 		$actions_taken        = array();
 		$iterations           = 0;
@@ -407,8 +422,9 @@ Rules:
 			$conversation_history   = array_merge( $conversation_history, $function_response_messages );
 
 			// Rebuild builder with all messages in correct order.
-			// Build the full conversation array: [original_user, model1, user1, model2, user2, ...].
-			$all_messages = array( $original_user_message );
+			// Build the full conversation array:
+			// [existing_history..., original_user, model1, user1, model2, user2, ...].
+			$all_messages = array_merge( $existing_history, array( $original_user_message ) );
 			$all_messages = array_merge( $all_messages, $conversation_history );
 
 			// Create a new builder with the full message array.
@@ -696,5 +712,59 @@ Rules:
 	 */
 	private function clear_conversation_state( int $user_id ): void {
 		delete_user_meta( $user_id, self::META_KEY_CONVERSATION_STATE );
+	}
+
+	/**
+	 * Load conversation history from stored state and convert to Message objects.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $history_array History stored as arrays.
+	 * @return array<Message> Array of Message objects.
+	 */
+	private function load_history_from_state( array $history_array ): array {
+		$messages = array();
+
+		foreach ( $history_array as $message_data ) {
+			if ( ! is_array( $message_data ) ) {
+				continue;
+			}
+
+			try {
+				$message    = Message::fromArray( $message_data );
+				$messages[] = $message;
+			} catch ( \Exception $e ) {
+				// Skip invalid message data.
+				continue;
+			}
+		}
+
+		return $messages;
+	}
+
+	/**
+	 * Append new interaction to conversation history.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array       $history_array      Existing history as arrays.
+	 * @param UserMessage $user_message      The user message to append.
+	 * @param array       $result             The AI response result.
+	 * @return array Updated history as arrays.
+	 */
+	private function append_to_history( array $history_array, UserMessage $user_message, array $result ): array {
+		// Convert user message to array.
+		$user_message_array = $user_message->toArray();
+		$history_array[]    = $user_message_array;
+
+		// Create model response message from result.
+		$response_text = isset( $result['response'] ) ? $result['response'] : '';
+		if ( ! empty( $response_text ) ) {
+			$model_message       = new ModelMessage( array( new MessagePart( $response_text ) ) );
+			$model_message_array = $model_message->toArray();
+			$history_array[]     = $model_message_array;
+		}
+
+		return $history_array;
 	}
 }
