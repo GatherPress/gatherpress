@@ -174,6 +174,16 @@ Rules:
 		$prompt_count = $state['prompt_count'];
 		$char_count   = $state['char_count'];
 
+		// Check if limits are exceeded and auto-reset if needed.
+		if ( $prompt_count >= self::MAX_PROMPTS || $char_count >= self::MAX_CHARS ) {
+			// Clear state to reset conversation.
+			$this->clear_conversation_state( $user_id );
+			// Reset to defaults.
+			$state        = $this->get_conversation_state( $user_id );
+			$prompt_count = 0;
+			$char_count   = 0;
+		}
+
 		// Increment prompt count and add prompt length to char count.
 		++$prompt_count;
 		$char_count += strlen( $prompt );
