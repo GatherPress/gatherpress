@@ -196,14 +196,14 @@ describe( 'AI Assistant', () => {
 			if ( '#gp-ai-messages' === selector ) {
 				return mockMessages;
 			}
-		if ( '#gp-ai-status' === selector ) {
-			return mockStatus;
-		}
-		if ( '.gp-ai-input-container' === selector ) {
+			if ( '#gp-ai-status' === selector ) {
+				return mockStatus;
+			}
+			if ( '.gp-ai-input-container' === selector ) {
+				return createMockElement();
+			}
+			// Default mock element
 			return createMockElement();
-		}
-		// Default mock element
-		return createMockElement();
 		} );
 
 		// Mock jQuery.ajax
