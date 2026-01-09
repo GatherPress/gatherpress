@@ -116,6 +116,60 @@ class Event_Datetime_Parser {
 			return $datetime;
 		}
 
+		// Try parsing weekday patterns (e.g., "sunday at 1 pm", "this sunday at 1 pm").
+		// PHP's DateTime constructor interprets bare weekdays as "next [weekday]", but we want "this [weekday]".
+		$weekday_pattern = '/^(this\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)(\s+at\s+.*)?$/i';
+		if ( preg_match( $weekday_pattern, $input, $matches ) ) {
+			$weekday = strtolower( $matches[2] );
+			$time_part = ! empty( $matches[3] ) ? trim( $matches[3] ) : '';
+
+			// Calculate "this week's" occurrence of the weekday.
+			$today = new DateTime( 'now', $tz );
+			$current_day = (int) $today->format( 'N' ); // 1=Monday, 7=Sunday
+			$weekday_map = array(
+				'monday' => 1,
+				'tuesday' => 2,
+				'wednesday' => 3,
+				'thursday' => 4,
+				'friday' => 5,
+				'saturday' => 6,
+				'sunday' => 7,
+			);
+			$target_day = $weekday_map[ $weekday ] ?? 1;
+
+			// Calculate days to target weekday.
+			// "This Sunday" means the upcoming Sunday in the current week if it hasn't passed,
+			// or next week's Sunday if it has passed (for future event scheduling).
+			if ( $current_day <= $target_day ) {
+				// Target is today or later this week.
+				$days_ahead = $target_day - $current_day;
+			} else {
+				// Target already passed this week. For event scheduling, use next week's occurrence.
+				$days_ahead = 7 - $current_day + $target_day;
+			}
+
+			$target_date = clone $today;
+			$target_date->modify( "+{$days_ahead} days" );
+
+			// Parse time if provided.
+			if ( ! empty( $time_part ) ) {
+				// Remove "at" prefix if present.
+				$time_part = preg_replace( '/^at\s+/', '', $time_part );
+				$time_only = $this->parse_time_only( $time_part );
+				if ( $time_only ) {
+					$target_date->setTime( $time_only['hour'], $time_only['minute'], 0 );
+				} else {
+					// Default to noon if time parsing fails.
+					$target_date->setTime( 12, 0, 0 );
+				}
+			} else {
+				// Default to noon if no time provided.
+				$target_date->setTime( 12, 0, 0 );
+			}
+
+			return $target_date;
+		}
+
 		// Try parsing with DateTime's flexible parser as last resort.
 		try {
 			$datetime = new DateTime( $input, $tz );
