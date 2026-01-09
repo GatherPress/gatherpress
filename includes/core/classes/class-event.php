@@ -435,10 +435,10 @@ class Event {
 		global $wpdb;
 
 		$data = array(
-			'datetime_start'     => '0000-00-00 00:00:00',
-			'datetime_start_gmt' => '0000-00-00 00:00:00',
-			'datetime_end'       => '0000-00-00 00:00:00',
-			'datetime_end_gmt'   => '0000-00-00 00:00:00',
+			'datetime_start'     => '',
+			'datetime_start_gmt' => '',
+			'datetime_end'       => '',
+			'datetime_end_gmt'   => '',
 			'timezone'           => sanitize_text_field( wp_timezone_string() ),
 		);
 
