@@ -434,7 +434,7 @@ class Event {
 	public function get_datetime(): array {
 		global $wpdb;
 
-		$default = array(
+		$data = array(
 			'datetime_start'     => '',
 			'datetime_start_gmt' => '',
 			'datetime_end'       => '',
@@ -443,37 +443,16 @@ class Event {
 		);
 
 		if ( ! $this->event ) {
-			return $default;
+			return $data;
 		}
 
-		$cache_key = sprintf( self::DATETIME_CACHE_KEY, $this->event->ID );
-		$data      = get_transient( $cache_key );
+		foreach ( $data as $key => & $value ) {
+			$result = get_post_meta( $this->event->ID, 'gatherpress_' . $key, true );
 
-		if ( empty( $data ) || ! is_array( $data ) ) {
-			$table = sprintf( self::TABLE_FORMAT, $wpdb->prefix );
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.NoCaching
-			// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-			$data = (array) $wpdb->get_results(
-				$wpdb->prepare(
-					'SELECT datetime_start, datetime_start_gmt, datetime_end, datetime_end_gmt, timezone
-					FROM %i WHERE post_id = %d LIMIT 1',
-					$table,
-					$this->event->ID
-				)
-			);
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.NoCaching
-			// phpcs:enable WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-			$data = ( ! empty( $data ) ) ? (array) current( $data ) : array();
-
-			set_transient( $cache_key, $data, 15 * MINUTE_IN_SECONDS );
+			if ( ! empty( $result ) ) {
+				$value = $result;
+			}
 		}
-
-		$data = array_merge(
-			$default,
-			(array) $data
-		);
 
 		$data['timezone'] = apply_filters( 'gatherpress_timezone', $data['timezone'] );
 
