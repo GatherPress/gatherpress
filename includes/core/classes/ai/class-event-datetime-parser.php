@@ -120,22 +120,22 @@ class Event_Datetime_Parser {
 		// PHP's DateTime constructor interprets bare weekdays as "next [weekday]", but we want "this [weekday]".
 		$weekday_pattern = '/^(this\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)(\s+at\s+.*)?$/i';
 		if ( preg_match( $weekday_pattern, $input, $matches ) ) {
-			$weekday = strtolower( $matches[2] );
+			$weekday   = strtolower( $matches[2] );
 			$time_part = ! empty( $matches[3] ) ? trim( $matches[3] ) : '';
 
 			// Calculate "this week's" occurrence of the weekday.
-			$today = new DateTime( 'now', $tz );
-			$current_day = (int) $today->format( 'N' ); // 1=Monday, 7=Sunday
+			$today       = new DateTime( 'now', $tz );
+			$current_day = (int) $today->format( 'N' ); // ISO-8601 weekday (Monday=1, Sunday=7).
 			$weekday_map = array(
-				'monday' => 1,
-				'tuesday' => 2,
+				'monday'    => 1,
+				'tuesday'   => 2,
 				'wednesday' => 3,
-				'thursday' => 4,
-				'friday' => 5,
-				'saturday' => 6,
-				'sunday' => 7,
+				'thursday'  => 4,
+				'friday'    => 5,
+				'saturday'  => 6,
+				'sunday'    => 7,
 			);
-			$target_day = $weekday_map[ $weekday ] ?? 1;
+			$target_day  = $weekday_map[ $weekday ] ?? 1;
 
 			// Calculate days to target weekday.
 			// "This Sunday" means the upcoming Sunday in the current week if it hasn't passed,

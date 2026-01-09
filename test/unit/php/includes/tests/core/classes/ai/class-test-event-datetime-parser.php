@@ -723,4 +723,67 @@ class Test_Event_Datetime_Parser extends Base {
 		// phpcs:ignore Generic.Files.LineLength.TooLong
 		$this->assertEquals( '2025-01-05 17:00:00', $result['datetime_end'], 'Failed to assert end datetime is recalculated (start + 2 hours), not preserved.' );
 	}
+
+	/**
+	 * Test parse_datetime_input with "this sunday" pattern.
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_this_sunday(): void {
+		$result = $this->parser->parse_datetime_input( 'this sunday' );
+
+		$this->assertInstanceOf( DateTime::class, $result, 'Failed to assert result is DateTime instance.' );
+		$day_of_week = (int) $result->format( 'N' );
+		$this->assertEquals( 7, $day_of_week, 'Failed to assert result is Sunday.' );
+	}
+
+	/**
+	 * Test parse_datetime_input with "sunday at 1 pm" (bare weekday).
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_sunday_at_time(): void {
+		// Bare "sunday at 1 pm" should be treated as "this sunday".
+		$result = $this->parser->parse_datetime_input( 'sunday at 1 pm' );
+
+		$this->assertInstanceOf( DateTime::class, $result, 'Failed to assert result is DateTime instance.' );
+		$day_of_week = (int) $result->format( 'N' );
+		$this->assertEquals( 7, $day_of_week, 'Failed to assert result is Sunday.' );
+		$hour = (int) $result->format( 'H' );
+		$this->assertEquals( 13, $hour, 'Failed to assert hour is 1pm (13).' );
+	}
+
+	/**
+	 * Test parse_datetime_input with "this monday" pattern.
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_this_monday(): void {
+		$result = $this->parser->parse_datetime_input( 'this monday' );
+
+		$this->assertInstanceOf( DateTime::class, $result, 'Failed to assert result is DateTime instance.' );
+		$day_of_week = (int) $result->format( 'N' );
+		$this->assertEquals( 1, $day_of_week, 'Failed to assert result is Monday.' );
+	}
+
+	/**
+	 * Test parse_datetime_input with bare weekday defaults to noon.
+	 *
+	 * @covers ::parse_datetime_input
+	 *
+	 * @return void
+	 */
+	public function test_parse_datetime_input_bare_weekday_defaults_to_noon(): void {
+		$result = $this->parser->parse_datetime_input( 'sunday' );
+
+		$this->assertInstanceOf( DateTime::class, $result, 'Failed to assert result is DateTime instance.' );
+		$hour = (int) $result->format( 'H' );
+		$this->assertEquals( 12, $hour, 'Failed to assert hour defaults to noon.' );
+	}
 }

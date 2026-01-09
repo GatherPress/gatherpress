@@ -382,12 +382,14 @@ class Test_Abilities_Integration extends Base {
 		$instance = Abilities_Integration::get_instance();
 		$params   = array(
 			'title'          => 'Test Event',
-			'datetime_start' => 'Jan 25, 2025 7pm',
+			// Use a format that cannot be parsed by any parser (not a valid date/time).
+			'datetime_start' => 'not-a-date-at-all-xyz123',
 		);
 		$result   = $instance->execute_create_event( $params );
 
 		$this->assertFalse( $result['success'], 'Failed to assert success is false.' );
-		$this->assertStringContainsString( 'Invalid start date/time format', $result['message'], 'Failed to assert error message.' ); // phpcs:ignore Generic.Files.LineLength.TooLong
+		// phpcs:ignore Generic.Files.LineLength.TooLong
+		$this->assertStringContainsString( 'Invalid start date/time format', $result['message'], 'Failed to assert error message.' );
 	}
 
 	/**
@@ -1394,6 +1396,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertStringContainsString( 'wp:gatherpress/venue', $content );
 		$this->assertStringContainsString( 'wp:gatherpress/rsvp', $content );
 		$this->assertStringContainsString( 'wp:paragraph', $content );
+		$this->assertStringContainsString( 'gp-ai-description', $content );
 	}
 
 	/**
@@ -1414,6 +1417,7 @@ class Test_Abilities_Integration extends Base {
 		$this->assertIsString( $content );
 		$this->assertStringContainsString( 'Test event description', $content );
 		$this->assertStringContainsString( 'wp:paragraph', $content );
+		$this->assertStringContainsString( 'gp-ai-description', $content );
 	}
 
 	/**
@@ -4352,5 +4356,75 @@ class Test_Abilities_Integration extends Base {
 		$this->assertEquals( '2025-01-04 12:00:00', $updated_datetime['datetime_start'], 'Failed to assert start datetime was preserved.' );
 		// phpcs:ignore Generic.Files.LineLength.TooLong
 		$this->assertEquals( '2025-01-04 14:00:00', $updated_datetime['datetime_end'], 'Failed to assert end datetime was preserved.' );
+	}
+
+	/**
+	 * Test update_event_description with existing gp-ai-description paragraph.
+	 *
+	 * @covers ::update_event_description
+	 *
+	 * @return void
+	 */
+	public function test_update_event_description_with_existing_paragraph(): void {
+		$instance         = Abilities_Integration::get_instance();
+		$existing_content = '<!-- wp:paragraph {"className":"gp-ai-description"} -->' . "\n"
+			. '<p>Old description</p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+
+		$result = \PMC\Unit_Test\Utility::invoke_hidden_method(
+			$instance,
+			'update_event_description',
+			array( $existing_content, 'New description' )
+		);
+
+		$this->assertStringContainsString( 'New description', $result );
+		$this->assertStringContainsString( 'gp-ai-description', $result );
+		$this->assertStringNotContainsString( 'Old description', $result );
+	}
+
+	/**
+	 * Test update_event_description with empty content rebuilds structure.
+	 *
+	 * @covers ::update_event_description
+	 *
+	 * @return void
+	 */
+	public function test_update_event_description_with_empty_content(): void {
+		$instance = Abilities_Integration::get_instance();
+
+		$result = \PMC\Unit_Test\Utility::invoke_hidden_method(
+			$instance,
+			'update_event_description',
+			array( '', 'New description' )
+		);
+
+		$this->assertStringContainsString( 'New description', $result );
+		$this->assertStringContainsString( 'gp-ai-description', $result );
+		$this->assertStringContainsString( 'wp:gatherpress/event-date', $result );
+	}
+
+	/**
+	 * Test update_event_description without gp-ai-description rebuilds.
+	 *
+	 * @covers ::update_event_description
+	 *
+	 * @return void
+	 */
+	public function test_update_event_description_without_marker_rebuilds(): void {
+		$instance         = Abilities_Integration::get_instance();
+		$existing_content = '<!-- wp:paragraph -->' . "\n"
+			. '<p>Some other content</p>' . "\n"
+			. '<!-- /wp:paragraph -->';
+
+		$result = \PMC\Unit_Test\Utility::invoke_hidden_method(
+			$instance,
+			'update_event_description',
+			array( $existing_content, 'New description' )
+		);
+
+		// Should rebuild with default structure.
+		$this->assertStringContainsString( 'New description', $result );
+		$this->assertStringContainsString( 'gp-ai-description', $result );
+		$this->assertStringContainsString( 'wp:gatherpress/event-date', $result );
 	}
 }

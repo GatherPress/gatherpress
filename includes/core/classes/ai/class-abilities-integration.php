@@ -1160,7 +1160,10 @@ class Abilities_Integration {
 
 		if ( isset( $params['description'] ) ) {
 			// Update description in existing block structure, or rebuild if needed.
-			$post_update['post_content'] = $this->update_event_description( $event_post->post_content, $params['description'] );
+			$post_update['post_content'] = $this->update_event_description(
+				$event_post->post_content,
+				$params['description']
+			);
 		}
 
 		if (
@@ -1301,15 +1304,17 @@ class Abilities_Integration {
 
 		// Find paragraph with gp-ai-description class (AI-managed description).
 		// Pattern matches paragraph block with className containing gp-ai-description.
-		$pattern = '/(<!-- wp:paragraph(?:\s+\{[^}]*"className"[^}]*"gp-ai-description"[^}]*\})? -->)\s*\n*(<p>)(.*?)(<\/p>)\s*\n*(<!-- \/wp:paragraph -->)/s';
-		$updated_content = preg_replace( $pattern, '$1' . "\n" . '$2' . $description_content . '$4' . "\n" . '$5', $existing_content, 1 );
+		// Only matches paragraphs that have gp-ai-description in className.
+		$pattern         = '/(<!-- wp:paragraph\s+\{[^}]*"className"[^}]*"gp-ai-description"[^}]*\} -->)'
+			. '\s*\n*(<p>)(.*?)(<\/p>)\s*\n*(<!-- \/wp:paragraph -->)/s';
+		$updated_content = preg_replace(
+			$pattern,
+			'$1' . "\n" . '$2' . $description_content . '$4' . "\n" . '$5',
+			$existing_content,
+			1
+		);
 
 		// If no AI-managed paragraph found, rebuild with default structure (snaps back to default position).
-		if ( $updated_content === $existing_content ) {
-			return $this->get_default_event_content( $new_description );
-		}
-
-		// If replacement didn't work (no paragraph found), rebuild with default structure.
 		if ( $updated_content === $existing_content ) {
 			return $this->get_default_event_content( $new_description );
 		}
