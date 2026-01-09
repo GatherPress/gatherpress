@@ -480,7 +480,7 @@ class Abilities_Integration {
 			array(
 				'label'               => __( 'Calculate Recurring Dates', 'gatherpress' ),
 				// phpcs:ignore Generic.Files.LineLength.TooLong
-				'description'         => __( 'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. 2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. 3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. 4) "Relative dates" (e.g., "next Tuesday", "tomorrow") - calculates relative dates. 5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.', 'gatherpress' ),
+				'description'         => __( 'Calculate recurring dates based on a pattern. Use this BEFORE creating recurring events to get accurate dates. PATTERN TYPES: 1) "Nth weekday" (e.g., "3rd Tuesday", "first Friday") - calculates Nth occurrence of weekday in each month. 2) "Every weekday" (e.g., "every Monday") - calculates weekly recurring dates. 3) "X weeks from weekday" (e.g., "3 weeks from Thursday") - calculates ONE specific date that is X weeks from the next occurrence of that weekday. 4) "Relative dates" (e.g., "this Sunday", "next Tuesday", "tomorrow") - calculates relative dates. IMPORTANT: "this [weekday]" means the upcoming occurrence in the current week (e.g., "this Sunday" on Friday = this week\'s Sunday, not next week\'s). "next [weekday]" means next week\'s occurrence. 5) "Interval patterns" (e.g., "every 2 weeks") - calculates recurring dates at intervals. IMPORTANT: "X weeks from weekday" patterns should ALWAYS use occurrences=1 as they calculate a single specific date, not multiple recurring dates.', 'gatherpress' ),
 				'category'            => 'event',
 				'input_schema'        => array(
 					'type'       => 'object',
@@ -488,7 +488,7 @@ class Abilities_Integration {
 						'pattern'     => array(
 							'type'        => 'string',
 							// phpcs:ignore Generic.Files.LineLength.TooLong
-							'description' => __( 'The date pattern to calculate (e.g., "3rd Tuesday", "every Monday", "next Thursday", "3 weeks from Friday")', 'gatherpress' ),
+							'description' => __( 'The date pattern to calculate (e.g., "3rd Tuesday", "every Monday", "this Sunday", "next Thursday", "3 weeks from Friday"). IMPORTANT: Use "this [weekday]" for the upcoming occurrence in the current week, not "next [weekday]".', 'gatherpress' ),
 						),
 						'occurrences' => array(
 							'type'        => 'integer',
@@ -940,16 +940,23 @@ class Abilities_Integration {
 			);
 		}
 
-		// Validate datetime format.
-		$start_datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $params['datetime_start'] );
-		if ( ! $start_datetime ) {
-			return array(
-				'success' => false,
-				'message' => __(
-					'Invalid start date/time format. Use Y-m-d H:i:s (e.g., 2025-01-21 19:00:00)',
-					'gatherpress'
-				),
-			);
+		// Parse datetime - accept both strict format and flexible formats (e.g., "sunday at 1 pm").
+		$parser = new Event_Datetime_Parser();
+		try {
+			$start_datetime = $parser->parse_datetime_input( $params['datetime_start'] );
+		} catch ( \Exception $e ) {
+			// Fallback to strict format parsing for backward compatibility.
+			$start_datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $params['datetime_start'] );
+			if ( ! $start_datetime ) {
+				return array(
+					'success' => false,
+					'message' => sprintf(
+						/* translators: %s: error message */
+						__( 'Invalid start date/time format: %s', 'gatherpress' ),
+						$e->getMessage()
+					),
+				);
+			}
 		}
 
 		// Default post status to draft for safety.
@@ -984,10 +991,15 @@ class Abilities_Integration {
 
 		// Calculate end datetime if not provided (default to 2 hours after start).
 		if ( ! empty( $params['datetime_end'] ) ) {
-			$end_datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $params['datetime_end'] );
-			if ( ! $end_datetime ) {
-				$end_datetime = clone $start_datetime;
-				$end_datetime->modify( '+2 hours' );
+			try {
+				$end_datetime = $parser->parse_datetime_input( $params['datetime_end'] );
+			} catch ( \Exception $e ) {
+				// Fallback to strict format parsing.
+				$end_datetime = \DateTime::createFromFormat( 'Y-m-d H:i:s', $params['datetime_end'] );
+				if ( ! $end_datetime ) {
+					$end_datetime = clone $start_datetime;
+					$end_datetime->modify( '+2 hours' );
+				}
 			}
 		} else {
 			$end_datetime = clone $start_datetime;
@@ -1147,7 +1159,8 @@ class Abilities_Integration {
 		}
 
 		if ( isset( $params['description'] ) ) {
-			$post_update['post_content'] = wp_kses_post( $params['description'] );
+			// Update description in existing block structure, or rebuild if needed.
+			$post_update['post_content'] = $this->update_event_description( $event_post->post_content, $params['description'] );
 		}
 
 		if (
@@ -1268,6 +1281,43 @@ class Abilities_Integration {
 	}
 
 	/**
+	 * Update event description in existing block structure.
+	 *
+	 * Uses string replacement to update paragraph content without breaking block structure.
+	 * Finds paragraph block by pattern and replaces only its content.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $existing_content Current post content.
+	 * @param string $new_description  New description text.
+	 * @return string Updated block content.
+	 */
+	private function update_event_description( string $existing_content, string $new_description ): string {
+		if ( empty( $existing_content ) ) {
+			return $this->get_default_event_content( $new_description );
+		}
+
+		$description_content = wp_kses_post( $new_description );
+
+		// Find paragraph with gp-ai-description class (AI-managed description).
+		// Pattern matches paragraph block with className containing gp-ai-description.
+		$pattern = '/(<!-- wp:paragraph(?:\s+\{[^}]*"className"[^}]*"gp-ai-description"[^}]*\})? -->)\s*\n*(<p>)(.*?)(<\/p>)\s*\n*(<!-- \/wp:paragraph -->)/s';
+		$updated_content = preg_replace( $pattern, '$1' . "\n" . '$2' . $description_content . '$4' . "\n" . '$5', $existing_content, 1 );
+
+		// If no AI-managed paragraph found, rebuild with default structure (snaps back to default position).
+		if ( $updated_content === $existing_content ) {
+			return $this->get_default_event_content( $new_description );
+		}
+
+		// If replacement didn't work (no paragraph found), rebuild with default structure.
+		if ( $updated_content === $existing_content ) {
+			return $this->get_default_event_content( $new_description );
+		}
+
+		return $updated_content;
+	}
+
+	/**
 	 * Get default event content with GatherPress blocks.
 	 *
 	 * @since 1.0.0
@@ -1276,7 +1326,6 @@ class Abilities_Integration {
 	 * @return string Block content for the event.
 	 */
 	private function get_default_event_content( $description = '' ) {
-		// Build the default event template matching the exact format from manual creation.
 		$content  = '<!-- wp:gatherpress/event-date /-->' . "\n\n";
 		$content .= '<!-- wp:gatherpress/add-to-calendar -->' . "\n";
 		$content .= '<div class="wp-block-gatherpress-add-to-calendar"></div>' . "\n";
@@ -1288,10 +1337,10 @@ class Abilities_Integration {
 		$content .= '<div class="wp-block-gatherpress-rsvp"></div>' . "\n";
 		$content .= '<!-- /wp:gatherpress/rsvp -->' . "\n\n";
 
-		// Add description paragraph.
+		// Add description paragraph with AI marker class for easy identification.
 		if ( ! empty( $description ) ) {
 			$description_content = wp_kses_post( $description );
-			$content            .= '<!-- wp:paragraph -->' . "\n";
+			$content            .= '<!-- wp:paragraph {"className":"gp-ai-description"} -->' . "\n";
 			$content            .= '<p>' . $description_content . '</p>' . "\n";
 			$content            .= '<!-- /wp:paragraph -->' . "\n\n";
 		} else {
@@ -1299,7 +1348,7 @@ class Abilities_Integration {
 			$description_placeholder = __( 'Add a description of the event and let people know what to expect, including the agenda, what they need to bring, and how to find the group.', 'gatherpress' );
 			$content                .= '<!-- wp:paragraph {"placeholder":"'
 				. esc_attr( $description_placeholder )
-				. '"} -->' . "\n";
+				. '","className":"gp-ai-description"} -->' . "\n";
 			$content                .= '<p></p>' . "\n";
 			$content                .= '<!-- /wp:paragraph -->' . "\n\n";
 		}
