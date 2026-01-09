@@ -69,10 +69,6 @@ async function createEventWithVenue( page, venueTitle ) {
 	await venueSelect.selectOption( { value: venueValue } );
 
 	// Publish
-	// await page.click('button:has-text("Publish")');
-	// await page.waitForTimeout( 800 );
-	// await page.click('button:has-text("Publish"):visible');
-	// Open the publish panel (toggle)
 	const publishToggle = page.locator(
 		'button.editor-post-publish-panel__toggle'
 	);
