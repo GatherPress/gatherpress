@@ -5,6 +5,7 @@ This section explains how to create, edit, and maintain events in GatherPress, u
 ## Creating an event
 
 To create an event:
+
 1. Go to `Events > Add New` in the WordPress admin.  
 2. Enter a title for your event.  
 3. Add your event description using blocks, just like a regular page or post.  

@@ -2,14 +2,14 @@
 
 * What is GatherPress?  
 * Who is it for?  
-  * Community organizers  
-  * Event organizers  
-  * Membership-based communities  
-  * Multisite networks  
+    * Community organizers  
+    * Event organizers  
+    * Membership-based communities  
+    * Multisite networks  
 * Key concepts overview (events, venues, RSVPs, attendees)  
 * Block-first and WordPress-native philosophy
 
-# Table of Content
+## Table of Content
 
 * [Core concepts](./core-concepts.md)
 * [Getting started](getting-started.md)

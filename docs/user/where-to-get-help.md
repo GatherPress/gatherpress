@@ -4,8 +4,8 @@ If you need help with GatherPress, there are several official and community-supp
 
 ## Official documentation
 
-* User documentation: https://gatherpress.org/documentation/  
-* Developer documentation: https://gatherpress.org/documentation/ (developer section)
+* User documentation: <https://gatherpress.org/documentation/>  
+* Developer documentation: <https://gatherpress.org/documentation/> (developer section)
 * On GitHub, on the Main branch [/docs](https://github.com/GatherPress/gatherpress/tree/main/docs)
 
 ## Sensitive and safety issues
@@ -14,7 +14,7 @@ Report sensitive issues to plugin@gatherpress.org and follow the [Security Polic
 
 ## GitHub
 
-Report bugs and request features: https://github.com/GatherPress/gatherpress/issues
+Report bugs and request features: <https://github.com/GatherPress/gatherpress/issues>
 
 When reporting an issue, include:
 

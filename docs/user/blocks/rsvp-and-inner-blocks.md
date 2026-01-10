@@ -20,30 +20,30 @@ When you toggle Block guard off, you'll see in the List view the inner blocks th
 ## Inner Blocks for No Response, Attending, Waiting List or Not Attending modes
 
 - Modal Manager
-	-  Call to Action
-		- RSVP Button (shows "RSVP" in No response mode or "Edit RSVP" in Attending/Waiting List/Not attending modes)
-	- Group (does not show on No response mode)
-		- Row
-			- Icon  (by default, it shows the checkmark on Attending more, the clock icon on Waiting list mode, or the X icon on the Not attending mode)
-			- RSVP Status (by default, it shows "Attending", "Waiting List" or "Not Attending")
-		- RSVP Guest Count Display. Note: if the event is set not to accept guests, this field is greyed out in the editor and will not display on front end.
-	- RSVP Modal
-		- Modal Content
-			- RSVP Heading
-			- RSVP Info
-			- Form Field
-			- Call to Action
-				- RSVP Button (by default, it shows "Not Attending"), for the user to change their RSVP
-				- Close Button
-	- Login Modal (will only show on No Response mode)
-		- Modal Content
-			- Login Heading
-			- Login Info
-			- Register Info
-			- Call to Action
-				- Close Button
+    -  Call to Action
+        - RSVP Button (shows "RSVP" in No response mode or "Edit RSVP" in Attending/Waiting List/Not attending modes)
+    - Group (does not show on No response mode)
+        - Row
+            - Icon  (by default, it shows the checkmark on Attending more, the clock icon on Waiting list mode, or the X icon on the Not attending mode)
+            - RSVP Status (by default, it shows "Attending", "Waiting List" or "Not Attending")
+        - RSVP Guest Count Display. Note: if the event is set not to accept guests, this field is greyed out in the editor and will not display on front end.
+    - RSVP Modal
+        - Modal Content
+            - RSVP Heading
+            - RSVP Info
+            - Form Field
+            - Call to Action
+                - RSVP Button (by default, it shows "Not Attending"), for the user to change their RSVP
+                - Close Button
+    - Login Modal (will only show on No Response mode)
+        - Modal Content
+            - Login Heading
+            - Login Info
+            - Register Info
+            - Call to Action
+                - Close Button
 
 ## Inner Blocks for Past event
 
 - Call to Action
-	- RSVP Button (that will show "Past Event")
+    - RSVP Button (that will show "Past Event")

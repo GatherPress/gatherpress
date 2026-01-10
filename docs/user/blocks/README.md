@@ -10,7 +10,7 @@ Event List (will be deprecated in the next version, 0.34)
 
 Add to Calendar: Allows a user to add an event to their preferred calendar application.
 
-### Other blocks used in an event
+## Other blocks used in an event
 
 See details on [Creating and managing events](../creating-and-managing-events.md)
 

@@ -72,12 +72,12 @@ RSVP behavior:
 
 GatherPress blocks allow you to display and manage:
 
-   * Date, time and timezone  
-   * Venue or online link  
-   * RSVP settings  
-   * Optional guest number and capacity  
-   * Stored as structured data, can be used for for filtering, sorting, and querying events
-   * Additional content such as text, images, lists, and other blocks you add in the editor  
+* Date, time and timezone  
+* Venue or online link  
+* RSVP settings  
+* Optional guest number and capacity  
+* Stored as structured data, can be used for for filtering, sorting, and querying events
+* Additional content such as text, images, lists, and other blocks you add in the editor  
 
 [More about blocks](./blocks.md)
 
