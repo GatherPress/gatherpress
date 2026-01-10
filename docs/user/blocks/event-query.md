@@ -3,7 +3,7 @@
 GatherPress includes a block-variation of the `core/query` block, called _Event Query_. This block allows for everything a normal query block can do including the following:
 
 
-![Screenshot of the Event Query block inside the WordPress post editor.](https://github.com/user-attachments/assets/6496e4eb-308d-4e8d-823e-83f06dce2fb2)
+![Screenshot of the Event Query block inside the WordPress post editor.](../user-doc-media/20260110163651.png)
 
 
 1. Allows endless customization in terms of layout & style, incl. the use of interactive blocks.
