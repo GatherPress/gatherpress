@@ -10,19 +10,19 @@ const DEFAULT_STATE = {
 };
 
 const actions = {
-	updateVenueLatitude(latitude) {
+	updateVenueLatitude( latitude ) {
 		return {
 			type: 'UPDATE_VENUE_LATITUDE',
 			latitude,
 		};
 	},
-	updateVenueLongitude(longitude) {
+	updateVenueLongitude( longitude ) {
 		return {
 			type: 'UPDATE_VENUE_LONGITUDE',
 			longitude,
 		};
 	},
-	updateMapCustomLatLong(mapCustomLatLong) {
+	updateMapCustomLatLong( mapCustomLatLong ) {
 		return {
 			type: 'UPDATE_MAP_CUSTOM_LAT_LONG',
 			mapCustomLatLong,
@@ -30,8 +30,8 @@ const actions = {
 	},
 };
 
-const reducer = (state = DEFAULT_STATE, action) => {
-	switch (action.type) {
+const reducer = ( state = DEFAULT_STATE, action ) => {
+	switch ( action.type ) {
 		case 'UPDATE_VENUE_LATITUDE':
 			return {
 				...state,
@@ -53,21 +53,21 @@ const reducer = (state = DEFAULT_STATE, action) => {
 };
 
 const selectors = {
-	getVenueLatitude(state) {
+	getVenueLatitude( state ) {
 		return state.latitude;
 	},
-	getVenueLongitude(state) {
+	getVenueLongitude( state ) {
 		return state.longitude;
 	},
-	getMapCustomLatLong(state) {
+	getMapCustomLatLong( state ) {
 		return state.mapCustomLatLong;
 	},
 };
 
-const store = createReduxStore('gatherpress/venue', {
+const store = createReduxStore( 'gatherpress/venue', {
 	reducer,
 	actions,
 	selectors,
-});
+} );
 
-register(store);
+register( store );

@@ -3,22 +3,30 @@ on:
   push:
     branches:
       - main
-
+      - develop
+  pull_request:
+    paths:
+    - '.github/workflows/e2e-tests.yml'
+    - 'package.*'
+    - 'composer.*'
+    - 'includes/**'
+    - 'src/**'
+    - 'test/e2e/**'
+    - '*.php'
+    - '*.js'
 jobs:
   playwright:
     name: Playwright Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Log debug information
-        run: |
-          npm --version
-          node --version
-          git --version
-          php --version
-          composer --version
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: xdebug
 
       - name: Install NodeJS
         uses: actions/setup-node@v4
@@ -29,15 +37,88 @@ jobs:
           # https://github.com/actions/setup-node#caching-global-packages-data
           cache: 'npm'
 
+      # Restoring the short lived node_modules cache
+      # to be used across all workflows running on the last commit.
+      # https://github.com/actions/cache/blob/main/caching-strategies.md#creating-a-short-lived-cache
+      - uses: actions/cache/restore@v4
+        id: node_modules-cache
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-node_modules-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+
       - name: NPM install
-        run: npm ci --legacy-peer-deps
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        run: npm install
+
+      # Creating a short lived node_modules cache
+      - uses: actions/cache/save@v4
+        if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        with:
+          path: |
+            ./node_modules
+          key: ${{ steps.node_modules-cache.outputs.cache-primary-key }}
 
       - name: Playwright install
         run: npx playwright install --with-deps
 
-      - name: Run Playwright
+      - name: Build plugin assets
+        run: npm run build
+
+      - name: Install dependencies
+        run: |
+          # Install Composer dependencies that might be needed for the plugin
+          composer install --no-dev --no-interaction || echo "Composer install failed or not needed"
+
+      - name: Install WordPress and start the server
+        run: |
+          npm run wp-env start
+
+          # Wait for WordPress admin to be accessible.
+          npx wait-on http://localhost:8889/wp-admin -t 60000
+
+          # Verify plugin is active.
+          echo "Verifying GatherPress plugin is active..."
+          npm run wp-env run cli wp plugin list --status=active | grep gatherpress
+
+          # Verify post types are registered via REST API.
+          echo "Verifying GatherPress post types via REST API..."
+          for i in 1 2 3 4 5; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8889/?rest_route=/wp/v2/types/gatherpress_event")
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✓ GatherPress event post type registered (HTTP 200)"
+              break
+            fi
+            echo "⏳ Waiting for post types... (attempt $i/5, HTTP status: $HTTP_STATUS)"
+            sleep 2
+          done
+
+          # Final verification - fail if post type still not found.
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8889/?rest_route=/wp/v2/types/gatherpress_event")
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ ERROR: GatherPress post types not accessible via REST API (HTTP $HTTP_STATUS)"
+            npm run wp-env run cli wp post-type list
+            exit 1
+          fi
+
+          echo "✓ WordPress environment ready for E2E tests"
+
+      - name: Run Playwright Tests
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WP_ADMIN_PASSWORD: ${{ secrets.WP_ADMIN_PASSWORD }}
+          WP_BASE_URL: 'http://localhost:8889'
+          PLAYWRIGHT_DEBUG: '1'
         run: npm run test:e2e
-        if: ${{ success() || failure() }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Stop WordPress
+        if: always()
+        run: npm run wp-env stop

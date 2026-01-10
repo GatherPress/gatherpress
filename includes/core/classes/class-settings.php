@@ -245,7 +245,8 @@ class Settings {
 						$section_settings['name'],
 						static function () use ( $section_settings ) {
 							if ( ! empty( $section_settings['description'] ) ) {
-								echo '<p class="description">' . wp_kses_post( $section_settings['description'] ) . '</p>';
+								echo '<p class="description">'
+									. wp_kses_post( $section_settings['description'] ) . '</p>';
 							}
 						},
 						Utility::prefix_key( $sub_page )
@@ -257,9 +258,19 @@ class Settings {
 								$option_settings['field']['type']
 								&& method_exists( $this, $option_settings['field']['type'] )
 							) {
-								$option_settings['callback'] = function () use ( $sub_page, $section, $option, $option_settings ) {
+								$option_settings['callback'] = function () use (
+									$sub_page,
+									$section,
+									$option,
+									$option_settings
+								) {
 									$sub_page = Utility::prefix_key( $sub_page );
-									$this->{$option_settings['field']['type']}( $sub_page, $section, $option, $option_settings );
+									$this->{$option_settings['field']['type']}(
+										$sub_page,
+										$section,
+										$option,
+										$option_settings
+									);
 								};
 							}
 							add_settings_field(
@@ -799,6 +810,9 @@ class Settings {
 			'gatherpress_general[urls][venues]' === $name ||
 			'gatherpress_general[urls][topics]' === $name
 		) {
+			// Initialize suffix - all switch cases will override this.
+			$suffix = '';
+
 			switch ( $name ) {
 				case 'gatherpress_general[urls][events]':
 					$suffix = _x( 'sample-event', 'URL permalink structure example for events', 'gatherpress' );
@@ -807,12 +821,21 @@ class Settings {
 					$suffix = _x( 'sample-venue', 'URL permalink structure example for venues', 'gatherpress' );
 					break;
 				case 'gatherpress_general[urls][topics]':
-					$suffix = _x( 'sample-topic-term', 'URL permalink structure example for topics', 'gatherpress' );
+					$suffix = _x(
+						'sample-topic-term',
+						'URL permalink structure example for topics',
+						'gatherpress'
+					);
 					break;
+				default:
+					// Nothing to see here. All valid names are already handled.
 			}
 
 			Utility::render_template(
-				sprintf( '%s/includes/templates/admin/settings/partials/url-rewrite-preview.php', GATHERPRESS_CORE_PATH ),
+				sprintf(
+					'%s/includes/templates/admin/settings/partials/url-rewrite-preview.php',
+					GATHERPRESS_CORE_PATH
+				),
 				array(
 					'name'   => $name,
 					'value'  => $value,
@@ -824,24 +847,28 @@ class Settings {
 	}
 
 	/**
-	 * Update Rewrite rules, when post type rewrite slugs change.
+	 * Schedule rewrite rules flush when post type rewrite slugs change.
 	 *
 	 * Fires after the value of the 'gatherpress_general["urls"]' option-part has been successfully updated
 	 * and only if it has changed since before.
 	 *
+	 * Deletes the core rewrite_rules option to trigger WordPress's automatic
+	 * rewrite rule regeneration on the next request. This is more efficient
+	 * than using a custom flag option.
+	 *
 	 * @since 1.0.0
 	 *
 	 * @param mixed $old_value The old option value.
-	 * @param mixed $new_value     The new option value.
+	 * @param mixed $new_value The new option value.
 	 * @return void
 	 */
 	public function maybe_flush_rewrite_rules( $old_value, $new_value ): void {
-		if ( ! isset( $old_value['urls'] ) && isset( $new_value['urls'] ) ||
-			isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ||
-			$old_value['urls'] !== $new_value['urls']
+		if (
+			( ! isset( $old_value['urls'] ) && isset( $new_value['urls'] ) ) ||
+			( isset( $old_value['urls'] ) && ! isset( $new_value['urls'] ) ) ||
+			( $old_value['urls'] !== $new_value['urls'] )
 		) {
-			// Event_Setup->maybe_create_flush_rewrite_rules_flag //@TODO https://github.com/GatherPress/gatherpress/issues/880 Maybe make this a public method ?!
-			add_option( 'gatherpress_flush_rewrite_rules_flag', true );
+			delete_option( 'rewrite_rules' );
 		}
 	}
 }

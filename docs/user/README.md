@@ -1,13 +1,27 @@
+# Introduction
 
-# Documentation for users
+* What is GatherPress?  
+* Who is it for?  
+    * Community organizers  
+    * Event organizers  
+    * Membership-based communities  
+    * Multisite networks  
+* Key concepts overview (events, venues, RSVPs, attendees)  
+* Block-first and WordPress-native philosophy
 
-Welcome to GatherPress (work in progress) documentation for users.
+## Table of Content
 
-You will find separate entries for the following topics:
+* [Core concepts](./core-concepts.md)
+* [Getting started](getting-started.md)
+* [Creating and managing events](./creating-and-managing-events.md)
+* [Topics](./topics.md)
+* [RSVP system](./rsvp-system.md)
+* [Emails](./emails.md)
+* [Venues](./venues.md)
+* [Blocks](./blocks/README.md)
+* [User roles and permissions](./user-roles-and-permissions.md)
+* [Privacy](./privacy.md)
+* [Where to get help](./where-to-get-help.md)
 
-- [1. Install GatherPress](./1-install-gatherpress.md)
-- [1a. GatherPress Alpha](./1a-gatherpress-alpha.md)
-- [2. GatherPress settings](./2-gatherpress-settings.md)
-- [3. Create or edit a venue](./3-create-or-edit-a-venue.md)
-- [4. GatherPress topics](./4-gatherpress-topics.md)
-- [5. Create or edit an event](./5-create-or-edit-an-event.md)
+
+Last update: January 10, 2026 - GatherPress version 0.33

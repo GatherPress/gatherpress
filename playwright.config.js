@@ -1,83 +1,40 @@
-// @ts-check
-const { defineConfig, devices } = require('@playwright/test');
+// playwright.config.js
+const { defineConfig, devices } = require( '@playwright/test' );
+require( 'dotenv' ).config();
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-require('dotenv').config();
-
-/**
- * @see https://playwright.dev/docs/test-configuration
- */
-module.exports = defineConfig({
+module.exports = defineConfig( {
 	testDir: './test/e2e',
-	/* Run tests in files in parallel */
-	fullyParallel: true,
-	/* Fail the build on CI if you accidentally left test.only in the source code. */
-	forbidOnly: !!process.env.CI,
-	/* Retry on CI only */
-	retries: 2,
-	/* Opt out of parallel tests on CI. */
-	workers: process.env.CI ? 1 : undefined,
-
-	timeout: 30000,
-	/* Reporter to use. See https://playwright.dev/docs/test-reporters */
-	reporter: 'html',
-
-	/* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-	use: {
-		/* Base URL to use in actions like `await page.goto('/')`. */
-		baseURL: 'https://develop.gatherpress.org/',
-
-		/* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-		trace: 'on-first-retry',
-		video: 'on',
-		screenshot: 'on',
+	fullyParallel: false, // Disable parallel for better stability
+	forbidOnly: !! process.env.CI,
+	retries: process.env.CI ? 2 : 1,
+	workers: 1, // Use single worker to avoid conflicts
+	timeout: 180000,
+	expect: {
+		timeout: 10000, // Shorter expect timeout for faster feedback
 	},
-
-	/* Configure projects for major browsers */
+	reporter: [
+		[ 'html' ],
+		[ 'list', { printSteps: true } ],
+		[ 'junit', { outputFile: 'test-results/junit.xml' } ],
+	],
+	globalSetup: './test/e2e/global-setup.js',
+	use: {
+		baseURL: process.env.WP_BASE_URL || 'http://localhost:8889',
+		trace: 'on-first-retry',
+		video: 'on-first-retry',
+		screenshot: 'only-on-failure',
+		storageState: './test/e2e/storageState.json',
+		actionTimeout: 15000, // Longer action timeout for slow WordPress admin
+		navigationTimeout: 30000, // Longer navigation timeout
+	},
 	projects: [
-		// {
-		//   name: "chromium",
-		//   use: { ...devices["Desktop Chrome"] },
-		// },
-
 		{
-			name: 'firefox',
-			use: { ...devices['Desktop Firefox'] },
-		},
-
-		{
-			name: 'webkit',
-			use: { ...devices['Desktop Safari'] },
-		},
-
-		/* Test against mobile viewports. */
-		// {
-		//   name: 'Mobile Chrome',
-		//   use: { ...devices['Pixel 5'] },
-		// },
-		// {
-		//   name: 'Mobile Safari',
-		//   use: { ...devices['iPhone 12'] },
-		// },
-
-		/* Test against branded browsers. */
-		{
-			name: 'Microsoft Edge',
-			use: { ...devices['Desktop Edge'], channel: 'msedge' },
-		},
-		{
-			name: 'Google Chrome',
-			use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+			name: 'chromium',
+			use: {
+				...devices[ 'Desktop Chrome' ],
+				storageState: './test/e2e/storageState.json',
+			},
 		},
 	],
-
-	/* Run your local dev server before starting the tests */
-	// webServer: {
-	//   command: 'npm run start',
-	//   url: 'http://127.0.0.1:3000',
-	//   reuseExistingServer: !process.env.CI,
-	// },
-});
+	outputDir: './test-results/',
+} );

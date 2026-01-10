@@ -4,8 +4,6 @@ These are the upcoming features we're actively developing or planning for future
 
 ## Upcoming Features
 
-- **Open RSVP support** (non-logged-in users)
-  [#68](https://github.com/GatherPress/gatherpress/issues/68)
 - **Recurring events**
   [#80](https://github.com/GatherPress/gatherpress/issues/80)
 - **Calendar block** for displaying upcoming events

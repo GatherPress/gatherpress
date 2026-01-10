@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import moment from 'moment';
-
-/**
  * WordPress dependencies.
  */
 import {
@@ -23,6 +18,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  */
 import { hasEventPastNotice } from '../helpers/event';
 import {
+	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
 	dateTimeLabelFormat,
 	dateTimeOffset,
@@ -45,77 +41,75 @@ import { getSettings } from '@wordpress/date';
  */
 const DateTimeStart = () => {
 	const { dateTimeStart, duration } = useSelect(
-		(select) => ({
-			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
-			duration: select('gatherpress/datetime').getDuration(),
-		}),
-		[]
+		( select ) => ( {
+			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
+			duration: select( 'gatherpress/datetime' ).getDuration(),
+		} ),
+		[],
 	);
 	const { setDateTimeStart, setDateTimeEnd } = useDispatch(
-		'gatherpress/datetime'
+		'gatherpress/datetime',
 	);
 	const settings = getSettings();
 	const is12HourTime = /a(?!\\)/i.test(
 		settings.formats.time
 			.toLowerCase()
-			.replace(/\\\\/g, '')
-			.split('')
+			.replaceAll( '\\\\', '' )
+			.split( '' )
 			.reverse()
-			.join('')
+			.join( '' ),
 	);
 
-	useEffect(() => {
+	useEffect( () => {
 		setDateTimeStart(
-			moment
-				.tz(dateTimeStart, getTimezone())
-				.format(dateTimeDatabaseFormat)
+			createMomentWithTimezone( dateTimeStart, getTimezone() )
+				.format( dateTimeDatabaseFormat ),
 		);
 
-		if (duration) {
-			setDateTimeEnd(dateTimeOffset(duration));
+		if ( duration ) {
+			setDateTimeEnd( dateTimeOffset( duration ) );
 		}
 
 		hasEventPastNotice();
-	}, [dateTimeStart, duration, setDateTimeStart, setDateTimeEnd]);
+	}, [ dateTimeStart, duration, setDateTimeStart, setDateTimeEnd ] );
 
 	return (
 		<PanelRow>
 			<Flex direction="column" gap="1">
 				<FlexItem>
-					<h3 style={{ marginBottom: 0 }}>
+					<h3 style={ { marginBottom: 0 } }>
 						<label htmlFor="gatherpress-datetime-start">
-							{__('Date & time start', 'gatherpress')}
+							{ __( 'Date & time start', 'gatherpress' ) }
 						</label>
 					</h3>
 				</FlexItem>
 				<FlexItem>
 					<Dropdown
-						popoverProps={{ placement: 'bottom-end' }}
-						renderToggle={({ isOpen, onToggle }) => (
+						popoverProps={ { placement: 'bottom-end' } }
+						renderToggle={ ( { isOpen, onToggle } ) => (
 							<Button
 								id="gatherpress-datetime-start"
-								onClick={onToggle}
-								aria-expanded={isOpen}
-								isLink
+								onClick={ onToggle }
+								aria-expanded={ isOpen }
+								variant="link"
 							>
-								{moment
-									.tz(dateTimeStart, getTimezone())
-									.format(dateTimeLabelFormat())}
+								{ createMomentWithTimezone( dateTimeStart, getTimezone() )
+									.format( dateTimeLabelFormat() ) }
 							</Button>
-						)}
-						renderContent={() => (
+						) }
+						renderContent={ () => (
 							<DateTimePicker
-								currentDate={dateTimeStart}
-								onChange={(date) => {
+								currentDate={ dateTimeStart }
+								onChange={ ( date ) => {
 									updateDateTimeStart(
 										date,
 										setDateTimeStart,
-										setDateTimeEnd
+										setDateTimeEnd,
 									);
-								}}
-								is12Hour={is12HourTime}
+								} }
+								is12Hour={ is12HourTime }
 							/>
-						)}
+						) }
 					/>
 				</FlexItem>
 			</Flex>

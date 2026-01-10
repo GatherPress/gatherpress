@@ -10,9 +10,9 @@ import { InnerBlocks } from '@wordpress/block-editor';
 import Edit from './edit';
 import './style.scss';
 
-registerBlockType('gatherpress/rsvp-template', {
+registerBlockType( 'gatherpress/rsvp-template', {
 	edit: Edit,
 	save: () => {
 		return <InnerBlocks.Content />;
 	},
-});
+} );

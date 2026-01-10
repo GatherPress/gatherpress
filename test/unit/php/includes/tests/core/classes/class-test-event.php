@@ -72,11 +72,45 @@ class Test_Event extends Base {
 					'datetime_end'   => '2020-05-12 17:00:00',
 					'timezone'       => 'America/New_York',
 				),
-				'expects' => 'Monday, May 11, 2020, 3:00 PM to Tuesday, May 12, 2020, 5:00 PM EDT',
+				'expects' => 'Monday, May 11, 2020 3:00 PM to Tuesday, May 12, 2020 5:00 PM EDT',
 			),
 			array(
 				'params'  => array(),
-				'expects' => '—',
+				'expects' => '-',
+			),
+			array(
+				'params'  => array(
+					'datetime_start' => '2020-05-11 15:00:00',
+					'datetime_end'   => '2020-05-11 17:00:00',
+					'timezone'       => 'America/New_York',
+					'type'           => 'both',
+					'start_format'   => 'F j, Y g:ia',
+					'end_format'     => 'F j, Y g:ia',
+					'separator'      => 'UNTIL',
+				),
+				'expects' => 'May 11, 2020 3:00pm UNTIL 5:00pm EDT',
+			),
+			array(
+				'params'  => array(
+					'datetime_start' => '2020-05-11 15:00:00',
+					'datetime_end'   => '2020-05-11 17:00:00',
+					'timezone'       => 'America/New_York',
+					'type'           => 'start',
+					'start_format'   => 'F j, Y',
+				),
+				'expects' => 'May 11, 2020 EDT',
+			),
+			array(
+				'params'  => array(
+					'datetime_start' => '2020-05-11 15:00:00',
+					'datetime_end'   => '2020-05-12 17:00:00',
+					'timezone'       => 'America/New_York',
+					'type'           => 'end',
+					'start_format'   => 'F j, Y g:ia',
+					'end_format'     => 'F j, Y g:ia',
+					'show_timezone'  => 'no',
+				),
+				'expects' => 'May 12, 2020 5:00pm',
 			),
 		);
 	}
@@ -90,6 +124,7 @@ class Test_Event extends Base {
 	 * @dataProvider data_get_display_datetime
 	 *
 	 * @covers ::get_display_datetime
+	 * @covers ::get_time_end
 	 * @covers ::save_datetimes
 	 * @covers ::is_same_date
 	 * @covers ::get_gmt_datetime
@@ -132,9 +167,26 @@ class Test_Event extends Base {
 			}
 		}
 
+		// For empty params test, ensure no datetime data exists.
+		// This needs to be done right before the assertion because
+		// previous tests may have set datetime values for this post ID.
+		if ( empty( $params ) ) {
+			global $wpdb;
+			$table = sprintf( Event::TABLE_FORMAT, $wpdb->prefix );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->delete( $table, array( 'post_id' => $post->ID ), array( '%d' ) );
+			delete_transient( sprintf( Event::DATETIME_CACHE_KEY, $post->ID ) );
+		}
+
 		$this->assertSame(
 			$expects,
-			$event->get_display_datetime(),
+			$event->get_display_datetime(
+				$params['type'] ?? '',
+				$params['start_format'] ?? '',
+				$params['end_format'] ?? '',
+				$params['separator'] ?? '',
+				$params['show_timezone'] ?? ''
+			),
 			'Failed to assert display date times match.'
 		);
 	}
@@ -319,7 +371,8 @@ class Test_Event extends Base {
 			)
 		)->get()->ID;
 		$event      = new Event( $event_id );
-		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
+		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",'
+			. '"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 
 		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
 		wp_set_post_terms( $event_id, '_unit-test-venue', Venue::TAXONOMY );
@@ -392,7 +445,7 @@ class Test_Event extends Base {
 	 *
 	 * @covers ::get_calendar_links
 	 * @covers ::get_google_calendar_link
-	 * @covers ::get_ics_calendar_download
+	 * @covers ::get_ics_download_link
 	 * @covers ::get_yahoo_calendar_link
 	 * @covers ::get_calendar_description
 	 *
@@ -414,7 +467,8 @@ class Test_Event extends Base {
 				'post_name'  => 'unit-test-venue',
 			)
 		)->get();
-		$venue_info  = '{"fullAddress":"123 Main Street, Montclair, NJ 07042","phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
+		$venue_info  = '{"fullAddress":"123 Main Street, Montclair, NJ 07042",'
+			. '"phoneNumber":"(123) 123-1234","website":"https://gatherpress.org/"}';
 		$event       = new Event( $post->ID );
 		$description = sanitize_text_field( sprintf( 'For details go to %s', get_the_permalink( $post ) ) );
 		$params      = array(
@@ -429,21 +483,28 @@ class Test_Event extends Base {
 
 		$output = $event->get_calendar_links();
 
-		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE&text=Unit%20Test%20Event&dates=20200511T150000Z%2F20200511T170000Z&details=' . rawurlencode( $description ) . '&location=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042&sprop=name%3A';
-		$expected_yahoo_link  = 'https://calendar.yahoo.com/?v=60&view=d&type=20&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200&desc=' . rawurlencode( $description ) . '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
-
-		$expects = array(
+		$expected_google_link = 'https://www.google.com/calendar/event?action=TEMPLATE'
+			. '&text=Unit%20Test%20Event&dates=20200511T150000Z%2F20200511T170000Z'
+			. '&details=' . rawurlencode( $description )
+			. '&location=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042'
+			. '&sprop=name%3A';
+		$expected_yahoo_link  = 'https://calendar.yahoo.com/?v=60&view=d&type=20'
+			. '&title=Unit%20Test%20Event&st=20200511T150000Z&dur=0200'
+			. '&desc=' . rawurlencode( $description )
+			. '&in_loc=Unit%20Test%20Venue%2C%20123%20Main%20Street%2C%20Montclair%2C%20NJ%2007042';
+		$expected_ics_link    = home_url( '/event/' . get_post_field( 'post_name', $post->ID ) . '.ics' );
+		$expects              = array(
 			'google'  => array(
 				'name' => 'Google Calendar',
 				'link' => $expected_google_link,
 			),
 			'ical'    => array(
-				'name'     => 'iCal',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gatherpress_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'name' => 'iCal',
+				'link' => $expected_ics_link,
 			),
 			'outlook' => array(
-				'name'     => 'Outlook',
-				'download' => 'data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0APRODID:-//GatherPress//RemoteApi//EN%0ABEGIN:VEVENT%0AURL:' . home_url( '/' ) . '?gatherpress_event=unit-test-event%0ADTSTART:20200511T150000Z%0ADTEND:20200511T170000Z%0ADTSTAMP:20200511T000000Z%0ASUMMARY:Unit Test Event%0ADESCRIPTION:' . $description . '%0ALOCATION:Unit Test Venue, 123 Main Street, Montclair, NJ 07042%0AUID:gatherpress_' . $post->ID . '%0AEND:VEVENT%0AEND:VCALENDAR',
+				'name' => 'Outlook',
+				'link' => $expected_ics_link,
 			),
 			'yahoo'   => array(
 				'name' => 'Yahoo Calendar',
@@ -743,5 +804,494 @@ class Test_Event extends Base {
 			$event->maybe_get_online_event_link(),
 			'Failed to assert empty string due to RSVP being set to null.'
 		);
+	}
+
+	/**
+	 * Coverage for is_same_date method.
+	 *
+	 * @covers ::is_same_date
+	 *
+	 * @return void
+	 */
+	public function test_is_same_date(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		// Test same day event.
+		$start = new DateTime( '2025-06-15 10:00:00' );
+		$end   = new DateTime( '2025-06-15 14:00:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$this->assertTrue(
+			$event->is_same_date(),
+			'Failed to assert event starts and ends on the same day.'
+		);
+
+		// Test multi-day event.
+		$start = new DateTime( '2025-06-15 22:00:00' );
+		$end   = new DateTime( '2025-06-16 02:00:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$this->assertFalse(
+			$event->is_same_date(),
+			'Failed to assert event spans multiple days.'
+		);
+	}
+
+	/**
+	 * Coverage for get_datetime_start method.
+	 *
+	 * @covers ::get_datetime_start
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_start(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_datetime_start();
+
+		$this->assertNotEmpty( $result, 'Failed to assert datetime start is not empty.' );
+		$this->assertStringContainsString( '2025', $result );
+	}
+
+	/**
+	 * Coverage for get_datetime_end method.
+	 *
+	 * @covers ::get_datetime_end
+	 *
+	 * @return void
+	 */
+	public function test_get_datetime_end(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_datetime_end();
+
+		$this->assertNotEmpty( $result, 'Failed to assert datetime end is not empty.' );
+		$this->assertStringContainsString( 'June', $result );
+	}
+
+	/**
+	 * Coverage for get_time_end method.
+	 *
+	 * @covers ::get_time_end
+	 *
+	 * @return void
+	 */
+	public function test_get_time_end(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		// Test default format.
+		$result = $event->get_time_end();
+
+		$this->assertNotEmpty( $result, 'Failed to assert time end is not empty.' );
+
+		// Test custom format.
+		$result = $event->get_time_end( 'H:i' );
+
+		$this->assertMatchesRegularExpression( '/^\d{2}:\d{2}$/', $result, 'Failed to assert custom time format.' );
+	}
+
+	/**
+	 * Coverage for get_formatted_datetime method.
+	 *
+	 * @covers ::get_formatted_datetime
+	 *
+	 * @return void
+	 */
+	public function test_get_formatted_datetime(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		// Test start datetime.
+		$result = $event->get_formatted_datetime( 'start' );
+
+		$this->assertNotEmpty( $result, 'Failed to assert formatted start datetime is not empty.' );
+
+		// Test end datetime.
+		$result = $event->get_formatted_datetime( 'end' );
+
+		$this->assertNotEmpty( $result, 'Failed to assert formatted end datetime is not empty.' );
+	}
+
+	/**
+	 * Coverage for get_google_calendar_link method.
+	 *
+	 * @covers ::get_google_calendar_link
+	 *
+	 * @return void
+	 */
+	public function test_get_google_calendar_link(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$start_formatted = $start->format( Event::DATETIME_FORMAT );
+		$end_formatted   = $end->format( Event::DATETIME_FORMAT );
+
+		$params = array(
+			'datetime_start' => $start_formatted,
+			'datetime_end'   => $end_formatted,
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_google_calendar_link();
+
+		$this->assertStringContainsString(
+			'google.com/calendar',
+			$result,
+			'Failed to assert Google calendar link contains expected URL.'
+		);
+		$this->assertStringContainsString(
+			'Test%20Event',
+			$result,
+			'Failed to assert Google calendar link contains event title.'
+		);
+	}
+
+	/**
+	 * Coverage for get_yahoo_calendar_link method.
+	 *
+	 * @covers ::get_yahoo_calendar_link
+	 *
+	 * @return void
+	 */
+	public function test_get_yahoo_calendar_link(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$start_formatted = $start->format( Event::DATETIME_FORMAT );
+		$end_formatted   = $end->format( Event::DATETIME_FORMAT );
+
+		$params = array(
+			'datetime_start' => $start_formatted,
+			'datetime_end'   => $end_formatted,
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_yahoo_calendar_link();
+
+		$this->assertStringContainsString(
+			'yahoo.com',
+			$result,
+			'Failed to assert Yahoo calendar link contains expected URL.'
+		);
+		$this->assertStringContainsString(
+			'Test%20Event',
+			$result,
+			'Failed to assert Yahoo calendar link contains event title.'
+		);
+	}
+
+	/**
+	 * Coverage for get_ics_download_link method.
+	 *
+	 * @covers ::get_ics_download_link
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_download_link(): void {
+		$event_id = $this->mock->post( array( 'post_type' => Event::POST_TYPE ) )->get()->ID;
+		$event    = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_ics_download_link();
+
+		$this->assertNotEmpty( $result, 'Failed to assert ICS link is not empty.' );
+		$this->assertStringContainsString( '.ics', $result, 'Failed to assert ICS link ends with .ics.' );
+	}
+
+	/**
+	 * Coverage for escape_ics_text method.
+	 *
+	 * @covers ::escape_ics_text
+	 *
+	 * @return void
+	 */
+	public function test_escape_ics_text(): void {
+		$event = new Event( 0 );
+
+		// Use reflection to test protected method.
+		$reflection = new \ReflectionClass( $event );
+		$method     = $reflection->getMethod( 'escape_ics_text' );
+		$method->setAccessible( true );
+
+		// Test backslash escaping.
+		$result = $method->invoke( $event, 'Test \\ text' );
+		$this->assertStringContainsString( '\\\\', $result, 'Failed to escape backslashes.' );
+
+		// Test semicolon escaping.
+		$result = $method->invoke( $event, 'Test; text' );
+		$this->assertStringContainsString( '\;', $result, 'Failed to escape semicolons.' );
+
+		// Test comma escaping.
+		$result = $method->invoke( $event, 'Test, text' );
+		$this->assertStringContainsString( '\,', $result, 'Failed to escape commas.' );
+
+		// Test that method is callable.
+		$this->assertTrue( true );
+	}
+
+	/**
+	 * Coverage for get_ics_calendar_string method.
+	 *
+	 * @covers ::get_ics_calendar_string
+	 * @covers ::escape_ics_text
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_calendar_string(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_ics_calendar_string();
+
+		$this->assertStringContainsString( 'BEGIN:VCALENDAR', $result, 'Failed to assert ICS contains VCALENDAR.' );
+		$this->assertStringContainsString( 'BEGIN:VEVENT', $result, 'Failed to assert ICS contains VEVENT.' );
+		$this->assertStringContainsString( 'SUMMARY:', $result, 'Failed to assert ICS contains SUMMARY.' );
+		$this->assertStringContainsString( 'END:VEVENT', $result, 'Failed to assert ICS contains VEVENT end.' );
+		$this->assertStringContainsString( 'END:VCALENDAR', $result, 'Failed to assert ICS contains VCALENDAR end.' );
+	}
+
+	/**
+	 * Coverage for get_ics_calendar_string method with venue full address.
+	 *
+	 * @covers ::get_ics_calendar_string
+	 *
+	 * @return void
+	 */
+	public function test_get_ics_calendar_string_with_venue_full_address(): void {
+		$venue      = $this->mock->post(
+			array(
+				'post_type'  => Venue::POST_TYPE,
+				'post_title' => 'Test Venue',
+				'post_name'  => 'test-venue',
+			)
+		)->get();
+		$event_id   = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event with Venue',
+			)
+		)->get()->ID;
+		$event      = new Event( $event_id );
+		$venue_info = '{"fullAddress":"123 Main Street, Montclair, NJ 07042"}';
+
+		update_post_meta( $venue->ID, 'gatherpress_venue_information', $venue_info );
+		wp_set_post_terms( $event_id, '_test-venue', Venue::TAXONOMY );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$params = array(
+			'datetime_start' => $start->format( Event::DATETIME_FORMAT ),
+			'datetime_end'   => $end->format( Event::DATETIME_FORMAT ),
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_ics_calendar_string();
+
+		$this->assertStringContainsString( 'BEGIN:VCALENDAR', $result, 'Failed to assert ICS contains VCALENDAR.' );
+		$this->assertStringContainsString( 'BEGIN:VEVENT', $result, 'Failed to assert ICS contains VEVENT.' );
+		$this->assertStringContainsString( 'SUMMARY:', $result, 'Failed to assert ICS contains SUMMARY.' );
+		$this->assertStringContainsString(
+			'LOCATION:',
+			$result,
+			'Failed to assert ICS contains LOCATION field.'
+		);
+		$this->assertStringContainsString(
+			'123 Mai',
+			$result,
+			'Failed to assert ICS LOCATION contains full address.'
+		);
+		$this->assertStringContainsString(
+			'Test Ve',
+			$result,
+			'Failed to assert ICS LOCATION contains venue name.'
+		);
+		$this->assertStringContainsString( 'END:VEVENT', $result, 'Failed to assert ICS contains VEVENT end.' );
+		$this->assertStringContainsString( 'END:VCALENDAR', $result, 'Failed to assert ICS contains VCALENDAR end.' );
+	}
+
+	/**
+	 * Coverage for get_calendar_description method.
+	 *
+	 * @covers ::get_calendar_description
+	 *
+	 * @return void
+	 */
+	public function test_get_calendar_description(): void {
+		$event_id = $this->mock->post(
+			array(
+				'post_type'    => Event::POST_TYPE,
+				'post_title'   => 'Test Event',
+				'post_excerpt' => 'This is a test event description.',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+
+		$start = new DateTime( '2025-06-15 14:30:00' );
+		$end   = new DateTime( '2025-06-15 16:30:00' );
+
+		$start_formatted = $start->format( Event::DATETIME_FORMAT );
+		$end_formatted   = $end->format( Event::DATETIME_FORMAT );
+
+		$params = array(
+			'datetime_start' => $start_formatted,
+			'datetime_end'   => $end_formatted,
+			'timezone'       => 'America/New_York',
+		);
+
+		$event->save_datetimes( $params );
+
+		$result = $event->get_calendar_description();
+
+		// The method returns "For details go to {permalink}".
+		$this->assertNotEmpty( $result, 'Failed to assert calendar description is not empty.' );
+		$this->assertStringContainsString(
+			'For details',
+			$result,
+			'Failed to assert calendar description contains standard text.'
+		);
+
+		// Test with no excerpt.
+		$event_id = $this->mock->post(
+			array(
+				'post_type'  => Event::POST_TYPE,
+				'post_title' => 'Test Event No Excerpt',
+			)
+		)->get()->ID;
+
+		$event = new Event( $event_id );
+		$event->save_datetimes( $params );
+		$result = $event->get_calendar_description();
+
+		$this->assertNotEmpty( $result, 'Failed to assert calendar description is not empty even without excerpt.' );
+	}
+
+	/**
+	 * Coverage for __construct with non-event post type.
+	 *
+	 * @covers ::__construct
+	 *
+	 * @return void
+	 */
+	public function test_construct_with_non_event_post(): void {
+		$post_id = $this->mock->post( array( 'post_type' => 'post' ) )->get()->ID;
+		$event   = new Event( $post_id );
+
+		$this->assertNull( $event->event, 'Failed to assert event is null for non-event post.' );
+		$this->assertNull( $event->rsvp, 'Failed to assert rsvp is null for non-event post.' );
 	}
 }

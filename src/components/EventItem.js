@@ -27,100 +27,100 @@ import RsvpStatusResponse from './RsvpStatusResponse';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const EventItem = (props) => {
+const EventItem = ( props ) => {
 	const { type, event, eventOptions } = props;
-	const limitExcerpt = (excerpt) => {
+	const limitExcerpt = ( excerpt ) => {
 		return (
 			excerpt
-				.split(' ')
-				.splice(0, parseInt(eventOptions.descriptionLimit))
-				.join(' ') + '[…]'
+				.split( ' ' )
+				.splice( 0, parseInt( eventOptions.descriptionLimit ) )
+				.join( ' ' ) + '[…]'
 		);
 	};
 	const size =
-		eventOptions.imageSize === 'default'
+		'default' === eventOptions.imageSize
 			? 'featured_image'
 			: 'featured_image_' + eventOptions.imageSize;
-	const featuredImage = HtmlReactParser(event[size]);
+	const featuredImage = HtmlReactParser( event[ size ] );
 	const eventClass = `gatherpress-events-list`;
 	let icon = 'location';
 	const isOnlineEvent = event.venue?.is_online_event;
 
-	if (isOnlineEvent) {
+	if ( isOnlineEvent ) {
 		icon = 'video-alt2';
 	}
 
 	return (
-		<div className={`${eventClass}`}>
-			<div className={`${eventClass}__header`}>
-				<div className={`${eventClass}__info`}>
-					{eventOptions.showFeaturedImage && (
-						<figure className={`${eventClass}__image`}>
-							<a href={event.permalink}>{featuredImage}</a>
+		<div className={ `${ eventClass }` }>
+			<div className={ `${ eventClass }__header` }>
+				<div className={ `${ eventClass }__info` }>
+					{ eventOptions.showFeaturedImage && (
+						<figure className={ `${ eventClass }__image` }>
+							<a href={ event.permalink }>{ featuredImage }</a>
 						</figure>
-					)}
-					<div className={`${eventClass}__datetime`}>
-						<strong>{event.datetime_start}</strong>
+					) }
+					<div className={ `${ eventClass }__datetime` }>
+						<strong>{ event.datetime_start }</strong>
 					</div>
-					<div className={`${eventClass}__title`}>
-						<a href={event.permalink}>
-							{HtmlReactParser(event.title)}
+					<div className={ `${ eventClass }__title` }>
+						<a href={ event.permalink }>
+							{ HtmlReactParser( event.title ) }
 						</a>
 					</div>
-					{event.venue && eventOptions.showVenue && (
-						<div className={`${eventClass}__venue`}>
+					{ event.venue && eventOptions.showVenue && (
+						<div className={ `${ eventClass }__venue` }>
 							<span
-								className={`dashicons dashicons-${icon}`}
+								className={ `dashicons dashicons-${ icon }` }
 							></span>
-							{!isOnlineEvent && (
-								<a href={event.venue.permalink}>
-									{HtmlReactParser(event.venue.name)}
+							{ ! isOnlineEvent && (
+								<a href={ event.venue.permalink }>
+									{ HtmlReactParser( event.venue.name ) }
 								</a>
-							)}
-							{isOnlineEvent && (
-								<span>{HtmlReactParser(event.venue.name)}</span>
-							)}
+							) }
+							{ isOnlineEvent && (
+								<span>{ HtmlReactParser( event.venue.name ) }</span>
+							) }
 						</div>
-					)}
-					{eventOptions.showDescription && (
-						<div className={`${eventClass}__content`}>
-							<div className={`${eventClass}__excerpt`}>
-								{HtmlReactParser(limitExcerpt(event.excerpt))}
+					) }
+					{ eventOptions.showDescription && (
+						<div className={ `${ eventClass }__content` }>
+							<div className={ `${ eventClass }__excerpt` }>
+								{ HtmlReactParser( limitExcerpt( event.excerpt ) ) }
 							</div>
 						</div>
-					)}
+					) }
 				</div>
 			</div>
-			<div className={`${eventClass}__footer`}>
-				{eventOptions.showRsvpResponse && (
+			<div className={ `${ eventClass }__footer` }>
+				{ eventOptions.showRsvpResponse && (
 					<div className="gatherpress-rsvp-response__items">
 						<RsvpResponseAvatarOnly
-							postId={event.ID}
+							postId={ event.ID }
 							value="attending"
-							responses={event.responses}
+							responses={ event.responses }
 							limit="3"
 						/>
 					</div>
-				)}
-				{'upcoming' === type && eventOptions.showRsvp && (
+				) }
+				{ 'upcoming' === type && eventOptions.showRsvp && (
 					<Rsvp
-						postId={event.ID}
-						currentUser={event.current_user}
-						type={type}
+						postId={ event.ID }
+						currentUser={ event.current_user }
+						type={ type }
 						enableAnonymousRsvp={
 							event.gatherpress_enable_anonymous_rsvp
 						}
 					/>
-				)}
+				) }
 
-				{'past' === type &&
+				{ 'past' === type &&
 					eventOptions.showRsvp &&
 					'' !== event.current_user && (
-						<RsvpStatusResponse
-							type={type}
-							status={event.current_user?.status}
-						/>
-					)}
+					<RsvpStatusResponse
+						type={ type }
+						status={ event.current_user?.status }
+					/>
+				) }
 			</div>
 		</div>
 	);

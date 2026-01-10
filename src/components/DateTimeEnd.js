@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import moment from 'moment';
-
-/**
  * WordPress dependencies.
  */
 import {
@@ -23,6 +18,7 @@ import { useDispatch, useSelect } from '@wordpress/data';
  */
 import { hasEventPastNotice } from '../helpers/event';
 import {
+	createMomentWithTimezone,
 	dateTimeDatabaseFormat,
 	dateTimeLabelFormat,
 	getTimezone,
@@ -44,70 +40,69 @@ import { getSettings } from '@wordpress/date';
  */
 const DateTimeEnd = () => {
 	const { dateTimeEnd } = useSelect(
-		(select) => ({
-			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
-		}),
-		[]
+		( select ) => ( {
+			dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
+		} ),
+		[],
 	);
 	const { setDateTimeEnd, setDateTimeStart } = useDispatch(
-		'gatherpress/datetime'
+		'gatherpress/datetime',
 	);
 	const settings = getSettings();
 	const is12HourTime = /a(?!\\)/i.test(
 		settings.formats.time
 			.toLowerCase()
-			.replace(/\\\\/g, '')
-			.split('')
+			.replaceAll( '\\\\', '' )
+			.split( '' )
 			.reverse()
-			.join('')
+			.join( '' ),
 	);
 
-	useEffect(() => {
+	useEffect( () => {
 		setDateTimeEnd(
-			moment.tz(dateTimeEnd, getTimezone()).format(dateTimeDatabaseFormat)
+			createMomentWithTimezone( dateTimeEnd, getTimezone() ).format( dateTimeDatabaseFormat ),
 		);
 
 		hasEventPastNotice();
-	});
+	} );
 
 	return (
 		<PanelRow>
 			<Flex direction="column" gap="1">
 				<FlexItem>
-					<h3 style={{ marginBottom: 0 }}>
+					<h3 style={ { marginBottom: 0 } }>
 						<label htmlFor="gatherpress-datetime-end">
-							{__('Date & time end', 'gatherpress')}
+							{ __( 'Date & time end', 'gatherpress' ) }
 						</label>
 					</h3>
 				</FlexItem>
 				<FlexItem>
 					<Dropdown
-						popoverProps={{ placement: 'bottom-end' }}
-						renderToggle={({ isOpen, onToggle }) => (
+						popoverProps={ { placement: 'bottom-end' } }
+						renderToggle={ ( { isOpen, onToggle } ) => (
 							<Button
 								id="gatherpress-datetime-end"
-								onClick={onToggle}
-								aria-expanded={isOpen}
-								isLink
+								onClick={ onToggle }
+								aria-expanded={ isOpen }
+								variant="link"
 							>
-								{moment
-									.tz(dateTimeEnd, getTimezone())
-									.format(dateTimeLabelFormat())}
+								{ createMomentWithTimezone( dateTimeEnd, getTimezone() )
+									.format( dateTimeLabelFormat() ) }
 							</Button>
-						)}
-						renderContent={() => (
+						) }
+						renderContent={ () => (
 							<DateTimePicker
-								currentDate={dateTimeEnd}
-								onChange={(date) =>
+								currentDate={ dateTimeEnd }
+								onChange={ ( date ) =>
 									updateDateTimeEnd(
 										date,
 										setDateTimeEnd,
-										setDateTimeStart
+										setDateTimeStart,
 									)
 								}
-								is12Hour={is12HourTime}
+								is12Hour={ is12HourTime }
 							/>
-						)}
+						) }
 					/>
 				</FlexItem>
 			</Flex>

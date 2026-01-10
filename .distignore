@@ -2,6 +2,7 @@
 
 # Configuration and Build Files
 .babelrc
+.claude
 .deployignore
 .distignore
 .editorconfig
@@ -9,13 +10,16 @@
 .eslintignore
 .eslintrc
 .eslintrc.js
+.extract-wp-hooks.json
 .gitignore
 .gitlab-ci.yml
+.markdownlintignore
 .nvmrc
 .stylelintignore
 .stylelintrc.js
 .travis.yml
 .typos.toml
+CLAUDE.md
 CODE_OF_CONDUCT.md
 composer.json
 composer.lock
@@ -32,6 +36,7 @@ phpstan.neon.dist
 phpstan.stubs
 phpunit.xml
 phpunit.xml.dist
+phpunit-multisite.xml.dist
 playwright.config.js
 sonar-project.properties
 webpack.config.js
@@ -40,6 +45,7 @@ yarn.lock
 
 # Dot Files and Directories
 .gatherpress-org
+.wordpress-org
 .git
 .github
 .wordpress-version-checker.json
@@ -50,6 +56,7 @@ Thumbs.db
 node_modules
 vendor
 src
+docs
 
 # Miscellaneous and SQL Archives
 behat.yml

@@ -23,42 +23,42 @@ import { Listener } from '../helpers/broadcasting';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpResponseContent = ({ items, activeValue, limit = false }) => {
-	const postId = getFromGlobal('eventDetails.postId');
-	const [rsvpResponse, setRsvpResponse] = useState(
-		getFromGlobal('eventDetails.responses')
+const RsvpResponseContent = ( { items, activeValue, limit = false } ) => {
+	const postId = getFromGlobal( 'eventDetails.postId' );
+	const [ rsvpResponse, setRsvpResponse ] = useState(
+		getFromGlobal( 'eventDetails.responses' ),
 	);
 
-	Listener({ setRsvpResponse }, postId);
+	Listener( { setRsvpResponse }, postId );
 
-	const renderedItems = items.map((item, index) => {
+	const renderedItems = items.map( ( item, index ) => {
 		const { value } = item;
 		const active = value === activeValue;
 
-		if (active) {
+		if ( active ) {
 			return (
 				<div
-					key={index}
+					key={ index }
 					className="gatherpress-rsvp-response__items"
-					id={`gatherpress-rsvp-${value}`}
+					id={ `gatherpress-rsvp-${ value }` }
 					role="tabpanel"
-					aria-labelledby={`gatherpress-rsvp-${value}-tab`}
+					aria-labelledby={ `gatherpress-rsvp-${ value }-tab` }
 				>
 					<RsvpResponseCard
-						value={value}
-						limit={limit}
-						responses={rsvpResponse}
+						value={ value }
+						limit={ limit }
+						responses={ rsvpResponse }
 					/>
 				</div>
 			);
 		}
 
 		return '';
-	});
+	} );
 
 	return (
 		<div className="gatherpress-rsvp-response__content">
-			{renderedItems}
+			{ renderedItems }
 		</div>
 	);
 };

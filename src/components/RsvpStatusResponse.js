@@ -18,7 +18,7 @@ import { _x } from '@wordpress/i18n';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
+const RsvpStatusResponse = ( { type = 'upcoming', status = 'no_status' } ) => {
 	const responses = {
 		upcoming: {
 			attending: {
@@ -26,7 +26,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 				text: _x(
 					'Attending',
 					'RSVP status label for upcoming events',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 			waiting_list: {
@@ -34,7 +34,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 				text: _x(
 					'Waiting List',
 					'RSVP status label for upcoming events',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 			not_attending: {
@@ -42,7 +42,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 				text: _x(
 					'Not Attending',
 					'RSVP status label for upcoming events',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 			no_status: {
@@ -56,7 +56,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 				text: _x(
 					'Went',
 					'RSVP status label for past events',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 			waiting_list: {
@@ -64,7 +64,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 				text: _x(
 					"Didn't Go",
 					'RSVP status label for past events',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 			not_attending: {
@@ -72,7 +72,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 				text: _x(
 					"Didn't Go",
 					'RSVP status label for past events',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 			no_status: {
@@ -80,7 +80,7 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 				text: _x(
 					"Didn't Go",
 					'RSVP status label for past events',
-					'gatherpress'
+					'gatherpress',
 				),
 			},
 		},
@@ -88,8 +88,8 @@ const RsvpStatusResponse = ({ type = 'upcoming', status = 'no_status' }) => {
 
 	return (
 		<div className="gatherpress-status__response">
-			<span className={responses[type][status].icon}></span>
-			<strong>{responses[type][status].text}</strong>
+			<span className={ responses[ type ][ status ].icon }></span>
+			<strong>{ responses[ type ][ status ].text }</strong>
 		</div>
 	);
 };

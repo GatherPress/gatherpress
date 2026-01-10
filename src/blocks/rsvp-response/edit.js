@@ -26,6 +26,8 @@ import { useState, useEffect } from '@wordpress/element';
 import RsvpManager from './rsvp-manager';
 import TEMPLATE from './template';
 import { getFromGlobal } from '../../helpers/globals';
+import { hasValidEventId, isEventPostType, DISABLED_FIELD_OPACITY } from '../../helpers/event';
+import { getEditorDocument, isInFSETemplate } from '../../helpers/editor';
 
 /**
  * Fetch RSVP responses from the API.
@@ -33,9 +35,9 @@ import { getFromGlobal } from '../../helpers/globals';
  * @param {number} postId The post ID for which to fetch RSVP responses.
  * @return {Promise<Object>} The RSVP responses data.
  */
-async function fetchRsvpResponses(postId) {
-	const apiUrl = getFromGlobal('urls.eventApiUrl');
-	const response = await fetch(`${apiUrl}/rsvp-responses?post_id=${postId}`);
+async function fetchRsvpResponses( postId ) {
+	const apiUrl = getFromGlobal( 'urls.eventApiUrl' );
+	const response = await fetch( `${ apiUrl }/rsvp-responses?post_id=${ postId }` );
 
 	return response.json();
 }
@@ -55,158 +57,187 @@ async function fetchRsvpResponses(postId) {
  *
  * @return {JSX.Element} The rendered edit interface for the block.
  */
-const Edit = ({ attributes, setAttributes, context }) => {
-	const blockProps = useBlockProps();
-	const [editMode, setEditMode] = useState(false);
-	const [showEmptyRsvpBlock, setShowEmptyRsvpBlock] = useState(false);
-	const [defaultStatus, setDefaultStatus] = useState('attending');
-	const [responses, setResponses] = useState(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
-	const postId = attributes?.postId ?? context?.postId ?? null;
+const Edit = ( { attributes, setAttributes, context } ) => {
+	const [ editMode, setEditMode ] = useState( false );
+	const [ showEmptyRsvpBlock, setShowEmptyRsvpBlock ] = useState( false );
+	const [ defaultStatus, setDefaultStatus ] = useState( 'attending' );
+	const [ responses, setResponses ] = useState( null );
+	const [ loading, setLoading ] = useState( true );
+	const [ error, setError ] = useState( null );
+	// Normalize empty strings to null so fallback to context.postId works correctly.
+	const postId = ( attributes?.postId || null ) ?? context?.postId ?? null;
 	const { rsvpLimitEnabled, rsvpLimit } = attributes;
 
-	useEffect(() => {
-		const emptyBlocks = global.document.querySelectorAll(
-			'.gatherpress--empty-rsvp'
-		);
-		const responseBlocks = global.document.querySelectorAll(
-			'.gatherpress--rsvp-responses'
-		);
+	// Check if block has a valid event connection.
+	const isValidEvent = hasValidEventId( postId );
 
-		emptyBlocks.forEach((block) => {
-			block.style.setProperty(
-				'display',
-				showEmptyRsvpBlock ? 'block' : 'none',
-				'important'
+	const blockProps = useBlockProps( {
+		style: {
+			opacity: ( isInFSETemplate() || isValidEvent ) ? 1 : DISABLED_FIELD_OPACITY,
+		},
+	} );
+
+	useEffect( () => {
+		const editorDoc = getEditorDocument();
+
+		const updateBlockVisibility = () => {
+			const emptyBlocks = editorDoc.querySelectorAll(
+				'.gatherpress-rsvp-response--no-responses',
 			);
-		});
+			const responseBlocks = editorDoc.querySelectorAll(
+				'.gatherpress--rsvp-responses',
+			);
 
-		responseBlocks.forEach((block) => {
-			if (!showEmptyRsvpBlock) {
-				block.style.removeProperty('display');
-			} else {
-				block.style.setProperty('display', 'none', 'important');
-			}
-		});
-	}, [showEmptyRsvpBlock, responses]);
+			emptyBlocks.forEach( ( block ) => {
+				block.style.setProperty(
+					'display',
+					showEmptyRsvpBlock ? 'block' : 'none',
+					'important',
+				);
+			} );
+			responseBlocks.forEach( ( block ) => {
+				if ( showEmptyRsvpBlock ) {
+					block.style.setProperty( 'display', 'none', 'important' );
+				} else {
+					block.style.removeProperty( 'display' );
+				}
+			} );
+		};
+
+		// Watch for DOM changes.
+		const observer = new MutationObserver( updateBlockVisibility );
+
+		observer.observe( editorDoc.body, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: [ 'class' ],
+		} );
+
+		// Initial call.
+		updateBlockVisibility();
+
+		return () => observer.disconnect();
+	}, [ showEmptyRsvpBlock, responses ] );
 
 	// Fetch responses when postId changes.
-	useEffect(() => {
-		if (!postId) {
-			setResponses(null);
-			setLoading(false);
+	useEffect( () => {
+		if ( ! postId ) {
+			setResponses( null );
+			setLoading( false );
 			return;
 		}
 
-		setLoading(true);
-		setError(null);
+		setLoading( true );
+		setError( null );
 
-		fetchRsvpResponses(postId)
-			.then((response) => {
-				setResponses(response.data);
-				setLoading(false);
-			})
-			.catch((err) => {
-				setError(err.message);
-				setLoading(false);
-			});
-	}, [postId]);
+		fetchRsvpResponses( postId )
+			.then( ( response ) => {
+				setResponses( response.data );
+				setLoading( false );
+			} )
+			.catch( ( err ) => {
+				setError( err.message );
+				setLoading( false );
+			} );
+	}, [ postId ] );
 
-	const onEditClick = (e) => {
+	const onEditClick = ( e ) => {
 		e.preventDefault();
-		setEditMode(!editMode);
+		setEditMode( ! editMode );
 	};
 
-	if (loading) {
+	if ( loading ) {
 		return (
-			<div {...blockProps}>
+			<div { ...blockProps }>
 				<Spinner />
 			</div>
 		);
 	}
 
-	if (error) {
+	if ( error ) {
 		return (
-			<div {...blockProps}>
-				<p>{__('Failed to load RSVP responses.', 'gatherpress')}</p>
+			<div { ...blockProps }>
+				<p>{ __( 'Failed to load RSVP responses.', 'gatherpress' ) }</p>
 			</div>
 		);
 	}
 
 	return (
-		<div {...blockProps}>
+		<div { ...blockProps }>
 			<BlockContextProvider
-				value={{
+				value={ {
 					'gatherpress/rsvpResponses': responses,
 					'gatherpress/rsvpLimitEnabled': rsvpLimitEnabled,
 					'gatherpress/rsvpLimit': rsvpLimit,
 					postId,
-				}}
+				} }
 			>
 				<InspectorControls>
 					<PanelBody>
 						<ToggleControl
-							label={__('Show Empty RSVP Block', 'gatherpress')}
-							checked={showEmptyRsvpBlock}
-							onChange={(value) => setShowEmptyRsvpBlock(value)}
-							help={__(
+							label={ __( 'Show Empty RSVP Block', 'gatherpress' ) }
+							checked={ showEmptyRsvpBlock }
+							onChange={ ( value ) => setShowEmptyRsvpBlock( value ) }
+							help={ __(
 								'Toggle to show or hide the Empty RSVP block.',
-								'gatherpress'
-							)}
+								'gatherpress',
+							) }
 						/>
 						<ToggleControl
-							label={__('Limit RSVP Display', 'gatherpress')}
-							checked={rsvpLimitEnabled}
-							onChange={() =>
-								setAttributes({
-									rsvpLimitEnabled: !rsvpLimitEnabled,
-								})
+							label={ __( 'Limit RSVP Display', 'gatherpress' ) }
+							checked={ rsvpLimitEnabled }
+							onChange={ () =>
+								setAttributes( {
+									rsvpLimitEnabled: ! rsvpLimitEnabled,
+								} )
 							}
-							help={__(
+							help={ __(
 								'Enable to limit the number of RSVPs displayed in this block.',
-								'gatherpress'
-							)}
+								'gatherpress',
+							) }
 						/>
-						{rsvpLimitEnabled && (
+						{ rsvpLimitEnabled && (
 							<NumberControl
-								label={__('RSVP Display Limit', 'gatherpress')}
-								value={rsvpLimit}
-								onChange={(value) =>
-									setAttributes({
-										rsvpLimit: parseInt(value, 10) || 8,
-									})
+								label={ __( 'RSVP Display Limit', 'gatherpress' ) }
+								value={ rsvpLimit }
+								onChange={ ( value ) =>
+									setAttributes( {
+										rsvpLimit: parseInt( value, 10 ) || 8,
+									} )
 								}
-								min={1}
-								max={100}
-								help={__(
+								min={ 1 }
+								max={ 100 }
+								help={ __(
 									'Set the maximum number of RSVPs to display. Default is 8.',
-									'gatherpress'
-								)}
+									'gatherpress',
+								) }
 							/>
-						)}
+						) }
 					</PanelBody>
 				</InspectorControls>
-				<BlockControls>
-					<ToolbarGroup>
-						<ToolbarButton
-							label={__('Edit', 'gatherpress')}
-							text={
-								editMode
-									? __('Preview', 'gatherpress')
-									: __('Edit', 'gatherpress')
-							}
-							onClick={onEditClick}
-						/>
-					</ToolbarGroup>
-				</BlockControls>
-				{editMode && (
+				{ isEventPostType() && (
+					<BlockControls>
+						<ToolbarGroup>
+							<ToolbarButton
+								label={ __( 'Edit', 'gatherpress' ) }
+								text={
+									editMode
+										? __( 'Preview', 'gatherpress' )
+										: __( 'Edit', 'gatherpress' )
+								}
+								onClick={ onEditClick }
+							/>
+						</ToolbarGroup>
+					</BlockControls>
+				) }
+				{ editMode && (
 					<RsvpManager
-						defaultStatus={defaultStatus}
-						setDefaultStatus={setDefaultStatus}
+						defaultStatus={ defaultStatus }
+						setDefaultStatus={ setDefaultStatus }
 					/>
-				)}
-				{!editMode && <InnerBlocks template={TEMPLATE} />}
+				) }
+				{ ! editMode && <InnerBlocks template={ TEMPLATE } /> }
 			</BlockContextProvider>
 		</div>
 	);

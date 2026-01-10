@@ -8,81 +8,80 @@ import { store, getContext, getElement } from '@wordpress/interactivity';
  */
 import { getFromGlobal, safeHTML } from '../../helpers/globals';
 
-const { state } = store('gatherpress', {
+const { state } = store( 'gatherpress', {
 	callbacks: {
 		renderBlocks() {
 			const context = getContext();
 			const element = getElement();
 			const rsvpResponseElement = element.ref.closest(
-				'.wp-block-gatherpress-rsvp-response'
+				'.wp-block-gatherpress-rsvp-response',
 			);
-			fetch(getFromGlobal('urls.eventApiUrl') + '/rsvp-status-html', {
+			fetch( getFromGlobal( 'urls.eventApiUrl' ) + '/rsvp-status-html', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-WP-Nonce': getFromGlobal('misc.nonce'),
 				},
-				body: JSON.stringify({
+				body: JSON.stringify( {
 					status:
-						state.posts[context.postId]?.rsvpSelection ||
+						state.posts[ context.postId ]?.rsvpSelection ||
 						'attending',
 					post_id: context.postId,
 					block_data: element.ref.textContent,
 					limit_enabled:
-						rsvpResponseElement.dataset.limitEnabled === '1',
-					limit: parseInt(rsvpResponseElement.dataset.limit, 10),
-				}),
-			})
-				.then((response) => response.json()) // Parse the JSON response.
-				.then((res) => {
-					if (res.success) {
+						'1' === rsvpResponseElement.dataset.limitEnabled,
+					limit: parseInt( rsvpResponseElement.dataset.limit, 10 ),
+				} ),
+			} )
+				.then( ( response ) => response.json() ) // Parse the JSON response.
+				.then( ( res ) => {
+					if ( res.success ) {
 						const parent = element.ref.parentElement;
 
-						Array.from(parent.children).forEach((sibling) => {
+						Array.from( parent.children ).forEach( ( sibling ) => {
 							if (
 								sibling !== element.ref &&
-								sibling.hasAttribute('data-id')
+								'id' in sibling.dataset
 							) {
 								sibling.remove();
 							}
-						});
+						} );
 
 						const grandParent = parent.parentElement;
 						const emptyRsvpMessageElement =
 							grandParent.querySelector(
-								'.gatherpress--empty-rsvp'
+								'.gatherpress-rsvp-response--no-responses',
 							);
 
-						if (emptyRsvpMessageElement) {
+						if ( emptyRsvpMessageElement ) {
 							if (
-								['attending', 'no_status'].includes(
-									state.posts[context.postId]?.rsvpSelection
+								[ 'attending', 'no_status' ].includes(
+									state.posts[ context.postId ]?.rsvpSelection,
 								) &&
 								0 === res.responses.attending.count
 							) {
 								emptyRsvpMessageElement.classList.add(
-									'gatherpress--is-visible'
+									'gatherpress--is-visible',
 								);
 								emptyRsvpMessageElement.classList.remove(
-									'gatherpress--is-not-visible'
+									'gatherpress--is-hidden',
 								);
 							} else {
 								emptyRsvpMessageElement.classList.add(
-									'gatherpress--is-not-visible'
+									'gatherpress--is-hidden',
 								);
 								emptyRsvpMessageElement.classList.remove(
-									'gatherpress--is-visible'
+									'gatherpress--is-visible',
 								);
 							}
 						}
 
 						element.ref.insertAdjacentHTML(
 							'beforebegin',
-							safeHTML(res.content)
+							safeHTML( res.content ),
 						);
 					}
-				})
-				.catch(() => {});
+				} )
+				.catch( () => {} );
 		},
 	},
-});
+} );

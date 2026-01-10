@@ -12,6 +12,59 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Disable shallow clone for SonarCloud analysis
+          fetch-tags: true  # Explicitly fetch all tags
+
+      - name: Ensure full git history for SonarCloud
+        run: |
+          # Configure git to never use shallow clones
+          git config --global fetch.unshallow true
+          # Check if currently shallow
+          IS_SHALLOW=$(git rev-parse --is-shallow-repository)
+          echo "Initially shallow: $IS_SHALLOW"
+
+          if [ "$IS_SHALLOW" = "true" ]; then
+            echo "Removing shallow clone indicators..."
+            # Remove shallow file and grafts
+            rm -f .git/shallow .git/info/grafts
+            # Update git config
+            git config --local core.repositoryformatversion 0
+          fi
+
+          # Fetch complete history with all refs
+          echo "Fetching full history..."
+          git fetch --prune --unshallow 2>/dev/null || echo "Already unshallowed"
+          git fetch --all --tags --prune --force
+          git fetch origin +refs/heads/*:refs/remotes/origin/* --force
+
+          # Force git to recognize full history
+          git reflog expire --expire=now --all
+          git gc --prune=now
+
+          # Repair git worktree to ensure proper state detection
+          git worktree repair 2>/dev/null || echo "Worktree repair not needed"
+
+          # Ensure proper HEAD configuration for SonarCloud
+          git symbolic-ref HEAD refs/heads/${GITHUB_REF##*/} 2>/dev/null || echo "HEAD already configured"
+
+          # Final verification
+          IS_SHALLOW=$(git rev-parse --is-shallow-repository)
+          echo "After processing - Is shallow: $IS_SHALLOW"
+          if [ "$IS_SHALLOW" = "true" ]; then
+            echo "ERROR: Repository is still shallow after all attempts!"
+            exit 1
+          fi
+
+          # Show repository stats
+          echo "=== Repository Statistics ==="
+          echo "Total commits: $(git rev-list --all --count)"
+          echo "Total branches: $(git branch -a | wc -l)"
+          echo "Total tags: $(git tag | wc -l)"
+          echo "Git directory size: $(du -sh .git | cut -f1)"
+          echo "HEAD: $(git symbolic-ref HEAD 2>/dev/null || echo 'detached')"
+          echo "Recent commits:"
+          git log --oneline -n 5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -48,6 +101,7 @@ jobs:
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         with:
           path: |
             ./node_modules
@@ -64,17 +118,26 @@ jobs:
       - name: Running Tests
         run: |
           php --version
-          npm i -g @wordpress/env
+          npm install
+          npm run build
           npm run test:unit:php
+          npm run test:unit:php:multisite
           npm run test:unit:js
           docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage.xml coverage.xml
+          docker cp $(docker ps -aqf "name=tests-wordpress"):/var/www/html/coverage-multisite.xml coverage-multisite.xml
         if: ${{ success() || failure() }}
 
       - name: Fix Code Coverage Paths
-        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+        run: |
+          sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
+          sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage-multisite.xml
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GIT_DEPTH: 0
+        with:
+          args: >
+            -Dsonar.scm.revision=${{ github.sha }}

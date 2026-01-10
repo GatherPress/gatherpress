@@ -93,6 +93,7 @@ jobs:
       # Creating a short lived node_modules cache
       - uses: actions/cache/save@v4
         if: steps.node_modules-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         with:
           path: |
             ./node_modules
@@ -122,6 +123,8 @@ jobs:
       - name: Add Preview Links comment
         id: comment-on-pr
         uses: actions/github-script@v7
+        env:
+          PHP_VERSIONS: '["8.4","8.2","7.4"]'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

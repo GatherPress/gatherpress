@@ -2,28 +2,33 @@
  * WordPress dependencies.
  */
 import { registerBlockType } from '@wordpress/blocks';
+import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
 
 /**
  * Internal dependencies.
  */
 import edit from './edit';
 import metadata from './block.json';
-import './style.scss';
 
 /**
- * Register the GatherPress Add to Calendar block.
+ * Edit component for the GatherPress Add to Calendar block.
  *
- * This code registers the GatherPress Add to Calendar block in the WordPress block editor.
- * It utilizes the block metadata from the 'block.json' file and associates it with the
- * edit component for rendering in the editor. The 'save' function is set to null as
- * the block doesn't have a front-end representation and is only used in the editor.
+ * This component renders the edit view of the GatherPress Add to Calendar block.
+ * The block allows users to add events to their personal calendars from the frontend.
+ * It supports customization of display text and calendar options, and integrates
+ * with event metadata provided by GatherPress.
  *
  * @since 1.0.0
  *
- * @return {void}
+ * @return {JSX.Element} The rendered React component for editing the block.
  */
-
-registerBlockType(metadata, {
+registerBlockType( metadata, {
 	edit,
-	save: () => null,
-});
+	save: () => {
+		return (
+			<div { ...useBlockProps.save() }>
+				<InnerBlocks.Content />
+			</div>
+		);
+	},
+} );

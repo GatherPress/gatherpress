@@ -10,17 +10,17 @@
  * @param {string} args - Dot-separated path to the desired property in the GatherPress global object.
  * @return {*} The value at the specified path in the GatherPress global object or undefined if not found.
  */
-export function getFromGlobal(args) {
+export function getFromGlobal( args ) {
 	// eslint-disable-next-line no-undef
-	if ('object' !== typeof GatherPress) {
+	if ( 'object' !== typeof GatherPress ) {
 		return undefined;
 	}
 
-	return args.split('.').reduce(
+	return args.split( '.' ).reduce(
 		// eslint-disable-next-line no-undef
-		(GatherPress, level) => GatherPress && GatherPress[level],
+		( GatherPress, level ) => GatherPress?.[ level ],
 		// eslint-disable-next-line no-undef
-		GatherPress
+		GatherPress,
 	);
 }
 
@@ -37,16 +37,16 @@ export function getFromGlobal(args) {
  *
  * @return {void}
  */
-export function setToGlobal(args, value) {
+export function setToGlobal( args, value ) {
 	// eslint-disable-next-line no-undef
-	if ('object' !== typeof GatherPress) {
+	if ( 'object' !== typeof GatherPress ) {
 		return;
 	}
-	const properties = args.split('.');
+	const properties = args.split( '.' );
 	const last = properties.pop();
 
 	// eslint-disable-next-line no-undef
-	properties.reduce((all, item) => (all[item] ??= {}), GatherPress)[last] =
+	properties.reduce( ( all, item ) => ( all[ item ] ??= {} ), GatherPress )[ last ] =
 		value;
 }
 
@@ -63,24 +63,22 @@ export function setToGlobal(args, value) {
  *
  * @return {string} The sanitized HTML string.
  */
-export function safeHTML(html) {
-	const { body } = document.implementation.createHTMLDocument('');
+export function safeHTML( html ) {
+	const { body } = document.implementation.createHTMLDocument( '' );
 	body.innerHTML = html;
-	const elements = body.getElementsByTagName('*');
+	const elements = body.getElementsByTagName( '*' );
 	let elementIndex = elements.length;
 
-	while (elementIndex--) {
-		const element = elements[elementIndex];
-		if ('SCRIPT' === element.tagName) {
-			if (element.parentNode) {
-				element.parentNode.removeChild(element);
-			}
+	while ( elementIndex-- ) {
+		const element = elements[ elementIndex ];
+		if ( 'SCRIPT' === element.tagName ) {
+			element.remove();
 		} else {
 			let attributeIndex = element.attributes.length;
-			while (attributeIndex--) {
-				const { name: key } = element.attributes[attributeIndex];
-				if (key.startsWith('on')) {
-					element.removeAttribute(key);
+			while ( attributeIndex-- ) {
+				const { name: key } = element.attributes[ attributeIndex ];
+				if ( key.startsWith( 'on' ) ) {
+					element.removeAttribute( key );
 				}
 			}
 		}
@@ -95,6 +93,8 @@ export function safeHTML(html) {
  * This function transforms a string in snake_case format into camelCase format by
  * removing underscores and capitalizing the first letter of each subsequent word.
  *
+ * @since 1.0.0
+ *
  * @param {string} snakeCaseString The snake_case string to be converted.
  * @return {string} The converted string in camelCase format.
  *
@@ -103,12 +103,26 @@ export function safeHTML(html) {
  * const camelCaseString = toCamelCase("not_attending");
  * console.log(camelCaseString); // Outputs: "notAttending"
  */
-export function toCamelCase(snakeCaseString) {
+export function toCamelCase( snakeCaseString ) {
 	// First replace consecutive underscores with a single one.
-	const normalized = snakeCaseString.replace(/__+/g, '_');
+	const normalized = snakeCaseString.replaceAll( /__+/g, '_' );
 
 	// Then do the camelCase conversion with a simpler regex.
-	return normalized.replace(/_([a-zA-Z])/g, (_, letter) =>
-		letter.toUpperCase()
+	return normalized.replaceAll( /_([a-zA-Z])/g, ( _, letter ) =>
+		letter.toUpperCase(),
 	);
+}
+
+/**
+ * Get a URL parameter value by name.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} name The parameter name to retrieve.
+ * @return {string|null} The parameter value or null if not found.
+ */
+export function getUrlParam( name ) {
+	const urlParams = new URLSearchParams( location.search );
+
+	return urlParams.get( name );
 }

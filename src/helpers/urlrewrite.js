@@ -21,19 +21,19 @@ import UrlRewritePreview from '../components/UrlRewritePreview';
 export function urlRewritePreview() {
 	// Select all elements with the attribute 'data-gatherpress_component_name' set to 'urlrewrite-preview'.
 	const urlRewritePreviewContainers = document.querySelectorAll(
-		`[data-gatherpress_component_name="urlrewrite-preview"]`
+		`[data-gatherpress_component_name="urlrewrite-preview"]`,
 	);
 
 	// Iterate through each matched element and initialize UrlRewritePreview component.
-	for (let i = 0; i < urlRewritePreviewContainers.length; i++) {
+	for ( const container of urlRewritePreviewContainers ) {
 		// Parse attributes from the 'data-gatherpress_component_attrs' attribute.
 		const attrs = JSON.parse(
-			urlRewritePreviewContainers[i].dataset.gatherpress_component_attrs
+			container.dataset.gatherpress_component_attrs,
 		);
 
 		// Create a root element and render the UrlRewritePreview component with the parsed attributes.
-		createRoot(urlRewritePreviewContainers[i]).render(
-			<UrlRewritePreview attrs={attrs} />
+		createRoot( container ).render(
+			<UrlRewritePreview attrs={ attrs } />,
 		);
 	}
 }

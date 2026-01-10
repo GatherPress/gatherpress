@@ -13,6 +13,11 @@
 			<directory prefix="class-test-" suffix=".php">./test/unit/php/</directory>
 		</testsuite>
 	</testsuites>
+	<groups>
+		<exclude>
+			<group>multisite</group>
+		</exclude>
+	</groups>
 	<coverage>
 		<include>
 			<directory suffix=".php">./includes/core/classes</directory>

@@ -15,10 +15,9 @@ function createBlueprintUrl(context, number) {
 	const { repo, owner } = context;
 	const workflow = encodeURI('Playground Preview');  // Encode the workflow name
 	const artifact = 'gatherpress-pr'; // GitHub Actions artifact name
-	// const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
-	const proxy = 'https://hub.carsten-bach.de/gatherpress/plugin-proxy.php'; // RESTORED TO TEST // SHOULD BE REMOVED BEFORE #750 GETS MERGED //
+	const proxy = 'https://gatherpress.org/playground-preview/plugin-proxy.php';
 
-	return `${proxy}/?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
+	return `${proxy}?org=${owner}&repo=${repo}&workflow=${workflow}&artifact=${artifact}&pr=${number}`;
 }
 
 /**
@@ -121,7 +120,7 @@ function createBlueprint(context, number, zipArtifactUrl, phpVersion) {
 				step: 'importWxr',
 				file: {
 					resource: 'url',
-					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.32.0.xml'
+					url: 'https://raw.githubusercontent.com/GatherPress/gatherpress-demo-data/main/GatherPress-demo-data-0.33.0.xml'
 				}
 			},
 			/**
@@ -176,7 +175,7 @@ async function createPreviewLinksComment(github, context) {
 	const prText         = `for PR#${prNumber}`;  // Descriptive text for the PR
 
 	// Retrieve PHP versions from environment variable (JSON string)
-	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.3","7.4"]';  // Default to common versions if not set
+	const phpVersionsEnv = process.env.PHP_VERSIONS || '["8.4","8.2","7.4"]';  // Default to common versions if not set
 	const phpVersions    = JSON.parse( phpVersionsEnv );  // Parse the JSON string into an array
 
 	// Generate preview links for each PHP version

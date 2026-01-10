@@ -2,12 +2,12 @@
 	display: block !important;
 }
 
-.gatherpress--is-not-visible {
+.gatherpress--is-hidden {
 	display: none !important;
 }
 
-.gatherpress--open-modal,
-.gatherpress--close-modal {
+.gatherpress-modal--trigger-open,
+.gatherpress-modal--trigger-close {
 	cursor: pointer;
 }
 
@@ -15,4 +15,19 @@
 	pointer-events: none;
 	cursor: not-allowed;
 	text-decoration: none;
+}
+
+.gatherpress--is-loading {
+	animation: gatherpress-pulse 1.5s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes gatherpress-pulse {
+	0%, 100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.4;
+	}
 }

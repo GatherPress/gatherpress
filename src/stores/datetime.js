@@ -14,41 +14,41 @@ import {
 } from '../helpers/datetime';
 
 const DEFAULT_STATE = {
-	dateTimeStart: getFromGlobal('eventDetails.dateTime.datetime_start')
-		? getFromGlobal('eventDetails.dateTime.datetime_start')
+	dateTimeStart: getFromGlobal( 'eventDetails.dateTime.datetime_start' )
+		? getFromGlobal( 'eventDetails.dateTime.datetime_start' )
 		: defaultDateTimeStart,
-	dateTimeEnd: getFromGlobal('eventDetails.dateTime.datetime_end')
-		? getFromGlobal('eventDetails.dateTime.datetime_end')
+	dateTimeEnd: getFromGlobal( 'eventDetails.dateTime.datetime_end' )
+		? getFromGlobal( 'eventDetails.dateTime.datetime_end' )
 		: defaultDateTimeEnd,
-	duration: getDateTimeOffset(),
-	timezone: getFromGlobal('eventDetails.dateTime.timezone'),
+	duration: null,
+	timezone: getFromGlobal( 'eventDetails.dateTime.timezone' ),
 };
 
 const actions = {
-	setDateTimeStart(dateTimeStart) {
-		setToGlobal('eventDetails.dateTime.datetime_start', dateTimeStart);
+	setDateTimeStart( dateTimeStart ) {
+		setToGlobal( 'eventDetails.dateTime.datetime_start', dateTimeStart );
 
 		return {
 			type: 'SET_DATETIME_START',
 			dateTimeStart,
 		};
 	},
-	setDateTimeEnd(dateTimeEnd) {
-		setToGlobal('eventDetails.dateTime.datetime_end', dateTimeEnd);
+	setDateTimeEnd( dateTimeEnd ) {
+		setToGlobal( 'eventDetails.dateTime.datetime_end', dateTimeEnd );
 
 		return {
 			type: 'SET_DATETIME_END',
 			dateTimeEnd,
 		};
 	},
-	setDuration(duration) {
+	setDuration( duration ) {
 		return {
 			type: 'SET_DURATION',
 			duration,
 		};
 	},
-	setTimezone(timezone) {
-		setToGlobal('eventDetails.dateTime.timezone', timezone);
+	setTimezone( timezone ) {
+		setToGlobal( 'eventDetails.dateTime.timezone', timezone );
 
 		return {
 			type: 'SET_TIMEZONE',
@@ -57,8 +57,8 @@ const actions = {
 	},
 };
 
-const reducer = (state = DEFAULT_STATE, action) => {
-	switch (action.type) {
+const reducer = ( state = DEFAULT_STATE, action ) => {
+	switch ( action.type ) {
 		case 'SET_DATETIME_START':
 			return { ...state, dateTimeStart: action.dateTimeStart };
 		case 'SET_DATETIME_END':
@@ -72,15 +72,16 @@ const reducer = (state = DEFAULT_STATE, action) => {
 	}
 };
 
-const store = createReduxStore('gatherpress/datetime', {
+const store = createReduxStore( 'gatherpress/datetime', {
 	reducer,
 	actions,
 	selectors: {
-		getDateTimeStart: (state) => state.dateTimeStart,
-		getDateTimeEnd: (state) => state.dateTimeEnd,
-		getDuration: (state) => state.duration,
-		getTimezone: (state) => state.timezone,
+		getDateTimeStart: ( state ) => state.dateTimeStart,
+		getDateTimeEnd: ( state ) => state.dateTimeEnd,
+		getDuration: ( state ) =>
+			false === state.duration ? false : getDateTimeOffset(),
+		getTimezone: ( state ) => state.timezone,
 	},
-});
+} );
 
-register(store);
+register( store );

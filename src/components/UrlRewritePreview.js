@@ -24,27 +24,27 @@ import { getFromGlobal } from '../helpers/globals';
  *
  * @return {JSX.Element} The rendered React component.
  */
-const UrlRewritePreview = (props) => {
+const UrlRewritePreview = ( props ) => {
 	const { name, value, suffix } = props.attrs;
-	const [rewrittenUrlPart, setRewrittenUrlPart] = useState(value);
+	const [ rewrittenUrlPart, setRewrittenUrlPart ] = useState( value );
 
-	const input = document.querySelector(`[name="${name}"]`);
+	const input = document.querySelector( `[name="${ name }"]` );
 
-	const homeUrl = getFromGlobal('urls.homeUrl');
+	const homeUrl = getFromGlobal( 'urls.homeUrl' );
 
 	input.addEventListener(
 		'input',
-		(e) => {
-			setRewrittenUrlPart(e.target.value);
+		( e ) => {
+			setRewrittenUrlPart( e.target.value );
 		},
-		{ once: true }
+		{ once: true },
 	);
 
 	return (
 		<>
-			{homeUrl + '/'}
-			<strong>{rewrittenUrlPart}</strong>
-			{'/' + suffix}
+			{ homeUrl + '/' }
+			<strong>{ rewrittenUrlPart }</strong>
+			{ '/' + suffix }
 		</>
 	);
 };

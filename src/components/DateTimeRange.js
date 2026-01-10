@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import moment from 'moment';
-
-/**
  * WordPress dependencies.
  */
 import { useDispatch, useSelect } from '@wordpress/data';
@@ -12,7 +7,10 @@ import { useEffect } from '@wordpress/element';
 /**
  * Internal dependencies.
  */
-import { dateTimeDatabaseFormat } from '../helpers/datetime';
+import {
+	dateTimeDatabaseFormat,
+	createMomentWithTimezone,
+} from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
 import Timezone from './Timezone';
@@ -36,46 +34,44 @@ import Duration from '../components/Duration';
  * @return {JSX.Element} The rendered DateTimeRange React component.
  */
 const DateTimeRange = () => {
-	const editPost = useDispatch('core/editor').editPost;
+	const editPost = useDispatch( 'core/editor' ).editPost;
 	let dateTimeMetaData = useSelect(
-		(select) =>
-			select('core/editor').getEditedPostAttribute('meta')
-				?.gatherpress_datetime
+		( select ) =>
+			select( 'core/editor' ).getEditedPostAttribute( 'meta' )
+				?.gatherpress_datetime,
 	);
 
 	try {
-		dateTimeMetaData = dateTimeMetaData ? JSON.parse(dateTimeMetaData) : {};
-	} catch (e) {
+		dateTimeMetaData = dateTimeMetaData ? JSON.parse( dateTimeMetaData ) : {};
+	} catch ( e ) {
+		// eslint-disable-next-line no-console
+		console.error( 'Failed to parse gatherpress_datetime meta:', e );
 		dateTimeMetaData = {};
 	}
 
 	const { dateTimeStart, dateTimeEnd, duration, timezone } = useSelect(
-		(select) => ({
-			dateTimeStart: select('gatherpress/datetime').getDateTimeStart(),
-			dateTimeEnd: select('gatherpress/datetime').getDateTimeEnd(),
-			duration: select('gatherpress/datetime').getDuration(),
-			timezone: select('gatherpress/datetime').getTimezone(),
-		}),
-		[]
+		( select ) => ( {
+			dateTimeStart: select( 'gatherpress/datetime' ).getDateTimeStart(),
+			dateTimeEnd: select( 'gatherpress/datetime' ).getDateTimeEnd(),
+			duration: select( 'gatherpress/datetime' ).getDuration(),
+			timezone: select( 'gatherpress/datetime' ).getTimezone(),
+		} ),
+		[],
 	);
-	const { setDuration } = useDispatch('gatherpress/datetime');
+	const { setDuration } = useDispatch( 'gatherpress/datetime' );
 
-	useEffect(() => {
-		const payload = JSON.stringify({
+	useEffect( () => {
+		const payload = JSON.stringify( {
 			...dateTimeMetaData,
-			...{
-				dateTimeStart: moment
-					.tz(dateTimeStart, timezone)
-					.format(dateTimeDatabaseFormat),
-				dateTimeEnd: moment
-					.tz(dateTimeEnd, timezone)
-					.format(dateTimeDatabaseFormat),
-				timezone,
-			},
-		});
+			dateTimeStart: createMomentWithTimezone( dateTimeStart, timezone )
+				.format( dateTimeDatabaseFormat ),
+			dateTimeEnd: createMomentWithTimezone( dateTimeEnd, timezone )
+				.format( dateTimeDatabaseFormat ),
+			timezone,
+		} );
 		const meta = { gatherpress_datetime: payload };
 
-		editPost({ meta });
+		editPost( { meta } );
 	}, [
 		dateTimeStart,
 		dateTimeEnd,
@@ -84,14 +80,14 @@ const DateTimeRange = () => {
 		editPost,
 		setDuration,
 		duration,
-	]);
+	] );
 
 	return (
 		<>
 			<section>
 				<DateTimeStart />
 			</section>
-			<section>{duration ? <Duration /> : <DateTimeEnd />}</section>
+			<section>{ duration ? <Duration /> : <DateTimeEnd /> }</section>
 			<section>
 				<Timezone />
 			</section>

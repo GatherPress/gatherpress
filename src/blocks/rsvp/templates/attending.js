@@ -23,7 +23,7 @@ const ATTENDING = [
 						name: _x(
 							'Call to Action',
 							'Block name displayed in the editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
@@ -34,15 +34,15 @@ const ATTENDING = [
 							text: _x(
 								'Edit RSVP',
 								'Button label for editing RSVP',
-								'gatherpress'
+								'gatherpress',
 							),
 							tagName: 'button',
-							className: 'gatherpress--open-modal',
+							className: 'gatherpress-modal--trigger-open',
 							metadata: {
 								name: _x(
 									'RSVP Button',
 									'Block name displayed in the editor',
-									'gatherpress'
+									'gatherpress',
 								),
 							},
 						},
@@ -96,31 +96,31 @@ const ATTENDING = [
 									content: _x(
 										'<strong>Attending</strong>',
 										'RSVP status indicator',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Status',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
 							],
 						],
 					],
-					['gatherpress/rsvp-guest-count-display', {}],
+					[ 'gatherpress/rsvp-guest-count-display', {} ],
 				],
 			],
 			[
 				'gatherpress/modal',
 				{
-					className: 'gatherpress--is-rsvp-modal',
+					className: 'gatherpress-modal--type-rsvp',
 					metadata: {
 						name: _x(
 							'RSVP Modal',
 							'Modal title in editor',
-							'gatherpress'
+							'gatherpress',
 						),
 					},
 				},
@@ -145,13 +145,13 @@ const ATTENDING = [
 									content: _x(
 										"<strong>You're Attending</strong>",
 										'RSVP modal header',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Heading',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -161,19 +161,42 @@ const ATTENDING = [
 								{
 									content: __(
 										'To change your attendance status, simply click the <strong>Not Attending</strong> button below.',
-										'gatherpress'
+										'gatherpress',
 									),
 									metadata: {
 										name: _x(
 											'RSVP Info',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
 							],
-							['gatherpress/rsvp-guest-count-input', {}],
-							['gatherpress/rsvp-anonymous-checkbox', {}],
+							[
+								'gatherpress/form-field',
+								{
+									className: 'gatherpress-rsvp-field-guests',
+									fieldType: 'number',
+									fieldName: 'gatherpress_rsvp_guests',
+									label: __( 'Number of guests?', 'gatherpress' ),
+									placeholder: __( '0', 'gatherpress' ),
+									minValue: 0,
+									inlineLayout: true,
+									fieldWidth: 10,
+									inputPadding: 5,
+									autocomplete: 'off',
+								},
+							],
+							[
+								'gatherpress/form-field',
+								{
+									className: 'gatherpress-rsvp-field-anonymous',
+									fieldType: 'checkbox',
+									fieldName: 'gatherpress_rsvp_anonymous',
+									label: __( 'List me as anonymous', 'gatherpress' ),
+									autocomplete: 'off',
+								},
+							],
 							[
 								'core/buttons',
 								{
@@ -196,7 +219,7 @@ const ATTENDING = [
 										name: _x(
 											'Call to Action',
 											'Block name displayed in the editor',
-											'gatherpress'
+											'gatherpress',
 										),
 									},
 								},
@@ -207,16 +230,16 @@ const ATTENDING = [
 											text: _x(
 												'Not Attending',
 												'RSVP button label for declining event attendance',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
-												'gatherpress--update-rsvp',
+												'gatherpress-rsvp--trigger-update',
 											metadata: {
 												name: _x(
 													'RSVP Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},
@@ -227,16 +250,16 @@ const ATTENDING = [
 											text: _x(
 												'Close',
 												'Button label for closing modal dialog',
-												'gatherpress'
+												'gatherpress',
 											),
 											tagName: 'button',
 											className:
-												'is-style-outline gatherpress--close-modal',
+												'is-style-outline gatherpress-modal--trigger-close',
 											metadata: {
 												name: _x(
 													'Close Button',
 													'Block name displayed in the editor',
-													'gatherpress'
+													'gatherpress',
 												),
 											},
 										},
