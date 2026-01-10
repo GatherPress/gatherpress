@@ -160,6 +160,28 @@ export function dateTimeLabelFormat() {
 }
 
 /**
+ * Normalizes a timezone string for use with Moment Timezone.
+ *
+ * Converts UTC offset strings (+00:00, -00:00) to 'UTC' since Moment Timezone
+ * requires IANA timezone identifiers, not offset strings.
+ *
+ * @since 1.0.0
+ *
+ * @param {string} timezone - The timezone string to normalize.
+ *
+ * @return {string} The normalized timezone, converting offset-based UTC to 'UTC'.
+ */
+export function normalizeTimezoneForMoment( timezone ) {
+	// Convert UTC+0 or UTC-0 offset strings to 'UTC'.
+	// Moment Timezone requires IANA timezone identifiers, not offset strings.
+	if ( '+00:00' === timezone || '-00:00' === timezone ) {
+		return 'UTC';
+	}
+
+	return timezone;
+}
+
+/**
  * Retrieves the timezone for the application based on the provided timezone or the global setting.
  * If the provided timezone is invalid, the default timezone is set to 'GMT'.
  *
@@ -172,6 +194,8 @@ export function dateTimeLabelFormat() {
 export function getTimezone(
 	timezone = getFromGlobal( 'eventDetails.dateTime.timezone' ),
 ) {
+	timezone = normalizeTimezoneForMoment( timezone );
+
 	if ( moment.tz.zone( timezone ) ) {
 		return timezone;
 	}

@@ -22,6 +22,7 @@ import {
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForDisplay,
 	maybeConvertUtcOffsetForSelect,
+	normalizeTimezoneForMoment,
 	removeNonTimePHPFormatChars,
 	updateDateTimeEnd,
 	updateDateTimeStart,
@@ -68,6 +69,26 @@ test( 'getTimeZone returns GMT when timezone is not set', () => {
 	};
 
 	expect( getTimezone() ).toBe( 'GMT' );
+} );
+
+/**
+ * Coverage for normalizeTimezoneForMoment.
+ */
+test( 'normalizeTimezoneForMoment converts +00:00 to UTC', () => {
+	expect( normalizeTimezoneForMoment( '+00:00' ) ).toBe( 'UTC' );
+} );
+
+test( 'normalizeTimezoneForMoment converts -00:00 to UTC', () => {
+	expect( normalizeTimezoneForMoment( '-00:00' ) ).toBe( 'UTC' );
+} );
+
+test( 'normalizeTimezoneForMoment does not convert other timezones', () => {
+	expect( normalizeTimezoneForMoment( 'America/New_York' ) ).toBe(
+		'America/New_York',
+	);
+	expect( normalizeTimezoneForMoment( '+05:30' ) ).toBe( '+05:30' );
+	expect( normalizeTimezoneForMoment( '-08:00' ) ).toBe( '-08:00' );
+	expect( normalizeTimezoneForMoment( 'UTC' ) ).toBe( 'UTC' );
 } );
 
 /**
