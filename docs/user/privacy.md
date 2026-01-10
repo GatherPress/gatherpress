@@ -12,7 +12,7 @@ GatherPress is following this best-practice and offers some text suggestions, yo
 
 With the help of contributors this prepared text may even be already translated into your language.
 
-![Screenshot of Settings > Privacy > Policy Guide where you find a new 'GatherPress' dropdown in the 'Policies' list](https://github.com/user-attachments/assets/1d9c198c-ff99-42d6-a7c9-b980f30e99dc)
+![Screenshot of Settings > Privacy > Policy Guide where you find a new 'GatherPress' dropdown in the 'Policies' list](./user-doc-media/20260110170648.png)
 
-Go to **Settings** > **Privacy** > **Policy Guide** to find a new '*GatherPress*' dropdown in the '**Policies**' list
+Go to `Settings > Privacy > Policy Guide` to find a new '*GatherPress*' dropdown in the 'Policies' list
 
