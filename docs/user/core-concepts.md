@@ -13,8 +13,8 @@ Key points:
 * Events can be drafts, scheduled, or published, and can be upcoming or past events.
 * Event can have Topics, which work like Categories for posts.
 
-[More about Events](./creating-and-managing-events.md)
-[More about Topics](./topics.md)
+* [More about Events](./creating-and-managing-events.md)
+* [More about Topics](./topics.md)
 
 ## Venues
 
