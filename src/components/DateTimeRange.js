@@ -1,9 +1,4 @@
 /**
- * External dependencies.
- */
-import moment from 'moment';
-
-/**
  * WordPress dependencies.
  */
 import { useDispatch, useSelect } from '@wordpress/data';
@@ -14,7 +9,7 @@ import { useEffect } from '@wordpress/element';
  */
 import {
 	dateTimeDatabaseFormat,
-	normalizeTimezoneForMoment,
+	createMomentWithTimezone,
 } from '../helpers/datetime';
 import DateTimeStart from '../components/DateTimeStart';
 import DateTimeEnd from '../components/DateTimeEnd';
@@ -65,17 +60,12 @@ const DateTimeRange = () => {
 	);
 	const { setDuration } = useDispatch( 'gatherpress/datetime' );
 
-	// Normalize timezone for Moment Timezone compatibility.
-	const normalizedTimezone = normalizeTimezoneForMoment( timezone );
-
 	useEffect( () => {
 		const payload = JSON.stringify( {
 			...dateTimeMetaData,
-			dateTimeStart: moment
-				.tz( dateTimeStart, normalizedTimezone )
+			dateTimeStart: createMomentWithTimezone( dateTimeStart, timezone )
 				.format( dateTimeDatabaseFormat ),
-			dateTimeEnd: moment
-				.tz( dateTimeEnd, normalizedTimezone )
+			dateTimeEnd: createMomentWithTimezone( dateTimeEnd, timezone )
 				.format( dateTimeDatabaseFormat ),
 			timezone,
 		} );
@@ -86,7 +76,6 @@ const DateTimeRange = () => {
 		dateTimeStart,
 		dateTimeEnd,
 		timezone,
-		normalizedTimezone,
 		dateTimeMetaData,
 		editPost,
 		setDuration,

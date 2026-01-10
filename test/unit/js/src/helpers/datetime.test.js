@@ -9,6 +9,7 @@ import 'moment-timezone';
  */
 import {
 	convertPHPToMomentFormat,
+	createMomentWithTimezone,
 	dateTimeLabelFormat,
 	dateTimeOffset,
 	dateTimePreview,
@@ -19,10 +20,10 @@ import {
 	getDateTimeStart,
 	getTimezone,
 	getUtcOffset,
+	isManualOffset,
 	maybeConvertUtcOffsetForDatabase,
 	maybeConvertUtcOffsetForDisplay,
 	maybeConvertUtcOffsetForSelect,
-	normalizeTimezoneForMoment,
 	removeNonTimePHPFormatChars,
 	updateDateTimeEnd,
 	updateDateTimeStart,
@@ -71,24 +72,131 @@ test( 'getTimeZone returns GMT when timezone is not set', () => {
 	expect( getTimezone() ).toBe( 'GMT' );
 } );
 
+test( 'getTimeZone returns manual offset as-is', () => {
+	global.GatherPress = {
+		eventDetails: {
+			dateTime: {
+				timezone: '+05:30',
+			},
+		},
+	};
+
+	expect( getTimezone() ).toBe( '+05:30' );
+} );
+
+test( 'getTimeZone handles various manual offsets', () => {
+	const offsets = [ '+00:00', '-12:00', '+14:00', '-05:30', '+08:45' ];
+
+	offsets.forEach( ( offset ) => {
+		global.GatherPress = {
+			eventDetails: {
+				dateTime: {
+					timezone: offset,
+				},
+			},
+		};
+
+		expect( getTimezone() ).toBe( offset );
+	} );
+} );
+
 /**
- * Coverage for normalizeTimezoneForMoment.
+ * Coverage for isManualOffset.
  */
-test( 'normalizeTimezoneForMoment converts +00:00 to UTC', () => {
-	expect( normalizeTimezoneForMoment( '+00:00' ) ).toBe( 'UTC' );
+describe( 'isManualOffset', () => {
+	test( 'detects positive manual offset strings', () => {
+		expect( isManualOffset( '+00:00' ) ).toBe( true );
+		expect( isManualOffset( '+05:30' ) ).toBe( true );
+		expect( isManualOffset( '+12:00' ) ).toBe( true );
+		expect( isManualOffset( '+14:00' ) ).toBe( true );
+	} );
+
+	test( 'detects negative manual offset strings', () => {
+		expect( isManualOffset( '-00:00' ) ).toBe( true );
+		expect( isManualOffset( '-05:00' ) ).toBe( true );
+		expect( isManualOffset( '-12:00' ) ).toBe( true );
+	} );
+
+	test( 'rejects IANA timezone identifiers', () => {
+		expect( isManualOffset( 'America/New_York' ) ).toBe( false );
+		expect( isManualOffset( 'Europe/London' ) ).toBe( false );
+		expect( isManualOffset( 'Asia/Kolkata' ) ).toBe( false );
+		expect( isManualOffset( 'UTC' ) ).toBe( false );
+		expect( isManualOffset( 'GMT' ) ).toBe( false );
+	} );
+
+	test( 'rejects invalid offset formats', () => {
+		expect( isManualOffset( 'UTC+5' ) ).toBe( false );
+		expect( isManualOffset( '+5:30' ) ).toBe( false );
+		expect( isManualOffset( '+530' ) ).toBe( false );
+		expect( isManualOffset( '' ) ).toBe( false );
+	} );
 } );
 
-test( 'normalizeTimezoneForMoment converts -00:00 to UTC', () => {
-	expect( normalizeTimezoneForMoment( '-00:00' ) ).toBe( 'UTC' );
-} );
+/**
+ * Coverage for createMomentWithTimezone.
+ */
+describe( 'createMomentWithTimezone', () => {
+	test( 'handles manual offsets correctly', () => {
+		const datetime = '2024-01-15 14:30:00';
 
-test( 'normalizeTimezoneForMoment does not convert other timezones', () => {
-	expect( normalizeTimezoneForMoment( 'America/New_York' ) ).toBe(
-		'America/New_York',
-	);
-	expect( normalizeTimezoneForMoment( '+05:30' ) ).toBe( '+05:30' );
-	expect( normalizeTimezoneForMoment( '-08:00' ) ).toBe( '-08:00' );
-	expect( normalizeTimezoneForMoment( 'UTC' ) ).toBe( 'UTC' );
+		// Test various manual offsets.
+		const result1 = createMomentWithTimezone( datetime, '+00:00' );
+		expect( result1.format( 'YYYY-MM-DD HH:mm:ss' ) ).toBe( datetime );
+
+		const result2 = createMomentWithTimezone( datetime, '+05:30' );
+		expect( result2.format( 'YYYY-MM-DD HH:mm:ss' ) ).toBe( datetime );
+
+		const result3 = createMomentWithTimezone( datetime, '-08:00' );
+		expect( result3.format( 'YYYY-MM-DD HH:mm:ss' ) ).toBe( datetime );
+	} );
+
+	test( 'handles IANA timezone identifiers correctly', () => {
+		const datetime = '2024-01-15 14:30:00';
+
+		const result1 = createMomentWithTimezone( datetime, 'America/New_York' );
+		expect( result1.format( 'YYYY-MM-DD HH:mm:ss' ) ).toBe( datetime );
+
+		const result2 = createMomentWithTimezone( datetime, 'UTC' );
+		expect( result2.format( 'YYYY-MM-DD HH:mm:ss' ) ).toBe( datetime );
+	} );
+
+	test( 'correctly applies manual offset for time calculations', () => {
+		const datetime = '2024-01-15 12:00:00';
+
+		// Create moment with +05:30 offset.
+		const result = createMomentWithTimezone( datetime, '+05:30' );
+
+		// Add 2 hours.
+		result.add( 2, 'hours' );
+
+		expect( result.format( 'YYYY-MM-DD HH:mm:ss' ) ).toBe( '2024-01-15 14:00:00' );
+	} );
+
+	test( 'handles various manual offset values from dropdown', () => {
+		const datetime = '2024-01-15 12:00:00';
+
+		// Test offsets that appear in the manual offset dropdown.
+		const offsets = [
+			'-12:00', // UTC-12
+			'-11:30', // UTC-11.5
+			'-11:00', // UTC-11
+			'-05:00', // UTC-5
+			'+00:00', // UTC+0
+			'+05:30', // UTC+5.5 (India)
+			'+05:45', // UTC+5.75 (Nepal)
+			'+08:45', // UTC+8.75 (Eucla)
+			'+12:00', // UTC+12
+			'+12:45', // UTC+12.75 (Chatham Islands)
+			'+13:00', // UTC+13
+			'+14:00', // UTC+14
+		];
+
+		offsets.forEach( ( offset ) => {
+			const result = createMomentWithTimezone( datetime, offset );
+			expect( result.format( 'YYYY-MM-DD HH:mm:ss' ) ).toBe( datetime );
+		} );
+	} );
 } );
 
 /**
@@ -106,7 +214,7 @@ test( 'getUtcOffset returns empty when not GMT', () => {
 	expect( getUtcOffset() ).toBe( '' );
 } );
 
-test( 'getUtcOffset returns offset in proper display format', () => {
+test( 'getUtcOffset returns offset in proper display format when timezone is GMT', () => {
 	global.GatherPress = {
 		eventDetails: {
 			dateTime: {
@@ -115,7 +223,24 @@ test( 'getUtcOffset returns offset in proper display format', () => {
 		},
 	};
 
-	expect( getUtcOffset() ).toBe( '+0200' );
+	// getUtcOffset only returns a value when getTimezone returns 'GMT'.
+	// Since '+02:00' is a valid manual offset, getTimezone returns it as-is, not 'GMT'.
+	// Therefore, getUtcOffset returns an empty string.
+	expect( getUtcOffset( '+02:00' ) ).toBe( '' );
+} );
+
+test( 'getUtcOffset returns offset when timezone string is invalid and falls back to GMT', () => {
+	global.GatherPress = {
+		eventDetails: {
+			dateTime: {
+				timezone: '+02:00',
+			},
+		},
+	};
+
+	// When an invalid timezone string is passed, getTimezone returns 'GMT'.
+	// In this case, getUtcOffset should return the offset from the global setting.
+	expect( getUtcOffset( 'InvalidTimezone' ) ).toBe( '+0200' );
 } );
 
 /**
