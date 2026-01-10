@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 /**
  * Internal dependencies.
  */
-import { getTimezone } from './datetime';
+import { createMomentWithTimezone, getTimezone } from './datetime';
 import { getFromGlobal } from './globals';
 
 /**
@@ -84,14 +84,21 @@ export function hasValidEventId( postId = null ) {
  * @return {boolean} True if the event has passed; false otherwise.
  */
 export function hasEventPast() {
-	const dateTimeEnd = moment.tz(
+	const timezone = getTimezone();
+	const dateTimeEnd = createMomentWithTimezone(
 		getFromGlobal( 'eventDetails.dateTime.datetime_end' ),
-		getTimezone(),
+		timezone,
+	);
+
+	// Get current time in the event timezone.
+	const now = createMomentWithTimezone(
+		moment().format( 'YYYY-MM-DD HH:mm:ss' ),
+		timezone,
 	);
 
 	return (
 		'gatherpress_event' === select( 'core/editor' )?.getCurrentPostType() &&
-		moment.tz( getTimezone() ).valueOf() > dateTimeEnd.valueOf()
+		now.valueOf() > dateTimeEnd.valueOf()
 	);
 }
 
