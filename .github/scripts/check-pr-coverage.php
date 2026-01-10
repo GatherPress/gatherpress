@@ -94,15 +94,69 @@ function get_changed_php_files( string $base_ref ): array {
 		exit( 1 );
 	}
 
-	// Filter to only PHP files.
+	// Filter to only PHP files that still exist.
 	$php_files = array_filter(
 		$output,
 		function ( $file ) {
-			return str_ends_with( $file, '.php' );
+			return str_ends_with( $file, '.php' ) && file_exists( $file );
 		}
 	);
 
 	return array_values( $php_files );
+}
+
+/**
+ * Merge coverage data from multiple coverage sources.
+ *
+ * A line is considered covered if it's covered in ANY of the coverage sources.
+ *
+ * @param array $coverage_data_array Array of coverage data arrays.
+ * @return array|null Merged coverage data.
+ */
+function merge_coverage_data( array $coverage_data_array ): ?array {
+	if ( empty( $coverage_data_array ) ) {
+		return null;
+	}
+
+	// If only one source, return it directly.
+	if ( count( $coverage_data_array ) === 1 ) {
+		return $coverage_data_array[0];
+	}
+
+	// Merge uncovered lines - a line is covered if it's covered in ANY source.
+	$all_uncovered = array();
+	foreach ( $coverage_data_array as $data ) {
+		$all_uncovered = array_merge( $all_uncovered, $data['uncovered_lines'] );
+	}
+
+	// Find lines that are uncovered in ALL sources.
+	$uncovered_in_all = array();
+	$unique_uncovered = array_unique( $all_uncovered );
+
+	foreach ( $unique_uncovered as $line_num ) {
+		$uncovered_count = 0;
+		foreach ( $coverage_data_array as $data ) {
+			if ( in_array( $line_num, $data['uncovered_lines'], true ) ) {
+				++$uncovered_count;
+			}
+		}
+
+		// If line is uncovered in all sources, it's truly uncovered.
+		if ( $uncovered_count === count( $coverage_data_array ) ) {
+			$uncovered_in_all[] = $line_num;
+		}
+	}
+
+	// Use the total from the first source (should be the same across all).
+	$total   = $coverage_data_array[0]['total'];
+	$covered = $total - count( $uncovered_in_all );
+
+	return array(
+		'covered'         => $covered,
+		'total'           => $total,
+		'percentage'      => $total > 0 ? ( $covered / $total ) * 100 : 0,
+		'uncovered_lines' => $uncovered_in_all,
+	);
 }
 
 /**
@@ -255,21 +309,31 @@ function main(): void {
 	}
 	echo "\n";
 
-	// Load coverage XML.
-	$coverage_file = __DIR__ . '/../../coverage.xml';
+	// Load coverage XML files (single-site and multisite).
+	$coverage_files = array(
+		'coverage.xml'           => __DIR__ . '/../../coverage.xml',
+		'coverage-multisite.xml' => __DIR__ . '/../../coverage-multisite.xml',
+	);
 
-	if ( ! file_exists( $coverage_file ) ) {
-		echo "❌ Error: Coverage file not found at {$coverage_file}\n";
+	$coverage_xmls = array();
+
+	foreach ( $coverage_files as $name => $path ) {
+		if ( file_exists( $path ) ) {
+			$xml = simplexml_load_file( $path );
+			if ( $xml ) {
+				$coverage_xmls[ $name ] = $xml;
+				echo "✅ Loaded {$name}\n";
+			}
+		}
+	}
+
+	if ( empty( $coverage_xmls ) ) {
+		echo "❌ Error: No coverage files found\n";
 		echo "Please run 'npm run test:unit:php' first to generate coverage data.\n";
 		exit( 1 );
 	}
 
-	$coverage_xml = simplexml_load_file( $coverage_file );
-
-	if ( ! $coverage_xml ) {
-		echo "❌ Error: Failed to parse coverage XML\n";
-		exit( 1 );
-	}
+	echo "\n";
 
 	// Check coverage for each file that needs checking.
 	$failed_files = array();
@@ -277,8 +341,17 @@ function main(): void {
 
 	foreach ( $files_to_check as $file ) {
 
-		// Get coverage data for this file.
-		$coverage = get_file_coverage( $coverage_xml, $file );
+		// Get coverage data for this file from all coverage sources.
+		$coverage_data_array = array();
+		foreach ( $coverage_xmls as $coverage_xml ) {
+			$file_coverage = get_file_coverage( $coverage_xml, $file );
+			if ( $file_coverage !== null ) {
+				$coverage_data_array[] = $file_coverage;
+			}
+		}
+
+		// Merge coverage from all sources.
+		$coverage = merge_coverage_data( $coverage_data_array );
 
 		if ( $coverage === null ) {
 			// File not in coverage report (might be new file with no tests yet).
